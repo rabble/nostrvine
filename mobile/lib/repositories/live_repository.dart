@@ -127,10 +127,14 @@ class LiveRepository {
 
   Future<Event?> publishRoom(LiveRoom room) async {
     final signedEvent = await _codec.buildRoomEvent(room, _nostrClient.signer);
-    return _nostrClient.publishEvent(
+    final result = await _nostrClient.publishEvent(
       signedEvent,
       targetRelays: room.relays.isEmpty ? null : room.relays,
     );
+    return switch (result) {
+      PublishSuccess(:final event) => event,
+      PublishNoRelays() || PublishFailed() => null,
+    };
   }
 
   Future<Event?> publishSession({
@@ -144,7 +148,11 @@ class LiveRepository {
       hostPubkey: hostPubkey,
       signer: _nostrClient.signer,
     );
-    return _nostrClient.publishEvent(signedEvent);
+    final result = await _nostrClient.publishEvent(signedEvent);
+    return switch (result) {
+      PublishSuccess(:final event) => event,
+      PublishNoRelays() || PublishFailed() => null,
+    };
   }
 
   Future<Event?> publishPresence({
@@ -158,7 +166,11 @@ class LiveRepository {
       handRaised: handRaised,
       signer: _nostrClient.signer,
     );
-    return _nostrClient.publishEvent(signedEvent);
+    final result = await _nostrClient.publishEvent(signedEvent);
+    return switch (result) {
+      PublishSuccess(:final event) => event,
+      PublishNoRelays() || PublishFailed() => null,
+    };
   }
 
   Future<LiveRoomRecording?> fetchRecording({

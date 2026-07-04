@@ -4,6 +4,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/live/live_room.dart';
 import 'package:openvine/models/live/live_session.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
@@ -18,7 +19,6 @@ import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore/explore_screen.dart';
 import 'package:openvine/screens/live/widgets/live_explore_entry_card.dart';
 import 'package:openvine/services/curated_list_service.dart';
-import 'package:openvine/services/user_list_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 
 import '../helpers/test_provider_overrides.dart';
@@ -106,7 +106,11 @@ void main() {
               FeatureFlag.livestreamingBeta,
             ).overrideWithValue(true),
           ],
-          child: const MaterialApp(home: Scaffold(body: ExploreScreen())),
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: ExploreScreen()),
+          ),
         ),
       );
 

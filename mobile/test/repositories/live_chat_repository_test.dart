@@ -71,7 +71,9 @@ void main() {
           targetRelays: any(named: 'targetRelays'),
         ),
       ).thenAnswer(
-        (invocation) async => invocation.positionalArguments.first as Event,
+        (invocation) async => PublishSuccess(
+          event: invocation.positionalArguments.first as Event,
+        ),
       );
 
       repository = LiveChatRepository(
@@ -235,6 +237,56 @@ void main() {
           ),
         ).called(1);
         verify(() => mockCodec.parseChatMessage(signedMessageEvent)).called(1);
+      },
+    );
+
+    test(
+      'publishMessage returns null when the Nostr client does not publish the event',
+      () async {
+        final signedMessageEvent = Event.fromJson(
+          _eventJson(
+            idChar: '5',
+            tags: const <List<String>>[
+              <String>['a', sessionAddress],
+            ],
+            content: 'Hello room',
+          ),
+        );
+
+        when(
+          () => mockCodec.buildChatMessageEvent(
+            sessionAddress: sessionAddress,
+            content: 'Hello room',
+            signer: mockSigner,
+          ),
+        ).thenAnswer((_) async => signedMessageEvent);
+        when(
+          () => mockNostrClient.publishEvent(
+            signedMessageEvent,
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => const PublishFailed());
+
+        final published = await repository.publishMessage(
+          sessionAddress: sessionAddress,
+          content: 'Hello room',
+        );
+
+        expect(published, isNull);
+        verify(
+          () => mockCodec.buildChatMessageEvent(
+            sessionAddress: sessionAddress,
+            content: 'Hello room',
+            signer: mockSigner,
+          ),
+        ).called(1);
+        verify(
+          () => mockNostrClient.publishEvent(
+            signedMessageEvent,
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).called(1);
+        verifyNever(() => mockCodec.parseChatMessage(any()));
       },
     );
   });

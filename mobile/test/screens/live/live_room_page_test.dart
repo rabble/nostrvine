@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -19,8 +20,7 @@ import 'package:openvine/repositories/live_repository.dart';
 import 'package:openvine/screens/live/live_discovery_page.dart';
 import 'package:openvine/screens/live/live_room_page.dart';
 import 'package:openvine/screens/live/live_route_data.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
-import 'package:openvine/services/content_moderation_service.dart';
+import 'package:openvine/services/content_moderation_types.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/live_api_service.dart';
 import 'package:openvine/services/livekit_room_service.dart';
@@ -43,8 +43,8 @@ class _MockPermissionsService extends Mock implements PermissionsService {}
 class _MockContentReportingService extends Mock
     implements ContentReportingService {}
 
-class _MockContentBlocklistService extends Mock
-    implements ContentBlocklistService {}
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -55,7 +55,7 @@ void main() {
     late _MockLiveApiService mockLiveApiService;
     late _MockLiveKitRoomService mockLiveKitRoomService;
     late _MockContentReportingService mockContentReportingService;
-    late _MockContentBlocklistService mockContentBlocklistService;
+    late _MockContentBlocklistRepository mockContentBlocklistRepository;
 
     const room = LiveRoom(
       id: 'room-123',
@@ -122,7 +122,7 @@ void main() {
       mockLiveApiService = _MockLiveApiService();
       mockLiveKitRoomService = _MockLiveKitRoomService();
       mockContentReportingService = _MockContentReportingService();
-      mockContentBlocklistService = _MockContentBlocklistService();
+      mockContentBlocklistRepository = _MockContentBlocklistRepository();
 
       when(() => mockLiveKitRoomService.watchState()).thenAnswer(
         (_) => Stream<LiveMediaState>.value(const LiveMediaState()),
@@ -182,7 +182,7 @@ void main() {
         ),
       ).thenAnswer((_) async => ReportResult.createSuccess('report-id'));
       when(
-        () => mockContentBlocklistService.blockUser(
+        () => mockContentBlocklistRepository.blockUser(
           'audience-pubkey',
           ourPubkey: 'host-pubkey',
         ),
@@ -241,8 +241,8 @@ void main() {
             contentReportingServiceProvider.overrideWith(
               (ref) async => mockContentReportingService,
             ),
-            contentBlocklistServiceProvider.overrideWithValue(
-              mockContentBlocklistService,
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              mockContentBlocklistRepository,
             ),
           ],
           home: LiveRoomPage(
@@ -277,6 +277,7 @@ void main() {
       expect(find.text('End session'), findsOneWidget);
       expect(find.text('Manage participants'), findsOneWidget);
 
+      await tester.ensureVisible(find.text('Manage participants'));
       await tester.tap(find.text('Manage participants'));
       await tester.pumpAndSettle();
 
@@ -483,8 +484,8 @@ void main() {
               contentReportingServiceProvider.overrideWith(
                 (ref) async => mockContentReportingService,
               ),
-              contentBlocklistServiceProvider.overrideWithValue(
-                mockContentBlocklistService,
+              contentBlocklistRepositoryProvider.overrideWithValue(
+                mockContentBlocklistRepository,
               ),
             ],
             home: LiveRoomPage(
@@ -506,6 +507,7 @@ void main() {
         await tester.tap(find.text('Host controls'));
         await tester.pumpAndSettle();
 
+        await tester.ensureVisible(find.text('Manage participants'));
         await tester.tap(find.text('Manage participants'));
         await tester.pumpAndSettle();
 
@@ -533,7 +535,7 @@ void main() {
         await tester.pump();
         await tester.pumpAndSettle();
         verify(
-          () => mockContentBlocklistService.blockUser(
+          () => mockContentBlocklistRepository.blockUser(
             'audience-pubkey',
             ourPubkey: 'host-pubkey',
           ),
@@ -671,8 +673,8 @@ void main() {
               contentReportingServiceProvider.overrideWith(
                 (ref) async => mockContentReportingService,
               ),
-              contentBlocklistServiceProvider.overrideWithValue(
-                mockContentBlocklistService,
+              contentBlocklistRepositoryProvider.overrideWithValue(
+                mockContentBlocklistRepository,
               ),
             ],
             child: MaterialApp.router(routerConfig: router),

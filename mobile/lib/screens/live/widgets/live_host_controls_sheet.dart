@@ -9,7 +9,7 @@ import 'package:openvine/models/live/live_room.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/live/widgets/live_local_media_controls.dart';
 import 'package:openvine/screens/live/widgets/live_speaker_queue_sheet.dart';
-import 'package:openvine/services/content_moderation_service.dart';
+import 'package:openvine/services/content_moderation_types.dart';
 
 class LiveHostControlsSheet extends ConsumerStatefulWidget {
   const LiveHostControlsSheet({super.key});
@@ -379,8 +379,8 @@ class _LiveHostControlsSheetState extends ConsumerState<LiveHostControlsSheet> {
     try {
       final currentUserPubkey =
           ref.read(authServiceProvider).currentPublicKeyHex ?? '';
-      final blocklistService = ref.read(contentBlocklistServiceProvider);
-      await blocklistService.blockUser(
+      final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
+      await blocklistRepository.blockUser(
         pubkey,
         ourPubkey: currentUserPubkey,
       );

@@ -5,8 +5,7 @@ import 'package:flutter/foundation.dart';
 enum LiveSessionStatus {
   planned,
   live,
-  ended
-  ;
+  ended;
 
   static LiveSessionStatus fromTagValue(String? rawStatus) {
     final normalized = rawStatus?.trim().toLowerCase();
@@ -38,12 +37,12 @@ class LiveSession extends Equatable {
   const LiveSession({
     required this.id,
     required this.roomId,
-    this.hostPubkey,
     required this.status,
     required this.startedAt,
     required this.endedAt,
     required this.speakerPubkeys,
     required this.audienceCount,
+    this.hostPubkey,
   });
 
   final String id;

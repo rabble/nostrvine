@@ -10,12 +10,12 @@ part of 'live_providers.dart';
 // ignore_for_file: type=lint, type=warning
 
 @ProviderFor(liveNostrCodec)
-const liveNostrCodecProvider = LiveNostrCodecProvider._();
+final liveNostrCodecProvider = LiveNostrCodecProvider._();
 
 final class LiveNostrCodecProvider
     extends $FunctionalProvider<LiveNostrCodec, LiveNostrCodec, LiveNostrCodec>
     with $Provider<LiveNostrCodec> {
-  const LiveNostrCodecProvider._()
+  LiveNostrCodecProvider._()
     : super(
         from: null,
         argument: null,
@@ -51,12 +51,12 @@ final class LiveNostrCodecProvider
 String _$liveNostrCodecHash() => r'788598190414429d741c84903d3515893346acf1';
 
 @ProviderFor(liveApiService)
-const liveApiServiceProvider = LiveApiServiceProvider._();
+final liveApiServiceProvider = LiveApiServiceProvider._();
 
 final class LiveApiServiceProvider
     extends $FunctionalProvider<LiveApiService, LiveApiService, LiveApiService>
     with $Provider<LiveApiService> {
-  const LiveApiServiceProvider._()
+  LiveApiServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -92,7 +92,7 @@ final class LiveApiServiceProvider
 String _$liveApiServiceHash() => r'649a35ab4a7c409884287a7a74b8cce70ffeb8ff';
 
 @ProviderFor(liveKitRoomService)
-const liveKitRoomServiceProvider = LiveKitRoomServiceProvider._();
+final liveKitRoomServiceProvider = LiveKitRoomServiceProvider._();
 
 final class LiveKitRoomServiceProvider
     extends
@@ -102,7 +102,7 @@ final class LiveKitRoomServiceProvider
           LiveKitRoomService
         >
     with $Provider<LiveKitRoomService> {
-  const LiveKitRoomServiceProvider._()
+  LiveKitRoomServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -140,12 +140,12 @@ String _$liveKitRoomServiceHash() =>
     r'dc7e09841e678d2cce4749f657cd9458dab67fc3';
 
 @ProviderFor(liveRepository)
-const liveRepositoryProvider = LiveRepositoryProvider._();
+final liveRepositoryProvider = LiveRepositoryProvider._();
 
 final class LiveRepositoryProvider
     extends $FunctionalProvider<LiveRepository, LiveRepository, LiveRepository>
     with $Provider<LiveRepository> {
-  const LiveRepositoryProvider._()
+  LiveRepositoryProvider._()
     : super(
         from: null,
         argument: null,
@@ -181,7 +181,7 @@ final class LiveRepositoryProvider
 String _$liveRepositoryHash() => r'7cd238964675e702e1c0fe0b0117c5070b9bad39';
 
 @ProviderFor(liveChatRepository)
-const liveChatRepositoryProvider = LiveChatRepositoryProvider._();
+final liveChatRepositoryProvider = LiveChatRepositoryProvider._();
 
 final class LiveChatRepositoryProvider
     extends
@@ -191,7 +191,7 @@ final class LiveChatRepositoryProvider
           LiveChatRepository
         >
     with $Provider<LiveChatRepository> {
-  const LiveChatRepositoryProvider._()
+  LiveChatRepositoryProvider._()
     : super(
         from: null,
         argument: null,

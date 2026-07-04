@@ -113,7 +113,9 @@ void main() {
           targetRelays: any(named: 'targetRelays'),
         ),
       ).thenAnswer(
-        (invocation) async => invocation.positionalArguments.first as Event,
+        (invocation) async => PublishSuccess(
+          event: invocation.positionalArguments.first as Event,
+        ),
       );
 
       repository = LiveRepository(
@@ -502,6 +504,45 @@ void main() {
         final published = await repository.publishRoom(room);
 
         expect(published, same(signedEvent));
+        verify(() => mockCodec.buildRoomEvent(room, mockSigner)).called(1);
+        verify(
+          () => mockNostrClient.publishEvent(
+            signedEvent,
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'publishRoom returns null when the Nostr client does not publish the event',
+      () async {
+        const room = LiveRoom(
+          id: roomId,
+          hostPubkey: hostPubkey,
+          title: 'Divine Live',
+          summary: 'Room summary',
+          imageUrl: null,
+          relays: <String>[],
+          visibility: LiveRoomVisibility.public,
+        );
+        final signedEvent = Event.fromJson(
+          _eventJson(idChar: '8', kind: 30312),
+        );
+
+        when(
+          () => mockCodec.buildRoomEvent(room, mockSigner),
+        ).thenAnswer((_) async => signedEvent);
+        when(
+          () => mockNostrClient.publishEvent(
+            signedEvent,
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => const PublishNoRelays());
+
+        final published = await repository.publishRoom(room);
+
+        expect(published, isNull);
         verify(() => mockCodec.buildRoomEvent(room, mockSigner)).called(1);
         verify(
           () => mockNostrClient.publishEvent(

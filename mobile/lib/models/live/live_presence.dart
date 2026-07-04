@@ -6,11 +6,11 @@ import 'package:openvine/models/live/live_role.dart';
 class LivePresence extends Equatable {
   const LivePresence({
     required this.sessionId,
-    this.sessionHostPubkey,
     required this.pubkey,
     required this.role,
     required this.handRaised,
     required this.updatedAt,
+    this.sessionHostPubkey,
   });
 
   final String sessionId;

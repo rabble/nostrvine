@@ -109,8 +109,11 @@ class LiveChatRepository {
       content: content,
       signer: _nostrClient.signer,
     );
-    final publishedEvent = await _nostrClient.publishEvent(signedEvent);
-    return _tryParseChatMessage(publishedEvent ?? signedEvent);
+    final result = await _nostrClient.publishEvent(signedEvent);
+    return switch (result) {
+      PublishSuccess(:final event) => _tryParseChatMessage(event),
+      PublishNoRelays() || PublishFailed() => null,
+    };
   }
 
   LiveChatMessage? _tryParseChatMessage(Event event) {
