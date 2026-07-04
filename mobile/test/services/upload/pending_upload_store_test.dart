@@ -90,7 +90,7 @@ Future<Directory> _forceStorageFailure() async {
 
 void main() {
   setUpAll(() async {
-    await setupTestEnvironment();
+    await initializeServiceTestEnvironment();
   });
 
   group(PendingUploadStore, () {

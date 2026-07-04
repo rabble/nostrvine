@@ -443,8 +443,10 @@ class TimeoutException implements Exception {
 /// HTTP mocking is complex due to interface restrictions
 /// Use package:mocktail or package:http_mock_adapter for HTTP testing
 
-/// Setup test environment for ProofMode tests
-Future<void> setupTestEnvironment() async {
+/// Initialize the service test environment (platform-channel mocks via
+/// [ServiceInitHelper]). Named distinctly from the app-wide
+/// `setupTestEnvironment` in test_setup.dart to avoid the import collision.
+Future<void> initializeServiceTestEnvironment() async {
   // Initialize Flutter binding for secure storage tests
   TestWidgetsFlutterBinding.ensureInitialized();
 

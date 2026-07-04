@@ -416,3 +416,48 @@ A common symptom of the missing setup is an assertion that passes when
 the string is hardcoded but fails after an l10n migration with
 `Found 0 widgets with text "…"`. The widget tree built correctly; only
 the text child failed to resolve.
+
+---
+
+## VGV merged isolate & process-global state
+
+Under CI's `very_good test --optimization`, every untagged `mobile/test`
+suite is bundled into **one isolate** (`test/.test_optimizer.dart` imports
+each `*_test.dart` and wraps its `main()` in a `group(...)`), and
+`flutter_test` **auto-restores nothing** between tests — mock channel
+handlers, `HttpOverrides.global`, view config, and platform `.instance`
+statics all persist for the whole bundle. (The SDK doc line "Registered
+callbacks are cleared after each test" is true only at *file* granularity —
+one isolate per file under plain `flutter test` — and false for the merged
+run.) So a test that mutates a process-global without restoring it strands
+every later suite in a seed-dependent way (#5713→#5725, #5159/#5163, #5340,
+#5738).
+
+`--exclude-tags integration` does **not** exclude a bundled file: package:test
+reads suite-level `@Tags` only from the bundle entry point, which has none.
+The only tag that changes bundling is `skip_very_good_optimization` (the
+optimizer text-scans for it and runs those files separately). Adding a
+file-level `@Tags(['integration'])` without `skip_very_good_optimization` is a
+dead letter — the `vgv-tag-gate` CI job enforces this.
+
+### Restore decision table
+
+| Global you mutate | Correct pattern |
+|---|---|
+| One of the 5 shared MethodChannels (`flutter_secure_storage`, `openvine.secure_storage`, `device_info`, `path_provider`, `image_picker`) | `overrideSharedChannel(channel, handler)` from `test/helpers/shared_channel_override.dart` — installs a sanctioned override and auto-restores the canonical handler on teardown. For a full reset in a hand-rolled `remove()`, call `restoreSharedChannelDefaults()`. |
+| A test-local MethodChannel (not one of the 5) | Install in `setUp`, clear (`setMockMethodCallHandler(ch, null)`) in `tearDown`. |
+| A `<Platform>.instance` singleton (`PathProviderPlatform`, `WebViewPlatform`, …) | Snapshot in `setUp`/`setUpAll`, restore in the matching `tearDown`/`tearDownAll` (`check_process_global_mutations.sh` enforces). |
+| `HttpOverrides.global` | Not allowed in a merged test — tag the file `['skip_very_good_optimization', 'integration']` (`check_http_overrides_isolation.sh` enforces). |
+| View config (`tester.view.physicalSize` / `devicePixelRatio` / `setSurfaceSize`) | Pair every override with an `addTearDown` reset (`resetPhysicalSize`, `resetDevicePixelRatio`, `setSurfaceSize(null)`). |
+
+### Heal-and-blame harness (the 5 shared channels)
+
+`flutter_test_config.dart` registers a root `tearDown` that, after **every**
+test, verifies each shared channel still carries its canonical handler
+(`checkMockMessageHandler` identity compare). If a test replaced one without
+going through `overrideSharedChannel`, the harness **heals** it (reinstalls
+canonical so the next suite is safe) and, under the `DIVINE_STRICT_CHANNELS`
+build flag (`--dart-define=DIVINE_STRICT_CHANNELS=true`), **fails** the
+perpetrating test with a fix recipe. Compliant tests never trip it. A static
+`check_shared_channel_overrides.sh` ratchet additionally freezes the set of
+files that raw-install a shared channel, so new ones must use the helper.

@@ -22,6 +22,8 @@ import 'package:nostr_sdk/nostr_sdk.dart' show generatePrivateKey;
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 
+import '../../test_setup.dart';
+
 const _secureStorageChannel = MethodChannel(
   'plugins.it_nomads.com/flutter_secure_storage',
 );
@@ -60,15 +62,14 @@ class AuthServiceChannelMocks {
   /// Tears the test's handlers down. Call from `tearDown`.
   ///
   /// The secure-storage and capability channels are shared: `setupTestEnvironment()`
-  /// installs them once at collection time and other suites (e.g.
-  /// `nostr_key_manager_profile_fetch_test`) rely on them without re-installing.
-  /// Under CI's `--optimization` single-isolate run with shuffled ordering,
-  /// nulling those channels here would strand a later suite with no handler
-  /// (MissingPluginException on `flutter_secure_storage`). So we restore a fresh
-  /// working default rather than clearing them; only the auth-only native-signer
-  /// channel is removed.
+  /// installs them once at collection time and other suites rely on them without
+  /// re-installing. Under CI's `--optimization` single-isolate run, nulling those
+  /// channels here would strand a later suite (MissingPluginException). So we
+  /// reinstall the *canonical* shared handlers via [restoreSharedChannelDefaults]
+  /// — matching the identity the heal-and-blame tearDown expects (#5738) — and
+  /// only remove the auth-only native-signer channel.
   static void remove() {
-    _installSecureStorageHandlers(<String, String>{});
+    restoreSharedChannelDefaults();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(_androidPluginChannel, null);
   }

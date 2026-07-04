@@ -17,10 +17,21 @@ The script writes JSONL timing records to `/tmp` by default and stores command
 logs in a temporary directory. Set `DIVINE_TEST_TIMING_OUTPUT` or pass
 `--output` when a stable artifact path is needed.
 
+## Merged-isolate state
+
+Under `very_good test --optimization` the whole unit suite shares one isolate
+and `flutter_test` auto-restores nothing between tests, so a process-global
+mutation left un-restored strands later suites in a seed-dependent way. The
+restore decision table and the shared-channel heal-and-blame harness are
+documented in `.claude/rules/testing.md` (VGV merged isolate). Route shared
+MethodChannel overrides through `overrideSharedChannel(...)`.
+
 ## Current Hotspots
 
 - `test/flutter_test_config.dart` must keep ordinary test startup light. Golden
-  setup is opt-in via `-D DIVINE_GOLDEN_TESTS=true`.
+  setup is opt-in via `-D DIVINE_GOLDEN_TESTS=true`. Its root heal-and-blame
+  tearDown only acts on a real shared-channel violation, so compliant tests pay
+  nothing.
 - `scripts/golden.sh` is the supported entrypoint for golden verification and
   update runs.
 - `Future.delayed` and broad `pumpAndSettle()` calls should be replaced with

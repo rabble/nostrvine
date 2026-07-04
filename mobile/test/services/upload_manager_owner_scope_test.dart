@@ -19,7 +19,7 @@ class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
 
 void main() {
   setUpAll(() async {
-    await setupTestEnvironment();
+    await initializeServiceTestEnvironment();
   });
 
   group('UploadManager owner-scoped pending uploads', () {

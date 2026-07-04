@@ -16,6 +16,8 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../helpers/shared_channel_override.dart';
+
 class _MockUserDataCleanupService extends Mock
     implements UserDataCleanupService {}
 
@@ -55,52 +57,50 @@ void main() {
       const channel = MethodChannel(
         'plugins.it_nomads.com/flutter_secure_storage',
       );
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(channel, (MethodCall call) async {
-            switch (call.method) {
-              case 'read':
-                final key = call.arguments['key'] as String?;
-                return secureStorage[key];
-              case 'write':
-                final key = call.arguments['key'] as String?;
-                final value = call.arguments['value'] as String?;
-                if (key != null && value != null) {
-                  secureStorage[key] = value;
-                }
-                return null;
-              case 'delete':
-                final key = call.arguments['key'] as String?;
-                secureStorage.remove(key);
-                return null;
-              case 'deleteAll':
-                secureStorage.clear();
-                return null;
-              case 'readAll':
-                return secureStorage;
-              case 'containsKey':
-                final key = call.arguments['key'] as String?;
-                return secureStorage.containsKey(key);
-              case 'getCapabilities':
-                return {'basicSecureStorage': true};
-              default:
-                return null;
+      overrideSharedChannel(channel, (MethodCall call) async {
+        switch (call.method) {
+          case 'read':
+            final key = call.arguments['key'] as String?;
+            return secureStorage[key];
+          case 'write':
+            final key = call.arguments['key'] as String?;
+            final value = call.arguments['value'] as String?;
+            if (key != null && value != null) {
+              secureStorage[key] = value;
             }
-          });
+            return null;
+          case 'delete':
+            final key = call.arguments['key'] as String?;
+            secureStorage.remove(key);
+            return null;
+          case 'deleteAll':
+            secureStorage.clear();
+            return null;
+          case 'readAll':
+            return secureStorage;
+          case 'containsKey':
+            final key = call.arguments['key'] as String?;
+            return secureStorage.containsKey(key);
+          case 'getCapabilities':
+            return {'basicSecureStorage': true};
+          default:
+            return null;
+        }
+      });
 
       const capabilityChannel = MethodChannel('openvine.secure_storage');
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(capabilityChannel, (MethodCall call) async {
-            switch (call.method) {
-              case 'getCapabilities':
-                return {
-                  'hasHardwareSecurity': false,
-                  'hasBiometrics': false,
-                  'hasKeychain': true,
-                };
-              default:
-                return null;
-            }
-          });
+      overrideSharedChannel(capabilityChannel, (MethodCall call) async {
+        switch (call.method) {
+          case 'getCapabilities':
+            return {
+              'hasHardwareSecurity': false,
+              'hasBiometrics': false,
+              'hasKeychain': true,
+            };
+          default:
+            return null;
+        }
+      });
     });
 
     /// Helper: stores a Keycast session and a valid local nsec that matches

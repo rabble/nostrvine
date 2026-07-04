@@ -31,7 +31,7 @@ void _mockConnectivity(String result) {
 
 void main() {
   setUpAll(() async {
-    await setupTestEnvironment();
+    await initializeServiceTestEnvironment();
     registerFallbackValue(File(''));
     registerFallbackValue(
       const BlossomResumableUploadSession(

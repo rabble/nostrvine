@@ -5,14 +5,32 @@ import 'dart:async';
 
 import 'package:alchemist/alchemist.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_test/flutter_test.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
+
+import 'helpers/shared_channel_override.dart';
 import 'test_setup.dart';
 
 const _runGoldenSetup = bool.fromEnvironment('DIVINE_GOLDEN_TESTS');
 
+/// When set (via `--dart-define=DIVINE_STRICT_CHANNELS=true`), the
+/// heal-and-blame tearDown also `fail()`s the test that leaked a shared
+/// channel. Off by default so the harness heals silently locally; CI can flip
+/// it on once the full suite is proven clean under it (#5738).
+const _strictChannels = bool.fromEnvironment('DIVINE_STRICT_CHANNELS');
+
 Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   // Set up test environment with plugin mocks (secure_storage, path_provider, etc.)
   setupTestEnvironment();
+
+  // Under `very_good test --optimization` the whole unit suite runs in one
+  // isolate and flutter_test auto-restores nothing, so a test that replaces a
+  // shared MethodChannel handler without restoring it strands every later
+  // suite (#5738). This root tearDown runs after every test in the bundle
+  // (inner group/file tearDowns first), heals any shared channel that drifted
+  // from its canonical handler, and — under DIVINE_STRICT_CHANNELS — blames
+  // the perpetrating test. Compliant tests never trip it.
+  tearDown(() => healAndBlameSharedChannels(strict: _strictChannels));
 
   // Web / `flutter test --platform chrome`: skip golden font loading and
   // Alchemist. Those paths can stall headless Chrome with almost no CPU while

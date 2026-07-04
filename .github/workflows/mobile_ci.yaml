@@ -99,6 +99,15 @@ jobs:
         run: bash scripts/check_http_overrides_isolation.sh
       - name: 🧬 Verify no untagged test leaks a process-global singleton
         run: bash scripts/check_process_global_mutations.sh
+      - name: 🔌 Verify no new raw shared-channel installs (heal-and-blame ratchet)
+        run: |
+          # LIST ratchet vs origin/main (fails closed if the base baseline can't
+          # load). The runtime heal-and-blame tearDown (flutter_test_config.dart)
+          # is the primary guard; this freezes raw setMockMethodCallHandler
+          # installs of the five shared channels so new ones must go through
+          # overrideSharedChannel(...). #5738.
+          git fetch --quiet --depth=1 origin main
+          bash scripts/check_shared_channel_overrides.sh
       - name: 🚧 Verify Riverpod boundary (@riverpod / StateProvider locations)
         run: bash scripts/check_riverpod_boundary.sh
       - name: 🚧 Verify ChangeNotifier boundary (sanctioned-allowlist ratchet)
@@ -240,7 +249,10 @@ jobs:
       - name: 📦 Install dependencies
         run: flutter pub get
       - name: 🛠️ Install Very Good CLI
-        run: dart pub global activate very_good_cli
+        # Pinned so the optimizer's bundle mechanics don't float under CI. 1.3.0
+        # is the current latest; 1.1.1≡1.2.0≡1.3.0 for all test/optimizer
+        # mechanics (package workflows pin 1.1.1 via very_good_workflows). #5738.
+        run: dart pub global activate very_good_cli 1.3.0
       - name: 🚀 Run Flutter tests
         # concurrency=4 matches the ubuntu runner's 4 vCPUs. The merged runner
         # alongside the tagged files runs race-free at 4 (verified locally at 4

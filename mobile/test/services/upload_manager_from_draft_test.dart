@@ -21,7 +21,7 @@ class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
 
 void main() {
   setUpAll(() async {
-    await setupTestEnvironment();
+    await initializeServiceTestEnvironment();
     registerFallbackValue(File(''));
   });
 

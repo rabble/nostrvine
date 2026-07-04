@@ -13,6 +13,7 @@ import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
 
+import '../helpers/shared_channel_override.dart';
 import '../helpers/test_provider_overrides.dart';
 
 void main() {
@@ -623,37 +624,37 @@ void _setupPlatformMocks() {
         return null;
       });
 
-  // SecureStorage mock
+  // SecureStorage mock — shared channel installed in setUpAll, so route it
+  // through the sanctioned override so the heal-and-blame tearDown leaves it
+  // in place for this group and auto-restores the canonical handler after (#5738).
   const MethodChannel secureStorageChannel = MethodChannel(
     'plugins.it_nomads.com/flutter_secure_storage',
   );
-  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-      .setMockMethodCallHandler(secureStorageChannel, (call) async {
-        if (call.method == 'read' || call.method == 'readAll') {
-          return null;
-        }
-        if (call.method == 'write' ||
-            call.method == 'delete' ||
-            call.method == 'deleteAll') {
-          return null;
-        }
-        return null;
-      });
+  overrideSharedChannel(secureStorageChannel, (call) async {
+    if (call.method == 'read' || call.method == 'readAll') {
+      return null;
+    }
+    if (call.method == 'write' ||
+        call.method == 'delete' ||
+        call.method == 'deleteAll') {
+      return null;
+    }
+    return null;
+  });
 
-  // PathProvider mock
+  // PathProvider mock — shared channel; sanctioned override auto-restores (#5738).
   const MethodChannel pathProviderChannel = MethodChannel(
     'plugins.flutter.io/path_provider',
   );
-  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-      .setMockMethodCallHandler(pathProviderChannel, (call) async {
-        if (call.method == 'getApplicationDocumentsDirectory') {
-          return '/tmp/test_documents';
-        }
-        if (call.method == 'getApplicationSupportDirectory') {
-          return '/tmp/test_support';
-        }
-        return '/tmp/test';
-      });
+  overrideSharedChannel(pathProviderChannel, (call) async {
+    if (call.method == 'getApplicationDocumentsDirectory') {
+      return '/tmp/test_documents';
+    }
+    if (call.method == 'getApplicationSupportDirectory') {
+      return '/tmp/test_support';
+    }
+    return '/tmp/test';
+  });
 
   // Connectivity mock
   const MethodChannel connectivityChannel = MethodChannel(

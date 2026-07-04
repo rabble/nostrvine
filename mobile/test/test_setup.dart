@@ -11,6 +11,37 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'mocks/mock_path_provider_platform.dart';
 
+/// Handler shape for [TestDefaultBinaryMessenger.setMockMethodCallHandler].
+typedef SharedChannelHandler = Future<Object?>? Function(MethodCall call);
+
+const String _secureStorageChannelName =
+    'plugins.it_nomads.com/flutter_secure_storage';
+const String _capabilityChannelName = 'openvine.secure_storage';
+const String _deviceInfoChannelName = 'plugins.flutter.io/device_info';
+const String _pathProviderChannelName = 'plugins.flutter.io/path_provider';
+const String _imagePickerChannelName = 'plugins.flutter.io/image_picker';
+
+/// The process-global MethodChannels that [setupTestEnvironment] owns. Under
+/// `very_good test --optimization` the whole unit suite shares one isolate and
+/// flutter_test auto-restores nothing (#5738), so any test that replaces one of
+/// these handlers without restoring degrades every later suite. The
+/// heal-and-blame tearDown in `flutter_test_config.dart` guards exactly this
+/// set; sanctioned per-test overrides go through
+/// `overrideSharedChannel(...)` in `helpers/shared_channel_override.dart`.
+const Set<String> sharedChannelNames = <String>{
+  _secureStorageChannelName,
+  _capabilityChannelName,
+  _deviceInfoChannelName,
+  _pathProviderChannelName,
+  _imagePickerChannelName,
+};
+
+/// Channel name → the exact handler closure whose identity is canonical.
+/// Populated every time an installer runs; read by `checkMockMessageHandler`
+/// in the heal-and-blame tearDown and by `restoreSharedChannel`.
+final Map<String, SharedChannelHandler> canonicalSharedHandlers =
+    <String, SharedChannelHandler>{};
+
 /// Set up test environment with necessary mocks and platform channel handlers
 void setupTestEnvironment() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -26,6 +57,38 @@ void setupTestEnvironment() {
   _setupPlatformChannelMocks();
   _setupImagePickerMock();
   _registerMocktailFallbacks();
+}
+
+/// Reinstall every canonical shared-channel handler and refresh the registry.
+///
+/// Scoped equivalent of rerunning [setupTestEnvironment] for just the shared
+/// MethodChannels: use from a `setUp`/`tearDown`/`addTearDown` that needs to
+/// undo a raw shared-channel install (the auth harness `remove()` does this).
+/// Prefer [overrideSharedChannel] for per-test overrides — it auto-restores.
+void restoreSharedChannelDefaults() {
+  _setupSecureStorageMock();
+  _setupPlatformChannelMocks();
+  _setupImagePickerMock();
+}
+
+/// Reinstall the canonical handler for a single shared [channel] (identity
+/// then matches the registry again). Used by the heal path and by
+/// [overrideSharedChannel]'s auto-restore.
+void restoreSharedChannel(MethodChannel channel) {
+  final handler = canonicalSharedHandlers[channel.name];
+  assert(
+    handler != null,
+    '${channel.name} is not a registered shared channel; '
+    'setupTestEnvironment() must run before restoreSharedChannel().',
+  );
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(channel, handler);
+}
+
+void _installShared(MethodChannel channel, SharedChannelHandler handler) {
+  canonicalSharedHandlers[channel.name] = handler;
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(channel, handler);
 }
 
 final MockPathProviderPlatform _mockPathProviderPlatform =
@@ -47,117 +110,123 @@ void _registerMocktailFallbacks() {
   registerFallbackValue(fallback);
 }
 
+// Named canonical handlers. Each is a top-level function so its identity is
+// stable across setup/restore calls — that identity is what
+// `checkMockMessageHandler` compares against.
+
+/// In-memory backing store for the mocked flutter_secure_storage channel.
+/// Cleared on each full [setupTestEnvironment]/[restoreSharedChannelDefaults]
+/// so a fresh setup starts empty (the historical local-variable behavior),
+/// while the handler identity stays stable.
+final Map<String, String> _secureStorageStore = <String, String>{};
+
+Future<Object?>? _secureStorageHandler(MethodCall methodCall) async {
+  switch (methodCall.method) {
+    case 'read':
+      final String? key = methodCall.arguments['key'];
+      return _secureStorageStore[key];
+    case 'write':
+      final String? key = methodCall.arguments['key'];
+      final String? value = methodCall.arguments['value'];
+      if (key != null && value != null) {
+        _secureStorageStore[key] = value;
+      }
+      return null;
+    case 'delete':
+      final String? key = methodCall.arguments['key'];
+      _secureStorageStore.remove(key);
+      return null;
+    case 'deleteAll':
+      _secureStorageStore.clear();
+      return null;
+    case 'readAll':
+      return _secureStorageStore;
+    case 'containsKey':
+      final String? key = methodCall.arguments['key'];
+      return _secureStorageStore.containsKey(key);
+    case 'getCapabilities':
+      return {'basicSecureStorage': true};
+    default:
+      return null;
+  }
+}
+
+Future<Object?>? _secureStorageCapabilityHandler(MethodCall methodCall) async {
+  switch (methodCall.method) {
+    case 'getCapabilities':
+      return {
+        'hasHardwareSecurity': false,
+        'hasBiometrics': false,
+        'hasKeychain': true,
+      };
+    default:
+      return null;
+  }
+}
+
+Future<Object?>? _deviceInfoHandler(MethodCall methodCall) async {
+  if (methodCall.method == 'getDeviceInfo') {
+    return {
+      'model': 'Test Device',
+      'manufacturer': 'Test Manufacturer',
+      'brand': 'Test Brand',
+      'version': {'release': '11', 'sdkInt': 30},
+    };
+  }
+  return null;
+}
+
+Future<Object?>? _pathProviderHandler(MethodCall methodCall) async {
+  switch (methodCall.method) {
+    case 'getTemporaryDirectory':
+      return '/tmp';
+    case 'getApplicationDocumentsDirectory':
+      return '/tmp/documents';
+    case 'getApplicationSupportDirectory':
+      return '/tmp/support';
+    default:
+      return null;
+  }
+}
+
+Future<Object?>? _imagePickerHandler(MethodCall methodCall) async {
+  switch (methodCall.method) {
+    case 'pickImage':
+      return '/tmp/test_picker_image.jpg';
+    case 'pickMultiImage':
+      return <String>['/tmp/test_picker_image.jpg'];
+    case 'pickVideo':
+      return '/tmp/test_picker_video.mp4';
+    case 'pickMedia':
+      return <String>['/tmp/test_picker_image.jpg'];
+    default:
+      return null;
+  }
+}
+
 void _setupSecureStorageMock() {
-  // Mock flutter_secure_storage
-  const MethodChannel secureStorageChannel = MethodChannel(
-    'plugins.it_nomads.com/flutter_secure_storage',
+  _secureStorageStore.clear();
+  _installShared(
+    const MethodChannel(_secureStorageChannelName),
+    _secureStorageHandler,
   );
-
-  // Simple in-memory storage for testing
-  final Map<String, String> testStorage = {};
-
-  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-      .setMockMethodCallHandler(secureStorageChannel, (
-        MethodCall methodCall,
-      ) async {
-        switch (methodCall.method) {
-          case 'read':
-            final String? key = methodCall.arguments['key'];
-            return testStorage[key];
-          case 'write':
-            final String? key = methodCall.arguments['key'];
-            final String? value = methodCall.arguments['value'];
-            if (key != null && value != null) {
-              testStorage[key] = value;
-            }
-            return null;
-          case 'delete':
-            final String? key = methodCall.arguments['key'];
-            testStorage.remove(key);
-            return null;
-          case 'deleteAll':
-            testStorage.clear();
-            return null;
-          case 'readAll':
-            return testStorage;
-          case 'containsKey':
-            final String? key = methodCall.arguments['key'];
-            return testStorage.containsKey(key);
-          case 'getCapabilities':
-            // Return basic capabilities for testing
-            return {'basicSecureStorage': true};
-          default:
-            return null;
-        }
-      });
-
-  // Mock the secure storage capability check channel
-  const MethodChannel capabilityChannel = MethodChannel(
-    'openvine.secure_storage',
+  _installShared(
+    const MethodChannel(_capabilityChannelName),
+    _secureStorageCapabilityHandler,
   );
-
-  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-      .setMockMethodCallHandler(capabilityChannel, (
-        MethodCall methodCall,
-      ) async {
-        switch (methodCall.method) {
-          case 'getCapabilities':
-            return {
-              'hasHardwareSecurity': false,
-              'hasBiometrics': false,
-              'hasKeychain': true,
-            };
-          default:
-            return null;
-        }
-      });
 }
 
 void _setupPlatformChannelMocks() {
   PathProviderPlatform.instance = _mockPathProviderPlatform;
 
-  // Mock other platform channels that might be needed
-
-  // Mock device info
-  const MethodChannel deviceInfoChannel = MethodChannel(
-    'plugins.flutter.io/device_info',
+  _installShared(
+    const MethodChannel(_deviceInfoChannelName),
+    _deviceInfoHandler,
   );
-
-  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-      .setMockMethodCallHandler(deviceInfoChannel, (
-        MethodCall methodCall,
-      ) async {
-        if (methodCall.method == 'getDeviceInfo') {
-          return {
-            'model': 'Test Device',
-            'manufacturer': 'Test Manufacturer',
-            'brand': 'Test Brand',
-            'version': {'release': '11', 'sdkInt': 30},
-          };
-        }
-        return null;
-      });
-
-  // Mock path provider
-  const MethodChannel pathProviderChannel = MethodChannel(
-    'plugins.flutter.io/path_provider',
+  _installShared(
+    const MethodChannel(_pathProviderChannelName),
+    _pathProviderHandler,
   );
-
-  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-      .setMockMethodCallHandler(pathProviderChannel, (
-        MethodCall methodCall,
-      ) async {
-        switch (methodCall.method) {
-          case 'getTemporaryDirectory':
-            return '/tmp';
-          case 'getApplicationDocumentsDirectory':
-            return '/tmp/documents';
-          case 'getApplicationSupportDirectory':
-            return '/tmp/support';
-          default:
-            return null;
-        }
-      });
 }
 
 void _setupImagePickerMock() {
@@ -165,25 +234,8 @@ void _setupImagePickerMock() {
   // exercise the picker entry point can proceed without a real platform
   // implementation. The path does not need to point at a real file because
   // upload-service mocks intercept the bytes before any I/O happens.
-  const MethodChannel imagePickerChannel = MethodChannel(
-    'plugins.flutter.io/image_picker',
+  _installShared(
+    const MethodChannel(_imagePickerChannelName),
+    _imagePickerHandler,
   );
-
-  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-      .setMockMethodCallHandler(imagePickerChannel, (
-        MethodCall methodCall,
-      ) async {
-        switch (methodCall.method) {
-          case 'pickImage':
-            return '/tmp/test_picker_image.jpg';
-          case 'pickMultiImage':
-            return <String>['/tmp/test_picker_image.jpg'];
-          case 'pickVideo':
-            return '/tmp/test_picker_video.mp4';
-          case 'pickMedia':
-            return <String>['/tmp/test_picker_image.jpg'];
-          default:
-            return null;
-        }
-      });
 }
