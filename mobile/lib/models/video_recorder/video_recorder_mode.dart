@@ -28,7 +28,7 @@ enum VideoRecorderMode {
   bool get hasRecordingLimit => switch (this) {
     .upload => false,
     .capture => false,
-    .lipSync => true,
+    .lipSync => false,
     .classic => true,
   };
 

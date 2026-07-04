@@ -27,8 +27,8 @@ void main() {
         expect(VideoRecorderMode.capture.hasRecordingLimit, isFalse);
       });
 
-      test('lipSync has recording limit', () {
-        expect(VideoRecorderMode.lipSync.hasRecordingLimit, isTrue);
+      test('lipSync has no recording limit', () {
+        expect(VideoRecorderMode.lipSync.hasRecordingLimit, isFalse);
       });
 
       test('classic has recording limit', () {
