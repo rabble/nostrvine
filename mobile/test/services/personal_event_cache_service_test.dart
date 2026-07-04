@@ -40,6 +40,13 @@ void main() {
   }
 
   setUp(() async {
+    // Defend against Hive state leaked by an earlier file in the shared
+    // very_good --optimization isolate: this service suite and the sibling
+    // provider suite both open boxes under the same fixed names, so force a
+    // clean Hive registry before init (#5738).
+    try {
+      await Hive.close();
+    } on PathNotFoundException catch (_) {}
     testDir = await Directory.systemTemp.createTemp(
       'personal_event_cache_service_test_',
     );
@@ -49,6 +56,10 @@ void main() {
 
   tearDown(() async {
     service.dispose();
+    // Drain the fire-and-forget box close (dispose -> unawaited _closeBox)
+    // before Hive.close() so the two don't race and leak box state into the
+    // next file in the shared VGV isolate (#5738).
+    await pumpEventQueue();
     try {
       await Hive.close();
     } on PathNotFoundException catch (_) {

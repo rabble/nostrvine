@@ -47,6 +47,14 @@ void main() {
     late StreamController<AuthState> authStateController;
 
     setUp(() async {
+      // Defend against Hive state leaked by an earlier file in the shared
+      // very_good --optimization isolate: this provider suite and the sibling
+      // service suite (personal_event_cache_service_test.dart) both open boxes
+      // under the same fixed names, so force a clean Hive registry before init
+      // (#5738).
+      try {
+        await Hive.close();
+      } on PathNotFoundException catch (_) {}
       testDir = await Directory.systemTemp.createTemp(
         'personal_event_cache_service_provider_test_',
       );
@@ -64,6 +72,14 @@ void main() {
 
     tearDown(() async {
       await authStateController.close();
+      // PersonalEventCacheService.dispose() closes its Hive boxes
+      // fire-and-forget (unawaited _closeBox). Drain the event queue so that
+      // close completes before Hive.close() below — otherwise the two race,
+      // corrupt Hive's global box registry, and leak box state into the next
+      // test in the shared very_good --optimization isolate (#5738). Boxes are
+      // opened under fixed global names, so a poisoned registry makes a later
+      // test's openBox return a stale box and its writes silently vanish.
+      await pumpEventQueue();
       try {
         await Hive.close();
       } on PathNotFoundException catch (_) {
