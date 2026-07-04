@@ -5,7 +5,9 @@ import 'dart:io';
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/circuit_breaker_service.dart';
+import 'package:openvine/services/upload_manager.dart';
 
 class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
 
@@ -246,6 +248,71 @@ void main() {
       // If thumbnail generation fails, video upload should still succeed
       // This is verified by the try-catch in the implementation
       expect(true, isTrue);
+    });
+  });
+
+  group('UploadManager.createSuccessfulUpload thumbnail precedence', () {
+    // The server derives a poster at {videoHash}.jpg and returns it as the
+    // video upload's thumbnailUrl. When the user picked a cover, we extract
+    // and upload it separately and store it on the upload's thumbnailPath —
+    // that custom cover must survive, not be replaced by the server poster.
+    const serverPoster = 'https://media.divine.video/videohash.jpg';
+    const customCover = 'https://media.divine.video/customcoverhash';
+
+    late _MockBlossomUploadService mockBlossomService;
+    late UploadManager uploadManager;
+
+    setUp(() {
+      mockBlossomService = _MockBlossomUploadService();
+      uploadManager = UploadManager(blossomService: mockBlossomService);
+    });
+
+    tearDown(() {
+      uploadManager.dispose();
+    });
+
+    PendingUpload uploadWith(String? thumbnailPath) => PendingUpload.create(
+      localVideoPath: '/tmp/video.mp4',
+      nostrPubkey: 'test-pubkey',
+      thumbnailPath: thumbnailPath,
+    );
+
+    BlossomUploadResult resultWithPoster() => const BlossomUploadResult(
+      success: true,
+      videoId: 'videohash',
+      url: 'https://media.divine.video/videohash',
+      fallbackUrl: 'https://media.divine.video/videohash',
+      thumbnailUrl: serverPoster,
+    );
+
+    test('keeps the custom uploaded cover over the server poster', () {
+      final updated = uploadManager.createSuccessfulUpload(
+        uploadWith(customCover),
+        resultWithPoster(),
+      );
+
+      expect(updated.thumbnailPath, equals(customCover));
+    });
+
+    test(
+      'falls back to the server poster when no custom cover was uploaded',
+      () {
+        final updated = uploadManager.createSuccessfulUpload(
+          uploadWith(null),
+          resultWithPoster(),
+        );
+
+        expect(updated.thumbnailPath, equals(serverPoster));
+      },
+    );
+
+    test('ignores a non-http local cover path and uses the server poster', () {
+      final updated = uploadManager.createSuccessfulUpload(
+        uploadWith('/data/app/thumbnail_local.jpg'),
+        resultWithPoster(),
+      );
+
+      expect(updated.thumbnailPath, equals(serverPoster));
     });
   });
 }

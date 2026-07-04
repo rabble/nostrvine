@@ -138,10 +138,7 @@ class UploadManager {
          scopeUploadsToCurrentUser: scopeUploadsToCurrentUser,
          currentNostrPubkey: currentNostrPubkey,
        ) {
-    _retryPolicy = UploadRetryPolicy(
-      store: _store,
-      retryConfig: _retryConfig,
-    );
+    _retryPolicy = UploadRetryPolicy(store: _store, retryConfig: _retryConfig);
     _reporter = UploadProgressReporter(
       store: _store,
       circuitBreaker: _circuitBreaker,
@@ -779,28 +776,24 @@ class UploadManager {
     File videoFile,
     ValueChanged<double>? onProgress,
   ) async {
-    await _retryPolicy.performWithRetry(
-      upload,
-      () async {
-        final currentUpload = _store.getUpload(upload.id) ?? upload;
+    await _retryPolicy.performWithRetry(upload, () async {
+      final currentUpload = _store.getUpload(upload.id) ?? upload;
 
-        // Validate file still exists
-        if (!videoFile.existsSync()) {
-          throw Exception('Video file not found: ${upload.localVideoPath}');
-        }
+      // Validate file still exists
+      if (!videoFile.existsSync()) {
+        throw Exception('Video file not found: ${upload.localVideoPath}');
+      }
 
-        // Execute upload with timeout
-        final result = await _executeUploadWithTimeout(
-          currentUpload,
-          videoFile,
-          onProgress,
-        );
+      // Execute upload with timeout
+      final result = await _executeUploadWithTimeout(
+        currentUpload,
+        videoFile,
+        onProgress,
+      );
 
-        // Success - record metrics and complete
-        await _handleUploadSuccess(currentUpload, result);
-      },
-      isRetriable: _retryPolicy.isRetriableError,
-    );
+      // Success - record metrics and complete
+      await _handleUploadSuccess(currentUpload, result);
+    }, isRetriable: _retryPolicy.isRetriableError);
   }
 
   /// Execute upload with timeout and progress tracking
@@ -924,9 +917,7 @@ class UploadManager {
                 // Send timeout crash report asynchronously
                 _reporter
                     .sendTimeoutCrashReport(upload, timeoutError)
-                    .catchError((
-                      e,
-                    ) {
+                    .catchError((e) {
                       Log.error(
                         'Failed to send timeout crash report: $e',
                         name: 'UploadManager',
@@ -1018,7 +1009,7 @@ class UploadManager {
       final latestUpload = getUpload(upload.id) ?? upload;
 
       // Create updated upload with success metadata
-      final updatedUpload = _createSuccessfulUpload(latestUpload, result);
+      final updatedUpload = createSuccessfulUpload(latestUpload, result);
       await _store.update(updatedUpload);
 
       // Record successful metrics
@@ -1255,10 +1246,7 @@ class UploadManager {
 
   /// Retry a failed upload. Delegates to [UploadRetryPolicy.retryUpload].
   Future<void> retryUpload(String uploadId) async {
-    await _retryPolicy.retryUpload(
-      uploadId,
-      performUpload: _performUpload,
-    );
+    await _retryPolicy.retryUpload(uploadId, performUpload: _performUpload);
   }
 
   /// Resumes a single interrupted upload.
@@ -1376,16 +1364,24 @@ class UploadManager {
     );
   }
 
-  /// Create successful upload with metadata
-  PendingUpload _createSuccessfulUpload(PendingUpload upload, dynamic result) {
+  /// Create successful upload with metadata.
+  ///
+  /// Visible for testing so the thumbnail-precedence contract — a custom
+  /// cover already uploaded onto [upload] wins over the server-derived
+  /// poster carried by [result] — can be exercised directly.
+  @visibleForTesting
+  PendingUpload createSuccessfulUpload(PendingUpload upload, dynamic result) {
     final resultThumbnailUrl = _resultThumbnailUrl(result);
 
     final existingThumbnailUrl = upload.thumbnailPath;
+    // Prefer the custom cover we uploaded from the user's chosen frame
+    // (already stored on the upload) over the server's derived poster —
+    // otherwise a picked cover is silently replaced by {videoHash}.jpg.
     String? thumbnailUrl;
-    if (_isHttpUrl(resultThumbnailUrl)) {
-      thumbnailUrl = resultThumbnailUrl;
-    } else if (_isHttpUrl(existingThumbnailUrl)) {
+    if (_isHttpUrl(existingThumbnailUrl)) {
       thumbnailUrl = existingThumbnailUrl;
+    } else if (_isHttpUrl(resultThumbnailUrl)) {
+      thumbnailUrl = resultThumbnailUrl;
     }
 
     if (resultThumbnailUrl != null && !_isHttpUrl(resultThumbnailUrl)) {
