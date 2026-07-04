@@ -4064,7 +4064,7 @@ void main() {
         );
       });
 
-      test('returns UsernameClaimError on network exception ', () async {
+      test('returns UsernameClaimNetworkError on network exception', () async {
         when(
           () => mockNostrClient.createNip98AuthHeader(
             url: any(named: 'url'),
@@ -4078,19 +4078,12 @@ void main() {
             headers: any(named: 'headers'),
             body: any(named: 'body'),
           ),
-        ).thenThrow(Exception('network exception'));
+        ).thenThrow(ClientException('network exception'));
 
         final usernameClaimResult = await profileRepository.claimUsername(
           username: 'username',
         );
-        expect(
-          usernameClaimResult,
-          isA<UsernameClaimError>().having(
-            (e) => e.message,
-            'message',
-            'Network error: Exception: network exception',
-          ),
-        );
+        expect(usernameClaimResult, isA<UsernameClaimNetworkError>());
       });
 
       test(
@@ -4250,55 +4243,51 @@ void main() {
         );
       });
 
-      test('returns UsernameClaimError when the POST exceeds the timeout', () {
-        fakeAsync((async) {
-          when(
-            () => mockNostrClient.createNip98AuthHeader(
-              url: any(named: 'url'),
-              method: any(named: 'method'),
-              payload: any(named: 'payload'),
-            ),
-          ).thenAnswer((_) => Future.value('authHeader'));
-          when(
-            () => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            ),
-          ).thenAnswer((_) async {
-            // Simulates an unresponsive name server: never resolves within
-            // the repository's _nameServerHttpTimeout (10s).
-            await Future<void>.delayed(const Duration(minutes: 5));
-            return Response('unused', 200);
+      test(
+        'returns UsernameClaimNetworkError when the POST exceeds the timeout',
+        () {
+          fakeAsync((async) {
+            when(
+              () => mockNostrClient.createNip98AuthHeader(
+                url: any(named: 'url'),
+                method: any(named: 'method'),
+                payload: any(named: 'payload'),
+              ),
+            ).thenAnswer((_) => Future.value('authHeader'));
+            when(
+              () => mockHttpClient.post(
+                any(),
+                headers: any(named: 'headers'),
+                body: any(named: 'body'),
+              ),
+            ).thenAnswer((_) async {
+              // Simulates an unresponsive name server: never resolves within
+              // the repository's _nameServerHttpTimeout (10s).
+              await Future<void>.delayed(const Duration(minutes: 5));
+              return Response('unused', 200);
+            });
+
+            UsernameClaimResult? result;
+            unawaited(
+              profileRepository
+                  .claimUsername(username: 'username')
+                  .then((r) => result = r),
+            );
+
+            // Below the 10s repository timeout — call still pending.
+            async
+              ..elapse(const Duration(seconds: 9))
+              ..flushMicrotasks();
+            expect(result, isNull);
+
+            // Crosses the 10s repository timeout.
+            async
+              ..elapse(const Duration(seconds: 2))
+              ..flushMicrotasks();
+            expect(result, isA<UsernameClaimNetworkError>());
           });
-
-          UsernameClaimResult? result;
-          unawaited(
-            profileRepository
-                .claimUsername(username: 'username')
-                .then((r) => result = r),
-          );
-
-          // Below the 10s repository timeout — call still pending.
-          async
-            ..elapse(const Duration(seconds: 9))
-            ..flushMicrotasks();
-          expect(result, isNull);
-
-          // Crosses the 10s repository timeout.
-          async
-            ..elapse(const Duration(seconds: 2))
-            ..flushMicrotasks();
-          expect(
-            result,
-            isA<UsernameClaimError>().having(
-              (e) => e.message,
-              'message',
-              contains('TimeoutException'),
-            ),
-          );
-        });
-      });
+        },
+      );
     });
 
     group('UsernameClaimResult', () {

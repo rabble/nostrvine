@@ -41,8 +41,14 @@ enum ProfileEditorError {
   /// The UI should show a connectivity-specific message and offer a retry.
   noRelaysConnected,
 
-  /// Failed to claim username (network error or other issue).
+  /// The server rejected the username claim (invalid format or an unexpected
+  /// server response). Network failures use [claimNetworkError] instead.
   claimFailed,
+
+  /// Could not reach the name server to claim the username (network failure,
+  /// timeout, or a browser CORS block on web). The UI offers a connectivity
+  /// retry rather than treating it as a rejected claim.
+  claimNetworkError,
 
   /// Username was already taken by another user.
   usernameTaken,

@@ -973,10 +973,20 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     // If the claim fails for any reason — taken, reserved, network error,
     // server unreachable — we abort *before* publishing kind 0. This keeps
     // the user's metadata in sync with the registry by construction.
+    // Only claim when the requested username is NOT already owned by this
+    // account. Ownership is recognized either from editor state
+    // (`initialUsername`, seeded when the profile loaded) or from the loaded
+    // profile's current NIP-05 (`divineUsername`). Relying on `initialUsername`
+    // alone re-claimed an already-owned name whenever the profile hadn't seeded
+    // it (e.g. a cold web load) — which, before the name-server CORS fix, failed
+    // on web. See #4199.
+    final requestedLower = username?.toLowerCase();
+    final ownedLower = <String?>[
+      state.initialUsername,
+      currentProfile?.divineUsername,
+    ].whereType<String>().map((u) => u.toLowerCase()).toSet();
     final shouldClaimUsername =
-        username != null &&
-        (state.initialUsername == null ||
-            username.toLowerCase() != state.initialUsername!.toLowerCase());
+        username != null && !ownedLower.contains(requestedLower);
     if (shouldClaimUsername) {
       Log.info(
         '📝 Attempting to claim username: $username',
@@ -991,6 +1001,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         UsernameClaimSuccess() => null,
         UsernameClaimTaken() => ProfileEditorError.usernameTaken,
         UsernameClaimReserved() => ProfileEditorError.usernameReserved,
+        UsernameClaimNetworkError() => ProfileEditorError.claimNetworkError,
         UsernameClaimError() => ProfileEditorError.claimFailed,
       };
 

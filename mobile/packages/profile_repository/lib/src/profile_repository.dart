@@ -773,7 +773,7 @@ class ProfileRepository {
         error: e,
         stackTrace: st,
       );
-      return UsernameClaimError('Network error: $e');
+      return const UsernameClaimNetworkError();
     }
   }
 

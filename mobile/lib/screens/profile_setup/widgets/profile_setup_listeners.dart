@@ -196,7 +196,12 @@ class ProfileSetupListeners extends ConsumerWidget {
                     context: context,
                     builder: (context) => UsernameReservedDialog(username),
                   );
+                // claimFailed (server rejected) and claimNetworkError
+                // (couldn't reach the server) currently share this copy; the
+                // types stay distinct for telemetry and to allow a
+                // connectivity-specific message later.
                 case ProfileEditorError.claimFailed:
+                case ProfileEditorError.claimNetworkError:
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(context.l10n.profileSetupClaimFailed),

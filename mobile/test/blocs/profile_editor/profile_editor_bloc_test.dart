@@ -568,6 +568,70 @@ void main() {
         );
 
         blocTest<ProfileEditorBloc, ProfileEditorState>(
+          'publishes without claiming when the username is already owned via '
+          'the loaded profile NIP-05 and initialUsername is unset (#4199)',
+          setUp: () {
+            // Cold web load: the editor never seeded initialUsername, but the
+            // loaded profile already carries this divine.video username, so the
+            // claim must be skipped (and, before the CORS fix, would have failed
+            // on web).
+            final owned = createTestProfile(
+              nip05: '_@$testUsername.divine.video',
+            );
+            when(
+              () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+            ).thenAnswer((_) async => owned);
+            when(
+              () => mockProfileRepository.saveProfileEvent(
+                displayName: testDisplayName,
+                about: testAbout,
+                username: testUsername,
+                picture: testPicture,
+                currentProfile: owned,
+              ),
+            ).thenAnswer((_) async => createTestProfile());
+          },
+          build: createBloc,
+          act: (bloc) => bloc.add(
+            const ProfileSaved(
+              pubkey: testPubkey,
+              displayName: testDisplayName,
+              about: testAbout,
+              picture: testPicture,
+              username: testUsername,
+            ),
+          ),
+          expect: () => [
+            isA<ProfileEditorState>().having(
+              (s) => s.status,
+              'status',
+              ProfileEditorStatus.loading,
+            ),
+            isA<ProfileEditorState>().having(
+              (s) => s.status,
+              'status',
+              ProfileEditorStatus.success,
+            ),
+          ],
+          verify: (_) {
+            verifyNever(
+              () => mockProfileRepository.claimUsername(
+                username: any(named: 'username'),
+              ),
+            );
+            verify(
+              () => mockProfileRepository.saveProfileEvent(
+                displayName: testDisplayName,
+                about: testAbout,
+                username: testUsername,
+                picture: testPicture,
+                currentProfile: any(named: 'currentProfile'),
+              ),
+            ).called(1);
+          },
+        );
+
+        blocTest<ProfileEditorBloc, ProfileEditorState>(
           'supports admin-assigned username for current user through '
           'availability check then save/claim success',
           setUp: () {
@@ -867,6 +931,12 @@ void main() {
             label: 'name server error',
             result: const UsernameClaimError('Server unavailable'),
             expectedError: ProfileEditorError.claimFailed,
+            expectedUsernameStatus: null,
+          ),
+          (
+            label: 'name server unreachable',
+            result: const UsernameClaimNetworkError(),
+            expectedError: ProfileEditorError.claimNetworkError,
             expectedUsernameStatus: null,
           ),
         ]) {
