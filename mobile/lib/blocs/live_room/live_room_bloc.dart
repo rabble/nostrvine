@@ -37,14 +37,26 @@ class LiveRoomBloc extends Bloc<LiveRoomEvent, LiveRoomState> {
            const MethodChannelNativeCameraPermissionService(),
        _currentUserPubkey = currentUserPubkey,
        super(const LiveRoomState()) {
-    on<LiveRoomJoinRequested>(_onJoinRequested);
+    on<LiveRoomJoinRequested>(
+      _onJoinRequested,
+      transformer: droppable(),
+    );
     on<LiveRoomSessionsUpdated>(_onSessionsUpdated);
     on<LiveRoomPresenceUpdated>(_onPresenceUpdated);
     on<LiveRoomMediaStateChanged>(_onMediaStateChanged);
     on<LiveRoomSubscriptionFailed>(_onSubscriptionFailed);
-    on<ToggleMicrophoneRequested>(_onToggleMicrophoneRequested);
-    on<ToggleCameraRequested>(_onToggleCameraRequested);
-    on<SwitchCameraRequested>(_onSwitchCameraRequested);
+    on<ToggleMicrophoneRequested>(
+      _onToggleMicrophoneRequested,
+      transformer: droppable(),
+    );
+    on<ToggleCameraRequested>(
+      _onToggleCameraRequested,
+      transformer: droppable(),
+    );
+    on<SwitchCameraRequested>(
+      _onSwitchCameraRequested,
+      transformer: droppable(),
+    );
     on<PromoteSpeakerRequested>(
       _onPromoteSpeakerRequested,
       transformer: sequential(),
@@ -55,7 +67,10 @@ class LiveRoomBloc extends Bloc<LiveRoomEvent, LiveRoomState> {
     );
     on<EnableAudioOnlyRequested>(_onEnableAudioOnlyRequested);
     on<ToggleHandRaiseRequested>(_onToggleHandRaiseRequested);
-    on<EndSessionRequested>(_onEndSessionRequested);
+    on<EndSessionRequested>(
+      _onEndSessionRequested,
+      transformer: droppable(),
+    );
     on<UpdateRoomMetadataRequested>(_onUpdateRoomMetadataRequested);
     on<ApproveRaisedHandRequested>(
       _onApproveRaisedHandRequested,

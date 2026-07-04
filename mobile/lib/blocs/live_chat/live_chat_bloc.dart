@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:openvine/blocs/live_chat/live_chat_event.dart';
 import 'package:openvine/blocs/live_chat/live_chat_state.dart';
 import 'package:openvine/models/live/live_chat_message.dart';
@@ -16,7 +17,10 @@ class LiveChatBloc extends Bloc<LiveChatEvent, LiveChatState> {
        super(const LiveChatState()) {
     on<LiveChatStarted>(_onStarted);
     on<LiveChatMessagesUpdated>(_onMessagesUpdated);
-    on<LiveChatMessageSendRequested>(_onMessageSendRequested);
+    on<LiveChatMessageSendRequested>(
+      _onMessageSendRequested,
+      transformer: droppable(),
+    );
     on<LiveChatSubscriptionFailed>(_onSubscriptionFailed);
   }
 

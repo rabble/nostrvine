@@ -114,6 +114,50 @@ void main() {
     });
 
     test(
+      'drops duplicate send requests while a publish is in flight',
+      () async {
+        final publishCompleter = Completer<LiveChatMessage?>();
+        when(
+          () => mockRepository.publishMessage(
+            sessionAddress: sessionAddress,
+            content: 'Hello room',
+          ),
+        ).thenAnswer((_) => publishCompleter.future);
+
+        final bloc = LiveChatBloc(liveChatRepository: mockRepository);
+
+        bloc.add(const LiveChatStarted(sessionAddress: sessionAddress));
+        await _flush();
+
+        messagesController.add(<LiveChatMessage>[firstMessage]);
+        await _flush();
+
+        bloc
+          ..add(const LiveChatMessageSendRequested('Hello room'))
+          ..add(const LiveChatMessageSendRequested('Hello room'));
+        await _flush();
+
+        verify(
+          () => mockRepository.publishMessage(
+            sessionAddress: sessionAddress,
+            content: 'Hello room',
+          ),
+        ).called(1);
+
+        publishCompleter.complete(sentMessage);
+        await _flush();
+
+        expect(bloc.state.isSending, isFalse);
+        expect(
+          bloc.state.messages,
+          <LiveChatMessage>[firstMessage, sentMessage],
+        );
+
+        await bloc.close();
+      },
+    );
+
+    test(
       'session switches clear stale messages and ignore late updates for the old session',
       () async {
         final bloc = LiveChatBloc(liveChatRepository: mockRepository);

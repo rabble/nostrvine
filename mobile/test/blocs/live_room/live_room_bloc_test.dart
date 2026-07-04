@@ -428,6 +428,42 @@ void main() {
     );
 
     test(
+      'drops duplicate camera toggles while media publish is in flight',
+      () async {
+        final cameraCompleter = Completer<void>();
+        when(
+          () => mockMediaService.setCameraEnabled(false),
+        ).thenAnswer((_) => cameraCompleter.future);
+        final bloc = LiveRoomBloc(
+          liveRepository: mockRepository,
+          liveApiService: mockApiService,
+          liveKitRoomService: mockMediaService,
+        );
+
+        bloc.add(const LiveRoomJoinRequested(room: room, role: LiveRole.host));
+        await _flush();
+
+        sessionsController.add(<LiveSession>[liveSession]);
+        await _flush();
+
+        mediaController.add(connectedMediaState);
+        await _flush();
+
+        bloc
+          ..add(const ToggleCameraRequested())
+          ..add(const ToggleCameraRequested());
+        await _flush();
+
+        verify(() => mockMediaService.setCameraEnabled(false)).called(1);
+
+        cameraCompleter.complete();
+        await _flush();
+
+        await bloc.close();
+      },
+    );
+
+    test(
       'microphone toggle follows requested state while local publish is still in flight',
       () async {
         final bloc = LiveRoomBloc(
