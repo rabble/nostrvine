@@ -18,6 +18,8 @@ Before keeping a test, it must satisfy all of these:
 - **It is not written to turn a line green.** A line only reachable through contorted setup with no real scenario is a signal of dead or over-defensive code — fix the code, don't manufacture a test for it.
 - **It does not restate a sibling.** One test that pins the behavior beats three that reword the same assertion.
 
+**The bar applies to tests that already exist, not just new ones.** When you're already editing a file whose tests fail the bar above, deleting them is the right call — removing a test that cannot fail is a net improvement, not a coverage loss, because the green line was hiding the gap instead of guarding it.
+
 > **LLM-generated tests skew hard toward coverage theatre** — asserting constructor parameters, mock-then-verify-the-mock, one trivial test per line. Reject these on the "can it fail?" bar even when the coverage number looks fine.
 
 ---
