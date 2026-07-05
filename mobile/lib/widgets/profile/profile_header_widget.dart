@@ -339,9 +339,10 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
                   ),
                 ),
 
-                // Name, NIP-05, and bio
+                // Name, NIP-05, and bio. Horizontal inset lives on the
+                // children so the badge row can scroll edge-to-edge.
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
+                  padding: const EdgeInsets.only(top: 32, bottom: 16),
                   child: _ProfileNameAndBio(
                     profile: effectiveProfile,
                     userIdHex: widget.userIdHex,

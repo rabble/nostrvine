@@ -23,38 +23,64 @@ class _ProfileNameAndBio extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Every child except the badge row carries the horizontal inset. The
+    // badge block spans the full width so its row can scroll edge-to-edge.
+    const inset = EdgeInsets.symmetric(
+      horizontal: _profileIdentityHorizontalInset,
+    );
     return Column(
       children: [
-        if (profile != null)
-          UserName.fromUserProfile(profile!, style: VineTheme.titleLargeFont())
-        else
-          UserName.fromPubKey(
-            userIdHex,
-            style: VineTheme.titleLargeFont(),
-            anonymousName: displayNameHint,
-          ),
-        Skeleton.keep(
-          child: _UniqueIdentifier(
-            userIdHex: userIdHex,
-            nip05: nip05,
-            isOwnProfile: isOwnProfile,
-            accentColor: accentColor,
+        Padding(
+          padding: inset,
+          child: Column(
+            children: [
+              if (profile != null)
+                UserName.fromUserProfile(
+                  profile!,
+                  style: VineTheme.titleLargeFont(),
+                )
+              else
+                UserName.fromPubKey(
+                  userIdHex,
+                  style: VineTheme.titleLargeFont(),
+                  anonymousName: displayNameHint,
+                ),
+              Skeleton.keep(
+                child: _UniqueIdentifier(
+                  userIdHex: userIdHex,
+                  nip05: nip05,
+                  isOwnProfile: isOwnProfile,
+                  accentColor: accentColor,
+                ),
+              ),
+            ],
           ),
         ),
         Skeleton.keep(child: _ProfileBadgesBlock(userIdHex: userIdHex)),
-        if (about != null && about!.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          Skeleton.keep(child: _AboutText(about: about!)),
-        ],
-        if (profile?.website?.isNotEmpty == true) ...[
-          const SizedBox(height: 8),
-          Skeleton.keep(child: ProfileWebsiteRow(url: profile!.website!)),
-        ],
-        _VerifiedAccountsBlock(isOwnProfile: isOwnProfile),
+        Padding(
+          padding: inset,
+          child: Column(
+            children: [
+              if (about != null && about!.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Skeleton.keep(child: _AboutText(about: about!)),
+              ],
+              if (profile?.website?.isNotEmpty == true) ...[
+                const SizedBox(height: 8),
+                Skeleton.keep(child: ProfileWebsiteRow(url: profile!.website!)),
+              ],
+              _VerifiedAccountsBlock(isOwnProfile: isOwnProfile),
+            ],
+          ),
+        ),
       ],
     );
   }
 }
+
+/// Horizontal inset applied to the name/bio identity block. Shared so the
+/// badge row can break out of it and scroll edge-to-edge.
+const double _profileIdentityHorizontalInset = 16;
 
 class _ProfileBadgesBlock extends ConsumerWidget {
   const _ProfileBadgesBlock({required this.userIdHex});
@@ -69,13 +95,31 @@ class _ProfileBadgesBlock extends ConsumerWidget {
         if (items.isEmpty) return const SizedBox.shrink();
         return Padding(
           padding: const EdgeInsets.only(top: 12),
-          child: Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final item in items) _ProfileBadgeChip(badge: item),
-            ],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              // The block spans the full width (its siblings carry the
+              // horizontal inset instead), so the row scrolls edge-to-edge.
+              // A resting lead keeps chips aligned with the text above while
+              // letting them peek past the screen edge once they overflow.
+              const inset = _profileIdentityHorizontalInset;
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: inset),
+                // Centered when the badges fit; scrollable once they overflow.
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minWidth: constraints.maxWidth - inset * 2,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    spacing: 8,
+                    children: [
+                      for (final item in items) _ProfileBadgeChip(badge: item),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
         );
       },
