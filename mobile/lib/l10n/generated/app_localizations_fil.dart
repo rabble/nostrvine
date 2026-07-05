@@ -5629,9 +5629,6 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String get dmReelReactionSentPill => 'Naipadala ang reaksyon';
-
-  @override
   String get dmReelReplyFailed => 'Hindi maipadala';
 
   @override

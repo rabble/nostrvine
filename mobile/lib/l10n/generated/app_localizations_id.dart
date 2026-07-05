@@ -5536,9 +5536,6 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String get dmReelReactionSentPill => 'Reaksi terkirim';
-
-  @override
   String get dmReelReplyFailed => 'Tidak dapat mengirim';
 
   @override

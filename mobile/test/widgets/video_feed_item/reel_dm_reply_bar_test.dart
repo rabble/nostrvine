@@ -141,6 +141,75 @@ void main() {
     ).called(1);
   });
 
+  testWidgets('tapped emoji bounces softly, then settles back to rest', (
+    tester,
+  ) async {
+    // Same host as [wrap], but without the disableAnimations override so the
+    // pulse actually runs. No ReelReplyBridge is wired, so the tap still
+    // never triggers a player overlay.
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          dmRepositoryProvider.overrideWithValue(dmRepo),
+          dmReactionsRepositoryProvider.overrideWithValue(reactionsRepo),
+          authServiceProvider.overrideWithValue(auth),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Align(
+              alignment: Alignment.bottomCenter,
+              child: ReelDmReplyBarHost(dmReplyContext: context()),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final scaleFinder = find.ancestor(
+      of: find.text('❤️'),
+      matching: find.byType(ScaleTransition),
+    );
+    expect(
+      tester.widget<ScaleTransition>(scaleFinder).scale.value,
+      moreOrLessEquals(1),
+    );
+
+    await tester.tap(find.text('❤️'));
+    await tester.pump(); // start the bounce ticker
+    await tester.pump(const Duration(milliseconds: 190));
+    expect(
+      tester.widget<ScaleTransition>(scaleFinder).scale.value,
+      greaterThan(1.1),
+    );
+
+    await tester.pump(const Duration(milliseconds: 650));
+    expect(
+      tester.widget<ScaleTransition>(scaleFinder).scale.value,
+      moreOrLessEquals(1),
+    );
+  });
+
+  testWidgets('reduced motion suppresses the tap pulse', (tester) async {
+    await tester.pumpWidget(wrap(context()));
+    await tester.pump();
+
+    final scaleFinder = find.ancestor(
+      of: find.text('❤️'),
+      matching: find.byType(ScaleTransition),
+    );
+
+    await tester.tap(find.text('❤️'));
+    await tester.pump(); // would start the ticker if one were scheduled
+    await tester.pump(const Duration(milliseconds: 80));
+    expect(
+      tester.widget<ScaleTransition>(scaleFinder).scale.value,
+      moreOrLessEquals(1),
+    );
+  });
+
   testWidgets('re-tapping the active emoji is a no-op', (tester) async {
     await tester.pumpWidget(wrap(context()));
     await tester.pump();

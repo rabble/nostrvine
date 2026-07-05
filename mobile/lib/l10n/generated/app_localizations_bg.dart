@@ -5614,9 +5614,6 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String get dmReelReactionSentPill => 'Реакцията е изпратена';
-
-  @override
   String get dmReelReplyFailed => 'Изпращането е неуспешно';
 
   @override

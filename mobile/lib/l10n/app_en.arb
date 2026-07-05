@@ -3189,10 +3189,6 @@
       }
     }
   },
-  "dmReelReactionSentPill": "Reaction sent",
-  "@dmReelReactionSentPill": {
-    "description": "Centered confirmation pill shown over the reel for ~1s after a quick reaction is sent, alongside the emoji float animation."
-  },
   "dmReelReplyFailed": "Couldn't send",
   "@dmReelReplyFailed": {
     "description": "Transient toast shown in the reel player when a reply or reaction fails to send."

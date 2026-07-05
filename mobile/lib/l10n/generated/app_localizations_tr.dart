@@ -5542,9 +5542,6 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get dmReelReactionSentPill => 'Tepki gönderildi';
-
-  @override
   String get dmReelReplyFailed => 'Gönderilemedi';
 
   @override

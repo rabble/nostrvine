@@ -591,7 +591,7 @@ class _QuickReactionRow extends StatelessWidget {
   }
 }
 
-class _ReactionEmojiButton extends StatelessWidget {
+class _ReactionEmojiButton extends StatefulWidget {
   const _ReactionEmojiButton({
     required this.emoji,
     required this.isActive,
@@ -603,18 +603,73 @@ class _ReactionEmojiButton extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
+  State<_ReactionEmojiButton> createState() => _ReactionEmojiButtonState();
+}
+
+class _ReactionEmojiButtonState extends State<_ReactionEmojiButton>
+    with SingleTickerProviderStateMixin {
+  static const Duration _bounceDuration = Duration(milliseconds: 550);
+
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: _bounceDuration,
+  );
+
+  /// Soft bounce: an unhurried lift, a gentle dip just below rest, then a
+  /// smooth settle. All-sine curves keep it springy without any snap.
+  late final Animation<double> _scale = TweenSequence<double>([
+    TweenSequenceItem(
+      tween: Tween(
+        begin: 1.0,
+        end: 1.25,
+      ).chain(CurveTween(curve: Curves.easeOutSine)),
+      weight: 35,
+    ),
+    TweenSequenceItem(
+      tween: Tween(
+        begin: 1.25,
+        end: 0.97,
+      ).chain(CurveTween(curve: Curves.easeInOutSine)),
+      weight: 35,
+    ),
+    TweenSequenceItem(
+      tween: Tween(
+        begin: 0.97,
+        end: 1.0,
+      ).chain(CurveTween(curve: Curves.easeOutSine)),
+      weight: 30,
+    ),
+  ]).animate(_controller);
+
+  void _handleTap() {
+    if (!MediaQuery.of(context).disableAnimations) {
+      _controller.forward(from: 0);
+    }
+    widget.onTap();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      selected: isActive,
-      label: emoji,
+      selected: widget.isActive,
+      label: widget.emoji,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: onTap,
+        onTap: _handleTap,
         child: ConstrainedBox(
           constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
           child: Center(
-            child: Text(emoji, style: const TextStyle(fontSize: 28)),
+            child: ScaleTransition(
+              scale: _scale,
+              child: Text(widget.emoji, style: const TextStyle(fontSize: 28)),
+            ),
           ),
         ),
       ),

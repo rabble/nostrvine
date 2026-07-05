@@ -896,8 +896,8 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                           ),
                       ],
                     ),
-                    // Full-screen Instagram-style reaction float over the
-                    // reel.
+                    // Full-screen TikTok/IG-style reaction pop, centered over
+                    // the reel.
                     if (_reactionEmoji != null)
                       Positioned.fill(
                         child: ReactionOverlay(
