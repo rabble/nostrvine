@@ -803,4 +803,82 @@ void main() {
       expect(info1, isNot(equals(info3)));
     });
   });
+
+  group('VideoEvent.imetaVideoUrls', () {
+    const hash =
+        'e770667c1a62cc394602fc07462fa0d7ba83441002d9aac662fb88d0cc575338';
+
+    VideoEvent eventWithTags(List<List<String>> tags) {
+      final event = Event(
+        'e2fef811cf3a5e0ff69f645d8207ee7cff36d64c81a7f2a8d0c8ff8ceecd6b0f',
+        34236,
+        tags,
+        '',
+        createdAt: 1234567890,
+      );
+      return VideoEvent.fromNostrEvent(event);
+    }
+
+    test('extracts the single url from space-separated imeta', () {
+      final video = eventWithTags([
+        [
+          'imeta',
+          'url https://media.divine.video/$hash',
+          'm video/mp4',
+          'x $hash',
+        ],
+      ]);
+
+      expect(
+        video.imetaVideoUrls,
+        equals(['https://media.divine.video/$hash']),
+      );
+    });
+
+    test('extracts and dedups urls from positional imeta', () {
+      final video = eventWithTags([
+        [
+          'imeta',
+          'url',
+          'https://media.divine.video/$hash/720p.mp4',
+          'url',
+          'https://media.divine.video/$hash',
+          'm',
+          'video/mp4',
+        ],
+      ]);
+
+      expect(
+        video.imetaVideoUrls,
+        equals([
+          'https://media.divine.video/$hash/720p.mp4',
+          'https://media.divine.video/$hash',
+        ]),
+      );
+    });
+
+    test('ignores thumbnail and non-url imeta keys', () {
+      final video = eventWithTags([
+        [
+          'imeta',
+          'url https://media.divine.video/$hash',
+          'image https://media.divine.video/$hash/thumb.jpg',
+          'thumb https://media.divine.video/$hash/thumb.jpg',
+        ],
+      ]);
+
+      expect(
+        video.imetaVideoUrls,
+        equals(['https://media.divine.video/$hash']),
+      );
+    });
+
+    test('returns empty list when there is no imeta tag', () {
+      final video = eventWithTags([
+        ['url', 'https://media.divine.video/$hash'],
+      ]);
+
+      expect(video.imetaVideoUrls, isEmpty);
+    });
+  });
 }

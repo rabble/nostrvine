@@ -1382,6 +1382,43 @@ class VideoEvent {
     }
   }
 
+  /// Whether [key] names a video URL inside an `imeta` tag.
+  ///
+  /// Mirrors the `url`-plus-POSTEL'S-LAW-alternates set that
+  /// `fromNostrEvent` collects as video URL candidates.
+  static bool _isImetaVideoUrlKey(String key) => switch (key) {
+    'url' ||
+    'hls' ||
+    'dash' ||
+    'stream' ||
+    'streaming' ||
+    'fallback' ||
+    'mp4' ||
+    'video' => true,
+    _ => false,
+  };
+
+  /// Video URLs advertised in this event's `imeta` tags, deduplicated.
+  ///
+  /// Uses the same key set ([_isImetaVideoUrlKey]) and
+  /// [VideoUrlResolver.isValidVideoUrl] validation as `fromNostrEvent`'s
+  /// candidate collection, so imeta URL extraction can't drift from the URL
+  /// actually selected into [videoUrl]. Handles both the space-separated
+  /// (`"url https://…"`) and positional (`"url", "https://…"`) encodings.
+  List<String> get imetaVideoUrls {
+    final urls = <String>[];
+    for (final tag in nostrEventTags) {
+      if (tag.isEmpty || tag.first != 'imeta') continue;
+      _parseImetaTag(tag, (key, value) {
+        final url = value.trim();
+        if (_isImetaVideoUrlKey(key) && VideoUrlResolver.isValidVideoUrl(url)) {
+          urls.add(url);
+        }
+      });
+    }
+    return urls.toSet().toList(growable: false);
+  }
+
   /// Extract width from dimensions string
   int? get width {
     if (dimensions == null) return null;

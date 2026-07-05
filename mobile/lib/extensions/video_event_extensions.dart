@@ -22,27 +22,6 @@ String _getBandwidthBasedQuality() {
   }
 }
 
-bool _isVideoUrlKey(String key) {
-  return switch (key) {
-    'url' ||
-    'hls' ||
-    'dash' ||
-    'stream' ||
-    'streaming' ||
-    'fallback' ||
-    'mp4' ||
-    'video' => true,
-    _ => false,
-  };
-}
-
-bool _isHttpVideoUrl(String value) {
-  final uri = Uri.tryParse(value);
-  return uri != null &&
-      (uri.scheme == 'http' || uri.scheme == 'https') &&
-      uri.host.isNotEmpty;
-}
-
 /// Extension methods for VideoEvent that require app-level dependencies.
 ///
 /// These methods are separated from the core VideoEvent model because they
@@ -136,7 +115,7 @@ extension VideoEventAppExtensions on VideoEvent {
       return false;
     }
 
-    final imetaUrls = _imetaVideoUrls();
+    final imetaUrls = imetaVideoUrls;
     return imetaUrls.length == 1 && imetaUrls.single == url;
   }
 
@@ -257,7 +236,9 @@ extension VideoEventAppExtensions on VideoEvent {
 
     // Direct Blossom uploads that only advertise the raw blob should start
     // from that actual published URL. Derived MP4/HLS variants may not exist
-    // yet and can generate avoidable parser errors before falling back.
+    // yet and can generate avoidable parser errors before falling back. This
+    // intentionally precedes the developer format override below: forcing a
+    // derived variant on a raw-only upload would just 404.
     if (hasRawOnlyDivineImetaUrl) return videoUrl;
 
     // Developer format override takes priority
@@ -355,44 +336,6 @@ extension VideoEventAppExtensions on VideoEvent {
   /// Use this when preparing to play a video.
   Future<String?> getPlayableUrl() async {
     return resolvePlayableUrl(videoUrl);
-  }
-
-  List<String> _imetaVideoUrls() {
-    final urls = <String>[];
-    for (final tag in nostrEventTags) {
-      if (tag.isEmpty || tag[0] != 'imeta') continue;
-      var i = 1;
-      while (i < tag.length) {
-        final component = tag[i].trim();
-        if (component.isEmpty) {
-          i++;
-          continue;
-        }
-
-        final splitIndex = component.indexOf(' ');
-        if (splitIndex > 0) {
-          final key = component.substring(0, splitIndex);
-          final value = component.substring(splitIndex + 1).trim();
-          if (_isVideoUrlKey(key) && _isHttpVideoUrl(value)) {
-            urls.add(value);
-          }
-          i++;
-          continue;
-        }
-
-        if (_isVideoUrlKey(component) && i + 1 < tag.length) {
-          final value = tag[i + 1].trim();
-          if (_isHttpVideoUrl(value)) {
-            urls.add(value);
-          }
-          i += 2;
-          continue;
-        }
-
-        i++;
-      }
-    }
-    return urls.toSet().toList(growable: false);
   }
 
   /// Resolve a video URL to its best playable format.
