@@ -81,5 +81,23 @@ void main() {
 
       expect(classifyRecoverableFlutterError(details), isNull);
     });
+
+    test(
+      'does not classify hardware keyboard assertion errors as recoverable',
+      () {
+        // Keyboard framework errors are not special-cased anywhere: they must
+        // reach crash reporting through the normal chain (#4115).
+        final details = FlutterErrorDetails(
+          exception: AssertionError(
+            'A KeyDownEvent is dispatched, but the state shows that the '
+            'physical key is already pressed. HardwareKeyboard is in an '
+            'inconsistent state.',
+          ),
+          library: 'services library',
+        );
+
+        expect(classifyRecoverableFlutterError(details), isNull);
+      },
+    );
   });
 }
