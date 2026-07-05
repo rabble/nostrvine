@@ -153,6 +153,32 @@ void main() {
     expect(linkSpan.recognizer, isA<TapGestureRecognizer>());
   });
 
+  testWidgets(
+    'tapping Reply still dispatches CommentReplyToggled (#5854 scroll intact)',
+    (tester) async {
+      final mocks = buildMocks();
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          'hello there',
+          composerBloc: mocks.composer,
+          reactionsBloc: mocks.reactions,
+        ),
+      );
+      await tester.pump();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await tester.tap(find.text(l10n.commentReply));
+      await tester.pump();
+
+      // The reply-tap now also scrolls the comment into view (#5854); the
+      // reply-mode toggle must still fire.
+      verify(
+        () => mocks.composer.add(any(that: isA<CommentReplyToggled>())),
+      ).called(1);
+    },
+  );
+
   testWidgets('opens video comments with hydrated route data', (tester) async {
     final mocks = buildMocks();
 

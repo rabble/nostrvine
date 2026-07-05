@@ -2,6 +2,7 @@
 // ABOUTME: Renders a single comment with author info, content, like button,
 // ABOUTME: and reply indicator. Long-press shows options (delete/report/block).
 
+import 'dart:async';
 import 'dart:math';
 
 import 'package:comments_repository/comments_repository.dart';
@@ -463,6 +464,23 @@ class _ActionsRow extends StatelessWidget {
           label: context.l10n.commentReplySemanticLabel,
           child: InkWell(
             onTap: () {
+              // Bring the replied-to comment up into a keyboard-safe position
+              // so the reply (which nests directly below it) lands on-screen
+              // instead of behind the keyboard / below the fold (#5854). The
+              // tapped comment is guaranteed on-screen here, so ensureVisible
+              // reliably works. A follow-up scroll to the inserted reply itself
+              // is driven by CommentsList once the placeholder appears.
+              final reduceMotion = MediaQuery.of(context).disableAnimations;
+              unawaited(
+                Scrollable.ensureVisible(
+                  context,
+                  alignment: 0.35,
+                  duration: reduceMotion
+                      ? Duration.zero
+                      : const Duration(milliseconds: 300),
+                  curve: Curves.easeOut,
+                ),
+              );
               context.read<CommentComposerBloc>().add(
                 CommentReplyToggled(commentId),
               );

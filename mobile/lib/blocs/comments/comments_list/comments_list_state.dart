@@ -76,6 +76,7 @@ final class CommentsListState extends Equatable {
     this.replyCountsByCommentId = const {},
     this.newCommentCount = 0,
     this.isBackfillComplete = false,
+    this.scrollToCommentId,
   });
 
   /// The current status of the list.
@@ -128,6 +129,13 @@ final class CommentsListState extends Equatable {
 
   /// Whether there are more comments to load.
   final bool hasMoreContent;
+
+  /// Transient one-shot signal: the id of a comment the UI should scroll into
+  /// view (e.g. the local user's just-inserted reply, which nests under an
+  /// older parent and would otherwise render off-screen — #5854). Set by the
+  /// optimistic-insert handler and cleared by [CommentsScrollHandled] after the
+  /// UI performs the scroll.
+  final String? scrollToCommentId;
 
   /// Returns a comparator for sorting comments based on [sortMode].
   ///
@@ -239,7 +247,9 @@ final class CommentsListState extends Equatable {
     Map<String, int>? replyCountsByCommentId,
     int? newCommentCount,
     bool? isBackfillComplete,
+    String? scrollToCommentId,
     bool clearError = false,
+    bool clearScrollTo = false,
   }) {
     return CommentsListState(
       status: status ?? this.status,
@@ -260,6 +270,9 @@ final class CommentsListState extends Equatable {
           replyCountsByCommentId ?? this.replyCountsByCommentId,
       newCommentCount: newCommentCount ?? this.newCommentCount,
       isBackfillComplete: isBackfillComplete ?? this.isBackfillComplete,
+      scrollToCommentId: clearScrollTo
+          ? null
+          : (scrollToCommentId ?? this.scrollToCommentId),
     );
   }
 
@@ -278,5 +291,6 @@ final class CommentsListState extends Equatable {
     replyCountsByCommentId,
     newCommentCount,
     isBackfillComplete,
+    scrollToCommentId,
   ];
 }

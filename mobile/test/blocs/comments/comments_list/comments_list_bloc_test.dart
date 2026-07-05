@@ -690,6 +690,21 @@ void main() {
         },
         verify: (b) {
           expect(b.state.commentsById.containsKey('pending_comment_1'), isTrue);
+          // #5854: flags the just-inserted own comment for scroll-into-view so
+          // a reply nested under an older parent isn't stranded off-screen.
+          expect(b.state.scrollToCommentId, equals('pending_comment_1'));
+        },
+      );
+
+      blocTest<CommentsListBloc, CommentsListState>(
+        'CommentsScrollHandled clears the scroll signal (#5854)',
+        build: createBloc,
+        seed: () => const CommentsListState(
+          scrollToCommentId: 'pending_comment_1',
+        ),
+        act: (b) => b.add(const CommentsScrollHandled()),
+        verify: (b) {
+          expect(b.state.scrollToCommentId, isNull);
         },
       );
 

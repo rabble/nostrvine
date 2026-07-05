@@ -48,6 +48,7 @@ class CommentsListBloc extends Bloc<CommentsListEvent, CommentsListState> {
     on<CommentsInitialBackfillCompleted>(_onInitialBackfillCompleted);
     on<NewCommentsAcknowledged>(_onNewCommentsAcknowledged);
     on<CommentsListErrorCleared>(_onErrorCleared);
+    on<CommentsScrollHandled>(_onScrollHandled);
     on<OptimisticCommentInserted>(_onOptimisticCommentInserted);
     on<OptimisticCommentConfirmed>(_onOptimisticCommentConfirmed);
     on<OptimisticCommentRolledBack>(_onOptimisticCommentRolledBack);
@@ -266,6 +267,14 @@ class CommentsListBloc extends Bloc<CommentsListEvent, CommentsListState> {
     emit(state.copyWith(clearError: true));
   }
 
+  void _onScrollHandled(
+    CommentsScrollHandled event,
+    Emitter<CommentsListState> emit,
+  ) {
+    if (state.scrollToCommentId == null) return;
+    emit(state.copyWith(clearScrollTo: true));
+  }
+
   void _onNewCommentReceived(
     NewCommentReceived event,
     Emitter<CommentsListState> emit,
@@ -340,10 +349,21 @@ class CommentsListBloc extends Bloc<CommentsListEvent, CommentsListState> {
     OptimisticCommentInserted event,
     Emitter<CommentsListState> emit,
   ) {
-    _emitStore(emit, {
+    // Also flag the just-inserted own comment for scroll-into-view: a reply
+    // nests under an older parent and would otherwise render off-screen, so the
+    // poster thinks the post failed and retries (#5854). The UI scrolls to this
+    // id then acks via [CommentsScrollHandled].
+    final updated = {
       ...state.commentsById,
       event.placeholder.id: event.placeholder,
-    });
+    };
+    emit(
+      state.copyWith(
+        commentsById: updated,
+        replyCountsByCommentId: computeReplyCounts(updated),
+        scrollToCommentId: event.placeholder.id,
+      ),
+    );
   }
 
   void _onOptimisticCommentConfirmed(

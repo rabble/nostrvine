@@ -230,6 +230,73 @@ void main() {
     });
 
     testWidgets(
+      'scrolls the flagged comment into view and acks it (#5854)',
+      (tester) async {
+        final comments = [
+          for (var i = 0; i < 12; i++)
+            CommentBuilder()
+                .withId('$i'.padLeft(64, 'a'))
+                .withContent('comment number $i')
+                // Newest-first sort: minute 12-i means i=0 is newest (top),
+                // so higher indices sit lower in the list.
+                .withCreatedAt(DateTime(2026).add(Duration(minutes: 12 - i)))
+                .build(),
+        ];
+        final commentsById = {for (final c in comments) c.id: c};
+        // A comment below the initial fold but within the build cache extent.
+        final target = comments[5];
+
+        final base = CommentsListState(
+          rootEventId: testVideoEventId,
+          rootAuthorPubkey: testVideoAuthorPubkey,
+          status: CommentsStatus.success,
+          commentsById: commentsById,
+        );
+        final withScroll = base.copyWith(scrollToCommentId: target.id);
+
+        whenListen(
+          mockListBloc,
+          Stream.fromIterable([base, withScroll]),
+          initialState: base,
+        );
+
+        final sc = ScrollController();
+        addTearDown(sc.dispose);
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              nostrServiceProvider.overrideWithValue(mockNostrClient),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: MultiBlocProvider(
+                  providers: [
+                    BlocProvider<CommentsListBloc>.value(value: mockListBloc),
+                    BlocProvider<CommentReactionsBloc>.value(
+                      value: mockReactionsBloc,
+                    ),
+                  ],
+                  child: CommentsList(
+                    showClassicVineNotice: false,
+                    scrollController: sc,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // The list scrolled down to reveal the flagged comment, and the
+        // one-shot scroll signal was acknowledged.
+        expect(sc.offset, greaterThan(0));
+        verify(() => mockListBloc.add(const CommentsScrollHandled())).called(1);
+      },
+    );
+
+    testWidgets(
       'ListView declares onDrag keyboard-dismiss behavior',
       (tester) async {
         final comment = CommentBuilder().build();

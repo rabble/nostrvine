@@ -45,6 +45,12 @@ final class CommentsListErrorCleared extends CommentsListEvent {
   const CommentsListErrorCleared();
 }
 
+/// The UI has scrolled the [CommentsListState.scrollToCommentId] target into
+/// view; clear the one-shot signal so it doesn't re-fire on the next rebuild.
+final class CommentsScrollHandled extends CommentsListEvent {
+  const CommentsScrollHandled();
+}
+
 // Cross-bloc store-mutation intents. Dispatched by the UI in response to
 // outbox signals from [CommentComposerBloc] and [CommentReactionsBloc]. The
 // list bloc owns the canonical [Comment] store; these events are the only
