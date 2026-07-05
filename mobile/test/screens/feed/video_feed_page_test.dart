@@ -456,6 +456,92 @@ void main() {
       await tester.pump();
     });
 
+    testWidgets(
+      'keeps the tuning receipt after the tuning-driven auto-advance',
+      (tester) async {
+        final videos = [
+          createTestVideoEvent(id: 'video-0'),
+          createTestVideoEvent(id: 'video-1'),
+        ];
+        final initialState = VideoFeedBlocState(
+          status: VideoFeedStatus.success,
+          videos: videos,
+        );
+        final tunedState = initialState.copyWith(
+          tuningActionSequence: 1,
+          lastTuningAction: VideoFeedTuningAction(
+            videoId: videos.first.id,
+            direction: FeedTuningDirection.more,
+            sequence: 1,
+            publishedEventId: 'published-tuning-event-id',
+          ),
+        );
+        final controller = StreamController<VideoFeedBlocState>();
+        addTearDown(controller.close);
+        when(() => videoFeedBloc.state).thenReturn(initialState);
+        whenListen(
+          videoFeedBloc,
+          controller.stream,
+          initialState: initialState,
+        );
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            additionalOverrides: [
+              isFeatureEnabledProvider(
+                FeatureFlag.feedTuning,
+              ).overrideWith((_) => true),
+            ],
+            home: MultiBlocProvider(
+              providers: [
+                BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),
+                BlocProvider<VideoPlaybackStatusCubit>(
+                  create: (_) => VideoPlaybackStatusCubit(),
+                ),
+                BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
+              ],
+              child: const Scaffold(body: VideoFeedView()),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.drag(
+          find.byType(FeedTuningSwipeOverlay),
+          const Offset(200, 0),
+        );
+        await tester.pump();
+
+        verify(
+          () => videoFeedBloc.add(
+            VideoFeedTuningSwipeCommitted(
+              videoId: videos.first.id,
+              direction: FeedTuningDirection.more,
+            ),
+          ),
+        ).called(1);
+
+        final feedVideos = tester.widget<FeedVideos>(find.byType(FeedVideos));
+        feedVideos.onActiveVideoChanged!(videos[1], 1);
+        await tester.pump();
+
+        when(() => videoFeedBloc.state).thenReturn(tunedState);
+        controller.add(tunedState);
+        await tester.pump();
+
+        expect(find.text('More like this'), findsOneWidget);
+
+        feedVideos.onActiveVideoChanged!(videos[1], 1);
+        await tester.pump();
+
+        expect(find.text('More like this'), findsNothing);
+
+        await tester.pump(const Duration(seconds: 3));
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      },
+    );
+
     testWidgets('requests auto-refresh when app returns from background', (
       tester,
     ) async {

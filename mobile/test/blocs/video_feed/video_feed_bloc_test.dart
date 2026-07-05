@@ -221,22 +221,29 @@ void main() {
           ),
         ),
         expect: () => [
-          isA<VideoFeedBlocState>().having(
-            (state) => state.lastTuningAction,
-            'lastTuningAction',
-            isA<VideoFeedTuningAction>()
-                .having((action) => action.videoId, 'videoId', 'tuned-video')
-                .having(
-                  (action) => action.direction,
-                  'direction',
-                  FeedTuningDirection.more,
-                )
-                .having(
-                  (action) => action.publishedEventId,
-                  'publishedEventId',
-                  'published-tuning-event-id',
-                ),
-          ),
+          isA<VideoFeedBlocState>()
+              .having((state) => state.tuningActionSequence, 'sequence', 1)
+              .having(
+                (state) => state.lastTuningAction,
+                'lastTuningAction',
+                isA<VideoFeedTuningAction>()
+                    .having(
+                      (action) => action.videoId,
+                      'videoId',
+                      'tuned-video',
+                    )
+                    .having(
+                      (action) => action.direction,
+                      'direction',
+                      FeedTuningDirection.more,
+                    )
+                    .having((action) => action.sequence, 'sequence', 1)
+                    .having(
+                      (action) => action.publishedEventId,
+                      'publishedEventId',
+                      'published-tuning-event-id',
+                    ),
+              ),
         ],
         verify: (_) {
           verify(

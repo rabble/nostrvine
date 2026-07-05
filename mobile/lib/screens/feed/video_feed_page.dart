@@ -152,6 +152,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   late int _currentIndex;
 
   final _feedVideosKey = GlobalKey<FeedVideosState>();
+  int? _pendingTuningAutoAdvanceIndex;
 
   /// Feed-scoped Auto playback state. Owned by this state so tests can drive
   /// the screen without also wiring the cubit externally; exposed to children
@@ -223,6 +224,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
 
     final nextIndex = _currentIndex + 1;
     if (nextIndex < videos.length) {
+      _pendingTuningAutoAdvanceIndex = nextIndex;
       _animateToPage(nextIndex);
     }
   }
@@ -468,7 +470,12 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                           isLoadingMore: state.isLoadingMore,
                           trafficSource: ViewTrafficSource.home,
                           onActiveVideoChanged: (video, index) {
-                            _dismissTuningSnackbar();
+                            final isTuningAutoAdvance =
+                                _pendingTuningAutoAdvanceIndex == index;
+                            _pendingTuningAutoAdvanceIndex = null;
+                            if (!isTuningAutoAdvance) {
+                              _dismissTuningSnackbar();
+                            }
                             ref
                                 .read(foregroundFeedActivityGateProvider)
                                 .markActive();

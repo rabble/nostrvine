@@ -110,7 +110,6 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
   final FeedPerformanceTracker? _feedTracker;
   final EnrichVideos? _enrichVideos;
   final FeedTuningRepository? _feedTuningRepository;
-  int _tuningActionSequence = 0;
 
   /// Owns the cross-restart cache serve / splice / resume-persist logic.
   final HomeFeedResumeManager _resumeManager;
@@ -182,13 +181,15 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       video: target,
       direction: event.direction,
     );
+    final sequence = state.tuningActionSequence + 1;
 
     emit(
       state.copyWith(
+        tuningActionSequence: sequence,
         lastTuningAction: VideoFeedTuningAction(
           videoId: event.videoId,
           direction: event.direction,
-          sequence: ++_tuningActionSequence,
+          sequence: sequence,
           publishedEventId: publishedEventId,
         ),
       ),
