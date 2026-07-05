@@ -177,6 +177,12 @@ class CommentsRepository {
             videoId: rootEventId,
             limit: limit,
             offset: offset,
+            // Skip the un-purged edge cache while the local user has a
+            // just-posted comment/reply for this video, so a post-action
+            // reload reflects it (and other fresh comments) instead of a
+            // stale ~120s cached list. Self-clears once the pending set
+            // prunes. Other viewers still need a backend surrogate purge.
+            cacheBustToken: _commentsCacheBustToken(rootEventId),
           );
           if (response != null) {
             final restThread = _buildThreadFromRestComments(
@@ -569,6 +575,23 @@ class CommentsRepository {
       updated < 0 ? 0 : updated,
       rootAddressableId: rootAddressableId,
     );
+  }
+
+  /// Returns a cache-bust token for [rootEventId]'s comments REST read, or
+  /// `null` when the local user has no recently-posted comment for the video.
+  ///
+  /// The token is the newest retained post time (microseconds), so it is stable
+  /// across reads within a post window (the edge can still cache that variant)
+  /// and changes when a newer comment is posted. Once [_recentlyPostedComments]
+  /// prunes (merged in or older than [_recentlyPostedRetention]), it returns
+  /// `null` and reads fall back to the normal cached URL (#5854).
+  String? _commentsCacheBustToken(String rootEventId) {
+    final pending = _recentlyPostedComments[rootEventId];
+    if (pending == null || pending.isEmpty) return null;
+    final latestMicros = pending
+        .map((p) => p.postedAt.microsecondsSinceEpoch)
+        .reduce((a, b) => a > b ? a : b);
+    return latestMicros.toString();
   }
 
   /// Records a just-posted [comment] so [loadComments] can keep it visible on

@@ -63,6 +63,7 @@ void main() {
             sort: any(named: 'sort'),
             limit: any(named: 'limit'),
             offset: any(named: 'offset'),
+            cacheBustToken: any(named: 'cacheBustToken'),
           ),
         ).thenAnswer(
           (_) async => VideoCommentsResponse(
@@ -112,6 +113,7 @@ void main() {
             sort: any(named: 'sort'),
             limit: any(named: 'limit'),
             offset: any(named: 'offset'),
+            cacheBustToken: any(named: 'cacheBustToken'),
           ),
         ).called(1);
         verifyNever(() => mockNostrClient.queryEvents(any()));
@@ -128,6 +130,7 @@ void main() {
               sort: any(named: 'sort'),
               limit: any(named: 'limit'),
               offset: any(named: 'offset'),
+              cacheBustToken: any(named: 'cacheBustToken'),
             ),
           ).thenAnswer(
             (_) async => VideoCommentsResponse(
@@ -185,6 +188,7 @@ void main() {
               sort: any(named: 'sort'),
               limit: any(named: 'limit'),
               offset: any(named: 'offset'),
+              cacheBustToken: any(named: 'cacheBustToken'),
             ),
           ).thenAnswer(
             (_) async => VideoCommentsResponse(
@@ -241,6 +245,7 @@ void main() {
             sort: any(named: 'sort'),
             limit: any(named: 'limit'),
             offset: any(named: 'offset'),
+            cacheBustToken: any(named: 'cacheBustToken'),
           ),
         ).thenThrow(
           const FunnelcakeApiException(message: 'boom', statusCode: 500),

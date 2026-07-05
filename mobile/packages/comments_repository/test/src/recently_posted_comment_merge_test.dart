@@ -65,6 +65,7 @@ void main() {
           sort: any(named: 'sort'),
           limit: any(named: 'limit'),
           offset: any(named: 'offset'),
+          cacheBustToken: any(named: 'cacheBustToken'),
         ),
       ).thenAnswer(
         (_) async => VideoCommentsResponse(comments: comments, total: total),
@@ -176,6 +177,40 @@ void main() {
       final thread = await load();
 
       expect(thread.comments, isEmpty);
+    });
+
+    // #5854: the comments REST response is edge-cached and not purged on
+    // comment ingest, so a post-action reload can serve a stale list. The
+    // repository busts the cache while it holds a just-posted comment.
+    group('cache-bust token (#5854)', () {
+      List<Object?> capturedCacheBustTokens() {
+        return verify(
+          () => funnelcakeClient.getVideoComments(
+            videoId: any(named: 'videoId'),
+            sort: any(named: 'sort'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            cacheBustToken: captureAny(named: 'cacheBustToken'),
+          ),
+        ).captured;
+      }
+
+      test('passes a cacheBustToken after a local post', () async {
+        await postOne();
+        stubRest(<VideoComment>[], total: 0);
+
+        await load();
+
+        expect(capturedCacheBustTokens().single, isNotNull);
+      });
+
+      test('passes no cacheBustToken on a cold load', () async {
+        stubRest(<VideoComment>[], total: 0);
+
+        await load();
+
+        expect(capturedCacheBustTokens().single, isNull);
+      });
     });
   });
 }

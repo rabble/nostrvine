@@ -1666,6 +1666,7 @@ class FunnelcakeApiClient {
     String sort = 'newest',
     int limit = 25,
     int offset = 0,
+    String? cacheBustToken,
   }) async {
     if (!isAvailable) {
       throw const FunnelcakeNotConfiguredException();
@@ -1675,11 +1676,19 @@ class FunnelcakeApiClient {
       throw const FunnelcakeException('Video ID cannot be empty');
     }
 
+    // The comments response is edge-cached (surrogate-control max-age) and is
+    // NOT purged when a new Kind 1111 comment/reply is ingested, so a same-URL
+    // re-fetch can return a stale list for the cache TTL. When the caller
+    // passes a [cacheBustToken] (e.g. after the local user just posted), it
+    // becomes a query param so the edge serves a fresh response. The token is
+    // stable within a post window, so it does not create unbounded cache keys.
     final uri = Uri.parse('$_baseUrl/api/v2/videos/$videoId/comments').replace(
       queryParameters: {
         'sort': sort,
         'limit': limit.toString(),
         'offset': offset.toString(),
+        if (cacheBustToken != null && cacheBustToken.isNotEmpty)
+          '_cb': cacheBustToken,
       },
     );
 

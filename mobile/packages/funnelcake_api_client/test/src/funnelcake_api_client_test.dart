@@ -3432,6 +3432,45 @@ void main() {
         expect(uri.queryParameters['offset'], equals('100'));
       });
 
+      test('includes _cb param when cacheBustToken is set (#5854)', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response(validResponse, 200));
+
+        await client.getVideoComments(
+          videoId: testVideoId,
+          cacheBustToken: '1700000000123456',
+        );
+
+        final uri =
+            verify(
+                  () => mockHttpClient.get(
+                    captureAny(),
+                    headers: any(named: 'headers'),
+                  ),
+                ).captured.first
+                as Uri;
+        expect(uri.queryParameters['_cb'], equals('1700000000123456'));
+      });
+
+      test('omits _cb param by default so reads stay edge-cacheable', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response(validResponse, 200));
+
+        await client.getVideoComments(videoId: testVideoId);
+
+        final uri =
+            verify(
+                  () => mockHttpClient.get(
+                    captureAny(),
+                    headers: any(named: 'headers'),
+                  ),
+                ).captured.first
+                as Uri;
+        expect(uri.queryParameters.containsKey('_cb'), isFalse);
+      });
+
       test('derives pagination lower-bound total from v2 has_more', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
