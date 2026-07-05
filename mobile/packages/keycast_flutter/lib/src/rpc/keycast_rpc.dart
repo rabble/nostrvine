@@ -248,10 +248,18 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
     }
   }
 
+  /// Whether [error] is the backend signalling that `sign_canonical` is not
+  /// implemented, as opposed to a transient or auth failure that must stay
+  /// retryable.
+  ///
+  /// Matched against the exact wordings the login backend returns today: the
+  /// HTTP `Unsupported method: sign_canonical` body and the JSON-RPC
+  /// `method_not_found` error field. The match is deliberately narrow — a
+  /// broader signal (e.g. caching on any 4xx) would risk permanently disabling
+  /// a supported capability after a transient blip. If the backend ever rewords
+  /// this, update the substrings here, otherwise canonical binding silently
+  /// re-requests on every publish.
   bool _isUnsupportedSignCanonical(RpcException error) {
-    if (error.method != 'sign_canonical') {
-      return false;
-    }
     final lower = error.message.toLowerCase();
     return lower.contains('unsupported method') ||
         lower.contains('method_not_found') ||
