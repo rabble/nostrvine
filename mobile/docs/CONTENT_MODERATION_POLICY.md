@@ -23,24 +23,27 @@ Divine fully complies with Apple's requirements for user-generated content apps 
 
 **Implementation:**
 - NIP-56 compliant reporting system (kind 1984 events)
-- Report dialog accessible from video menu
+- Report dialog accessible from the video action rail and user profile more menu
 - Reports published to `wss://relay.divine.video` (Divine moderation relay)
 - 9 distinct report categories
 
 **Location:**
 - `lib/services/content_reporting_service.dart`
-- `lib/widgets/share_video_menu.dart` (ReportContentDialog)
+- `lib/widgets/video_feed_item/actions/report_action_button.dart` (video report entry point)
+- `lib/widgets/report_content_dialog.dart` (ReportContentDialog)
+- `lib/screens/other_profile_screen.dart` (user report entry point)
 
 ### ✅ Ability to Block Abusive Users
 
 **Implementation:**
-- Block/Unblock functionality in video menu
+- Block/Unblock functionality in the user profile more menu
 - Blocked users filtered from all feeds (home, explore, hashtag)
 - Users can still explicitly visit blocked profiles (maintaining Nostr decentralization principles)
 
 **Location:**
 - `packages/content_blocklist_repository/lib/src/content_blocklist_repository.dart`
-- `lib/widgets/share_video_menu.dart` (Block User action)
+- `lib/screens/other_profile_screen.dart` (block/unblock action handling)
+- `lib/widgets/profile/more_sheet/` (block/unblock menu and confirmation views)
 
 ### ✅ Timely Response to Reports (24-Hour SLA)
 
