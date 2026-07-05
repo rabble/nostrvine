@@ -186,25 +186,6 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 @visibleForTesting
-bool handleKnownFrameworkError(
-  FlutterErrorDetails details, {
-  required void Function(String message) logWarning,
-  VoidCallback? clearKeyboardState,
-}) {
-  final exception = details.exception.toString();
-  if (exception.contains('KeyDownEvent') ||
-      exception.contains('HardwareKeyboard')) {
-    logWarning(
-      'Known Flutter framework keyboard issue (recovering): '
-      '${details.exception}',
-    );
-    clearKeyboardState?.call();
-    return true;
-  }
-  return false;
-}
-
-@visibleForTesting
 Future<void> configureVideoPlayerCacheForStartup({
   required bool skip,
   required Future<void> Function() configureCache,
@@ -1205,22 +1186,6 @@ Future<void> _startOpenVineApp() async {
       name: 'Main',
       category: LogCategory.system,
     );
-
-    // Recover from Flutter's known duplicate key state assertion so desktop
-    // text input continues working after logout/resume flows.
-    if (handleKnownFrameworkError(
-      details,
-      logWarning: (message) => Log.warning(message, name: 'Main'),
-      clearKeyboardState: () {
-        // Flutter does not currently expose a stable public recovery API for
-        // this duplicate-key assertion path. Keep this workaround tightly
-        // scoped to the known framework failure above.
-        // ignore: invalid_use_of_visible_for_testing_member
-        HardwareKeyboard.instance.clearState();
-      },
-    )) {
-      return;
-    }
 
     // Downgrade cache manager errors from FATAL to non-fatal.
     // The flutter_cache_manager library reports corrupted JSON via
