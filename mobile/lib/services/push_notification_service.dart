@@ -176,11 +176,6 @@ class PushNotificationService {
     }
 
     if (event == null) {
-      Log.error(
-        'Failed to sign deregistration event',
-        name: 'PushNotificationService',
-        category: LogCategory.system,
-      );
       return;
     }
     if (!await _isPublishCurrent(
@@ -433,11 +428,19 @@ class PushNotificationService {
     );
     if (content == null) return null;
 
-    return _authService.createAndSignEvent(
+    final event = await _authService.createAndSignEvent(
       kind: pushDeregistrationKind,
       content: content,
       tags: _deregistrationTags(pushServicePubkey),
     );
+    if (event == null) {
+      Log.error(
+        'Failed to sign deregistration event',
+        name: 'PushNotificationService',
+        category: LogCategory.system,
+      );
+    }
+    return event;
   }
 
   /// Fetches the current FCM token and NIP-44 encrypts `{"token": <token>}` for

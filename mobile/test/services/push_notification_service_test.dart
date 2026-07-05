@@ -18,6 +18,7 @@ import 'package:openvine/services/notification_helpers.dart'
     show localNotificationTapPayload;
 import 'package:openvine/services/notification_service.dart';
 import 'package:openvine/services/push_notification_service.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
 
@@ -450,6 +451,7 @@ void main() {
       test(
         'does not publish deregistration when the FCM token is unavailable',
         () async {
+          await LogCaptureService().clearAllLogs();
           final service = buildService(token: null);
 
           await service.deregister(testPubkey);
@@ -469,6 +471,19 @@ void main() {
               timeout: any(named: 'timeout'),
               diagnosticTag: any(named: 'diagnosticTag'),
             ),
+          );
+          final messages = LogCaptureService().getRecentLogs().map(
+            (entry) => entry.message,
+          );
+          expect(
+            messages,
+            contains(
+              'FCM token is null — skipping push notification deregistration',
+            ),
+          );
+          expect(
+            messages,
+            isNot(contains('Failed to sign deregistration event')),
           );
           service.dispose();
         },
