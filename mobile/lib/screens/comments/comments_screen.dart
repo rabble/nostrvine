@@ -58,6 +58,13 @@ String _reactionsErrorToString(AppLocalizations l10n, ReactionsError error) {
   };
 }
 
+/// Normalizes comment text for duplicate detection: trims, collapses internal
+/// whitespace, and lowercases. The real #5854 duplicates differ only in
+/// whitespace ("box of  krayshawns" vs "box of krayshawns"), so an exact-match
+/// guard would leak — this catches them.
+String _normalizeCommentText(String text) =>
+    text.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
+
 /// Dynamic title widget that shows comment count and a "# new" pill
 /// when real-time comments arrive.
 /// Initially shows the count from video metadata, then updates to loaded count.
@@ -206,6 +213,23 @@ abstract final class CommentsScreen {
                       ),
                       ...followRepository.followingPubkeys,
                     ],
+                    // Live duplicate check against the canonical store so a
+                    // re-sent reply doesn't publish a duplicate (#5854).
+                    isDuplicateSubmission:
+                        ({
+                          required String content,
+                          required String authorPubkey,
+                          String? parentCommentId,
+                        }) {
+                          final normalized = _normalizeCommentText(content);
+                          return listBloc.state.commentsById.values.any(
+                            (c) =>
+                                !c.id.startsWith('pending_comment_') &&
+                                c.authorPubkey == authorPubkey &&
+                                c.replyToEventId == parentCommentId &&
+                                _normalizeCommentText(c.content) == normalized,
+                          );
+                        },
                   );
                 },
               ),

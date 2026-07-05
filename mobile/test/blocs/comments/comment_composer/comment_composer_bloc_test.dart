@@ -23,6 +23,18 @@ class _MockProfileRepository extends Mock implements ProfileRepository {}
 class _MockMentionResolutionService extends Mock
     implements MentionResolutionService {}
 
+bool _dupYes({
+  required String content,
+  required String authorPubkey,
+  String? parentCommentId,
+}) => true;
+
+bool _dupNo({
+  required String content,
+  required String authorPubkey,
+  String? parentCommentId,
+}) => false;
+
 void main() {
   group(CommentComposerBloc, () {
     late _MockCommentsRepository mockCommentsRepository;
@@ -82,6 +94,7 @@ void main() {
     CommentComposerBloc createBloc({
       String? rootAddressableId,
       MentionCandidatePubkeysProvider? candidateProvider,
+      DuplicateCommentChecker? isDuplicate,
     }) => CommentComposerBloc(
       commentsRepository: mockCommentsRepository,
       authService: mockAuthService,
@@ -92,6 +105,7 @@ void main() {
       profileRepository: mockProfileRepository,
       mentionResolutionService: mockMentionResolutionService,
       mentionCandidatePubkeysProvider: candidateProvider,
+      isDuplicateSubmission: isDuplicate,
     );
 
     Comment makeComment(
@@ -232,6 +246,83 @@ void main() {
             isA<ComposerOutboxConfirmPlaceholder>(),
           ),
         ],
+      );
+
+      // #5854: a re-sent identical reply (the poster couldn't see the first
+      // one because it rendered off-screen) must not publish a duplicate.
+      blocTest<CommentComposerBloc, CommentComposerState>(
+        'drops a duplicate reply: no publish, reply input cleared',
+        build: () => createBloc(isDuplicate: _dupYes),
+        seed: () => CommentComposerState(
+          activeReplyCommentId: validId('parent'),
+          replyInputText: 'same reply',
+        ),
+        act: (b) => b.add(
+          CommentSubmitted(
+            parentCommentId: validId('parent'),
+            parentAuthorPubkey: validId('parentauthor'),
+          ),
+        ),
+        verify: (b) {
+          verifyNever(
+            () => mockCommentsRepository.postComment(
+              content: any(named: 'content'),
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              replyToEventId: any(named: 'replyToEventId'),
+              replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
+              mentionedPubkeys: any(named: 'mentionedPubkeys'),
+            ),
+          );
+          expect(b.state.outbox, isNull);
+          expect(b.state.activeReplyCommentId, isNull);
+          expect(b.state.replyInputText, isEmpty);
+        },
+      );
+
+      blocTest<CommentComposerBloc, CommentComposerState>(
+        'a non-duplicate reply publishes normally',
+        setUp: () {
+          when(
+            () => mockCommentsRepository.postComment(
+              content: any(named: 'content'),
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              replyToEventId: any(named: 'replyToEventId'),
+              replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
+              mentionedPubkeys: any(named: 'mentionedPubkeys'),
+            ),
+          ).thenAnswer((_) async => makeComment(validId('confirmed')));
+        },
+        build: () => createBloc(isDuplicate: _dupNo),
+        seed: () => CommentComposerState(
+          activeReplyCommentId: validId('parent'),
+          replyInputText: 'fresh reply',
+        ),
+        act: (b) => b.add(
+          CommentSubmitted(
+            parentCommentId: validId('parent'),
+            parentAuthorPubkey: validId('parentauthor'),
+          ),
+        ),
+        verify: (_) {
+          verify(
+            () => mockCommentsRepository.postComment(
+              content: any(named: 'content'),
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              replyToEventId: any(named: 'replyToEventId'),
+              replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
+              mentionedPubkeys: any(named: 'mentionedPubkeys'),
+            ),
+          ).called(1);
+        },
       );
 
       blocTest<CommentComposerBloc, CommentComposerState>(

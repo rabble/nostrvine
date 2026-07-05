@@ -15,6 +15,21 @@ import 'package:unified_logger/unified_logger.dart';
 part 'comment_composer_event.dart';
 part 'comment_composer_state.dart';
 
+/// Returns `true` when a comment/reply with the same normalized [content] to the
+/// same [parentCommentId] already exists for [authorPubkey] in the canonical
+/// store. Injected from the UI (which can read the list store live) so the
+/// composer can drop a duplicate resubmit without a BLoC-to-BLoC dependency.
+///
+/// #5854: replies rendered off-screen led posters to re-send the same reply,
+/// spawning duplicates. The scroll-into-view fix stops that at the source; this
+/// checker is the defense-in-depth net for stray double-submits.
+typedef DuplicateCommentChecker =
+    bool Function({
+      required String content,
+      required String authorPubkey,
+      String? parentCommentId,
+    });
+
 /// BLoC owning composer input state for one video's comments: main / reply /
 /// edit text buffers, mention search (`restartable()`), publish + edit flows
 /// with optimistic placeholders signalled through [ComposerOutbox], and edit
@@ -31,6 +46,7 @@ class CommentComposerBloc
     ProfileRepository? profileRepository,
     MentionResolutionService? mentionResolutionService,
     MentionCandidatePubkeysProvider? mentionCandidatePubkeysProvider,
+    DuplicateCommentChecker? isDuplicateSubmission,
   }) : _commentsRepository = commentsRepository,
        _authService = authService,
        _rootEventId = rootEventId,
@@ -46,6 +62,7 @@ class CommentComposerBloc
                    profileRepository: profileRepository,
                  )),
        _mentionCandidatePubkeysProvider = mentionCandidatePubkeysProvider,
+       _isDuplicateSubmission = isDuplicateSubmission,
        super(const CommentComposerState()) {
     on<CommentTextChanged>(_onTextChanged);
     on<CommentReplyToggled>(_onReplyToggled);
@@ -72,6 +89,7 @@ class CommentComposerBloc
   final ProfileRepository? _profileRepository;
   final MentionResolutionService? _mentionResolutionService;
   final MentionCandidatePubkeysProvider? _mentionCandidatePubkeysProvider;
+  final DuplicateCommentChecker? _isDuplicateSubmission;
   final String _rootEventId;
   final int _rootEventKind;
   final String _rootAuthorPubkey;
@@ -144,6 +162,31 @@ class CommentComposerBloc
       currentUserPubkey: myPubkey,
     );
     text = resolvedMentions.canonicalText;
+
+    // Defense-in-depth against duplicate resubmits (#5854): if the same
+    // reply/comment to the same parent by this user already exists, drop this
+    // one instead of publishing a duplicate. The scroll-into-view fix is the
+    // primary cure (the poster sees their reply and stops re-sending); this
+    // catches stray double-submits. Clears the input like a normal post.
+    final isDuplicate =
+        _isDuplicateSubmission?.call(
+          parentCommentId: event.parentCommentId,
+          content: text,
+          authorPubkey: myPubkey,
+        ) ??
+        false;
+    if (isDuplicate) {
+      emit(
+        isReply
+            ? state.clearActiveReply()
+            : state.copyWith(
+                mainInputText: '',
+                activeMentions: const {},
+                activeMentionBindings: const [],
+              ),
+      );
+      return;
+    }
 
     // 1. Optimistic placeholder — the listener bridges this to ListBloc which
     // inserts it into commentsById before the publish returns. Reconciled on
