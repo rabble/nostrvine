@@ -1048,13 +1048,14 @@ void main() {
 
       final props = state.props;
 
-      expect(props.length, 20);
+      expect(props.length, 21);
       expect(props[0], isTrue); // isInitialized
       expect(props[1], isFalse); // isRecording
       expect(props[4], DivineCameraLens.back); // lens
       expect(props[14], 1); // textureId
+      expect(props[15], 0); // previewRotationDegrees
       expect(
-        props[17],
+        props[18],
         DivineVideoStabilizationMode.off,
       ); // videoStabilizationMode
     });

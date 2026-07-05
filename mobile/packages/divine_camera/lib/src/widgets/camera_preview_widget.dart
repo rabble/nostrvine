@@ -71,7 +71,9 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget> {
       return !_camera.mirrorFrontCameraOutput;
     }
     // coverage:ignore-end
-    return false;
+    // Android: the SurfaceProducer preview path drops the native front-camera
+    // mirror transform, so mirror the selfie preview in Flutter instead.
+    return true;
   }
 
   @override
@@ -205,6 +207,7 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget> {
                 aspectRatio: aspectRatio,
                 fit: widget.fit,
                 shouldMirror: _isPreviewMirrored,
+                rotationDegrees: _camera.state.previewRotationDegrees,
               ),
             ),
             ValueListenableBuilder<Offset?>(
@@ -233,12 +236,17 @@ class _CameraPreview extends StatelessWidget {
     required this.aspectRatio,
     required this.fit,
     required this.shouldMirror,
+    required this.rotationDegrees,
   });
 
   final BoxConstraints constraints;
   final int textureId;
   final double aspectRatio;
   final BoxFit fit;
+
+  /// Clockwise rotation to apply to the raw preview texture so it renders
+  /// upright. Zero when the platform already delivers an oriented frame.
+  final int rotationDegrees;
 
   /// Whether to apply a horizontal flip transform to the preview.
   /// This is determined by the parent widget based on platform and settings.
@@ -247,6 +255,14 @@ class _CameraPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget preview = Texture(textureId: textureId);
+
+    // Rotate the raw sensor-oriented frame upright when the platform doesn't
+    // orient it itself (Android SurfaceProducer path). Applied before mirror so
+    // the horizontal flip stays horizontal on the upright image.
+    final quarterTurns = (rotationDegrees ~/ 90) % 4;
+    if (quarterTurns != 0) {
+      preview = RotatedBox(quarterTurns: quarterTurns, child: preview);
+    }
 
     // Mirror front camera preview (selfie mode)
     // This is a visual-only transform, the actual pixels remain "real-world"

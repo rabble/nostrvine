@@ -9,7 +9,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
-import android.graphics.SurfaceTexture
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
@@ -63,8 +62,11 @@ class CameraController(
     // case photo capture is unavailable but video keeps working.
     private var imageCapture: ImageCapture? = null
 
-    private var textureEntry: TextureRegistry.SurfaceTextureEntry? = null
-    private var flutterSurfaceTexture: SurfaceTexture? = null
+    // Flutter's SurfaceProducer (not the deprecated SurfaceTexture API): under
+    // Impeller it retains the last rendered frame while CameraX detaches and
+    // rebinds during a lens switch, so the preview freezes instead of flashing
+    // black — issue #5865.
+    private var surfaceProducer: TextureRegistry.SurfaceProducer? = null
     private var previewSurface: Surface? = null
 
     private var cameraExecutor: ExecutorService =
@@ -129,6 +131,13 @@ class CameraController(
             result.get(CaptureResult.SENSOR_EXPOSURE_TIME)?.let { exposureTime ->
                 currentExposureTime = exposureTime
             }
+
+            // First frame after a lens switch: let the switch completion run so
+            // the UI flips lens/rotation only now that the new frame is ready.
+            onFirstFrameAfterSwitch?.let { completion ->
+                onFirstFrameAfterSwitch = null
+                completion()
+            }
         }
     }
 
@@ -188,6 +197,14 @@ class CameraController(
     private var maxDurationRunnable: Runnable? = null
     private var autoStopCallback: ((Map<String, Any?>?, String?) -> Unit)? = null
 
+    // Fires once, on the first frame the incoming camera produces after a lens
+    // switch, so the switch completes (and the UI flips lens/rotation) only when
+    // the new frame is ready — otherwise the frozen preview briefly flips upside
+    // down at the old→new rotation boundary (#5865). Written on the main thread,
+    // read on the Camera2 capture thread, so it must be @Volatile.
+    @Volatile
+    private var onFirstFrameAfterSwitch: (() -> Unit)? = null
+
     // Quality fallback: when the hardware encoder rejects the requested quality
     // (e.g. device falsely reports FHD support), retry with lower quality.
     private var encoderRetryCount: Int = 0
@@ -202,6 +219,11 @@ class CameraController(
 
     companion object {
         private const val MAX_ENCODER_RETRIES = 2
+
+        // Safety net: resolve a lens switch even if the incoming camera never
+        // reports a frame (rare device quirk), so `await switchCamera` on the
+        // Dart side can't hang forever.
+        private const val SWITCH_FIRST_FRAME_TIMEOUT_MS = 1200L
 
         // Canonical cross-platform stabilization mode strings, shared with the
         // iOS/macOS implementations so the Dart layer speaks one vocabulary.
@@ -226,12 +248,12 @@ class CameraController(
         /**
          * Decides how a preview surface request should be fulfilled.
          *
-         * The Flutter [SurfaceTexture] can be torn down (released and the
-         * field nulled by `release()`) between registering a surface provider
-         * and CameraX actually dispatching the request. Reading it then
-         * passing it straight to `Surface(...)` crashes with
-         * `surfaceTexture must not be null`, so callers must [DECLINE] when no
-         * texture is available rather than build a surface from null.
+         * The Flutter surface producer can be released between registering a
+         * surface provider and CameraX actually dispatching the request. When
+         * no producer is available the caller must [DECLINE] the request via
+         * `willNotProvideSurface()` rather than provide a null surface;
+         * [REUSE] the cached surface while it is still valid, otherwise
+         * [CREATE] a fresh one from the producer.
          */
         internal fun decideSurfaceProvision(
             hasTexture: Boolean,
@@ -798,22 +820,22 @@ class CameraController(
 
     /**
      * Returns a preview [Surface] to hand to a CameraX surface request,
-     * reusing the existing one when still valid and otherwise creating a new
-     * one from [surfaceTexture]. Returns null when no surface can be supplied
-     * (the Flutter texture was released), so the caller declines the request
-     * via `willNotProvideSurface()` instead of constructing `Surface(null)`.
+     * reusing the cached one when still valid and otherwise fetching a fresh
+     * one from the Flutter [TextureRegistry.SurfaceProducer]. Returns null when
+     * no surface can be supplied (the producer was released), so the caller
+     * declines the request via `willNotProvideSurface()`.
      */
-    private fun resolvePreviewSurface(surfaceTexture: SurfaceTexture?): Surface? {
+    private fun resolvePreviewSurface(): Surface? {
         val existing = previewSurface
         return when (
             decideSurfaceProvision(
-                hasTexture = surfaceTexture != null,
+                hasTexture = surfaceProducer != null,
                 existingSurfaceValid = existing != null && existing.isValid,
             )
         ) {
             SurfaceProvision.REUSE -> existing
             SurfaceProvision.CREATE ->
-                surfaceTexture?.let { Surface(it).also { s -> previewSurface = s } }
+                surfaceProducer?.getSurface()?.also { previewSurface = it }
             SurfaceProvision.DECLINE -> null
         }
     }
@@ -841,19 +863,18 @@ class CameraController(
             DivineCameraLog.d(TAG, "Unbound all previous use cases")
 
             // Release previous resources only if not already handled (e.g., by switchCamera)
-            if (textureEntry != null) {
-                previewSurface?.release()
+            if (surfaceProducer != null) {
+                // The SurfaceProducer owns the Surface, so drop the cached
+                // reference and let release() tear it down.
                 previewSurface = null
-                textureEntry?.release()
-                textureEntry = null
-                flutterSurfaceTexture = null
+                surfaceProducer?.release()
+                surfaceProducer = null
             }
 
-            // Create texture entry for Flutter
-            textureEntry = textureRegistry.createSurfaceTexture()
-            flutterSurfaceTexture = textureEntry?.surfaceTexture()
+            // Create the Flutter surface producer for the preview.
+            surfaceProducer = textureRegistry.createSurfaceProducer()
 
-            val textureId = textureEntry?.id() ?: run {
+            val textureId = surfaceProducer?.id() ?: run {
                 DivineCameraLog.e(TAG, "Failed to create texture entry")
                 callback(null, "Failed to create texture")
                 return
@@ -894,12 +915,9 @@ class CameraController(
                 aspectRatio = videoHeight.toFloat() / videoWidth.toFloat()
                 DivineCameraLog.d(TAG, "Aspect ratio set to: $aspectRatio (portrait), video dimensions: ${videoWidth}x${videoHeight}")
 
-                // Capture the texture locally: the request fires asynchronously
-                // and release() may have nulled the field in the meantime.
-                val surfaceTexture = flutterSurfaceTexture
-                surfaceTexture?.setDefaultBufferSize(videoWidth, videoHeight)
+                surfaceProducer?.setSize(videoWidth, videoHeight)
 
-                val surface = resolvePreviewSurface(surfaceTexture)
+                val surface = resolvePreviewSurface()
 
                 // Provide the surface
                 if (surface != null && surface.isValid) {
@@ -1053,12 +1071,9 @@ class CameraController(
                 // Update aspect ratio for portrait mode (height/width gives 9:16 ratio)
                 aspectRatio = videoHeight.toFloat() / videoWidth.toFloat()
 
-                // Capture the texture locally: release() may have nulled the
-                // field between registering the provider and this request.
-                val surfaceTexture = flutterSurfaceTexture
-                surfaceTexture?.setDefaultBufferSize(videoWidth, videoHeight)
+                surfaceProducer?.setSize(videoWidth, videoHeight)
 
-                val surface = resolvePreviewSurface(surfaceTexture)
+                val surface = resolvePreviewSurface()
                 if (surface != null && surface.isValid) {
                     request.provideSurface(
                         surface,
@@ -1114,11 +1129,20 @@ class CameraController(
             // Compute virtual zoom ranges for auto lens switching
             computeVirtualZoomRanges()
 
-            DivineCameraLog.d(TAG, "Camera switched successfully")
-
-            mainHandler.post {
+            // Resolve the switch only once the incoming camera has produced its
+            // first frame. Until then the SurfaceProducer keeps showing the old
+            // frame (frozen) and the state (lens/rotation) stays on the old
+            // camera, so the frozen frame never flips to the new rotation early.
+            var switchResolved = false
+            val finishSwitch = Runnable {
+                if (switchResolved) return@Runnable
+                switchResolved = true
+                onFirstFrameAfterSwitch = null
+                DivineCameraLog.d(TAG, "Camera switched successfully")
                 callback(getCameraState(), null)
             }
+            onFirstFrameAfterSwitch = { mainHandler.post(finishSwitch) }
+            mainHandler.postDelayed(finishSwitch, SWITCH_FIRST_FRAME_TIMEOUT_MS)
 
         } catch (e: Exception) {
             DivineCameraLog.e(TAG, "Failed to switch camera", e)
@@ -1605,7 +1629,7 @@ class CameraController(
                 videoHeight = resolution.height
                 aspectRatio =
                     videoHeight.toFloat() / videoWidth.toFloat()
-                flutterSurfaceTexture?.setDefaultBufferSize(
+                surfaceProducer?.setSize(
                     videoWidth,
                     videoHeight
                 )
@@ -1613,10 +1637,8 @@ class CameraController(
                 // Post surface provision to let setZoomRatio settle
                 // in the camera pipeline before any frames flow.
                 mainHandler.postDelayed({
-                    // Re-read the texture: release() can null it during the
-                    // delay, which would crash Surface(null).
                     val surface =
-                        resolvePreviewSurface(flutterSurfaceTexture)
+                        resolvePreviewSurface()
                     if (surface != null && surface.isValid) {
                         request.provideSurface(
                             surface,
@@ -2319,10 +2341,36 @@ class CameraController(
     }
 
     /**
+     * Reads the clockwise sensor orientation (degrees) of the current lens.
+     * The recorder is portrait-locked, so this doubles as the rotation the UI
+     * must apply to the preview when the surface producer does not rotate it.
+     * Returns 0 if the characteristic is unavailable.
+     */
+    private fun currentSensorOrientation(): Int {
+        return try {
+            val cameraId = getCameraIdForLens(currentLensType) ?: return 0
+            val cameraManager =
+                context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
+            cameraManager
+                .getCameraCharacteristics(cameraId)
+                .get(CameraCharacteristics.SENSOR_ORIENTATION) ?: 0
+        } catch (e: Exception) {
+            DivineCameraLog.w(TAG, "Failed to read sensor orientation: ${e.message}")
+            0
+        }
+    }
+
+    /**
      * Gets the current camera state as a map.
      */
     fun getCameraState(): MutableMap<String, Any?> {
-        val textureId = textureEntry?.id() ?: -1L
+        val textureId = surfaceProducer?.id() ?: -1L
+        // When the surface producer handles crop/rotation itself, Flutter
+        // rotates the preview; otherwise the frames arrive in sensor
+        // orientation and the UI must rotate them (issue #5865).
+        val previewRotation =
+            if (surfaceProducer?.handlesCropAndRotation() == true) 0
+            else currentSensorOrientation()
         val stabilizationModes = availableVideoStabilizationModesForCurrentLens()
         return mutableMapOf(
             "isInitialized" to (camera != null),
@@ -2341,6 +2389,7 @@ class CameraController(
             "isFocusPointSupported" to isFocusPointSupported,
             "isExposurePointSupported" to isExposurePointSupported,
             "textureId" to textureId,
+            "previewRotationDegrees" to previewRotation,
             "availableLenses" to getAvailableLenses(),
             "currentLensMetadata" to getCurrentLensMetadata(),
             "videoStabilizationMode" to requestedStabilizationMode,
@@ -2382,12 +2431,12 @@ class CameraController(
             preview = null
             videoCapture = null
 
-            previewSurface?.release()
+            // The SurfaceProducer owns the Surface; drop the cached reference
+            // and let release() tear it down.
             previewSurface = null
 
-            textureEntry?.release()
-            textureEntry = null
-            flutterSurfaceTexture = null
+            surfaceProducer?.release()
+            surfaceProducer = null
 
             // Delay shutdown so CameraX can drain in-flight encoder/muxer
             // tasks. cameraExecutor is rejection-tolerant, so any callback
