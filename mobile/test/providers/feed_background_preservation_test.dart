@@ -75,7 +75,6 @@ void main() {
 
       // Nostr fallback data: discoveryVideos for ClassicVines
       when(() => mockVideoEventService.discoveryVideos).thenReturn(testVideos);
-      when(() => mockVideoEventService.popularNowVideos).thenReturn(testVideos);
       when(() => mockVideoEventService.addListener(any())).thenReturn(null);
       when(() => mockVideoEventService.removeListener(any())).thenReturn(null);
       when(
