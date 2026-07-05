@@ -387,4 +387,54 @@ void main() {
 
     expect(reacted, '❤️');
   });
+
+  testWidgets('reduced motion suppresses the player reaction overlay', (
+    tester,
+  ) async {
+    String? reacted;
+    final dmContext = context();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          dmRepositoryProvider.overrideWithValue(dmRepo),
+          dmReactionsRepositoryProvider.overrideWithValue(reactionsRepo),
+          authServiceProvider.overrideWithValue(auth),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => MediaQuery(
+                data: MediaQuery.of(context).copyWith(disableAnimations: true),
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: ReelReplyBridge(
+                    setComposerFocused: (_) {},
+                    playReaction: (emoji) => reacted = emoji,
+                    child: ReelDmReplyBarHost(dmReplyContext: dmContext),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('❤️'));
+    await tester.pump();
+
+    verify(
+      () => reactionsRepo.publish(
+        conversationId: 'convo-id',
+        targetMessageId: _reelId,
+        targetMessageAuthor: _peer,
+        emoji: '❤️',
+      ),
+    ).called(1);
+    expect(reacted, isNull);
+  });
 }
