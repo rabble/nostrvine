@@ -1,6 +1,24 @@
 # Testing
 
-Goal: 100% test coverage on all projects. Tests reduce bugs, encourage clean code, and provide confidence when shipping.
+Tests reduce bugs, encourage clean code, and give confidence when shipping — but only when each test earns its place. Two ideas govern everything below: a test must be able to fail for a real reason (see [A test must be able to fail](#a-test-must-be-able-to-fail)), and coverage expectations differ by layer — packages carry hard percentage gates, while the app layer (`mobile/lib`) is behavior-first with ratchets rather than an absolute percentage (see [Coverage](#coverage)). There is deliberately no repo-wide 100% mandate; do not read the package gates as one.
+
+---
+
+## A Test Must Be Able to Fail
+
+A passing test should be evidence that the feature works. If the test would still pass with the feature broken, it tests nothing — delete it rather than bank it as coverage.
+
+Coverage percentage is a byproduct of good tests, never the goal. A green line that no meaningful assertion protects is worth less than an uncovered one, because it hides the gap instead of flagging it.
+
+Before keeping a test, it must satisfy all of these:
+
+- **It can catch a regression.** If you cannot describe a plausible code change that turns it red, it has no reason to exist.
+- **It fails for the right reason.** Assert the user-visible outcome, not the mechanism that produces it (see [Test Behavior, Not Properties](#test-behavior-not-properties)).
+- **It is not a tautology.** Never assert the value you just stubbed — `when(() => mock.x).thenReturn(1); expect(mock.x, 1)` tests Mockito, not your code.
+- **It is not written to turn a line green.** A line only reachable through contorted setup with no real scenario is a signal of dead or over-defensive code — fix the code, don't manufacture a test for it.
+- **It does not restate a sibling.** One test that pins the behavior beats three that reword the same assertion.
+
+> **LLM-generated tests skew hard toward coverage theatre** — asserting constructor parameters, mock-then-verify-the-mock, one trivial test per line. Reject these on the "can it fail?" bar even when the coverage number looks fine.
 
 ---
 
@@ -355,11 +373,23 @@ dart test --test-randomize-ordering-seed random
 
 ## Coverage
 
-Aim for 100% coverage. Use:
+Measure coverage locally with:
 
 ```bash
 flutter test --coverage
 ```
+
+### Coverage expectations by layer
+
+The enforced bar differs by architectural layer. There is deliberately no repo-wide threshold on the app layer (`mobile/lib`) — the package gates are not a blanket 100% mandate.
+
+| Layer | Bar |
+|-------|-----|
+| Client / Repository (`mobile/packages/*`) | Hard percentage gate. The VeryGood package workflow defaults to **100%** unless a package lowers `min_coverage` in its own `.github/workflows/<pkg>.yaml`. Keep it green; the value only ratchets down deliberately. |
+| BLoC / Cubit | Held high. `blocTest` is cheap and the logic is pure — treat it close to package-grade, not UI-grade. |
+| Widgets / UI (`mobile/lib`) | **Behavior + golden, not a line-percentage chase.** No absolute threshold; the floor is a meaningful test alongside every change, plus the untested-services ratchet below. |
+
+Chasing line coverage on widgets pushes tests toward asserting properties (padding, widget config) just to reach branches, which contradicts [Test Behavior, Not Properties](#test-behavior-not-properties) and the [can-it-fail bar](#a-test-must-be-able-to-fail). On UI, a golden or an interaction test is the meaningful unit — a test asserting `padding == EdgeInsets.all(16)` is coverage, not evidence.
 
 ### Strict-coverage packages
 
