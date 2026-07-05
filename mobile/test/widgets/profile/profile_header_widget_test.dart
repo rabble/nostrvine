@@ -526,6 +526,66 @@ void main() {
       expect(find.text('+2 more'), findsOneWidget);
     });
 
+    testWidgets('lays accepted badges out in a single horizontal scroll row', (
+      tester,
+    ) async {
+      final testProfile = createTestProfile(displayName: 'Badged User');
+      ProfileBadgeViewData acceptedBadge(String name, String dTag) {
+        final coordinate = '30009:$issuerUserHex:$dTag';
+        return ProfileBadgeViewData(
+          badge: Nip58ProfileBadgeRef(
+            definitionCoordinate: coordinate,
+            awardEventId:
+                '00000000000000000000000000000000000000000000000000000000000000aa',
+          ),
+          award: Nip58BadgeAward(
+            event: _badgeAwardEvent(),
+            definitionCoordinate: coordinate,
+            recipientPubkeys: const [testUserHex],
+          ),
+          definition: Nip58BadgeDefinition(
+            event: _badgeDefinitionEvent(),
+            coordinate: coordinate,
+            dTag: dTag,
+            name: name,
+          ),
+        );
+      }
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: false,
+          suppliedProfile: testProfile,
+          acceptedProfileBadges: [
+            acceptedBadge('Badge One', 'badge-one'),
+            acceptedBadge('Badge Two', 'badge-two'),
+            acceptedBadge('Badge Three', 'badge-three'),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      // All badges render — they are not truncated to a single row.
+      expect(find.text('Badge One'), findsOneWidget);
+      expect(find.text('Badge Two'), findsOneWidget);
+      expect(find.text('Badge Three'), findsOneWidget);
+
+      // The row scrolls horizontally instead of wrapping, so each chip lives
+      // inside a horizontal SingleChildScrollView rather than a Wrap.
+      Finder horizontalScrollAbove(String badgeName) => find.ancestor(
+        of: find.text(badgeName),
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is SingleChildScrollView &&
+              widget.scrollDirection == Axis.horizontal,
+        ),
+      );
+      expect(horizontalScrollAbove('Badge One'), findsOneWidget);
+      expect(horizontalScrollAbove('Badge Three'), findsOneWidget);
+    });
+
     testWidgets('displays user avatar when profile is loaded', (tester) async {
       final testProfile = createTestProfile(
         displayName: 'Test User',
