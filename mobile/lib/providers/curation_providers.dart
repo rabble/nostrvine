@@ -6,6 +6,7 @@ import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/providers/feed_refresh_helpers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/video_events_providers.dart';
@@ -338,11 +339,13 @@ class AnalyticsTrending extends _$AnalyticsTrending {
       if (!ref.mounted) return;
 
       if (videos.isNotEmpty) {
-        // Deduplicate and merge (case-insensitive for Nostr IDs)
-        final existingIds = state.map((v) => v.id.toLowerCase()).toSet();
-        final newVideos = videos
-            .where((v) => !existingIds.contains(v.id.toLowerCase()))
-            .toList();
+        // Deduplicate and merge by addressable identity, so a republished
+        // coordinate (same kind:pubkey:d-tag, fresh event id) is not appended
+        // as a duplicate.
+        final newVideos = dedupeByFeedKey(
+          videos,
+          alreadySeen: state.map((v) => v.feedDedupKey),
+        );
 
         if (newVideos.isNotEmpty) {
           state = [...state, ...newVideos];

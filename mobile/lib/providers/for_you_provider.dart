@@ -135,15 +135,20 @@ class ForYouFeed extends _$ForYouFeed {
         category: LogCategory.video,
       );
 
-      // Filter for platform compatibility, content preferences,
-      // and blocked users
+      // Filter for platform compatibility, content preferences, blocked
+      // users, and dedupe by addressable identity (the recommendation cursor
+      // dedupes by event id, so a republished coordinate arrives twice).
       final videoEventService = ref.read(videoEventServiceProvider);
       final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
-      final filteredVideos = videoEventService.filterVideoList(
-        resultVideos
-            .where((v) => v.isSupportedOnCurrentPlatform)
-            .where((v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey))
-            .toList(),
+      final filteredVideos = dedupeByFeedKey(
+        videoEventService.filterVideoList(
+          resultVideos
+              .where((v) => v.isSupportedOnCurrentPlatform)
+              .where(
+                (v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey),
+              )
+              .toList(),
+        ),
       );
 
       _sessionSeed = requestSeed;
@@ -228,12 +233,10 @@ class ForYouFeed extends _$ForYouFeed {
             .where((v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey))
             .toList(),
       );
-      final existingIds = currentState.videos
-          .map((video) => video.id.toLowerCase())
-          .toSet();
-      final newVideos = filteredVideos
-          .where((video) => existingIds.add(video.id.toLowerCase()))
-          .toList();
+      final newVideos = dedupeByFeedKey(
+        filteredVideos,
+        alreadySeen: currentState.videos.map((video) => video.feedDedupKey),
+      );
       final mergedVideos = [...currentState.videos, ...newVideos];
       final newEventsLoaded = newVideos.length;
 
