@@ -194,69 +194,69 @@ void main() {
   });
 }
 
-/// Hosts a button that opens the real sheet via [VideoEditorMainActionsSheet.
-/// show], so the sheet's own `MultiBlocProvider` (not the host's) is what
-/// resolves the blocs each action reads.
+/// Wraps [child] in the app + localization shell every test here needs.
+Widget _app({required Widget child}) => MaterialApp(
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  home: Scaffold(body: child),
+);
+
+/// Builds a [VideoEditorScope] with test defaults, overriding only the
+/// callbacks a given test asserts on.
+VideoEditorScope _scope({
+  Widget? child,
+  VoidCallback? onOpenClipsEditor,
+  VoidCallback? onOpenMusicLibrary,
+  VoidCallback? onOpenVoiceOver,
+  VoidCallback? onAddStickers,
+}) => VideoEditorScope(
+  editorKey: GlobalKey<ProImageEditorState>(),
+  removeAreaKey: GlobalKey(),
+  onOpenCamera: () {},
+  onAddStickers: onAddStickers ?? () {},
+  onOpenClipsEditor: onOpenClipsEditor ?? () {},
+  onAddEditTextLayer: ([layer]) async => null,
+  onOpenMusicLibrary: onOpenMusicLibrary ?? () {},
+  onOpenVoiceOver: onOpenVoiceOver ?? () {},
+  originalClipAspectRatio: 9 / 16,
+  bodySizeNotifier: ValueNotifier(const Size(400, 800)),
+  zoomMatrixNotifier: ValueNotifier(Matrix4.identity()),
+  fromLibrary: false,
+  child: child ?? const SizedBox.shrink(),
+);
+
+/// Hosts a button that opens the real sheet via
+/// [VideoEditorMainActionsSheet.show], so the sheet's own `MultiBlocProvider`
+/// (not the host's) is what resolves the blocs each action reads.
 Widget _buildShowHost({
   required _MockVideoEditorMainBloc mainBloc,
   required _MockClipEditorBloc clipBloc,
   required _MockTimelineOverlayBloc timelineOverlayBloc,
   required _MockVideoEditorTuneBloc tuneBloc,
-}) {
-  final scope = _scope();
-
-  return MaterialApp(
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
-    supportedLocales: AppLocalizations.supportedLocales,
-    home: Scaffold(
-      body: MultiBlocProvider(
-        providers: [
-          BlocProvider<VideoEditorMainBloc>.value(value: mainBloc),
-          BlocProvider<ClipEditorBloc>.value(value: clipBloc),
-          BlocProvider<TimelineOverlayBloc>.value(value: timelineOverlayBloc),
-          BlocProvider<VideoEditorTuneBloc>.value(value: tuneBloc),
-        ],
-        child: VideoEditorScope(
-          editorKey: scope.editorKey,
-          removeAreaKey: scope.removeAreaKey,
-          onOpenCamera: scope.onOpenCamera,
-          onAddStickers: scope.onAddStickers,
-          onOpenClipsEditor: scope.onOpenClipsEditor,
-          onAddEditTextLayer: scope.onAddEditTextLayer,
-          onOpenMusicLibrary: scope.onOpenMusicLibrary,
-          onOpenVoiceOver: scope.onOpenVoiceOver,
-          originalClipAspectRatio: scope.originalClipAspectRatio,
-          bodySizeNotifier: scope.bodySizeNotifier,
-          zoomMatrixNotifier: scope.zoomMatrixNotifier,
-          fromLibrary: scope.fromLibrary,
-          child: Builder(
-            builder: (context) => ElevatedButton(
-              key: const Key('open-sheet'),
-              onPressed: () => VideoEditorMainActionsSheet.show(context),
-              child: const Text('open'),
-            ),
-          ),
+}) => _app(
+  child: MultiBlocProvider(
+    providers: [
+      BlocProvider<VideoEditorMainBloc>.value(value: mainBloc),
+      BlocProvider<ClipEditorBloc>.value(value: clipBloc),
+      BlocProvider<TimelineOverlayBloc>.value(value: timelineOverlayBloc),
+      BlocProvider<VideoEditorTuneBloc>.value(value: tuneBloc),
+    ],
+    child: _scope(
+      child: Builder(
+        builder: (context) => ElevatedButton(
+          key: const Key('open-sheet'),
+          onPressed: () => VideoEditorMainActionsSheet.show(context),
+          child: const Text('open'),
         ),
       ),
     ),
-  );
-}
-
-VideoEditorScope _scope() => VideoEditorScope(
-  editorKey: GlobalKey<ProImageEditorState>(),
-  removeAreaKey: GlobalKey(),
-  onOpenCamera: () {},
-  onAddStickers: () {},
-  onOpenClipsEditor: () {},
-  onAddEditTextLayer: ([layer]) async => null,
-  onOpenMusicLibrary: () {},
-  onOpenVoiceOver: () {},
-  originalClipAspectRatio: 9 / 16,
-  bodySizeNotifier: ValueNotifier(const Size(400, 800)),
-  zoomMatrixNotifier: ValueNotifier(Matrix4.identity()),
-  fromLibrary: false,
+  ),
 );
 
+/// Renders the sheet directly under a host-provided bloc list, for asserting
+/// individual action callbacks without driving the `show` route. The sheet
+/// reads its scope from the constructor, so no `VideoEditorScope` ancestor is
+/// needed here (unlike [_buildShowHost], where `show` reads it via context).
 Widget _buildWidget({
   required _MockVideoEditorMainBloc mainBloc,
   required _MockClipEditorBloc clipBloc,
@@ -265,57 +265,20 @@ Widget _buildWidget({
   VoidCallback? onOpenMusicLibrary,
   VoidCallback? onOpenVoiceOver,
   VoidCallback? onAddStickers,
-}) {
-  final editorKey = GlobalKey<ProImageEditorState>();
-  final removeAreaKey = GlobalKey();
-
-  final scope = VideoEditorScope(
-    editorKey: editorKey,
-    removeAreaKey: removeAreaKey,
-    onOpenCamera: () {},
-    onAddStickers: onAddStickers ?? () {},
-    onOpenClipsEditor: onOpenClipsEditor ?? () {},
-    onAddEditTextLayer: ([layer]) async => null,
-    onOpenMusicLibrary: onOpenMusicLibrary ?? () {},
-    onOpenVoiceOver: onOpenVoiceOver ?? () {},
-    originalClipAspectRatio: 9 / 16,
-    bodySizeNotifier: ValueNotifier(const Size(400, 800)),
-    zoomMatrixNotifier: ValueNotifier(Matrix4.identity()),
-    fromLibrary: false,
-  );
-
-  return MaterialApp(
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
-    supportedLocales: AppLocalizations.supportedLocales,
-    home: Scaffold(
-      body: Builder(
-        builder: (context) {
-          return MultiBlocProvider(
-            providers: [
-              BlocProvider<VideoEditorMainBloc>.value(value: mainBloc),
-              BlocProvider<ClipEditorBloc>.value(value: clipBloc),
-              BlocProvider<TimelineOverlayBloc>.value(
-                value: timelineOverlayBloc,
-              ),
-            ],
-            child: VideoEditorScope(
-              editorKey: scope.editorKey,
-              removeAreaKey: scope.removeAreaKey,
-              onOpenCamera: () {},
-              onAddStickers: scope.onAddStickers,
-              onOpenClipsEditor: scope.onOpenClipsEditor,
-              onAddEditTextLayer: scope.onAddEditTextLayer,
-              onOpenMusicLibrary: scope.onOpenMusicLibrary,
-              onOpenVoiceOver: scope.onOpenVoiceOver,
-              originalClipAspectRatio: scope.originalClipAspectRatio,
-              bodySizeNotifier: scope.bodySizeNotifier,
-              zoomMatrixNotifier: scope.zoomMatrixNotifier,
-              fromLibrary: scope.fromLibrary,
-              child: VideoEditorMainActionsSheet(scope: scope),
-            ),
-          );
-        },
+}) => _app(
+  child: MultiBlocProvider(
+    providers: [
+      BlocProvider<VideoEditorMainBloc>.value(value: mainBloc),
+      BlocProvider<ClipEditorBloc>.value(value: clipBloc),
+      BlocProvider<TimelineOverlayBloc>.value(value: timelineOverlayBloc),
+    ],
+    child: VideoEditorMainActionsSheet(
+      scope: _scope(
+        onOpenClipsEditor: onOpenClipsEditor,
+        onOpenMusicLibrary: onOpenMusicLibrary,
+        onOpenVoiceOver: onOpenVoiceOver,
+        onAddStickers: onAddStickers,
       ),
     ),
-  );
-}
+  ),
+);
