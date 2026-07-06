@@ -13,13 +13,6 @@ typedef ProfileTabIndexKey = ({
   String targetPubkeyHex,
 });
 
-ProfileTabIndexKey profileTabIndexKey({
-  required String? viewerPubkeyHex,
-  required String targetPubkeyHex,
-}) {
-  return (viewerPubkeyHex: viewerPubkeyHex, targetPubkeyHex: targetPubkeyHex);
-}
-
 /// Remembers the currently selected tab index per viewer/profile pair.
 ///
 /// `ProfileGridView`'s [TabController] is recreated whenever the profile

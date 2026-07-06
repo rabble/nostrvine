@@ -190,7 +190,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
   List<ProfileTabKind> get _tabKinds =>
       profileTabKinds(isOwnProfile: widget.isOwnProfile);
 
-  ProfileTabIndexKey get _tabIndexKey => profileTabIndexKey(
+  ProfileTabIndexKey get _tabIndexKey => (
     viewerPubkeyHex: ref.read(authServiceProvider).currentPublicKeyHex,
     targetPubkeyHex: widget.userIdHex,
   );
