@@ -251,5 +251,29 @@ void main() {
         expect(semantics.properties.label, equals('Like video'));
       });
     });
+
+    group('raster', () {
+      testWidgets(
+        'wraps the blurred icon shadows in a RepaintBoundary so they are '
+        'cached over the playing feed video',
+        (tester) async {
+          await tester.pumpWidget(buildSubject());
+
+          // The foreground glyph must sit inside a RepaintBoundary that lives
+          // under the button, so the ImageFiltered shadow blurs rasterise once
+          // and are cached instead of re-rastered on every video frame.
+          expect(
+            find.ancestor(
+              of: find.byType(DivineIcon).last,
+              matching: find.descendant(
+                of: find.byType(VideoActionButton),
+                matching: find.byType(RepaintBoundary),
+              ),
+            ),
+            findsOneWidget,
+          );
+        },
+      );
+    });
   });
 }

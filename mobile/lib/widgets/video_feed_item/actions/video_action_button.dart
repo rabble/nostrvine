@@ -180,13 +180,27 @@ class _ShadowedIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        _IconShadow(icon: icon, offset: const Offset(1, 1), blurSigma: 1),
-        _IconShadow(icon: icon, offset: const Offset(0.4, 0.4), blurSigma: 0.6),
-        DivineIcon(icon: icon, color: color),
-      ],
+    // Isolate the two ImageFiltered (saveLayer) shadow blurs in their own
+    // repaint layer. In the feed these icons sit over a playing video, whose
+    // texture changes every frame; without a boundary the blurs share the
+    // video's layer and are re-rasterised on every frame (profiling showed
+    // this as the dominant raster cost — a constant red/raster-bound frame
+    // graph). A boundary here — rather than around the whole overlay — keeps
+    // the cached layer alive even while sibling overlay content (subtitles,
+    // counts) repaints, since the icon itself changes only on icon/color.
+    return RepaintBoundary(
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          _IconShadow(icon: icon, offset: const Offset(1, 1), blurSigma: 1),
+          _IconShadow(
+            icon: icon,
+            offset: const Offset(0.4, 0.4),
+            blurSigma: 0.6,
+          ),
+          DivineIcon(icon: icon, color: color),
+        ],
+      ),
     );
   }
 }
