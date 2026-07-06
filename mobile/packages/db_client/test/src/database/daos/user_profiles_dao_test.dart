@@ -322,5 +322,39 @@ void main() {
         expect(byPubkey[testPubkey2]!.name, equals('New'));
       });
     });
+
+    group('watchProfile', () {
+      test(
+        'collapses no-op re-emissions and emits only on real changes',
+        () async {
+          // Seed so the initial emission is the current profile version.
+          await dao.upsertProfile(createProfile(eventId: 'e1', name: 'A'));
+
+          final stream = dao.watchProfile(testPubkey);
+
+          Future.delayed(const Duration(milliseconds: 50), () async {
+            // Identical re-write of the same version -> no new emission.
+            await dao.upsertProfile(createProfile(eventId: 'e1', name: 'A'));
+            // Unrelated profile write -> Drift re-runs this watcher, but the
+            // value for testPubkey is unchanged -> distinct drops it.
+            await dao.upsertProfile(
+              createProfile(pubkey: testPubkey2, eventId: 'other'),
+            );
+            // Genuine update (new event id) -> should emit.
+            await dao.upsertProfile(createProfile(eventId: 'e2', name: 'A2'));
+          });
+
+          // Without distinct this would be [e1, e1, ...]; the second distinct
+          // value is only ever reached once the real update lands.
+          await expectLater(
+            stream.take(2),
+            emitsInOrder([
+              isA<UserProfile>().having((p) => p.eventId, 'eventId', 'e1'),
+              isA<UserProfile>().having((p) => p.eventId, 'eventId', 'e2'),
+            ]),
+          );
+        },
+      );
+    });
   });
 }

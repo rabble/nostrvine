@@ -77,12 +77,19 @@ class UserProfilesDao extends DatabaseAccessor<AppDatabase>
   ///
   /// Returns a stream that emits UserProfile domain model whenever
   /// the profile changes in the database.
+  ///
+  /// Drift re-runs a table watcher on *every* write to `user_profiles`, so
+  /// without [Stream.distinct] each watcher would re-emit on unrelated
+  /// profile writes too — during the cold-start kind-0 flood that fans out
+  /// into a rebuild for every author row and caption. [UserProfile] equality
+  /// is by (pubkey, eventId), so `distinct` collapses those no-op re-emissions
+  /// and still fires whenever the profile advances to a newer event.
   Stream<UserProfile?> watchProfile(String pubkey) {
     final query = select(userProfiles)..where((t) => t.pubkey.equals(pubkey));
-    return query.watchSingleOrNull().map((row) {
-      if (row == null) return null;
-      return _rowToUserProfile(row);
-    });
+    return query
+        .watchSingleOrNull()
+        .map((row) => row == null ? null : _rowToUserProfile(row))
+        .distinct();
   }
 
   /// Get multiple profiles by pubkeys with domain model conversion.
