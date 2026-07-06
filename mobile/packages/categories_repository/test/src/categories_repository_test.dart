@@ -238,6 +238,41 @@ void main() {
         expect(videos.single.id, 'allowed-id');
         expect(videos.single.pubkey, allowedPubkey);
       });
+
+      test(
+        'collapses a republished coordinate returned twice in one page',
+        () async {
+          when(
+            () => apiClient.getRecommendations(
+              pubkey: 'viewer_pubkey',
+              limit: 50,
+            ),
+          ).thenAnswer(
+            (_) async => RecommendationsResponse(
+              videos: [
+                _videoStats(
+                  id: 'event-a',
+                  pubkey: allowedPubkey,
+                  dTag: 'shared-d-tag',
+                ),
+                _videoStats(
+                  id: 'event-b',
+                  pubkey: allowedPubkey,
+                  dTag: 'shared-d-tag',
+                ),
+              ],
+              source: 'personalized',
+            ),
+          );
+
+          final videos = await repository.getRecommendedVideos(
+            pubkey: 'viewer_pubkey',
+          );
+
+          expect(videos, hasLength(1));
+          expect(videos.single.id, 'event-a');
+        },
+      );
     });
 
     group('invalidateCache', () {
@@ -256,7 +291,11 @@ void main() {
   });
 }
 
-VideoStats _videoStats({required String id, required String pubkey}) {
+VideoStats _videoStats({
+  required String id,
+  required String pubkey,
+  String? dTag,
+}) {
   return VideoStats(
     id: id,
     pubkey: pubkey,
@@ -265,7 +304,7 @@ VideoStats _videoStats({required String id, required String pubkey}) {
     title: 'Video $id',
     createdAt: DateTime(2026),
     kind: 34236,
-    dTag: id,
+    dTag: dTag ?? id,
     reactions: 0,
     comments: 0,
     reposts: 0,

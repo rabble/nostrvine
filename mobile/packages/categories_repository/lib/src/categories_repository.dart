@@ -132,6 +132,12 @@ class CategoriesRepository {
   }
 
   /// Returns filtered personalized recommendations for [pubkey].
+  ///
+  /// Recommendation responses can carry the same addressable video more than
+  /// once in a single page: the server's emitted-id cursor dedupes by event
+  /// id, so a republished coordinate (same kind:pubkey:d-tag, fresh event id)
+  /// slips through. Dedupe by [VideoEvent.feedDedupKey] here so the category
+  /// gallery never shows the same video twice.
   Future<List<VideoEvent>> getRecommendedVideos({
     required String pubkey,
     String? category,
@@ -142,13 +148,22 @@ class CategoriesRepository {
       category: category,
       limit: limit,
     );
-    return _filterVideos(response.videos.toVideoEvents());
+    return _dedupeByFeedKey(_filterVideos(response.videos.toVideoEvents()));
   }
 
   List<VideoEvent> _filterVideos(List<VideoEvent> videos) {
     final blockFilter = _blockFilter;
     if (blockFilter == null) return videos;
     return videos.where((video) => !blockFilter(video.pubkey)).toList();
+  }
+
+  /// Removes videos whose [VideoEvent.feedDedupKey] has already been seen,
+  /// preserving first-occurrence order.
+  List<VideoEvent> _dedupeByFeedKey(List<VideoEvent> videos) {
+    final seen = <String>{};
+    return videos
+        .where((video) => seen.add(video.feedDedupKey))
+        .toList(growable: false);
   }
 
   /// Clears the in-memory cache so the next call fetches fresh data.

@@ -775,6 +775,69 @@ void main() {
     );
 
     test(
+      'for you collapses a republished coordinate returned twice in one page',
+      () async {
+        when(
+          () => mockFunnelcakeApiClient.getRecommendations(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            fallback: any(named: 'fallback'),
+            category: any(named: 'category'),
+            cursor: any(named: 'cursor'),
+            seed: any(named: 'seed'),
+            preferredLanguages: any(named: 'preferredLanguages'),
+            viewerCountry: any(named: 'viewerCountry'),
+          ),
+        ).thenAnswer(
+          (_) => Future.value(
+            RecommendationsResponse(
+              videos: [
+                _videoStats(
+                  'for-you-a',
+                  pubkey: 'author-shared',
+                  dTag: 'shared-d-tag',
+                ),
+                _videoStats(
+                  'for-you-b',
+                  pubkey: 'author-shared',
+                  dTag: 'shared-d-tag',
+                ),
+              ],
+              source: 'personalized',
+              nextCursor: 'cursor-2',
+            ),
+          ),
+        );
+
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+            appReadyProvider.overrideWithValue(true),
+            videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              mockBlocklistRepository,
+            ),
+            funnelcakeApiClientProvider.overrideWithValue(
+              mockFunnelcakeApiClient,
+            ),
+            authServiceProvider.overrideWithValue(mockAuthService),
+            funnelcakeAvailableProvider.overrideWith(
+              _AlwaysAvailableFunnelcake.new,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(funnelcakeAvailableProvider.future);
+        final subscription = container.listen(forYouFeedProvider, (_, _) {});
+        addTearDown(subscription.close);
+
+        final state = await container.read(forYouFeedProvider.future);
+        expect(state.videos.map((video) => video.id), ['for-you-a']);
+      },
+    );
+
+    test(
       'for you load more keeps cursor and seed paired across rebuilds',
       () async {
         final geoCompleter = Completer<GeoBlockResponse>();
@@ -1116,13 +1179,13 @@ VideoEvent _vineArchiveVideo(String id, {int createdAt = 1_742_169_600}) {
   );
 }
 
-VideoStats _videoStats(String id) {
+VideoStats _videoStats(String id, {String? pubkey, String? dTag}) {
   return VideoStats(
     id: id,
-    pubkey: 'author-$id',
+    pubkey: pubkey ?? 'author-$id',
     createdAt: DateTime(2026, 3, 17),
     kind: 34236,
-    dTag: id,
+    dTag: dTag ?? id,
     title: id,
     thumbnail: 'https://example.com/$id.jpg',
     videoUrl: 'https://example.com/$id.mp4',
