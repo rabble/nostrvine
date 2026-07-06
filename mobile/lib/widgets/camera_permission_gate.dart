@@ -17,14 +17,14 @@ import 'package:unified_logger/unified_logger.dart';
 
 /// A declarative gate widget that handles camera/microphone permissions.
 ///
-/// This gate owns permission prompting: a denied or blocked request keeps the
-/// user here on the matching prompt instead of bouncing back to the feed, so
-/// the native permission dialog only ever fires from the explicit Continue
-/// action below.
+/// On direct navigation to the recorder (quick actions, deep links) a
+/// still-requestable permission fires the native OS dialog immediately via
+/// [_onPermissionState] — no in-app priming screen. A denial that stays
+/// requestable pops back so the next camera tap re-prompts.
 ///
 /// Renders appropriate UI based on permission state:
 /// - loading: Shows a loading indicator
-/// - canRequest: Shows the prompt with a Continue button that requests access
+/// - canRequest: Shows a loading indicator while the native dialog is up
 /// - requiresSettings: Shows the prompt with a Go to Settings button
 /// - authorized: Renders the [child] (camera screen)
 /// - error: Shows an error screen with a Retry button

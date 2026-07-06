@@ -10,11 +10,10 @@ part 'camera_permission_state.dart';
 
 /// BLoC for managing camera and microphone permissions.
 ///
-/// Permission prompting is owned by the recorder gate
-/// (`CameraPermissionGate`): a [CameraPermissionRequest] is only dispatched
-/// from the gate's explicit "Continue" action, so the native media permission
-/// dialog always happens in response to a user gesture on the recorder
-/// screen. Callers that navigate to the recorder no longer prompt themselves.
+/// A [CameraPermissionRequest] fires the native OS permission dialog directly —
+/// dispatched by `pushToCameraWithPermission` on the current page, or by
+/// `CameraPermissionGate` on direct navigation to the recorder. There is no
+/// in-app priming screen; the dialog always follows the user's camera gesture.
 ///
 /// Handles:
 /// - Checking current permission status
@@ -69,9 +68,9 @@ class CameraPermissionBloc
       final cameraStatus = await _permissionsService.requestCameraPermission();
 
       if (cameraStatus != PermissionStatus.granted) {
-        // Stay on the recorder gate with the resolved status so the gate can
-        // re-prompt (canRequest) or send the user to Settings
-        // (requiresSettings) instead of silently bouncing back to the feed.
+        // Surface the resolved status so the caller can re-prompt (canRequest)
+        // or send the user to Settings (requiresSettings) instead of silently
+        // bouncing back to the feed.
         emit(CameraPermissionLoaded(_cameraStatusFromPermission(cameraStatus)));
         return;
       }
