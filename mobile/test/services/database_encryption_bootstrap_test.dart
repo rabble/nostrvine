@@ -52,6 +52,7 @@ void main() {
       bool Function(String rawKeyHex)? canOpenEncryptedDatabase,
       bool Function(String rawKeyHex)? salvageDatabase,
       bool Function(String rawKeyHex)? encryptedKeyMatches,
+      void Function(Object error)? onRecordRecovery,
     }) {
       return DatabaseEncryptionBootstrap(
         secureStorage: storage,
@@ -71,6 +72,9 @@ void main() {
         // rotates the key unless a test opts into the still-valid-key case.
         encryptedKeyMatches: (rawKeyHex) async =>
             encryptedKeyMatches?.call(rawKeyHex) ?? false,
+        recordRecovery: onRecordRecovery == null
+            ? null
+            : (error, _) async => onRecordRecovery(error),
       );
     }
 
@@ -199,6 +203,31 @@ void main() {
         expect(store[dbCipherKeyStorageKey], equals(existing));
         expect(deleted, isFalse, reason: 'no key-rotation wipe on salvage');
         expect(reset, isTrue, reason: 'DMs re-drain into the salvaged DB');
+      },
+    );
+
+    test(
+      'records a recovery event to Crashlytics on salvage (#116)',
+      () async {
+        // Recovery succeeds silently, so it never reaches the startup error
+        // reporter; the bootstrap must record it as a non-fatal so the
+        // corruption rate is observable.
+        const existing =
+            '2dd29ca851e7b56e4697b0e1f08507293d761a05ce4d1b628663f411a8086d99';
+        store[dbCipherKeyStorageKey] = existing;
+        Object? recorded;
+
+        final bootstrap = buildBootstrap(
+          outcome: CipherMigrationOutcome.alreadyEncrypted,
+          onDelete: () {},
+          canOpenEncryptedDatabase: (_) => false,
+          salvageDatabase: (_) => true,
+          onRecordRecovery: (error) => recorded = error,
+        );
+
+        await bootstrap.resolveCipherKey();
+
+        expect(recorded, isA<DatabaseRecoveryEvent>());
       },
     );
 

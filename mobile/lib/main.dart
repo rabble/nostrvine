@@ -1309,6 +1309,11 @@ Future<void> _startOpenVineApp() async {
         // re-drain instead of skipping it as "already complete" (which had
         // left recovered chats stranded under "Message requests"). See #5304.
         onDatabaseReset: () => DmSyncState(sharedPreferences).clearAll(),
+        // Recovery succeeds silently (returns a key, never throws), so record
+        // it as a non-fatal to surface the corruption rate and any
+        // recover-every-launch loop in Crashlytics.
+        recordRecovery: (error, stack) => CrashReportingService.instance
+            .recordError(error, stack, reason: 'DB startup recovery'),
       ).resolveCipherKey(),
       // SQLite3MultipleCiphers build misconfiguration or secure-storage
       // failures must fail closed after reporting. Continuing with a null key

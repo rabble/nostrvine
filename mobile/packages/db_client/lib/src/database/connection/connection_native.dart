@@ -190,10 +190,13 @@ const _corruptionBackupSuffix = '.pre_corruption_recovery_backup';
 /// The large relay-backed caches (`event`, `video_metrics`, profile/hashtag
 /// stats, `user_profiles`, `notifications`, `nip05_verifications`) are
 /// intentionally omitted: they resync from relays and copying them would be
-/// unbounded. `direct_messages` / `conversations` are also omitted — they
-/// re-drain from gift wraps on relays, which the app-layer recovery triggers by
-/// clearing the DM sync state after a salvage. `outgoing_dms` is kept because
-/// unsent outbound messages are not yet on any relay.
+/// unbounded. `direct_messages` / `conversations` / `dm_message_reactions` are
+/// also omitted — they re-drain from gift wraps on relays, which the app-layer
+/// recovery triggers by clearing the DM sync state after a salvage. (A DM
+/// reaction whose gift wrap has not been sent yet is re-derivable from the
+/// relay-backed conversation, unlike an `outgoing_dms` message.) `outgoing_dms`
+/// is kept because unsent outbound messages are not yet on any relay.
+/// `pending_view_events` is omitted as best-effort view telemetry.
 ///
 /// This is the local-only set also tracked by [_localOnlyDataQueries] (the
 /// legacy-migration "is there actionable data worth preserving" probe), minus

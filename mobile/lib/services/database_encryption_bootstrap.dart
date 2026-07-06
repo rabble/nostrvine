@@ -33,7 +33,9 @@ class DatabaseEncryptionBootstrap {
     Future<bool> Function(String rawKeyHex)? canOpenEncryptedDatabase,
     Future<bool> Function(String rawKeyHex)? salvageDatabase,
     Future<bool> Function(String rawKeyHex)? encryptedKeyMatches,
+    Future<void> Function(Object error, StackTrace stack)? recordRecovery,
   }) : _secureStorage = secureStorage,
+       _recordRecovery = recordRecovery,
        _ensureRuntime = ensureRuntime ?? ensureSqlCipherRuntime,
        _isCipherAvailable = isCipherAvailable ?? isSqlCipherAvailable,
        _migrate =
@@ -69,6 +71,13 @@ class DatabaseEncryptionBootstrap {
   /// when salvage fails, to keep a still-valid key (so the backup stays
   /// readable) instead of rotating it. Returns `false` on genuine key loss.
   final Future<bool> Function(String rawKeyHex) _encryptedKeyMatches;
+
+  /// Records a startup DB recovery (salvage or wipe) as a non-fatal so the
+  /// corruption rate — and a device recovering on every launch — is observable
+  /// in Crashlytics. Recovery succeeds silently otherwise: it does not throw,
+  /// so it never reaches the startup error reporter. Best-effort; `null` in
+  /// tests that don't assert on it.
+  final Future<void> Function(Object error, StackTrace stack)? _recordRecovery;
 
   /// Invoked after the key-loss recreate wipes the Drift DB, so callers can
   /// clear local state that lives OUTSIDE the database (e.g. the DM sync
@@ -128,6 +137,7 @@ class DatabaseEncryptionBootstrap {
             'and relay-backed caches resync.',
             name: _logName,
           );
+          await _reportRecovery('salvaged local-only data into a fresh DB');
           await _runPostDatabaseReset(_onDatabaseReset);
           return key;
         }
@@ -189,9 +199,36 @@ class DatabaseEncryptionBootstrap {
       name: _logName,
     );
     await _deleteDatabase();
+    await _reportRecovery('backed up + recreated ($reason)');
     await _runPostDatabaseReset(_onDatabaseReset);
     return key;
   }
+
+  /// Records a recovery as a non-fatal Crashlytics event. Best-effort: a
+  /// reporting failure must never fail startup now that recovery has succeeded.
+  Future<void> _reportRecovery(String reason) async {
+    try {
+      await _recordRecovery?.call(
+        DatabaseRecoveryEvent(reason),
+        StackTrace.current,
+      );
+    } on Object catch (e) {
+      Log.warning('Recovery reporting failed (non-fatal): $e', name: _logName);
+    }
+  }
+}
+
+/// Non-fatal marker recorded to Crashlytics when the startup DB recovery runs
+/// (salvage or wipe), so the corruption/recovery rate — and a device recovering
+/// on every launch — is observable. Not a programming error; it carries only
+/// the recovery [reason] and never embeds key material or DB contents.
+class DatabaseRecoveryEvent implements Exception {
+  DatabaseRecoveryEvent(this.reason);
+
+  final String reason;
+
+  @override
+  String toString() => 'DatabaseRecoveryEvent: $reason';
 }
 
 class DatabaseCipherUnavailableError extends StateError {
