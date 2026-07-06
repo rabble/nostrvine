@@ -121,25 +121,6 @@ void main() {
     });
 
     test(
-      'trusts cache-relay events without verifying their signature',
-      () async {
-        // A cache-relay event carrying a deliberately invalid signature is
-        // still routed: cache events were verified before being stored, so
-        // the expensive verify is skipped on cold-start replay.
-        final cache = _FakeRelay(
-          'wss://cache.example',
-          relayType: RelayType.cache,
-        );
-        await nostr.relayPool.add(cache, relayType: RelayType.cache);
-
-        final json = signedEventJson()..['sig'] = badSig;
-        await cache.deliver(['EVENT', subId, json]);
-
-        expect(received, hasLength(1));
-      },
-    );
-
-    test(
       'skips verify for ids known-verified from a previous session',
       () async {
         // The app seeds ids verified and persisted in a prior session. A
@@ -170,30 +151,5 @@ void main() {
       expect(nostr.relayPool.verifiesPerformed, 1);
       expect(nostr.relayPool.verifiesSkippedKnown, 0);
     });
-
-    test(
-      'does not trust a network copy just because a cache copy arrived',
-      () async {
-        // Cache trust must not poison the network-verified set: the same id
-        // arriving from a network relay with a bad signature is still dropped.
-        final cache = _FakeRelay(
-          'wss://cache.example',
-          relayType: RelayType.cache,
-        );
-        final net = _FakeRelay('wss://n1.example');
-        await nostr.relayPool.add(cache, relayType: RelayType.cache);
-        await nostr.relayPool.add(net);
-
-        final badJson = signedEventJson()..['sig'] = badSig;
-        await cache.deliver(['EVENT', subId, badJson]);
-        await net.deliver(['EVENT', subId, Map<String, dynamic>.from(badJson)]);
-
-        expect(
-          received,
-          hasLength(1),
-          reason: 'network copy with bad sig must not be trusted via cache',
-        );
-      },
-    );
   });
 }

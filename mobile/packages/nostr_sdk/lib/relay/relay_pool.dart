@@ -388,8 +388,8 @@ class RelayPool {
   /// been verified on this isolate. The same event arriving again from
   /// another relay skips the ~0.3ms secp256k1 verify that otherwise
   /// dominates cold start (signature verification was ~42% of startup CPU
-  /// in profiling). Only network-verified ids are recorded here; cache-relay
-  /// ids are deliberately not, so a later network copy is still verified.
+  /// in profiling). Only ids from a fresh network verify are recorded here,
+  /// so a known/duplicate hit never masks an unverified network copy.
   static const int _verifiedEventIdsCap = 20000;
   final LinkedHashSet<String> _verifiedEventIds = LinkedHashSet<String>();
 
@@ -404,11 +404,14 @@ class RelayPool {
   bool Function(String eventId)? isKnownVerifiedEvent;
 
   /// Diagnostic counters for how [_onEvent] treated each incoming event's
-  /// signature. Exposed so callers / tests can observe the skip rate.
-  int verifiesPerformed = 0;
-  int verifiesSkippedKnown = 0;
-  int verifiesSkippedSessionDup = 0;
-  int verifiesSkippedCache = 0;
+  /// signature. Read-only; exposed so callers / tests can observe the skip
+  /// rate.
+  int get verifiesPerformed => _verifiesPerformed;
+  int get verifiesSkippedKnown => _verifiesSkippedKnown;
+  int get verifiesSkippedSessionDup => _verifiesSkippedSessionDup;
+  int _verifiesPerformed = 0;
+  int _verifiesSkippedKnown = 0;
+  int _verifiesSkippedSessionDup = 0;
 
   /// Records [id] as verified, evicting the oldest id once the cap is hit.
   void _markEventVerified(String id) {
@@ -467,23 +470,19 @@ class RelayPool {
         // trusted. Because isValid proves id == sha256(content) (which
         // includes the pubkey), two events sharing an id are byte-identical,
         // so id-based trust is cryptographically sound.
-        //  - Cache-relay events were verified before being written, so they
-        //    are trusted by origin and never re-verified on cold start.
         //  - Events verified in a previous session (known to the injected
         //    [isKnownVerifiedEvent] store) skip re-verify on cold start.
         //  - Network events verified earlier this session (a duplicate
         //    delivery of the same id from another relay) skip re-verify.
         // Only fresh network verifications are recorded in [_verifiedEventIds]
-        // so cache/known events never mask an unverified network copy.
-        if (relay.relayStatus.relayType == RelayType.cache) {
-          verifiesSkippedCache++;
-        } else if (_verifiedEventIds.contains(event.id)) {
-          verifiesSkippedSessionDup++;
+        // so a known/duplicate hit never masks an unverified network copy.
+        if (_verifiedEventIds.contains(event.id)) {
+          _verifiesSkippedSessionDup++;
         } else if (isKnownVerifiedEvent?.call(event.id) ?? false) {
-          verifiesSkippedKnown++;
+          _verifiesSkippedKnown++;
         } else if (event.isSigned) {
           _markEventVerified(event.id);
-          verifiesPerformed++;
+          _verifiesPerformed++;
         } else {
           log(
             'Dropping relay event with invalid signature '
