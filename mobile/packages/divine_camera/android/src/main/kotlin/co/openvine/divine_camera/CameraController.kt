@@ -1133,13 +1133,16 @@ class CameraController(
             // first frame. Until then the SurfaceProducer keeps showing the old
             // frame (frozen) and the state (lens/rotation) stays on the old
             // camera, so the frozen frame never flips to the new rotation early.
-            var switchResolved = false
-            val finishSwitch = Runnable {
-                if (switchResolved) return@Runnable
-                switchResolved = true
-                onFirstFrameAfterSwitch = null
-                DivineCameraLog.d(TAG, "Camera switched successfully")
-                callback(getCameraState(), null)
+            // Whichever path runs first (first frame or the timeout) cancels the
+            // other queued copy via removeCallbacks, so this runs exactly once
+            // and no stale timeout lingers on the main looper afterwards.
+            val finishSwitch = object : Runnable {
+                override fun run() {
+                    mainHandler.removeCallbacks(this)
+                    onFirstFrameAfterSwitch = null
+                    DivineCameraLog.d(TAG, "Camera switched successfully")
+                    callback(getCameraState(), null)
+                }
             }
             onFirstFrameAfterSwitch = { mainHandler.post(finishSwitch) }
             mainHandler.postDelayed(finishSwitch, SWITCH_FIRST_FRAME_TIMEOUT_MS)
@@ -2340,6 +2343,10 @@ class CameraController(
         }
     }
 
+    // SENSOR_ORIENTATION is immutable per camera id, so cache it and avoid a
+    // fresh getCameraCharacteristics() lookup on every getCameraState() call.
+    private val sensorOrientationByCameraId = mutableMapOf<String, Int>()
+
     /**
      * Reads the clockwise sensor orientation (degrees) of the current lens.
      * The recorder is portrait-locked, so this doubles as the rotation the UI
@@ -2349,11 +2356,13 @@ class CameraController(
     private fun currentSensorOrientation(): Int {
         return try {
             val cameraId = getCameraIdForLens(currentLensType) ?: return 0
-            val cameraManager =
-                context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
-            cameraManager
-                .getCameraCharacteristics(cameraId)
-                .get(CameraCharacteristics.SENSOR_ORIENTATION) ?: 0
+            sensorOrientationByCameraId.getOrPut(cameraId) {
+                val cameraManager =
+                    context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
+                cameraManager
+                    .getCameraCharacteristics(cameraId)
+                    .get(CameraCharacteristics.SENSOR_ORIENTATION) ?: 0
+            }
         } catch (e: Exception) {
             DivineCameraLog.w(TAG, "Failed to read sensor orientation: ${e.message}")
             0

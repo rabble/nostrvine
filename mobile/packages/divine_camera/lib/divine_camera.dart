@@ -207,9 +207,12 @@ class DivineCamera {
 
   /// Switches between front and back camera.
   ///
-  /// Returns true if successful.
+  /// Returns true if successful. Returns false while a switch is already in
+  /// flight: the native side now completes a switch on the incoming camera's
+  /// first frame, so a re-entrant call would clobber that pending completion
+  /// and target the wrong lens.
   Future<bool> switchCamera() async {
-    if (!_state.canSwitchCamera) return false;
+    if (!_state.canSwitchCamera || _state.isSwitchingCamera) return false;
     final newLens = _state.lens.opposite;
 
     // Set switching state to keep last frame visible
@@ -246,10 +249,13 @@ class DivineCamera {
   /// Switches to a specific camera lens.
   ///
   /// [lens] the lens to switch to.
-  /// Returns true if successful.
+  /// Returns true if successful. Returns false while a switch is already in
+  /// flight, for the same reason as [switchCamera].
   Future<bool> setLens(DivineCameraLens lens) async {
     if (lens == _state.lens) return true;
-    if (!_state.availableLenses.contains(lens)) return false;
+    if (!_state.availableLenses.contains(lens) || _state.isSwitchingCamera) {
+      return false;
+    }
 
     // Set switching state to keep last frame visible
     _state = _state.copyWith(isSwitchingCamera: true);

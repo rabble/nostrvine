@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:divine_camera/divine_camera.dart';
 import 'package:divine_camera/divine_camera_method_channel.dart';
 import 'package:divine_camera/divine_camera_platform_interface.dart';
@@ -116,8 +118,13 @@ class MockDivineCameraPlatform
     return level >= 1.0 && level <= 10.0;
   }
 
+  /// When set, [switchCamera] awaits this before completing, so a test can
+  /// hold a switch in flight and probe re-entrant calls.
+  Completer<void>? switchGate;
+
   @override
   Future<CameraState> switchCamera(DivineCameraLens lens) async {
+    await switchGate?.future;
     return _state = _state.copyWith(lens: lens);
   }
 
@@ -467,6 +474,22 @@ void main() {
           expect(DivineCamera.instance.canSwitchCamera, isTrue);
         },
       );
+
+      test('ignores a re-entrant switch while one is in flight', () async {
+        await DivineCamera.instance.initialize();
+
+        final gate = Completer<void>();
+        mockPlatform.switchGate = gate;
+
+        final first = DivineCamera.instance.switchCamera();
+        // Second call arrives before the first resolves.
+        final second = await DivineCamera.instance.switchCamera();
+        expect(second, isFalse);
+
+        gate.complete();
+        expect(await first, isTrue);
+        expect(DivineCamera.instance.state.lens, DivineCameraLens.front);
+      });
     });
 
     group('setLens', () {
