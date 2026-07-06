@@ -44,6 +44,10 @@ class _CameraPermissionGateState extends State<CameraPermissionGate>
     with WidgetsBindingObserver {
   bool _wasInBackground = false;
 
+  /// Guards the one auto-request per mount so a denial that stays requestable
+  /// doesn't immediately re-trigger the native dialog in a loop.
+  bool _autoRequested = false;
+
   @override
   void initState() {
     super.initState();
@@ -72,6 +76,11 @@ class _CameraPermissionGateState extends State<CameraPermissionGate>
           category: LogCategory.video,
         );
         bloc.add(const CameraPermissionRefresh());
+      } else {
+        // Already resolved before the gate mounted (the app-level bloc warms
+        // the check at startup). The listener won't fire for this initial
+        // state, so drive the auto-request here.
+        _onPermissionState(bloc.state);
       }
     });
   }
@@ -114,6 +123,24 @@ class _CameraPermissionGateState extends State<CameraPermissionGate>
     }
   }
 
+  /// Drives the direct-request flow for a still-requestable permission:
+  /// fire the native OS dialog immediately (no in-app priming screen) the
+  /// first time, and pop back on a denial that leaves it requestable so the
+  /// next camera tap re-prompts. A permanent denial resolves to
+  /// [CameraPermissionStatus.requiresSettings] and is surfaced by the builder.
+  void _onPermissionState(CameraPermissionState state) {
+    if (!mounted) return;
+    if (state is! CameraPermissionLoaded) return;
+    if (state.status != CameraPermissionStatus.canRequest) return;
+
+    if (!_autoRequested) {
+      _autoRequested = true;
+      context.read<CameraPermissionBloc>().add(const CameraPermissionRequest());
+    } else {
+      _popBack();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<CameraPermissionBloc, CameraPermissionState>(
@@ -123,6 +150,7 @@ class _CameraPermissionGateState extends State<CameraPermissionGate>
           name: 'CameraPermissionGate',
           category: LogCategory.video,
         );
+        _onPermissionState(state);
       },
       builder: (context, state) {
         Log.debug(
@@ -157,17 +185,10 @@ class _CameraPermissionGateState extends State<CameraPermissionGate>
           ),
           CameraPermissionLoaded(:final status) => switch (status) {
             CameraPermissionStatus.authorized => widget.child,
-            CameraPermissionStatus.canRequest => _PermissionScreen(
-              title: context.l10n.cameraPermissionAllowAccessTitle,
-              description: context.l10n.cameraPermissionAllowAccessDescription,
-              buttonLabel: context.l10n.cameraPermissionContinue,
-              onAction: () {
-                context.read<CameraPermissionBloc>().add(
-                  const CameraPermissionRequest(),
-                );
-              },
-              onClose: _popBack,
-            ),
+            // Requestable permission fires the native OS dialog directly via
+            // [_onPermissionState]; no in-app priming screen. The indicator
+            // covers the brief window while the dialog is up.
+            CameraPermissionStatus.canRequest => const _LoadingIndicator(),
             CameraPermissionStatus.requiresSettings => _PermissionScreen(
               title: context.l10n.cameraPermissionAllowAccessTitle,
               description: context.l10n.cameraPermissionAllowAccessDescription,

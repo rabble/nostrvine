@@ -22,11 +22,13 @@ part 'camera_permission_state.dart';
 /// - Caching status to avoid repeated OS calls
 /// - Refreshing status when app resumes from background
 ///
-/// Both [CameraPermissionRequest] and [CameraPermissionRefresh] use the
-/// `droppable()` transformer so duplicate requests/refreshes dispatched while
-/// one is already in flight are ignored. This replaces the previous in-flight
-/// boolean/future fields with the idiomatic bloc concurrency primitive and
-/// keeps all coordination out of mutable instance state.
+/// [CameraPermissionRefresh] uses `droppable()` so overlapping refreshes are
+/// ignored. [CameraPermissionRequest] uses `restartable()`: a new request
+/// supersedes an in-flight one. This matters because `permission_handler`'s
+/// native `request()` can hang and never complete when the Android permission
+/// dialog is dismissed with the back button — `droppable()` would then block
+/// every later request forever. `restartable()` lets the next camera tap
+/// abandon the stuck request and fire a fresh native dialog.
 class CameraPermissionBloc
     extends Bloc<CameraPermissionEvent, CameraPermissionState> {
   CameraPermissionBloc({
@@ -35,7 +37,7 @@ class CameraPermissionBloc
   }) : _permissionsService = permissionsService,
        _skipLinuxBypass = skipLinuxBypass ?? false,
        super(const CameraPermissionInitial()) {
-    on<CameraPermissionRequest>(_onRequest, transformer: droppable());
+    on<CameraPermissionRequest>(_onRequest, transformer: restartable());
     on<CameraPermissionRefresh>(_onRefresh, transformer: droppable());
     on<CameraPermissionOpenSettings>(_onOpenSettings);
   }
@@ -56,6 +58,12 @@ class CameraPermissionBloc
     if (currentState.status != CameraPermissionStatus.canRequest) {
       return;
     }
+
+    // Emit a distinct loading state so a denial that leaves the permission
+    // still requestable (canRequest -> canRequest) is observable as a real
+    // transition. Without it, the equal Loaded(canRequest) emit is suppressed
+    // by Equatable and the caller can't tell the request finished.
+    emit(const CameraPermissionLoading());
 
     try {
       final cameraStatus = await _permissionsService.requestCameraPermission();

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -102,12 +104,14 @@ void main() {
             const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
         act: (bloc) => bloc.add(const CameraPermissionRequest()),
         expect: () => [
+          const CameraPermissionLoading(),
           const CameraPermissionLoaded(CameraPermissionStatus.authorized),
         ],
       );
 
       blocTest<CameraPermissionBloc, CameraPermissionState>(
-        'stays on Loaded(canRequest) when camera request stays requestable',
+        'emits [Loading, Loaded(canRequest)] when camera request stays '
+        'requestable',
         setUp: () {
           when(
             () => mockPermissionsService.requestCameraPermission(),
@@ -120,9 +124,13 @@ void main() {
         seed: () =>
             const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
         act: (bloc) => bloc.add(const CameraPermissionRequest()),
-        // Mapped status equals the seeded state, so no new state is emitted —
-        // the gate keeps showing the canRequest prompt for a retry.
-        expect: () => <CameraPermissionState>[],
+        // The transient Loading makes the denial observable even though the
+        // mapped status equals the seeded canRequest, so the caller can tell
+        // the request finished and re-prompt on the next tap.
+        expect: () => [
+          const CameraPermissionLoading(),
+          const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
+        ],
         verify: (_) {
           verify(
             () => mockPermissionsService.requestCameraPermission(),
@@ -134,7 +142,8 @@ void main() {
       );
 
       blocTest<CameraPermissionBloc, CameraPermissionState>(
-        'stays on Loaded(canRequest) when microphone request stays requestable',
+        'emits [Loading, Loaded(canRequest)] when microphone request stays '
+        'requestable',
         setUp: () {
           when(
             () => mockPermissionsService.requestCameraPermission(),
@@ -150,7 +159,10 @@ void main() {
         seed: () =>
             const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
         act: (bloc) => bloc.add(const CameraPermissionRequest()),
-        expect: () => <CameraPermissionState>[],
+        expect: () => [
+          const CameraPermissionLoading(),
+          const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
+        ],
         verify: (_) {
           verify(
             () => mockPermissionsService.requestCameraPermission(),
@@ -162,7 +174,7 @@ void main() {
       );
 
       blocTest<CameraPermissionBloc, CameraPermissionState>(
-        'emits [Loaded(authorized)] when gallery permission denied '
+        'emits [Loading, Loaded(authorized)] when gallery permission denied '
         '(gallery is optional)',
         setUp: () {
           when(
@@ -183,6 +195,7 @@ void main() {
             const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
         act: (bloc) => bloc.add(const CameraPermissionRequest()),
         expect: () => [
+          const CameraPermissionLoading(),
           const CameraPermissionLoaded(CameraPermissionStatus.authorized),
         ],
       );
@@ -202,6 +215,7 @@ void main() {
             const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
         act: (bloc) => bloc.add(const CameraPermissionRequest()),
         expect: () => [
+          const CameraPermissionLoading(),
           const CameraPermissionLoaded(CameraPermissionStatus.requiresSettings),
         ],
         verify: (_) {
@@ -229,17 +243,24 @@ void main() {
             const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
         act: (bloc) => bloc.add(const CameraPermissionRequest()),
         expect: () => [
+          const CameraPermissionLoading(),
           const CameraPermissionLoaded(CameraPermissionStatus.requiresSettings),
         ],
       );
 
       blocTest<CameraPermissionBloc, CameraPermissionState>(
-        'drops a duplicate request dispatched while one is in flight',
+        'restartable request lets a refreshed retry supersede a stuck request',
         setUp: () {
+          var cameraCalls = 0;
           when(
             () => mockPermissionsService.requestCameraPermission(),
           ).thenAnswer((_) async {
-            await Future<void>.delayed(const Duration(milliseconds: 10));
+            cameraCalls++;
+            // The first request never completes (mimics the Android
+            // back-dismiss hang); the superseding request resolves.
+            if (cameraCalls == 1) {
+              return Completer<PermissionStatus>().future;
+            }
             return PermissionStatus.granted;
           });
           when(
@@ -248,6 +269,15 @@ void main() {
           when(
             () => mockPermissionsService.requestGalleryPermission(),
           ).thenAnswer((_) async => PermissionStatus.granted);
+          // The retry refreshes the stuck Loading back to a requestable status
+          // before re-requesting (mirrors pushToCameraWithPermission on a
+          // second camera tap).
+          when(
+            () => mockPermissionsService.checkCameraStatus(),
+          ).thenAnswer((_) async => PermissionStatus.canRequest);
+          when(
+            () => mockPermissionsService.checkMicrophoneStatus(),
+          ).thenAnswer((_) async => PermissionStatus.canRequest);
         },
         build: () => CameraPermissionBloc(
           permissionsService: mockPermissionsService,
@@ -255,24 +285,28 @@ void main() {
         ),
         seed: () =>
             const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
-        act: (bloc) {
-          bloc
-            ..add(const CameraPermissionRequest())
-            ..add(const CameraPermissionRequest());
+        act: (bloc) async {
+          // First request hangs on the camera prompt (state -> Loading).
+          bloc.add(const CameraPermissionRequest());
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          // Refresh un-sticks Loading back to canRequest.
+          bloc.add(const CameraPermissionRefresh());
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          // With droppable this would be dropped (the first is still in
+          // flight); restartable lets it supersede and resolve.
+          bloc.add(const CameraPermissionRequest());
         },
-        wait: const Duration(milliseconds: 20),
+        wait: const Duration(milliseconds: 50),
         expect: () => [
+          const CameraPermissionLoading(),
+          const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
+          const CameraPermissionLoading(),
           const CameraPermissionLoaded(CameraPermissionStatus.authorized),
         ],
-        verify: (_) {
-          verify(
-            () => mockPermissionsService.requestCameraPermission(),
-          ).called(1);
-        },
       );
 
       blocTest<CameraPermissionBloc, CameraPermissionState>(
-        'emits [Loaded(authorized)] when gallery permission requires settings '
+        'emits [Loading, Loaded(authorized)] when gallery requires settings '
         '(gallery is optional)',
         setUp: () {
           when(
@@ -293,12 +327,13 @@ void main() {
             const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
         act: (bloc) => bloc.add(const CameraPermissionRequest()),
         expect: () => [
+          const CameraPermissionLoading(),
           const CameraPermissionLoaded(CameraPermissionStatus.authorized),
         ],
       );
 
       blocTest<CameraPermissionBloc, CameraPermissionState>(
-        'emits [Error] when camera request throws',
+        'emits [Loading, Error] when camera request throws',
         setUp: () {
           when(
             () => mockPermissionsService.requestCameraPermission(),
@@ -311,11 +346,14 @@ void main() {
         seed: () =>
             const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
         act: (bloc) => bloc.add(const CameraPermissionRequest()),
-        expect: () => [const CameraPermissionError()],
+        expect: () => [
+          const CameraPermissionLoading(),
+          const CameraPermissionError(),
+        ],
       );
 
       blocTest<CameraPermissionBloc, CameraPermissionState>(
-        'emits [Error] when microphone request throws',
+        'emits [Loading, Error] when microphone request throws',
         setUp: () {
           when(
             () => mockPermissionsService.requestCameraPermission(),
@@ -331,11 +369,14 @@ void main() {
         seed: () =>
             const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
         act: (bloc) => bloc.add(const CameraPermissionRequest()),
-        expect: () => [const CameraPermissionError()],
+        expect: () => [
+          const CameraPermissionLoading(),
+          const CameraPermissionError(),
+        ],
       );
 
       blocTest<CameraPermissionBloc, CameraPermissionState>(
-        'emits [Error] when gallery request throws',
+        'emits [Loading, Error] when gallery request throws',
         setUp: () {
           when(
             () => mockPermissionsService.requestCameraPermission(),
@@ -354,7 +395,10 @@ void main() {
         seed: () =>
             const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
         act: (bloc) => bloc.add(const CameraPermissionRequest()),
-        expect: () => [const CameraPermissionError()],
+        expect: () => [
+          const CameraPermissionLoading(),
+          const CameraPermissionError(),
+        ],
       );
     });
 

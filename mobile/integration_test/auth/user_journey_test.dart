@@ -75,22 +75,9 @@ void main() {
         await tapSemantic(tester, 'camera_button');
         logPhase('Camera button tapped');
 
-        // The recorder's CameraPermissionGate renders a permission screen
-        // with a "Continue" button that triggers the native OS dialog.
-        // We must tap "Continue" first, then handle the native dialogs.
-        final continuePermission = find.text('Continue');
-        final foundContinue = await waitForWidget(
-          tester,
-          continuePermission,
-          maxSeconds: 10,
-        );
-        if (foundContinue) {
-          await tester.tap(continuePermission);
-          await tester.pump(const Duration(seconds: 1));
-          logPhase('Tapped Continue on pre-permission sheet');
-        }
-
-        // Grant camera permission via Patrol native automation
+        // Tapping the camera button fires the native OS permission dialog
+        // directly on the current page — no in-app "Continue" priming screen.
+        // Grant camera permission via Patrol native automation.
         if (await $.platformAutomator.mobile.isPermissionDialogVisible(
           timeout: const Duration(seconds: 5),
         )) {

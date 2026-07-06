@@ -1,5 +1,5 @@
 // ABOUTME: Tests for pushToCameraWithPermission extension on BuildContext
-// ABOUTME: Verifies pre-navigation permission checks route to the recorder gate
+// ABOUTME: Verifies the native permission request fires on the current page
 
 import 'dart:async';
 
@@ -87,9 +87,29 @@ void main() {
     );
   }
 
+  void verifyNavigated() {
+    verify(
+      () => mockGoRouter.push<Object?>(
+        VideoRecorderScreen.path,
+        extra: any(named: 'extra'),
+      ),
+    ).called(1);
+  }
+
+  void verifyNotNavigated() {
+    verifyNever(
+      () => mockGoRouter.push<Object?>(
+        VideoRecorderScreen.path,
+        extra: any(named: 'extra'),
+      ),
+    );
+  }
+
   group('pushToCameraWithPermission', () {
-    group('navigates directly', () {
-      testWidgets('when permission is authorized', (tester) async {
+    group('terminal statuses navigate without requesting', () {
+      testWidgets('authorized navigates and dispatches nothing', (
+        tester,
+      ) async {
         final bloc = _FakeCameraPermissionBloc(
           const CameraPermissionLoaded(CameraPermissionStatus.authorized),
         );
@@ -101,16 +121,14 @@ void main() {
         await tester.tap(find.text('Trigger'));
         await tester.pumpAndSettle();
 
-        verify(
-          () => mockGoRouter.push<Object?>(
-            VideoRecorderScreen.path,
-            extra: any(named: 'extra'),
-          ),
-        ).called(1);
+        verifyNavigated();
         expect(result, isTrue);
+        expect(bloc.addedEvents, isEmpty);
       });
 
-      testWidgets('when permission requires settings', (tester) async {
+      testWidgets('requiresSettings navigates and dispatches nothing', (
+        tester,
+      ) async {
         final bloc = _FakeCameraPermissionBloc(
           const CameraPermissionLoaded(CameraPermissionStatus.requiresSettings),
         );
@@ -122,18 +140,89 @@ void main() {
         await tester.tap(find.text('Trigger'));
         await tester.pumpAndSettle();
 
-        verify(
-          () => mockGoRouter.push<Object?>(
-            VideoRecorderScreen.path,
-            extra: any(named: 'extra'),
-          ),
-        ).called(1);
+        verifyNavigated();
+        expect(result, isTrue);
+        expect(bloc.addedEvents, isEmpty);
+      });
+    });
+
+    group('requestable permission fires the native request first', () {
+      testWidgets('dispatches request on the current page before navigating', (
+        tester,
+      ) async {
+        final bloc = _FakeCameraPermissionBloc(
+          const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
+        );
+        await tester.pumpWidget(buildSubject(bloc));
+
+        await tester.tap(find.text('Trigger'));
+        await tester.pump();
+
+        // The request fires while still on the current page — no navigation
+        // has happened yet.
+        expect(bloc.addedEvents, contains(isA<CameraPermissionRequest>()));
+        verifyNotNavigated();
+
+        bloc.emitState(
+          const CameraPermissionLoaded(CameraPermissionStatus.authorized),
+        );
+        await tester.pumpAndSettle();
+
+        verifyNavigated();
+      });
+
+      testWidgets(
+        'stays put when the request is denied but still requestable',
+        (
+          tester,
+        ) async {
+          final bloc = _FakeCameraPermissionBloc(
+            const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
+          );
+          bool? result;
+          await tester.pumpWidget(
+            buildSubject(bloc, onResult: (r) => result = r),
+          );
+
+          await tester.tap(find.text('Trigger'));
+          await tester.pump();
+
+          bloc.emitState(
+            const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
+          );
+          await tester.pumpAndSettle();
+
+          verifyNotNavigated();
+          expect(result, isFalse);
+        },
+      );
+
+      testWidgets('navigates when the request resolves to requiresSettings', (
+        tester,
+      ) async {
+        final bloc = _FakeCameraPermissionBloc(
+          const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
+        );
+        bool? result;
+        await tester.pumpWidget(
+          buildSubject(bloc, onResult: (r) => result = r),
+        );
+
+        await tester.tap(find.text('Trigger'));
+        await tester.pump();
+
+        bloc.emitState(
+          const CameraPermissionLoaded(CameraPermissionStatus.requiresSettings),
+        );
+        await tester.pumpAndSettle();
+
+        verifyNavigated();
         expect(result, isTrue);
       });
     });
 
-    group('waits for permission status', () {
-      testWidgets('adds $CameraPermissionRefresh when state is initial', (
+    group('resolves status first when not settled', () {
+      testWidgets('refreshes when initial, then navigates when authorized', (
         tester,
       ) async {
         final bloc = _FakeCameraPermissionBloc(const CameraPermissionInitial());
@@ -144,142 +233,41 @@ void main() {
 
         expect(bloc.addedEvents, contains(isA<CameraPermissionRefresh>()));
 
-        // Unblock the stream wait
-        bloc.emitState(
-          const CameraPermissionLoaded(CameraPermissionStatus.authorized),
-        );
-        await tester.pumpAndSettle();
-      });
-
-      testWidgets('navigates when permission resolves to authorized', (
-        tester,
-      ) async {
-        final bloc = _FakeCameraPermissionBloc(const CameraPermissionInitial());
-        bool? result;
-        await tester.pumpWidget(
-          buildSubject(bloc, onResult: (r) => result = r),
-        );
-
-        await tester.tap(find.text('Trigger'));
-        await tester.pump();
-
         bloc.emitState(
           const CameraPermissionLoaded(CameraPermissionStatus.authorized),
         );
         await tester.pumpAndSettle();
 
-        verify(
-          () => mockGoRouter.push<Object?>(
-            VideoRecorderScreen.path,
-            extra: any(named: 'extra'),
-          ),
-        ).called(1);
-        expect(result, isTrue);
+        verifyNavigated();
       });
 
-      testWidgets('navigates directly when resolve times out after 10s', (
+      testWidgets('refreshes when stuck in loading instead of hanging', (
         tester,
       ) async {
-        final bloc = _FakeCameraPermissionBloc(const CameraPermissionInitial());
-        bool? result;
-        await tester.pumpWidget(
-          buildSubject(bloc, onResult: (r) => result = r),
-        );
+        final bloc = _FakeCameraPermissionBloc(const CameraPermissionLoading());
+        await tester.pumpWidget(buildSubject(bloc));
 
         await tester.tap(find.text('Trigger'));
         await tester.pump();
 
-        // Stream never emits → 10s timeout fires → navigates anyway and lets
-        // the gate render the loading/error UI.
-        await tester.pump(const Duration(seconds: 11));
-        await tester.pumpAndSettle();
+        // A stuck Loading state must not block: a fresh refresh is dispatched.
+        expect(bloc.addedEvents, contains(isA<CameraPermissionRefresh>()));
 
-        verify(
-          () => mockGoRouter.push<Object?>(
-            VideoRecorderScreen.path,
-            extra: any(named: 'extra'),
-          ),
-        ).called(1);
-        expect(result, isTrue);
-      });
-
-      testWidgets('navigates when permission resolves to error', (
-        tester,
-      ) async {
-        final bloc = _FakeCameraPermissionBloc(const CameraPermissionInitial());
-        bool? result;
-        await tester.pumpWidget(
-          buildSubject(bloc, onResult: (r) => result = r),
+        bloc.emitState(
+          const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
         );
-
-        await tester.tap(find.text('Trigger'));
         await tester.pump();
 
-        bloc.emitState(const CameraPermissionError());
-        await tester.pumpAndSettle();
+        // Once resolved to canRequest, the native request fires.
+        expect(bloc.addedEvents, contains(isA<CameraPermissionRequest>()));
 
-        verify(
-          () => mockGoRouter.push<Object?>(
-            VideoRecorderScreen.path,
-            extra: any(named: 'extra'),
-          ),
-        ).called(1);
-        expect(result, isTrue);
-      });
-    });
-
-    group('returns immediately for terminal states', () {
-      testWidgets('navigates directly when state is $CameraPermissionError', (
-        tester,
-      ) async {
-        final bloc = _FakeCameraPermissionBloc(const CameraPermissionError());
-        bool? result;
-        await tester.pumpWidget(
-          buildSubject(bloc, onResult: (r) => result = r),
+        bloc.emitState(
+          const CameraPermissionLoaded(CameraPermissionStatus.authorized),
         );
-
-        await tester.tap(find.text('Trigger'));
         await tester.pumpAndSettle();
 
-        verify(
-          () => mockGoRouter.push<Object?>(
-            VideoRecorderScreen.path,
-            extra: any(named: 'extra'),
-          ),
-        ).called(1);
-        expect(result, isTrue);
-        expect(bloc.addedEvents, isEmpty);
+        verifyNavigated();
       });
-    });
-
-    group('routes requestable permissions to the recorder gate', () {
-      testWidgets(
-        'navigates without dispatching $CameraPermissionRequest when canRequest',
-        (tester) async {
-          final bloc = _FakeCameraPermissionBloc(
-            const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
-          );
-          bool? result;
-          await tester.pumpWidget(
-            buildSubject(bloc, onResult: (r) => result = r),
-          );
-
-          await tester.tap(find.text('Trigger'));
-          await tester.pumpAndSettle();
-
-          verify(
-            () => mockGoRouter.push<Object?>(
-              VideoRecorderScreen.path,
-              extra: any(named: 'extra'),
-            ),
-          ).called(1);
-          expect(
-            bloc.addedEvents,
-            isNot(contains(isA<CameraPermissionRequest>())),
-          );
-          expect(result, isTrue);
-        },
-      );
     });
   });
 }
