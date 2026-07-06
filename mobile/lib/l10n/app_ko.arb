@@ -2032,7 +2032,6 @@
     "cameraPermissionRetry": "다시 시도",
     "cameraPermissionAllowAccessTitle": "카메라 및 마이크 접근 허용",
     "cameraPermissionAllowAccessDescription": "이렇게 하면 앱에서 바로 동영상을 촬영하고 편집할 수 있으며, 그 외 용도는 없습니다.",
-    "cameraPermissionContinue": "계속",
     "cameraPermissionGoToSettings": "설정으로 이동",
     "videoEditorAddClipFromLibrary": "보관함에서 클립 추가",
     "videoEditorAddElementSemanticLabel": "요소 추가",

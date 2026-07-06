@@ -7848,9 +7848,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Aceasta îți permite să capturezi și să editezi videoclipuri direct în aplicație, nimic mai mult.';
 
   @override
-  String get cameraPermissionContinue => 'Continuă';
-
-  @override
   String get cameraPermissionGoToSettings => 'Mergi la setări';
 
   @override

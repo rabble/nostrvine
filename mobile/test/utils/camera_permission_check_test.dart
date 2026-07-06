@@ -268,6 +268,63 @@ void main() {
 
         verifyNavigated();
       });
+
+      testWidgets(
+        'navigates to the gate when the entry check errors so Retry shows',
+        (tester) async {
+          final bloc = _FakeCameraPermissionBloc(
+            const CameraPermissionInitial(),
+          );
+          bool? result;
+          await tester.pumpWidget(
+            buildSubject(bloc, onResult: (r) => result = r),
+          );
+
+          await tester.tap(find.text('Trigger'));
+          await tester.pump();
+
+          // The entry check refreshes, then errors.
+          expect(bloc.addedEvents, contains(isA<CameraPermissionRefresh>()));
+          bloc.emitState(const CameraPermissionError());
+          await tester.pumpAndSettle();
+
+          // Navigate so the gate renders Error + Retry — no request is fired
+          // on the errored state (which would dead-wait the 30s timeout).
+          verifyNavigated();
+          expect(
+            bloc.addedEvents,
+            isNot(contains(isA<CameraPermissionRequest>())),
+          );
+          expect(result, isTrue);
+        },
+      );
+    });
+
+    group('supersedes stale concurrent flows', () {
+      testWidgets('only the latest of two concurrent taps navigates', (
+        tester,
+      ) async {
+        final bloc = _FakeCameraPermissionBloc(
+          const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
+        );
+        await tester.pumpWidget(buildSubject(bloc));
+
+        // Two overlapping camera taps each start a request flow; the
+        // generation guard must let only the latest act on the shared result,
+        // otherwise both would push the recorder.
+        await tester.tap(find.text('Trigger'));
+        await tester.pump();
+        await tester.tap(find.text('Trigger'));
+        await tester.pump();
+
+        bloc.emitState(
+          const CameraPermissionLoaded(CameraPermissionStatus.authorized),
+        );
+        await tester.pumpAndSettle();
+
+        // verifyNavigated asserts exactly one push, not two.
+        verifyNavigated();
+      });
     });
   });
 }

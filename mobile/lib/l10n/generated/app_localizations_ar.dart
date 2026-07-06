@@ -7630,9 +7630,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'يتيح لك هذا التقاط الفيديوهات وتعديلها مباشرة داخل التطبيق، ولا شيء أكثر.';
 
   @override
-  String get cameraPermissionContinue => 'متابعة';
-
-  @override
   String get cameraPermissionGoToSettings => 'الذهاب إلى الإعدادات';
 
   @override

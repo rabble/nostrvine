@@ -7673,9 +7673,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Detta låter dig spela in och redigera videor direkt i appen, inget mer.';
 
   @override
-  String get cameraPermissionContinue => 'Fortsätt';
-
-  @override
   String get cameraPermissionGoToSettings => 'Gå till inställningar';
 
   @override

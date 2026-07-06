@@ -2709,7 +2709,6 @@
     "cameraPermissionRetry": "Opnieuw proberen",
     "cameraPermissionAllowAccessTitle": "Toegang tot camera en microfoon toestaan",
     "cameraPermissionAllowAccessDescription": "Hiermee kun je video's rechtstreeks in de app opnemen en bewerken, verder niets.",
-    "cameraPermissionContinue": "Doorgaan",
     "cameraPermissionGoToSettings": "Naar instellingen",
     "videoRecorderWhySixSecondsTitle": "Waarom zes seconden?",
     "videoRecorderWhySixSecondsSubtitle": "Korte clips geven ruimte aan spontaniteit. Het 6-secondenformaat helpt je om authentieke momenten vast te leggen terwijl ze gebeuren.",

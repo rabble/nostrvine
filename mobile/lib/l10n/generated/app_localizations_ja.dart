@@ -7369,9 +7369,6 @@ class AppLocalizationsJa extends AppLocalizations {
       'これにより、アプリ内で動画の撮影と編集ができるようになります。それ以外の用途はありません。';
 
   @override
-  String get cameraPermissionContinue => '続行';
-
-  @override
   String get cameraPermissionGoToSettings => '設定に移動';
 
   @override

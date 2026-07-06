@@ -7392,9 +7392,6 @@ class AppLocalizationsKo extends AppLocalizations {
       '이렇게 하면 앱에서 바로 동영상을 촬영하고 편집할 수 있으며, 그 외 용도는 없습니다.';
 
   @override
-  String get cameraPermissionContinue => '계속';
-
-  @override
   String get cameraPermissionGoToSettings => '설정으로 이동';
 
   @override

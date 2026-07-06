@@ -2708,7 +2708,6 @@
     "cameraPermissionRetry": "Tekrar dene",
     "cameraPermissionAllowAccessTitle": "Kamera ve mikrofona erişime izin ver",
     "cameraPermissionAllowAccessDescription": "Bu, videoları doğrudan uygulama içinde çekip düzenlemeni sağlar, daha fazlasını değil.",
-    "cameraPermissionContinue": "Devam et",
     "cameraPermissionGoToSettings": "Ayarlara git",
     "videoEditorAddClipFromLibrary": "Kütüphaneden klip ekle",
     "videoEditorAddElementSemanticLabel": "Öğe ekle",

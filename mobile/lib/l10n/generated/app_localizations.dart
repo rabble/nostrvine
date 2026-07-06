@@ -13302,12 +13302,6 @@ abstract class AppLocalizations {
   /// **'This allows you to capture and edit videos right here in the app, nothing more.'**
   String get cameraPermissionAllowAccessDescription;
 
-  /// No description provided for @cameraPermissionContinue.
-  ///
-  /// In en, this message translates to:
-  /// **'Continue'**
-  String get cameraPermissionContinue;
-
   /// No description provided for @cameraPermissionGoToSettings.
   ///
   /// In en, this message translates to:

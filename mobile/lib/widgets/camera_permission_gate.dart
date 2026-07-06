@@ -170,8 +170,8 @@ class _CameraPermissionGateState extends State<CameraPermissionGate>
         }
 
         return switch (state) {
-          CameraPermissionInitial() => const _LoadingIndicator(),
-          CameraPermissionLoading() => const _LoadingIndicator(),
+          CameraPermissionInitial() => _LoadingIndicator(onClose: _popBack),
+          CameraPermissionLoading() => _LoadingIndicator(onClose: _popBack),
           CameraPermissionError() => _PermissionScreen(
             title: context.l10n.cameraPermissionErrorTitle,
             description: context.l10n.cameraPermissionErrorDescription,
@@ -188,7 +188,9 @@ class _CameraPermissionGateState extends State<CameraPermissionGate>
             // Requestable permission fires the native OS dialog directly via
             // [_onPermissionState]; no in-app priming screen. The indicator
             // covers the brief window while the dialog is up.
-            CameraPermissionStatus.canRequest => const _LoadingIndicator(),
+            CameraPermissionStatus.canRequest => _LoadingIndicator(
+              onClose: _popBack,
+            ),
             CameraPermissionStatus.requiresSettings => _PermissionScreen(
               title: context.l10n.cameraPermissionAllowAccessTitle,
               description: context.l10n.cameraPermissionAllowAccessDescription,
@@ -207,14 +209,46 @@ class _CameraPermissionGateState extends State<CameraPermissionGate>
   }
 }
 
-/// Loading indicator centered on screen
+/// Centered loading indicator with an optional escape hatch.
+///
+/// The direct-navigation gate path (quick actions, deep links) can land here on
+/// a still-requestable permission whose native dialog was dismissed with the
+/// back button — the `permission_handler` hang that pins the bloc in
+/// [CameraPermissionLoading]. [onClose] lets the user bail back to the feed
+/// instead of being trapped on the spinner; re-entering re-fires the request.
 class _LoadingIndicator extends StatelessWidget {
-  const _LoadingIndicator();
+  const _LoadingIndicator({this.onClose});
+
+  final VoidCallback? onClose;
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: CircularProgressIndicator(color: VineTheme.vineGreen),
+    return Scaffold(
+      backgroundColor: VineTheme.backgroundColor,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const Center(
+            child: CircularProgressIndicator(color: VineTheme.vineGreen),
+          ),
+          if (onClose case final onClose?)
+            Align(
+              alignment: .topLeft,
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const .fromLTRB(16, 16, 0, 8),
+                  child: DivineIconButton(
+                    icon: .x,
+                    onPressed: onClose,
+                    size: .small,
+                    type: .ghost,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

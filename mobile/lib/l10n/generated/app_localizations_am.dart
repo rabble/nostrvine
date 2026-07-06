@@ -7522,9 +7522,6 @@ class AppLocalizationsAm extends AppLocalizations {
       'ይህ በመተግበሪያው ውስጥ ቪዲዮዎችን እንዲቀርጹ እና እንዲያርትዑ ይፈቅድልዎታል፣ ምንም ተጨማሪ ነገር የለም።';
 
   @override
-  String get cameraPermissionContinue => 'ቀጥል';
-
-  @override
   String get cameraPermissionGoToSettings => 'ወደ ቅንብሮች ይሂዱ';
 
   @override

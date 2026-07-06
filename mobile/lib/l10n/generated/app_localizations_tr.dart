@@ -7648,9 +7648,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bu, videoları doğrudan uygulama içinde çekip düzenlemeni sağlar, daha fazlasını değil.';
 
   @override
-  String get cameraPermissionContinue => 'Devam et';
-
-  @override
   String get cameraPermissionGoToSettings => 'Ayarlara git';
 
   @override

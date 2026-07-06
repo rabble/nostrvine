@@ -17,7 +17,8 @@ part 'camera_permission_state.dart';
 ///
 /// Handles:
 /// - Checking current permission status
-/// - Requesting permissions via OS dialog (from the gate)
+/// - Requesting permissions via the OS dialog (from
+///   `pushToCameraWithPermission` on the current page, or the gate)
 /// - Caching status to avoid repeated OS calls
 /// - Refreshing status when app resumes from background
 ///
@@ -28,6 +29,13 @@ part 'camera_permission_state.dart';
 /// dialog is dismissed with the back button — `droppable()` would then block
 /// every later request forever. `restartable()` lets the next camera tap
 /// abandon the stuck request and fire a fresh native dialog.
+///
+/// Accepted tradeoff of `restartable()`: on a fast double-tap, the second
+/// request supersedes the first while its dialog is still live, so a grant on
+/// that first dialog is dropped and that one tap resolves to nothing. It
+/// self-heals on the next tap (a refresh sees the OS grant and navigates), so
+/// the visible cost is a single dead tap on an uncommon race — preferred over
+/// permanently stranding the recorder on the back-dismiss hang.
 class CameraPermissionBloc
     extends Bloc<CameraPermissionEvent, CameraPermissionState> {
   CameraPermissionBloc({

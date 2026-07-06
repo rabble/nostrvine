@@ -7648,9 +7648,6 @@ class AppLocalizationsId extends AppLocalizations {
       'Ini memungkinkan Anda merekam dan mengedit video langsung di aplikasi, tidak lebih.';
 
   @override
-  String get cameraPermissionContinue => 'Lanjutkan';
-
-  @override
   String get cameraPermissionGoToSettings => 'Buka pengaturan';
 
   @override

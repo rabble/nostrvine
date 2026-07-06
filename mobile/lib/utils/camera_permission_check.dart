@@ -37,24 +37,25 @@ extension CameraPermissionNavigation on BuildContext {
       return true;
     }
 
-    var status = await _resolveStatus(bloc);
+    final resolved = await _resolveStatus(bloc);
     if (!mounted) return false;
 
-    // Fire the native dialog while still on the current page. A null status
-    // means the bloc never settled on a Loaded state (e.g. a previous request
-    // is stuck); requesting supersedes it via the restartable transformer.
-    if (status == CameraPermissionStatus.canRequest || status == null) {
-      status = await _requestPermission(bloc);
+    if (resolved == CameraPermissionStatus.canRequest) {
+      // Fire the native dialog while still on the current page.
+      final requested = await _requestPermission(bloc);
       if (!mounted) return false;
+      // Denied-but-requestable, or superseded by a newer tap → stay put so the
+      // next camera tap re-prompts.
+      if (requested != CameraPermissionStatus.authorized &&
+          requested != CameraPermissionStatus.requiresSettings) {
+        return false;
+      }
     }
 
-    // Stay put unless the status is terminal; a denial that stays requestable
-    // (or a superseded/stuck request) keeps the user here to re-tap.
-    if (status != CameraPermissionStatus.authorized &&
-        status != CameraPermissionStatus.requiresSettings) {
-      return false;
-    }
-
+    // Navigate for a terminal status (authorized opens the camera,
+    // requiresSettings shows the settings prompt) or when the entry check
+    // couldn't settle (`resolved == null`: an errored/stalled pre-nav check) so
+    // the gate surfaces its Error + Retry screen instead of dead-waiting here.
     await pushWithVideoPause(VideoRecorderScreen.path);
     return true;
   }

@@ -2959,7 +2959,6 @@
     "cameraPermissionRetry": "Опитай пак",
     "cameraPermissionAllowAccessTitle": "Разреши достъп до камерата и микрофона",
     "cameraPermissionAllowAccessDescription": "Това ти позволява да записваш и редактираш видеа директно в приложението. Нищо повече.",
-    "cameraPermissionContinue": "Продължи",
     "cameraPermissionGoToSettings": "Към настройките",
     "videoRecorderWhySixSecondsTitle": "Защо шест секунди?",
     "videoRecorderWhySixSecondsSubtitle": "Кратките клипове оставят място за спонтанност. 6-секундният формат ти помага да хванеш истинските моменти, докато се случват.",

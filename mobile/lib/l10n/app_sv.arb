@@ -2709,7 +2709,6 @@
     "cameraPermissionRetry": "Försök igen",
     "cameraPermissionAllowAccessTitle": "Tillåt åtkomst till kamera och mikrofon",
     "cameraPermissionAllowAccessDescription": "Detta låter dig spela in och redigera videor direkt i appen, inget mer.",
-    "cameraPermissionContinue": "Fortsätt",
     "cameraPermissionGoToSettings": "Gå till inställningar",
     "videoRecorderWhySixSecondsTitle": "Varför sex sekunder?",
     "videoRecorderWhySixSecondsSubtitle": "Snabba klipp skapar utrymme för spontanitet. Formatet på 6 sekunder hjälper dig att fånga äkta ögonblick när de händer.",

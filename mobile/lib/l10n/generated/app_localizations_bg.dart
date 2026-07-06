@@ -7747,9 +7747,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'Това ти позволява да записваш и редактираш видеа директно в приложението. Нищо повече.';
 
   @override
-  String get cameraPermissionContinue => 'Продължи';
-
-  @override
   String get cameraPermissionGoToSettings => 'Към настройките';
 
   @override

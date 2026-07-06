@@ -2709,7 +2709,6 @@
     "cameraPermissionRetry": "Încearcă din nou",
     "cameraPermissionAllowAccessTitle": "Permite accesul la cameră și microfon",
     "cameraPermissionAllowAccessDescription": "Aceasta îți permite să capturezi și să editezi videoclipuri direct în aplicație, nimic mai mult.",
-    "cameraPermissionContinue": "Continuă",
     "cameraPermissionGoToSettings": "Mergi la setări",
     "videoRecorderWhySixSecondsTitle": "De ce șase secunde?",
     "videoRecorderWhySixSecondsSubtitle": "Clipurile scurte lasă loc pentru spontaneitate. Formatul de 6 secunde te ajută să surprinzi momente autentice exact când se întâmplă.",

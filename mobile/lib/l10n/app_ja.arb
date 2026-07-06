@@ -2701,7 +2701,6 @@
     "cameraPermissionRetry": "再試行",
     "cameraPermissionAllowAccessTitle": "カメラとマイクへのアクセスを許可",
     "cameraPermissionAllowAccessDescription": "これにより、アプリ内で動画の撮影と編集ができるようになります。それ以外の用途はありません。",
-    "cameraPermissionContinue": "続行",
     "cameraPermissionGoToSettings": "設定に移動",
     "videoEditorAddClipFromLibrary": "ライブラリからクリップを追加",
     "videoEditorAddElementSemanticLabel": "要素を追加",

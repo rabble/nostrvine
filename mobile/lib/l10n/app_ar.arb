@@ -2701,7 +2701,6 @@
     "cameraPermissionRetry": "إعادة المحاولة",
     "cameraPermissionAllowAccessTitle": "السماح بالوصول إلى الكاميرا والميكروفون",
     "cameraPermissionAllowAccessDescription": "يتيح لك هذا التقاط الفيديوهات وتعديلها مباشرة داخل التطبيق، ولا شيء أكثر.",
-    "cameraPermissionContinue": "متابعة",
     "cameraPermissionGoToSettings": "الذهاب إلى الإعدادات",
     "videoEditorAddClipFromLibrary": "إضافة مقطع من المكتبة",
     "videoEditorAddElementSemanticLabel": "إضافة عنصر",

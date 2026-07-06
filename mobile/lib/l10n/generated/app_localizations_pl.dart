@@ -7846,9 +7846,6 @@ class AppLocalizationsPl extends AppLocalizations {
       'To pozwala nagrywać i edytować filmy bezpośrednio w aplikacji i nic więcej.';
 
   @override
-  String get cameraPermissionContinue => 'Kontynuuj';
-
-  @override
   String get cameraPermissionGoToSettings => 'Przejdź do ustawień';
 
   @override

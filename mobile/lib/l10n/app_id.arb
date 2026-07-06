@@ -2708,7 +2708,6 @@
     "cameraPermissionRetry": "Coba lagi",
     "cameraPermissionAllowAccessTitle": "Izinkan akses kamera & mikrofon",
     "cameraPermissionAllowAccessDescription": "Ini memungkinkan Anda merekam dan mengedit video langsung di aplikasi, tidak lebih.",
-    "cameraPermissionContinue": "Lanjutkan",
     "cameraPermissionGoToSettings": "Buka pengaturan",
     "videoEditorAddClipFromLibrary": "Tambah klip dari Perpustakaan",
     "videoEditorAddElementSemanticLabel": "Tambah elemen",

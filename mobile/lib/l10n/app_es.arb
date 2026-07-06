@@ -2717,7 +2717,6 @@
     "cameraPermissionRetry": "Reintentar",
     "cameraPermissionAllowAccessTitle": "Permitir acceso a cámara y micrófono",
     "cameraPermissionAllowAccessDescription": "Esto te permite capturar y editar videos aquí mismo en la app, nada más.",
-    "cameraPermissionContinue": "Continuar",
     "cameraPermissionGoToSettings": "Ir a ajustes",
     "videoRecorderWhySixSecondsTitle": "¿Por qué seis segundos?",
     "videoRecorderWhySixSecondsSubtitle": "Los clips cortos dejan espacio para la espontaneidad. El formato de 6 segundos te ayuda a capturar momentos auténticos tal como ocurren.",

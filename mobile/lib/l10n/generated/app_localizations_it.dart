@@ -7746,9 +7746,6 @@ class AppLocalizationsIt extends AppLocalizations {
       'Questo ti consente di registrare e modificare video direttamente nell\'app, niente di più.';
 
   @override
-  String get cameraPermissionContinue => 'Continua';
-
-  @override
   String get cameraPermissionGoToSettings => 'Vai alle impostazioni';
 
   @override

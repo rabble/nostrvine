@@ -7763,9 +7763,6 @@ class AppLocalizationsFil extends AppLocalizations {
       'Pinapayagan ka nitong kumuha at mag-edit ng video dito mismo sa app, wala nang iba.';
 
   @override
-  String get cameraPermissionContinue => 'Magpatuloy';
-
-  @override
   String get cameraPermissionGoToSettings => 'Pumunta sa settings';
 
   @override

@@ -7707,9 +7707,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Hiermee kun je video\'s rechtstreeks in de app opnemen en bewerken, verder niets.';
 
   @override
-  String get cameraPermissionContinue => 'Doorgaan';
-
-  @override
   String get cameraPermissionGoToSettings => 'Naar instellingen';
 
   @override
