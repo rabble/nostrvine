@@ -422,6 +422,9 @@ class CameraController: NSObject {
             // flag set so the next recording continues without audio.
             sessionQueue.async { [weak self] in
                 guard let self = self else { return }
+                // While paused (app locked / backgrounded) don't re-grab
+                // the mic; resumePreview() recovers instead.
+                guard !self.isPaused else { return }
                 if self.attachAudioToSessionIfNeeded() {
                     self.audioInterrupted = false
                 } else {
@@ -1136,7 +1139,12 @@ class CameraController: NSObject {
         // the status bar shortly after the camera page opens (TikTok,
         // Instagram, and Snapchat all behave the same way).
         sessionQueue.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-            _ = self?.attachAudioToSessionIfNeeded()
+            // Skip when the preview was paused before the pre-build fired
+            // (locked / backgrounded within 1s of the first frame) —
+            // attaching would grab the mic while the app isn't visible.
+            // resumePreview() / startRecording() attach on demand instead.
+            guard let self = self, !self.isPaused else { return }
+            _ = self.attachAudioToSessionIfNeeded()
         }
     }
     
@@ -2379,9 +2387,46 @@ class CameraController: NSObject {
                     self.recordingStartTime = nil
                     self.isWriterSessionStarted = false
                     self.lastVideoFrameEndPTS = nil
+
+                    // pausePreview() keeps the mic attached while a
+                    // recording is draining. If the preview is still
+                    // paused now (app locked mid-recording), release the
+                    // mic so the lock screen stops showing the recording
+                    // indicator.
+                    if self.isPaused {
+                        self.sessionQueue.async { [weak self] in
+                            guard let self = self,
+                                  self.isPaused,
+                                  !self.isRecording else { return }
+                            self.releaseAudioForPause()
+                        }
+                    }
                 }
             }
         }
+    }
+
+    /// Releases the microphone while the preview is paused.
+    ///
+    /// The dedicated audio capture session normally keeps running between
+    /// recordings so record-start stays instant, but holding it across an
+    /// app pause leaves the app owning the mic — iOS surfaces that as a
+    /// recording indicator on the lock screen. Stop the capture session
+    /// BEFORE deactivating the shared AVAudioSession; the reverse order
+    /// leaves a stale route delivering digital-silence buffers (see
+    /// attachAudioToSessionIfNeeded()).
+    ///
+    /// Must run on `sessionQueue`.
+    private func releaseAudioForPause() {
+        audioCaptureSession?.stopRunning()
+        try? AVAudioSession.sharedInstance().setActive(
+            false,
+            options: .notifyOthersOnDeactivation
+        )
+        DivineCameraLog.shared.info(
+            "Released mic for pause (audio capture stopped, session inactive)",
+            name: "DivineCamera.AudioSession"
+        )
     }
 
     /// Pauses the camera preview.
@@ -2389,7 +2434,14 @@ class CameraController: NSObject {
         disableScreenFlash()
         isPaused = true
         sessionQueue.async { [weak self] in
-            self?.captureSession?.stopRunning()
+            guard let self = self else { return }
+            self.captureSession?.stopRunning()
+            // Keep the mic during an active recording — the writer is
+            // still draining; stopRecording() releases it if the preview
+            // is still paused once the file is finalized.
+            if !self.isRecording {
+                self.releaseAudioForPause()
+            }
         }
     }
     
@@ -2403,11 +2455,23 @@ class CameraController: NSObject {
         }
         
         sessionQueue.async { [weak self] in
-            self?.captureSession?.startRunning()
-            
+            guard let self = self else { return }
+            self.captureSession?.startRunning()
+
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
                 completion(self.getCameraState(), nil)
+            }
+
+            // Restore the audio path released by releaseAudioForPause().
+            // A successful attach proves the path is live again, so also
+            // clear a stale interruption flag — iOS delivers no `.ended`
+            // for lock-screen interruptions, and a stuck flag would drop
+            // the audio track from every later recording in this session.
+            // Skip the never-built case (paused before the pre-build
+            // fired); startRecording() builds on demand.
+            if self.audioCaptureSession != nil, self.attachAudioToSessionIfNeeded() {
+                self.audioInterrupted = false
             }
         }
     }
