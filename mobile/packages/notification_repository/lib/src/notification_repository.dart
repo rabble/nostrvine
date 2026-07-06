@@ -1592,9 +1592,14 @@ class NotificationRepository {
   /// Maps a relay notification type string + source kind to
   /// [NotificationKind].
   ///
-  /// Likes (and zaps) on a non-video target — typically a kind 1111
-  /// comment — map to [NotificationKind.likeComment] so the UI can
-  /// render "liked your comment" instead of "liked your video".
+  /// Likes (and zaps) on a comment map to [NotificationKind.likeComment]
+  /// so the UI can render "liked your comment" instead of "liked your
+  /// video". A comment target is identified by a non-empty
+  /// `targetCommentId`, which Funnelcake sets to the comment's event ID
+  /// for reactions on a kind 1111 comment. `isReferencedVideo` cannot be
+  /// used for this split: Funnelcake populates `referenced_video` from the
+  /// notification's root video, so it is set for a like on a comment (whose
+  /// root is that video) exactly as it is for a like on the video itself.
   ///
   /// Replies (kind 1111) split by the immediate target, not by whether the
   /// payload also carries root video metadata. A reply directly on a video
@@ -1608,6 +1613,10 @@ class NotificationRepository {
       _ => n.sourceKind == 7,
     };
     if (isReaction) {
+      final targetCommentId = n.targetCommentId;
+      final targetsComment =
+          targetCommentId != null && targetCommentId.isNotEmpty;
+      if (targetsComment) return NotificationKind.likeComment;
       return n.isReferencedVideo
           ? NotificationKind.like
           : NotificationKind.likeComment;

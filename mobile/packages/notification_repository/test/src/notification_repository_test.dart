@@ -1293,6 +1293,25 @@ void main() {
         expect(item.type, equals(NotificationKind.like));
       });
 
+      test('reaction with a target comment maps to likeComment even when '
+          'referenced_video is populated from the root video', () async {
+        // Funnelcake fills referenced_video from the notification's root
+        // video, so isReferencedVideo is true for a like on a comment exactly
+        // as for a like on the video itself. targetCommentId is the reliable
+        // comment signal. Without an owner mismatch the #4813 path never fires
+        // (this is a like on your own comment on your own video), so before
+        // this fix the like was surfaced as "liked your video".
+        stubNotifications([
+          makeNotification(targetCommentId: 'comment_event_xyz'),
+        ]);
+        stubProfiles({});
+
+        final page = await repository.getNotifications();
+        final item = page.items.single as ActorNotification;
+        expect(item.type, equals(NotificationKind.likeComment));
+        expect(item.targetEventId, equals('comment_event_xyz'));
+      });
+
       test('reaction on a non-owned video is reclassified as likeComment '
           'instead of liked your video (#4813)', () async {
         stubNotifications([
