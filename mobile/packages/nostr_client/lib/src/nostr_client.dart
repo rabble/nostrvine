@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:crypto/crypto.dart';
 import 'package:db_client/db_client.dart' hide Filter;
@@ -125,6 +126,41 @@ class NostrClient {
 
   /// Convenience getter for the NostrEventsDao
   NostrEventsDao? get _nostrEventsDao => _dbClient?.database.nostrEventsDao;
+
+  /// Ids of events already persisted — and therefore already
+  /// signature-verified — in a previous session. Seeded once at
+  /// [initialize] so the relay pool can skip re-verifying events that relays
+  /// re-send on cold start.
+  final Set<String> _knownVerifiedEventIds = <String>{};
+
+  /// Loads recently-persisted event ids into [_knownVerifiedEventIds] and
+  /// wires the relay pool to consult it. No-op when there is no local store.
+  ///
+  /// Called before relays connect so the lookup is in place before the
+  /// cold-start event flood arrives.
+  Future<void> _seedVerifiedEventIds() async {
+    final dao = _nostrEventsDao;
+    if (dao == null) return;
+    try {
+      final ids = await dao.getRecentEventIds();
+      _knownVerifiedEventIds
+        ..clear()
+        ..addAll(ids);
+      _nostr.relayPool.isKnownVerifiedEvent = _knownVerifiedEventIds.contains;
+      log(
+        '🔏 Seeded ${_knownVerifiedEventIds.length} known-verified event ids',
+        name: 'NostrClient',
+      );
+    } on Object catch (e, st) {
+      // Non-fatal: without the seed the pool simply verifies every event.
+      log(
+        'Failed to seed known-verified event ids',
+        name: 'NostrClient',
+        error: e,
+        stackTrace: st,
+      );
+    }
+  }
 
   /// Helper to cache an event with default expiry.
   ///
@@ -306,6 +342,9 @@ class NostrClient {
     try {
       // Signer is the single source of truth for the public key.
       await _nostr.refreshPublicKey();
+      // Seed the already-verified set before relays connect, so re-sent
+      // events skip re-verification during the cold-start flood.
+      await _seedVerifiedEventIds();
       await _relayManager.initialize();
       if (!_readyCompleter.isCompleted) {
         _readyCompleter.complete();

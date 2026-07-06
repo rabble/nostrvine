@@ -623,4 +623,19 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
     ).getSingle();
     return result.read<int>('count');
   }
+
+  /// Returns the ids of the most recently created events, newest first,
+  /// capped at [limit].
+  ///
+  /// Used to seed the relay pool's already-verified set: every event in this
+  /// table was signature-verified before being written, so re-verifying the
+  /// same ids when relays re-send them on the next cold start is wasted work.
+  Future<List<String>> getRecentEventIds({int limit = 50000}) async {
+    final rows = await customSelect(
+      'SELECT id FROM event ORDER BY created_at DESC LIMIT ?',
+      variables: [Variable.withInt(limit)],
+      readsFrom: {nostrEvents},
+    ).get();
+    return rows.map((row) => row.read<String>('id')).toList();
+  }
 }
