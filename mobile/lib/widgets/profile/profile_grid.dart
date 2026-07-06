@@ -190,6 +190,11 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
   List<ProfileTabKind> get _tabKinds =>
       profileTabKinds(isOwnProfile: widget.isOwnProfile);
 
+  ProfileTabIndexKey get _tabIndexKey => profileTabIndexKey(
+    viewerPubkeyHex: ref.read(authServiceProvider).currentPublicKeyHex,
+    targetPubkeyHex: widget.userIdHex,
+  );
+
   /// Key attached to the ProfileHeaderWidget so we can measure its height
   /// and compute the tab bar top inset accordingly.
   final GlobalKey _headerKey = GlobalKey();
@@ -200,11 +205,8 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     // Restore the previously selected tab index (if any) so navigating back
     // from a fullscreen video doesn't drop the user on the Videos tab.
     final tabCount = _tabKinds.length;
-    final restoredIndex =
-        (ref.read(profileTabIndexProvider)[widget.userIdHex] ?? 0).clamp(
-          0,
-          tabCount - 1,
-        );
+    final restoredIndex = (ref.read(profileTabIndexProvider)[_tabIndexKey] ?? 0)
+        .clamp(0, tabCount - 1);
     _tabController = TabController(
       length: tabCount,
       vsync: this,
@@ -243,10 +245,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     // transitions that briefly take the URL off the profile route) can
     // restore the user to the tab they were on.
     final notifier = ref.read(profileTabIndexProvider.notifier);
-    notifier.state = {
-      ...notifier.state,
-      widget.userIdHex: _tabController.index,
-    };
+    notifier.state = {...notifier.state, _tabIndexKey: _tabController.index};
 
     _syncCurrentTabIfNeeded();
   }

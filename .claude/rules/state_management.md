@@ -643,23 +643,30 @@ Consequences:
 - The user sees the screen "reset" (e.g. selected tab → Videos, scroll
   position → top) after closing the pushed route.
 
-**Fix:** persist the state externally, keyed by a stable identifier.
-For per-screen state like "active tab index," a simple
-`StateProvider<Map<String, int>>` keyed by `userIdHex` is enough:
+**Fix:** persist the state externally, keyed by stable identifiers.
+For per-screen state like "active tab index," include both the signed-in
+viewer and target profile so account switches cannot restore another
+identity's tab selection for the same profile:
 
 ```dart
 // lib/providers/profile_tab_index_provider.dart
 import 'package:flutter_riverpod/legacy.dart';
 
-final profileTabIndexProvider = StateProvider<Map<String, int>>(
-  (ref) => <String, int>{},
+typedef ProfileTabIndexKey = ({
+  String? viewerPubkeyHex,
+  String targetPubkeyHex,
+});
+
+final profileTabIndexProvider = StateProvider<Map<ProfileTabIndexKey, int>>(
+  (ref) => <ProfileTabIndexKey, int>{},
 );
 ```
 
 Read in `initState` to seed `TabController.initialIndex`; write in the
-tab listener. Lazy-sync side effects (e.g. loading a tab's data on
-first view) must also be re-dispatched when the restored index is not
-zero, since the controller's listener doesn't fire for the initial
+tab listener using `authServiceProvider.currentPublicKeyHex` plus the
+profile pubkey as the key. Lazy-sync side effects (e.g. loading a tab's
+data on first view) must also be re-dispatched when the restored index is
+not zero, since the controller's listener doesn't fire for the initial
 index.
 
 See `profile_grid.dart` + `profile_tab_index_provider.dart` for the

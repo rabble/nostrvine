@@ -5,6 +5,7 @@ import 'package:content_policy/content_policy.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
@@ -13,6 +14,7 @@ import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_feed/profile_feed_cubit.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/widgets/profile/profile_grid.dart';
@@ -122,6 +124,7 @@ void main() {
     Widget buildSubject({
       required bool isOwnProfile,
       bool isLoadingVideos = false,
+      MockAuthService? mockAuthService,
     }) {
       return testMaterialApp(
         theme: VineTheme.theme,
@@ -141,6 +144,7 @@ void main() {
           ),
         ),
         mockNostrService: nostrClient,
+        mockAuthService: mockAuthService,
         additionalOverrides: [
           likesRepositoryProvider.overrideWithValue(likesRepository),
           repostsRepositoryProvider.overrideWithValue(repostsRepository),
@@ -157,6 +161,31 @@ void main() {
             FeatureFlag.curatedLists,
           ).overrideWith((_) => false),
         ],
+      );
+    }
+
+    Widget buildSubjectWithContainer(ProviderContainer container) {
+      return UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: VineTheme.theme,
+          home: Scaffold(
+            body: MultiBlocProvider(
+              providers: [
+                BlocProvider<MyProfileBloc>.value(value: myProfileBloc),
+                BlocProvider<ProfileFeedCubit>.value(value: profileFeedCubit),
+              ],
+              child: const ProfileGridView(
+                key: ValueKey('profile-grid'),
+                userIdHex: userIdHex,
+                isOwnProfile: false,
+                videos: [],
+              ),
+            ),
+          ),
+        ),
       );
     }
 
@@ -181,6 +210,67 @@ void main() {
         expect(find.bySemanticsLabel('reposted_tab'), findsOneWidget);
         expect(find.bySemanticsLabel('saved_tab'), findsOneWidget);
         expect(find.bySemanticsLabel('comments_tab'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'does not restore another viewer identity tab index after auth change',
+      (tester) async {
+        const viewerA =
+            '1111111111111111111111111111111111111111111111111111111111111111';
+        const viewerB =
+            '2222222222222222222222222222222222222222222222222222222222222222';
+        var currentViewer = viewerA;
+        final authService = createMockAuthService();
+        when(
+          () => authService.currentPublicKeyHex,
+        ).thenAnswer((_) => currentViewer);
+        when(() => authService.isAuthenticated).thenReturn(true);
+        when(() => authService.isAnonymous).thenReturn(false);
+        when(() => authService.hasExpiredOAuthSession).thenReturn(false);
+        when(() => authService.isRpcUpgradeInProgress).thenReturn(false);
+
+        final container = ProviderContainer(
+          overrides: [
+            ...getStandardTestOverrides(
+              mockAuthService: authService,
+              mockNostrService: nostrClient,
+            ),
+            likesRepositoryProvider.overrideWithValue(likesRepository),
+            repostsRepositoryProvider.overrideWithValue(repostsRepository),
+            videosRepositoryProvider.overrideWithValue(videosRepository),
+            commentsRepositoryProvider.overrideWithValue(commentsRepository),
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              blocklistRepository,
+            ),
+            bookmarkServiceProvider.overrideWith((_) => bookmarkService),
+            isFeatureEnabledProvider(
+              FeatureFlag.videoReplies,
+            ).overrideWith((_) => false),
+            isFeatureEnabledProvider(
+              FeatureFlag.curatedLists,
+            ).overrideWith((_) => false),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(buildSubjectWithContainer(container));
+        await tester.pump();
+        await tester.tap(find.bySemanticsLabel('reposted_tab'));
+        await tester.pumpAndSettle();
+        expect(tester.widget<TabBar>(find.byType(TabBar)).controller?.index, 2);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpWidget(buildSubjectWithContainer(container));
+        await tester.pump();
+        expect(tester.widget<TabBar>(find.byType(TabBar)).controller?.index, 2);
+
+        currentViewer = viewerB;
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpWidget(buildSubjectWithContainer(container));
+        await tester.pump();
+
+        expect(tester.widget<TabBar>(find.byType(TabBar)).controller?.index, 0);
       },
     );
 
