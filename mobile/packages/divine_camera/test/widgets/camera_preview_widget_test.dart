@@ -148,6 +148,25 @@ class _WideAspectRatioMock extends MockDivineCameraPlatform {
   }
 }
 
+/// Mock that reports a non-zero preview rotation, as the Android
+/// SurfaceProducer path does when the producer does not orient frames itself.
+class _RotatedPreviewMock extends MockDivineCameraPlatform {
+  @override
+  Future<CameraState> initializeCamera({
+    DivineCameraLens lens = DivineCameraLens.back,
+    DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
+    bool enableScreenFlash = true,
+    bool mirrorFrontCameraOutput = false,
+    bool enableAutoLensSwitch = false,
+  }) async {
+    return const CameraState(
+      isInitialized: true,
+      textureId: 1,
+      previewRotationDegrees: 90,
+    );
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -230,6 +249,27 @@ void main() {
       await tester.pumpWidget(buildTestWidget(fit: BoxFit.cover));
 
       expect(find.byType(FittedBox), findsOneWidget);
+    });
+
+    testWidgets('rotates preview when previewRotationDegrees is non-zero', (
+      tester,
+    ) async {
+      DivineCameraPlatform.instance = _RotatedPreviewMock();
+      await camera.initialize();
+      await tester.pumpWidget(buildTestWidget());
+
+      final rotatedBox = tester.widget<RotatedBox>(find.byType(RotatedBox));
+      // 90 degrees clockwise = one quarter turn.
+      expect(rotatedBox.quarterTurns, 1);
+    });
+
+    testWidgets('does not rotate preview when previewRotationDegrees is zero', (
+      tester,
+    ) async {
+      await camera.initialize();
+      await tester.pumpWidget(buildTestWidget());
+
+      expect(find.byType(RotatedBox), findsNothing);
     });
 
     testWidgets('calls onTap callback with correct positions', (tester) async {
