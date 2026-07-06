@@ -40,7 +40,7 @@ private const val TAG = "DivineCameraController"
 private const val LENS_SWITCH_HYSTERESIS = 0.03f
 
 /** How a preview [Surface] should be supplied to a CameraX surface request. */
-internal enum class SurfaceProvision { REUSE, CREATE, DECLINE }
+internal enum class SurfaceProvision { CREATE, DECLINE }
 
 /**
  * Controller for CameraX-based camera operations.
@@ -67,7 +67,6 @@ class CameraController(
     // rebinds during a lens switch, so the preview freezes instead of flashing
     // black — issue #5865.
     private var surfaceProducer: TextureRegistry.SurfaceProducer? = null
-    private var previewSurface: Surface? = null
 
     private var cameraExecutor: ExecutorService =
         RejectionTolerantExecutorService(Executors.newSingleThreadExecutor())
@@ -252,17 +251,18 @@ class CameraController(
          * surface provider and CameraX actually dispatching the request. When
          * no producer is available the caller must [DECLINE] the request via
          * `willNotProvideSurface()` rather than provide a null surface;
-         * [REUSE] the cached surface while it is still valid, otherwise
-         * [CREATE] a fresh one from the producer.
+         * otherwise [CREATE] fetches the current surface from the producer.
+         *
+         * The surface is always re-fetched from the producer rather than
+         * cached: a cross-lens resolution change applied via `setSize()` is
+         * materialised lazily by `ImageReaderSurfaceProducer` inside
+         * `getSurface()`, so reusing a cached surface would strand the preview
+         * on the previous lens's reader for the session.
          */
         internal fun decideSurfaceProvision(
             hasTexture: Boolean,
-            existingSurfaceValid: Boolean,
-        ): SurfaceProvision = when {
-            existingSurfaceValid -> SurfaceProvision.REUSE
-            hasTexture -> SurfaceProvision.CREATE
-            else -> SurfaceProvision.DECLINE
-        }
+        ): SurfaceProvision =
+            if (hasTexture) SurfaceProvision.CREATE else SurfaceProvision.DECLINE
 
         /** Returns the next lower quality, or null if already at minimum. */
         fun lowerQuality(current: Quality): Quality? = when (current) {
@@ -820,22 +820,14 @@ class CameraController(
 
     /**
      * Returns a preview [Surface] to hand to a CameraX surface request,
-     * reusing the cached one when still valid and otherwise fetching a fresh
-     * one from the Flutter [TextureRegistry.SurfaceProducer]. Returns null when
-     * no surface can be supplied (the producer was released), so the caller
+     * fetching the current one from the Flutter [TextureRegistry.SurfaceProducer]
+     * each time so a `setSize()` resolution change is picked up. Returns null
+     * when no surface can be supplied (the producer was released), so the caller
      * declines the request via `willNotProvideSurface()`.
      */
     private fun resolvePreviewSurface(): Surface? {
-        val existing = previewSurface
-        return when (
-            decideSurfaceProvision(
-                hasTexture = surfaceProducer != null,
-                existingSurfaceValid = existing != null && existing.isValid,
-            )
-        ) {
-            SurfaceProvision.REUSE -> existing
-            SurfaceProvision.CREATE ->
-                surfaceProducer?.getSurface()?.also { previewSurface = it }
+        return when (decideSurfaceProvision(hasTexture = surfaceProducer != null)) {
+            SurfaceProvision.CREATE -> surfaceProducer?.getSurface()
             SurfaceProvision.DECLINE -> null
         }
     }
@@ -864,9 +856,8 @@ class CameraController(
 
             // Release previous resources only if not already handled (e.g., by switchCamera)
             if (surfaceProducer != null) {
-                // The SurfaceProducer owns the Surface, so drop the cached
-                // reference and let release() tear it down.
-                previewSurface = null
+                // The SurfaceProducer owns the Surface, so release() tears it
+                // down.
                 surfaceProducer?.release()
                 surfaceProducer = null
             }
@@ -1005,9 +996,16 @@ class CameraController(
     /**
      * Switches to a different camera lens.
      * Reuses the same texture to avoid black screen during switch.
+     *
+     * [onBound] runs synchronously once the new camera is bound, before the
+     * switch is gated on the first frame and while the preview is still frozen
+     * on the old frame. Use it for adjustments (e.g. restoring zoom) that must
+     * already be in effect when the incoming frame becomes visible, so the
+     * preview doesn't visibly unfreeze at the default and then jump.
      */
     fun switchCamera(
         lens: String,
+        onBound: (() -> Unit)? = null,
         callback: (Map<String, Any?>?, String?) -> Unit
     ) {
         DivineCameraLog.d(TAG, "Switching camera to: $lens")
@@ -1128,6 +1126,11 @@ class CameraController(
 
             // Compute virtual zoom ranges for auto lens switching
             computeVirtualZoomRanges()
+
+            // Apply post-bind adjustments (e.g. zoom restore) while the preview
+            // is still frozen, so the incoming frame is already correct when it
+            // becomes visible instead of unfreezing at the reset default.
+            onBound?.invoke()
 
             // Resolve the switch only once the incoming camera has produced its
             // first frame. Until then the SurfaceProducer keeps showing the old
@@ -1817,17 +1820,22 @@ class CameraController(
         // Rebind the current lens so CameraX reconfigures the session with the
         // new stabilization setting. The switch path resets zoom to 1.0x like a
         // lens switch, but a stabilization toggle should not move the framing —
-        // capture the current (reported) zoom and restore it once rebound. This
-        // also keeps the Dart-side zoom (which is not re-fetched after this
-        // call) consistent with the native zoom.
+        // capture the current (reported) zoom and restore it in onBound (right
+        // after the rebind, before the frozen preview releases) so the preview
+        // never unfreezes at 1.0x and then jumps back. This also keeps the
+        // Dart-side zoom (not re-fetched after this call) consistent with the
+        // native zoom.
         val zoomToRestore =
             if (autoLensSwitchEnabled) virtualCurrentZoom else currentZoom
         DivineCameraLog.d(TAG, "Rebinding to apply stabilization mode: $mode")
-        switchCamera(currentLensType) { _, error ->
-            if (error == null && zoomToRestore != 1.0f) {
-                setZoomLevel(zoomToRestore)
+        switchCamera(
+            currentLensType,
+            onBound = {
+                if (zoomToRestore != 1.0f) {
+                    setZoomLevel(zoomToRestore)
+                }
             }
-        }
+        ) { _, _ -> }
         return true
     }
 
@@ -2374,12 +2382,14 @@ class CameraController(
      */
     fun getCameraState(): MutableMap<String, Any?> {
         val textureId = surfaceProducer?.id() ?: -1L
-        // When the surface producer handles crop/rotation itself, Flutter
-        // rotates the preview; otherwise the frames arrive in sensor
-        // orientation and the UI must rotate them (issue #5865).
+        // When the surface producer applies its transform matrix itself (the
+        // API<29 SurfaceTexture path), that matrix already carries both the
+        // preview rotation and the front-camera mirror, so Flutter must apply
+        // neither. Otherwise (API 29+ ImageReader path) frames arrive raw and
+        // the UI reconstructs both (issue #5865).
+        val handlesTransform = surfaceProducer?.handlesCropAndRotation() == true
         val previewRotation =
-            if (surfaceProducer?.handlesCropAndRotation() == true) 0
-            else currentSensorOrientation()
+            if (handlesTransform) 0 else currentSensorOrientation()
         val stabilizationModes = availableVideoStabilizationModesForCurrentLens()
         return mutableMapOf(
             "isInitialized" to (camera != null),
@@ -2399,6 +2409,7 @@ class CameraController(
             "isExposurePointSupported" to isExposurePointSupported,
             "textureId" to textureId,
             "previewRotationDegrees" to previewRotation,
+            "previewHandlesTransform" to handlesTransform,
             "availableLenses" to getAvailableLenses(),
             "currentLensMetadata" to getCurrentLensMetadata(),
             "videoStabilizationMode" to requestedStabilizationMode,
@@ -2440,10 +2451,7 @@ class CameraController(
             preview = null
             videoCapture = null
 
-            // The SurfaceProducer owns the Surface; drop the cached reference
-            // and let release() tear it down.
-            previewSurface = null
-
+            // The SurfaceProducer owns the Surface; release() tears it down.
             surfaceProducer?.release()
             surfaceProducer = null
 

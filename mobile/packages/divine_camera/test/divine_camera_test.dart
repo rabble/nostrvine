@@ -122,9 +122,16 @@ class MockDivineCameraPlatform
   /// hold a switch in flight and probe re-entrant calls.
   Completer<void>? switchGate;
 
+  /// When true, [switchCamera] throws to exercise the native failure path
+  /// (e.g. a CameraX bind error surfaced as a [PlatformException]).
+  bool throwOnSwitch = false;
+
   @override
   Future<CameraState> switchCamera(DivineCameraLens lens) async {
     await switchGate?.future;
+    if (throwOnSwitch) {
+      throw PlatformException(code: 'SWITCH_FAILED');
+    }
     return _state = _state.copyWith(lens: lens);
   }
 
@@ -490,6 +497,28 @@ void main() {
         expect(await first, isTrue);
         expect(DivineCamera.instance.state.lens, DivineCameraLens.front);
       });
+
+      test(
+        'resets isSwitchingCamera and stays switchable after a thrown switch',
+        () async {
+          await DivineCamera.instance.initialize();
+
+          mockPlatform.throwOnSwitch = true;
+          await expectLater(
+            DivineCamera.instance.switchCamera(),
+            throwsA(isA<PlatformException>()),
+          );
+
+          // A stuck flag would freeze the preview and, via the re-entrancy
+          // guard, block every later switch for the session.
+          expect(DivineCamera.instance.isSwitchingCamera, isFalse);
+
+          mockPlatform.throwOnSwitch = false;
+          final recovered = await DivineCamera.instance.switchCamera();
+          expect(recovered, isTrue);
+          expect(DivineCamera.instance.state.lens, DivineCameraLens.front);
+        },
+      );
     });
 
     group('setLens', () {
@@ -540,6 +569,25 @@ void main() {
           DivineCamera.instance.state.lens,
           DivineCameraLens.frontUltraWide,
         );
+      });
+
+      test('resets isSwitchingCamera after a thrown setLens', () async {
+        await DivineCamera.instance.initialize();
+
+        mockPlatform.throwOnSwitch = true;
+        await expectLater(
+          DivineCamera.instance.setLens(DivineCameraLens.ultraWide),
+          throwsA(isA<PlatformException>()),
+        );
+
+        expect(DivineCamera.instance.isSwitchingCamera, isFalse);
+
+        mockPlatform.throwOnSwitch = false;
+        final recovered = await DivineCamera.instance.setLens(
+          DivineCameraLens.ultraWide,
+        );
+        expect(recovered, isTrue);
+        expect(DivineCamera.instance.state.lens, DivineCameraLens.ultraWide);
       });
     });
 
@@ -1071,14 +1119,15 @@ void main() {
 
       final props = state.props;
 
-      expect(props.length, 21);
+      expect(props.length, 22);
       expect(props[0], isTrue); // isInitialized
       expect(props[1], isFalse); // isRecording
       expect(props[4], DivineCameraLens.back); // lens
       expect(props[14], 1); // textureId
       expect(props[15], 0); // previewRotationDegrees
+      expect(props[16], isFalse); // previewHandlesTransform
       expect(
-        props[18],
+        props[19],
         DivineVideoStabilizationMode.off,
       ); // videoStabilizationMode
     });

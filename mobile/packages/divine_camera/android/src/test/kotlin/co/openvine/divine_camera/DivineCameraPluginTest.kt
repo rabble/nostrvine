@@ -416,31 +416,13 @@ internal class VideoStabilizationTest {
 // the plain JUnit runner rather than Robolectric.
 internal class SurfaceProvisionTest {
     @Test
-    fun existingSurfaceValid_reusesRegardlessOfTexture() {
-        assertEquals(
-            SurfaceProvision.REUSE,
-            CameraController.decideSurfaceProvision(
-                hasTexture = true,
-                existingSurfaceValid = true,
-            ),
-        )
-        assertEquals(
-            SurfaceProvision.REUSE,
-            CameraController.decideSurfaceProvision(
-                hasTexture = false,
-                existingSurfaceValid = true,
-            ),
-        )
-    }
-
-    @Test
-    fun noExistingSurfaceButTexturePresent_createsNew() {
+    fun texturePresent_createsFromProducer() {
+        // The surface is always re-fetched from the producer so a cross-lens
+        // setSize() resolution change is picked up instead of stranding the
+        // preview on the previous lens's reader.
         assertEquals(
             SurfaceProvision.CREATE,
-            CameraController.decideSurfaceProvision(
-                hasTexture = true,
-                existingSurfaceValid = false,
-            ),
+            CameraController.decideSurfaceProvision(hasTexture = true),
         )
     }
 
@@ -451,10 +433,7 @@ internal class SurfaceProvisionTest {
         // request must be declined, never turned into Surface(null).
         assertEquals(
             SurfaceProvision.DECLINE,
-            CameraController.decideSurfaceProvision(
-                hasTexture = false,
-                existingSurfaceValid = false,
-            ),
+            CameraController.decideSurfaceProvision(hasTexture = false),
         )
     }
 }

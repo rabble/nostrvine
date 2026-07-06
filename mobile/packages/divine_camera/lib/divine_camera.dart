@@ -219,10 +219,17 @@ class DivineCamera {
     _state = _state.copyWith(isSwitchingCamera: true);
     _notifyStateChanged();
 
-    _state = await _platform.switchCamera(newLens);
-    _state = _state.copyWith(isSwitchingCamera: false);
-    _notifyStateChanged();
-    return true;
+    // Reset the flag in `finally` so a thrown platform switch (e.g. a CameraX
+    // bind failure) doesn't leave `isSwitchingCamera` stuck true — which would
+    // both freeze the preview and, via the re-entrancy guard above, block every
+    // later switch for the session.
+    try {
+      _state = await _platform.switchCamera(newLens);
+      return true;
+    } finally {
+      _state = _state.copyWith(isSwitchingCamera: false);
+      _notifyStateChanged();
+    }
   }
 
   /// Sets the video stabilization mode.
@@ -261,10 +268,15 @@ class DivineCamera {
     _state = _state.copyWith(isSwitchingCamera: true);
     _notifyStateChanged();
 
-    _state = await _platform.switchCamera(lens);
-    _state = _state.copyWith(isSwitchingCamera: false);
-    _notifyStateChanged();
-    return true;
+    // Reset the flag in `finally` for the same reason as [switchCamera]: a
+    // thrown switch must not strand `isSwitchingCamera` true.
+    try {
+      _state = await _platform.switchCamera(lens);
+      return true;
+    } finally {
+      _state = _state.copyWith(isSwitchingCamera: false);
+      _notifyStateChanged();
+    }
   }
 
   /// Starts video recording.

@@ -27,6 +27,7 @@ class CameraState extends Equatable {
     this.isExposurePointSupported = false,
     this.textureId,
     this.previewRotationDegrees = 0,
+    this.previewHandlesTransform = false,
     this.availableLenses = const [DivineCameraLens.back],
     this.currentLensMetadata,
     this.videoStabilizationMode = DivineVideoStabilizationMode.off,
@@ -58,6 +59,7 @@ class CameraState extends Equatable {
           map['isExposurePointSupported'] as bool? ?? false,
       textureId: map['textureId'] as int?,
       previewRotationDegrees: map['previewRotationDegrees'] as int? ?? 0,
+      previewHandlesTransform: map['previewHandlesTransform'] as bool? ?? false,
       availableLenses: map['availableLenses'] != null
           ? DivineCameraLens.fromNativeStringList(
               map['availableLenses'] as List<dynamic>,
@@ -133,6 +135,13 @@ class CameraState extends Equatable {
   /// sensor orientation and the UI must rotate them.
   final int previewRotationDegrees;
 
+  /// Whether the native surface producer already applies its transform matrix
+  /// to the preview (the Android API<29 SurfaceTexture path). When `true`, that
+  /// matrix carries both the rotation and the front-camera mirror, so the UI
+  /// must apply neither; when `false` (API 29+ ImageReader path) the UI
+  /// reconstructs both. Always `false` on non-Android platforms.
+  final bool previewHandlesTransform;
+
   /// List of all available camera lenses on this device.
   /// Includes front, back, ultraWide, telephoto, and macro if supported.
   final List<DivineCameraLens> availableLenses;
@@ -199,6 +208,7 @@ class CameraState extends Equatable {
     bool? isExposurePointSupported,
     int? textureId,
     int? previewRotationDegrees,
+    bool? previewHandlesTransform,
     List<DivineCameraLens>? availableLenses,
     CameraLensMetadata? currentLensMetadata,
     DivineVideoStabilizationMode? videoStabilizationMode,
@@ -225,6 +235,8 @@ class CameraState extends Equatable {
       textureId: textureId ?? this.textureId,
       previewRotationDegrees:
           previewRotationDegrees ?? this.previewRotationDegrees,
+      previewHandlesTransform:
+          previewHandlesTransform ?? this.previewHandlesTransform,
       availableLenses: availableLenses ?? this.availableLenses,
       currentLensMetadata: currentLensMetadata ?? this.currentLensMetadata,
       videoStabilizationMode:
@@ -256,6 +268,7 @@ class CameraState extends Equatable {
       'isExposurePointSupported': isExposurePointSupported,
       'textureId': textureId,
       'previewRotationDegrees': previewRotationDegrees,
+      'previewHandlesTransform': previewHandlesTransform,
       'availableLenses': availableLenses
           .map((l) => l.toNativeString())
           .toList(),
@@ -286,6 +299,7 @@ class CameraState extends Equatable {
         'isExposurePointSupported: $isExposurePointSupported, '
         'textureId: $textureId, '
         'previewRotationDegrees: $previewRotationDegrees, '
+        'previewHandlesTransform: $previewHandlesTransform, '
         'availableLenses: $availableLenses, '
         'currentLensMetadata: $currentLensMetadata, '
         'videoStabilizationMode: $videoStabilizationMode, '
@@ -312,6 +326,7 @@ class CameraState extends Equatable {
     isExposurePointSupported,
     textureId,
     previewRotationDegrees,
+    previewHandlesTransform,
     availableLenses,
     currentLensMetadata,
     videoStabilizationMode,

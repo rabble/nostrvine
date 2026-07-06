@@ -65,15 +65,23 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget> {
     if (kIsWeb) return false;
     if (!_camera.lens.isFrontFacing) return false;
 
-    // On iOS/macOS, mirror preview only when native isn't mirroring
+    // Platform-specific mirror handling. These branches depend on the host OS
+    // via `dart:io` Platform, so they resolve differently under a widget test
+    // than on device (a macOS test host takes the Apple branch; Linux CI falls
+    // through to Android). They're verified on device, not in host tests, and
+    // excluded from coverage the same way across both arms.
     // coverage:ignore-start
+    // On iOS/macOS, mirror preview only when native isn't mirroring.
     if (Platform.isIOS || Platform.isMacOS) {
       return !_camera.mirrorFrontCameraOutput;
     }
+    // Android: mirror the selfie preview in Flutter only when the native
+    // producer doesn't apply its own transform matrix. On the API<29
+    // SurfaceTexture path (previewHandlesTransform == true) that matrix already
+    // carries the front-camera mirror, so mirroring again would double-flip it.
+    // On the API 29+ ImageReader path the matrix is dropped, so mirror here.
+    return !_camera.state.previewHandlesTransform;
     // coverage:ignore-end
-    // Android: the SurfaceProducer preview path drops the native front-camera
-    // mirror transform, so mirror the selfie preview in Flutter instead.
-    return true;
   }
 
   @override
@@ -120,7 +128,16 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget> {
     }
     // coverage:ignore-end
 
-    final normalizedPosition = Offset(normalizedX, normalizedY);
+    // Undo the display rotation so the point lands in the raw texture's
+    // coordinate space. The Android SurfaceProducer path rotates the preview
+    // in Flutter ([RotatedBox]) and hands frames to native un-rotated, so
+    // native maps normalized focus/exposure coords onto the sensor axes. On a
+    // 90/270 preview a tap in the upright widget would otherwise focus the
+    // wrong point.
+    final normalizedPosition = _unrotateNormalized(
+      Offset(normalizedX, normalizedY),
+      _camera.state.previewRotationDegrees,
+    );
 
     // Update focus point for indicator
     if (widget.focusIndicatorBuilder != null) {
@@ -129,6 +146,19 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget> {
 
     // Call external callback - user decides what to do with the position
     widget.onTap?.call(localPosition, normalizedPosition);
+  }
+
+  /// Maps a point normalized against the displayed (upright) preview back into
+  /// the raw texture's coordinate space by undoing the [RotatedBox]'s clockwise
+  /// [rotationDegrees]. Returns the point unchanged when no rotation applies.
+  Offset _unrotateNormalized(Offset point, int rotationDegrees) {
+    final quarterTurns = (rotationDegrees ~/ 90) % 4;
+    return switch (quarterTurns) {
+      1 => Offset(point.dy, 1.0 - point.dx),
+      2 => Offset(1.0 - point.dx, 1.0 - point.dy),
+      3 => Offset(1.0 - point.dy, point.dx),
+      _ => point,
+    };
   }
 
   /// Calculate the actual preview size based on constraints and aspect ratio
