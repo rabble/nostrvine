@@ -75,6 +75,72 @@ Finder _divineIcon(DivineIconName name) =>
     find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
 
 void main() {
+  group(isDuplicatePendingReplySubmission, () {
+    const authorPubkey =
+        'c3d4e5f6789012345678901234567890abcdef123456789012345678901234ab';
+    const parentCommentId =
+        'd4e5f6789012345678901234567890abcdef123456789012345678901234abc';
+
+    test('allows repeated top-level comments by the same author', () {
+      final existing = CommentBuilder()
+          .withId(
+            'e5f6789012345678901234567890abcdef123456789012345678901234abcd',
+          )
+          .withAuthorPubkey(authorPubkey)
+          .withContent('lol')
+          .build();
+
+      expect(
+        isDuplicatePendingReplySubmission(
+          comments: [existing],
+          content: 'lol',
+          authorPubkey: authorPubkey,
+        ),
+        isFalse,
+      );
+    });
+
+    test('blocks a matching pending reply resend', () {
+      final pendingReply = CommentBuilder()
+          .withId('pending_comment_1')
+          .withAuthorPubkey(authorPubkey)
+          .withContent('box of  krayshawns')
+          .withReplyToEventId(parentCommentId)
+          .build();
+
+      expect(
+        isDuplicatePendingReplySubmission(
+          comments: [pendingReply],
+          content: ' box of krayshawns ',
+          authorPubkey: authorPubkey,
+          parentCommentId: parentCommentId,
+        ),
+        isTrue,
+      );
+    });
+
+    test('allows the same confirmed reply text later', () {
+      final confirmedReply = CommentBuilder()
+          .withId(
+            'f6789012345678901234567890abcdef123456789012345678901234abcde',
+          )
+          .withAuthorPubkey(authorPubkey)
+          .withContent('same reply')
+          .withReplyToEventId(parentCommentId)
+          .build();
+
+      expect(
+        isDuplicatePendingReplySubmission(
+          comments: [confirmedReply],
+          content: 'same reply',
+          authorPubkey: authorPubkey,
+          parentCommentId: parentCommentId,
+        ),
+        isFalse,
+      );
+    });
+  });
+
   group('CommentsScreen', () {
     late _MockSocialService mockSocialService;
     late _MockAuthService mockAuthService;

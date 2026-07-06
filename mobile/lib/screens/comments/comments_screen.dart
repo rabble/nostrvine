@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:comments_repository/comments_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -64,6 +65,28 @@ String _reactionsErrorToString(AppLocalizations l10n, ReactionsError error) {
 /// guard would leak — this catches them.
 String _normalizeCommentText(String text) =>
     text.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
+
+/// Returns true only for the resend window #5854 needs to suppress: an
+/// in-flight optimistic reply by the same author, to the same parent, with the
+/// same normalized text. Top-level comments and confirmed comments are allowed
+/// so intentional repeated reactions are not silently dropped.
+bool isDuplicatePendingReplySubmission({
+  required Iterable<Comment> comments,
+  required String content,
+  required String authorPubkey,
+  String? parentCommentId,
+}) {
+  if (parentCommentId == null) return false;
+
+  final normalized = _normalizeCommentText(content);
+  return comments.any(
+    (c) =>
+        c.id.startsWith('pending_comment_') &&
+        c.authorPubkey == authorPubkey &&
+        c.replyToEventId == parentCommentId &&
+        _normalizeCommentText(c.content) == normalized,
+  );
+}
 
 /// Dynamic title widget that shows comment count and a "# new" pill
 /// when real-time comments arrive.
@@ -221,13 +244,11 @@ abstract final class CommentsScreen {
                           required String authorPubkey,
                           String? parentCommentId,
                         }) {
-                          final normalized = _normalizeCommentText(content);
-                          return listBloc.state.commentsById.values.any(
-                            (c) =>
-                                !c.id.startsWith('pending_comment_') &&
-                                c.authorPubkey == authorPubkey &&
-                                c.replyToEventId == parentCommentId &&
-                                _normalizeCommentText(c.content) == normalized,
+                          return isDuplicatePendingReplySubmission(
+                            comments: listBloc.state.commentsById.values,
+                            content: content,
+                            authorPubkey: authorPubkey,
+                            parentCommentId: parentCommentId,
                           );
                         },
                   );
