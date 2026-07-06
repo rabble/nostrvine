@@ -1,5 +1,5 @@
 // ABOUTME: Regression tests for RelayPool._onEvent signature-verification
-// ABOUTME: dedup and cache-relay trust (cold-start CPU optimization).
+// ABOUTME: dedup and known-verified event trust (cold-start CPU optimization).
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
