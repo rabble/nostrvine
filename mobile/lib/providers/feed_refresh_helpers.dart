@@ -78,6 +78,28 @@ List<VideoEvent> mergeEnrichedVideos({
   }).toList();
 }
 
+/// Removes videos whose [VideoEvent.feedDedupKey] has already been seen,
+/// preserving first-occurrence order.
+///
+/// Deduplicates by the addressable coordinate (`kind:pubkey:d-tag`) when
+/// present, else the event id — so a video republished with a fresh event id
+/// (which the Funnelcake emitted-id cursor dedupes only by event id) never
+/// appears twice. Seed [alreadySeen] with the keys already displayed to also
+/// drop cross-page duplicates when appending a paginated page.
+List<VideoEvent> dedupeByFeedKey(
+  List<VideoEvent> videos, {
+  Iterable<String> alreadySeen = const [],
+}) {
+  final seen = alreadySeen.toSet();
+  final result = <VideoEvent>[];
+  for (final video in videos) {
+    if (seen.add(video.feedDedupKey)) {
+      result.add(video);
+    }
+  }
+  return result;
+}
+
 /// Compares two video lists for equality by element identity.
 bool videoListsEqual(List<VideoEvent> a, List<VideoEvent> b) {
   if (identical(a, b)) return true;

@@ -10462,6 +10462,76 @@ void main() {
         ).called(1);
       });
 
+      test(
+        'deduplicates videos sharing an addressable identity in one page',
+        () async {
+          const author = 'recommended-pubkey';
+          const sharedDTag = 'shared-dtag';
+          // Same kind:pubkey:d-tag republished with a fresh event id — the
+          // server's emitted-id cursor dedupes by event id, so this slips
+          // through and must be collapsed by feedDedupKey here.
+          final first = _createVideoStats(
+            id: 'first-event-id',
+            pubkey: author,
+            dTag: sharedDTag,
+            videoUrl: 'https://example.com/first.mp4',
+            createdAt: 1704067250,
+          );
+          final republished = _createVideoStats(
+            id: 'republished-event-id',
+            pubkey: author,
+            dTag: sharedDTag,
+            videoUrl: 'https://example.com/republished.mp4',
+            createdAt: 1704067150,
+          );
+          final other = _createVideoStats(
+            id: 'other-event-id',
+            pubkey: 'other-pubkey',
+            dTag: 'other-dtag',
+            videoUrl: 'https://example.com/other.mp4',
+            createdAt: 1704067100,
+          );
+          when(
+            () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              fallback: any(named: 'fallback'),
+              category: any(named: 'category'),
+              preferredLanguages: any(named: 'preferredLanguages'),
+              viewerCountry: any(named: 'viewerCountry'),
+            ),
+          ).thenAnswer(
+            (_) async => RecommendationsResponse(
+              videos: [first, republished, other],
+              source: 'personalized',
+            ),
+          );
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repo.getRecommendedVideos(
+            userPubkey: 'user-pubkey',
+            limit: 10,
+          );
+
+          expect(result.videos, hasLength(2));
+          expect(
+            result.videos.map((v) => v.feedDedupKey).toSet(),
+            hasLength(2),
+            reason: 'no duplicate feedDedupKey survives',
+          );
+          expect(
+            result.videos.where((v) => v.pubkey == author).length,
+            1,
+            reason: 'the republished addressable video collapses to one entry',
+          );
+        },
+      );
+
       test('caches refreshed recommendations for feed remounts', () async {
         final requestedSeeds = <String?>[];
         var callCount = 0;

@@ -133,12 +133,10 @@ class NewVideosFeed extends _$NewVideosFeed {
 
       _nextCursor = getOldestTimestamp(newVideos);
 
-      final existingIds = currentState.videos
-          .map((v) => v.id.toLowerCase())
-          .toSet();
-      final dedupedNew = newVideos
-          .where((v) => !existingIds.contains(v.id.toLowerCase()))
-          .toList();
+      final dedupedNew = dedupeByFeedKey(
+        newVideos,
+        alreadySeen: currentState.videos.map((v) => v.feedDedupKey),
+      );
       final filteredNew = _filterVideos(dedupedNew);
 
       if (filteredNew.isEmpty) {

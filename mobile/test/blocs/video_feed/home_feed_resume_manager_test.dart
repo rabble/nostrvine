@@ -53,7 +53,7 @@ class _GatedCache implements HomeFeedCache {
   }) async => null;
 }
 
-VideoEvent _video(String id) => VideoEvent(
+VideoEvent _video(String id, {String? vineId}) => VideoEvent(
   id: id,
   pubkey: 'a' * 64,
   createdAt: 1700000000,
@@ -63,6 +63,7 @@ VideoEvent _video(String id) => VideoEvent(
     isUtc: true,
   ),
   videoUrl: 'https://cdn.divine.video/$id.mp4',
+  vineId: vineId,
 );
 
 Future<void> _pump() => Future<void>.delayed(Duration.zero);
@@ -179,6 +180,47 @@ void main() {
       cache.releaseNextWrite();
       await _pump();
       expect(cache.clearCallCount, 1);
+    });
+
+    group('splice', () {
+      test(
+        'drops a fresh addressable video republished with a new event id',
+        () {
+          // Cached head holds the addressable video under its original event
+          // id; the fresh page carries the same kind:pubkey:d-tag video under a
+          // fresh event id. Keyed on the raw event id they would both survive
+          // as a visible duplicate; keyed on feedDedupKey the fresh copy drops.
+          final result = manager.splice(
+            existing: [
+              _video('old-event', vineId: 'shared-d'),
+              _video('c1'),
+            ],
+            fresh: [
+              _video('new-event', vineId: 'shared-d'),
+              _video('f1'),
+            ],
+            currentIndex: 0,
+          );
+
+          expect(
+            result.map((v) => v.id),
+            equals(['old-event', 'c1', 'f1']),
+          );
+        },
+      );
+
+      test('keeps fresh videos with distinct identities', () {
+        final result = manager.splice(
+          existing: [_video('c0'), _video('c1')],
+          fresh: [_video('f0'), _video('f1')],
+          currentIndex: 0,
+        );
+
+        expect(
+          result.map((v) => v.id),
+          equals(['c0', 'c1', 'f0', 'f1']),
+        );
+      });
     });
   });
 }

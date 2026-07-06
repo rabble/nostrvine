@@ -290,4 +290,67 @@ void main() {
       expect(getOldestTimestamp([videoAt(42)]), 42);
     });
   });
+
+  group('dedupeByFeedKey', () {
+    VideoEvent video(String id, {String? pubkey, String? dTag}) {
+      return VideoEvent(
+        id: id,
+        pubkey: pubkey ?? 'author-$id',
+        createdAt: 1700000000,
+        content: '',
+        timestamp: DateTime.fromMillisecondsSinceEpoch(
+          1700000000 * 1000,
+          isUtc: true,
+        ),
+        videoUrl: 'https://example.com/$id.mp4',
+        vineId: dTag,
+      );
+    }
+
+    test('collapses videos sharing an addressable coordinate', () {
+      // Same kind:pubkey:d-tag republished with a fresh event id — the
+      // Funnelcake emitted-id cursor only dedupes by event id, so this pair
+      // reaches the client and must collapse to one.
+      final result = dedupeByFeedKey([
+        video('first-event', pubkey: 'p1', dTag: 'shared'),
+        video('republished-event', pubkey: 'p1', dTag: 'shared'),
+        video('other', pubkey: 'p2', dTag: 'unique'),
+      ]);
+
+      expect(result.map((v) => v.id), equals(['first-event', 'other']));
+    });
+
+    test('drops videos already seen when appending a page', () {
+      final existing = [video('a', pubkey: 'p1', dTag: 'shared')];
+      final result = dedupeByFeedKey(
+        [
+          video('a-republished', pubkey: 'p1', dTag: 'shared'),
+          video('b', pubkey: 'p2', dTag: 'other'),
+        ],
+        alreadySeen: existing.map((v) => v.feedDedupKey),
+      );
+
+      expect(result.map((v) => v.id), equals(['b']));
+    });
+
+    test('dedupes by event id when no d-tag is present', () {
+      final result = dedupeByFeedKey([
+        video('dup', pubkey: 'p1'),
+        video('dup', pubkey: 'p1'),
+        video('keep', pubkey: 'p1'),
+      ]);
+
+      expect(result.map((v) => v.id), equals(['dup', 'keep']));
+    });
+
+    test('keeps distinct videos and preserves order', () {
+      final result = dedupeByFeedKey([
+        video('x'),
+        video('y'),
+        video('z'),
+      ]);
+
+      expect(result.map((v) => v.id), equals(['x', 'y', 'z']));
+    });
+  });
 }

@@ -77,6 +77,12 @@ class HomeFeedResumeManager {
   /// the current video instead of behind the whole cached window. The kept
   /// prefix leaves the active video's controller untouched, so it does not
   /// restart when fresh lands.
+  ///
+  /// Dedup uses [VideoEvent.feedDedupKey] (the addressable coordinate when
+  /// present, else the event id) to match the pagination merge in
+  /// [VideoFeedBloc]. A cached addressable video republished with a fresh event
+  /// id shares its coordinate with the fresh copy, so keying on the raw id
+  /// would let both through as a visible duplicate.
   List<VideoEvent> splice({
     required List<VideoEvent> existing,
     required List<VideoEvent> fresh,
@@ -90,8 +96,8 @@ class HomeFeedResumeManager {
       existing.length,
     );
     final head = existing.sublist(0, keepCount);
-    final headIds = head.map((v) => v.id.toLowerCase()).toSet();
-    final tail = fresh.where((v) => !headIds.contains(v.id.toLowerCase()));
+    final headKeys = head.map((v) => v.feedDedupKey).toSet();
+    final tail = fresh.where((v) => !headKeys.contains(v.feedDedupKey));
     return [...head, ...tail];
   }
 

@@ -103,14 +103,16 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
           final videos = stats.toVideoEvents();
 
           // Filter for platform compatibility, content preferences,
-          // blocked users, and shuffle
-          final filteredVideos = videoEventService.filterVideoList(
-            videos
-                .where((v) => v.isSupportedOnCurrentPlatform)
-                .where(
-                  (v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey),
-                )
-                .toList(),
+          // blocked users, dedupe by addressable identity, and shuffle
+          final filteredVideos = dedupeByFeedKey(
+            videoEventService.filterVideoList(
+              videos
+                  .where((v) => v.isSupportedOnCurrentPlatform)
+                  .where(
+                    (v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey),
+                  )
+                  .toList(),
+            ),
           );
 
           return filteredVideos..shuffle(_random);
@@ -210,13 +212,20 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
     );
 
     final allVideos = videoEventService.discoveryVideos;
-    final classicVideos = videoEventService.filterVideoList(
-      allVideos
-          .where((v) => v.isOriginalVine)
-          .where((v) => v.isSupportedOnCurrentPlatform)
-          .where((v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey))
-          .toList(),
-    )..sort((a, b) => (b.originalLoops ?? 0).compareTo(a.originalLoops ?? 0));
+    final classicVideos =
+        dedupeByFeedKey(
+          videoEventService.filterVideoList(
+            allVideos
+                .where((v) => v.isOriginalVine)
+                .where((v) => v.isSupportedOnCurrentPlatform)
+                .where(
+                  (v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey),
+                )
+                .toList(),
+          ),
+        )..sort(
+          (a, b) => (b.originalLoops ?? 0).compareTo(a.originalLoops ?? 0),
+        );
 
     // Take top entries then shuffle for variety
     final topClassics = classicVideos.take(_pageSize).toList()
@@ -282,11 +291,16 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
 
       final videoEventService = ref.read(videoEventServiceProvider);
       final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
-      final filteredVideos = videoEventService.filterVideoList(
-        videos
-            .where((v) => v.isSupportedOnCurrentPlatform)
-            .where((v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey))
-            .toList(),
+      final filteredVideos = dedupeByFeedKey(
+        videoEventService.filterVideoList(
+          videos
+              .where((v) => v.isSupportedOnCurrentPlatform)
+              .where(
+                (v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey),
+              )
+              .toList(),
+        ),
+        alreadySeen: currentState.videos.map((v) => v.feedDedupKey),
       );
 
       final allVideos = [...currentState.videos, ...filteredVideos];

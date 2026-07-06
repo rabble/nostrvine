@@ -2515,7 +2515,18 @@ class VideosRepository {
         ),
       );
     }
-    final videos = _transformVideoStats(response.videos);
+    // Recommendation responses can carry the same addressable video more than
+    // once in a single page: the server's emitted-id cursor dedupes by event
+    // id, so a republished coordinate (same kind:pubkey:d-tag, fresh event id)
+    // slips through. Dedupe by feedDedupKey here — as getNewVideos already does
+    // — so the forYou feed never shows the same video twice.
+    final videos = <VideoEvent>[];
+    _appendUniqueVideos(
+      videos,
+      _transformVideoStats(response.videos),
+      seenVideoKeys: <String>{},
+    );
+
     if (videos.isEmpty) {
       return HomeFeedResult(
         videos: await getPopularVideos(
