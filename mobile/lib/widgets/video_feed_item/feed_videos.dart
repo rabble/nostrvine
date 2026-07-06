@@ -765,20 +765,65 @@ class _FeedItemActions extends StatelessWidget {
       );
     }
 
+    // The overlay content (author row, every action button, caption) does
+    // not depend on the scroll-driven opacity, so it is built once and
+    // reused. Only [ScrollFadeOverlay]'s Opacity / IgnorePointer rebuild as
+    // the page position ticks, instead of the whole overlay — the dominant
+    // feed rebuild in profiling (~150 overlay rebuilds fanning out into ~900
+    // action-button rebuilds).
+    return ScrollFadeOverlay(
+      pagePosition: listenable,
+      index: index,
+      child: _FeedItemOverlayActions(
+        video: video,
+        contextTitle: contextTitle,
+        isOwnVideo: isOwnVideo,
+        autoAdvanceAvailable: autoAdvanceAvailable,
+        effectiveAutoEnabled: effectiveAutoEnabled,
+        onToggleAutoAdvance: onToggleAutoAdvance,
+        onSuppressAutoAdvance: onSuppressAutoAdvance,
+        subtitleLayer: subtitleLayer,
+      ),
+    );
+  }
+}
+
+/// Applies the scroll-driven fade to a feed item's overlay without rebuilding
+/// it on every page-position tick.
+///
+/// [child] — the overlay content — is built once by the caller and reused;
+/// only the wrapping [Opacity] / [IgnorePointer] rebuild as [pagePosition]
+/// changes. This keeps a scroll frame from fanning out into a full overlay
+/// (author row + all action buttons + caption) rebuild.
+class ScrollFadeOverlay extends StatelessWidget {
+  const ScrollFadeOverlay({
+    required this.pagePosition,
+    required this.index,
+    required this.child,
+    super.key,
+  });
+
+  /// Current fractional page offset of the enclosing [PageView].
+  final ValueListenable<double> pagePosition;
+
+  /// This item's page index; the fade is driven by the distance between
+  /// [pagePosition] and [index].
+  final int index;
+
+  /// Overlay content, built once and shared across page-position ticks.
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
     return ValueListenableBuilder<double>(
-      valueListenable: listenable,
-      builder: (context, page, _) {
+      valueListenable: pagePosition,
+      child: child,
+      builder: (context, page, child) {
         final distance = (page - index).abs().clamp(0.0, 1.0);
-        return _FeedItemOverlayActions(
-          video: video,
-          contextTitle: contextTitle,
-          isOwnVideo: isOwnVideo,
-          autoAdvanceAvailable: autoAdvanceAvailable,
-          effectiveAutoEnabled: effectiveAutoEnabled,
-          onToggleAutoAdvance: onToggleAutoAdvance,
-          onSuppressAutoAdvance: onSuppressAutoAdvance,
-          subtitleLayer: subtitleLayer,
-          overlayOpacity: scrollDrivenOpacity(distance),
+        final opacity = scrollDrivenOpacity(distance);
+        return Opacity(
+          opacity: opacity,
+          child: IgnorePointer(ignoring: opacity < 0.01, child: child),
         );
       },
     );
@@ -795,7 +840,6 @@ class _FeedItemOverlayActions extends StatelessWidget {
     required this.onToggleAutoAdvance,
     required this.onSuppressAutoAdvance,
     this.subtitleLayer,
-    this.overlayOpacity,
   });
 
   final VideoEvent video;
@@ -806,31 +850,16 @@ class _FeedItemOverlayActions extends StatelessWidget {
   final VoidCallback? onToggleAutoAdvance;
   final VoidCallback? onSuppressAutoAdvance;
   final Widget? subtitleLayer;
-  final double? overlayOpacity;
 
   @override
   Widget build(BuildContext context) {
-    final opacity = overlayOpacity;
-    if (opacity == null) {
-      return VideoOverlayActions(
-        video: video,
-        isVisible: true,
-        isActive: true,
-        hasBottomNavigation: false,
-        contextTitle: contextTitle,
-        isFullscreen: true,
-        topOffset: isOwnVideo ? 64 : 8,
-        showAutoButton: autoAdvanceAvailable,
-        onInteracted: onSuppressAutoAdvance,
-        subtitleLayer: subtitleLayer,
-      );
-    }
-
+    // Rendered at full opacity; the scroll-driven fade is applied by the
+    // enclosing ValueListenableBuilder so this subtree stays stable across
+    // page-position ticks.
     return VideoOverlayActions(
       video: video,
       isVisible: true,
       isActive: true,
-      overlayOpacity: opacity,
       hasBottomNavigation: false,
       contextTitle: contextTitle,
       isFullscreen: true,
