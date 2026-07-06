@@ -675,7 +675,8 @@ void main() {
 
     group('Cross-bloc store mutation events', () {
       blocTest<CommentsListBloc, CommentsListState>(
-        'OptimisticCommentInserted adds placeholder',
+        'OptimisticCommentInserted adds a top-level placeholder without '
+        'flagging it for scroll (#5854)',
         build: createBloc,
         act: (b) {
           final placeholder = Comment(
@@ -690,8 +691,32 @@ void main() {
         },
         verify: (b) {
           expect(b.state.commentsById.containsKey('pending_comment_1'), isTrue);
-          // #5854: flags the just-inserted own comment for scroll-into-view so
-          // a reply nested under an older parent isn't stranded off-screen.
+          // A new top-level comment lands at the visible top, so it must not
+          // trigger a scroll — only replies (which nest off-screen) do.
+          expect(b.state.scrollToCommentId, isNull);
+        },
+      );
+
+      blocTest<CommentsListBloc, CommentsListState>(
+        'OptimisticCommentInserted flags a reply for scroll-into-view (#5854)',
+        build: createBloc,
+        act: (b) {
+          final placeholder = Comment(
+            id: 'pending_comment_1',
+            content: 'wip reply',
+            authorPubkey: validId('me'),
+            createdAt: DateTime.now(),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+            replyToEventId: validId('parent'),
+            replyToAuthorPubkey: validId('parentauthor'),
+          );
+          b.add(OptimisticCommentInserted(placeholder));
+        },
+        verify: (b) {
+          expect(b.state.commentsById.containsKey('pending_comment_1'), isTrue);
+          // A reply nests under an (often older) parent and would render
+          // off-screen, so the poster must be scrolled to it.
           expect(b.state.scrollToCommentId, equals('pending_comment_1'));
         },
       );

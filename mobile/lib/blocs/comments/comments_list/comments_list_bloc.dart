@@ -349,19 +349,22 @@ class CommentsListBloc extends Bloc<CommentsListEvent, CommentsListState> {
     OptimisticCommentInserted event,
     Emitter<CommentsListState> emit,
   ) {
-    // Also flag the just-inserted own comment for scroll-into-view: a reply
-    // nests under an older parent and would otherwise render off-screen, so the
-    // poster thinks the post failed and retries (#5854). The UI scrolls to this
-    // id then acks via [CommentsScrollHandled].
+    // Flag the just-inserted comment for scroll-into-view only when it is a
+    // reply: a reply nests under an (often older) parent and would otherwise
+    // render off-screen, so the poster thinks the post failed and retries
+    // (#5854). A new top-level comment already lands at the visible top, so it
+    // needs no scroll. The UI scrolls to the flagged id then acks via
+    // [CommentsScrollHandled].
     final updated = {
       ...state.commentsById,
       event.placeholder.id: event.placeholder,
     };
+    final isReply = event.placeholder.replyToEventId != null;
     emit(
       state.copyWith(
         commentsById: updated,
         replyCountsByCommentId: computeReplyCounts(updated),
-        scrollToCommentId: event.placeholder.id,
+        scrollToCommentId: isReply ? event.placeholder.id : null,
       ),
     );
   }
