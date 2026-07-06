@@ -68,6 +68,15 @@ class CameraController: NSObject {
             audioInterruptedLock.unlock()
         }
     }
+
+    /// Diagnostics for the finished-clip audio log (#4779 family): how many
+    /// audio buffers reached the writer and the loudest peak seen during
+    /// the recording (dBFS, 0 = full scale). A populated track whose peak
+    /// stayed near -160 is the silent-AAC signature. Written on
+    /// `videoOutputQueue`, read once after the writer finished — same loose
+    /// cross-queue convention as `lastVideoFrameEndPTS`.
+    private var appendedAudioBufferCount = 0
+    private var maxAudioPeakDb: Float = -160
     
     private var textureRegistry: FlutterTextureRegistry
 
@@ -396,7 +405,8 @@ class CameraController: NSObject {
             // (captureOutput) see a consistent value.
             self.audioInterrupted = true
             DivineCameraLog.shared.warning(
-                "AVAudioSession interruption began — audio capture paused",
+                "AVAudioSession interruption began — audio capture paused "
+                    + "(reason=\(Self.interruptionReasonDescription(info)))",
                 name: "DivineCamera.AudioSession"
             )
         case .ended:
@@ -438,7 +448,28 @@ class CameraController: NSObject {
             break
         }
     }
-    
+
+    /// Human-readable interruption reason for the diagnostics log.
+    /// `builtInMicMuted` (iPad hardware mic mute) silently kills capture
+    /// and is invisible without this.
+    private static func interruptionReasonDescription(
+        _ info: [AnyHashable: Any]
+    ) -> String {
+        guard #available(iOS 14.5, *),
+              let raw = info[AVAudioSessionInterruptionReasonKey] as? UInt else {
+            return "unspecified"
+        }
+        if #available(iOS 17.0, *),
+           AVAudioSession.InterruptionReason(rawValue: raw) == .routeDisconnected {
+            return "routeDisconnected"
+        }
+        switch AVAudioSession.InterruptionReason(rawValue: raw) {
+        case .default: return "default"
+        case .builtInMicMuted: return "builtInMicMuted"
+        default: return "raw(\(raw))"
+        }
+    }
+
     /// Gets metadata for the currently active camera lens.
     private func getCurrentLensMetadata() -> [String: Any]? {
         guard let device = videoDevice else {
@@ -2087,6 +2118,27 @@ class CameraController: NSObject {
                 )
             }
 
+            // One state line per recording so a silent clip can be traced
+            // to its cause: no input in the route, a system-level input
+            // mute, or a category another player stole.
+            let session = AVAudioSession.sharedInstance()
+            let inputs = session.currentRoute.inputs
+                .map(\.portType.rawValue).joined(separator: "+")
+            let outputs = session.currentRoute.outputs
+                .map(\.portType.rawValue).joined(separator: "+")
+            var inputMuted = "n/a"
+            if #available(iOS 17.0, *) {
+                inputMuted = AVAudioApplication.shared.isInputMuted
+                    ? "true" : "false"
+            }
+            DivineCameraLog.shared.info(
+                "Recording audio state: ready=\(audioReady), "
+                    + "category=\(session.category.rawValue), "
+                    + "inputs=[\(inputs)], outputs=[\(outputs)], "
+                    + "inputMuted=\(inputMuted)",
+                name: "DivineCamera.Recording"
+            )
+
             self.videoOutputQueue.async { [weak self] in
                 guard let self = self else { return }
                 self.startRecordingAfterAudioReady(
@@ -2214,6 +2266,8 @@ class CameraController: NSObject {
             self.isWriterSessionStarted = false  // Will be set to true when first frame is received
             self.lastVideoFrameEndPTS = nil
             self.recordingStartTime = Date()
+            self.appendedAudioBufferCount = 0
+            self.maxAudioPeakDb = -160
 
             // Check and enable auto-flash if needed
             self.checkAndEnableAutoFlash()
@@ -2349,14 +2403,16 @@ class CameraController: NSObject {
                         // reports (#4779): inspect the finished file rather than
                         // trusting the in-flight audioReady flag.
                         let hasAudioTrack = !asset.tracks(withMediaType: .audio).isEmpty
+                        let audioStats = "audioBuffers=\(self.appendedAudioBufferCount), "
+                            + "maxPeakDb=\(String(format: "%.1f", self.maxAudioPeakDb))"
                         if hasAudioTrack {
                             DivineCameraLog.shared.info(
-                                "Recording completed with audio track (durationMs=\(duration))",
+                                "Recording completed with audio track (durationMs=\(duration), \(audioStats))",
                                 name: "DivineCamera.Recording"
                             )
                         } else {
                             DivineCameraLog.shared.warning(
-                                "Recording completed WITHOUT audio track (durationMs=\(duration))",
+                                "Recording completed WITHOUT audio track (durationMs=\(duration), \(audioStats))",
                                 name: "DivineCamera.Recording"
                             )
                         }
@@ -2713,6 +2769,10 @@ extension CameraController: AVCaptureVideoDataOutputSampleBufferDelegate {
                 // Only append audio after session has started
                 if isWriterSessionStarted && writer.status == .writing && audioInput.isReadyForMoreMediaData {
                     audioInput.append(sampleBuffer)
+                    appendedAudioBufferCount += 1
+                    for channel in connection.audioChannels {
+                        maxAudioPeakDb = max(maxAudioPeakDb, channel.peakHoldLevel)
+                    }
                 }
             }
         }
