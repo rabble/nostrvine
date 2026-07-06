@@ -29,6 +29,7 @@ class DivineTextField extends StatelessWidget {
     this.onSubmitted,
     this.onChanged,
     this.primaryWhenFilled = false,
+    this.spellCheckConfiguration,
   });
 
   /// Default content padding around the input. Exposed so overlays
@@ -102,6 +103,30 @@ class DivineTextField extends StatelessWidget {
   /// has content (in addition to when it is focused).
   final bool primaryWhenFilled;
 
+  /// Configures the spell check / "Replace" suggestion flow.
+  ///
+  /// Defaults to [defaultSpellCheckConfiguration], which enables the native
+  /// spell checker so natural-language fields get misspelling underlines and
+  /// replacement suggestions for free. On platforms without a native spell
+  /// check service (desktop, tests) it is a harmless no-op. Pass an explicit
+  /// config to override, e.g. `SpellCheckConfiguration.disabled()` for
+  /// technical inputs (search, keys, URLs) where spell check adds noise.
+  final SpellCheckConfiguration? spellCheckConfiguration;
+
+  /// The spell check configuration used when [spellCheckConfiguration] is not
+  /// provided.
+  ///
+  /// Uses [RegionAwareSpellCheckService] so the platform checker receives a
+  /// region-qualified locale (iOS' `UITextChecker` returns nothing for a bare
+  /// language code). Supplying a service explicitly also means this never trips
+  /// the framework assertion that fires when spell check is enabled on a
+  /// platform with no native service (desktop, widget tests); there it simply
+  /// yields no suggestions instead of throwing.
+  static final SpellCheckConfiguration defaultSpellCheckConfiguration =
+      SpellCheckConfiguration(
+        spellCheckService: RegionAwareSpellCheckService(),
+      );
+
   @override
   Widget build(BuildContext context) {
     return TextField(
@@ -122,6 +147,8 @@ class DivineTextField extends StatelessWidget {
       obscureText: obscureText,
       canRequestFocus: canRequestFocus,
       expands: expands,
+      spellCheckConfiguration:
+          spellCheckConfiguration ?? defaultSpellCheckConfiguration,
       onTap: onTap,
       onEditingComplete: onEditingComplete,
       decoration: InputDecoration(

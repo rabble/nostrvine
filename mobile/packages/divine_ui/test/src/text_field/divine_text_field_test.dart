@@ -308,6 +308,47 @@ void main() {
       );
     });
 
+    group('spellCheckConfiguration', () {
+      test('default config is enabled and carries a spell check service', () {
+        final config = DivineTextField.defaultSpellCheckConfiguration;
+
+        expect(config, isNot(const SpellCheckConfiguration.disabled()));
+        expect(config.spellCheckService, isNotNull);
+      });
+
+      testWidgets('enables spell check by default', (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(body: DivineTextField()),
+          ),
+        );
+
+        final textField = tester.widget<TextField>(find.byType(TextField));
+        expect(
+          textField.spellCheckConfiguration,
+          DivineTextField.defaultSpellCheckConfiguration,
+        );
+      });
+
+      testWidgets('passes a provided config through unchanged', (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: DivineTextField(
+                spellCheckConfiguration: SpellCheckConfiguration.disabled(),
+              ),
+            ),
+          ),
+        );
+
+        final textField = tester.widget<TextField>(find.byType(TextField));
+        expect(
+          textField.spellCheckConfiguration,
+          const SpellCheckConfiguration.disabled(),
+        );
+      });
+    });
+
     group('defaultContentPadding', () {
       test('exposes a 16px-all default for overlay alignment', () {
         expect(
