@@ -163,22 +163,44 @@ class DivineCamera {
     return success;
   }
 
-  /// Sets the focus point in normalized coordinates (0.0-1.0).
+  /// Sets the focus point.
   ///
-  /// [offset] the focus point coordinates.
+  /// [offset] is a point in the displayed (upright) preview's normalized
+  /// coordinates (0.0-1.0), i.e. where the user tapped. It is mapped onto the
+  /// raw sensor axes here so a rotated preview focuses the right spot; see
+  /// [_sensorOrientedPoint].
   /// Returns true if successful.
   Future<bool> setFocusPoint(Offset offset) async {
     if (!_state.isFocusPointSupported) return false;
-    return _platform.setFocusPoint(offset);
+    return _platform.setFocusPoint(_sensorOrientedPoint(offset));
   }
 
-  /// Sets the exposure point in normalized coordinates (0.0-1.0).
+  /// Sets the exposure point.
   ///
-  /// [offset] the exposure point coordinates.
+  /// [offset] is a point in the displayed (upright) preview's normalized
+  /// coordinates (0.0-1.0); it is mapped onto the raw sensor axes here the same
+  /// way as [setFocusPoint].
   /// Returns true if successful.
   Future<bool> setExposurePoint(Offset offset) async {
     if (!_state.isExposurePointSupported) return false;
-    return _platform.setExposurePoint(offset);
+    return _platform.setExposurePoint(_sensorOrientedPoint(offset));
+  }
+
+  /// Maps a point normalized against the displayed (upright) preview back into
+  /// the raw sensor texture's coordinate space by undoing the clockwise
+  /// [CameraState.previewRotationDegrees] the UI applies to render the preview
+  /// upright (the Android ImageReader path). Native metering maps normalized
+  /// coords onto the un-rotated sensor, so without this a non-center tap on a
+  /// 90/270 preview would meter the wrong point. Returns the point unchanged
+  /// when no rotation applies (the common 0° / SurfaceTexture cases).
+  Offset _sensorOrientedPoint(Offset point) {
+    final quarterTurns = (_state.previewRotationDegrees ~/ 90) % 4;
+    return switch (quarterTurns) {
+      1 => Offset(point.dy, 1.0 - point.dx),
+      2 => Offset(1.0 - point.dx, 1.0 - point.dy),
+      3 => Offset(1.0 - point.dy, point.dx),
+      _ => point,
+    };
   }
 
   /// Cancels any active focus/metering lock and returns to continuous

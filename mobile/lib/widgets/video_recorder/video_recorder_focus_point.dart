@@ -32,11 +32,15 @@ class _VideoRecorderFocusPointState extends State<VideoRecorderFocusPoint> {
     final camera = DivineCamera.instance;
     if (!camera.lens.isFrontFacing) return false;
 
-    // On iOS, mirror preview only when native isn't mirroring
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+    // Must mirror the indicator the same way CameraPreviewWidget mirrors the
+    // preview, so the indicator stays under the user's finger.
+    if (defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS) {
       return !camera.mirrorFrontCameraOutput;
     }
-    return false;
+    // Android: mirrored unless the native producer applies its own transform
+    // (the API<29 SurfaceTexture path).
+    return !camera.state.previewHandlesTransform;
   }
   // coverage:ignore-end
 

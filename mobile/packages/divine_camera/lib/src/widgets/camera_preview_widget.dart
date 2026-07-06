@@ -128,16 +128,12 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget> {
     }
     // coverage:ignore-end
 
-    // Undo the display rotation so the point lands in the raw texture's
-    // coordinate space. The Android SurfaceProducer path rotates the preview
-    // in Flutter ([RotatedBox]) and hands frames to native un-rotated, so
-    // native maps normalized focus/exposure coords onto the sensor axes. On a
-    // 90/270 preview a tap in the upright widget would otherwise focus the
-    // wrong point.
-    final normalizedPosition = _unrotateNormalized(
-      Offset(normalizedX, normalizedY),
-      _camera.state.previewRotationDegrees,
-    );
+    // This point stays in the displayed (upright) preview's coordinate space:
+    // it drives both the native focus call and the visual focus indicator. The
+    // display-rotation undo needed to map it onto the raw sensor axes happens
+    // at the native boundary (DivineCamera.setFocusPoint/setExposurePoint), so
+    // the indicator can keep positioning itself where the user tapped.
+    final normalizedPosition = Offset(normalizedX, normalizedY);
 
     // Update focus point for indicator
     if (widget.focusIndicatorBuilder != null) {
@@ -146,19 +142,6 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget> {
 
     // Call external callback - user decides what to do with the position
     widget.onTap?.call(localPosition, normalizedPosition);
-  }
-
-  /// Maps a point normalized against the displayed (upright) preview back into
-  /// the raw texture's coordinate space by undoing the [RotatedBox]'s clockwise
-  /// [rotationDegrees]. Returns the point unchanged when no rotation applies.
-  Offset _unrotateNormalized(Offset point, int rotationDegrees) {
-    final quarterTurns = (rotationDegrees ~/ 90) % 4;
-    return switch (quarterTurns) {
-      1 => Offset(point.dy, 1.0 - point.dx),
-      2 => Offset(1.0 - point.dx, 1.0 - point.dy),
-      3 => Offset(1.0 - point.dy, point.dx),
-      _ => point,
-    };
   }
 
   /// Calculate the actual preview size based on constraints and aspect ratio

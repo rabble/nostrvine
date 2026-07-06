@@ -98,13 +98,22 @@ class MockDivineCameraPlatform
     return true;
   }
 
+  /// The last point handed to [setFocusPoint], for asserting the sensor-space
+  /// mapping DivineCamera applies before the native call.
+  Offset? capturedFocusPoint;
+
+  /// The last point handed to [setExposurePoint].
+  Offset? capturedExposurePoint;
+
   @override
   Future<bool> setFocusPoint(Offset offset) async {
+    capturedFocusPoint = offset;
     return true;
   }
 
   @override
   Future<bool> setExposurePoint(Offset offset) async {
+    capturedExposurePoint = offset;
     return true;
   }
 
@@ -418,6 +427,8 @@ void main() {
         );
 
         expect(success, isTrue);
+        // No preview rotation (default): the point passes through unchanged.
+        expect(mockPlatform.capturedFocusPoint, const Offset(0.5, 0.5));
       });
 
       test('sets exposure point successfully', () async {
@@ -428,7 +439,51 @@ void main() {
         );
 
         expect(success, isTrue);
+        expect(mockPlatform.capturedExposurePoint, const Offset(0.3, 0.7));
       });
+
+      test(
+        'maps focus/exposure onto sensor axes for a rotated preview',
+        () async {
+          // The tap is in the displayed (upright) preview's space; DivineCamera
+          // undoes the clockwise RotatedBox so native meters the right point.
+          const tap = Offset(0.3, 0.25);
+          final cases = <(int, Offset)>[
+            (90, const Offset(0.25, 0.7)), // (y, 1 - x)
+            (180, const Offset(0.7, 0.75)), // (1 - x, 1 - y)
+            (270, const Offset(0.75, 0.3)), // (1 - y, x)
+          ];
+          for (final (degrees, expected) in cases) {
+            final mock = _RotatedFocusMock(degrees);
+            DivineCameraPlatform.instance = mock;
+            await DivineCamera.instance.initialize();
+
+            await DivineCamera.instance.setFocusPoint(tap);
+            await DivineCamera.instance.setExposurePoint(tap);
+
+            expect(
+              mock.capturedFocusPoint!.dx,
+              closeTo(expected.dx, 0.0001),
+              reason: 'focus dx @ $degrees',
+            );
+            expect(
+              mock.capturedFocusPoint!.dy,
+              closeTo(expected.dy, 0.0001),
+              reason: 'focus dy @ $degrees',
+            );
+            expect(
+              mock.capturedExposurePoint!.dx,
+              closeTo(expected.dx, 0.0001),
+              reason: 'exposure dx @ $degrees',
+            );
+            expect(
+              mock.capturedExposurePoint!.dy,
+              closeTo(expected.dy, 0.0001),
+              reason: 'exposure dy @ $degrees',
+            );
+          }
+        },
+      );
 
       test('cancels focus and metering successfully', () async {
         await DivineCamera.instance.initialize();
@@ -1805,6 +1860,31 @@ void main() {
 
   // MethodChannelDivineCamera Tests
   _runMethodChannelTests();
+}
+
+/// Mock reporting a non-zero preview rotation with focus/exposure supported,
+/// to verify DivineCamera maps tap coords onto the sensor axes before the
+/// native focus/exposure call.
+class _RotatedFocusMock extends MockDivineCameraPlatform {
+  _RotatedFocusMock(this.degrees);
+
+  final int degrees;
+
+  @override
+  Future<CameraState> initializeCamera({
+    DivineCameraLens lens = DivineCameraLens.back,
+    DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
+    bool enableScreenFlash = true,
+    bool mirrorFrontCameraOutput = false,
+    bool enableAutoLensSwitch = false,
+  }) async {
+    return CameraState(
+      isInitialized: true,
+      isFocusPointSupported: true,
+      isExposurePointSupported: true,
+      previewRotationDegrees: degrees,
+    );
+  }
 }
 
 /// Mock that doesn't support focus point
