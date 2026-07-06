@@ -325,36 +325,76 @@ void main() {
 
     group('watchProfile', () {
       test(
-        'collapses no-op re-emissions and emits only on real changes',
+        'emits when content advances under an unchanged synthetic eventId',
         () async {
-          // Seed so the initial emission is the current profile version.
-          await dao.upsertProfile(createProfile(eventId: 'e1', name: 'A'));
-
-          final stream = dao.watchProfile(testPubkey);
-
-          Future.delayed(const Duration(milliseconds: 50), () async {
-            // Identical re-write of the same version -> no new emission.
-            await dao.upsertProfile(createProfile(eventId: 'e1', name: 'A'));
-            // Unrelated profile write -> Drift re-runs this watcher, but the
-            // value for testPubkey is unchanged -> distinct drops it.
-            await dao.upsertProfile(
-              createProfile(pubkey: testPubkey2, eventId: 'other'),
-            );
-            // Genuine update (new event id) -> should emit.
-            await dao.upsertProfile(createProfile(eventId: 'e2', name: 'A2'));
-          });
-
-          // Without distinct this would be [e1, e1, ...]; the second distinct
-          // value is only ever reached once the real update lands.
-          await expectLater(
-            stream.take(2),
-            emitsInOrder([
-              isA<UserProfile>().having((p) => p.eventId, 'eventId', 'e1'),
-              isA<UserProfile>().having((p) => p.eventId, 'eventId', 'e2'),
-            ]),
+          // Funnelcake REST profiles carry a content-independent synthetic
+          // eventId (`rest-<pubkey>`), so a newer profile version reuses the
+          // same eventId. Dedup on (pubkey, eventId) alone would drop the
+          // update; watchProfile must still surface it.
+          const syntheticId = 'rest-$testPubkey';
+          await dao.upsertProfile(
+            createProfile(
+              eventId: syntheticId,
+              name: 'Old',
+              createdAt: DateTime(2024),
+            ),
           );
+
+          final names = <String?>[];
+          final sub = dao
+              .watchProfile(testPubkey)
+              .listen((p) => names.add(p?.name));
+          addTearDown(sub.cancel);
+          await pumpEventQueue();
+
+          await dao.upsertProfile(
+            createProfile(
+              eventId: syntheticId,
+              name: 'New',
+              createdAt: DateTime(2024, 1, 2),
+            ),
+          );
+          await pumpEventQueue();
+
+          expect(names, ['Old', 'New']);
         },
       );
+
+      test('collapses identical and unrelated-write re-emissions', () async {
+        await dao.upsertProfile(
+          createProfile(eventId: 'e1', name: 'A', createdAt: DateTime(2024)),
+        );
+
+        final eventIds = <String?>[];
+        final sub = dao
+            .watchProfile(testPubkey)
+            .listen((p) => eventIds.add(p?.eventId));
+        addTearDown(sub.cancel);
+        await pumpEventQueue();
+
+        // Identical re-write of the same version -> no new emission.
+        await dao.upsertProfile(
+          createProfile(eventId: 'e1', name: 'A', createdAt: DateTime(2024)),
+        );
+        // Unrelated profile write -> Drift re-runs this watcher, but the value
+        // for testPubkey is unchanged -> the guard drops it.
+        await dao.upsertProfile(
+          createProfile(pubkey: testPubkey2, eventId: 'other'),
+        );
+        await pumpEventQueue();
+
+        // Genuine update -> emits.
+        await dao.upsertProfile(
+          createProfile(
+            eventId: 'e2',
+            name: 'A2',
+            createdAt: DateTime(2024, 1, 2),
+          ),
+        );
+        await pumpEventQueue();
+
+        expect(eventIds, ['e1', 'e2']);
+      });
     });
   });
 }

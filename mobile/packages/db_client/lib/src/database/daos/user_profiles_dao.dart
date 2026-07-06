@@ -79,17 +79,33 @@ class UserProfilesDao extends DatabaseAccessor<AppDatabase>
   /// the profile changes in the database.
   ///
   /// Drift re-runs a table watcher on *every* write to `user_profiles`, so
-  /// without [Stream.distinct] each watcher would re-emit on unrelated
-  /// profile writes too — during the cold-start kind-0 flood that fans out
-  /// into a rebuild for every author row and caption. [UserProfile] equality
-  /// is by (pubkey, eventId), so `distinct` collapses those no-op re-emissions
-  /// and still fires whenever the profile advances to a newer event.
+  /// without a distinct guard each watcher would re-emit on unrelated profile
+  /// writes too — during the cold-start kind-0 flood that fans out into a
+  /// rebuild for every author row and caption.
+  ///
+  /// The dedup key is (pubkey, eventId, createdAt), not `UserProfile` value
+  /// equality. `UserProfile.==` is (pubkey, eventId) only, but the Funnelcake
+  /// REST path mints a content-independent synthetic eventId (`rest-<pubkey>`),
+  /// so a newer profile version can reuse the same eventId. Comparing
+  /// [UserProfile.createdAt] too — which the newest-wins cache only ever
+  /// advances — keeps a real update flowing through while still collapsing the
+  /// no-op re-emissions.
   Stream<UserProfile?> watchProfile(String pubkey) {
     final query = select(userProfiles)..where((t) => t.pubkey.equals(pubkey));
     return query
         .watchSingleOrNull()
         .map((row) => row == null ? null : _rowToUserProfile(row))
-        .distinct();
+        .distinct(_isSameProfileVersion);
+  }
+
+  /// Whether two consecutive [watchProfile] emissions are the same profile
+  /// version. Compares `createdAt` on top of `UserProfile.==` — see
+  /// [watchProfile] for why the eventId alone is not enough.
+  static bool _isSameProfileVersion(UserProfile? a, UserProfile? b) {
+    if (a == null || b == null) return identical(a, b);
+    return a.pubkey == b.pubkey &&
+        a.eventId == b.eventId &&
+        a.createdAt == b.createdAt;
   }
 
   /// Get multiple profiles by pubkeys with domain model conversion.
