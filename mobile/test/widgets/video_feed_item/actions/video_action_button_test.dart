@@ -275,5 +275,37 @@ void main() {
         },
       );
     });
+
+    group('icon caching', () {
+      DivineIcon foregroundIcon(WidgetTester tester) =>
+          tester.widgetList<DivineIcon>(find.byType(DivineIcon)).last;
+
+      testWidgets('does not rebuild the icon when only the count changes', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject(count: 1));
+        final before = foregroundIcon(tester);
+        expect(find.text('1'), findsOneWidget);
+
+        await tester.pumpWidget(buildSubject(count: 2));
+        final after = foregroundIcon(tester);
+
+        // Same widget instance => Flutter skipped rebuilding (and
+        // re-rasterising) the blurred icon subtree; only the caption changed.
+        expect(identical(before, after), isTrue);
+        expect(find.text('2'), findsOneWidget);
+      });
+
+      testWidgets('rebuilds the icon when the icon changes', (tester) async {
+        await tester.pumpWidget(buildSubject());
+        final before = foregroundIcon(tester);
+
+        await tester.pumpWidget(buildSubject(icon: DivineIconName.chat));
+        final after = foregroundIcon(tester);
+
+        expect(identical(before, after), isFalse);
+        expect(after.icon, equals(DivineIconName.chat));
+      });
+    });
   });
 }

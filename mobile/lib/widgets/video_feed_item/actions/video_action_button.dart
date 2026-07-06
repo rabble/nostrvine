@@ -25,7 +25,7 @@ import 'package:openvine/utils/string_utils.dart';
 ///   labelWhenZero: 'Like',
 /// )
 /// ```
-class VideoActionButton extends StatelessWidget {
+class VideoActionButton extends StatefulWidget {
   const VideoActionButton({
     required this.icon,
     required this.semanticIdentifier,
@@ -76,17 +76,44 @@ class VideoActionButton extends StatelessWidget {
   final String? labelWhenZero;
 
   @override
+  State<VideoActionButton> createState() => _VideoActionButtonState();
+}
+
+class _VideoActionButtonState extends State<VideoActionButton> {
+  /// Cached icon subtree. The icon — a [DivineIcon] with two blurred
+  /// ([ImageFiltered]) shadow layers — depends only on [VideoActionButton.icon]
+  /// and [VideoActionButton.iconColor], never on the [VideoActionButton.count].
+  /// Reusing the same widget instance across rebuilds lets Flutter skip
+  /// re-running — and re-rasterising the shadow blur of — the icon when only
+  /// the interaction count changes, which happens once per incoming
+  /// like/comment/repost event during the cold-start flood.
+  Widget? _icon;
+
+  @override
+  void didUpdateWidget(VideoActionButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.icon != widget.icon ||
+        oldWidget.iconColor != widget.iconColor) {
+      _icon = null;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final icon = _icon ??= _ShadowedIcon(
+      icon: widget.icon,
+      color: widget.iconColor,
+    );
     return Semantics(
-      identifier: semanticIdentifier,
+      identifier: widget.semanticIdentifier,
       container: true,
       explicitChildNodes: true,
       button: true,
-      label: semanticLabel,
+      label: widget.semanticLabel,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: isLoading ? null : onPressed,
-        onLongPress: isLoading ? null : onLongPress,
+        onTap: widget.isLoading ? null : widget.onPressed,
+        onLongPress: widget.isLoading ? null : widget.onLongPress,
         child: SizedBox(
           width: 48,
           child: ConstrainedBox(
@@ -95,7 +122,7 @@ class VideoActionButton extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                if (isLoading)
+                if (widget.isLoading)
                   const SizedBox.square(
                     dimension: 24,
                     child: CircularProgressIndicator(
@@ -104,12 +131,12 @@ class VideoActionButton extends StatelessWidget {
                     ),
                   )
                 else
-                  _ShadowedIcon(icon: icon, color: iconColor),
-                if (!isLoading)
+                  icon,
+                if (!widget.isLoading)
                   _VideoActionCaption(
-                    caption: caption,
-                    count: count,
-                    labelWhenZero: labelWhenZero,
+                    caption: widget.caption,
+                    count: widget.count,
+                    labelWhenZero: widget.labelWhenZero,
                   ),
               ],
             ),
