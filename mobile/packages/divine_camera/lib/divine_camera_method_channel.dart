@@ -293,8 +293,10 @@ class MethodChannelDivineCamera extends DivineCameraPlatform {
   }
 
   @override
-  Future<void> pausePreview() async {
-    await methodChannel.invokeMethod<void>('pausePreview');
+  Future<void> pausePreview({bool releaseAudio = true}) async {
+    await methodChannel.invokeMethod<void>('pausePreview', <String, dynamic>{
+      'releaseAudio': releaseAudio,
+    });
   }
 
   @override

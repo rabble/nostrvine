@@ -331,6 +331,12 @@ class DivineCamera {
 
     switch (appState) {
       case AppLifecycleState.inactive:
+        // `.inactive` fires on transient foreground interruptions (Control
+        // Center / notification shade / app-switcher pulls) with no real
+        // background transition. Stop the preview but keep the audio session
+        // so we don't churn other apps' playback on every such pull; genuine
+        // background always follows with `.paused`/`.hidden`.
+        await _platform.pausePreview(releaseAudio: false);
       case AppLifecycleState.paused:
       case AppLifecycleState.detached:
       case AppLifecycleState.hidden:

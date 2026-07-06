@@ -396,8 +396,34 @@ void main() {
       expect(logged, isTrue);
     });
 
-    test('pausePreview completes without error', () async {
-      await expectLater(platform.pausePreview(), completes);
+    test('pausePreview forwards releaseAudio: true by default', () async {
+      Map<dynamic, dynamic>? pauseArgs;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (methodCall) async {
+            if (methodCall.method == 'pausePreview') {
+              pauseArgs = methodCall.arguments as Map<dynamic, dynamic>?;
+            }
+            return null;
+          });
+
+      await platform.pausePreview();
+
+      expect(pauseArgs?['releaseAudio'], isTrue);
+    });
+
+    test('pausePreview forwards releaseAudio: false when passed', () async {
+      Map<dynamic, dynamic>? pauseArgs;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (methodCall) async {
+            if (methodCall.method == 'pausePreview') {
+              pauseArgs = methodCall.arguments as Map<dynamic, dynamic>?;
+            }
+            return null;
+          });
+
+      await platform.pausePreview(releaseAudio: false);
+
+      expect(pauseArgs?['releaseAudio'], isFalse);
     });
 
     test('resumePreview completes without error', () async {

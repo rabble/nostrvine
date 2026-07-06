@@ -12,6 +12,10 @@ class MockDivineCameraPlatform
   CameraState _state = const CameraState();
   bool _isRecording = false;
   bool throwOnStopRecording = false;
+
+  /// Records the `releaseAudio` argument of the last [pausePreview] call, or
+  /// `null` if it was never called.
+  bool? lastPauseReleaseAudio;
   void Function(VideoRecordingResult result)? _onRecordingAutoStopped;
   void Function(RemoteRecordTrigger trigger)? _onRemoteRecordTrigger;
 
@@ -167,7 +171,9 @@ class MockDivineCameraPlatform
   }
 
   @override
-  Future<void> pausePreview() async {}
+  Future<void> pausePreview({bool releaseAudio = true}) async {
+    lastPauseReleaseAudio = releaseAudio;
+  }
 
   @override
   Future<void> resumePreview() async {}
@@ -1312,25 +1318,28 @@ void main() {
       expect(result, isNull);
     });
 
-    test('handleAppLifecycleState paused calls pausePreview', () async {
+    test('handleAppLifecycleState paused releases audio on pause', () async {
       await DivineCamera.instance.initialize();
 
-      // pausePreview is called - no exception means it worked
       await DivineCamera.instance.handleAppLifecycleState(
         AppLifecycleState.paused,
       );
 
-      // Camera should still be initialized after pause
+      // Genuine background frees the mic to clear the lock-screen indicator.
+      expect(mockPlatform.lastPauseReleaseAudio, isTrue);
       expect(DivineCamera.instance.isInitialized, isTrue);
     });
 
-    test('handleAppLifecycleState inactive calls pausePreview', () async {
+    test('handleAppLifecycleState inactive keeps audio session', () async {
       await DivineCamera.instance.initialize();
 
       await DivineCamera.instance.handleAppLifecycleState(
         AppLifecycleState.inactive,
       );
 
+      // Transient interruption stops video only — leaving audio alone avoids
+      // churning other apps' playback on Control Center / app-switcher pulls.
+      expect(mockPlatform.lastPauseReleaseAudio, isFalse);
       expect(DivineCamera.instance.isInitialized, isTrue);
     });
 

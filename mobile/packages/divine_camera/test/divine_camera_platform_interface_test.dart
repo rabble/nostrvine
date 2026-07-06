@@ -54,7 +54,7 @@ class TestDivineCameraPlatform extends DivineCameraPlatform
   Future<VideoRecordingResult?> stopRecording() async => null;
 
   @override
-  Future<void> pausePreview() async {}
+  Future<void> pausePreview({bool releaseAudio = true}) async {}
 
   @override
   Future<void> resumePreview() async {}

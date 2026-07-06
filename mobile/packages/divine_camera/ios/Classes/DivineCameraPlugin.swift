@@ -235,7 +235,7 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
             capturePhoto(useCache: useCache, outputDirectory: outputDirectory, result: result)
 
         case "pausePreview":
-            pausePreview(result: result)
+            pausePreview(call: call, result: result)
             
         case "resumePreview":
             resumePreview(result: result)
@@ -472,8 +472,9 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
         }
     }
     
-    private func pausePreview(result: @escaping FlutterResult) {
-        cameraController?.pausePreview()
+    private func pausePreview(call: FlutterMethodCall, result: @escaping FlutterResult) {
+        let releaseAudio = (call.arguments as? [String: Any])?["releaseAudio"] as? Bool ?? true
+        cameraController?.pausePreview(releaseAudio: releaseAudio)
         result(nil)
     }
     

@@ -2475,10 +2475,22 @@ class CameraController: NSObject {
     /// Must run on `sessionQueue`.
     private func releaseAudioForPause() {
         audioCaptureSession?.stopRunning()
-        try? AVAudioSession.sharedInstance().setActive(
-            false,
-            options: .notifyOthersOnDeactivation
-        )
+        do {
+            try AVAudioSession.sharedInstance().setActive(
+                false,
+                options: .notifyOthersOnDeactivation
+            )
+        } catch {
+            // A failing deactivation (session busy / insufficient priority) is
+            // exactly the "mic not released" symptom this path guards against,
+            // so surface it instead of swallowing. stopRunning() above is the
+            // primary indicator-clearer, so this stays a warning.
+            DivineCameraLog.shared.warning(
+                "Failed to deactivate audio session on pause — mic may stay "
+                    + "held (error=\(error.localizedDescription))",
+                name: "DivineCamera.AudioSession"
+            )
+        }
         DivineCameraLog.shared.info(
             "Released mic for pause (audio capture stopped, session inactive)",
             name: "DivineCamera.AudioSession"
@@ -2486,7 +2498,15 @@ class CameraController: NSObject {
     }
 
     /// Pauses the camera preview.
-    func pausePreview() {
+    ///
+    /// Pass `releaseAudio: false` for transient foreground interruptions
+    /// (iOS `.inactive` from a Control Center / app-switcher pull) to stop
+    /// only the video session and leave the shared audio session running —
+    /// releasing it there would signal other apps to resume and then re-cut
+    /// their playback on every pull. `releaseAudio: true` (genuine
+    /// background) additionally frees the mic so the lock screen stops
+    /// showing the recording indicator.
+    func pausePreview(releaseAudio: Bool = true) {
         disableScreenFlash()
         isPaused = true
         sessionQueue.async { [weak self] in
@@ -2495,7 +2515,7 @@ class CameraController: NSObject {
             // Keep the mic during an active recording — the writer is
             // still draining; stopRecording() releases it if the preview
             // is still paused once the file is finalized.
-            if !self.isRecording {
+            if releaseAudio, !self.isRecording {
                 self.releaseAudioForPause()
             }
         }
