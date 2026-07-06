@@ -13,7 +13,11 @@ part 'user_profile_providers.g.dart';
 // ignore: specify_nonobvious_property_types
 final userProfileStatsReactiveProvider =
     StreamProvider.family<ProfileStats?, String>((ref, pubkey) async* {
-      final repo = ref.watch(profileRepositoryProvider);
+      // Counts come from a public funnelcake REST call + Drift; they need only
+      // an identity-known session, not the full nostrReady relay-connect settle.
+      // Using the identity-known-gated stats repo lets counts render as soon as
+      // REST returns instead of stalling on "—" until relays connect (#5863).
+      final repo = ref.watch(profileStatsRepositoryProvider);
       if (repo == null) {
         return;
       }

@@ -290,6 +290,39 @@ ProfileRepository? profileRepository(Ref ref) {
     return null;
   }
 
+  return _buildProfileRepository(ref, warmCache: true);
+}
+
+/// Lightweight ProfileRepository gated on **identity-known** (a pubkey is
+/// available) rather than the full `nostrReady` relay-connect settle.
+///
+/// The follower/following/video COUNTS are populated by a PUBLIC funnelcake
+/// REST call (`getUserProfile` → `_cacheProfileStatsFromResult`, no signer,
+/// no relay) and read back from Drift via `watchProfileStats`. None of that
+/// needs the relay-ready client, so gating those counts behind `nostrReady`
+/// is what left them stuck on "—" for the ~4s relay-connect window at cold
+/// start (#5863). This provider hands over the same repository as soon as the
+/// user's identity is known, so the counts render as soon as REST returns.
+///
+/// It does NOT warm the Kind-0 cache — that side effect belongs to the
+/// relay-backed [profileRepository]. Only [userProfileStatsReactiveProvider]
+/// consumes this; everything relay-dependent must keep using
+/// [profileRepository].
+@Riverpod(keepAlive: true)
+ProfileRepository? profileStatsRepository(Ref ref) {
+  final phase = ref.watch(nostrSessionProvider).phase;
+  if (phase != NostrSessionPhase.identityKnown &&
+      phase != NostrSessionPhase.nostrReady) {
+    return null;
+  }
+
+  return _buildProfileRepository(ref, warmCache: false);
+}
+
+/// Shared construction for [profileRepository] and [profileStatsRepository].
+/// When [warmCache] is true, pre-loads known cached pubkeys into the
+/// SubscriptionManager so Kind-0 relay requests skip already-cached authors.
+ProfileRepository _buildProfileRepository(Ref ref, {required bool warmCache}) {
   final nostrClient = ref.watch(nostrServiceProvider);
   final userProfilesDao = ref.watch(databaseProvider).userProfilesDao;
   final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
@@ -319,15 +352,17 @@ ProfileRepository? profileRepository(Ref ref) {
     blockFilter: blockFilter,
   );
 
-  // Pre-load known cached pubkeys and wire into SubscriptionManager
-  // so Kind 0 relay requests skip already-cached authors.
-  unawaited(
-    repo.loadKnownCachedPubkeys().then((_) {
-      ref
-          .read(subscriptionManagerProvider)
-          .setCacheLookup(hasProfileCached: repo.hasProfile);
-    }),
-  );
+  if (warmCache) {
+    // Pre-load known cached pubkeys and wire into SubscriptionManager
+    // so Kind 0 relay requests skip already-cached authors.
+    unawaited(
+      repo.loadKnownCachedPubkeys().then((_) {
+        ref
+            .read(subscriptionManagerProvider)
+            .setCacheLookup(hasProfileCached: repo.hasProfile);
+      }),
+    );
+  }
 
   return repo;
 }

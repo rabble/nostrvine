@@ -398,7 +398,102 @@ final class ProfileRepositoryProvider
   }
 }
 
-String _$profileRepositoryHash() => r'387526a9d5084ffca862ce5ea06c3c568b9f653c';
+String _$profileRepositoryHash() => r'92a8519f8d195b5c33727803820aa82e94a8b0b2';
+
+/// Lightweight ProfileRepository gated on **identity-known** (a pubkey is
+/// available) rather than the full `nostrReady` relay-connect settle.
+///
+/// The follower/following/video COUNTS are populated by a PUBLIC funnelcake
+/// REST call (`getUserProfile` → `_cacheProfileStatsFromResult`, no signer,
+/// no relay) and read back from Drift via `watchProfileStats`. None of that
+/// needs the relay-ready client, so gating those counts behind `nostrReady`
+/// is what left them stuck on "—" for the ~4s relay-connect window at cold
+/// start (#5863). This provider hands over the same repository as soon as the
+/// user's identity is known, so the counts render as soon as REST returns.
+///
+/// It does NOT warm the Kind-0 cache — that side effect belongs to the
+/// relay-backed [profileRepository]. Only [userProfileStatsReactiveProvider]
+/// consumes this; everything relay-dependent must keep using
+/// [profileRepository].
+
+@ProviderFor(profileStatsRepository)
+final profileStatsRepositoryProvider = ProfileStatsRepositoryProvider._();
+
+/// Lightweight ProfileRepository gated on **identity-known** (a pubkey is
+/// available) rather than the full `nostrReady` relay-connect settle.
+///
+/// The follower/following/video COUNTS are populated by a PUBLIC funnelcake
+/// REST call (`getUserProfile` → `_cacheProfileStatsFromResult`, no signer,
+/// no relay) and read back from Drift via `watchProfileStats`. None of that
+/// needs the relay-ready client, so gating those counts behind `nostrReady`
+/// is what left them stuck on "—" for the ~4s relay-connect window at cold
+/// start (#5863). This provider hands over the same repository as soon as the
+/// user's identity is known, so the counts render as soon as REST returns.
+///
+/// It does NOT warm the Kind-0 cache — that side effect belongs to the
+/// relay-backed [profileRepository]. Only [userProfileStatsReactiveProvider]
+/// consumes this; everything relay-dependent must keep using
+/// [profileRepository].
+
+final class ProfileStatsRepositoryProvider
+    extends
+        $FunctionalProvider<
+          ProfileRepository?,
+          ProfileRepository?,
+          ProfileRepository?
+        >
+    with $Provider<ProfileRepository?> {
+  /// Lightweight ProfileRepository gated on **identity-known** (a pubkey is
+  /// available) rather than the full `nostrReady` relay-connect settle.
+  ///
+  /// The follower/following/video COUNTS are populated by a PUBLIC funnelcake
+  /// REST call (`getUserProfile` → `_cacheProfileStatsFromResult`, no signer,
+  /// no relay) and read back from Drift via `watchProfileStats`. None of that
+  /// needs the relay-ready client, so gating those counts behind `nostrReady`
+  /// is what left them stuck on "—" for the ~4s relay-connect window at cold
+  /// start (#5863). This provider hands over the same repository as soon as the
+  /// user's identity is known, so the counts render as soon as REST returns.
+  ///
+  /// It does NOT warm the Kind-0 cache — that side effect belongs to the
+  /// relay-backed [profileRepository]. Only [userProfileStatsReactiveProvider]
+  /// consumes this; everything relay-dependent must keep using
+  /// [profileRepository].
+  ProfileStatsRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'profileStatsRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$profileStatsRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<ProfileRepository?> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ProfileRepository? create(Ref ref) {
+    return profileStatsRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ProfileRepository? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ProfileRepository?>(value),
+    );
+  }
+}
+
+String _$profileStatsRepositoryHash() =>
+    r'af27bd6095556f7b013fb09e9c31026882dcb1ec';
 
 /// Curation Service - manages NIP-51 video curation sets
 
