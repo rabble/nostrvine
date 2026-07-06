@@ -43,34 +43,13 @@ void main() {
     debugUsesAppleAppStoreTipPolicyOverride = null;
   });
 
-  testWidgets('can save monetization links before a profile is cached', (
+  testWidgets('does not save monetization links before a profile is cached', (
     tester,
   ) async {
     final authService = _MockAuthService();
     final repository = _MockProfileRepository();
     final profileStream = StreamController<UserProfile?>();
     final l10n = lookupAppLocalizations(const Locale('en'));
-
-    UserProfile? capturedCurrentProfile;
-    List<MonetizationLink>? capturedLinks;
-
-    final savedProfile = UserProfile(
-      pubkey: pubkey,
-      displayName: '',
-      rawData: {
-        divineMonetizationLinksKey: [
-          const MonetizationLink(
-            provider: MonetizationLinkProvider.cashApp,
-            category: MonetizationLinkCategory.tip,
-            url: r'https://cash.app/$creator',
-            enabled: true,
-          ).toJson(),
-        ],
-      },
-      createdAt: DateTime(2026),
-      eventId:
-          'saved123456789012345678901234567890123456789012345678901234567890',
-    );
 
     when(() => authService.authState).thenReturn(AuthState.authenticated);
     when(
@@ -88,26 +67,6 @@ void main() {
     when(
       () => repository.watchProfile(pubkey: pubkey),
     ).thenAnswer((_) => profileStream.stream);
-    when(
-      () => repository.saveProfileEvent(
-        displayName: any(named: 'displayName'),
-        about: any(named: 'about'),
-        website: any(named: 'website'),
-        picture: any(named: 'picture'),
-        banner: any(named: 'banner'),
-        monetizationLinks: any(named: 'monetizationLinks'),
-        currentProfile: any(named: 'currentProfile'),
-      ),
-    ).thenAnswer((invocation) async {
-      capturedCurrentProfile =
-          invocation.namedArguments[#currentProfile] as UserProfile?;
-      capturedLinks =
-          (invocation.namedArguments[#monetizationLinks]
-                  as Iterable<MonetizationLink>)
-              .toList();
-      return savedProfile;
-    });
-
     addTearDown(profileStream.close);
 
     await tester.pumpWidget(
@@ -141,11 +100,18 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(capturedCurrentProfile?.pubkey, pubkey);
-    expect(capturedLinks, hasLength(1));
-    expect(capturedLinks!.single.provider, MonetizationLinkProvider.cashApp);
-    expect(capturedLinks!.single.url, r'https://cash.app/$creator');
-    expect(find.text(l10n.monetizationSettingsSaved), findsOneWidget);
+    verifyNever(
+      () => repository.saveProfileEvent(
+        displayName: any(named: 'displayName'),
+        about: any(named: 'about'),
+        website: any(named: 'website'),
+        picture: any(named: 'picture'),
+        banner: any(named: 'banner'),
+        monetizationLinks: any(named: 'monetizationLinks'),
+        currentProfile: any(named: 'currentProfile'),
+      ),
+    );
+    expect(find.text(l10n.monetizationSettingsSaved), findsNothing);
   });
 
   testWidgets('starts new monetization link toggles off', (tester) async {

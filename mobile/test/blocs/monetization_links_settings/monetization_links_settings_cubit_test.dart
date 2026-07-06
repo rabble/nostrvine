@@ -49,7 +49,6 @@ void main() {
     }) {
       return MonetizationLinksSettingsCubit(
         repository: repository,
-        pubkey: pubkey,
         profile: currentProfile ?? profile(),
         visibleProviders: visibleProviders,
         trackConfiguredLink: trackedLinks.add,
@@ -122,6 +121,55 @@ void main() {
           (state) => state.errorFor(MonetizationLinkProvider.cashApp),
           'cash app validation error',
           MonetizationLinkInputInvalidReason.wrongProvider,
+        ),
+      ],
+      verify: (_) {
+        verifyNever(
+          () => repository.saveProfileEvent(
+            displayName: any(named: 'displayName'),
+            about: any(named: 'about'),
+            website: any(named: 'website'),
+            picture: any(named: 'picture'),
+            banner: any(named: 'banner'),
+            monetizationLinks: any(named: 'monetizationLinks'),
+            currentProfile: any(named: 'currentProfile'),
+          ),
+        );
+      },
+    );
+
+    blocTest<MonetizationLinksSettingsCubit, MonetizationLinksSettingsState>(
+      'keeps save disabled until a real profile is loaded',
+      build: () => MonetizationLinksSettingsCubit(
+        repository: repository,
+        profile: null,
+        visibleProviders: visibleProviders,
+        trackConfiguredLink: trackedLinks.add,
+        onProfileSaved: savedCallbacks.add,
+      ),
+      verify: (cubit) {
+        expect(cubit.state.currentProfile, isNull);
+        expect(cubit.state.canSave, isFalse);
+      },
+    );
+
+    blocTest<MonetizationLinksSettingsCubit, MonetizationLinksSettingsState>(
+      'validates an enabled provider with an empty field',
+      build: buildCubit,
+      act: (cubit) {
+        cubit.setEnabled(MonetizationLinkProvider.cashApp, true);
+        return cubit.save();
+      },
+      expect: () => [
+        isA<MonetizationLinksSettingsState>().having(
+          (state) => state.isEnabled(MonetizationLinkProvider.cashApp),
+          'cash app enabled',
+          isTrue,
+        ),
+        isA<MonetizationLinksSettingsState>().having(
+          (state) => state.errorFor(MonetizationLinkProvider.cashApp),
+          'cash app validation error',
+          MonetizationLinkInputInvalidReason.empty,
         ),
       ],
       verify: (_) {

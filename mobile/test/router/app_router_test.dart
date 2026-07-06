@@ -12,16 +12,20 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/router.dart';
+import 'package:openvine/router/routes/settings_routes.dart';
 import 'package:openvine/screens/auth/nostr_connect_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/message_requests/request_preview_page.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
+import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -397,6 +401,40 @@ void main() {
         );
       },
     );
+  });
+
+  group('feature-flagged settings routes', () {
+    test('monetization settings route redirects when flag is off', () {
+      final redirectProvider = Provider<String?>(
+        monetizationLinksRedirectIfDisabled,
+      );
+      final container = ProviderContainer(
+        overrides: [
+          featureFlagStateProvider.overrideWith(
+            (_) => const {FeatureFlag.profileMonetizationLinks: false},
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      expect(container.read(redirectProvider), SettingsScreen.path);
+    });
+
+    test('monetization settings route stays available when flag is on', () {
+      final redirectProvider = Provider<String?>(
+        monetizationLinksRedirectIfDisabled,
+      );
+      final container = ProviderContainer(
+        overrides: [
+          featureFlagStateProvider.overrideWith(
+            (_) => const {FeatureFlag.profileMonetizationLinks: true},
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      expect(container.read(redirectProvider), isNull);
+    });
   });
 
   group('NIP-46 signer callbacks', () {

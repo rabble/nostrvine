@@ -17,7 +17,6 @@ class MonetizationLinksSettingsCubit
     extends Cubit<MonetizationLinksSettingsState> {
   MonetizationLinksSettingsCubit({
     required ProfileRepository? repository,
-    required String? pubkey,
     required UserProfile? profile,
     required List<MonetizationLinkProvider> visibleProviders,
     required MonetizationAnalyticsSink trackConfiguredLink,
@@ -27,7 +26,7 @@ class MonetizationLinksSettingsCubit
        _onProfileSaved = onProfileSaved,
        super(
          _stateFromProfile(
-           currentProfile: _profileSeed(pubkey: pubkey, cachedProfile: profile),
+           currentProfile: profile,
            visibleProviders: visibleProviders,
          ),
        );
@@ -72,7 +71,6 @@ class MonetizationLinksSettingsCubit
 
     for (final provider in state.visibleProviders) {
       final input = state.valueFor(provider);
-      if (input.trim().isEmpty) continue;
       if (!state.isEnabled(provider)) continue;
       final result = normalizeMonetizationLinkInput(
         provider: provider,
@@ -202,21 +200,6 @@ class MonetizationLinksSettingsCubit
         for (final provider in MonetizationLinkProvider.values)
           provider: byProvider[provider]?.enabled ?? false,
       },
-    );
-  }
-
-  static UserProfile? _profileSeed({
-    required String? pubkey,
-    required UserProfile? cachedProfile,
-  }) {
-    if (cachedProfile != null) return cachedProfile;
-    if (pubkey == null) return null;
-    return UserProfile(
-      pubkey: pubkey,
-      displayName: '',
-      rawData: const {},
-      createdAt: DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
-      eventId: 'local-profile-seed-$pubkey',
     );
   }
 

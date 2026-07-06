@@ -2,7 +2,10 @@
 // ABOUTME: Split from app_router.dart (#4508)
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/screens/badges/badges_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
@@ -24,7 +27,7 @@ import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
 
-List<RouteBase> settingsRoutes() {
+List<RouteBase> settingsRoutes(Ref ref) {
   return [
     GoRoute(
       path: SettingsScreen.path,
@@ -64,6 +67,7 @@ List<RouteBase> settingsRoutes() {
     GoRoute(
       path: MonetizationLinksSettingsScreen.path,
       name: MonetizationLinksSettingsScreen.routeName,
+      redirect: (_, _) => monetizationLinksRedirectIfDisabled(ref),
       builder: (_, _) => const MonetizationLinksSettingsScreen(),
     ),
     GoRoute(
@@ -141,4 +145,12 @@ List<RouteBase> settingsRoutes() {
       ),
     ),
   ];
+}
+
+String? monetizationLinksRedirectIfDisabled(Ref ref) {
+  final enabled = ref.read(
+    isFeatureEnabledProvider(FeatureFlag.profileMonetizationLinks),
+  );
+  if (enabled) return null;
+  return SettingsScreen.path;
 }

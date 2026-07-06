@@ -662,6 +662,44 @@ void main() {
           ).called(1);
         });
 
+        test(
+          'does not return cached REST profile when raw Kind 0 is requested',
+          () async {
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeClient.getUserProfile(testPubkey),
+            ).thenAnswer(
+              (_) async => UserProfileFound(
+                profile: UserProfileData.fromJson(testPubkey, const {
+                  'display_name': 'REST User',
+                  'name': 'restuser',
+                }),
+              ),
+            );
+            when(
+              () => mockNostrClient.fetchProfile(testPubkey, useCache: false),
+            ).thenAnswer((_) async => null);
+            when(
+              () => mockUserProfilesDao.getProfile(testPubkey),
+            ).thenAnswer(
+              (_) async => UserProfile(
+                pubkey: testPubkey,
+                displayName: 'Cached REST User',
+                rawData: const {'display_name': 'Cached REST User'},
+                createdAt: DateTime(2026),
+                eventId: 'cached-rest-$testPubkey',
+              ),
+            );
+
+            final result = await repoWithFunnelcake.fetchFreshProfile(
+              pubkey: testPubkey,
+              requireRawKind0: true,
+            );
+
+            expect(result, isNull);
+          },
+        );
+
         test('falls back to relay when Funnelcake throws', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
           when(

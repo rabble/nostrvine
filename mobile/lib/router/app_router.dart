@@ -98,7 +98,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ...listsRoutes(ref),
       ...authRoutes(),
       ...appsRoutes(ref),
-      ...settingsRoutes(),
+      ...settingsRoutes(ref),
       ...profileRoutes(),
       ...libraryRoutes(),
     ],

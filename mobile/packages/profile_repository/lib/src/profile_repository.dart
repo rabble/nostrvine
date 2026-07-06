@@ -399,6 +399,10 @@ class ProfileRepository {
       return relayProfile;
     }
 
+    if (requireRawKind0) {
+      return null;
+    }
+
     // Relay/indexer found nothing. If a local profile already exists
     // (e.g. Funnelcake had a hit but we skipped its upsert to protect
     // a freshly-saved bio), return it as a fallback rather than null.

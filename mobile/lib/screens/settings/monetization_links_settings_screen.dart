@@ -45,7 +45,6 @@ class MonetizationLinksSettingsScreen extends ConsumerWidget {
       )),
       create: (_) => MonetizationLinksSettingsCubit(
         repository: repository,
-        pubkey: pubkey,
         profile: profile,
         visibleProviders: providers,
         trackConfiguredLink: (link) =>
