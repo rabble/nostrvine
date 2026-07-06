@@ -127,14 +127,17 @@ class NostrClient {
   /// Convenience getter for the NostrEventsDao
   NostrEventsDao? get _nostrEventsDao => _dbClient?.database.nostrEventsDao;
 
-  /// Ids of events already persisted — and therefore already
+  /// `"id:sig"` keys of events already persisted — and therefore already
   /// signature-verified — in a previous session. Seeded once at
   /// [initialize] so the relay pool can skip re-verifying events that relays
-  /// re-send on cold start.
-  final Set<String> _knownVerifiedEventIds = <String>{};
+  /// re-send on cold start. The signature is part of the key because a Nostr
+  /// event id does not commit to `sig`; trusting an id alone would let a
+  /// replayed id carrying a forged signature bypass verification.
+  final Set<String> _knownVerifiedEventKeys = <String>{};
 
-  /// Loads recently-persisted event ids into [_knownVerifiedEventIds] and
-  /// wires the relay pool to consult it. No-op when there is no local store.
+  /// Loads recently-persisted `(id, sig)` pairs into
+  /// [_knownVerifiedEventKeys] and wires the relay pool to consult it. No-op
+  /// when there is no local store.
   ///
   /// Called before relays connect so the lookup is in place before the
   /// cold-start event flood arrives.
@@ -142,13 +145,14 @@ class NostrClient {
     final dao = _nostrEventsDao;
     if (dao == null) return;
     try {
-      final ids = await dao.getRecentEventIds();
-      _knownVerifiedEventIds
+      final pairs = await dao.getRecentEventIdSigs();
+      _knownVerifiedEventKeys
         ..clear()
-        ..addAll(ids);
-      _nostr.relayPool.isKnownVerifiedEvent = _knownVerifiedEventIds.contains;
+        ..addAll(pairs.map((pair) => '${pair.id}:${pair.sig}'));
+      _nostr.relayPool.isKnownVerifiedEvent = (id, sig) =>
+          _knownVerifiedEventKeys.contains('$id:$sig');
       log(
-        '🔏 Seeded ${_knownVerifiedEventIds.length} known-verified event ids',
+        '🔏 Seeded ${_knownVerifiedEventKeys.length} known-verified events',
         name: 'NostrClient',
       );
     } on Object catch (e, st) {

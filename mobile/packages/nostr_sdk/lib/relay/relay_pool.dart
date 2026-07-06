@@ -384,24 +384,32 @@ class RelayPool {
     return null;
   }
 
-  /// Session-scoped LRU of event ids whose Schnorr signature has already
-  /// been verified on this isolate. The same event arriving again from
-  /// another relay skips the ~0.3ms secp256k1 verify that otherwise
+  /// Session-scoped LRU of `"id:sig"` keys whose Schnorr signature has
+  /// already been verified on this isolate. The same event arriving again
+  /// from another relay skips the ~0.3ms secp256k1 verify that otherwise
   /// dominates cold start (signature verification was ~42% of startup CPU
-  /// in profiling). Only ids from a fresh network verify are recorded here,
-  /// so a known/duplicate hit never masks an unverified network copy.
-  static const int _verifiedEventIdsCap = 20000;
-  final LinkedHashSet<String> _verifiedEventIds = LinkedHashSet<String>();
+  /// in profiling).
+  ///
+  /// The signature is part of the key because a Nostr event id commits to
+  /// the event body only, *not* to `sig` — a relay can replay a known id
+  /// carrying a different, invalid signature. Keying by id alone would let
+  /// that copy skip verification; keying by `(id, sig)` forces a re-verify
+  /// whenever the signature differs. Only fresh network verifications are
+  /// recorded here, so a known/duplicate hit never masks an unverified copy.
+  static const int _verifiedEventKeysCap = 20000;
+  final LinkedHashSet<String> _verifiedEventKeys = LinkedHashSet<String>();
 
-  /// Optional lookup for event ids already verified in a *previous* session.
+  /// Optional lookup for `(event id, signature)` pairs already verified in a
+  /// *previous* session.
   ///
   /// Relays re-send events the app already downloaded and persisted, so on
-  /// every cold start those ids arrive again and would be re-verified. The
-  /// app injects a lookup backed by its local event store (all ids there
-  /// were verified before being written), letting [_onEvent] skip the
-  /// expensive Schnorr verify for known ids. Must be a cheap, synchronous,
-  /// side-effect-free membership test.
-  bool Function(String eventId)? isKnownVerifiedEvent;
+  /// every cold start those events arrive again and would be re-verified. The
+  /// app injects a lookup backed by its local event store (every persisted
+  /// event was verified before being written), letting [_onEvent] skip the
+  /// expensive Schnorr verify for a known id **only when the incoming
+  /// signature matches the one that was persisted** — the id alone does not
+  /// commit to `sig`. Must be a cheap, synchronous, side-effect-free test.
+  bool Function(String eventId, String signature)? isKnownVerifiedEvent;
 
   /// Diagnostic counters for how [_onEvent] treated each incoming event's
   /// signature. Read-only; exposed so callers / tests can observe the skip
@@ -413,13 +421,14 @@ class RelayPool {
   int _verifiesSkippedKnown = 0;
   int _verifiesSkippedSessionDup = 0;
 
-  /// Records [id] as verified, evicting the oldest id once the cap is hit.
-  void _markEventVerified(String id) {
-    _verifiedEventIds
-      ..remove(id)
-      ..add(id);
-    if (_verifiedEventIds.length > _verifiedEventIdsCap) {
-      _verifiedEventIds.remove(_verifiedEventIds.first);
+  /// Records [key] (an `"id:sig"` pair) as verified, evicting the oldest once
+  /// the cap is hit.
+  void _markEventVerified(String key) {
+    _verifiedEventKeys
+      ..remove(key)
+      ..add(key);
+    if (_verifiedEventKeys.length > _verifiedEventKeysCap) {
+      _verifiedEventKeys.remove(_verifiedEventKeys.first);
     }
   }
 
@@ -466,22 +475,23 @@ class RelayPool {
           return;
         }
 
-        // Skip the expensive Schnorr verify when the event is already
-        // trusted. Because isValid proves id == sha256(content) (which
-        // includes the pubkey), two events sharing an id are byte-identical,
-        // so id-based trust is cryptographically sound.
-        //  - Events verified in a previous session (known to the injected
+        // Skip the expensive Schnorr verify when this exact `(id, sig)` pair
+        // is already trusted. The event id commits to the body but not to
+        // `sig`, so trust is keyed by both — a replayed id carrying a
+        // different signature falls through to a full verify below.
+        //  - Pairs verified in a previous session (known to the injected
         //    [isKnownVerifiedEvent] store) skip re-verify on cold start.
-        //  - Network events verified earlier this session (a duplicate
-        //    delivery of the same id from another relay) skip re-verify.
-        // Only fresh network verifications are recorded in [_verifiedEventIds]
+        //  - Pairs verified earlier this session (a duplicate delivery of the
+        //    same event from another relay) skip re-verify.
+        // Only fresh network verifications are recorded in [_verifiedEventKeys]
         // so a known/duplicate hit never masks an unverified network copy.
-        if (_verifiedEventIds.contains(event.id)) {
+        final verifyKey = '${event.id}:${event.sig}';
+        if (_verifiedEventKeys.contains(verifyKey)) {
           _verifiesSkippedSessionDup++;
-        } else if (isKnownVerifiedEvent?.call(event.id) ?? false) {
+        } else if (isKnownVerifiedEvent?.call(event.id, event.sig) ?? false) {
           _verifiesSkippedKnown++;
         } else if (event.isSigned) {
-          _markEventVerified(event.id);
+          _markEventVerified(verifyKey);
           _verifiesPerformed++;
         } else {
           log(

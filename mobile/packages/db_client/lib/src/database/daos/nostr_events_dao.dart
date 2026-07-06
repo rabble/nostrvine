@@ -624,18 +624,31 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
     return result.read<int>('count');
   }
 
-  /// Returns the ids of the most recently created events, newest first,
-  /// capped at [limit].
+  /// Returns the `(id, sig)` pairs of the most recently created events,
+  /// newest first, capped at [limit].
   ///
   /// Used to seed the relay pool's already-verified set: every event in this
   /// table was signature-verified before being written, so re-verifying the
-  /// same ids when relays re-send them on the next cold start is wasted work.
-  Future<List<String>> getRecentEventIds({int limit = 50000}) async {
+  /// same events when relays re-send them on the next cold start is wasted
+  /// work. The signature is returned alongside the id because a Nostr event
+  /// id commits to the event body but not to `sig`, so trust must be keyed by
+  /// the exact `(id, sig)` pair that was verified — an id alone would let a
+  /// replayed id carrying a forged signature bypass verification.
+  Future<List<({String id, String sig})>> getRecentEventIdSigs({
+    int limit = 50000,
+  }) async {
     final rows = await customSelect(
-      'SELECT id FROM event ORDER BY created_at DESC LIMIT ?',
+      'SELECT id, sig FROM event ORDER BY created_at DESC LIMIT ?',
       variables: [Variable.withInt(limit)],
       readsFrom: {nostrEvents},
     ).get();
-    return rows.map((row) => row.read<String>('id')).toList();
+    return rows
+        .map(
+          (row) => (
+            id: row.read<String>('id'),
+            sig: row.read<String>('sig'),
+          ),
+        )
+        .toList();
   }
 }

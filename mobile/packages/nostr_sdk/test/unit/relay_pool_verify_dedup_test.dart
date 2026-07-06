@@ -121,16 +121,19 @@ void main() {
     });
 
     test(
-      'skips verify for ids known-verified from a previous session',
+      'skips verify for (id, sig) pairs known-verified from a prior session',
       () async {
-        // The app seeds ids verified and persisted in a prior session. A
-        // network event whose id is known — even with a bad signature here —
-        // is trusted and routed without re-verifying.
+        // The app seeds (id, sig) pairs verified and persisted in a prior
+        // session. A network event whose exact pair is known is trusted and
+        // routed without re-verifying.
         final relay = _FakeRelay('wss://n1.example');
         await nostr.relayPool.add(relay);
 
-        final json = signedEventJson()..['sig'] = badSig;
-        nostr.relayPool.isKnownVerifiedEvent = {json['id'] as String}.contains;
+        final json = signedEventJson();
+        final id = json['id'] as String;
+        final sig = json['sig'] as String;
+        nostr.relayPool.isKnownVerifiedEvent = (eventId, eventSig) =>
+            eventId == id && eventSig == sig;
 
         await relay.deliver(['EVENT', subId, json]);
 
@@ -140,10 +143,32 @@ void main() {
       },
     );
 
+    test('re-verifies and drops a known id carrying a different, invalid '
+        'signature', () async {
+      // The id is known-verified, but the incoming signature differs from
+      // the one that was verified. A Nostr event id commits to the body,
+      // not to sig, so the pool must NOT trust the id alone: it re-verifies,
+      // the forged signature fails, and the event is dropped.
+      final relay = _FakeRelay('wss://n1.example');
+      await nostr.relayPool.add(relay);
+
+      final valid = signedEventJson();
+      final id = valid['id'] as String;
+      final validSig = valid['sig'] as String;
+      nostr.relayPool.isKnownVerifiedEvent = (eventId, eventSig) =>
+          eventId == id && eventSig == validSig;
+
+      final forged = Map<String, dynamic>.from(valid)..['sig'] = badSig;
+      await relay.deliver(['EVENT', subId, forged]);
+
+      expect(received, isEmpty);
+      expect(nostr.relayPool.verifiesSkippedKnown, 0);
+    });
+
     test('still verifies ids absent from the known-verified set', () async {
       final relay = _FakeRelay('wss://n1.example');
       await nostr.relayPool.add(relay);
-      nostr.relayPool.isKnownVerifiedEvent = (_) => false;
+      nostr.relayPool.isKnownVerifiedEvent = (_, _) => false;
 
       await relay.deliver(['EVENT', subId, signedEventJson(content: 'ok')]);
 

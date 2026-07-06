@@ -1745,17 +1745,23 @@ void main() {
       });
     });
 
-    group('getRecentEventIds', () {
-      test('returns ids ordered by created_at descending', () async {
-        final older = createEvent(content: 'older', createdAt: 1000);
-        final newer = createEvent(content: 'newer', createdAt: 2000);
-        await dao.upsertEvent(older);
-        await dao.upsertEvent(newer);
+    group('getRecentEventIdSigs', () {
+      test(
+        'returns (id, sig) pairs ordered by created_at descending',
+        () async {
+          final older = createEvent(content: 'older', createdAt: 1000);
+          final newer = createEvent(content: 'newer', createdAt: 2000);
+          await dao.upsertEvent(older);
+          await dao.upsertEvent(newer);
 
-        final ids = await dao.getRecentEventIds();
+          final pairs = await dao.getRecentEventIdSigs();
 
-        expect(ids, [newer.id, older.id]);
-      });
+          expect(pairs, [
+            (id: newer.id, sig: newer.sig),
+            (id: older.id, sig: older.sig),
+          ]);
+        },
+      );
 
       test('respects the limit', () async {
         for (var i = 0; i < 5; i++) {
@@ -1764,13 +1770,13 @@ void main() {
           );
         }
 
-        final ids = await dao.getRecentEventIds(limit: 2);
+        final pairs = await dao.getRecentEventIdSigs(limit: 2);
 
-        expect(ids, hasLength(2));
+        expect(pairs, hasLength(2));
       });
 
       test('returns empty when no events exist', () async {
-        expect(await dao.getRecentEventIds(), isEmpty);
+        expect(await dao.getRecentEventIdSigs(), isEmpty);
       });
     });
   });

@@ -153,17 +153,22 @@ void main() {
         );
       }
 
-      test('wires the pool lookup from persisted ids', () async {
+      test('wires the pool lookup from persisted (id, sig) pairs', () async {
         final dao = _MockNostrEventsDao();
-        when(dao.getRecentEventIds).thenAnswer((_) async => ['idA']);
+        when(
+          dao.getRecentEventIdSigs,
+        ).thenAnswer((_) async => [(id: 'idA', sig: 'sigA')]);
         final clientWithDb = buildClientWithDao(dao);
 
         await clientWithDb.initialize();
 
         final lookup = realPool.isKnownVerifiedEvent;
         expect(lookup, isNotNull);
-        expect(lookup!('idA'), isTrue);
-        expect(lookup('never-seen'), isFalse);
+        expect(lookup!('idA', 'sigA'), isTrue);
+        // A known id carrying a different signature is not trusted — the id
+        // does not commit to sig, so this must fall through to a full verify.
+        expect(lookup('idA', 'other-sig'), isFalse);
+        expect(lookup('never-seen', 'sigA'), isFalse);
       });
 
       test('leaves the lookup unset when there is no db client', () async {
@@ -179,7 +184,7 @@ void main() {
 
       test('initialize still completes when seeding fails', () async {
         final dao = _MockNostrEventsDao();
-        when(dao.getRecentEventIds).thenThrow(Exception('boom'));
+        when(dao.getRecentEventIdSigs).thenThrow(Exception('boom'));
         final clientWithDb = buildClientWithDao(dao);
 
         await expectLater(clientWithDb.initialize(), completes);
