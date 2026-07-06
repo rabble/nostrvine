@@ -42,7 +42,7 @@ class DatabaseEncryptionBootstrap {
        _onDatabaseReset = onDatabaseReset,
        _canOpenEncryptedDatabase =
            canOpenEncryptedDatabase ??
-           ((rawKeyHex) => encryptedDatabaseOpensWithKey(rawKeyHex: rawKeyHex)),
+           ((rawKeyHex) => encryptedDatabaseOpensCleanly(rawKeyHex: rawKeyHex)),
        _salvageDatabase =
            salvageDatabase ??
            ((rawKeyHex) =>
@@ -104,9 +104,9 @@ class DatabaseEncryptionBootstrap {
         if (await _canOpenEncryptedDatabase(key)) {
           return key;
         }
-        // The key either no longer opens the DB (stale) or opens it but it
-        // failed the integrity check (on-disk corruption). Before the
-        // destructive key-rotation wipe, try to salvage the local-only data
+        // The key either no longer opens the DB (stale) or opens it but
+        // on-disk corruption surfaced when the Drift startup cleanup ran. Before
+        // the destructive key-rotation wipe, try to salvage the local-only data
         // (drafts, clips, pending queues) into a fresh DB rebuilt in place
         // under the SAME key. Local-only data cannot be re-fetched from relays,
         // so preserving it matters. Salvage returns false on genuine key loss

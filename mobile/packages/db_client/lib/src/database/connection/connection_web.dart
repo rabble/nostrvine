@@ -25,7 +25,10 @@ Future<String> getSharedDatabasePath() async {
 /// Web at-rest encryption is deferred behind the OPFS migration (#373). The
 /// app guards encryption with `kIsWeb`, so this is never reached at runtime —
 /// it exists only so app code compiles for web. See the native variant.
-QueryExecutor openEncryptedConnection({required String rawKeyHex}) {
+QueryExecutor openEncryptedConnection({
+  required String rawKeyHex,
+  String? databasePath,
+}) {
   throw UnsupportedError(
     'Native at-rest encryption is not supported on web',
   );

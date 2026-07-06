@@ -1,0 +1,74 @@
+// ABOUTME: Reactive corruption probe that opens the real encrypted AppDatabase.
+// ABOUTME: Forces beforeOpen startup cleanup so on-disk corruption surfaces at
+// ABOUTME: the recovery gate instead of bricking the session on first query.
+
+import 'package:db_client/db_client.dart';
+
+/// SQLite's stable message for every SQLITE_CORRUPT_* variant (e.g. 779
+/// SQLITE_CORRUPT_INDEX) — the structural-corruption signature.
+const _corruptMessage = 'database disk image is malformed';
+
+/// SQLite's stable message for SQLITE_NOTADB — the key cannot decrypt the file.
+const _notADatabaseMessage = 'file is not a database';
+
+/// Whether the shared encrypted database opens **and its Drift `beforeOpen`
+/// startup cleanup runs** under [rawKeyHex].
+///
+/// This is the reactive corruption gate for the app-layer startup recovery.
+/// Rather than pre-scanning the whole database with `PRAGMA quick_check` on
+/// every launch — an added, size-unbounded cost on the startup hot path — it
+/// opens the real [AppDatabase] and forces `beforeOpen` (which runs
+/// `runStartupCleanup` → `DELETE FROM event …`) via a trivial query. That
+/// cleanup is the exact operation that trips on the field corruption and it
+/// runs on every open anyway, so a healthy database pays nothing extra here.
+///
+/// Returns `false` when the open fails with SQLITE_CORRUPT (structural
+/// corruption past the schema page) or SQLITE_NOTADB (the key cannot decrypt
+/// the file); the caller then salvages or recreates. Any other error
+/// propagates.
+///
+/// [databasePath] defaults to the shared database and exists so tests can point
+/// at a specific file.
+Future<bool> encryptedDatabaseOpensCleanly({
+  required String rawKeyHex,
+  String? databasePath,
+}) async {
+  final db = AppDatabase(
+    openEncryptedConnection(rawKeyHex: rawKeyHex, databasePath: databasePath),
+  );
+  try {
+    // Forces the lazy open → migration.beforeOpen → runStartupCleanup, which is
+    // where field corruption throws. A healthy open returns the literal row.
+    await db.customSelect('SELECT 1;').get();
+    return true;
+  } on Object catch (error) {
+    if (_indicatesCorruptionOrKeyFailure(error)) return false;
+    rethrow;
+  } finally {
+    await _closeQuietly(db);
+  }
+}
+
+/// Classifies [error] as on-disk corruption or an undecryptable file.
+///
+/// The encrypted database runs on a background isolate, so a failing query
+/// arrives wrapped in drift's `DriftRemoteException`, whose `toString()`
+/// forwards the original `SqliteException` message. Matching the stable SQLite
+/// signatures avoids importing drift's experimental `remote.dart` (or its
+/// web-unsafe `isolate.dart`) purely for the wrapper type.
+bool _indicatesCorruptionOrKeyFailure(Object error) {
+  final text = error.toString().toLowerCase();
+  return text.contains(_corruptMessage) || text.contains(_notADatabaseMessage);
+}
+
+/// Closes [db] without letting a close-time failure escape the probe.
+///
+/// Closing a database whose open failed can itself throw; the probe result is
+/// already decided, so a close error must not become the probe's outcome.
+Future<void> _closeQuietly(AppDatabase db) async {
+  try {
+    await db.close();
+  } on Object {
+    // Best effort: the open already failed and the result is decided.
+  }
+}

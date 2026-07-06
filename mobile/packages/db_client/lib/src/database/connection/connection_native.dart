@@ -49,14 +49,21 @@ bool get _isFlutterTestProcess =>
 /// throws
 /// rather than silently writing plaintext.
 ///
+/// [databasePath] overrides the shared database location; it defaults to
+/// [getSharedDatabasePath] and exists so probes/tests
+/// (`encryptedDatabaseOpensCleanly`) can point at a specific file.
+///
 /// Throws [ArgumentError] if [rawKeyHex] is malformed (the error never embeds
 /// the key — see [formatCipherKeyPragma]).
-QueryExecutor openEncryptedConnection({required String rawKeyHex}) {
+QueryExecutor openEncryptedConnection({
+  required String rawKeyHex,
+  String? databasePath,
+}) {
   // Validate eagerly so a malformed key fails fast at construction time.
   _rawKeyLiteral(rawKeyHex);
 
   return LazyDatabase(() async {
-    final dbPath = await getSharedDatabasePath();
+    final dbPath = databasePath ?? await getSharedDatabasePath();
     final dbFile = prepareDatabaseFile(dbPath);
     // Open on a background isolate so the SQLite3MultipleCiphers per-page
     // AES-256-CBC + HMAC-SHA512 work (every read and write) never runs on the
@@ -73,23 +80,21 @@ QueryExecutor openEncryptedConnection({required String rawKeyHex}) {
   });
 }
 
-/// Returns whether the shared encrypted database opens **and is structurally
-/// intact** with [rawKeyHex].
+/// Returns whether the encrypted database at [databasePath] opens with
+/// [rawKeyHex] and is structurally intact, via
+/// [databasePassesIntegrityCheck].
 ///
-/// This is a startup guard for the app layer: a valid-looking key can remain
-/// in secure storage while the database file belongs to a different key
-/// (backup/restore drift, partial reinstall, manual sandbox surgery). In that
-/// case the DB is just as unrecoverable as a missing key and should be backed
-/// up/recreated before the first Drift provider touches it.
+/// This verifies a freshly-rebuilt salvage copy before
+/// [salvageCorruptEncryptedDatabase] swaps it into place: it must open under
+/// the same key and pass a full `PRAGMA quick_check`. The whole-database scan
+/// is appropriate here because the salvage copy is small (local-only rows plus
+/// empty caches).
 ///
-/// It also runs [databasePassesIntegrityCheck]. [applyCipherKey] only reads
-/// `sqlite_master` (the schema page), so on-disk corruption localised to a
-/// table or index b-tree passes this guard and only surfaces later inside
-/// Drift's `beforeOpen` startup cleanup (`DELETE FROM event …`) — past the
-/// recovery gate, where SQLITE_CORRUPT then throws on every query and bricks
-/// the session until reinstall. Walking every b-tree here lets that corruption
-/// be detected at the same gate that already handles a stale cipher key, so
-/// the caller backs the file up and recreates it.
+/// It is intentionally **not** used as the startup guard for the large
+/// production database — that would add an unbounded whole-DB scan to every
+/// launch. The app-layer startup recovery instead uses the reactive
+/// `encryptedDatabaseOpensCleanly`, which forces Drift's `beforeOpen` cleanup
+/// (the operation that trips on the field corruption) rather than pre-scanning.
 Future<bool> encryptedDatabaseOpensWithKey({
   required String rawKeyHex,
   String? databasePath,
