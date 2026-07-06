@@ -115,6 +115,7 @@ import 'package:openvine/widgets/app_lifecycle_handler.dart';
 import 'package:openvine/widgets/geo_blocking_gate.dart';
 import 'package:openvine/widgets/upload_failure_sheet.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permissions_service/permissions_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -777,6 +778,15 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
         task: () async {
           await container.read(loggingConfigServiceProvider).initialize();
           LogMessageBatcher.instance.initialize();
+          // Cross-session log files so bug-report exports cover previous
+          // sessions — user reports usually arrive a day after the bug.
+          // Web has no dart:io file system.
+          if (!kIsWeb) {
+            final supportDir = await getApplicationSupportDirectory();
+            await LogCaptureService().enablePersistence(
+              directoryPath: '${supportDir.path}/logs',
+            );
+          }
         },
       );
     },
