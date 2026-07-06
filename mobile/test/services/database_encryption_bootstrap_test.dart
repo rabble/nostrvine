@@ -51,6 +51,7 @@ void main() {
       void Function()? onReset,
       bool Function(String rawKeyHex)? canOpenEncryptedDatabase,
       bool Function(String rawKeyHex)? salvageDatabase,
+      bool Function(String rawKeyHex)? encryptedKeyMatches,
     }) {
       return DatabaseEncryptionBootstrap(
         secureStorage: storage,
@@ -63,9 +64,13 @@ void main() {
             ? null
             : (rawKeyHex) async => canOpenEncryptedDatabase(rawKeyHex),
         // Default to "nothing to salvage" so the corruption branch falls
-        // through to the key-rotation wipe unless a test opts in.
+        // through to the wipe unless a test opts in.
         salvageDatabase: (rawKeyHex) async =>
             salvageDatabase?.call(rawKeyHex) ?? false,
+        // Default to "key no longer decrypts" (genuine key loss) so the wipe
+        // rotates the key unless a test opts into the still-valid-key case.
+        encryptedKeyMatches: (rawKeyHex) async =>
+            encryptedKeyMatches?.call(rawKeyHex) ?? false,
       );
     }
 
@@ -198,10 +203,10 @@ void main() {
     );
 
     test(
-      'wipes and rotates the key when salvage cannot read the DB',
+      'wipes and rotates the key when the key can no longer decrypt the DB',
       () async {
-        // Salvage returns false (genuine key loss — nothing readable), so the
-        // recovery must fall through to the destructive key-rotation wipe.
+        // Salvage returns false AND the key no longer decrypts the file
+        // (genuine key loss), so recovery must rotate the key + wipe.
         const staleKey =
             '2dd29ca851e7b56e4697b0e1f08507293d761a05ce4d1b628663f411a8086d99';
         store[dbCipherKeyStorageKey] = staleKey;
@@ -212,12 +217,41 @@ void main() {
           onDelete: () => deleted = true,
           canOpenEncryptedDatabase: (_) => false,
           salvageDatabase: (_) => false,
+          encryptedKeyMatches: (_) => false,
         );
 
         final key = await bootstrap.resolveCipherKey();
 
         expect(key, isNot(equals(staleKey)));
         expect(deleted, isTrue);
+      },
+    );
+
+    test(
+      'wipes but keeps the key when salvage fails yet the key still decrypts',
+      () async {
+        // The key decrypts the schema (so it is NOT key loss) but the DB is
+        // corrupt and could not be salvaged. Rotating would make the backup —
+        // encrypted with this key — unreadable, so the key must be kept and the
+        // DB recreated under it.
+        const validKey =
+            '2dd29ca851e7b56e4697b0e1f08507293d761a05ce4d1b628663f411a8086d99';
+        store[dbCipherKeyStorageKey] = validKey;
+        var deleted = false;
+
+        final bootstrap = buildBootstrap(
+          outcome: CipherMigrationOutcome.alreadyEncrypted,
+          onDelete: () => deleted = true,
+          canOpenEncryptedDatabase: (_) => false,
+          salvageDatabase: (_) => false,
+          encryptedKeyMatches: (_) => true,
+        );
+
+        final key = await bootstrap.resolveCipherKey();
+
+        expect(key, equals(validKey), reason: 'key kept so the backup is read');
+        expect(store[dbCipherKeyStorageKey], equals(validKey));
+        expect(deleted, isTrue, reason: 'the corrupt DB is still backed up');
       },
     );
 

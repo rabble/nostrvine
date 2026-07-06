@@ -8,7 +8,8 @@ import 'package:drift/native.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:sqlite3/common.dart' show CommonDatabase;
+import 'package:sqlite3/common.dart'
+    show CommonDatabase, CommonPreparedStatement;
 import 'package:sqlite3/sqlite3.dart';
 
 /// Open a database connection for native platforms
@@ -119,6 +120,39 @@ Future<bool> encryptedDatabaseOpensWithKey({
   }
 }
 
+/// Whether [rawKeyHex] can decrypt the database at [databasePath] — i.e. it is
+/// the correct cipher key, independent of deeper b-tree integrity.
+///
+/// [applyCipherKey] reads `sqlite_master` (the schema page), so this returns
+/// `true` for a decryptable-but-corrupt database and `false` only on a genuine
+/// key mismatch (SQLITE_NOTADB) or an unreadable schema page (SQLITE_CORRUPT).
+/// The app-layer recovery uses it to tell "salvage failed under a working key"
+/// (keep the key so the `.pre_key_loss_wipe_backup` stays readable) apart from
+/// real key loss (rotate). Returns `false` when the file is missing.
+Future<bool> encryptedDatabaseKeyDecrypts({
+  required String rawKeyHex,
+  String? databasePath,
+}) async {
+  _rawKeyLiteral(rawKeyHex);
+
+  final dbPath = databasePath ?? await getSharedDatabasePath();
+  if (!File(dbPath).existsSync()) return false;
+
+  Database? db;
+  try {
+    db = sqlite3.open(dbPath);
+    applyCipherKey(db, rawKeyHex);
+    return true;
+  } on SqliteException catch (e) {
+    if (e.resultCode == _sqliteNotADb || e.resultCode == _sqliteCorrupt) {
+      return false;
+    }
+    rethrow;
+  } finally {
+    db?.close();
+  }
+}
+
 /// Returns whether [db] passes SQLite's `PRAGMA quick_check` — i.e. every
 /// table and index b-tree is structurally sound.
 ///
@@ -160,6 +194,11 @@ const _corruptionBackupSuffix = '.pre_corruption_recovery_backup';
 /// re-drain from gift wraps on relays, which the app-layer recovery triggers by
 /// clearing the DM sync state after a salvage. `outgoing_dms` is kept because
 /// unsent outbound messages are not yet on any relay.
+///
+/// This is the local-only set also tracked by [_localOnlyDataQueries] (the
+/// legacy-migration "is there actionable data worth preserving" probe), minus
+/// `direct_messages` / `conversations`. A new local-only table added to one
+/// list should be considered for the other.
 @visibleForTesting
 const salvageableLocalOnlyTables = <String>[
   'drafts',
@@ -245,13 +284,21 @@ bool _buildSalvageCopy({
     target = sqlite3.open(salvagePath);
     applyCipherKey(target, rawKeyHex);
     _copyDatabaseSchema(source: source, target: target);
-    // Carry Drift's schema version so it opens the salvaged file as an
-    // existing database (running beforeOpen) instead of a fresh one — a fresh
-    // open re-runs onCreate and fails with "table already exists".
-    target.execute('PRAGMA user_version = ${_userVersion(source)};');
+    // Carry Drift's schema version so it opens the salvaged file as an existing
+    // database (running beforeOpen) instead of a fresh one — a fresh open
+    // re-runs onCreate and fails with "table already exists". Then wrap the row
+    // copy in one transaction: without it each INSERT is its own fsync'd
+    // autocommit, so salvaging thousands of rows can take many seconds on
+    // device flash. The per-row skips inside [_copySalvageableRows] never
+    // throw, so COMMIT is always reached; a schema/DDL failure above is caught
+    // before BEGIN.
+    target
+      ..execute('PRAGMA user_version = ${_userVersion(source)};')
+      ..execute('BEGIN;');
     for (final table in salvageableLocalOnlyTables) {
       _copySalvageableRows(source: source, target: target, table: table);
     }
+    target.execute('COMMIT;');
     return true;
   } on SqliteException {
     return false;
@@ -280,33 +327,60 @@ void _copyDatabaseSchema({
   }
 }
 
-/// Copies every readable row of [table] from [source] to [target], skipping the
-/// table entirely if its own pages are corrupt and skipping any individual row
-/// that cannot be read or re-inserted.
+/// Copies the readable rows of [table] from [source] to [target], keeping every
+/// row before a corrupt page and skipping any individual row that cannot be
+/// re-inserted.
+///
+/// Iterates a statement **cursor** rather than materializing `SELECT *`
+/// eagerly: an eager `select()` on a table whose own pages are corrupt throws
+/// before yielding anything, salvaging **zero** rows — even for the
+/// drafts/clips this exists to save. A cursor yields every row up to the
+/// corrupt page, then
+/// `moveNext()` throws and the readable prefix is kept.
 void _copySalvageableRows({
   required CommonDatabase source,
   required CommonDatabase target,
   required String table,
 }) {
-  final ResultSet rows;
+  final CommonPreparedStatement select;
   try {
-    rows = source.select('SELECT * FROM "$table";');
+    select = source.prepare('SELECT * FROM "$table";');
   } on SqliteException {
     return;
   }
-  if (rows.isEmpty) return;
+  try {
+    final cursor = select.selectCursor();
+    String? insert;
+    List<String>? columns;
+    while (_cursorHasNextRow(cursor)) {
+      final row = cursor.current;
+      final resolvedColumns = columns ??= cursor.columnNames;
+      insert ??= _buildRowInsert(table, resolvedColumns);
+      try {
+        target.execute(insert, [for (final c in resolvedColumns) row[c]]);
+      } on SqliteException {
+        // Skip an individual unreadable / conflicting row; keep the rest.
+      }
+    }
+  } finally {
+    select.close();
+  }
+}
 
-  final columns = rows.columnNames;
+/// Advances [cursor], treating a mid-iteration corruption as end-of-data so the
+/// readable prefix already copied is kept.
+bool _cursorHasNextRow(IteratingCursor cursor) {
+  try {
+    return cursor.moveNext();
+  } on SqliteException {
+    return false;
+  }
+}
+
+String _buildRowInsert(String table, List<String> columns) {
   final columnList = columns.map((c) => '"$c"').join(', ');
   final placeholders = List.filled(columns.length, '?').join(', ');
-  final insert = 'INSERT INTO "$table" ($columnList) VALUES ($placeholders);';
-  for (final row in rows) {
-    try {
-      target.execute(insert, [for (final column in columns) row[column]]);
-    } on SqliteException {
-      // Skip an individual unreadable / conflicting row; keep the rest.
-    }
-  }
+  return 'INSERT INTO "$table" ($columnList) VALUES ($placeholders);';
 }
 
 /// Keys [rawDb] with [rawKeyHex] and verifies SQLite3MultipleCiphers is active.
@@ -434,6 +508,17 @@ Future<CipherMigrationOutcome> migratePlaintextToEncrypted({
     return CipherMigrationOutcome.migrated;
   }
 
+  // Resume an interrupted salvage swap (see [salvageCorruptEncryptedDatabase]).
+  // A force-kill after the corrupt original was renamed to its backup but
+  // before the verified salvage copy was promoted leaves the salvage file with
+  // no file at [dbPath] — the same window the migration resume above covers.
+  // Promoting the still-sound salvage completes the swap instead of stranding
+  // the recovered drafts/clips and creating a fresh empty database.
+  if (!File(dbPath).existsSync() &&
+      await _resumeInterruptedSalvage(dbPath: dbPath, rawKeyHex: rawKeyHex)) {
+    return CipherMigrationOutcome.alreadyEncrypted;
+  }
+
   if (!File(dbPath).existsSync()) return CipherMigrationOutcome.noDatabase;
 
   switch (_classifyDatabase(dbPath)) {
@@ -451,6 +536,35 @@ Future<CipherMigrationOutcome> migratePlaintextToEncrypted({
     case _DbClassification.populatedPlaintext:
       return _rekeyPlaintextInPlace(dbPath: dbPath, rawKeyHex: rawKeyHex);
   }
+}
+
+/// Completes a salvage swap that was interrupted after the corrupt original was
+/// backed up but before the verified salvage copy was promoted into place.
+/// Mirrors the `.sqlcipher_migrating` resume in [migratePlaintextToEncrypted].
+///
+/// The salvage copy is re-verified under [rawKeyHex] before promotion; an
+/// unusable leftover is discarded so startup falls through to creating a fresh
+/// database. Returns whether a salvage copy was promoted into [dbPath].
+Future<bool> _resumeInterruptedSalvage({
+  required String dbPath,
+  required String rawKeyHex,
+}) async {
+  final salvagePath = '$dbPath$_salvageSuffix';
+  if (!File(salvagePath).existsSync()) return false;
+
+  if (await encryptedDatabaseOpensWithKey(
+    rawKeyHex: rawKeyHex,
+    databasePath: salvagePath,
+  )) {
+    promoteEncryptedMigrationArtifact(
+      encryptedPath: salvagePath,
+      dbPath: dbPath,
+    );
+    return true;
+  }
+
+  _deleteDatabaseAndSidecars(salvagePath);
+  return false;
 }
 
 const _migratingSuffix = '.sqlcipher_migrating';

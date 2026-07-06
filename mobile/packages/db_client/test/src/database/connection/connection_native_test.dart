@@ -811,6 +811,139 @@ void main() {
         );
       },
     );
+
+    test(
+      'keeps the readable prefix when a salvageable table itself is corrupt',
+      () async {
+        // Corruption lands inside a *salvageable* table's own pages (drafts,
+        // here spanning past the file midpoint), not just the re-fetchable
+        // event cache. An eager `SELECT *` throws and salvages zero drafts; the
+        // cursor keeps every row before the corrupt page.
+        _createEncryptedDatabaseWithManyDrafts(
+          dbPath,
+          validKey,
+          draftCount: 2000,
+        );
+        _corruptBackHalf(dbPath);
+
+        expect(
+          await encryptedDatabaseOpensWithKey(
+            rawKeyHex: validKey,
+            databasePath: dbPath,
+          ),
+          isFalse,
+          reason: 'precondition: the drafts table is genuinely corrupt',
+        );
+
+        final salvaged = await salvageCorruptEncryptedDatabase(
+          rawKeyHex: validKey,
+          databasePath: dbPath,
+        );
+
+        expect(salvaged, isTrue);
+        final recovered = _encryptedRowCount(dbPath, validKey, 'drafts');
+        expect(
+          recovered,
+          greaterThan(0),
+          reason: 'the readable prefix survives (eager select would drop all)',
+        );
+        expect(
+          recovered,
+          lessThan(2000),
+          reason: 'the corrupt tail is genuinely past recovery',
+        );
+      },
+    );
+  });
+
+  group('migratePlaintextToEncrypted salvage-swap resume', () {
+    const validKey =
+        '2dd29ca851e7b56e4697b0e1f08507293d761a05ce4d1b628663f411a8086d99';
+    const otherKey =
+        'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+    late Directory tempRoot;
+    late String dbPath;
+
+    setUp(() {
+      tempRoot = Directory.systemTemp.createTempSync(
+        'db_client_salvage_resume_test_',
+      );
+      dbPath = p.join(tempRoot.path, 'divine_db.db');
+    });
+
+    tearDown(() {
+      if (tempRoot.existsSync()) tempRoot.deleteSync(recursive: true);
+    });
+
+    test(
+      'promotes a verified salvage copy stranded by an interrupted swap',
+      () async {
+        // Reproduce the crash window in salvageCorruptEncryptedDatabase: the
+        // corrupt original was already renamed to its backup (so dbPath is
+        // gone) and a verified salvage copy sits at `.corruption_salvage`, but
+        // the process died before the final promote.
+        final salvagePath = '$dbPath.corruption_salvage';
+        _createEncryptedDatabaseWithLocalData(salvagePath, validKey);
+        expect(File(dbPath).existsSync(), isFalse);
+
+        final outcome = await migratePlaintextToEncrypted(
+          rawKeyHex: validKey,
+          databasePath: dbPath,
+        );
+
+        expect(outcome, CipherMigrationOutcome.alreadyEncrypted);
+        expect(File(dbPath).existsSync(), isTrue);
+        expect(
+          File(salvagePath).existsSync(),
+          isFalse,
+          reason: 'the salvage copy is promoted into place, not left behind',
+        );
+        // The recovered local-only rows landed in the promoted database.
+        expect(_encryptedRowCount(dbPath, validKey, 'drafts'), equals(2));
+        expect(_encryptedRowCount(dbPath, validKey, 'clips'), equals(1));
+      },
+    );
+
+    test(
+      'discards an unusable salvage leftover instead of promoting it',
+      () async {
+        // A salvage copy that no longer opens under the key (here: written
+        // under a different key) must not be promoted; it is deleted so
+        // startup falls through to creating a fresh database.
+        final salvagePath = '$dbPath.corruption_salvage';
+        _createEncryptedDatabaseWithLocalData(salvagePath, otherKey);
+        expect(File(dbPath).existsSync(), isFalse);
+
+        final outcome = await migratePlaintextToEncrypted(
+          rawKeyHex: validKey,
+          databasePath: dbPath,
+        );
+
+        expect(outcome, CipherMigrationOutcome.noDatabase);
+        expect(File(salvagePath).existsSync(), isFalse);
+        expect(File(dbPath).existsSync(), isFalse);
+      },
+    );
+  });
+
+  group('salvageableLocalOnlyTables', () {
+    test('every name exists in the real AppDatabase schema', () {
+      // Pins the salvage list to the live Drift schema. Renaming a table
+      // without updating this list would make `SELECT * FROM "<old>"` throw and
+      // be silently swallowed — that table would salvage zero rows with every
+      // test still green, because the salvage tests use a fabricated schema.
+      final db = AppDatabase();
+      addTearDown(db.close);
+
+      final realTables = db.allTables.map((t) => t.actualTableName).toSet();
+      for (final table in salvageableLocalOnlyTables) {
+        expect(
+          realTables,
+          contains(table),
+          reason: 'salvage list references unknown table "$table" — renamed?',
+        );
+      }
+    });
   });
 
   // The production opens use NativeDatabase.createInBackground (#5391), which
@@ -1082,6 +1215,34 @@ void _createEncryptedDatabaseWithLocalData(String path, String key) {
       db.execute('INSERT INTO event (id, content) VALUES (?, ?);', [
         'e${i.toString().padLeft(6, '0')}',
         'content_${i.toString().padLeft(6, '0')}',
+      ]);
+    }
+  } finally {
+    db.close();
+  }
+}
+
+/// Builds an encrypted DB whose `drafts` table alone spans well past the file
+/// midpoint (chunky titles + [draftCount] rows), so [_corruptBackHalf] damages
+/// the drafts b-tree itself — the salvageable-table corruption case.
+void _createEncryptedDatabaseWithManyDrafts(
+  String path,
+  String key, {
+  required int draftCount,
+}) {
+  File(path).parent.createSync(recursive: true);
+  final db = sqlite3.open(path);
+  try {
+    applyCipherKey(db, key);
+    db
+      ..execute('PRAGMA user_version = 1;')
+      ..execute('CREATE TABLE drafts (id TEXT PRIMARY KEY, title TEXT);')
+      ..execute('CREATE TABLE clips (id TEXT PRIMARY KEY, draft_id TEXT);');
+    final title = 'x' * 256;
+    for (var i = 0; i < draftCount; i += 1) {
+      db.execute('INSERT INTO drafts (id, title) VALUES (?, ?);', [
+        'd${i.toString().padLeft(7, '0')}',
+        title,
       ]);
     }
   } finally {

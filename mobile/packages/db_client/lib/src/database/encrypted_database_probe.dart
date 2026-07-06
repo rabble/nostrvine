@@ -19,13 +19,21 @@ const _notADatabaseMessage = 'file is not a database';
 /// every launch — an added, size-unbounded cost on the startup hot path — it
 /// opens the real [AppDatabase] and forces `beforeOpen` (which runs
 /// `runStartupCleanup` → `DELETE FROM event …`) via a trivial query. That
-/// cleanup is the exact operation that trips on the field corruption and it
-/// runs on every open anyway, so a healthy database pays nothing extra here.
+/// cleanup is the exact operation that trips on the field corruption. On a
+/// healthy database the added cost is one extra `beforeOpen` pass (the same
+/// idempotent missing-table checks + expiry cleanup the real open runs) plus
+/// this probe's isolate open — bounded work, deliberately not the whole-DB
+/// `PRAGMA quick_check` scan a pre-scan gate would add.
 ///
 /// Returns `false` when the open fails with SQLITE_CORRUPT (structural
 /// corruption past the schema page) or SQLITE_NOTADB (the key cannot decrypt
 /// the file); the caller then salvages or recreates. Any other error
 /// propagates.
+///
+/// The caller only reaches this gate for a database file that already exists
+/// (`CipherMigrationOutcome.alreadyEncrypted`). On a missing file this opens
+/// an empty [AppDatabase] via Drift's `onCreate` and returns `true`; that
+/// side effect is out of the startup contract but noted for any future caller.
 ///
 /// [databasePath] defaults to the shared database and exists so tests can point
 /// at a specific file.

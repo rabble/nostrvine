@@ -32,6 +32,7 @@ class DatabaseEncryptionBootstrap {
     Future<void> Function()? onDatabaseReset,
     Future<bool> Function(String rawKeyHex)? canOpenEncryptedDatabase,
     Future<bool> Function(String rawKeyHex)? salvageDatabase,
+    Future<bool> Function(String rawKeyHex)? encryptedKeyMatches,
   }) : _secureStorage = secureStorage,
        _ensureRuntime = ensureRuntime ?? ensureSqlCipherRuntime,
        _isCipherAvailable = isCipherAvailable ?? isSqlCipherAvailable,
@@ -46,7 +47,10 @@ class DatabaseEncryptionBootstrap {
        _salvageDatabase =
            salvageDatabase ??
            ((rawKeyHex) =>
-               salvageCorruptEncryptedDatabase(rawKeyHex: rawKeyHex));
+               salvageCorruptEncryptedDatabase(rawKeyHex: rawKeyHex)),
+       _encryptedKeyMatches =
+           encryptedKeyMatches ??
+           ((rawKeyHex) => encryptedDatabaseKeyDecrypts(rawKeyHex: rawKeyHex));
 
   final FlutterSecureStorage _secureStorage;
   final Future<void> Function() _ensureRuntime;
@@ -56,9 +60,15 @@ class DatabaseEncryptionBootstrap {
   final Future<bool> Function(String rawKeyHex) _canOpenEncryptedDatabase;
 
   /// Attempts to salvage the local-only data from a corrupt encrypted database
-  /// (rebuilding it in place under the same key) before the destructive
-  /// key-rotation wipe. Returns `false` on genuine key loss.
+  /// (rebuilding it in place under the same key) before the destructive wipe.
+  /// Returns `false` on key loss or when a sound copy could not be rebuilt;
+  /// [_encryptedKeyMatches] then decides whether the wipe rotates the key.
   final Future<bool> Function(String rawKeyHex) _salvageDatabase;
+
+  /// Whether the key still decrypts the corrupt DB's schema page. Used only
+  /// when salvage fails, to keep a still-valid key (so the backup stays
+  /// readable) instead of rotating it. Returns `false` on genuine key loss.
+  final Future<bool> Function(String rawKeyHex) _encryptedKeyMatches;
 
   /// Invoked after the key-loss recreate wipes the Drift DB, so callers can
   /// clear local state that lives OUTSIDE the database (e.g. the DM sync
@@ -106,11 +116,11 @@ class DatabaseEncryptionBootstrap {
         }
         // The key either no longer opens the DB (stale) or opens it but
         // on-disk corruption surfaced when the Drift startup cleanup ran. Before
-        // the destructive key-rotation wipe, try to salvage the local-only data
-        // (drafts, clips, pending queues) into a fresh DB rebuilt in place
-        // under the SAME key. Local-only data cannot be re-fetched from relays,
-        // so preserving it matters. Salvage returns false on genuine key loss
-        // (nothing is readable), which falls through to the wipe.
+        // the destructive wipe, try to salvage the local-only data (drafts,
+        // clips, pending queues) into a fresh DB rebuilt in place under the SAME
+        // key. Local-only data cannot be re-fetched from relays, so preserving
+        // it matters. Salvage returns false on key loss (nothing decryptable)
+        // or a failure to rebuild a sound copy; the wipe below handles both.
         if (await _salvageDatabase(key)) {
           Log.warning(
             'Recovered a corrupt encrypted database by salvaging local-only '
@@ -121,6 +131,19 @@ class DatabaseEncryptionBootstrap {
           await _runPostDatabaseReset(_onDatabaseReset);
           return key;
         }
+        // Salvage failed. Only rotate the cipher key when it genuinely cannot
+        // decrypt the file: rotating a still-valid key would overwrite the only
+        // key that can read the `.pre_key_loss_wipe_backup` we are about to
+        // create, silently breaking the "backup stays readable" guarantee. A
+        // decryptable-but-unsalvageable DB (transient salvage failure, or a
+        // rebuilt copy that failed its own integrity check) is recreated under
+        // the SAME key so the backup stays recoverable.
+        if (await _encryptedKeyMatches(key)) {
+          return _recoverUnusableEncryptedDatabase(
+            key,
+            reason: 'corrupt and unsalvageable (key still valid)',
+          );
+        }
         final replacementKey = generateCipherKeyHex();
         await _secureStorage.write(
           key: dbCipherKeyStorageKey,
@@ -128,7 +151,7 @@ class DatabaseEncryptionBootstrap {
         );
         return _recoverUnusableEncryptedDatabase(
           replacementKey,
-          reason: 'stale',
+          reason: 'key loss',
         );
       case CipherMigrationOutcome.failed:
         Log.warning(
@@ -155,14 +178,14 @@ class DatabaseEncryptionBootstrap {
     String key, {
     required String reason,
   }) async {
-    // Key-loss recovery (#570 §6): the keystore was cleared, or it contains a
-    // valid-looking key that no longer opens the encrypted DB. Either way the
-    // DB is cryptographically unrecoverable, so it is backed up (not
-    // hard-deleted) and recreated under the current key. Local-only data is
-    // preserved in the backup; DMs resync from relays.
+    // Terminal recovery (#570 §6): the DB could not be used and could not be
+    // salvaged. It is backed up (not hard-deleted) and recreated under [key] —
+    // which the caller has either rotated (genuine key loss) or kept unchanged
+    // (decryptable-but-unsalvageable corruption, so the backup stays readable).
+    // Local-only data is preserved in the backup; DMs resync from relays.
     Log.warning(
-      'Encrypted database is unrecoverable ($reason cipher key). Backing it '
-      'up and recreating under a new key.',
+      'Encrypted database is unrecoverable ($reason). Backing it up and '
+      'recreating.',
       name: _logName,
     );
     await _deleteDatabase();
