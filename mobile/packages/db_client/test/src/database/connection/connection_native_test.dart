@@ -797,6 +797,11 @@ void main() {
         expect(_encryptedRowCount(dbPath, validKey, 'drafts'), equals(2));
         expect(_encryptedRowCount(dbPath, validKey, 'clips'), equals(1));
         expect(_encryptedRowCount(dbPath, validKey, 'event'), equals(0));
+        // The unsent DM reaction (only-copy local data) is preserved too.
+        expect(
+          _encryptedRowCount(dbPath, validKey, 'dm_message_reactions'),
+          equals(1),
+        );
 
         // The corrupt original is kept as a backup, still readable under the
         // same key (no key rotation).
@@ -851,6 +856,87 @@ void main() {
           recovered,
           lessThan(2000),
           reason: 'the corrupt tail is genuinely past recovery',
+        );
+      },
+    );
+  });
+
+  group('encryptedDatabaseKeyDecrypts', () {
+    const validKey =
+        '2dd29ca851e7b56e4697b0e1f08507293d761a05ce4d1b628663f411a8086d99';
+    const otherKey =
+        'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+    late Directory tempRoot;
+    late String dbPath;
+
+    setUp(() {
+      tempRoot = Directory.systemTemp.createTempSync(
+        'db_client_key_decrypts_test_',
+      );
+      dbPath = p.join(tempRoot.path, 'divine_db.db');
+    });
+
+    tearDown(() {
+      if (tempRoot.existsSync()) tempRoot.deleteSync(recursive: true);
+    });
+
+    test('returns false when the database file does not exist', () async {
+      expect(
+        await encryptedDatabaseKeyDecrypts(
+          rawKeyHex: validKey,
+          databasePath: dbPath,
+        ),
+        isFalse,
+      );
+    });
+
+    test('returns true when the key decrypts a healthy database', () async {
+      final db = sqlite3.open(dbPath);
+      applyCipherKey(db, validKey);
+      db
+        ..execute('CREATE TABLE t (id INTEGER PRIMARY KEY);')
+        ..close();
+
+      expect(
+        await encryptedDatabaseKeyDecrypts(
+          rawKeyHex: validKey,
+          databasePath: dbPath,
+        ),
+        isTrue,
+      );
+    });
+
+    test('returns false when the key cannot decrypt the file', () async {
+      final db = sqlite3.open(dbPath);
+      applyCipherKey(db, validKey);
+      db
+        ..execute('CREATE TABLE t (id INTEGER PRIMARY KEY);')
+        ..close();
+
+      expect(
+        await encryptedDatabaseKeyDecrypts(
+          rawKeyHex: otherKey,
+          databasePath: dbPath,
+        ),
+        isFalse,
+      );
+    });
+
+    test(
+      'returns true for a decryptable-but-corrupt database (keeps the key)',
+      () async {
+        // The gate must NOT report key loss for a corrupt-but-decryptable DB —
+        // that would rotate a still-valid key and orphan the backup. The schema
+        // page stays intact (key decrypts) while the data pages are damaged.
+        _createEncryptedDatabaseWithLocalData(dbPath, validKey);
+        _corruptBackHalf(dbPath);
+
+        expect(
+          await encryptedDatabaseKeyDecrypts(
+            rawKeyHex: validKey,
+            databasePath: dbPath,
+          ),
+          isTrue,
         );
       },
     );
@@ -1209,6 +1295,17 @@ void _createEncryptedDatabaseWithLocalData(String path, String key) {
       ..execute("INSERT INTO drafts (id, title) VALUES ('d1', 'My draft');")
       ..execute("INSERT INTO drafts (id, title) VALUES ('d2', 'Another');")
       ..execute("INSERT INTO clips (id, draft_id) VALUES ('c1', 'd1');")
+      // An unsent DM reaction (gift_wrap_id NULL): only-copy local data whose
+      // rumor lives solely here, so salvage must keep it.
+      ..execute(
+        'CREATE TABLE dm_message_reactions '
+        '(id TEXT PRIMARY KEY, gift_wrap_id TEXT, rumor_event_json TEXT);',
+      )
+      ..execute(
+        'INSERT INTO dm_message_reactions (id, gift_wrap_id, rumor_event_json) '
+        'VALUES (?, ?, ?);',
+        ['r1', null, '{"kind":7}'],
+      )
       ..execute('CREATE TABLE event (id TEXT PRIMARY KEY, content TEXT);')
       ..execute('CREATE INDEX idx_event_content ON event (content);');
     for (var i = 0; i < 800; i += 1) {

@@ -124,11 +124,15 @@ Future<bool> encryptedDatabaseOpensWithKey({
 /// the correct cipher key, independent of deeper b-tree integrity.
 ///
 /// [applyCipherKey] reads `sqlite_master` (the schema page), so this returns
-/// `true` for a decryptable-but-corrupt database and `false` only on a genuine
-/// key mismatch (SQLITE_NOTADB) or an unreadable schema page (SQLITE_CORRUPT).
-/// The app-layer recovery uses it to tell "salvage failed under a working key"
-/// (keep the key so the `.pre_key_loss_wipe_backup` stays readable) apart from
-/// real key loss (rotate). Returns `false` when the file is missing.
+/// `true` for a decryptable-but-corrupt database — including SQLITE_CORRUPT,
+/// which means the key decrypted the page far enough to hit a *structural*
+/// error, so the key is valid. It returns `false` only on SQLITE_NOTADB (the
+/// key cannot decrypt the file). The app-layer recovery uses it to tell
+/// "salvage failed under a working key" (keep the key so the
+/// `.pre_key_loss_wipe_backup` stays readable) apart from real key loss
+/// (rotate); classifying schema-page corruption as key loss would rotate a
+/// still-valid key and orphan that backup. Returns `false` when the file is
+/// missing.
 Future<bool> encryptedDatabaseKeyDecrypts({
   required String rawKeyHex,
   String? databasePath,
@@ -144,9 +148,10 @@ Future<bool> encryptedDatabaseKeyDecrypts({
     applyCipherKey(db, rawKeyHex);
     return true;
   } on SqliteException catch (e) {
-    if (e.resultCode == _sqliteNotADb || e.resultCode == _sqliteCorrupt) {
-      return false;
-    }
+    if (e.resultCode == _sqliteNotADb) return false;
+    // SQLITE_CORRUPT means the key decrypted the page but the b-tree is
+    // structurally damaged — the key is valid, so keep it (don't rotate).
+    if (e.resultCode == _sqliteCorrupt) return true;
     rethrow;
   } finally {
     db?.close();
@@ -190,18 +195,23 @@ const _corruptionBackupSuffix = '.pre_corruption_recovery_backup';
 /// The large relay-backed caches (`event`, `video_metrics`, profile/hashtag
 /// stats, `user_profiles`, `notifications`, `nip05_verifications`) are
 /// intentionally omitted: they resync from relays and copying them would be
-/// unbounded. `direct_messages` / `conversations` / `dm_message_reactions` are
-/// also omitted — they re-drain from gift wraps on relays, which the app-layer
-/// recovery triggers by clearing the DM sync state after a salvage. (A DM
-/// reaction whose gift wrap has not been sent yet is re-derivable from the
-/// relay-backed conversation, unlike an `outgoing_dms` message.) `outgoing_dms`
-/// is kept because unsent outbound messages are not yet on any relay.
-/// `pending_view_events` is omitted as best-effort view telemetry.
+/// unbounded. `direct_messages` / `conversations` are also omitted — they
+/// re-drain from gift wraps on relays, which the app-layer recovery triggers by
+/// clearing the DM sync state after a salvage. `pending_view_events` is omitted
+/// as best-effort view telemetry.
 ///
-/// This is the local-only set also tracked by [_localOnlyDataQueries] (the
-/// legacy-migration "is there actionable data worth preserving" probe), minus
-/// `direct_messages` / `conversations`. A new local-only table added to one
-/// list should be considered for the other.
+/// `outgoing_dms` and `dm_message_reactions` are kept: an unsent outbound
+/// message or a `failed`/`pending` reaction (`gift_wrap_id IS NULL`) was never
+/// wrapped to any relay, and the reaction rumor lives **only** in
+/// `dm_message_reactions.rumor_event_json` (read back by
+/// `DmReactionsRepository` on retry). Re-draining restores the target message,
+/// not the user's unsent reaction, so it is the same only-copy case as
+/// `outgoing_dms`.
+///
+/// This overlaps the [_localOnlyDataQueries] legacy-migration probe but is not
+/// identical: salvage drops `direct_messages` / `conversations` (re-drainable)
+/// and adds `dm_message_reactions` (only-copy). A new local-only table added to
+/// one list should be considered for the other.
 @visibleForTesting
 const salvageableLocalOnlyTables = <String>[
   'drafts',
@@ -211,6 +221,7 @@ const salvageableLocalOnlyTables = <String>[
   'outgoing_dms',
   'personal_reactions',
   'personal_reposts',
+  'dm_message_reactions',
 ];
 
 /// Salvages a corrupt encrypted database in place, preserving the local-only
