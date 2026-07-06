@@ -1314,11 +1314,12 @@ void main() {
 
       test('reaction on a non-owned video is reclassified as likeComment '
           'instead of liked your video (#4813)', () async {
+        // No targetCommentId, so this genuinely exercises the owner-mismatch
+        // reclassification: _mapNotificationKind returns `like`, which the
+        // #4813 path rewrites to likeComment. A comment-like that *does* carry
+        // a targetCommentId is covered by the direct-classification test above.
         stubNotifications([
-          makeNotification(
-            referencedEventId: 'foreign_video',
-            targetCommentId: 'comment_event_xyz',
-          ),
+          makeNotification(referencedEventId: 'foreign_video'),
         ]);
         stubProfiles({});
         stubVideoStats(
@@ -1331,7 +1332,7 @@ void main() {
         expect(page.items, hasLength(1));
         final item = page.items.single as ActorNotification;
         expect(item.type, equals(NotificationKind.likeComment));
-        expect(item.targetEventId, equals('comment_event_xyz'));
+        expect(item.targetEventId, equals('foreign_video'));
       });
 
       test('comment on a non-owned video is reclassified as reply '
