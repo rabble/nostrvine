@@ -42,6 +42,17 @@ Future<bool> encryptedDatabaseOpensWithKey({
   );
 }
 
+/// Corruption salvage is native-only; startup skips DB encryption on web.
+/// Never reached at runtime (guarded by `kIsWeb` in the app).
+Future<bool> salvageCorruptEncryptedDatabase({
+  required String rawKeyHex,
+  String? databasePath,
+}) async {
+  throw UnsupportedError(
+    'Native at-rest encryption is not supported on web',
+  );
+}
+
 /// No-op on web (key-loss recovery is native-only). Never reached at runtime.
 Future<void> backUpAndRemoveSharedDatabase() async {}
 

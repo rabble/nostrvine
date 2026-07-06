@@ -50,6 +50,7 @@ void main() {
       bool cipherAvailable = true,
       void Function()? onReset,
       bool Function(String rawKeyHex)? canOpenEncryptedDatabase,
+      bool Function(String rawKeyHex)? salvageDatabase,
     }) {
       return DatabaseEncryptionBootstrap(
         secureStorage: storage,
@@ -61,6 +62,10 @@ void main() {
         canOpenEncryptedDatabase: canOpenEncryptedDatabase == null
             ? null
             : (rawKeyHex) async => canOpenEncryptedDatabase(rawKeyHex),
+        // Default to "nothing to salvage" so the corruption branch falls
+        // through to the key-rotation wipe unless a test opts in.
+        salvageDatabase: (rawKeyHex) async =>
+            salvageDatabase?.call(rawKeyHex) ?? false,
       );
     }
 
@@ -159,6 +164,60 @@ void main() {
         expect(store[dbCipherKeyStorageKey], equals(key));
         expect(deleted, isTrue);
         expect(reset, isTrue);
+      },
+    );
+
+    test(
+      'salvages local data and keeps the key when a corrupt DB is repaired',
+      () async {
+        // The key still decrypts the DB (so it is NOT key loss) but the DB
+        // failed the integrity check. Salvage rebuilds it in place under the
+        // same key, so the key is kept — no rotation, no wipe — and the DM
+        // sync state is cleared so DMs re-drain into the fresh DB.
+        const existing =
+            '2dd29ca851e7b56e4697b0e1f08507293d761a05ce4d1b628663f411a8086d99';
+        store[dbCipherKeyStorageKey] = existing;
+        var deleted = false;
+        var reset = false;
+
+        final bootstrap = buildBootstrap(
+          outcome: CipherMigrationOutcome.alreadyEncrypted,
+          onDelete: () => deleted = true,
+          onReset: () => reset = true,
+          canOpenEncryptedDatabase: (_) => false,
+          salvageDatabase: (_) => true,
+        );
+
+        final key = await bootstrap.resolveCipherKey();
+
+        expect(key, equals(existing), reason: 'key kept, not rotated');
+        expect(store[dbCipherKeyStorageKey], equals(existing));
+        expect(deleted, isFalse, reason: 'no key-rotation wipe on salvage');
+        expect(reset, isTrue, reason: 'DMs re-drain into the salvaged DB');
+      },
+    );
+
+    test(
+      'wipes and rotates the key when salvage cannot read the DB',
+      () async {
+        // Salvage returns false (genuine key loss — nothing readable), so the
+        // recovery must fall through to the destructive key-rotation wipe.
+        const staleKey =
+            '2dd29ca851e7b56e4697b0e1f08507293d761a05ce4d1b628663f411a8086d99';
+        store[dbCipherKeyStorageKey] = staleKey;
+        var deleted = false;
+
+        final bootstrap = buildBootstrap(
+          outcome: CipherMigrationOutcome.alreadyEncrypted,
+          onDelete: () => deleted = true,
+          canOpenEncryptedDatabase: (_) => false,
+          salvageDatabase: (_) => false,
+        );
+
+        final key = await bootstrap.resolveCipherKey();
+
+        expect(key, isNot(equals(staleKey)));
+        expect(deleted, isTrue);
       },
     );
 

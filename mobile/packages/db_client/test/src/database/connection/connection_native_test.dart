@@ -573,6 +573,246 @@ void main() {
     });
   });
 
+  group('databasePassesIntegrityCheck', () {
+    late Directory tempRoot;
+    late String dbPath;
+
+    setUp(() {
+      tempRoot = Directory.systemTemp.createTempSync(
+        'db_client_integrity_check_test_',
+      );
+      dbPath = p.join(tempRoot.path, 'divine_db.db');
+    });
+
+    tearDown(() {
+      if (tempRoot.existsSync()) tempRoot.deleteSync(recursive: true);
+    });
+
+    test('returns true for a structurally sound database', () {
+      _createMultiPageDatabase(dbPath);
+      final db = sqlite3.open(dbPath);
+      addTearDown(db.close);
+
+      expect(databasePassesIntegrityCheck(db), isTrue);
+    });
+
+    test('returns false when a table/index b-tree page is malformed', () {
+      _createMultiPageDatabase(dbPath);
+      _corruptPagesAfterSchema(dbPath);
+      final db = sqlite3.open(dbPath);
+      addTearDown(db.close);
+
+      // The schema page is intact, so the open above and a bare
+      // `sqlite_master` read both succeed — this is exactly the corruption
+      // that slips past applyCipherKey's schema probe.
+      expect(
+        () => db.select('SELECT count(*) FROM sqlite_master;'),
+        returnsNormally,
+      );
+      expect(databasePassesIntegrityCheck(db), isFalse);
+    });
+  });
+
+  group('encryptedDatabaseOpensWithKey', () {
+    const validKey =
+        '2dd29ca851e7b56e4697b0e1f08507293d761a05ce4d1b628663f411a8086d99';
+    const otherKey =
+        'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+    late Directory tempRoot;
+    late String dbPath;
+
+    setUp(() {
+      tempRoot = Directory.systemTemp.createTempSync(
+        'db_client_opens_with_key_test_',
+      );
+      dbPath = p.join(tempRoot.path, 'divine_db.db');
+    });
+
+    tearDown(() {
+      if (tempRoot.existsSync()) tempRoot.deleteSync(recursive: true);
+    });
+
+    test('returns true when the database file does not exist', () async {
+      expect(File(dbPath).existsSync(), isFalse);
+
+      expect(
+        await encryptedDatabaseOpensWithKey(
+          rawKeyHex: validKey,
+          databasePath: dbPath,
+        ),
+        isTrue,
+      );
+    });
+
+    test('returns true for a healthy encrypted database', () async {
+      final db = sqlite3.open(dbPath);
+      applyCipherKey(db, validKey);
+      db
+        ..execute('CREATE TABLE t (id INTEGER PRIMARY KEY, v TEXT);')
+        ..execute("INSERT INTO t (v) VALUES ('kept');")
+        ..close();
+
+      expect(
+        await encryptedDatabaseOpensWithKey(
+          rawKeyHex: validKey,
+          databasePath: dbPath,
+        ),
+        isTrue,
+      );
+    });
+
+    test('returns false when the key does not open the database', () async {
+      final db = sqlite3.open(dbPath);
+      applyCipherKey(db, validKey);
+      db
+        ..execute('CREATE TABLE t (id INTEGER PRIMARY KEY);')
+        ..close();
+
+      expect(
+        await encryptedDatabaseOpensWithKey(
+          rawKeyHex: otherKey,
+          databasePath: dbPath,
+        ),
+        isFalse,
+      );
+    });
+
+    test('returns false when corruption lies past the schema page', () async {
+      final db = sqlite3.open(dbPath);
+      applyCipherKey(db, validKey);
+      db.execute('CREATE TABLE t (id INTEGER PRIMARY KEY, v TEXT);');
+      for (var i = 0; i < 500; i += 1) {
+        db.execute('INSERT INTO t (v) VALUES (?);', [
+          'value_${i.toString().padLeft(6, '0')}',
+        ]);
+      }
+      db.close();
+
+      // Corrupt the back half of the file, leaving the header + schema pages
+      // intact so applyCipherKey's `sqlite_master` probe still passes. The
+      // damage is only reached once the integrity check walks the data b-tree
+      // — the production shape where the shallow schema probe is not enough.
+      final bytes = File(dbPath).readAsBytesSync();
+      for (var i = bytes.length ~/ 2; i < bytes.length; i += 1) {
+        bytes[i] = 0xFF;
+      }
+      File(dbPath).writeAsBytesSync(bytes);
+
+      expect(
+        await encryptedDatabaseOpensWithKey(
+          rawKeyHex: validKey,
+          databasePath: dbPath,
+        ),
+        isFalse,
+      );
+    });
+  });
+
+  group('salvageCorruptEncryptedDatabase', () {
+    const validKey =
+        '2dd29ca851e7b56e4697b0e1f08507293d761a05ce4d1b628663f411a8086d99';
+    const otherKey =
+        'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+    late Directory tempRoot;
+    late String dbPath;
+
+    setUp(() {
+      tempRoot = Directory.systemTemp.createTempSync(
+        'db_client_salvage_test_',
+      );
+      dbPath = p.join(tempRoot.path, 'divine_db.db');
+    });
+
+    tearDown(() {
+      if (tempRoot.existsSync()) tempRoot.deleteSync(recursive: true);
+    });
+
+    test('returns false when the database file does not exist', () async {
+      expect(
+        await salvageCorruptEncryptedDatabase(
+          rawKeyHex: validKey,
+          databasePath: dbPath,
+        ),
+        isFalse,
+      );
+    });
+
+    test('returns false and leaves the file when the key cannot decrypt '
+        'it', () async {
+      _createEncryptedDatabaseWithLocalData(dbPath, validKey);
+      final before = File(dbPath).readAsBytesSync();
+
+      final salvaged = await salvageCorruptEncryptedDatabase(
+        rawKeyHex: otherKey,
+        databasePath: dbPath,
+      );
+
+      expect(salvaged, isFalse);
+      expect(File(dbPath).readAsBytesSync(), equals(before));
+      expect(File('$dbPath.corruption_salvage').existsSync(), isFalse);
+    });
+
+    test(
+      'preserves drafts/clips when a corrupt database is salvaged',
+      () async {
+        _createEncryptedDatabaseWithLocalData(dbPath, validKey);
+        _corruptBackHalf(dbPath);
+
+        // Precondition: the DB is corrupt but the local tables are still
+        // readable (reading a table does not walk the corrupt event pages).
+        expect(
+          await encryptedDatabaseOpensWithKey(
+            rawKeyHex: validKey,
+            databasePath: dbPath,
+          ),
+          isFalse,
+          reason: 'the corrupt DB must fail the integrity probe',
+        );
+
+        final salvaged = await salvageCorruptEncryptedDatabase(
+          rawKeyHex: validKey,
+          databasePath: dbPath,
+        );
+
+        expect(salvaged, isTrue);
+        // The swapped-in database opens with the SAME key and is now sound.
+        expect(
+          await encryptedDatabaseOpensWithKey(
+            rawKeyHex: validKey,
+            databasePath: dbPath,
+          ),
+          isTrue,
+        );
+        // Drift's schema version is carried over so it opens the salvaged file
+        // as an existing DB (beforeOpen) rather than re-running onCreate.
+        final salvagedDb = sqlite3.open(dbPath);
+        applyCipherKey(salvagedDb, validKey);
+        expect(
+          salvagedDb.select('PRAGMA user_version;').first.values.first,
+          equals(1),
+        );
+        salvagedDb.close();
+        // The irreplaceable local-only rows survived; the re-fetchable event
+        // cache was dropped and will resync.
+        expect(_encryptedRowCount(dbPath, validKey, 'drafts'), equals(2));
+        expect(_encryptedRowCount(dbPath, validKey, 'clips'), equals(1));
+        expect(_encryptedRowCount(dbPath, validKey, 'event'), equals(0));
+
+        // The corrupt original is kept as a backup, still readable under the
+        // same key (no key rotation).
+        final backup = '$dbPath.pre_corruption_recovery_backup';
+        expect(File(backup).existsSync(), isTrue);
+        final backupDb = sqlite3.open(backup);
+        addTearDown(backupDb.close);
+        applyCipherKey(backupDb, validKey);
+        expect(
+          backupDb.select('SELECT count(*) c FROM drafts;').first['c'],
+          equals(2),
+        );
+      },
+    );
+  });
+
   // The production opens use NativeDatabase.createInBackground (#5391), which
   // runs the cipher `setup:` on a spawned background isolate. This proves
   // sqlite3mc resolves there (else applyCipherKey fails closed) and the DB is
@@ -818,6 +1058,89 @@ void main() {
       },
     );
   });
+}
+
+/// Creates an encrypted database with a few local-only rows (drafts, clips) in
+/// early pages and a large re-fetchable `event` table filling the later pages,
+/// so [_corruptBackHalf] can damage the event region while leaving the local
+/// tables readable.
+void _createEncryptedDatabaseWithLocalData(String path, String key) {
+  File(path).parent.createSync(recursive: true);
+  final db = sqlite3.open(path);
+  try {
+    applyCipherKey(db, key);
+    db
+      ..execute('PRAGMA user_version = 1;')
+      ..execute('CREATE TABLE drafts (id TEXT PRIMARY KEY, title TEXT);')
+      ..execute('CREATE TABLE clips (id TEXT PRIMARY KEY, draft_id TEXT);')
+      ..execute("INSERT INTO drafts (id, title) VALUES ('d1', 'My draft');")
+      ..execute("INSERT INTO drafts (id, title) VALUES ('d2', 'Another');")
+      ..execute("INSERT INTO clips (id, draft_id) VALUES ('c1', 'd1');")
+      ..execute('CREATE TABLE event (id TEXT PRIMARY KEY, content TEXT);')
+      ..execute('CREATE INDEX idx_event_content ON event (content);');
+    for (var i = 0; i < 800; i += 1) {
+      db.execute('INSERT INTO event (id, content) VALUES (?, ?);', [
+        'e${i.toString().padLeft(6, '0')}',
+        'content_${i.toString().padLeft(6, '0')}',
+      ]);
+    }
+  } finally {
+    db.close();
+  }
+}
+
+/// Overwrites the back half of the file so the event pages are damaged while
+/// the header, schema, and early `drafts`/`clips` pages stay intact.
+void _corruptBackHalf(String path) {
+  final file = File(path);
+  final bytes = file.readAsBytesSync();
+  for (var i = bytes.length ~/ 2; i < bytes.length; i += 1) {
+    bytes[i] = 0xFF;
+  }
+  file.writeAsBytesSync(bytes);
+}
+
+int _encryptedRowCount(String path, String key, String table) {
+  final db = sqlite3.open(path);
+  try {
+    applyCipherKey(db, key);
+    return db.select('SELECT count(*) AS c FROM "$table";').first['c'] as int;
+  } finally {
+    db.close();
+  }
+}
+
+/// Creates a plaintext database spanning many small pages so corruption can be
+/// injected into a data/index b-tree page while leaving the schema page intact.
+void _createMultiPageDatabase(String path) {
+  File(path).parent.createSync(recursive: true);
+  final db = sqlite3.open(path);
+  try {
+    db
+      ..execute('PRAGMA page_size = 512;')
+      ..execute('CREATE TABLE t (id INTEGER PRIMARY KEY, v TEXT);')
+      ..execute('CREATE INDEX idx_t_v ON t (v);');
+    for (var i = 0; i < 500; i += 1) {
+      db.execute('INSERT INTO t (v) VALUES (?);', [
+        'value_${i.toString().padLeft(6, '0')}',
+      ]);
+    }
+  } finally {
+    db.close();
+  }
+}
+
+/// Overwrites every page after the first two (the schema/root pages) with
+/// garbage, corrupting the table and index b-tree pages while keeping the file
+/// openable and its schema readable.
+void _corruptPagesAfterSchema(String path) {
+  final file = File(path);
+  final bytes = file.readAsBytesSync();
+  // page_size is 512, so bytes [0, 1024) cover pages 1-2 (header + schema).
+  for (var i = 1024; i < bytes.length; i += 1) {
+    bytes[i] = 0xFF;
+  }
+  file.writeAsBytesSync(bytes);
 }
 
 void _createSqliteDatabase(

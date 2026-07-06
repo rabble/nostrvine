@@ -73,13 +73,23 @@ QueryExecutor openEncryptedConnection({required String rawKeyHex}) {
   });
 }
 
-/// Returns whether the shared encrypted database opens with [rawKeyHex].
+/// Returns whether the shared encrypted database opens **and is structurally
+/// intact** with [rawKeyHex].
 ///
 /// This is a startup guard for the app layer: a valid-looking key can remain
 /// in secure storage while the database file belongs to a different key
 /// (backup/restore drift, partial reinstall, manual sandbox surgery). In that
 /// case the DB is just as unrecoverable as a missing key and should be backed
 /// up/recreated before the first Drift provider touches it.
+///
+/// It also runs [databasePassesIntegrityCheck]. [applyCipherKey] only reads
+/// `sqlite_master` (the schema page), so on-disk corruption localised to a
+/// table or index b-tree passes this guard and only surfaces later inside
+/// Drift's `beforeOpen` startup cleanup (`DELETE FROM event …`) — past the
+/// recovery gate, where SQLITE_CORRUPT then throws on every query and bricks
+/// the session until reinstall. Walking every b-tree here lets that corruption
+/// be detected at the same gate that already handles a stale cipher key, so
+/// the caller backs the file up and recreates it.
 Future<bool> encryptedDatabaseOpensWithKey({
   required String rawKeyHex,
   String? databasePath,
@@ -93,12 +103,204 @@ Future<bool> encryptedDatabaseOpensWithKey({
   try {
     db = sqlite3.open(dbPath);
     applyCipherKey(db, rawKeyHex);
-    return true;
+    return databasePassesIntegrityCheck(db);
   } on SqliteException catch (e) {
-    if (e.resultCode == _sqliteNotADb) return false;
+    if (e.resultCode == _sqliteNotADb || e.resultCode == _sqliteCorrupt) {
+      return false;
+    }
     rethrow;
   } finally {
     db?.close();
+  }
+}
+
+/// Returns whether [db] passes SQLite's `PRAGMA quick_check` — i.e. every
+/// table and index b-tree is structurally sound.
+///
+/// `quick_check` walks the page structure of all b-trees (skipping only the
+/// slower row-content and foreign-key validation that `integrity_check` adds),
+/// so it detects the malformed-index / malformed-page corruption that a bare
+/// `sqlite_master` read misses, while staying cheap enough for a startup
+/// probe. It returns a single `'ok'` row on a healthy database; any other
+/// output — or a thrown [SqliteException] on a badly damaged file — is treated
+/// as corruption.
+@visibleForTesting
+bool databasePassesIntegrityCheck(CommonDatabase db) {
+  try {
+    final rows = db.select('PRAGMA quick_check;');
+    if (rows.length != 1) return false;
+    final result = rows.first.values.first;
+    return result is String && result.toLowerCase() == 'ok';
+  } on SqliteException {
+    return false;
+  }
+}
+
+/// Suffix for the in-progress salvage copy built by
+/// [salvageCorruptEncryptedDatabase].
+const _salvageSuffix = '.corruption_salvage';
+
+/// Suffix for the corrupt original preserved by
+/// [salvageCorruptEncryptedDatabase]. Kept (not deleted) under the same cipher
+/// key, so it stays readable for any later recovery.
+const _corruptionBackupSuffix = '.pre_corruption_recovery_backup';
+
+/// Tables whose rows are local-only and cannot be re-fetched from relays, so
+/// they are copied during salvage.
+///
+/// The large relay-backed caches (`event`, `video_metrics`, profile/hashtag
+/// stats, `user_profiles`, `notifications`, `nip05_verifications`) are
+/// intentionally omitted: they resync from relays and copying them would be
+/// unbounded. `direct_messages` / `conversations` are also omitted — they
+/// re-drain from gift wraps on relays, which the app-layer recovery triggers by
+/// clearing the DM sync state after a salvage. `outgoing_dms` is kept because
+/// unsent outbound messages are not yet on any relay.
+@visibleForTesting
+const salvageableLocalOnlyTables = <String>[
+  'drafts',
+  'clips',
+  'pending_uploads',
+  'pending_actions',
+  'outgoing_dms',
+  'personal_reactions',
+  'personal_reposts',
+];
+
+/// Salvages a corrupt encrypted database in place, preserving the local-only
+/// data ([salvageableLocalOnlyTables]) that cannot be re-fetched from relays.
+///
+/// The app-layer startup recovery calls this when [rawKeyHex] opens the
+/// database but it fails [databasePassesIntegrityCheck]. Reading a *table* does
+/// not traverse a corrupt *index*, so rows on intact pages are recovered even
+/// when `PRAGMA quick_check` fails. Readable rows are copied into a fresh
+/// database keyed with the **same** [rawKeyHex]; the fresh database replaces
+/// the corrupt one, which is renamed to a `.pre_corruption_recovery_backup`
+/// backup (still readable under the same key). Re-fetchable caches are dropped
+/// and resync.
+///
+/// Returns `true` when a fresh, integrity-clean database was swapped into
+/// place. Returns `false` when [rawKeyHex] cannot decrypt the file (genuine
+/// key loss — nothing is salvageable) or the salvage copy could not be made
+/// sound; in both cases the original file is left untouched and the caller
+/// should rotate the key and recreate.
+Future<bool> salvageCorruptEncryptedDatabase({
+  required String rawKeyHex,
+  String? databasePath,
+}) async {
+  _rawKeyLiteral(rawKeyHex);
+
+  final dbPath = databasePath ?? await getSharedDatabasePath();
+  if (!File(dbPath).existsSync()) return false;
+
+  final salvagePath = '$dbPath$_salvageSuffix';
+  _deleteDatabaseAndSidecars(salvagePath);
+
+  // Build the salvage copy, then only swap it in if it is itself sound. On any
+  // failure (wrong key, unbuildable, unsound copy) leave the original intact.
+  final built = _buildSalvageCopy(
+    sourcePath: dbPath,
+    salvagePath: salvagePath,
+    rawKeyHex: rawKeyHex,
+  );
+  final usable =
+      built &&
+      await encryptedDatabaseOpensWithKey(
+        rawKeyHex: rawKeyHex,
+        databasePath: salvagePath,
+      );
+  if (!usable) {
+    _deleteDatabaseAndSidecars(salvagePath);
+    return false;
+  }
+
+  final backupPath = _nextDatabaseBackupPath(
+    dbPath,
+    suffix: _corruptionBackupSuffix,
+  );
+  File(dbPath).renameSync(backupPath);
+  _moveSidecars(fromPath: dbPath, toPath: backupPath);
+  promoteEncryptedMigrationArtifact(encryptedPath: salvagePath, dbPath: dbPath);
+  return true;
+}
+
+/// Opens the corrupt source and a fresh keyed target, recreates the schema, and
+/// copies the salvageable rows. Returns `false` when the key cannot decrypt the
+/// source (`SqliteException`) — a build-level cipher failure (`StateError`) is
+/// left to propagate, matching the rest of this file.
+bool _buildSalvageCopy({
+  required String sourcePath,
+  required String salvagePath,
+  required String rawKeyHex,
+}) {
+  Database? source;
+  Database? target;
+  try {
+    source = sqlite3.open(sourcePath);
+    applyCipherKey(source, rawKeyHex);
+    target = sqlite3.open(salvagePath);
+    applyCipherKey(target, rawKeyHex);
+    _copyDatabaseSchema(source: source, target: target);
+    // Carry Drift's schema version so it opens the salvaged file as an
+    // existing database (running beforeOpen) instead of a fresh one — a fresh
+    // open re-runs onCreate and fails with "table already exists".
+    target.execute('PRAGMA user_version = ${_userVersion(source)};');
+    for (final table in salvageableLocalOnlyTables) {
+      _copySalvageableRows(source: source, target: target, table: table);
+    }
+    return true;
+  } on SqliteException {
+    return false;
+  } finally {
+    source?.close();
+    target?.close();
+  }
+}
+
+/// Recreates every schema object from [source] in [target] so the salvaged
+/// database matches the schema Drift expects. Tables are created before the
+/// views / indexes / triggers that depend on them.
+void _copyDatabaseSchema({
+  required CommonDatabase source,
+  required CommonDatabase target,
+}) {
+  for (final type in const ['table', 'view', 'index', 'trigger']) {
+    final rows = source.select(
+      'SELECT sql FROM sqlite_master WHERE type = ? AND sql IS NOT NULL '
+      "AND name NOT LIKE 'sqlite_%';",
+      [type],
+    );
+    for (final row in rows) {
+      target.execute(row['sql'] as String);
+    }
+  }
+}
+
+/// Copies every readable row of [table] from [source] to [target], skipping the
+/// table entirely if its own pages are corrupt and skipping any individual row
+/// that cannot be read or re-inserted.
+void _copySalvageableRows({
+  required CommonDatabase source,
+  required CommonDatabase target,
+  required String table,
+}) {
+  final ResultSet rows;
+  try {
+    rows = source.select('SELECT * FROM "$table";');
+  } on SqliteException {
+    return;
+  }
+  if (rows.isEmpty) return;
+
+  final columns = rows.columnNames;
+  final columnList = columns.map((c) => '"$c"').join(', ');
+  final placeholders = List.filled(columns.length, '?').join(', ');
+  final insert = 'INSERT INTO "$table" ($columnList) VALUES ($placeholders);';
+  for (final row in rows) {
+    try {
+      target.execute(insert, [for (final column in columns) row[column]]);
+    } on SqliteException {
+      // Skip an individual unreadable / conflicting row; keep the rest.
+    }
   }
 }
 
@@ -248,6 +450,9 @@ Future<CipherMigrationOutcome> migratePlaintextToEncrypted({
 
 const _migratingSuffix = '.sqlcipher_migrating';
 const _sqliteNotADb = 26; // SQLITE_NOTADB
+// Primary result code for every SQLITE_CORRUPT_* extended code (e.g. 779
+// SQLITE_CORRUPT_INDEX), so this matches whichever variant SQLite reports.
+const _sqliteCorrupt = 11; // SQLITE_CORRUPT
 
 enum _DbClassification {
   encrypted,
