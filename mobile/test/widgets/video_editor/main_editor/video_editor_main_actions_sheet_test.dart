@@ -9,6 +9,8 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
+import 'package:openvine/blocs/video_editor/tune_editor/video_editor_tune_bloc.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_main_actions_sheet.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
@@ -25,24 +27,39 @@ class _MockTimelineOverlayBloc
     extends MockBloc<TimelineOverlayEvent, TimelineOverlayState>
     implements TimelineOverlayBloc {}
 
+class _MockVideoEditorTuneBloc
+    extends MockBloc<VideoEditorTuneEvent, VideoEditorTuneState>
+    implements VideoEditorTuneBloc {}
+
 void main() {
   final l10n = lookupAppLocalizations(const Locale('en'));
+
+  setUpAll(() {
+    registerFallbackValue(const VideoEditorTuneSessionStarted());
+  });
 
   group(VideoEditorMainActionsSheet, () {
     late _MockVideoEditorMainBloc mainBloc;
     late _MockClipEditorBloc clipBloc;
     late _MockTimelineOverlayBloc timelineOverlayBloc;
+    late _MockVideoEditorTuneBloc tuneBloc;
 
     setUp(() {
       mainBloc = _MockVideoEditorMainBloc();
       clipBloc = _MockClipEditorBloc();
       timelineOverlayBloc = _MockTimelineOverlayBloc();
+      tuneBloc = _MockVideoEditorTuneBloc();
 
       when(() => mainBloc.state).thenReturn(const VideoEditorMainState());
       when(() => clipBloc.state).thenReturn(const ClipEditorState());
       when(
         () => timelineOverlayBloc.state,
       ).thenReturn(const TimelineOverlayState());
+      when(() => tuneBloc.state).thenReturn(
+        const VideoEditorTuneState(
+          adjustments: VideoEditorConstants.tuneAdjustments,
+        ),
+      );
     });
 
     testWidgets('renders all action labels', (tester) async {
@@ -143,8 +160,102 @@ void main() {
 
       expect(addedStickers, isTrue);
     });
+
+    // Regression: the sheet opens on a separate route, so `show` must
+    // re-provide every bloc its actions read. When the tune bloc was left out,
+    // tapping Adjust threw a ProviderNotFoundException instead of starting a
+    // tune session.
+    testWidgets(
+      'tap on Adjust in the shown sheet starts a tune session',
+      (tester) async {
+        await tester.pumpWidget(
+          _buildShowHost(
+            mainBloc: mainBloc,
+            clipBloc: clipBloc,
+            timelineOverlayBloc: timelineOverlayBloc,
+            tuneBloc: tuneBloc,
+          ),
+        );
+
+        await tester.tap(find.byKey(const Key('open-sheet')));
+        await tester.pumpAndSettle();
+
+        await tester.tap(
+          find.bySemanticsLabel(l10n.videoEditorOpenTuneSemanticLabel),
+        );
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        verify(
+          () => tuneBloc.add(any(that: isA<VideoEditorTuneSessionStarted>())),
+        ).called(1);
+      },
+    );
   });
 }
+
+/// Hosts a button that opens the real sheet via [VideoEditorMainActionsSheet.
+/// show], so the sheet's own `MultiBlocProvider` (not the host's) is what
+/// resolves the blocs each action reads.
+Widget _buildShowHost({
+  required _MockVideoEditorMainBloc mainBloc,
+  required _MockClipEditorBloc clipBloc,
+  required _MockTimelineOverlayBloc timelineOverlayBloc,
+  required _MockVideoEditorTuneBloc tuneBloc,
+}) {
+  final scope = _scope();
+
+  return MaterialApp(
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    home: Scaffold(
+      body: MultiBlocProvider(
+        providers: [
+          BlocProvider<VideoEditorMainBloc>.value(value: mainBloc),
+          BlocProvider<ClipEditorBloc>.value(value: clipBloc),
+          BlocProvider<TimelineOverlayBloc>.value(value: timelineOverlayBloc),
+          BlocProvider<VideoEditorTuneBloc>.value(value: tuneBloc),
+        ],
+        child: VideoEditorScope(
+          editorKey: scope.editorKey,
+          removeAreaKey: scope.removeAreaKey,
+          onOpenCamera: scope.onOpenCamera,
+          onAddStickers: scope.onAddStickers,
+          onOpenClipsEditor: scope.onOpenClipsEditor,
+          onAddEditTextLayer: scope.onAddEditTextLayer,
+          onOpenMusicLibrary: scope.onOpenMusicLibrary,
+          onOpenVoiceOver: scope.onOpenVoiceOver,
+          originalClipAspectRatio: scope.originalClipAspectRatio,
+          bodySizeNotifier: scope.bodySizeNotifier,
+          zoomMatrixNotifier: scope.zoomMatrixNotifier,
+          fromLibrary: scope.fromLibrary,
+          child: Builder(
+            builder: (context) => ElevatedButton(
+              key: const Key('open-sheet'),
+              onPressed: () => VideoEditorMainActionsSheet.show(context),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+VideoEditorScope _scope() => VideoEditorScope(
+  editorKey: GlobalKey<ProImageEditorState>(),
+  removeAreaKey: GlobalKey(),
+  onOpenCamera: () {},
+  onAddStickers: () {},
+  onOpenClipsEditor: () {},
+  onAddEditTextLayer: ([layer]) async => null,
+  onOpenMusicLibrary: () {},
+  onOpenVoiceOver: () {},
+  originalClipAspectRatio: 9 / 16,
+  bodySizeNotifier: ValueNotifier(const Size(400, 800)),
+  zoomMatrixNotifier: ValueNotifier(Matrix4.identity()),
+  fromLibrary: false,
+);
 
 Widget _buildWidget({
   required _MockVideoEditorMainBloc mainBloc,

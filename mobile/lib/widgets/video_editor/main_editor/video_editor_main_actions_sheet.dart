@@ -33,6 +33,7 @@ class VideoEditorMainActionsSheet extends StatelessWidget {
     final videoEditorMainBloc = context.read<VideoEditorMainBloc>();
     final clipEditorBloc = context.read<ClipEditorBloc>();
     final timelineOverlayBloc = context.read<TimelineOverlayBloc>();
+    final tuneBloc = context.read<VideoEditorTuneBloc>();
 
     return VineBottomSheet.show(
       context: context,
@@ -41,6 +42,9 @@ class VideoEditorMainActionsSheet extends StatelessWidget {
       isScrollControlled: true,
       title: Text(context.l10n.videoEditorAddTitle),
       children: [
+        // The sheet opens on a separate route, outside the editor's
+        // MultiBlocProvider, so re-provide every bloc the actions read —
+        // including the tune bloc the Adjust action needs.
         MultiBlocProvider(
           providers: [
             BlocProvider<VideoEditorMainBloc>.value(
@@ -50,6 +54,7 @@ class VideoEditorMainActionsSheet extends StatelessWidget {
             BlocProvider<TimelineOverlayBloc>.value(
               value: timelineOverlayBloc,
             ),
+            BlocProvider<VideoEditorTuneBloc>.value(value: tuneBloc),
           ],
           child: VideoEditorMainActionsSheet(scope: scope),
         ),
