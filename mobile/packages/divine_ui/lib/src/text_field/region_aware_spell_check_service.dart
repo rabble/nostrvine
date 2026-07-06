@@ -53,30 +53,35 @@ class RegionAwareSpellCheckService implements SpellCheckService {
   List<Locale> get _locales =>
       _deviceLocales ?? PlatformDispatcher.instance.locales;
 
-  /// The region-qualified locales to try, most-preferred first: the device's
-  /// own regional variant of the language, then the [fallbackRegions] default,
-  /// then the bare locale as a last resort. An already-region-qualified locale
-  /// is returned as the single candidate.
+  /// The locales to try, most-preferred first: the locale's own region (when it
+  /// already carries one), then the device's regional variant of the language,
+  /// then the [fallbackRegions] default, then the bare locale as a last resort.
+  /// Duplicates are dropped while preserving that order.
+  ///
+  /// A region-qualified input is tried first but still falls back, so an
+  /// unsupported region (e.g. `en_VN`) resolves to a supported one instead of
+  /// disabling spell check outright.
   @visibleForTesting
   List<Locale> localeCandidates(Locale locale) {
-    if (locale.countryCode != null) return [locale];
-
     final candidates = <Locale>[];
+    void add(Locale candidate) {
+      if (!candidates.contains(candidate)) candidates.add(candidate);
+    }
+
+    if (locale.countryCode != null) add(locale);
+
     for (final device in _locales) {
       if (device.languageCode == locale.languageCode &&
           device.countryCode != null) {
-        candidates.add(Locale(locale.languageCode, device.countryCode));
+        add(Locale(locale.languageCode, device.countryCode));
         break;
       }
     }
 
     final region = fallbackRegions[locale.languageCode];
-    if (region != null) {
-      final mapped = Locale(locale.languageCode, region);
-      if (!candidates.contains(mapped)) candidates.add(mapped);
-    }
+    if (region != null) add(Locale(locale.languageCode, region));
 
-    candidates.add(locale);
+    add(Locale(locale.languageCode));
     return candidates;
   }
 

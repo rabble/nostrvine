@@ -25,13 +25,15 @@ class _FakeSpellCheckService implements SpellCheckService {
 void main() {
   group(RegionAwareSpellCheckService, () {
     group('localeCandidates', () {
-      test('returns the single locale when it already has a country', () {
+      test('tries an already-region-qualified locale first, then falls '
+          'back', () {
         final service = RegionAwareSpellCheckService(deviceLocales: const []);
 
-        expect(
-          service.localeCandidates(const Locale('en', 'GB')),
-          [const Locale('en', 'GB')],
-        );
+        expect(service.localeCandidates(const Locale('en', 'GB')), const [
+          Locale('en', 'GB'),
+          Locale('en', 'US'),
+          Locale('en'),
+        ]);
       });
 
       test('prefers device region, then fallback, then the bare locale', () {
@@ -107,6 +109,27 @@ void main() {
         );
 
         expect(delegate.calls, const [Locale('en', 'CH'), Locale('en', 'US')]);
+        expect(result, const [span]);
+      });
+
+      test('falls back when the incoming locale has an unsupported '
+          'region', () async {
+        const span = SuggestionSpan(TextRange(start: 0, end: 3), ['The']);
+        final delegate = _FakeSpellCheckService(
+          (locale, _) async =>
+              locale == const Locale('en', 'US') ? const [span] : null,
+        );
+        final service = RegionAwareSpellCheckService(
+          delegate: delegate,
+          deviceLocales: const [],
+        );
+
+        final result = await service.fetchSpellCheckSuggestions(
+          const Locale('en', 'VN'),
+          'Teh',
+        );
+
+        expect(delegate.calls, const [Locale('en', 'VN'), Locale('en', 'US')]);
         expect(result, const [span]);
       });
 
