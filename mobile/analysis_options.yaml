@@ -57,7 +57,6 @@ linter:
     cancel_subscriptions: false
     depend_on_referenced_packages: false
     flutter_style_todos: false
-    implementation_imports: false
     lines_longer_than_80_chars: false
     missing_code_block_language_in_doc_comment: false
     no_default_cases: false
