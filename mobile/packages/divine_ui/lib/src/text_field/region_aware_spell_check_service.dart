@@ -29,8 +29,8 @@ class RegionAwareSpellCheckService implements SpellCheckService {
   final SpellCheckService _delegate;
   final List<Locale>? _deviceLocales;
 
-  /// Default region per language for the app's supported locales, used to
-  /// produce a candidate the platform checker is known to support.
+  /// Default region per language for locales with platform spell-check support,
+  /// used to produce a candidate the platform checker is known to support.
   static const Map<String, String> fallbackRegions = {
     'ar': 'SA',
     'bg': 'BG',
@@ -52,6 +52,8 @@ class RegionAwareSpellCheckService implements SpellCheckService {
 
   List<Locale> get _locales =>
       _deviceLocales ?? PlatformDispatcher.instance.locales;
+
+  final Map<String, Locale> _resolvedLocaleCache = {};
 
   /// The locales to try, most-preferred first: the locale's own region (when it
   /// already carries one), then the device's regional variant of the language,
@@ -90,13 +92,31 @@ class RegionAwareSpellCheckService implements SpellCheckService {
     Locale locale,
     String text,
   ) async {
+    final candidates = localeCandidates(locale);
+    final cacheKey = _cacheKeyFor(candidates);
+    final cachedLocale = _resolvedLocaleCache[cacheKey];
+    if (cachedLocale != null) {
+      final result = await _delegate.fetchSpellCheckSuggestions(
+        cachedLocale,
+        text,
+      );
+      if (result != null) return result;
+      _resolvedLocaleCache.remove(cacheKey);
+    }
+
     List<SuggestionSpan>? result;
-    for (final candidate in localeCandidates(locale)) {
+    for (final candidate in candidates) {
       // A supported language returns a (possibly empty) list; an unsupported
       // one returns null. Stop at the first supported candidate.
       result = await _delegate.fetchSpellCheckSuggestions(candidate, text);
-      if (result != null) return result;
+      if (result != null) {
+        _resolvedLocaleCache[cacheKey] = candidate;
+        return result;
+      }
     }
     return result;
   }
+
+  String _cacheKeyFor(List<Locale> candidates) =>
+      candidates.map((locale) => locale.toLanguageTag()).join('|');
 }
