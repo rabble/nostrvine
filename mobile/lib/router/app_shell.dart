@@ -34,6 +34,28 @@ import 'package:unified_logger/unified_logger.dart';
 /// Kept short so tab switches stay snappy.
 const Duration _kTabFadeDuration = Duration(milliseconds: 120);
 
+/// Resolves the route context the shell chrome (app bar) should render for,
+/// plus the value the caller must cache for the next build.
+///
+/// While a full-screen route is pushed above the whole shell —
+/// [isShellCovered] true, i.e. the shell's `ModalRoute.isCurrent` is false —
+/// the global pageContext points at that pushed route (camera, editor, …)
+/// rather than the active tab underneath. Rendering the chrome off it would
+/// pop a suppressed app bar (own-profile grid, inbox) in and out for the
+/// length of the push/pop transition, shoving the still-visible tab content
+/// down. So while covered the chrome freezes to [lastTabContext] — the last
+/// context seen while the shell was on top — and the cache is left untouched.
+({RouteContext? context, RouteContext? nextCache}) resolveShellChromeContext({
+  required bool isShellCovered,
+  required RouteContext? liveContext,
+  required RouteContext? lastTabContext,
+}) {
+  if (isShellCovered) {
+    return (context: lastTabContext ?? liveContext, nextCache: lastTabContext);
+  }
+  return (context: liveContext, nextCache: liveContext ?? lastTabContext);
+}
+
 /// Shell chrome (app bar + bottom nav) wrapped around the [StatefulShellRoute]
 /// branch container.
 ///
@@ -54,6 +76,13 @@ class AppShell extends ConsumerStatefulWidget {
 class _AppShellState extends ConsumerState<AppShell> with RouteAware {
   int get currentIndex => widget.currentIndex;
   Widget get child => widget.child;
+
+  /// Last route context observed while the shell was the top-most route.
+  ///
+  /// Used to freeze the chrome (app bar) while a full-screen route is pushed
+  /// above the shell — see the note in [build] — so the global pageContext
+  /// flipping to the pushed route can't pop the app bar in/out mid-transition.
+  RouteContext? _lastTabRouteContext;
 
   @override
   void didChangeDependencies() {
@@ -97,9 +126,8 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
   @override
   void didPopNext() => _setShellObscured(obscured: false);
 
-  String _titleFor(BuildContext context, WidgetRef ref) {
+  String _titleFor(BuildContext context, WidgetRef ref, RouteContext? ctx) {
     final l10n = context.l10n;
-    final ctx = ref.watch(pageContextProvider).asData?.value;
     switch (ctx?.type) {
       case RouteType.home:
         return l10n.navHome;
@@ -201,13 +229,35 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
     }
   }
 
+  /// Whether the shell app bar should show a back button for [ctx].
+  bool _showBackButton(RouteContext? ctx) {
+    if (ctx == null) return false;
+    final isExploreVideo =
+        ctx.type == RouteType.explore && ctx.videoIndex != null;
+    // Notifications base state is index 0, not null.
+    final isNotificationVideo =
+        ctx.type == RouteType.notifications &&
+        ctx.videoIndex != null &&
+        ctx.videoIndex != 0;
+    final isOtherUserProfile =
+        ctx.type == RouteType.profile &&
+        ctx.npub != ref.read(authServiceProvider).currentNpub;
+    final isProfileVideo =
+        ctx.type == RouteType.profile && ctx.videoIndex != null;
+
+    return isExploreVideo ||
+        isNotificationVideo ||
+        isOtherUserProfile ||
+        isProfileVideo;
+  }
+
   /// Builds the header title - tappable for Explore and Hashtag routes to navigate back
   Widget _buildTappableTitle(
     BuildContext context,
     WidgetRef ref,
     String title,
+    RouteContext? ctx,
   ) {
-    final ctx = ref.watch(pageContextProvider).asData?.value;
     final routeType = ctx?.type;
 
     // Check if title should be tappable (Explore-related routes)
@@ -251,8 +301,6 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
 
   @override
   Widget build(BuildContext context) {
-    final title = _titleFor(context, ref);
-
     // Publish the authoritative active branch (navigationShell.currentIndex)
     // so backgrounded tab screens can pause off it. Deferred to a post-frame
     // callback because a provider must not be mutated during build. This is
@@ -289,57 +337,52 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
     // TODO(#4338): remove when BlocklistCubit owns post-login sync.
     ref.watch(blocklistSyncBridgeProvider);
 
-    // Watch page context to determine if back button should show and if on search route
+    // The shell chrome (app bar) mirrors the *active tab's* route. While a
+    // full-screen route is pushed above the whole shell (camera, editor,
+    // video detail, …) the global pageContext points at that pushed route,
+    // not the tab underneath. Recomputing the chrome off it makes a
+    // suppressed app bar (own-profile grid, inbox) pop in for the length of
+    // the push/pop transition, shoving the still-visible tab content down.
+    // Freeze the chrome to the last tab context while the shell is covered so
+    // the transition stays still. `isCurrent` is false exactly when a route
+    // sits on top of the shell (it also gates resizeToAvoidBottomInset below).
+    final shellRoute = ModalRoute.of(context);
+    final isShellCovered = !(shellRoute?.isCurrent ?? true);
     final pageCtxAsync = ref.watch(pageContextProvider);
+    final chrome = resolveShellChromeContext(
+      isShellCovered: isShellCovered,
+      liveContext: pageCtxAsync.asData?.value,
+      lastTabContext: _lastTabRouteContext,
+    );
+    _lastTabRouteContext = chrome.nextCache;
+    final chromeCtx = chrome.context;
+
+    final title = _titleFor(context, ref, chromeCtx);
 
     // Own profile grid renders its own scrollable header (avatar + stats), so
     // AppShell suppresses its app bar for it — like home / inbox / explore grid.
-    final isOwnProfileGrid = pageCtxAsync.maybeWhen(
-      data: (ctx) {
-        if (ctx.type != RouteType.profile) return false;
-        if (ctx.videoIndex != null) return false; // Video mode uses the app bar
-        final currentNpub = ref.read(authServiceProvider).currentNpub;
-        return ctx.npub == 'me' || ctx.npub == currentNpub;
-      },
-      orElse: () => false,
-    );
+    final isOwnProfileGrid =
+        chromeCtx != null &&
+        chromeCtx.type == RouteType.profile &&
+        chromeCtx.videoIndex == null && // Video mode uses the app bar
+        (chromeCtx.npub == 'me' ||
+            chromeCtx.npub == ref.read(authServiceProvider).currentNpub);
 
     // Inbox manages its own header (segmented toggle replaces app bar)
-    final isInbox = pageCtxAsync.maybeWhen(
-      data: (ctx) =>
-          ctx.type == RouteType.inbox || ctx.type == RouteType.conversation,
-      orElse: () => false,
-    );
+    final isInbox =
+        chromeCtx != null &&
+        (chromeCtx.type == RouteType.inbox ||
+            chromeCtx.type == RouteType.conversation);
 
     // Explore grid mode manages its own header (search bar + tabs).
-    final isExploreGrid = pageCtxAsync.maybeWhen(
-      data: (ctx) => ctx.type == RouteType.explore
-          ? ctx.videoIndex == null
-          : currentIndex == 1,
-      orElse: () => currentIndex == 1,
-    );
-    final showBackButton = pageCtxAsync.maybeWhen(
-      data: (ctx) {
-        final isExploreVideo =
-            ctx.type == RouteType.explore && ctx.videoIndex != null;
-        // Notifications base state is index 0, not null
-        final isNotificationVideo =
-            ctx.type == RouteType.notifications &&
-            ctx.videoIndex != null &&
-            ctx.videoIndex != 0;
-        final isOtherUserProfile =
-            ctx.type == RouteType.profile &&
-            ctx.npub != ref.read(authServiceProvider).currentNpub;
-        final isProfileVideo =
-            ctx.type == RouteType.profile && ctx.videoIndex != null;
+    final bool isExploreGrid;
+    if (chromeCtx?.type == RouteType.explore) {
+      isExploreGrid = chromeCtx!.videoIndex == null;
+    } else {
+      isExploreGrid = currentIndex == 1;
+    }
 
-        return isExploreVideo ||
-            isNotificationVideo ||
-            isOtherUserProfile ||
-            isProfileVideo;
-      },
-      orElse: () => false,
-    );
+    final showBackButton = _showBackButton(chromeCtx);
 
     // Get environment config for app bar styling
     final environment = ref.watch(currentEnvironmentProvider);
@@ -352,7 +395,7 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
       // laggy on older devices (Galaxy S10, reported on #5758). While the feed
       // is the topmost route the default resize behaviour is preserved so its
       // own bottom composers still lift above the keyboard.
-      resizeToAvoidBottomInset: ModalRoute.of(context)?.isCurrent ?? true,
+      resizeToAvoidBottomInset: shellRoute?.isCurrent ?? true,
       // Home tab uses FeedModeSwitch overlay (menu + mode dropdown + search)
       // instead of the standard AppBar, for full-screen video UX.
       // Inbox uses its own segmented toggle header.
@@ -361,7 +404,7 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
       appBar: currentIndex == 0 || isInbox || isExploreGrid || isOwnProfileGrid
           ? null
           : DiVineAppBar(
-              titleWidget: _buildTappableTitle(context, ref, title),
+              titleWidget: _buildTappableTitle(context, ref, title, chromeCtx),
               titleSuffix: const EnvironmentBadge(),
               backgroundColor: getEnvironmentAppBarColor(environment),
               showBackButton: showBackButton,
