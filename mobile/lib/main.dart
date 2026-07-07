@@ -1201,13 +1201,13 @@ Future<void> _startOpenVineApp() async {
         'Cache manager error (non-fatal): ${details.exception}',
         name: 'Main',
       );
-      try {
-        FirebaseCrashlytics.instance.recordError(
+      unawaited(
+        CrashReportingService.instance.recordError(
           details.exception,
           details.stack,
           reason: 'Cache manager JSON corruption',
-        );
-      } catch (_) {}
+        ),
+      );
       return;
     }
 
@@ -1228,13 +1228,13 @@ Future<void> _startOpenVineApp() async {
       );
       // Record as non-fatal in Crashlytics (if available) instead of
       // letting it propagate as a fatal crash.
-      try {
-        FirebaseCrashlytics.instance.recordError(
+      unawaited(
+        CrashReportingService.instance.recordError(
           details.exception,
           details.stack,
           reason: 'Video player disposed race condition',
-        );
-      } catch (_) {}
+        ),
+      );
       // Still show the error widget (dark placeholder) but don't report
       // as fatal.
       FlutterError.presentError(details);
@@ -1248,13 +1248,13 @@ Future<void> _startOpenVineApp() async {
         '${details.exception}',
         name: 'Main',
       );
-      try {
-        FirebaseCrashlytics.instance.recordError(
+      unawaited(
+        CrashReportingService.instance.recordError(
           details.exception,
           details.stack,
           reason: recoverableReason,
-        );
-      } catch (_) {}
+        ),
+      );
       FlutterError.presentError(details);
       return;
     }
@@ -1265,7 +1265,11 @@ Future<void> _startOpenVineApp() async {
       if (previousOnError != null) {
         previousOnError(details);
       }
-    } catch (_) {}
+    } catch (_) {
+      // No-op: a foreign FlutterError handler (e.g. Crashlytics') threw while
+      // we forwarded to it. Rethrowing here would re-enter FlutterError.onError,
+      // so swallow and fall through to presentError below.
+    }
     FlutterError.presentError(details);
   };
 
@@ -1559,14 +1563,13 @@ void main() {
       await _startOpenVineApp();
     },
     (error, stack) async {
-      // Best-effort logging; if Crashlytics isn't ready, still print
-      try {
-        await CrashReportingService.instance.recordError(
-          error,
-          stack,
-          reason: 'runZonedGuarded',
-        );
-      } catch (_) {}
+      // CrashReportingService.recordError self-guards (no-ops if uninitialized)
+      // and logs its own failure internally, so no outer catch is needed here.
+      await CrashReportingService.instance.recordError(
+        error,
+        stack,
+        reason: 'runZonedGuarded',
+      );
     },
   );
 }
@@ -2758,9 +2761,7 @@ class _CrashProbeHotspotState extends State<_CrashProbeHotspot> {
     _taps++;
     if (_taps >= 7) {
       // Record a breadcrumb, then crash the app (TestFlight validation)
-      try {
-        FirebaseCrashlytics.instance.log('CrashProbe: triggering test crash');
-      } catch (_) {}
+      CrashReportingService.instance.log('CrashProbe: triggering test crash');
       // Force a native crash to ensure reporting in TF
       FirebaseCrashlytics.instance.crash();
     }
