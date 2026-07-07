@@ -4552,10 +4552,11 @@ class AppLocalizationsAm extends AppLocalizations {
   String get reportReasonChildSafetySubtitle => 'ስለ ታዳጊዎች ደህንነት አጠቃላይ ስጋቶች';
 
   @override
-  String get reportReasonCsam => 'የልጅ ደህንነት ጥሰት';
+  String get reportReasonCsam => 'የህጻናት ወሲባዊ ጥቃት';
 
   @override
-  String get reportReasonCsamSubtitle => 'ህፃናትን የሚበዘብዝ ወይም አደጋ ላይ የሚጥል ይዘት';
+  String get reportReasonCsamSubtitle =>
+      'ለአካለ መጠን ያልደረሱ ልጆች ላይ የሚፈጸም ወሲባዊ ጥቃትን የሚያሳይ ይዘት';
 
   @override
   String get reportReasonUnderageUser => 'ተጠቃሚው ከ16 ዓመት በታች ይመስላል';

@@ -4717,11 +4717,11 @@ class AppLocalizationsFr extends AppLocalizations {
       'Préoccupations générales sur la sécurité des mineurs';
 
   @override
-  String get reportReasonCsam => 'Violation de sécurité des enfants';
+  String get reportReasonCsam => 'Abus sexuels sur mineurs';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Contenu qui exploite ou met en danger des mineurs';
+      'Contenu représentant des abus sexuels sur mineurs';
 
   @override
   String get reportReasonUnderageUser =>

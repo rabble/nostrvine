@@ -4673,11 +4673,11 @@ class AppLocalizationsNl extends AppLocalizations {
       'Algemene zorgen over de veiligheid van minderjarigen';
 
   @override
-  String get reportReasonCsam => 'Schending kinderveiligheid';
+  String get reportReasonCsam => 'Seksueel kindermisbruik';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Content die minderjarigen uitbuit of in gevaar brengt';
+      'Content die seksueel misbruik van minderjarigen toont';
 
   @override
   String get reportReasonUnderageUser => 'Gebruiker lijkt jonger dan 16';

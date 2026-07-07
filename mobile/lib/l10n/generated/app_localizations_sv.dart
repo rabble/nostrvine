@@ -4651,11 +4651,11 @@ class AppLocalizationsSv extends AppLocalizations {
       'Allmänna farhågor om minderårigas säkerhet';
 
   @override
-  String get reportReasonCsam => 'Brott mot barns säkerhet';
+  String get reportReasonCsam => 'Sexuella övergrepp mot barn';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Innehåll som utnyttjar eller utsätter minderåriga för fara';
+      'Innehåll som skildrar sexuella övergrepp mot minderåriga';
 
   @override
   String get reportReasonUnderageUser => 'Användaren verkar vara under 16';

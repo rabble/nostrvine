@@ -4783,11 +4783,11 @@ class AppLocalizationsRo extends AppLocalizations {
       'Îngrijorări generale privind siguranța minorilor';
 
   @override
-  String get reportReasonCsam => 'Încălcarea siguranței copiilor';
+  String get reportReasonCsam => 'Abuz sexual asupra copiilor';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Conținut care exploatează sau pune în pericol minorii';
+      'Conținut care înfățișează abuzul sexual asupra minorilor';
 
   @override
   String get reportReasonUnderageUser => 'Utilizatorul pare să aibă sub 16 ani';

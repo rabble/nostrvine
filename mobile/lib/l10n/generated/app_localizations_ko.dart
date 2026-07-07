@@ -4456,10 +4456,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get reportReasonChildSafetySubtitle => '미성년자 안전에 대한 전반적인 우려';
 
   @override
-  String get reportReasonCsam => '아동 안전 위반';
+  String get reportReasonCsam => '아동 성적 학대';
 
   @override
-  String get reportReasonCsamSubtitle => '미성년자를 착취하거나 위험에 빠뜨리는 콘텐츠';
+  String get reportReasonCsamSubtitle => '미성년자에 대한 성적 학대를 묘사한 콘텐츠';
 
   @override
   String get reportReasonUnderageUser => '사용자가 16세 미만으로 보임';

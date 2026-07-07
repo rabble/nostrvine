@@ -4634,11 +4634,11 @@ class AppLocalizationsTr extends AppLocalizations {
       'Reşit olmayanların güvenliğiyle ilgili genel endişeler';
 
   @override
-  String get reportReasonCsam => 'Çocuk Güvenliği İhlali';
+  String get reportReasonCsam => 'Çocuğa yönelik cinsel istismar';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Reşit olmayanları sömüren veya tehlikeye atan içerik';
+      'Reşit olmayanlara yönelik cinsel istismarı gösteren içerik';
 
   @override
   String get reportReasonUnderageUser =>

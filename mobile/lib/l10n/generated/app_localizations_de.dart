@@ -4709,11 +4709,11 @@ class AppLocalizationsDe extends AppLocalizations {
       'Allgemeine Bedenken zur Sicherheit von Minderjährigen';
 
   @override
-  String get reportReasonCsam => 'Verletzung der Kindersicherheit';
+  String get reportReasonCsam => 'Sexueller Kindesmissbrauch';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Inhalte, die Minderjährige ausbeuten oder gefährden';
+      'Inhalte, die sexuellen Missbrauch von Minderjährigen darstellen';
 
   @override
   String get reportReasonUnderageUser => 'Nutzer scheint unter 16 zu sein';

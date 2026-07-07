@@ -4625,11 +4625,11 @@ class AppLocalizationsId extends AppLocalizations {
       'Kekhawatiran umum tentang keselamatan anak di bawah umur';
 
   @override
-  String get reportReasonCsam => 'Pelanggaran Keamanan Anak';
+  String get reportReasonCsam => 'Pelecehan seksual terhadap anak';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Konten yang mengeksploitasi atau membahayakan anak di bawah umur';
+      'Konten yang menggambarkan pelecehan seksual terhadap anak di bawah umur';
 
   @override
   String get reportReasonUnderageUser => 'Pengguna Tampak di Bawah 16 Tahun';

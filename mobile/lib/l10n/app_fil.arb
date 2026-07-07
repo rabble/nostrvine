@@ -2386,8 +2386,8 @@
     "commentsEmptySubtitle": "Get the party started!",
     "commentsHeaderTitle": "Comments",
     "commentsHeaderCloseLabel": "Close comments",
-    "reportReasonCsam": "Paglabag sa Kaligtasan ng Bata",
-    "reportReasonCsamSubtitle": "Content na nag-eexploit o naglalagay sa panganib ng mga menor de edad",
+    "reportReasonCsam": "Sekswal na Pang-aabuso sa Bata",
+    "reportReasonCsamSubtitle": "Content na naglalarawan ng sekswal na pang-aabuso sa mga menor de edad",
     "minorAccountReviewUnder13EmailSubject": "Under-13 account review for case {caseId}",
     "@minorAccountReviewUnder13EmailSubject": {
         "placeholders": {

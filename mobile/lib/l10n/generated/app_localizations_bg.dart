@@ -4700,11 +4700,11 @@ class AppLocalizationsBg extends AppLocalizations {
       'Общи притеснения за безопасността на непълнолетни';
 
   @override
-  String get reportReasonCsam => 'Нарушение на безопасността на детето';
+  String get reportReasonCsam => 'Сексуално насилие над деца';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Съдържание, което експлоатира или застрашава непълнолетни';
+      'Съдържание, изобразяващо сексуално насилие над непълнолетни';
 
   @override
   String get reportReasonUnderageUser => 'Потребителят изглежда под 16 г.';

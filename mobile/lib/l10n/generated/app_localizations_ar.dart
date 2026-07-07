@@ -4614,10 +4614,11 @@ class AppLocalizationsAr extends AppLocalizations {
       'مخاوف عامة بشأن سلامة القُصَّر';
 
   @override
-  String get reportReasonCsam => 'انتهاك سلامة الأطفال';
+  String get reportReasonCsam => 'الاعتداء الجنسي على الأطفال';
 
   @override
-  String get reportReasonCsamSubtitle => 'محتوى يستغل القاصرين أو يعرضهم للخطر';
+  String get reportReasonCsamSubtitle =>
+      'محتوى يصوّر الاعتداء الجنسي على القاصرين';
 
   @override
   String get reportReasonUnderageUser => 'يبدو أن المستخدم دون 16 عامًا';

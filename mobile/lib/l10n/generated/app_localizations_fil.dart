@@ -4713,11 +4713,11 @@ class AppLocalizationsFil extends AppLocalizations {
       'Pangkalahatang alalahanin tungkol sa kaligtasan ng mga menor de edad';
 
   @override
-  String get reportReasonCsam => 'Paglabag sa Kaligtasan ng Bata';
+  String get reportReasonCsam => 'Sekswal na Pang-aabuso sa Bata';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Content na nag-eexploit o naglalagay sa panganib ng mga menor de edad';
+      'Content na naglalarawan ng sekswal na pang-aabuso sa mga menor de edad';
 
   @override
   String get reportReasonUnderageUser => 'Mukhang Wala Pang 16 ang User';

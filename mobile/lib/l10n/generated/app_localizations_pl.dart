@@ -4771,11 +4771,11 @@ class AppLocalizationsPl extends AppLocalizations {
       'Ogólne obawy o bezpieczeństwo nieletnich';
 
   @override
-  String get reportReasonCsam => 'Naruszenie bezpieczeństwa dzieci';
+  String get reportReasonCsam => 'Wykorzystywanie seksualne dzieci';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Treści wykorzystujące lub narażające nieletnich';
+      'Treści przedstawiające wykorzystywanie seksualne nieletnich';
 
   @override
   String get reportReasonUnderageUser =>
