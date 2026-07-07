@@ -2,6 +2,7 @@
 // ABOUTME: Handles platform-appropriate client creation with proper configuration
 
 import 'package:db_client/db_client.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/constants/app_constants.dart';
@@ -43,7 +44,12 @@ class NostrServiceFactory {
 
     final effectiveSigner = signer ?? LocalKeySigner(null);
 
-    final config = NostrClientConfig(signer: effectiveSigner);
+    final config = NostrClientConfig(
+      signer: effectiveSigner,
+      // Verify inbound relay-event signatures off the main isolate (#5863).
+      // Web has no Isolate.spawn, so it stays on the inline path there.
+      eventVerifyWorkerSpawner: kIsWeb ? null : EventVerifyIsolate.spawn,
+    );
 
     // In non-production environments, lock relays to the environment host so a
     // user's NIP-65 list (which may carry production relays) cannot pull the

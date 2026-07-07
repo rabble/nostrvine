@@ -12,6 +12,7 @@ class NostrClientConfig {
     this.gatewayUrl,
     this.enableGateway = false,
     this.webSocketChannelFactory,
+    this.eventVerifyWorkerSpawner,
   });
 
   /// Signer for event signing - the single source of truth for the public key.
@@ -33,4 +34,12 @@ class NostrClientConfig {
 
   /// WebSocket channel factory for testing (optional)
   final WebSocketChannelFactory? webSocketChannelFactory;
+
+  /// Optional spawner for the off-main relay-event verify isolate (#5863).
+  ///
+  /// When provided, `NostrClient.initialize` spawns it and wires it into the
+  /// relay pool so inbound-event signature verification runs off the main
+  /// isolate. When null (tests, web), verification runs inline on the main
+  /// isolate exactly as before. The app passes `EventVerifyIsolate.spawn`.
+  final EventVerifyWorkerSpawner? eventVerifyWorkerSpawner;
 }

@@ -16,6 +16,7 @@ import '../subscription.dart';
 import '../utils/string_util.dart';
 import 'client_connected.dart';
 import 'event_filter.dart';
+import 'event_verify_isolate.dart';
 import 'publish_outcome.dart';
 import 'relay.dart';
 import 'relay_base.dart';
@@ -50,6 +51,21 @@ class RelayPool {
   final Map<String, Relay> _relays = {};
 
   final Map<String, Relay> _cacheRelays = {};
+
+  /// Optional off-main signature-verify worker (#5863). When set, the fresh
+  /// Schnorr verify for a not-yet-trusted inbound event runs on a background
+  /// isolate instead of the main/UI isolate. When null, verify runs inline on
+  /// the main isolate exactly as before (the default, and every existing test).
+  /// Wired by the app to an [EventVerifyIsolate]; injectable for tests.
+  EventVerifyWorker? _verifyWorker;
+
+  set eventVerifyWorker(EventVerifyWorker? worker) => _verifyWorker = worker;
+
+  /// Per-relay serial tail used to keep EVENT/EOSE frames in order once verify
+  /// becomes asynchronous (an EOSE must not complete a query before its
+  /// preceding events finish verifying). One entry per relay url; only used
+  /// when [_verifyWorker] is set.
+  final Map<String, Future<void>> _orderedFrameTails = {};
 
   // subscription
   final Map<String, Subscription> _subscriptions = {};
@@ -437,6 +453,36 @@ class RelayPool {
     }
   }
 
+  /// Verifies [event]'s Schnorr signature, off the main isolate when a verify
+  /// worker is wired (#5863), else inline via [Event.isSigned]. The caller has
+  /// already run [Event.isValid] (id recompute), so only the signature is
+  /// checked here. On any worker failure (isolate closed / died) it degrades
+  /// to the inline check so a verify never hangs and correctness is preserved.
+  Future<bool> _verifySignatureOffMain(
+    Event event,
+    Map<String, dynamic> eventJson,
+  ) async {
+    final worker = _verifyWorker;
+    if (worker == null) return event.isSigned;
+    try {
+      return await worker.verify(eventJson);
+    } catch (_) {
+      return event.isSigned;
+    }
+  }
+
+  /// Runs [work] after the previous EVENT/EOSE frame from the same relay,
+  /// preserving per-relay in-order delivery once verify is asynchronous. Errors
+  /// are swallowed on the retained tail so one bad frame can't wedge the chain;
+  /// the returned future still surfaces them to the immediate caller.
+  Future<void> _enqueueOrdered(Relay relay, Future<void> Function() work) {
+    final key = relay.url;
+    final prev = _orderedFrameTails[key] ?? Future<void>.value();
+    final next = prev.then((_) => work());
+    _orderedFrameTails[key] = next.catchError((Object _) {});
+    return next;
+  }
+
   Future<void> _onEvent(Relay relay, List<dynamic> json) async {
     final messageType = _stringAt(relay, json, 0, 'message type');
     if (messageType == null) return;
@@ -459,6 +505,25 @@ class RelayPool {
       log('📡 Raw message from ${relay.url}: $json');
     }
 
+    // #5863: when an off-main verify worker is wired, serialize EVENT/EOSE
+    // per relay so the asynchronous verify preserves in-order delivery — an
+    // EOSE must not complete a query before its preceding events finish
+    // verifying. With no worker the original synchronous path runs unchanged.
+    if (_verifyWorker != null &&
+        (messageType == 'EVENT' || messageType == 'EOSE')) {
+      return _enqueueOrdered(
+        relay,
+        () => _dispatchTypedFrame(relay, json, messageType),
+      );
+    }
+    return _dispatchTypedFrame(relay, json, messageType);
+  }
+
+  Future<void> _dispatchTypedFrame(
+    Relay relay,
+    List<dynamic> json,
+    String messageType,
+  ) async {
     if (messageType == 'EVENT') {
       try {
         final subId = _stringAt(relay, json, 1, 'EVENT subscription id');
@@ -495,7 +560,7 @@ class RelayPool {
           _verifiesSkippedSessionDup++;
         } else if (isKnownVerifiedEvent?.call(event.id, event.sig) ?? false) {
           _verifiesSkippedKnown++;
-        } else if (event.isSigned) {
+        } else if (await _verifySignatureOffMain(event, eventJson)) {
           _markEventVerified(verifyKey);
           _verifiesPerformed++;
         } else {

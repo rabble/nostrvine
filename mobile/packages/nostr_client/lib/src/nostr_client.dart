@@ -64,6 +64,7 @@ class NostrClient {
       nostr: nostr,
       relayManager: relayManager,
       dbClient: dbClient,
+      eventVerifyWorkerSpawner: config.eventVerifyWorkerSpawner,
     );
   }
 
@@ -72,9 +73,11 @@ class NostrClient {
     required Nostr nostr,
     required RelayManager relayManager,
     AppDbClient? dbClient,
+    EventVerifyWorkerSpawner? eventVerifyWorkerSpawner,
   }) : _nostr = nostr,
        _relayManager = relayManager,
-       _dbClient = dbClient;
+       _dbClient = dbClient,
+       _eventVerifyWorkerSpawner = eventVerifyWorkerSpawner;
 
   /// Creates a NostrClient with injected dependencies for testing
   @visibleForTesting
@@ -82,9 +85,11 @@ class NostrClient {
     required Nostr nostr,
     required RelayManager relayManager,
     AppDbClient? dbClient,
+    EventVerifyWorkerSpawner? eventVerifyWorkerSpawner,
   }) : _nostr = nostr,
        _relayManager = relayManager,
-       _dbClient = dbClient;
+       _dbClient = dbClient,
+       _eventVerifyWorkerSpawner = eventVerifyWorkerSpawner;
 
   static Nostr _createNostr(NostrClientConfig config) {
     RelayBase tempRelayGenerator(String url) => RelayBase(
@@ -104,6 +109,13 @@ class NostrClient {
   final Nostr _nostr;
   final RelayManager _relayManager;
   final AppDbClient? _dbClient;
+
+  /// Spawns the off-main event-verify isolate (#5863). Null in tests / on web,
+  /// where verify falls back to the main isolate.
+  final EventVerifyWorkerSpawner? _eventVerifyWorkerSpawner;
+
+  /// The spawned verify worker, if any. Closed on [dispose].
+  EventVerifyWorker? _verifyWorker;
 
   /// Maximum number of concurrent one-shot relay queries ([queryEvents]).
   ///
@@ -163,6 +175,21 @@ class NostrClient {
         error: e,
         stackTrace: st,
       );
+    }
+  }
+
+  /// Spawns the off-main relay-event verify isolate (if a spawner was
+  /// configured) and wires it into the relay pool. A spawn failure is
+  /// non-fatal: the relay pool falls back to inline main-isolate verification.
+  Future<void> _maybeStartEventVerifyWorker() async {
+    final spawner = _eventVerifyWorkerSpawner;
+    if (spawner == null || _verifyWorker != null) return;
+    try {
+      final worker = await spawner();
+      _verifyWorker = worker;
+      _nostr.relayPool.eventVerifyWorker = worker;
+    } on Object catch (_) {
+      // Non-fatal: without a worker the relay pool verifies inline as before.
     }
   }
 
@@ -349,6 +376,9 @@ class NostrClient {
       // Seed the already-verified set before relays connect, so re-sent
       // events skip re-verification during the cold-start flood.
       await _seedVerifiedEventIds();
+      // Wire the off-main verify isolate before relays connect, so the fresh
+      // verifies during the cold-start flood run off the main isolate (#5863).
+      await _maybeStartEventVerifyWorker();
       await _relayManager.initialize();
       if (!_readyCompleter.isCompleted) {
         _readyCompleter.complete();
@@ -1356,6 +1386,8 @@ class NostrClient {
     await _relayManager.dispose();
     await _queryPool.close();
     _nostr.close();
+    _verifyWorker?.close();
+    _verifyWorker = null;
     _subscriptionFilters.clear();
     _isDisposed = true;
   }
