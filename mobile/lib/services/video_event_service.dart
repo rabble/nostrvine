@@ -2879,6 +2879,28 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     );
   }
 
+  /// Cancels the active profile-feed subscription only if it still belongs to
+  /// [pubkey]. Profile feeds are route-scoped, but the underlying subscription
+  /// registry is service-global; the author guard prevents an old route disposal
+  /// from cancelling a newer profile route.
+  Future<void> unsubscribeFromUserVideos(String pubkey) async {
+    final params = _subscriptionParams[SubscriptionType.profile];
+    final authors = params?['authors'] as List<String>?;
+    final isActiveAuthor =
+        authors != null && authors.length == 1 && authors.single == pubkey;
+
+    if (!isActiveAuthor) {
+      Log.debug(
+        'Skipping stale profile unsubscribe for $pubkey',
+        name: 'VideoEventService',
+        category: LogCategory.video,
+      );
+      return;
+    }
+
+    await _cancelSubscription(SubscriptionType.profile);
+  }
+
   /// Query historical videos for a specific user (for pagination)
   /// This is used by profile feed provider to load older videos beyond the initial subscription
   Future<void> queryHistoricalUserVideos(

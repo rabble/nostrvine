@@ -104,6 +104,7 @@ class _Harness {
     ).thenAnswer((i) => i.positionalArguments[0] as List<VideoEvent>);
     when(() => ves.isVideoEventLocallyDeleted(any())).thenReturn(false);
     when(() => ves.subscribeToUserVideos(any())).thenAnswer((_) async {});
+    when(() => ves.unsubscribeFromUserVideos(any())).thenAnswer((_) async {});
     when(
       () => ves.queryHistoricalUserVideos(any(), until: any(named: 'until')),
     ).thenAnswer((_) async {});
@@ -224,6 +225,16 @@ void main() {
           key: cacheKey,
           fromJson: ProfileVideoOffsetSnapshot.fromJson,
         );
+
+    test('close unsubscribes the active profile feed subscription', () async {
+      h.stubAuthorFeed(_result(const []));
+      final cubit = h.build();
+      await pumpEventQueue();
+
+      await cubit.close();
+
+      verify(() => h.ves.unsubscribeFromUserVideos(_author)).called(1);
+    });
 
     group('CacheSync stale-while-revalidate', () {
       test('reopen restores the persisted window + cursor instantly, then '

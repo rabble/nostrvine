@@ -61,6 +61,13 @@ void main() {
       when(() => nostr.connectedRelayCount).thenReturn(1);
       when(() => nostr.connectedRelays).thenReturn(['wss://relay.example.com']);
       when(() => nostr.subscribe(any())).thenAnswer((_) => eventStream.stream);
+      when(
+        () => nostr.subscribe(
+          any(),
+          subscriptionId: any(named: 'subscriptionId'),
+          onEose: any(named: 'onEose'),
+        ),
+      ).thenAnswer((_) => eventStream.stream);
 
       service = VideoEventService(
         nostr,
@@ -117,5 +124,42 @@ void main() {
       expect(authored, hasLength(1));
       expect(authored.single.id.toLowerCase(), 'dup');
     });
+
+    test(
+      'skips stale profile unsubscribe after another author is active',
+      () async {
+        final authorAStream = StreamController<Event>.broadcast();
+        final authorBStream = StreamController<Event>.broadcast();
+
+        when(
+          () => nostr.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            onEose: any(named: 'onEose'),
+          ),
+        ).thenAnswer((invocation) {
+          final filters = invocation.positionalArguments.single as List<Filter>;
+          final authors = filters.first.authors;
+          if (authors?.contains(_authorA) ?? false) {
+            return authorAStream.stream;
+          }
+          return authorBStream.stream;
+        });
+
+        await service.subscribeToUserVideos(_authorA);
+        expect(authorAStream.hasListener, isTrue);
+
+        await service.subscribeToUserVideos(_authorB);
+        expect(authorAStream.hasListener, isFalse);
+        expect(authorBStream.hasListener, isTrue);
+
+        await service.unsubscribeFromUserVideos(_authorA);
+
+        expect(authorBStream.hasListener, isTrue);
+
+        await authorAStream.close();
+        await authorBStream.close();
+      },
+    );
   });
 }

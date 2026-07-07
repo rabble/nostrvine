@@ -763,11 +763,17 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
   }
 
   @override
-  Future<void> close() {
+  Future<void> close() async {
     _removeChangeListener?.call();
     _unregisterUpdate?.call();
     _initialLoadTimer?.cancel();
     _flushSnapshot();
+    try {
+      await _videoEventService.unsubscribeFromUserVideos(_authorPubkey);
+    } on Object {
+      // Closing the Cubit must still complete; the service treats unsubscribe
+      // as best-effort route cleanup.
+    }
     return super.close();
   }
 }
