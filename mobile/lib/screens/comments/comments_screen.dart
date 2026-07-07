@@ -292,7 +292,7 @@ abstract final class CommentsScreen {
           // starts dismissing (drag / scrim / back), otherwise iOS leaves it
           // stranded over the feed below (#5604).
           bottomInput: UnfocusOnSheetDismiss(
-            child: _MainCommentInput(draggableController: draggableController),
+            child: MainCommentInput(draggableController: draggableController),
           ),
           buildScrollBody: (scrollController) {
             activeScrollController = scrollController;
@@ -579,16 +579,19 @@ class _CommentsScreenBody extends StatelessWidget {
 }
 
 /// Main comment input widget that reads from [CommentComposerBloc] state.
-class _MainCommentInput extends ConsumerStatefulWidget {
-  const _MainCommentInput({required this.draggableController});
+///
+/// Public-by-test only: production callers should use [CommentsScreen.show].
+@visibleForTesting
+class MainCommentInput extends ConsumerStatefulWidget {
+  const MainCommentInput({required this.draggableController, super.key});
 
   final DraggableScrollableController draggableController;
 
   @override
-  ConsumerState<_MainCommentInput> createState() => _MainCommentInputState();
+  ConsumerState<MainCommentInput> createState() => _MainCommentInputState();
 }
 
-class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
+class _MainCommentInputState extends ConsumerState<MainCommentInput> {
   late final TextEditingController _controller;
   late final FocusNode _focusNode;
 

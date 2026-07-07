@@ -18,6 +18,8 @@ import 'package:openvine/blocs/comments/comment_composer/comment_composer_bloc.d
 import 'package:openvine/blocs/comments/comment_reactions/comment_reactions_bloc.dart';
 import 'package:openvine/blocs/comments/comments_list/comments_list_bloc.dart';
 import 'package:openvine/blocs/comments/comments_surface_performance_telemetry.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -235,14 +237,21 @@ void main() {
         when(() => mockComposerBloc.state).thenReturn(composerState);
       }
 
+      final effectiveDraggableController =
+          draggableController ?? DraggableScrollableController();
+      if (draggableController == null) {
+        addTearDown(effectiveDraggableController.dispose);
+      }
+
       final content = draggableController == null
           ? _CommentsScreenTestContent(
               videoEvent: videoEvent ?? testVideoEvent,
               sheetScrollController: scrollController,
               initialCommentCount: initialCommentCount ?? 0,
+              draggableController: effectiveDraggableController,
             )
           : DraggableScrollableSheet(
-              controller: draggableController,
+              controller: effectiveDraggableController,
               expand: false,
               initialChildSize: 0.7,
               minChildSize: 0.5,
@@ -254,7 +263,7 @@ void main() {
                     videoEvent: videoEvent ?? testVideoEvent,
                     sheetScrollController: sheetScrollController,
                     initialCommentCount: initialCommentCount ?? 0,
-                    draggableController: draggableController,
+                    draggableController: effectiveDraggableController,
                   ),
             );
 
@@ -263,6 +272,9 @@ void main() {
           socialServiceProvider.overrideWithValue(mockSocialService),
           authServiceProvider.overrideWithValue(mockAuthService),
           nostrServiceProvider.overrideWithValue(mockNostrClient),
+          isFeatureEnabledProvider(
+            FeatureFlag.videoReplies,
+          ).overrideWithValue(false),
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -660,8 +672,11 @@ void main() {
         await tester.pumpAndSettle();
 
         final l10n = lookupAppLocalizations(const Locale('en'));
+        final generatedAuthorName = UserProfile.generatedNameFor(
+          TestCommentIds.author1Pubkey,
+        );
         expect(
-          find.text('${l10n.commentReplyToPrefix} TestUser'),
+          find.text('${l10n.commentReplyToPrefix} $generatedAuthorName'),
           findsOneWidget,
         );
         expect(_divineIcon(DivineIconName.x), findsWidgets);
@@ -946,13 +961,13 @@ class _CommentsScreenTestContent extends StatelessWidget {
     required this.videoEvent,
     required this.sheetScrollController,
     required this.initialCommentCount,
-    this.draggableController,
+    required this.draggableController,
   });
 
   final VideoEvent videoEvent;
   final ScrollController sheetScrollController;
   final int initialCommentCount;
-  final DraggableScrollableController? draggableController;
+  final DraggableScrollableController draggableController;
 
   @override
   Widget build(BuildContext context) {
@@ -970,146 +985,9 @@ class _CommentsScreenTestContent extends StatelessWidget {
               scrollController: sheetScrollController,
             ),
           ),
-          _MainCommentInputTest(draggableController: draggableController),
+          MainCommentInput(draggableController: draggableController),
         ],
       ),
-    );
-  }
-}
-
-/// Test version of main comment input that reads from the composer bloc.
-class _MainCommentInputTest extends StatefulWidget {
-  const _MainCommentInputTest({this.draggableController});
-
-  final DraggableScrollableController? draggableController;
-
-  @override
-  State<_MainCommentInputTest> createState() => _MainCommentInputTestState();
-}
-
-class _MainCommentInputTestState extends State<_MainCommentInputTest> {
-  late final TextEditingController _controller;
-  late final FocusNode _focusNode;
-
-  @override
-  void initState() {
-    super.initState();
-    final state = context.read<CommentComposerBloc>().state;
-    _controller = TextEditingController(text: state.mainInputText);
-    _focusNode = FocusNode();
-    _focusNode.addListener(_handleFocusChanged);
-    widget.draggableController?.addListener(_handleSheetSizeChanged);
-  }
-
-  @override
-  void dispose() {
-    widget.draggableController?.removeListener(_handleSheetSizeChanged);
-    _focusNode.removeListener(_handleFocusChanged);
-    _controller.dispose();
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  void _handleFocusChanged() {
-    if (_focusNode.hasFocus) {
-      _expandSheetForKeyboard();
-    }
-  }
-
-  void _handleSheetSizeChanged() {
-    final controller = widget.draggableController;
-    if (!_focusNode.hasFocus ||
-        controller == null ||
-        !controller.isAttached ||
-        controller.size >= 0.7) {
-      return;
-    }
-
-    _expandSheetForKeyboard();
-  }
-
-  void _expandSheetForKeyboard() {
-    final controller = widget.draggableController;
-    if (controller == null ||
-        !controller.isAttached ||
-        controller.size >= 0.93) {
-      return;
-    }
-
-    controller.animateTo(
-      0.93,
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeOut,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocConsumer<CommentComposerBloc, CommentComposerState>(
-      listenWhen: (prev, next) =>
-          prev.activeReplyCommentId != next.activeReplyCommentId,
-      listener: (context, state) {
-        if (state.activeReplyCommentId != null) {
-          _focusNode.requestFocus();
-        }
-      },
-      buildWhen: (prev, next) =>
-          prev.mainInputText != next.mainInputText ||
-          prev.replyInputText != next.replyInputText ||
-          prev.activeReplyCommentId != next.activeReplyCommentId,
-      builder: (context, state) {
-        final isReplyMode = state.activeReplyCommentId != null;
-        final inputText = isReplyMode
-            ? state.replyInputText
-            : state.mainInputText;
-
-        if (_controller.text != inputText) {
-          _controller.text = inputText;
-          _controller.selection = TextSelection.collapsed(
-            offset: inputText.length,
-          );
-        }
-
-        String? replyToDisplayName;
-        String? replyToAuthorPubkey;
-        if (isReplyMode) {
-          final listState = context.read<CommentsListBloc>().state;
-          final replyComment =
-              listState.commentsById[state.activeReplyCommentId];
-          if (replyComment != null) {
-            replyToAuthorPubkey = replyComment.authorPubkey;
-            replyToDisplayName = 'TestUser';
-          }
-        }
-
-        return CommentInput(
-          controller: _controller,
-          focusNode: _focusNode,
-          replyToDisplayName: replyToDisplayName,
-          onChanged: (text) {
-            context.read<CommentComposerBloc>().add(
-              CommentTextChanged(text, commentId: state.activeReplyCommentId),
-            );
-          },
-          onSubmit: () {
-            if (isReplyMode) {
-              context.read<CommentComposerBloc>().add(
-                CommentSubmitted(
-                  parentCommentId: state.activeReplyCommentId,
-                  parentAuthorPubkey: replyToAuthorPubkey,
-                ),
-              );
-            } else {
-              context.read<CommentComposerBloc>().add(const CommentSubmitted());
-            }
-          },
-          onCancelReply: () {
-            context.read<CommentComposerBloc>().add(
-              CommentReplyToggled(state.activeReplyCommentId!),
-            );
-          },
-        );
-      },
     );
   }
 }
