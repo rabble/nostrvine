@@ -70,10 +70,10 @@ void main() {
     });
 
     group('when URL is the raw blob URL', () {
-      test('returns [rawUrl, hlsUrl, originalUrl] deduplicated', () {
+      test('returns [hlsUrl, rawUrl, originalUrl] deduplicated', () {
         final video = _makeVideo(videoUrl: _rawUrl);
-        // raw == original → [rawUrl, hlsUrl]
-        expect(resolvePlaybackSources(video), equals([_rawUrl, _hlsUrl]));
+        // raw == original -> [hlsUrl, rawUrl]
+        expect(resolvePlaybackSources(video), equals([_hlsUrl, _rawUrl]));
       });
 
       test('includes originalUrl when it differs from rawUrl', () {
@@ -83,7 +83,7 @@ void main() {
           video,
           urlResolver: (_) => _rawUrl,
         );
-        expect(result, equals([_rawUrl, _hlsUrl, otherOriginal]));
+        expect(result, equals([_hlsUrl, _rawUrl, otherOriginal]));
       });
     });
 

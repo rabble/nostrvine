@@ -10,10 +10,11 @@ import 'package:models/models.dart';
 ///
 /// **Fallback order rationale**: ExoPlayer uses `ProgressiveMediaSource` for
 /// `.mp4`-extension URLs and only switches to `HlsMediaSource` when the URL
-/// ends with `.m3u8`. Some Divine CDN paths (e.g. `<hash>/720p.mp4`) serve
-/// content that ExoPlayer cannot parse with its progressive extractors even
-/// though the file is reachable. HLS is tried second so at most one failed
-/// attempt is needed before ExoPlayer switches to the adaptive source.
+/// ends with `.m3u8`. Some Divine CDN paths (including raw blob URLs and
+/// `<hash>/720p.mp4`) serve content that ExoPlayer cannot parse or start
+/// quickly with its progressive extractors even though the file is reachable.
+/// HLS is preferred for canonical Divine blobs, with raw MP4 retained as a
+/// fallback for assets whose HLS rendition is still unavailable.
 List<String> resolvePlaybackSources(
   VideoEvent video, {
   String? Function(VideoEvent video)? urlResolver,
@@ -35,12 +36,13 @@ List<String> resolvePlaybackSources(
     }
 
     final isRawBlob = resolvedSource == rawUrl;
-    // For the raw blob, HLS is the first fallback.
+    // For the raw blob, prefer HLS so cold progressive MP4 metadata/layout
+    // does not stall feed playback before falling back to raw bytes.
     // For quality-specific variants (e.g. 720p.mp4), HLS comes before raw
     // because the variant URL may serve content ExoPlayer cannot parse as
     // a progressive stream.
     return isRawBlob
-        ? orderedUniqueSources([resolvedSource, hlsUrl, originalUrl])
+        ? orderedUniqueSources([hlsUrl, resolvedSource, originalUrl])
         : orderedUniqueSources([resolvedSource, hlsUrl, rawUrl, originalUrl]);
   }
 
