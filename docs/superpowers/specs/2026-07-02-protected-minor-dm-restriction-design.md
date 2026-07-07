@@ -201,3 +201,55 @@ migration to an official account rides along here only where it intersects
 minor-facing DM affordances; the full support-identity cleanup is tracked via
 support-trust-safety#115. Parent-approved allowlist is a later follow-on
 (#178 / divine-web#455).
+
+## Corrections after adversarial review (2026-07-07)
+
+An independent adversarial review (verified against code) found three
+correctness holes in the security boundary. These corrections supersede the
+conflicting text above; the implementation follows the corrected design.
+
+### C-H1 — the send gate moves to the lowest NIP-17 publish primitive (was: `sendMessage`)
+
+`sendMessage()` is one of ~7 outbound kind-1059 publishers. Verified bypasses in
+`dm_repository.dart`/`dm_reactions_repository.dart`: `sendGroupMessage` (:3367),
+`sendSharedVideo` (:2657), `sendFileMessage` (:3695), the queue-replay paths
+`recoverFullSend` (:3031) and `recoverSelfWrap` (:2861) — which re-publish from
+`OutgoingDmsDao` JSON with no policy check and fire routinely on inbox open —
+and `DmReactionsRepository._sendRumorWithTimeout` (:604), i.e. a DM *reaction* is
+itself an outbound rumor. Correct chokepoint: enforce the injected recipient
+policy inside `NIP17MessageService.sendRumor` / `sendPrivateMessage` /
+`publishSelfWrap` (nip17_message_service.dart) so ALL NIP-17 paths are covered at
+one seam; the legacy NIP-04 `_sendNip04Message` (:3791) gets its own guard.
+**Queue replay must re-evaluate the policy at replay time**, not trust
+enqueue-time state — a recipient revoked (or an account that became protected)
+after enqueue must not be replayed to. Group send requires ALL recipients
+approved at the primitive.
+
+### C-H2 — new discriminated NIP-05 resolver (was: reuse `Nip05Validor`)
+
+`Nip05Validor.getPubkey`/`valid` collapse different-key, absent, and network
+failure into one `null`/`false`, so the graded model is unimplementable on it.
+New resolver returning a discriminated result:
+`{ matched | differentKey(hex) | absent | networkError }`, with explicit
+connect/receive **timeouts** (so the network-failure branch actually triggers
+and a slow/hostile server can't hang a send), a **redirect cap** and
+**max-content-length**, and **lowercase+trim normalization** on both sides of
+the hex compare (an uppercase/checksummed nostr.json must not be misread as
+different-key and mass-revoke support). The graded drop / fail-open rules attach
+to this discriminated result, not to a boolean.
+
+### C-M1 — send-time freshness must not be defeated by in-flight dedup
+
+The resolver's concurrency handling must **await the in-flight resolution** for a
+name already being resolved (e.g. by a concurrent receive-time revalidation) and
+return its real result, never a null-as-failure that the send path would treat as
+network-failure → pin-trusted → approve. Point-of-use freshness cannot degrade to
+fail-open just because the other point of use is mid-check on the same two names.
+
+### C-L4 — receive-time first-render is accepted, bounded
+
+Inbound filtering keys on the sync last-known leg, so a just-revoked-but-cached
+counterparty's message can render for the moment before receive-time
+revalidation completes and pulls it. Accepted (bounded to the revalidation
+round-trip, and the pin still blocks attacker-addition); noted as a known small
+window, not a silent one.
