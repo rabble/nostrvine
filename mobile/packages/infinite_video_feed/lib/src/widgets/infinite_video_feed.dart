@@ -818,6 +818,9 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     // disposing. Re-checking identity (not just _isActive/_currentIndex, which
     // miss a same-index controller swap) avoids calling setVolume()/play() on a
     // disposed controller, which throws StateError from _ensureInitialized().
+    // Unlike ownsInit()/ownsRetry(), `mounted` is intentionally omitted:
+    // dispose() clears [_controllers] before super.dispose(), so the identity
+    // check already fails after unmount.
     bool stillOwnsController() =>
         _isActive &&
         index == _currentIndex &&
