@@ -111,35 +111,58 @@ class BadgeRepository {
   final BadgeEventSigner _signEvent;
 
   Future<BadgeDashboardData> loadDashboard() async {
-    final awarded = await loadAwardedBadges();
-    final issued = await loadIssuedBadges();
-    return BadgeDashboardData(awarded: awarded, issued: issued);
+    final memo = _DashboardLookupMemo();
+    final awardedFuture = _loadAwardedBadges(memo);
+    final issuedFuture = _loadIssuedBadges(memo);
+    await Future.wait<void>([awardedFuture, issuedFuture]);
+    return BadgeDashboardData(
+      awarded: await awardedFuture,
+      issued: await issuedFuture,
+    );
   }
 
-  Future<List<BadgeAwardViewData>> loadAwardedBadges() async {
+  Future<List<BadgeAwardViewData>> loadAwardedBadges() =>
+      _loadAwardedBadges(_DashboardLookupMemo());
+
+  Future<List<BadgeAwardViewData>> _loadAwardedBadges(
+    _DashboardLookupMemo memo,
+  ) async {
     final pubkey = _requireCurrentPubkey();
     final dismissedAwardIds = _dismissedAwardIds(pubkey);
-    final awards = await _queryAwardsForRecipient(pubkey);
-    final profileBadges = await _latestProfileBadges(pubkey);
-
-    final viewData = <BadgeAwardViewData>[];
-    for (final award in awards) {
-      if (dismissedAwardIds.contains(award.event.id)) continue;
-
-      final definition = await _loadDefinition(award.definitionCoordinate);
-      viewData.add(
-        BadgeAwardViewData(
-          award: award,
-          definition: definition,
-          isAccepted: _containsAward(profileBadges, award),
-        ),
-      );
-    }
-
-    viewData.sort(
-      (left, right) =>
-          right.award.event.createdAt.compareTo(left.award.event.createdAt),
+    final awardsFuture = _queryAwardsForRecipient(pubkey);
+    final profileBadgesFuture = memo.profileBadges(
+      pubkey,
+      () => _latestProfileBadges(pubkey),
     );
+    // Future.wait (not sequential awaits) so a failure in one query cannot
+    // leave the other as an unawaited error.
+    final results = await Future.wait<Object?>([
+      awardsFuture,
+      profileBadgesFuture,
+    ]);
+    final awards = results[0]! as List<Nip58BadgeAward>;
+    final profileBadges = results[1] as Nip58ProfileBadges?;
+
+    final visibleAwards = [
+      for (final award in awards)
+        if (!dismissedAwardIds.contains(award.event.id)) award,
+    ];
+    final definitions = await _definitionsByCoordinate(memo, [
+      for (final award in visibleAwards) award.definitionCoordinate,
+    ]);
+
+    final viewData =
+        [
+          for (final award in visibleAwards)
+            BadgeAwardViewData(
+              award: award,
+              definition: definitions[award.definitionCoordinate],
+              isAccepted: _containsAward(profileBadges, award),
+            ),
+        ]..sort(
+          (left, right) =>
+              right.award.event.createdAt.compareTo(left.award.event.createdAt),
+        );
     return List<BadgeAwardViewData>.unmodifiable(viewData);
   }
 
@@ -170,47 +193,90 @@ class BadgeRepository {
 
   Future<List<IssuedBadgeViewData>> loadIssuedBadges({
     int recipientCheckLimit = 50,
+  }) => _loadIssuedBadges(
+    _DashboardLookupMemo(),
+    recipientCheckLimit: recipientCheckLimit,
+  );
+
+  Future<List<IssuedBadgeViewData>> _loadIssuedBadges(
+    _DashboardLookupMemo memo, {
+    int recipientCheckLimit = 50,
   }) async {
     final pubkey = _requireCurrentPubkey();
     final events = await _nostrClient.queryEvents([
       Filter(authors: [pubkey], kinds: [EventKind.badgeAward], limit: 100),
     ]);
 
-    final issued = <IssuedBadgeViewData>[];
-    for (final event in events) {
-      final award = Nip58BadgeParser.parseAward(event);
-      if (award == null) continue;
-
-      final definition = await _loadDefinition(award.definitionCoordinate);
-      final recipients = <IssuedBadgeRecipientViewData>[];
-      for (final recipientPubkey in award.recipientPubkeys.take(
-        recipientCheckLimit,
-      )) {
-        final profileBadges = await _latestProfileBadges(recipientPubkey);
-        recipients.add(
-          IssuedBadgeRecipientViewData(
-            pubkey: recipientPubkey,
-            isAccepted: _containsAward(profileBadges, award),
-          ),
+    final awards = events
+        .map(Nip58BadgeParser.parseAward)
+        .whereType<Nip58BadgeAward>()
+        .toList(growable: false);
+    List<String> cappedRecipients(Nip58BadgeAward award) => award
+        .recipientPubkeys
+        .take(recipientCheckLimit)
+        .toList(
+          growable: false,
         );
-      }
 
-      issued.add(
-        IssuedBadgeViewData(
-          award: award,
-          definition: definition,
-          recipients: List<IssuedBadgeRecipientViewData>.unmodifiable(
-            recipients,
-          ),
-        ),
-      );
-    }
+    final definitionsFuture = _definitionsByCoordinate(memo, [
+      for (final award in awards) award.definitionCoordinate,
+    ]);
+    final profileBadgesFuture = _profileBadgesByPubkey(memo, [
+      for (final award in awards) ...cappedRecipients(award),
+    ]);
+    final results = await Future.wait<Object?>([
+      definitionsFuture,
+      profileBadgesFuture,
+    ]);
+    final definitions = results[0]! as Map<String, Nip58BadgeDefinition?>;
+    final profileBadges = results[1]! as Map<String, Nip58ProfileBadges?>;
 
-    issued.sort(
-      (left, right) =>
-          right.award.event.createdAt.compareTo(left.award.event.createdAt),
-    );
+    final issued =
+        [
+          for (final award in awards)
+            IssuedBadgeViewData(
+              award: award,
+              definition: definitions[award.definitionCoordinate],
+              recipients: List<IssuedBadgeRecipientViewData>.unmodifiable([
+                for (final recipientPubkey in cappedRecipients(award))
+                  IssuedBadgeRecipientViewData(
+                    pubkey: recipientPubkey,
+                    isAccepted: _containsAward(
+                      profileBadges[recipientPubkey],
+                      award,
+                    ),
+                  ),
+              ]),
+            ),
+        ]..sort(
+          (left, right) =>
+              right.award.event.createdAt.compareTo(left.award.event.createdAt),
+        );
     return List<IssuedBadgeViewData>.unmodifiable(issued);
+  }
+
+  Future<Map<String, Nip58BadgeDefinition?>> _definitionsByCoordinate(
+    _DashboardLookupMemo memo,
+    Iterable<String> coordinates,
+  ) async {
+    final unique = coordinates.toSet().toList(growable: false);
+    final loaded = await Future.wait([
+      for (final coordinate in unique)
+        memo.definition(coordinate, () => _loadDefinition(coordinate)),
+    ]);
+    return {for (var i = 0; i < unique.length; i++) unique[i]: loaded[i]};
+  }
+
+  Future<Map<String, Nip58ProfileBadges?>> _profileBadgesByPubkey(
+    _DashboardLookupMemo memo,
+    Iterable<String> pubkeys,
+  ) async {
+    final unique = pubkeys.toSet().toList(growable: false);
+    final loaded = await Future.wait([
+      for (final pubkey in unique)
+        memo.profileBadges(pubkey, () => _latestProfileBadges(pubkey)),
+    ]);
+    return {for (var i = 0; i < unique.length; i++) unique[i]: loaded[i]};
   }
 
   Future<void> acceptAward(BadgeAwardViewData award) async {
@@ -277,21 +343,23 @@ class BadgeRepository {
   }
 
   Future<Nip58ProfileBadges?> _latestProfileBadges(String pubkey) async {
-    final currentEvents = await _nostrClient.queryEvents([
-      Filter(authors: [pubkey], kinds: [EventKind.profileBadges], limit: 10),
+    // Both kinds are queried concurrently; the current kind keeps
+    // precedence and legacy is consulted only when it parses to nothing.
+    final results = await Future.wait([
+      _nostrClient.queryEvents([
+        Filter(authors: [pubkey], kinds: [EventKind.profileBadges], limit: 10),
+      ]),
+      _nostrClient.queryEvents([
+        Filter(
+          authors: [pubkey],
+          kinds: [EventKind.badgeSet],
+          d: ['profile_badges'],
+          limit: 10,
+        ),
+      ]),
     ]);
-    final current = _newestParsedProfileBadges(currentEvents);
-    if (current != null) return current;
-
-    final legacyEvents = await _nostrClient.queryEvents([
-      Filter(
-        authors: [pubkey],
-        kinds: [EventKind.badgeSet],
-        d: ['profile_badges'],
-        limit: 10,
-      ),
-    ]);
-    return _newestParsedProfileBadges(legacyEvents);
+    return _newestParsedProfileBadges(results[0]) ??
+        _newestParsedProfileBadges(results[1]);
   }
 
   Future<Nip58BadgeDefinition?> _loadDefinition(String coordinate) async {
@@ -408,6 +476,27 @@ class BadgeRepository {
   static String _dismissedAwardsKey(String pubkey) {
     return 'dismissed_badge_awards_$pubkey';
   }
+}
+
+/// Deduplicates identical relay lookups within one dashboard load pass.
+///
+/// Memoizes futures so concurrent requests for the same definition
+/// coordinate or pubkey share a single relay query. Created per public
+/// load call — never stored on the repository — so a failed pass does not
+/// poison a retry with cached errors.
+class _DashboardLookupMemo {
+  final Map<String, Future<Nip58BadgeDefinition?>> _definitions = {};
+  final Map<String, Future<Nip58ProfileBadges?>> _profileBadges = {};
+
+  Future<Nip58BadgeDefinition?> definition(
+    String coordinate,
+    Future<Nip58BadgeDefinition?> Function() load,
+  ) => _definitions.putIfAbsent(coordinate, load);
+
+  Future<Nip58ProfileBadges?> profileBadges(
+    String pubkey,
+    Future<Nip58ProfileBadges?> Function() load,
+  ) => _profileBadges.putIfAbsent(pubkey, load);
 }
 
 String _definitionNameFromCoordinate(String coordinate) {

@@ -268,6 +268,229 @@ void main() {
       );
     });
 
+    test('loadAwardedBadges loads each unique definition once', () async {
+      final coordinate = '30009:${_pubkey(2)}:daily-diviner';
+      final awardA = _awardEvent(
+        id: _eventId(20),
+        issuerPubkey: _pubkey(2),
+        definitionCoordinate: coordinate,
+        recipients: [_pubkey(1)],
+      );
+      final awardB = _awardEvent(
+        id: _eventId(21),
+        issuerPubkey: _pubkey(2),
+        definitionCoordinate: coordinate,
+        recipients: [_pubkey(1)],
+      );
+      final definition = _definitionEvent(
+        pubkey: _pubkey(2),
+        dTag: 'daily-diviner',
+        name: 'Diviner of the Day',
+      );
+      final callCounts = _stubQueries(nostrClient, {
+        'awarded': [awardA, awardB],
+        'definition:$coordinate': [definition],
+      });
+
+      final awards = await repository.loadAwardedBadges();
+
+      expect(awards, hasLength(2));
+      expect(
+        awards.map((award) => award.definition?.name),
+        everyElement('Diviner of the Day'),
+      );
+      expect(callCounts['definition:$coordinate'], 1);
+    });
+
+    test(
+      'loadIssuedBadges checks each unique recipient once across awards',
+      () async {
+        final coordinate = '30009:${_pubkey(1)}:creator-badge';
+        final awardA = _awardEvent(
+          id: _eventId(32),
+          issuerPubkey: _pubkey(1),
+          definitionCoordinate: coordinate,
+          recipients: [_pubkey(2)],
+        );
+        final awardB = _awardEvent(
+          id: _eventId(33),
+          issuerPubkey: _pubkey(1),
+          definitionCoordinate: coordinate,
+          recipients: [_pubkey(2)],
+        );
+        final callCounts = _stubQueries(nostrClient, {
+          'issued': [awardA, awardB],
+        });
+
+        final issued = await repository.loadIssuedBadges();
+
+        expect(issued, hasLength(2));
+        expect(callCounts['profileCurrent:${_pubkey(2)}'], 1);
+        expect(callCounts['profileLegacy:${_pubkey(2)}'], 1);
+        expect(callCounts['definition:$coordinate'], 1);
+      },
+    );
+
+    test(
+      'loadDashboard shares the own profile badges lookup between halves',
+      () async {
+        final awardedAward = _awardEvent(
+          id: _eventId(22),
+          issuerPubkey: _pubkey(2),
+          definitionCoordinate: '30009:${_pubkey(2)}:daily-diviner',
+          recipients: [_pubkey(1)],
+        );
+        final selfIssuedAward = _awardEvent(
+          id: _eventId(23),
+          issuerPubkey: _pubkey(1),
+          definitionCoordinate: '30009:${_pubkey(1)}:creator-badge',
+          recipients: [_pubkey(1)],
+        );
+        final callCounts = _stubQueries(nostrClient, {
+          'awarded': [awardedAward],
+          'issued': [selfIssuedAward],
+        });
+
+        final dashboard = await repository.loadDashboard();
+
+        expect(dashboard.awarded, hasLength(1));
+        expect(dashboard.issued, hasLength(1));
+        expect(callCounts['profileCurrent:${_pubkey(1)}'], 1);
+        expect(callCounts['profileLegacy:${_pubkey(1)}'], 1);
+      },
+    );
+
+    test('loadAwardedBadges rethrows when a definition query fails', () async {
+      final coordinate = '30009:${_pubkey(2)}:daily-diviner';
+      final award = _awardEvent(
+        id: _eventId(24),
+        issuerPubkey: _pubkey(2),
+        definitionCoordinate: coordinate,
+        recipients: [_pubkey(1)],
+      );
+      _stubQueries(
+        nostrClient,
+        {
+          'awarded': [award],
+        },
+        errorsByQueryKey: {
+          'definition:$coordinate': Exception('relay unavailable'),
+        },
+      );
+
+      await expectLater(repository.loadAwardedBadges(), throwsException);
+    });
+
+    test(
+      'loadIssuedBadges preserves recipient order under concurrency',
+      () async {
+        final coordinate = '30009:${_pubkey(1)}:creator-badge';
+        final award = _awardEvent(
+          id: _eventId(25),
+          issuerPubkey: _pubkey(1),
+          definitionCoordinate: coordinate,
+          recipients: [_pubkey(2), _pubkey(3)],
+        );
+        final acceptance = _profileBadgesEvent(
+          id: _eventId(26),
+          pubkey: _pubkey(3),
+          tags: [
+            ['a', coordinate],
+            ['e', _eventId(25)],
+          ],
+        );
+        _stubQueries(
+          nostrClient,
+          {
+            'issued': [award],
+            'profileCurrent:${_pubkey(3)}': [acceptance],
+          },
+          delaysByQueryKey: {
+            'profileCurrent:${_pubkey(2)}': const Duration(milliseconds: 40),
+            'profileCurrent:${_pubkey(3)}': const Duration(milliseconds: 1),
+          },
+        );
+
+        final issued = await repository.loadIssuedBadges();
+
+        final recipients = issued.single.recipients;
+        expect(
+          [for (final recipient in recipients) recipient.pubkey],
+          [_pubkey(2), _pubkey(3)],
+        );
+        expect(recipients[0].isAccepted, isFalse);
+        expect(recipients[1].isAccepted, isTrue);
+      },
+    );
+
+    test(
+      'loadAwardedBadges prefers current profile badges over newer legacy',
+      () async {
+        final coordinate = '30009:${_pubkey(2)}:daily-diviner';
+        final award = _awardEvent(
+          id: _eventId(27),
+          issuerPubkey: _pubkey(2),
+          definitionCoordinate: coordinate,
+          recipients: [_pubkey(1)],
+        );
+        final currentProfileBadges = _profileBadgesEvent(
+          id: _eventId(28),
+          pubkey: _pubkey(1),
+          tags: [
+            ['a', coordinate],
+            ['e', _eventId(27)],
+          ],
+        );
+        final newerLegacyWithoutAward = _event(
+          id: _eventId(29),
+          pubkey: _pubkey(1),
+          kind: EventKind.badgeSet,
+          createdAt: 2000,
+          tags: [
+            ['d', 'profile_badges'],
+            ['a', '30009:${_pubkey(3)}:weekly-diviner'],
+            ['e', _eventId(30)],
+          ],
+        );
+        _stubQueries(nostrClient, {
+          'awarded': [award],
+          'profileCurrent:${_pubkey(1)}': [currentProfileBadges],
+          'profileLegacy:${_pubkey(1)}': [newerLegacyWithoutAward],
+        });
+
+        final awards = await repository.loadAwardedBadges();
+
+        expect(awards.single.isAccepted, isTrue);
+      },
+    );
+
+    test(
+      'loadIssuedBadges caps recipient checks at recipientCheckLimit',
+      () async {
+        final award = _awardEvent(
+          id: _eventId(31),
+          issuerPubkey: _pubkey(1),
+          definitionCoordinate: '30009:${_pubkey(1)}:creator-badge',
+          recipients: [_pubkey(2), _pubkey(3), _pubkey(4)],
+        );
+        final callCounts = _stubQueries(nostrClient, {
+          'issued': [award],
+        });
+
+        final issued = await repository.loadIssuedBadges(
+          recipientCheckLimit: 2,
+        );
+
+        expect(
+          [
+            for (final recipient in issued.single.recipients) recipient.pubkey,
+          ],
+          [_pubkey(2), _pubkey(3)],
+        );
+        expect(callCounts['profileCurrent:${_pubkey(4)}'], isNull);
+      },
+    );
+
     test(
       'loadIssuedBadges marks recipients accepted when they publish award',
       () async {
@@ -301,16 +524,31 @@ void main() {
   });
 }
 
-void _stubQueries(
+/// Stubs [NostrClient.queryEvents] with answer-keyed canned events and
+/// returns a live map of query-key invocation counts for dedup assertions.
+Map<String, int> _stubQueries(
   _MockNostrClient nostrClient,
-  Map<String, List<Event>> eventsByQueryKey,
-) {
+  Map<String, List<Event>> eventsByQueryKey, {
+  Map<String, Duration> delaysByQueryKey = const {},
+  Map<String, Object> errorsByQueryKey = const {},
+}) {
+  final callCounts = <String, int>{};
   when(() => nostrClient.queryEvents(any())).thenAnswer((invocation) async {
     final filters = invocation.positionalArguments.single as List<Filter>;
     final filter = filters.single;
     final key = _queryKey(filter);
+    callCounts.update(key, (count) => count + 1, ifAbsent: () => 1);
+    final delay = delaysByQueryKey[key];
+    if (delay != null) {
+      await Future<void>.delayed(delay);
+    }
+    final error = errorsByQueryKey[key];
+    if (error != null) {
+      throw error;
+    }
     return eventsByQueryKey[key] ?? const <Event>[];
   });
+  return callCounts;
 }
 
 String _queryKey(Filter filter) {
