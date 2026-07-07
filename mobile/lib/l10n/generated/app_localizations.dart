@@ -16977,6 +16977,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove broken clips?'**
   String get settingsStorageRemoveBrokenConfirmTitle;
+
+  /// Title for the Nostr relay signature verification setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Signature verification'**
+  String get nostrSettingsSignatureVerification;
+
+  /// Intro copy for the Nostr relay signature verification setting screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose when Divine checks relay event signatures. Event IDs are always validated first.'**
+  String get nostrSettingsSignatureVerificationIntro;
+
+  /// Option label to verify event signatures from all Nostr relays.
+  ///
+  /// In en, this message translates to:
+  /// **'All relays'**
+  String get nostrSettingsSignatureVerificationAll;
+
+  /// Option subtitle for verifying every Nostr relay event signature.
+  ///
+  /// In en, this message translates to:
+  /// **'Safest. Verify every relay event signature.'**
+  String get nostrSettingsSignatureVerificationAllSubtitle;
+
+  /// Option label to verify event signatures only from untrusted Nostr relays.
+  ///
+  /// In en, this message translates to:
+  /// **'Untrusted relays'**
+  String get nostrSettingsSignatureVerificationUntrusted;
+
+  /// Option subtitle for skipping signature checks on configured relays.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip checks for relays already in your configured pool.'**
+  String get nostrSettingsSignatureVerificationUntrustedSubtitle;
+
+  /// Option label to verify event signatures only from non-Divine Nostr relays.
+  ///
+  /// In en, this message translates to:
+  /// **'Non-Divine relays'**
+  String get nostrSettingsSignatureVerificationNonDivine;
+
+  /// Option subtitle for trusting Divine-hosted relays while verifying other relay signatures.
+  ///
+  /// In en, this message translates to:
+  /// **'Trust Divine relays, verify the rest.'**
+  String get nostrSettingsSignatureVerificationNonDivineSubtitle;
 }
 
 class _AppLocalizationsDelegate

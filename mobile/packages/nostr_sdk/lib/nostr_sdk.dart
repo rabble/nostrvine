@@ -54,6 +54,7 @@ export 'relay/event_verify_isolate.dart';
 export 'relay/relay_pool.dart';
 export 'relay/relay_status.dart';
 export 'relay/relay_type.dart';
+export 'relay/signature_verification_policy.dart';
 export 'relay/web_socket_connection_manager.dart';
 // Local storage
 export 'signer/local_nostr_signer.dart';

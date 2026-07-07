@@ -144,7 +144,16 @@ void main() {
 
 // Every key in app_en.arb is currently translated in all 16 locales.
 // Add keys here only when a translation pass is intentionally deferred.
-const _knownUntranslatedDebt = <String>{};
+const _knownUntranslatedDebt = <String>{
+  'nostrSettingsSignatureVerification',
+  'nostrSettingsSignatureVerificationIntro',
+  'nostrSettingsSignatureVerificationAll',
+  'nostrSettingsSignatureVerificationAllSubtitle',
+  'nostrSettingsSignatureVerificationUntrusted',
+  'nostrSettingsSignatureVerificationUntrustedSubtitle',
+  'nostrSettingsSignatureVerificationNonDivine',
+  'nostrSettingsSignatureVerificationNonDivineSubtitle',
+};
 
 Map<String, Object?> _readArb(File file) {
   return (jsonDecode(file.readAsStringSync()) as Map).cast<String, Object?>();

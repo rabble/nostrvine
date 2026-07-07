@@ -5725,5 +5725,21 @@
   "settingsStorageApproxVideos": "≈ {count} videos",
   "@settingsStorageApproxVideos": {"description": "Approximate number of videos that fit in the chosen cache size.", "placeholders": {"count": {"type": "int"}}},
   "settingsStorageRemoveBrokenConfirmTitle": "Remove broken clips?",
-  "@settingsStorageRemoveBrokenConfirmTitle": {"description": "Title of the confirmation sheet before permanently removing broken clips whose video file is gone."}
+  "@settingsStorageRemoveBrokenConfirmTitle": {"description": "Title of the confirmation sheet before permanently removing broken clips whose video file is gone."},
+  "nostrSettingsSignatureVerification": "Signature verification",
+  "@nostrSettingsSignatureVerification": {"description": "Title for the Nostr relay signature verification setting."},
+  "nostrSettingsSignatureVerificationIntro": "Choose when Divine checks relay event signatures. Event IDs are always validated first.",
+  "@nostrSettingsSignatureVerificationIntro": {"description": "Intro copy for the Nostr relay signature verification setting screen."},
+  "nostrSettingsSignatureVerificationAll": "All relays",
+  "@nostrSettingsSignatureVerificationAll": {"description": "Option label to verify event signatures from all Nostr relays."},
+  "nostrSettingsSignatureVerificationAllSubtitle": "Safest. Verify every relay event signature.",
+  "@nostrSettingsSignatureVerificationAllSubtitle": {"description": "Option subtitle for verifying every Nostr relay event signature."},
+  "nostrSettingsSignatureVerificationUntrusted": "Untrusted relays",
+  "@nostrSettingsSignatureVerificationUntrusted": {"description": "Option label to verify event signatures only from untrusted Nostr relays."},
+  "nostrSettingsSignatureVerificationUntrustedSubtitle": "Skip checks for relays already in your configured pool.",
+  "@nostrSettingsSignatureVerificationUntrustedSubtitle": {"description": "Option subtitle for skipping signature checks on configured relays."},
+  "nostrSettingsSignatureVerificationNonDivine": "Non-Divine relays",
+  "@nostrSettingsSignatureVerificationNonDivine": {"description": "Option label to verify event signatures only from non-Divine Nostr relays."},
+  "nostrSettingsSignatureVerificationNonDivineSubtitle": "Trust Divine relays, verify the rest.",
+  "@nostrSettingsSignatureVerificationNonDivineSubtitle": {"description": "Option subtitle for trusting Divine-hosted relays while verifying other relay signatures."}
 }

@@ -9450,4 +9450,32 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get settingsStorageRemoveBrokenConfirmTitle => '壊れたクリップを削除しますか？';
+
+  @override
+  String get nostrSettingsSignatureVerification => 'Signature verification';
+
+  @override
+  String get nostrSettingsSignatureVerificationIntro =>
+      'Choose when Divine checks relay event signatures. Event IDs are always validated first.';
+
+  @override
+  String get nostrSettingsSignatureVerificationAll => 'All relays';
+
+  @override
+  String get nostrSettingsSignatureVerificationAllSubtitle =>
+      'Safest. Verify every relay event signature.';
+
+  @override
+  String get nostrSettingsSignatureVerificationUntrusted => 'Untrusted relays';
+
+  @override
+  String get nostrSettingsSignatureVerificationUntrustedSubtitle =>
+      'Skip checks for relays already in your configured pool.';
+
+  @override
+  String get nostrSettingsSignatureVerificationNonDivine => 'Non-Divine relays';
+
+  @override
+  String get nostrSettingsSignatureVerificationNonDivineSubtitle =>
+      'Trust Divine relays, verify the rest.';
 }

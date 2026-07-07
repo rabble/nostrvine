@@ -18,6 +18,7 @@ import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/auth/nostr_identity.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/nostr_signature_verification_preference_service.dart';
 import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
 
@@ -165,6 +166,9 @@ void main() {
         ),
         appDbClientProvider.overrideWithValue(mockDbClient),
         nostrClientFactoryProvider.overrideWithValue(factory.call),
+        nostrSignatureVerificationPolicyProvider.overrideWithValue(
+          NostrSignatureVerificationPolicy.nonDivineRelays,
+        ),
       ],
     );
   }
@@ -182,6 +186,9 @@ void main() {
         ),
         appDbClientProvider.overrideWithValue(mockDbClient),
         nostrClientFactoryProvider.overrideWithValue(factory.call),
+        nostrSignatureVerificationPolicyProvider.overrideWithValue(
+          NostrSignatureVerificationPolicy.nonDivineRelays,
+        ),
         nostrInitRetryDelayProvider.overrideWithValue(
           retryDelay ?? (_) => Duration.zero,
         ),

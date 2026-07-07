@@ -23,6 +23,7 @@ import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/settings/nip05_settings_screen.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/nostr_signature_verification_preference_service.dart';
 import 'package:openvine/widgets/delete_account_dialog.dart';
 
 class NostrSettingsScreen extends ConsumerWidget {
@@ -85,6 +86,7 @@ class NostrSettingsScreen extends ConsumerWidget {
                 subtitle: context.l10n.nostrSettingsMediaServersSubtitle,
                 onTap: () => context.push(BlossomSettingsScreen.path),
               ),
+              const _SignatureVerificationTile(),
               _SettingsTile(
                 icon: Icons.science,
                 title: context.l10n.settingsExperimentalFeatures,
@@ -159,9 +161,7 @@ class _RemoveKeysTile extends StatelessWidget {
 
         final progressOverlay = _ProgressOverlay.show(context);
 
-        unawaited(
-          progressOverlay.closed,
-        );
+        unawaited(progressOverlay.closed);
 
         try {
           await authService.signOut(
@@ -226,11 +226,7 @@ class _ProgressOverlay {
     );
 
     final closed = navigator.push(route);
-    return _ProgressOverlay._(
-      navigator,
-      route: route,
-      closed: closed,
-    );
+    return _ProgressOverlay._(navigator, route: route, closed: closed);
   }
 
   void dismiss() {
@@ -307,6 +303,135 @@ class _ClientAttributionToggle extends ConsumerWidget {
       activeThumbColor: VineTheme.vineGreen,
       secondary: const Icon(Icons.travel_explore, color: VineTheme.vineGreen),
     );
+  }
+}
+
+class _SignatureVerificationTile extends ConsumerWidget {
+  const _SignatureVerificationTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final policy = ref.watch(nostrSignatureVerificationPolicyProvider);
+
+    return _SettingsTile(
+      icon: Icons.verified_user,
+      title: context.l10n.nostrSettingsSignatureVerification,
+      subtitle: _policySubtitle(context, policy),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => const _SignatureVerificationPolicyScreen(),
+        ),
+      ),
+    );
+  }
+}
+
+class _SignatureVerificationPolicyScreen extends ConsumerWidget {
+  const _SignatureVerificationPolicyScreen();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final current = ref.watch(nostrSignatureVerificationPolicyProvider);
+
+    return Scaffold(
+      appBar: DiVineAppBar(
+        title: context.l10n.nostrSettingsSignatureVerification,
+        showBackButton: true,
+        onBackPressed: () => Navigator.of(context).pop(),
+      ),
+      backgroundColor: VineTheme.backgroundColor,
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: ListView(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Text(
+                  context.l10n.nostrSettingsSignatureVerificationIntro,
+                  style: const TextStyle(
+                    color: VineTheme.lightText,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              RadioGroup<NostrSignatureVerificationPolicy>(
+                groupValue: current,
+                onChanged: (value) {
+                  if (value == null || value == current) return;
+                  unawaited(_setPolicy(ref, value));
+                },
+                child: Column(
+                  children: [
+                    for (final policy
+                        in NostrSignatureVerificationPolicy.values)
+                      RadioListTile<NostrSignatureVerificationPolicy>(
+                        value: policy,
+                        activeColor: VineTheme.vineGreen,
+                        title: Text(
+                          _policyTitle(context, policy),
+                          style: const TextStyle(
+                            color: VineTheme.whiteText,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        subtitle: Text(
+                          _policySubtitle(context, policy),
+                          style: const TextStyle(
+                            color: VineTheme.lightText,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _setPolicy(
+    WidgetRef ref,
+    NostrSignatureVerificationPolicy value,
+  ) async {
+    final service = ref.read(
+      nostrSignatureVerificationPreferenceServiceProvider,
+    );
+    await service.setPolicy(value);
+    ref.invalidate(nostrSignatureVerificationPolicyProvider);
+  }
+}
+
+String _policyTitle(
+  BuildContext context,
+  NostrSignatureVerificationPolicy policy,
+) {
+  switch (policy) {
+    case NostrSignatureVerificationPolicy.all:
+      return context.l10n.nostrSettingsSignatureVerificationAll;
+    case NostrSignatureVerificationPolicy.untrustedRelays:
+      return context.l10n.nostrSettingsSignatureVerificationUntrusted;
+    case NostrSignatureVerificationPolicy.nonDivineRelays:
+      return context.l10n.nostrSettingsSignatureVerificationNonDivine;
+  }
+}
+
+String _policySubtitle(
+  BuildContext context,
+  NostrSignatureVerificationPolicy policy,
+) {
+  switch (policy) {
+    case NostrSignatureVerificationPolicy.all:
+      return context.l10n.nostrSettingsSignatureVerificationAllSubtitle;
+    case NostrSignatureVerificationPolicy.untrustedRelays:
+      return context.l10n.nostrSettingsSignatureVerificationUntrustedSubtitle;
+    case NostrSignatureVerificationPolicy.nonDivineRelays:
+      return context.l10n.nostrSettingsSignatureVerificationNonDivineSubtitle;
   }
 }
 

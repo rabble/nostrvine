@@ -8,9 +8,11 @@ import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/providers/preferences_providers.dart';
 import 'package:openvine/providers/relay_providers.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/nostr_service_factory.dart';
+import 'package:openvine/services/nostr_signature_verification_preference_service.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -172,6 +174,12 @@ class NostrService extends _$NostrService {
     ref.watch(currentEnvironmentProvider);
     ref.watch(appDbClientProvider);
     ref.watch(nostrClientFactoryProvider);
+    ref.listen<NostrSignatureVerificationPolicy>(
+      nostrSignatureVerificationPolicyProvider,
+      (_, next) {
+        state.signatureVerificationPolicy = next.toSdkPolicy();
+      },
+    );
 
     final initialPubkey = authService.currentIdentity?.pubkey;
 
@@ -237,6 +245,9 @@ class NostrService extends _$NostrService {
       environmentConfig: ref.read(currentEnvironmentProvider),
       dbClient: ref.read(appDbClientProvider),
     );
+    client.signatureVerificationPolicy = ref
+        .read(nostrSignatureVerificationPolicyProvider)
+        .toSdkPolicy();
     _trackedClients.add(client);
     return client;
   }

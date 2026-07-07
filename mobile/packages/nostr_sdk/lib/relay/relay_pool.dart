@@ -21,6 +21,7 @@ import 'publish_outcome.dart';
 import 'relay.dart';
 import 'relay_base.dart';
 import 'relay_type.dart';
+import 'signature_verification_policy.dart';
 
 class RelayPool {
   // avoid to send these events to cache relay
@@ -96,7 +97,15 @@ class RelayPool {
     this.eventFilters,
     this.tempRelayGener, {
     this.onNotice,
+    this.signatureVerificationPolicy =
+        SignatureVerificationPolicy.nonDivineRelays,
   });
+
+  /// Controls whether [_dispatchTypedFrame] performs expensive Schnorr
+  /// verification. The event id is always recomputed first; policy skips only
+  /// bypass the signature check for relay origins the app is configured to
+  /// trust.
+  SignatureVerificationPolicy signatureVerificationPolicy;
 
   List<Subscription> _subscriptionsSnapshot() =>
       _subscriptions.values.toList(growable: false);
@@ -438,9 +447,11 @@ class RelayPool {
   int get verifiesPerformed => _verifiesPerformed;
   int get verifiesSkippedKnown => _verifiesSkippedKnown;
   int get verifiesSkippedSessionDup => _verifiesSkippedSessionDup;
+  int get verifiesSkippedByPolicy => _verifiesSkippedByPolicy;
   int _verifiesPerformed = 0;
   int _verifiesSkippedKnown = 0;
   int _verifiesSkippedSessionDup = 0;
+  int _verifiesSkippedByPolicy = 0;
 
   /// Records [key] (an `"id:sig"` pair) as verified, evicting the oldest once
   /// the cap is hit.
@@ -558,20 +569,32 @@ class RelayPool {
         //    same event from another relay) skip re-verify.
         // Only fresh network verifications are recorded in [_verifiedEventKeys]
         // so a known/duplicate hit never masks an unverified network copy.
+        if (event.sig.isEmpty) {
+          log(
+            'Dropping relay event with empty signature '
+            'from ${relay.url}: eventId=${event.id}',
+          );
+          return;
+        }
+
         final verifyKey = '${event.id}:${event.sig}';
         if (_verifiedEventKeys.contains(verifyKey)) {
           _verifiesSkippedSessionDup++;
         } else if (isKnownVerifiedEvent?.call(event.id, event.sig) ?? false) {
           _verifiesSkippedKnown++;
-        } else if (await _verifySignatureOffMain(event, eventJson)) {
-          _markEventVerified(verifyKey);
-          _verifiesPerformed++;
+        } else if (_shouldVerifySignature(relay)) {
+          if (await _verifySignatureOffMain(event, eventJson)) {
+            _markEventVerified(verifyKey);
+            _verifiesPerformed++;
+          } else {
+            log(
+              'Dropping relay event with invalid signature '
+              'from ${relay.url}: eventId=${event.id}',
+            );
+            return;
+          }
         } else {
-          log(
-            'Dropping relay event with invalid signature '
-            'from ${relay.url}: eventId=${event.id}',
-          );
-          return;
+          _verifiesSkippedByPolicy++;
         }
 
         if ((relay.relayStatus.relayType != RelayType.cache)) {
@@ -1859,5 +1882,23 @@ class RelayPool {
     }
 
     return relays;
+  }
+
+  bool _shouldVerifySignature(Relay relay) {
+    switch (signatureVerificationPolicy) {
+      case SignatureVerificationPolicy.all:
+        return true;
+      case SignatureVerificationPolicy.untrustedRelays:
+        return !_relays.containsKey(relay.url);
+      case SignatureVerificationPolicy.nonDivineRelays:
+        return !_isDivineRelayHost(relay.url);
+    }
+  }
+
+  bool _isDivineRelayHost(String relayUrl) {
+    final uri = Uri.tryParse(relayUrl);
+    final host = uri?.host.toLowerCase();
+    if (host == null || host.isEmpty) return false;
+    return host == 'divine.video' || host.endsWith('.divine.video');
   }
 }

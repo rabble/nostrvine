@@ -103,6 +103,7 @@ class NostrClient {
       tempRelayGenerator,
       onNotice: config.onNotice,
       channelFactory: config.webSocketChannelFactory,
+      signatureVerificationPolicy: config.signatureVerificationPolicy,
     );
   }
 
@@ -135,6 +136,14 @@ class NostrClient {
   /// reuse this signer rather than creating their own, to ensure consistent
   /// key material.
   NostrSigner get signer => _nostr.nostrSigner;
+
+  /// Policy for expensive inbound relay EVENT signature verification.
+  SignatureVerificationPolicy get signatureVerificationPolicy =>
+      _nostr.relayPool.signatureVerificationPolicy;
+
+  set signatureVerificationPolicy(SignatureVerificationPolicy policy) {
+    _nostr.relayPool.signatureVerificationPolicy = policy;
+  }
 
   /// Convenience getter for the NostrEventsDao
   NostrEventsDao? get _nostrEventsDao => _dbClient?.database.nostrEventsDao;

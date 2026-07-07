@@ -13,6 +13,8 @@ class NostrClientConfig {
     this.enableGateway = false,
     this.webSocketChannelFactory,
     this.eventVerifyWorkerSpawner,
+    this.signatureVerificationPolicy =
+        SignatureVerificationPolicy.nonDivineRelays,
   });
 
   /// Signer for event signing - the single source of truth for the public key.
@@ -42,4 +44,7 @@ class NostrClientConfig {
   /// isolate. When null (tests, web), verification runs inline on the main
   /// isolate exactly as before. The app passes `EventVerifyIsolate.spawn`.
   final EventVerifyWorkerSpawner? eventVerifyWorkerSpawner;
+
+  /// Policy for verifying inbound relay EVENT signatures.
+  final SignatureVerificationPolicy signatureVerificationPolicy;
 }

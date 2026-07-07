@@ -11,6 +11,7 @@ import 'relay/publish_outcome.dart';
 import 'relay/relay.dart';
 import 'relay/relay_pool.dart';
 import 'relay/relay_type.dart';
+import 'relay/signature_verification_policy.dart';
 import 'relay/web_socket_connection_manager.dart';
 import 'signer/nostr_signer.dart';
 import 'signer/pubkey_only_nostr_signer.dart';
@@ -34,10 +35,18 @@ class Nostr {
     this.tempRelayGener, {
     this.onNotice,
     WebSocketChannelFactory? channelFactory,
+    SignatureVerificationPolicy signatureVerificationPolicy =
+        SignatureVerificationPolicy.nonDivineRelays,
   }) {
     // Public key starts empty - call refreshPublicKey() after construction
     // to populate from the signer (single source of truth).
-    _pool = RelayPool(this, eventFilters, tempRelayGener, onNotice: onNotice);
+    _pool = RelayPool(
+      this,
+      eventFilters,
+      tempRelayGener,
+      onNotice: onNotice,
+      signatureVerificationPolicy: signatureVerificationPolicy,
+    );
   }
 
   /// Public key of the client.

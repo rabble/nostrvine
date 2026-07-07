@@ -8,6 +8,7 @@ import 'package:openvine/services/audio_sharing_preference_service.dart';
 import 'package:openvine/services/feed_aspect_ratio_preference_service.dart';
 import 'package:openvine/services/hold_to_record_preference_service.dart';
 import 'package:openvine/services/language_preference_service.dart';
+import 'package:openvine/services/nostr_signature_verification_preference_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'preferences_providers.g.dart';
@@ -30,6 +31,20 @@ final holdToRecordPreferenceServiceProvider =
     Provider<HoldToRecordPreferenceService>((ref) {
       final prefs = ref.watch(sharedPreferencesProvider);
       return HoldToRecordPreferenceService(prefs);
+    });
+
+final nostrSignatureVerificationPreferenceServiceProvider =
+    Provider<NostrSignatureVerificationPreferenceService>((ref) {
+      final prefs = ref.watch(sharedPreferencesProvider);
+      return NostrSignatureVerificationPreferenceService(prefs);
+    });
+
+final nostrSignatureVerificationPolicyProvider =
+    Provider<NostrSignatureVerificationPolicy>((ref) {
+      final service = ref.watch(
+        nostrSignatureVerificationPreferenceServiceProvider,
+      );
+      return service.currentPolicy;
     });
 
 /// Audio device preference service for managing the preferred input device
