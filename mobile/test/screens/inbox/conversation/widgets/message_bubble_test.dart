@@ -19,13 +19,13 @@ import 'package:openvine/l10n/generated/app_localizations_en.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/message_bubble.dart';
-import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
+import 'package:videos_repository/videos_repository.dart';
 
 import '../../../../helpers/test_provider_overrides.dart';
 
-class _MockVideoEventService extends Mock implements VideoEventService {}
+class _MockVideosRepository extends Mock implements VideosRepository {}
 
 const _testHexPubkey =
     '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
@@ -103,6 +103,10 @@ TapGestureRecognizer? _findRecognizer(InlineSpan span, String linkText) {
 
 void main() {
   final strings = AppLocalizationsEn();
+
+  setUpAll(() {
+    registerFallbackValue(<String>[]);
+  });
 
   group(MessageBubble, () {
     group('renders', () {
@@ -742,7 +746,7 @@ void main() {
     });
 
     group('video preview card', () {
-      late _MockVideoEventService mockVideoEventService;
+      late _MockVideosRepository mockVideosRepository;
       late MockNostrClient mockNostrClient;
 
       final testVideo = VideoEvent(
@@ -759,17 +763,15 @@ void main() {
       );
 
       setUp(() {
-        mockVideoEventService = _MockVideoEventService();
+        mockVideosRepository = _MockVideosRepository();
         mockNostrClient = createMockNostrService();
 
-        // Default stubs: nothing in cache.
-        when(() => mockVideoEventService.getVideoById(any())).thenReturn(null);
+        // Default: the repository resolves nothing (unavailable card).
         when(
-          () => mockVideoEventService.getVideoEventByVineId(any()),
-        ).thenReturn(null);
-        // Stub fetchEventById for video link preview lookups.
-        when(
-          () => mockNostrClient.fetchEventById(any()),
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            any(),
+            fallbackRouteIds: any(named: 'fallbackRouteIds'),
+          ),
         ).thenAnswer((_) async => null);
       });
 
@@ -789,9 +791,7 @@ void main() {
         ),
         mockNostrService: mockNostrClient,
         additionalOverrides: [
-          videoEventServiceProvider.overrideWithValue(
-            mockVideoEventService,
-          ),
+          videosRepositoryProvider.overrideWithValue(mockVideosRepository),
         ],
       );
 
@@ -831,9 +831,12 @@ void main() {
       ) async {
         // Use a Completer that never completes so the cubit stays in
         // the loading state without leaving a pending Timer.
-        final neverCompletes = Completer<Never>();
+        final neverCompletes = Completer<VideoEvent?>();
         when(
-          () => mockNostrClient.fetchEventById(any()),
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            any(),
+            fallbackRouteIds: any(named: 'fallbackRouteIds'),
+          ),
         ).thenAnswer((_) => neverCompletes.future);
 
         await tester.pumpWidget(
@@ -850,8 +853,11 @@ void main() {
         tester,
       ) async {
         when(
-          () => mockVideoEventService.getVideoById('abc123'),
-        ).thenReturn(testVideo);
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            'abc123',
+            fallbackRouteIds: any(named: 'fallbackRouteIds'),
+          ),
+        ).thenAnswer((_) async => testVideo);
 
         await tester.pumpWidget(
           buildWithVideoMessage(message: 'https://divine.video/video/abc123'),
@@ -866,8 +872,11 @@ void main() {
         tester,
       ) async {
         when(
-          () => mockVideoEventService.getVideoEventByVineId('abc123'),
-        ).thenReturn(testVideo);
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            'abc123',
+            fallbackRouteIds: any(named: 'fallbackRouteIds'),
+          ),
+        ).thenAnswer((_) async => testVideo);
 
         await tester.pumpWidget(
           buildWithVideoMessage(
@@ -889,7 +898,10 @@ void main() {
         expect(find.text('watch this'), findsOneWidget);
         expect(find.textContaining('nostr:'), findsNothing);
         verify(
-          () => mockVideoEventService.getVideoEventByVineId('abc123'),
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            'abc123',
+            fallbackRouteIds: any(named: 'fallbackRouteIds'),
+          ),
         ).called(greaterThanOrEqualTo(1));
       });
 
@@ -897,8 +909,11 @@ void main() {
         tester,
       ) async {
         when(
-          () => mockVideoEventService.getVideoById('abc123'),
-        ).thenReturn(testVideo);
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            'abc123',
+            fallbackRouteIds: any(named: 'fallbackRouteIds'),
+          ),
+        ).thenAnswer((_) async => testVideo);
 
         await tester.pumpWidget(
           buildWithVideoMessage(message: 'https://divine.video/video/abc123'),
@@ -923,8 +938,11 @@ void main() {
 
       testWidgets('shared-video card matches Figma geometry', (tester) async {
         when(
-          () => mockVideoEventService.getVideoById('abc123'),
-        ).thenReturn(testVideo);
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            'abc123',
+            fallbackRouteIds: any(named: 'fallbackRouteIds'),
+          ),
+        ).thenAnswer((_) async => testVideo);
 
         await tester.pumpWidget(
           buildWithVideoMessage(message: 'https://divine.video/video/abc123'),
@@ -961,8 +979,11 @@ void main() {
         tester,
       ) async {
         when(
-          () => mockVideoEventService.getVideoById('abc123'),
-        ).thenReturn(testVideo);
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            'abc123',
+            fallbackRouteIds: any(named: 'fallbackRouteIds'),
+          ),
+        ).thenAnswer((_) async => testVideo);
 
         await tester.pumpWidget(
           buildWithVideoMessage(
@@ -1024,9 +1045,7 @@ void main() {
             router,
             mockNostrService: mockNostrClient,
             additionalOverrides: [
-              videoEventServiceProvider.overrideWithValue(
-                mockVideoEventService,
-              ),
+              videosRepositoryProvider.overrideWithValue(mockVideosRepository),
             ],
           ),
         );
@@ -1045,8 +1064,11 @@ void main() {
         tester,
       ) async {
         when(
-          () => mockVideoEventService.getVideoById('abc123'),
-        ).thenReturn(testVideo);
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            'abc123',
+            fallbackRouteIds: any(named: 'fallbackRouteIds'),
+          ),
+        ).thenAnswer((_) async => testVideo);
 
         await tester.pumpWidget(
           buildWithVideoMessage(
@@ -1067,8 +1089,11 @@ void main() {
 
       testWidgets('preserves text before video URL only', (tester) async {
         when(
-          () => mockVideoEventService.getVideoById('abc123'),
-        ).thenReturn(testVideo);
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            'abc123',
+            fallbackRouteIds: any(named: 'fallbackRouteIds'),
+          ),
+        ).thenAnswer((_) async => testVideo);
 
         await tester.pumpWidget(
           buildWithVideoMessage(
@@ -1094,8 +1119,11 @@ void main() {
           // bubble text. Pin that contract — without this, the title
           // can silently leak back above the thumbnail.
           when(
-            () => mockVideoEventService.getVideoById('abc123'),
-          ).thenReturn(testVideo);
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+              'abc123',
+              fallbackRouteIds: any(named: 'fallbackRouteIds'),
+            ),
+          ).thenAnswer((_) async => testVideo);
 
           await tester.pumpWidget(
             buildWithVideoMessage(
@@ -1119,8 +1147,11 @@ void main() {
           // must render under the thumbnail; the "<title>" line above
           // it (also part of the template) must NOT render.
           when(
-            () => mockVideoEventService.getVideoById('abc123'),
-          ).thenReturn(testVideo);
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+              'abc123',
+              fallbackRouteIds: any(named: 'fallbackRouteIds'),
+            ),
+          ).thenAnswer((_) async => testVideo);
 
           await tester.pumpWidget(
             buildWithVideoMessage(
@@ -1143,8 +1174,11 @@ void main() {
         'embedded quotes',
         (tester) async {
           when(
-            () => mockVideoEventService.getVideoById('abc123'),
-          ).thenReturn(testVideo);
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+              'abc123',
+              fallbackRouteIds: any(named: 'fallbackRouteIds'),
+            ),
+          ).thenAnswer((_) async => testVideo);
 
           await tester.pumpWidget(
             buildWithVideoMessage(
@@ -1162,7 +1196,7 @@ void main() {
     });
 
     group('quoted video reply preview', () {
-      late _MockVideoEventService mockVideoEventService;
+      late _MockVideosRepository mockVideosRepository;
       late MockNostrClient mockNostrClient;
 
       final testVideo = VideoEvent(
@@ -1186,15 +1220,14 @@ void main() {
       );
 
       setUp(() {
-        mockVideoEventService = _MockVideoEventService();
+        mockVideosRepository = _MockVideosRepository();
         mockNostrClient = createMockNostrService();
 
-        when(() => mockVideoEventService.getVideoById(any())).thenReturn(null);
         when(
-          () => mockVideoEventService.getVideoEventByVineId(any()),
-        ).thenReturn(null);
-        when(
-          () => mockNostrClient.fetchEventById(any()),
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            any(),
+            fallbackRouteIds: any(named: 'fallbackRouteIds'),
+          ),
         ).thenAnswer((_) async => null);
       });
 
@@ -1214,9 +1247,7 @@ void main() {
         ),
         mockNostrService: mockNostrClient,
         additionalOverrides: [
-          videoEventServiceProvider.overrideWithValue(
-            mockVideoEventService,
-          ),
+          videosRepositoryProvider.overrideWithValue(mockVideosRepository),
         ],
       );
 
@@ -1255,8 +1286,11 @@ void main() {
         'full share card',
         (tester) async {
           when(
-            () => mockVideoEventService.getVideoEventByVineId('abc123'),
-          ).thenReturn(testVideo);
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+              'abc123',
+              fallbackRouteIds: any(named: 'fallbackRouteIds'),
+            ),
+          ).thenAnswer((_) async => testVideo);
 
           await tester.pumpWidget(
             buildWithQuotedReply(
@@ -1311,8 +1345,11 @@ void main() {
         'exposes the resolved quoted preview as a button with the reply hint',
         (tester) async {
           when(
-            () => mockVideoEventService.getVideoEventByVineId('abc123'),
-          ).thenReturn(testVideo);
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+              'abc123',
+              fallbackRouteIds: any(named: 'fallbackRouteIds'),
+            ),
+          ).thenAnswer((_) async => testVideo);
 
           await tester.pumpWidget(
             buildWithQuotedReply(
@@ -1342,8 +1379,11 @@ void main() {
         '(sharedVideoRef set, quotedVideoRef null)',
         (tester) async {
           when(
-            () => mockVideoEventService.getVideoEventByVineId('abc123'),
-          ).thenReturn(testVideo);
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+              'abc123',
+              fallbackRouteIds: any(named: 'fallbackRouteIds'),
+            ),
+          ).thenAnswer((_) async => testVideo);
 
           await tester.pumpWidget(
             testMaterialApp(
@@ -1357,8 +1397,8 @@ void main() {
               ),
               mockNostrService: mockNostrClient,
               additionalOverrides: [
-                videoEventServiceProvider.overrideWithValue(
-                  mockVideoEventService,
+                videosRepositoryProvider.overrideWithValue(
+                  mockVideosRepository,
                 ),
               ],
             ),
@@ -1414,8 +1454,11 @@ void main() {
         'text when quotedVideoRef is set',
         (tester) async {
           when(
-            () => mockVideoEventService.getVideoEventByVineId('abc123'),
-          ).thenReturn(testVideo);
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+              'abc123',
+              fallbackRouteIds: any(named: 'fallbackRouteIds'),
+            ),
+          ).thenAnswer((_) async => testVideo);
 
           await tester.pumpWidget(
             buildWithQuotedReply(

@@ -14,7 +14,6 @@ import 'package:models/models.dart' hide AspectRatio, LogCategory;
 import 'package:openvine/blocs/dm/conversation/conversation_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/screens/feed/dm_reply_context.dart';
@@ -585,8 +584,7 @@ class _VideoLinkPreview extends ConsumerWidget {
     return BlocProvider(
       create: (_) => VideoLinkPreviewCubit(
         videoStableId: videoStableId,
-        videoEventService: ref.read(videoEventServiceProvider),
-        nostrClient: ref.read(nostrServiceProvider),
+        videosRepository: ref.read(videosRepositoryProvider),
         authorPubkey: authorPubkey,
         videoKind: videoKind,
       ),
@@ -673,8 +671,7 @@ class _QuotedVideoPreview extends ConsumerWidget {
     return BlocProvider(
       create: (_) => VideoLinkPreviewCubit(
         videoStableId: target.stableId,
-        videoEventService: ref.read(videoEventServiceProvider),
-        nostrClient: ref.read(nostrServiceProvider),
+        videosRepository: ref.read(videosRepositoryProvider),
         authorPubkey: target.authorPubkey,
         videoKind: target.videoKind,
       ),

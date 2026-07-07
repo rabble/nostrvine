@@ -14,7 +14,7 @@ import 'package:openvine/models/collaborator_invite.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/collaborator_invite_card.dart';
-import 'package:openvine/services/video_event_service.dart';
+import 'package:videos_repository/videos_repository.dart';
 
 import '../../../../helpers/test_provider_overrides.dart';
 
@@ -22,7 +22,7 @@ class _MockCollaboratorInviteActionsCubit
     extends MockCubit<CollaboratorInviteActionsState>
     implements CollaboratorInviteActionsCubit {}
 
-class _MockVideoEventService extends Mock implements VideoEventService {}
+class _MockVideosRepository extends Mock implements VideosRepository {}
 
 const _creatorPubkey =
     '1122334411223344112233441122334411223344112233441122334411223344';
@@ -40,12 +40,16 @@ const _testInvite = CollaboratorInvite(
 
 void main() {
   late _MockCollaboratorInviteActionsCubit mockCubit;
-  late _MockVideoEventService mockVideoEventService;
+  late _MockVideosRepository mockVideosRepository;
   late MockNostrClient mockNostrClient;
+
+  setUpAll(() {
+    registerFallbackValue(<String>[]);
+  });
 
   setUp(() {
     mockCubit = _MockCollaboratorInviteActionsCubit();
-    mockVideoEventService = _MockVideoEventService();
+    mockVideosRepository = _MockVideosRepository();
     mockNostrClient = createMockNostrService();
 
     when(() => mockCubit.state).thenReturn(
@@ -54,17 +58,19 @@ void main() {
     when(
       () => mockCubit.loadInvites(any()),
     ).thenReturn(null);
-    when(() => mockVideoEventService.getVideoById(any())).thenReturn(null);
     when(
-      () => mockVideoEventService.getVideoEventByVineId(any()),
-    ).thenReturn(null);
+      () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+        any(),
+        fallbackRouteIds: any(named: 'fallbackRouteIds'),
+      ),
+    ).thenAnswer((_) async => null);
   });
 
   Widget buildSubject({bool isSent = false}) {
     return ProviderScope(
       overrides: [
         nostrServiceProvider.overrideWithValue(mockNostrClient),
-        videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+        videosRepositoryProvider.overrideWithValue(mockVideosRepository),
       ],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,

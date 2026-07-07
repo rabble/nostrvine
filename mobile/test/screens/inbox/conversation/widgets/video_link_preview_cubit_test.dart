@@ -1,5 +1,5 @@
 // ABOUTME: Unit tests for VideoLinkPreviewCubit.
-// ABOUTME: Tests cache hit, relay fetch, d-tag fallback, and not-found paths.
+// ABOUTME: Tests repository-delegated resolve, hydration, fallback, not-found.
 
 import 'dart:async';
 
@@ -7,25 +7,21 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
-import 'package:nostr_client/nostr_client.dart';
-import 'package:nostr_sdk/event.dart';
-import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/video_link_preview_cubit.dart';
-import 'package:openvine/services/video_event_service.dart';
+import 'package:videos_repository/videos_repository.dart';
 
-class _MockVideoEventService extends Mock implements VideoEventService {}
-
-class _MockNostrClient extends Mock implements NostrClient {}
+class _MockVideosRepository extends Mock implements VideosRepository {}
 
 void main() {
   setUpAll(() {
-    registerFallbackValue(<Filter>[]);
+    registerFallbackValue(<String>[]);
   });
 
   group(VideoLinkPreviewCubit, () {
-    late _MockVideoEventService mockVideoEventService;
-    late _MockNostrClient mockNostrClient;
+    late _MockVideosRepository mockVideosRepository;
 
+    // Carries a hydrated `views` tag so totalLoops is non-zero: the exact
+    // count the shared-video card and detail screen must surface (see #5844).
     final testVideo = VideoEvent(
       id:
           '0123456789abcdef0123456789abcdef'
@@ -37,151 +33,95 @@ void main() {
       content: 'Test',
       timestamp: DateTime.fromMillisecondsSinceEpoch(1757385263 * 1000),
       title: 'My Cool Video',
+      rawTags: const {'views': '1234'},
     );
 
     setUp(() {
-      mockVideoEventService = _MockVideoEventService();
-      mockNostrClient = _MockNostrClient();
+      mockVideosRepository = _MockVideosRepository();
 
-      // Default stubs: nothing in cache, nothing from relay.
-      when(() => mockVideoEventService.getVideoById(any())).thenReturn(null);
+      // Default: repository resolves nothing.
       when(
-        () => mockVideoEventService.getVideoEventByVineId(any()),
-      ).thenReturn(null);
-      when(
-        () => mockNostrClient.fetchEventById(any()),
+        () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+          any(),
+          fallbackRouteIds: any(named: 'fallbackRouteIds'),
+        ),
       ).thenAnswer((_) async => null);
-      when(
-        () => mockNostrClient.queryEvents(any()),
-      ).thenAnswer((_) async => <Event>[]);
     });
 
     VideoLinkPreviewCubit createCubit({String stableId = 'test-id'}) =>
         VideoLinkPreviewCubit(
           videoStableId: stableId,
-          videoEventService: mockVideoEventService,
-          nostrClient: mockNostrClient,
+          videosRepository: mockVideosRepository,
         );
 
-    group('cache hit', () {
+    group('resolve', () {
       blocTest<VideoLinkPreviewCubit, VideoLinkPreviewState>(
-        'emits $VideoLinkPreviewResolved when found by event ID',
+        'emits $VideoLinkPreviewResolved with the repository-hydrated video',
         setUp: () {
           when(
-            () => mockVideoEventService.getVideoById('test-id'),
-          ).thenReturn(testVideo);
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+              'test-id',
+              fallbackRouteIds: any(named: 'fallbackRouteIds'),
+            ),
+          ).thenAnswer((_) async => testVideo);
         },
         build: createCubit,
         expect: () => [
-          isA<VideoLinkPreviewResolved>().having(
-            (s) => s.video.id,
-            'video.id',
-            testVideo.id,
-          ),
+          isA<VideoLinkPreviewResolved>()
+              .having((s) => s.video.id, 'video.id', testVideo.id)
+              .having((s) => s.video.totalLoops, 'video.totalLoops', 1234),
         ],
-        verify: (_) {
-          verifyNever(() => mockNostrClient.fetchEventById(any()));
-        },
       );
 
       blocTest<VideoLinkPreviewCubit, VideoLinkPreviewState>(
-        'emits $VideoLinkPreviewResolved when found by vine ID (d-tag)',
-        setUp: () {
-          when(
-            () => mockVideoEventService.getVideoEventByVineId('vine-tag'),
-          ).thenReturn(testVideo);
-        },
-        build: () => createCubit(stableId: 'vine-tag'),
-        expect: () => [
-          isA<VideoLinkPreviewResolved>().having(
-            (s) => s.video.id,
-            'video.id',
-            testVideo.id,
-          ),
-        ],
-        verify: (_) {
-          verifyNever(() => mockNostrClient.fetchEventById(any()));
-        },
-      );
-    });
-
-    group('relay fetch', () {
-      blocTest<VideoLinkPreviewCubit, VideoLinkPreviewState>(
-        'emits $VideoLinkPreviewResolved when relay returns event by ID',
-        setUp: () {
-          when(() => mockNostrClient.fetchEventById('test-id')).thenAnswer(
-            (_) async => Event.fromJson({
-              'id': testVideo.id,
-              'pubkey': testVideo.pubkey,
-              'created_at': testVideo.createdAt,
-              'kind': 34236,
-              'tags': <List<String>>[],
-              'content': '',
-              'sig': '0' * 128,
-            }),
-          );
-        },
-        build: createCubit,
-        expect: () => [isA<VideoLinkPreviewResolved>()],
-      );
-
-      blocTest<VideoLinkPreviewCubit, VideoLinkPreviewState>(
-        'emits $VideoLinkPreviewResolved when relay returns event by d-tag',
-        setUp: () {
-          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-            (_) async => [
-              Event.fromJson({
-                'id': testVideo.id,
-                'pubkey': testVideo.pubkey,
-                'created_at': testVideo.createdAt,
-                'kind': 34236,
-                'tags': <List<String>>[],
-                'content': '',
-                'sig': '0' * 128,
-              }),
-            ],
-          );
-        },
-        build: createCubit,
-        expect: () => [isA<VideoLinkPreviewResolved>()],
-      );
-
-      blocTest<VideoLinkPreviewCubit, VideoLinkPreviewState>(
-        'queries invite d-tag with creator and kind when provided',
+        'passes an author/kind addressable fallback route when both are given',
         build: () => VideoLinkPreviewCubit(
           videoStableId: 'skate-loop',
           authorPubkey: testVideo.pubkey,
           videoKind: 34235,
-          videoEventService: mockVideoEventService,
-          nostrClient: mockNostrClient,
+          videosRepository: mockVideosRepository,
         ),
         expect: () => [isA<VideoLinkPreviewNotFound>()],
         verify: (_) {
-          final captured =
-              verify(
-                    () => mockNostrClient.queryEvents(captureAny()),
-                  ).captured.single
-                  as List<Filter>;
-          final filter = captured.single;
-          expect(filter.kinds, [34235]);
-          expect(filter.authors, [testVideo.pubkey]);
-          expect(filter.d, ['skate-loop']);
+          verify(
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+              'skate-loop',
+              fallbackRouteIds: ['34235:${testVideo.pubkey}:skate-loop'],
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<VideoLinkPreviewCubit, VideoLinkPreviewState>(
+        'passes no fallback route when author/kind are absent',
+        build: createCubit,
+        expect: () => [isA<VideoLinkPreviewNotFound>()],
+        verify: (_) {
+          verify(
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+              'test-id',
+              fallbackRouteIds: any(named: 'fallbackRouteIds', that: isEmpty),
+            ),
+          ).called(1);
         },
       );
     });
 
     group('not found', () {
       blocTest<VideoLinkPreviewCubit, VideoLinkPreviewState>(
-        'emits $VideoLinkPreviewNotFound when cache and relay return nothing',
+        'emits $VideoLinkPreviewNotFound when the repository resolves nothing',
         build: createCubit,
         expect: () => [isA<VideoLinkPreviewNotFound>()],
       );
 
       blocTest<VideoLinkPreviewCubit, VideoLinkPreviewState>(
-        'emits $VideoLinkPreviewNotFound when relay fetch throws',
+        'emits $VideoLinkPreviewNotFound when the repository throws',
         setUp: () {
           when(
-            () => mockNostrClient.fetchEventById(any()),
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+              any(),
+              fallbackRouteIds: any(named: 'fallbackRouteIds'),
+            ),
           ).thenThrow(Exception('network error'));
         },
         build: createCubit,
@@ -190,23 +130,26 @@ void main() {
     });
 
     group('close during in-flight resolve', () {
-      test('does not emit or throw when closed mid relay fetch', () async {
-        final completer = Completer<Event?>();
+      test('does not emit or throw when closed mid resolve', () async {
+        final completer = Completer<VideoEvent?>();
         when(
-          () => mockNostrClient.fetchEventById(any()),
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            any(),
+            fallbackRouteIds: any(named: 'fallbackRouteIds'),
+          ),
         ).thenAnswer((_) => completer.future);
 
         final cubit = createCubit();
-        // Let _resolve run past the cache miss to the awaited fetch.
+        // Let _resolve run past scheduling to the awaited repository call.
         await pumpEventQueue();
         expect(cubit.state, isA<VideoLinkPreviewLoading>());
 
-        // Close while the relay fetch is still in flight.
+        // Close while the resolve is still in flight.
         await cubit.close();
 
-        // Completing drives the post-await not-found path; without the
-        // isClosed guard this emits on the closed cubit and throws StateError.
-        completer.complete(null);
+        // Completing drives the post-await path; without the isClosed guard
+        // this emits on the closed cubit and throws StateError.
+        completer.complete(testVideo);
         await pumpEventQueue();
 
         expect(cubit.state, isA<VideoLinkPreviewLoading>());
