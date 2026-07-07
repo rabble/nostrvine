@@ -310,9 +310,16 @@ ProfileRepository? profileRepository(Ref ref) {
 /// [profileRepository].
 @Riverpod(keepAlive: true)
 ProfileRepository? profileStatsRepository(Ref ref) {
-  final phase = ref.watch(nostrSessionProvider).phase;
-  if (phase != NostrSessionPhase.identityKnown &&
-      phase != NostrSessionPhase.nostrReady) {
+  final identityPubkey = ref.watch(
+    nostrSessionProvider.select((readiness) {
+      if (readiness.phase == NostrSessionPhase.identityKnown ||
+          readiness.phase == NostrSessionPhase.nostrReady) {
+        return readiness.pubkey;
+      }
+      return null;
+    }),
+  );
+  if (identityPubkey == null || identityPubkey.isEmpty) {
     return null;
   }
 

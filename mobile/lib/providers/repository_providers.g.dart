@@ -493,7 +493,7 @@ final class ProfileStatsRepositoryProvider
 }
 
 String _$profileStatsRepositoryHash() =>
-    r'af27bd6095556f7b013fb09e9c31026882dcb1ec';
+    r'80251b83ada9ba843c40f64b98a0e7d02ae46fc6';
 
 /// Curation Service - manages NIP-51 video curation sets
 
