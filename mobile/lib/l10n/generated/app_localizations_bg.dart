@@ -8602,11 +8602,8 @@ class AppLocalizationsBg extends AppLocalizations {
       'Приключване на избора на рисунки';
 
   @override
-  String get videoEditorLayerMultiSelectClearLabel => 'Изчисти';
-
-  @override
-  String get videoEditorLayerMultiSelectClearSemanticLabel =>
-      'Изчистване на избора';
+  String get videoEditorDeleteSelectedDrawingsSemanticLabel =>
+      'Изтриване на избраните рисунки';
 
   @override
   String videoEditorLayerMultiSelectCountLabel(int count) {

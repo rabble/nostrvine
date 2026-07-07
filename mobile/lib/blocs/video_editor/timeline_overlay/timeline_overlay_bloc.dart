@@ -56,7 +56,6 @@ class TimelineOverlayBloc
     );
     on<TimelineOverlayLayerMultiSelectStarted>(_onLayerMultiSelectStarted);
     on<TimelineOverlayLayerMultiSelectToggled>(_onLayerMultiSelectToggled);
-    on<TimelineOverlayLayerSelectionCleared>(_onLayerSelectionCleared);
     on<TimelineOverlayLayerMultiSelectCancelled>(_onLayerMultiSelectCancelled);
   }
 
@@ -543,14 +542,6 @@ class TimelineOverlayBloc
       selected.add(event.layerId);
     }
     emit(state.copyWith(multiSelectedLayerIds: selected));
-  }
-
-  void _onLayerSelectionCleared(
-    TimelineOverlayLayerSelectionCleared event,
-    Emitter<TimelineOverlayState> emit,
-  ) {
-    if (!state.isLayerMultiSelectMode) return;
-    emit(state.copyWith(multiSelectedLayerIds: const <String>{}));
   }
 
   void _onLayerMultiSelectCancelled(

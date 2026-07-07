@@ -1812,29 +1812,6 @@ void main() {
     );
 
     blocTest<TimelineOverlayBloc, TimelineOverlayState>(
-      'clear empties the selection but stays in multi-select mode',
-      build: TimelineOverlayBloc.new,
-      seed: () => const TimelineOverlayState(
-        isLayerMultiSelectMode: true,
-        multiSelectedLayerIds: {'a', 'b'},
-      ),
-      act: (bloc) => bloc.add(const TimelineOverlayLayerSelectionCleared()),
-      expect: () => [
-        isA<TimelineOverlayState>()
-            .having((s) => s.isLayerMultiSelectMode, 'mode', isTrue)
-            .having((s) => s.multiSelectedLayerIds, 'selected', isEmpty),
-      ],
-    );
-
-    blocTest<TimelineOverlayBloc, TimelineOverlayState>(
-      'clear is a no-op when not in multi-select mode',
-      build: TimelineOverlayBloc.new,
-      seed: TimelineOverlayState.new,
-      act: (bloc) => bloc.add(const TimelineOverlayLayerSelectionCleared()),
-      expect: () => <TimelineOverlayState>[],
-    );
-
-    blocTest<TimelineOverlayBloc, TimelineOverlayState>(
       'cancel exits mode and clears the selection',
       build: TimelineOverlayBloc.new,
       seed: () => const TimelineOverlayState(

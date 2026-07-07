@@ -8499,10 +8499,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'Done selecting drawings';
 
   @override
-  String get videoEditorLayerMultiSelectClearLabel => 'Clear';
-
-  @override
-  String get videoEditorLayerMultiSelectClearSemanticLabel => 'Clear selection';
+  String get videoEditorDeleteSelectedDrawingsSemanticLabel =>
+      'Delete selected drawings';
 
   @override
   String videoEditorLayerMultiSelectCountLabel(int count) {

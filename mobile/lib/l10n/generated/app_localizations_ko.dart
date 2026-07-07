@@ -8195,10 +8195,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorLayerMultiSelectDoneSemanticLabel => '그림 선택 완료';
 
   @override
-  String get videoEditorLayerMultiSelectClearLabel => '지우기';
-
-  @override
-  String get videoEditorLayerMultiSelectClearSemanticLabel => '선택 지우기';
+  String get videoEditorDeleteSelectedDrawingsSemanticLabel => '선택한 그림 삭제';
 
   @override
   String videoEditorLayerMultiSelectCountLabel(int count) {

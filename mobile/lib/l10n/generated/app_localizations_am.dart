@@ -8337,10 +8337,8 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorLayerMultiSelectDoneSemanticLabel => 'ስዕሎችን መምረጥ ጨርስ';
 
   @override
-  String get videoEditorLayerMultiSelectClearLabel => 'አጽዳ';
-
-  @override
-  String get videoEditorLayerMultiSelectClearSemanticLabel => 'ምርጫን አጽዳ';
+  String get videoEditorDeleteSelectedDrawingsSemanticLabel =>
+      'የተመረጡ ስዕሎችን ሰርዝ';
 
   @override
   String videoEditorLayerMultiSelectCountLabel(int count) {

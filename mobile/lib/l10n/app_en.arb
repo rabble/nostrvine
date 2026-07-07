@@ -4970,13 +4970,9 @@
   "@videoEditorLayerMultiSelectDoneSemanticLabel": {
     "description": "Accessibility label for the button that exits draw-layer multi-select mode."
   },
-  "videoEditorLayerMultiSelectClearLabel": "Clear",
-  "@videoEditorLayerMultiSelectClearLabel": {
-    "description": "Label for the button that clears the current draw-layer selection without leaving multi-select mode."
-  },
-  "videoEditorLayerMultiSelectClearSemanticLabel": "Clear selection",
-  "@videoEditorLayerMultiSelectClearSemanticLabel": {
-    "description": "Accessibility label for the button that clears the current draw-layer selection."
+  "videoEditorDeleteSelectedDrawingsSemanticLabel": "Delete selected drawings",
+  "@videoEditorDeleteSelectedDrawingsSemanticLabel": {
+    "description": "Accessibility label for the button that deletes the selected drawings in draw-layer multi-select mode."
   },
   "videoEditorLayerMultiSelectCountLabel": "{count, plural, =0{No drawings selected} =1{1 drawing selected} other{{count} drawings selected}}",
   "@videoEditorLayerMultiSelectCountLabel": {

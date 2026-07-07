@@ -8706,10 +8706,8 @@ class AppLocalizationsRo extends AppLocalizations {
       'Termină selectarea desenelor';
 
   @override
-  String get videoEditorLayerMultiSelectClearLabel => 'Șterge';
-
-  @override
-  String get videoEditorLayerMultiSelectClearSemanticLabel => 'Șterge selecția';
+  String get videoEditorDeleteSelectedDrawingsSemanticLabel =>
+      'Șterge desenele selectate';
 
   @override
   String videoEditorLayerMultiSelectCountLabel(int count) {

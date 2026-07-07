@@ -8458,10 +8458,8 @@ class AppLocalizationsAr extends AppLocalizations {
       'إنهاء تحديد الرسومات';
 
   @override
-  String get videoEditorLayerMultiSelectClearLabel => 'مسح';
-
-  @override
-  String get videoEditorLayerMultiSelectClearSemanticLabel => 'مسح التحديد';
+  String get videoEditorDeleteSelectedDrawingsSemanticLabel =>
+      'حذف الرسومات المحددة';
 
   @override
   String videoEditorLayerMultiSelectCountLabel(int count) {

@@ -14764,17 +14764,11 @@ abstract class AppLocalizations {
   /// **'Done selecting drawings'**
   String get videoEditorLayerMultiSelectDoneSemanticLabel;
 
-  /// Label for the button that clears the current draw-layer selection without leaving multi-select mode.
+  /// Accessibility label for the button that deletes the selected drawings in draw-layer multi-select mode.
   ///
   /// In en, this message translates to:
-  /// **'Clear'**
-  String get videoEditorLayerMultiSelectClearLabel;
-
-  /// Accessibility label for the button that clears the current draw-layer selection.
-  ///
-  /// In en, this message translates to:
-  /// **'Clear selection'**
-  String get videoEditorLayerMultiSelectClearSemanticLabel;
+  /// **'Delete selected drawings'**
+  String get videoEditorDeleteSelectedDrawingsSemanticLabel;
 
   /// Header shown in the draw-layer multi-select action bar reporting how many drawings are selected.
   ///

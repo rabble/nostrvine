@@ -8490,10 +8490,8 @@ class AppLocalizationsId extends AppLocalizations {
       'Selesai memilih gambar';
 
   @override
-  String get videoEditorLayerMultiSelectClearLabel => 'Hapus';
-
-  @override
-  String get videoEditorLayerMultiSelectClearSemanticLabel => 'Hapus pilihan';
+  String get videoEditorDeleteSelectedDrawingsSemanticLabel =>
+      'Hapus gambar yang dipilih';
 
   @override
   String videoEditorLayerMultiSelectCountLabel(int count) {

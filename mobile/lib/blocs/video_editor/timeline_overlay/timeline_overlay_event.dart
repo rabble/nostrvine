@@ -291,11 +291,6 @@ class TimelineOverlayLayerMultiSelectToggled extends TimelineOverlayEvent {
   List<Object?> get props => [layerId];
 }
 
-/// Clear the multi-select set without leaving multi-select mode.
-class TimelineOverlayLayerSelectionCleared extends TimelineOverlayEvent {
-  const TimelineOverlayLayerSelectionCleared();
-}
-
 /// Exit draw-layer multi-select mode and clear the selection.
 class TimelineOverlayLayerMultiSelectCancelled extends TimelineOverlayEvent {
   const TimelineOverlayLayerMultiSelectCancelled();

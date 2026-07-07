@@ -8553,10 +8553,8 @@ class AppLocalizationsNl extends AppLocalizations {
       'Klaar met tekeningen selecteren';
 
   @override
-  String get videoEditorLayerMultiSelectClearLabel => 'Wissen';
-
-  @override
-  String get videoEditorLayerMultiSelectClearSemanticLabel => 'Selectie wissen';
+  String get videoEditorDeleteSelectedDrawingsSemanticLabel =>
+      'Geselecteerde tekeningen verwijderen';
 
   @override
   String videoEditorLayerMultiSelectCountLabel(int count) {

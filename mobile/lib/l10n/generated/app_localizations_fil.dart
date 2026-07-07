@@ -8615,11 +8615,8 @@ class AppLocalizationsFil extends AppLocalizations {
       'Tapos nang pumili ng mga drawing';
 
   @override
-  String get videoEditorLayerMultiSelectClearLabel => 'I-clear';
-
-  @override
-  String get videoEditorLayerMultiSelectClearSemanticLabel =>
-      'I-clear ang pinili';
+  String get videoEditorDeleteSelectedDrawingsSemanticLabel =>
+      'Burahin ang mga napiling drawing';
 
   @override
   String videoEditorLayerMultiSelectCountLabel(int count) {

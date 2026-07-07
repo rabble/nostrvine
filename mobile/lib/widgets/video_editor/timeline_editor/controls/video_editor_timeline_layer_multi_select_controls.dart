@@ -19,7 +19,7 @@ class TimelineLayerMultiSelectControls extends StatelessWidget {
     );
 
     final canCombine = selectedCount >= 2;
-    final canClear = selectedCount >= 1;
+    final canDelete = selectedCount >= 1;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -65,17 +65,12 @@ class TimelineLayerMultiSelectControls extends StatelessWidget {
                         type: .primary,
                       ),
                       _ControlButton(
-                        icon: .x,
-                        label:
-                            context.l10n.videoEditorLayerMultiSelectClearLabel,
+                        icon: .trash,
+                        label: context.l10n.videoEditorDeleteLabel,
                         semanticLabel: context
                             .l10n
-                            .videoEditorLayerMultiSelectClearSemanticLabel,
-                        onPressed: canClear
-                            ? () => context.read<TimelineOverlayBloc>().add(
-                                const TimelineOverlayLayerSelectionCleared(),
-                              )
-                            : null,
+                            .videoEditorDeleteSelectedDrawingsSemanticLabel,
+                        onPressed: canDelete ? () => _delete(context) : null,
                         type: .error,
                       ),
                       _ControlButton(
@@ -120,6 +115,22 @@ class TimelineLayerMultiSelectControls extends StatelessWidget {
     if (merged != null) {
       overlayBloc.add(TimelineOverlayItemSelected(merged.id));
     }
+  }
+
+  /// Removes the selected draw layers from the canvas as a single undo step,
+  /// then exits multi-select mode.
+  void _delete(BuildContext context) {
+    final editor = VideoEditorScope.of(context).editor;
+    final overlayBloc = context.read<TimelineOverlayBloc>();
+    final ids = overlayBloc.state.multiSelectedLayerIds;
+    if (editor == null || ids.isEmpty) return;
+
+    final remaining = editor.activeLayers
+        .where((layer) => !ids.contains(layer.id))
+        .toList();
+    editor.addHistory(layers: remaining);
+
+    overlayBloc.add(const TimelineOverlayLayerMultiSelectCancelled());
   }
 }
 

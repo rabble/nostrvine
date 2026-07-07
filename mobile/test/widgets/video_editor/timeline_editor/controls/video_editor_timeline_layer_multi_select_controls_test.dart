@@ -167,7 +167,7 @@ void main() {
       },
     );
 
-    testWidgets('clear empties the selection without leaving the mode', (
+    testWidgets('delete removes the selected drawings and exits the mode', (
       tester,
     ) async {
       when(() => overlayBloc.state).thenReturn(
@@ -176,22 +176,34 @@ void main() {
           multiSelectedLayerIds: {'a', 'b'},
         ),
       );
+      when(
+        () => editor.activeLayers,
+      ).thenReturn([_paintLayer('a'), _paintLayer('b'), _paintLayer('c')]);
+      when(
+        () => editor.addHistory(layers: any(named: 'layers')),
+      ).thenAnswer((_) {});
 
       await tester.pumpWidget(build());
 
       await tester.tap(
         find.bySemanticsLabel(
-          l10n.videoEditorLayerMultiSelectClearSemanticLabel,
+          l10n.videoEditorDeleteSelectedDrawingsSemanticLabel,
         ),
       );
       await tester.pump();
 
+      final captured =
+          verify(
+                () => editor.addHistory(layers: captureAny(named: 'layers')),
+              ).captured.single
+              as List<Layer>;
+      expect(captured.map((l) => l.id), ['c']);
       verify(
-        () => overlayBloc.add(const TimelineOverlayLayerSelectionCleared()),
+        () => overlayBloc.add(const TimelineOverlayLayerMultiSelectCancelled()),
       ).called(1);
     });
 
-    testWidgets('clear is disabled when nothing is selected', (tester) async {
+    testWidgets('delete is disabled when nothing is selected', (tester) async {
       when(() => overlayBloc.state).thenReturn(
         const TimelineOverlayState(isLayerMultiSelectMode: true),
       );
@@ -200,14 +212,12 @@ void main() {
 
       await tester.tap(
         find.bySemanticsLabel(
-          l10n.videoEditorLayerMultiSelectClearSemanticLabel,
+          l10n.videoEditorDeleteSelectedDrawingsSemanticLabel,
         ),
       );
       await tester.pump();
 
-      verifyNever(
-        () => overlayBloc.add(const TimelineOverlayLayerSelectionCleared()),
-      );
+      verifyNever(() => editor.addHistory(layers: any(named: 'layers')));
     });
 
     testWidgets('done exits multi-select mode', (tester) async {

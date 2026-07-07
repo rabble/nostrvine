@@ -8638,11 +8638,8 @@ class AppLocalizationsFr extends AppLocalizations {
       'Terminer la sélection des dessins';
 
   @override
-  String get videoEditorLayerMultiSelectClearLabel => 'Effacer';
-
-  @override
-  String get videoEditorLayerMultiSelectClearSemanticLabel =>
-      'Effacer la sélection';
+  String get videoEditorDeleteSelectedDrawingsSemanticLabel =>
+      'Supprimer les dessins sélectionnés';
 
   @override
   String videoEditorLayerMultiSelectCountLabel(int count) {

@@ -8169,10 +8169,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorLayerMultiSelectDoneSemanticLabel => '描画の選択を完了';
 
   @override
-  String get videoEditorLayerMultiSelectClearLabel => 'クリア';
-
-  @override
-  String get videoEditorLayerMultiSelectClearSemanticLabel => '選択をクリア';
+  String get videoEditorDeleteSelectedDrawingsSemanticLabel => '選択した描画を削除';
 
   @override
   String videoEditorLayerMultiSelectCountLabel(int count) {

@@ -8517,10 +8517,8 @@ class AppLocalizationsSv extends AppLocalizations {
       'Klar med att välja teckningar';
 
   @override
-  String get videoEditorLayerMultiSelectClearLabel => 'Rensa';
-
-  @override
-  String get videoEditorLayerMultiSelectClearSemanticLabel => 'Rensa markering';
+  String get videoEditorDeleteSelectedDrawingsSemanticLabel =>
+      'Ta bort valda teckningar';
 
   @override
   String videoEditorLayerMultiSelectCountLabel(int count) {
