@@ -20,11 +20,20 @@ class EventRouterConfig {
     this.flushDelay = const Duration(milliseconds: 50),
     this.maxBatchSize = eventRouterBatchFlushThreshold,
     this.autoStart = true,
+    this.maxQueueDepth,
   });
 
   final Duration flushDelay;
   final int maxBatchSize;
   final bool autoStart;
+
+  /// Hard cap on the total number of queued events across all priorities.
+  ///
+  /// When null (the default) the queues are unbounded — every existing caller
+  /// is unaffected. When set, [EventRouter.handleEvent] drops the oldest
+  /// low-priority events (background, then normal, then visible only if it
+  /// alone exceeds the cap) once the total exceeds this depth.
+  final int? maxQueueDepth;
 }
 
 typedef EventRouterYield = Future<void> Function();
@@ -66,8 +75,42 @@ class EventRouter {
     // not re-arm a drain that would run SQLite against a closed connection.
     if (_disposed) return;
     _queueFor(priority).add(event);
+    _enforceQueueBound();
     if (_config.autoStart) {
       _scheduleProcessing(immediate: _queuedLength >= _config.maxBatchSize);
+    }
+  }
+
+  /// Drops the oldest low-priority events until the total queued count is back
+  /// within [EventRouterConfig.maxQueueDepth]. No-op when the cap is null.
+  ///
+  /// Background is shed first, then normal; visible is only dropped when it
+  /// alone exceeds the cap, so the on-screen feed keeps persisting.
+  void _enforceQueueBound() {
+    final maxQueueDepth = _config.maxQueueDepth;
+    if (maxQueueDepth == null) return;
+
+    var dropped = 0;
+    while (_queuedLength > maxQueueDepth) {
+      final Queue<Event> queue;
+      if (_backgroundQueue.isNotEmpty) {
+        queue = _backgroundQueue;
+      } else if (_normalQueue.isNotEmpty) {
+        queue = _normalQueue;
+      } else {
+        queue = _visibleQueue;
+      }
+      queue.removeFirst();
+      dropped++;
+    }
+
+    if (dropped > 0) {
+      _droppedEventCount += dropped;
+      Log.warning(
+        'Dropped $dropped events to bound ingestion queue at $maxQueueDepth',
+        name: 'EventRouter',
+        category: LogCategory.system,
+      );
     }
   }
 

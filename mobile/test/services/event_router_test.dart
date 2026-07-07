@@ -287,5 +287,68 @@ void main() {
         expect(await db.nostrEventsDao.getEventById(event.id), isNotNull);
       },
     );
+
+    group('maxQueueDepth', () {
+      test('bounds the queue and drops events once the cap is exceeded', () {
+        router.dispose();
+        router = EventRouter(
+          db,
+          config: const EventRouterConfig(autoStart: false, maxQueueDepth: 500),
+        );
+
+        for (var i = 0; i < 5000; i++) {
+          router.handleEvent(
+            videoEvent(3000 + i),
+            priority: EventIngestionPriority.background,
+          );
+        }
+
+        expect(router.queuedLength, lessThanOrEqualTo(500));
+        expect(router.droppedEventCount, greaterThan(0));
+      });
+
+      test('drops oldest background events but never visible ones', () async {
+        router.dispose();
+        router = EventRouter(
+          db,
+          config: const EventRouterConfig(autoStart: false, maxQueueDepth: 10),
+        );
+
+        final visible = List.generate(5, (i) => videoEvent(4000 + i));
+        for (final event in visible) {
+          router.handleEvent(event, priority: EventIngestionPriority.visible);
+        }
+
+        // Flood background well past the cap to force drops.
+        for (var i = 0; i < 200; i++) {
+          router.handleEvent(
+            videoEvent(5000 + i),
+            priority: EventIngestionPriority.background,
+          );
+        }
+
+        expect(router.queuedLength, lessThanOrEqualTo(10));
+        expect(router.droppedEventCount, greaterThan(0));
+
+        // Every visible event survives the bound and still persists.
+        await router.drainForTesting();
+        for (final event in visible) {
+          expect(await db.nostrEventsDao.getEventById(event.id), isNotNull);
+        }
+      });
+
+      test('is unbounded by default so existing callers are unaffected', () {
+        // Default config leaves maxQueueDepth null.
+        for (var i = 0; i < 1000; i++) {
+          router.handleEvent(
+            videoEvent(6000 + i),
+            priority: EventIngestionPriority.background,
+          );
+        }
+
+        expect(router.queuedLength, equals(1000));
+        expect(router.droppedEventCount, equals(0));
+      });
+    });
   });
 }

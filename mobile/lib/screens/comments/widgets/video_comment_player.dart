@@ -1,12 +1,19 @@
 // ABOUTME: Inline video attachment player for video comments.
 // ABOUTME: Starts from thumbnail and plays the attached NIP-92 video in-place.
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+
+/// Builds a [VideoPlayerController] for the given [url].
+///
+/// Injectable so tests can supply a fake/recording controller.
+typedef VideoControllerFactory = VideoPlayerController Function(Uri url);
 
 class VideoCommentPlayer extends StatefulWidget {
   const VideoCommentPlayer({
@@ -15,6 +22,7 @@ class VideoCommentPlayer extends StatefulWidget {
     this.blurhash,
     this.borderRadius,
     this.onOpenVideo,
+    this.controllerFactory = VideoPlayerController.networkUrl,
     super.key,
   });
 
@@ -23,21 +31,49 @@ class VideoCommentPlayer extends StatefulWidget {
   final String? blurhash;
   final BorderRadiusGeometry? borderRadius;
   final VoidCallback? onOpenVideo;
+  final VideoControllerFactory controllerFactory;
 
   @override
   State<VideoCommentPlayer> createState() => _VideoCommentPlayerState();
 }
 
-class _VideoCommentPlayerState extends State<VideoCommentPlayer> {
+class _VideoCommentPlayerState extends State<VideoCommentPlayer>
+    with WidgetsBindingObserver {
   VideoPlayerController? _controller;
   bool _isInitializing = false;
   bool _isPlaying = false;
   bool _isMuted = true;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
   void dispose() {
-    _controller?.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    // Pause before dispose so the native CADisplayLink stops firing frames
+    // into freed memory (FVPFrameUpdater EXC_BAD_ACCESS crash). State.dispose
+    // can't await, so hand the teardown to an async closure.
+    final controller = _controller;
+    _controller = null;
+    controller?.removeListener(_syncPlaybackState);
+    unawaited(() async {
+      await controller?.pause();
+      await controller?.dispose();
+    }());
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // All crash samples are processState=BACKGROUND: stop playback the moment
+    // the app is backgrounded so no frame lands after the view is torn down.
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden) {
+      _controller?.pause();
+    }
   }
 
   Future<void> _togglePlay() async {
@@ -45,15 +81,15 @@ class _VideoCommentPlayerState extends State<VideoCommentPlayer> {
 
     if (_controller == null) {
       setState(() => _isInitializing = true);
-      final controller = VideoPlayerController.networkUrl(
-        Uri.parse(widget.videoUrl),
-      );
+      final controller = widget.controllerFactory(Uri.parse(widget.videoUrl));
       try {
         await controller.initialize();
         await controller.setLooping(true);
         await controller.setVolume(0);
         controller.addListener(_syncPlaybackState);
         if (!mounted) {
+          controller.removeListener(_syncPlaybackState);
+          await controller.pause();
           await controller.dispose();
           return;
         }

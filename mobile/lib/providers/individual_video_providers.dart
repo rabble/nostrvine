@@ -298,14 +298,65 @@ class VideoLoadingState {
       'VideoLoadingState(videoId: $videoId, isLoading: $isLoading, isInitialized: $isInitialized, hasError: $hasError, errorMessage: $errorMessage)';
 }
 
-int _fvpLiveControllers = 0;
+/// Hard cap on the number of concurrent `video_player`/FVP controllers held
+/// live by [individualVideoControllerProvider].
+///
+/// Each live controller holds a native player and its decode buffers (4K =
+/// ~25MB/frame), so an unbounded population is the Phase-2 OOM source. When the
+/// cap is reached a new controller evicts the least-recently-used *idle*
+/// controller; an on-screen (actively-listened) controller is never evicted.
+const kMaxFvpControllers = 8;
+
+/// Registry entry tracking a live controller's keep-alive link and whether it
+/// currently has an active listener (i.e. is on-screen).
+class _FvpEntry {
+  _FvpEntry(this.close, {required this.hasListener});
+
+  /// Closes the provider's keep-alive link, triggering its `onDispose`.
+  final void Function() close;
+
+  /// True while a listener is attached (on-screen); such entries are never
+  /// evicted to make room for a new controller.
+  bool hasListener;
+}
+
+/// Insertion-ordered registry of live controllers keyed by `videoId`.
+///
+/// A plain `Map` literal is a `LinkedHashMap`, so iteration order is insertion
+/// order — the first idle entry encountered is the least-recently-used one.
+final _fvpControllerRegistry = <String, _FvpEntry>{};
 
 /// Number of `video_player`/FVP controllers currently held live by
 /// [individualVideoControllerProvider].
 ///
 /// Exposed as an always-on gauge for memory instrumentation; each live
 /// controller holds a native player and its decode buffers.
-int get fvpLiveControllerCount => _fvpLiveControllers;
+int get fvpLiveControllerCount => _fvpControllerRegistry.length;
+
+/// Evicts the least-recently-used idle controller(s) until there is room for a
+/// new one within [kMaxFvpControllers].
+///
+/// Only entries with `hasListener == false` are candidates; if every live
+/// controller is on-screen a transient overage is allowed rather than killing a
+/// visible player. Eviction removes the entry synchronously (so the gauge and
+/// subsequent size checks are accurate) and closes its keep-alive link, which
+/// tears the controller down on a microtask via the provider's `onDispose`.
+void _evictIdleFvpControllersIfNeeded() {
+  while (_fvpControllerRegistry.length >= kMaxFvpControllers) {
+    String? oldestIdleId;
+    for (final entry in _fvpControllerRegistry.entries) {
+      if (!entry.value.hasListener) {
+        oldestIdleId = entry.key;
+        break;
+      }
+    }
+    if (oldestIdleId == null) {
+      // All live controllers are on-screen; allow the transient overage.
+      break;
+    }
+    _fvpControllerRegistry.remove(oldestIdleId)?.close();
+  }
+}
 
 /// Provider for individual video controllers with autoDispose
 /// Each video gets its own controller instance
@@ -320,9 +371,16 @@ VideoPlayerController individualVideoController(
   final link = ref.keepAlive();
   Timer? cacheTimer;
 
+  // Track this controller in the global registry so the population stays
+  // bounded (see [kMaxFvpControllers]). Assume it is on-screen until onCancel
+  // reports the last listener has gone.
+  final entry = _FvpEntry(link.close, hasListener: true);
+
   // Riverpod lifecycle hooks for idiomatic cache behavior
   ref.onCancel(() {
-    // Last listener removed - start cache timeout before disposal
+    // Last listener removed - now idle and eligible for LRU eviction.
+    entry.hasListener = false;
+    // Start cache timeout before disposal.
     // Android uses shorter timeout (3s) to prevent MediaCodec accumulation crash
     // iOS/desktop use longer timeout (15s) for smoother scroll-back experience
     // Short timeout prevents OOM with high-resolution videos (4K = ~25MB/frame)
@@ -333,9 +391,19 @@ VideoPlayerController individualVideoController(
   });
 
   ref.onResume(() {
-    // New listener added - cancel the disposal timer
+    // New listener added - cancel the disposal timer and mark on-screen again.
     cacheTimer?.cancel();
+    entry.hasListener = true;
+    // Move to newest so LRU ordering reflects recency.
+    if (identical(_fvpControllerRegistry[params.videoId], entry)) {
+      _fvpControllerRegistry.remove(params.videoId);
+      _fvpControllerRegistry[params.videoId] = entry;
+    }
   });
+
+  // Make room within the cap before registering this controller, then register.
+  _evictIdleFvpControllersIfNeeded();
+  _fvpControllerRegistry[params.videoId] = entry;
 
   // Clear the disposed flag for this video since we are creating a fresh
   // controller (handles retries and scroll-back scenarios).
@@ -480,10 +548,6 @@ VideoPlayerController individualVideoController(
       ? const Duration(seconds: 60)
       : const Duration(seconds: 30);
   final formatType = isHls ? 'HLS' : 'MP4';
-
-  // Count this controller as live for memory instrumentation. Decremented
-  // exactly once in the provider's onDispose below.
-  _fvpLiveControllers++;
 
   // Track significant video state changes only (initialization, errors, buffering)
   // Previous state tracking to avoid logging every frame update
@@ -991,9 +1055,12 @@ VideoPlayerController individualVideoController(
   // AutoDispose: Cleanup controller when provider is disposed
   ref.onDispose(() {
     cacheTimer?.cancel();
-    // Decrement the live-controller gauge once per provider disposal, before
-    // the deferred native dispose runs in the microtask below.
-    _fvpLiveControllers--;
+    // Drop this controller from the registry so the gauge and the cap reflect
+    // the live population. Identity-guarded so a deferred eviction of a stale
+    // entry can't remove a freshly-rebuilt controller for the same videoId.
+    if (identical(_fvpControllerRegistry[params.videoId], entry)) {
+      _fvpControllerRegistry.remove(params.videoId);
+    }
     Log.info(
       '🧹 Disposing VideoPlayerController for video ${params.videoId.length > 8 ? params.videoId : params.videoId}...',
       name: 'IndividualVideoController',
@@ -1014,10 +1081,12 @@ VideoPlayerController individualVideoController(
 
     // Defer controller disposal to avoid triggering listener callbacks during lifecycle
     // This prevents "Cannot use Ref inside life-cycles" errors when listeners try to access providers
-    Future.microtask(() {
-      // Only dispose if controller exists
+    // Pause before dispose so the native CADisplayLink stops firing frames
+    // into freed memory (FVPFrameUpdater EXC_BAD_ACCESS crash).
+    Future.microtask(() async {
       try {
-        controller.dispose();
+        await controller.pause();
+        await controller.dispose();
       } catch (e) {
         Log.warning(
           'Failed to dispose controller: $e',
