@@ -143,6 +143,55 @@ void main() {
           verifyNever(() => mockNostrClient.queryEvents(any()));
         });
 
+        test(
+          'refresh merges newer relay videos ahead of API results',
+          () async {
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeClient.getRecentVideos(
+                limit: any(named: 'limit'),
+                before: any(named: 'before'),
+              ),
+            ).thenAnswer(
+              (_) async => [
+                _createVideoStats(
+                  id: 'api-video',
+                  pubkey: 'api-pubkey',
+                  dTag: 'api-dtag',
+                  videoUrl: 'https://example.com/api.mp4',
+                ),
+              ],
+            );
+            when(
+              () => mockNostrClient.queryEvents(any()),
+            ).thenAnswer(
+              (_) async => [
+                _createVideoEvent(
+                  id: 'relay-video',
+                  pubkey: 'relay-pubkey',
+                  videoUrl: 'https://example.com/relay.mp4',
+                  createdAt: 1704067300,
+                ),
+              ],
+            );
+
+            final repositoryWithApi = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            final result = await repositoryWithApi.getNewVideos(
+              skipCache: true,
+            );
+
+            expect(result.map((video) => video.id), [
+              'relay-video',
+              'api-video',
+            ]);
+            verify(() => mockNostrClient.queryEvents(any())).called(1);
+          },
+        );
+
         test('passes limit and before to Funnelcake API', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
           when(

@@ -56,6 +56,13 @@ const Duration _relaySearchTimeout = Duration(seconds: 15);
 /// healthy Funnelcake responses while still bounding degraded-service latency.
 const Duration _statsFetchTimeout = Duration(seconds: 3);
 
+/// Bounds the relay freshness check used by manual New-feed refreshes.
+///
+/// The REST recent feed can lag briefly behind relays due to ingestion and edge
+/// caching. Pull-to-refresh asks relays for just the first page too, but should
+/// still complete quickly when a relay is slow.
+const Duration _recentRelayRefreshTimeout = Duration(seconds: 3);
+
 /// Per-call timeout for relay queries inside the route-lookup orchestrator.
 ///
 /// `NostrClient.queryEvents` waits for EOSE from every relay in the pool with
@@ -663,8 +670,14 @@ class VideosRepository {
           limit: limit,
           until: until,
         );
+        final mergedVideos = skipCache && until == null
+            ? await _mergeRecentApiVideosWithRelayRefresh(
+                videos,
+                limit: limit,
+              )
+            : videos;
         // Hydrate views/loops — list endpoint omits them for some rows.
-        final hydrated = await _hydrateVideosWithBulkStats(videos);
+        final hydrated = await _hydrateVideosWithBulkStats(mergedVideos);
         if (until == null) {
           _inMemoryFeedCache?.set('latest', HomeFeedResult(videos: hydrated));
         }
@@ -711,6 +724,35 @@ class VideosRepository {
     }
 
     return visible.take(limit).toList();
+  }
+
+  Future<List<VideoEvent>> _mergeRecentApiVideosWithRelayRefresh(
+    List<VideoEvent> apiVideos, {
+    required int limit,
+  }) async {
+    try {
+      final relayVideos = await _fetchVisibleRecentVideosFromRelays(
+        limit: limit,
+      ).timeout(_recentRelayRefreshTimeout);
+      if (relayVideos.isEmpty) return apiVideos;
+
+      final candidates = [...relayVideos, ...apiVideos]
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      final merged = <VideoEvent>[];
+      _appendUniqueVideos(
+        merged,
+        candidates,
+        seenVideoKeys: <String>{},
+      );
+      return merged.take(limit).toList();
+    } on Object catch (e) {
+      Log.warning(
+        'Recent relay refresh enrichment failed: $e',
+        name: 'VideosRepository',
+        category: LogCategory.video,
+      );
+      return apiVideos;
+    }
   }
 
   Future<List<VideoEvent>> _fetchVisibleRecentVideosFromRelays({
