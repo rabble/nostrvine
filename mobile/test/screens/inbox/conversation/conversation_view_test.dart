@@ -22,8 +22,8 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_view.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/widgets.dart';
-import 'package:openvine/services/video_event_service.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
+import 'package:videos_repository/videos_repository.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../../builders/video_event_builder.dart';
@@ -42,7 +42,7 @@ class _MockConversationReactionsCubit
     extends MockBloc<ConversationReactionsEvent, ConversationReactionsState>
     implements ConversationReactionsCubit {}
 
-class _MockVideoEventService extends Mock implements VideoEventService {}
+class _MockVideosRepository extends Mock implements VideosRepository {}
 
 class _MockContentBlocklistRepository extends Mock
     implements ContentBlocklistRepository {}
@@ -78,7 +78,7 @@ void main() {
     late _MockConversationBloc mockBloc;
     late _MockCollaboratorInviteActionsCubit mockInviteActionsCubit;
     late _MockConversationReactionsCubit mockReactionsCubit;
-    late _MockVideoEventService mockVideoEventService;
+    late _MockVideosRepository mockVideosRepository;
     late MockNostrClient mockNostrClient;
     late _MockAuthService mockAuthService;
     late _MockContentBlocklistRepository mockBlocklist;
@@ -86,6 +86,7 @@ void main() {
     setUpAll(() {
       registerFallbackValue(fallbackInvite);
       registerFallbackValue(<CollaboratorInvite>[]);
+      registerFallbackValue(<String>[]);
       registerFallbackValue(
         const ConversationMessageSent(
           recipientPubkeys: [otherPubkey],
@@ -110,7 +111,7 @@ void main() {
       mockBloc = _MockConversationBloc();
       mockInviteActionsCubit = _MockCollaboratorInviteActionsCubit();
       mockReactionsCubit = _MockConversationReactionsCubit();
-      mockVideoEventService = _MockVideoEventService();
+      mockVideosRepository = _MockVideosRepository();
       mockNostrClient = createMockNostrService();
       mockAuthService = _MockAuthService(currentPubkey);
       mockBlocklist = _MockContentBlocklistRepository();
@@ -136,12 +137,11 @@ void main() {
       when(
         () => mockInviteActionsCubit.ignoreInvite(any()),
       ).thenAnswer((_) async {});
-      when(() => mockVideoEventService.getVideoById(any())).thenReturn(null);
       when(
-        () => mockVideoEventService.getVideoEventByVineId(any()),
-      ).thenReturn(null);
-      when(
-        () => mockNostrClient.fetchEventById(any()),
+        () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+          any(),
+          fallbackRouteIds: any(named: 'fallbackRouteIds'),
+        ),
       ).thenAnswer((_) async => null);
     });
 
@@ -161,7 +161,7 @@ void main() {
         mockAuthService: mockAuthService,
         mockNostrService: mockNostrClient,
         additionalOverrides: [
-          videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+          videosRepositoryProvider.overrideWithValue(mockVideosRepository),
           fetchUserProfileProvider(
             otherPubkey,
           ).overrideWith((ref) async => otherProfile),
@@ -644,9 +644,12 @@ void main() {
           final mockGoRouter = MockGoRouter();
           when(() => mockGoRouter.push(any())).thenAnswer((_) async => null);
           when(
-            () => mockVideoEventService.getVideoEventByVineId('skate-loop'),
-          ).thenReturn(
-            VideoEventBuilder(
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+              'skate-loop',
+              fallbackRouteIds: any(named: 'fallbackRouteIds'),
+            ),
+          ).thenAnswer(
+            (_) async => VideoEventBuilder(
               id: '7777777777777777777777777777777777777777777777777777777777777777',
               pubkey: otherPubkey,
               title: 'Skate loop',

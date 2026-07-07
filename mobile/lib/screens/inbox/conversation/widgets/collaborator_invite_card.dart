@@ -144,6 +144,10 @@ class _CardChrome extends ConsumerWidget {
       maxVisibleVideoWidth,
     );
 
+    // Re-key the cubit on the repository identity: videosRepositoryProvider
+    // yields a fresh instance when filter/aspect/host preferences change.
+    final videosRepository = ref.watch(videosRepositoryProvider);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Align(
@@ -164,11 +168,12 @@ class _CardChrome extends ConsumerWidget {
           ),
           clipBehavior: Clip.antiAlias,
           child: BlocProvider(
+            key: ValueKey(videosRepository),
             create: (_) => VideoLinkPreviewCubit(
               videoStableId: invite.videoDTag,
               authorPubkey: invite.creatorPubkey,
               videoKind: invite.videoKind,
-              videosRepository: ref.read(videosRepositoryProvider),
+              videosRepository: videosRepository,
             ),
             child: _InviteVideoContent(
               inviteThumbnailUrl: _inviteThumbnailUrl,

@@ -21,7 +21,6 @@ lib/screens/geo_blocked_screen.dart
 lib/screens/hashtag_feed_screen.dart
 lib/screens/inbox/conversation/conversation_view.dart
 lib/screens/inbox/conversation/widgets/collaborator_invite_card.dart
-lib/screens/inbox/conversation/widgets/video_link_preview_cubit.dart
 lib/screens/inbox/message_requests/request_preview_view.dart
 lib/screens/inbox/widgets/conversation_tile.dart
 lib/screens/key_import_screen.dart

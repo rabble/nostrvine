@@ -19,8 +19,8 @@ import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/message_requests/request_preview_view.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
-import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/user_avatar.dart';
+import 'package:videos_repository/videos_repository.dart';
 
 import '../../../helpers/go_router.dart';
 import '../../../helpers/test_provider_overrides.dart';
@@ -36,7 +36,7 @@ class _MockCollaboratorInviteActionsCubit
     extends MockCubit<CollaboratorInviteActionsState>
     implements CollaboratorInviteActionsCubit {}
 
-class _MockVideoEventService extends Mock implements VideoEventService {}
+class _MockVideosRepository extends Mock implements VideosRepository {}
 
 class _MockAuthService extends MockAuthService {
   _MockAuthService(this._pubkey) {
@@ -74,7 +74,7 @@ void main() {
     late _MockMessageRequestActionsCubit mockActionsCubit;
     late _MockRequestPreviewCubit mockPreviewCubit;
     late _MockCollaboratorInviteActionsCubit mockInviteActionsCubit;
-    late _MockVideoEventService mockVideoEventService;
+    late _MockVideosRepository mockVideosRepository;
     late MockNostrClient mockNostrClient;
     late _MockAuthService mockAuthService;
     late MockGoRouter mockGoRouter;
@@ -82,13 +82,14 @@ void main() {
 
     setUpAll(() {
       registerFallbackValue(fallbackInvite);
+      registerFallbackValue(<String>[]);
     });
 
     setUp(() {
       mockActionsCubit = _MockMessageRequestActionsCubit();
       mockPreviewCubit = _MockRequestPreviewCubit();
       mockInviteActionsCubit = _MockCollaboratorInviteActionsCubit();
-      mockVideoEventService = _MockVideoEventService();
+      mockVideosRepository = _MockVideosRepository();
       mockNostrClient = createMockNostrService();
       mockAuthService = _MockAuthService(currentPubkey);
       mockGoRouter = MockGoRouter();
@@ -115,12 +116,11 @@ void main() {
       when(
         () => mockInviteActionsCubit.ignoreInvite(any()),
       ).thenAnswer((_) async {});
-      when(() => mockVideoEventService.getVideoById(any())).thenReturn(null);
       when(
-        () => mockVideoEventService.getVideoEventByVineId(any()),
-      ).thenReturn(null);
-      when(
-        () => mockNostrClient.fetchEventById(any()),
+        () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+          any(),
+          fallbackRouteIds: any(named: 'fallbackRouteIds'),
+        ),
       ).thenAnswer((_) async => null);
 
       testProfile = UserProfile(
@@ -143,7 +143,7 @@ void main() {
         mockNostrService: mockNostrClient,
         additionalOverrides: [
           goRouterProvider.overrideWithValue(mockGoRouter),
-          videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+          videosRepositoryProvider.overrideWithValue(mockVideosRepository),
           userProfileReactiveProvider(
             otherPubkey,
           ).overrideWith((ref) => Stream.value(testProfile)),
