@@ -12,6 +12,8 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_overlay_strip.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_overlay_strips.dart';
+import 'package:pro_image_editor/pro_image_editor.dart'
+    show PaintLayer, PaintMode, PaintedModel;
 
 class _MockTimelineOverlayBloc
     extends MockBloc<TimelineOverlayEvent, TimelineOverlayState>
@@ -98,5 +100,62 @@ void main() {
 
       expect(find.byType(TimelineOverlayStrip), findsNWidgets(3));
     });
+
+    testWidgets(
+      'dims non-mergeable items on every strip during draw multi-select',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+        when(() => overlayBloc.state).thenReturn(
+          TimelineOverlayState(
+            isLayerMultiSelectMode: true,
+            multiSelectedLayerIds: const {'draw-1'},
+            items: [
+              const TimelineOverlayItem(
+                id: 'sound',
+                type: TimelineOverlayType.sound,
+                startTime: Duration.zero,
+                endTime: Duration(seconds: 1),
+                label: 'My Sound',
+              ),
+              TimelineOverlayItem(
+                id: 'draw-1',
+                type: TimelineOverlayType.layer,
+                startTime: const Duration(seconds: 2),
+                endTime: const Duration(seconds: 3),
+                label: 'My Drawing',
+                layer: PaintLayer(
+                  id: 'draw-1',
+                  rawSize: const Size(10, 10),
+                  opacity: 1,
+                  item: PaintedModel(
+                    mode: PaintMode.freeStyle,
+                    offsets: const [Offset.zero, Offset(10, 10)],
+                    erasedOffsets: const [],
+                    color: const Color(0xFFFF0000),
+                    strokeWidth: 6,
+                    opacity: 1,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+
+        await tester.pumpWidget(build());
+
+        // The audio tile can't be combined: announced disabled, tap inert.
+        // RegExp: the tile merges its title text into the label ("My Sound\n…").
+        expect(
+          tester.getSemantics(find.bySemanticsLabel(RegExp('^My Sound'))),
+          isSemantics(isButton: true, hasEnabledState: true, isEnabled: false),
+        );
+        // The selected draw tile is announced as selected.
+        expect(
+          tester.getSemantics(find.bySemanticsLabel('My Drawing')),
+          isSemantics(isButton: true, isSelected: true),
+        );
+        handle.dispose();
+      },
+    );
   });
 }

@@ -237,10 +237,10 @@ class _TimelineOverlayStripsState extends State<TimelineOverlayStrips> {
                 rowHeight: config.rowHeight,
                 isCollapsed: config.isCollapsed,
                 selectedItemId: selectedItemId,
-                // Multi-select applies only to the draw-layer strip.
-                isLayerMultiSelectMode:
-                    isLayerMultiSelectMode &&
-                    config.type == TimelineOverlayType.layer,
+                // Every strip enters selection mode so non-mergeable items
+                // (audio, filters, text, stickers) dim and can't drag; only
+                // mergeable draw layers stay selectable.
+                isLayerMultiSelectMode: isLayerMultiSelectMode,
                 multiSelectedLayerIds: multiSelectedLayerIds,
                 snapPointsMs: _snapPointsMs,
                 onItemTapped: widget.onItemTapped,

@@ -92,6 +92,9 @@ class TimelineOverlayPositionedItem extends StatelessWidget {
         width: itemWidth + trimExpansion * 2,
         child: _OverlayItemGestureWrapper(
           semanticLabel: item.label,
+          // Unreachable while multi-selecting: entering the mode clears the
+          // single selection, so the trim-handle variant never coexists with a
+          // multi-select overlay.
           multiSelectState: OverlayMultiSelectState.none,
           onTap: onTap,
           onLongPressStart: onLongPressStart,
@@ -166,9 +169,18 @@ class _OverlayItemGestureWrapper extends StatelessWidget {
           ? null
           : context.l10n.videoEditorTimelineLongPressToDragHint,
       button: true,
-      selected: isMultiSelecting
-          ? multiSelectState == OverlayMultiSelectState.selected
+      // Announce non-mergeable tiles as disabled — their tap is a no-op while
+      // multi-selecting — and only report a selected state on tiles that can
+      // actually be toggled.
+      enabled: multiSelectState == OverlayMultiSelectState.disabled
+          ? false
           : null,
+      selected: switch (multiSelectState) {
+        OverlayMultiSelectState.none ||
+        OverlayMultiSelectState.disabled => null,
+        OverlayMultiSelectState.selected => true,
+        OverlayMultiSelectState.unselected => false,
+      },
       child: GestureDetector(
         onTap: onTap,
         onLongPressStart: (_) => onLongPressStart(),

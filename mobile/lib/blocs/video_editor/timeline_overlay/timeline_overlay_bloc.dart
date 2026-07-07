@@ -197,11 +197,17 @@ class TimelineOverlayBloc
           currentVolumes.containsKey(t.id) && currentVolumes[t.id] != t.volume,
     );
 
-    // Drop multi-selected layer ids that no longer exist (e.g. after a merge
-    // or undo) and exit multi-select mode once nothing valid remains selected.
+    // Drop multi-selected layer ids that no longer exist or are no longer
+    // mergeable (e.g. after a merge, or an undo that restored an animation or
+    // timeline window) and exit multi-select mode once nothing valid remains
+    // selected.
     final prunedMultiSelect = state.isLayerMultiSelectMode
         ? state.multiSelectedLayerIds
-              .where((id) => newItems.any((i) => i.id == id))
+              .where(
+                (id) => newItems.any(
+                  (i) => i.id == id && isMergeableDrawLayer(i.layer),
+                ),
+              )
               .toSet()
         : state.multiSelectedLayerIds;
 

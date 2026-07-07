@@ -1850,6 +1850,37 @@ void main() {
     );
 
     blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+      'items update prunes selected ids that are no longer mergeable',
+      build: TimelineOverlayBloc.new,
+      seed: () => TimelineOverlayState(
+        items: [drawItem('a'), drawItem('b')],
+        isLayerMultiSelectMode: true,
+        multiSelectedLayerIds: const {'a', 'b'},
+      ),
+      act: (bloc) => bloc.add(
+        TimelineOverlayItemsUpdate(
+          layers: [
+            paintLayer('a'),
+            // An undo can restore a timeline window on a still-existing
+            // layer, which makes it non-mergeable again.
+            paintLayer('b').copyWith(
+              startTime: Duration.zero,
+              endTime: const Duration(seconds: 1),
+            ),
+          ],
+          filters: const [],
+          audioTracks: const [],
+          totalVideoDuration: const Duration(seconds: 3),
+        ),
+      ),
+      expect: () => [
+        isA<TimelineOverlayState>()
+            .having((s) => s.isLayerMultiSelectMode, 'mode', isTrue)
+            .having((s) => s.multiSelectedLayerIds, 'selected', {'a'}),
+      ],
+    );
+
+    blocTest<TimelineOverlayBloc, TimelineOverlayState>(
       'items update exits mode once no selected id survives',
       build: TimelineOverlayBloc.new,
       seed: () => TimelineOverlayState(
