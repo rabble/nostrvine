@@ -49,6 +49,8 @@ import 'package:videos_repository/videos_repository.dart';
 
 part 'video_providers.g.dart';
 
+const _maxEventRouterQueueDepth = 2000;
+
 /// Video filter builder for constructing relay-aware filters with server-side sorting
 @riverpod
 VideoFilterBuilder videoFilterBuilder(Ref ref) {
@@ -133,7 +135,7 @@ VideoEventService videoEventService(Ref ref) {
   // steady-state depth; tune from the Phase-1 `ingest_queue_depth` telemetry.
   final eventRouter = EventRouter(
     db,
-    config: const EventRouterConfig(maxQueueDepth: 2000),
+    config: const EventRouterConfig(maxQueueDepth: _maxEventRouterQueueDepth),
   );
   ref.onDispose(eventRouter.dispose);
 

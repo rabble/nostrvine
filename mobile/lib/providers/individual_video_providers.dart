@@ -320,11 +320,13 @@ class _FvpEntry {
   bool hasListener;
 }
 
-/// Insertion-ordered registry of live controllers keyed by `videoId`.
+/// Insertion-ordered registry of live controllers keyed by provider params.
 ///
-/// A plain `Map` literal is a `LinkedHashMap`, so iteration order is insertion
-/// order — the first idle entry encountered is the least-recently-used one.
-final _fvpControllerRegistry = <String, _FvpEntry>{};
+/// [VideoControllerParams] is the Riverpod family key; using the same key keeps
+/// alternate playback URLs for a video visible to the cap. A plain `Map` literal
+/// is a `LinkedHashMap`, so iteration order is insertion order — the first idle
+/// entry encountered is the least-recently-used one.
+final _fvpControllerRegistry = <VideoControllerParams, _FvpEntry>{};
 
 /// Number of `video_player`/FVP controllers currently held live by
 /// [individualVideoControllerProvider].
@@ -343,18 +345,18 @@ int get fvpLiveControllerCount => _fvpControllerRegistry.length;
 /// tears the controller down on a microtask via the provider's `onDispose`.
 void _evictIdleFvpControllersIfNeeded() {
   while (_fvpControllerRegistry.length >= kMaxFvpControllers) {
-    String? oldestIdleId;
+    VideoControllerParams? oldestIdleParams;
     for (final entry in _fvpControllerRegistry.entries) {
       if (!entry.value.hasListener) {
-        oldestIdleId = entry.key;
+        oldestIdleParams = entry.key;
         break;
       }
     }
-    if (oldestIdleId == null) {
+    if (oldestIdleParams == null) {
       // All live controllers are on-screen; allow the transient overage.
       break;
     }
-    _fvpControllerRegistry.remove(oldestIdleId)?.close();
+    _fvpControllerRegistry.remove(oldestIdleParams)?.close();
   }
 }
 
@@ -395,15 +397,15 @@ VideoPlayerController individualVideoController(
     cacheTimer?.cancel();
     entry.hasListener = true;
     // Move to newest so LRU ordering reflects recency.
-    if (identical(_fvpControllerRegistry[params.videoId], entry)) {
-      _fvpControllerRegistry.remove(params.videoId);
-      _fvpControllerRegistry[params.videoId] = entry;
+    if (identical(_fvpControllerRegistry[params], entry)) {
+      _fvpControllerRegistry.remove(params);
+      _fvpControllerRegistry[params] = entry;
     }
   });
 
   // Make room within the cap before registering this controller, then register.
   _evictIdleFvpControllersIfNeeded();
-  _fvpControllerRegistry[params.videoId] = entry;
+  _fvpControllerRegistry[params] = entry;
 
   // Clear the disposed flag for this video since we are creating a fresh
   // controller (handles retries and scroll-back scenarios).
@@ -1057,9 +1059,9 @@ VideoPlayerController individualVideoController(
     cacheTimer?.cancel();
     // Drop this controller from the registry so the gauge and the cap reflect
     // the live population. Identity-guarded so a deferred eviction of a stale
-    // entry can't remove a freshly-rebuilt controller for the same videoId.
-    if (identical(_fvpControllerRegistry[params.videoId], entry)) {
-      _fvpControllerRegistry.remove(params.videoId);
+    // entry can't remove a freshly-rebuilt controller for the same params.
+    if (identical(_fvpControllerRegistry[params], entry)) {
+      _fvpControllerRegistry.remove(params);
     }
     Log.info(
       '🧹 Disposing VideoPlayerController for video ${params.videoId.length > 8 ? params.videoId : params.videoId}...',
@@ -1086,6 +1088,14 @@ VideoPlayerController individualVideoController(
     Future.microtask(() async {
       try {
         await controller.pause();
+      } catch (e) {
+        Log.warning(
+          'Failed to pause controller before dispose: $e',
+          name: 'IndividualVideoController',
+          category: LogCategory.system,
+        );
+      }
+      try {
         await controller.dispose();
       } catch (e) {
         Log.warning(

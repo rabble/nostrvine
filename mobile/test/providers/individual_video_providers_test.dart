@@ -140,11 +140,32 @@ void main() {
       // v0 was never torn down and still reads normally.
       expect(disposedControllersTracker.contains('v0'), isFalse);
       expect(
-        () => container.read(
-          individualVideoControllerProvider(listenedParams),
-        ),
+        () => container.read(individualVideoControllerProvider(listenedParams)),
         returnsNormally,
       );
+    });
+
+    test('tracks alternate params for the same video independently', () {
+      final baseline = fvpLiveControllerCount;
+      final container = buildContainer();
+
+      const mediumParams = VideoControllerParams(
+        videoId: 'same-video',
+        videoUrl: 'https://example.com/same-video-720p.mp4',
+      );
+      const fallbackParams = VideoControllerParams(
+        videoId: 'same-video',
+        videoUrl: 'https://example.com/same-video-fallback.mp4',
+      );
+
+      container
+        ..read(individualVideoControllerProvider(mediumParams))
+        ..read(individualVideoControllerProvider(fallbackParams));
+
+      expect(fvpLiveControllerCount, equals(baseline + 2));
+
+      container.dispose();
+      expect(fvpLiveControllerCount, equals(baseline));
     });
   });
 
@@ -154,9 +175,9 @@ void main() {
       final previousPlatform = video_platform.VideoPlayerPlatform.instance;
       video_platform.VideoPlayerPlatform.instance =
           _RecordingVideoPlayerPlatform(calls);
-      addTearDown(
-        () => video_platform.VideoPlayerPlatform.instance = previousPlatform,
-      );
+      addTearDown(() {
+        video_platform.VideoPlayerPlatform.instance = previousPlatform;
+      });
 
       final authService = MockMediaViewerAuthService();
       when(() => authService.canCreateHeaders).thenReturn(false);

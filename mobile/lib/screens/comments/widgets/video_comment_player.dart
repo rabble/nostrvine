@@ -60,8 +60,12 @@ class _VideoCommentPlayerState extends State<VideoCommentPlayer>
     _controller = null;
     controller?.removeListener(_syncPlaybackState);
     unawaited(() async {
-      await controller?.pause();
-      await controller?.dispose();
+      try {
+        await controller?.pause();
+      } catch (_) {}
+      try {
+        await controller?.dispose();
+      } catch (_) {}
     }());
     super.dispose();
   }
@@ -177,10 +181,7 @@ class _VideoCommentPlayerState extends State<VideoCommentPlayer>
                   Positioned(
                     right: 8,
                     bottom: 8,
-                    child: _MuteButton(
-                      isMuted: _isMuted,
-                      onTap: _toggleMute,
-                    ),
+                    child: _MuteButton(isMuted: _isMuted, onTap: _toggleMute),
                   ),
                 if (widget.onOpenVideo != null)
                   Positioned(
@@ -200,10 +201,7 @@ class _VideoCommentPlayerState extends State<VideoCommentPlayer>
       return player;
     }
 
-    return ClipRRect(
-      borderRadius: borderRadius,
-      child: player,
-    );
+    return ClipRRect(borderRadius: borderRadius, child: player);
   }
 }
 
