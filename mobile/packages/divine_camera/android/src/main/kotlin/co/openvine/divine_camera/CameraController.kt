@@ -835,6 +835,26 @@ class CameraController(
     /**
      * Starts the camera with preview and video capture use cases.
      */
+    /**
+     * Builds the video [Recorder] for the current [videoQuality].
+     *
+     * Sets an explicit target encoding bitrate — without it CameraX uses the
+     * device encoder's default, which for FHD typically lands at 15–25 Mbit/s
+     * instead of the intended 8 Mbit/s. Callers that lower [videoQuality]
+     * (encoder-failure retry) pick up the matching lower bitrate on rebuild.
+     */
+    private fun buildRecorder(aspectRatio: Int): Recorder = Recorder.Builder()
+        .setQualitySelector(
+            QualitySelector.from(
+                videoQuality,
+                FallbackStrategy.lowerQualityOrHigherThan(Quality.SD)
+            )
+        )
+        .setAspectRatio(aspectRatio)
+        .setExecutor(cameraExecutor)
+        .setTargetVideoEncodingBitRate(videoEncodingBitRate(videoQuality))
+        .build()
+
     private fun startCamera(callback: (Map<String, Any?>?, String?) -> Unit) {
         val provider = cameraProvider ?: run {
             DivineCameraLog.e(TAG, "Camera provider not available")
@@ -939,16 +959,7 @@ class CameraController(
 
             // Build video capture with same aspect ratio as preview
             // Mirror front camera video to match preview
-            val recorder = Recorder.Builder()
-                .setQualitySelector(
-                    QualitySelector.from(
-                        videoQuality,
-                        FallbackStrategy.lowerQualityOrHigherThan(Quality.SD)
-                    )
-                )
-                .setAspectRatio(targetAspectRatio)
-                .setExecutor(cameraExecutor)
-                .build()
+            val recorder = buildRecorder(targetAspectRatio)
 
             // Mirror front camera video output based on mirrorFrontCameraOutput setting
             videoCapture = VideoCapture.Builder(recorder)
@@ -1086,16 +1097,7 @@ class CameraController(
             }
 
             // Create recorder with same quality and aspect ratio
-            val recorder = Recorder.Builder()
-                .setQualitySelector(
-                    QualitySelector.from(
-                        videoQuality,
-                        FallbackStrategy.lowerQualityOrHigherThan(Quality.SD)
-                    )
-                )
-                .setAspectRatio(targetAspectRatio)
-                .setExecutor(cameraExecutor)
-                .build()
+            val recorder = buildRecorder(targetAspectRatio)
 
             // Mirror front camera video output based on mirrorFrontCameraOutput setting
             videoCapture = VideoCapture.Builder(recorder)
@@ -1675,18 +1677,7 @@ class CameraController(
                 }, 100)
             }
 
-            val recorder = Recorder.Builder()
-                .setQualitySelector(
-                    QualitySelector.from(
-                        videoQuality,
-                        FallbackStrategy.lowerQualityOrHigherThan(
-                            Quality.SD
-                        )
-                    )
-                )
-                .setAspectRatio(targetAspectRatio)
-                .setExecutor(cameraExecutor)
-                .build()
+            val recorder = buildRecorder(targetAspectRatio)
 
             videoCapture = VideoCapture.Builder(recorder)
                 .setMirrorMode(
