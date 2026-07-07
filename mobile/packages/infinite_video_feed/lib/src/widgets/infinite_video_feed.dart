@@ -813,14 +813,22 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     DivineVideoPlayerController controller,
     int index,
   ) async {
-    if (!_isActive || index != _currentIndex || !controller.isInitialized) {
-      return;
-    }
+    // The captured [controller] can be disposed mid-await by a window update,
+    // failover, or re-init — each removes it from [_controllers] before
+    // disposing. Re-checking identity (not just _isActive/_currentIndex, which
+    // miss a same-index controller swap) avoids calling setVolume()/play() on a
+    // disposed controller, which throws StateError from _ensureInitialized().
+    bool stillOwnsController() =>
+        _isActive &&
+        index == _currentIndex &&
+        identical(_controllers[index], controller);
+
+    if (!stillOwnsController() || !controller.isInitialized) return;
     if (!_canAutoPlayAt(index)) return;
     await controller.setVolume(_volume);
-    if (!_isActive || index != _currentIndex) return;
+    if (!stillOwnsController()) return;
     await controller.play();
-    if (!_isActive || index != _currentIndex) return;
+    if (!stillOwnsController()) return;
     // Playback resumed cleanly — clear any auto-retry budget spent on this
     // slot so a later, unrelated stall starts from a fresh backoff.
     _autoRetryAttempts.remove(index);
