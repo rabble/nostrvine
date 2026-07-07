@@ -47,11 +47,6 @@ Future<void> tapTile(WidgetTester tester, String title) async {
 }
 
 void main() {
-  // Make a tap that misses its target a hard failure locally, so the
-  // clipped-tile geometry flake (which passed on macOS and failed on Linux CI)
-  // cannot slip through a local run again.
-  WidgetController.hitTestWarningShouldBeFatal = true;
-
   testWidgets(
     'DeveloperOptionsScreen constrains menu content width on wide screens',
     (
@@ -68,6 +63,22 @@ void main() {
   );
 
   group('protected-minor simulation (#5721)', () {
+    late bool previousHitTestWarningShouldBeFatal;
+
+    setUp(() {
+      previousHitTestWarningShouldBeFatal =
+          WidgetController.hitTestWarningShouldBeFatal;
+      // Make a tap that misses its target a hard failure for these tests, so
+      // the clipped-tile geometry flake (which passed on macOS and failed on
+      // Linux CI) cannot slip through a local run again.
+      WidgetController.hitTestWarningShouldBeFatal = true;
+    });
+
+    tearDown(() {
+      WidgetController.hitTestWarningShouldBeFatal =
+          previousHitTestWarningShouldBeFatal;
+    });
+
     testWidgets('simulate protected minor sets the override to true', (
       tester,
     ) async {
