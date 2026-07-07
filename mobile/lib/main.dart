@@ -2384,6 +2384,10 @@ class _DivineAppState extends ConsumerState<DivineApp>
     // run for the durable pending_view_events queue without a UI consumer.
     ref.watch(viewEventRetryServiceProvider);
 
+    // Eagerly create the product-event queue so foreground sweeps run for the
+    // durable pending_product_events queue without a UI consumer.
+    ref.watch(productEventQueueProvider);
+
     // Wrap with geo-blocking check first, then lifecycle handler
     Widget wrapped = MultiRepositoryProvider(
       providers: [

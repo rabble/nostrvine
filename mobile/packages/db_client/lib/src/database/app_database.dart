@@ -35,6 +35,7 @@ const _notificationRetentionDays = 7;
     Conversations,
     OutgoingDms,
     PendingViewEvents,
+    PendingProductEvents,
     PendingGiftWraps,
     ProcessedGiftWraps,
   ],
@@ -57,6 +58,7 @@ const _notificationRetentionDays = 7;
     ConversationsDao,
     OutgoingDmsDao,
     PendingViewEventsDao,
+    PendingProductEventsDao,
     PendingGiftWrapsDao,
     ProcessedGiftWrapsDao,
   ],
@@ -626,6 +628,34 @@ class AppDatabase extends _$AppDatabase {
     await customStatement('''
       CREATE INDEX IF NOT EXISTS idx_pending_view_events_created_at
       ON pending_view_events (created_at)
+    ''');
+
+    final pendingProductEventsResult = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type='table' "
+      "AND name='pending_product_events'",
+    ).get();
+
+    if (pendingProductEventsResult.isEmpty) {
+      await customStatement('''
+        CREATE TABLE pending_product_events (
+          id TEXT NOT NULL PRIMARY KEY,
+          event_name TEXT NOT NULL,
+          payload_json TEXT NOT NULL,
+          status TEXT NOT NULL,
+          attempt_count INTEGER NOT NULL DEFAULT 0,
+          next_attempt_at INTEGER,
+          last_error TEXT,
+          created_at INTEGER NOT NULL
+        )
+      ''');
+    }
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_pending_product_events_status_next_attempt
+      ON pending_product_events (status, next_attempt_at)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_pending_product_events_created_at
+      ON pending_product_events (created_at)
     ''');
 
     // Check if pending_gift_wraps table exists, create if missing.

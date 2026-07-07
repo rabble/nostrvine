@@ -212,6 +212,58 @@ final class ViewEventRetryServiceProvider
 String _$viewEventRetryServiceHash() =>
     r'3d2bf5f8def6302b9cb64d60bc35e8a792dcc15f';
 
+/// Durable queue for first-party product analytics events.
+
+@ProviderFor(productEventQueue)
+final productEventQueueProvider = ProductEventQueueProvider._();
+
+/// Durable queue for first-party product analytics events.
+
+final class ProductEventQueueProvider
+    extends
+        $FunctionalProvider<
+          ProductEventQueue,
+          ProductEventQueue,
+          ProductEventQueue
+        >
+    with $Provider<ProductEventQueue> {
+  /// Durable queue for first-party product analytics events.
+  ProductEventQueueProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'productEventQueueProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$productEventQueueHash();
+
+  @$internal
+  @override
+  $ProviderElement<ProductEventQueue> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ProductEventQueue create(Ref ref) {
+    return productEventQueue(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ProductEventQueue value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ProductEventQueue>(value),
+    );
+  }
+}
+
+String _$productEventQueueHash() => r'5af5836ef23cef5c459a40814e8cbe0d46d8714e';
+
 /// Analytics service with opt-out support.
 ///
 /// Publishes Kind 22236 ephemeral Nostr view events via [ViewEventPublisher].
@@ -267,7 +319,7 @@ final class AnalyticsServiceProvider
   }
 }
 
-String _$analyticsServiceHash() => r'afdabdf0b1d7c769d7b1219062de928f17d34633';
+String _$analyticsServiceHash() => r'd86ad0633e379e991437845121e14ac3820c96ce';
 
 /// Hashtag cache service for persistent hashtag storage
 

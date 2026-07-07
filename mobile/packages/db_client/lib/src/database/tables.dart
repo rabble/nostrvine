@@ -1251,6 +1251,48 @@ class PendingViewEvents extends Table {
   ];
 }
 
+/// Durable queue of product analytics events awaiting ingest publish.
+@DataClassName('PendingProductEventRow')
+class PendingProductEvents extends Table {
+  @override
+  String get tableName => 'pending_product_events';
+
+  TextColumn get id => text()();
+
+  TextColumn get eventName => text().named('event_name')();
+
+  TextColumn get payloadJson => text().named('payload_json')();
+
+  TextColumn get status => text()();
+
+  IntColumn get attemptCount =>
+      integer().withDefault(const Constant(0)).named('attempt_count')();
+
+  DateTimeColumn get nextAttemptAt =>
+      dateTime().nullable().named('next_attempt_at')();
+
+  TextColumn get lastError => text().nullable().named('last_error')();
+
+  DateTimeColumn get createdAt => dateTime().named('created_at')();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  List<Index> get indexes => [
+    Index(
+      'idx_pending_product_events_status_next_attempt',
+      'CREATE INDEX IF NOT EXISTS '
+          'idx_pending_product_events_status_next_attempt '
+          'ON pending_product_events (status, next_attempt_at)',
+    ),
+    Index(
+      'idx_pending_product_events_created_at',
+      'CREATE INDEX IF NOT EXISTS idx_pending_product_events_created_at '
+          'ON pending_product_events (created_at)',
+    ),
+  ];
+}
+
 /// Durable queue of gift-wrap (kind 1059) events that failed NIP-44
 /// decryption — e.g. a transient Keycast RPC failure while the one-time
 /// history drain processes a burst of gift wraps for a remote-signer

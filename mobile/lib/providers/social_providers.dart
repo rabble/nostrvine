@@ -7,6 +7,8 @@ import 'dart:async';
 import 'package:collaborator_repository/collaborator_repository.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
+import 'package:openvine/config/app_config.dart';
 import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/auth_providers.dart';
@@ -18,6 +20,7 @@ import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/upload_media_providers.dart';
 import 'package:openvine/providers/video_providers.dart';
+import 'package:openvine/services/analytics_ingest_client.dart';
 import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/clip_library_service.dart';
@@ -31,6 +34,7 @@ import 'package:openvine/services/hashtag_cache_service.dart';
 import 'package:openvine/services/hashtag_service.dart';
 import 'package:openvine/services/outgoing_dm_retry_service.dart';
 import 'package:openvine/services/pending_action_service.dart';
+import 'package:openvine/services/product_event_queue.dart';
 import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
@@ -261,18 +265,64 @@ ViewEventRetryService? viewEventRetryService(Ref ref) {
   return service;
 }
 
+/// Durable queue for first-party product analytics events.
+@Riverpod(keepAlive: true)
+ProductEventQueue productEventQueue(Ref ref) {
+  final db = ref.watch(databaseProvider);
+  final env = ref.watch(currentEnvironmentProvider);
+  final client = http.Client();
+  ref.onDispose(client.close);
+
+  final ingestClient = AnalyticsIngestClient(
+    httpClient: client,
+    nip98AuthService: ref.watch(nip98AuthServiceProvider),
+    apiBaseUrl: () => env.apiBaseUrl,
+  );
+  final queue = ProductEventQueue(
+    dao: db.pendingProductEventsDao,
+    ingestClient: ingestClient,
+  );
+
+  queue.flush().catchError((Object e) {
+    Log.debug(
+      'Initial ProductEventQueue flush failed: $e',
+      name: 'AppProviders',
+      category: LogCategory.system,
+    );
+  });
+
+  ref.listen<bool>(appForegroundProvider, (_, next) {
+    if (next) {
+      queue.flush().catchError((Object e) {
+        Log.debug(
+          'Foreground ProductEventQueue flush failed: $e',
+          name: 'AppProviders',
+          category: LogCategory.system,
+        );
+      });
+    }
+  }, fireImmediately: true);
+
+  return queue;
+}
+
 /// Analytics service with opt-out support.
 ///
 /// Publishes Kind 22236 ephemeral Nostr view events via [ViewEventPublisher].
 @Riverpod(keepAlive: true) // Keep alive to maintain singleton behavior
 AnalyticsService analyticsService(Ref ref) {
   final db = ref.watch(databaseProvider);
+  final authService = ref.watch(authServiceProvider);
   final viewPublisher = ref.watch(viewEventPublisherProvider);
   final retryService = ref.watch(viewEventRetryServiceProvider);
+  final productQueue = ref.watch(productEventQueueProvider);
   final service = AnalyticsService(
     viewEventPublisher: viewPublisher,
     pendingViewEventsDao: db.pendingViewEventsDao,
     flushPendingViewEvents: retryService?.sweep,
+    productEventQueue: productQueue,
+    currentUserPubkey: () => authService.currentPublicKeyHex,
+    appVersion: () => AppConfig.appVersion,
   );
 
   // Ensure cleanup on disposal

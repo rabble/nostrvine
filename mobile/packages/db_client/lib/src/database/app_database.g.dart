@@ -13221,6 +13221,536 @@ class PendingViewEventsCompanion extends UpdateCompanion<PendingViewEventRow> {
   }
 }
 
+class $PendingProductEventsTable extends PendingProductEvents
+    with TableInfo<$PendingProductEventsTable, PendingProductEventRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PendingProductEventsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _eventNameMeta = const VerificationMeta(
+    'eventName',
+  );
+  @override
+  late final GeneratedColumn<String> eventName = GeneratedColumn<String>(
+    'event_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _payloadJsonMeta = const VerificationMeta(
+    'payloadJson',
+  );
+  @override
+  late final GeneratedColumn<String> payloadJson = GeneratedColumn<String>(
+    'payload_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _attemptCountMeta = const VerificationMeta(
+    'attemptCount',
+  );
+  @override
+  late final GeneratedColumn<int> attemptCount = GeneratedColumn<int>(
+    'attempt_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _nextAttemptAtMeta = const VerificationMeta(
+    'nextAttemptAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> nextAttemptAt =
+      GeneratedColumn<DateTime>(
+        'next_attempt_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _lastErrorMeta = const VerificationMeta(
+    'lastError',
+  );
+  @override
+  late final GeneratedColumn<String> lastError = GeneratedColumn<String>(
+    'last_error',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    eventName,
+    payloadJson,
+    status,
+    attemptCount,
+    nextAttemptAt,
+    lastError,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'pending_product_events';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PendingProductEventRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('event_name')) {
+      context.handle(
+        _eventNameMeta,
+        eventName.isAcceptableOrUnknown(data['event_name']!, _eventNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_eventNameMeta);
+    }
+    if (data.containsKey('payload_json')) {
+      context.handle(
+        _payloadJsonMeta,
+        payloadJson.isAcceptableOrUnknown(
+          data['payload_json']!,
+          _payloadJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_payloadJsonMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('attempt_count')) {
+      context.handle(
+        _attemptCountMeta,
+        attemptCount.isAcceptableOrUnknown(
+          data['attempt_count']!,
+          _attemptCountMeta,
+        ),
+      );
+    }
+    if (data.containsKey('next_attempt_at')) {
+      context.handle(
+        _nextAttemptAtMeta,
+        nextAttemptAt.isAcceptableOrUnknown(
+          data['next_attempt_at']!,
+          _nextAttemptAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_error')) {
+      context.handle(
+        _lastErrorMeta,
+        lastError.isAcceptableOrUnknown(data['last_error']!, _lastErrorMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PendingProductEventRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PendingProductEventRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      eventName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}event_name'],
+      )!,
+      payloadJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payload_json'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      attemptCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}attempt_count'],
+      )!,
+      nextAttemptAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}next_attempt_at'],
+      ),
+      lastError: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_error'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $PendingProductEventsTable createAlias(String alias) {
+    return $PendingProductEventsTable(attachedDatabase, alias);
+  }
+}
+
+class PendingProductEventRow extends DataClass
+    implements Insertable<PendingProductEventRow> {
+  final String id;
+  final String eventName;
+  final String payloadJson;
+  final String status;
+  final int attemptCount;
+  final DateTime? nextAttemptAt;
+  final String? lastError;
+  final DateTime createdAt;
+  const PendingProductEventRow({
+    required this.id,
+    required this.eventName,
+    required this.payloadJson,
+    required this.status,
+    required this.attemptCount,
+    this.nextAttemptAt,
+    this.lastError,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['event_name'] = Variable<String>(eventName);
+    map['payload_json'] = Variable<String>(payloadJson);
+    map['status'] = Variable<String>(status);
+    map['attempt_count'] = Variable<int>(attemptCount);
+    if (!nullToAbsent || nextAttemptAt != null) {
+      map['next_attempt_at'] = Variable<DateTime>(nextAttemptAt);
+    }
+    if (!nullToAbsent || lastError != null) {
+      map['last_error'] = Variable<String>(lastError);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  PendingProductEventsCompanion toCompanion(bool nullToAbsent) {
+    return PendingProductEventsCompanion(
+      id: Value(id),
+      eventName: Value(eventName),
+      payloadJson: Value(payloadJson),
+      status: Value(status),
+      attemptCount: Value(attemptCount),
+      nextAttemptAt: nextAttemptAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nextAttemptAt),
+      lastError: lastError == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastError),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory PendingProductEventRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PendingProductEventRow(
+      id: serializer.fromJson<String>(json['id']),
+      eventName: serializer.fromJson<String>(json['eventName']),
+      payloadJson: serializer.fromJson<String>(json['payloadJson']),
+      status: serializer.fromJson<String>(json['status']),
+      attemptCount: serializer.fromJson<int>(json['attemptCount']),
+      nextAttemptAt: serializer.fromJson<DateTime?>(json['nextAttemptAt']),
+      lastError: serializer.fromJson<String?>(json['lastError']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'eventName': serializer.toJson<String>(eventName),
+      'payloadJson': serializer.toJson<String>(payloadJson),
+      'status': serializer.toJson<String>(status),
+      'attemptCount': serializer.toJson<int>(attemptCount),
+      'nextAttemptAt': serializer.toJson<DateTime?>(nextAttemptAt),
+      'lastError': serializer.toJson<String?>(lastError),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  PendingProductEventRow copyWith({
+    String? id,
+    String? eventName,
+    String? payloadJson,
+    String? status,
+    int? attemptCount,
+    Value<DateTime?> nextAttemptAt = const Value.absent(),
+    Value<String?> lastError = const Value.absent(),
+    DateTime? createdAt,
+  }) => PendingProductEventRow(
+    id: id ?? this.id,
+    eventName: eventName ?? this.eventName,
+    payloadJson: payloadJson ?? this.payloadJson,
+    status: status ?? this.status,
+    attemptCount: attemptCount ?? this.attemptCount,
+    nextAttemptAt: nextAttemptAt.present
+        ? nextAttemptAt.value
+        : this.nextAttemptAt,
+    lastError: lastError.present ? lastError.value : this.lastError,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  PendingProductEventRow copyWithCompanion(PendingProductEventsCompanion data) {
+    return PendingProductEventRow(
+      id: data.id.present ? data.id.value : this.id,
+      eventName: data.eventName.present ? data.eventName.value : this.eventName,
+      payloadJson: data.payloadJson.present
+          ? data.payloadJson.value
+          : this.payloadJson,
+      status: data.status.present ? data.status.value : this.status,
+      attemptCount: data.attemptCount.present
+          ? data.attemptCount.value
+          : this.attemptCount,
+      nextAttemptAt: data.nextAttemptAt.present
+          ? data.nextAttemptAt.value
+          : this.nextAttemptAt,
+      lastError: data.lastError.present ? data.lastError.value : this.lastError,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PendingProductEventRow(')
+          ..write('id: $id, ')
+          ..write('eventName: $eventName, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('status: $status, ')
+          ..write('attemptCount: $attemptCount, ')
+          ..write('nextAttemptAt: $nextAttemptAt, ')
+          ..write('lastError: $lastError, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    eventName,
+    payloadJson,
+    status,
+    attemptCount,
+    nextAttemptAt,
+    lastError,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PendingProductEventRow &&
+          other.id == this.id &&
+          other.eventName == this.eventName &&
+          other.payloadJson == this.payloadJson &&
+          other.status == this.status &&
+          other.attemptCount == this.attemptCount &&
+          other.nextAttemptAt == this.nextAttemptAt &&
+          other.lastError == this.lastError &&
+          other.createdAt == this.createdAt);
+}
+
+class PendingProductEventsCompanion
+    extends UpdateCompanion<PendingProductEventRow> {
+  final Value<String> id;
+  final Value<String> eventName;
+  final Value<String> payloadJson;
+  final Value<String> status;
+  final Value<int> attemptCount;
+  final Value<DateTime?> nextAttemptAt;
+  final Value<String?> lastError;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const PendingProductEventsCompanion({
+    this.id = const Value.absent(),
+    this.eventName = const Value.absent(),
+    this.payloadJson = const Value.absent(),
+    this.status = const Value.absent(),
+    this.attemptCount = const Value.absent(),
+    this.nextAttemptAt = const Value.absent(),
+    this.lastError = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PendingProductEventsCompanion.insert({
+    required String id,
+    required String eventName,
+    required String payloadJson,
+    required String status,
+    this.attemptCount = const Value.absent(),
+    this.nextAttemptAt = const Value.absent(),
+    this.lastError = const Value.absent(),
+    required DateTime createdAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       eventName = Value(eventName),
+       payloadJson = Value(payloadJson),
+       status = Value(status),
+       createdAt = Value(createdAt);
+  static Insertable<PendingProductEventRow> custom({
+    Expression<String>? id,
+    Expression<String>? eventName,
+    Expression<String>? payloadJson,
+    Expression<String>? status,
+    Expression<int>? attemptCount,
+    Expression<DateTime>? nextAttemptAt,
+    Expression<String>? lastError,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (eventName != null) 'event_name': eventName,
+      if (payloadJson != null) 'payload_json': payloadJson,
+      if (status != null) 'status': status,
+      if (attemptCount != null) 'attempt_count': attemptCount,
+      if (nextAttemptAt != null) 'next_attempt_at': nextAttemptAt,
+      if (lastError != null) 'last_error': lastError,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PendingProductEventsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? eventName,
+    Value<String>? payloadJson,
+    Value<String>? status,
+    Value<int>? attemptCount,
+    Value<DateTime?>? nextAttemptAt,
+    Value<String?>? lastError,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return PendingProductEventsCompanion(
+      id: id ?? this.id,
+      eventName: eventName ?? this.eventName,
+      payloadJson: payloadJson ?? this.payloadJson,
+      status: status ?? this.status,
+      attemptCount: attemptCount ?? this.attemptCount,
+      nextAttemptAt: nextAttemptAt ?? this.nextAttemptAt,
+      lastError: lastError ?? this.lastError,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (eventName.present) {
+      map['event_name'] = Variable<String>(eventName.value);
+    }
+    if (payloadJson.present) {
+      map['payload_json'] = Variable<String>(payloadJson.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (attemptCount.present) {
+      map['attempt_count'] = Variable<int>(attemptCount.value);
+    }
+    if (nextAttemptAt.present) {
+      map['next_attempt_at'] = Variable<DateTime>(nextAttemptAt.value);
+    }
+    if (lastError.present) {
+      map['last_error'] = Variable<String>(lastError.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PendingProductEventsCompanion(')
+          ..write('id: $id, ')
+          ..write('eventName: $eventName, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('status: $status, ')
+          ..write('attemptCount: $attemptCount, ')
+          ..write('nextAttemptAt: $nextAttemptAt, ')
+          ..write('lastError: $lastError, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $PendingGiftWrapsTable extends PendingGiftWraps
     with TableInfo<$PendingGiftWrapsTable, PendingGiftWrapRow> {
   @override
@@ -13998,6 +14528,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $OutgoingDmsTable outgoingDms = $OutgoingDmsTable(this);
   late final $PendingViewEventsTable pendingViewEvents =
       $PendingViewEventsTable(this);
+  late final $PendingProductEventsTable pendingProductEvents =
+      $PendingProductEventsTable(this);
   late final $PendingGiftWrapsTable pendingGiftWraps = $PendingGiftWrapsTable(
     this,
   );
@@ -14052,6 +14584,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final PendingViewEventsDao pendingViewEventsDao = PendingViewEventsDao(
     this as AppDatabase,
   );
+  late final PendingProductEventsDao pendingProductEventsDao =
+      PendingProductEventsDao(this as AppDatabase);
   late final PendingGiftWrapsDao pendingGiftWrapsDao = PendingGiftWrapsDao(
     this as AppDatabase,
   );
@@ -14080,6 +14614,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     conversations,
     outgoingDms,
     pendingViewEvents,
+    pendingProductEvents,
     pendingGiftWraps,
     processedGiftWraps,
   ];
@@ -20189,6 +20724,285 @@ typedef $$PendingViewEventsTableProcessedTableManager =
       PendingViewEventRow,
       PrefetchHooks Function()
     >;
+typedef $$PendingProductEventsTableCreateCompanionBuilder =
+    PendingProductEventsCompanion Function({
+      required String id,
+      required String eventName,
+      required String payloadJson,
+      required String status,
+      Value<int> attemptCount,
+      Value<DateTime?> nextAttemptAt,
+      Value<String?> lastError,
+      required DateTime createdAt,
+      Value<int> rowid,
+    });
+typedef $$PendingProductEventsTableUpdateCompanionBuilder =
+    PendingProductEventsCompanion Function({
+      Value<String> id,
+      Value<String> eventName,
+      Value<String> payloadJson,
+      Value<String> status,
+      Value<int> attemptCount,
+      Value<DateTime?> nextAttemptAt,
+      Value<String?> lastError,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+class $$PendingProductEventsTableFilterComposer
+    extends Composer<_$AppDatabase, $PendingProductEventsTable> {
+  $$PendingProductEventsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get eventName => $composableBuilder(
+    column: $table.eventName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get attemptCount => $composableBuilder(
+    column: $table.attemptCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get nextAttemptAt => $composableBuilder(
+    column: $table.nextAttemptAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastError => $composableBuilder(
+    column: $table.lastError,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$PendingProductEventsTableOrderingComposer
+    extends Composer<_$AppDatabase, $PendingProductEventsTable> {
+  $$PendingProductEventsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get eventName => $composableBuilder(
+    column: $table.eventName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get attemptCount => $composableBuilder(
+    column: $table.attemptCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get nextAttemptAt => $composableBuilder(
+    column: $table.nextAttemptAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastError => $composableBuilder(
+    column: $table.lastError,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PendingProductEventsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PendingProductEventsTable> {
+  $$PendingProductEventsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get eventName =>
+      $composableBuilder(column: $table.eventName, builder: (column) => column);
+
+  GeneratedColumn<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<int> get attemptCount => $composableBuilder(
+    column: $table.attemptCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get nextAttemptAt => $composableBuilder(
+    column: $table.nextAttemptAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get lastError =>
+      $composableBuilder(column: $table.lastError, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$PendingProductEventsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PendingProductEventsTable,
+          PendingProductEventRow,
+          $$PendingProductEventsTableFilterComposer,
+          $$PendingProductEventsTableOrderingComposer,
+          $$PendingProductEventsTableAnnotationComposer,
+          $$PendingProductEventsTableCreateCompanionBuilder,
+          $$PendingProductEventsTableUpdateCompanionBuilder,
+          (
+            PendingProductEventRow,
+            BaseReferences<
+              _$AppDatabase,
+              $PendingProductEventsTable,
+              PendingProductEventRow
+            >,
+          ),
+          PendingProductEventRow,
+          PrefetchHooks Function()
+        > {
+  $$PendingProductEventsTableTableManager(
+    _$AppDatabase db,
+    $PendingProductEventsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PendingProductEventsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PendingProductEventsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$PendingProductEventsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> eventName = const Value.absent(),
+                Value<String> payloadJson = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<int> attemptCount = const Value.absent(),
+                Value<DateTime?> nextAttemptAt = const Value.absent(),
+                Value<String?> lastError = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PendingProductEventsCompanion(
+                id: id,
+                eventName: eventName,
+                payloadJson: payloadJson,
+                status: status,
+                attemptCount: attemptCount,
+                nextAttemptAt: nextAttemptAt,
+                lastError: lastError,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String eventName,
+                required String payloadJson,
+                required String status,
+                Value<int> attemptCount = const Value.absent(),
+                Value<DateTime?> nextAttemptAt = const Value.absent(),
+                Value<String?> lastError = const Value.absent(),
+                required DateTime createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => PendingProductEventsCompanion.insert(
+                id: id,
+                eventName: eventName,
+                payloadJson: payloadJson,
+                status: status,
+                attemptCount: attemptCount,
+                nextAttemptAt: nextAttemptAt,
+                lastError: lastError,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PendingProductEventsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PendingProductEventsTable,
+      PendingProductEventRow,
+      $$PendingProductEventsTableFilterComposer,
+      $$PendingProductEventsTableOrderingComposer,
+      $$PendingProductEventsTableAnnotationComposer,
+      $$PendingProductEventsTableCreateCompanionBuilder,
+      $$PendingProductEventsTableUpdateCompanionBuilder,
+      (
+        PendingProductEventRow,
+        BaseReferences<
+          _$AppDatabase,
+          $PendingProductEventsTable,
+          PendingProductEventRow
+        >,
+      ),
+      PendingProductEventRow,
+      PrefetchHooks Function()
+    >;
 typedef $$PendingGiftWrapsTableCreateCompanionBuilder =
     PendingGiftWrapsCompanion Function({
       required String giftWrapId,
@@ -20645,6 +21459,8 @@ class $AppDatabaseManager {
       $$OutgoingDmsTableTableManager(_db, _db.outgoingDms);
   $$PendingViewEventsTableTableManager get pendingViewEvents =>
       $$PendingViewEventsTableTableManager(_db, _db.pendingViewEvents);
+  $$PendingProductEventsTableTableManager get pendingProductEvents =>
+      $$PendingProductEventsTableTableManager(_db, _db.pendingProductEvents);
   $$PendingGiftWrapsTableTableManager get pendingGiftWraps =>
       $$PendingGiftWrapsTableTableManager(_db, _db.pendingGiftWraps);
   $$ProcessedGiftWrapsTableTableManager get processedGiftWraps =>

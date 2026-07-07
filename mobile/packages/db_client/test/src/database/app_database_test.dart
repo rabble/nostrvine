@@ -487,6 +487,117 @@ void main() {
         },
       );
 
+      test(
+        'upgrade path recreates pending_product_events when missing',
+        () async {
+          await database.customStatement('DROP TABLE pending_product_events');
+
+          final droppedCheck = await database
+              .customSelect(
+                "SELECT name FROM sqlite_master WHERE type='table' "
+                "AND name='pending_product_events'",
+              )
+              .get();
+          expect(
+            droppedCheck,
+            isEmpty,
+            reason: 'precondition: pending_product_events must be missing',
+          );
+
+          await database.close();
+          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+
+          final tableCheck = await database
+              .customSelect(
+                "SELECT name FROM sqlite_master WHERE type='table' "
+                "AND name='pending_product_events'",
+              )
+              .get();
+          expect(
+            tableCheck,
+            hasLength(1),
+            reason: 'pending_product_events must be re-created on reopen',
+          );
+
+          final indexNames = await _collectIndexNames(
+            database,
+            'pending_product_events',
+          );
+          expect(
+            indexNames,
+            containsAll(<String>{
+              'idx_pending_product_events_status_next_attempt',
+              'idx_pending_product_events_created_at',
+            }),
+          );
+
+          final dao = database.pendingProductEventsDao;
+          await dao.enqueue(
+            PendingProductEvent(
+              id: 'upgrade-product-event-id',
+              eventName: 'screen_time',
+              payloadJson: '{"event_id":"upgrade-product-event-id"}',
+              status: PendingProductEventStatus.pending,
+              createdAt: DateTime.utc(2026, 7),
+            ),
+          );
+
+          final fetched = await dao.getById('upgrade-product-event-id');
+          expect(fetched, isNotNull);
+          expect(fetched!.status, PendingProductEventStatus.pending);
+          expect(fetched.eventName, 'screen_time');
+        },
+      );
+
+      test(
+        'schema parity — pending_product_events fresh-install matches runtime '
+        'CREATE-IF-NOT-EXISTS path',
+        () async {
+          final freshColumns = await _collectTableInfo(
+            database,
+            'pending_product_events',
+          );
+          final freshIndexes = await _collectIndexNames(
+            database,
+            'pending_product_events',
+          );
+
+          expect(
+            freshColumns,
+            isNotEmpty,
+            reason:
+                'precondition: fresh install should have '
+                'pending_product_events',
+          );
+
+          await database.customStatement('DROP TABLE pending_product_events');
+          for (final indexName in freshIndexes) {
+            await database.customStatement('DROP INDEX IF EXISTS $indexName');
+          }
+          await database.close();
+
+          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+          await database
+              .customSelect(
+                "SELECT name FROM sqlite_master WHERE type='table' "
+                "AND name='pending_product_events'",
+              )
+              .get();
+
+          final recreatedColumns = await _collectTableInfo(
+            database,
+            'pending_product_events',
+          );
+          final recreatedIndexes = await _collectIndexNames(
+            database,
+            'pending_product_events',
+          );
+
+          expect(recreatedColumns, equals(freshColumns));
+          expect(recreatedIndexes, equals(freshIndexes));
+        },
+      );
+
       test('upgrade path recreates pending_gift_wraps when missing', () async {
         await database.customStatement('DROP TABLE pending_gift_wraps');
 

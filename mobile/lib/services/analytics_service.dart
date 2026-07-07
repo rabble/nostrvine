@@ -6,10 +6,13 @@ import 'dart:async';
 import 'package:db_client/db_client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/services/analytics_ingest_client.dart';
 import 'package:openvine/services/background_activity_manager.dart';
+import 'package:openvine/services/product_event_queue.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
+import 'package:uuid/uuid.dart';
 
 /// Service for tracking video analytics with privacy controls.
 ///
@@ -25,17 +28,52 @@ class AnalyticsService implements BackgroundAwareService {
     ViewEventPublisher? viewEventPublisher,
     PendingViewEventsDao? pendingViewEventsDao,
     Future<void> Function()? flushPendingViewEvents,
+    ProductEventQueue? productEventQueue,
+    String? Function()? currentUserPubkey,
+    String Function()? anonymousId,
+    String Function()? sessionId,
+    String Function()? platform,
+    String Function()? appVersion,
+    String Function()? buildNumber,
+    DateTime Function()? now,
+    String Function()? eventIdFactory,
     @visibleForTesting bool? disableNostrPublishing,
   }) : _viewEventPublisher = viewEventPublisher,
        _pendingViewEventsDao = pendingViewEventsDao,
        _flushPendingViewEvents = flushPendingViewEvents,
+       _productEventQueue = productEventQueue,
+       _currentUserPubkey = currentUserPubkey,
+       _anonymousIdOverride = anonymousId,
+       _sessionIdOverride = sessionId,
+       _platform = platform ?? _defaultPlatform,
+       _appVersion = appVersion ?? _emptyString,
+       _buildNumber = buildNumber ?? _emptyString,
+       _now = now ?? DateTime.now,
+       _eventIdFactory = eventIdFactory ?? _uuidV4,
        _disableNostrPublishing = disableNostrPublishing ?? false;
+
+  static const Uuid _uuid = Uuid();
+
+  static String _uuidV4() => _uuid.v4();
+
+  static String _emptyString() => '';
+
+  static String _defaultPlatform() => defaultTargetPlatform.name;
 
   /// The view event publisher for Kind 22236 Nostr events.
   ViewEventPublisher? _viewEventPublisher;
 
   final PendingViewEventsDao? _pendingViewEventsDao;
   final Future<void> Function()? _flushPendingViewEvents;
+  final ProductEventQueue? _productEventQueue;
+  final String? Function()? _currentUserPubkey;
+  final String Function()? _anonymousIdOverride;
+  final String Function()? _sessionIdOverride;
+  final String Function() _platform;
+  final String Function() _appVersion;
+  final String Function() _buildNumber;
+  final DateTime Function() _now;
+  final String Function() _eventIdFactory;
 
   /// Testing flag to disable Nostr publishing in unit tests.
   final bool _disableNostrPublishing;
@@ -44,6 +82,8 @@ class AnalyticsService implements BackgroundAwareService {
 
   bool _analyticsEnabled = true; // Default to enabled
   bool _isInitialized = false;
+  late final String _anonymousId = _uuid.v4();
+  late String _sessionId = _uuid.v4();
 
   // Track recent views to prevent duplicate tracking
   final Set<String> _recentlyTrackedViews = {};
@@ -125,6 +165,46 @@ class AnalyticsService implements BackgroundAwareService {
     } catch (e) {
       Log.error(
         'Failed to save analytics preference: $e',
+        name: 'AnalyticsService',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  /// Track a first-party product analytics event into the durable ingest queue.
+  Future<void> track(
+    String eventName, {
+    required AnalyticsSurface surface,
+    Map<String, String> props = const {},
+    Map<String, double> propsNum = const {},
+    String? targetId,
+  }) async {
+    if (_isDisposed || !_analyticsEnabled) return;
+
+    final queue = _productEventQueue;
+    if (queue == null) return;
+
+    final event = ProductAnalyticsEvent(
+      eventId: _eventIdFactory(),
+      eventName: eventName,
+      occurredAt: _now(),
+      userPubkey: _currentUserPubkey?.call() ?? '',
+      anonymousId: _anonymousIdOverride?.call() ?? _anonymousId,
+      sessionId: _sessionIdOverride?.call() ?? _sessionId,
+      platform: _platform(),
+      appVersion: _appVersion(),
+      buildNumber: _buildNumber(),
+      surface: surface,
+      targetId: targetId,
+      props: props,
+      propsNum: propsNum,
+    );
+
+    try {
+      await queue.enqueue(event);
+    } catch (e) {
+      Log.warning(
+        'Failed to enqueue product analytics event $eventName: $e',
         name: 'AnalyticsService',
         category: LogCategory.system,
       );
@@ -388,6 +468,9 @@ class AnalyticsService implements BackgroundAwareService {
 
   @override
   void onAppResumed() {
+    if (_isInBackground && _sessionIdOverride == null) {
+      _sessionId = _uuid.v4();
+    }
     _isInBackground = false;
   }
 

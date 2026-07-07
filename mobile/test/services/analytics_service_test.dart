@@ -8,7 +8,9 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/services/analytics_ingest_client.dart';
 import 'package:openvine/services/analytics_service.dart';
+import 'package:openvine/services/product_event_queue.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -16,11 +18,17 @@ class _MockViewEventPublisher extends Mock implements ViewEventPublisher {}
 
 class _MockPendingViewEventsDao extends Mock implements PendingViewEventsDao {}
 
+class _MockProductEventQueue extends Mock implements ProductEventQueue {}
+
 class _FakeVideoEvent extends Fake implements VideoEvent {}
+
+class _FakeProductAnalyticsEvent extends Fake
+    implements ProductAnalyticsEvent {}
 
 void main() {
   setUpAll(() {
     registerFallbackValue(_FakeVideoEvent());
+    registerFallbackValue(_FakeProductAnalyticsEvent());
     registerFallbackValue(_pendingViewEventFallback());
     registerFallbackValue(ViewTrafficSource.unknown);
   });
@@ -125,6 +133,56 @@ void main() {
 
       // Should complete without error (dedup is internal)
       expect(true, isTrue);
+    });
+
+    test('track stamps identity and session before enqueueing', () async {
+      final queue = _MockProductEventQueue();
+      when(() => queue.enqueue(any())).thenAnswer((_) async {});
+      analyticsService.dispose();
+      analyticsService = AnalyticsService(
+        productEventQueue: queue,
+        currentUserPubkey: () =>
+            '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+        anonymousId: () => '018ff7d7-2ef5-7000-8000-000000000001',
+        sessionId: () => '018ff7d7-2ef5-7000-8000-000000000002',
+        platform: () => 'ios',
+        appVersion: () => '1.2.3',
+        buildNumber: () => '123',
+        now: () => DateTime.utc(2026, 7, 7, 12),
+        eventIdFactory: () => '018ff7d7-2ef5-7000-8000-000000000003',
+      );
+      await analyticsService.initialize();
+
+      await analyticsService.track(
+        'screen_time',
+        surface: AnalyticsSurface.feed,
+        props: const {'screen_name': 'feed'},
+        propsNum: const {'duration_ms': 1250.0},
+        targetId:
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      );
+
+      final captured =
+          verify(
+                () => queue.enqueue(captureAny()),
+              ).captured.single
+              as ProductAnalyticsEvent;
+      expect(captured.eventId, '018ff7d7-2ef5-7000-8000-000000000003');
+      expect(captured.eventName, 'screen_time');
+      expect(captured.occurredAt, DateTime.utc(2026, 7, 7, 12));
+      expect(
+        captured.userPubkey,
+        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+      );
+      expect(captured.anonymousId, '018ff7d7-2ef5-7000-8000-000000000001');
+      expect(captured.sessionId, '018ff7d7-2ef5-7000-8000-000000000002');
+      expect(captured.platform, 'ios');
+      expect(captured.appVersion, '1.2.3');
+      expect(captured.buildNumber, '123');
+      expect(captured.surface, AnalyticsSurface.feed);
+      expect(captured.targetId, contains('aaaaaaaa'));
+      expect(captured.props, containsPair('screen_name', 'feed'));
+      expect(captured.propsNum, containsPair('duration_ms', 1250.0));
     });
 
     test('enqueues eligible view_end before triggering a retry flush', () async {
