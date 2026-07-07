@@ -209,6 +209,11 @@ class CameraController: NSObject {
 
     var videoQualityPreset: AVCaptureSession.Preset = .high
 
+    /// Target H.264 bitrate in bits per second for the recording
+    /// AVAssetWriter. Mirrors `DivineVideoQuality.bitrate` in
+    /// `lib/src/models/video_quality.dart`.
+    var videoEncodingBitRate = 8_000_000
+
     /// Initializes the camera with the specified lens and video quality.
     func initialize(
         lens: String,
@@ -227,22 +232,29 @@ class CameraController: NSObject {
             }
         }
 
-        // Map video quality string to AVCaptureSession.Preset
+        // Map video quality string to AVCaptureSession.Preset and target bitrate
         switch videoQuality {
         case "sd":
             videoQualityPreset = .medium
+            videoEncodingBitRate = 2_000_000
         case "hd":
             videoQualityPreset = .hd1280x720
+            videoEncodingBitRate = 4_000_000
         case "fhd":
             videoQualityPreset = .hd1920x1080
+            videoEncodingBitRate = 8_000_000
         case "uhd":
             videoQualityPreset = .hd4K3840x2160
+            videoEncodingBitRate = 20_000_000
         case "highest":
             videoQualityPreset = .high
+            videoEncodingBitRate = 20_000_000
         case "lowest":
             videoQualityPreset = .low
+            videoEncodingBitRate = 2_000_000
         default:
             videoQualityPreset = .hd1920x1080
+            videoEncodingBitRate = 8_000_000
         }
 
         sessionQueue.async { [weak self] in

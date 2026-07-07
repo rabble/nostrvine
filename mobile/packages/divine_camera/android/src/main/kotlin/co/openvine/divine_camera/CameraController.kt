@@ -839,6 +839,11 @@ class CameraController(
      * device encoder's default, which for FHD typically lands at 15–25 Mbit/s
      * instead of the intended 8 Mbit/s. Callers that lower [videoQuality]
      * (encoder-failure retry) pick up the matching lower bitrate on rebuild.
+     *
+     * The bitrate keys off the requested [videoQuality]; if [FallbackStrategy]
+     * silently selects a lower resolution the device can actually record, the
+     * target is a bounded overshoot for that tier (never above the requested
+     * one) — still far below the uncapped device default, so acceptable.
      */
     private fun buildRecorder(aspectRatio: Int): Recorder = Recorder.Builder()
         .setQualitySelector(

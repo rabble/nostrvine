@@ -88,7 +88,7 @@ extension CameraController {
                     AVVideoWidthKey: videoWidth,
                     AVVideoHeightKey: videoHeight,
                     AVVideoCompressionPropertiesKey: [
-                        AVVideoAverageBitRateKey: 6_000_000,
+                        AVVideoAverageBitRateKey: self.videoEncodingBitRate,
                         AVVideoProfileLevelKey:
                             AVVideoProfileLevelH264HighAutoLevel,
                     ],

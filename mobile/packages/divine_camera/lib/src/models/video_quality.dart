@@ -35,8 +35,8 @@ enum DivineVideoQuality {
   ///
   /// The native recorders apply these values per quality tier and keep
   /// their own mirror of this table — update `VideoEncodingBitrate.kt`
-  /// (Android) and the `initialize` quality switch in
-  /// `CameraController.swift` (iOS) when changing them here.
+  /// (Android) and the `initialize` quality switch in `CameraController.swift`
+  /// (iOS and macOS) when changing them here.
   final int bitrate;
 
   /// Converts to a string representation for platform channels.
