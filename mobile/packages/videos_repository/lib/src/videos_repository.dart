@@ -2793,9 +2793,12 @@ class _VideoRouteCandidate {
 
     // Raw NIP-33 addressable coordinate: "kind:pubkey:d-tag"
     // Produced by VideoNotification.videoAddressableId for stable notification
-    // navigation. AId.fromString validates the format and extracts the d-tag.
+    // navigation and by DM share-card fallbacks, which can reference any
+    // acceptable NIP-71 kind (e.g. 34235). Accepts the same kinds as the
+    // naddr branch above; the 34236-only isVideoKind check would let a
+    // 34235 coordinate fall through to an unmatched d-tag lookup.
     final aid = AId.fromString(trimmed);
-    if (aid != null && NIP71VideoKinds.isVideoKind(aid.kind)) {
+    if (aid != null && NIP71VideoKinds.isAcceptableVideoKind(aid.kind)) {
       return _VideoRouteCandidate(
         addressableId: trimmed,
         addressablePubkey: aid.pubkey,

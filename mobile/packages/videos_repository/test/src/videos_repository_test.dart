@@ -10187,6 +10187,71 @@ void main() {
       );
 
       test(
+        'raw addressable coordinates accept legacy NIP-71 kinds — '
+        'a 34235:pubkey:d-tag route must stay author-scoped instead of '
+        'degrading to a bare d-tag lookup of the whole coordinate string',
+        () async {
+          const eventId =
+              'b995f6b60119d9521934a691347d9f78'
+              'e8770b56da16bb255ee77ac112b4c1f6';
+          const author =
+              '4bf0c63fcb93463407af97a5e5ee64fa'
+              '883d107ef9e558472c4eb9aaaefa459d';
+          const dTag = 'normal-video-34235';
+          // DM share-card fallbacks build raw coordinates from the shared
+          // ref's kind, which can be 34235 (addressable normal video). The
+          // pre-fix parse branch gated on isVideoKind() (34236 only), so
+          // this string fell through to a stableId candidate whose relay
+          // query searched d: ['34235:<pubkey>:<d-tag>'] — unmatched.
+          const rawAddressableId = '34235:$author:$dTag';
+          final legacyEvent = Event.fromJson({
+            'id': eventId,
+            'pubkey': author,
+            'created_at': 1739350000,
+            'kind': 34235,
+            'tags': [
+              ['d', dTag],
+              ['url', 'https://example.com/normal.mp4'],
+              ['title', 'Kind-34235 addressable'],
+            ],
+            'content': '',
+            'sig': 'sig',
+          });
+
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer((
+            invocation,
+          ) async {
+            final filters =
+                invocation.positionalArguments.single as List<Filter>;
+            final filter = filters.single;
+            // Only match the addressable filter (kind + author + d-tag),
+            // so the test fails loudly if the parse gate degrades the
+            // coordinate to an unscoped stable-id lookup again.
+            if ((filter.kinds?.contains(34235) ?? false) &&
+                (filter.authors?.contains(author) ?? false) &&
+                (filter.d?.contains(dTag) ?? false)) {
+              return [legacyEvent];
+            }
+            return <Event>[];
+          });
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repo.fetchVideoWithStatsForRouteId(
+            rawAddressableId,
+          );
+
+          expect(result, isNotNull);
+          expect(result!.id, equals(eventId));
+          expect(result.vineId, equals(dTag));
+          expect(result.pubkey, equals(author));
+        },
+      );
+
+      test(
         'resolves plain stable IDs from local storage before relay',
         () async {
           const eventId =
