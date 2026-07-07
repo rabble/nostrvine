@@ -8127,6 +8127,13 @@ class AppLocalizationsId extends AppLocalizations {
       'Duplikat item yang dipilih';
 
   @override
+  String get videoEditorCombineLabel => 'Gabungkan';
+
+  @override
+  String get videoEditorCombineDrawLayersSemanticLabel =>
+      'Gabungkan gambar terpilih menjadi satu lapisan';
+
+  @override
   String get videoEditorSplitLabel => 'Bagi';
 
   @override
@@ -8470,6 +8477,32 @@ class AppLocalizationsId extends AppLocalizations {
       other: '$count klip dipilih',
       one: '1 klip dipilih',
       zero: 'Tidak ada klip dipilih',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorLayerMultiSelectSemanticLabel =>
+      'Pilih beberapa gambar';
+
+  @override
+  String get videoEditorLayerMultiSelectDoneSemanticLabel =>
+      'Selesai memilih gambar';
+
+  @override
+  String get videoEditorLayerMultiSelectClearLabel => 'Hapus';
+
+  @override
+  String get videoEditorLayerMultiSelectClearSemanticLabel => 'Hapus pilihan';
+
+  @override
+  String videoEditorLayerMultiSelectCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count gambar dipilih',
+      one: '1 gambar dipilih',
+      zero: 'Tidak ada gambar dipilih',
     );
     return '$_temp0';
   }

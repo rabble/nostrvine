@@ -127,6 +127,15 @@ void main() {
       expect(find.bySemanticsLabel('Add element'), findsNothing);
     });
 
+    testWidgets('hides FAB during draw-layer multi-select', (tester) async {
+      overlayBloc.add(const TimelineOverlayLayerMultiSelectStarted('draw-1'));
+
+      await tester.pumpWidget(buildWidget(isLoading: true));
+      await tester.pump();
+
+      expect(find.bySemanticsLabel('Add element'), findsNothing);
+    });
+
     testWidgets(
       'shows reverse progress overlay while clip reverse is running',
       (

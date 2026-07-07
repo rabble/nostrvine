@@ -8232,6 +8232,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Duplicar elemento seleccionado';
 
   @override
+  String get videoEditorCombineLabel => 'Combinar';
+
+  @override
+  String get videoEditorCombineDrawLayersSemanticLabel =>
+      'Combina los dibujos seleccionados en una capa';
+
+  @override
   String get videoEditorSplitLabel => 'Dividir';
 
   @override
@@ -8578,6 +8585,33 @@ class AppLocalizationsEs extends AppLocalizations {
       other: '$count clips seleccionados',
       one: '1 clip seleccionado',
       zero: 'Ningún clip seleccionado',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorLayerMultiSelectSemanticLabel =>
+      'Seleccionar varios dibujos';
+
+  @override
+  String get videoEditorLayerMultiSelectDoneSemanticLabel =>
+      'Terminar de seleccionar dibujos';
+
+  @override
+  String get videoEditorLayerMultiSelectClearLabel => 'Borrar';
+
+  @override
+  String get videoEditorLayerMultiSelectClearSemanticLabel =>
+      'Borrar selección';
+
+  @override
+  String videoEditorLayerMultiSelectCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dibujos seleccionados',
+      one: '1 dibujo seleccionado',
+      zero: 'No hay dibujos seleccionados',
     );
     return '$_temp0';
   }

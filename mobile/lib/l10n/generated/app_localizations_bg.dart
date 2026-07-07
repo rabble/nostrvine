@@ -8232,6 +8232,13 @@ class AppLocalizationsBg extends AppLocalizations {
       'Дублиране на избрания елемент';
 
   @override
+  String get videoEditorCombineLabel => 'Обединяване';
+
+  @override
+  String get videoEditorCombineDrawLayersSemanticLabel =>
+      'Обедини избраните рисунки в един слой';
+
+  @override
   String get videoEditorSplitLabel => 'Сплит';
 
   @override
@@ -8582,6 +8589,33 @@ class AppLocalizationsBg extends AppLocalizations {
       other: '$count избрани клипа',
       one: '1 избран клип',
       zero: 'Няма избрани клипове',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorLayerMultiSelectSemanticLabel =>
+      'Избор на няколко рисунки';
+
+  @override
+  String get videoEditorLayerMultiSelectDoneSemanticLabel =>
+      'Приключване на избора на рисунки';
+
+  @override
+  String get videoEditorLayerMultiSelectClearLabel => 'Изчисти';
+
+  @override
+  String get videoEditorLayerMultiSelectClearSemanticLabel =>
+      'Изчистване на избора';
+
+  @override
+  String videoEditorLayerMultiSelectCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count избрани рисунки',
+      one: '1 избрана рисунка',
+      zero: 'Няма избрани рисунки',
     );
     return '$_temp0';
   }

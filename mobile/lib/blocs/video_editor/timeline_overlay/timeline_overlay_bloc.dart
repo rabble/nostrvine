@@ -54,6 +54,10 @@ class TimelineOverlayBloc
       _onAllAudioVolumeChanged,
       transformer: sequential(),
     );
+    on<TimelineOverlayLayerMultiSelectStarted>(_onLayerMultiSelectStarted);
+    on<TimelineOverlayLayerMultiSelectToggled>(_onLayerMultiSelectToggled);
+    on<TimelineOverlayLayerSelectionCleared>(_onLayerSelectionCleared);
+    on<TimelineOverlayLayerMultiSelectCancelled>(_onLayerMultiSelectCancelled);
   }
 
   /// A playhead within this distance of a marker counts as "on" that marker.
@@ -194,6 +198,14 @@ class TimelineOverlayBloc
           currentVolumes.containsKey(t.id) && currentVolumes[t.id] != t.volume,
     );
 
+    // Drop multi-selected layer ids that no longer exist (e.g. after a merge
+    // or undo) and exit multi-select mode once nothing valid remains selected.
+    final prunedMultiSelect = state.isLayerMultiSelectMode
+        ? state.multiSelectedLayerIds
+              .where((id) => newItems.any((i) => i.id == id))
+              .toSet()
+        : state.multiSelectedLayerIds;
+
     emit(
       state.copyWith(
         items: newItems,
@@ -207,6 +219,9 @@ class TimelineOverlayBloc
             ? state.audioTracksPlayerRevision + 1
             : state.audioTracksPlayerRevision,
         timelineMarkers: _clampMarkers(event.timelineMarkers, total),
+        isLayerMultiSelectMode:
+            state.isLayerMultiSelectMode && prunedMultiSelect.isNotEmpty,
+        multiSelectedLayerIds: prunedMultiSelect,
       ),
     );
   }
@@ -493,6 +508,61 @@ class TimelineOverlayBloc
     } else {
       emit(state.copyWith(selectedItemId: event.itemId));
     }
+  }
+
+  void _onLayerMultiSelectStarted(
+    TimelineOverlayLayerMultiSelectStarted event,
+    Emitter<TimelineOverlayState> emit,
+  ) {
+    final seedValid = state.items.any(
+      (i) => i.id == event.initialLayerId && isMergeableDrawLayer(i.layer),
+    );
+    emit(
+      state.copyWith(
+        isLayerMultiSelectMode: true,
+        clearSelectedItemId: true,
+        multiSelectedLayerIds: seedValid
+            ? {event.initialLayerId}
+            : const <String>{},
+      ),
+    );
+  }
+
+  void _onLayerMultiSelectToggled(
+    TimelineOverlayLayerMultiSelectToggled event,
+    Emitter<TimelineOverlayState> emit,
+  ) {
+    if (!state.isLayerMultiSelectMode) return;
+    final isMergeable = state.items.any(
+      (i) => i.id == event.layerId && isMergeableDrawLayer(i.layer),
+    );
+    if (!isMergeable) return;
+
+    final selected = Set<String>.of(state.multiSelectedLayerIds);
+    if (!selected.remove(event.layerId)) {
+      selected.add(event.layerId);
+    }
+    emit(state.copyWith(multiSelectedLayerIds: selected));
+  }
+
+  void _onLayerSelectionCleared(
+    TimelineOverlayLayerSelectionCleared event,
+    Emitter<TimelineOverlayState> emit,
+  ) {
+    if (!state.isLayerMultiSelectMode) return;
+    emit(state.copyWith(multiSelectedLayerIds: const <String>{}));
+  }
+
+  void _onLayerMultiSelectCancelled(
+    TimelineOverlayLayerMultiSelectCancelled event,
+    Emitter<TimelineOverlayState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        isLayerMultiSelectMode: false,
+        multiSelectedLayerIds: const <String>{},
+      ),
+    );
   }
 
   void _onDragStarted(

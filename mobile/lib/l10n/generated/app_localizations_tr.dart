@@ -8122,6 +8122,13 @@ class AppLocalizationsTr extends AppLocalizations {
       'Seçili öğeyi çoğalt';
 
   @override
+  String get videoEditorCombineLabel => 'Birleştir';
+
+  @override
+  String get videoEditorCombineDrawLayersSemanticLabel =>
+      'Seçili çizimleri tek katmanda birleştir';
+
+  @override
   String get videoEditorSplitLabel => 'Böl';
 
   @override
@@ -8462,6 +8469,32 @@ class AppLocalizationsTr extends AppLocalizations {
       other: '$count klip seçildi',
       one: '1 klip seçildi',
       zero: 'Hiç klip seçilmedi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorLayerMultiSelectSemanticLabel =>
+      'Birden fazla çizim seç';
+
+  @override
+  String get videoEditorLayerMultiSelectDoneSemanticLabel =>
+      'Çizim seçimini bitir';
+
+  @override
+  String get videoEditorLayerMultiSelectClearLabel => 'Temizle';
+
+  @override
+  String get videoEditorLayerMultiSelectClearSemanticLabel => 'Seçimi temizle';
+
+  @override
+  String videoEditorLayerMultiSelectCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count çizim seçildi',
+      one: '1 çizim seçildi',
+      zero: 'Hiç çizim seçilmedi',
     );
     return '$_temp0';
   }

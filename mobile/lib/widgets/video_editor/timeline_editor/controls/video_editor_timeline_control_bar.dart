@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_clip_controls.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_layer_multi_select_controls.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_marker_controls.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_multi_select_controls.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_overlay_controls.dart';
@@ -29,6 +30,9 @@ class TimelineControlsBar extends StatelessWidget {
     final isMultiSelectMode = context.select(
       (ClipEditorBloc b) => b.state.isMultiSelectMode,
     );
+    final isLayerMultiSelectMode = context.select(
+      (TimelineOverlayBloc b) => b.state.isLayerMultiSelectMode,
+    );
     final selectedOverlayItem = context.select((TimelineOverlayBloc b) {
       final state = b.state;
       final selectedId = state.selectedItemId;
@@ -39,30 +43,35 @@ class TimelineControlsBar extends StatelessWidget {
     final showControls =
         isMarkerMode ||
         isMultiSelectMode ||
+        isLayerMultiSelectMode ||
         isEditing ||
         selectedOverlayItem != null;
     final controlsChild = switch ((
       isMarkerMode,
       isMultiSelectMode,
+      isLayerMultiSelectMode,
       showControls,
       isEditing,
     )) {
-      (true, _, _, _) => TimelineMarkerControls(
+      (true, _, _, _, _) => TimelineMarkerControls(
         key: const ValueKey('timeline_controls_marker'),
         playheadPosition: playheadPosition,
       ),
-      (false, true, _, _) => const TimelineMultiSelectControls(
+      (false, true, _, _, _) => const TimelineMultiSelectControls(
         key: ValueKey('timeline_controls_multi_select'),
       ),
-      (false, false, true, true) => TimelineClipControls(
+      (false, false, true, _, _) => const TimelineLayerMultiSelectControls(
+        key: ValueKey('timeline_controls_layer_multi_select'),
+      ),
+      (false, false, false, true, true) => TimelineClipControls(
         key: const ValueKey('timeline_controls_clip'),
         playheadPosition: playheadPosition,
       ),
-      (false, false, true, false) => TimelineOverlayControls(
+      (false, false, false, true, false) => TimelineOverlayControls(
         key: const ValueKey('timeline_controls_overlay'),
         item: selectedOverlayItem!,
       ),
-      (false, false, false, _) => const SizedBox(
+      (false, false, false, false, _) => const SizedBox(
         key: ValueKey('timeline_controls_hidden'),
         width: double.infinity,
       ),

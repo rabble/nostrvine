@@ -3,6 +3,7 @@
 
 import 'dart:typed_data';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart'
@@ -11,7 +12,8 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:openvine/widgets/stereo_waveform_painter.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_overlay_item.dart';
-import 'package:pro_image_editor/pro_image_editor.dart' show WidgetLayer;
+import 'package:pro_image_editor/pro_image_editor.dart'
+    show DrawPaintItem, PaintLayer, PaintMode, PaintedModel, WidgetLayer;
 
 void main() {
   group(TimelineOverlayItemTile, () {
@@ -236,6 +238,104 @@ void main() {
           expect(find.text('Fallback Label'), findsOneWidget);
         },
       );
+    });
+
+    group('_PaintPreview', () {
+      PaintLayer buildPaintLayer(int strokeCount) => PaintLayer(
+        rawSize: const Size(10, 10),
+        opacity: 1,
+        items: [
+          for (var i = 0; i < strokeCount; i++)
+            PaintedModel(
+              mode: PaintMode.freeStyle,
+              offsets: const [Offset.zero, Offset(10, 10)],
+              erasedOffsets: const [],
+              color: const Color(0xFFFF0000),
+              strokeWidth: 6,
+              opacity: 1,
+            ),
+        ],
+      );
+
+      int drawPaintItemCount(WidgetTester tester) => tester
+          .widgetList<CustomPaint>(find.byType(CustomPaint))
+          .where((paint) => paint.painter is DrawPaintItem)
+          .length;
+
+      Widget buildTile(PaintLayer layer) => MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: TimelineOverlayItemTile(
+            item: TimelineOverlayItem(
+              id: 'draw-1',
+              type: TimelineOverlayType.layer,
+              startTime: Duration.zero,
+              endTime: const Duration(seconds: 3),
+              layer: layer,
+            ),
+            width: 120,
+            height: 40,
+            color: Colors.blue,
+          ),
+        ),
+      );
+
+      testWidgets('renders one painter per stroke for a merged layer', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildTile(buildPaintLayer(3)));
+
+        expect(drawPaintItemCount(tester), 3);
+      });
+
+      testWidgets('renders a single painter for a one-stroke layer', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildTile(buildPaintLayer(1)));
+
+        expect(drawPaintItemCount(tester), 1);
+      });
+    });
+
+    group('multi-select overlay', () {
+      Finder checkBadge() => find.byWidgetPredicate(
+        (widget) => widget is DivineIcon && widget.icon == DivineIconName.check,
+      );
+
+      Widget buildTile(OverlayMultiSelectState state) => MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: TimelineOverlayItemTile(
+            item: item,
+            width: 120,
+            height: 40,
+            color: Colors.blue,
+            multiSelectState: state,
+          ),
+        ),
+      );
+
+      testWidgets('shows a check badge when selected', (tester) async {
+        await tester.pumpWidget(buildTile(OverlayMultiSelectState.selected));
+
+        expect(checkBadge(), findsOneWidget);
+      });
+
+      testWidgets('shows no check badge when unselected', (tester) async {
+        await tester.pumpWidget(buildTile(OverlayMultiSelectState.unselected));
+
+        expect(checkBadge(), findsNothing);
+      });
+
+      testWidgets('shows no check badge when not multi-selecting', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildTile(OverlayMultiSelectState.none));
+
+        expect(checkBadge(), findsNothing);
+      });
     });
   });
 }

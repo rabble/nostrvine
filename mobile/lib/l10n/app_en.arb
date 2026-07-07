@@ -4654,6 +4654,8 @@
   "videoEditorEditSelectedItemSemanticLabel": "Edit selected item",
   "videoEditorDuplicateLabel": "Duplicate",
   "videoEditorDuplicateSelectedItemSemanticLabel": "Duplicate selected item",
+  "videoEditorCombineLabel": "Combine",
+  "videoEditorCombineDrawLayersSemanticLabel": "Combine selected drawings into one layer",
   "videoEditorSplitLabel": "Split",
   "videoEditorSplitSelectedClipSemanticLabel": "Split selected clip",
   "videoEditorExtractAudioLabel": "Extract Audio",
@@ -4954,6 +4956,31 @@
   "videoEditorMultiSelectCountLabel": "{count, plural, =0{No clips selected} =1{1 clip selected} other{{count} clips selected}}",
   "@videoEditorMultiSelectCountLabel": {
     "description": "Header shown in the multi-select action bar reporting how many clips are selected.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditorLayerMultiSelectSemanticLabel": "Select multiple drawings",
+  "@videoEditorLayerMultiSelectSemanticLabel": {
+    "description": "Accessibility label for the button that starts draw-layer multi-select mode."
+  },
+  "videoEditorLayerMultiSelectDoneSemanticLabel": "Done selecting drawings",
+  "@videoEditorLayerMultiSelectDoneSemanticLabel": {
+    "description": "Accessibility label for the button that exits draw-layer multi-select mode."
+  },
+  "videoEditorLayerMultiSelectClearLabel": "Clear",
+  "@videoEditorLayerMultiSelectClearLabel": {
+    "description": "Label for the button that clears the current draw-layer selection without leaving multi-select mode."
+  },
+  "videoEditorLayerMultiSelectClearSemanticLabel": "Clear selection",
+  "@videoEditorLayerMultiSelectClearSemanticLabel": {
+    "description": "Accessibility label for the button that clears the current draw-layer selection."
+  },
+  "videoEditorLayerMultiSelectCountLabel": "{count, plural, =0{No drawings selected} =1{1 drawing selected} other{{count} drawings selected}}",
+  "@videoEditorLayerMultiSelectCountLabel": {
+    "description": "Header shown in the draw-layer multi-select action bar reporting how many drawings are selected.",
     "placeholders": {
       "count": {
         "type": "int"

@@ -773,14 +773,15 @@ class _AddElementFab extends StatelessWidget {
           b.state.isTimelineHiddenByUser ||
           b.state.isMarkerMode,
     );
-    final hasSelectedOverlay = context.select(
-      (TimelineOverlayBloc b) => b.state.selectedItemId != null,
+    final isOverlayInteracting = context.select(
+      (TimelineOverlayBloc b) =>
+          b.state.selectedItemId != null || b.state.isLayerMultiSelectMode,
     );
     final isClipInteracting = context.select(
       (ClipEditorBloc b) => b.state.isEditing || b.state.isMultiSelectMode,
     );
 
-    if (shouldHide || hasSelectedOverlay || isClipInteracting) {
+    if (shouldHide || isOverlayInteracting || isClipInteracting) {
       return const SizedBox.shrink();
     }
 

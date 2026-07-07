@@ -3,6 +3,7 @@
 // ABOUTME: and state helpers for the current event/state API.
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
@@ -1694,6 +1695,205 @@ void main() {
       expect(cleared.dragPosition, isNull);
       expect(cleared.trimPosition, isNull);
     });
+  });
+
+  group('layer multi-select', () {
+    PaintLayer paintLayer(String id) => PaintLayer(
+      id: id,
+      rawSize: const Size(10, 10),
+      opacity: 1,
+      item: PaintedModel(
+        mode: PaintMode.freeStyle,
+        offsets: const [Offset.zero, Offset(10, 10)],
+        erasedOffsets: const [],
+        color: const Color(0xFFFF0000),
+        strokeWidth: 6,
+        opacity: 1,
+      ),
+    );
+
+    TimelineOverlayItem drawItem(String id) => TimelineOverlayItem(
+      id: id,
+      type: TimelineOverlayType.layer,
+      startTime: Duration.zero,
+      endTime: const Duration(seconds: 3),
+      layer: paintLayer(id),
+    );
+
+    blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+      'start seeds the tapped draw layer, enters mode, clears single selection',
+      build: TimelineOverlayBloc.new,
+      seed: () => TimelineOverlayState(
+        items: [drawItem('a'), drawItem('b')],
+        selectedItemId: 'a',
+      ),
+      act: (bloc) =>
+          bloc.add(const TimelineOverlayLayerMultiSelectStarted('a')),
+      expect: () => [
+        isA<TimelineOverlayState>()
+            .having((s) => s.isLayerMultiSelectMode, 'mode', isTrue)
+            .having((s) => s.multiSelectedLayerIds, 'selected', {'a'})
+            .having((s) => s.selectedItemId, 'single selection', isNull),
+      ],
+    );
+
+    blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+      'start with a non-mergeable id enters mode with an empty selection',
+      build: TimelineOverlayBloc.new,
+      seed: () => TimelineOverlayState(
+        items: [
+          _item(
+            id: 'text',
+            type: TimelineOverlayType.layer,
+            start: Duration.zero,
+            end: const Duration(seconds: 3),
+          ),
+        ],
+      ),
+      act: (bloc) =>
+          bloc.add(const TimelineOverlayLayerMultiSelectStarted('text')),
+      expect: () => [
+        isA<TimelineOverlayState>()
+            .having((s) => s.isLayerMultiSelectMode, 'mode', isTrue)
+            .having((s) => s.multiSelectedLayerIds, 'selected', isEmpty),
+      ],
+    );
+
+    blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+      'toggle adds then removes a draw layer',
+      build: TimelineOverlayBloc.new,
+      seed: () => TimelineOverlayState(
+        items: [drawItem('a')],
+        isLayerMultiSelectMode: true,
+      ),
+      act: (bloc) => bloc
+        ..add(const TimelineOverlayLayerMultiSelectToggled('a'))
+        ..add(const TimelineOverlayLayerMultiSelectToggled('a')),
+      expect: () => [
+        isA<TimelineOverlayState>().having(
+          (s) => s.multiSelectedLayerIds,
+          'selected',
+          {'a'},
+        ),
+        isA<TimelineOverlayState>().having(
+          (s) => s.multiSelectedLayerIds,
+          'selected',
+          isEmpty,
+        ),
+      ],
+    );
+
+    blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+      'toggle ignores a non-mergeable layer',
+      build: TimelineOverlayBloc.new,
+      seed: () => TimelineOverlayState(
+        items: [
+          _item(
+            id: 'text',
+            type: TimelineOverlayType.layer,
+            start: Duration.zero,
+            end: const Duration(seconds: 3),
+          ),
+        ],
+        isLayerMultiSelectMode: true,
+      ),
+      act: (bloc) =>
+          bloc.add(const TimelineOverlayLayerMultiSelectToggled('text')),
+      expect: () => <TimelineOverlayState>[],
+    );
+
+    blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+      'toggle is a no-op when not in multi-select mode',
+      build: TimelineOverlayBloc.new,
+      seed: () => TimelineOverlayState(items: [drawItem('a')]),
+      act: (bloc) =>
+          bloc.add(const TimelineOverlayLayerMultiSelectToggled('a')),
+      expect: () => <TimelineOverlayState>[],
+    );
+
+    blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+      'clear empties the selection but stays in multi-select mode',
+      build: TimelineOverlayBloc.new,
+      seed: () => const TimelineOverlayState(
+        isLayerMultiSelectMode: true,
+        multiSelectedLayerIds: {'a', 'b'},
+      ),
+      act: (bloc) => bloc.add(const TimelineOverlayLayerSelectionCleared()),
+      expect: () => [
+        isA<TimelineOverlayState>()
+            .having((s) => s.isLayerMultiSelectMode, 'mode', isTrue)
+            .having((s) => s.multiSelectedLayerIds, 'selected', isEmpty),
+      ],
+    );
+
+    blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+      'clear is a no-op when not in multi-select mode',
+      build: TimelineOverlayBloc.new,
+      seed: TimelineOverlayState.new,
+      act: (bloc) => bloc.add(const TimelineOverlayLayerSelectionCleared()),
+      expect: () => <TimelineOverlayState>[],
+    );
+
+    blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+      'cancel exits mode and clears the selection',
+      build: TimelineOverlayBloc.new,
+      seed: () => const TimelineOverlayState(
+        isLayerMultiSelectMode: true,
+        multiSelectedLayerIds: {'a', 'b'},
+      ),
+      act: (bloc) => bloc.add(const TimelineOverlayLayerMultiSelectCancelled()),
+      expect: () => [
+        isA<TimelineOverlayState>()
+            .having((s) => s.isLayerMultiSelectMode, 'mode', isFalse)
+            .having((s) => s.multiSelectedLayerIds, 'selected', isEmpty),
+      ],
+    );
+
+    blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+      'items update prunes vanished selected ids and keeps the survivors',
+      build: TimelineOverlayBloc.new,
+      seed: () => TimelineOverlayState(
+        items: [drawItem('a'), drawItem('b')],
+        isLayerMultiSelectMode: true,
+        multiSelectedLayerIds: const {'a', 'b'},
+      ),
+      act: (bloc) => bloc.add(
+        TimelineOverlayItemsUpdate(
+          layers: [paintLayer('a')],
+          filters: const [],
+          audioTracks: const [],
+          totalVideoDuration: const Duration(seconds: 3),
+        ),
+      ),
+      expect: () => [
+        isA<TimelineOverlayState>()
+            .having((s) => s.isLayerMultiSelectMode, 'mode', isTrue)
+            .having((s) => s.multiSelectedLayerIds, 'selected', {'a'}),
+      ],
+    );
+
+    blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+      'items update exits mode once no selected id survives',
+      build: TimelineOverlayBloc.new,
+      seed: () => TimelineOverlayState(
+        items: [drawItem('a')],
+        isLayerMultiSelectMode: true,
+        multiSelectedLayerIds: const {'a'},
+      ),
+      act: (bloc) => bloc.add(
+        const TimelineOverlayItemsUpdate(
+          layers: [],
+          filters: [],
+          audioTracks: [],
+          totalVideoDuration: Duration(seconds: 3),
+        ),
+      ),
+      expect: () => [
+        isA<TimelineOverlayState>()
+            .having((s) => s.isLayerMultiSelectMode, 'mode', isFalse)
+            .having((s) => s.multiSelectedLayerIds, 'selected', isEmpty),
+      ],
+    );
   });
 
   group(TimelineOverlayItem, () {

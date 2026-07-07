@@ -18,6 +18,7 @@ class VideoEditorTimelineControls extends StatelessWidget {
     this.onExtractAudio,
     this.isExtractingAudio = false,
     this.onMultiSelect,
+    this.multiSelectSemanticLabel,
     super.key,
   });
 
@@ -35,6 +36,10 @@ class VideoEditorTimelineControls extends StatelessWidget {
   final VoidCallback? onExtractAudio;
   final bool isExtractingAudio;
   final VoidCallback? onMultiSelect;
+
+  /// Overrides the multi-select button's accessibility label. Defaults to the
+  /// clip-oriented copy; draw-layer callers pass a drawing-specific label.
+  final String? multiSelectSemanticLabel;
   final VoidCallback? onDone;
 
   @override
@@ -149,6 +154,7 @@ class VideoEditorTimelineControls extends StatelessWidget {
                       icon: .checks,
                       label: context.l10n.videoEditorMultiSelectLabel,
                       semanticLabel:
+                          multiSelectSemanticLabel ??
                           context.l10n.videoEditorMultiSelectSemanticLabel,
                       onPressed: onMultiSelect,
                     ),

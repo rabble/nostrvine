@@ -7850,6 +7850,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorDuplicateSelectedItemSemanticLabel => '선택한 항목 복제';
 
   @override
+  String get videoEditorCombineLabel => '합치기';
+
+  @override
+  String get videoEditorCombineDrawLayersSemanticLabel =>
+      '선택한 그림을 하나의 레이어로 합치기';
+
+  @override
   String get videoEditorSplitLabel => '분할';
 
   @override
@@ -8177,6 +8184,30 @@ class AppLocalizationsKo extends AppLocalizations {
       other: '클립 $count개 선택됨',
       one: '클립 1개 선택됨',
       zero: '선택된 클립 없음',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorLayerMultiSelectSemanticLabel => '여러 그림 선택';
+
+  @override
+  String get videoEditorLayerMultiSelectDoneSemanticLabel => '그림 선택 완료';
+
+  @override
+  String get videoEditorLayerMultiSelectClearLabel => '지우기';
+
+  @override
+  String get videoEditorLayerMultiSelectClearSemanticLabel => '선택 지우기';
+
+  @override
+  String videoEditorLayerMultiSelectCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '그림 $count개 선택됨',
+      one: '그림 1개 선택됨',
+      zero: '선택된 그림 없음',
     );
     return '$_temp0';
   }

@@ -8340,6 +8340,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Duplichează elementul selectat';
 
   @override
+  String get videoEditorCombineLabel => 'Combină';
+
+  @override
+  String get videoEditorCombineDrawLayersSemanticLabel =>
+      'Combină desenele selectate într-un singur strat';
+
+  @override
   String get videoEditorSplitLabel => 'Împarte';
 
   @override
@@ -8686,6 +8693,32 @@ class AppLocalizationsRo extends AppLocalizations {
       other: '$count clipuri selectate',
       one: '1 clip selectat',
       zero: 'Niciun clip selectat',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorLayerMultiSelectSemanticLabel =>
+      'Selectează mai multe desene';
+
+  @override
+  String get videoEditorLayerMultiSelectDoneSemanticLabel =>
+      'Termină selectarea desenelor';
+
+  @override
+  String get videoEditorLayerMultiSelectClearLabel => 'Șterge';
+
+  @override
+  String get videoEditorLayerMultiSelectClearSemanticLabel => 'Șterge selecția';
+
+  @override
+  String videoEditorLayerMultiSelectCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count desene selectate',
+      one: '1 desen selectat',
+      zero: 'Niciun desen selectat',
     );
     return '$_temp0';
   }

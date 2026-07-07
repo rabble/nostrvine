@@ -12,6 +12,7 @@ import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bl
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_drop_indicator_line.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_overlay_item.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_positioned_item.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/timeline_snap_controller.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_geometry.dart';
@@ -68,6 +69,8 @@ class TimelineOverlayStrip extends StatefulWidget {
     this.rowHeight = TimelineConstants.overlayRowHeight,
     this.isCollapsed = false,
     this.selectedItemId,
+    this.isLayerMultiSelectMode = false,
+    this.multiSelectedLayerIds = const {},
     this.snapPointsMs,
     this.onItemTapped,
     this.onItemMoved,
@@ -109,6 +112,14 @@ class TimelineOverlayStrip extends StatefulWidget {
 
   /// ID of the currently selected item (shows trim handles).
   final String? selectedItemId;
+
+  /// Whether the timeline is in draw-layer multi-select mode. While active,
+  /// tiles show a selection overlay and long-press drag is disabled.
+  final bool isLayerMultiSelectMode;
+
+  /// Layer ids currently selected for combining, used to render the per-tile
+  /// selection state while [isLayerMultiSelectMode] is active.
+  final Set<String> multiSelectedLayerIds;
 
   /// Edge positions (in ms) from other overlay items and clip
   /// boundaries. Used for cross-layer snap during drag and trim.
@@ -276,6 +287,7 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
                 item: item,
                 isDragging: false,
                 isSelected: widget.selectedItemId == item.id,
+                multiSelectState: _multiSelectStateFor(item),
                 snappedStartMs: 0,
                 dragDeltaY: 0,
                 rowHeight: _effectiveRowHeight,
@@ -372,7 +384,20 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
 
   // -- Long-press drag callbacks -------------------------------------------
 
+  /// Resolves the per-tile multi-select visual state for [item].
+  OverlayMultiSelectState _multiSelectStateFor(TimelineOverlayItem item) {
+    if (!widget.isLayerMultiSelectMode) return OverlayMultiSelectState.none;
+    if (!isMergeableDrawLayer(item.layer)) {
+      return OverlayMultiSelectState.disabled;
+    }
+    return widget.multiSelectedLayerIds.contains(item.id)
+        ? OverlayMultiSelectState.selected
+        : OverlayMultiSelectState.unselected;
+  }
+
   void _onLongPressStart(TimelineOverlayItem item) {
+    // In multi-select mode a tile only toggles on tap; dragging is disabled.
+    if (widget.isLayerMultiSelectMode) return;
     final mainBloc = context.read<VideoEditorMainBloc?>();
     if (mainBloc?.state.isVolumeEditMode == true) return;
     HapticFeedback.mediumImpact();

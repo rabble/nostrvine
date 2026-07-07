@@ -8250,6 +8250,13 @@ class AppLocalizationsFil extends AppLocalizations {
       'I-duplicate ang napiling item';
 
   @override
+  String get videoEditorCombineLabel => 'Pagsamahin';
+
+  @override
+  String get videoEditorCombineDrawLayersSemanticLabel =>
+      'Pagsamahin ang mga napiling drawing sa isang layer';
+
+  @override
   String get videoEditorSplitLabel => 'I-split';
 
   @override
@@ -8595,6 +8602,33 @@ class AppLocalizationsFil extends AppLocalizations {
       other: '$count clip ang napili',
       one: '1 clip ang napili',
       zero: 'Walang napiling clip',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorLayerMultiSelectSemanticLabel =>
+      'Pumili ng maraming drawing';
+
+  @override
+  String get videoEditorLayerMultiSelectDoneSemanticLabel =>
+      'Tapos nang pumili ng mga drawing';
+
+  @override
+  String get videoEditorLayerMultiSelectClearLabel => 'I-clear';
+
+  @override
+  String get videoEditorLayerMultiSelectClearSemanticLabel =>
+      'I-clear ang pinili';
+
+  @override
+  String videoEditorLayerMultiSelectCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count drawing ang napili',
+      one: '1 drawing ang napili',
+      zero: 'Walang napiling drawing',
     );
     return '$_temp0';
   }

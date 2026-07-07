@@ -7828,6 +7828,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorDuplicateSelectedItemSemanticLabel => '選択したアイテムを複製';
 
   @override
+  String get videoEditorCombineLabel => '結合';
+
+  @override
+  String get videoEditorCombineDrawLayersSemanticLabel => '選択した描画を1つのレイヤーに結合';
+
+  @override
   String get videoEditorSplitLabel => '分割';
 
   @override
@@ -8152,6 +8158,30 @@ class AppLocalizationsJa extends AppLocalizations {
       other: '$count 件のクリップを選択中',
       one: '1 件のクリップを選択中',
       zero: 'クリップが選択されていません',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorLayerMultiSelectSemanticLabel => '複数の描画を選択';
+
+  @override
+  String get videoEditorLayerMultiSelectDoneSemanticLabel => '描画の選択を完了';
+
+  @override
+  String get videoEditorLayerMultiSelectClearLabel => 'クリア';
+
+  @override
+  String get videoEditorLayerMultiSelectClearSemanticLabel => '選択をクリア';
+
+  @override
+  String videoEditorLayerMultiSelectCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count件の描画を選択中',
+      one: '1件の描画を選択中',
+      zero: '描画が選択されていません',
     );
     return '$_temp0';
   }

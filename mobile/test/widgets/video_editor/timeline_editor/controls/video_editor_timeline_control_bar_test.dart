@@ -13,6 +13,7 @@ import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bl
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_clip_controls.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_control_bar.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_layer_multi_select_controls.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_marker_controls.dart';
 
 class _MockVideoEditorMainBloc
@@ -95,5 +96,25 @@ void main() {
       expect(find.byType(TimelineMarkerControls), findsOneWidget);
       expect(find.byType(TimelineClipControls), findsNothing);
     });
+
+    testWidgets(
+      'shows layer multi-select controls when that mode is active',
+      (tester) async {
+        when(() => overlayBloc.state).thenReturn(
+          const TimelineOverlayState(
+            isLayerMultiSelectMode: true,
+            multiSelectedLayerIds: {'a', 'b'},
+          ),
+        );
+
+        await tester.pumpWidget(build(isEditing: false));
+
+        expect(
+          find.byType(TimelineLayerMultiSelectControls),
+          findsOneWidget,
+        );
+        expect(find.byType(TimelineClipControls), findsNothing);
+      },
+    );
   });
 }

@@ -7,6 +7,19 @@ import 'dart:typed_data';
 import 'package:equatable/equatable.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
+/// Whether [layer] is a draw layer that can take part in a merge.
+///
+/// Mirrors `pro_image_editor`'s `PaintLayerMergeManager.isMergeable`: a censor
+/// layer, a layer scheduled to a video-timeline window ([Layer.startTime] /
+/// [Layer.endTime]), or one carrying enter/leave animations cannot be baked
+/// into a single static merged layer.
+bool isMergeableDrawLayer(Layer? layer) =>
+    layer is PaintLayer &&
+    !layer.isCensor &&
+    layer.startTime == null &&
+    layer.endTime == null &&
+    layer.animations.isEmpty;
+
 /// The type of overlay on the timeline.
 enum TimelineOverlayType {
   /// Visual overlay: text, drawing, sticker, etc.

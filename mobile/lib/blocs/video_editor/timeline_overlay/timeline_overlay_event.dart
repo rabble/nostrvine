@@ -264,3 +264,39 @@ class TimelineOverlayAllAudioVolumeChanged extends TimelineOverlayEvent {
   @override
   List<Object?> get props => [volume];
 }
+
+/// Enter draw-layer multi-select mode, seeded with [initialLayerId].
+///
+/// Clears the single-item selection. The seed id is only added when it maps to
+/// an existing mergeable draw layer.
+class TimelineOverlayLayerMultiSelectStarted extends TimelineOverlayEvent {
+  const TimelineOverlayLayerMultiSelectStarted(this.initialLayerId);
+
+  final String initialLayerId;
+
+  @override
+  List<Object?> get props => [initialLayerId];
+}
+
+/// Toggle a draw layer's membership in the multi-select set.
+///
+/// No-op when not in multi-select mode or when [layerId] is not a mergeable
+/// draw layer.
+class TimelineOverlayLayerMultiSelectToggled extends TimelineOverlayEvent {
+  const TimelineOverlayLayerMultiSelectToggled(this.layerId);
+
+  final String layerId;
+
+  @override
+  List<Object?> get props => [layerId];
+}
+
+/// Clear the multi-select set without leaving multi-select mode.
+class TimelineOverlayLayerSelectionCleared extends TimelineOverlayEvent {
+  const TimelineOverlayLayerSelectionCleared();
+}
+
+/// Exit draw-layer multi-select mode and clear the selection.
+class TimelineOverlayLayerMultiSelectCancelled extends TimelineOverlayEvent {
+  const TimelineOverlayLayerMultiSelectCancelled();
+}

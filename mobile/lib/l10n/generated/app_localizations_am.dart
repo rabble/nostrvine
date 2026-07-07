@@ -7988,6 +7988,13 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorDuplicateSelectedItemSemanticLabel => 'የተመረጠውን ንጥል ያባዛ';
 
   @override
+  String get videoEditorCombineLabel => 'አዋህድ';
+
+  @override
+  String get videoEditorCombineDrawLayersSemanticLabel =>
+      'የተመረጡ ስዕሎችን ወደ አንድ ንብርብር አዋህድ';
+
+  @override
   String get videoEditorSplitLabel => 'ተከፈለ';
 
   @override
@@ -8319,6 +8326,30 @@ class AppLocalizationsAm extends AppLocalizations {
       other: '$count ቅንጥቦች ተመርጠዋል',
       one: '1 ቅንጥብ ተመርጧል',
       zero: 'ምንም ቅንጥብ አልተመረጠም',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorLayerMultiSelectSemanticLabel => 'ብዙ ስዕሎችን ይምረጡ';
+
+  @override
+  String get videoEditorLayerMultiSelectDoneSemanticLabel => 'ስዕሎችን መምረጥ ጨርስ';
+
+  @override
+  String get videoEditorLayerMultiSelectClearLabel => 'አጽዳ';
+
+  @override
+  String get videoEditorLayerMultiSelectClearSemanticLabel => 'ምርጫን አጽዳ';
+
+  @override
+  String videoEditorLayerMultiSelectCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ስዕሎች ተመርጠዋል',
+      one: '1 ስዕል ተመርጧል',
+      zero: 'ምንም ስዕል አልተመረጠም',
     );
     return '$_temp0';
   }

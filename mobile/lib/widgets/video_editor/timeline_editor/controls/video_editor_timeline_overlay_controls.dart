@@ -60,12 +60,25 @@ class _LayerOverlayControls extends StatelessWidget {
         .firstOrNull;
     final isTextLayer = layer is TextLayer;
 
+    // Draw layers can be multi-selected and combined when the selected layer is
+    // itself a mergeable draw layer and at least two mergeable draw layers exist
+    // on the canvas.
+    final mergeableDrawLayerCount =
+        scope.editor?.activeLayers.where(isMergeableDrawLayer).length ?? 0;
+    final canMultiSelect =
+        isMergeableDrawLayer(layer) && mergeableDrawLayerCount >= 2;
+
     return VideoEditorTimelineControls(
       onDelete: () => _removeLayer(context: context, layer: layer),
       onEdit: isTextLayer
           ? () => _editTextLayer(context: context, layer: layer)
           : null,
       onDuplicated: () => _duplicateLayer(context: context, layer: layer),
+      onMultiSelect: canMultiSelect
+          ? () => _startLayerMultiSelect(context: context)
+          : null,
+      multiSelectSemanticLabel:
+          context.l10n.videoEditorLayerMultiSelectSemanticLabel,
       onSplit: () => _splitLayer(context: context, layer: layer),
       onAnimate: layer == null
           ? null
@@ -106,6 +119,16 @@ class _LayerOverlayControls extends StatelessWidget {
     if (updatedLayer == null) return;
 
     editor.applyTextLayerChanges(layer, updatedLayer);
+  }
+
+  /// Enters draw-layer multi-select mode, seeded with the tapped layer.
+  ///
+  /// The user then toggles additional draw layers and combines the selection
+  /// via the multi-select control bar.
+  void _startLayerMultiSelect({required BuildContext context}) {
+    context.read<TimelineOverlayBloc>().add(
+      TimelineOverlayLayerMultiSelectStarted(item.id),
+    );
   }
 
   void _duplicateLayer({required BuildContext context, Layer? layer}) {

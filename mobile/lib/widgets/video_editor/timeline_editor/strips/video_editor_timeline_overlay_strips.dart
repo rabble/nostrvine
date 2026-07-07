@@ -122,15 +122,23 @@ class _TimelineOverlayStripsState extends State<TimelineOverlayStrips> {
 
   @override
   Widget build(BuildContext context) {
-    final (:items, :selectedItemId, :collapsedTypes, :timelineMarkers) = context
-        .select(
-          (TimelineOverlayBloc b) => (
-            items: b.state.items,
-            selectedItemId: b.state.selectedItemId,
-            collapsedTypes: b.state.collapsedTypes,
-            timelineMarkers: b.state.timelineMarkers,
-          ),
-        );
+    final (
+      :items,
+      :selectedItemId,
+      :collapsedTypes,
+      :timelineMarkers,
+      :isLayerMultiSelectMode,
+      :multiSelectedLayerIds,
+    ) = context.select(
+      (TimelineOverlayBloc b) => (
+        items: b.state.items,
+        selectedItemId: b.state.selectedItemId,
+        collapsedTypes: b.state.collapsedTypes,
+        timelineMarkers: b.state.timelineMarkers,
+        isLayerMultiSelectMode: b.state.isLayerMultiSelectMode,
+        multiSelectedLayerIds: b.state.multiSelectedLayerIds,
+      ),
+    );
     final isVolumeEditMode = context.select(
       (VideoEditorMainBloc b) => b.state.isVolumeEditMode,
     );
@@ -229,6 +237,11 @@ class _TimelineOverlayStripsState extends State<TimelineOverlayStrips> {
                 rowHeight: config.rowHeight,
                 isCollapsed: config.isCollapsed,
                 selectedItemId: selectedItemId,
+                // Multi-select applies only to the draw-layer strip.
+                isLayerMultiSelectMode:
+                    isLayerMultiSelectMode &&
+                    config.type == TimelineOverlayType.layer,
+                multiSelectedLayerIds: multiSelectedLayerIds,
                 snapPointsMs: _snapPointsMs,
                 onItemTapped: widget.onItemTapped,
                 onItemMoved: widget.onItemMoved,

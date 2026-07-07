@@ -948,6 +948,97 @@ void main() {
           expect(tuneBloc.state.editingSetId, 'set-1');
         },
       );
+
+      testWidgets(
+        'multi-select entry starts draw-layer multi-select with the tapped id',
+        (tester) async {
+          final drawA = _buildPaintLayer('draw-a');
+          final drawB = _buildPaintLayer('draw-b');
+          when(
+            () => mockEditor.activeLayers,
+          ).thenReturn([drawA, drawB]);
+          when(() => mainBloc.state).thenReturn(const VideoEditorMainState());
+
+          const item = TimelineOverlayItem(
+            id: 'draw-a',
+            type: TimelineOverlayType.layer,
+            startTime: Duration.zero,
+            endTime: Duration(seconds: 3),
+          );
+          await tester.pumpWidget(buildWithEditor(item, mockEditor, mainBloc));
+
+          expect(find.text(l10n.videoEditorMultiSelectLabel), findsOneWidget);
+
+          await tester.tap(
+            find.bySemanticsLabel(
+              l10n.videoEditorLayerMultiSelectSemanticLabel,
+            ),
+          );
+          await tester.pump();
+
+          verify(
+            () => overlayBloc.add(
+              const TimelineOverlayLayerMultiSelectStarted('draw-a'),
+            ),
+          ).called(1);
+        },
+      );
+
+      testWidgets(
+        'multi-select entry is hidden when a non-draw layer is selected',
+        (tester) async {
+          final text = TextLayer(text: 'hi', id: 'text-1');
+          final drawA = _buildPaintLayer('draw-a');
+          final drawB = _buildPaintLayer('draw-b');
+          when(
+            () => mockEditor.activeLayers,
+          ).thenReturn([text, drawA, drawB]);
+          when(() => mainBloc.state).thenReturn(const VideoEditorMainState());
+
+          const item = TimelineOverlayItem(
+            id: 'text-1',
+            type: TimelineOverlayType.layer,
+            startTime: Duration.zero,
+            endTime: Duration(seconds: 3),
+          );
+          await tester.pumpWidget(buildWithEditor(item, mockEditor, mainBloc));
+
+          expect(find.text(l10n.videoEditorMultiSelectLabel), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'multi-select entry is hidden when only one draw layer exists',
+        (tester) async {
+          final drawA = _buildPaintLayer('draw-a');
+          when(() => mockEditor.activeLayers).thenReturn([drawA]);
+          when(() => mainBloc.state).thenReturn(const VideoEditorMainState());
+
+          const item = TimelineOverlayItem(
+            id: 'draw-a',
+            type: TimelineOverlayType.layer,
+            startTime: Duration.zero,
+            endTime: Duration(seconds: 3),
+          );
+          await tester.pumpWidget(buildWithEditor(item, mockEditor, mainBloc));
+
+          expect(find.text(l10n.videoEditorMultiSelectLabel), findsNothing);
+        },
+      );
     });
   });
 }
+
+PaintLayer _buildPaintLayer(String id) => PaintLayer(
+  id: id,
+  rawSize: const Size(10, 10),
+  opacity: 1,
+  item: PaintedModel(
+    mode: PaintMode.freeStyle,
+    offsets: const [Offset.zero, Offset(10, 10)],
+    erasedOffsets: const [],
+    color: const Color(0xFFFF0000),
+    strokeWidth: 6,
+    opacity: 1,
+  ),
+);

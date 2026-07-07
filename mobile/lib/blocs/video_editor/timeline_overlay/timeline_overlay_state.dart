@@ -15,6 +15,8 @@ class TimelineOverlayState extends Equatable {
     this.trimPosition,
     this.collapsedTypes = const {},
     this.timelineMarkers = const [],
+    this.isLayerMultiSelectMode = false,
+    this.multiSelectedLayerIds = const {},
   });
 
   /// All overlay items across all strip types.
@@ -81,6 +83,17 @@ class TimelineOverlayState extends Equatable {
   /// Timeline marker positions used for visual guides and snapping.
   final List<Duration> timelineMarkers;
 
+  /// Whether the timeline is in draw-layer multi-select mode.
+  ///
+  /// While active, tapping a mergeable draw-layer overlay toggles its
+  /// membership in [multiSelectedLayerIds] instead of single-selecting it, and
+  /// the multi-select control bar (Combine / Done) replaces the per-layer one.
+  final bool isLayerMultiSelectMode;
+
+  /// The layer ids currently selected for combining. Only meaningful while
+  /// [isLayerMultiSelectMode] is `true`.
+  final Set<String> multiSelectedLayerIds;
+
   TimelineOverlayState copyWith({
     List<TimelineOverlayItem>? items,
     List<AudioEvent>? audioTracks,
@@ -99,6 +112,8 @@ class TimelineOverlayState extends Equatable {
     bool clearTrimPosition = false,
     Set<TimelineOverlayType>? collapsedTypes,
     List<Duration>? timelineMarkers,
+    bool? isLayerMultiSelectMode,
+    Set<String>? multiSelectedLayerIds,
   }) {
     return TimelineOverlayState(
       items: items ?? this.items,
@@ -125,6 +140,10 @@ class TimelineOverlayState extends Equatable {
           : (trimPosition ?? this.trimPosition),
       collapsedTypes: collapsedTypes ?? this.collapsedTypes,
       timelineMarkers: timelineMarkers ?? this.timelineMarkers,
+      isLayerMultiSelectMode:
+          isLayerMultiSelectMode ?? this.isLayerMultiSelectMode,
+      multiSelectedLayerIds:
+          multiSelectedLayerIds ?? this.multiSelectedLayerIds,
     );
   }
 
@@ -142,5 +161,7 @@ class TimelineOverlayState extends Equatable {
     trimPosition,
     collapsedTypes,
     timelineMarkers,
+    isLayerMultiSelectMode,
+    multiSelectedLayerIds,
   ];
 }
