@@ -46,17 +46,63 @@ Notes:
 
 ### NIP-05 leg semantics: fail open on network failure, fail closed on affirmative mismatch
 
-- **Affirmative mismatch** (the identifier resolves to a different key, or the
-  name affirmatively 404s): the entry drops out of the approved set — this is
-  the revocation path working as designed.
-- **Network failure** (offline, timeout, 5xx): the entry keeps its last-known
-  state, defaulting to pin-trusted on cold start. A protected minor on a plane
-  must still be able to DM support; the pin alone already prevents the
-  attacker-addition failure mode, so the NIP-05 leg only exists for revocation
-  freshness and must not brick offline support access.
-- **Cache TTL: 1 hour** (vs the 24h label cache). Rationale: this tier's whole
-  point is fast revocation; hourly re-checks of exactly two names are cheap.
-  Re-check opportunistically on app foreground.
+Drop signals are graded by ambiguity (amended 2026-07-07 after pressure-testing):
+
+- **Resolves to a DIFFERENT key** (unambiguous — either a deliberate revocation
+  repoint or a name-server compromise, and under the intersection both mean
+  "stop trusting this entry"): drop **immediately**, persist the dropped state.
+- **Affirmative absence** (well-formed response without the name, or 404): weak
+  signal — a name-server deploy hiccup or edge-cache misconfiguration looks
+  identical and would otherwise mass-revoke support access for every protected
+  minor at once. Require **confirmation on a ~5-minute recheck** before
+  dropping; a single absent response alone never drops.
+- **Network failure** (offline, timeout, 5xx, malformed response): the entry
+  keeps its last-known state, defaulting to pin-trusted on cold start. A
+  protected minor on a plane must still be able to DM support; the pin alone
+  already prevents the attacker-ADDITION failure mode, so the NIP-05 leg exists
+  only for revocation freshness and must not brick offline support access.
+- **Cache TTL: 1 hour** for the background/inbound state (vs the 24h label
+  cache), re-checked opportunistically on app foreground.
+- **Send-time freshness:** the send path is async, so if the cached leg state
+  is older than the TTL at the moment of send, `isApprovedMinorDmRecipient`
+  awaits a fresh resolution before approving (falling back to the network-
+  failure rule if the fetch fails). The action that matters most gets
+  point-of-use freshness; the hot inbound-filter path stays on the sync cache.
+
+### Threat model and accepted risks (documented, not discovered-in-review)
+
+- **The revocation guarantee is reachability-bounded:** "a revoked entry drops
+  within TTL" holds only for clients that can successfully reach the name
+  server. An attacker holding a compromised pinned key AND network position on
+  a specific victim can suppress revocation for as long as they hold both. We
+  accept this: the alternative (fail closed on network failure) cuts every
+  offline minor off from support, a certain harm against a compound-condition
+  one. Send-time freshness narrows the send-side window; future hardening
+  could try to distinguish general offline from selective unreachability of
+  divine.video, but that is unreliable on mobile networks and deferred.
+- **Storage-clear un-revokes until the next successful check:** persisted
+  dropped state lives in SharedPreferences; clearing app storage returns the
+  entry to the cold-start pin-trusted default. Chained with offline, a revoked
+  entry can be transiently trusted again. Accepted for the same reason as
+  above; noted so it is a decision, not a surprise.
+- **Client-side filtering is the ONLY inbound enforcement layer.** NIP-17
+  gift-wraps are authored by ephemeral keys, so the relay cannot block DMs
+  from a banned sender, and a leaked raw nsec signs from anywhere regardless
+  of keycast suspension. This is why the inbound filter and its fail-safe
+  posture carry security-review weight disproportionate to their code size.
+
+### Launch checklist (ops artifacts, required before the PR merges)
+
+1. **Revocation runbook:** who repoints/removes a tier-2 nip-05 in the name
+   server, how it is triggered out-of-hours, and the expected end-to-end
+   propagation time (repoint + client TTL).
+2. **Monitoring:** the team-side nostr.json monitor alerts specifically on the
+   two tier-2 identifiers (resolution changed or absent), so a repoint or
+   misconfiguration is seen on a dashboard before it is felt by minors.
+3. **Change control:** decide whether changes to the child-contactable set
+   (pin changes in code, or name-server repoints of these two names) require a
+   documented two-person rule, per the CSAM-adjacent change-control principles
+   (raised as open item in the #4948 decision).
 
 ### Enforcement activation: same sticky posture as #175
 
