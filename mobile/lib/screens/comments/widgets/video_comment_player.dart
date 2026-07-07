@@ -7,6 +7,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -62,10 +63,22 @@ class _VideoCommentPlayerState extends State<VideoCommentPlayer>
     unawaited(() async {
       try {
         await controller?.pause();
-      } catch (_) {}
+      } catch (e) {
+        Log.warning(
+          'Failed to pause comment video before dispose: $e',
+          name: 'VideoCommentPlayer',
+          category: LogCategory.video,
+        );
+      }
       try {
         await controller?.dispose();
-      } catch (_) {}
+      } catch (e) {
+        Log.warning(
+          'Failed to dispose comment video controller: $e',
+          name: 'VideoCommentPlayer',
+          category: LogCategory.video,
+        );
+      }
     }());
     super.dispose();
   }
