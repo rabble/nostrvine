@@ -129,13 +129,6 @@ class _DeveloperOptionsScreenState
     final reviewStatusAsync = ref.watch(
       currentMinorAccountReviewStatusProvider,
     );
-    final protectedMinorAsync = ref.watch(protectedMinorStatusProvider);
-    // Plain service read: prefs-backed value, not reactive — the action
-    // handlers call setState() after mutating it, matching the minor-review
-    // simulation idiom above.
-    final protectedMinorOverride = ref
-        .watch(protectedMinorOverrideServiceProvider)
-        .getOverride();
 
     // All available environment configurations
     final environments = [
@@ -480,15 +473,7 @@ class _DeveloperOptionsScreenState
                     ),
                   ),
                   subtitle: Text(
-                    '${protectedMinorAsync.when(
-                      data: (status) => status.isProtectedMinor ? context.l10n.devOptionsProtectedMinorStateProtected : context.l10n.devOptionsProtectedMinorStateNotProtected,
-                      loading: () => context.l10n.devOptionsProtectedMinorStateLoading,
-                      error: (error, stackTrace) => context.l10n.devOptionsProtectedMinorStateError,
-                    )}\n${switch (protectedMinorOverride) {
-                      true => context.l10n.devOptionsProtectedMinorOverrideProtected,
-                      false => context.l10n.devOptionsProtectedMinorOverrideNotProtected,
-                      null => context.l10n.devOptionsProtectedMinorOverrideNone,
-                    }}',
+                    _protectedMinorStateText(context),
                     style: const TextStyle(
                       color: VineTheme.secondaryText,
                       fontSize: 14,
@@ -557,6 +542,34 @@ class _DeveloperOptionsScreenState
         ),
       ),
     );
+  }
+
+  String _protectedMinorStateText(BuildContext context) {
+    final protectedMinorAsync = ref.watch(protectedMinorStatusProvider);
+    // Plain service read: prefs-backed value, not reactive — the action
+    // handlers call setState() after mutating it, matching the minor-review
+    // simulation idiom above. This method is only invoked from the kDebugMode
+    // section, so release builds do not subscribe to protected-minor providers
+    // just by opening Developer Options.
+    final protectedMinorOverride = ref
+        .watch(protectedMinorOverrideServiceProvider)
+        .getOverride();
+
+    final statusText = protectedMinorAsync.when(
+      data: (status) => status.isProtectedMinor
+          ? context.l10n.devOptionsProtectedMinorStateProtected
+          : context.l10n.devOptionsProtectedMinorStateNotProtected,
+      loading: () => context.l10n.devOptionsProtectedMinorStateLoading,
+      error: (error, stackTrace) =>
+          context.l10n.devOptionsProtectedMinorStateError,
+    );
+    final overrideText = switch (protectedMinorOverride) {
+      true => context.l10n.devOptionsProtectedMinorOverrideProtected,
+      false => context.l10n.devOptionsProtectedMinorOverrideNotProtected,
+      null => context.l10n.devOptionsProtectedMinorOverrideNone,
+    };
+
+    return '$statusText\n$overrideText';
   }
 
   Future<void> _switchEnvironment(
