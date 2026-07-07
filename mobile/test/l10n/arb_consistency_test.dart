@@ -64,6 +64,37 @@ void main() {
       }
     });
 
+    test('CSAM report reason does not collapse into child safety copy', () {
+      final l10nDir = Directory('lib/l10n');
+      final arbFiles =
+          l10nDir
+              .listSync()
+              .whereType<File>()
+              .where((file) => file.path.endsWith('.arb'))
+              .where((file) => !file.path.endsWith('app_en.arb'))
+              .toList()
+            ..sort((a, b) => a.path.compareTo(b.path));
+
+      for (final file in arbFiles) {
+        final arb = _readArb(file);
+
+        expect(
+          arb['reportReasonCsam'],
+          isNot(arb['reportReasonChildSafety']),
+          reason:
+              '${file.path} must keep CSAM distinct from child safety in the '
+              'report reason title',
+        );
+        expect(
+          arb['reportReasonCsamSubtitle'],
+          isNot(arb['reportReasonChildSafetySubtitle']),
+          reason:
+              '${file.path} must keep CSAM distinct from child safety in the '
+              'report reason subtitle',
+        );
+      }
+    });
+
     test('age-gate signer-unreachable copy is localized for every locale', () {
       final l10nDir = Directory('lib/l10n');
       final arbFiles =
