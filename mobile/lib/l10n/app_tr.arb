@@ -2791,15 +2791,6 @@
     "videoEditorHideTimelineSemanticLabel": "Zaman çizelgesini gizle",
     "videoEditorHueSemanticLabel": "Ton",
     "videoEditorKeepEditingButton": "Düzenlemeye devam et",
-    "videoEditorLayerReorderHint": "Yeniden sıralamak için basılı tut",
-    "videoEditorLayerReorderLabel": "Katman {index}'i yeniden sırala",
-    "@videoEditorLayerReorderLabel": {
-        "placeholders": {
-            "index": {
-                "type": "int"
-            }
-        }
-    },
     "videoEditorLevelSemanticLabel": "Seviye",
     "videoEditorMuteAudioSemanticLabel": "Sesi kapat",
     "videoEditorNoStickersAvailable": "Kullanılabilir çıkartma yok",

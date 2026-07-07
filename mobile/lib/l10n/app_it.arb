@@ -2927,15 +2927,6 @@
     "videoEditorDrawToolEraserSemanticLabel": "Strumento gomma",
     "videoEditorDrawToolMarkerSemanticLabel": "Strumento evidenziatore",
     "videoEditorDrawToolPencilSemanticLabel": "Strumento matita",
-    "videoEditorLayerReorderLabel": "Riordina livello {index}",
-    "@videoEditorLayerReorderLabel": {
-        "placeholders": {
-            "index": {
-                "type": "int"
-            }
-        }
-    },
-    "videoEditorLayerReorderHint": "Tieni premuto per riordinare",
     "videoEditorShowTimelineSemanticLabel": "Mostra timeline",
     "videoEditorHideTimelineSemanticLabel": "Nascondi timeline",
     "videoEditorFeedPreviewContent": "Evita di posizionare contenuti dietro queste aree.",

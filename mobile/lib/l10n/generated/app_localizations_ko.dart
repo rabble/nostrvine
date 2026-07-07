@@ -8086,14 +8086,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorDrawToolPencilSemanticLabel => '연필 도구';
 
   @override
-  String videoEditorLayerReorderLabel(int index) {
-    return '레이어 $index 순서 변경';
-  }
-
-  @override
-  String get videoEditorLayerReorderHint => '길게 눌러 순서 변경';
-
-  @override
   String get videoEditorShowTimelineSemanticLabel => '타임라인 표시';
 
   @override

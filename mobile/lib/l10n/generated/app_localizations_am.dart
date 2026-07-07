@@ -8227,14 +8227,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorDrawToolPencilSemanticLabel => 'የእርሳስ መሳሪያ';
 
   @override
-  String videoEditorLayerReorderLabel(int index) {
-    return 'ንብርብር እንደገና ይዘዙ $index';
-  }
-
-  @override
-  String get videoEditorLayerReorderHint => 'እንደገና ለመደርደር ይያዙ';
-
-  @override
   String get videoEditorShowTimelineSemanticLabel => 'የጊዜ መስመር አሳይ';
 
   @override

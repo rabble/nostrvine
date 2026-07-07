@@ -2784,15 +2784,6 @@
     "videoEditorHideTimelineSemanticLabel": "إخفاء الجدول الزمني",
     "videoEditorHueSemanticLabel": "الصبغة",
     "videoEditorKeepEditingButton": "مواصلة التحرير",
-    "videoEditorLayerReorderHint": "اضغط مطولاً لإعادة الترتيب",
-    "videoEditorLayerReorderLabel": "إعادة ترتيب الطبقة {index}",
-    "@videoEditorLayerReorderLabel": {
-        "placeholders": {
-            "index": {
-                "type": "int"
-            }
-        }
-    },
     "videoEditorLevelSemanticLabel": "المستوى",
     "videoEditorMuteAudioSemanticLabel": "كتم الصوت",
     "videoEditorNoStickersAvailable": "لا توجد ملصقات متاحة",

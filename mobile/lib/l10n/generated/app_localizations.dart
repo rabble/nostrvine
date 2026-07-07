@@ -14592,18 +14592,6 @@ abstract class AppLocalizations {
   /// **'Pencil tool'**
   String get videoEditorDrawToolPencilSemanticLabel;
 
-  /// No description provided for @videoEditorLayerReorderLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Reorder layer {index}'**
-  String videoEditorLayerReorderLabel(int index);
-
-  /// No description provided for @videoEditorLayerReorderHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Hold to reorder'**
-  String get videoEditorLayerReorderHint;
-
   /// No description provided for @videoEditorShowTimelineSemanticLabel.
   ///
   /// In en, this message translates to:

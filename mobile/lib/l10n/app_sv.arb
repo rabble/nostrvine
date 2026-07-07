@@ -2927,15 +2927,6 @@
     "videoEditorDrawToolEraserSemanticLabel": "Suddverktyg",
     "videoEditorDrawToolMarkerSemanticLabel": "Markeringsverktyg",
     "videoEditorDrawToolPencilSemanticLabel": "Pennverktyg",
-    "videoEditorLayerReorderLabel": "Ordna om lager {index}",
-    "@videoEditorLayerReorderLabel": {
-        "placeholders": {
-            "index": {
-                "type": "int"
-            }
-        }
-    },
-    "videoEditorLayerReorderHint": "Håll ned för att ordna om",
     "videoEditorShowTimelineSemanticLabel": "Visa tidslinje",
     "videoEditorHideTimelineSemanticLabel": "Dölj tidslinje",
     "videoEditorFeedPreviewContent": "Undvik att placera innehåll bakom dessa områden.",

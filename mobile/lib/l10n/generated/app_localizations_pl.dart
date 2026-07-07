@@ -8577,15 +8577,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoEditorDrawToolPencilSemanticLabel => 'Narzędzie ołówka';
 
   @override
-  String videoEditorLayerReorderLabel(int index) {
-    return 'Zmień kolejność warstwy $index';
-  }
-
-  @override
-  String get videoEditorLayerReorderHint =>
-      'Przytrzymaj, aby zmienić kolejność';
-
-  @override
   String get videoEditorShowTimelineSemanticLabel => 'Pokaż oś czasu';
 
   @override

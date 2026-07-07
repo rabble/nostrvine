@@ -2927,15 +2927,6 @@
     "videoEditorDrawToolEraserSemanticLabel": "Narzędzie gumki",
     "videoEditorDrawToolMarkerSemanticLabel": "Narzędzie markera",
     "videoEditorDrawToolPencilSemanticLabel": "Narzędzie ołówka",
-    "videoEditorLayerReorderLabel": "Zmień kolejność warstwy {index}",
-    "@videoEditorLayerReorderLabel": {
-        "placeholders": {
-            "index": {
-                "type": "int"
-            }
-        }
-    },
-    "videoEditorLayerReorderHint": "Przytrzymaj, aby zmienić kolejność",
     "videoEditorShowTimelineSemanticLabel": "Pokaż oś czasu",
     "videoEditorHideTimelineSemanticLabel": "Ukryj oś czasu",
     "videoEditorFeedPreviewContent": "Unikaj umieszczania treści za tymi obszarami.",

@@ -8485,14 +8485,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoEditorDrawToolPencilSemanticLabel => 'Инструмент молив';
 
   @override
-  String videoEditorLayerReorderLabel(int index) {
-    return 'Пренареждане на слой $index';
-  }
-
-  @override
-  String get videoEditorLayerReorderHint => 'Задръжте за пренареждане';
-
-  @override
   String get videoEditorShowTimelineSemanticLabel =>
       'Показване на времевата линия';
 

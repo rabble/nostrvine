@@ -8368,14 +8368,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorDrawToolPencilSemanticLabel => 'Kalem aracı';
 
   @override
-  String videoEditorLayerReorderLabel(int index) {
-    return 'Katman $index\'i yeniden sırala';
-  }
-
-  @override
-  String get videoEditorLayerReorderHint => 'Yeniden sıralamak için basılı tut';
-
-  @override
   String get videoEditorShowTimelineSemanticLabel => 'Zaman çizelgesini göster';
 
   @override

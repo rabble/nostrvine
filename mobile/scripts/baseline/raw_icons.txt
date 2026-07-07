@@ -53,7 +53,6 @@ lib/widgets/proofmode_badge.dart	7
 lib/widgets/sound_tile.dart	2
 lib/widgets/user_search_view.dart	2
 lib/widgets/video_editor/audio_editor/audio_selection_bottom_sheet.dart	3
-lib/widgets/video_editor/main_editor/video_editor_layer_reorder_sheet.dart	1
 lib/widgets/video_feed_item/collaborator_avatar_row.dart	1
 lib/widgets/video_processing_status_widget.dart	8
 lib/widgets/video_recorder/video_recorder_camera_placeholder.dart	2

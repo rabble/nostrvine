@@ -8439,14 +8439,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoEditorDrawToolPencilSemanticLabel => 'Potloodgereedschap';
 
   @override
-  String videoEditorLayerReorderLabel(int index) {
-    return 'Laag $index herordenen';
-  }
-
-  @override
-  String get videoEditorLayerReorderHint => 'Vasthouden om te herordenen';
-
-  @override
   String get videoEditorShowTimelineSemanticLabel => 'Tijdlijn tonen';
 
   @override

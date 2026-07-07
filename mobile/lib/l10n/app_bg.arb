@@ -3178,15 +3178,6 @@
     "videoEditorDrawToolEraserSemanticLabel": "Инструмент за изтриване",
     "videoEditorDrawToolMarkerSemanticLabel": "Инструмент за маркер",
     "videoEditorDrawToolPencilSemanticLabel": "Инструмент молив",
-    "videoEditorLayerReorderLabel": "Пренареждане на слой {index}",
-    "@videoEditorLayerReorderLabel": {
-        "placeholders": {
-            "index": {
-                "type": "int"
-            }
-        }
-    },
-    "videoEditorLayerReorderHint": "Задръжте за пренареждане",
     "videoEditorShowTimelineSemanticLabel": "Показване на времевата линия",
     "videoEditorHideTimelineSemanticLabel": "Скриване на времевата линия",
     "videoEditorFeedPreviewContent": "Избягвайте да поставяте съдържание зад тези области.",

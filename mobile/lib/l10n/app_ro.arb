@@ -2927,15 +2927,6 @@
     "videoEditorDrawToolEraserSemanticLabel": "Instrument radieră",
     "videoEditorDrawToolMarkerSemanticLabel": "Instrument marker",
     "videoEditorDrawToolPencilSemanticLabel": "Instrument creion",
-    "videoEditorLayerReorderLabel": "Reordonează stratul {index}",
-    "@videoEditorLayerReorderLabel": {
-        "placeholders": {
-            "index": {
-                "type": "int"
-            }
-        }
-    },
-    "videoEditorLayerReorderHint": "Ține apăsat pentru a reordona",
     "videoEditorShowTimelineSemanticLabel": "Afișează cronologia",
     "videoEditorHideTimelineSemanticLabel": "Ascunde cronologia",
     "videoEditorFeedPreviewContent": "Evită să plasezi conținut în spatele acestor zone.",

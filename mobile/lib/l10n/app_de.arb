@@ -2927,15 +2927,6 @@
     "videoEditorDrawToolEraserSemanticLabel": "Radiergummi-Werkzeug",
     "videoEditorDrawToolMarkerSemanticLabel": "Marker-Werkzeug",
     "videoEditorDrawToolPencilSemanticLabel": "Bleistift-Werkzeug",
-    "videoEditorLayerReorderLabel": "Ebene {index} neu anordnen",
-    "@videoEditorLayerReorderLabel": {
-        "placeholders": {
-            "index": {
-                "type": "int"
-            }
-        }
-    },
-    "videoEditorLayerReorderHint": "Zum Neuordnen halten",
     "videoEditorShowTimelineSemanticLabel": "Timeline anzeigen",
     "videoEditorHideTimelineSemanticLabel": "Timeline ausblenden",
     "videoEditorFeedPreviewContent": "Vermeide es, Inhalte hinter diesen Bereichen zu platzieren.",

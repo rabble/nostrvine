@@ -2784,15 +2784,6 @@
     "videoEditorHideTimelineSemanticLabel": "タイムラインを非表示",
     "videoEditorHueSemanticLabel": "色相",
     "videoEditorKeepEditingButton": "編集を続ける",
-    "videoEditorLayerReorderHint": "長押しして並べ替え",
-    "videoEditorLayerReorderLabel": "レイヤー{index}を並べ替え",
-    "@videoEditorLayerReorderLabel": {
-        "placeholders": {
-            "index": {
-                "type": "int"
-            }
-        }
-    },
     "videoEditorLevelSemanticLabel": "レベル",
     "videoEditorMuteAudioSemanticLabel": "音声をミュート",
     "videoEditorNoStickersAvailable": "ステッカーがありません",

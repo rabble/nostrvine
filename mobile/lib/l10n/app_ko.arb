@@ -2115,15 +2115,6 @@
     "videoEditorHideTimelineSemanticLabel": "타임라인 숨기기",
     "videoEditorHueSemanticLabel": "색조",
     "videoEditorKeepEditingButton": "계속 편집",
-    "videoEditorLayerReorderHint": "길게 눌러 순서 변경",
-    "videoEditorLayerReorderLabel": "레이어 {index} 순서 변경",
-    "@videoEditorLayerReorderLabel": {
-        "placeholders": {
-            "index": {
-                "type": "int"
-            }
-        }
-    },
     "videoEditorLevelSemanticLabel": "레벨",
     "videoEditorMuteAudioSemanticLabel": "오디오 음소거",
     "videoEditorNoStickersAvailable": "사용 가능한 스티커 없음",

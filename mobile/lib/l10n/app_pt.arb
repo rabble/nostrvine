@@ -2927,15 +2927,6 @@
     "videoEditorDrawToolEraserSemanticLabel": "Ferramenta borracha",
     "videoEditorDrawToolMarkerSemanticLabel": "Ferramenta marcador",
     "videoEditorDrawToolPencilSemanticLabel": "Ferramenta lápis",
-    "videoEditorLayerReorderLabel": "Reordenar camada {index}",
-    "@videoEditorLayerReorderLabel": {
-        "placeholders": {
-            "index": {
-                "type": "int"
-            }
-        }
-    },
-    "videoEditorLayerReorderHint": "Pressione e segure para reordenar",
     "videoEditorShowTimelineSemanticLabel": "Mostrar linha do tempo",
     "videoEditorHideTimelineSemanticLabel": "Ocultar linha do tempo",
     "videoEditorFeedPreviewContent": "Evite posicionar conteúdo atrás dessas áreas.",

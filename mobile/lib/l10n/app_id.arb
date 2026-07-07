@@ -2791,15 +2791,6 @@
     "videoEditorHideTimelineSemanticLabel": "Sembunyikan timeline",
     "videoEditorHueSemanticLabel": "Rona",
     "videoEditorKeepEditingButton": "Lanjutkan mengedit",
-    "videoEditorLayerReorderHint": "Tahan untuk mengurutkan ulang",
-    "videoEditorLayerReorderLabel": "Urutkan ulang lapisan {index}",
-    "@videoEditorLayerReorderLabel": {
-        "placeholders": {
-            "index": {
-                "type": "int"
-            }
-        }
-    },
     "videoEditorLevelSemanticLabel": "Level",
     "videoEditorMuteAudioSemanticLabel": "Matikan suara",
     "videoEditorNoStickersAvailable": "Tidak ada stiker tersedia",

@@ -8500,15 +8500,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoEditorDrawToolPencilSemanticLabel => 'Pencil tool';
 
   @override
-  String videoEditorLayerReorderLabel(int index) {
-    return 'I-reorder ang layer $index';
-  }
-
-  @override
-  String get videoEditorLayerReorderHint =>
-      'Pindutin nang matagal para mag-reorder';
-
-  @override
   String get videoEditorShowTimelineSemanticLabel => 'Ipakita ang timeline';
 
   @override

@@ -1866,8 +1866,6 @@
     "videoEditorDrawToolEraserSemanticLabel": "Eraser tool",
     "videoEditorDrawToolMarkerSemanticLabel": "Marker tool",
     "videoEditorDrawToolPencilSemanticLabel": "Pencil tool",
-    "videoEditorLayerReorderLabel": "I-reorder ang layer {index}",
-    "videoEditorLayerReorderHint": "Pindutin nang matagal para mag-reorder",
     "videoEditorShowTimelineSemanticLabel": "Ipakita ang timeline",
     "videoEditorHideTimelineSemanticLabel": "Itago ang timeline",
     "videoEditorFeedPreviewContent": "Iwasan ang paglalagay ng content sa likod ng mga area na ito.",

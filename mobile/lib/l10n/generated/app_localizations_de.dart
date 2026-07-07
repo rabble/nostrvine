@@ -8503,14 +8503,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoEditorDrawToolPencilSemanticLabel => 'Bleistift-Werkzeug';
 
   @override
-  String videoEditorLayerReorderLabel(int index) {
-    return 'Ebene $index neu anordnen';
-  }
-
-  @override
-  String get videoEditorLayerReorderHint => 'Zum Neuordnen halten';
-
-  @override
   String get videoEditorShowTimelineSemanticLabel => 'Timeline anzeigen';
 
   @override

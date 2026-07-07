@@ -8524,14 +8524,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get videoEditorDrawToolPencilSemanticLabel => 'Outil crayon';
 
   @override
-  String videoEditorLayerReorderLabel(int index) {
-    return 'Réorganiser le calque $index';
-  }
-
-  @override
-  String get videoEditorLayerReorderHint => 'Maintenez appuyé pour réorganiser';
-
-  @override
   String get videoEditorShowTimelineSemanticLabel => 'Afficher la timeline';
 
   @override

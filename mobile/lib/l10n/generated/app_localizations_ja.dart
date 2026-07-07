@@ -8061,14 +8061,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorDrawToolPencilSemanticLabel => '鉛筆ツール';
 
   @override
-  String videoEditorLayerReorderLabel(int index) {
-    return 'レイヤー$indexを並べ替え';
-  }
-
-  @override
-  String get videoEditorLayerReorderHint => '長押しして並べ替え';
-
-  @override
   String get videoEditorShowTimelineSemanticLabel => 'タイムラインを表示';
 
   @override

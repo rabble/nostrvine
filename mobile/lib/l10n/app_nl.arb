@@ -2927,15 +2927,6 @@
     "videoEditorDrawToolEraserSemanticLabel": "Gumgereedschap",
     "videoEditorDrawToolMarkerSemanticLabel": "Markeergereedschap",
     "videoEditorDrawToolPencilSemanticLabel": "Potloodgereedschap",
-    "videoEditorLayerReorderLabel": "Laag {index} herordenen",
-    "@videoEditorLayerReorderLabel": {
-        "placeholders": {
-            "index": {
-                "type": "int"
-            }
-        }
-    },
-    "videoEditorLayerReorderHint": "Vasthouden om te herordenen",
     "videoEditorShowTimelineSemanticLabel": "Tijdlijn tonen",
     "videoEditorHideTimelineSemanticLabel": "Tijdlijn verbergen",
     "videoEditorFeedPreviewContent": "Plaats geen content achter deze gebieden.",

@@ -3488,15 +3488,6 @@
     "videoEditorDrawToolEraserSemanticLabel": "መጥረጊያ መሳሪያ",
     "videoEditorDrawToolMarkerSemanticLabel": "ምልክት ማድረጊያ መሳሪያ",
     "videoEditorDrawToolPencilSemanticLabel": "የእርሳስ መሳሪያ",
-    "videoEditorLayerReorderLabel": "ንብርብር እንደገና ይዘዙ {index}",
-    "@videoEditorLayerReorderLabel": {
-        "placeholders": {
-            "index": {
-                "type": "int"
-            }
-        }
-    },
-    "videoEditorLayerReorderHint": "እንደገና ለመደርደር ይያዙ",
     "videoEditorShowTimelineSemanticLabel": "የጊዜ መስመር አሳይ",
     "videoEditorHideTimelineSemanticLabel": "የጊዜ መስመርን ደብቅ",
     "videoEditorFeedPreviewContent": "ከእነዚህ አካባቢዎች በስተጀርባ ይዘትን ከማስቀመጥ ተቆጠብ።",

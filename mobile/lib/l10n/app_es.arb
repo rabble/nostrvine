@@ -2935,15 +2935,6 @@
     "videoEditorDrawToolEraserSemanticLabel": "Herramienta borrador",
     "videoEditorDrawToolMarkerSemanticLabel": "Herramienta marcador",
     "videoEditorDrawToolPencilSemanticLabel": "Herramienta lápiz",
-    "videoEditorLayerReorderLabel": "Reordenar capa {index}",
-    "@videoEditorLayerReorderLabel": {
-        "placeholders": {
-            "index": {
-                "type": "int"
-            }
-        }
-    },
-    "videoEditorLayerReorderHint": "Mantén presionado para reordenar",
     "videoEditorShowTimelineSemanticLabel": "Mostrar línea de tiempo",
     "videoEditorHideTimelineSemanticLabel": "Ocultar línea de tiempo",
     "videoEditorFeedPreviewContent": "Evita colocar contenido detrás de estas áreas.",
