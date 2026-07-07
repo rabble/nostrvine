@@ -9452,6 +9452,73 @@ class AppLocalizationsPl extends AppLocalizations {
       'Simulated under-13 support case enabled';
 
   @override
+  String get devOptionsProtectedMinorSimulationTitle =>
+      'Protected Minor Simulation';
+
+  @override
+  String get devOptionsProtectedMinorCurrentStateLabel => 'Current state';
+
+  @override
+  String get devOptionsProtectedMinorStateProtected =>
+      'Protected minor (13-15)';
+
+  @override
+  String get devOptionsProtectedMinorStateNotProtected => 'Not protected';
+
+  @override
+  String get devOptionsProtectedMinorStateLoading => 'Loading…';
+
+  @override
+  String get devOptionsProtectedMinorStateError => 'Error reading state';
+
+  @override
+  String get devOptionsProtectedMinorOverrideNone =>
+      'No override (real account state)';
+
+  @override
+  String get devOptionsProtectedMinorOverrideProtected =>
+      'Override: forced protected';
+
+  @override
+  String get devOptionsProtectedMinorOverrideNotProtected =>
+      'Override: forced not protected';
+
+  @override
+  String get devOptionsProtectedMinorSimulateTitle =>
+      'Simulate protected minor (13-15)';
+
+  @override
+  String get devOptionsProtectedMinorSimulateSubtitle =>
+      'Force the protected-minor state to QA the #175/#176 protections';
+
+  @override
+  String get devOptionsProtectedMinorSimulateNonMinorTitle =>
+      'Simulate non-minor';
+
+  @override
+  String get devOptionsProtectedMinorSimulateNonMinorSubtitle =>
+      'Force not-protected (explicit negative, distinct from no override)';
+
+  @override
+  String get devOptionsProtectedMinorClearTitle => 'Clear override';
+
+  @override
+  String get devOptionsProtectedMinorClearSubtitle =>
+      'Return to the real Keycast-driven account state';
+
+  @override
+  String get devOptionsProtectedMinorEnabledToast =>
+      'Protected-minor state forced on';
+
+  @override
+  String get devOptionsProtectedMinorNonMinorToast =>
+      'Protected-minor state forced off';
+
+  @override
+  String get devOptionsProtectedMinorClearedToast =>
+      'Protected-minor override cleared';
+
+  @override
   String get commentsRecordVideoButtonLabel => 'Nagraj komentarz wideo';
 
   @override

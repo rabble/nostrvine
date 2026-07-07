@@ -16042,6 +16042,114 @@ abstract class AppLocalizations {
   /// **'Simulated under-13 support case enabled'**
   String get devOptionsMinorReviewUnder13EnabledToast;
 
+  /// No description provided for @devOptionsProtectedMinorSimulationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Protected Minor Simulation'**
+  String get devOptionsProtectedMinorSimulationTitle;
+
+  /// No description provided for @devOptionsProtectedMinorCurrentStateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Current state'**
+  String get devOptionsProtectedMinorCurrentStateLabel;
+
+  /// No description provided for @devOptionsProtectedMinorStateProtected.
+  ///
+  /// In en, this message translates to:
+  /// **'Protected minor (13-15)'**
+  String get devOptionsProtectedMinorStateProtected;
+
+  /// No description provided for @devOptionsProtectedMinorStateNotProtected.
+  ///
+  /// In en, this message translates to:
+  /// **'Not protected'**
+  String get devOptionsProtectedMinorStateNotProtected;
+
+  /// No description provided for @devOptionsProtectedMinorStateLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading…'**
+  String get devOptionsProtectedMinorStateLoading;
+
+  /// No description provided for @devOptionsProtectedMinorStateError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error reading state'**
+  String get devOptionsProtectedMinorStateError;
+
+  /// No description provided for @devOptionsProtectedMinorOverrideNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No override (real account state)'**
+  String get devOptionsProtectedMinorOverrideNone;
+
+  /// No description provided for @devOptionsProtectedMinorOverrideProtected.
+  ///
+  /// In en, this message translates to:
+  /// **'Override: forced protected'**
+  String get devOptionsProtectedMinorOverrideProtected;
+
+  /// No description provided for @devOptionsProtectedMinorOverrideNotProtected.
+  ///
+  /// In en, this message translates to:
+  /// **'Override: forced not protected'**
+  String get devOptionsProtectedMinorOverrideNotProtected;
+
+  /// No description provided for @devOptionsProtectedMinorSimulateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulate protected minor (13-15)'**
+  String get devOptionsProtectedMinorSimulateTitle;
+
+  /// No description provided for @devOptionsProtectedMinorSimulateSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Force the protected-minor state to QA the #175/#176 protections'**
+  String get devOptionsProtectedMinorSimulateSubtitle;
+
+  /// No description provided for @devOptionsProtectedMinorSimulateNonMinorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulate non-minor'**
+  String get devOptionsProtectedMinorSimulateNonMinorTitle;
+
+  /// No description provided for @devOptionsProtectedMinorSimulateNonMinorSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Force not-protected (explicit negative, distinct from no override)'**
+  String get devOptionsProtectedMinorSimulateNonMinorSubtitle;
+
+  /// No description provided for @devOptionsProtectedMinorClearTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear override'**
+  String get devOptionsProtectedMinorClearTitle;
+
+  /// No description provided for @devOptionsProtectedMinorClearSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Return to the real Keycast-driven account state'**
+  String get devOptionsProtectedMinorClearSubtitle;
+
+  /// No description provided for @devOptionsProtectedMinorEnabledToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Protected-minor state forced on'**
+  String get devOptionsProtectedMinorEnabledToast;
+
+  /// No description provided for @devOptionsProtectedMinorNonMinorToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Protected-minor state forced off'**
+  String get devOptionsProtectedMinorNonMinorToast;
+
+  /// No description provided for @devOptionsProtectedMinorClearedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Protected-minor override cleared'**
+  String get devOptionsProtectedMinorClearedToast;
+
   /// Semantics label for the button that opens the recorder to create a video reply in comments.
   ///
   /// In en, this message translates to:

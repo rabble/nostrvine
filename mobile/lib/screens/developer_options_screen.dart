@@ -16,6 +16,7 @@ import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/providers/protected_minor_providers.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/video_format_preference.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -128,6 +129,13 @@ class _DeveloperOptionsScreenState
     final reviewStatusAsync = ref.watch(
       currentMinorAccountReviewStatusProvider,
     );
+    final protectedMinorAsync = ref.watch(protectedMinorStatusProvider);
+    // Plain service read: prefs-backed value, not reactive — the action
+    // handlers call setState() after mutating it, matching the minor-review
+    // simulation idiom above.
+    final protectedMinorOverride = ref
+        .watch(protectedMinorOverrideServiceProvider)
+        .getOverride();
 
     // All available environment configurations
     final environments = [
@@ -443,6 +451,106 @@ class _DeveloperOptionsScreenState
                   ),
                   onTap: _simulateUnder13MinorReview,
                 ),
+                // Protected-minor (13-15) simulation (#5721): flips the
+                // debug-only ProtectedMinorOverrideService so QA can exercise
+                // the #175/#176 protections without a real approved-minor
+                // account. Sibling of the review simulation above.
+                const Divider(color: VineTheme.outlineVariant, height: 32),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: Text(
+                    context.l10n.devOptionsProtectedMinorSimulationTitle,
+                    style: const TextStyle(
+                      color: VineTheme.vineGreen,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                ListTile(
+                  title: Text(
+                    context.l10n.devOptionsProtectedMinorCurrentStateLabel,
+                    style: const TextStyle(
+                      color: VineTheme.primaryText,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  subtitle: Text(
+                    '${protectedMinorAsync.when(
+                      data: (status) => status.isProtectedMinor ? context.l10n.devOptionsProtectedMinorStateProtected : context.l10n.devOptionsProtectedMinorStateNotProtected,
+                      loading: () => context.l10n.devOptionsProtectedMinorStateLoading,
+                      error: (error, stackTrace) => context.l10n.devOptionsProtectedMinorStateError,
+                    )}\n${switch (protectedMinorOverride) {
+                      true => context.l10n.devOptionsProtectedMinorOverrideProtected,
+                      false => context.l10n.devOptionsProtectedMinorOverrideNotProtected,
+                      null => context.l10n.devOptionsProtectedMinorOverrideNone,
+                    }}',
+                    style: const TextStyle(
+                      color: VineTheme.secondaryText,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                ListTile(
+                  title: Text(
+                    context.l10n.devOptionsProtectedMinorSimulateTitle,
+                    style: const TextStyle(
+                      color: VineTheme.primaryText,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  subtitle: Text(
+                    context.l10n.devOptionsProtectedMinorSimulateSubtitle,
+                    style: const TextStyle(
+                      color: VineTheme.secondaryText,
+                      fontSize: 14,
+                    ),
+                  ),
+                  onTap: () => _setProtectedMinorOverride(true),
+                ),
+                ListTile(
+                  title: Text(
+                    context.l10n.devOptionsProtectedMinorSimulateNonMinorTitle,
+                    style: const TextStyle(
+                      color: VineTheme.primaryText,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  subtitle: Text(
+                    context
+                        .l10n
+                        .devOptionsProtectedMinorSimulateNonMinorSubtitle,
+                    style: const TextStyle(
+                      color: VineTheme.secondaryText,
+                      fontSize: 14,
+                    ),
+                  ),
+                  onTap: () => _setProtectedMinorOverride(false),
+                ),
+                ListTile(
+                  title: Text(
+                    context.l10n.devOptionsProtectedMinorClearTitle,
+                    style: const TextStyle(
+                      color: VineTheme.primaryText,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  subtitle: Text(
+                    context.l10n.devOptionsProtectedMinorClearSubtitle,
+                    style: const TextStyle(
+                      color: VineTheme.secondaryText,
+                      fontSize: 14,
+                    ),
+                  ),
+                  onTap: _clearProtectedMinorOverride,
+                ),
               ],
             ],
           ),
@@ -551,6 +659,38 @@ class _DeveloperOptionsScreenState
         backgroundColor: VineTheme.vineGreen,
       ),
     );
+  }
+
+  Future<void> _setProtectedMinorOverride(bool isProtectedMinor) async {
+    await ref
+        .read(protectedMinorOverrideServiceProvider)
+        .setOverride(isProtectedMinor);
+    ref.invalidate(protectedMinorStatusProvider);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          isProtectedMinor
+              ? context.l10n.devOptionsProtectedMinorEnabledToast
+              : context.l10n.devOptionsProtectedMinorNonMinorToast,
+        ),
+        backgroundColor: VineTheme.vineGreen,
+      ),
+    );
+    setState(() {});
+  }
+
+  Future<void> _clearProtectedMinorOverride() async {
+    await ref.read(protectedMinorOverrideServiceProvider).clearOverride();
+    ref.invalidate(protectedMinorStatusProvider);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(context.l10n.devOptionsProtectedMinorClearedToast),
+        backgroundColor: VineTheme.vineGreen,
+      ),
+    );
+    setState(() {});
   }
 
   Future<void> _clearMinorReviewOverride() async {
