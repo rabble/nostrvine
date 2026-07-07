@@ -108,19 +108,14 @@ class TimelineMarkerControls extends StatelessWidget {
     );
   }
 
-  /// Returns the marker within [TimelineOverlayBloc.markerMatchTolerance] of
-  /// [position], or `null` when the playhead is not on a marker.
+  /// Returns the marker the playhead currently sits on, or `null` when it is
+  /// not on one, using the same tolerance as add dedup / removal.
   static Duration? _markerAtPlayhead(
     List<Duration> markers,
     Duration position,
   ) {
-    for (final marker in markers) {
-      if ((marker - position).abs() <=
-          TimelineOverlayBloc.markerMatchTolerance) {
-        return marker;
-      }
-    }
-    return null;
+    final index = TimelineOverlayBloc.markerIndexAt(markers, position);
+    return index == -1 ? null : markers[index];
   }
 
   void _addMarker(

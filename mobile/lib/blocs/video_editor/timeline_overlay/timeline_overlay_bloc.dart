@@ -62,6 +62,17 @@ class TimelineOverlayBloc
   /// matches the dedup/removal behaviour here.
   static const markerMatchTolerance = Duration(milliseconds: 50);
 
+  /// Index of the marker within [markerMatchTolerance] of [position], or `-1`
+  /// when the playhead is not on any marker.
+  ///
+  /// The single source of truth for "is the playhead on a marker" — used by
+  /// add dedup and removal here and by the marker-mode add/delete gating.
+  static int markerIndexAt(List<Duration> markers, Duration position) {
+    return markers.indexWhere(
+      (marker) => (marker - position).abs() <= markerMatchTolerance,
+    );
+  }
+
   /// Adjustment kind → display label for tune timeline bars. Uses the same
   /// English names the (non-localized) filter bars use; the tune editor's
   /// bottom bar shows the localized names.
@@ -587,11 +598,7 @@ class TimelineOverlayBloc
       event.totalDuration,
     );
     final markers = List<Duration>.from(state.timelineMarkers);
-    final alreadyExists = markers.any(
-      (marker) => (marker - clampedPosition).abs() <= markerMatchTolerance,
-    );
-
-    if (alreadyExists) return;
+    if (markerIndexAt(markers, clampedPosition) != -1) return;
 
     markers.add(clampedPosition);
     markers.sort();
@@ -608,9 +615,7 @@ class TimelineOverlayBloc
     Emitter<TimelineOverlayState> emit,
   ) {
     final markers = List<Duration>.from(state.timelineMarkers);
-    final existingIndex = markers.indexWhere(
-      (marker) => (marker - event.position).abs() <= markerMatchTolerance,
-    );
+    final existingIndex = markerIndexAt(markers, event.position);
 
     if (existingIndex == -1) return;
 
