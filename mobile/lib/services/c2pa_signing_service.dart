@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:c2pa_flutter/c2pa.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:openvine/services/c2pa_identity_manifest_service.dart';
 import 'package:openvine/services/nostr_creator_binding_service.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -24,12 +25,22 @@ abstract class C2paEditActions {
   static const String edited = 'c2pa.edited';
 }
 
+/// High-level reason a C2PA signing operation failed.
+enum C2paSigningFailureReason {
+  inputMissing,
+  outputMissing,
+  tls,
+  network,
+  other,
+}
+
 /// Result of a C2PA signing operation
 class C2paSigningResult {
   const C2paSigningResult({
     required this.signedFilePath,
     required this.success,
     this.error,
+    this.failureReason,
   });
 
   /// Path to the signed video file
@@ -40,6 +51,9 @@ class C2paSigningResult {
 
   /// Error message if signing failed
   final String? error;
+
+  /// Machine-readable reason when signing failed.
+  final C2paSigningFailureReason? failureReason;
 }
 
 /// Service for signing videos with C2PA content credentials.
@@ -87,6 +101,7 @@ class C2paSigningService {
           signedFilePath: videoPath,
           success: false,
           error: 'Input file does not exist',
+          failureReason: C2paSigningFailureReason.inputMissing,
         );
       }
 
@@ -136,6 +151,7 @@ class C2paSigningService {
           signedFilePath: videoPath,
           success: false,
           error: 'Signed file was not created',
+          failureReason: C2paSigningFailureReason.outputMissing,
         );
       }
 
@@ -154,8 +170,9 @@ class C2paSigningService {
 
       return C2paSigningResult(signedFilePath: sFileNew.path, success: true);
     } catch (e, stackTrace) {
+      final failureReason = classifyFailureReason(e);
       Log.error(
-        'C2PA signing failed: $e',
+        'C2PA signing failed (${failureReason.name}): $e',
         name: 'C2paSigningService',
         category: LogCategory.video,
         error: e,
@@ -167,6 +184,7 @@ class C2paSigningService {
         signedFilePath: videoPath,
         success: false,
         error: e.toString(),
+        failureReason: failureReason,
       );
     }
   }
@@ -284,6 +302,49 @@ class C2paSigningService {
         error: e.toString(),
       );
     }
+  }
+
+  @visibleForTesting
+  static C2paSigningFailureReason classifyFailureReason(Object error) {
+    final message = switch (error) {
+      PlatformException(:final code, :final message, :final details) =>
+        '$code $message $details'.toLowerCase(),
+      _ => error.toString().toLowerCase(),
+    };
+
+    if (_containsAny(message, const [
+      'tls',
+      'ssl',
+      'secure connection',
+      'certificate',
+      'cert chain',
+      'trust',
+      'handshake',
+    ])) {
+      return C2paSigningFailureReason.tls;
+    }
+
+    if (_containsAny(message, const [
+      'network',
+      'not connected',
+      'connection',
+      'timed out',
+      'timeout',
+      'offline',
+      'host',
+      'dns',
+      'socket',
+      'internet',
+      'reset by peer',
+    ])) {
+      return C2paSigningFailureReason.network;
+    }
+
+    return C2paSigningFailureReason.other;
+  }
+
+  static bool _containsAny(String message, List<String> needles) {
+    return needles.any(message.contains);
   }
 
   /// Reads and validates C2PA manifest from a signed file.

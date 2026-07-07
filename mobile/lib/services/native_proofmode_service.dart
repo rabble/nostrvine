@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:app_device_integrity/app_device_integrity.dart';
+import 'package:c2pa_flutter/c2pa.dart';
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -33,6 +34,9 @@ class NativeProofModeService {
     Map<String, dynamic>? editorStateHistory,
   })?
   proofFileOverride;
+
+  @visibleForTesting
+  static C2paSigningService Function()? c2paSigningServiceFactoryOverride;
 
   /// Generate native ProofMode proof for a video file.
   ///
@@ -89,7 +93,8 @@ class NativeProofModeService {
         return null;
       }
 
-      final C2paSigningService c2paSigningService = C2paSigningService();
+      final c2paSigningService =
+          c2paSigningServiceFactoryOverride?.call() ?? C2paSigningService();
 
       try {
         final String proofHash = await generateSha256FileHash(videoFile.path);
@@ -169,21 +174,31 @@ class NativeProofModeService {
 
       if (c2paResult.success) {
         Log.info(
-          'C2PA signing complete: $c2paResult.signedFilePath : File Length=${videoFile.lengthSync()}',
+          'C2PA signing complete: ${c2paResult.signedFilePath} : File Length=${videoFile.lengthSync()}',
           name: 'VideoRecorderProofService',
           category: LogCategory.video,
         );
       } else {
         Log.warning(
-          'C2PA signing failed (continuing without): ${c2paResult.error}',
+          'C2PA signing failed (${c2paResult.failureReason?.name ?? 'unknown'}; continuing without): ${c2paResult.error}',
           name: 'VideoRecorderProofService',
           category: LogCategory.video,
         );
       }
 
-      final manifestInfo = await c2paSigningService.readManifest(
-        c2paResult.signedFilePath,
-      );
+      final ManifestStoreInfo? manifestInfo;
+      if (c2paResult.success) {
+        manifestInfo = await c2paSigningService.readManifest(
+          c2paResult.signedFilePath,
+        );
+      } else {
+        manifestInfo = null;
+        Log.info(
+          'Skipping C2PA manifest read after failed signing (${c2paResult.failureReason?.name ?? 'unknown'})',
+          name: 'VideoRecorderProofService',
+          category: LogCategory.video,
+        );
+      }
       if (manifestInfo?.validationStatus != null) {
         Log.debug('C2PA Active Manifest ID: ${manifestInfo?.activeManifest}');
       }

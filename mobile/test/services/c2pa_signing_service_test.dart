@@ -1,10 +1,11 @@
-// ABOUTME: Tests for C2paSigningService.resignDerived carry-forward behaviour
-// ABOUTME: Covers the manifest-present gate and the parent-ingredient re-sign
+// ABOUTME: Tests C2PA signing failure handling and derived-file re-signing
+// ABOUTME: Covers typed failures, manifest gates, and parent ingredients
 
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:c2pa_flutter/c2pa.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/services/c2pa_signing_service.dart';
@@ -50,6 +51,49 @@ void main() {
       final file = File('${tempDir.path}/$name')..writeAsBytesSync(bytes);
       return file;
     }
+
+    group('failure classification', () {
+      test('classifies iOS secure connection failures as TLS errors', () {
+        final reason = C2paSigningService.classifyFailureReason(
+          PlatformException(
+            code: 'C2PA_ERROR',
+            message: 'A TLS error caused the secure connection to fail.',
+          ),
+        );
+
+        expect(reason, C2paSigningFailureReason.tls);
+      });
+
+      test('classifies connection failures as network errors', () {
+        final reason = C2paSigningService.classifyFailureReason(
+          PlatformException(
+            code: 'C2PA_ERROR',
+            message: 'Connection reset by peer',
+          ),
+        );
+
+        expect(reason, C2paSigningFailureReason.network);
+      });
+
+      test('returns typed failure reason when remote signing throws', () async {
+        final video = writeFile('video.mp4', const [0, 1, 2, 3]);
+        final failingService = C2paSigningService(
+          c2pa: _FailingC2pa(
+            PlatformException(
+              code: 'C2PA_ERROR',
+              message: 'A TLS error caused the secure connection to fail.',
+            ),
+          ),
+        );
+
+        final result = await failingService.signVideo(videoPath: video.path);
+
+        expect(result.success, isFalse);
+        expect(result.signedFilePath, video.path);
+        expect(result.failureReason, C2paSigningFailureReason.tls);
+        expect(result.error, contains('A TLS error caused'));
+      });
+    });
 
     group('resignDerived', () {
       test(
@@ -156,4 +200,20 @@ void main() {
       );
     });
   });
+}
+
+class _FailingC2pa extends C2pa {
+  _FailingC2pa(this.error);
+
+  final Object error;
+
+  @override
+  Future<void> signFile({
+    required String sourcePath,
+    required String destPath,
+    required String manifestJson,
+    required C2paSigner signer,
+  }) async {
+    throw error;
+  }
 }
