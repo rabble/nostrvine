@@ -3,8 +3,8 @@
 
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/router/app_router.dart';
-import 'package:riverpod/riverpod.dart';
 
 /// Provider that exposes the raw router location stream
 ///

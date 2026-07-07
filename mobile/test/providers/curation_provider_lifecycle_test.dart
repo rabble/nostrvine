@@ -2,6 +2,7 @@
 // ABOUTME: Verifies editor's picks persist when navigating away and back to tab
 
 import 'package:curation_repository/curation_repository.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:likes_repository/likes_repository.dart';
@@ -16,7 +17,6 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:riverpod/riverpod.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 

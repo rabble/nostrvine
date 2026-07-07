@@ -5,10 +5,10 @@ import 'dart:io';
 
 import 'package:db_client/db_client.dart';
 import 'package:drift/native.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:path/path.dart' as p;
-import 'package:riverpod/riverpod.dart';
 
 void main() {
   group('Database Provider', () {

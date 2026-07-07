@@ -1,6 +1,7 @@
 // ABOUTME: Derived provider that parses router location into structured context
 // ABOUTME: Single source of truth for "what page are we on?" with route types and parsing
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/features/people_lists/view/create_people_list_page.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/router/router.dart';
@@ -53,7 +54,6 @@ import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_edit_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
-import 'package:riverpod/riverpod.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Route types supported by the app

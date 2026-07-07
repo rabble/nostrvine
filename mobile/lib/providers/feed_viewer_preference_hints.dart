@@ -4,11 +4,11 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:flutter_riverpod/misc.dart';
 import 'package:openvine/providers/permissions_providers.dart';
 import 'package:openvine/providers/preferences_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/locale_preference_service.dart';
-import 'package:riverpod/misc.dart';
 
 const _countryHintTimeout = Duration(milliseconds: 250);
 

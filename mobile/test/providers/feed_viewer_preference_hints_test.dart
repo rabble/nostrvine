@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/providers/feed_viewer_preference_hints.dart';
 import 'package:openvine/providers/permissions_providers.dart';
 import 'package:openvine/providers/preferences_providers.dart';
 import 'package:openvine/services/geo_blocking_service.dart';
 import 'package:openvine/services/language_preference_service.dart';
-import 'package:riverpod/riverpod.dart';
 
 class _TestLanguagePreferenceService extends LanguagePreferenceService {
   _TestLanguagePreferenceService(this._contentLanguage);

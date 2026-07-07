@@ -2,6 +2,7 @@
 // ABOUTME: Verifies fix for feeds going empty when app resumes from background
 
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
@@ -12,7 +13,6 @@ import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:riverpod/riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}

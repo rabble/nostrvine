@@ -1,9 +1,9 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/providers/feed_refresh_helpers.dart';
 import 'package:openvine/state/video_feed_state.dart';
-import 'package:riverpod/riverpod.dart';
 
 void main() {
   group('staleWhileRevalidate', () {

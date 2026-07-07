@@ -1,6 +1,7 @@
 // ABOUTME: Tests for FunnelcakeAvailable provider fast-path and probe logic
 // ABOUTME: Verifies Divine relay detection skips probe, unknown relays still probe
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
@@ -10,7 +11,6 @@ import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:riverpod/riverpod.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 

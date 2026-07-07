@@ -1,9 +1,9 @@
 // ABOUTME: Shared helpers for explore feed providers
 // ABOUTME: Extracts common stale-while-revalidate refresh pattern and utility functions
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
 import 'package:openvine/state/video_feed_state.dart';
-import 'package:riverpod/riverpod.dart';
 
 /// Implements the stale-while-revalidate pattern for feed refresh.
 ///
