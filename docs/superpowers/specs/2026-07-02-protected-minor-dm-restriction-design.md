@@ -253,3 +253,78 @@ counterparty's message can render for the moment before receive-time
 revalidation completes and pulls it. Accepted (bounded to the revalidation
 round-trip, and the pin still blocks attacker-addition); noted as a known small
 window, not a silent one.
+
+## Corrections round 2 — second adversarial review + fail-safe decision (2026-07-07)
+
+A second independent review (verified against code) confirmed the round-1 gaps
+and found more; combined with the fail-safe decision below, these supersede the
+conflicting text above.
+
+### C-B2/B3 — protected-state fails CLOSED and PERSISTENT (decision; reverses the earlier fail-open posture)
+
+The single most important change, and a deliberate divergence from #175's
+adult-content lock. Rationale: this control's restricted party (the minor) can
+trivially SUPPRESS the input that produces `unknown` (airplane mode, clear
+storage, block the Keycast domain, expired token). If `unknown` fails open, the
+control is opt-out by its own target. It fails closed on suppression.
+
+- **Persist last-known `protected` to disk** (SharedPreferences). The "sticky
+  from Riverpod `.value`" claim was false — `.value` is in-memory and dies with
+  the process; the store does not exist today and must be built.
+- **Enforce during cold-start-before-resolution** (`.value` null) **and on
+  `unknown`** whenever this account was ever seen `protected`.
+- **A null/empty token maps to `unknown`, not `notProtected`** — today
+  `protected_minor_repository.dart` returns a *positive* `notProtected()` on a
+  missing token (:24-35), which affirmatively LIFTS protection on a transient
+  refresh/expiry. That must become `unknown` (which now enforces if
+  last-known-protected).
+- **The sticky store's role inverts:** it exists to RELAX the fail-closed
+  default for accounts positively seen as `not_protected` (so adults don't eat a
+  lockout on every blip), not to establish protection. Safety does not depend on
+  it; adult UX does. Accepted cost: a brand-new adult install during a Keycast
+  outage can DM only official accounts until the check clears (rare, self-heals).
+- **Wire the gate unconditionally**; the callback reads live state at call time,
+  rather than being installed only when the starts-false value says protected.
+- **Re-resolve on mid-session approval:** the provider only recomputes on
+  auth-state change, so a minor approved mid-session stays ungated until restart.
+  Invalidate on the approval signal.
+
+### C-B1 — gate BEFORE enqueue, and re-check on queue drain
+
+`sendMessage` enqueues at :2505 before publishing at :2530, so a point-of-send
+check leaves a stored-intent bypass: the retry/recover drain (:3031, :2861)
+re-publishes the stored rumor unchecked. Gate at the TOP of the send methods
+(before `outgoingDao.enqueue`), AND re-run the policy in the drain path before
+every `sendRumor`. A durable queue defeats any point-of-send-only check by
+construction.
+
+### C-S2 — the unread badge must apply the same filter
+
+`DmUnreadCountCubit` composes counts independently ("mirrors the Messages list";
+its invariant is count-cannot-drift-from-list). Filtering only
+`conversation_list_bloc` leaks the existence + count of hidden non-official
+contact attempts to the minor and breaks the cubit's parity invariant. Apply the
+approved predicate in the cubit too, or route both through one filtered source.
+
+### C-S3 — group inbound requires ALL non-self participants approved
+
+NIP-17 group DMs are attacker-craftable: anyone can author a kind-14 p-tagging
+the minor plus a decoy. If inbound is "any participant approved," an attacker
+includes moderation@'s pinned hex as a decoy and their content reaches the
+minor. Inbound group filter requires EVERY non-self participant approved
+(mirrors the send-side all-recipients rule). State and test explicitly.
+
+### C-S5 — revocation runbook must mandate repoint-not-removal
+
+The graded-absence 5-min recheck means revoking a compromised key by REMOVING
+the name is delayed 5 min (and an attacker who can force absence-not-key-swap
+holds trust across rechecks). Revoking by REPOINTING to a burner key is
+immediate. The launch-checklist runbook must prescribe repoint, not removal, or
+"near-instant revocation" is false for the removal method.
+
+### Validation — the report affordance survives (by design)
+
+`report_content_dialog.dart:443` DMs `divineModerationPubkeyHex` (moderation,
+`8fd5eb6d…`), which is in the pinned set, so a protected minor's abuse-report DM
+still sends. This is why the set must include moderation: an approved-set gate
+preserves safety-reporting, where a blanket minor-DM block would break it.
