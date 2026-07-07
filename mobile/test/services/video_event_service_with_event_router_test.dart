@@ -111,6 +111,10 @@ void main() {
       }
     });
 
+    test('exposes the injected EventRouter via eventRouter getter', () {
+      expect(videoEventService.eventRouter, same(eventRouter));
+    });
+
     test('Video events (kind 34236) are cached to NostrEvents table', () async {
       // Create test video event
       final videoEvent = Event(

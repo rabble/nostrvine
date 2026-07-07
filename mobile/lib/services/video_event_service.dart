@@ -147,6 +147,13 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   late final RepostResolver _repostResolver;
   final ProfileRepository? _profileRepository;
   final EventRouter? _eventRouter;
+
+  /// The ingestion router backing this service, if one was injected.
+  ///
+  /// Exposed so app-level memory instrumentation can read its queue depth and
+  /// shed low-priority backlog under memory pressure.
+  EventRouter? get eventRouter => _eventRouter;
+
   final VideoFilterBuilder? _videoFilterBuilder;
   final PerformanceTraceMonitor _performanceMonitor;
   final ConnectionStatusService _connectionService;

@@ -13,11 +13,7 @@ import 'package:unified_logger/unified_logger.dart';
 
 const eventRouterBatchFlushThreshold = 50;
 
-enum EventIngestionPriority {
-  visible,
-  normal,
-  background,
-}
+enum EventIngestionPriority { visible, normal, background }
 
 class EventRouterConfig {
   const EventRouterConfig({
@@ -88,6 +84,41 @@ class EventRouter {
 
   int get _queuedLength =>
       _visibleQueue.length + _normalQueue.length + _backgroundQueue.length;
+
+  /// Total number of events currently queued across all priorities.
+  ///
+  /// Exposed as an always-on gauge for memory instrumentation; a growing
+  /// value points at ingestion outrunning persistence.
+  int get queuedLength => _queuedLength;
+
+  int _droppedEventCount = 0;
+
+  /// Number of events dropped by [shedLowPriority] over this router's
+  /// lifetime.
+  int get droppedEventCount => _droppedEventCount;
+
+  /// Drops all queued background- and normal-priority events, preserving the
+  /// visible queue so the on-screen feed still persists.
+  ///
+  /// Called under memory pressure to shed ingestion backlog. Returns the
+  /// number of events dropped.
+  int shedLowPriority() {
+    // Mirror [handleEvent]'s guard: after dispose the queues are cleared and
+    // the database may be closing, so there is nothing to shed.
+    if (_disposed) return 0;
+    final dropped = _backgroundQueue.length + _normalQueue.length;
+    _backgroundQueue.clear();
+    _normalQueue.clear();
+    _droppedEventCount += dropped;
+    if (dropped > 0) {
+      Log.info(
+        'Shed $dropped low-priority events under memory pressure',
+        name: 'EventRouter',
+        category: LogCategory.system,
+      );
+    }
+    return dropped;
+  }
 
   void _scheduleProcessing({bool immediate = false}) {
     if (_disposed || _isProcessingBatch) return;

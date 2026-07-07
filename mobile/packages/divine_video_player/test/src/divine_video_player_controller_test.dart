@@ -891,6 +891,22 @@ void main() {
       });
     });
 
+    group('liveControllerCount', () {
+      test('is zero after resetIdCounterForTesting', () {
+        expect(DivineVideoPlayerController.liveControllerCount, equals(0));
+      });
+
+      test('reflects live instances across initialize and dispose', () async {
+        expect(DivineVideoPlayerController.liveControllerCount, equals(0));
+
+        await initController();
+        expect(DivineVideoPlayerController.liveControllerCount, equals(1));
+
+        await controller.dispose();
+        expect(DivineVideoPlayerController.liveControllerCount, equals(0));
+      });
+    });
+
     group('static methods', () {
       test('configureCache invokes global channel', () async {
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
