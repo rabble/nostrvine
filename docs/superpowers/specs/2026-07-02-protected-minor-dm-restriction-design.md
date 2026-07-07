@@ -1,330 +1,103 @@
 # Protected-minor DM restriction (mobile) — design
 
-**Issue:** divinevideo/support-trust-safety#176 (part of the protected-minor epic #173; consumes the #174 seam, merged as #5708; shares #175's sticky fail-safe posture)
-**Date:** 2026-07-02, filled in 2026-07-07 after the divine-mobile#4948 trust-model decision
-**Status:** Design complete, pending Matt's approval; implementation follows on this branch. Security posture review by dcadenas on the PR before merge (per the #4948 handoff).
+**Issue:** divinevideo/support-trust-safety#176 (protected-minor epic #173; consumes the #174 seam merged as #5708).
+**Trust model:** decided in divine-mobile#4948 (tiered).
+**Status:** Design complete; implementation held pending @dcadenas design-level review (child-safety control). Two independent adversarial reviews (2026-07-07) are folded into this document.
+**Note:** this is the clean consolidated spec; it supersedes the earlier draft + correction rounds in git history.
 
 ## Goal
 
-Restrict a protected minor's direct messages to **official Divine accounts only**:
-- **Send:** block sending a DM to any pubkey outside the approved-recipient set.
-- **Inbound:** suppress display of DMs from senders outside the approved-recipient set.
+Restrict a **protected minor** (13-15, keycast `verified_minor`) to DMs with **official Divine accounts only**:
+- **Send:** block sending a DM to any pubkey outside the approved set.
+- **Inbound:** suppress display of, and metadata about, DMs from senders outside the approved set.
 
-Client-side by necessity: NIP-17 DMs are kind-1059 gift-wraps authored by a one-time key, so the relay cannot attribute a DM to a real sender and cannot filter by sender.
+Enforcement is **client-side by necessity and is the only inbound layer**: NIP-17 DMs are kind-1059 gift-wraps authored by ephemeral keys, so the relay cannot attribute a DM to a sender or filter by one, and a leaked raw nsec signs regardless of keycast suspension. This is why the fail-safe posture below carries security weight out of proportion to its code size.
 
-## Decisions (were open questions; resolved via divine-mobile#4948)
+## The approved set — pinned ∩ live NIP-05 (Tier 2 of #4948)
 
-### The approved-recipient set: pinned ∩ live NIP-05 (Tier 2)
+"May DM a protected minor" is a stricter tier than labels/badges. An account is an approved recipient iff **both**:
 
-Per the #4948 decision, "may DM a protected minor" is a stricter trust tier than
-labels/badges. An account is an approved minor-DM recipient iff **both**:
+1. it is in `PINNED_OFFICIAL_ACCOUNTS` (hardcoded, ships with the app) with `minorContactable: true`, **and**
+2. its pinned canonical NIP-05 identifier currently resolves to its pinned hex pubkey.
 
-1. it is in `PINNED_OFFICIAL_ACCOUNTS` (hardcoded, ships with the app) with
-   `minorContactable: true`, **and**
-2. its pinned canonical NIP-05 identifier currently resolves to its pinned hex
-   pubkey (the revocation lever: repointing/removing the name drops the account
-   from the set within the cache TTL, no app release).
+The pin blocks attacker *addition* (an attacker can't inject a key the app didn't ship); the NIP-05 leg is the *revocation* lever (repointing/removing a name drops that account without an app release).
 
-The pinned set (verified live 2026-07-07; full hex, never truncate):
+The set (verified live 2026-07-07; full hex, never truncate):
 
 | role | display | hex pubkey | canonical nip-05 | minorContactable |
 |---|---|---|---|---|
 | hq | Divine HQ | `c4a39f1291291d452405cd8ddd798c4a29a3858c52cd0d843f1f6852cf17682e` | `_@divinehq.divine.video` | true |
 | moderation | Divine Moderation | `8fd5eb6d8f362163bc00a5ab6b4a3167dbf32d00ec4efdbcf43b3c9514433b7e` | `moderation@divine.video` | true |
 
-Notes:
-- The two accounts deliberately declare different canonical forms (subdomain vs
-  classic); each entry pins its own identifier and the check verifies THAT
-  identifier against THAT hex.
-- The set is small and stable; team members act through these accounts via
-  direct or bunkered keycast credentials, so it does not churn per-agent.
-  Additions require an app release — accepted friction for this tier.
-- `78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738`
-  ("support" in `bug_report_config.dart`, a personal key) is NOT in the set.
-  Any minor-facing support affordance that points there migrates to HQ as part
-  of this work (see Scope).
+- Each entry pins its **own** canonical form (HQ uses a subdomain origin, moderation the classic form); the check verifies THAT identifier against THAT hex.
+- Small and stable: team members act *through* these accounts via direct/bunkered keycast credentials, so per-agent attribution lives in keycast's audit layer and the set does not churn. Additions require an app release — accepted friction for a child-contact list.
+- The personal key `78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738` ("support" in `bug_report_config.dart`) is **not** in the set; minor-facing affordances pointing there migrate to HQ (see Scope).
+- **Design validation:** `report_content_dialog.dart:443` DMs the moderation pubkey, which is in the set — so a minor's abuse-report still sends. An approved-*set* gate preserves safety-reporting where a blanket minor-DM block would break it. This is why moderation must be in the set.
 
-### NIP-05 leg semantics: fail open on network failure, fail closed on affirmative mismatch
+## Fail-safe posture — FAIL CLOSED and PERSISTENT (the load-bearing decision)
 
-Drop signals are graded by ambiguity (amended 2026-07-07 after pressure-testing):
+A deliberate divergence from #175's adult-content lock, because **the restricted party can trivially suppress the input that produces `unknown`** (airplane mode, clear storage, block the keycast domain, let the token expire). If `unknown` failed open, the control would be opt-out by its own target. So:
 
-- **Resolves to a DIFFERENT key** (unambiguous — either a deliberate revocation
-  repoint or a name-server compromise, and under the intersection both mean
-  "stop trusting this entry"): drop **immediately**, persist the dropped state.
-- **Affirmative absence** (well-formed response without the name, or 404): weak
-  signal — a name-server deploy hiccup or edge-cache misconfiguration looks
-  identical and would otherwise mass-revoke support access for every protected
-  minor at once. Require **confirmation on a ~5-minute recheck** before
-  dropping; a single absent response alone never drops.
-- **Network failure** (offline, timeout, 5xx, malformed response): the entry
-  keeps its last-known state, defaulting to pin-trusted on cold start. A
-  protected minor on a plane must still be able to DM support; the pin alone
-  already prevents the attacker-ADDITION failure mode, so the NIP-05 leg exists
-  only for revocation freshness and must not brick offline support access.
-- **Cache TTL: 1 hour** for the background/inbound state (vs the 24h label
-  cache), re-checked opportunistically on app foreground.
-- **Send-time freshness:** the send path is async, so if the cached leg state
-  is older than the TTL at the moment of send, `isApprovedMinorDmRecipient`
-  awaits a fresh resolution before approving (falling back to the network-
-  failure rule if the fetch fails). The action that matters most gets
-  point-of-use freshness; the hot inbound-filter path stays on the sync cache.
-- **Receive-time revalidation:** when an inbound message arrives from a tier-2
-  counterparty whose cached leg state is stale, kick an async re-resolution in
-  the background and re-apply the filter on result (the conversation streams
-  already re-emit). Bounded to the two pinned names and TTL-gated, so there is
-  no fetch-storm risk. With send- and receive-time freshness, revocation is
-  near-instant at both points of use for reachable clients and the 1h TTL is a
-  pure backstop, not the primary propagation mechanism.
+- **Persist last-known `protected` to disk.** The "sticky from Riverpod `.value`" assumption was false — `.value` is in-memory and dies with the process. A persistent store must be built.
+- **Enforce on `unknown` and during cold-start-before-resolution** whenever this account was ever seen `protected`.
+- **A null/empty token maps to `unknown`, not `notProtected`.** Today `protected_minor_repository.dart:24-35` returns a *positive* `notProtected()` on a missing token, which affirmatively *lifts* protection on a transient blip. It must become `unknown`.
+- **The persistent store's role is to RELAX, not to protect:** it lets accounts positively seen as `not_protected` skip the fail-closed default so adults don't eat a lockout on every network blip. Safety does not depend on it; adult UX does. Accepted cost: a brand-new adult install during a keycast outage can DM only official accounts until the check clears (rare, self-heals).
+- **Wire the gate unconditionally** and have the callback read live state at call time — never install it conditionally on a value that starts `false`.
+- **Re-resolve on mid-session approval:** the provider recomputes only on auth-state change, so a minor approved mid-session stays ungated until invalidated. Invalidate on the approval signal.
 
-### Threat model and accepted risks (documented, not discovered-in-review)
+## NIP-05 leg — graded drop, fail open only on network failure
 
-- **The revocation guarantee is reachability-bounded:** "a revoked entry drops
-  within TTL" holds only for clients that can successfully reach the name
-  server. An attacker holding a compromised pinned key AND network position on
-  a specific victim can suppress revocation for as long as they hold both. We
-  accept this: the alternative (fail closed on network failure) cuts every
-  offline minor off from support, a certain harm against a compound-condition
-  one. Send- and receive-time freshness narrow both point-of-use windows;
-  future hardening
-  could try to distinguish general offline from selective unreachability of
-  divine.video, but that is unreliable on mobile networks and deferred.
-- **Storage-clear un-revokes until the next successful check:** persisted
-  dropped state lives in SharedPreferences; clearing app storage returns the
-  entry to the cold-start pin-trusted default. Chained with offline, a revoked
-  entry can be transiently trusted again. Accepted for the same reason as
-  above; noted so it is a decision, not a surprise.
-- **Client-side filtering is the ONLY inbound enforcement layer.** NIP-17
-  gift-wraps are authored by ephemeral keys, so the relay cannot block DMs
-  from a banned sender, and a leaked raw nsec signs from anywhere regardless
-  of keycast suspension. This is why the inbound filter and its fail-safe
-  posture carry security-review weight disproportionate to their code size.
+Drop signals are graded by ambiguity (a name-server hiccup must not mass-revoke support):
 
-### Launch checklist (ops artifacts, required before the PR merges)
-
-1. **Revocation runbook:** who repoints/removes a tier-2 nip-05 in the name
-   server, how it is triggered out-of-hours, and the expected end-to-end
-   propagation time (repoint + client TTL).
-2. **Monitoring:** the team-side nostr.json monitor alerts specifically on the
-   two tier-2 identifiers (resolution changed or absent), so a repoint or
-   misconfiguration is seen on a dashboard before it is felt by minors.
-3. **Change control:** decide whether changes to the child-contactable set
-   (pin changes in code, or name-server repoints of these two names) require a
-   documented two-person rule, per the CSAM-adjacent change-control principles
-   (raised as open item in the #4948 decision).
-
-### Enforcement activation: same sticky posture as #175
-
-Enforcement applies when the protected-minor state is `protected`
-(`isProtectedMinorProvider`, last-known-preserving per #174's merged seam).
-A never-resolved `unknown` does not enforce (matches the shipped #175
-behavior); a `protected`-then-`unknown` sequence keeps enforcing until a
-positive `not_protected` resolution lifts it.
+- **Resolves to a DIFFERENT key** → drop **immediately**, persist. (Revocation or compromise; both mean stop trusting.)
+- **Affirmative absence** (well-formed response without the name, or 404) → drop only after a **confirming ~5-minute recheck**; a single absent response never drops.
+- **Network failure** (offline, timeout, 5xx, malformed) → keep last-known, pin-trusted on cold start. The pin already blocks attacker-addition, so the leg exists only for revocation freshness and must not brick offline support access.
+- **1h background/inbound TTL**, plus point-of-use freshness so the TTL is a backstop, not the propagation mechanism:
+  - **Send-time:** if the cached leg is stale at send, await a fresh resolution before approving.
+  - **Receive-time:** an inbound message from a stale-cached tier-2 counterparty kicks a background re-resolution and re-applies the filter on result (streams re-emit; bounded to two names, no fetch-storm).
 
 ## Architecture
 
-### New: `OfficialAccountsService` (+ config)
+### `OfficialAccountsService` + a new discriminated resolver
 
-- `lib/config/official_accounts.dart`: the `OfficialAccount` model
-  (`pubkeyHex`, `nip05`, `role`, `minorContactable`) and the
-  `PINNED_OFFICIAL_ACCOUNTS` const above.
-- `lib/services/official_accounts_service.dart`:
-  - `bool isPinnedMinorContactable(String pubkeyHex)` — sync, pin-only.
-  - `Future<bool> isApprovedMinorDmRecipient(String pubkeyHex)` — pin ∩ NIP-05
-    with the leg semantics above (uses `Nip05Validor` with a dedicated 1h
-    cache + last-known store in SharedPreferences).
-  - `bool isApprovedMinorDmRecipientSync(String pubkeyHex)` — pin ∩ last-known
-    NIP-05 leg, for hot paths (inbound list filtering must not await network
-    per conversation).
-- Riverpod provider alongside `protected_minor_providers.dart`.
+- `lib/config/official_accounts.dart`: `OfficialAccount` (`pubkeyHex`, `nip05`, `role`, `minorContactable`) + `PINNED_OFFICIAL_ACCOUNTS`.
+- A **new NIP-05 resolver** (NOT `Nip05Validor`, which collapses different-key/absent/network into one `null`): returns `{ matched | differentKey(hex) | absent | networkError }`, with connect/receive **timeouts** (so the network branch actually fires and a hostile server can't hang a send), **redirect cap**, **max-content-length**, and **lowercase+trim** hex normalization (an uppercase/checksummed nostr.json must not read as different-key and mass-revoke). Concurrency: a request for a name already in flight **awaits that resolution** and returns its real result — never null-as-failure that would degrade send-time freshness to fail-open.
+- `lib/services/official_accounts_service.dart`: `bool isPinnedMinorContactable(hex)` (pin-only, sync); `Future<bool> isApprovedMinorDmRecipient(hex)` (pin ∩ NIP-05, graded rules, dedicated 1h cache + persistent last-known); `bool isApprovedMinorDmRecipientSync(hex)` (pin ∩ last-known, for hot list paths). Riverpod provider alongside `protected_minor_providers.dart`.
 
 ### Enforcement points (seams verified in code 2026-07-07)
 
-1. **Repository send gate (authoritative):**
-   `packages/dm_repository/lib/src/dm_repository.dart` `sendMessage()`
-   (~:2471), before the `sendRumor()` call (~:2530): when the injected
-   recipient policy is active and the recipient fails
-   `isApprovedMinorDmRecipient`, return a typed failure (no silent drop).
-   Group sends likewise require ALL recipients approved. dm_repository is a
-   package and stays app-agnostic: it accepts an injected
-   `Future<bool> Function(String recipientPubkey)?` recipient-policy callback,
-   wired from the app layer only when the account is protected.
-2. **UI affordances (UX, defense-in-depth):**
-   - `lib/screens/other_profile_screen.dart` `_messageUser()` (~:160): hide the
-     Message button for non-approved profiles when protected.
-   - `ConversationPage` deep-link/route entry: guard `participantPubkeys`
-     against the set when protected (redirect to inbox with a notice).
-3. **Inbound filter:**
-   `lib/blocs/dm/conversation_list/conversation_list_bloc.dart` (~:99-126):
-   when protected, filter both `watchAcceptedConversations` and
-   `watchPotentialRequests` streams to conversations whose counterparty passes
-   `isApprovedMinorDmRecipientSync`. Applies to inbox AND the Requests tab —
-   a protected minor sees no non-official requests at all.
-   Sender identity is the **seal pubkey** (`dm_decryption_worker.dart` ~:172,
-   authoritative per NIP-59; rumor sender claims are already rebuilt from the
-   seal), so the filter keys on stored conversation counterparty pubkeys that
-   derive from it.
-4. **Blocked-send UX:** snackbar/inline copy (new l10n strings) explaining DMs
-   are limited to Divine accounts for this account type. No dead-air failures.
+1. **Send gate at the lowest primitive, before enqueue, re-checked on drain.** `sendMessage` is one of ~7 publishers and it **enqueues (`dm_repository.dart:2505`) before publishing (`:2530`)**, so a point-of-send check is a stored-intent bypass. Enforce inside `NIP17MessageService.sendRumor`/`sendPrivateMessage`/`publishSelfWrap` so all NIP-17 paths are covered at one seam (covers `sendGroupMessage`, `sendSharedVideo`, `sendFileMessage`, reactions via `DmReactionsRepository._sendRumorWithTimeout:604`); the legacy NIP-04 `_sendNip04Message:3791` gets its own guard. Gate **before** `outgoingDao.enqueue`, AND **re-evaluate the policy in the queue drain** (`recoverFullSend:3031`, `recoverSelfWrap:2861`) before every republish — a recipient revoked (or an account that became protected) after enqueue must not be replayed to. Group send requires **ALL** recipients approved. Failure returns a typed error, never a silent drop; surfaced as blocked-send UX (new l10n copy), no dead air.
+2. **Inbound filter** in `conversation_list_bloc.dart:99-126`: when protected, filter both `watchAcceptedConversations` and `watchPotentialRequests` to counterparties passing `isApprovedMinorDmRecipientSync` — inbox AND Requests tab. Counterparty identity is the **seal pubkey** (`dm_decryption_worker.dart:172`, authoritative per NIP-59; spoofed rumor senders already rebuilt from the seal). **Group inbound requires EVERY non-self participant approved** (else an attacker p-tags the minor + a pinned decoy to slip content through). Receive-time revalidation (above) pulls a just-revoked-but-cached counterparty; the brief first-render before it completes is an accepted, bounded window.
+3. **Unread badge:** `DmUnreadCountCubit` composes counts independently ("count cannot drift from list"), so it must apply the same predicate (or route through one filtered source) or it leaks the existence + count of hidden contact attempts.
+4. **Affordance guards (UX / defense-in-depth):** hide the Message button in `other_profile_screen.dart:160` for non-approved profiles when protected; guard the `ConversationPage` deep-link/route (redirect to inbox with a notice).
 
 ### What this does NOT do
 
-- No relay/server enforcement (impossible for NIP-17; documented in #176).
-- No parent-approved allowlist (#178, later); the service API shape
-  (`minorContactable` flag + injected policy callback) leaves room for it.
-- No change to labels/badges resolution (Tier 1, `ModerationLabelService`,
-  stays NIP-05-authoritative per #4948; advisory mismatch logging is separate
-  small work there).
+- No relay/server enforcement (impossible for NIP-17).
+- No parent-approved allowlist (#178, later); the `minorContactable` flag + injected-policy shape leaves room for it.
+- No change to Tier 1 labels/badges (`ModerationLabelService` stays NIP-05-authoritative per #4948; advisory mismatch logging is separate small work).
+
+## Threat model and accepted risks
+
+- **Revocation is reachability-bounded:** a revoked entry drops within TTL only for clients that can reach the name server. An attacker holding a compromised pinned key AND network position on a victim can suppress revocation while they hold both. Accepted vs the alternative (fail-closed-on-network cuts every offline minor off from support). Send/receive freshness narrow both point-of-use windows.
+- **Storage-clear un-revokes** an entry to the pin-trusted default until the next successful check; chained with offline, transiently trusts a revoked entry. Accepted, noted.
+- **Client-side ceiling:** fail-closed defeats the trivial no-tools bypass (airplane mode), not a sideloaded/patched client or raw-protocol use. Nothing client-side can. It raises the bar from "toggle a switch" to "sideload a modified app," which is the right and worthwhile increase for this population.
+
+## Launch checklist (ops artifacts, required before merge)
+
+1. **Revocation runbook — mandate REPOINT-to-burner, not removal.** Removal is an "affirmative absence" and eats the 5-min recheck delay (and an attacker who can force absence-not-key-swap holds trust across rechecks); repoint is immediate. Include who executes it out-of-hours and expected propagation (repoint + TTL).
+2. **Monitoring** on the two tier-2 identifiers (resolution changed OR absent) — and specifically the **`divinehq` subdomain origin** as its own dependency, since the support migration makes HQ load-bearing and its well-known is a separate origin from `divine.video`. A dashboard should see a repoint/misconfig before minors feel it.
+3. **Change control:** decide whether changes to the child-contactable set (code pins or name-server repoints of these two names) require a two-person rule, per the CSAM-adjacent change-control principles.
 
 ## Tests
 
-- `official_accounts_service`: pin-miss rejected; pin-hit + NIP-05 match
-  approved; affirmative mismatch drops entry (and persists dropped state);
-  network failure preserves last-known/pin-trusted; TTL respected;
-  non-minorContactable pinned entry rejected for DM purposes.
-- send gate: protected minor → non-approved recipient returns typed failure and
-  nothing publishes; approved recipient sends; non-minor unaffected; group send
-  with any non-approved recipient fails.
-- inbound: protected minor sees only official conversations in inbox and
-  requests; non-minor sees everything; flip to protected mid-session filters on
-  next emission.
-- affordances: Message button hidden for non-approved when protected; deep link
-  guarded.
-- Follow existing bloc/service test harnesses; #5721's dev toggle enables
-  manual QA end to end.
+- **resolver:** matched/differentKey/absent/networkError discrimination; timeout fires network branch; case-normalized compare; concurrency awaits in-flight (never null-as-failure).
+- **official-accounts service:** pin-miss rejected; pin+match approved; different-key drops+persists; absence needs the confirming recheck; network failure retains last-known; non-minorContactable pinned entry rejected; TTL respected.
+- **protected-state:** fails closed on `unknown`/cold-start when ever-seen-protected; persists across restart; null token → `unknown` not `notProtected`; relax only on positive `not_protected`; re-resolves on mid-session approval.
+- **send gate:** covered at the primitive for every publisher incl. reactions/group/file; blocked before enqueue; drain re-checks and refuses a revoked recipient; group requires all approved; typed failure, nothing published.
+- **inbound:** protected minor sees only official conversations in inbox + requests; group requires all participants approved; unread badge matches the list; non-minor unaffected; receive-time revalidation pulls a revoked counterparty.
+- Use existing bloc/service harnesses; #5721's dev toggle drives manual end-to-end QA.
 
 ## Scope
 
-Mobile this branch/PR. Web parity is divine-web#454 (mirrored design committed
-there; web additionally migrates its hardcoded `DIVINE_SUPPORT_PUBKEY`
-(personal key) surfaces to HQ). Mobile's `bug_report_config.supportPubkey`
-migration to an official account rides along here only where it intersects
-minor-facing DM affordances; the full support-identity cleanup is tracked via
-support-trust-safety#115. Parent-approved allowlist is a later follow-on
-(#178 / divine-web#455).
-
-## Corrections after adversarial review (2026-07-07)
-
-An independent adversarial review (verified against code) found three
-correctness holes in the security boundary. These corrections supersede the
-conflicting text above; the implementation follows the corrected design.
-
-### C-H1 — the send gate moves to the lowest NIP-17 publish primitive (was: `sendMessage`)
-
-`sendMessage()` is one of ~7 outbound kind-1059 publishers. Verified bypasses in
-`dm_repository.dart`/`dm_reactions_repository.dart`: `sendGroupMessage` (:3367),
-`sendSharedVideo` (:2657), `sendFileMessage` (:3695), the queue-replay paths
-`recoverFullSend` (:3031) and `recoverSelfWrap` (:2861) — which re-publish from
-`OutgoingDmsDao` JSON with no policy check and fire routinely on inbox open —
-and `DmReactionsRepository._sendRumorWithTimeout` (:604), i.e. a DM *reaction* is
-itself an outbound rumor. Correct chokepoint: enforce the injected recipient
-policy inside `NIP17MessageService.sendRumor` / `sendPrivateMessage` /
-`publishSelfWrap` (nip17_message_service.dart) so ALL NIP-17 paths are covered at
-one seam; the legacy NIP-04 `_sendNip04Message` (:3791) gets its own guard.
-**Queue replay must re-evaluate the policy at replay time**, not trust
-enqueue-time state — a recipient revoked (or an account that became protected)
-after enqueue must not be replayed to. Group send requires ALL recipients
-approved at the primitive.
-
-### C-H2 — new discriminated NIP-05 resolver (was: reuse `Nip05Validor`)
-
-`Nip05Validor.getPubkey`/`valid` collapse different-key, absent, and network
-failure into one `null`/`false`, so the graded model is unimplementable on it.
-New resolver returning a discriminated result:
-`{ matched | differentKey(hex) | absent | networkError }`, with explicit
-connect/receive **timeouts** (so the network-failure branch actually triggers
-and a slow/hostile server can't hang a send), a **redirect cap** and
-**max-content-length**, and **lowercase+trim normalization** on both sides of
-the hex compare (an uppercase/checksummed nostr.json must not be misread as
-different-key and mass-revoke support). The graded drop / fail-open rules attach
-to this discriminated result, not to a boolean.
-
-### C-M1 — send-time freshness must not be defeated by in-flight dedup
-
-The resolver's concurrency handling must **await the in-flight resolution** for a
-name already being resolved (e.g. by a concurrent receive-time revalidation) and
-return its real result, never a null-as-failure that the send path would treat as
-network-failure → pin-trusted → approve. Point-of-use freshness cannot degrade to
-fail-open just because the other point of use is mid-check on the same two names.
-
-### C-L4 — receive-time first-render is accepted, bounded
-
-Inbound filtering keys on the sync last-known leg, so a just-revoked-but-cached
-counterparty's message can render for the moment before receive-time
-revalidation completes and pulls it. Accepted (bounded to the revalidation
-round-trip, and the pin still blocks attacker-addition); noted as a known small
-window, not a silent one.
-
-## Corrections round 2 — second adversarial review + fail-safe decision (2026-07-07)
-
-A second independent review (verified against code) confirmed the round-1 gaps
-and found more; combined with the fail-safe decision below, these supersede the
-conflicting text above.
-
-### C-B2/B3 — protected-state fails CLOSED and PERSISTENT (decision; reverses the earlier fail-open posture)
-
-The single most important change, and a deliberate divergence from #175's
-adult-content lock. Rationale: this control's restricted party (the minor) can
-trivially SUPPRESS the input that produces `unknown` (airplane mode, clear
-storage, block the Keycast domain, expired token). If `unknown` fails open, the
-control is opt-out by its own target. It fails closed on suppression.
-
-- **Persist last-known `protected` to disk** (SharedPreferences). The "sticky
-  from Riverpod `.value`" claim was false — `.value` is in-memory and dies with
-  the process; the store does not exist today and must be built.
-- **Enforce during cold-start-before-resolution** (`.value` null) **and on
-  `unknown`** whenever this account was ever seen `protected`.
-- **A null/empty token maps to `unknown`, not `notProtected`** — today
-  `protected_minor_repository.dart` returns a *positive* `notProtected()` on a
-  missing token (:24-35), which affirmatively LIFTS protection on a transient
-  refresh/expiry. That must become `unknown` (which now enforces if
-  last-known-protected).
-- **The sticky store's role inverts:** it exists to RELAX the fail-closed
-  default for accounts positively seen as `not_protected` (so adults don't eat a
-  lockout on every blip), not to establish protection. Safety does not depend on
-  it; adult UX does. Accepted cost: a brand-new adult install during a Keycast
-  outage can DM only official accounts until the check clears (rare, self-heals).
-- **Wire the gate unconditionally**; the callback reads live state at call time,
-  rather than being installed only when the starts-false value says protected.
-- **Re-resolve on mid-session approval:** the provider only recomputes on
-  auth-state change, so a minor approved mid-session stays ungated until restart.
-  Invalidate on the approval signal.
-
-### C-B1 — gate BEFORE enqueue, and re-check on queue drain
-
-`sendMessage` enqueues at :2505 before publishing at :2530, so a point-of-send
-check leaves a stored-intent bypass: the retry/recover drain (:3031, :2861)
-re-publishes the stored rumor unchecked. Gate at the TOP of the send methods
-(before `outgoingDao.enqueue`), AND re-run the policy in the drain path before
-every `sendRumor`. A durable queue defeats any point-of-send-only check by
-construction.
-
-### C-S2 — the unread badge must apply the same filter
-
-`DmUnreadCountCubit` composes counts independently ("mirrors the Messages list";
-its invariant is count-cannot-drift-from-list). Filtering only
-`conversation_list_bloc` leaks the existence + count of hidden non-official
-contact attempts to the minor and breaks the cubit's parity invariant. Apply the
-approved predicate in the cubit too, or route both through one filtered source.
-
-### C-S3 — group inbound requires ALL non-self participants approved
-
-NIP-17 group DMs are attacker-craftable: anyone can author a kind-14 p-tagging
-the minor plus a decoy. If inbound is "any participant approved," an attacker
-includes moderation@'s pinned hex as a decoy and their content reaches the
-minor. Inbound group filter requires EVERY non-self participant approved
-(mirrors the send-side all-recipients rule). State and test explicitly.
-
-### C-S5 — revocation runbook must mandate repoint-not-removal
-
-The graded-absence 5-min recheck means revoking a compromised key by REMOVING
-the name is delayed 5 min (and an attacker who can force absence-not-key-swap
-holds trust across rechecks). Revoking by REPOINTING to a burner key is
-immediate. The launch-checklist runbook must prescribe repoint, not removal, or
-"near-instant revocation" is false for the removal method.
-
-### Validation — the report affordance survives (by design)
-
-`report_content_dialog.dart:443` DMs `divineModerationPubkeyHex` (moderation,
-`8fd5eb6d…`), which is in the pinned set, so a protected minor's abuse-report DM
-still sends. This is why the set must include moderation: an approved-set gate
-preserves safety-reporting, where a blanket minor-DM block would break it.
+Mobile this branch/PR. Web parity is divine-web#454 (mirror spec on that branch; web additionally guards the thread view, persists last-known to localStorage, and sweeps the personal-support-key migration across all four sites). Mobile's `bug_report_config.supportPubkey` migration rides along only where it touches minor-facing DM affordances; full support-identity cleanup is support-trust-safety#115. Parent-approved allowlist is #178.
