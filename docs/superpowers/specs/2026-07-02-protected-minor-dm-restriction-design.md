@@ -68,6 +68,13 @@ Drop signals are graded by ambiguity (amended 2026-07-07 after pressure-testing)
   awaits a fresh resolution before approving (falling back to the network-
   failure rule if the fetch fails). The action that matters most gets
   point-of-use freshness; the hot inbound-filter path stays on the sync cache.
+- **Receive-time revalidation:** when an inbound message arrives from a tier-2
+  counterparty whose cached leg state is stale, kick an async re-resolution in
+  the background and re-apply the filter on result (the conversation streams
+  already re-emit). Bounded to the two pinned names and TTL-gated, so there is
+  no fetch-storm risk. With send- and receive-time freshness, revocation is
+  near-instant at both points of use for reachable clients and the 1h TTL is a
+  pure backstop, not the primary propagation mechanism.
 
 ### Threat model and accepted risks (documented, not discovered-in-review)
 
@@ -77,7 +84,8 @@ Drop signals are graded by ambiguity (amended 2026-07-07 after pressure-testing)
   a specific victim can suppress revocation for as long as they hold both. We
   accept this: the alternative (fail closed on network failure) cuts every
   offline minor off from support, a certain harm against a compound-condition
-  one. Send-time freshness narrows the send-side window; future hardening
+  one. Send- and receive-time freshness narrow both point-of-use windows;
+  future hardening
   could try to distinguish general offline from selective unreachability of
   divine.video, but that is unreliable on mobile networks and deferred.
 - **Storage-clear un-revokes until the next successful check:** persisted
