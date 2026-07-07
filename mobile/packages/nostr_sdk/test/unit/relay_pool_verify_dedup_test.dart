@@ -117,8 +117,58 @@ void main() {
       await r1.deliver(['EVENT', subId, json]);
       await r2.deliver(['EVENT', subId, Map<String, dynamic>.from(json)]);
 
+      // Both copies route, but the second must be skipped (not re-verified):
+      // the counters pin that the session (id, sig) dedup actually fired.
       expect(received, hasLength(2));
+      expect(nostr.relayPool.verifiesPerformed, 1);
+      expect(nostr.relayPool.verifiesSkippedSessionDup, 1);
     });
+
+    test('re-verifies a same-session duplicate id delivered with a different, '
+        'invalid signature', () async {
+      // Pins that the *session* dedup key is (id, sig), not id alone. Relay A
+      // delivers a valid event (its (id, sig) enters the verified set); relay
+      // B replays the same id with a forged signature. Because the pair
+      // differs, it must fall through to a full verify, fail, and be dropped.
+      // If the session key were id-only this forged copy would be trusted.
+      final r1 = _FakeRelay('wss://n1.example');
+      final r2 = _FakeRelay('wss://n2.example');
+      await nostr.relayPool.add(r1);
+      await nostr.relayPool.add(r2);
+
+      final valid = signedEventJson();
+      await r1.deliver(['EVENT', subId, valid]);
+
+      final forged = Map<String, dynamic>.from(valid)..['sig'] = badSig;
+      await r2.deliver(['EVENT', subId, forged]);
+
+      expect(received, hasLength(1));
+      expect(nostr.relayPool.verifiesSkippedSessionDup, 0);
+    });
+
+    test(
+      'drops a known-verified pair whose body no longer hashes to its id',
+      () async {
+        // isValid (sha256 id recompute) runs before the skip branches and is the
+        // sole body-integrity guard. A "known" (id, sig) pair delivered with a
+        // tampered body must be dropped here, before the skip can trust it.
+        final relay = _FakeRelay('wss://n1.example');
+        await nostr.relayPool.add(relay);
+
+        final valid = signedEventJson();
+        final id = valid['id'] as String;
+        final sig = valid['sig'] as String;
+        nostr.relayPool.isKnownVerifiedEvent = (eventId, eventSig) =>
+            eventId == id && eventSig == sig;
+
+        final tampered = Map<String, dynamic>.from(valid)
+          ..['content'] = 'tampered body — id no longer matches';
+        await relay.deliver(['EVENT', subId, tampered]);
+
+        expect(received, isEmpty);
+        expect(nostr.relayPool.verifiesSkippedKnown, 0);
+      },
+    );
 
     test(
       'skips verify for (id, sig) pairs known-verified from a prior session',

@@ -384,11 +384,13 @@ class RelayPool {
     return null;
   }
 
-  /// Session-scoped LRU of `"id:sig"` keys whose Schnorr signature has
-  /// already been verified on this isolate. The same event arriving again
-  /// from another relay skips the ~0.3ms secp256k1 verify that otherwise
-  /// dominates cold start (signature verification was ~42% of startup CPU
-  /// in profiling).
+  /// Session-scoped, insertion-ordered set of `"id:sig"` keys whose Schnorr
+  /// signature has already been verified on this isolate. The same event
+  /// arriving again from another relay skips the ~0.3ms secp256k1 verify that
+  /// otherwise dominates cold start (signature verification was ~42% of
+  /// startup CPU in profiling). Eviction is oldest-inserted-first (FIFO); a
+  /// duplicate hit is not moved to most-recent, so it is not a true LRU — for
+  /// a bounded seen-set that distinction is immaterial.
   ///
   /// The signature is part of the key because a Nostr event id commits to
   /// the event body only, *not* to `sig` — a relay can replay a known id
@@ -412,8 +414,11 @@ class RelayPool {
   bool Function(String eventId, String signature)? isKnownVerifiedEvent;
 
   /// Diagnostic counters for how [_onEvent] treated each incoming event's
-  /// signature. Read-only; exposed so callers / tests can observe the skip
-  /// rate.
+  /// signature. Read-only; read by the dedup tests to assert that the skip
+  /// branches actually fire. There is no production reader by design — the
+  /// periodic verify-stats log was removed to keep the hot path quiet; wire
+  /// these into a diagnostics surface if on-device skip-rate visibility is
+  /// ever needed.
   int get verifiesPerformed => _verifiesPerformed;
   int get verifiesSkippedKnown => _verifiesSkippedKnown;
   int get verifiesSkippedSessionDup => _verifiesSkippedSessionDup;

@@ -634,6 +634,14 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
   /// id commits to the event body but not to `sig`, so trust must be keyed by
   /// the exact `(id, sig)` pair that was verified — an id alone would let a
   /// replayed id carrying a forged signature bypass verification.
+  ///
+  /// The default [limit] is intentionally large: on-device profiling showed
+  /// this seed take cold-start relay verify from ~37% of startup CPU to ~1%,
+  /// i.e. the re-send flood in this app approaches this scale, so a smaller
+  /// cap would re-introduce the expensive EC verify for the tail. The one-time
+  /// seed cost (~SQLite read + string/set builds) is negligible against the
+  /// per-event verify seconds it saves. Newest-first so the cap keeps the
+  /// most-likely-re-sent events.
   Future<List<({String id, String sig})>> getRecentEventIdSigs({
     int limit = 50000,
   }) async {
