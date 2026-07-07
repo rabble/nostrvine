@@ -152,6 +152,12 @@ class ProcessResult {
   final dynamic stderr;
 }
 
+// ProcessInfo stub for web platform
+class ProcessInfo {
+  static int get currentRss => 0;
+  static int get maxRss => 0;
+}
+
 // HttpClient stub for web platform
 class HttpClient {
   Duration? connectionTimeout;

@@ -1,8 +1,10 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/providers/individual_video_providers.dart';
+import 'package:openvine/providers/upload_media_providers.dart';
 import 'package:openvine/services/media_viewer_auth_service.dart';
 
 class MockMediaViewerAuthService extends Mock
@@ -13,6 +15,36 @@ void main() {
 
   setUp(() {
     mockMediaViewerAuthService = MockMediaViewerAuthService();
+  });
+
+  group('fvpLiveControllerCount', () {
+    test('rises when a controller is read and falls after disposal', () {
+      // Controller construction reads mediaViewerAuthServiceProvider for
+      // sync auth headers; override it so the read doesn't pull the whole
+      // auth/Nostr graph into the test.
+      final authService = MockMediaViewerAuthService();
+      when(() => authService.canCreateHeaders).thenReturn(false);
+
+      final baseline = fvpLiveControllerCount;
+      final container = ProviderContainer(
+        overrides: [
+          mediaViewerAuthServiceProvider.overrideWithValue(authService),
+        ],
+      );
+
+      const params = VideoControllerParams(
+        videoId: 'gauge-video',
+        videoUrl: 'https://example.com/gauge.mp4',
+      );
+
+      // Reading the provider constructs the controller (no initialize()),
+      // which increments the gauge.
+      container.read(individualVideoControllerProvider(params));
+      expect(fvpLiveControllerCount, equals(baseline + 1));
+
+      container.dispose();
+      expect(fvpLiveControllerCount, equals(baseline));
+    });
   });
 
   group('createViewerAuthHeadersForVideo', () {

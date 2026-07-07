@@ -213,6 +213,12 @@ class DivineVideoPlayerController {
   static final Set<DivineVideoPlayerController> _liveControllers =
       <DivineVideoPlayerController>{};
 
+  /// Number of controllers that have been initialized and not yet disposed.
+  ///
+  /// Exposed as an always-on gauge for memory instrumentation; each live
+  /// controller holds a native player and its buffers.
+  static int get liveControllerCount => _liveControllers.length;
+
   /// Disposes all native player instances that may still be alive.
   ///
   /// Call at app startup to clean up zombie players from a previous

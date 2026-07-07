@@ -298,6 +298,15 @@ class VideoLoadingState {
       'VideoLoadingState(videoId: $videoId, isLoading: $isLoading, isInitialized: $isInitialized, hasError: $hasError, errorMessage: $errorMessage)';
 }
 
+int _fvpLiveControllers = 0;
+
+/// Number of `video_player`/FVP controllers currently held live by
+/// [individualVideoControllerProvider].
+///
+/// Exposed as an always-on gauge for memory instrumentation; each live
+/// controller holds a native player and its decode buffers.
+int get fvpLiveControllerCount => _fvpLiveControllers;
+
 /// Provider for individual video controllers with autoDispose
 /// Each video gets its own controller instance
 @riverpod
@@ -471,6 +480,10 @@ VideoPlayerController individualVideoController(
       ? const Duration(seconds: 60)
       : const Duration(seconds: 30);
   final formatType = isHls ? 'HLS' : 'MP4';
+
+  // Count this controller as live for memory instrumentation. Decremented
+  // exactly once in the provider's onDispose below.
+  _fvpLiveControllers++;
 
   // Track significant video state changes only (initialization, errors, buffering)
   // Previous state tracking to avoid logging every frame update
@@ -978,6 +991,9 @@ VideoPlayerController individualVideoController(
   // AutoDispose: Cleanup controller when provider is disposed
   ref.onDispose(() {
     cacheTimer?.cancel();
+    // Decrement the live-controller gauge once per provider disposal, before
+    // the deferred native dispose runs in the microtask below.
+    _fvpLiveControllers--;
     Log.info(
       '🧹 Disposing VideoPlayerController for video ${params.videoId.length > 8 ? params.videoId : params.videoId}...',
       name: 'IndividualVideoController',

@@ -63,6 +63,8 @@ import 'package:openvine/providers/db_cipher_key_provider.dart';
 import 'package:openvine/providers/deep_link_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/foreground_idle_warmup_provider.dart';
+import 'package:openvine/providers/individual_video_providers.dart'
+    show fvpLiveControllerCount;
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -86,6 +88,8 @@ import 'package:openvine/services/database_encryption_bootstrap.dart';
 import 'package:openvine/services/deep_link_service.dart';
 import 'package:openvine/services/firebase_initialization.dart';
 import 'package:openvine/services/locale_preference_service.dart';
+import 'package:openvine/services/memory_pressure_handler.dart';
+import 'package:openvine/services/memory_telemetry_service.dart';
 import 'package:openvine/services/mention_resolution_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart' show HttpMethod;
 import 'package:openvine/services/notification_helpers.dart'
@@ -1581,16 +1585,39 @@ class DivineApp extends ConsumerStatefulWidget {
   ConsumerState<DivineApp> createState() => _DivineAppState();
 }
 
-class _DivineAppState extends ConsumerState<DivineApp> {
+class _DivineAppState extends ConsumerState<DivineApp>
+    with WidgetsBindingObserver {
   bool _backgroundInitDone = false;
   StreamSubscription<void>? _shakeSubscription;
   StreamSubscription<NotificationTapEvent>? _notificationTapSubscription;
   QuickActionsCoordinator? _quickActionsCoordinator;
   late final StartupSplashReleaseController _splashReleaseController;
+  late final MemoryPressureHandler _memoryPressureHandler;
+  late final MemoryTelemetryService _memoryTelemetry;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _memoryPressureHandler = MemoryPressureHandler(
+      clearImageCache: () {
+        PaintingBinding.instance.imageCache
+          ..clear()
+          ..clearLiveImages();
+      },
+      shedIngestion: () {
+        ref.read(videoEventServiceProvider).eventRouter?.shedLowPriority();
+      },
+    );
+    _memoryTelemetry = MemoryTelemetryService(
+      readRssBytes: () => kIsWeb ? 0 : io.ProcessInfo.currentRss,
+      nativeControllerCount: () =>
+          DivineVideoPlayerController.liveControllerCount,
+      fvpControllerCount: () => fvpLiveControllerCount,
+      queueDepth: () =>
+          ref.read(videoEventServiceProvider).eventRouter?.queuedLength ?? 0,
+      emit: _emitMemorySnapshot,
+    );
     // Subscribe before deferred startup settles auth; routerDelegate reliably
     // notifies after redirect configuration changes (#5242).
     final router = ref.read(goRouterProvider);
@@ -1616,17 +1643,51 @@ class _DivineAppState extends ConsumerState<DivineApp> {
         _initializeDeepLinkServices();
         _initializeQuickActions();
         _initializeBackgroundServices();
+        _memoryTelemetry.start();
       }
     });
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _memoryTelemetry.stop();
     _splashReleaseController.dispose();
     _notificationTapSubscription?.cancel();
     unawaited(_quickActionsCoordinator?.dispose());
     _shakeSubscription?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didHaveMemoryPressure() {
+    _memoryPressureHandler.onMemoryPressure();
+  }
+
+  /// Logs a memory snapshot at info and annotates Crashlytics custom keys so
+  /// OOM crash reports carry the last-seen memory footprint and gauges.
+  void _emitMemorySnapshot(MemorySnapshot snapshot) {
+    const bytesPerMb = 1024 * 1024;
+    final rssMb = (snapshot.rssBytes / bytesPerMb).toStringAsFixed(1);
+    final peakMb = (snapshot.peakRssBytes / bytesPerMb).toStringAsFixed(1);
+    Log.info(
+      'Memory: rss $rssMb MB (peak $peakMb MB), '
+      'vc_native=${snapshot.nativeControllers}, '
+      'vc_fvp=${snapshot.fvpControllers}, '
+      'ingest_queue_depth=${snapshot.queueDepth}',
+      name: 'MemoryTelemetry',
+      category: LogCategory.system,
+    );
+    final crashReporting = CrashReportingService.instance;
+    unawaited(crashReporting.setCustomKey('mem_rss_mb', rssMb));
+    unawaited(crashReporting.setCustomKey('mem_peak_mb', peakMb));
+    unawaited(
+      crashReporting.setCustomKey('vc_native', snapshot.nativeControllers),
+    );
+    unawaited(crashReporting.setCustomKey('vc_fvp', snapshot.fvpControllers));
+    unawaited(
+      crashReporting.setCustomKey('ingest_queue_depth', snapshot.queueDepth),
+    );
   }
 
   void _initializeDeepLinkServices() {
