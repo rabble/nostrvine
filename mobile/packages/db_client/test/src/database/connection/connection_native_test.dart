@@ -613,6 +613,140 @@ void main() {
     });
   });
 
+  group('encryptedCopyMatchesSource', () {
+    const validKey =
+        '2dd29ca851e7b56e4697b0e1f08507293d761a05ce4d1b628663f411a8086d99';
+    late Directory tempRoot;
+    late String plaintextPath;
+    late String encryptedPath;
+
+    setUp(() {
+      tempRoot = Directory.systemTemp.createTempSync(
+        'db_client_copy_matches_test_',
+      );
+      plaintextPath = p.join(tempRoot.path, 'plain.db');
+      encryptedPath = p.join(tempRoot.path, 'enc.db');
+    });
+
+    tearDown(() {
+      if (tempRoot.existsSync()) tempRoot.deleteSync(recursive: true);
+    });
+
+    // Builds a plaintext source and a keyed encrypted copy that agree on
+    // user_version and user-table row counts, so the only thing that can flip
+    // the verifier's verdict is the structural integrity check.
+    void seedMatchingPair() {
+      sqlite3.open(plaintextPath)
+        ..execute('CREATE TABLE t (id INTEGER PRIMARY KEY, v TEXT);')
+        ..execute("INSERT INTO t (v) VALUES ('a');")
+        ..execute("INSERT INTO t (v) VALUES ('b');")
+        ..execute('PRAGMA user_version = 7;')
+        ..close();
+
+      final encrypted = sqlite3.open(encryptedPath);
+      applyCipherKey(encrypted, validKey);
+      encrypted
+        ..execute('CREATE TABLE t (id INTEGER PRIMARY KEY, v TEXT);')
+        ..execute("INSERT INTO t (v) VALUES ('a');")
+        ..execute("INSERT INTO t (v) VALUES ('b');")
+        ..execute('PRAGMA user_version = 7;')
+        ..close();
+    }
+
+    test('rejects the artifact when the integrity check fails, even though row '
+        'counts and user_version match', () {
+      seedMatchingPair();
+
+      expect(
+        encryptedCopyMatchesSource(
+          plaintextPath: plaintextPath,
+          encryptedPath: encryptedPath,
+          rawKeyHex: validKey,
+          integrityCheck: (_) => false,
+        ),
+        isFalse,
+        reason:
+            'quick_check must gate promotion even when counts and version '
+            'match — this is the 1.0.15 index-corruption vector',
+      );
+    });
+
+    test(
+      'accepts a healthy copy whose counts, version, and integrity hold',
+      () {
+        seedMatchingPair();
+
+        expect(
+          encryptedCopyMatchesSource(
+            plaintextPath: plaintextPath,
+            encryptedPath: encryptedPath,
+            rawKeyHex: validKey,
+          ),
+          isTrue,
+        );
+      },
+    );
+
+    test('rejects a copy whose row counts differ from the source', () {
+      seedMatchingPair();
+      final encrypted = sqlite3.open(encryptedPath);
+      applyCipherKey(encrypted, validKey);
+      encrypted
+        ..execute("INSERT INTO t (v) VALUES ('c');")
+        ..close();
+
+      expect(
+        encryptedCopyMatchesSource(
+          plaintextPath: plaintextPath,
+          encryptedPath: encryptedPath,
+          rawKeyHex: validKey,
+        ),
+        isFalse,
+      );
+    });
+
+    test('rejects a copy whose user_version differs from the source', () {
+      seedMatchingPair();
+      final encrypted = sqlite3.open(encryptedPath);
+      applyCipherKey(encrypted, validKey);
+      encrypted
+        ..execute('PRAGMA user_version = 8;')
+        ..close();
+
+      expect(
+        encryptedCopyMatchesSource(
+          plaintextPath: plaintextPath,
+          encryptedPath: encryptedPath,
+          rawKeyHex: validKey,
+        ),
+        isFalse,
+      );
+    });
+
+    test('fails closed when a database cannot be read (SqliteException)', () {
+      // A valid encrypted copy but a non-database plaintext source: reading it
+      // raises SqliteException, which the verifier must treat as "no match"
+      // rather than promoting an unverifiable pair.
+      final encrypted = sqlite3.open(encryptedPath);
+      applyCipherKey(encrypted, validKey);
+      encrypted
+        ..execute('CREATE TABLE t (id INTEGER PRIMARY KEY);')
+        ..close();
+      File(
+        plaintextPath,
+      ).writeAsBytesSync(List<int>.generate(2048, (i) => i % 256));
+
+      expect(
+        encryptedCopyMatchesSource(
+          plaintextPath: plaintextPath,
+          encryptedPath: encryptedPath,
+          rawKeyHex: validKey,
+        ),
+        isFalse,
+      );
+    });
+  });
+
   group('encryptedDatabaseOpensWithKey', () {
     const validKey =
         '2dd29ca851e7b56e4697b0e1f08507293d761a05ce4d1b628663f411a8086d99';
@@ -717,9 +851,7 @@ void main() {
     late String dbPath;
 
     setUp(() {
-      tempRoot = Directory.systemTemp.createTempSync(
-        'db_client_salvage_test_',
-      );
+      tempRoot = Directory.systemTemp.createTempSync('db_client_salvage_test_');
       dbPath = p.join(tempRoot.path, 'divine_db.db');
     });
 

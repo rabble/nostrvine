@@ -667,7 +667,7 @@ CipherMigrationOutcome _rekeyPlaintextInPlace({
     return CipherMigrationOutcome.failed;
   }
 
-  if (!_encryptedCopyMatchesSource(
+  if (!encryptedCopyMatchesSource(
     plaintextPath: dbPath,
     encryptedPath: encryptedPath,
     rawKeyHex: rawKeyHex,
@@ -721,13 +721,24 @@ void promoteEncryptedMigrationArtifact({
   _moveSidecars(fromPath: encryptedPath, toPath: dbPath);
 }
 
-/// Verifies the encrypted copy opens with [rawKeyHex] and that its
-/// `user_version` (drift's schema version) and user-table row counts match the
-/// plaintext source — the gate before swapping files.
-bool _encryptedCopyMatchesSource({
+/// Verifies the encrypted copy opens with [rawKeyHex], that its `user_version`
+/// (drift's schema version) and user-table row counts match the plaintext
+/// source, and that it is structurally sound — the gate before swapping files.
+///
+/// The structural check ([integrityCheck], defaulting to
+/// [databasePassesIntegrityCheck] which runs `PRAGMA quick_check`) is the
+/// load-bearing addition: `user_version` + row counts can match on an encrypted
+/// artifact whose index b-tree is corrupt, and promoting such a file throws
+/// `SqliteException(779)` ("database disk image is malformed") on the first
+/// index-traversing write. [integrityCheck] is injectable only so the gate's
+/// fail-closed behaviour can be exercised deterministically in tests.
+@visibleForTesting
+bool encryptedCopyMatchesSource({
   required String plaintextPath,
   required String encryptedPath,
   required String rawKeyHex,
+  bool Function(CommonDatabase db) integrityCheck =
+      databasePassesIntegrityCheck,
 }) {
   Database? encrypted;
   Database? plaintext;
@@ -739,10 +750,14 @@ bool _encryptedCopyMatchesSource({
 
     if (_userVersion(encrypted) != _userVersion(plaintext)) return false;
 
-    return const MapEquality<String, int>().equals(
+    if (!const MapEquality<String, int>().equals(
       _userTableRowCounts(encrypted),
       _userTableRowCounts(plaintext),
-    );
+    )) {
+      return false;
+    }
+
+    return integrityCheck(encrypted);
   } on SqliteException {
     return false;
   } finally {
