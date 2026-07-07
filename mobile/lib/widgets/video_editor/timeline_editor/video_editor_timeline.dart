@@ -139,6 +139,9 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
     final isTimelineHiddenByUser = context.select(
       (VideoEditorMainBloc b) => b.state.isTimelineHiddenByUser,
     );
+    final isMarkerMode = context.select(
+      (VideoEditorMainBloc b) => b.state.isMarkerMode,
+    );
     // Sync layers from main editor to timeline overlay bloc, and
     // sync scroll to playback position while not user-scrolling.
     return MultiBlocListener(
@@ -197,6 +200,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
             context.read<TimelineOverlayBloc>().add(
               const TimelineOverlayItemSelected(null),
             );
+            _exitMarkerMode(context);
           },
         ),
         BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
@@ -220,7 +224,39 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
 
             final bloc = context.read<TimelineOverlayBloc>();
             bloc.add(const TimelineOverlayItemSelected(null));
+            _exitMarkerMode(context);
           },
+        ),
+        // Marker mode owns the bottom controls bar exclusively, so entering it
+        // clears any clip edit / overlay selection / volume mode.
+        BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
+          listenWhen: (prev, curr) => !prev.isMarkerMode && curr.isMarkerMode,
+          listener: (context, state) {
+            final clipBloc = context.read<ClipEditorBloc>();
+            if (clipBloc.state.isEditing) {
+              clipBloc.add(const ClipEditorEditingToggled());
+            }
+            context.read<TimelineOverlayBloc>().add(
+              const TimelineOverlayItemSelected(null),
+            );
+            final mainBloc = context.read<VideoEditorMainBloc>();
+            if (mainBloc.state.isVolumeEditMode) {
+              mainBloc.add(const VideoEditorVolumeEditModeToggled());
+            }
+          },
+        ),
+        // Selecting an overlay item leaves marker mode.
+        BlocListener<TimelineOverlayBloc, TimelineOverlayState>(
+          listenWhen: (prev, curr) =>
+              prev.selectedItemId == null && curr.selectedItemId != null,
+          listener: (context, state) => _exitMarkerMode(context),
+        ),
+        // Starting clip editing or multi-select leaves marker mode.
+        BlocListener<ClipEditorBloc, ClipEditorState>(
+          listenWhen: (prev, curr) =>
+              (!prev.isEditing && curr.isEditing) ||
+              (!prev.isMultiSelectMode && curr.isMultiSelectMode),
+          listener: (context, state) => _exitMarkerMode(context),
         ),
       ],
       child: GestureDetector(
@@ -307,6 +343,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
 
             TimelineControlsBar(
               isEditing: isEditing,
+              isMarkerMode: isMarkerMode,
               playheadPosition: _playheadPosition,
             ),
           ],
@@ -379,6 +416,15 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
       context.read<TimelineOverlayBloc>().add(
         const TimelineOverlayItemSelected(null),
       );
+      _exitMarkerMode(context);
+    }
+  }
+
+  /// Leaves marker-placement mode if it is active.
+  void _exitMarkerMode(BuildContext context) {
+    final bloc = context.read<VideoEditorMainBloc>();
+    if (bloc.state.isMarkerMode) {
+      bloc.add(const VideoEditorMarkerModeChanged(isActive: false));
     }
   }
 

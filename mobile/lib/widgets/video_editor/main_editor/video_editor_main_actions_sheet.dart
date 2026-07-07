@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
-import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/blocs/video_editor/tune_editor/video_editor_tune_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
@@ -32,7 +31,6 @@ class VideoEditorMainActionsSheet extends StatelessWidget {
     final scope = VideoEditorScope.of(context);
     final videoEditorMainBloc = context.read<VideoEditorMainBloc>();
     final clipEditorBloc = context.read<ClipEditorBloc>();
-    final timelineOverlayBloc = context.read<TimelineOverlayBloc>();
     final tuneBloc = context.read<VideoEditorTuneBloc>();
 
     return VineBottomSheet.show(
@@ -51,9 +49,6 @@ class VideoEditorMainActionsSheet extends StatelessWidget {
               value: videoEditorMainBloc,
             ),
             BlocProvider<ClipEditorBloc>.value(value: clipEditorBloc),
-            BlocProvider<TimelineOverlayBloc>.value(
-              value: timelineOverlayBloc,
-            ),
             BlocProvider<VideoEditorTuneBloc>.value(value: tuneBloc),
           ],
           child: VideoEditorMainActionsSheet(scope: scope),
@@ -64,9 +59,6 @@ class VideoEditorMainActionsSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currentPosition = context.select(
-      (VideoEditorMainBloc b) => b.state.currentPosition,
-    );
     final totalDuration = context.select(
       (ClipEditorBloc b) => b.state.totalDuration,
     );
@@ -178,11 +170,11 @@ class VideoEditorMainActionsSheet extends StatelessWidget {
                   Navigator.pop(context);
                   if (totalDuration <= Duration.zero) return;
 
-                  context.read<TimelineOverlayBloc>().add(
-                    TimelineMarkerAdded(
-                      position: currentPosition,
-                      totalDuration: totalDuration,
-                    ),
+                  // Enter marker mode instead of dropping a single marker, so
+                  // the bottom bar exposes add/delete-marker controls and the
+                  // user can keep marking beats while playback runs.
+                  context.read<VideoEditorMainBloc>().add(
+                    const VideoEditorMarkerModeChanged(isActive: true),
                   );
                 },
               ),

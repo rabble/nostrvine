@@ -161,3 +161,13 @@ class VideoEditorReorderingChanged extends VideoEditorMainEvent {
 class VideoEditorTimelineVisibilityToggled extends VideoEditorMainEvent {
   const VideoEditorTimelineVisibilityToggled();
 }
+
+/// Enters or exits marker-placement mode.
+class VideoEditorMarkerModeChanged extends VideoEditorMainEvent {
+  const VideoEditorMarkerModeChanged({required this.isActive});
+
+  final bool isActive;
+
+  @override
+  List<Object?> get props => [isActive];
+}

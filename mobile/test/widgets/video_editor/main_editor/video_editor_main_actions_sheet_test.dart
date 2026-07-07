@@ -31,11 +31,23 @@ class _MockVideoEditorTuneBloc
     extends MockBloc<VideoEditorTuneEvent, VideoEditorTuneState>
     implements VideoEditorTuneBloc {}
 
+/// [ClipEditorState.totalDuration] is derived from clips; this fake supplies it
+/// directly so tests don't need to construct clip fixtures.
+class _FakeClipEditorState extends ClipEditorState {
+  const _FakeClipEditorState(this._total);
+
+  final Duration _total;
+
+  @override
+  Duration get totalDuration => _total;
+}
+
 void main() {
   final l10n = lookupAppLocalizations(const Locale('en'));
 
   setUpAll(() {
     registerFallbackValue(const VideoEditorTuneSessionStarted());
+    registerFallbackValue(const VideoEditorMarkerModeChanged(isActive: false));
   });
 
   group(VideoEditorMainActionsSheet, () {
@@ -159,6 +171,52 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(addedStickers, isTrue);
+    });
+
+    testWidgets('tap on Marker enters marker mode', (tester) async {
+      when(
+        () => clipBloc.state,
+      ).thenReturn(const _FakeClipEditorState(Duration(seconds: 5)));
+
+      await tester.pumpWidget(
+        _buildWidget(
+          mainBloc: mainBloc,
+          clipBloc: clipBloc,
+          timelineOverlayBloc: timelineOverlayBloc,
+        ),
+      );
+
+      await tester.tap(
+        find.bySemanticsLabel(l10n.videoEditorAddTimelineMarkerSemanticLabel),
+      );
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mainBloc.add(
+          const VideoEditorMarkerModeChanged(isActive: true),
+        ),
+      ).called(1);
+    });
+
+    testWidgets('tap on Marker does nothing when there is no duration', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _buildWidget(
+          mainBloc: mainBloc,
+          clipBloc: clipBloc,
+          timelineOverlayBloc: timelineOverlayBloc,
+        ),
+      );
+
+      await tester.tap(
+        find.bySemanticsLabel(l10n.videoEditorAddTimelineMarkerSemanticLabel),
+      );
+      await tester.pumpAndSettle();
+
+      verifyNever(
+        () => mainBloc.add(any(that: isA<VideoEditorMarkerModeChanged>())),
+      );
     });
 
     // Regression: the sheet opens on a separate route, so `show` must

@@ -28,6 +28,7 @@ void main() {
       expect(bloc.state.totalDuration, equals(Duration.zero));
       expect(bloc.state.isVolumeEditMode, isFalse);
       expect(bloc.state.isReordering, isFalse);
+      expect(bloc.state.isMarkerMode, isFalse);
       bloc.close();
     });
 
@@ -458,6 +459,37 @@ void main() {
           isA<VideoEditorMainState>().having(
             (s) => s.isVolumeEditMode,
             'isVolumeEditMode',
+            isFalse,
+          ),
+        ],
+      );
+    });
+
+    group(VideoEditorMarkerModeChanged, () {
+      blocTest<VideoEditorMainBloc, VideoEditorMainState>(
+        'enters marker mode when isActive is true',
+        build: buildBloc,
+        act: (bloc) =>
+            bloc.add(const VideoEditorMarkerModeChanged(isActive: true)),
+        expect: () => [
+          isA<VideoEditorMainState>().having(
+            (s) => s.isMarkerMode,
+            'isMarkerMode',
+            isTrue,
+          ),
+        ],
+      );
+
+      blocTest<VideoEditorMainBloc, VideoEditorMainState>(
+        'leaves marker mode when isActive is false',
+        build: buildBloc,
+        seed: () => const VideoEditorMainState(isMarkerMode: true),
+        act: (bloc) =>
+            bloc.add(const VideoEditorMarkerModeChanged(isActive: false)),
+        expect: () => [
+          isA<VideoEditorMainState>().having(
+            (s) => s.isMarkerMode,
+            'isMarkerMode',
             isFalse,
           ),
         ],

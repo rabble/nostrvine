@@ -36,6 +36,7 @@ class VideoEditorMainBloc
     on<VideoEditorVolumeEditModeToggled>(_onVolumeEditModeToggled);
     on<VideoEditorReorderingChanged>(_onReorderingChanged);
     on<VideoEditorTimelineVisibilityToggled>(_onTimelineVisibilityToggled);
+    on<VideoEditorMarkerModeChanged>(_onMarkerModeChanged);
   }
 
   /// Updates undo/redo/subEditor state based on editor capabilities.
@@ -178,5 +179,12 @@ class VideoEditorMainBloc
     Emitter<VideoEditorMainState> emit,
   ) {
     emit(state.copyWith(isTimelineHiddenByUser: !state.isTimelineHiddenByUser));
+  }
+
+  void _onMarkerModeChanged(
+    VideoEditorMarkerModeChanged event,
+    Emitter<VideoEditorMainState> emit,
+  ) {
+    emit(state.copyWith(isMarkerMode: event.isActive));
   }
 }

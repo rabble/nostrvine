@@ -769,7 +769,9 @@ class _AddElementFab extends StatelessWidget {
   Widget build(BuildContext context) {
     final shouldHide = context.select(
       (VideoEditorMainBloc b) =>
-          b.state.isSubEditorOpen || b.state.isTimelineHiddenByUser,
+          b.state.isSubEditorOpen ||
+          b.state.isTimelineHiddenByUser ||
+          b.state.isMarkerMode,
     );
     final hasSelectedOverlay = context.select(
       (TimelineOverlayBloc b) => b.state.selectedItemId != null,

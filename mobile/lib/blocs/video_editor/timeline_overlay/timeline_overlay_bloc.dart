@@ -56,7 +56,11 @@ class TimelineOverlayBloc
     );
   }
 
-  static const _markerMatchTolerance = Duration(milliseconds: 50);
+  /// A playhead within this distance of a marker counts as "on" that marker.
+  ///
+  /// Shared with the marker-mode controls so the UI's add/delete affordance
+  /// matches the dedup/removal behaviour here.
+  static const markerMatchTolerance = Duration(milliseconds: 50);
 
   /// Adjustment kind → display label for tune timeline bars. Uses the same
   /// English names the (non-localized) filter bars use; the tune editor's
@@ -584,7 +588,7 @@ class TimelineOverlayBloc
     );
     final markers = List<Duration>.from(state.timelineMarkers);
     final alreadyExists = markers.any(
-      (marker) => (marker - clampedPosition).abs() <= _markerMatchTolerance,
+      (marker) => (marker - clampedPosition).abs() <= markerMatchTolerance,
     );
 
     if (alreadyExists) return;
@@ -605,7 +609,7 @@ class TimelineOverlayBloc
   ) {
     final markers = List<Duration>.from(state.timelineMarkers);
     final existingIndex = markers.indexWhere(
-      (marker) => (marker - event.position).abs() <= _markerMatchTolerance,
+      (marker) => (marker - event.position).abs() <= markerMatchTolerance,
     );
 
     if (existingIndex == -1) return;

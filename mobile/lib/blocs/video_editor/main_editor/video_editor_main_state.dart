@@ -20,6 +20,7 @@ class VideoEditorMainState extends Equatable {
     this.isVolumeEditMode = false,
     this.isReordering = false,
     this.isTimelineHiddenByUser = false,
+    this.isMarkerMode = false,
   });
 
   /// Whether the undo action is available.
@@ -84,6 +85,12 @@ class VideoEditorMainState extends Equatable {
   /// Whether timeline visibility was manually toggled off by the user.
   final bool isTimelineHiddenByUser;
 
+  /// Whether the timeline is in marker-placement mode.
+  ///
+  /// While active, the bottom controls bar shows add/delete-marker actions so
+  /// the user can drop markers repeatedly while playback runs.
+  final bool isMarkerMode;
+
   /// Creates a copy with the given fields replaced.
   ///
   /// Use [clearOpenSubEditor] to explicitly close the sub-editor.
@@ -106,6 +113,7 @@ class VideoEditorMainState extends Equatable {
     Duration? totalDuration,
     bool? isReordering,
     bool? isTimelineHiddenByUser,
+    bool? isMarkerMode,
   }) {
     return VideoEditorMainState(
       canUndo: canUndo ?? this.canUndo,
@@ -133,6 +141,7 @@ class VideoEditorMainState extends Equatable {
       isReordering: isReordering ?? this.isReordering,
       isTimelineHiddenByUser:
           isTimelineHiddenByUser ?? this.isTimelineHiddenByUser,
+      isMarkerMode: isMarkerMode ?? this.isMarkerMode,
     );
   }
 
@@ -155,5 +164,6 @@ class VideoEditorMainState extends Equatable {
     isVolumeEditMode,
     isReordering,
     isTimelineHiddenByUser,
+    isMarkerMode,
   ];
 }
