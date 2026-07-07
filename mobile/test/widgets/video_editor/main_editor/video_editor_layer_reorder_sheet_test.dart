@@ -96,6 +96,43 @@ void main() {
       });
     });
 
+    group('PaintLayer preview', () {
+      PaintLayer buildPaintLayer(int strokeCount) => PaintLayer(
+        rawSize: const Size(10, 10),
+        opacity: 1,
+        items: [
+          for (var i = 0; i < strokeCount; i++)
+            PaintedModel(
+              mode: PaintMode.freeStyle,
+              offsets: const [Offset.zero, Offset(10, 10)],
+              erasedOffsets: const [],
+              color: const Color(0xFFFF0000),
+              strokeWidth: 6,
+              opacity: 1,
+            ),
+        ],
+      );
+
+      int drawPaintItemCount(WidgetTester tester) => tester
+          .widgetList<CustomPaint>(find.byType(CustomPaint))
+          .where((paint) => paint.painter is DrawPaintItem)
+          .length;
+
+      testWidgets('renders every stroke for a merged layer', (tester) async {
+        await tester.pumpWidget(buildWidget(layers: [buildPaintLayer(3)]));
+        await tester.pumpAndSettle();
+
+        expect(drawPaintItemCount(tester), 3);
+      });
+
+      testWidgets('renders a single stroke layer once', (tester) async {
+        await tester.pumpWidget(buildWidget(layers: [buildPaintLayer(1)]));
+        await tester.pumpAndSettle();
+
+        expect(drawPaintItemCount(tester), 1);
+      });
+    });
+
     group('mixed layers', () {
       testWidgets('renders different layer types together', (tester) async {
         final layers = <Layer>[

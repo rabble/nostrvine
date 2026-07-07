@@ -170,9 +170,14 @@ class _PaintLayerPreview extends StatelessWidget {
         alignment: .centerLeft,
         child: isCensorLayer
             ? const Icon(Icons.blur_circular)
-            : CustomPaint(
-                size: layer.size,
-                painter: DrawPaintItem(item: layer.item, scale: layer.scale),
+            : Stack(
+                children: [
+                  for (final item in layer.items)
+                    CustomPaint(
+                      size: layer.size,
+                      painter: DrawPaintItem(item: item, scale: layer.scale),
+                    ),
+                ],
               ),
       ),
     );
