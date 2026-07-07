@@ -833,9 +833,6 @@ class CameraController(
     }
 
     /**
-     * Starts the camera with preview and video capture use cases.
-     */
-    /**
      * Builds the video [Recorder] for the current [videoQuality].
      *
      * Sets an explicit target encoding bitrate — without it CameraX uses the
@@ -855,6 +852,9 @@ class CameraController(
         .setTargetVideoEncodingBitRate(videoEncodingBitRate(videoQuality))
         .build()
 
+    /**
+     * Starts the camera with preview and video capture use cases.
+     */
     private fun startCamera(callback: (Map<String, Any?>?, String?) -> Unit) {
         val provider = cameraProvider ?: run {
             DivineCameraLog.e(TAG, "Camera provider not available")
