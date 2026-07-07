@@ -39,6 +39,51 @@ void main() {
       expect(cache.isFailed(url), isFalse);
     });
 
+    test('records deterministic failures for one hour', () {
+      const url = 'https://example.com/avatar.png';
+
+      final kind = cache.recordFailureForError(
+        url,
+        Exception('Invalid image data'),
+      );
+
+      expect(kind, AvatarFailureKind.deterministic);
+      expect(cache.isFailed(url), isTrue);
+
+      now = now.add(AvatarFailureCache.transientFailureTtl);
+      expect(cache.isFailed(url), isTrue);
+
+      now = now.add(
+        AvatarFailureCache.deterministicFailureTtl -
+            AvatarFailureCache.transientFailureTtl,
+      );
+      expect(cache.isFailed(url), isFalse);
+    });
+
+    test('records unknown failures as transient', () {
+      const url = 'https://example.com/avatar.png';
+
+      final kind = cache.recordFailureForError(url, Exception('HTTP 503'));
+
+      expect(kind, AvatarFailureKind.transient);
+      expect(cache.isFailed(url), isTrue);
+
+      now = now.add(AvatarFailureCache.transientFailureTtl);
+      expect(cache.isFailed(url), isFalse);
+    });
+
+    test('does not record cancelled failures', () {
+      const url = 'https://example.com/avatar.png';
+
+      final kind = cache.recordFailureForError(
+        url,
+        Exception('MediaCacheImageProvider load cancelled'),
+      );
+
+      expect(kind, AvatarFailureKind.cancelled);
+      expect(cache.isFailed(url), isFalse);
+    });
+
     test('evicts least recently used entries when bounded', () {
       cache = AvatarFailureCache.testing(clock: () => now, maxEntries: 2);
 

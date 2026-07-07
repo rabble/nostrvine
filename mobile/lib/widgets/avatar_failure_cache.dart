@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 
 typedef AvatarFailureClock = DateTime Function();
 
+enum AvatarFailureKind { deterministic, transient, cancelled }
+
 class AvatarFailureCache {
   AvatarFailureCache._({
     required AvatarFailureClock clock,
@@ -56,14 +58,35 @@ class AvatarFailureCache {
     }
   }
 
-  @visibleForTesting
-  void clear() {
-    _failedUrls.clear();
+  AvatarFailureKind recordFailureForError(String url, Object error) {
+    final kind = classifyFailure(error);
+    switch (kind) {
+      case AvatarFailureKind.deterministic:
+        recordFailure(url, ttl: deterministicFailureTtl);
+      case AvatarFailureKind.transient:
+        recordFailure(url, ttl: transientFailureTtl);
+      case AvatarFailureKind.cancelled:
+        break;
+    }
+    return kind;
   }
 
   @visibleForTesting
-  void setClockForTesting(AvatarFailureClock clock) {
-    _clock = clock;
+  static AvatarFailureKind classifyFailure(Object error) {
+    final message = error.toString().toLowerCase();
+    if (message.contains('load cancelled')) {
+      return AvatarFailureKind.cancelled;
+    }
+    if (message.contains('invalid image data') ||
+        message.contains('image codec failed')) {
+      return AvatarFailureKind.deterministic;
+    }
+    return AvatarFailureKind.transient;
+  }
+
+  @visibleForTesting
+  void clear() {
+    _failedUrls.clear();
   }
 
   @visibleForTesting

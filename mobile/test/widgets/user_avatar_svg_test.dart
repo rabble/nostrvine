@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -83,6 +86,19 @@ void main() {
       home: Scaffold(
         body: UserAvatar(imageUrl: imageUrl, name: 'Test User'),
       ),
+    );
+  }
+
+  Future<void> pumpAvatarWithValidSvgResponse(
+    WidgetTester tester,
+    String imageUrl,
+  ) {
+    return HttpOverrides.runZoned(
+      () async {
+        await tester.pumpWidget(buildAvatar(imageUrl: imageUrl));
+        await tester.pump();
+      },
+      createHttpClient: (_) => _ValidSvgHttpClient(),
     );
   }
 
@@ -204,6 +220,36 @@ void main() {
       expect(AvatarFailureCache.instance.isFailed(failedUrl), isTrue);
     });
 
+    testWidgets('SVG transient failures are cached briefly', (tester) async {
+      const failedUrl = 'https://divine.video/divine-logo.svg';
+
+      await pumpAvatarWithValidSvgResponse(tester, failedUrl);
+      final svg = tester.widget<SvgPicture>(find.byType(SvgPicture));
+
+      svg.errorBuilder!(
+        tester.element(find.byType(SvgPicture)),
+        Exception('HTTP 503'),
+        StackTrace.current,
+      );
+
+      expect(AvatarFailureCache.instance.isFailed(failedUrl), isTrue);
+    });
+
+    testWidgets('SVG load cancellations are not cached', (tester) async {
+      const cancelledUrl = 'https://divine.video/divine-logo.svg';
+
+      await pumpAvatarWithValidSvgResponse(tester, cancelledUrl);
+      final svg = tester.widget<SvgPicture>(find.byType(SvgPicture));
+
+      svg.errorBuilder!(
+        tester.element(find.byType(SvgPicture)),
+        Exception('SvgPicture load cancelled'),
+        StackTrace.current,
+      );
+
+      expect(AvatarFailureCache.instance.isFailed(cancelledUrl), isFalse);
+    });
+
     testWidgets('raster load cancellations are not cached', (tester) async {
       const cancelledUrl = 'https://divine.video/avatar.png';
 
@@ -247,4 +293,111 @@ void main() {
       expect(find.byType(VineCachedImage), findsNothing);
     });
   });
+}
+
+class _ValidSvgHttpClient implements HttpClient {
+  @override
+  Future<HttpClientRequest> openUrl(String method, Uri url) async =>
+      _ValidSvgRequest();
+
+  @override
+  Future<HttpClientRequest> getUrl(Uri url) async => _ValidSvgRequest();
+
+  @override
+  void close({bool force = false}) {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _ValidSvgRequest implements HttpClientRequest {
+  final _headers = _EmptyHttpHeaders();
+
+  @override
+  bool followRedirects = true;
+
+  @override
+  int maxRedirects = 5;
+
+  @override
+  bool persistentConnection = false;
+
+  @override
+  int contentLength = 0;
+
+  @override
+  HttpHeaders get headers => _headers;
+
+  @override
+  Future<void> addStream(Stream<List<int>> stream) async {
+    await stream.drain<void>();
+  }
+
+  @override
+  Future<HttpClientResponse> close() async => _ValidSvgResponse();
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _ValidSvgResponse extends Stream<List<int>>
+    implements HttpClientResponse {
+  _ValidSvgResponse()
+    : _body = utf8.encode(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1" />',
+      );
+
+  final List<int> _body;
+  final _headers = _EmptyHttpHeaders();
+
+  @override
+  int get statusCode => HttpStatus.ok;
+
+  @override
+  int get contentLength => _body.length;
+
+  @override
+  bool get persistentConnection => false;
+
+  @override
+  HttpHeaders get headers => _headers;
+
+  @override
+  bool get isRedirect => false;
+
+  @override
+  List<RedirectInfo> get redirects => const [];
+
+  @override
+  String get reasonPhrase => 'OK';
+
+  @override
+  HttpClientResponseCompressionState get compressionState =>
+      HttpClientResponseCompressionState.notCompressed;
+
+  @override
+  StreamSubscription<List<int>> listen(
+    void Function(List<int> event)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  }) {
+    return Stream<List<int>>.value(_body).listen(
+      onData,
+      onError: onError,
+      onDone: onDone,
+      cancelOnError: cancelOnError,
+    );
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _EmptyHttpHeaders implements HttpHeaders {
+  @override
+  void forEach(void Function(String name, List<String> values) action) {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

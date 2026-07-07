@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/notifications/widgets/notification_avatar_stack.dart';
+import 'package:openvine/widgets/avatar_failure_cache.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
@@ -41,8 +42,15 @@ void main() {
     // Stub the image cache (#5158 seam) so VineCachedImage does no real
     // path_provider / cache-manager work that could settle after the test and
     // cascade in the merged VGV optimizer isolate (#5159).
-    setUp(() => debugImageCacheOverride = createMockMediaCacheManager());
-    tearDown(() => debugImageCacheOverride = null);
+    setUp(() {
+      AvatarFailureCache.instance.clear();
+      debugImageCacheOverride = createMockMediaCacheManager();
+    });
+
+    tearDown(() {
+      debugImageCacheOverride = null;
+      AvatarFailureCache.instance.clear();
+    });
 
     testWidgets('renders single avatar for one actor', (tester) async {
       await tester.pumpWidget(buildSubject(actors: const [actor1]));

@@ -21,8 +21,6 @@ enum UserAvatarPlaceholderTone {
   blue,
 }
 
-enum _AvatarFailureKind { deterministic, transient, cancelled }
-
 class UserAvatar extends StatelessWidget {
   const UserAvatar({
     super.key,
@@ -113,35 +111,6 @@ class UserAvatar extends StatelessWidget {
 
   bool get _isSvgImageUrl => isSvgImageUrl(imageUrl);
 
-  _AvatarFailureKind _classifyAvatarFailure(Object error) {
-    final message = error.toString().toLowerCase();
-    if (message.contains('load cancelled')) {
-      return _AvatarFailureKind.cancelled;
-    }
-    if (message.contains('invalid image data') ||
-        message.contains('image codec failed')) {
-      return _AvatarFailureKind.deterministic;
-    }
-    return _AvatarFailureKind.transient;
-  }
-
-  void _recordAvatarFailure(String url, _AvatarFailureKind kind) {
-    switch (kind) {
-      case _AvatarFailureKind.deterministic:
-        AvatarFailureCache.instance.recordFailure(
-          url,
-          ttl: AvatarFailureCache.deterministicFailureTtl,
-        );
-      case _AvatarFailureKind.transient:
-        AvatarFailureCache.instance.recordFailure(
-          url,
-          ttl: AvatarFailureCache.transientFailureTtl,
-        );
-      case _AvatarFailureKind.cancelled:
-        break;
-    }
-  }
-
   Widget _buildPlaceholder() => _Placeholder(
     size: size,
     placeholderTone: placeholderTone,
@@ -174,10 +143,7 @@ class UserAvatar extends StatelessWidget {
             'Avatar SVG failed to load URL: $imageUrl - Error: $error',
             name: 'UserAvatar',
           );
-          AvatarFailureCache.instance.recordFailure(
-            imageUrl!,
-            ttl: AvatarFailureCache.deterministicFailureTtl,
-          );
+          AvatarFailureCache.instance.recordFailureForError(imageUrl!, error);
           return _buildPlaceholder();
         },
       );
@@ -192,10 +158,12 @@ class UserAvatar extends StatelessWidget {
         imageUrl: imageUrl!,
         placeholder: (context, url) => _buildPlaceholder(),
         errorWidget: (context, url, error) {
-          final failureKind = _classifyAvatarFailure(error);
-          _recordAvatarFailure(url, failureKind);
+          final failureKind = AvatarFailureCache.instance.recordFailureForError(
+            url,
+            error,
+          );
 
-          if (failureKind == _AvatarFailureKind.deterministic) {
+          if (failureKind == AvatarFailureKind.deterministic) {
             UnifiedLogger.warning(
               '🖼️ Invalid image data for avatar URL: $url - Error: $error',
               name: 'UserAvatar',
