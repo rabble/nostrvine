@@ -314,7 +314,7 @@ class _SignatureVerificationTile extends ConsumerWidget {
     final policy = ref.watch(nostrSignatureVerificationPolicyProvider);
 
     return _SettingsTile(
-      icon: Icons.verified_user,
+      divineIcon: DivineIconName.shieldCheck,
       title: context.l10n.nostrSettingsSignatureVerification,
       subtitle: _policySubtitle(context, policy),
       onTap: () => Navigator.of(context).push(
@@ -437,15 +437,17 @@ String _policySubtitle(
 
 class _SettingsTile extends StatelessWidget {
   const _SettingsTile({
-    required this.icon,
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.icon,
+    this.divineIcon,
     this.iconColor,
     this.titleColor,
-  });
+  }) : assert(icon != null || divineIcon != null);
 
-  final IconData icon;
+  final IconData? icon;
+  final DivineIconName? divineIcon;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
@@ -455,7 +457,12 @@ class _SettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(icon, color: iconColor ?? VineTheme.vineGreen),
+      leading: divineIcon != null
+          ? DivineIcon(
+              icon: divineIcon!,
+              color: iconColor ?? VineTheme.vineGreen,
+            )
+          : Icon(icon, color: iconColor ?? VineTheme.vineGreen),
       title: Text(
         title,
         style: TextStyle(
