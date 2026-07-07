@@ -139,10 +139,7 @@ void main() {
         limit: 10,
       );
 
-      expect(retryable.map((event) => event.id), [
-        'failed-old',
-        'pending-new',
-      ]);
+      expect(retryable.map((event) => event.id), ['failed-old', 'pending-new']);
     });
 
     test('markDeadLetter stops exhausted events from retrying', () async {
@@ -154,6 +151,42 @@ void main() {
       final fetched = await dao.getById('event-a');
       expect(fetched!.status, PendingProductEventStatus.deadLetter);
       expect(fetched.lastError, 'too many attempts');
+    });
+
+    test('resetPublishingToPending recovers only in-flight rows', () async {
+      await dao.enqueue(
+        makeEvent(
+          id: 'publishing-a',
+          status: PendingProductEventStatus.publishing,
+        ),
+      );
+      await dao.enqueue(makeEvent(id: 'pending-a'));
+      await dao.enqueue(
+        makeEvent(id: 'failed-a', status: PendingProductEventStatus.failed),
+      );
+      await dao.enqueue(
+        makeEvent(id: 'dead-a', status: PendingProductEventStatus.deadLetter),
+      );
+
+      final updated = await dao.resetPublishingToPending();
+
+      expect(updated, 1);
+      expect(
+        (await dao.getById('publishing-a'))!.status,
+        PendingProductEventStatus.pending,
+      );
+      expect(
+        (await dao.getById('pending-a'))!.status,
+        PendingProductEventStatus.pending,
+      );
+      expect(
+        (await dao.getById('failed-a'))!.status,
+        PendingProductEventStatus.failed,
+      );
+      expect(
+        (await dao.getById('dead-a'))!.status,
+        PendingProductEventStatus.deadLetter,
+      );
     });
   });
 }

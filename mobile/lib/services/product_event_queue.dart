@@ -64,51 +64,66 @@ class ProductEventQueue {
     if (_isFlushing) return;
     _isFlushing = true;
     try {
-      final rows = await _dao.getRetryable(
-        now: _now(),
-        maxAttempts: _retryConfig.maxAttempts,
-        limit: _retryConfig.batchSize,
-      );
-      if (rows.isEmpty) return;
-
-      final claimed = <PendingProductEvent>[];
-      for (final row in rows) {
-        final marked = await _dao.markPublishing(row.id);
-        if (marked) claimed.add(row);
-      }
-      if (claimed.isEmpty) return;
-
-      final events = claimed
-          .map((row) => ProductAnalyticsEvent.fromPayloadJson(row.payloadJson))
-          .toList();
-      final result = await _ingestClient.publishBatch(events);
-
-      switch (result) {
-        case AnalyticsIngestAccepted():
-          for (final row in claimed) {
-            await _dao.deleteById(row.id);
-          }
-        case AnalyticsIngestRejected(:final reason):
-          for (final row in claimed) {
-            await _dao.markDeadLetter(row.id, reason);
-          }
-        case AnalyticsIngestTransientFailure(:final reason):
-          for (final row in claimed) {
-            if (row.attemptCount + 1 >= _retryConfig.maxAttempts) {
-              await _dao.markDeadLetter(row.id, reason);
-              continue;
-            }
-            await _dao.markFailed(
-              row.id,
-              reason,
-              nextAttemptAt: _now().add(
-                _retryConfig.backoffFor(row.attemptCount + 1),
-              ),
-            );
-          }
-      }
+      await _flushUnlocked();
     } finally {
       _isFlushing = false;
+    }
+  }
+
+  Future<void> recoverPublishingAndFlush() async {
+    if (_isFlushing) return;
+    _isFlushing = true;
+    try {
+      await _dao.resetPublishingToPending();
+      await _flushUnlocked();
+    } finally {
+      _isFlushing = false;
+    }
+  }
+
+  Future<void> _flushUnlocked() async {
+    final rows = await _dao.getRetryable(
+      now: _now(),
+      maxAttempts: _retryConfig.maxAttempts,
+      limit: _retryConfig.batchSize,
+    );
+    if (rows.isEmpty) return;
+
+    final claimed = <PendingProductEvent>[];
+    for (final row in rows) {
+      final marked = await _dao.markPublishing(row.id);
+      if (marked) claimed.add(row);
+    }
+    if (claimed.isEmpty) return;
+
+    final events = claimed
+        .map((row) => ProductAnalyticsEvent.fromPayloadJson(row.payloadJson))
+        .toList();
+    final result = await _ingestClient.publishBatch(events);
+
+    switch (result) {
+      case AnalyticsIngestAccepted():
+        for (final row in claimed) {
+          await _dao.deleteById(row.id);
+        }
+      case AnalyticsIngestRejected(:final reason):
+        for (final row in claimed) {
+          await _dao.markDeadLetter(row.id, reason);
+        }
+      case AnalyticsIngestTransientFailure(:final reason):
+        for (final row in claimed) {
+          if (row.attemptCount + 1 >= _retryConfig.maxAttempts) {
+            await _dao.markDeadLetter(row.id, reason);
+            continue;
+          }
+          await _dao.markFailed(
+            row.id,
+            reason,
+            nextAttemptAt: _now().add(
+              _retryConfig.backoffFor(row.attemptCount + 1),
+            ),
+          );
+        }
     }
   }
 }

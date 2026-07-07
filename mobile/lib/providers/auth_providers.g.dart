@@ -844,7 +844,7 @@ final class Nip98AuthServiceProvider
   }
 }
 
-String _$nip98AuthServiceHash() => r'cfc2e0a65e1dbd9c559886929257fa66a7afb1c6';
+String _$nip98AuthServiceHash() => r'2e5b190deac613283e316aadf81bc99d8d1778f2';
 
 /// Account Deletion Service for NIP-62 Request to Vanish
 

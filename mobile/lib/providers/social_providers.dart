@@ -283,9 +283,9 @@ ProductEventQueue productEventQueue(Ref ref) {
     ingestClient: ingestClient,
   );
 
-  queue.flush().catchError((Object e) {
+  queue.recoverPublishingAndFlush().catchError((Object e) {
     Log.debug(
-      'Initial ProductEventQueue flush failed: $e',
+      'Initial ProductEventQueue recovery/flush failed: $e',
       name: 'AppProviders',
       category: LogCategory.system,
     );

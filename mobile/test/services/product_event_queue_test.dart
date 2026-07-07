@@ -76,6 +76,39 @@ void main() {
       verify(() => dao.deleteById('event-a')).called(1);
     });
 
+    test(
+      'recoverPublishingAndFlush resets orphaned publishing rows first',
+      () async {
+        when(() => dao.resetPublishingToPending()).thenAnswer((_) async => 1);
+        when(
+          () => dao.getRetryable(
+            now: any(named: 'now'),
+            maxAttempts: any(named: 'maxAttempts'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => [_row('event-a')]);
+        when(() => dao.markPublishing('event-a')).thenAnswer((_) async => true);
+        when(
+          () => client.publishBatch(any()),
+        ).thenAnswer((_) async => const AnalyticsIngestAccepted());
+        when(() => dao.deleteById('event-a')).thenAnswer((_) async => 1);
+
+        await queue.recoverPublishingAndFlush();
+
+        verifyInOrder([
+          () => dao.resetPublishingToPending(),
+          () => dao.getRetryable(
+            now: any(named: 'now'),
+            maxAttempts: any(named: 'maxAttempts'),
+            limit: any(named: 'limit'),
+          ),
+          () => dao.markPublishing('event-a'),
+          () => client.publishBatch(any(that: hasLength(1))),
+          () => dao.deleteById('event-a'),
+        ]);
+      },
+    );
+
     test('flush schedules retry after transient failure', () async {
       when(
         () => dao.getRetryable(

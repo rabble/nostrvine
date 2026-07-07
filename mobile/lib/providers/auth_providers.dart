@@ -415,7 +415,9 @@ IdentityClaimsRepository identityClaimsRepository(Ref ref) {
 @riverpod
 Nip98AuthService nip98AuthService(Ref ref) {
   final authService = ref.watch(authServiceProvider);
-  return Nip98AuthService(authService: authService);
+  final service = Nip98AuthService(authService: authService);
+  ref.onDispose(service.dispose);
+  return service;
 }
 
 /// Account Deletion Service for NIP-62 Request to Vanish
