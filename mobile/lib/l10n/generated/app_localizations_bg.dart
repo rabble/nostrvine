@@ -9524,6 +9524,10 @@ class AppLocalizationsBg extends AppLocalizations {
       'Премахване на маркер от хронологията';
 
   @override
+  String get videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel =>
+      'Премахване на маркера при плейхеда';
+
+  @override
   String get videoEditorDeleteTimelineMarkerTitle =>
       'Да се изтрие ли маркерът?';
 

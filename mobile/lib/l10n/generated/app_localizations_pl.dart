@@ -9611,6 +9611,10 @@ class AppLocalizationsPl extends AppLocalizations {
       'Usuń znacznik osi czasu';
 
   @override
+  String get videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel =>
+      'Usuń znacznik przy głowicy odtwarzania';
+
+  @override
   String get videoEditorDeleteTimelineMarkerTitle => 'Usunąć znacznik?';
 
   @override

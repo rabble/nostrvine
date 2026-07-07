@@ -2791,6 +2791,7 @@
     "videoEditorMarkerLabel": "Marqueur",
     "videoEditorAddTimelineMarkerSemanticLabel": "Ajouter un marqueur à la chronologie",
     "videoEditorRemoveTimelineMarkerSemanticLabel": "Supprimer le marqueur de la chronologie",
+    "videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel": "Supprimer le marqueur à la tête de lecture",
     "videoEditorDeleteTimelineMarkerTitle": "Supprimer le marqueur ?",
     "videoEditorDeleteTimelineMarkerSubtitle": "Cela retire le marqueur de la chronologie. Votre montage reste intact.",
     "videoEditorAddTitle": "Ajouter",

@@ -2791,6 +2791,7 @@
     "videoEditorMarkerLabel": "Markör",
     "videoEditorAddTimelineMarkerSemanticLabel": "Lägg till tidslinjemarkör",
     "videoEditorRemoveTimelineMarkerSemanticLabel": "Ta bort tidslinjemarkör",
+    "videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel": "Ta bort markör vid spelhuvudet",
     "videoEditorDeleteTimelineMarkerTitle": "Radera markör?",
     "videoEditorDeleteTimelineMarkerSubtitle": "Detta tar bort markören från tidslinjen. Din redigering behålls.",
     "videoEditorAddTitle": "Lägg till",

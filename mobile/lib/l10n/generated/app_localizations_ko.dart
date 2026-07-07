@@ -9085,6 +9085,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorRemoveTimelineMarkerSemanticLabel => '타임라인 마커 제거';
 
   @override
+  String get videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel =>
+      '재생 헤드의 마커 제거';
+
+  @override
   String get videoEditorDeleteTimelineMarkerTitle => '마커를 삭제할까요?';
 
   @override

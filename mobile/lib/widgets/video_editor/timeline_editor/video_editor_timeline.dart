@@ -228,7 +228,10 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
           },
         ),
         // Marker mode owns the bottom controls bar exclusively, so entering it
-        // clears any clip edit / overlay selection / volume mode.
+        // clears any clip edit / overlay selection / volume mode. Reordering
+        // needs no clearing here even though it isn't in the FAB's hide
+        // condition: it's an active single-pointer drag holding the touch that
+        // would otherwise tap the FAB, so entry can't race an ongoing reorder.
         BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
           listenWhen: (prev, curr) => !prev.isMarkerMode && curr.isMarkerMode,
           listener: (context, state) {

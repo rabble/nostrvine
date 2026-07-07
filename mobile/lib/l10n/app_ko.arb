@@ -2045,6 +2045,7 @@
     "videoEditorMarkerLabel": "마커",
     "videoEditorAddTimelineMarkerSemanticLabel": "타임라인 마커 추가",
     "videoEditorRemoveTimelineMarkerSemanticLabel": "타임라인 마커 제거",
+    "videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel": "재생 헤드의 마커 제거",
     "videoEditorDeleteTimelineMarkerTitle": "마커를 삭제할까요?",
     "videoEditorDeleteTimelineMarkerSubtitle": "타임라인에서 마커만 제거합니다. 편집 내용은 그대로 유지됩니다.",
     "videoEditorAudioNoSoundsAvailableSubtitle": "크리에이터가 오디오를 공유하면 여기에 표시됩니다",

@@ -78,7 +78,7 @@ class TimelineMarkerControls extends StatelessWidget {
                         label: context.l10n.videoEditorDeleteLabel,
                         semanticLabel: context
                             .l10n
-                            .videoEditorRemoveTimelineMarkerSemanticLabel,
+                            .videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel,
                         onPressed: markerAtPlayhead == null
                             ? null
                             : () => _removeMarker(context, markerAtPlayhead),

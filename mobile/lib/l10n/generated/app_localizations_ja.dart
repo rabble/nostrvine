@@ -9061,6 +9061,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorRemoveTimelineMarkerSemanticLabel => 'タイムラインマーカーを削除';
 
   @override
+  String get videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel =>
+      '再生ヘッド位置のマーカーを削除';
+
+  @override
   String get videoEditorDeleteTimelineMarkerTitle => 'マーカーを削除しますか？';
 
   @override

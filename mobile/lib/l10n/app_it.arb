@@ -2791,6 +2791,7 @@
     "videoEditorMarkerLabel": "Marcatore",
     "videoEditorAddTimelineMarkerSemanticLabel": "Aggiungi marcatore alla timeline",
     "videoEditorRemoveTimelineMarkerSemanticLabel": "Rimuovi marcatore dalla timeline",
+    "videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel": "Rimuovi marcatore alla testina di riproduzione",
     "videoEditorDeleteTimelineMarkerTitle": "Eliminare il marcatore?",
     "videoEditorDeleteTimelineMarkerSubtitle": "Questo rimuove il marcatore dalla timeline. La tua modifica resta intatta.",
     "videoEditorAddTitle": "Aggiungi",

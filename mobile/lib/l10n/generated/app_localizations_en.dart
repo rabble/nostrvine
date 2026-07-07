@@ -9408,6 +9408,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Remove timeline marker';
 
   @override
+  String get videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel =>
+      'Remove marker at playhead';
+
+  @override
   String get videoEditorDeleteTimelineMarkerTitle => 'Delete marker?';
 
   @override

@@ -9363,6 +9363,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'إزالة علامة من المخطط الزمني';
 
   @override
+  String get videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel =>
+      'إزالة العلامة عند رأس التشغيل';
+
+  @override
   String get videoEditorDeleteTimelineMarkerTitle => 'حذف العلامة؟';
 
   @override

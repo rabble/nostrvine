@@ -9630,6 +9630,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Elimină marcatorul de pe cronologie';
 
   @override
+  String get videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel =>
+      'Elimină marcatorul de la capul de redare';
+
+  @override
   String get videoEditorDeleteTimelineMarkerTitle => 'Ștergi marcatorul?';
 
   @override

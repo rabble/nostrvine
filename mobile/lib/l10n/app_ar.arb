@@ -2714,6 +2714,7 @@
     "videoEditorMarkerLabel": "علامة",
     "videoEditorAddTimelineMarkerSemanticLabel": "إضافة علامة إلى المخطط الزمني",
     "videoEditorRemoveTimelineMarkerSemanticLabel": "إزالة علامة من المخطط الزمني",
+    "videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel": "إزالة العلامة عند رأس التشغيل",
     "videoEditorDeleteTimelineMarkerTitle": "حذف العلامة؟",
     "videoEditorDeleteTimelineMarkerSubtitle": "سيؤدي هذا إلى إزالة العلامة من المخطط الزمني. سيبقى تعديلك كما هو.",
     "videoEditorAudioNoSoundsAvailableSubtitle": "ستظهر الأصوات هنا عندما يشاركها المبدعون",

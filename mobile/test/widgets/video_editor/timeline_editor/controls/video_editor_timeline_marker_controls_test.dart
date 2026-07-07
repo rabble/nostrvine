@@ -98,7 +98,7 @@ void main() {
     Finder addButton() =>
         find.bySemanticsLabel(l10n.videoEditorAddTimelineMarkerSemanticLabel);
     Finder deleteButton() => find.bySemanticsLabel(
-      l10n.videoEditorRemoveTimelineMarkerSemanticLabel,
+      l10n.videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel,
     );
 
     testWidgets('renders add, delete and done controls', (tester) async {

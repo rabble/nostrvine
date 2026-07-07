@@ -503,6 +503,77 @@ void main() {
         },
       );
     });
+
+    group('marker-mode mutual exclusion', () {
+      testWidgets(
+        'entering marker mode clears volume mode, clip edit, and overlay '
+        'selection',
+        (tester) async {
+          final clips = [_createTestClip(id: 'a')];
+          final mainStates = StreamController<VideoEditorMainState>.broadcast();
+          addTearDown(mainStates.close);
+          // Start already in volume mode with a clip being edited: entering
+          // marker mode must clear all of it. Volume mode starts on so the
+          // enter-volume listener can't also fire and inflate the counts.
+          whenListen(
+            mockMainBloc,
+            mainStates.stream,
+            initialState: const VideoEditorMainState(isVolumeEditMode: true),
+          );
+
+          await tester.pumpWidget(
+            buildWidget(
+              clipState: ClipEditorState(clips: clips, isEditing: true),
+            ),
+          );
+
+          mainStates.add(
+            const VideoEditorMainState(
+              isMarkerMode: true,
+              isVolumeEditMode: true,
+            ),
+          );
+          await tester.pump();
+
+          verify(
+            () => mockClipBloc.add(const ClipEditorEditingToggled()),
+          ).called(1);
+          verify(
+            () => mockOverlayBloc.add(const TimelineOverlayItemSelected(null)),
+          ).called(1);
+          verify(
+            () => mockMainBloc.add(const VideoEditorVolumeEditModeToggled()),
+          ).called(1);
+        },
+      );
+
+      testWidgets('starting clip editing exits marker mode', (tester) async {
+        final clips = [_createTestClip(id: 'a')];
+        final clipStates = StreamController<ClipEditorState>.broadcast();
+        addTearDown(clipStates.close);
+        whenListen(
+          mockMainBloc,
+          const Stream<VideoEditorMainState>.empty(),
+          initialState: const VideoEditorMainState(isMarkerMode: true),
+        );
+        whenListen(
+          mockClipBloc,
+          clipStates.stream,
+          initialState: ClipEditorState(clips: clips),
+        );
+
+        await tester.pumpWidget(buildWidget());
+
+        clipStates.add(ClipEditorState(clips: clips, isEditing: true));
+        await tester.pump();
+
+        verify(
+          () => mockMainBloc.add(
+            const VideoEditorMarkerModeChanged(isActive: false),
+          ),
+        ).called(1);
+      });
+    });
   });
 }
 

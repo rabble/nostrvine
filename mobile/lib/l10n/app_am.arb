@@ -3352,6 +3352,7 @@
     "videoEditorMarkerLabel": "ማርከር",
     "videoEditorAddTimelineMarkerSemanticLabel": "የጊዜ መስመር ማርከር አክል",
     "videoEditorRemoveTimelineMarkerSemanticLabel": "የጊዜ መስመር ማርከር አስወግድ",
+    "videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel": "በማጫወቻ ቦታ ያለውን ማርከር አስወግድ",
     "videoEditorDeleteTimelineMarkerTitle": "ማርከሩን ይሰርዙ?",
     "videoEditorDeleteTimelineMarkerSubtitle": "ይህ ማርከሩን ከጊዜ መስመሩ ያስወግዳል። አርትዖትዎ እንዳለ ይቀራል።",
     "videoEditorAddTitle": "አክል",

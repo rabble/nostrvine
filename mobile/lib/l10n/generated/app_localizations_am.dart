@@ -9232,6 +9232,10 @@ class AppLocalizationsAm extends AppLocalizations {
       'የጊዜ መስመር ማርከር አስወግድ';
 
   @override
+  String get videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel =>
+      'በማጫወቻ ቦታ ያለውን ማርከር አስወግድ';
+
+  @override
   String get videoEditorDeleteTimelineMarkerTitle => 'ማርከሩን ይሰርዙ?';
 
   @override

@@ -2791,6 +2791,7 @@
     "videoEditorMarkerLabel": "Znacznik",
     "videoEditorAddTimelineMarkerSemanticLabel": "Dodaj znacznik osi czasu",
     "videoEditorRemoveTimelineMarkerSemanticLabel": "Usuń znacznik osi czasu",
+    "videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel": "Usuń znacznik przy głowicy odtwarzania",
     "videoEditorDeleteTimelineMarkerTitle": "Usunąć znacznik?",
     "videoEditorDeleteTimelineMarkerSubtitle": "Spowoduje to usunięcie znacznika z osi czasu. Twoja edycja pozostanie bez zmian.",
     "videoEditorAddTitle": "Dodaj",

@@ -2791,6 +2791,7 @@
     "videoEditorMarkerLabel": "Markering",
     "videoEditorAddTimelineMarkerSemanticLabel": "Tijdlijnmarkering toevoegen",
     "videoEditorRemoveTimelineMarkerSemanticLabel": "Tijdlijnmarkering verwijderen",
+    "videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel": "Markering bij de afspeelkop verwijderen",
     "videoEditorDeleteTimelineMarkerTitle": "Markering verwijderen?",
     "videoEditorDeleteTimelineMarkerSubtitle": "Dit verwijdert de markering uit de tijdlijn. Je bewerking blijft intact.",
     "videoEditorAddTitle": "Toevoegen",

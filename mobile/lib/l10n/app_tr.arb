@@ -2721,6 +2721,7 @@
     "videoEditorMarkerLabel": "İşaretçi",
     "videoEditorAddTimelineMarkerSemanticLabel": "Zaman çizelgesi işaretçisi ekle",
     "videoEditorRemoveTimelineMarkerSemanticLabel": "Zaman çizelgesi işaretçisini kaldır",
+    "videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel": "Oynatma başlığındaki işaretçiyi kaldır",
     "videoEditorDeleteTimelineMarkerTitle": "İşaretçi silinsin mi?",
     "videoEditorDeleteTimelineMarkerSubtitle": "Bu, işaretçiyi zaman çizelgesinden kaldırır. Düzenlemeniz olduğu gibi kalır.",
     "videoEditorAudioNoSoundsAvailableSubtitle": "İçerik üreticileri ses paylaştığında burada görünür",

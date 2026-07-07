@@ -9539,6 +9539,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Timeline-Markierung entfernen';
 
   @override
+  String get videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel =>
+      'Markierung an der Abspielposition entfernen';
+
+  @override
   String get videoEditorDeleteTimelineMarkerTitle => 'Markierung löschen?';
 
   @override

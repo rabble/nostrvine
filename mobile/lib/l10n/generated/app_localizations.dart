@@ -16306,6 +16306,12 @@ abstract class AppLocalizations {
   /// **'Remove timeline marker'**
   String get videoEditorRemoveTimelineMarkerSemanticLabel;
 
+  /// Semantic label for the marker-mode bottom-bar delete button, which immediately removes the marker at the current playhead position. Distinct from videoEditorRemoveTimelineMarkerSemanticLabel (the per-marker dot, which asks for confirmation) so screen-reader users can tell the two delete controls apart.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove marker at playhead'**
+  String get videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel;
+
   /// No description provided for @videoEditorDeleteTimelineMarkerTitle.
   ///
   /// In en, this message translates to:

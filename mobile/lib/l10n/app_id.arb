@@ -2721,6 +2721,7 @@
     "videoEditorMarkerLabel": "Penanda",
     "videoEditorAddTimelineMarkerSemanticLabel": "Tambahkan penanda timeline",
     "videoEditorRemoveTimelineMarkerSemanticLabel": "Hapus penanda timeline",
+    "videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel": "Hapus penanda di posisi pemutaran",
     "videoEditorDeleteTimelineMarkerTitle": "Hapus penanda?",
     "videoEditorDeleteTimelineMarkerSubtitle": "Ini menghapus penanda dari timeline. Editan Anda tetap utuh.",
     "videoEditorAudioNoSoundsAvailableSubtitle": "Suara akan muncul di sini saat kreator berbagi audio",

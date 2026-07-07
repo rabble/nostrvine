@@ -9471,6 +9471,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Tijdlijnmarkering verwijderen';
 
   @override
+  String get videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel =>
+      'Markering bij de afspeelkop verwijderen';
+
+  @override
   String get videoEditorDeleteTimelineMarkerTitle => 'Markering verwijderen?';
 
   @override

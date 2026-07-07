@@ -9432,6 +9432,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ta bort tidslinjemarkör';
 
   @override
+  String get videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel =>
+      'Ta bort markör vid spelhuvudet';
+
+  @override
   String get videoEditorDeleteTimelineMarkerTitle => 'Radera markör?';
 
   @override

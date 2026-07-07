@@ -9404,6 +9404,10 @@ class AppLocalizationsId extends AppLocalizations {
       'Hapus penanda timeline';
 
   @override
+  String get videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel =>
+      'Hapus penanda di posisi pemutaran';
+
+  @override
   String get videoEditorDeleteTimelineMarkerTitle => 'Hapus penanda?';
 
   @override

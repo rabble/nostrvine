@@ -9565,6 +9565,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Supprimer le marqueur de la chronologie';
 
   @override
+  String get videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel =>
+      'Supprimer le marqueur à la tête de lecture';
+
+  @override
   String get videoEditorDeleteTimelineMarkerTitle => 'Supprimer le marqueur ?';
 
   @override

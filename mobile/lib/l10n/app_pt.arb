@@ -2791,6 +2791,7 @@
     "videoEditorMarkerLabel": "Marcador",
     "videoEditorAddTimelineMarkerSemanticLabel": "Adicionar marcador à linha do tempo",
     "videoEditorRemoveTimelineMarkerSemanticLabel": "Remover marcador da linha do tempo",
+    "videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel": "Remover marcador no cursor de reprodução",
     "videoEditorDeleteTimelineMarkerTitle": "Excluir marcador?",
     "videoEditorDeleteTimelineMarkerSubtitle": "Isso remove o marcador da linha do tempo. Sua edição permanece intacta.",
     "videoEditorAddTitle": "Adicionar",

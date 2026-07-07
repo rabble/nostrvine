@@ -9535,6 +9535,10 @@ class AppLocalizationsFil extends AppLocalizations {
       'Alisin ang marker sa timeline';
 
   @override
+  String get videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel =>
+      'Alisin ang marker sa posisyon ng pagpapatugtog';
+
+  @override
   String get videoEditorDeleteTimelineMarkerTitle => 'Burahin ang marker?';
 
   @override

@@ -9491,6 +9491,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Remover marcador da linha do tempo';
 
   @override
+  String get videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel =>
+      'Remover marcador no cursor de reprodução';
+
+  @override
   String get videoEditorDeleteTimelineMarkerTitle => 'Excluir marcador?';
 
   @override

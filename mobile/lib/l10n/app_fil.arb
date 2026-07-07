@@ -1737,6 +1737,7 @@
     "videoEditorMarkerLabel": "Marker",
     "videoEditorAddTimelineMarkerSemanticLabel": "Magdagdag ng marker sa timeline",
     "videoEditorRemoveTimelineMarkerSemanticLabel": "Alisin ang marker sa timeline",
+    "videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel": "Alisin ang marker sa posisyon ng pagpapatugtog",
     "videoEditorDeleteTimelineMarkerTitle": "Burahin ang marker?",
     "videoEditorDeleteTimelineMarkerSubtitle": "Aalisin nito ang marker sa timeline. Mananatili ang iyong edit.",
     "videoEditorAddTitle": "Idagdag",

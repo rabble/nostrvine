@@ -3042,6 +3042,7 @@
     "videoEditorMarkerLabel": "Маркер",
     "videoEditorAddTimelineMarkerSemanticLabel": "Добавяне на маркер в хронологията",
     "videoEditorRemoveTimelineMarkerSemanticLabel": "Премахване на маркер от хронологията",
+    "videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel": "Премахване на маркера при плейхеда",
     "videoEditorDeleteTimelineMarkerTitle": "Да се изтрие ли маркерът?",
     "videoEditorDeleteTimelineMarkerSubtitle": "Това премахва маркера от хронологията. Редакцията ви остава непроменена.",
     "videoEditorAddTitle": "Добави",

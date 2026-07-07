@@ -2714,6 +2714,7 @@
     "videoEditorMarkerLabel": "マーカー",
     "videoEditorAddTimelineMarkerSemanticLabel": "タイムラインマーカーを追加",
     "videoEditorRemoveTimelineMarkerSemanticLabel": "タイムラインマーカーを削除",
+    "videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel": "再生ヘッド位置のマーカーを削除",
     "videoEditorDeleteTimelineMarkerTitle": "マーカーを削除しますか？",
     "videoEditorDeleteTimelineMarkerSubtitle": "タイムラインからマーカーを削除します。編集内容はそのまま残ります。",
     "videoEditorAudioNoSoundsAvailableSubtitle": "クリエイターがオーディオを共有するとここに表示されます",

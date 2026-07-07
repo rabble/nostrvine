@@ -2791,6 +2791,7 @@
     "videoEditorMarkerLabel": "Marcator",
     "videoEditorAddTimelineMarkerSemanticLabel": "Adaugă marcator pe cronologie",
     "videoEditorRemoveTimelineMarkerSemanticLabel": "Elimină marcatorul de pe cronologie",
+    "videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel": "Elimină marcatorul de la capul de redare",
     "videoEditorDeleteTimelineMarkerTitle": "Ștergi marcatorul?",
     "videoEditorDeleteTimelineMarkerSubtitle": "Aceasta elimină marcatorul de pe cronologie. Editarea rămâne intactă.",
     "videoEditorAddTitle": "Adaugă",

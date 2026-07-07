@@ -5487,6 +5487,10 @@
     "videoEditorMarkerLabel": "Marker",
     "videoEditorAddTimelineMarkerSemanticLabel": "Add timeline marker",
     "videoEditorRemoveTimelineMarkerSemanticLabel": "Remove timeline marker",
+    "videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel": "Remove marker at playhead",
+    "@videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel": {
+        "description": "Semantic label for the marker-mode bottom-bar delete button, which immediately removes the marker at the current playhead position. Distinct from videoEditorRemoveTimelineMarkerSemanticLabel (the per-marker dot, which asks for confirmation) so screen-reader users can tell the two delete controls apart."
+    },
     "videoEditorDeleteTimelineMarkerTitle": "Delete marker?",
     "videoEditorDeleteTimelineMarkerSubtitle": "This removes the marker from the timeline. Your edit stays intact.",
     "videoEditorVolumeLongPressHint": "Mute or unmute all tracks",

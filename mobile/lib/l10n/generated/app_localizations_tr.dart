@@ -9398,6 +9398,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Zaman çizelgesi işaretçisini kaldır';
 
   @override
+  String get videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel =>
+      'Oynatma başlığındaki işaretçiyi kaldır';
+
+  @override
   String get videoEditorDeleteTimelineMarkerTitle => 'İşaretçi silinsin mi?';
 
   @override
