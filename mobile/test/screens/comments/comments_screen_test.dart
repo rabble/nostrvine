@@ -225,6 +225,8 @@ void main() {
       CommentComposerState? composerState,
       VideoEvent? videoEvent,
       int? initialCommentCount,
+      DraggableScrollableController? draggableController,
+      EdgeInsets viewInsets = EdgeInsets.zero,
     }) {
       if (listState != null) {
         when(() => mockListBloc.state).thenReturn(listState);
@@ -232,6 +234,29 @@ void main() {
       if (composerState != null) {
         when(() => mockComposerBloc.state).thenReturn(composerState);
       }
+
+      final content = draggableController == null
+          ? _CommentsScreenTestContent(
+              videoEvent: videoEvent ?? testVideoEvent,
+              sheetScrollController: scrollController,
+              initialCommentCount: initialCommentCount ?? 0,
+            )
+          : DraggableScrollableSheet(
+              controller: draggableController,
+              expand: false,
+              initialChildSize: 0.7,
+              minChildSize: 0.5,
+              maxChildSize: 0.93,
+              snap: true,
+              snapSizes: const [0.7, 0.93],
+              builder: (context, sheetScrollController) =>
+                  _CommentsScreenTestContent(
+                    videoEvent: videoEvent ?? testVideoEvent,
+                    sheetScrollController: sheetScrollController,
+                    initialCommentCount: initialCommentCount ?? 0,
+                    draggableController: draggableController,
+                  ),
+            );
 
       return ProviderScope(
         overrides: [
@@ -242,21 +267,23 @@ void main() {
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: MultiBlocProvider(
-              providers: [
-                BlocProvider<CommentsListBloc>.value(value: mockListBloc),
-                BlocProvider<CommentComposerBloc>.value(
-                  value: mockComposerBloc,
-                ),
-                BlocProvider<CommentReactionsBloc>.value(
-                  value: mockReactionsBloc,
-                ),
-              ],
-              child: _CommentsScreenTestContent(
-                videoEvent: videoEvent ?? testVideoEvent,
-                sheetScrollController: scrollController,
-                initialCommentCount: initialCommentCount ?? 0,
+          home: MediaQuery(
+            data: MediaQueryData(
+              size: const Size(800, 600),
+              viewInsets: viewInsets,
+            ),
+            child: Scaffold(
+              body: MultiBlocProvider(
+                providers: [
+                  BlocProvider<CommentsListBloc>.value(value: mockListBloc),
+                  BlocProvider<CommentComposerBloc>.value(
+                    value: mockComposerBloc,
+                  ),
+                  BlocProvider<CommentReactionsBloc>.value(
+                    value: mockReactionsBloc,
+                  ),
+                ],
+                child: content,
               ),
             ),
           ),
@@ -474,6 +501,110 @@ void main() {
             verify(() => mockComposerBloc.add(captureAny())).captured.last
                 as CommentTextChanged;
         expect(captured.text, 'Test comment');
+      });
+
+      testWidgets(
+        'expands sheet to max when top-level input gains focus above keyboard',
+        (tester) async {
+          final draggableController = DraggableScrollableController();
+          addTearDown(draggableController.dispose);
+          final comment = CommentBuilder()
+              .withId(TestCommentIds.comment1Id)
+              .withContent('Visible comment')
+              .build();
+          final listState = CommentsListState(
+            rootEventId: testVideoEventId,
+            rootAuthorPubkey: testVideoAuthorPubkey,
+            status: CommentsStatus.success,
+            commentsById: {comment.id: comment},
+          );
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              draggableController: draggableController,
+              listState: listState,
+              composerState: const CommentComposerState(
+                mainInputText: 'ready to send',
+              ),
+              viewInsets: const EdgeInsets.only(bottom: 300),
+            ),
+          );
+          await tester.pump();
+
+          expect(draggableController.size, 0.7);
+
+          await tester.tap(find.byType(TextField).first);
+          await tester.pumpAndSettle();
+
+          expect(draggableController.size, closeTo(0.93, 0.001));
+          expect(
+            find.bySemanticsIdentifier('send_comment_button'),
+            findsOneWidget,
+          );
+          expect(
+            find.bySemanticsIdentifier('hide_comment_keyboard_button'),
+            findsOneWidget,
+          );
+          expect(find.text('ready to send'), findsOneWidget);
+        },
+      );
+
+      testWidgets('keeps focused composer from settling below safe snap size', (
+        tester,
+      ) async {
+        final draggableController = DraggableScrollableController();
+        addTearDown(draggableController.dispose);
+        final comment = CommentBuilder()
+            .withId(TestCommentIds.comment1Id)
+            .withContent('Visible comment')
+            .build();
+        final listState = CommentsListState(
+          rootEventId: testVideoEventId,
+          rootAuthorPubkey: testVideoAuthorPubkey,
+          status: CommentsStatus.success,
+          commentsById: {comment.id: comment},
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            draggableController: draggableController,
+            listState: listState,
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.byType(TextField).first);
+        await tester.pumpAndSettle();
+        expect(draggableController.size, closeTo(0.93, 0.001));
+
+        draggableController.jumpTo(0.5);
+        await tester.pumpAndSettle();
+
+        expect(draggableController.size, closeTo(0.93, 0.001));
+      });
+
+      testWidgets('hide keyboard keeps draft text available', (tester) async {
+        final draggableController = DraggableScrollableController();
+        addTearDown(draggableController.dispose);
+
+        await tester.pumpWidget(
+          buildTestWidget(draggableController: draggableController),
+        );
+        await tester.pump();
+
+        await tester.enterText(find.byType(TextField).first, 'draft reply');
+        await tester.pumpAndSettle();
+
+        await tester.tap(
+          find.bySemanticsIdentifier('hide_comment_keyboard_button'),
+        );
+        await tester.pump();
+
+        expect(find.text('draft reply'), findsOneWidget);
+        expect(
+          find.bySemanticsIdentifier('hide_comment_keyboard_button'),
+          findsNothing,
+        );
       });
     });
 
@@ -815,11 +946,13 @@ class _CommentsScreenTestContent extends StatelessWidget {
     required this.videoEvent,
     required this.sheetScrollController,
     required this.initialCommentCount,
+    this.draggableController,
   });
 
   final VideoEvent videoEvent;
   final ScrollController sheetScrollController;
   final int initialCommentCount;
+  final DraggableScrollableController? draggableController;
 
   @override
   Widget build(BuildContext context) {
@@ -837,7 +970,7 @@ class _CommentsScreenTestContent extends StatelessWidget {
               scrollController: sheetScrollController,
             ),
           ),
-          _MainCommentInputTest(),
+          _MainCommentInputTest(draggableController: draggableController),
         ],
       ),
     );
@@ -846,6 +979,10 @@ class _CommentsScreenTestContent extends StatelessWidget {
 
 /// Test version of main comment input that reads from the composer bloc.
 class _MainCommentInputTest extends StatefulWidget {
+  const _MainCommentInputTest({this.draggableController});
+
+  final DraggableScrollableController? draggableController;
+
   @override
   State<_MainCommentInputTest> createState() => _MainCommentInputTestState();
 }
@@ -860,13 +997,50 @@ class _MainCommentInputTestState extends State<_MainCommentInputTest> {
     final state = context.read<CommentComposerBloc>().state;
     _controller = TextEditingController(text: state.mainInputText);
     _focusNode = FocusNode();
+    _focusNode.addListener(_handleFocusChanged);
+    widget.draggableController?.addListener(_handleSheetSizeChanged);
   }
 
   @override
   void dispose() {
+    widget.draggableController?.removeListener(_handleSheetSizeChanged);
+    _focusNode.removeListener(_handleFocusChanged);
     _controller.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  void _handleFocusChanged() {
+    if (_focusNode.hasFocus) {
+      _expandSheetForKeyboard();
+    }
+  }
+
+  void _handleSheetSizeChanged() {
+    final controller = widget.draggableController;
+    if (!_focusNode.hasFocus ||
+        controller == null ||
+        !controller.isAttached ||
+        controller.size >= 0.7) {
+      return;
+    }
+
+    _expandSheetForKeyboard();
+  }
+
+  void _expandSheetForKeyboard() {
+    final controller = widget.draggableController;
+    if (controller == null ||
+        !controller.isAttached ||
+        controller.size >= 0.93) {
+      return;
+    }
+
+    controller.animateTo(
+      0.93,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+    );
   }
 
   @override

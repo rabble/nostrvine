@@ -157,6 +157,7 @@ abstract final class CommentsScreen {
     ValueChanged<int>? onCommentCountChanged,
   }) {
     final container = ProviderScope.containerOf(context, listen: false);
+    final draggableController = DraggableScrollableController();
 
     // Synchronously available repositories / services.
     final commentsRepository = container.read(commentsRepositoryProvider);
@@ -190,10 +191,11 @@ abstract final class CommentsScreen {
     return context
         .showVideoPausingVineBottomSheet<void>(
           snap: true,
-          snapSizes: const [0.7, 0.93],
-          initialChildSize: 0.7,
-          minChildSize: 0.5,
-          maxChildSize: 0.93,
+          snapSizes: _CommentsSheetSizing.snapSizes,
+          initialChildSize: _CommentsSheetSizing.initial,
+          minChildSize: _CommentsSheetSizing.min,
+          maxChildSize: _CommentsSheetSizing.max,
+          draggableController: draggableController,
           // Wrap the whole sheet subtree in a MultiBlocProvider so every slot
           // (title, trailing, bottomInput, buildScrollBody) shares the same
           // three blocs. BlocProvider owns lifecycle — it closes each BLoC
@@ -289,7 +291,9 @@ abstract final class CommentsScreen {
           // Wrap the input so the keyboard is dropped the instant the sheet
           // starts dismissing (drag / scrim / back), otherwise iOS leaves it
           // stranded over the feed below (#5604).
-          bottomInput: const UnfocusOnSheetDismiss(child: _MainCommentInput()),
+          bottomInput: UnfocusOnSheetDismiss(
+            child: _MainCommentInput(draggableController: draggableController),
+          ),
           buildScrollBody: (scrollController) {
             activeScrollController = scrollController;
             return CommentsSheetLoadTelemetry(
@@ -301,10 +305,19 @@ abstract final class CommentsScreen {
             );
           },
         )
-        .whenComplete(
-          surfaceTelemetry.completeDismissed,
-        );
+        .whenComplete(() {
+          surfaceTelemetry.completeDismissed();
+          draggableController.dispose();
+        });
   }
+}
+
+abstract final class _CommentsSheetSizing {
+  static const min = 0.5;
+  static const initial = 0.7;
+  static const max = 0.93;
+  static const List<double> snapSizes = [initial, max];
+  static const focusExpandDuration = Duration(milliseconds: 250);
 }
 
 /// Wires the composer / reactions outbox signals into [CommentsListBloc] store
@@ -384,10 +397,7 @@ class OutboxBridges extends StatelessWidget {
     );
   }
 
-  static bool _idSetsEqual(
-    Map<String, Object?> a,
-    Map<String, Object?> b,
-  ) {
+  static bool _idSetsEqual(Map<String, Object?> a, Map<String, Object?> b) {
     if (a.length != b.length) return false;
     for (final key in a.keys) {
       if (!b.containsKey(key)) return false;
@@ -570,7 +580,9 @@ class _CommentsScreenBody extends StatelessWidget {
 
 /// Main comment input widget that reads from [CommentComposerBloc] state.
 class _MainCommentInput extends ConsumerStatefulWidget {
-  const _MainCommentInput();
+  const _MainCommentInput({required this.draggableController});
+
+  final DraggableScrollableController draggableController;
 
   @override
   ConsumerState<_MainCommentInput> createState() => _MainCommentInputState();
@@ -586,13 +598,47 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
     final state = context.read<CommentComposerBloc>().state;
     _controller = TextEditingController(text: state.mainInputText);
     _focusNode = FocusNode();
+    _focusNode.addListener(_handleFocusChanged);
+    widget.draggableController.addListener(_handleSheetSizeChanged);
   }
 
   @override
   void dispose() {
+    widget.draggableController.removeListener(_handleSheetSizeChanged);
+    _focusNode.removeListener(_handleFocusChanged);
     _controller.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  void _handleFocusChanged() {
+    if (_focusNode.hasFocus) {
+      _expandSheetForKeyboard();
+    }
+  }
+
+  void _handleSheetSizeChanged() {
+    final controller = widget.draggableController;
+    if (!_focusNode.hasFocus ||
+        !controller.isAttached ||
+        controller.size >= _CommentsSheetSizing.initial) {
+      return;
+    }
+
+    _expandSheetForKeyboard();
+  }
+
+  void _expandSheetForKeyboard() {
+    final controller = widget.draggableController;
+    if (!controller.isAttached || controller.size >= _CommentsSheetSizing.max) {
+      return;
+    }
+
+    controller.animateTo(
+      _CommentsSheetSizing.max,
+      duration: _CommentsSheetSizing.focusExpandDuration,
+      curve: Curves.easeOut,
+    );
   }
 
   @override
@@ -701,9 +747,7 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
               // reply (E tag without matching P tag). Cancel reply mode
               // instead so the user can re-target a still-visible comment.
               if (replyToAuthorPubkey == null) {
-                composer.add(
-                  CommentReplyToggled(state.activeReplyCommentId!),
-                );
+                composer.add(CommentReplyToggled(state.activeReplyCommentId!));
                 return;
               }
               composer.add(
