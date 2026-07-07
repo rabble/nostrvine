@@ -6,6 +6,7 @@ import 'dart:math' as math;
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:openvine/widgets/avatar_failure_cache.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -19,6 +20,8 @@ enum UserAvatarPlaceholderTone {
   purple,
   blue,
 }
+
+enum _AvatarFailureKind { deterministic, transient, cancelled }
 
 class UserAvatar extends StatelessWidget {
   const UserAvatar({
@@ -110,6 +113,35 @@ class UserAvatar extends StatelessWidget {
 
   bool get _isSvgImageUrl => isSvgImageUrl(imageUrl);
 
+  _AvatarFailureKind _classifyAvatarFailure(Object error) {
+    final message = error.toString().toLowerCase();
+    if (message.contains('load cancelled')) {
+      return _AvatarFailureKind.cancelled;
+    }
+    if (message.contains('invalid image data') ||
+        message.contains('image codec failed')) {
+      return _AvatarFailureKind.deterministic;
+    }
+    return _AvatarFailureKind.transient;
+  }
+
+  void _recordAvatarFailure(String url, _AvatarFailureKind kind) {
+    switch (kind) {
+      case _AvatarFailureKind.deterministic:
+        AvatarFailureCache.instance.recordFailure(
+          url,
+          ttl: AvatarFailureCache.deterministicFailureTtl,
+        );
+      case _AvatarFailureKind.transient:
+        AvatarFailureCache.instance.recordFailure(
+          url,
+          ttl: AvatarFailureCache.transientFailureTtl,
+        );
+      case _AvatarFailureKind.cancelled:
+        break;
+    }
+  }
+
   Widget _buildPlaceholder() => _Placeholder(
     size: size,
     placeholderTone: placeholderTone,
@@ -129,6 +161,10 @@ class UserAvatar extends StatelessWidget {
     }
 
     if (_hasNetworkImage && _isSvgImageUrl) {
+      if (AvatarFailureCache.instance.isFailed(imageUrl!)) {
+        return _buildPlaceholder();
+      }
+
       return SvgPicture.network(
         imageUrl!,
         fit: BoxFit.cover,
@@ -138,18 +174,28 @@ class UserAvatar extends StatelessWidget {
             'Avatar SVG failed to load URL: $imageUrl - Error: $error',
             name: 'UserAvatar',
           );
+          AvatarFailureCache.instance.recordFailure(
+            imageUrl!,
+            ttl: AvatarFailureCache.deterministicFailureTtl,
+          );
           return _buildPlaceholder();
         },
       );
     }
 
     if (_hasNetworkImage) {
+      if (AvatarFailureCache.instance.isFailed(imageUrl!)) {
+        return _buildPlaceholder();
+      }
+
       return VineCachedImage(
         imageUrl: imageUrl!,
         placeholder: (context, url) => _buildPlaceholder(),
         errorWidget: (context, url, error) {
-          if (error.toString().contains('Invalid image data') ||
-              error.toString().contains('Image codec failed')) {
+          final failureKind = _classifyAvatarFailure(error);
+          _recordAvatarFailure(url, failureKind);
+
+          if (failureKind == _AvatarFailureKind.deterministic) {
             UnifiedLogger.warning(
               '🖼️ Invalid image data for avatar URL: $url - Error: $error',
               name: 'UserAvatar',

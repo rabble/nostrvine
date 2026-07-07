@@ -1,7 +1,9 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/widgets/avatar_failure_cache.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
@@ -84,6 +86,22 @@ void main() {
     );
   }
 
+  Finder gradientPlaceholderFinder() => find.byWidgetPredicate((widget) {
+    if (widget is! DecoratedBox) return false;
+    final decoration = widget.decoration;
+    return decoration is BoxDecoration && decoration.gradient != null;
+  }, description: 'generated avatar placeholder');
+
+  setUp(() {
+    AvatarFailureCache.instance.clear();
+    AvatarFailureCache.instance.resetClockForTesting();
+  });
+
+  tearDown(() {
+    AvatarFailureCache.instance.clear();
+    AvatarFailureCache.instance.resetClockForTesting();
+  });
+
   group('UserAvatar.isSvgImageUrl', () {
     test('returns true for svg URLs', () {
       expect(
@@ -116,6 +134,93 @@ void main() {
   });
 
   group('UserAvatar rendering', () {
+    testWidgets('skips SvgPicture for cached failed SVG avatar URLs', (
+      tester,
+    ) async {
+      const failedUrl = 'https://divine.video/divine-logo.svg';
+      AvatarFailureCache.instance.recordFailure(
+        failedUrl,
+        ttl: AvatarFailureCache.deterministicFailureTtl,
+      );
+
+      await tester.pumpWidget(buildAvatar(imageUrl: failedUrl));
+
+      expect(find.byType(SvgPicture), findsNothing);
+      expect(find.byType(VineCachedImage), findsNothing);
+      expect(gradientPlaceholderFinder(), findsAtLeastNWidgets(1));
+    });
+
+    testWidgets('skips VineCachedImage for cached failed raster avatar URLs', (
+      tester,
+    ) async {
+      const failedUrl = 'https://divine.video/avatar.png';
+      AvatarFailureCache.instance.recordFailure(
+        failedUrl,
+        ttl: AvatarFailureCache.deterministicFailureTtl,
+      );
+
+      await tester.pumpWidget(buildAvatar(imageUrl: failedUrl));
+
+      expect(find.byType(SvgPicture), findsNothing);
+      expect(find.byType(VineCachedImage), findsNothing);
+      expect(gradientPlaceholderFinder(), findsAtLeastNWidgets(1));
+    });
+
+    testWidgets('cached failures are scoped to the exact avatar URL', (
+      tester,
+    ) async {
+      const failedUrl = 'https://divine.video/broken-avatar.png';
+      const workingUrl = 'https://divine.video/avatar.png';
+      AvatarFailureCache.instance.recordFailure(
+        failedUrl,
+        ttl: AvatarFailureCache.deterministicFailureTtl,
+      );
+
+      await tester.pumpWidget(buildAvatar(imageUrl: failedUrl));
+      expect(find.byType(VineCachedImage), findsNothing);
+
+      await tester.pumpWidget(buildAvatar(imageUrl: workingUrl));
+      expect(find.byType(VineCachedImage), findsOneWidget);
+      expect(
+        tester.widget<VineCachedImage>(find.byType(VineCachedImage)).imageUrl,
+        workingUrl,
+      );
+    });
+
+    testWidgets('raster deterministic failures are cached', (tester) async {
+      const failedUrl = 'https://divine.video/avatar.png';
+
+      await tester.pumpWidget(buildAvatar(imageUrl: failedUrl));
+      final image = tester.widget<VineCachedImage>(
+        find.byType(VineCachedImage),
+      );
+
+      image.errorWidget!(
+        tester.element(find.byType(VineCachedImage)),
+        failedUrl,
+        Exception('Invalid image data'),
+      );
+
+      expect(AvatarFailureCache.instance.isFailed(failedUrl), isTrue);
+    });
+
+    testWidgets('raster load cancellations are not cached', (tester) async {
+      const cancelledUrl = 'https://divine.video/avatar.png';
+
+      await tester.pumpWidget(buildAvatar(imageUrl: cancelledUrl));
+      final image = tester.widget<VineCachedImage>(
+        find.byType(VineCachedImage),
+      );
+
+      image.errorWidget!(
+        tester.element(find.byType(VineCachedImage)),
+        cancelledUrl,
+        Exception('MediaCacheImageProvider load cancelled'),
+      );
+
+      expect(AvatarFailureCache.instance.isFailed(cancelledUrl), isFalse);
+    });
+
     testWidgets('keeps raster avatar URLs on VineCachedImage', (tester) async {
       await tester.pumpWidget(
         buildAvatar(imageUrl: 'https://divine.video/avatar.png'),
