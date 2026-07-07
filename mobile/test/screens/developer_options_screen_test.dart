@@ -31,13 +31,27 @@ Future<void> pumpScreen(WidgetTester tester, SharedPreferences prefs) async {
 }
 
 Future<void> tapTile(WidgetTester tester, String title) async {
-  final tile = find.text(title);
+  // Tap the whole ListTile (not just the text) and ensure it is fully in view
+  // first: scrollUntilVisible can leave the row clipped at a viewport edge, so
+  // a tap on the text's centre lands off-target on some layouts (this is what
+  // failed on Linux CI but passed on macOS). hitTestWarningShouldBeFatal
+  // (set in main) turns any such miss into a hard failure so it can't pass
+  // locally again.
+  final tile = find.widgetWithText(ListTile, title);
   await tester.scrollUntilVisible(tile, 300);
+  await tester.pumpAndSettle();
+  await tester.ensureVisible(tile);
+  await tester.pumpAndSettle();
   await tester.tap(tile);
   await tester.pumpAndSettle();
 }
 
 void main() {
+  // Make a tap that misses its target a hard failure locally, so the
+  // clipped-tile geometry flake (which passed on macOS and failed on Linux CI)
+  // cannot slip through a local run again.
+  WidgetController.hitTestWarningShouldBeFatal = true;
+
   testWidgets(
     'DeveloperOptionsScreen constrains menu content width on wide screens',
     (
