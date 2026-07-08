@@ -210,13 +210,25 @@ class VideoPublishService {
     required DivineVideoDraft draft,
     String? expectedPubkey,
   }) async {
+    final effectiveExpectedPubkey =
+        expectedPubkey ?? draft.expectedPublishPubkey;
+    if (effectiveExpectedPubkey == null &&
+        _requiresPersistedPublishIdentity(draft)) {
+      Log.warning(
+        '⚠️ Publish retry draft lacks owner identity, cannot publish',
+        category: .video,
+      );
+      _backgroundUploadId = null;
+      return const PublishError(PublishErrorKind.notSignedIn);
+    }
+
     final initialReadiness = _requirePublishReadiness(
-      expectedPubkey: expectedPubkey,
+      expectedPubkey: effectiveExpectedPubkey,
     );
     if (initialReadiness == null) {
       return const PublishError(PublishErrorKind.notSignedIn);
     }
-    final publishPubkey = expectedPubkey ?? initialReadiness.pubkey!;
+    final publishPubkey = effectiveExpectedPubkey ?? initialReadiness.pubkey!;
 
     // Check if we have a background upload ID and its status
     if (_backgroundUploadId != null) {
@@ -346,6 +358,13 @@ class VideoPublishService {
     } catch (e, stackTrace) {
       return _handleUploadError(e, stackTrace, draft);
     }
+  }
+
+  bool _requiresPersistedPublishIdentity(DivineVideoDraft draft) {
+    return draft.sourceDraftId != null &&
+        draft.publishAttempts > 0 &&
+        (draft.publishStatus == PublishStatus.failed ||
+            draft.publishStatus == PublishStatus.publishing);
   }
 
   PublishReadiness _currentPublishReadiness() {

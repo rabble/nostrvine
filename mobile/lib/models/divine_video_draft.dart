@@ -32,6 +32,7 @@ class DivineVideoDraft {
     required this.publishAttempts,
     this.publishError,
     this.sourceDraftId,
+    this.expectedPublishPubkey,
     this.allowAudioReuse = false,
     this.expireTime,
     this.proofManifestJson,
@@ -165,6 +166,7 @@ class DivineVideoDraft {
       publishError: json['publishError'] as String?,
       publishAttempts: json['publishAttempts'] as int? ?? 0,
       sourceDraftId: json['sourceDraftId'] as String?,
+      expectedPublishPubkey: json['expectedPublishPubkey'] as String?,
       proofManifestJson: json['proofManifestJson'] as String?,
       editorStateHistory:
           (json['editorStateHistory'] as Map<String, dynamic>?) ?? const {},
@@ -241,6 +243,7 @@ class DivineVideoDraft {
   final String? proofManifestJson;
   final String? publishError;
   final String? sourceDraftId;
+  final String? expectedPublishPubkey;
   final int publishAttempts;
   final bool allowAudioReuse;
 
@@ -319,6 +322,8 @@ class DivineVideoDraft {
     bool clearPublishError = false,
     String? sourceDraftId,
     bool clearSourceDraftId = false,
+    String? expectedPublishPubkey,
+    bool clearExpectedPublishPubkey = false,
     Duration? expireTime,
     bool? allowAudioReuse,
     int? publishAttempts,
@@ -359,6 +364,9 @@ class DivineVideoDraft {
     sourceDraftId: clearSourceDraftId
         ? null
         : (sourceDraftId ?? this.sourceDraftId),
+    expectedPublishPubkey: clearExpectedPublishPubkey
+        ? null
+        : (expectedPublishPubkey ?? this.expectedPublishPubkey),
     publishAttempts: publishAttempts ?? this.publishAttempts,
     proofManifestJson: clearProofManifestJson
         ? null
@@ -406,6 +414,8 @@ class DivineVideoDraft {
     'publishStatus': publishStatus.name,
     'publishError': publishError,
     if (sourceDraftId != null) 'sourceDraftId': sourceDraftId,
+    if (expectedPublishPubkey != null)
+      'expectedPublishPubkey': expectedPublishPubkey,
     'publishAttempts': publishAttempts,
     'proofManifestJson': proofManifestJson,
     if (editorStateHistory.isNotEmpty) 'editorStateHistory': editorStateHistory,

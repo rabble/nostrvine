@@ -225,6 +225,79 @@ void main() {
       );
 
       test(
+        'returns not signed in without saving or uploading when retry draft lacks persisted publish pubkey',
+        () async {
+          // Arrange
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn(
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+          );
+          service = VideoPublishService(
+            uploadManager: mockUploadManager,
+            authService: mockAuthService,
+            videoEventPublisher: mockVideoEventPublisher,
+            blossomService: mockBlossomService,
+            draftService: mockDraftService,
+            collaboratorInviteService: mockCollaboratorInviteService,
+            mentionResolutionService: mockMentionResolutionService,
+            readPublishReadiness: () => const PublishReadiness.ready(
+              pubkey:
+                  'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+            ),
+            onProgressChanged:
+                ({required double progress, required String draftId}) =>
+                    progressChanges.add(progress),
+          );
+
+          final retryDraft = _createTestDraft().copyWith(
+            publishStatus: PublishStatus.failed,
+            sourceDraftId: 'source_draft_id',
+            publishAttempts: 1,
+          );
+
+          // Act
+          final result = await service.publishVideo(draft: retryDraft);
+
+          // Assert
+          expect(result, isA<PublishError>());
+          expect((result as PublishError).kind, PublishErrorKind.notSignedIn);
+          verifyNever(() => mockDraftService.saveDraft(any()));
+          verifyNever(
+            () => mockUploadManager.startUploadFromDraft(
+              draft: any(named: 'draft'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              onProgress: any(named: 'onProgress'),
+            ),
+          );
+          verifyNever(
+            () => mockVideoEventPublisher.publishVideoEvent(
+              upload: any(named: 'upload'),
+              title: any(named: 'title'),
+              description: any(named: 'description'),
+              hashtags: any(named: 'hashtags'),
+              expirationTimestamp: any(named: 'expirationTimestamp'),
+              allowAudioReuse: any(named: 'allowAudioReuse'),
+              collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
+              mentionedPubkeys: any(named: 'mentionedPubkeys'),
+              inspiredByAddressableId: any(named: 'inspiredByAddressableId'),
+              inspiredByRelayUrl: any(named: 'inspiredByRelayUrl'),
+              inspiredByNpub: any(named: 'inspiredByNpub'),
+              selectedAudio: any(named: 'selectedAudio'),
+              selectedAudioEventId: any(named: 'selectedAudioEventId'),
+              selectedAudioRelay: any(named: 'selectedAudioRelay'),
+              language: any(named: 'language'),
+              contentWarning: any(named: 'contentWarning'),
+              thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
+              replyContext: any(named: 'replyContext'),
+              addReplyToFeed: any(named: 'addReplyToFeed'),
+            ),
+          );
+        },
+      );
+
+      test(
         'revalidates live readiness before saving publish draft',
         () async {
           // Arrange

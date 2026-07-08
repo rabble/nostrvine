@@ -222,6 +222,7 @@ class BackgroundPublishBloc
 
     final newPublishProcess = videoPublishService.publishVideo(
       draft: uploadToRetry.draft,
+      expectedPubkey: uploadToRetry.draft.expectedPublishPubkey,
     );
 
     add(

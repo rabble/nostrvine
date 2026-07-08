@@ -457,6 +457,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         publishStatus: PublishStatus.publishing,
         clearPublishError: true,
         sourceDraftId: draft.sourceDraftId ?? draft.id,
+        expectedPublishPubkey: publishPubkey,
         publishAttempts: draft.publishAttempts + 1,
       );
 

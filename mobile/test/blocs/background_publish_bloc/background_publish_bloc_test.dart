@@ -667,8 +667,15 @@ void main() {
           draftStorageService: mockDraftStorageService,
         ),
         setUp: () {
+          when(() => draft.expectedPublishPubkey).thenReturn(
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          );
           when(
-            () => mockPublishService.publishVideo(draft: draft),
+            () => mockPublishService.publishVideo(
+              draft: draft,
+              expectedPubkey:
+                  'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+            ),
           ).thenAnswer((_) => Future.value(const PublishSuccess()));
         },
         seed: () => BackgroundPublishState(
@@ -696,7 +703,13 @@ void main() {
           const BackgroundPublishState(recentlySucceededIds: {draftId}),
         ],
         verify: (_) {
-          verify(() => mockPublishService.publishVideo(draft: draft)).called(1);
+          verify(
+            () => mockPublishService.publishVideo(
+              draft: draft,
+              expectedPubkey:
+                  'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+            ),
+          ).called(1);
         },
       );
     });

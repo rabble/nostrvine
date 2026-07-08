@@ -146,6 +146,24 @@ void main() {
       expect(deserialized.publishError, 'Network error');
       expect(deserialized.publishAttempts, 2);
     });
+
+    test('should serialize expectedPublishPubkey when present', () {
+      const expectedPublishPubkey =
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      final draft = DivineVideoDraft.create(
+        clips: [_testClip()],
+        title: 'Retryable publish draft',
+        description: '',
+        hashtags: {},
+        selectedApproach: 'native',
+      ).copyWith(expectedPublishPubkey: expectedPublishPubkey);
+
+      final json = draft.toJson();
+      expect(json['expectedPublishPubkey'], expectedPublishPubkey);
+
+      final deserialized = DivineVideoDraft.fromJson(json, '/path/to');
+      expect(deserialized.expectedPublishPubkey, expectedPublishPubkey);
+    });
   });
 
   group('VineDraft.copyWith with publish fields', () {
@@ -251,5 +269,34 @@ void main() {
       expect(cleared.publishError, null);
       expect(cleared.publishAttempts, 0);
     });
+
+    test('should preserve and clear expectedPublishPubkey via copyWith', () {
+      const expectedPublishPubkey =
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      final draft = DivineVideoDraft.create(
+        clips: [_testClip()],
+        title: 'Retryable publish draft',
+        description: '',
+        hashtags: {},
+        selectedApproach: 'native',
+      ).copyWith(expectedPublishPubkey: expectedPublishPubkey);
+
+      final failed = draft.copyWith(publishStatus: PublishStatus.failed);
+      expect(failed.expectedPublishPubkey, expectedPublishPubkey);
+
+      final cleared = failed.copyWith(clearExpectedPublishPubkey: true);
+      expect(cleared.expectedPublishPubkey, isNull);
+    });
   });
+}
+
+DivineVideoClip _testClip() {
+  return DivineVideoClip(
+    id: 'test_clip',
+    video: EditorVideo.file('/path/to/video.mp4'),
+    duration: const Duration(seconds: 6),
+    recordedAt: DateTime.now(),
+    targetAspectRatio: AspectRatio.square,
+    originalAspectRatio: 9 / 16,
+  );
 }
