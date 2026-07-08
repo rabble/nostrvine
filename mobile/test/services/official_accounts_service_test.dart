@@ -285,4 +285,40 @@ void main() {
       expect(await svc.isApprovedMinorDmRecipient(hqHex), isFalse);
     },
   );
+
+  test('onVerdictChanged fires when a verdict flips to revoked', () async {
+    when(() => resolver.resolve(hqNip05, hqHex)).thenAnswer(
+      (_) async => const Nip05Resolution.differentKey(attackerHex),
+    );
+    final svc = build();
+    addTearDown(svc.dispose);
+    final fired = <void>[];
+    final sub = svc.onVerdictChanged.listen(fired.add);
+    addTearDown(sub.cancel);
+
+    await svc.isApprovedMinorDmRecipient(hqHex);
+    await Future<void>.delayed(Duration.zero);
+
+    expect(fired, hasLength(1));
+  });
+
+  test(
+    'onVerdictChanged does not fire when a resolution confirms the verdict',
+    () async {
+      when(
+        () => resolver.resolve(hqNip05, hqHex),
+      ).thenAnswer((_) async => const Nip05Resolution.matched(hqHex));
+      final svc = build();
+      addTearDown(svc.dispose);
+      final fired = <void>[];
+      final sub = svc.onVerdictChanged.listen(fired.add);
+      addTearDown(sub.cancel);
+
+      // matched == the pin-trusted default (approved), so no observable flip.
+      await svc.isApprovedMinorDmRecipient(hqHex);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(fired, isEmpty);
+    },
+  );
 }

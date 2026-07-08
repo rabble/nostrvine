@@ -2,6 +2,7 @@
 // ABOUTME: pin ∩ live NIP-05, with graded revocation, a 1h freshness TTL, a 5-min
 // ABOUTME: confirming recheck for absence, and a persistent last-known verdict.
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:openvine/config/official_accounts.dart';
@@ -61,6 +62,18 @@ class OfficialAccountsService {
        _now = now ?? DateTime.now,
        _accounts = accounts ?? kPinnedOfficialAccounts;
 
+  final StreamController<void> _verdictChanges =
+      StreamController<void>.broadcast();
+
+  /// Emits when a persisted verdict flips (approved <-> revoked), so a live view
+  /// (the inbound DM filter) can re-evaluate. Does NOT fire when a re-resolution
+  /// merely confirms the existing verdict, so it can't drive a recompute loop.
+  Stream<void> get onVerdictChanged => _verdictChanges.stream;
+
+  /// Releases the change stream. The app-scoped provider lives for the session,
+  /// so this is mainly for tests.
+  void dispose() => _verdictChanges.close();
+
   /// Normalize a hex identifier for comparison/storage. The pin is the trust
   /// anchor, so caller-supplied and pinned hex are normalized identically —
   /// trimmed and lowercased — so a padded or checksummed value neither slips
@@ -116,14 +129,26 @@ class OfficialAccountsService {
       return record.approved;
     }
 
+    // The verdict a live view currently believes (pin-trusted default when
+    // there's no record). A persist that differs from this fires onVerdictChanged.
+    final priorApproved = record?.approved ?? true;
+
     final res = await _resolver.resolve(account.nip05, account.pubkeyHex);
     final now = _now();
     switch (res.kind) {
       case Nip05ResolutionKind.matched:
-        await _save(hex, _Record(approved: true, checkedAt: now));
+        await _persistVerdict(
+          hex,
+          _Record(approved: true, checkedAt: now),
+          priorApproved,
+        );
         return true;
       case Nip05ResolutionKind.differentKey:
-        await _save(hex, _Record(approved: false, checkedAt: now));
+        await _persistVerdict(
+          hex,
+          _Record(approved: false, checkedAt: now),
+          priorApproved,
+        );
         return false;
       case Nip05ResolutionKind.absent:
         if (record != null && !record.approved) {
@@ -132,18 +157,23 @@ class OfficialAccountsService {
         final firstAbsent = record?.firstAbsentAt;
         if (firstAbsent != null &&
             now.difference(firstAbsent) >= absenceRecheck) {
-          await _save(hex, _Record(approved: false, checkedAt: now));
+          await _persistVerdict(
+            hex,
+            _Record(approved: false, checkedAt: now),
+            priorApproved,
+          );
           return false; // confirming recheck: drop
         }
         // First absence (or still within the recheck window): keep last-known
         // approved and remember when the absence began.
-        await _save(
+        await _persistVerdict(
           hex,
           _Record(
             approved: true,
             checkedAt: now,
             firstAbsentAt: firstAbsent ?? now,
           ),
+          priorApproved,
         );
         return true;
       case Nip05ResolutionKind.networkError:
@@ -174,6 +204,19 @@ class OfficialAccountsService {
 
   Future<void> _save(String hex, _Record record) =>
       _prefs.setString(_key(hex), jsonEncode(record.toJson()));
+
+  /// Persist [record] and, if its approved verdict differs from [priorApproved]
+  /// (what a live view currently believes), signal the flip so the view
+  /// re-evaluates. Unchanged verdicts are silent, so a steady re-resolution
+  /// can't drive a recompute loop.
+  Future<void> _persistVerdict(
+    String hex,
+    _Record record,
+    bool priorApproved,
+  ) async {
+    await _save(hex, record);
+    if (record.approved != priorApproved) _verdictChanges.add(null);
+  }
 
   String _key(String hex) => 'official_recipient_${_normHex(hex)}';
 }

@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
 import 'package:openvine/blocs/dm/message_requests/message_request_actions_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/official_accounts_providers.dart';
 import 'package:openvine/screens/inbox/message_requests/message_requests_view.dart';
 
 /// Message Requests inbox page.
@@ -33,6 +34,9 @@ class MessageRequestsPage extends ConsumerWidget {
             dmRepository: dmRepository,
             followRepository: followRepository,
             contentBlocklistRepository: blocklistRepository,
+            protectedMinorInboxGate: ref.watch(
+              protectedMinorInboxGateProvider,
+            ),
           )..add(const ConversationListStarted()),
         ),
         BlocProvider(

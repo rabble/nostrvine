@@ -15,6 +15,7 @@ import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/blocs/notifications/badge/notification_badge_cubit.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/official_accounts_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/screens/inbox/inbox_view.dart';
 
@@ -52,6 +53,9 @@ class InboxPage extends ConsumerWidget {
               dmRepository: dmRepository,
               followRepository: followRepository,
               contentBlocklistRepository: blocklistRepository,
+              protectedMinorInboxGate: ref.watch(
+                protectedMinorInboxGateProvider,
+              ),
             )..add(const ConversationListStarted()),
           ),
           // Inbox-scope NotificationBadgeCubit feeds the segmented

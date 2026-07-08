@@ -58,6 +58,36 @@ class _FakeInboxGate implements ProtectedMinorInboxGate {
   }
 }
 
+/// A gate whose approval set can change at runtime; revoking emits on [changes]
+/// so the bloc must re-filter (models receive-time revalidation).
+class _MutableInboxGate implements ProtectedMinorInboxGate {
+  _MutableInboxGate(Set<String> approved) : _approved = approved;
+  Set<String> _approved;
+  final StreamController<void> _changes = StreamController<void>.broadcast();
+
+  void revoke(String pubkey) {
+    _approved = {..._approved}..remove(pubkey);
+    _changes.add(null);
+  }
+
+  @override
+  Stream<void> get changes => _changes.stream;
+
+  @override
+  List<DmConversation> filter(
+    List<DmConversation> conversations, {
+    required String userPubkey,
+  }) {
+    return conversations
+        .where(
+          (c) => c.participantPubkeys
+              .where((p) => p != userPubkey)
+              .every(_approved.contains),
+        )
+        .toList();
+  }
+}
+
 DmConversation _createConversation({
   required String id,
   bool isRead = true,
@@ -215,6 +245,65 @@ void main() {
             (s) => s.status == ConversationListStatus.loaded,
           );
           expect(state.requestConversations, isEmpty);
+        },
+      );
+
+      test(
+        're-filters when the gate signals a revocation (receive-time revalidation)',
+        () async {
+          final conv = _createConversation(
+            id: 'c',
+            currentUserHasSent: true,
+            participantPubkeys: const [_testPubkey1, _testPubkey2],
+          );
+          // Single-subscription (buffering) so the value survives until the bloc
+          // subscribes; a broadcast controller would drop it and the list would
+          // never populate.
+          final acceptedController = StreamController<List<DmConversation>>();
+          addTearDown(acceptedController.close);
+          when(
+            () => mockDmRepository.watchAcceptedConversations(
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) => acceptedController.stream);
+          when(
+            () => mockDmRepository.watchPotentialRequests(),
+          ).thenAnswer((_) => Stream.value(const <DmConversation>[]));
+          when(
+            () => mockDmRepository.historyRecoveryStream,
+          ).thenAnswer((_) => const Stream<bool>.empty());
+          when(() => mockDmRepository.isRecoveringHistory).thenReturn(false);
+
+          final gate = _MutableInboxGate({_testPubkey2});
+          final bloc = ConversationListBloc(
+            dmRepository: mockDmRepository,
+            followRepository: mockFollowRepository,
+            protectedMinorInboxGate: gate,
+            recomputeDebounce: Duration.zero,
+          )..add(const ConversationListStarted());
+          addTearDown(bloc.close);
+
+          final states = <ConversationListState>[];
+          final sub = bloc.stream.listen(states.add);
+          addTearDown(sub.cancel);
+
+          acceptedController.add([conv]);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          expect(
+            states.last.conversations.map((c) => c.id).toList(),
+            ['c'],
+            reason: 'approved counterparty is visible before revocation',
+          );
+
+          // A revocation fires the gate's changes stream; the list must re-filter
+          // and drop the now-unapproved counterparty without any new DAO write.
+          gate.revoke(_testPubkey2);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          expect(
+            states.last.conversations,
+            isEmpty,
+            reason: 'a verdict flip re-filters the list without a DAO write',
+          );
         },
       );
 

@@ -99,7 +99,7 @@ class ConversationListBloc
     // Combining ensures requests are never truncated by pagination
     // and follow-list changes are handled automatically.
     await emit.forEach(
-      Rx.combineLatest5(
+      Rx.combineLatest6(
         _dmRepository.watchAcceptedConversations(limit: state.currentLimit),
         _dmRepository.watchPotentialRequests(),
         _followRepository.followingStream.startWith(const []),
@@ -111,7 +111,13 @@ class ConversationListBloc
         // empty pre-auth pubkey would misroute every 1:1. This re-fires the
         // handler once the real identity arrives. See #5374.
         _dmRepository.userPubkeyStream.startWith(_dmRepository.userPubkey),
-        (accepted, potentialRequests, _, isRestoring, userPubkey) => (
+        // Stream 6: protected-minor verdict changes (#176). A receive-time
+        // revalidation that flips a counterparty's approval fires here so the
+        // list re-filters and a just-revoked official drops, even though no
+        // conversation row changed. Pass-through (never emits) when unrestricted.
+        (_protectedMinorInboxGate?.changes ?? const Stream<void>.empty())
+            .startWith(null),
+        (accepted, potentialRequests, _, isRestoring, userPubkey, _) => (
           accepted: accepted,
           potentialRequests: potentialRequests,
           isRestoring: isRestoring,
