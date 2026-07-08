@@ -158,6 +158,57 @@ void main() {
     );
   });
 
+  group('userProfileReactiveProvider', () {
+    test(
+      'renders cached profile from identity-known repository before nostrReady',
+      () async {
+        final profileRepository = _MockProfileRepository();
+        final profile = UserProfile(
+          pubkey: pubkey,
+          rawData: const {'display_name': 'Lily Majid'},
+          displayName: 'Lily Majid',
+          eventId: 'cached-profile-event',
+          createdAt: DateTime.fromMillisecondsSinceEpoch(1000),
+        );
+
+        when(
+          () => profileRepository.getCachedProfile(pubkey: pubkey),
+        ).thenAnswer((_) async => profile);
+        when(
+          () => profileRepository.watchProfile(pubkey: pubkey),
+        ).thenAnswer((_) => Stream.value(profile));
+
+        final container = ProviderContainer(
+          overrides: [
+            profileRepositoryProvider.overrideWithValue(null),
+            profileStatsRepositoryProvider.overrideWithValue(profileRepository),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final emittedProfile = Completer<UserProfile?>();
+        final sub = container.listen(
+          userProfileReactiveProvider(pubkey),
+          (_, next) {
+            if (next.hasValue && !emittedProfile.isCompleted) {
+              emittedProfile.complete(next.value);
+            }
+          },
+          fireImmediately: true,
+        );
+        addTearDown(sub.close);
+
+        await expectLater(
+          emittedProfile.future,
+          completion(same(profile)),
+        );
+        verifyNever(
+          () => profileRepository.fetchFreshProfile(pubkey: pubkey),
+        );
+      },
+    );
+  });
+
   group('profileStatsRepository gating (#5863)', () {
     ProviderContainer containerWith(NostrSessionReadiness readiness) {
       final container = ProviderContainer(

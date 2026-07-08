@@ -297,18 +297,18 @@ ProfileRepository? profileRepository(Ref ref) {
 /// Lightweight ProfileRepository gated on **identity-known** (a pubkey is
 /// available) rather than the full `nostrReady` relay-connect settle.
 ///
-/// The follower/following/video COUNTS are populated by a PUBLIC funnelcake
-/// REST call (`getUserProfile` → `_cacheProfileStatsFromResult`, no signer,
-/// no relay) and read back from Drift via `watchProfileStats`. None of that
-/// needs the relay-ready client, so gating those counts behind `nostrReady`
-/// is what left them stuck on "—" for the ~4s relay-connect window at cold
-/// start (#5863). This provider hands over the same repository as soon as the
-/// user's identity is known, so the counts render as soon as REST returns.
+/// Cached profile identity and follower/following/video COUNTS are read from
+/// Drift, and fresh profile data can be hydrated by a PUBLIC Funnelcake REST
+/// call (`getUserProfile`, no signer, no relay). None of that needs the
+/// relay-ready client, so gating those reads behind `nostrReady` left own
+/// profile headers stuck on skeleton/generated fallback during the cold-start
+/// relay-connect window. This provider hands over the same repository as soon
+/// as the user's identity is known, so names and counts render from cache/REST
+/// while signer-backed writes remain gated on [profileRepository].
 ///
 /// It does NOT warm the Kind-0 cache — that side effect belongs to the
-/// relay-backed [profileRepository]. Only [userProfileStatsReactiveProvider]
-/// consumes this; everything relay-dependent must keep using
-/// [profileRepository].
+/// relay-backed [profileRepository]. Read-only profile display providers may
+/// consume this; everything relay-dependent must keep using [profileRepository].
 @Riverpod(keepAlive: true)
 ProfileRepository? profileStatsRepository(Ref ref) {
   final identityPubkey = ref.watch(

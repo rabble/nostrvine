@@ -93,7 +93,7 @@ final class UserProfileReactiveProvider
 }
 
 String _$userProfileReactiveHash() =>
-    r'b0df16fa99256495c86d9dc1980ac7312d71a6bd';
+    r'ceb157f8463c47d9583242bdeb66e90a47718954';
 
 /// Reactive profile provider backed by Drift's watchProfile stream.
 ///
@@ -202,7 +202,7 @@ final class FetchUserProfileProvider
   }
 }
 
-String _$fetchUserProfileHash() => r'b5565d7d2d026d79ff21286d42511b8aee085d4d';
+String _$fetchUserProfileHash() => r'5d183d94f59828f47e858d8532795fa99b860526';
 
 /// One-shot provider: returns cached profile or fetches fresh.
 ///

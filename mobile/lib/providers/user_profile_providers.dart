@@ -44,7 +44,9 @@ final userProfileStatsReactiveProvider =
 /// FutureProvider, so widget code changes are minimal.
 @riverpod
 Stream<UserProfile?> userProfileReactive(Ref ref, String pubkey) async* {
-  final repo = ref.watch(profileRepositoryProvider);
+  final repo =
+      ref.watch(profileRepositoryProvider) ??
+      ref.watch(profileStatsRepositoryProvider);
   if (repo == null) return;
 
   // Kick off a background fetch if nothing is cached yet.
@@ -62,7 +64,9 @@ Stream<UserProfile?> userProfileReactive(Ref ref, String pubkey) async* {
 /// rather than a reactive stream.
 @riverpod
 Future<UserProfile?> fetchUserProfile(Ref ref, String pubkey) async {
-  final repo = ref.watch(profileRepositoryProvider);
+  final repo =
+      ref.watch(profileRepositoryProvider) ??
+      ref.watch(profileStatsRepositoryProvider);
   if (repo == null) return null;
 
   return await repo.getCachedProfile(pubkey: pubkey) ??
