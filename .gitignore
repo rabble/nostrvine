@@ -137,9 +137,10 @@ node_modules/
 
 # Environment files
 .env
-.env.local
-.env.production
-.env.development
+.env.*
+# ...but keep tracked example templates at any depth (mobile/, local_stack/)
+!**/.env.example
+!.env.example
 
 # Temporary and log files
 *.tmp
@@ -167,6 +168,11 @@ mobile/macos/Runner/Configs/LocalRelease.xcconfig
 
 # Superpowers local scratch (not docs/superpowers/)
 .superpowers/
+# Superpowers clearance render scratch (committed specs live in specs/*.md)
+docs/superpowers/specs/.clearance-*/
+
+# Ephemeral working context / session notes — never tracked (any depth)
+.context/
 
 # Playwright MCP scratch output
 **/.playwright-mcp/

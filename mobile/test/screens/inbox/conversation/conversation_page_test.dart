@@ -61,6 +61,28 @@ void main() {
       );
     });
 
+    group('allParticipantsApprovedForMinor (#176 route-guard predicate)', () {
+      test('empty participant list fails closed, not vacuously approved', () {
+        // `[].every(...)` is vacuously true; a protected minor must NOT be let
+        // into a degenerate zero-counterparty thread. Must fail closed.
+        expect(allParticipantsApprovedForMinor(const [], (_) => true), isFalse);
+      });
+
+      test('every counterparty approved -> allowed', () {
+        expect(
+          allParticipantsApprovedForMinor(const ['a', 'b'], (_) => true),
+          isTrue,
+        );
+      });
+
+      test('any non-approved counterparty -> blocked', () {
+        expect(
+          allParticipantsApprovedForMinor(const ['a', 'b'], (p) => p == 'a'),
+          isFalse,
+        );
+      });
+    });
+
     group('renders', () {
       testWidgets('renders $ConversationView', (tester) async {
         await tester.pumpWidget(

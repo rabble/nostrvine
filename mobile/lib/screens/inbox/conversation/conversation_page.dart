@@ -16,6 +16,17 @@ import 'package:openvine/providers/protected_minor_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_view.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
 
+/// Whether a protected minor may enter a conversation with [participantPubkeys]
+/// (#176 route-guard predicate). Requires at least one counterparty AND that
+/// every counterparty is an approved official: an empty list is a degenerate
+/// route and must fail closed rather than pass the vacuous truth of
+/// `[].every(...)`.
+@visibleForTesting
+bool allParticipantsApprovedForMinor(
+  List<String> participantPubkeys,
+  bool Function(String) isApproved,
+) => participantPubkeys.isNotEmpty && participantPubkeys.every(isApproved);
+
 /// Conversation detail page (single DM thread).
 ///
 /// Provides [ConversationBloc] to the widget tree, backed by [DmRepository].
@@ -62,7 +73,8 @@ class ConversationPage extends ConsumerWidget {
     // gate and the inbox list already block those paths). Bounce to the inbox.
     if (ref.watch(isProtectedMinorProvider)) {
       final officials = ref.watch(officialAccountsServiceProvider);
-      final allApproved = participantPubkeys.every(
+      final allApproved = allParticipantsApprovedForMinor(
+        participantPubkeys,
         officials.isApprovedMinorDmRecipientSync,
       );
       if (!allApproved) {

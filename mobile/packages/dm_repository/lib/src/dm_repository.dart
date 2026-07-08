@@ -3490,6 +3490,12 @@ class DmRepository {
     final rumors = <Event>[];
     final results = <NIP17SendResult>[];
 
+    // Delivery below is per-recipient and NOT atomic: a mid-loop publish
+    // failure can leave the group partially delivered. That is a reliability/UX
+    // concern only, not a safety leak for the #176 restriction — the
+    // all-or-nothing gate above already guarantees EVERY recipient is approved,
+    // so a partial send can only ever reach approved recipients, never a
+    // blocked one.
     for (final pubkey in recipientPubkeys) {
       final rumorTags = <List<String>>[
         ...additionalTags,
