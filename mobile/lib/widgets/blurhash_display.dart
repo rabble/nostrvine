@@ -18,6 +18,7 @@ class BlurhashDisplay extends StatefulWidget {
     this.width,
     this.height,
     this.fit = BoxFit.cover,
+    this.opacity = 1.0,
   });
 
   final String? blurhash;
@@ -25,6 +26,10 @@ class BlurhashDisplay extends StatefulWidget {
   final double? width;
   final double? height;
   final BoxFit fit;
+
+  /// Alpha applied at paint level (no [Opacity] saveLayer). Used by the
+  /// fullscreen feed backdrop, which dims the blurhash to 50%.
+  final double opacity;
 
   @override
   State<BlurhashDisplay> createState() => _BlurhashDisplayState();
@@ -92,7 +97,10 @@ class _BlurhashDisplayState extends State<BlurhashDisplay> {
           if (snapshot.hasData && snapshot.data != null) {
             return RepaintBoundary(
               child: CustomPaint(
-                painter: _BlurhashImagePainter(snapshot.data!),
+                painter: _BlurhashImagePainter(
+                  snapshot.data!,
+                  opacity: widget.opacity,
+                ),
                 size: Size(
                   widget.width ?? double.infinity,
                   widget.height ?? double.infinity,
@@ -117,6 +125,19 @@ class _BlurhashDisplayState extends State<BlurhashDisplay> {
 
   Widget _buildGradientFallback() {
     final colors = _blurhashData?.colors ?? [];
+    final gradientColors = colors.isNotEmpty
+        ? (colors.length >= 2
+              ? [Color(colors[0].toARGB32()), Color(colors[1].toARGB32())]
+              : [
+                  Color(colors[0].toARGB32()),
+                  Color(colors[0].toARGB32()).withValues(alpha: 0.7),
+                ])
+        : [
+            Color(_blurhashData!.primaryColor.toARGB32()),
+            Color(
+              _blurhashData!.primaryColor.toARGB32(),
+            ).withValues(alpha: 0.7),
+          ];
     return Container(
       width: widget.width,
       height: widget.height,
@@ -124,19 +145,12 @@ class _BlurhashDisplayState extends State<BlurhashDisplay> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: colors.isNotEmpty
-              ? (colors.length >= 2
-                    ? [Color(colors[0].toARGB32()), Color(colors[1].toARGB32())]
-                    : [
-                        Color(colors[0].toARGB32()),
-                        Color(colors[0].toARGB32()).withValues(alpha: 0.7),
-                      ])
-              : [
-                  Color(_blurhashData!.primaryColor.toARGB32()),
-                  Color(
-                    _blurhashData!.primaryColor.toARGB32(),
-                  ).withValues(alpha: 0.7),
-                ],
+          colors: [
+            // Match the paint-level alpha of the decoded-image path so the
+            // fallback doesn't flash at full strength before decode lands.
+            for (final color in gradientColors)
+              color.withValues(alpha: color.a * widget.opacity),
+          ],
         ),
       ),
     );
@@ -180,10 +194,16 @@ class _BlurhashDisplayState extends State<BlurhashDisplay> {
 
 /// Custom painter for rendering decoded blurhash image
 class _BlurhashImagePainter extends CustomPainter {
-  _BlurhashImagePainter(this.image);
+  _BlurhashImagePainter(this.image, {this.opacity = 1.0});
 
   final ui.Image image;
-  final _paint = Paint()..filterQuality = FilterQuality.low;
+  final double opacity;
+
+  // Paint color alpha modulates the drawn image, so opacity costs nothing
+  // extra at raster time (no saveLayer, unlike an Opacity widget).
+  late final _paint = Paint()
+    ..filterQuality = FilterQuality.low
+    ..color = Color.fromRGBO(0, 0, 0, opacity);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -201,7 +221,9 @@ class _BlurhashImagePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return oldDelegate is! _BlurhashImagePainter || oldDelegate.image != image;
+    return oldDelegate is! _BlurhashImagePainter ||
+        oldDelegate.image != image ||
+        oldDelegate.opacity != opacity;
   }
 }
 

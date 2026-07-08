@@ -323,7 +323,12 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
             fit: StackFit.expand,
             children: [
               if (showBlurBackdrop)
-                Positioned.fill(child: BlurredVideoBackdrop(url: thumbnailUrl)),
+                Positioned.fill(
+                  child: BlurredVideoBackdrop(
+                    url: thumbnailUrl,
+                    blurhash: video.blurhash,
+                  ),
+                ),
               child,
             ],
           );
