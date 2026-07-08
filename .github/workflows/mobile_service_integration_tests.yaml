@@ -1,38 +1,151 @@
 name: Mobile Integration Tests (Services)
 
+# Nightly Android-emulator Patrol e2e lane: runs the real app on a booted
+# emulator against the seeded local_stack Docker backend. This replaces the
+# previous `flutter test --tags service` step, which executed ZERO tests —
+# a patrolTest body cannot run under `flutter test` (it blocks on the
+# patrol app-service handshake that only `patrol test` provides).
+# See tasks #4239 (fix the plumbing) + #4841/WS-6 (coverage).
+
 on:
+  schedule:
+    - cron: "0 6 * * *" # 06:00 UTC nightly (default branch only)
   workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  packages: read # pull the 6 private ghcr.io/divinevideo/* local_stack images
+  issues: write # open/update a tracking issue when the nightly run fails
+
 jobs:
   service-tests:
     name: Integration Tests (services)
     runs-on: ubuntu-24.04
+    timeout-minutes: 90
     defaults:
       run:
         working-directory: mobile/
     steps:
       - uses: actions/checkout@v4
+
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.44.0"
           channel: "stable"
           cache: true
-      - name: 🐳 Start local stack
-        run: |
-          cd ../local_stack
-          docker compose up -d
-          docker compose ps
+
+      - name: ☕ Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: 🔑 Log in to GHCR (local_stack private images)
+        # local_stack pulls 6 private ghcr.io/divinevideo/* images. GITHUB_TOKEN
+        # works only if those packages grant this repo pull access (org-internal
+        # or explicitly linked). If a run fails at `docker compose` with an
+        # unauthorized/pull error, swap this for a read:packages PAT secret.
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: 📦 Install dependencies
         run: flutter pub get
-      - name: 🚀 Run service integration tests
-        run: flutter test integration_test/e2e/ --tags service
+
+      - name: 🤖 Install patrol_cli
+        run: dart pub global activate patrol_cli 4.2.0
+
+      - name: 🧩 Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: 💾 Cache AVD
+        uses: actions/cache@v4
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-api34-x86_64-v1
+
+      - name: 🏗️ Create AVD snapshot (for caching)
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          profile: pixel_6
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: false
+          script: echo "Generated AVD snapshot for caching."
+
+      - name: 🐳 Start seeded local stack
+        # up.sh brings up the 12 services with `--wait` then runs the e2e-seed
+        # profile (100 kind-34236 videos + 10 blobs). Needed for feed-TTFF.
+        run: |
+          cd ../local_stack
+          bash up.sh
+          docker compose ps
+
+      - name: 🚀 Run service integration tests (Patrol)
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          profile: pixel_6
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          working-directory: mobile/
+          script: |
+            export PATH="$HOME/.pub-cache/bin:$PATH"
+            patrol test \
+              --target integration_test/e2e \
+              --tags "service || device" \
+              --dart-define=DEFAULT_ENV=LOCAL \
+              --dart-define=INVITE_SERVER_URL=http://10.0.2.2:43004
+
       - name: 🐳 Stop local stack
         if: always()
         run: |
           cd ../local_stack
           docker compose down
+
+      - name: 🚨 Open/update tracking issue on nightly failure
+        if: failure() && github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = 'Nightly e2e (service) lane failed';
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = `The nightly Android-emulator Patrol e2e lane failed.\n\nRun: ${runUrl}\nCommit: ${context.sha}`;
+            const existing = await github.rest.search.issuesAndPullRequests({
+              q: `repo:${context.repo.owner}/${context.repo.repo} is:issue is:open in:title "${title}"`,
+            });
+            const hit = existing.data.items.find((i) => i.title === title);
+            if (hit) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: hit.number,
+                body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+              });
+            }

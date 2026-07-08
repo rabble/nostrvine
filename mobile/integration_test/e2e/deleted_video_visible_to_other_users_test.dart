@@ -24,6 +24,7 @@ void main() {
 
     patrolTest(
       'deleted video disappears after re-navigation',
+      tags: ['service'],
       ($) async {
         final tester = $.tester;
         final originalOnError = suppressSetStateErrors();
