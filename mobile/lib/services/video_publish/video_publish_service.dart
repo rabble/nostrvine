@@ -139,6 +139,23 @@ class CollaboratorInviteWarning extends Equatable {
 typedef OnStateChanged = void Function(VideoPublishState state);
 typedef OnProgressChanged =
     void Function({required String draftId, required double progress});
+typedef ReadPublishReadiness = PublishReadiness Function();
+
+class PublishReadiness extends Equatable {
+  const PublishReadiness._({required this.isReady, this.pubkey});
+
+  const PublishReadiness.ready({required String pubkey})
+    : this._(isReady: true, pubkey: pubkey);
+
+  const PublishReadiness.notReady({String? pubkey})
+    : this._(isReady: false, pubkey: pubkey);
+
+  final bool isReady;
+  final String? pubkey;
+
+  @override
+  List<Object?> get props => [isReady, pubkey];
+}
 
 class VideoPublishService {
   VideoPublishService({
@@ -148,6 +165,7 @@ class VideoPublishService {
     required this.blossomService,
     required this.draftService,
     required this.onProgressChanged,
+    this.readPublishReadiness,
     this.collaboratorInviteService,
     this.languagePreferenceService,
     this.mentionResolutionService,
@@ -180,12 +198,26 @@ class VideoPublishService {
   /// Resolves typed mentions before publishing Nostr video events.
   final MentionResolutionService? mentionResolutionService;
 
+  /// Current signer-backed Nostr readiness for publish side effects.
+  final ReadPublishReadiness? readPublishReadiness;
+
   /// Tracks the current background upload ID.
   String? _backgroundUploadId;
 
   /// Publishes a video draft.
   /// Returns [PublishSuccess] on success, [PublishError] on failure.
   Future<PublishResult> publishVideo({required DivineVideoDraft draft}) async {
+    final readiness = _currentPublishReadiness();
+    final pubkey = readiness.pubkey;
+    if (!readiness.isReady || pubkey == null || pubkey.isEmpty) {
+      Log.warning(
+        '⚠️ Signer session not ready, cannot publish',
+        category: .video,
+      );
+      _backgroundUploadId = null;
+      return const PublishError(PublishErrorKind.notSignedIn);
+    }
+
     // Check if we have a background upload ID and its status
     if (_backgroundUploadId != null) {
       final error = await _handleActiveUpload(draft.id);
@@ -198,25 +230,6 @@ class VideoPublishService {
 
       final videoPath = await draft.clips.first.video.safeFilePath();
       Log.info('📝 Publishing video: $videoPath', category: .video);
-
-      // Verify user is fully authenticated
-      if (!authService.isAuthenticated) {
-        Log.warning(
-          '⚠️ User not authenticated, cannot publish',
-          category: .video,
-        );
-        _backgroundUploadId = null;
-        return const PublishError(PublishErrorKind.notSignedIn);
-      }
-      final pubkey = authService.currentPublicKeyHex;
-      if (pubkey == null || pubkey.isEmpty) {
-        Log.warning(
-          '⚠️ Authenticated session has no publish pubkey, cannot publish',
-          category: .video,
-        );
-        _backgroundUploadId = null;
-        return const PublishError(PublishErrorKind.notSignedIn);
-      }
 
       // Use existing upload if available, otherwise start new upload
       final pendingUpload = await _getOrCreateUpload(pubkey, draft);
@@ -314,6 +327,18 @@ class VideoPublishService {
     } catch (e, stackTrace) {
       return _handleUploadError(e, stackTrace, draft);
     }
+  }
+
+  PublishReadiness _currentPublishReadiness() {
+    final explicitReadiness = readPublishReadiness?.call();
+    if (explicitReadiness != null) return explicitReadiness;
+
+    if (!authService.isAuthenticated) return const PublishReadiness.notReady();
+    final pubkey = authService.currentPublicKeyHex;
+    if (pubkey == null || pubkey.isEmpty) {
+      return const PublishReadiness.notReady();
+    }
+    return PublishReadiness.ready(pubkey: pubkey);
   }
 
   Future<List<String>> _resolveMentionedPubkeys(

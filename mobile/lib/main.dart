@@ -2361,6 +2361,14 @@ class _DivineAppState extends ConsumerState<DivineApp>
         videoEventPublisher: ref.read(videoEventPublisherProvider),
         blossomService: ref.read(blossomUploadServiceProvider),
         draftService: ref.read(draftStorageServiceProvider),
+        readPublishReadiness: () {
+          final readiness = ref.read(nostrSessionProvider);
+          final pubkey = readiness.pubkey;
+          if (!readiness.isReadyForActiveClient || pubkey == null) {
+            return PublishReadiness.notReady(pubkey: pubkey);
+          }
+          return PublishReadiness.ready(pubkey: pubkey);
+        },
         mentionResolutionService: profileRepository == null
             ? null
             : MentionResolutionService(profileRepository: profileRepository),

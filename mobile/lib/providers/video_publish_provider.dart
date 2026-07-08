@@ -25,6 +25,7 @@ import 'package:openvine/models/video_publish/video_publish_provider_state.dart'
 import 'package:openvine/models/video_reply_context.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/preferences_providers.dart';
 import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -153,6 +154,14 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       videoEventPublisher: ref.read(videoEventPublisherProvider),
       blossomService: ref.read(blossomUploadServiceProvider),
       draftService: _draftService,
+      readPublishReadiness: () {
+        final readiness = ref.read(nostrSessionProvider);
+        final pubkey = readiness.pubkey;
+        if (!readiness.isReadyForActiveClient || pubkey == null) {
+          return PublishReadiness.notReady(pubkey: pubkey);
+        }
+        return PublishReadiness.ready(pubkey: pubkey);
+      },
       mentionResolutionService: createVideoPublishMentionResolutionService(
         ref.read(profileRepositoryProvider),
       ),
