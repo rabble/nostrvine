@@ -1307,6 +1307,19 @@ void main() {
       late String clipVideoPath;
       late String clipThumbnailPath;
 
+      setUpAll(() {
+        registerFallbackValue(
+          DivineVideoDraft.create(
+            id: 'fallback',
+            clips: const [],
+            title: '',
+            description: '',
+            hashtags: const {},
+            selectedApproach: 'video',
+          ),
+        );
+      });
+
       setUp(() async {
         SharedPreferences.setMockInitialValues({});
         final prefs = await SharedPreferences.getInstance();
@@ -1671,6 +1684,68 @@ void main() {
                 'invalidates (and deletes) the restored finalRenderedClip and '
                 'bumps lastModified, making the draft look freshly saved',
           );
+        },
+      );
+
+      test(
+        'viewing a draft is read-only: no re-save fires once the autosave '
+        'debounce elapses (#5956)',
+        () {
+          final renderedPath = '${tempDir.path}/rendered.mp4';
+          File(renderedPath).writeAsBytesSync(const [0]);
+
+          final draft = DivineVideoDraft.create(
+            id: 'draft-1',
+            clips: [
+              DivineVideoClip(
+                id: 'c1',
+                video: EditorVideo.file(clipVideoPath),
+                thumbnailPath: clipThumbnailPath,
+                duration: const Duration(seconds: 3),
+                recordedAt: DateTime.now(),
+                targetAspectRatio: .vertical,
+                originalAspectRatio: 9 / 16,
+              ),
+            ],
+            title: 'Title',
+            description: '',
+            hashtags: const {},
+            selectedApproach: 'video',
+            finalRenderedClip: DivineVideoClip(
+              id: 'rendered',
+              video: EditorVideo.file(renderedPath),
+              thumbnailPath: clipThumbnailPath,
+              duration: const Duration(seconds: 3),
+              recordedAt: DateTime.now(),
+              targetAspectRatio: .vertical,
+              originalAspectRatio: 9 / 16,
+            ),
+          );
+          when(
+            () => mockDraftStorage.getDraftById('draft-1'),
+          ).thenAnswer((_) async => draft);
+
+          fakeAsync((async) {
+            bool? result;
+            container
+                .read(videoEditorProvider.notifier)
+                .restoreDraft('draft-1')
+                .then((value) => result = value);
+            async.flushMicrotasks();
+            expect(result, isTrue);
+
+            // Elapse well past the autosave debounce; a restore that
+            // re-triggers autosave would re-save the draft here, bumping
+            // lastModified and reordering it to the top of the drafts list.
+            async.elapse(const Duration(seconds: 10));
+
+            verifyNever(
+              () => mockDraftStorage.saveDraft(
+                any(),
+                deferOrphanCleanup: any(named: 'deferOrphanCleanup'),
+              ),
+            );
+          });
         },
       );
     });
