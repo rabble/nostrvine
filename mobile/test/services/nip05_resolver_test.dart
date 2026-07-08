@@ -59,6 +59,27 @@ void main() {
     },
   );
 
+  test(
+    'redirect (3xx) is ignored per NIP-05 and never approves, even if the '
+    'redirect body would resolve to the expected key',
+    () async {
+      // NIP-05 §"the .well-known endpoint MUST NOT redirect and fetchers MUST
+      // ignore redirects." A followed/interpreted 3xx is a spurious-APPROVE
+      // vector: a MITM or misconfigured origin could 30x-bounce the lookup to
+      // an attacker host whose body returns the expected key for a burner. A
+      // redirect response must carry no signal.
+      when(() => dio.get(any())).thenAnswer(
+        (_) async => jsonResponse({
+          'names': {'_': hqHex},
+        }, status: 302),
+      );
+
+      final result = await resolver.resolve('_@divinehq.divine.video', hqHex);
+
+      expect(result.kind, Nip05ResolutionKind.networkError);
+    },
+  );
+
   test('absent: well-formed names map that lacks the name', () async {
     when(() => dio.get(any())).thenAnswer(
       (_) async => jsonResponse({

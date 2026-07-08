@@ -68,8 +68,15 @@ class Nip05Resolver {
             BaseOptions(
               connectTimeout: const Duration(seconds: 5),
               receiveTimeout: const Duration(seconds: 5),
-              followRedirects: true,
-              maxRedirects: 3,
+              // NIP-05 (§05): the .well-known/nostr.json endpoint MUST NOT
+              // redirect and fetchers MUST ignore redirects. Following a 30x is
+              // a spurious-APPROVE vector — a MITM or misconfigured origin could
+              // bounce the lookup to an attacker host that returns the expected
+              // key for a burner. Do not follow; a 3xx is treated as no-signal
+              // below (validateStatus accepts <400 so it surfaces as a Response,
+              // not a throw, which the 3xx guard in _fetchRaw then rejects).
+              followRedirects: false,
+              maxRedirects: 0,
             ),
           );
 
@@ -113,6 +120,13 @@ class Nip05Resolver {
       final res = await _dio.get(
         'https://$domain/.well-known/nostr.json?name=$name',
       );
+      // NIP-05 requires ignoring redirects. With followRedirects:false a 3xx
+      // surfaces here as a Response (status < 400 passes validateStatus); treat
+      // it as no-signal so a redirect body can never resolve to matched.
+      final status = res.statusCode ?? 0;
+      if (status >= 300 && status < 400) {
+        return const _RawResolution(_RawKind.networkError);
+      }
       // Parse-guard only (see _maxContentLength): avoids decoding an absurd
       // advertised body; the download has already happened by here.
       final advertised = int.tryParse(
