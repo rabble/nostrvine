@@ -708,8 +708,40 @@ class AppDatabase extends _$AppDatabase {
       ''');
     }
 
+    // Denormalized NIP-33 d-tag column so replaceable-event upserts can use
+    // an indexed lookup instead of decoding the tags JSON of every
+    // (pubkey, kind) row (on-device profiling: ~23% of main-isolate CPU).
+    await _addColumnIfMissing('event', 'd_tag', 'TEXT');
+
+    // Create the event indexes unconditionally. The `List<Index> get
+    // indexes` getter on NostrEvents is not wired through
+    // `@DriftDatabase(...)`, so Drift's m.createAll() never creates them —
+    // this runtime path is the source of truth for the index set (same
+    // pattern as outgoing_dms above; keep in sync with tables.dart).
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_event_kind_created_at
+      ON event (kind, created_at)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_event_pubkey_created_at
+      ON event (pubkey, created_at)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_event_pubkey_kind_d_tag
+      ON event (pubkey, kind, d_tag)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_event_created_at
+      ON event (created_at)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_event_expire_at
+      ON event (expire_at)
+    ''');
+
     // Populate new columns from existing JSON data blobs
     await _backfillFilePathColumns();
+    await _backfillEventDTagColumn();
   }
 
   /// Adds a column to a table if it does not already exist.
@@ -765,6 +797,29 @@ class AppDatabase extends _$AppDatabase {
       UPDATE drafts
       SET custom_thumbnail_path = json_extract(data, '$.customThumbnailPath')
       WHERE custom_thumbnail_path IS NULL
+    ''');
+  }
+
+  /// Populates the denormalized d_tag column for parameterized replaceable
+  /// events (kind 30000-39999) that were written before the column existed.
+  ///
+  /// Matches NostrEventsDao's d-tag semantics: the value of the first 'd'
+  /// tag, '' when the tag has no value or the event has no d-tag (NIP-01).
+  /// Idempotent — once a row has a non-NULL d_tag it is skipped.
+  Future<void> _backfillEventDTagColumn() async {
+    await customStatement(r'''
+      UPDATE event
+      SET d_tag = COALESCE(
+        (
+          SELECT COALESCE(json_extract(tag.value, '$[1]'), '')
+          FROM json_each(event.tags) AS tag
+          WHERE json_extract(tag.value, '$[0]') = 'd'
+          ORDER BY tag.key
+          LIMIT 1
+        ),
+        ''
+      )
+      WHERE d_tag IS NULL AND kind >= 30000 AND kind < 40000
     ''');
   }
 

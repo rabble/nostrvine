@@ -98,6 +98,15 @@ class $NostrEventsTable extends NostrEvents
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _dTagMeta = const VerificationMeta('dTag');
+  @override
+  late final GeneratedColumn<String> dTag = GeneratedColumn<String>(
+    'd_tag',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -109,6 +118,7 @@ class $NostrEventsTable extends NostrEvents
     sig,
     sources,
     expireAt,
+    dTag,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -187,6 +197,12 @@ class $NostrEventsTable extends NostrEvents
         expireAt.isAcceptableOrUnknown(data['expire_at']!, _expireAtMeta),
       );
     }
+    if (data.containsKey('d_tag')) {
+      context.handle(
+        _dTagMeta,
+        dTag.isAcceptableOrUnknown(data['d_tag']!, _dTagMeta),
+      );
+    }
     return context;
   }
 
@@ -232,6 +248,10 @@ class $NostrEventsTable extends NostrEvents
         DriftSqlType.int,
         data['${effectivePrefix}expire_at'],
       ),
+      dTag: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}d_tag'],
+      ),
     );
   }
 
@@ -254,6 +274,13 @@ class NostrEventRow extends DataClass implements Insertable<NostrEventRow> {
   /// Unix timestamp when this cached event should be considered expired.
   /// Null means the event never expires. Used for cache eviction.
   final int? expireAt;
+
+  /// Denormalized NIP-33 d-tag value for parameterized replaceable events
+  /// (kind 30000-39999). Empty string when the event has no d-tag (per
+  /// NIP-01); NULL for non-parameterized-replaceable kinds. Lets upserts
+  /// find the existing version with an indexed lookup instead of decoding
+  /// the tags JSON of every (pubkey, kind) row.
+  final String? dTag;
   const NostrEventRow({
     required this.id,
     required this.pubkey,
@@ -264,6 +291,7 @@ class NostrEventRow extends DataClass implements Insertable<NostrEventRow> {
     required this.sig,
     this.sources,
     this.expireAt,
+    this.dTag,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -280,6 +308,9 @@ class NostrEventRow extends DataClass implements Insertable<NostrEventRow> {
     }
     if (!nullToAbsent || expireAt != null) {
       map['expire_at'] = Variable<int>(expireAt);
+    }
+    if (!nullToAbsent || dTag != null) {
+      map['d_tag'] = Variable<String>(dTag);
     }
     return map;
   }
@@ -299,6 +330,7 @@ class NostrEventRow extends DataClass implements Insertable<NostrEventRow> {
       expireAt: expireAt == null && nullToAbsent
           ? const Value.absent()
           : Value(expireAt),
+      dTag: dTag == null && nullToAbsent ? const Value.absent() : Value(dTag),
     );
   }
 
@@ -317,6 +349,7 @@ class NostrEventRow extends DataClass implements Insertable<NostrEventRow> {
       sig: serializer.fromJson<String>(json['sig']),
       sources: serializer.fromJson<String?>(json['sources']),
       expireAt: serializer.fromJson<int?>(json['expireAt']),
+      dTag: serializer.fromJson<String?>(json['dTag']),
     );
   }
   @override
@@ -332,6 +365,7 @@ class NostrEventRow extends DataClass implements Insertable<NostrEventRow> {
       'sig': serializer.toJson<String>(sig),
       'sources': serializer.toJson<String?>(sources),
       'expireAt': serializer.toJson<int?>(expireAt),
+      'dTag': serializer.toJson<String?>(dTag),
     };
   }
 
@@ -345,6 +379,7 @@ class NostrEventRow extends DataClass implements Insertable<NostrEventRow> {
     String? sig,
     Value<String?> sources = const Value.absent(),
     Value<int?> expireAt = const Value.absent(),
+    Value<String?> dTag = const Value.absent(),
   }) => NostrEventRow(
     id: id ?? this.id,
     pubkey: pubkey ?? this.pubkey,
@@ -355,6 +390,7 @@ class NostrEventRow extends DataClass implements Insertable<NostrEventRow> {
     sig: sig ?? this.sig,
     sources: sources.present ? sources.value : this.sources,
     expireAt: expireAt.present ? expireAt.value : this.expireAt,
+    dTag: dTag.present ? dTag.value : this.dTag,
   );
   NostrEventRow copyWithCompanion(NostrEventsCompanion data) {
     return NostrEventRow(
@@ -367,6 +403,7 @@ class NostrEventRow extends DataClass implements Insertable<NostrEventRow> {
       sig: data.sig.present ? data.sig.value : this.sig,
       sources: data.sources.present ? data.sources.value : this.sources,
       expireAt: data.expireAt.present ? data.expireAt.value : this.expireAt,
+      dTag: data.dTag.present ? data.dTag.value : this.dTag,
     );
   }
 
@@ -381,7 +418,8 @@ class NostrEventRow extends DataClass implements Insertable<NostrEventRow> {
           ..write('content: $content, ')
           ..write('sig: $sig, ')
           ..write('sources: $sources, ')
-          ..write('expireAt: $expireAt')
+          ..write('expireAt: $expireAt, ')
+          ..write('dTag: $dTag')
           ..write(')'))
         .toString();
   }
@@ -397,6 +435,7 @@ class NostrEventRow extends DataClass implements Insertable<NostrEventRow> {
     sig,
     sources,
     expireAt,
+    dTag,
   );
   @override
   bool operator ==(Object other) =>
@@ -410,7 +449,8 @@ class NostrEventRow extends DataClass implements Insertable<NostrEventRow> {
           other.content == this.content &&
           other.sig == this.sig &&
           other.sources == this.sources &&
-          other.expireAt == this.expireAt);
+          other.expireAt == this.expireAt &&
+          other.dTag == this.dTag);
 }
 
 class NostrEventsCompanion extends UpdateCompanion<NostrEventRow> {
@@ -423,6 +463,7 @@ class NostrEventsCompanion extends UpdateCompanion<NostrEventRow> {
   final Value<String> sig;
   final Value<String?> sources;
   final Value<int?> expireAt;
+  final Value<String?> dTag;
   final Value<int> rowid;
   const NostrEventsCompanion({
     this.id = const Value.absent(),
@@ -434,6 +475,7 @@ class NostrEventsCompanion extends UpdateCompanion<NostrEventRow> {
     this.sig = const Value.absent(),
     this.sources = const Value.absent(),
     this.expireAt = const Value.absent(),
+    this.dTag = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   NostrEventsCompanion.insert({
@@ -446,6 +488,7 @@ class NostrEventsCompanion extends UpdateCompanion<NostrEventRow> {
     required String sig,
     this.sources = const Value.absent(),
     this.expireAt = const Value.absent(),
+    this.dTag = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        pubkey = Value(pubkey),
@@ -464,6 +507,7 @@ class NostrEventsCompanion extends UpdateCompanion<NostrEventRow> {
     Expression<String>? sig,
     Expression<String>? sources,
     Expression<int>? expireAt,
+    Expression<String>? dTag,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -476,6 +520,7 @@ class NostrEventsCompanion extends UpdateCompanion<NostrEventRow> {
       if (sig != null) 'sig': sig,
       if (sources != null) 'sources': sources,
       if (expireAt != null) 'expire_at': expireAt,
+      if (dTag != null) 'd_tag': dTag,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -490,6 +535,7 @@ class NostrEventsCompanion extends UpdateCompanion<NostrEventRow> {
     Value<String>? sig,
     Value<String?>? sources,
     Value<int?>? expireAt,
+    Value<String?>? dTag,
     Value<int>? rowid,
   }) {
     return NostrEventsCompanion(
@@ -502,6 +548,7 @@ class NostrEventsCompanion extends UpdateCompanion<NostrEventRow> {
       sig: sig ?? this.sig,
       sources: sources ?? this.sources,
       expireAt: expireAt ?? this.expireAt,
+      dTag: dTag ?? this.dTag,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -536,6 +583,9 @@ class NostrEventsCompanion extends UpdateCompanion<NostrEventRow> {
     if (expireAt.present) {
       map['expire_at'] = Variable<int>(expireAt.value);
     }
+    if (dTag.present) {
+      map['d_tag'] = Variable<String>(dTag.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -554,6 +604,7 @@ class NostrEventsCompanion extends UpdateCompanion<NostrEventRow> {
           ..write('sig: $sig, ')
           ..write('sources: $sources, ')
           ..write('expireAt: $expireAt, ')
+          ..write('dTag: $dTag, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -14631,6 +14682,7 @@ typedef $$NostrEventsTableCreateCompanionBuilder =
       required String sig,
       Value<String?> sources,
       Value<int?> expireAt,
+      Value<String?> dTag,
       Value<int> rowid,
     });
 typedef $$NostrEventsTableUpdateCompanionBuilder =
@@ -14644,6 +14696,7 @@ typedef $$NostrEventsTableUpdateCompanionBuilder =
       Value<String> sig,
       Value<String?> sources,
       Value<int?> expireAt,
+      Value<String?> dTag,
       Value<int> rowid,
     });
 
@@ -14698,6 +14751,11 @@ class $$NostrEventsTableFilterComposer
 
   ColumnFilters<int> get expireAt => $composableBuilder(
     column: $table.expireAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get dTag => $composableBuilder(
+    column: $table.dTag,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -14755,6 +14813,11 @@ class $$NostrEventsTableOrderingComposer
     column: $table.expireAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get dTag => $composableBuilder(
+    column: $table.dTag,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$NostrEventsTableAnnotationComposer
@@ -14792,6 +14855,9 @@ class $$NostrEventsTableAnnotationComposer
 
   GeneratedColumn<int> get expireAt =>
       $composableBuilder(column: $table.expireAt, builder: (column) => column);
+
+  GeneratedColumn<String> get dTag =>
+      $composableBuilder(column: $table.dTag, builder: (column) => column);
 }
 
 class $$NostrEventsTableTableManager
@@ -14834,6 +14900,7 @@ class $$NostrEventsTableTableManager
                 Value<String> sig = const Value.absent(),
                 Value<String?> sources = const Value.absent(),
                 Value<int?> expireAt = const Value.absent(),
+                Value<String?> dTag = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => NostrEventsCompanion(
                 id: id,
@@ -14845,6 +14912,7 @@ class $$NostrEventsTableTableManager
                 sig: sig,
                 sources: sources,
                 expireAt: expireAt,
+                dTag: dTag,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -14858,6 +14926,7 @@ class $$NostrEventsTableTableManager
                 required String sig,
                 Value<String?> sources = const Value.absent(),
                 Value<int?> expireAt = const Value.absent(),
+                Value<String?> dTag = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => NostrEventsCompanion.insert(
                 id: id,
@@ -14869,6 +14938,7 @@ class $$NostrEventsTableTableManager
                 sig: sig,
                 sources: sources,
                 expireAt: expireAt,
+                dTag: dTag,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

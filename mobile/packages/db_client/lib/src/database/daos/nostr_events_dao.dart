@@ -82,8 +82,9 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
   Future<void> _insertEvent(Event event, {int? expireAt}) async {
     await customInsert(
       'INSERT OR REPLACE INTO event '
-      '(id, pubkey, created_at, kind, tags, content, sig, sources, expire_at) '
-      'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      '(id, pubkey, created_at, kind, tags, content, sig, sources, '
+      'expire_at, d_tag) '
+      'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       variables: [
         Variable.withString(event.id),
         Variable.withString(event.pubkey),
@@ -95,6 +96,12 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
         const Variable(null), // sources - not used yet
         if (expireAt != null)
           Variable.withInt(expireAt)
+        else
+          const Variable(null),
+        // Denormalized d-tag so replaceable upserts can use an indexed
+        // lookup; NULL for kinds without NIP-33 d-tag semantics.
+        if (EventKind.isParameterizedReplaceable(event.kind))
+          Variable.withString(event.dTagValue)
         else
           const Variable(null),
       ],
@@ -143,47 +150,49 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
   ///
   /// Only stores the event if no existing event with same pubkey+kind+d-tag
   /// exists, or if the new event has a higher created_at timestamp.
+  ///
+  /// Uses the indexed d_tag column for the existing-version lookup instead
+  /// of decoding the tags JSON of every (pubkey, kind) row — the decode
+  /// loop dominated main-isolate CPU (~23%) during feed ingestion.
   Future<void> _upsertParameterizedReplaceableEvent(
     Event event, {
     required int expireAt,
   }) async {
     final dTagValue = event.dTagValue;
 
-    // Check if a newer event already exists for this pubkey+kind+d-tag
-    // We need to check tags JSON for the d-tag value
+    // Compare against the newest stored version. MAX over all versions
+    // (rather than an arbitrary first row) keeps the newest even when raw
+    // ingestion via cacheEventsBatch left multiple versions behind.
     final existingRows = await customSelect(
-      'SELECT id, created_at, tags FROM event '
-      'WHERE pubkey = ? AND kind = ?',
+      'SELECT MAX(created_at) AS max_created_at FROM event '
+      'WHERE pubkey = ? AND kind = ? AND d_tag = ?',
       variables: [
         Variable.withString(event.pubkey),
         Variable.withInt(event.kind),
+        Variable.withString(dTagValue),
       ],
       readsFrom: {nostrEvents},
     ).get();
 
-    for (final row in existingRows) {
-      final tagsJson = row.read<String>('tags');
-      final tags = (jsonDecode(tagsJson) as List)
-          .map((tag) => (tag as List).map((e) => e.toString()).toList())
-          .toList();
-      final existingDTag = _extractDTagFromTags(tags);
-
-      if (existingDTag == dTagValue) {
-        final existingCreatedAt = row.read<int>('created_at');
-        if (event.createdAt <= existingCreatedAt) {
-          // Existing event is newer or same age, don't replace
-          return;
-        }
-        // Delete the old event before inserting the new one
-        final existingId = row.read<String>('id');
-        await customUpdate(
-          'DELETE FROM event WHERE id = ?',
-          variables: [Variable.withString(existingId)],
-          updates: {nostrEvents},
-          updateKind: UpdateKind.delete,
-        );
-        break;
+    final maxCreatedAt = existingRows.isEmpty
+        ? null
+        : existingRows.first.read<int?>('max_created_at');
+    if (maxCreatedAt != null) {
+      if (event.createdAt <= maxCreatedAt) {
+        // Existing event is newer or same age, don't replace
+        return;
       }
+      // Delete all older versions before inserting the new one
+      await customUpdate(
+        'DELETE FROM event WHERE pubkey = ? AND kind = ? AND d_tag = ?',
+        variables: [
+          Variable.withString(event.pubkey),
+          Variable.withInt(event.kind),
+          Variable.withString(dTagValue),
+        ],
+        updates: {nostrEvents},
+        updateKind: UpdateKind.delete,
+      );
     }
 
     await _insertEvent(event, expireAt: expireAt);
@@ -554,18 +563,6 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
     return event
       ..id = row.read<String>('id')
       ..sig = row.read<String>('sig');
-  }
-
-  /// Extracts the d-tag value from raw tag list (for database queries).
-  ///
-  /// Returns empty string if no d-tag is found (per NIP-01 spec).
-  String _extractDTagFromTags(List<List<String>> tags) {
-    for (final tag in tags) {
-      if (tag.isNotEmpty && tag[0] == 'd') {
-        return tag.length > 1 ? tag[1] : '';
-      }
-    }
-    return '';
   }
 
   // ---------------------------------------------------------------------------

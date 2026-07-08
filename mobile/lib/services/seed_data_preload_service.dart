@@ -7,6 +7,7 @@ import 'package:db_client/db_client.dart';
 import 'package:drift/drift.dart' show Batch;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:nostr_sdk/event_kind.dart';
 import 'package:openvine/services/classic_viner_seed_preload_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -94,20 +95,35 @@ class SeedDataPreloadService {
       DateTime.parse(iso).millisecondsSinceEpoch ~/ 1000;
 
   static void _insertEvent(Batch batch, Map<String, dynamic> event) {
+    final kind = event['kind'] as int;
     batch.customStatement(
       'INSERT OR IGNORE INTO event '
-      '(id, pubkey, created_at, kind, tags, content, sig, sources) '
-      'VALUES (?, ?, ?, ?, ?, ?, ?, NULL)',
+      '(id, pubkey, created_at, kind, tags, content, sig, sources, d_tag) '
+      'VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?)',
       [
         event['id'] as String,
         event['pubkey'] as String,
         event['created_at'] as int,
-        event['kind'] as int,
+        kind,
         jsonEncode(event['tags']),
         event['content'] as String,
         event['sig'] as String,
+        _dTagForEvent(kind, event['tags'] as List?),
       ],
     );
+  }
+
+  /// Denormalized NIP-33 d-tag matching NostrEventsDao's insert semantics:
+  /// first 'd' tag value ('' when absent) for parameterized replaceable
+  /// kinds, NULL otherwise.
+  static String? _dTagForEvent(int kind, List<dynamic>? tags) {
+    if (!EventKind.isParameterizedReplaceable(kind)) return null;
+    for (final tag in tags ?? const <dynamic>[]) {
+      if (tag is List && tag.isNotEmpty && tag.first == 'd') {
+        return tag.length > 1 ? tag[1].toString() : '';
+      }
+    }
+    return '';
   }
 
   static void _insertProfile(Batch batch, Map<String, dynamic> profile) {

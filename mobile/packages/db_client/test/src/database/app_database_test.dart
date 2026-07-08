@@ -1004,6 +1004,93 @@ void main() {
         expect(notifications.length, equals(1));
       });
     });
+
+    group('event table d_tag column', () {
+      test(
+        'upgrade path — adds, indexes, and backfills d_tag on reopen',
+        () async {
+          final dao = database.nostrEventsDao;
+
+          // Rows that will pre-date the d_tag column: a video PRE event
+          // with a d-tag, a PRE event without one, and a regular note.
+          final videoEvent = createEvent(
+            kind: 34236,
+            tags: [
+              ['d', 'legacy-video'],
+              ['url', 'https://example.com/v.mp4'],
+            ],
+            createdAt: 1000,
+          );
+          final noDTagEvent = createEvent(
+            kind: 30023,
+            content: 'no d tag',
+            createdAt: 1000,
+          );
+          final noteEvent = createEvent(createdAt: 1000);
+          await dao.upsertEvent(videoEvent, expireAt: nowUnix() + 3600);
+          await dao.upsertEvent(noDTagEvent, expireAt: nowUnix() + 3600);
+          await dao.upsertEvent(noteEvent, expireAt: nowUnix() + 3600);
+
+          // Simulate a legacy install that pre-dates the column: drop the
+          // index that references it, then the column itself.
+          await database.customStatement(
+            'DROP INDEX idx_event_pubkey_kind_d_tag',
+          );
+          await database.customStatement(
+            'ALTER TABLE event DROP COLUMN d_tag',
+          );
+          await database.close();
+
+          // Reopen the same on-disk file. `beforeOpen` re-adds the column,
+          // recreates the indexes, and backfills d_tag from the tags JSON.
+          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+
+          final rows = await database
+              .customSelect('SELECT id, d_tag FROM event')
+              .get();
+          final dTagsById = {
+            for (final row in rows)
+              row.read<String>('id'): row.readNullable<String>('d_tag'),
+          };
+          expect(dTagsById[videoEvent.id], equals('legacy-video'));
+          // PRE event without a d-tag backfills to '' (NIP-01 default).
+          expect(dTagsById[noDTagEvent.id], equals(''));
+          // Non-parameterized-replaceable kinds stay NULL.
+          expect(dTagsById[noteEvent.id], isNull);
+
+          final indexNames = await _collectIndexNames(database, 'event');
+          expect(
+            indexNames,
+            containsAll(<String>[
+              'idx_event_kind_created_at',
+              'idx_event_pubkey_created_at',
+              'idx_event_pubkey_kind_d_tag',
+              'idx_event_created_at',
+              'idx_event_expire_at',
+            ]),
+          );
+
+          // Prove the upsert path works against backfilled rows: a newer
+          // version of the video replaces the legacy row.
+          final newerVideo = createEvent(
+            kind: 34236,
+            tags: [
+              ['d', 'legacy-video'],
+              ['url', 'https://example.com/v2.mp4'],
+            ],
+            content: 'updated',
+            createdAt: 2000,
+          );
+          await database.nostrEventsDao.upsertEvent(newerVideo);
+
+          final results = await database.nostrEventsDao.getEventsByFilter(
+            Filter(kinds: [34236]),
+          );
+          expect(results, hasLength(1));
+          expect(results.first.content, equals('updated'));
+        },
+      );
+    });
   });
 }
 

@@ -26,55 +26,58 @@ class NostrEvents extends Table {
   /// Null means the event never expires. Used for cache eviction.
   IntColumn get expireAt => integer().nullable().named('expire_at')();
 
+  /// Denormalized NIP-33 d-tag value for parameterized replaceable events
+  /// (kind 30000-39999). Empty string when the event has no d-tag (per
+  /// NIP-01); NULL for non-parameterized-replaceable kinds. Lets upserts
+  /// find the existing version with an indexed lookup instead of decoding
+  /// the tags JSON of every (pubkey, kind) row.
+  TextColumn get dTag => text().nullable().named('d_tag')();
+
   @override
   Set<Column> get primaryKey => {id};
 
+  /// Documents the index set for the event table.
+  ///
+  /// This getter is not wired through `@DriftDatabase(...)`, so Drift's
+  /// `m.createAll()` never creates these indexes. The runtime
+  /// CREATE-IF-NOT-EXISTS statements in `AppDatabase._createMissingTables`
+  /// are the source of truth (same pattern as outgoing_dms); keep both in
+  /// sync.
   List<Index> get indexes => [
-    // Index on kind for filtering video events (kind IN (34236, 6))
-    Index(
-      'idx_event_kind',
-      'CREATE INDEX IF NOT EXISTS idx_event_kind ON event (kind)',
-    ),
-
-    // Index on created_at for sorting by timestamp (ORDER BY created_at DESC)
-    Index(
-      'idx_event_created_at',
-      'CREATE INDEX IF NOT EXISTS idx_event_created_at '
-          'ON event (created_at)',
-    ),
-
-    // Composite index for optimal video queries
-    // (WHERE kind = ? ORDER BY created_at DESC)
+    // Feed queries (WHERE kind = ? ORDER BY created_at DESC); the kind
+    // prefix also serves kind-only filters.
     Index(
       'idx_event_kind_created_at',
       'CREATE INDEX IF NOT EXISTS idx_event_kind_created_at '
           'ON event (kind, created_at)',
     ),
 
-    // Index on pubkey for author queries (WHERE pubkey = ?)
-    Index(
-      'idx_event_pubkey',
-      'CREATE INDEX IF NOT EXISTS idx_event_pubkey ON event (pubkey)',
-    ),
-
-    // Composite index for profile page video queries
-    // (WHERE kind = ? AND pubkey = ?)
-    Index(
-      'idx_event_kind_pubkey',
-      'CREATE INDEX IF NOT EXISTS idx_event_kind_pubkey '
-          'ON event (kind, pubkey)',
-    ),
-
-    // Composite index for author video timeline
-    // (WHERE pubkey = ? ORDER BY created_at DESC)
+    // Author timeline (WHERE pubkey = ? ORDER BY created_at DESC); the
+    // pubkey prefix also serves author-only filters.
     Index(
       'idx_event_pubkey_created_at',
       'CREATE INDEX IF NOT EXISTS idx_event_pubkey_created_at '
           'ON event (pubkey, created_at)',
     ),
 
-    // Index on expire_at for cache eviction queries
-    // (WHERE expire_at IS NOT NULL AND expire_at < ?)
+    // Replaceable-event upserts (WHERE pubkey = ? AND kind = ? AND
+    // d_tag = ?); the (pubkey, kind) prefix serves standard replaceable
+    // upserts and profile queries.
+    Index(
+      'idx_event_pubkey_kind_d_tag',
+      'CREATE INDEX IF NOT EXISTS idx_event_pubkey_kind_d_tag '
+          'ON event (pubkey, kind, d_tag)',
+    ),
+
+    // Global recency (ORDER BY created_at DESC LIMIT ?), e.g. the
+    // verified-signature seed on cold start.
+    Index(
+      'idx_event_created_at',
+      'CREATE INDEX IF NOT EXISTS idx_event_created_at '
+          'ON event (created_at)',
+    ),
+
+    // Cache eviction (WHERE expire_at IS NULL OR expire_at < ?)
     Index(
       'idx_event_expire_at',
       'CREATE INDEX IF NOT EXISTS idx_event_expire_at ON event (expire_at)',
