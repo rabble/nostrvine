@@ -1619,6 +1619,60 @@ void main() {
           expect(result, isTrue);
         },
       );
+
+      test(
+        'viewing a draft is read-only: restore keeps the finalRenderedClip '
+        'instead of invalidating it (#5956)',
+        () async {
+          final renderedPath = '${tempDir.path}/rendered.mp4';
+          await File(renderedPath).writeAsBytes(const [0]);
+
+          final draft = DivineVideoDraft.create(
+            id: 'draft-1',
+            clips: [
+              DivineVideoClip(
+                id: 'c1',
+                video: EditorVideo.file(clipVideoPath),
+                thumbnailPath: clipThumbnailPath,
+                duration: const Duration(seconds: 3),
+                recordedAt: DateTime.now(),
+                targetAspectRatio: .vertical,
+                originalAspectRatio: 9 / 16,
+              ),
+            ],
+            title: 'Title',
+            description: '',
+            hashtags: const {},
+            selectedApproach: 'video',
+            finalRenderedClip: DivineVideoClip(
+              id: 'rendered',
+              video: EditorVideo.file(renderedPath),
+              thumbnailPath: clipThumbnailPath,
+              duration: const Duration(seconds: 3),
+              recordedAt: DateTime.now(),
+              targetAspectRatio: .vertical,
+              originalAspectRatio: 9 / 16,
+            ),
+          );
+          when(
+            () => mockDraftStorage.getDraftById('draft-1'),
+          ).thenAnswer((_) async => draft);
+
+          final result = await container
+              .read(videoEditorProvider.notifier)
+              .restoreDraft('draft-1');
+
+          expect(result, isTrue);
+          expect(
+            container.read(videoEditorProvider).finalRenderedClip?.id,
+            'rendered',
+            reason:
+                'restoring a draft to view it must not autosave: an autosave '
+                'invalidates (and deletes) the restored finalRenderedClip and '
+                'bumps lastModified, making the draft look freshly saved',
+          );
+        },
+      );
     });
   });
 

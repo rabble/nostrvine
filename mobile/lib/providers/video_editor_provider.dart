@@ -977,7 +977,11 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       clearCustomThumbnailPath: draft.customThumbnailPath == null,
     );
 
-    _clipManager.replaceClips(clipsWithThumbnails);
+    // Restoring is read-only: don't autosave here. An autosave would bump the
+    // draft's lastModified (reordering it to the top of the drafts list as if
+    // freshly saved) and invalidate/delete the finalRenderedClip we just
+    // restored above — mutating a draft the user only opened to view (#5956).
+    _clipManager.replaceClips(clipsWithThumbnails, autosave: false);
     if (clipsWithThumbnails.isEmpty) {
       Log.warning(
         '⚠️ Draft restored with no clips',

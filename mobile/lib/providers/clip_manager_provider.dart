@@ -374,7 +374,13 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
   /// Clears the current clip list and installs [clips] in a single state
   /// update so consumers never observe an intermediate empty-then-populated
   /// transition during restoration flows.
-  void replaceClips(List<DivineVideoClip> clips) {
+  ///
+  /// Pass [autosave] as `false` when installing clips that reflect no user
+  /// edit — e.g. restoring a draft for viewing. An autosave there would bump
+  /// the draft's `lastModified` (reordering it to the top of the drafts list
+  /// as if freshly saved) and invalidate/delete the just-restored
+  /// `finalRenderedClip`, mutating a draft the user only opened to watch.
+  void replaceClips(List<DivineVideoClip> clips, {bool autosave = true}) {
     final previousCount = _clips.length;
     _clips
       ..clear()
@@ -387,7 +393,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     );
 
     state = state.copyWith(clips: List.unmodifiable(_clips));
-    _triggerAutosave();
+    if (autosave) _triggerAutosave();
   }
 
   /// Delete a clip by ID.
