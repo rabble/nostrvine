@@ -162,8 +162,10 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
 
     // Compare against the newest stored version. MAX over all versions
     // (rather than an arbitrary first row) keeps the newest even when raw
-    // ingestion via cacheEventsBatch left multiple versions behind.
-    final existingRows = await customSelect(
+    // ingestion via cacheEventsBatch left multiple versions behind. An
+    // aggregate without GROUP BY always yields exactly one row (NULL when
+    // no version exists).
+    final existingRow = await customSelect(
       'SELECT MAX(created_at) AS max_created_at FROM event '
       'WHERE pubkey = ? AND kind = ? AND d_tag = ?',
       variables: [
@@ -172,11 +174,9 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
         Variable.withString(dTagValue),
       ],
       readsFrom: {nostrEvents},
-    ).get();
+    ).getSingle();
 
-    final maxCreatedAt = existingRows.isEmpty
-        ? null
-        : existingRows.first.read<int?>('max_created_at');
+    final maxCreatedAt = existingRow.read<int?>('max_created_at');
     if (maxCreatedAt != null) {
       if (event.createdAt <= maxCreatedAt) {
         // Existing event is newer or same age, don't replace
