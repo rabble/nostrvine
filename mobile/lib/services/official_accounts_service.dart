@@ -1,0 +1,166 @@
+// ABOUTME: Decides whether a protected minor (13-15) may DM a given pubkey (#176):
+// ABOUTME: pin ∩ live NIP-05, with graded revocation, a 1h freshness TTL, a 5-min
+// ABOUTME: confirming recheck for absence, and a persistent last-known verdict.
+
+import 'dart:convert';
+
+import 'package:openvine/config/official_accounts.dart';
+import 'package:openvine/services/nip05_resolver.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// Persisted last-known verdict for one pinned account. `firstAbsentAt` is set
+/// while an affirmative absence is pending its confirming recheck.
+class _Record {
+  final bool approved;
+  final DateTime checkedAt;
+  final DateTime? firstAbsentAt;
+  const _Record({
+    required this.approved,
+    required this.checkedAt,
+    this.firstAbsentAt,
+  });
+
+  Map<String, Object?> toJson() => {
+    'v': approved ? 'a' : 'r',
+    'c': checkedAt.millisecondsSinceEpoch,
+    if (firstAbsentAt != null) 'f': firstAbsentAt!.millisecondsSinceEpoch,
+  };
+
+  static _Record? fromJson(Map<String, Object?> j) {
+    final c = j['c'];
+    if (c is! int) return null;
+    final f = j['f'];
+    return _Record(
+      approved: j['v'] == 'a',
+      checkedAt: DateTime.fromMillisecondsSinceEpoch(c),
+      firstAbsentAt: f is int ? DateTime.fromMillisecondsSinceEpoch(f) : null,
+    );
+  }
+}
+
+class OfficialAccountsService {
+  /// How long a fresh verdict is trusted without re-resolving.
+  static const Duration ttl = Duration(hours: 1);
+
+  /// A single affirmative absence never drops; a second absence at least this
+  /// long after the first confirms the revocation.
+  static const Duration absenceRecheck = Duration(minutes: 5);
+
+  final Nip05Resolver _resolver;
+  final SharedPreferences _prefs;
+  final DateTime Function() _now;
+  final List<OfficialAccount> _accounts;
+
+  OfficialAccountsService({
+    required Nip05Resolver resolver,
+    required SharedPreferences prefs,
+    DateTime Function()? now,
+    List<OfficialAccount>? accounts,
+  }) : _resolver = resolver,
+       _prefs = prefs,
+       _now = now ?? DateTime.now,
+       _accounts = accounts ?? kPinnedOfficialAccounts;
+
+  OfficialAccount? _pinnedFor(String hex) {
+    final h = hex.toLowerCase();
+    for (final a in _accounts) {
+      if (a.pubkeyHex.toLowerCase() == h) return a;
+    }
+    return null;
+  }
+
+  /// Pin-only, synchronous: is this pubkey in the shipped set AND flagged
+  /// minor-contactable? The attacker-addition barrier.
+  bool isPinnedMinorContactable(String hex) {
+    final a = _pinnedFor(hex);
+    return a != null && a.minorContactable;
+  }
+
+  /// Pin ∩ last-known, synchronous, no network. For hot list/render paths
+  /// (inbound filter, unread badge). A pinned account with no stored verdict
+  /// defaults to trusted — the pin already blocks attacker addition, and a
+  /// background re-resolution corrects a stale trust.
+  bool isApprovedMinorDmRecipientSync(String hex) {
+    if (!isPinnedMinorContactable(hex)) return false;
+    return _load(hex)?.approved ?? true;
+  }
+
+  /// Pin ∩ live NIP-05, graded. Awaits a fresh resolution when the cached
+  /// verdict is stale (send-time freshness); returns the cached verdict while
+  /// fresh. Grading:
+  /// - matched -> approved
+  /// - differentKey -> revoked immediately (unambiguous compromise/revoke)
+  /// - absent -> a single absence never drops; a second absence >= the recheck
+  ///   window after the first confirms the drop
+  /// - networkError -> keep last-known; a pinned account with no record stays
+  ///   trusted (the pin blocks attacker addition; do not brick offline support)
+  Future<bool> isApprovedMinorDmRecipient(String hex) async {
+    final account = _pinnedFor(hex);
+    if (account == null || !account.minorContactable) return false;
+
+    final record = _load(hex);
+    if (record != null && !_stale(record)) {
+      return record.approved;
+    }
+
+    final res = await _resolver.resolve(account.nip05, account.pubkeyHex);
+    final now = _now();
+    switch (res.kind) {
+      case Nip05ResolutionKind.matched:
+        await _save(hex, _Record(approved: true, checkedAt: now));
+        return true;
+      case Nip05ResolutionKind.differentKey:
+        await _save(hex, _Record(approved: false, checkedAt: now));
+        return false;
+      case Nip05ResolutionKind.absent:
+        if (record != null && !record.approved) {
+          return false; // already revoked, stays revoked
+        }
+        final firstAbsent = record?.firstAbsentAt;
+        if (firstAbsent != null &&
+            now.difference(firstAbsent) >= absenceRecheck) {
+          await _save(hex, _Record(approved: false, checkedAt: now));
+          return false; // confirming recheck: drop
+        }
+        // First absence (or still within the recheck window): keep last-known
+        // approved and remember when the absence began.
+        await _save(
+          hex,
+          _Record(
+            approved: true,
+            checkedAt: now,
+            firstAbsentAt: firstAbsent ?? now,
+          ),
+        );
+        return true;
+      case Nip05ResolutionKind.networkError:
+        // No trustworthy signal. Keep last-known; a pinned account with no
+        // record defaults to trusted. Do not refresh checkedAt, so the next
+        // call retries rather than caching a non-answer.
+        return record?.approved ?? true;
+    }
+  }
+
+  bool _stale(_Record r) {
+    final age = _now().difference(r.checkedAt);
+    // While an absence is pending confirmation, re-check on the shorter window
+    // so the confirming resolution actually happens.
+    final limit = r.firstAbsentAt != null ? absenceRecheck : ttl;
+    return age >= limit;
+  }
+
+  _Record? _load(String hex) {
+    final raw = _prefs.getString(_key(hex));
+    if (raw == null) return null;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map<String, Object?>) return _Record.fromJson(decoded);
+    } catch (_) {}
+    return null;
+  }
+
+  Future<void> _save(String hex, _Record record) =>
+      _prefs.setString(_key(hex), jsonEncode(record.toJson()));
+
+  String _key(String hex) => 'official_recipient_${hex.toLowerCase()}';
+}
