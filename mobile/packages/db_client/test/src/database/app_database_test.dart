@@ -1034,7 +1034,7 @@ void main() {
           // Simulate a legacy install that pre-dates the column: drop the
           // index that references it, then the column itself.
           await database.customStatement(
-            'DROP INDEX idx_event_pubkey_kind_d_tag',
+            'DROP INDEX idx_event_pubkey_kind_d_tag_created_at',
           );
           await database.customStatement(
             'ALTER TABLE event DROP COLUMN d_tag',
@@ -1064,7 +1064,7 @@ void main() {
             containsAll(<String>[
               'idx_event_kind_created_at',
               'idx_event_pubkey_created_at',
-              'idx_event_pubkey_kind_d_tag',
+              'idx_event_pubkey_kind_d_tag_created_at',
               'idx_event_created_at',
               'idx_event_expire_at',
             ]),

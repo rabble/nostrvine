@@ -726,9 +726,15 @@ class AppDatabase extends _$AppDatabase {
       CREATE INDEX IF NOT EXISTS idx_event_pubkey_created_at
       ON event (pubkey, created_at)
     ''');
+    // The trailing created_at makes the replaceable-upsert MAX(created_at)
+    // lookup a covering-index seek; without it SQLite's min/max
+    // optimization picks idx_event_kind_created_at and reverse-scans the
+    // kind partition (PR #5957 review). The DROP cleans up the narrower
+    // predecessor index from pre-release builds of this change.
+    await customStatement('DROP INDEX IF EXISTS idx_event_pubkey_kind_d_tag');
     await customStatement('''
-      CREATE INDEX IF NOT EXISTS idx_event_pubkey_kind_d_tag
-      ON event (pubkey, kind, d_tag)
+      CREATE INDEX IF NOT EXISTS idx_event_pubkey_kind_d_tag_created_at
+      ON event (pubkey, kind, d_tag, created_at)
     ''');
     await customStatement('''
       CREATE INDEX IF NOT EXISTS idx_event_created_at

@@ -62,11 +62,15 @@ class NostrEvents extends Table {
 
     // Replaceable-event upserts (WHERE pubkey = ? AND kind = ? AND
     // d_tag = ?); the (pubkey, kind) prefix serves standard replaceable
-    // upserts and profile queries.
+    // upserts and profile queries. The trailing created_at makes the
+    // upsert's MAX(created_at) lookup a covering-index seek — without it
+    // SQLite's min/max optimization prefers idx_event_kind_created_at
+    // (kind-only equality + residual filters), a reverse scan of the
+    // whole kind partition (PR #5957 review).
     Index(
-      'idx_event_pubkey_kind_d_tag',
-      'CREATE INDEX IF NOT EXISTS idx_event_pubkey_kind_d_tag '
-          'ON event (pubkey, kind, d_tag)',
+      'idx_event_pubkey_kind_d_tag_created_at',
+      'CREATE INDEX IF NOT EXISTS idx_event_pubkey_kind_d_tag_created_at '
+          'ON event (pubkey, kind, d_tag, created_at)',
     ),
 
     // Global recency (ORDER BY created_at DESC LIMIT ?), e.g. the

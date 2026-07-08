@@ -1556,6 +1556,31 @@ void main() {
           expect(dTagsById[note.id], isNull);
         },
       );
+
+      test(
+        'upsert MAX(created_at) lookup uses the covering d_tag index',
+        () async {
+          // Pins the query plan: without the trailing created_at column
+          // SQLite's min/max optimization picks idx_event_kind_created_at
+          // (kind-only equality) and reverse-scans the whole kind
+          // partition instead of seeking — the regression this index
+          // shape exists to prevent (PR #5957 review).
+          final plan = await database
+              .customSelect(
+                'EXPLAIN QUERY PLAN '
+                'SELECT MAX(created_at) FROM event '
+                "WHERE pubkey = 'p' AND kind = 30023 AND d_tag = 'd'",
+              )
+              .get();
+          final detail = plan
+              .map((row) => row.read<String>('detail'))
+              .join('; ');
+          expect(
+            detail,
+            contains('COVERING INDEX idx_event_pubkey_kind_d_tag_created_at'),
+          );
+        },
+      );
     });
 
     group('watchEventsByFilter (reactive queries)', () {
