@@ -10,6 +10,7 @@ import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/protected_minor_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/minor_account_review_parent_consent_screen.dart';
 import 'package:openvine/screens/minor_account_review_parent_contact_screen.dart';
@@ -20,6 +21,19 @@ import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 enum MinorAccountReviewEntryPoint { welcome, moderation }
+
+/// Re-reads the review status AND the protected-minor flag together (#176).
+///
+/// A review-status refresh is the approval-discovery signal on this screen: an
+/// approved teen may now carry the `verified_minor` flag, so the protected-minor
+/// state must be invalidated in lockstep. Otherwise `isProtectedMinorProvider`
+/// keeps its stale value and the DM/content restrictions wouldn't apply until
+/// the next relaunch or auth transition. Invalidating is strictly fail-closed:
+/// the sticky store never lets a refetch weaken protection.
+void refreshMinorAccountState(WidgetRef ref) {
+  ref.invalidate(currentMinorAccountReviewStatusProvider);
+  ref.invalidate(protectedMinorStatusProvider);
+}
 
 class MinorAccountReviewScreen extends ConsumerWidget {
   static const routeName = 'minor-account-review';
@@ -65,8 +79,7 @@ class MinorAccountReviewScreen extends ConsumerWidget {
                   category: LogCategory.ui,
                 );
                 return _ErrorView(
-                  onRetry: () =>
-                      ref.invalidate(currentMinorAccountReviewStatusProvider),
+                  onRetry: () => refreshMinorAccountState(ref),
                 );
               },
             ),
@@ -320,8 +333,7 @@ class _LoadedView extends ConsumerWidget {
           label: l10n.minorAccountReviewCheckAgain,
           type: DivineButtonType.ghost,
           expanded: true,
-          onPressed: () =>
-              ref.invalidate(currentMinorAccountReviewStatusProvider),
+          onPressed: () => refreshMinorAccountState(ref),
         ),
         const SizedBox(height: 24),
         TextButton(

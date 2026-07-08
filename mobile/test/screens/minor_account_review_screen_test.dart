@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
+import 'package:openvine/models/protected_minor_status.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/protected_minor_providers.dart';
 import 'package:openvine/screens/minor_account_review_parent_consent_screen.dart';
 import 'package:openvine/screens/minor_account_review_screen.dart';
 import 'package:openvine/screens/minor_account_review_under13_screen.dart';
@@ -318,6 +320,75 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(find.text('Open Support Center'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Check Again re-reads the protected-minor flag, not just the review '
+      'status, so an approved teen is gated without relaunch (#176)',
+      (tester) async {
+        var protectedFetches = 0;
+        final container = ProviderContainer(
+          overrides: [
+            currentMinorAccountReviewStatusProvider.overrideWith((ref) async {
+              return const MinorAccountReviewStatus(
+                restrictionStatus:
+                    AccountRestrictionStatus.restrictedMinorReview,
+                currentCase: MinorReviewCase(
+                  id: 'case-reviewing',
+                  state: MinorReviewCaseState.submittedForReview,
+                  suspectedAgeBand: SuspectedAgeBand.age13To15,
+                  allowedResolution:
+                      MinorReviewResolutionType.parentVideoOrEmail,
+                  instructions: MinorReviewInstructions(
+                    title: 'Submission received',
+                    body: 'We are reviewing this case.',
+                  ),
+                  supportEmail: 'support@divine.video',
+                ),
+              );
+            }),
+            protectedMinorStatusProvider.overrideWith((ref) async {
+              protectedFetches++;
+              return ProtectedMinorStatus.notProtected();
+            }),
+          ],
+        );
+        addTearDown(container.dispose);
+        // Keep the provider active so an invalidate forces a re-fetch we can
+        // count. In production isProtectedMinorProvider keeps it live app-wide,
+        // so invalidating it re-reads the flag and re-applies the DM/content
+        // gates without a relaunch.
+        container.listen(protectedMinorStatusProvider, (_, _) {});
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: MinorAccountReviewScreen(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(protectedFetches, 1);
+
+        await tester.scrollUntilVisible(
+          find.text('Check Again'),
+          200,
+          scrollable: find.byType(Scrollable),
+        );
+        await tester.tap(find.text('Check Again'));
+        await tester.pumpAndSettle();
+
+        expect(
+          protectedFetches,
+          2,
+          reason:
+              'tapping Check Again must re-read the protected-minor flag, not '
+              'just the review status',
+        );
       },
     );
   });
