@@ -139,7 +139,8 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
         listenWhen: (previous, current) =>
             previous.sendStatus != current.sendStatus &&
             (current.sendStatus == SendStatus.failed ||
-                current.sendStatus == SendStatus.sentPartial),
+                current.sendStatus == SendStatus.sentPartial ||
+                current.sendStatus == SendStatus.blocked),
         listener: _onSendOutcome,
         child: Column(
           children: [
@@ -223,6 +224,23 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
   }
 
   void _onSendOutcome(BuildContext context, ConversationState state) {
+    // Protected-minor DM restriction (#176): the send was refused by policy,
+    // not a transient failure — show distinct copy with NO retry (retrying only
+    // re-hits the same block).
+    if (state.sendStatus == SendStatus.blocked) {
+      final l10n = context.l10n;
+      final message = l10n.dmSendBlockedMessage;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(message)));
+      SemanticsService.sendAnnouncement(
+        View.of(context),
+        message,
+        Directionality.of(context),
+      );
+      return;
+    }
+
     final isPartial = state.sendStatus == SendStatus.sentPartial;
     // Pick the retry payload based on which outcome we're recovering
     // from: failed → full resend (content + recipients), sentPartial →

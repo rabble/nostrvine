@@ -2468,6 +2468,7 @@
     "libraryWebUnavailableHeadline": "Perpustakaan ada di aplikasi seluler",
     "notificationFollowBack": "Ikuti balik",
     "profileSetupUploadStaged": "Diunggah — ketuk Simpan untuk menerapkan",
+    "dmSendBlockedMessage": "You can only message official Divine accounts",
     "dmSendFailedMessage": "Pesan gagal dikirim",
     "dmSendFailedRetry": "Coba Lagi",
     "dmSendPartialMessage": "Terkirim, tapi tidak tersinkron ke perangkat lainmu",

@@ -2469,6 +2469,7 @@
     "libraryWebUnavailableHeadline": "Mediathek ist in der mobilen App",
     "notificationFollowBack": "Zurückfolgen",
     "profileSetupUploadStaged": "Hochgeladen – tippe auf Speichern, um zu übernehmen",
+    "dmSendBlockedMessage": "You can only message official Divine accounts",
     "dmSendFailedMessage": "Nachricht konnte nicht gesendet werden",
     "dmSendFailedRetry": "Erneut versuchen",
     "dmSendPartialMessage": "Gesendet, aber nicht mit deinen anderen Geräten synchronisiert",

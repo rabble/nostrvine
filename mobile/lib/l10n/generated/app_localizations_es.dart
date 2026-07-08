@@ -5551,6 +5551,10 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get dmSendBlockedMessage =>
+      'You can only message official Divine accounts';
+
+  @override
   String get dmSendFailedMessage => 'No se pudo enviar el mensaje';
 
   @override

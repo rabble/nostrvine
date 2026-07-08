@@ -2500,6 +2500,7 @@
     },
     "collaboratorInviteDmBody": "Поканени сте да си сътрудничите по {title}: {url}\n\nOpen diVine to review and accept.",
     "collaboratorInviteDmBodyUntitled": "Поканени сте да си сътрудничите по видеоклип: {url}\n\nOpen diVine to review and accept.",
+    "dmSendBlockedMessage": "You can only message official Divine accounts",
     "dmSendFailedMessage": "Съобщението не мина",
     "dmSendFailedRetry": "Опитай пак",
     "dmSendPartialMessage": "Изпратено, но не се синхронизира с другите ти устройства",

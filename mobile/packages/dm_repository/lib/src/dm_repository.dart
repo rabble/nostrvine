@@ -2552,7 +2552,7 @@ class DmRepository {
     // covers the drain replay); this earlier check avoids storing a queue row
     // that would only ever re-fail the gate.
     if (!await _messageService!.canSendTo(recipientPubkey)) {
-      return const NIP17SendResult.failure(
+      return const NIP17SendResult.blocked(
         'blocked: recipient not permitted by send policy',
       );
     }
@@ -3476,7 +3476,7 @@ class DmRepository {
       if (!await _messageService!.canSendTo(pubkey)) {
         return [
           for (final _ in recipientPubkeys)
-            const NIP17SendResult.failure(
+            const NIP17SendResult.blocked(
               'blocked: group contains a non-approved recipient',
             ),
         ];

@@ -181,6 +181,11 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           content: event.content,
         );
         if (!result.success) {
+          if (result.blocked) {
+            // Protected-minor DM restriction (#176): refused, not retriable.
+            emit(state.copyWith(sendStatus: SendStatus.blocked));
+            return;
+          }
           throw Exception(result.error ?? 'Failed to send message');
         }
         if (result.selfWrapPublished == false) {
@@ -192,6 +197,11 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           content: event.content,
         );
         if (!results.any((r) => r.success)) {
+          if (results.isNotEmpty && results.every((r) => r.blocked)) {
+            // Group all-or-nothing block (#176): refused, not retriable.
+            emit(state.copyWith(sendStatus: SendStatus.blocked));
+            return;
+          }
           throw Exception(
             results.first.error ?? 'Failed to send group message',
           );

@@ -1444,6 +1444,7 @@
     "categoryVlogging": "Vlogging",
     "categoryWrestling": "Wrestling",
     "profileSetupUploadStaged": "Na-upload na — i-tap ang I-save para ilapat",
+    "dmSendBlockedMessage": "You can only message official Divine accounts",
     "dmSendFailedMessage": "Hindi naipadala ang message",
     "dmSendFailedRetry": "Subukan ulit",
     "dmSendPartialMessage": "Naipadala, pero hindi nag-sync sa iba mong device",

@@ -2461,6 +2461,7 @@
     "libraryWebUnavailableHeadline": "ライブラリはモバイルアプリで利用できます",
     "notificationFollowBack": "フォローバック",
     "profileSetupUploadStaged": "アップロードしたよ — 適用するには「保存」をタップしてね",
+    "dmSendBlockedMessage": "You can only message official Divine accounts",
     "dmSendFailedMessage": "メッセージを送信できなかった",
     "dmSendFailedRetry": "もう一回",
     "dmSendPartialMessage": "送信したけど、ほかのデバイスには同期できなかった",

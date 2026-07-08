@@ -2469,6 +2469,7 @@
     "libraryWebUnavailableHeadline": "Biblioteka jest w aplikacji mobilnej",
     "notificationFollowBack": "Zaobserwuj",
     "profileSetupUploadStaged": "Przesłano — dotknij Zapisz, aby zastosować",
+    "dmSendBlockedMessage": "You can only message official Divine accounts",
     "dmSendFailedMessage": "Nie udało się wysłać wiadomości",
     "dmSendFailedRetry": "Spróbuj ponownie",
     "dmSendPartialMessage": "Wysłano, ale nie zsynchronizowano z twoimi innymi urządzeniami",

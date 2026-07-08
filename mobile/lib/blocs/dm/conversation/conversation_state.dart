@@ -10,7 +10,11 @@ enum ConversationStatus { initial, loading, loaded, error }
 /// sender's self-addressed NIP-17 gift wrap did not reach relays, so the
 /// sender's other devices will not see this message on relay-only restore.
 /// Distinct from [sent] (full success) and [failed] (recipient never got it).
-enum SendStatus { idle, sending, sent, sentPartial, failed }
+///
+/// [blocked] is a policy block (protected-minor DM restriction, #176): the send
+/// was refused, not a transient failure, so the UI shows distinct copy with NO
+/// retry affordance (retrying only re-hits the same policy).
+enum SendStatus { idle, sending, sent, sentPartial, failed, blocked }
 
 /// Per-bubble delivery status, derived from the durable `outgoing_dms`
 /// queue row (when present) merged with the persisted `direct_messages`

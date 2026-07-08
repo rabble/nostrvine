@@ -5575,6 +5575,10 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
+  String get dmSendBlockedMessage =>
+      'You can only message official Divine accounts';
+
+  @override
   String get dmSendFailedMessage => 'Hindi naipadala ang message';
 
   @override

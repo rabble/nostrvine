@@ -369,6 +369,39 @@ void main() {
         );
 
         blocTest<ConversationBloc, ConversationState>(
+          'emits [sending, blocked] with no retry payload on a policy-blocked send (#176)',
+          setUp: () {
+            when(
+              () => mockDmRepository.sendMessage(
+                recipientPubkey: recipientPubkey,
+                content: 'Hello',
+              ),
+            ).thenAnswer(
+              (_) async =>
+                  const NIP17SendResult.blocked('blocked: not permitted'),
+            );
+          },
+          build: buildBloc,
+          act: (bloc) => bloc.add(
+            const ConversationMessageSent(
+              recipientPubkeys: [recipientPubkey],
+              content: 'Hello',
+            ),
+          ),
+          expect: () => [
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sending,
+            ),
+            // Blocked, not failed: no lastFailedSend, so the UI shows no retry.
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.blocked)
+                .having((s) => s.lastFailedSend, 'lastFailedSend', isNull),
+          ],
+        );
+
+        blocTest<ConversationBloc, ConversationState>(
           'emits [sending with optimistic message, failed without '
           'optimistic and with lastFailedSend] on failed sendMessage',
           setUp: () {

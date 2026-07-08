@@ -3106,6 +3106,13 @@
       }
     }
   },
+  "dmSendBlockedMessage": "You can only message official Divine accounts",
+
+  "@dmSendBlockedMessage": {
+
+    "description": "SnackBar text shown when a protected minor (13-15) tries to DM a non-approved account (#176). Neutral, no retry action."
+
+  },
   "dmSendFailedMessage": "Message couldn't be sent",
   "@dmSendFailedMessage": {
     "description": "SnackBar text shown in a DM conversation when a send fails (relay error, signer error, network error). Paired with the retry action `dmSendFailedRetry`."

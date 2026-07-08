@@ -1792,6 +1792,7 @@
     "libraryWebUnavailableHeadline": "라이브러리는 모바일 앱에서 이용할 수 있어요",
     "notificationFollowBack": "맞팔로우",
     "profileSetupUploadStaged": "업로드됐어요 — 적용하려면 저장을 탭하세요",
+    "dmSendBlockedMessage": "You can only message official Divine accounts",
     "dmSendFailedMessage": "메시지를 보내지 못했어요",
     "dmSendFailedRetry": "다시 시도",
     "dmSendPartialMessage": "보냈지만 다른 기기에 동기화되지 않았어요",

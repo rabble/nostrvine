@@ -9666,6 +9666,12 @@ abstract class AppLocalizations {
   /// **'Video posted, but {count, plural, =1{1 collaborator invite did not send.} other{{count} collaborator invites did not send.}}'**
   String videoPublishCollaboratorInviteWarning(int count);
 
+  /// SnackBar text shown when a protected minor (13-15) tries to DM a non-approved account (#176). Neutral, no retry action.
+  ///
+  /// In en, this message translates to:
+  /// **'You can only message official Divine accounts'**
+  String get dmSendBlockedMessage;
+
   /// SnackBar text shown in a DM conversation when a send fails (relay error, signer error, network error). Paired with the retry action `dmSendFailedRetry`.
   ///
   /// In en, this message translates to:

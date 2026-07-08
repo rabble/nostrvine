@@ -2461,6 +2461,7 @@
     "libraryWebUnavailableHeadline": "المكتبة متوفّرة في التطبيق على الجوال",
     "notificationFollowBack": "متابعة بالمقابل",
     "profileSetupUploadStaged": "تم الرفع — اضغط على حفظ للتطبيق",
+    "dmSendBlockedMessage": "You can only message official Divine accounts",
     "dmSendFailedMessage": "تعذّر إرسال الرسالة",
     "dmSendFailedRetry": "إعادة المحاولة",
     "dmSendPartialMessage": "أُرسلت، لكنّها لم تُزامَن مع أجهزتك الأخرى",

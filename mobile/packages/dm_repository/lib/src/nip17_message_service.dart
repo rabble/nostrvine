@@ -280,7 +280,7 @@ class NIP17MessageService {
           'NIP-17 send blocked by policy for recipient',
           category: LogCategory.system,
         );
-        return const NIP17SendResult.failure(
+        return const NIP17SendResult.blocked(
           'blocked: recipient not permitted by send policy',
         );
       }

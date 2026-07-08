@@ -2468,6 +2468,7 @@
     "libraryWebUnavailableHeadline": "Kitaplık mobil uygulamada",
     "notificationFollowBack": "Geri takip et",
     "profileSetupUploadStaged": "Yüklendi — uygulamak için Kaydet'e dokunun",
+    "dmSendBlockedMessage": "You can only message official Divine accounts",
     "dmSendFailedMessage": "Mesaj gönderilemedi",
     "dmSendFailedRetry": "Tekrar Dene",
     "dmSendPartialMessage": "Gönderildi, ama diğer cihazlarınla eşitlenmedi",

@@ -64,9 +64,19 @@ sealed class NIP17SendResult {
   /// when the recipient publish fails.
   const factory NIP17SendResult.failure(String error) = NIP17SendFailure;
 
+  /// Build a policy-block result (protected-minor DM restriction, #176). Unlike
+  /// a transient failure, a blocked send must NOT be retried — retrying only
+  /// re-hits the same policy — so the UI surfaces distinct, no-retry copy.
+  const factory NIP17SendResult.blocked(String error) =
+      NIP17SendFailure.blocked;
+
   /// Whether the recipient gift wrap (kind 1059, encrypted to the
   /// recipient) reached at least one relay. The headline send status.
   bool get success => this is NIP17SendSuccess;
+
+  /// Whether this failure is a policy block (#176), not a transient/network
+  /// error. Blocked sends are not retriable. Always `false` for success.
+  bool get blocked => false;
 
   /// The rumor event ID (kind 14/15) — the canonical message
   /// identifier. Use this as the primary key when persisting sent
@@ -165,10 +175,16 @@ final class NIP17SendSuccess extends NIP17SendResult {
 /// the recipient at all. Self-wrap is not attempted on this branch.
 @immutable
 final class NIP17SendFailure extends NIP17SendResult {
-  const NIP17SendFailure(this.error);
+  const NIP17SendFailure(this.error) : blocked = false;
+
+  /// A policy block (#176): same non-delivery as a failure, but not retriable.
+  const NIP17SendFailure.blocked(this.error) : blocked = true;
 
   @override
   final String error;
+
+  @override
+  final bool blocked;
 
   @override
   String? get rumorEventId => null;
@@ -188,12 +204,14 @@ final class NIP17SendFailure extends NIP17SendResult {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is NIP17SendFailure && other.error == error;
+    return other is NIP17SendFailure &&
+        other.error == error &&
+        other.blocked == blocked;
   }
 
   @override
-  int get hashCode => error.hashCode;
+  int get hashCode => Object.hash(error, blocked);
 
   @override
-  String toString() => 'NIP17SendFailure(error: $error)';
+  String toString() => 'NIP17SendFailure(error: $error, blocked: $blocked)';
 }

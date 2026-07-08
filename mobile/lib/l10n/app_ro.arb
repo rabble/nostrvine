@@ -2469,6 +2469,7 @@
     "libraryWebUnavailableHeadline": "Biblioteca e în aplicația mobilă",
     "notificationFollowBack": "Urmărește înapoi",
     "profileSetupUploadStaged": "Încărcată — apasă pe Salvează pentru a aplica",
+    "dmSendBlockedMessage": "You can only message official Divine accounts",
     "dmSendFailedMessage": "Mesajul nu a putut fi trimis",
     "dmSendFailedRetry": "Reîncearcă",
     "dmSendPartialMessage": "Trimis, dar nu s-a sincronizat cu celelalte dispozitive",

@@ -2469,6 +2469,7 @@
     "libraryWebUnavailableHeadline": "Bibliotheek is beschikbaar in de mobiele app",
     "notificationFollowBack": "Terugvolgen",
     "profileSetupUploadStaged": "Geüpload — tik op Opslaan om toe te passen",
+    "dmSendBlockedMessage": "You can only message official Divine accounts",
     "dmSendFailedMessage": "Bericht kon niet worden verzonden",
     "dmSendFailedRetry": "Opnieuw",
     "dmSendPartialMessage": "Verzonden, maar niet gesynchroniseerd met je andere apparaten",

@@ -2469,6 +2469,7 @@
     "libraryWebUnavailableHeadline": "Biblioteket finns i mobilappen",
     "notificationFollowBack": "Följ tillbaka",
     "profileSetupUploadStaged": "Uppladdad — tryck på Spara för att tillämpa",
+    "dmSendBlockedMessage": "You can only message official Divine accounts",
     "dmSendFailedMessage": "Meddelandet kunde inte skickas",
     "dmSendFailedRetry": "Försök igen",
     "dmSendPartialMessage": "Skickat, men inte synkat till dina andra enheter",
