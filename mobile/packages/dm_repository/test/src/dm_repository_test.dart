@@ -4774,7 +4774,7 @@ void main() {
 
       test(
         'remote-signer drain verifies gift wraps off the main isolate and '
-        'closes the verify isolate when the drain ends (#5424)',
+        'keeps the shared verify isolate alive until account switch (#5424)',
         () async {
           when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
 
@@ -4827,7 +4827,9 @@ void main() {
           ).called(1);
 
           // ...with both the outer wrap and the seal verified via the worker
-          // (i.e. off the main isolate), and the worker torn down afterwards.
+          // (i.e. off the main isolate). The key-less worker deliberately
+          // survives the drain so live-subscription / retry wraps keep
+          // verifying off the main isolate...
           expect(
             verifyWorker.verifiedKinds,
             containsAllInOrder(<int>[
@@ -4835,7 +4837,144 @@ void main() {
               EventKind.sealEventKind,
             ]),
           );
+          expect(verifyWorker.closed, isFalse);
+
+          // ...and is reclaimed on account switch so no worker leaks across
+          // users.
+          repository.setCredentials(
+            userPubkey: senderPub,
+            signer: LocalNostrSigner(senderPriv),
+            messageService: mockMessageService,
+          );
           expect(verifyWorker.closed, isTrue);
+        },
+      );
+
+      test(
+        'live-subscription wrap outside a drain lazily spawns the shared '
+        'verify isolate, reuses it, and verifies off the main isolate',
+        () async {
+          final wrap1 = await _buildGiftWrap(
+            rumor: rumorFor('live off-isolate verify', createdAt: 1700000500),
+            senderPrivateKey: senderPriv,
+            recipientPubkey: recipientPub,
+            outerCreatedAt: 1700000000,
+          );
+          final wrap2 = await _buildGiftWrap(
+            rumor: rumorFor('live reuse', createdAt: 1700000600),
+            senderPrivateKey: senderPriv,
+            recipientPubkey: recipientPub,
+            outerCreatedAt: 1700000100,
+          );
+
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+
+          var spawnCount = 0;
+          final verifyWorker = _RecordingVerifyWorker();
+          final repository = createRepository(
+            userPubkey: recipientPub,
+            // Production decryptor + non-isolate signer: the exact path that
+            // used to verify inline on the main isolate outside a drain.
+            signer: LocalNostrSigner(recipientPriv),
+            verifyIsolateSpawner: () async {
+              spawnCount++;
+              return verifyWorker;
+            },
+          );
+
+          await repository.startListening();
+          controller
+            ..add(wrap1)
+            ..add(wrap2);
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+
+          // Both wraps verified through one lazily-spawned worker (outer
+          // wrap + seal each, off the main isolate) and persisted.
+          expect(spawnCount, equals(1));
+          expect(
+            verifyWorker.verifiedKinds,
+            containsAllInOrder(<int>[
+              EventKind.giftWrap,
+              EventKind.sealEventKind,
+              EventKind.giftWrap,
+              EventKind.sealEventKind,
+            ]),
+          );
+          expect(
+            persistedGiftWrapIds,
+            containsAll(<String>[
+              wrap1.id,
+              wrap2.id,
+            ]),
+          );
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
+
+      test(
+        'verify-isolate spawn failure falls back to inline verification '
+        'without respawning per wrap',
+        () async {
+          final wrap1 = await _buildGiftWrap(
+            rumor: rumorFor('spawn-fail inline 1', createdAt: 1700000500),
+            senderPrivateKey: senderPriv,
+            recipientPubkey: recipientPub,
+            outerCreatedAt: 1700000000,
+          );
+          final wrap2 = await _buildGiftWrap(
+            rumor: rumorFor('spawn-fail inline 2', createdAt: 1700000600),
+            senderPrivateKey: senderPriv,
+            recipientPubkey: recipientPub,
+            outerCreatedAt: 1700000100,
+          );
+
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+
+          var spawnAttempts = 0;
+          final repository = createRepository(
+            userPubkey: recipientPub,
+            signer: LocalNostrSigner(recipientPriv),
+            verifyIsolateSpawner: () async {
+              spawnAttempts++;
+              throw StateError('spawn refused');
+            },
+          );
+
+          await repository.startListening();
+          controller
+            ..add(wrap1)
+            ..add(wrap2);
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+
+          // One failed spawn attempt, then inline verification — both wraps
+          // still decrypt and persist.
+          expect(spawnAttempts, equals(1));
+          expect(
+            persistedGiftWrapIds,
+            containsAll(<String>[
+              wrap1.id,
+              wrap2.id,
+            ]),
+          );
+
+          await controller.close();
+          await repository.stopListening();
         },
       );
 

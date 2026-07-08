@@ -361,14 +361,65 @@ class DmRepository {
   /// PR #5405 review / #5391.
   DmDecryptWorker? _drainDecryptIsolate;
 
-  /// A single long-lived, KEY-LESS verify isolate, alive only for the duration
-  /// of a REMOTE-signer history drain. Spawned in [_runHistoryDrain] when there
-  /// is no decrypt isolate (remote signers, whose decrypt stays on the main
-  /// isolate) and killed in its `finally`, so the per-event id + Schnorr
-  /// verification in `GiftWrapUtil.getRumorEvent` runs off the main isolate.
-  /// `null` outside a drain, for local-key signers (they validate inside the
-  /// decrypt isolate), or when the verify isolate could not spawn. See #5424.
-  DmVerifyWorker? _drainVerifyIsolate;
+  /// A single long-lived, KEY-LESS verify isolate so the per-event id +
+  /// Schnorr verification in `GiftWrapUtil.getRumorEvent` runs off the main
+  /// isolate. Spawned on demand via [_ensureVerifyIsolate] — at drain start
+  /// for remote signers and lazily on the first live-subscription / retry
+  /// wrap — and kept until account switch ([_resetState]).
+  ///
+  /// Originally drain-scoped (#5424), which left every wrap arriving
+  /// OUTSIDE a drain verifying inline: two pure-Dart Schnorr verifies
+  /// (~20ms of BigInt math) per wrap on the main isolate — 47% of
+  /// main-isolate CPU in on-device profiling of a live DM burst. The worker
+  /// holds no key (unlike [_drainDecryptIsolate], whose teardown reclaims
+  /// the resident private key), so keeping it alive costs one idle isolate.
+  /// `null` until first needed or when the spawn failed.
+  DmVerifyWorker? _verifyIsolate;
+
+  /// In-flight [_ensureVerifyIsolate] spawn, so concurrent wraps share one
+  /// spawn instead of racing several.
+  Future<DmVerifyWorker?>? _verifyIsolateSpawn;
+
+  /// Set when a verify-isolate spawn failed; suppresses per-wrap respawn
+  /// attempts (and their log spam) until the next account switch. Wraps
+  /// verify inline in that state, unchanged.
+  bool _verifyIsolateSpawnFailed = false;
+
+  /// Returns the shared key-less verify isolate, spawning it on first use.
+  ///
+  /// Returns `null` (callers verify inline) when the spawn fails or when the
+  /// user switched while spawning; a worker spawned for a stale user is
+  /// closed, never installed.
+  Future<DmVerifyWorker?> _ensureVerifyIsolate() {
+    final existing = _verifyIsolate;
+    if (existing != null) return Future.value(existing);
+    if (_verifyIsolateSpawnFailed) return Future<DmVerifyWorker?>.value();
+    return _verifyIsolateSpawn ??= _spawnVerifyIsolate();
+  }
+
+  Future<DmVerifyWorker?> _spawnVerifyIsolate() async {
+    final pubkey = _userPubkey;
+    try {
+      final spawned = await _verifyIsolateSpawner();
+      if (_disposed || _userPubkey != pubkey) {
+        spawned.close();
+        return null;
+      }
+      _verifyIsolate = spawned;
+      return spawned;
+    } on Object catch (e, stackTrace) {
+      _verifyIsolateSpawnFailed = true;
+      Log.error(
+        'DM verify isolate spawn failed; validating on main isolate: $e',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return null;
+    } finally {
+      _verifyIsolateSpawn = null;
+    }
+  }
 
   /// Serializes event processing so concurrent subscription events
   /// never race into the dedup/insert path.
@@ -505,10 +556,12 @@ class DmRepository {
     // bailing drain's `finally` is idempotent if it also runs.
     _drainDecryptIsolate?.close();
     _drainDecryptIsolate = null;
-    // Likewise kill any drain-scoped verify isolate (key-less, but still a live
-    // worker). The bailing drain's idempotent `finally` is a no-op if it runs.
-    _drainVerifyIsolate?.close();
-    _drainVerifyIsolate = null;
+    // Likewise kill the shared verify isolate (key-less, but still a live
+    // worker) so the next user starts with a fresh one. An in-flight spawn
+    // detects the pubkey change on resume and closes its worker itself.
+    _verifyIsolate?.close();
+    _verifyIsolate = null;
+    _verifyIsolateSpawnFailed = false;
     // Abandon the recovery signal for the outgoing user. The bailing loops'
     // _endRecovery() then no-ops (guarded on the zeroed counter).
     if (_activeRecoveryOps > 0) {
@@ -1075,7 +1128,6 @@ class DmRepository {
 
     _beginRecovery();
     DmDecryptWorker? drainDecryptIsolate;
-    DmVerifyWorker? drainVerifyIsolate;
     try {
       // Spawn one drain-scoped decrypt isolate for local-key signers so the
       // whole backfill pays a single isolate spawn instead of one per chunk
@@ -1105,29 +1157,15 @@ class DmRepository {
         }
       }
 
-      // Remote signers (no decrypt isolate) validate each gift wrap on the main
-      // isolate inside GiftWrapUtil.getRumorEvent. Spawn one key-less verify
-      // isolate for the drain so that id + Schnorr work moves off the main
+      // Remote signers (no decrypt isolate) validate each gift wrap on the
+      // main isolate inside GiftWrapUtil.getRumorEvent. Bring up the shared
+      // key-less verify isolate so that id + Schnorr work moves off the main
       // isolate; local-key signers already validate inside their decrypt
-      // isolate, so they skip this. On spawn failure, leave it null and fall
-      // back to inline main-isolate validation. See #5424.
+      // isolate, so they skip this. On spawn failure _ensureVerifyIsolate
+      // logs, returns null, and wraps validate inline. See #5424.
       if (drainDecryptIsolate == null) {
-        try {
-          final spawnedVerify = await _verifyIsolateSpawner();
-          if (_disposed || _userPubkey != pubkey) {
-            spawnedVerify.close();
-            return;
-          }
-          drainVerifyIsolate = spawnedVerify;
-          _drainVerifyIsolate = spawnedVerify;
-        } on Object catch (e, stackTrace) {
-          Log.error(
-            'DM verify isolate spawn failed; validating on main isolate: $e',
-            category: LogCategory.system,
-            error: e,
-            stackTrace: stackTrace,
-          );
-        }
+        await _ensureVerifyIsolate();
+        if (_disposed || _userPubkey != pubkey) return;
       }
 
       // The relay filters `until:` on the OUTER gift-wrap created_at, which
@@ -1268,13 +1306,11 @@ class DmRepository {
       // Kill the drain-scoped decrypt isolate (reclaiming the resident key)
       // before clearing the recovery flag. Runs on every exit path — page
       // cap, exhaustion, user-switch / teardown bail, or error. See #5391.
+      // The shared verify isolate deliberately survives the drain: it holds
+      // no key, and live-subscription wraps keep verifying through it.
       drainDecryptIsolate?.close();
       if (identical(_drainDecryptIsolate, drainDecryptIsolate)) {
         _drainDecryptIsolate = null;
-      }
-      drainVerifyIsolate?.close();
-      if (identical(_drainVerifyIsolate, drainVerifyIsolate)) {
-        _drainVerifyIsolate = null;
       }
       _endRecovery();
     }
@@ -2088,27 +2124,28 @@ class DmRepository {
         // Fall through to main-isolate decryptor.
       }
     }
-    // When a key-less verify isolate is live (spawned for a remote-signer
-    // history drain), route the production decryptor's id + Schnorr
-    // verification through it so the CPU-bound work leaves the main isolate.
-    // The gate is "verify isolate alive", not "drain batch path only": a
-    // live-subscription wrap arriving mid-drain routes here too, which is
-    // correct (its verify also leaves the main isolate). Only
-    // GiftWrapUtil.getRumorEvent accepts a verifier; a test-injected decryptor
-    // is used unchanged. If the isolate is torn down mid-flight (account
-    // switch) verifyPart throws StateError — the parallel-decrypt drain worker
-    // catches it and falls through to the per-event retry queue; the live
-    // _handleGiftWrapEvent path catches it and drops that one wrap, which the
-    // switch re-recovers (drain completion is deferred and the live
-    // subscription re-subscribes on switch-back). See #5424.
-    final verifyWorker = _drainVerifyIsolate;
-    if (verifyWorker != null &&
-        identical(_rumorDecryptor, GiftWrapUtil.getRumorEvent)) {
-      return GiftWrapUtil.getRumorEvent(
-        nostr,
-        giftWrapEvent,
-        verifyPart: verifyWorker.verifyPart,
-      );
+    // Route the production decryptor's id + Schnorr verification through the
+    // shared key-less verify isolate so the CPU-bound work leaves the main
+    // isolate — spawned lazily here on the first wrap, since live-subscription
+    // and retry wraps arrive outside a history drain too (two pure-Dart
+    // Schnorr verifies per wrap were ~47% of main-isolate CPU in on-device
+    // profiling of a live DM burst). Only GiftWrapUtil.getRumorEvent accepts
+    // a verifier; a test-injected decryptor is used unchanged. If the isolate
+    // is torn down mid-flight (account switch) verifyPart throws StateError —
+    // the parallel-decrypt drain worker catches it and falls through to the
+    // per-event retry queue; the live _handleGiftWrapEvent path catches it
+    // and drops that one wrap, which the switch re-recovers (drain completion
+    // is deferred and the live subscription re-subscribes on switch-back).
+    // See #5424.
+    if (identical(_rumorDecryptor, GiftWrapUtil.getRumorEvent)) {
+      final verifyWorker = await _ensureVerifyIsolate();
+      if (verifyWorker != null) {
+        return GiftWrapUtil.getRumorEvent(
+          nostr,
+          giftWrapEvent,
+          verifyPart: verifyWorker.verifyPart,
+        );
+      }
     }
     return _rumorDecryptor(nostr, giftWrapEvent);
   }
