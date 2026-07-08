@@ -36,7 +36,13 @@ void main() {
       expect(s.isProtectedMinor, isTrue);
     });
 
-    test('not protected when there is no access token', () async {
+    test('unknown when there is no access token (never lifts protection on a '
+        'missing signal)', () async {
+      // A null token carries NO signal about minor status, so it must map to
+      // unknown — not a positive notProtected. A trusted notProtected would
+      // both lift the DM/content gates and overwrite the sticky `protected`,
+      // re-opening a confirmed minor on a transient/absent token (#176 design
+      // doc). unknown falls back to the last-known sticky value instead.
       final repo = ProtectedMinorRepository(
         oauthClient: _oauthReturning(_minorBody, 200),
         readAccessToken: () async => null,
@@ -44,7 +50,8 @@ void main() {
 
       final s = await repo.fetchCurrentStatus();
 
-      expect(s.isProtectedMinor, isFalse);
+      expect(s.kind, ProtectedMinorStatusKind.unknown);
+      expect(s.isKnown, isFalse);
     });
 
     test('unknown on server error', () async {
@@ -60,7 +67,8 @@ void main() {
       expect(s.isProtectedMinor, isFalse);
     });
 
-    test('not protected when the access token is empty', () async {
+    test('unknown when the access token is empty (never lifts protection on a '
+        'missing signal)', () async {
       final repo = ProtectedMinorRepository(
         oauthClient: _oauthReturning(_minorBody, 200),
         readAccessToken: () async => '',
@@ -68,7 +76,8 @@ void main() {
 
       final s = await repo.fetchCurrentStatus();
 
-      expect(s.isProtectedMinor, isFalse);
+      expect(s.kind, ProtectedMinorStatusKind.unknown);
+      expect(s.isKnown, isFalse);
     });
 
     test('unknown when reading the token throws', () async {
