@@ -1,20 +1,35 @@
 // ABOUTME: Drops the keyboard when the enclosing modal sheet starts dismissing
 // ABOUTME: so iOS does not strand an orphaned keyboard over the screen below.
 
-import 'package:flutter/material.dart';
+import 'dart:async';
 
-/// Unfocuses the active text field the moment the enclosing [ModalRoute] begins
-/// its dismiss transition.
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+/// Unfocuses the active text field and hides the software keyboard the moment
+/// the enclosing [ModalRoute] begins its dismiss transition.
 ///
 /// The comments bottom sheet has no close button — it is dismissed by dragging
-/// it down, tapping the scrim, or the system back gesture. Every one of those
-/// vectors reverses the modal route's transition animation (the same
-/// `AnimationStatus.reverse` signal Flutter's own `_dismissUnderway` checks in
-/// `material/bottom_sheet.dart`). On iOS, tearing the route down does not
-/// reliably resign first responder, so the software keyboard is left visible
-/// over the feed below (#5604). Reacting to [AnimationStatus.reverse] unfocuses
-/// while the field is still mounted and focused, which closes the text-input
-/// connection in time for the keyboard to animate away with the sheet.
+/// it down, tapping the scrim, or the system back gesture. Most of those
+/// vectors reverse the modal route's transition animation, so
+/// [AnimationStatus.reverse] is the primary dismiss signal (#5604). Two
+/// teardown paths never emit it (#5959):
+///
+/// * a chrome drag that rides the route controller to its 0.0 clamp goes
+///   completed→forward→dismissed (both fling branches in
+///   `material/bottom_sheet.dart` are guarded by `value > 0.0`, and the
+///   follow-up pop's `reverse()` takes the zero-duration branch), covered by
+///   also reacting to [AnimationStatus.dismissed];
+/// * route removal without a pop emits no status change at all, covered by
+///   the [dispose] fallback.
+///
+/// `unfocus()` alone is not enough: when iOS tears down the text-input
+/// session during a background/resume cycle, the framework nulls its side of
+/// the connection without any outbound `TextInput.hide`, while iOS
+/// re-presents the keyboard for the stale first responder on resume. In that
+/// split-brain state `unfocus()` produces zero text-input channel traffic, so
+/// an explicit `TextInput.hide` — which resigns the first responder
+/// engine-side regardless of framework connection state — is sent as well.
 ///
 /// Renders [child] unchanged; it only observes the route animation. No-op when
 /// there is no enclosing modal route (e.g. a non-modal host).
@@ -43,17 +58,31 @@ class _UnfocusOnSheetDismissState extends State<UnfocusOnSheetDismiss> {
   }
 
   void _onStatusChanged(AnimationStatus status) {
-    // The route only reverses when it is actually being dismissed (partial
-    // sheet resizes do not touch the route animation), so this fires once per
-    // dismiss, while the comment field still holds focus.
-    if (status == AnimationStatus.reverse) {
-      FocusManager.instance.primaryFocus?.unfocus();
+    // reverse: pop-driven dismissals (scrim tap, drag release, back, pop),
+    // fired while the comment field still holds focus. dismissed: a chrome
+    // drag that reaches the route controller's 0.0 clamp skips reverse
+    // entirely — see the class doc.
+    if (status == AnimationStatus.reverse ||
+        status == AnimationStatus.dismissed) {
+      _dismissKeyboard();
     }
+  }
+
+  void _dismissKeyboard() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    // unfocus() sends nothing over the text-input channel when the framework
+    // side of the connection is already gone (platform-initiated teardown
+    // during background/resume — see the class doc). Hide explicitly; this is
+    // a harmless no-op when the keyboard is already down.
+    unawaited(SystemChannels.textInput.invokeMethod<void>('TextInput.hide'));
   }
 
   @override
   void dispose() {
     _animation?.removeStatusListener(_onStatusChanged);
+    // Covers teardown paths that never change the route animation status
+    // (route removal without a pop). Redundant but harmless on popped paths.
+    _dismissKeyboard();
     super.dispose();
   }
 
