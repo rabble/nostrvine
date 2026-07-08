@@ -1354,11 +1354,12 @@ void main() {
       });
 
       test(
-        'all-or-nothing: any non-approved participant blocks the whole group send (#176)',
+        'all-or-nothing: any non-approved participant blocks the whole '
+        'group send (#176)',
         () async {
-          // One approved, one not. Per-recipient gating alone would still deliver
-          // to the approved participant, so an attacker could p-tag the minor
-          // with a pinned decoy. The whole send must be refused.
+          // One approved, one not. Per-recipient gating alone would still
+          // deliver to the approved participant, so an attacker could p-tag the
+          // minor with a pinned decoy. The whole send must be refused.
           when(
             () => mockMessageService.canSendTo(_validPubkeyB),
           ).thenAnswer((_) async => true);
