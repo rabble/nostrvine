@@ -40,8 +40,7 @@ void main() {
 
     test('applies the boundary filter to emitted videos', () {
       final repo = StaticFeedRepository(
-        filter: (videos) =>
-            videos.where((v) => v.pubkey != 'blocked').toList(),
+        filter: (videos) => videos.where((v) => v.pubkey != 'blocked').toList(),
       );
       final source = VideoListViewSource([
         _video('1'),
@@ -100,8 +99,7 @@ void main() {
       addTearDown(controller.close);
       final repo = StreamFeedRepository(
         videos: controller.stream,
-        filter: (videos) =>
-            videos.where((v) => v.pubkey != 'blocked').toList(),
+        filter: (videos) => videos.where((v) => v.pubkey != 'blocked').toList(),
       );
 
       expect(

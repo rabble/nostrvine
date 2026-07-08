@@ -1,0 +1,27 @@
+# ABOUTME: CI workflow for the nostr_app_bridge_repository package.
+# ABOUTME: Runs tests, formatting, and analysis only when nostr_app_bridge_repository files change.
+
+name: Nostr App Bridge Repository CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "mobile/packages/nostr_app_bridge_repository/**"
+      - ".github/workflows/nostr_app_bridge_repository.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "mobile/packages/nostr_app_bridge_repository/**"
+      - ".github/workflows/nostr_app_bridge_repository.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/flutter_package.yml@v1
+    with:
+      working_directory: "mobile/packages/nostr_app_bridge_repository"
+      min_coverage: 78

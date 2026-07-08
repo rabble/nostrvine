@@ -54,6 +54,12 @@ void main() {
 
   final initialPlatform = DivineQuickActionsPlatform.instance;
 
+  // Platform singletons are process-global; restore after every test so the
+  // swapped-in mock cannot strand sibling suites in the merged-isolate run.
+  tearDown(() {
+    DivineQuickActionsPlatform.instance = initialPlatform;
+  });
+
   test('$MethodChannelDivineQuickActions is the default instance', () {
     expect(initialPlatform, isInstanceOf<MethodChannelDivineQuickActions>());
   });

@@ -1,0 +1,27 @@
+# ABOUTME: CI workflow for the background_uploader package.
+# ABOUTME: Runs tests, formatting, and analysis only when background_uploader files change.
+
+name: Background Uploader CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "mobile/packages/background_uploader/**"
+      - ".github/workflows/background_uploader.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "mobile/packages/background_uploader/**"
+      - ".github/workflows/background_uploader.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/flutter_package.yml@v1
+    with:
+      working_directory: "mobile/packages/background_uploader"
+      min_coverage: 69

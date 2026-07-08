@@ -1,0 +1,27 @@
+# ABOUTME: CI workflow for the feed_repository package.
+# ABOUTME: Runs tests, formatting, and analysis only when feed_repository files change.
+
+name: Feed Repository CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "mobile/packages/feed_repository/**"
+      - ".github/workflows/feed_repository.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "mobile/packages/feed_repository/**"
+      - ".github/workflows/feed_repository.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/flutter_package.yml@v1
+    with:
+      working_directory: "mobile/packages/feed_repository"
+      min_coverage: 64

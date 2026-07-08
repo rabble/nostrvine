@@ -1,0 +1,27 @@
+# ABOUTME: CI workflow for the people_lists_repository package.
+# ABOUTME: Runs tests, formatting, and analysis only when people_lists_repository files change.
+
+name: People Lists Repository CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "mobile/packages/people_lists_repository/**"
+      - ".github/workflows/people_lists_repository.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "mobile/packages/people_lists_repository/**"
+      - ".github/workflows/people_lists_repository.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/flutter_package.yml@v1
+    with:
+      working_directory: "mobile/packages/people_lists_repository"
+      min_coverage: 95

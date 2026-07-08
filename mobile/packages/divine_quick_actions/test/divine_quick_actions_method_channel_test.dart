@@ -6,11 +6,16 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  final platform = MethodChannelDivineQuickActions();
+  // Constructed per test: the constructor installs this instance as the
+  // channel's incoming-call handler (last one wins process-wide), so a
+  // file-level instance loses the handler to any sibling suite that touches
+  // DivineQuickActionsPlatform.instance in the merged-isolate bundle.
+  late MethodChannelDivineQuickActions platform;
   const channel = MethodChannel('divine_quick_actions');
   final calls = <MethodCall>[];
 
   setUp(() {
+    platform = MethodChannelDivineQuickActions();
     calls.clear();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (methodCall) async {
