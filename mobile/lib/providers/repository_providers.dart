@@ -29,6 +29,7 @@ import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/official_accounts_providers.dart';
 import 'package:openvine/providers/relay_providers.dart';
 import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -533,6 +534,7 @@ DmReactionsRepository dmReactionsRepository(Ref ref) {
       signer: nostrService.signer,
       senderPublicKey: publicKey,
       nostrService: nostrService,
+      sendPolicy: ref.read(dmSendPolicyProvider),
     ),
   );
   return repository;
@@ -616,6 +618,7 @@ DmRepository dmRepository(Ref ref) {
         signer: signer,
         senderPublicKey: publicKey,
         nostrService: nostrService,
+        sendPolicy: ref.read(dmSendPolicyProvider),
       );
 
       repository.setCredentials(
