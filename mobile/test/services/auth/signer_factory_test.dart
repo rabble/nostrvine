@@ -445,6 +445,65 @@ void main() {
           expect(event!.isSigned, isFalse);
         },
       );
+
+      test(
+        'falls back to inline verification when the verify isolate cannot '
+        'spawn — a validly signed remote event is not dropped',
+        () async {
+          final failingFactory = SignerFactory(
+            verifyOffMain: (_) async =>
+                throw StateError('isolate spawn refused'),
+          );
+          final remoteSigner = _MockNostrSigner();
+          // Produce a REAL signature so the inline fallback can verify it.
+          when(() => remoteSigner.signEvent(any())).thenAnswer((inv) async {
+            final event = inv.positionalArguments.first as Event;
+            return LocalNostrSigner(testPrivateKey).signEvent(event);
+          });
+          final identity = BunkerNostrIdentity(
+            pubkey: testPublicKey,
+            remoteSigner: remoteSigner,
+          );
+
+          final event = await failingFactory.createAndSignEvent(
+            identity: identity,
+            authSource: AuthenticationSource.bunker,
+            kind: 1,
+            content: 'valid despite spawn failure',
+          );
+
+          expect(event, isNotNull);
+          expect(event!.isSigned, isTrue);
+        },
+      );
+
+      test(
+        'inline fallback still rejects an invalid remote signature when the '
+        'verify isolate cannot spawn',
+        () async {
+          final failingFactory = SignerFactory(
+            verifyOffMain: (_) async =>
+                throw StateError('isolate spawn refused'),
+          );
+          final remoteSigner = _MockNostrSigner();
+          when(() => remoteSigner.signEvent(any())).thenAnswer(
+            (_) async => Event(testPublicKey, 1, [], 'unsigned'),
+          );
+          final identity = BunkerNostrIdentity(
+            pubkey: testPublicKey,
+            remoteSigner: remoteSigner,
+          );
+
+          final event = await failingFactory.createAndSignEvent(
+            identity: identity,
+            authSource: AuthenticationSource.bunker,
+            kind: 1,
+            content: 'unsigned',
+          );
+
+          expect(event, isNull);
+        },
+      );
     });
   });
 }

@@ -73,10 +73,33 @@ class EventSignerAccountMismatchException implements Exception {
 /// signer slots, auth source) and delegates here with per-call snapshots, so
 /// this class never captures a stale signer reference (#3503 class of bug).
 class SignerFactory {
-  SignerFactory({AuthCrashReporter? crashReporter})
-    : _reportError = crashReporter;
+  SignerFactory({
+    AuthCrashReporter? crashReporter,
+    Future<bool> Function(Map<String, dynamic> eventJson)? verifyOffMain,
+  }) : _reportError = crashReporter,
+       _verifyOffMain = verifyOffMain ?? _verifyEventSignatureOffMain;
 
   final AuthCrashReporter? _reportError;
+
+  /// Runs the remote-signature check in a background isolate; injectable so
+  /// tests can simulate isolate-spawn failure.
+  final Future<bool> Function(Map<String, dynamic> eventJson) _verifyOffMain;
+
+  static Future<bool> _verifyEventSignatureOffMain(
+    Map<String, dynamic> eventJson,
+  ) => compute(_verifyEventSignature, eventJson);
+
+  /// Verifies [signedEvent]'s Schnorr signature off the main isolate,
+  /// falling back to the inline check when the worker isolate cannot spawn
+  /// (e.g. resource exhaustion) — a validly signed event must not be
+  /// dropped because of a spawn failure (PR #5957 review).
+  Future<bool> _verifyRemoteSignature(Event signedEvent) async {
+    try {
+      return await _verifyOffMain(signedEvent.toJson());
+    } on Object {
+      return signedEvent.isSigned;
+    }
+  }
 
   /// Builds a [NostrIdentity] from a per-call snapshot of the session's
   /// signer state.
@@ -242,7 +265,7 @@ class SignerFactory {
       // isolate for ~10ms per signed event (on-device profiling). The cheap
       // structural check (isValid: id == hash) below always runs.
       if (!identity.signsWithLocalKey &&
-          !await compute(_verifyEventSignature, signedEvent.toJson())) {
+          !await _verifyRemoteSignature(signedEvent)) {
         Log.error(
           'Event signature validation FAILED! '
           'kind=$kind, eventPubkey=${signedEvent.pubkey}, '
