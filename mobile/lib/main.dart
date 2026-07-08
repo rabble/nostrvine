@@ -66,6 +66,7 @@ import 'package:openvine/providers/foreground_idle_warmup_provider.dart';
 import 'package:openvine/providers/individual_video_providers.dart'
     show fvpLiveControllerCount;
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/official_accounts_providers.dart';
 import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/router.dart';
@@ -2435,6 +2436,9 @@ class _DivineAppState extends ConsumerState<DivineApp>
             followRepository: ref.read(followRepositoryProvider),
             contentBlocklistRepository: ref.read(
               contentBlocklistRepositoryProvider,
+            ),
+            protectedMinorInboxGate: ref.read(
+              protectedMinorInboxGateProvider,
             ),
           ),
         ),

@@ -11,6 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/dm/conversation_list/protected_minor_inbox_gate.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 
 class _MockDmRepository extends Mock implements DmRepository {}
@@ -29,6 +30,30 @@ const _alice =
 const _bob = 'd4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5';
 const _carol =
     'e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6';
+
+/// Approves a fixed set of counterparties; used to prove the badge applies the
+/// same protected-minor predicate as the list (no leaked hidden attempts).
+class _FakeInboxGate implements ProtectedMinorInboxGate {
+  _FakeInboxGate({required this.approved});
+  final Set<String> approved;
+
+  @override
+  Stream<void> get changes => const Stream<void>.empty();
+
+  @override
+  List<DmConversation> filter(
+    List<DmConversation> conversations, {
+    required String userPubkey,
+  }) {
+    return conversations
+        .where(
+          (c) => c.participantPubkeys
+              .where((p) => p != userPubkey)
+              .every(approved.contains),
+        )
+        .toList();
+  }
+}
 
 DmConversation _convo(
   String id, {
@@ -122,6 +147,29 @@ void main() {
       expect(cubit.state, equals(0));
       cubit.close();
     });
+
+    test(
+      'excludes unread conversations from non-approved counterparties (#176)',
+      () async {
+        // alice approved, bob not. The badge must not reveal bob's hidden attempt.
+        final cubit = DmUnreadCountCubit(
+          dmRepository: dmRepository,
+          followRepository: followRepository,
+          protectedMinorInboxGate: _FakeInboxGate(approved: {_alice}),
+          recomputeDebounce: Duration.zero,
+        );
+        addTearDown(cubit.close);
+
+        acceptedController.add([
+          _convo('a', peer: _alice, isRead: false, currentUserHasSent: true),
+          _convo('b', peer: _bob, isRead: false, currentUserHasSent: true),
+        ]);
+        potentialController.add(const []);
+        await _settle();
+
+        expect(cubit.state, equals(1));
+      },
+    );
 
     test('stays at 0 when there are no conversations', () async {
       final cubit = buildCubit();

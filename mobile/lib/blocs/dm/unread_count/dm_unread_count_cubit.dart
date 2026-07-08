@@ -9,6 +9,7 @@ import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/dm/conversation_list/protected_minor_inbox_gate.dart';
 import 'package:rxdart/rxdart.dart';
 
 /// Cubit that tracks the number of unread DM conversations shown in the
@@ -49,8 +50,10 @@ class DmUnreadCountCubit extends Cubit<int> {
     required DmRepository dmRepository,
     required FollowRepository followRepository,
     ContentBlocklistRepository? contentBlocklistRepository,
+    ProtectedMinorInboxGate? protectedMinorInboxGate,
     Duration recomputeDebounce = _defaultRecomputeDebounce,
-  }) : _recomputeDebounce = recomputeDebounce,
+  }) : _protectedMinorInboxGate = protectedMinorInboxGate,
+       _recomputeDebounce = recomputeDebounce,
        super(0) {
     setRepositories(
       dmRepository: dmRepository,
@@ -69,6 +72,11 @@ class DmUnreadCountCubit extends Cubit<int> {
   /// invisible and the coalesced result is identical. Overridable in tests.
   static const _defaultRecomputeDebounce = Duration(milliseconds: 200);
 
+  /// Same inbound filter the list uses (#176). Stable across repository swaps
+  /// (it depends on the session-scoped officials service, not the auth-rebuilt
+  /// repositories), so it's held once here rather than passed to
+  /// [setRepositories]. Null when the user is unrestricted / not wired.
+  final ProtectedMinorInboxGate? _protectedMinorInboxGate;
   final Duration _recomputeDebounce;
   DmRepository? _dmRepository;
   FollowRepository? _followRepository;
@@ -116,6 +124,14 @@ class DmUnreadCountCubit extends Cubit<int> {
               .map<Object?>((_) => null)
               .startWith(null);
 
+    // Protected-minor verdict changes (#176): a receive-time revalidation that
+    // flips a counterparty's approval must re-count so the badge drops the now
+    // hidden conversation, just as the list does. Value unused (re-count only).
+    final minorVerdictTicks =
+        (_protectedMinorInboxGate?.changes ?? const Stream<void>.empty())
+            .map<Object?>((_) => null)
+            .startWith(null);
+
     // The combiner stays cheap — it only packages the inputs into a record so
     // the debounce sees one value per source tick. The expensive recompute
     // (`_countUnread`: classify + mergeAndSort + filter) runs AFTER the debounce
@@ -124,12 +140,13 @@ class DmUnreadCountCubit extends Cubit<int> {
     // to trigger a recompute, and `_countUnread` reads the live follow/block
     // state, so the debounced `map` picks up their latest values.
     _subscription =
-        Rx.combineLatest5<
+        Rx.combineLatest6<
               List<DmConversation>,
               List<DmConversation>,
               List<String>,
               Object?,
               String,
+              Object?,
               (List<DmConversation>, List<DmConversation>, String)
             >(
               dmRepository.watchAcceptedConversations(),
@@ -141,7 +158,8 @@ class DmUnreadCountCubit extends Cubit<int> {
               // _countUnread classifies with the empty pubkey and undercounts
               // followed-but-unreplied 1:1s. Re-fires once the identity lands.
               dmRepository.userPubkeyStream.startWith(dmRepository.userPubkey),
-              (accepted, potentialRequests, _, _, userPubkey) => (
+              minorVerdictTicks,
+              (accepted, potentialRequests, _, _, userPubkey, _) => (
                 accepted,
                 potentialRequests,
                 userPubkey,
@@ -191,12 +209,17 @@ class DmUnreadCountCubit extends Cubit<int> {
       isFollowing: followRepository.isFollowing,
     );
     final inbox = DmRepository.mergeAndSort(accepted, split.followed);
-    final visible =
+    final blocklisted =
         _blocklistRepository?.filterBlockedConversations(
           inbox,
           userPubkey: userPubkey,
         ) ??
         inbox;
+    // Protected-minor filter (#176): the badge must apply the SAME predicate as
+    // the list, or it leaks the existence + count of hidden contact attempts.
+    final visible =
+        _protectedMinorInboxGate?.filter(blocklisted, userPubkey: userPubkey) ??
+        blocklisted;
     return visible.where((c) => !c.isRead).length;
   }
 
