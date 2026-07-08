@@ -206,17 +206,17 @@ class VideoPublishService {
 
   /// Publishes a video draft.
   /// Returns [PublishSuccess] on success, [PublishError] on failure.
-  Future<PublishResult> publishVideo({required DivineVideoDraft draft}) async {
-    final readiness = _currentPublishReadiness();
-    final pubkey = readiness.pubkey;
-    if (!readiness.isReady || pubkey == null || pubkey.isEmpty) {
-      Log.warning(
-        '⚠️ Signer session not ready, cannot publish',
-        category: .video,
-      );
-      _backgroundUploadId = null;
+  Future<PublishResult> publishVideo({
+    required DivineVideoDraft draft,
+    String? expectedPubkey,
+  }) async {
+    final initialReadiness = _requirePublishReadiness(
+      expectedPubkey: expectedPubkey,
+    );
+    if (initialReadiness == null) {
       return const PublishError(PublishErrorKind.notSignedIn);
     }
+    final publishPubkey = expectedPubkey ?? initialReadiness.pubkey!;
 
     // Check if we have a background upload ID and its status
     if (_backgroundUploadId != null) {
@@ -225,6 +225,12 @@ class VideoPublishService {
     }
 
     try {
+      final saveReadiness = _requirePublishReadiness(
+        expectedPubkey: publishPubkey,
+      );
+      if (saveReadiness == null) {
+        return const PublishError(PublishErrorKind.notSignedIn);
+      }
       final publishing = draft.copyWith(publishStatus: .publishing);
       await draftService.saveDraft(publishing);
 
@@ -232,7 +238,13 @@ class VideoPublishService {
       Log.info('📝 Publishing video: $videoPath', category: .video);
 
       // Use existing upload if available, otherwise start new upload
-      final pendingUpload = await _getOrCreateUpload(pubkey, draft);
+      final uploadReadiness = _requirePublishReadiness(
+        expectedPubkey: publishPubkey,
+      );
+      if (uploadReadiness == null) {
+        return const PublishError(PublishErrorKind.notSignedIn);
+      }
+      final pendingUpload = await _getOrCreateUpload(publishPubkey, draft);
       if (pendingUpload == null) {
         Log.error('❌ Upload creation failed', category: .video);
         final failedUpload = _backgroundUploadId != null
@@ -273,9 +285,16 @@ class VideoPublishService {
       // Publish Nostr event
       Log.info('📝 Publishing Nostr event...', category: .video);
 
+      final signingReadiness = _requirePublishReadiness(
+        expectedPubkey: publishPubkey,
+      );
+      if (signingReadiness == null) {
+        return const PublishError(PublishErrorKind.notSignedIn);
+      }
+
       final mentionedPubkeys = await _resolveMentionedPubkeys(
         draft,
-        currentUserPubkey: pubkey,
+        currentUserPubkey: publishPubkey,
       );
 
       final published = await videoEventPublisher.publishVideoEvent(
@@ -315,7 +334,7 @@ class VideoPublishService {
       final inviteWarnings = await _sendCollaboratorInvites(
         draft: draft,
         upload: pendingUpload,
-        creatorPubkey: pubkey,
+        creatorPubkey: publishPubkey,
       );
 
       // Success: delete draft
@@ -339,6 +358,23 @@ class VideoPublishService {
       return const PublishReadiness.notReady();
     }
     return PublishReadiness.ready(pubkey: pubkey);
+  }
+
+  PublishReadiness? _requirePublishReadiness({String? expectedPubkey}) {
+    final readiness = _currentPublishReadiness();
+    final pubkey = readiness.pubkey;
+    if (!readiness.isReady ||
+        pubkey == null ||
+        pubkey.isEmpty ||
+        (expectedPubkey != null && pubkey != expectedPubkey)) {
+      Log.warning(
+        '⚠️ Signer session not ready, cannot publish',
+        category: .video,
+      );
+      _backgroundUploadId = null;
+      return null;
+    }
+    return readiness;
   }
 
   Future<List<String>> _resolveMentionedPubkeys(

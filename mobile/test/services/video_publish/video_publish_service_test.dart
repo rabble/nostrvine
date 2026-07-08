@@ -224,6 +224,72 @@ void main() {
         },
       );
 
+      test(
+        'revalidates live readiness before saving publish draft',
+        () async {
+          // Arrange
+          var readinessReads = 0;
+          service = VideoPublishService(
+            uploadManager: mockUploadManager,
+            authService: mockAuthService,
+            videoEventPublisher: mockVideoEventPublisher,
+            blossomService: mockBlossomService,
+            draftService: mockDraftService,
+            collaboratorInviteService: mockCollaboratorInviteService,
+            mentionResolutionService: mockMentionResolutionService,
+            readPublishReadiness: () {
+              readinessReads += 1;
+              return readinessReads == 1
+                  ? const PublishReadiness.ready(pubkey: 'test_pubkey')
+                  : const PublishReadiness.notReady(pubkey: 'test_pubkey');
+            },
+            onProgressChanged:
+                ({required double progress, required String draftId}) =>
+                    progressChanges.add(progress),
+          );
+
+          final draft = _createTestDraft();
+
+          // Act
+          final result = await service.publishVideo(draft: draft);
+
+          // Assert
+          expect(result, isA<PublishError>());
+          expect((result as PublishError).kind, PublishErrorKind.notSignedIn);
+          verifyNever(() => mockDraftService.saveDraft(any()));
+          verifyNever(
+            () => mockUploadManager.startUploadFromDraft(
+              draft: any(named: 'draft'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              onProgress: any(named: 'onProgress'),
+            ),
+          );
+          verifyNever(
+            () => mockVideoEventPublisher.publishVideoEvent(
+              upload: any(named: 'upload'),
+              title: any(named: 'title'),
+              description: any(named: 'description'),
+              hashtags: any(named: 'hashtags'),
+              expirationTimestamp: any(named: 'expirationTimestamp'),
+              allowAudioReuse: any(named: 'allowAudioReuse'),
+              collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
+              mentionedPubkeys: any(named: 'mentionedPubkeys'),
+              inspiredByAddressableId: any(named: 'inspiredByAddressableId'),
+              inspiredByRelayUrl: any(named: 'inspiredByRelayUrl'),
+              inspiredByNpub: any(named: 'inspiredByNpub'),
+              selectedAudio: any(named: 'selectedAudio'),
+              selectedAudioEventId: any(named: 'selectedAudioEventId'),
+              selectedAudioRelay: any(named: 'selectedAudioRelay'),
+              language: any(named: 'language'),
+              contentWarning: any(named: 'contentWarning'),
+              thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
+              replyContext: any(named: 'replyContext'),
+              addReplyToFeed: any(named: 'addReplyToFeed'),
+            ),
+          );
+        },
+      );
+
       test('returns success when publish completes successfully', () async {
         // Arrange
         _setupSuccessfulPublish(

@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show NativeProofData;
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -49,11 +50,34 @@ class MockVideoEventPublisher extends Mock implements VideoEventPublisher {}
 
 class MockBlossomUploadService extends Mock implements BlossomUploadService {}
 
+class MockNostrClient extends Mock implements NostrClient {}
+
 class _IdentityKnownNostrSession extends NostrSession {
   @override
   NostrSessionReadiness build() => const NostrSessionReadiness.identityKnown(
     pubkey: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
   );
+}
+
+class _ReadyThenTearingDownNostrSession extends NostrSession {
+  static late NostrClient client;
+
+  @override
+  NostrSessionReadiness build() {
+    Future.microtask(
+      () => update(
+        const NostrSessionReadiness.tearingDown(
+          pubkey:
+              'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        ),
+      ),
+    );
+    return NostrSessionReadiness.nostrReady(
+      pubkey:
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      client: client,
+    );
+  }
 }
 
 DivineVideoClip _createTestClip() => DivineVideoClip(
@@ -399,6 +423,96 @@ void main() {
         await publishRef
             .read(videoPublishProvider.notifier)
             .publishVideo(publishContext, _createPublishableDraft());
+
+        final state = publishRef.read(videoPublishProvider);
+        expect(state.publishState, VideoPublishState.error);
+        expect(state.errorMessage, isNotEmpty);
+        verifyNever(() => draftStorageService.saveDraft(any()));
+        expect(backgroundPublishBloc.state.uploads, isEmpty);
+      },
+    );
+
+    testWidgets(
+      'publishVideo revalidates live readiness before saving publish draft',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        final sharedPreferences = await SharedPreferences.getInstance();
+        final draftStorageService = MockDraftStorageService();
+        final authService = MockAuthService();
+        final uploadManager = MockUploadManager();
+        final videoEventPublisher = MockVideoEventPublisher();
+        final blossomUploadService = MockBlossomUploadService();
+        final nostrClient = MockNostrClient();
+        _ReadyThenTearingDownNostrSession.client = nostrClient;
+        final backgroundPublishBloc = BackgroundPublishBloc(
+          videoPublishServiceFactory: ({required onProgress}) async =>
+              throw StateError('background publish should not be requested'),
+          draftStorageService: draftStorageService,
+        );
+        addTearDown(backgroundPublishBloc.close);
+
+        when(
+          () => draftStorageService.saveDraft(any()),
+        ).thenAnswer((_) async {});
+        when(() => authService.currentNpub).thenReturn(null);
+        when(() => authService.isAuthenticated).thenReturn(true);
+        when(() => authService.currentPublicKeyHex).thenReturn(
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        );
+        when(() => authService.currentProfile).thenReturn(null);
+        when(() => nostrClient.hasKeys).thenReturn(true);
+        when(() => nostrClient.publicKey).thenReturn(
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        );
+
+        late BuildContext publishContext;
+        late WidgetRef publishRef;
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+              draftStorageServiceProvider.overrideWithValue(
+                draftStorageService,
+              ),
+              authServiceProvider.overrideWithValue(authService),
+              uploadManagerProvider.overrideWithValue(uploadManager),
+              videoEventPublisherProvider.overrideWithValue(
+                videoEventPublisher,
+              ),
+              blossomUploadServiceProvider.overrideWithValue(
+                blossomUploadService,
+              ),
+              nostrSessionProvider.overrideWith(
+                _ReadyThenTearingDownNostrSession.new,
+              ),
+            ],
+            child: MaterialApp(
+              home: BlocProvider<BackgroundPublishBloc>.value(
+                value: backgroundPublishBloc,
+                child: Consumer(
+                  builder: (context, ref, _) {
+                    publishContext = context;
+                    publishRef = ref;
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final draft = DivineVideoDraft.create(
+          clips: [_createTestClip()],
+          title: 'Test Draft',
+          description: 'Test Description',
+          hashtags: const {},
+          selectedApproach: 'default',
+        ).copyWith(finalRenderedClip: _createTestClip());
+
+        await publishRef
+            .read(videoPublishProvider.notifier)
+            .publishVideo(publishContext, draft);
 
         final state = publishRef.read(videoPublishProvider);
         expect(state.publishState, VideoPublishState.error);

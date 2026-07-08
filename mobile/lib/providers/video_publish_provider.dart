@@ -147,7 +147,6 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
   /// Creates the publish service with callbacks wired to this notifier.
   Future<VideoPublishService> _createPublishService({
     required OnProgressChanged onProgressChanged,
-    required PublishReadiness publishReadiness,
   }) async {
     return VideoPublishService(
       uploadManager: ref.read(uploadManagerProvider),
@@ -155,7 +154,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       videoEventPublisher: ref.read(videoEventPublisherProvider),
       blossomService: ref.read(blossomUploadServiceProvider),
       draftService: _draftService,
-      readPublishReadiness: () => publishReadiness,
+      readPublishReadiness: _currentPublishReadiness,
       mentionResolutionService: createVideoPublishMentionResolutionService(
         ref.read(profileRepositoryProvider),
       ),
@@ -178,6 +177,13 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       return PublishReadiness.notReady(pubkey: pubkey);
     }
     return PublishReadiness.ready(pubkey: pubkey);
+  }
+
+  bool _isReadyForExpectedPubkey(
+    PublishReadiness readiness, {
+    required String expectedPubkey,
+  }) {
+    return readiness.isReady && readiness.pubkey == expectedPubkey;
   }
 
   /// Resets all video-related providers.
@@ -454,6 +460,15 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         publishAttempts: draft.publishAttempts + 1,
       );
 
+      if (!_isReadyForExpectedPubkey(
+        _currentPublishReadiness(),
+        expectedPubkey: publishPubkey,
+      )) {
+        final l10n = currentAppL10n(ref.read(sharedPreferencesProvider));
+        setError(l10n.publishErrorMessage(PublishErrorKind.notSignedIn));
+        return;
+      }
+
       Log.debug(
         '💾 Saving publish draft: ${publishDraft.id}',
         name: 'VideoPublishNotifier',
@@ -471,7 +486,6 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
 
       final backgroundPublishBloc = context.read<BackgroundPublishBloc>();
       final publishService = await _createPublishService(
-        publishReadiness: publishReadiness,
         onProgressChanged: ({required draftId, required progress}) {
           backgroundPublishBloc.add(
             BackgroundPublishProgressChanged(
@@ -484,6 +498,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
 
       final publishmentProcess = publishService.publishVideo(
         draft: publishDraft,
+        expectedPubkey: publishPubkey,
       );
       final videoReplyContext = publishDraft.videoReplyContext;
       final isVideoReply = videoReplyContext != null;
