@@ -18,6 +18,8 @@ import 'package:openvine/features/people_lists/view/add_to_people_lists_sheet.da
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/official_accounts_providers.dart';
+import 'package:openvine/providers/protected_minor_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
@@ -161,7 +163,20 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
     super.dispose();
   }
 
+  /// Whether a protected minor (#176) may not DM this profile — the current
+  /// user is restricted and this pubkey is not an approved official recipient.
+  /// Drives hiding the Message affordance and guards the tap itself.
+  bool _messagingBlockedForProtectedMinor() {
+    if (!ref.read(isProtectedMinorProvider)) return false;
+    return !ref
+        .read(officialAccountsServiceProvider)
+        .isApprovedMinorDmRecipientSync(widget.pubkey);
+  }
+
   void _messageUser() {
+    // Defense-in-depth: the button is hidden when blocked, but a stale tap or
+    // programmatic call must not open a conversation the minor can't use.
+    if (_messagingBlockedForProtectedMinor()) return;
     context.push(
       ConversationPage.pathForId(widget.pubkey),
       extra: [widget.pubkey],
@@ -439,7 +454,9 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
                     scrollController: _scrollController,
                     onBack: context.pop,
                     onMore: _more,
-                    onMessageUser: _messageUser,
+                    onMessageUser: _messagingBlockedForProtectedMinor()
+                        ? null
+                        : _messageUser,
                     onShareProfile: _shareProfile,
                     onBlockedTap: _showUnblockConfirmation,
                     displayNameHint: widget.displayNameHint,

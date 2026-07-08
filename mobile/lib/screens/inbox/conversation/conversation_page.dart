@@ -6,11 +6,15 @@ import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/dm/conversation/collaborator_invite_actions_cubit.dart';
 import 'package:openvine/blocs/dm/conversation/conversation_bloc.dart';
 import 'package:openvine/blocs/dm/reactions/conversation_reactions_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/official_accounts_providers.dart';
+import 'package:openvine/providers/protected_minor_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_view.dart';
+import 'package:openvine/screens/inbox/inbox_page.dart';
 
 /// Conversation detail page (single DM thread).
 ///
@@ -52,6 +56,22 @@ class ConversationPage extends ConsumerWidget {
     );
     final authService = ref.watch(authServiceProvider);
     final currentPubkey = authService.currentPublicKeyHex ?? '';
+
+    // Route guard (#176): a protected minor must not open a conversation with a
+    // non-approved counterparty, even via a deep-link or a stale route (the send
+    // gate and the inbox list already block those paths). Bounce to the inbox.
+    if (ref.watch(isProtectedMinorProvider)) {
+      final officials = ref.watch(officialAccountsServiceProvider);
+      final allApproved = participantPubkeys.every(
+        officials.isApprovedMinorDmRecipientSync,
+      );
+      if (!allApproved) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (context.mounted) context.go(InboxPage.path);
+        });
+        return const Scaffold(body: SizedBox.shrink());
+      }
+    }
 
     return MultiBlocProvider(
       providers: [
