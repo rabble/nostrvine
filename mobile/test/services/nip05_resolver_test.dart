@@ -59,15 +59,51 @@ void main() {
     },
   );
 
+  // NIP-05 §05: the .well-known endpoint MUST NOT redirect and fetchers MUST
+  // ignore redirects. A followed/interpreted 3xx is a spurious-APPROVE vector: a
+  // MITM or misconfigured origin could 30x-bounce the lookup to an attacker host
+  // whose body returns the expected key for a burner. A redirect must carry no
+  // signal, whichever way Dio surfaces it.
   test(
-    'redirect (3xx) is ignored per NIP-05 and never approves, even if the '
-    'redirect body would resolve to the expected key',
+    'redirect (3xx) that Dio throws as badResponse -> networkError, never '
+    'approves (the real production path with the default 2xx validateStatus)',
     () async {
-      // NIP-05 §"the .well-known endpoint MUST NOT redirect and fetchers MUST
-      // ignore redirects." A followed/interpreted 3xx is a spurious-APPROVE
-      // vector: a MITM or misconfigured origin could 30x-bounce the lookup to
-      // an attacker host whose body returns the expected key for a burner. A
-      // redirect response must carry no signal.
+      for (final code in [301, 302, 307, 308]) {
+        when(() => dio.get(any())).thenThrow(
+          DioException(
+            requestOptions: RequestOptions(),
+            response: Response(
+              statusCode: code,
+              // A hostile redirect could even carry a matching body; it must
+              // still never resolve to matched.
+              data: {
+                'names': {'_': hqHex},
+              },
+              requestOptions: RequestOptions(),
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+        );
+
+        final result = await resolver.resolve('_@divinehq.divine.video', hqHex);
+
+        expect(
+          result.kind,
+          Nip05ResolutionKind.networkError,
+          reason: '$code must be no-signal, not matched',
+        );
+      }
+    },
+  );
+
+  test(
+    'defense-in-depth: even if a 3xx surfaces as a Response (widened '
+    'validateStatus), a redirect body is not interpreted',
+    () async {
+      // Guards the belt-and-suspenders branch in _fetchRaw: unreachable with the
+      // default 2xx validateStatus (the case above covers production), but if
+      // validateStatus is ever widened to accept 3xx, a redirect body still
+      // must not resolve to matched.
       when(() => dio.get(any())).thenAnswer(
         (_) async => jsonResponse({
           'names': {'_': hqHex},

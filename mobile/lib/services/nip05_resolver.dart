@@ -72,9 +72,12 @@ class Nip05Resolver {
               // redirect and fetchers MUST ignore redirects. Following a 30x is
               // a spurious-APPROVE vector — a MITM or misconfigured origin could
               // bounce the lookup to an attacker host that returns the expected
-              // key for a burner. Do not follow; a 3xx is treated as no-signal
-              // below (validateStatus accepts <400 so it surfaces as a Response,
-              // not a throw, which the 3xx guard in _fetchRaw then rejects).
+              // key for a burner. Do not follow. With Dio's default
+              // validateStatus (2xx only), the unfollowed 3xx fails validation
+              // and throws DioException.badResponse, which _fetchRaw's catch
+              // maps to networkError (no signal). The explicit 3xx guard in
+              // _fetchRaw is defense-in-depth for a future validateStatus that
+              // might accept 3xx as a Response.
               followRedirects: false,
               maxRedirects: 0,
             ),
@@ -120,9 +123,12 @@ class Nip05Resolver {
       final res = await _dio.get(
         'https://$domain/.well-known/nostr.json?name=$name',
       );
-      // NIP-05 requires ignoring redirects. With followRedirects:false a 3xx
-      // surfaces here as a Response (status < 400 passes validateStatus); treat
-      // it as no-signal so a redirect body can never resolve to matched.
+      // Defense-in-depth for redirects (NIP-05 requires ignoring them). In
+      // production this branch is NOT the one that rejects a 3xx: Dio's default
+      // validateStatus (2xx only) makes an unfollowed 302 throw badResponse,
+      // handled in the DioException catch below. This guard only matters if a
+      // future validateStatus is widened to surface a 3xx as a Response — then a
+      // redirect body still can't resolve to matched.
       final status = res.statusCode ?? 0;
       if (status >= 300 && status < 400) {
         return const _RawResolution(_RawKind.networkError);
@@ -138,7 +144,9 @@ class Nip05Resolver {
       data = res.data;
     } on DioException catch (e) {
       // A 404 is an affirmative "this name is not here"; anything else
-      // (timeout, offline, 5xx, connection reset) carries no signal.
+      // (an unfollowed 3xx redirect, timeout, offline, 5xx, connection reset)
+      // carries no signal. The 3xx lands here because the default validateStatus
+      // (2xx only) rejects it — this is the real redirect-rejection path.
       if (e.response?.statusCode == 404) {
         return const _RawResolution(_RawKind.absent);
       }

@@ -193,4 +193,69 @@ void main() {
       expect(prefs.getBool('protected_minor_sticky_$pubkey'), isFalse);
     },
   );
+
+  test(
+    'isProtectedMinorProvider: authenticated unknown (e.g. a missing token) '
+    'falls to the sticky verdict and keeps a confirmed minor protected',
+    () async {
+      // The load-bearing case for the null-token fix: the repo now yields
+      // unknown (not notProtected) on a missing token, so a confirmed minor must
+      // stay protected via the sticky store and the store must NOT be wiped.
+      const pubkey =
+          'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+      SharedPreferences.setMockInitialValues({
+        'protected_minor_sticky_$pubkey': true,
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final authService = _MockAuthService();
+      when(() => authService.currentPublicKeyHex).thenReturn(pubkey);
+
+      final container = ProviderContainer(
+        overrides: [
+          currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
+          authServiceProvider.overrideWithValue(authService),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          protectedMinorStatusProvider.overrideWith(
+            (ref) async => ProtectedMinorStatus.unknown(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(protectedMinorStatusProvider.future);
+
+      expect(container.read(isProtectedMinorProvider), isTrue);
+      expect(prefs.getBool('protected_minor_sticky_$pubkey'), isTrue);
+    },
+  );
+
+  test(
+    'isProtectedMinorProvider: authenticated unknown for a never-seen account '
+    'does NOT over-restrict (stays not-protected)',
+    () async {
+      const pubkey =
+          'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final prefs = await SharedPreferences.getInstance();
+      final authService = _MockAuthService();
+      when(() => authService.currentPublicKeyHex).thenReturn(pubkey);
+
+      final container = ProviderContainer(
+        overrides: [
+          currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
+          authServiceProvider.overrideWithValue(authService),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          protectedMinorStatusProvider.overrideWith(
+            (ref) async => ProtectedMinorStatus.unknown(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(protectedMinorStatusProvider.future);
+
+      // Never positively seen -> unknown must not invent protection.
+      expect(container.read(isProtectedMinorProvider), isFalse);
+    },
+  );
 }
