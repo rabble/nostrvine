@@ -594,6 +594,7 @@ class MainCommentInput extends ConsumerStatefulWidget {
 class _MainCommentInputState extends ConsumerState<MainCommentInput> {
   late final TextEditingController _controller;
   late final FocusNode _focusNode;
+  bool _isExpanding = false;
 
   @override
   void initState() {
@@ -632,16 +633,20 @@ class _MainCommentInputState extends ConsumerState<MainCommentInput> {
   }
 
   void _expandSheetForKeyboard() {
+    if (_isExpanding) return;
     final controller = widget.draggableController;
     if (!controller.isAttached || controller.size >= _CommentsSheetSizing.max) {
       return;
     }
 
-    controller.animateTo(
-      _CommentsSheetSizing.max,
-      duration: _CommentsSheetSizing.focusExpandDuration,
-      curve: Curves.easeOut,
-    );
+    _isExpanding = true;
+    controller
+        .animateTo(
+          _CommentsSheetSizing.max,
+          duration: _CommentsSheetSizing.focusExpandDuration,
+          curve: Curves.easeOut,
+        )
+        .whenComplete(() => _isExpanding = false);
   }
 
   @override
