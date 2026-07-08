@@ -365,7 +365,9 @@ class DmRepository {
   /// Schnorr verification in `GiftWrapUtil.getRumorEvent` runs off the main
   /// isolate. Spawned on demand via [_ensureVerifyIsolate] — at drain start
   /// for remote signers and lazily on the first live-subscription / retry
-  /// wrap — and kept until account switch ([_resetState]).
+  /// wrap — and kept until [stopListening] (the production disposal path:
+  /// dmRepositoryProvider rebuilds dispose the old repository through it)
+  /// or account switch ([_resetState]).
   ///
   /// Originally drain-scoped (#5424), which left every wrap arriving
   /// OUTSIDE a drain verifying inline: two pure-Dart Schnorr verifies
@@ -399,9 +401,17 @@ class DmRepository {
 
   Future<DmVerifyWorker?> _spawnVerifyIsolate() async {
     final pubkey = _userPubkey;
+    // Session token guard: [stopListening] closes the worker but leaves
+    // _userPubkey/_disposed untouched, so a spawn in flight across a stop
+    // would re-install a worker nothing ever closes. The generation bump in
+    // stopListening/_resetState invalidates such a spawn; the late worker is
+    // closed, never installed.
+    final generation = _resetGeneration;
     try {
       final spawned = await _verifyIsolateSpawner();
-      if (_disposed || _userPubkey != pubkey) {
+      if (_disposed ||
+          _userPubkey != pubkey ||
+          _resetGeneration != generation) {
         spawned.close();
         return null;
       }
@@ -1332,6 +1342,15 @@ class DmRepository {
     _resetGeneration++;
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
+    // Close the shared verify isolate: in production this is the disposal
+    // path — dmRepositoryProvider rebuilds construct a fresh repository and
+    // dispose the old one via stopListening, never via _resetState — so
+    // without this close every provider rebuild would orphan a live worker
+    // (PR #5957 review). Re-spawns lazily on the next wrap; a spawn in
+    // flight is invalidated by the generation bump above.
+    _verifyIsolate?.close();
+    _verifyIsolate = null;
+    _verifyIsolateSpawnFailed = false;
     // Cancel a pending read-marker publish; the cursor is persisted, so it
     // republishes on the next read or session. Keep _pendingReadCursors — the
     // same user may resume listening. #4977.
