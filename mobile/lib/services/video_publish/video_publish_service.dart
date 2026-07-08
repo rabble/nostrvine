@@ -208,7 +208,15 @@ class VideoPublishService {
         _backgroundUploadId = null;
         return const PublishError(PublishErrorKind.notSignedIn);
       }
-      final pubkey = authService.currentPublicKeyHex!;
+      final pubkey = authService.currentPublicKeyHex;
+      if (pubkey == null || pubkey.isEmpty) {
+        Log.warning(
+          '⚠️ Authenticated session has no publish pubkey, cannot publish',
+          category: .video,
+        );
+        _backgroundUploadId = null;
+        return const PublishError(PublishErrorKind.notSignedIn);
+      }
 
       // Use existing upload if available, otherwise start new upload
       final pendingUpload = await _getOrCreateUpload(pubkey, draft);

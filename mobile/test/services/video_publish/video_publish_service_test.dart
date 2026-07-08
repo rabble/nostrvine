@@ -111,6 +111,50 @@ void main() {
         expect((result as PublishError).kind, PublishErrorKind.notSignedIn);
       });
 
+      test(
+        'returns not signed in when authenticated state has no publish pubkey',
+        () async {
+          // Arrange
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(() => mockAuthService.currentPublicKeyHex).thenReturn(null);
+          when(
+            () => mockDraftService.saveDraft(any()),
+          ).thenAnswer((_) async {});
+
+          final draft = _createTestDraft();
+
+          // Act
+          final result = await service.publishVideo(draft: draft);
+
+          // Assert
+          expect(result, isA<PublishError>());
+          expect((result as PublishError).kind, PublishErrorKind.notSignedIn);
+          verifyNever(
+            () => mockVideoEventPublisher.publishVideoEvent(
+              upload: any(named: 'upload'),
+              title: any(named: 'title'),
+              description: any(named: 'description'),
+              hashtags: any(named: 'hashtags'),
+              expirationTimestamp: any(named: 'expirationTimestamp'),
+              allowAudioReuse: any(named: 'allowAudioReuse'),
+              collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
+              mentionedPubkeys: any(named: 'mentionedPubkeys'),
+              inspiredByAddressableId: any(named: 'inspiredByAddressableId'),
+              inspiredByRelayUrl: any(named: 'inspiredByRelayUrl'),
+              inspiredByNpub: any(named: 'inspiredByNpub'),
+              selectedAudio: any(named: 'selectedAudio'),
+              selectedAudioEventId: any(named: 'selectedAudioEventId'),
+              selectedAudioRelay: any(named: 'selectedAudioRelay'),
+              language: any(named: 'language'),
+              contentWarning: any(named: 'contentWarning'),
+              thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
+              replyContext: any(named: 'replyContext'),
+              addReplyToFeed: any(named: 'addReplyToFeed'),
+            ),
+          );
+        },
+      );
+
       test('returns success when publish completes successfully', () async {
         // Arrange
         _setupSuccessfulPublish(
