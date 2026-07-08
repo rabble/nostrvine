@@ -7,10 +7,9 @@ import 'package:keycast_flutter/src/storage/keycast_storage.dart';
 /// KeycastStorage implementation using FlutterSecureStorage
 /// Provides secure credential storage on iOS/Android
 class SecureKeycastStorage implements KeycastStorage {
-  final FlutterSecureStorage _storage;
-
   SecureKeycastStorage([FlutterSecureStorage? storage])
     : _storage = storage ?? const FlutterSecureStorage();
+  final FlutterSecureStorage _storage;
 
   @override
   Future<String?> read(String key) async {

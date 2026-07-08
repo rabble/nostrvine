@@ -86,25 +86,25 @@ class NostrAppGrantStore {
     required String origin,
     required String capability,
   }) async {
-    final grants = _readGrants()
-        .where(
-          (grant) =>
-              !(grant.userPubkey == userPubkey &&
-                  grant.appId == appId &&
-                  grant.origin == origin &&
-                  grant.capability == capability),
-        )
-        .toList();
-
-    grants.add(
-      NostrAppGrant(
-        userPubkey: userPubkey,
-        appId: appId,
-        origin: origin,
-        capability: capability,
-        grantedAt: DateTime.now().toUtc(),
-      ),
-    );
+    final grants =
+        _readGrants()
+            .where(
+              (grant) =>
+                  !(grant.userPubkey == userPubkey &&
+                      grant.appId == appId &&
+                      grant.origin == origin &&
+                      grant.capability == capability),
+            )
+            .toList()
+          ..add(
+            NostrAppGrant(
+              userPubkey: userPubkey,
+              appId: appId,
+              origin: origin,
+              capability: capability,
+              grantedAt: DateTime.now().toUtc(),
+            ),
+          );
 
     await _writeGrants(grants);
   }
@@ -162,7 +162,7 @@ class NostrAppGrantStore {
                 grant.capability.isNotEmpty,
           )
           .toList(growable: false);
-    } catch (_) {
+    } on Object catch (_) {
       return const [];
     }
   }

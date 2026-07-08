@@ -8,18 +8,6 @@ import 'package:keycast_flutter/src/oauth/token_response.dart';
 const _storageKey = 'keycast_session';
 
 class KeycastSession {
-  final String bunkerUrl;
-  final String? accessToken;
-  final DateTime? expiresAt;
-  final String? scope;
-  final String? userPubkey;
-
-  /// Handle for silent re-authentication
-  final String? authorizationHandle;
-
-  /// Refresh token for obtaining new access tokens
-  final String? refreshToken;
-
   const KeycastSession({
     required this.bunkerUrl,
     this.accessToken,
@@ -42,6 +30,31 @@ class KeycastSession {
       refreshToken: response.refreshToken,
     );
   }
+
+  factory KeycastSession.fromJson(Map<String, dynamic> json) {
+    return KeycastSession(
+      bunkerUrl: json['bunker_url'] as String,
+      accessToken: json['access_token'] as String?,
+      expiresAt: json['expires_at'] != null
+          ? DateTime.parse(json['expires_at'] as String)
+          : null,
+      scope: json['scope'] as String?,
+      userPubkey: json['user_pubkey'] as String?,
+      authorizationHandle: json['authorization_handle'] as String?,
+      refreshToken: json['refresh_token'] as String?,
+    );
+  }
+  final String bunkerUrl;
+  final String? accessToken;
+  final DateTime? expiresAt;
+  final String? scope;
+  final String? userPubkey;
+
+  /// Handle for silent re-authentication
+  final String? authorizationHandle;
+
+  /// Refresh token for obtaining new access tokens
+  final String? refreshToken;
 
   bool get isExpired => expiresAt != null && DateTime.now().isAfter(expiresAt!);
 
@@ -77,20 +90,6 @@ class KeycastSession {
       'authorization_handle': authorizationHandle,
       'refresh_token': refreshToken,
     };
-  }
-
-  factory KeycastSession.fromJson(Map<String, dynamic> json) {
-    return KeycastSession(
-      bunkerUrl: json['bunker_url'] as String,
-      accessToken: json['access_token'] as String?,
-      expiresAt: json['expires_at'] != null
-          ? DateTime.parse(json['expires_at'] as String)
-          : null,
-      scope: json['scope'] as String?,
-      userPubkey: json['user_pubkey'] as String?,
-      authorizationHandle: json['authorization_handle'] as String?,
-      refreshToken: json['refresh_token'] as String?,
-    );
   }
 
   Future<void> save([FlutterSecureStorage? storage]) async {

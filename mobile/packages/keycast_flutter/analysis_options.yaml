@@ -1,0 +1,16 @@
+include: package:very_good_analysis/analysis_options.yaml
+
+# Relaxations mirror the analytics package precedent: this package was imported
+# from an external author (#745). Narrowing bare catch clauses and typing the
+# dynamic RPC call sites would be behavior-affecting changes.
+analyzer:
+  errors:
+    avoid_catches_without_on_clauses: ignore
+
+linter:
+  rules:
+    avoid_dynamic_calls: false
+    # Repo-wide, line length is enforced by `dart format`, not by this lint
+    # (see .claude/rules/code_style.md).
+    lines_longer_than_80_chars: false
+    public_member_api_docs: false

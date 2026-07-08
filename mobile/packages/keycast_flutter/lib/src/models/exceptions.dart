@@ -2,9 +2,8 @@
 // ABOUTME: Provides typed exceptions for session, OAuth, RPC, and key errors
 
 class KeycastException implements Exception {
-  final String message;
-
   KeycastException(this.message);
+  final String message;
 
   @override
   String toString() => 'KeycastException: $message';
@@ -16,9 +15,8 @@ class SessionExpiredException extends KeycastException {
 }
 
 class OAuthException extends KeycastException {
-  final String? errorCode;
-
   OAuthException(super.message, {this.errorCode});
+  final String? errorCode;
 
   @override
   String toString() => errorCode != null
@@ -27,9 +25,8 @@ class OAuthException extends KeycastException {
 }
 
 class RpcException extends KeycastException {
-  final String? method;
-
   RpcException(super.message, {this.method});
+  final String? method;
 
   @override
   String toString() => method != null

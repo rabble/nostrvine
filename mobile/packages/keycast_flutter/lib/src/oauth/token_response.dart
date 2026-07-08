@@ -2,19 +2,6 @@
 // ABOUTME: Includes bunker URL, access token, expiry, scope, and policy info
 
 class TokenResponse {
-  final String bunkerUrl;
-  final String? accessToken;
-  final String tokenType;
-  final int expiresIn;
-  final String? scope;
-  final PolicyInfo? policy;
-
-  /// Handle for silent re-authentication (pass to next authorize request)
-  final String? authorizationHandle;
-
-  /// Refresh token for obtaining new access tokens without re-authentication
-  final String? refreshToken;
-
   const TokenResponse({
     required this.bunkerUrl,
     this.accessToken,
@@ -40,14 +27,21 @@ class TokenResponse {
       refreshToken: json['refresh_token'] as String?,
     );
   }
+  final String bunkerUrl;
+  final String? accessToken;
+  final String tokenType;
+  final int expiresIn;
+  final String? scope;
+  final PolicyInfo? policy;
+
+  /// Handle for silent re-authentication (pass to next authorize request)
+  final String? authorizationHandle;
+
+  /// Refresh token for obtaining new access tokens without re-authentication
+  final String? refreshToken;
 }
 
 class PolicyInfo {
-  final String slug;
-  final String displayName;
-  final String description;
-  final List<PermissionDisplay> permissions;
-
   const PolicyInfo({
     required this.slug,
     required this.displayName,
@@ -69,14 +63,14 @@ class PolicyInfo {
           [],
     );
   }
+  final String slug;
+  final String displayName;
+  final String description;
+  final List<PermissionDisplay> permissions;
 }
 
 /// User-friendly permission info from Keycast server
 class PermissionDisplay {
-  final String icon;
-  final String title;
-  final String description;
-
   const PermissionDisplay({
     required this.icon,
     required this.title,
@@ -90,4 +84,7 @@ class PermissionDisplay {
       description: json['description'] as String? ?? '',
     );
   }
+  final String icon;
+  final String title;
+  final String description;
 }

@@ -4,28 +4,28 @@ import 'package:meta/meta.dart';
 
 /// A point-in-time snapshot of a user's followers.
 ///
-/// Returned by [FollowRepository.watchMyFollowers] and used as the
-/// cache payload for [CacheSync].
+/// Returned by `FollowRepository.watchMyFollowers` and used as the
+/// cache payload for `CacheSync`.
 @immutable
 class FollowersSnapshot {
   const FollowersSnapshot({required this.pubkeys, required this.count});
+
+  /// Deserializes from a JSON string produced by [toJson].
+  factory FollowersSnapshot.fromJson(String json) {
+    final data = jsonDecode(json) as Map<String, dynamic>;
+    final pubkeys = (data['pubkeys'] as List<dynamic>? ?? []).cast<String>();
+    final count = data['count'] as int? ?? pubkeys.length;
+    return FollowersSnapshot(pubkeys: pubkeys, count: count);
+  }
 
   /// Public keys of users who follow the current user.
   final List<String> pubkeys;
 
   /// Authoritative follower count.
   ///
-  /// May exceed [pubkeys.length] when relay result caps prevent
+  /// May exceed `pubkeys.length` when relay result caps prevent
   /// downloading every follower.
   final int count;
-
-  /// Deserializes from a JSON string produced by [toJson].
-  static FollowersSnapshot fromJson(String json) {
-    final data = jsonDecode(json) as Map<String, dynamic>;
-    final pubkeys = (data['pubkeys'] as List<dynamic>? ?? []).cast<String>();
-    final count = data['count'] as int? ?? pubkeys.length;
-    return FollowersSnapshot(pubkeys: pubkeys, count: count);
-  }
 
   /// Serializes to a JSON string for cache storage.
   String toJson() => jsonEncode({'pubkeys': pubkeys, 'count': count});

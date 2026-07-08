@@ -1550,8 +1550,7 @@ void main() {
           closeCalled = true;
         });
 
-        final oauth = KeycastOAuth(config: config, httpClient: mockClient);
-        oauth.close();
+        KeycastOAuth(config: config, httpClient: mockClient).close();
 
         expect(closeCalled, isTrue);
       });
@@ -1561,9 +1560,8 @@ void main() {
 
 /// Helper client that tracks when close() is called
 class _CloseTrackingClient extends http.BaseClient {
-  final void Function() onClose;
-
   _CloseTrackingClient(this.onClose);
+  final void Function() onClose;
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) {

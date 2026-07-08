@@ -44,13 +44,13 @@ class CollaboratorConfirmationRepository {
   final CollaboratorInviteLocalStateReader _localStateReader;
   final String _currentUserPubkey;
 
-  /// Acceptance events observed from the relay, keyed by [videoAddress].
+  /// Acceptance events observed from the relay, keyed by `videoAddress`.
   /// Each inner set contains collaborator pubkeys that have published a
   /// valid kind-34238 acceptance for that address.
   final Map<String, Set<String>> _relayAccepted = <String, Set<String>>{};
 
   /// Local fast-path overrides for the current user. Keyed by
-  /// [videoAddress] → [CollaboratorStatus]. Only the current user's own
+  /// `videoAddress` → [CollaboratorStatus]. Only the current user's own
   /// pubkey is meaningful here.
   final Map<String, CollaboratorStatus> _currentUserOverride =
       <String, CollaboratorStatus>{};
@@ -94,26 +94,26 @@ class CollaboratorConfirmationRepository {
       taggedPubkeys: List.unmodifiable(taggedPubkeys),
     );
 
-    final subject = _subjects.putIfAbsent(
-      videoAddress,
-      () => BehaviorSubject<VideoCollaboratorStatus>.seeded(
-        _snapshot(
-          videoAddress: videoAddress,
-          creatorPubkey: creatorPubkey,
-          taggedPubkeys: taggedPubkeys,
-        ),
-      ),
-    );
-
-    // Always re-emit a fresh snapshot so callers that arrive after acceptance
-    // events have landed see the cached state immediately.
-    subject.add(
-      _snapshot(
-        videoAddress: videoAddress,
-        creatorPubkey: creatorPubkey,
-        taggedPubkeys: taggedPubkeys,
-      ),
-    );
+    final subject =
+        _subjects.putIfAbsent(
+            videoAddress,
+            () => BehaviorSubject<VideoCollaboratorStatus>.seeded(
+              _snapshot(
+                videoAddress: videoAddress,
+                creatorPubkey: creatorPubkey,
+                taggedPubkeys: taggedPubkeys,
+              ),
+            ),
+          )
+          // Always re-emit a fresh snapshot so callers that arrive after
+          // acceptance events have landed see the cached state immediately.
+          ..add(
+            _snapshot(
+              videoAddress: videoAddress,
+              creatorPubkey: creatorPubkey,
+              taggedPubkeys: taggedPubkeys,
+            ),
+          );
 
     // Open the relay subscription on demand, only for own-authored videos.
     final isOwnVideo = creatorPubkey == _currentUserPubkey;
@@ -149,8 +149,8 @@ class CollaboratorConfirmationRepository {
     final current = _refCount[videoAddress] ?? 0;
     if (current <= 1) {
       _refCount.remove(videoAddress);
-      _relaySubs.remove(videoAddress)?.cancel();
-      _subjects.remove(videoAddress)?.close();
+      unawaited(_relaySubs.remove(videoAddress)?.cancel());
+      unawaited(_subjects.remove(videoAddress)?.close());
       _relayAccepted.remove(videoAddress);
       _currentUserOverride.remove(videoAddress);
       _watchContext.remove(videoAddress);

@@ -231,7 +231,7 @@ class NostrAppBridgeService {
 
     if (relayMap.isEmpty) {
       final signerRelays = await _bridgeGateway.getFallbackRelays();
-      if (signerRelays case final Map relays) {
+      if (signerRelays case final Map<dynamic, dynamic> relays) {
         for (final entry in relays.entries) {
           final key = entry.key;
           final value = entry.value;

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 
@@ -53,11 +54,13 @@ class NostrAppAuditService {
 
     final upload = _uploadQueuedEvents();
     _activeUpload = upload;
-    upload.whenComplete(() {
-      if (identical(_activeUpload, upload)) {
-        _activeUpload = null;
-      }
-    });
+    unawaited(
+      upload.whenComplete(() {
+        if (identical(_activeUpload, upload)) {
+          _activeUpload = null;
+        }
+      }),
+    );
     return upload;
   }
 

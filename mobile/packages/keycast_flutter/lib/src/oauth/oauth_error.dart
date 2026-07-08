@@ -2,9 +2,6 @@
 // ABOUTME: Represents structured OAuth errors from server responses
 
 class OAuthError {
-  final String error;
-  final String? errorDescription;
-
   const OAuthError({required this.error, this.errorDescription});
 
   factory OAuthError.fromJson(Map<String, dynamic> json) {
@@ -20,6 +17,8 @@ class OAuthError {
       errorDescription: params['error_description'],
     );
   }
+  final String error;
+  final String? errorDescription;
 
   @override
   String toString() => errorDescription != null

@@ -819,7 +819,7 @@ void main() {
       test('closes the stream controller', () async {
         await repository.initialize();
 
-        repository.dispose();
+        await repository.dispose();
 
         expect(
           () => repository.followingStream.listen((_) {}),
@@ -1002,11 +1002,16 @@ void main() {
           });
 
           List<String>? followers;
-          repository.getFollowers(testTargetPubkey).then((r) => followers = r);
+          unawaited(
+            repository
+                .getFollowers(testTargetPubkey)
+                .then((r) => followers = r),
+          );
 
           // Advance past the 8s _fetchFollowersTimeout.
-          async.elapse(const Duration(seconds: 9));
-          async.flushMicrotasks();
+          async
+            ..elapse(const Duration(seconds: 9))
+            ..flushMicrotasks();
 
           expect(followers, isEmpty);
         });
@@ -1695,7 +1700,7 @@ void main() {
       test('cancels subscription on dispose', () async {
         await repository.initialize();
 
-        repository.dispose();
+        await repository.dispose();
 
         // Verify that adding events after dispose doesn't cause issues
         final remoteEvent = Event(
@@ -2641,7 +2646,7 @@ void main() {
             limit: any(named: 'limit'),
           ),
         ).thenAnswer(
-          (_) async => const PaginatedPubkeys(pubkeys: []),
+          (_) async => PaginatedPubkeys.empty,
         );
 
         repository = FollowRepository(
@@ -2906,8 +2911,8 @@ void main() {
           isOnline: () => false,
           queueOfflineAction:
               ({
-                required bool isFollow,
-                required String pubkey,
+                required isFollow,
+                required pubkey,
               }) async {
                 queuedAction = isFollow ? 'follow' : 'unfollow';
                 queuedPubkey = pubkey;
@@ -2949,8 +2954,8 @@ void main() {
           isOnline: () => false,
           queueOfflineAction:
               ({
-                required bool isFollow,
-                required String pubkey,
+                required isFollow,
+                required pubkey,
               }) async {
                 queuedAction = isFollow ? 'follow' : 'unfollow';
                 queuedPubkey = pubkey;

@@ -92,9 +92,10 @@ class FollowRepository {
           .timeout(Duration(seconds: fallbackTimeoutSeconds));
     } on TimeoutException {
       return null;
+      // Catching StateError is intentional: `.first` throws it when the
+      // stream closes without a matching event.
       // ignore: avoid_catching_errors
     } on StateError {
-      // Stream closed without matching event.
       return null;
     }
   }
@@ -150,13 +151,13 @@ class FollowRepository {
 
   /// Dispose resources (idempotent — safe to call multiple times).
   Future<void> dispose() async {
-    _contactListSubscription?.cancel();
+    unawaited(_contactListSubscription?.cancel());
     if (_contactListSubscriptionId != null) {
       await _nostrClient.unsubscribe(_contactListSubscriptionId!);
       _contactListSubscriptionId = null;
     }
     if (!_followingSubject.isClosed) {
-      _followingSubject.close();
+      unawaited(_followingSubject.close());
     }
   }
 
@@ -1020,9 +1021,7 @@ class FollowRepository {
       ),
     );
 
-    for (final pubkeys in results) {
-      allFollowers.addAll(pubkeys);
-    }
+    results.forEach(allFollowers.addAll);
 
     Log.debug(
       'Indexer follower pubkeys: '
@@ -1470,10 +1469,9 @@ class FollowRepository {
   /// Used when syncing offline actions - combines local follows with
   /// any follows that were added on other devices while offline.
   Future<void> mergeFollows(List<String> additionalPubkeys) async {
-    final merged = <String>{..._followingPubkeys, ...additionalPubkeys};
-
     // Remove self if accidentally included
-    merged.remove(_nostrClient.publicKey);
+    final merged = <String>{..._followingPubkeys, ...additionalPubkeys}
+      ..remove(_nostrClient.publicKey);
 
     if (merged.length != _followingPubkeys.length ||
         !merged.every(_followingPubkeys.contains)) {
@@ -1505,7 +1503,7 @@ class FollowRepository {
         final cached = prefs.getString(key);
 
         if (cached != null) {
-          final List<dynamic> decoded = jsonDecode(cached);
+          final decoded = jsonDecode(cached) as List<dynamic>;
           _followingPubkeys = decoded.cast<String>();
           _emitFollowingList();
 
@@ -1904,7 +1902,7 @@ class FollowRepository {
           _processContactListEvent(event);
         }
       },
-      onError: (error) {
+      onError: (Object error) {
         Log.error(
           'Real-time contact list subscription '
           'error: $error',
@@ -2036,18 +2034,20 @@ class FollowRepository {
 
         _followingPubkeys = merged.toList();
         _emitFollowingList();
-        _saveToLocalStorage();
-        _invalidateMyFollowingCache();
+        unawaited(_saveToLocalStorage());
+        unawaited(_invalidateMyFollowingCache());
 
         // Re-broadcast the merged list so relays have the correct state.
-        _broadcastContactList().catchError((e) {
-          Log.error(
-            'Failed to broadcast merged '
-            'contact list: $e',
-            name: 'FollowRepository',
-            category: LogCategory.system,
-          );
-        });
+        unawaited(
+          _broadcastContactList().catchError((Object e) {
+            Log.error(
+              'Failed to broadcast merged '
+              'contact list: $e',
+              name: 'FollowRepository',
+              category: LogCategory.system,
+            );
+          }),
+        );
         return;
       }
 
@@ -2061,8 +2061,8 @@ class FollowRepository {
         category: LogCategory.system,
       );
 
-      _saveToLocalStorage();
-      _invalidateMyFollowingCache();
+      unawaited(_saveToLocalStorage());
+      unawaited(_invalidateMyFollowingCache());
     }
   }
 }

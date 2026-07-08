@@ -82,7 +82,7 @@ void main() {
 
           final body = jsonDecode(request.body);
           expect(body['method'], 'get_public_key');
-          expect(body['params'], []);
+          expect(body['params'], isEmpty);
 
           return http.Response(
             jsonEncode({
@@ -123,7 +123,7 @@ void main() {
                     '3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d',
                 'created_at': 1234567890,
                 'kind': 1,
-                'tags': [],
+                'tags': <dynamic>[],
                 'content': 'test content',
                 'sig':
                     'sig123abc456sig123abc456sig123abc456sig123abc456sig123abc456sig123abc456sig123abc456sig123abc456sig123abc456sig123ab',

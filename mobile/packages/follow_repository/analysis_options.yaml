@@ -1,0 +1,15 @@
+include: package:very_good_analysis/analysis_options.yaml
+
+# Relaxations mirror the analytics package precedent: this code was extracted
+# from the app (#2985) and authored under the app's lint configuration.
+# Narrowing bare catch clauses would be a behavior-affecting change.
+analyzer:
+  errors:
+    avoid_catches_without_on_clauses: ignore
+
+linter:
+  rules:
+    # Repo-wide, line length is enforced by `dart format`, not by this lint
+    # (see .claude/rules/code_style.md).
+    lines_longer_than_80_chars: false
+    public_member_api_docs: false

@@ -18,23 +18,6 @@ import 'package:unified_logger/unified_logger.dart';
 typedef TokenRefreshCallback = Future<String?> Function();
 
 class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
-  /// Default timeout applied to every RPC HTTP request.
-  ///
-  /// Without a bound, a dead socket (e.g. Android Doze killing the
-  /// connection while backgrounded) hangs the request forever and wedges
-  /// every caller awaiting it.
-  static const Duration defaultRequestTimeout = Duration(seconds: 30);
-
-  final String nostrApi;
-  String _accessToken;
-  final http.Client _client;
-  final TokenRefreshCallback? _onTokenRefresh;
-  bool _signCanonicalUnsupported = false;
-
-  /// Maximum time to wait for any single RPC request before failing
-  /// with a [TimeoutException].
-  final Duration requestTimeout;
-
   KeycastRpc({
     required this.nostrApi,
     required String accessToken,
@@ -61,6 +44,23 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
       requestTimeout: requestTimeout,
     );
   }
+
+  /// Default timeout applied to every RPC HTTP request.
+  ///
+  /// Without a bound, a dead socket (e.g. Android Doze killing the
+  /// connection while backgrounded) hangs the request forever and wedges
+  /// every caller awaiting it.
+  static const Duration defaultRequestTimeout = Duration(seconds: 30);
+
+  final String nostrApi;
+  String _accessToken;
+  final http.Client _client;
+  final TokenRefreshCallback? _onTokenRefresh;
+  bool _signCanonicalUnsupported = false;
+
+  /// Maximum time to wait for any single RPC request before failing
+  /// with a [TimeoutException].
+  final Duration requestTimeout;
 
   Future<T> _call<T>(
     String method,
@@ -154,7 +154,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
   }
 
   @override
-  Future<String?> nip44Encrypt(pubkey, plaintext) async {
+  Future<String?> nip44Encrypt(String pubkey, String plaintext) async {
     return _call('nip44_encrypt', [
       pubkey,
       plaintext,
@@ -162,7 +162,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
   }
 
   @override
-  Future<String?> nip44Decrypt(pubkey, ciphertext) async {
+  Future<String?> nip44Decrypt(String pubkey, String ciphertext) async {
     return _call('nip44_decrypt', [
       pubkey,
       ciphertext,
@@ -170,7 +170,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
   }
 
   @override
-  Future<String?> encrypt(pubkey, plaintext) async {
+  Future<String?> encrypt(String pubkey, String plaintext) async {
     return _call('nip04_encrypt', [
       pubkey,
       plaintext,
@@ -178,7 +178,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
   }
 
   @override
-  Future<String?> decrypt(pubkey, ciphertext) async {
+  Future<String?> decrypt(String pubkey, String ciphertext) async {
     return _call('nip04_decrypt', [
       pubkey,
       ciphertext,
@@ -186,7 +186,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
   }
 
   @override
-  Future<Map?> getRelays() async {
+  Future<Map<dynamic, dynamic>?> getRelays() async {
     return null;
   }
 
@@ -204,7 +204,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
   ///   * the request errors at the HTTP level,
   ///   * the response is malformed.
   ///
-  /// Callers (e.g. [KeycastNostrIdentity]) treat null as "canonical signing
+  /// Callers (e.g. `KeycastNostrIdentity`) treat null as "canonical signing
   /// unsupported by this identity" and skip the assertion gracefully.
   Future<String?> signCanonicalPayload(Uint8List payload) async {
     if (_signCanonicalUnsupported) {

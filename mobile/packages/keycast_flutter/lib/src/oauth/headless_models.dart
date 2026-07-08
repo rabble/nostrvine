@@ -3,18 +3,6 @@
 
 /// Result from POST /api/headless/register
 class HeadlessRegisterResult {
-  final bool success;
-  final String pubkey;
-  final bool verificationRequired;
-  final String? deviceCode;
-  final String? email;
-
-  /// OAuth error code (e.g., 'email_exists', 'invalid_password')
-  final String? errorCode;
-
-  /// Human-readable error description from server
-  final String? errorDescription;
-
   HeadlessRegisterResult({
     required this.success,
     required this.pubkey,
@@ -47,17 +35,21 @@ class HeadlessRegisterResult {
       errorDescription: message,
     );
   }
+  final bool success;
+  final String pubkey;
+  final bool verificationRequired;
+  final String? deviceCode;
+  final String? email;
+
+  /// OAuth error code (e.g., 'email_exists', 'invalid_password')
+  final String? errorCode;
+
+  /// Human-readable error description from server
+  final String? errorDescription;
 }
 
 /// Result from POST /api/headless/login
 class HeadlessLoginResult {
-  final bool success;
-  final String? code;
-  final String? pubkey;
-  final String? state;
-  final String? error;
-  final String? errorDescription;
-
   HeadlessLoginResult({
     required this.success,
     this.code,
@@ -85,6 +77,12 @@ class HeadlessLoginResult {
       errorDescription: message,
     );
   }
+  final bool success;
+  final String? code;
+  final String? pubkey;
+  final String? state;
+  final String? error;
+  final String? errorDescription;
 }
 
 /// Result from GET /api/oauth/poll
@@ -97,13 +95,6 @@ enum KeycastAuthFailure {
 }
 
 class PollResult {
-  final PollStatus status;
-  final String? code;
-  final String? error;
-  final String? errorCode;
-  final int? statusCode;
-  final KeycastAuthFailure? failure;
-
   PollResult({
     required this.status,
     this.code,
@@ -130,6 +121,12 @@ class PollResult {
     statusCode: statusCode,
     failure: failure,
   );
+  final PollStatus status;
+  final String? code;
+  final String? error;
+  final String? errorCode;
+  final int? statusCode;
+  final KeycastAuthFailure? failure;
 
   bool get isTransientFailure =>
       failure == KeycastAuthFailure.network ||
@@ -144,10 +141,6 @@ enum PollStatus {
 
 /// Result from POST /api/auth/forgot-password
 class ForgotPasswordResult {
-  final bool success;
-  final String? message;
-  final String? error;
-
   ForgotPasswordResult({required this.success, this.message, this.error});
 
   factory ForgotPasswordResult.fromJson(Map<String, dynamic> json) {
@@ -161,12 +154,12 @@ class ForgotPasswordResult {
   factory ForgotPasswordResult.error(String message) {
     return ForgotPasswordResult(success: false, error: message);
   }
+  final bool success;
+  final String? message;
+  final String? error;
 }
 
 class ResetPasswordResult {
-  final bool success;
-  final String? message;
-
   ResetPasswordResult({required this.success, this.message});
 
   factory ResetPasswordResult.fromJson(Map<String, dynamic> json) {
@@ -179,14 +172,12 @@ class ResetPasswordResult {
   factory ResetPasswordResult.error(String message) {
     return ResetPasswordResult(success: false, message: message);
   }
+  final bool success;
+  final String? message;
 }
 
 /// Result from DELETE /api/user/account
 class DeleteAccountResult {
-  final bool success;
-  final String? message;
-  final String? error;
-
   DeleteAccountResult({required this.success, this.message, this.error});
 
   factory DeleteAccountResult.fromJson(Map<String, dynamic> json) {
@@ -200,17 +191,13 @@ class DeleteAccountResult {
   factory DeleteAccountResult.error(String message) {
     return DeleteAccountResult(success: false, error: message);
   }
+  final bool success;
+  final String? message;
+  final String? error;
 }
 
 /// Result from POST /api/auth/verify-email
 class VerifyEmailResult {
-  final bool success;
-  final String? message;
-  final String? error;
-  final String? errorCode;
-  final int? statusCode;
-  final KeycastAuthFailure? failure;
-
   VerifyEmailResult({
     required this.success,
     this.message,
@@ -245,6 +232,12 @@ class VerifyEmailResult {
     statusCode: statusCode,
     failure: failure,
   );
+  final bool success;
+  final String? message;
+  final String? error;
+  final String? errorCode;
+  final int? statusCode;
+  final KeycastAuthFailure? failure;
 
   bool get isTransientFailure =>
       failure == KeycastAuthFailure.network ||

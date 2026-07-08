@@ -59,6 +59,14 @@ KeycastAuthFailure _failureForStatusCode(int statusCode) {
 }
 
 class KeycastOAuth {
+  KeycastOAuth({
+    required this.config,
+    http.Client? httpClient,
+    KeycastStorage? storage,
+    this.requestTimeout = defaultRequestTimeout,
+  }) : _client = httpClient ?? http.Client(),
+       _storage = storage ?? MemoryKeycastStorage();
+
   /// Default timeout applied to every Keycast HTTP request.
   ///
   /// Without a bound, a dead socket (e.g. Android Doze killing the
@@ -76,14 +84,6 @@ class KeycastOAuth {
 
   // Invalidates in-flight refresh saves after logout clears credential storage.
   int _storageEpoch = 0;
-
-  KeycastOAuth({
-    required this.config,
-    http.Client? httpClient,
-    KeycastStorage? storage,
-    this.requestTimeout = defaultRequestTimeout,
-  }) : _client = httpClient ?? http.Client(),
-       _storage = storage ?? MemoryKeycastStorage();
 
   /// Get stored session from storage
   /// Returns null if no session or session is expired
@@ -420,7 +420,7 @@ class KeycastOAuth {
       }
 
       // Handle error responses - preserve error code for client-side handling
-      final String errorCode = json['code'] as String? ?? 'registration_failed';
+      final errorCode = json['code'] as String? ?? 'registration_failed';
       final description =
           json['error'] as String? ?? json['message'] as String? ?? errorCode;
 

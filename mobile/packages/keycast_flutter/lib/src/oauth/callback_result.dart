@@ -6,16 +6,14 @@ sealed class CallbackResult {
 }
 
 class CallbackSuccess extends CallbackResult {
-  final String code;
-
   const CallbackSuccess({required this.code});
+  final String code;
 }
 
 class CallbackError extends CallbackResult {
+  const CallbackError({required this.error, this.description});
   final String error;
   final String? description;
-
-  const CallbackError({required this.error, this.description});
 
   @override
   String toString() => description != null
