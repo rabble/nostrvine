@@ -1379,29 +1379,13 @@ class NotificationRepository {
   };
 
   /// Builds the stable NIP-33 addressable route for the video a video-anchored
-  /// notification (like/comment/repost) points at, always scoped to
-  /// [_userPubkey], or null when no usable d-tag is available.
+  /// notification (like/comment/repost) points at, scoped to [_userPubkey].
   ///
-  /// Video-anchored notifications are structurally about the recipient's own
-  /// video; a confirmed *different* owner is reclassified to an actor row
-  /// upstream ([_groupVideoAnchored] / #4920) before this is reached. So
-  /// ownership here is either confirmed-recipient or unconfirmable (a metadata
-  /// miss: stale/edited event id, fetch failure, or a comment with an empty
-  /// `referenced_event_id`). In both cases we synthesize the route rather than
-  /// dropping to the raw, often-stale `referencedEventId` — which is the #4730
-  /// broken-link gap: once the recipient edits a video, its old event id no
-  /// longer resolves, so the stable route is the only thing that reopens it.
-  ///
-  /// Safety bound (unchanged from #4730): the pubkey is pinned to
-  /// [_userPubkey], so a wrong/stale d-tag can only ever surface the
-  /// recipient's *own* (or a non-existent) video — never another creator's.
-  /// The relaxation is purely *when* to synthesize (now also on a metadata
-  /// miss), not *whose* video the route can address. Tradeoff: a misattributed
-  /// notification whose ownership the metadata fetch happened to miss now
-  /// resolves to the recipient's d-tag match (or not-found) instead of the
-  /// other creator's event id. The route resolver preserves this bound by
-  /// validating addressable candidates before cache or REST hits can satisfy
-  /// the coordinate.
+  /// A payload d-tag is only safe after [video] confirms ownership. Without
+  /// that owner proof, synthesizing `34236:<recipient>:<d-tag>` can make a
+  /// misattributed notification for another creator's video look like it was
+  /// for the recipient's own video. Metadata misses therefore keep the raw
+  /// event-id fallback instead of manufacturing a recipient-scoped coordinate.
   ///
   /// Prefers the authoritative `VideoStats` d-tag over the payload [dTag] so a
   /// `referenced_video` block disagreeing with `referenced_event_id` cannot
@@ -1410,10 +1394,7 @@ class NotificationRepository {
     required String? dTag,
     required VideoStats? video,
   }) {
-    // Defensive local invariant: metadata that resolves and names a different
-    // owner never yields a recipient-scoped route. Unreachable via
-    // _groupVideoAnchored (those are reclassified to actor rows, #4920).
-    if (video != null && video.pubkey != _userPubkey) return null;
+    if (video == null || video.pubkey != _userPubkey) return null;
     final resolvedDTag = _nonEmpty(video?.dTag) ?? _nonEmpty(dTag);
     if (resolvedDTag == null) return null;
     return '${NIP71VideoKinds.addressableShortVideo}'

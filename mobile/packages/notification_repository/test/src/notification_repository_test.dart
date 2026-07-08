@@ -861,16 +861,13 @@ void main() {
         );
       });
 
-      test('grouped video notifications synthesize the addressable id from the '
-          'payload d-tag when the referenced video metadata is missing '
-          '(#4730 broken-link fix)', () async {
+      test('grouped video notifications leave addressable id null when '
+          'metadata is missing even if the payload has a d-tag', () async {
         // No video stats stubbed → ownership cannot be confirmed (e.g. a
-        // stale/edited event id whose old metadata no longer resolves). The
-        // notification is structurally about the recipient's own video, so we
-        // synthesize the recipient-scoped stable route from the server-provided
-        // d-tag rather than dropping to the (often stale) raw event id. The
-        // pubkey is pinned to the recipient, so the route can never address
-        // another creator's video.
+        // stale/edited event id whose old metadata no longer resolves). A
+        // server-provided d-tag alone is not proof that the d-tag belongs to the
+        // recipient, so synthesizing `34236:<recipient>:<d-tag>` here can make a
+        // notification for another creator's video look like "your video".
         stubNotifications([
           makeNotification(
             id: 'l1',
@@ -894,13 +891,7 @@ void main() {
 
         expect(page.items, hasLength(1));
         final item = page.items.single as VideoNotification;
-        expect(
-          item.videoAddressableId,
-          equals(
-            '${NIP71VideoKinds.addressableShortVideo}:'
-            '$userPubkey:vine-id',
-          ),
-        );
+        expect(item.videoAddressableId, isNull);
         // The canonical event id is still carried for the resolver fallback.
         expect(item.videoEventId, equals('video_x'));
       });
@@ -927,15 +918,13 @@ void main() {
         expect(item.videoEventId, equals('video_x'));
       });
 
-      test('comment with empty referencedEventId synthesizes the addressable '
-          'id from the payload d-tag and keeps the root video event id '
-          '(#4730 broken-link fix)', () async {
+      test('comment with empty referencedEventId leaves addressable id null '
+          'when root video ownership is unconfirmed', () async {
         // NIP-22 comment whose referenced_event_id is empty carries the video
         // via rootEventId. The page-load path fetches metadata by
         // referenced_event_id only (not rootEventId), so ownership of the root
-        // video is unconfirmed here — but the notification is still about the
-        // recipient's own video, so the recipient-scoped route is synthesized
-        // from the payload d-tag instead of dropping to the rootEventId.
+        // video is unconfirmed here. The payload d-tag alone is not enough to
+        // build a recipient-scoped route.
         stubNotifications([
           makeNotification(
             id: 'c1',
@@ -955,13 +944,7 @@ void main() {
         expect(page.items, hasLength(1));
         final item = page.items.single as VideoNotification;
         expect(item.type, equals(NotificationKind.comment));
-        expect(
-          item.videoAddressableId,
-          equals(
-            '${NIP71VideoKinds.addressableShortVideo}:'
-            '$userPubkey:vine-id',
-          ),
-        );
+        expect(item.videoAddressableId, isNull);
         expect(item.videoEventId, equals('video_root'));
       });
 
@@ -990,13 +973,7 @@ void main() {
           final item = page.items.single as VideoNotification;
           expect(item.type, equals(NotificationKind.comment));
           expect(item.videoEventId, equals('reply_video_event'));
-          expect(
-            item.videoAddressableId,
-            equals(
-              '${NIP71VideoKinds.addressableShortVideo}:'
-              '$userPubkey:reply-video-dtag',
-            ),
-          );
+          expect(item.videoAddressableId, isNull);
         },
       );
 
