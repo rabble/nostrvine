@@ -262,6 +262,48 @@ class _RecordingVerifyWorker implements DmVerifyWorker {
   }
 }
 
+/// Delegating [NostrSigner] whose [getPublicKey] suspends on [gate] — models a
+/// remote signer's slow `refreshPublicKey` RPC so tests can run
+/// `stopListening()` while a live wrap is parked inside
+/// `_handleGiftWrapEvent`, before its `_decryptRumor` call.
+class _GatedPubkeySigner implements NostrSigner {
+  _GatedPubkeySigner(this._inner, this.gate);
+
+  final NostrSigner _inner;
+  final Future<void> gate;
+
+  @override
+  Future<String?> getPublicKey() async {
+    await gate;
+    return _inner.getPublicKey();
+  }
+
+  @override
+  Future<Event?> signEvent(Event event) => _inner.signEvent(event);
+
+  @override
+  Future<Map<dynamic, dynamic>?> getRelays() => _inner.getRelays();
+
+  @override
+  Future<String?> encrypt(String pubkey, String plaintext) =>
+      _inner.encrypt(pubkey, plaintext);
+
+  @override
+  Future<String?> decrypt(String pubkey, String ciphertext) =>
+      _inner.decrypt(pubkey, ciphertext);
+
+  @override
+  Future<String?> nip44Encrypt(String pubkey, String plaintext) =>
+      _inner.nip44Encrypt(pubkey, plaintext);
+
+  @override
+  Future<String?> nip44Decrypt(String pubkey, String ciphertext) =>
+      _inner.nip44Decrypt(pubkey, ciphertext);
+
+  @override
+  void close() => _inner.close();
+}
+
 /// Test double for [DmSyncState] that stores values in memory and captures
 /// [recordSeen] calls for assertions.
 class _FakeDmSyncState implements DmSyncState {
@@ -5065,6 +5107,65 @@ void main() {
           // The stale worker never verified anything — the wrap it was
           // spawned for fell back to inline verification.
           expect(staleWorker.verifiedKinds, isEmpty);
+        },
+      );
+
+      test(
+        'a wrap suspended at refreshPublicKey across stopListening does not '
+        're-spawn the verify isolate into the torn-down repository',
+        () async {
+          final wrap = await _buildGiftWrap(
+            rumor: rumorFor('post-stop respawn', createdAt: 1700000500),
+            senderPrivateKey: senderPriv,
+            recipientPubkey: recipientPub,
+            outerCreatedAt: 1700000000,
+          );
+
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+
+          // Models a remote signer whose refreshPublicKey RPC is slow: the
+          // wrap parks inside _handleGiftWrapEvent, *before* _decryptRumor
+          // (and thus before any verify-isolate spawn starts).
+          final rpcGate = Completer<void>();
+          final spawnedWorkers = <_RecordingVerifyWorker>[];
+          final repository = createRepository(
+            userPubkey: recipientPub,
+            signer: _GatedPubkeySigner(
+              LocalNostrSigner(recipientPriv),
+              rpcGate.future,
+            ),
+            verifyIsolateSpawner: () async {
+              final worker = _RecordingVerifyWorker();
+              spawnedWorkers.add(worker);
+              return worker;
+            },
+          );
+
+          await repository.startListening();
+          controller.add(wrap);
+          await Future<void>.delayed(Duration.zero);
+
+          // Terminal stop (the provider-dispose path) while the wrap is
+          // parked at the RPC — then the RPC resolves. Without the post-await
+          // session recheck the resumed wrap re-spawns a worker whose
+          // generation guard sees only post-stop values, installing a worker
+          // into the orphaned repository that nothing ever closes.
+          await controller.close();
+          await repository.stopListening();
+          rpcGate.complete();
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+
+          expect(spawnedWorkers, isEmpty);
+          // The torn-down session persists nothing; the wrap re-arrives via
+          // the next session's subscription window / history drain.
+          expect(persistedGiftWrapIds, isNot(contains(wrap.id)));
         },
       );
 

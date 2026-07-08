@@ -1502,6 +1502,7 @@ class DmRepository {
   /// history-drain path via [_persistDecryptedGiftWrap]. Callers must already
   /// hold the [_eventLock] (via [_handleIncomingEvent]).
   Future<void> _handleGiftWrapEvent(Event giftWrapEvent) async {
+    final gen = _resetGeneration;
     final Event? rumorEvent;
     try {
       // Dedup: skip if already processed (message row or ledger). #5452.
@@ -1514,6 +1515,15 @@ class DmRepository {
       if (signer == null) return;
       final nostr = Nostr(signer, [], _dummyRelay);
       await nostr.refreshPublicKey();
+
+      // A stop or account switch landed during the awaits above (a
+      // multi-hundred-ms RPC for remote signers): bail before _decryptRumor,
+      // whose _ensureVerifyIsolate would otherwise start a spawn that only
+      // sees post-stop session values — installing a verify worker into the
+      // torn-down repository that nothing ever closes (PR #5957 review).
+      // The wrap re-arrives via the next session's subscription window /
+      // history drain, so nothing is lost.
+      if (_disposed || _resetGeneration != gen) return;
 
       rumorEvent = await _decryptRumor(nostr, giftWrapEvent);
     } on Object catch (e, stackTrace) {
