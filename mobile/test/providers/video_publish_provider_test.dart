@@ -4,34 +4,93 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:dm_repository/dm_repository.dart'
     show CollaboratorInviteRetrySummary;
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show NativeProofData;
+import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/video_publish/video_publish_state.dart';
 import 'package:openvine/models/video_reply_context.dart';
+import 'package:openvine/providers/auth_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
+import 'package:openvine/providers/upload_media_providers.dart';
+import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
+import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/cawg_verifier_client.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/mention_resolution_service.dart';
+import 'package:openvine/services/upload_manager.dart';
+import 'package:openvine/services/video_event_publisher.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:profile_repository/profile_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MockProfileRepository extends Mock implements ProfileRepository {}
 
-class _MockDraftStorageService extends Mock implements DraftStorageService {}
+class MockDraftStorageService extends Mock implements DraftStorageService {}
+
+class MockAuthService extends Mock implements AuthService {}
+
+class MockUploadManager extends Mock implements UploadManager {}
+
+class MockVideoEventPublisher extends Mock implements VideoEventPublisher {}
+
+class MockBlossomUploadService extends Mock implements BlossomUploadService {}
+
+class _IdentityKnownNostrSession extends NostrSession {
+  @override
+  NostrSessionReadiness build() => const NostrSessionReadiness.identityKnown(
+    pubkey: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+  );
+}
+
+DivineVideoClip _createTestClip() => DivineVideoClip(
+  id: 'clip_1',
+  video: EditorVideo.file('/tmp/test.mp4'),
+  duration: const Duration(seconds: 6),
+  recordedAt: DateTime(2026),
+  originalAspectRatio: 9 / 16,
+  targetAspectRatio: .vertical,
+);
+
+DivineVideoDraft _createPublishableDraft() {
+  final clip = _createTestClip();
+  final proofManifestJson = jsonEncode(
+    const NativeProofData(
+      videoHash: 'abc123',
+      creatorBindingAssertionLabel: 'video.divine.nostr.creator_binding',
+      creatorBindingPayloadJson: '{"version":1}',
+    ).toJson(),
+  );
+
+  return DivineVideoDraft.create(
+    clips: [clip],
+    title: 'Test Draft',
+    description: 'Test Description',
+    hashtags: const {},
+    selectedApproach: 'default',
+  ).copyWith(finalRenderedClip: clip, proofManifestJson: proofManifestJson);
+}
 
 class _FakeDivineVideoDraft extends Fake implements DivineVideoDraft {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(_createPublishableDraft());
+  });
+
   group('VideoPublishNotifier', () {
     late ProviderContainer container;
     late VideoPublishNotifier notifier;
@@ -275,6 +334,79 @@ void main() {
       expect(destination.path, VideoDetailScreen.pathForId(rootAddressableId));
       expect(destination.extra.autoOpenComments, isTrue);
     });
+
+    testWidgets(
+      'publishVideo returns not signed in before saving publish draft when signer is not ready',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        final sharedPreferences = await SharedPreferences.getInstance();
+        final draftStorageService = MockDraftStorageService();
+        final authService = MockAuthService();
+        final uploadManager = MockUploadManager();
+        final videoEventPublisher = MockVideoEventPublisher();
+        final blossomUploadService = MockBlossomUploadService();
+        final backgroundPublishBloc = BackgroundPublishBloc(
+          videoPublishServiceFactory: ({required onProgress}) async =>
+              throw StateError('background publish should not be requested'),
+          draftStorageService: draftStorageService,
+        );
+        addTearDown(backgroundPublishBloc.close);
+
+        when(
+          () => draftStorageService.saveDraft(any()),
+        ).thenAnswer((_) async {});
+        when(() => authService.currentNpub).thenReturn(null);
+        when(() => authService.isAuthenticated).thenReturn(true);
+        when(() => authService.currentPublicKeyHex).thenReturn(
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        );
+
+        late BuildContext publishContext;
+        late WidgetRef publishRef;
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+              draftStorageServiceProvider.overrideWithValue(
+                draftStorageService,
+              ),
+              authServiceProvider.overrideWithValue(authService),
+              uploadManagerProvider.overrideWithValue(uploadManager),
+              videoEventPublisherProvider.overrideWithValue(
+                videoEventPublisher,
+              ),
+              blossomUploadServiceProvider.overrideWithValue(
+                blossomUploadService,
+              ),
+              nostrSessionProvider.overrideWith(_IdentityKnownNostrSession.new),
+            ],
+            child: MaterialApp(
+              home: BlocProvider<BackgroundPublishBloc>.value(
+                value: backgroundPublishBloc,
+                child: Consumer(
+                  builder: (context, ref, _) {
+                    publishContext = context;
+                    publishRef = ref;
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await publishRef
+            .read(videoPublishProvider.notifier)
+            .publishVideo(publishContext, _createPublishableDraft());
+
+        final state = publishRef.read(videoPublishProvider);
+        expect(state.publishState, VideoPublishState.error);
+        expect(state.errorMessage, isNotEmpty);
+        verifyNever(() => draftStorageService.saveDraft(any()));
+        expect(backgroundPublishBloc.state.uploads, isEmpty);
+      },
+    );
   });
 
   group('VideoPublishNotifier publishVideo duplicate guard (#6018)', () {
@@ -319,7 +451,7 @@ void main() {
       'reset during an in-flight publish does not reopen the gate for '
       'the same source draft',
       (tester) async {
-        final mockDraftStorage = _MockDraftStorageService();
+        final mockDraftStorage = MockDraftStorageService();
         // Never completes - keeps the first publish in flight, like the
         // 20s+ audio-reuse window in production.
         final saveDraftGate = Completer<void>();

@@ -147,6 +147,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
   /// Creates the publish service with callbacks wired to this notifier.
   Future<VideoPublishService> _createPublishService({
     required OnProgressChanged onProgressChanged,
+    required PublishReadiness publishReadiness,
   }) async {
     return VideoPublishService(
       uploadManager: ref.read(uploadManagerProvider),
@@ -154,14 +155,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       videoEventPublisher: ref.read(videoEventPublisherProvider),
       blossomService: ref.read(blossomUploadServiceProvider),
       draftService: _draftService,
-      readPublishReadiness: () {
-        final readiness = ref.read(nostrSessionProvider);
-        final pubkey = readiness.pubkey;
-        if (!readiness.isReadyForActiveClient || pubkey == null) {
-          return PublishReadiness.notReady(pubkey: pubkey);
-        }
-        return PublishReadiness.ready(pubkey: pubkey);
-      },
+      readPublishReadiness: () => publishReadiness,
       mentionResolutionService: createVideoPublishMentionResolutionService(
         ref.read(profileRepositoryProvider),
       ),
@@ -175,6 +169,15 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         onProgressChanged(draftId: draftId, progress: progress);
       },
     );
+  }
+
+  PublishReadiness _currentPublishReadiness() {
+    final readiness = ref.read(nostrSessionProvider);
+    final pubkey = readiness.pubkey;
+    if (!readiness.isReadyForActiveClient || pubkey == null) {
+      return PublishReadiness.notReady(pubkey: pubkey);
+    }
+    return PublishReadiness.ready(pubkey: pubkey);
   }
 
   /// Resets all video-related providers.
@@ -370,6 +373,16 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       return;
     }
 
+    final publishReadiness = _currentPublishReadiness();
+    final publishPubkey = publishReadiness.pubkey;
+    if (!publishReadiness.isReady ||
+        publishPubkey == null ||
+        publishPubkey.isEmpty) {
+      final l10n = currentAppL10n(ref.read(sharedPreferencesProvider));
+      setError(l10n.publishErrorMessage(PublishErrorKind.notSignedIn));
+      return;
+    }
+
     _inFlightSourceDraftIds.add(sourceDraftId);
     state = state.copyWith(publishState: .preparing);
 
@@ -458,6 +471,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
 
       final backgroundPublishBloc = context.read<BackgroundPublishBloc>();
       final publishService = await _createPublishService(
+        publishReadiness: publishReadiness,
         onProgressChanged: ({required draftId, required progress}) {
           backgroundPublishBloc.add(
             BackgroundPublishProgressChanged(
