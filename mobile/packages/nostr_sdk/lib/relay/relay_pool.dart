@@ -489,17 +489,20 @@ class RelayPool {
 
     // Log message type + sub ID (full json is too verbose for non-DM events)
     if (json.length >= 2) {
-      final msgSubId = json.length >= 2 ? json[1] : '';
+      final msgSubId = json[1];
       if (msgSubId == 'dm_inbox' ||
           messageType == 'AUTH' ||
           messageType == 'CLOSED' ||
           messageType == 'NOTICE') {
         log('📡 Raw message from ${relay.url}: $json');
       } else {
-        log(
-          '📡 ${relay.url}: $messageType '
-          '${json.length >= 2 ? json[1] : ""}',
-        );
+        // Debug-only: this branch fires for every EVENT/EOSE frame and the
+        // unconditional log cost ~6% of main-isolate CPU in on-device
+        // profiling. The assert closure never runs in profile/release.
+        assert(() {
+          log('📡 ${relay.url}: $messageType $msgSubId');
+          return true;
+        }());
       }
     } else {
       log('📡 Raw message from ${relay.url}: $json');
