@@ -198,7 +198,12 @@ class OfficialAccountsService {
     try {
       final decoded = jsonDecode(raw);
       if (decoded is Map<String, Object?>) return _Record.fromJson(decoded);
-    } catch (_) {}
+    } catch (_) {
+      // Intentional no-op: a corrupt/unparseable stored verdict is treated as
+      // "no record" — the caller falls back to the pin-trusted default and the
+      // async path re-resolves and overwrites it. Nothing actionable to log or
+      // report per read (a bad localStorage/prefs entry self-heals next check).
+    }
     return null;
   }
 
