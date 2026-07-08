@@ -8,7 +8,6 @@ analyzer:
     - "**/*.mocks.dart"
     - "**/generated/**"
     - "**/l10n/**"
-    - "**/packages/**"
     - "build/**"
   errors:
     avoid_catches_without_on_clauses: ignore
