@@ -1,6 +1,7 @@
 // ABOUTME: Signer-core collaborator: builds the atomic NostrIdentity and owns
 // ABOUTME: the createAndSignEvent dispatch. Extracted from AuthService (#4741).
 
+import 'package:flutter/foundation.dart' show compute;
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:nostr_client/nostr_client.dart' show Nip89ClientTag;
 import 'package:nostr_key_manager/nostr_key_manager.dart'
@@ -29,6 +30,15 @@ typedef AuthCrashReporter =
       required String reason,
       required String logMessage,
     });
+
+/// Isolate worker for [SignerFactory.createAndSignEvent]'s remote-signature
+/// check.
+///
+/// Top-level so [compute] can pass it to a background isolate. A pure-Dart
+/// Schnorr verification costs ~10ms of BigInt math, which drops frames when
+/// it runs on the main isolate during the feed-scroll signing path.
+bool _verifyEventSignature(Map<String, dynamic> eventJson) =>
+    Event.fromJson(eventJson).isSigned;
 
 /// Thrown when a signer returns an event whose author public key does not
 /// match the active identity.
@@ -227,9 +237,12 @@ class SignerFactory {
       // key only exercises the crypto library and costs a full schnorr
       // verification per event (hot on the feed-scroll signing path). Skip
       // it for local signers; remote/external signers cross a trust
-      // boundary, so their returned signature is still verified. The cheap
+      // boundary, so their returned signature is still verified — in a
+      // background isolate, because the pure-Dart verify blocked the main
+      // isolate for ~10ms per signed event (on-device profiling). The cheap
       // structural check (isValid: id == hash) below always runs.
-      if (!identity.signsWithLocalKey && !signedEvent.isSigned) {
+      if (!identity.signsWithLocalKey &&
+          !await compute(_verifyEventSignature, signedEvent.toJson())) {
         Log.error(
           'Event signature validation FAILED! '
           'kind=$kind, eventPubkey=${signedEvent.pubkey}, '
