@@ -17,6 +17,14 @@ import 'package:openvine/widgets/vine_cached_image.dart';
 /// without a blurhash; that fullscreen blur pass over the live video
 /// texture was a major raster-thread cost (on-device: Impeller janked
 /// every frame), so the blurhash path is strongly preferred.
+///
+/// When [videoAspectRatio] is known, the backdrop paints only in the letterbox
+/// bars — one `RepaintBoundary`-isolated fill per bar, from the screen edge up
+/// to the video — instead of a single fullscreen layer behind the (opaque)
+/// video. That occluded fullscreen fill, composited whole every frame, was the
+/// backdrop's per-frame overdraw cost on Skia; the per-bar layers are cached
+/// and never re-rastered by the video texture (PR #5957). When the aspect
+/// ratio is unknown the backdrop falls back to a fullscreen fill.
 class BlurredVideoBackdrop extends StatelessWidget {
   /// Creates a blurred backdrop for a video poster.
   ///
@@ -24,7 +32,59 @@ class BlurredVideoBackdrop extends StatelessWidget {
   /// thumbnail used for the runtime-blur fallback; when neither is
   /// available, or the image fails to load, the widget renders as empty
   /// ([SizedBox.shrink]) and lets the parent background show through.
-  const BlurredVideoBackdrop({super.key, this.url, this.blurhash});
+  const BlurredVideoBackdrop({
+    super.key,
+    this.url,
+    this.blurhash,
+    this.videoAspectRatio,
+  });
+
+  final String? url;
+  final String? blurhash;
+
+  /// Intrinsic aspect ratio (width / height) of the video sitting on this
+  /// backdrop. Drives the letterbox bar geometry. When null the backdrop
+  /// paints fullscreen — the safe fallback when dimensions are unknown.
+  final double? videoAspectRatio;
+
+  @override
+  Widget build(BuildContext context) {
+    final aspectRatio = videoAspectRatio;
+    if (aspectRatio == null) {
+      return _BackdropContent(url: url, blurhash: blurhash);
+    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final size = constraints.biggest;
+        final bands = _letterboxBands(
+          letterboxVideoRect(aspectRatio, size),
+          size,
+        );
+        return Stack(
+          children: [
+            for (final band in bands)
+              Positioned.fromRect(
+                rect: band,
+                // Its own RepaintBoundary per bar: the bar's fill is isolated
+                // from the video texture's per-frame markNeedsPaint, so it is
+                // rastered once and then only composited — and it never covers
+                // the video area, so there is no occluded fullscreen overdraw
+                // (PR #5957).
+                child: RepaintBoundary(
+                  child: _BackdropContent(url: url, blurhash: blurhash),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// The blurred fill itself, without any letterbox clip. Prefers the cheap
+/// stretched-blurhash path and falls back to a runtime gaussian of the poster.
+class _BackdropContent extends StatelessWidget {
+  const _BackdropContent({this.url, this.blurhash});
 
   final String? url;
   final String? blurhash;
@@ -58,4 +118,64 @@ class BlurredVideoBackdrop extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The letterbox bars a blurred fill covers — the full gap between each box
+/// edge and the contain-fit [video], so the blur runs from the screen edge
+/// right up to the video with no dark band between. Only the sides where
+/// [video] doesn't reach the [box] edge produce a bar. Top/bottom bars span the
+/// full width (owning the corners); left/right bars span only the video's
+/// height, so bars never overlap and never cover the video area. Each bar is
+/// painted in its own `RepaintBoundary`, keeping it isolated from the video
+/// texture's per-frame repaint.
+List<Rect> _letterboxBands(Rect video, Size box) {
+  final bands = <Rect>[];
+  if (video.top > 0) {
+    bands.add(Rect.fromLTWH(0, 0, box.width, video.top));
+  }
+  if (video.bottom < box.height) {
+    bands.add(
+      Rect.fromLTWH(0, video.bottom, box.width, box.height - video.bottom),
+    );
+  }
+  if (video.left > 0) {
+    bands.add(Rect.fromLTWH(0, video.top, video.left, video.height));
+  }
+  if (video.right < box.width) {
+    bands.add(
+      Rect.fromLTWH(
+        video.right,
+        video.top,
+        box.width - video.right,
+        video.height,
+      ),
+    );
+  }
+  return bands;
+}
+
+/// The rect a video of [aspectRatio] occupies when `BoxFit.contain`-fitted and
+/// centered in [box] — mirrors the player's `FittedBox(fit: contain)`. Locates
+/// the letterbox bars the blurred fill covers. Exposed for testing the
+/// letterbox geometry, which is the seam-risk load-bearing logic.
+@visibleForTesting
+Rect letterboxVideoRect(double aspectRatio, Size box) {
+  final boxAspect = box.width / box.height;
+  final double width;
+  final double height;
+  if (aspectRatio > boxAspect) {
+    // Wider than the box → full width, letterbox top and bottom.
+    width = box.width;
+    height = box.width / aspectRatio;
+  } else {
+    // Taller/narrower than the box → full height, pillarbox left and right.
+    height = box.height;
+    width = box.height * aspectRatio;
+  }
+  return Rect.fromLTWH(
+    (box.width - width) / 2,
+    (box.height - height) / 2,
+    width,
+    height,
+  );
 }

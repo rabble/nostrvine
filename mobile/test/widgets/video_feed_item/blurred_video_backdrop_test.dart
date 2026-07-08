@@ -9,13 +9,21 @@ void main() {
     const testUrl = 'https://example.com/poster.jpg';
     const testBlurhash = 'L6Pj0^jE.AyE_3t7t7R**0o#DgR4';
 
-    Widget buildWidget({String url = testUrl, String? blurhash}) {
+    Widget buildWidget({
+      String url = testUrl,
+      String? blurhash,
+      double? videoAspectRatio,
+    }) {
       return WidgetsApp(
         color: const Color(0xFF000000),
         builder: (_, _) => SizedBox(
           width: 400,
           height: 800,
-          child: BlurredVideoBackdrop(url: url, blurhash: blurhash),
+          child: BlurredVideoBackdrop(
+            url: url,
+            blurhash: blurhash,
+            videoAspectRatio: videoAspectRatio,
+          ),
         ),
       );
     }
@@ -83,7 +91,7 @@ void main() {
             builder: (_, _) => const SizedBox(
               width: 400,
               height: 800,
-              child: BlurredVideoBackdrop(),
+              child: BlurredVideoBackdrop(url: ''),
             ),
           ),
         );
@@ -132,6 +140,59 @@ void main() {
       final box = fallback as SizedBox;
       expect(box.width, equals(0));
       expect(box.height, equals(0));
+    });
+
+    group('letterbox bands', () {
+      testWidgets(
+        'renders a RepaintBoundary-isolated blur fill in each letterbox bar '
+        'when the aspect ratio is known',
+        (tester) async {
+          // 1:1 video in the 400×800 box → top and bottom bars → two fills.
+          await tester.pumpWidget(
+            buildWidget(blurhash: testBlurhash, videoAspectRatio: 1),
+          );
+
+          expect(find.byType(BlurhashDisplay), findsNWidgets(2));
+          // Each bar is isolated in its own RepaintBoundary.
+          expect(find.byType(RepaintBoundary), findsNWidgets(2));
+        },
+      );
+
+      testWidgets(
+        'paints a single fullscreen fill when the aspect ratio is unknown',
+        (tester) async {
+          await tester.pumpWidget(buildWidget(blurhash: testBlurhash));
+
+          expect(find.byType(BlurhashDisplay), findsOneWidget);
+          expect(find.byType(RepaintBoundary), findsNothing);
+        },
+      );
+    });
+
+    group('letterboxVideoRect', () {
+      test('centers a 1:1 video with symmetric top/bottom bars', () {
+        // 1:1 into 400×800 → 400×400 centered → 200 px bars top and bottom.
+        expect(
+          letterboxVideoRect(1, const Size(400, 800)),
+          equals(const Rect.fromLTWH(0, 200, 400, 400)),
+        );
+      });
+
+      test('pillarboxes a video wider than a landscape box', () {
+        // 1:1 into 800×400 → 400×400 centered → 200 px bars left and right.
+        expect(
+          letterboxVideoRect(1, const Size(800, 400)),
+          equals(const Rect.fromLTWH(200, 0, 400, 400)),
+        );
+      });
+
+      test('letterboxes a 16:9 video in a portrait box', () {
+        // 16:9 (≈1.778) into 400×800 → full width, height 225, centered.
+        final rect = letterboxVideoRect(16 / 9, const Size(400, 800));
+        expect(rect.width, equals(400));
+        expect(rect.height, closeTo(225, 0.001));
+        expect(rect.top, closeTo((800 - 225) / 2, 0.001));
+      });
     });
   });
 }
