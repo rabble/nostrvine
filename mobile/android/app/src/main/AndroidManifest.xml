@@ -89,6 +89,17 @@
         android:theme="@style/NormalTheme"
         android:localeConfig="@xml/locales_config"
         android:networkSecurityConfig="@xml/network_security_config">
+        <!-- Run Impeller on its OpenGL ES backend instead of Vulkan.
+             On-device profiling (Pixel-class device, feed scroll) showed
+             Impeller/Vulkan rastering every frame at 17-27ms (46 FPS,
+             constant jank) while Skia rendered the same scene at 60 FPS.
+             The feed composites many blur/saveLayer passes over a live
+             video texture, which the Vulkan backend handles poorly on
+             this GPU class. GLES keeps Impeller (Skia on Android is
+             deprecated) while avoiding the Vulkan raster regression. -->
+        <meta-data
+            android:name="io.flutter.embedding.android.ImpellerBackend"
+            android:value="opengles" />
         <!-- FCM default notification channel -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
