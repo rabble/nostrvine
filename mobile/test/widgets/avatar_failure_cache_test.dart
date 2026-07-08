@@ -60,6 +60,21 @@ void main() {
       expect(cache.isFailed(url), isFalse);
     });
 
+    test('treats malformed SVG parse errors as deterministic', () {
+      const url = 'https://divine.video/divine-logo.svg';
+
+      final kind = cache.recordFailureForError(
+        url,
+        Exception('XmlParserException: ">" expected at 1:5'),
+      );
+
+      expect(kind, AvatarFailureKind.deterministic);
+      expect(cache.isFailed(url), isTrue);
+
+      now = now.add(AvatarFailureCache.transientFailureTtl);
+      expect(cache.isFailed(url), isTrue);
+    });
+
     test('records unknown failures as transient', () {
       const url = 'https://example.com/avatar.png';
 

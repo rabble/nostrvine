@@ -7,6 +7,7 @@ import 'package:alchemist/alchemist.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
+import 'package:openvine/widgets/avatar_failure_cache.dart';
 
 import 'helpers/shared_channel_override.dart';
 import 'test_setup.dart';
@@ -31,6 +32,12 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   // from its canonical handler, and — under DIVINE_STRICT_CHANNELS — blames
   // the perpetrating test. Compliant tests never trip it.
   tearDown(() => healAndBlameSharedChannels(strict: _strictChannels));
+
+  // UserAvatar records broken image URLs in a process-global negative cache.
+  // In the merged optimizer isolate that state would otherwise leak a failed
+  // URL into a later test that expects the same avatar to load. Reset it after
+  // every test so avatar failure caching stays test-local.
+  tearDown(AvatarFailureCache.instance.clear);
 
   // Web / `flutter test --platform chrome`: skip golden font loading and
   // Alchemist. Those paths can stall headless Chrome with almost no CPU while

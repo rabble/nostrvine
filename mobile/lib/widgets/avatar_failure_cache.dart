@@ -78,7 +78,9 @@ class AvatarFailureCache {
       return AvatarFailureKind.cancelled;
     }
     if (message.contains('invalid image data') ||
-        message.contains('image codec failed')) {
+        message.contains('image codec failed') ||
+        message.contains('xmlparserexception') ||
+        message.contains('invalid svg data')) {
       return AvatarFailureKind.deterministic;
     }
     return AvatarFailureKind.transient;
