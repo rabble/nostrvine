@@ -865,9 +865,9 @@ void main() {
           'metadata is missing even if the payload has a d-tag', () async {
         // No video stats stubbed → ownership cannot be confirmed (e.g. a
         // stale/edited event id whose old metadata no longer resolves). A
-        // server-provided d-tag alone is not proof that the d-tag belongs to the
-        // recipient, so synthesizing `34236:<recipient>:<d-tag>` here can make a
-        // notification for another creator's video look like "your video".
+        // server-provided d-tag alone is not proof that the d-tag belongs to
+        // the recipient, so synthesizing `34236:<recipient>:<d-tag>` here can
+        // make a notification for another creator's video look like "your video".
         stubNotifications([
           makeNotification(
             id: 'l1',

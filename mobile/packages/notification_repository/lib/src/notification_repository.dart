@@ -1395,7 +1395,7 @@ class NotificationRepository {
     required VideoStats? video,
   }) {
     if (video == null || video.pubkey != _userPubkey) return null;
-    final resolvedDTag = _nonEmpty(video?.dTag) ?? _nonEmpty(dTag);
+    final resolvedDTag = _nonEmpty(video.dTag) ?? _nonEmpty(dTag);
     if (resolvedDTag == null) return null;
     return '${NIP71VideoKinds.addressableShortVideo}'
         ':$_userPubkey:$resolvedDTag';
