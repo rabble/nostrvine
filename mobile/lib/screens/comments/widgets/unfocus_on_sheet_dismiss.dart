@@ -31,6 +31,11 @@ import 'package:flutter/services.dart';
 /// an explicit `TextInput.hide` — which resigns the first responder
 /// engine-side regardless of framework connection state — is sent as well.
 ///
+/// The [dispose] fallback runs only when no route-status change already
+/// dismissed the keyboard and only when there was an enclosing modal route, so
+/// it is scoped to a sheet actually tearing down rather than firing on every
+/// disposal of a generic subtree.
+///
 /// Renders [child] unchanged; it only observes the route animation. No-op when
 /// there is no enclosing modal route (e.g. a non-modal host).
 class UnfocusOnSheetDismiss extends StatefulWidget {
@@ -45,6 +50,7 @@ class UnfocusOnSheetDismiss extends StatefulWidget {
 
 class _UnfocusOnSheetDismissState extends State<UnfocusOnSheetDismiss> {
   Animation<double>? _animation;
+  bool _dismissed = false;
 
   @override
   void didChangeDependencies() {
@@ -69,6 +75,10 @@ class _UnfocusOnSheetDismissState extends State<UnfocusOnSheetDismiss> {
   }
 
   void _dismissKeyboard() {
+    // A single teardown can surface more than one signal (a pop emits reverse
+    // then dismissed); dismiss exactly once so we don't re-send TextInput.hide.
+    if (_dismissed) return;
+    _dismissed = true;
     FocusManager.instance.primaryFocus?.unfocus();
     // unfocus() sends nothing over the text-input channel when the framework
     // side of the connection is already gone (platform-initiated teardown
@@ -80,9 +90,14 @@ class _UnfocusOnSheetDismissState extends State<UnfocusOnSheetDismiss> {
   @override
   void dispose() {
     _animation?.removeStatusListener(_onStatusChanged);
-    // Covers teardown paths that never change the route animation status
-    // (route removal without a pop). Redundant but harmless on popped paths.
-    _dismissKeyboard();
+    // Fallback for the one teardown that emits no status change at all: a
+    // route removed without a pop. Gated on `!_dismissed` so a status-handled
+    // close doesn't fire it again, and on an enclosing modal route having
+    // existed so a generic non-sheet host that never stranded a keyboard
+    // doesn't yank global focus / hide another route's keyboard on disposal.
+    if (!_dismissed && _animation != null) {
+      _dismissKeyboard();
+    }
     super.dispose();
   }
 

@@ -151,6 +151,53 @@ void main() {
       },
     );
 
+    testWidgets(
+      'sends TextInput.hide exactly once on a pop that emits both reverse '
+      'and dismissed',
+      (tester) async {
+        final focusNode = await pumpHostAndOpenSheet(tester);
+        // Sever the connection first so unfocus() contributes no framework
+        // hide of its own — every logged hide is then our explicit one,
+        // isolating the dedup guard.
+        await severConnectionPlatformSide(tester, focusNode);
+
+        tester.testTextInput.log.clear();
+        Navigator.of(tester.element(find.byType(UnfocusOnSheetDismiss))).pop();
+        await tester.pumpAndSettle();
+
+        // A pop drives the route controller reverse → dismissed, so both
+        // status branches fire; the dedup guard must collapse them to a
+        // single explicit hide.
+        expect(
+          tester.testTextInput.log
+              .where((call) => call.method == 'TextInput.hide')
+              .length,
+          1,
+        );
+      },
+    );
+
+    testWidgets(
+      'does not touch the keyboard on disposal when there is no enclosing '
+      'modal route',
+      (tester) async {
+        // A generic host with no modal route never stranded a keyboard, so
+        // tearing it down must not reach for global focus or the IME. Pump
+        // without any Navigator/route so ModalRoute.of resolves to null.
+        await tester.pumpWidget(
+          const Directionality(
+            textDirection: TextDirection.ltr,
+            child: UnfocusOnSheetDismiss(child: SizedBox()),
+          ),
+        );
+
+        tester.testTextInput.log.clear();
+        await tester.pumpWidget(const SizedBox());
+
+        expect(tester.testTextInput.log, isEmpty);
+      },
+    );
+
     testWidgets('renders its child unchanged', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(home: UnfocusOnSheetDismiss(child: Text('hello'))),
