@@ -594,7 +594,13 @@ class MainCommentInput extends ConsumerStatefulWidget {
 class _MainCommentInputState extends ConsumerState<MainCommentInput> {
   late final TextEditingController _controller;
   late final FocusNode _focusNode;
+
+  /// Guards against restarting the expand animation on every intermediate
+  /// frame while it is climbing. Reset by [_expandWindowTimer], never by the
+  /// [DraggableScrollableController.animateTo] future — see
+  /// [_expandSheetForKeyboard].
   bool _isExpanding = false;
+  Timer? _expandWindowTimer;
 
   @override
   void initState() {
@@ -608,6 +614,7 @@ class _MainCommentInputState extends ConsumerState<MainCommentInput> {
 
   @override
   void dispose() {
+    _expandWindowTimer?.cancel();
     widget.draggableController.removeListener(_handleSheetSizeChanged);
     _focusNode.removeListener(_handleFocusChanged);
     _controller.dispose();
@@ -640,13 +647,29 @@ class _MainCommentInputState extends ConsumerState<MainCommentInput> {
     }
 
     _isExpanding = true;
-    controller
-        .animateTo(
-          _CommentsSheetSizing.max,
-          duration: _CommentsSheetSizing.focusExpandDuration,
-          curve: Curves.easeOut,
-        )
-        .whenComplete(() => _isExpanding = false);
+    controller.animateTo(
+      _CommentsSheetSizing.max,
+      duration: _CommentsSheetSizing.focusExpandDuration,
+      curve: Curves.easeOut,
+    );
+
+    // The future from `animateTo` never completes when a user drag cancels the
+    // animation (the underlying TickerFuture only resolves its `orCancel`
+    // path), so releasing the latch on that future would strand `_isExpanding`
+    // and silently disable the re-clamp for the rest of the sheet session.
+    // Release it on a duration-matched timer instead, then re-check so a drag
+    // that left the focused sheet below the safe size gets clamped back up.
+    _expandWindowTimer?.cancel();
+    _expandWindowTimer = Timer(
+      _CommentsSheetSizing.focusExpandDuration,
+      _onExpandWindowElapsed,
+    );
+  }
+
+  void _onExpandWindowElapsed() {
+    if (!mounted) return;
+    _isExpanding = false;
+    _handleSheetSizeChanged();
   }
 
   @override

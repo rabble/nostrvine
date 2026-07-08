@@ -228,7 +228,6 @@ void main() {
       VideoEvent? videoEvent,
       int? initialCommentCount,
       DraggableScrollableController? draggableController,
-      EdgeInsets viewInsets = EdgeInsets.zero,
     }) {
       if (listState != null) {
         when(() => mockListBloc.state).thenReturn(listState);
@@ -280,10 +279,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: MediaQuery(
-            data: MediaQueryData(
-              size: const Size(800, 600),
-              viewInsets: viewInsets,
-            ),
+            data: const MediaQueryData(size: Size(800, 600)),
             child: Scaffold(
               body: MultiBlocProvider(
                 providers: [
@@ -515,51 +511,51 @@ void main() {
         expect(captured.text, 'Test comment');
       });
 
-      testWidgets(
-        'expands sheet to max when top-level input gains focus above keyboard',
-        (tester) async {
-          final draggableController = DraggableScrollableController();
-          addTearDown(draggableController.dispose);
-          final comment = CommentBuilder()
-              .withId(TestCommentIds.comment1Id)
-              .withContent('Visible comment')
-              .build();
-          final listState = CommentsListState(
-            rootEventId: testVideoEventId,
-            rootAuthorPubkey: testVideoAuthorPubkey,
-            status: CommentsStatus.success,
-            commentsById: {comment.id: comment},
-          );
+      testWidgets('expands sheet to max when the composer gains focus', (
+        tester,
+      ) async {
+        final draggableController = DraggableScrollableController();
+        addTearDown(draggableController.dispose);
+        final comment = CommentBuilder()
+            .withId(TestCommentIds.comment1Id)
+            .withContent('Visible comment')
+            .build();
+        final listState = CommentsListState(
+          rootEventId: testVideoEventId,
+          rootAuthorPubkey: testVideoAuthorPubkey,
+          status: CommentsStatus.success,
+          commentsById: {comment.id: comment},
+        );
 
-          await tester.pumpWidget(
-            buildTestWidget(
-              draggableController: draggableController,
-              listState: listState,
-              composerState: const CommentComposerState(
-                mainInputText: 'ready to send',
-              ),
-              viewInsets: const EdgeInsets.only(bottom: 300),
+        await tester.pumpWidget(
+          buildTestWidget(
+            draggableController: draggableController,
+            listState: listState,
+            composerState: const CommentComposerState(
+              mainInputText: 'ready to send',
             ),
-          );
-          await tester.pump();
+          ),
+        );
+        await tester.pump();
 
-          expect(draggableController.size, 0.7);
+        expect(draggableController.size, 0.7);
 
-          await tester.tap(find.byType(TextField).first);
-          await tester.pumpAndSettle();
+        await tester.tap(find.byType(TextField).first);
+        await tester.pumpAndSettle();
 
-          expect(draggableController.size, closeTo(0.93, 0.001));
-          expect(
-            find.bySemanticsIdentifier('send_comment_button'),
-            findsOneWidget,
-          );
-          expect(
-            find.bySemanticsIdentifier('hide_comment_keyboard_button'),
-            findsOneWidget,
-          );
-          expect(find.text('ready to send'), findsOneWidget);
-        },
-      );
+        // The sheet fraction reaching max is the guard that keeps the fixed
+        // chrome + composer + keyboard padding inside the visible region;
+        // button presence alone wouldn't prove that.
+        expect(draggableController.size, closeTo(0.93, 0.001));
+        // The keyboard-dismiss affordance is focus-gated, so its presence
+        // confirms focus actually took effect (not just that a node exists).
+        expect(
+          find.bySemanticsIdentifier('hide_comment_keyboard_button'),
+          findsOneWidget,
+        );
+        // Draft text survives the focus-driven expand.
+        expect(find.text('ready to send'), findsOneWidget);
+      });
 
       testWidgets('keeps focused composer from settling below safe snap size', (
         tester,
@@ -592,6 +588,55 @@ void main() {
         draggableController.jumpTo(0.5);
         await tester.pumpAndSettle();
 
+        expect(draggableController.size, closeTo(0.93, 0.001));
+      });
+
+      testWidgets('re-clamps after an interrupted focus expand', (
+        tester,
+      ) async {
+        final draggableController = DraggableScrollableController();
+        addTearDown(draggableController.dispose);
+        final comment = CommentBuilder()
+            .withId(TestCommentIds.comment1Id)
+            .withContent('Visible comment')
+            .build();
+        final listState = CommentsListState(
+          rootEventId: testVideoEventId,
+          rootAuthorPubkey: testVideoAuthorPubkey,
+          status: CommentsStatus.success,
+          commentsById: {comment.id: comment},
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            draggableController: draggableController,
+            listState: listState,
+          ),
+        );
+        await tester.pump();
+
+        // Kick off the focus-driven expand but do NOT let it settle.
+        await tester.tap(find.byType(TextField).first);
+        await tester.pump(); // apply focus + start the expand animation
+        await tester.pump(const Duration(milliseconds: 80)); // mid-flight
+        expect(draggableController.size, greaterThan(0.7));
+        expect(draggableController.size, lessThan(0.93));
+
+        // Interrupt the in-flight expand while the composer stays focused.
+        // `jumpTo` calls `startActivity`, which cancels the running `animateTo`
+        // (a real drag would do the same but also drops focus). That
+        // cancellation never resolves the `animateTo` future, so a latch
+        // released on that future strands and permanently disables the
+        // re-clamp for the rest of the sheet session.
+        draggableController.jumpTo(0.5);
+        await tester.pump();
+        expect(draggableController.size, lessThan(0.7));
+
+        // Elapse past the expand window (250ms) so the latch releases and
+        // re-checks, then settle the re-clamp animation. With focus retained,
+        // the sheet must return to max.
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pumpAndSettle();
         expect(draggableController.size, closeTo(0.93, 0.001));
       });
 
