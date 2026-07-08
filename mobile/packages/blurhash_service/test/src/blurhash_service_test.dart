@@ -44,6 +44,35 @@ void main() {
       expect(data.height, equals(32));
     });
 
+    test('memoizes decode results for identical inputs', () {
+      final testBlurhash = BlurhashService.getDefaultVineBlurhash();
+
+      final first = BlurhashService.decodeBlurhash(testBlurhash);
+      final second = BlurhashService.decodeBlurhash(testBlurhash);
+
+      expect(first, isNotNull);
+      expect(
+        identical(first, second),
+        isTrue,
+        reason: 'repeated decodes of the same hash must hit the cache',
+      );
+    });
+
+    test('memoization keys include the requested dimensions', () {
+      final testBlurhash = BlurhashService.getDefaultVineBlurhash();
+
+      final large = BlurhashService.decodeBlurhash(testBlurhash);
+      final small = BlurhashService.decodeBlurhash(
+        testBlurhash,
+        width: 16,
+        height: 16,
+      );
+
+      expect(identical(large, small), isFalse);
+      expect(small!.width, equals(16));
+      expect(small.height, equals(16));
+    });
+
     test('provides content-specific blurhashes', () {
       final comedyBlurhash = BlurhashService.getBlurhashForContentType(
         VineContentType.comedy,
