@@ -21,6 +21,10 @@ class _MockNostrSigner extends Mock implements NostrSigner {}
 
 class _FakeEvent extends Fake implements Event {}
 
+/// Denies every recipient — stands in for a protected minor's policy where the
+/// counterparty is not in the approved official set.
+Future<bool> _denyAllPolicy(String recipientPubkey) async => false;
+
 /// A local-key signer that advertises the isolate-offload capability,
 /// delegating all crypto to a real [LocalNostrSigner]. Used to exercise the
 /// `_buildWrap` isolate branch in [NIP17MessageService]. See #5391.
@@ -96,6 +100,56 @@ void main() {
 
     test('nostrService getter returns the injected client', () {
       expect(service.nostrService, same(mockNostrClient));
+    });
+
+    group('send policy gate', () {
+      test(
+        'sendRumor blocked by policy returns failure and never publishes',
+        () async {
+          final blocked = NIP17MessageService(
+            signer: LocalNostrSigner(_testPrivateKey),
+            senderPublicKey: _testPublicKey,
+            nostrService: mockNostrClient,
+            sendPolicy: _denyAllPolicy,
+          );
+          final rumor = blocked.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'should be blocked',
+          );
+
+          final result = await blocked.sendRumor(
+            rumorEvent: rumor,
+            recipientPubkey: _recipientPubkey,
+          );
+
+          expect(result.success, isFalse);
+          verifyNever(() => mockNostrClient.publishEvent(any()));
+          verifyNever(
+            () => mockNostrClient.publishEvent(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          );
+        },
+      );
+
+      test('default policy allows sending (behavior preserved)', () async {
+        when(() => mockNostrClient.publishEvent(any())).thenAnswer(
+          (inv) async =>
+              PublishSuccess(event: inv.positionalArguments[0] as Event),
+        );
+        final rumor = service.buildRumor(
+          recipientPubkey: _recipientPubkey,
+          content: 'allowed',
+        );
+
+        final result = await service.sendRumor(
+          rumorEvent: rumor,
+          recipientPubkey: _recipientPubkey,
+        );
+
+        expect(result.success, isTrue);
+      });
     });
 
     group('sendRumor relay targeting', () {
