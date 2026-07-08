@@ -81,6 +81,15 @@ class NIP17MessageService {
   /// Access to the underlying NostrService for relay management
   NostrClient get nostrService => _nostrService;
 
+  /// Whether the injected [DmSendPolicy] permits delivering to
+  /// [recipientPubkey]. Exposed so `DmRepository` can gate BEFORE enqueue
+  /// (avoid storing a doomed intent) and enforce group all-or-nothing before
+  /// any per-recipient send. The per-send gate in [sendRumor] remains the
+  /// authoritative choke point (covers the drain replay); this is the earlier,
+  /// cheaper check.
+  Future<bool> canSendTo(String recipientPubkey) =>
+      _sendPolicy(recipientPubkey);
+
   /// Builds a single NIP-17 gift wrap for [receiverPublicKey] from
   /// [rumorEvent].
   ///

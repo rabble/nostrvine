@@ -133,6 +133,21 @@ void main() {
         },
       );
 
+      test(
+        'canSendTo surfaces the policy verdict for pre-enqueue/group checks',
+        () async {
+          final blocked = NIP17MessageService(
+            signer: LocalNostrSigner(_testPrivateKey),
+            senderPublicKey: _testPublicKey,
+            nostrService: mockNostrClient,
+            sendPolicy: _denyAllPolicy,
+          );
+
+          expect(await service.canSendTo(_recipientPubkey), isTrue);
+          expect(await blocked.canSendTo(_recipientPubkey), isFalse);
+        },
+      );
+
       test('default policy allows sending (behavior preserved)', () async {
         when(() => mockNostrClient.publishEvent(any())).thenAnswer(
           (inv) async =>

@@ -581,6 +581,12 @@ void main() {
           content,
         );
       });
+
+      // Default: the send policy permits everyone (behavior preserved). The
+      // protected-minor gate tests override this per-recipient. (#176)
+      when(
+        () => mockMessageService.canSendTo(any()),
+      ).thenAnswer((_) async => true);
     });
 
     DmRepository createRepository({
@@ -1346,6 +1352,38 @@ void main() {
           throwsA(isA<ArgumentError>()),
         );
       });
+
+      test(
+        'all-or-nothing: any non-approved participant blocks the whole group send (#176)',
+        () async {
+          // One approved, one not. Per-recipient gating alone would still deliver
+          // to the approved participant, so an attacker could p-tag the minor
+          // with a pinned decoy. The whole send must be refused.
+          when(
+            () => mockMessageService.canSendTo(_validPubkeyB),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockMessageService.canSendTo(_validPubkeyC),
+          ).thenAnswer((_) async => false);
+
+          final repository = createRepository();
+
+          final results = await repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'group with a decoy',
+          );
+
+          expect(results, isNotEmpty);
+          expect(results.every((r) => !r.success), isTrue);
+          // Nothing delivered — not even to the approved participant.
+          verifyNever(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: any(named: 'recipientPubkey'),
+            ),
+          );
+        },
+      );
     });
 
     group('userPubkey', () {
@@ -12538,6 +12576,34 @@ void main() {
               status: any(named: 'status'),
               eventId: any(named: 'eventId'),
               lastError: any(named: 'lastError'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'a policy-blocked recipient is neither enqueued nor sent (#176)',
+        () async {
+          when(
+            () => mockMessageService.canSendTo(_validPubkeyB),
+          ).thenAnswer((_) async => false);
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final result = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'should be blocked before enqueue',
+          );
+
+          expect(result.success, isFalse);
+          // Pre-enqueue gate: no doomed intent stored, nothing published.
+          verifyNever(() => mockOutgoingDmsDao.enqueue(any()));
+          verifyNever(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: any(named: 'recipientPubkey'),
             ),
           );
         },
