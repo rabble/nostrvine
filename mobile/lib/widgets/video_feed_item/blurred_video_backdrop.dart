@@ -179,3 +179,21 @@ Rect letterboxVideoRect(double aspectRatio, Size box) {
     height,
   );
 }
+
+/// The intrinsic aspect ratio (width / height) that drives the backdrop's
+/// letterbox geometry, or null when the video's dimensions are unknown — in
+/// which case the backdrop paints fullscreen, the safe fallback.
+double? backdropAspectRatio(int? width, int? height) {
+  if (width == null || height == null || height <= 0) return null;
+  return width / height;
+}
+
+/// Whether a video of [aspectRatio] fully covers (occludes) the feed viewport,
+/// so the backdrop must not be mounted at all. Mirrors the cover branch of
+/// `VideoItem._resolveBoxFit`: with [shouldPortraitExpand] every non-square
+/// video is `BoxFit.cover`-fitted and hides the backdrop, while square (1:1)
+/// and non-expanded videos stay contain-fit and keep their letterbox bars.
+bool videoCoversFeedViewport({
+  required double? aspectRatio,
+  required bool shouldPortraitExpand,
+}) => shouldPortraitExpand && aspectRatio != null && aspectRatio != 1.0;

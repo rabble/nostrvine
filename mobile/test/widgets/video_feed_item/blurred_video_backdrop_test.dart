@@ -153,8 +153,21 @@ void main() {
           );
 
           expect(find.byType(BlurhashDisplay), findsNWidgets(2));
-          // Each bar is isolated in its own RepaintBoundary.
-          expect(find.byType(RepaintBoundary), findsNWidgets(2));
+          // Each bar wraps its fill in its own RepaintBoundary. Assert that
+          // structure directly instead of counting RepaintBoundary widgets:
+          // BlurhashDisplay adds its own internal RepaintBoundary once its
+          // async image decode resolves, so a global count would be
+          // timing-dependent.
+          final bars = tester.widgetList<Positioned>(
+            find.descendant(
+              of: find.byType(BlurredVideoBackdrop),
+              matching: find.byType(Positioned),
+            ),
+          );
+          expect(bars, hasLength(2));
+          for (final bar in bars) {
+            expect(bar.child, isA<RepaintBoundary>());
+          }
         },
       );
 
@@ -164,7 +177,14 @@ void main() {
           await tester.pumpWidget(buildWidget(blurhash: testBlurhash));
 
           expect(find.byType(BlurhashDisplay), findsOneWidget);
-          expect(find.byType(RepaintBoundary), findsNothing);
+          // No letterbox bars: the fullscreen fill has no Positioned wrapper.
+          expect(
+            find.descendant(
+              of: find.byType(BlurredVideoBackdrop),
+              matching: find.byType(Positioned),
+            ),
+            findsNothing,
+          );
         },
       );
     });
@@ -193,6 +213,66 @@ void main() {
         expect(rect.height, closeTo(225, 0.001));
         expect(rect.top, closeTo((800 - 225) / 2, 0.001));
       });
+    });
+
+    group('backdropAspectRatio', () {
+      test('returns width / height when both dimensions are known', () {
+        expect(backdropAspectRatio(1920, 1080), closeTo(16 / 9, 0.0001));
+      });
+
+      test('returns null when either dimension is missing', () {
+        expect(backdropAspectRatio(null, 1080), isNull);
+        expect(backdropAspectRatio(1920, null), isNull);
+      });
+
+      test('returns null when height is zero (avoids divide-by-zero)', () {
+        expect(backdropAspectRatio(1920, 0), isNull);
+      });
+    });
+
+    group('videoCoversFeedViewport', () {
+      // Mirrors VideoItem._resolveBoxFit: the video is cover-fit (and so
+      // occludes the backdrop) only when portrait-expand is on and it is not
+      // square. These pin that contract so it can't silently drift.
+      test('landscape with portrait-expand covers the viewport', () {
+        expect(
+          videoCoversFeedViewport(
+            aspectRatio: 16 / 9,
+            shouldPortraitExpand: true,
+          ),
+          isTrue,
+        );
+      });
+
+      test('square stays contain-fit even with portrait-expand', () {
+        expect(
+          videoCoversFeedViewport(aspectRatio: 1, shouldPortraitExpand: true),
+          isFalse,
+        );
+      });
+
+      test('portrait-expand off never covers the viewport', () {
+        expect(
+          videoCoversFeedViewport(
+            aspectRatio: 16 / 9,
+            shouldPortraitExpand: false,
+          ),
+          isFalse,
+        );
+      });
+
+      test(
+        'unknown aspect ratio never covers (backdrop paints fullscreen)',
+        () {
+          expect(
+            videoCoversFeedViewport(
+              aspectRatio: null,
+              shouldPortraitExpand: true,
+            ),
+            isFalse,
+          );
+        },
+      );
     });
   });
 }

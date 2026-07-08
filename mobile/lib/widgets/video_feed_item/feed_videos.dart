@@ -316,19 +316,18 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
 
           final thumbnailUrl = video.thumbnailUrl;
           final blurhash = video.blurhash;
-          final width = video.width;
-          final height = video.height;
-          final aspectRatio = (width != null && height != null && height > 0)
-              ? width / height
-              : null;
+          // Metadata (dim-tag) ratio, which the player's decoded ratio is
+          // expected to match; a stale/wrong dim tag only mis-sizes the bars,
+          // and a missing one falls back to a fullscreen fill.
+          final aspectRatio = backdropAspectRatio(video.width, video.height);
           // The player covers (fills) the screen for every non-square video
           // when shouldPortraitExpand is set (see VideoItem._resolveBoxFit),
           // fully occluding the backdrop — so only mount it for the
           // contain-fit (letterboxed) case where it is actually visible.
-          final coversScreen =
-              widget.shouldPortraitExpand &&
-              aspectRatio != null &&
-              aspectRatio != 1.0;
+          final coversScreen = videoCoversFeedViewport(
+            aspectRatio: aspectRatio,
+            shouldPortraitExpand: widget.shouldPortraitExpand,
+          );
           // Either source can carry the backdrop: the blurhash path needs
           // no poster URL (PR #5957 review). The backdrop paints only in the
           // letterbox bars (each bar in its own RepaintBoundary), so no outer
