@@ -13,6 +13,7 @@ import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
+import 'package:openvine/blocs/dm/conversation_list/protected_minor_inbox_gate.dart';
 
 class _MockDmRepository extends Mock implements DmRepository {}
 
@@ -32,6 +33,30 @@ const _testPubkey2 =
     'd4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5';
 const _testPubkey3 =
     'e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6';
+
+/// Approves a fixed set of counterparties; a conversation is visible only when
+/// every non-self participant is approved. `changes` never emits (C1).
+class _FakeInboxGate implements ProtectedMinorInboxGate {
+  _FakeInboxGate({required this.approved});
+  final Set<String> approved;
+
+  @override
+  Stream<void> get changes => const Stream<void>.empty();
+
+  @override
+  List<DmConversation> filter(
+    List<DmConversation> conversations, {
+    required String userPubkey,
+  }) {
+    return conversations
+        .where(
+          (c) => c.participantPubkeys
+              .where((p) => p != userPubkey)
+              .every(approved.contains),
+        )
+        .toList();
+  }
+}
 
 DmConversation _createConversation({
   required String id,
@@ -133,6 +158,97 @@ void main() {
       // The debounce itself is covered by a dedicated coalescing test.
       recomputeDebounce: Duration.zero,
     );
+
+    group('protected-minor inbound filter (#176)', () {
+      test(
+        'hides inbox conversations whose counterparty is not approved',
+        () async {
+          final approvedConv = _createConversation(
+            id: 'a',
+            currentUserHasSent: true,
+            participantPubkeys: const [_testPubkey1, _testPubkey2],
+          );
+          final blockedConv = _createConversation(
+            id: 'b',
+            currentUserHasSent: true,
+            participantPubkeys: const [_testPubkey1, _testPubkey3],
+          );
+          _stubStreams(
+            mockDmRepository,
+            accepted: [approvedConv, blockedConv],
+          );
+
+          final bloc = ConversationListBloc(
+            dmRepository: mockDmRepository,
+            followRepository: mockFollowRepository,
+            protectedMinorInboxGate: _FakeInboxGate(approved: {_testPubkey2}),
+            recomputeDebounce: Duration.zero,
+          )..add(const ConversationListStarted());
+          addTearDown(bloc.close);
+
+          final state = await bloc.stream.firstWhere(
+            (s) => s.status == ConversationListStatus.loaded,
+          );
+          expect(state.conversations.map((c) => c.id).toList(), ['a']);
+        },
+      );
+
+      test(
+        'hides request conversations whose counterparty is not approved',
+        () async {
+          when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
+          final blockedReq = _createConversation(
+            id: 'r',
+            participantPubkeys: const [_testPubkey1, _testPubkey3],
+          );
+          _stubStreams(mockDmRepository, potentialRequests: [blockedReq]);
+
+          final bloc = ConversationListBloc(
+            dmRepository: mockDmRepository,
+            followRepository: mockFollowRepository,
+            protectedMinorInboxGate: _FakeInboxGate(approved: {_testPubkey2}),
+            recomputeDebounce: Duration.zero,
+          )..add(const ConversationListStarted());
+          addTearDown(bloc.close);
+
+          final state = await bloc.stream.firstWhere(
+            (s) => s.status == ConversationListStatus.loaded,
+          );
+          expect(state.requestConversations, isEmpty);
+        },
+      );
+
+      test(
+        'a group hidden unless every non-self participant is approved',
+        () async {
+          final groupConv = _createConversation(
+            id: 'g',
+            isGroup: true,
+            currentUserHasSent: true,
+            participantPubkeys: const [
+              _testPubkey1,
+              _testPubkey2,
+              _testPubkey3,
+            ],
+          );
+          _stubStreams(mockDmRepository, accepted: [groupConv]);
+
+          final bloc = ConversationListBloc(
+            dmRepository: mockDmRepository,
+            followRepository: mockFollowRepository,
+            // _testPubkey2 approved, _testPubkey3 not -> group hidden.
+            protectedMinorInboxGate: _FakeInboxGate(approved: {_testPubkey2}),
+            recomputeDebounce: Duration.zero,
+          )..add(const ConversationListStarted());
+          addTearDown(bloc.close);
+
+          final state = await bloc.stream.firstWhere(
+            (s) => s.status == ConversationListStatus.loaded,
+          );
+          expect(state.conversations, isEmpty);
+        },
+      );
+    });
 
     test('initial state is $ConversationListState with initial status', () {
       final bloc = createBloc();
