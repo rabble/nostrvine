@@ -661,6 +661,62 @@ final class BrokenVideoTrackerProvider
 String _$brokenVideoTrackerHash() =>
     r'36268bd477659a229f13da325ac23403a20e7fa7';
 
+/// Guard that HEAD-confirms a feed item's media is a hard 404 and marks it
+/// broken so the home feed can skip past + persistently prune it. Reuses the
+/// singleton [brokenVideoTrackerProvider] so a mark here is visible to every
+/// surface's `filterVideoList`. See #5953.
+
+@ProviderFor(deadMediaFeedGuard)
+final deadMediaFeedGuardProvider = DeadMediaFeedGuardProvider._();
+
+/// Guard that HEAD-confirms a feed item's media is a hard 404 and marks it
+/// broken so the home feed can skip past + persistently prune it. Reuses the
+/// singleton [brokenVideoTrackerProvider] so a mark here is visible to every
+/// surface's `filterVideoList`. See #5953.
+
+final class DeadMediaFeedGuardProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<DeadMediaFeedGuard>,
+          DeadMediaFeedGuard,
+          FutureOr<DeadMediaFeedGuard>
+        >
+    with
+        $FutureModifier<DeadMediaFeedGuard>,
+        $FutureProvider<DeadMediaFeedGuard> {
+  /// Guard that HEAD-confirms a feed item's media is a hard 404 and marks it
+  /// broken so the home feed can skip past + persistently prune it. Reuses the
+  /// singleton [brokenVideoTrackerProvider] so a mark here is visible to every
+  /// surface's `filterVideoList`. See #5953.
+  DeadMediaFeedGuardProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'deadMediaFeedGuardProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$deadMediaFeedGuardHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<DeadMediaFeedGuard> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<DeadMediaFeedGuard> create(Ref ref) {
+    return deadMediaFeedGuard(ref);
+  }
+}
+
+String _$deadMediaFeedGuardHash() =>
+    r'c0eed3bb2461ee831a2619dd662ebaf88f0da3a5';
+
 /// Provider for VideoLocalStorage instance (SQLite-backed)
 ///
 /// Creates a DbVideoLocalStorage for caching video events locally.

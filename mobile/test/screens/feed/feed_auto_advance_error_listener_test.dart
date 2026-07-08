@@ -20,6 +20,7 @@ Widget _host({
   required bool isActive,
   required bool isAutoAdvanceActive,
   required VoidCallback onSkip,
+  Future<bool> Function()? confirmAndMarkMissing,
 }) {
   return Directionality(
     textDirection: TextDirection.ltr,
@@ -30,6 +31,7 @@ Widget _host({
         isActive: isActive,
         isAutoAdvanceActive: isAutoAdvanceActive,
         onSkipBrokenVideo: onSkip,
+        confirmAndMarkMissing: confirmAndMarkMissing,
         child: const SizedBox.shrink(),
       ),
     ),
@@ -252,6 +254,116 @@ void main() {
         await tester.pump();
         await tester.pump();
         expect(skipCount, equals(2));
+      },
+    );
+
+    testWidgets(
+      'manual scroll: skips when confirmAndMarkMissing confirms a hard 404',
+      (tester) async {
+        var confirmCalls = 0;
+        final updated = VideoPlaybackStatusState().withStatus(
+          'video-1',
+          PlaybackStatus.notFound,
+        );
+        whenListen(
+          cubit,
+          Stream<VideoPlaybackStatusState>.fromIterable([updated]),
+          initialState: VideoPlaybackStatusState(),
+        );
+
+        await tester.pumpWidget(
+          _host(
+            cubit: cubit,
+            videoId: 'video-1',
+            isActive: true,
+            isAutoAdvanceActive: false, // manual scroll
+            onSkip: () => skipCount++,
+            confirmAndMarkMissing: () async {
+              confirmCalls++;
+              return true; // confirmed hard 404
+            },
+          ),
+        );
+
+        await tester.pump(); // deliver stream event
+        await tester.pump(); // resolve confirm future
+        await tester.pump(); // run post-frame skip
+
+        expect(confirmCalls, equals(1));
+        expect(skipCount, equals(1));
+      },
+    );
+
+    testWidgets(
+      'manual scroll: does NOT skip when the failure is not a confirmed 404',
+      (tester) async {
+        var confirmCalls = 0;
+        final updated = VideoPlaybackStatusState().withStatus(
+          'video-1',
+          PlaybackStatus.generic,
+        );
+        whenListen(
+          cubit,
+          Stream<VideoPlaybackStatusState>.fromIterable([updated]),
+          initialState: VideoPlaybackStatusState(),
+        );
+
+        await tester.pumpWidget(
+          _host(
+            cubit: cubit,
+            videoId: 'video-1',
+            isActive: true,
+            isAutoAdvanceActive: false, // manual scroll
+            onSkip: () => skipCount++,
+            confirmAndMarkMissing: () async {
+              confirmCalls++;
+              return false; // transient / non-404 — keep the item
+            },
+          ),
+        );
+
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+
+        expect(confirmCalls, equals(1));
+        expect(skipCount, equals(0));
+      },
+    );
+
+    testWidgets(
+      'auto mode: skips immediately and still runs confirmAndMarkMissing',
+      (tester) async {
+        var confirmCalls = 0;
+        final updated = VideoPlaybackStatusState().withStatus(
+          'video-1',
+          PlaybackStatus.notFound,
+        );
+        whenListen(
+          cubit,
+          Stream<VideoPlaybackStatusState>.fromIterable([updated]),
+          initialState: VideoPlaybackStatusState(),
+        );
+
+        await tester.pumpWidget(
+          _host(
+            cubit: cubit,
+            videoId: 'video-1',
+            isActive: true,
+            isAutoAdvanceActive: true, // auto
+            onSkip: () => skipCount++,
+            confirmAndMarkMissing: () async {
+              confirmCalls++;
+              return true;
+            },
+          ),
+        );
+
+        await tester.pump();
+        await tester.pump();
+
+        expect(skipCount, equals(1));
+        expect(confirmCalls, equals(1));
       },
     );
   });
