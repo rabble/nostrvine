@@ -315,10 +315,13 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
           final video = widget.videos[index];
 
           final thumbnailUrl = video.thumbnailUrl;
+          final blurhash = video.blurhash;
+          // Either source can carry the backdrop: the blurhash path needs
+          // no poster URL (PR #5957 review).
           final showBlurBackdrop =
               !video.isPortrait &&
-              thumbnailUrl != null &&
-              thumbnailUrl.isNotEmpty;
+              ((thumbnailUrl != null && thumbnailUrl.isNotEmpty) ||
+                  (blurhash != null && blurhash.isNotEmpty));
           return Stack(
             fit: StackFit.expand,
             children: [
@@ -326,7 +329,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
                 Positioned.fill(
                   child: BlurredVideoBackdrop(
                     url: thumbnailUrl,
-                    blurhash: video.blurhash,
+                    blurhash: blurhash,
                   ),
                 ),
               child,

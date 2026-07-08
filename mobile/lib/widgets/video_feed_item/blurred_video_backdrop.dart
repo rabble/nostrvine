@@ -21,12 +21,12 @@ class BlurredVideoBackdrop extends StatelessWidget {
   /// Creates a blurred backdrop for a video poster.
   ///
   /// [blurhash] is preferred when non-empty. [url] is the HTTPS poster
-  /// thumbnail used for the runtime-blur fallback; if the image fails to
-  /// load, the widget renders as empty ([SizedBox.shrink]) and lets the
-  /// parent background show through.
-  const BlurredVideoBackdrop({required this.url, super.key, this.blurhash});
+  /// thumbnail used for the runtime-blur fallback; when neither is
+  /// available, or the image fails to load, the widget renders as empty
+  /// ([SizedBox.shrink]) and lets the parent background show through.
+  const BlurredVideoBackdrop({super.key, this.url, this.blurhash});
 
-  final String url;
+  final String? url;
   final String? blurhash;
 
   @override
@@ -35,6 +35,10 @@ class BlurredVideoBackdrop extends StatelessWidget {
     if (hash != null && hash.isNotEmpty) {
       // Paint-level 50% alpha — no Opacity saveLayer, no blur pass.
       return BlurhashDisplay(blurhash: hash, opacity: 0.5);
+    }
+    final posterUrl = url;
+    if (posterUrl == null || posterUrl.isEmpty) {
+      return const SizedBox.shrink();
     }
     return ClipRect(
       // `ImageFiltered` applies the blur on the GPU side; `ClipRect`
@@ -45,7 +49,7 @@ class BlurredVideoBackdrop extends StatelessWidget {
         child: Opacity(
           opacity: 0.5,
           child: VineCachedImage(
-            imageUrl: url,
+            imageUrl: posterUrl,
             // Fall back to nothing on error — the parent
             // [ColoredBox(VineTheme.surfaceContainerHigh)] shows through.
             errorWidget: (_, _, _) => const SizedBox.shrink(),

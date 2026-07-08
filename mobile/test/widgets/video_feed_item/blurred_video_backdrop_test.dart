@@ -55,6 +55,45 @@ void main() {
       },
     );
 
+    testWidgets(
+      'renders the blurhash path without any poster url',
+      (tester) async {
+        await tester.pumpWidget(
+          WidgetsApp(
+            color: const Color(0xFF000000),
+            builder: (_, _) => const SizedBox(
+              width: 400,
+              height: 800,
+              child: BlurredVideoBackdrop(blurhash: testBlurhash),
+            ),
+          ),
+        );
+
+        expect(find.byType(BlurhashDisplay), findsOneWidget);
+        expect(find.byType(VineCachedImage), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'renders empty when neither blurhash nor url is available',
+      (tester) async {
+        await tester.pumpWidget(
+          WidgetsApp(
+            color: const Color(0xFF000000),
+            builder: (_, _) => const SizedBox(
+              width: 400,
+              height: 800,
+              child: BlurredVideoBackdrop(),
+            ),
+          ),
+        );
+
+        expect(find.byType(BlurhashDisplay), findsNothing);
+        expect(find.byType(ImageFiltered), findsNothing);
+        expect(find.byType(VineCachedImage), findsNothing);
+      },
+    );
+
     testWidgets('passes url to $VineCachedImage', (tester) async {
       await tester.pumpWidget(buildWidget());
 
