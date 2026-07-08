@@ -3810,6 +3810,13 @@ class DmRepository {
       throw ArgumentError.value(fileUrl, 'fileUrl', 'must not be empty');
     }
 
+    // Protected-minor gate (#176): the file path intentionally relies on the
+    // single authoritative choke point in `sendRumor` (via sendPrivateMessage)
+    // rather than adding its own pre-check like sendMessage/sendGroupMessage. A
+    // blocked recipient is refused there before any publish; the extra pre-gate
+    // on the text paths is only an early-out to avoid enqueuing a doomed 1:1/
+    // group intent, which the single-shot file send does not create.
+
     final additionalTags = <List<String>>[
       ['file-type', fileMetadata.fileType],
       ['encryption-algorithm', fileMetadata.encryptionAlgorithm],
