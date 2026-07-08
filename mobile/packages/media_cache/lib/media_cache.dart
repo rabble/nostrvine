@@ -59,7 +59,8 @@ export 'src/cancellable_downloader.dart'
         CancellableDownloadResult,
         CancellableDownloader,
         HttpCancellableDownloader;
-export 'src/media_cache_image_provider.dart' show MediaCacheImageProvider;
+export 'src/media_cache_image_provider.dart'
+    show MediaCacheImageLoadException, MediaCacheImageProvider;
 export 'src/media_cache_manager.dart'
     show CacheMetrics, MediaCacheConfig, MediaCacheManager;
 export 'src/safe_cache_info_repository.dart'

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:media_cache/media_cache.dart';
 import 'package:openvine/widgets/avatar_failure_cache.dart';
 
 void main() {
@@ -87,12 +88,44 @@ void main() {
       expect(cache.isFailed(url), isFalse);
     });
 
-    test('does not record cancelled failures', () {
+    test('caches completed raster download failures transiently', () {
+      const url = 'https://blotcdn.com/broken-avatar.png';
+
+      final kind = cache.recordFailureForError(
+        url,
+        const MediaCacheImageLoadException(url),
+      );
+
+      expect(kind, AvatarFailureKind.transient);
+      expect(cache.isFailed(url), isTrue);
+
+      now = now.add(AvatarFailureCache.transientFailureTtl);
+      expect(cache.isFailed(url), isFalse);
+    });
+
+    test('treats empty cached image files as deterministic', () {
       const url = 'https://example.com/avatar.png';
 
       final kind = cache.recordFailureForError(
         url,
-        Exception('MediaCacheImageProvider load cancelled'),
+        StateError(
+          "File: '/tmp/avatar.png' is empty and cannot be loaded as an image.",
+        ),
+      );
+
+      expect(kind, AvatarFailureKind.deterministic);
+      expect(cache.isFailed(url), isTrue);
+
+      now = now.add(AvatarFailureCache.transientFailureTtl);
+      expect(cache.isFailed(url), isTrue);
+    });
+
+    test('does not record genuine load cancellations', () {
+      const url = 'https://example.com/avatar.png';
+
+      final kind = cache.recordFailureForError(
+        url,
+        Exception('SvgPicture load cancelled'),
       );
 
       expect(kind, AvatarFailureKind.cancelled);

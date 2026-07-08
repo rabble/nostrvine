@@ -2,6 +2,7 @@
 // ABOUTME: Prevents repeated fetch/log loops for broken profile images
 
 import 'package:flutter/foundation.dart';
+import 'package:media_cache/media_cache.dart';
 
 typedef AvatarFailureClock = DateTime Function();
 
@@ -73,16 +74,32 @@ class AvatarFailureCache {
 
   @visibleForTesting
   static AvatarFailureKind classifyFailure(Object error) {
-    final message = error.toString().toLowerCase();
-    if (message.contains('load cancelled')) {
-      return AvatarFailureKind.cancelled;
+    // A completed raster download that produced no file — a dead or broken
+    // URL, non-2xx response, or DNS failure. This is distinct from a benign
+    // scroll-away cancellation (which never surfaces as an error), so cache it
+    // with the short TTL to stop the retry-and-relog loop while still letting
+    // a recovered host reload soon. Matched by type rather than message so it
+    // survives any future rewording in media_cache.
+    if (error is MediaCacheImageLoadException) {
+      return AvatarFailureKind.transient;
     }
+
+    final message = error.toString().toLowerCase();
+
     if (message.contains('invalid image data') ||
         message.contains('image codec failed') ||
         message.contains('xmlparserexception') ||
-        message.contains('invalid svg data')) {
+        message.contains('invalid svg data') ||
+        message.contains('empty and cannot be loaded')) {
       return AvatarFailureKind.deterministic;
     }
+
+    // A genuine in-flight cancellation (e.g. flutter_svg aborting a request)
+    // says nothing about whether the URL is broken, so never cache it.
+    if (message.contains('load cancelled')) {
+      return AvatarFailureKind.cancelled;
+    }
+
     return AvatarFailureKind.transient;
   }
 

@@ -4,11 +4,16 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:media_cache/media_cache.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/widgets/avatar_failure_cache.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
+
+class _MockMediaCacheManager extends Mock implements MediaCacheManager {}
 
 final Uint8List _transparentImageBytes = Uint8List.fromList(<int>[
   0x89,
@@ -250,22 +255,56 @@ void main() {
       expect(AvatarFailureCache.instance.isFailed(cancelledUrl), isFalse);
     });
 
-    testWidgets('raster load cancellations are not cached', (tester) async {
-      const cancelledUrl = 'https://divine.video/avatar.png';
+    testWidgets('raster completed download failures are cached', (
+      tester,
+    ) async {
+      const failedUrl = 'https://blotcdn.com/broken-avatar.png';
 
-      await tester.pumpWidget(buildAvatar(imageUrl: cancelledUrl));
+      await tester.pumpWidget(buildAvatar(imageUrl: failedUrl));
       final image = tester.widget<VineCachedImage>(
         find.byType(VineCachedImage),
       );
 
       image.errorWidget!(
         tester.element(find.byType(VineCachedImage)),
-        cancelledUrl,
-        Exception('MediaCacheImageProvider load cancelled'),
+        failedUrl,
+        const MediaCacheImageLoadException(failedUrl),
       );
 
-      expect(AvatarFailureCache.instance.isFailed(cancelledUrl), isFalse);
+      expect(AvatarFailureCache.instance.isFailed(failedUrl), isTrue);
     });
+
+    testWidgets(
+      'caches a broken raster URL through the real image provider',
+      (tester) async {
+        const brokenUrl = 'https://blotcdn.com/dead-avatar.png';
+        final cache = _MockMediaCacheManager();
+        when(
+          () => cache.getFileFromCache(any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => cache.cacheFileCancellable(
+            any(),
+            key: any(named: 'key'),
+            aliasKey: any(named: 'aliasKey'),
+            authHeaders: any(named: 'authHeaders'),
+          ),
+          // An empty stream resolves the download to a null file — exactly
+          // what a dead URL (non-2xx / DNS failure) produces in production.
+        ).thenReturn(
+          CancellableCacheOperation.fromStream(
+            const Stream<FileResponse>.empty(),
+          ),
+        );
+        debugImageCacheOverride = cache;
+        addTearDown(() => debugImageCacheOverride = null);
+
+        await tester.pumpWidget(buildAvatar(imageUrl: brokenUrl));
+        await tester.pumpAndSettle();
+
+        expect(AvatarFailureCache.instance.isFailed(brokenUrl), isTrue);
+      },
+    );
 
     testWidgets('keeps raster avatar URLs on VineCachedImage', (tester) async {
       await tester.pumpWidget(

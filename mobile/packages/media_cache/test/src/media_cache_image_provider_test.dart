@@ -388,10 +388,11 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       expect(errors, hasLength(1));
-      expect(
-        errors.single.toString(),
-        contains('MediaCacheImageProvider load cancelled'),
-      );
+      final failure = errors.single;
+      expect(failure, isA<MediaCacheImageLoadException>());
+      expect((failure as MediaCacheImageLoadException).url, equals(url));
+      expect(failure.toString(), contains(url));
+      expect(failure.toString(), contains('download completed without a file'));
       expect(
         PaintingBinding.instance.imageCache.containsKey(provider),
         isFalse,

@@ -98,7 +98,11 @@ class MediaCacheImageProvider extends ImageProvider<MediaCacheImageProvider> {
         return _abortCancelledLoad(key);
       }
       if (file == null) {
-        throw const _ImageLoadCancelledException();
+        // The download completed but produced no file (network/DNS failure,
+        // non-2xx response, …). This is a genuine load failure, distinct from
+        // the benign scroll-away cancellation handled above via
+        // `_abortCancelledLoad` — the latter never throws.
+        throw MediaCacheImageLoadException(url);
       }
 
       return _decodeFile(file, decode: decode);
@@ -204,9 +208,23 @@ class _ImageLoadHandle {
   }
 }
 
-class _ImageLoadCancelledException implements Exception {
-  const _ImageLoadCancelledException();
+/// Thrown by [MediaCacheImageProvider] when a download completes without
+/// producing a usable file.
+///
+/// This signals a genuine load failure — a network or DNS error, a non-2xx
+/// response, or an otherwise dead URL — and is distinct from the benign
+/// scroll-away cancellation the provider handles silently (which returns a
+/// never-completing future rather than throwing). Callers that maintain a
+/// negative cache of broken URLs should treat this as a cacheable failure.
+class MediaCacheImageLoadException implements Exception {
+  /// Creates an exception for the [url] whose download produced no file.
+  const MediaCacheImageLoadException(this.url);
+
+  /// The URL whose download completed without a file.
+  final String url;
 
   @override
-  String toString() => 'MediaCacheImageProvider load cancelled';
+  String toString() =>
+      'MediaCacheImageProvider failed to load "$url": '
+      'download completed without a file';
 }
