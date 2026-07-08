@@ -681,6 +681,13 @@
   "@videoErrorAdultContentHidden": {
     "description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."
   },
+  "videoDetailLoadError": "Failed to load video: {error}",
+  "@videoDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
+  "videoDetailContextTitle": "Shared Video",
+  "@videoDetailContextTitle": {
+    "description": "App bar title over the fullscreen player when a video is opened from a share/deep link; also forwarded verbatim as the feedMode analytics dimension."
+  },
+  "videoDetailCloseSemanticLabel": "Close video player",
   "videoFollowButtonFollowing": "Following",
   "videoFollowButtonFollow": "Follow",
   "audioAttributionOriginalSound": "Original sound",

@@ -1429,6 +1429,17 @@ class AppLocalizationsPt extends AppLocalizations {
       'O conteúdo adulto está desativado. Você pode ativá-lo em Configurações → Filtros de conteúdo.';
 
   @override
+  String videoDetailLoadError(String error) {
+    return 'Falha ao carregar o vídeo: $error';
+  }
+
+  @override
+  String get videoDetailContextTitle => 'Vídeo compartilhado';
+
+  @override
+  String get videoDetailCloseSemanticLabel => 'Fechar reprodutor de vídeo';
+
+  @override
   String get videoFollowButtonFollowing => 'Seguindo';
 
   @override

@@ -1433,6 +1433,17 @@ class AppLocalizationsBg extends AppLocalizations {
       'Съдържанието за възрастни е изключено. Можеш да го включиш от Настройки → Филтри за съдържание.';
 
   @override
+  String videoDetailLoadError(String error) {
+    return 'Неуспешно зареждане на видеото: $error';
+  }
+
+  @override
+  String get videoDetailContextTitle => 'Споделено видео';
+
+  @override
+  String get videoDetailCloseSemanticLabel => 'Затворете видеоплейъра';
+
+  @override
   String get videoFollowButtonFollowing => 'Следване';
 
   @override

@@ -1393,6 +1393,17 @@ class AppLocalizationsTr extends AppLocalizations {
       'Yetişkin içeriği kapalı. Ayarlar → İçerik Filtreleri\'nden açabilirsin.';
 
   @override
+  String videoDetailLoadError(String error) {
+    return 'Video yüklenemedi: $error';
+  }
+
+  @override
+  String get videoDetailContextTitle => 'Paylaşılan video';
+
+  @override
+  String get videoDetailCloseSemanticLabel => 'Video oynatıcıyı kapat';
+
+  @override
   String get videoFollowButtonFollowing => 'Takip ediliyor';
 
   @override

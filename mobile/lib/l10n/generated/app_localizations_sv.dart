@@ -1407,6 +1407,17 @@ class AppLocalizationsSv extends AppLocalizations {
       'Innehåll för vuxna är avstängt. Du kan slå på det i Inställningar → Innehållsfilter.';
 
   @override
+  String videoDetailLoadError(String error) {
+    return 'Kunde inte läsa in videon: $error';
+  }
+
+  @override
+  String get videoDetailContextTitle => 'Delad video';
+
+  @override
+  String get videoDetailCloseSemanticLabel => 'Stäng videospelaren';
+
+  @override
   String get videoFollowButtonFollowing => 'Följer';
 
   @override

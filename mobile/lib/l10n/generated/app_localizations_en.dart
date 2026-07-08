@@ -1411,6 +1411,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Adult content is switched off. You can turn it on in Settings → Content Filters.';
 
   @override
+  String videoDetailLoadError(String error) {
+    return 'Failed to load video: $error';
+  }
+
+  @override
+  String get videoDetailContextTitle => 'Shared Video';
+
+  @override
+  String get videoDetailCloseSemanticLabel => 'Close video player';
+
+  @override
   String get videoFollowButtonFollowing => 'Following';
 
   @override

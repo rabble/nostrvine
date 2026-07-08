@@ -1449,6 +1449,17 @@ class AppLocalizationsRo extends AppLocalizations {
       'Conținutul pentru adulți este dezactivat. Îl poți activa în Setări → Filtre de conținut.';
 
   @override
+  String videoDetailLoadError(String error) {
+    return 'N-am putut încărca videoclipul: $error';
+  }
+
+  @override
+  String get videoDetailContextTitle => 'Videoclip partajat';
+
+  @override
+  String get videoDetailCloseSemanticLabel => 'Închide playerul video';
+
+  @override
   String get videoFollowButtonFollowing => 'Urmărit';
 
   @override

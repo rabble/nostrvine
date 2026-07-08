@@ -1438,6 +1438,17 @@ class AppLocalizationsFr extends AppLocalizations {
       'Le contenu pour adultes est désactivé. Tu peux l\'activer dans Réglages → Filtres de contenu.';
 
   @override
+  String videoDetailLoadError(String error) {
+    return 'Échec du chargement de la vidéo : $error';
+  }
+
+  @override
+  String get videoDetailContextTitle => 'Vidéo partagée';
+
+  @override
+  String get videoDetailCloseSemanticLabel => 'Fermer le lecteur vidéo';
+
+  @override
   String get videoFollowButtonFollowing => 'Abonné';
 
   @override

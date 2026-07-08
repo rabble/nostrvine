@@ -1373,6 +1373,17 @@ class AppLocalizationsAm extends AppLocalizations {
       'የአዋቂዎች ይዘት ጠፍቷል። በቅንብሮች → የይዘት ማጣሪያዎች ውስጥ ማብራት ይችላሉ።';
 
   @override
+  String videoDetailLoadError(String error) {
+    return 'ቪዲዮ መጫን አልተሳካም፦ $error';
+  }
+
+  @override
+  String get videoDetailContextTitle => 'የተጋራ ቪዲዮ';
+
+  @override
+  String get videoDetailCloseSemanticLabel => 'የቪዲዮ ማጫወቻን ዝጋ';
+
+  @override
   String get videoFollowButtonFollowing => 'በመከተል ላይ';
 
   @override

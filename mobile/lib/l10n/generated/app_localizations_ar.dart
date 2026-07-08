@@ -1397,6 +1397,17 @@ class AppLocalizationsAr extends AppLocalizations {
       'المحتوى للبالغين مُعطَّل. يمكنك تفعيله من الإعدادات ← مرشّحات المحتوى.';
 
   @override
+  String videoDetailLoadError(String error) {
+    return 'فشل تحميل الفيديو: $error';
+  }
+
+  @override
+  String get videoDetailContextTitle => 'فيديو تمت مشاركته';
+
+  @override
+  String get videoDetailCloseSemanticLabel => 'إغلاق مشغل الفيديو';
+
+  @override
   String get videoFollowButtonFollowing => 'متابع';
 
   @override

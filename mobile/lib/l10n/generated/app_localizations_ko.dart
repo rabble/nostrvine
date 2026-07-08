@@ -1329,6 +1329,17 @@ class AppLocalizationsKo extends AppLocalizations {
       '성인 콘텐츠가 꺼져 있어요. 설정 → 콘텐츠 필터에서 켤 수 있어요.';
 
   @override
+  String videoDetailLoadError(String error) {
+    return '영상을 불러오지 못했어요: $error';
+  }
+
+  @override
+  String get videoDetailContextTitle => '공유된 영상';
+
+  @override
+  String get videoDetailCloseSemanticLabel => '동영상 플레이어 닫기';
+
+  @override
   String get videoFollowButtonFollowing => '팔로잉';
 
   @override

@@ -1388,6 +1388,17 @@ class AppLocalizationsId extends AppLocalizations {
       'Konten dewasa sedang dimatikan. Kamu bisa mengaktifkannya di Pengaturan → Filter Konten.';
 
   @override
+  String videoDetailLoadError(String error) {
+    return 'Gagal memuat video: $error';
+  }
+
+  @override
+  String get videoDetailContextTitle => 'Video yang dibagikan';
+
+  @override
+  String get videoDetailCloseSemanticLabel => 'Tutup pemutar video';
+
+  @override
   String get videoFollowButtonFollowing => 'Mengikuti';
 
   @override

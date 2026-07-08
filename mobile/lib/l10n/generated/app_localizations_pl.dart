@@ -1434,6 +1434,17 @@ class AppLocalizationsPl extends AppLocalizations {
       'Treści dla dorosłych są wyłączone. Możesz je włączyć w Ustawienia → Filtry treści.';
 
   @override
+  String videoDetailLoadError(String error) {
+    return 'Nie udało się wczytać filmu: $error';
+  }
+
+  @override
+  String get videoDetailContextTitle => 'Udostępniony film';
+
+  @override
+  String get videoDetailCloseSemanticLabel => 'Zamknij odtwarzacz wideo';
+
+  @override
   String get videoFollowButtonFollowing => 'Obserwujesz';
 
   @override

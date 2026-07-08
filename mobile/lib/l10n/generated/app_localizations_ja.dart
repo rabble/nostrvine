@@ -1320,6 +1320,17 @@ class AppLocalizationsJa extends AppLocalizations {
       'アダルトコンテンツはオフになってるよ。[設定]→[コンテンツフィルター]でオンにできるよ。';
 
   @override
+  String videoDetailLoadError(String error) {
+    return '動画の読み込みに失敗したよ: $error';
+  }
+
+  @override
+  String get videoDetailContextTitle => '共有された動画';
+
+  @override
+  String get videoDetailCloseSemanticLabel => '動画プレーヤーを閉じる';
+
+  @override
   String get videoFollowButtonFollowing => 'フォロー中';
 
   @override

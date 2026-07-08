@@ -12,6 +12,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -36,6 +37,8 @@ Finder _divineIcon(DivineIconName name) =>
     find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
 
 void main() {
+  final l10n = lookupAppLocalizations(const Locale('en'));
+
   setUpAll(() {
     registerFallbackValue(createTestVideoEvent(id: 'fallback_video'));
   });
@@ -388,9 +391,20 @@ void main() {
           await tester.pumpWidget(buildSubject());
           await tester.pump();
 
-          expect(find.text('Video not found'), findsOneWidget);
+          expect(find.text(l10n.videoErrorNotFound), findsOneWidget);
+          // Prove the copy resolves through l10n rather than a hardcoded
+          // English string (#5125).
+          expect(
+            find.text(
+              lookupAppLocalizations(const Locale('de')).videoErrorNotFound,
+            ),
+            findsNothing,
+          );
           expect(_divineIcon(DivineIconName.warningCircle), findsOneWidget);
-          expect(find.bySemanticsLabel('Close video player'), findsOneWidget);
+          expect(
+            find.bySemanticsLabel(l10n.videoDetailCloseSemanticLabel),
+            findsOneWidget,
+          );
         },
       );
 
@@ -414,9 +428,12 @@ void main() {
           await tester.pumpWidget(buildSubject(videoId: coordinate));
           await tester.pump();
 
-          expect(find.text('Video not found'), findsOneWidget);
+          expect(find.text(l10n.videoErrorNotFound), findsOneWidget);
           expect(_divineIcon(DivineIconName.warningCircle), findsOneWidget);
-          expect(find.bySemanticsLabel('Close video player'), findsOneWidget);
+          expect(
+            find.bySemanticsLabel(l10n.videoDetailCloseSemanticLabel),
+            findsOneWidget,
+          );
         },
       );
 
@@ -453,7 +470,7 @@ void main() {
           await tester.pump();
 
           expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
-          expect(find.text('Video not found'), findsNothing);
+          expect(find.text(l10n.videoErrorNotFound), findsNothing);
 
           isInitialized = true;
           connectedRelayCount = 1;
@@ -485,9 +502,15 @@ void main() {
           await tester.pumpWidget(buildSubject());
           await tester.pump();
 
-          expect(find.textContaining('Failed to load video'), findsOneWidget);
+          expect(
+            find.text(l10n.videoDetailLoadError('Exception: Network error')),
+            findsOneWidget,
+          );
           expect(_divineIcon(DivineIconName.warningCircle), findsOneWidget);
-          expect(find.bySemanticsLabel('Close video player'), findsOneWidget);
+          expect(
+            find.bySemanticsLabel(l10n.videoDetailCloseSemanticLabel),
+            findsOneWidget,
+          );
         },
       );
     });
@@ -564,8 +587,11 @@ void main() {
         await tester.pumpWidget(buildSubject(videoId: 'hidden_video_id'));
         await tester.pump();
 
-        expect(find.text('Video not found'), findsOneWidget);
-        expect(find.bySemanticsLabel('Close video player'), findsOneWidget);
+        expect(find.text(l10n.videoErrorNotFound), findsOneWidget);
+        expect(
+          find.bySemanticsLabel(l10n.videoDetailCloseSemanticLabel),
+          findsOneWidget,
+        );
       });
 
       testWidgets('renders exit button when video was locally deleted', (
@@ -589,8 +615,11 @@ void main() {
         await tester.pumpWidget(buildSubject(videoId: 'deleted_video_id'));
         await tester.pump();
 
-        expect(find.text('Video not found'), findsOneWidget);
-        expect(find.bySemanticsLabel('Close video player'), findsOneWidget);
+        expect(find.text(l10n.videoErrorNotFound), findsOneWidget);
+        expect(
+          find.bySemanticsLabel(l10n.videoDetailCloseSemanticLabel),
+          findsOneWidget,
+        );
       });
     });
   });

@@ -1421,6 +1421,17 @@ class AppLocalizationsNl extends AppLocalizations {
       'Inhoud voor volwassenen staat uit. Je kunt dit aanzetten via Instellingen → Inhoudsfilters.';
 
   @override
+  String videoDetailLoadError(String error) {
+    return 'Video laden mislukt: $error';
+  }
+
+  @override
+  String get videoDetailContextTitle => 'Gedeelde video';
+
+  @override
+  String get videoDetailCloseSemanticLabel => 'Videospeler sluiten';
+
+  @override
   String get videoFollowButtonFollowing => 'Volgend';
 
   @override

@@ -2530,6 +2530,24 @@ abstract class AppLocalizations {
   /// **'Adult content is switched off. You can turn it on in Settings → Content Filters.'**
   String get videoErrorAdultContentHidden;
 
+  /// No description provided for @videoDetailLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load video: {error}'**
+  String videoDetailLoadError(String error);
+
+  /// App bar title over the fullscreen player when a video is opened from a share/deep link; also forwarded verbatim as the feedMode analytics dimension.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared Video'**
+  String get videoDetailContextTitle;
+
+  /// No description provided for @videoDetailCloseSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Close video player'**
+  String get videoDetailCloseSemanticLabel;
+
   /// No description provided for @videoFollowButtonFollowing.
   ///
   /// In en, this message translates to:

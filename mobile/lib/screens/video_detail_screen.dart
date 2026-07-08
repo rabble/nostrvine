@@ -81,7 +81,8 @@ class VideoDetailScreen extends ConsumerStatefulWidget {
 class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
   VideoEvent? _video;
   bool _isLoading = true;
-  String? _error;
+  _VideoDetailError? _error;
+  Object? _errorDetail;
   StreamSubscription? _relayReadySubscription;
   bool _retryScheduled = false;
   bool _hasRetriedAfterRelayReady = false;
@@ -118,6 +119,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
       _video = widget.initialVideo;
       _isLoading = widget.initialVideo == null;
       _error = null;
+      _errorDetail = null;
     });
 
     if (widget.initialVideo != null) {
@@ -167,6 +169,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
             _video = video;
             _isLoading = false;
             _error = null;
+            _errorDetail = null;
           });
           ScreenAnalyticsService().markDataLoaded('video_detail');
         }
@@ -191,7 +194,8 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
         );
         if (mounted) {
           setState(() {
-            _error = 'Video not found';
+            _error = _VideoDetailError.notFound;
+            _errorDetail = null;
             _isLoading = false;
           });
         }
@@ -217,7 +221,8 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
       );
       if (mounted) {
         setState(() {
-          _error = 'Failed to load video: $e';
+          _error = _VideoDetailError.loadFailed;
+          _errorDetail = e;
           _isLoading = false;
         });
       }
@@ -241,6 +246,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
       setState(() {
         _isLoading = true;
         _error = null;
+        _errorDetail = null;
       });
       unawaited(_loadVideo(allowRelayReadyRetry: false));
     }
@@ -276,6 +282,12 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
     }
 
     if (_error != null) {
+      final message = switch (_error!) {
+        _VideoDetailError.notFound => context.l10n.videoErrorNotFound,
+        _VideoDetailError.loadFailed => context.l10n.videoDetailLoadError(
+          '$_errorDetail',
+        ),
+      };
       return Scaffold(
         backgroundColor: VineTheme.backgroundColor,
         appBar: _buildExitAppBar(context),
@@ -290,11 +302,8 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                _error!,
-                style: const TextStyle(
-                  color: VineTheme.primaryText,
-                  fontSize: 16,
-                ),
+                message,
+                style: VineTheme.bodyLargeFont(),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -312,7 +321,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
         body: Center(
           child: Text(
             context.l10n.videoErrorNotFound,
-            style: const TextStyle(color: VineTheme.primaryText),
+            style: VineTheme.bodyMediumFont(),
           ),
         ),
       );
@@ -324,7 +333,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
           source: SingleVideoViewSource(_video!),
           feedRepository: StaticFeedRepository(),
           initialIndex: 0,
-          contextTitle: 'Shared Video',
+          contextTitle: context.l10n.videoDetailContextTitle,
           trafficSource: ViewTrafficSource.share,
           autoOpenComments: widget.autoOpenComments,
           dmReplyContext: widget.dmReplyContext,
@@ -336,7 +345,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
       title: '',
       showBackButton: true,
       onBackPressed: () => _handleExit(context),
-      backButtonSemanticLabel: 'Close video player',
+      backButtonSemanticLabel: context.l10n.videoDetailCloseSemanticLabel,
       backgroundMode: DiVineAppBarBackgroundMode.transparent,
     );
   }
@@ -349,3 +358,5 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
     context.go('/');
   }
 }
+
+enum _VideoDetailError { notFound, loadFailed }

@@ -1429,6 +1429,17 @@ class AppLocalizationsDe extends AppLocalizations {
       'Inhalte für Erwachsene sind ausgeschaltet. Du kannst sie unter Einstellungen → Inhaltsfilter aktivieren.';
 
   @override
+  String videoDetailLoadError(String error) {
+    return 'Video konnte nicht geladen werden: $error';
+  }
+
+  @override
+  String get videoDetailContextTitle => 'Geteiltes Video';
+
+  @override
+  String get videoDetailCloseSemanticLabel => 'Videoplayer schließen';
+
+  @override
   String get videoFollowButtonFollowing => 'Gefolgt';
 
   @override
