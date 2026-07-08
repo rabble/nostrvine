@@ -149,57 +149,6 @@ void main() {
     ).thenAnswer((_) async => profiles);
   }
 
-  void stubNotifications(
-    List<RelayNotification> notifications, {
-    int unreadCount = 0,
-    bool hasMore = false,
-    String? nextCursor,
-    String? nextCursorId,
-  }) {
-    when(
-      () => funnelcakeApiClient.getNotifications(
-        pubkey: any(named: 'pubkey'),
-        cursor: any(named: 'cursor'),
-        cursorId: any(named: 'cursorId'),
-        requestUri: any(named: 'requestUri'),
-        authHeaders: any(named: 'authHeaders'),
-        limit: any(named: 'limit'),
-      ),
-    ).thenAnswer(
-      (_) async => NotificationResponse(
-        notifications: notifications,
-        unreadCount: unreadCount,
-        hasMore: hasMore,
-        nextCursor: nextCursor,
-        nextCursorId: nextCursorId,
-      ),
-    );
-  }
-
-  /// Stubs `getVideoStats(eventId)` to return [stats].
-  void stubVideoStats(String eventId, VideoStats stats) {
-    when(
-      () => funnelcakeApiClient.getVideoStats(eventId),
-    ).thenAnswer((_) async => stats);
-  }
-
-  UserProfile makeProfile(
-    String pubkey, {
-    String? displayName,
-    String? name,
-    String? picture,
-  }) {
-    return UserProfile(
-      pubkey: pubkey,
-      rawData: const {},
-      createdAt: DateTime(2024),
-      eventId: 'evt_$pubkey',
-      displayName: displayName,
-      name: name,
-      picture: picture,
-    );
-  }
-
   VideoStats makeVideoStats({
     required String id,
     String pubkey = userPubkey,
@@ -220,6 +169,75 @@ void main() {
       comments: 0,
       reposts: 0,
       engagementScore: 0,
+    );
+  }
+
+  /// Stubs `getVideoStats(eventId)` to return [stats].
+  void stubVideoStats(String eventId, VideoStats stats) {
+    when(
+      () => funnelcakeApiClient.getVideoStats(eventId),
+    ).thenAnswer((_) async => stats);
+  }
+
+  /// Stubs `getVideoStats(eventId)` to miss, leaving video ownership unknown.
+  void stubMissingVideoStats(String eventId) {
+    when(
+      () => funnelcakeApiClient.getVideoStats(eventId),
+    ).thenThrow(const FunnelcakeException('no stats'));
+  }
+
+  void stubNotifications(
+    List<RelayNotification> notifications, {
+    int unreadCount = 0,
+    bool hasMore = false,
+    String? nextCursor,
+    String? nextCursorId,
+    bool stubOwnedVideoStats = true,
+  }) {
+    when(
+      () => funnelcakeApiClient.getNotifications(
+        pubkey: any(named: 'pubkey'),
+        cursor: any(named: 'cursor'),
+        cursorId: any(named: 'cursorId'),
+        requestUri: any(named: 'requestUri'),
+        authHeaders: any(named: 'authHeaders'),
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer(
+      (_) async => NotificationResponse(
+        notifications: notifications,
+        unreadCount: unreadCount,
+        hasMore: hasMore,
+        nextCursor: nextCursor,
+        nextCursorId: nextCursorId,
+      ),
+    );
+    if (stubOwnedVideoStats) {
+      final videoIds = notifications
+          .expand((n) => [n.referencedEventId, n.rootEventId])
+          .whereType<String>()
+          .where((id) => id.isNotEmpty)
+          .toSet();
+      for (final id in videoIds) {
+        stubVideoStats(id, makeVideoStats(id: id));
+      }
+    }
+  }
+
+  UserProfile makeProfile(
+    String pubkey, {
+    String? displayName,
+    String? name,
+    String? picture,
+  }) {
+    return UserProfile(
+      pubkey: pubkey,
+      rawData: const {},
+      createdAt: DateTime(2024),
+      eventId: 'evt_$pubkey',
+      displayName: displayName,
+      name: name,
+      picture: picture,
     );
   }
 
@@ -812,6 +830,7 @@ void main() {
           'pub_a': makeProfile('pub_a', displayName: 'Alice'),
           'pub_b': makeProfile('pub_b', displayName: 'Bob'),
         });
+        stubMissingVideoStats('video_x');
         // Authoritative ownership: video stats resolve and the owner is the
         // recipient (makeVideoStats defaults pubkey == userPubkey, d-tag
         // 'd_video_x'). The payload referencedDTag intentionally DIFFERS so the
@@ -842,7 +861,7 @@ void main() {
             referencedEventId: 'video_x',
             referencedDTag: 'vine-id',
           ),
-        ]);
+        ], stubOwnedVideoStats: false);
         stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
         // Owner confirmed, but VideoStats carries no d-tag → use the payload
         // d-tag rather than drop the stable route.
@@ -861,8 +880,8 @@ void main() {
         );
       });
 
-      test('grouped video notifications leave addressable id null when '
-          'metadata is missing even if the payload has a d-tag', () async {
+      test('metadata-missing video likes become actor-anchored fallback even '
+          'if the payload has a d-tag', () async {
         // No video stats stubbed → ownership cannot be confirmed (e.g. a
         // stale/edited event id whose old metadata no longer resolves). A
         // server-provided d-tag alone is not proof that the d-tag belongs to
@@ -881,25 +900,27 @@ void main() {
             referencedEventId: 'video_x',
             referencedDTag: 'vine-id',
           ),
-        ]);
+        ], stubOwnedVideoStats: false);
         stubProfiles({
           'pub_a': makeProfile('pub_a', displayName: 'Alice'),
           'pub_b': makeProfile('pub_b', displayName: 'Bob'),
         });
+        stubMissingVideoStats('video_x');
 
         final page = await repository.getNotifications();
 
-        expect(page.items, hasLength(1));
-        final item = page.items.single as VideoNotification;
-        expect(item.videoAddressableId, isNull);
-        // The canonical event id is still carried for the resolver fallback.
-        expect(item.videoEventId, equals('video_x'));
+        expect(page.items, hasLength(2));
+        expect(page.items, everyElement(isA<ActorNotification>()));
+        final first = page.items.first as ActorNotification;
+        expect(first.type, equals(NotificationKind.likeComment));
+        expect(first.videoAddressableId, isNull);
+        expect(first.targetEventId, equals('video_x'));
       });
 
-      test('grouped video notifications leave addressable id null on a '
-          'metadata miss when no payload d-tag is available', () async {
-        // Metadata miss AND no usable d-tag → nothing to synthesize from, so
-        // the route stays null and navigation falls back to the raw event id.
+      test('metadata-missing video like without a d-tag becomes '
+          'actor-anchored fallback', () async {
+        // Metadata miss means ownership is unknown, so even without a d-tag the
+        // row must not claim this was the recipient's video.
         stubNotifications([
           makeNotification(
             id: 'l1',
@@ -907,18 +928,20 @@ void main() {
             referencedEventId: 'video_x',
             referencedDTag: '',
           ),
-        ]);
+        ], stubOwnedVideoStats: false);
         stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
+        stubMissingVideoStats('video_x');
 
         final page = await repository.getNotifications();
 
         expect(page.items, hasLength(1));
-        final item = page.items.single as VideoNotification;
+        final item = page.items.single as ActorNotification;
+        expect(item.type, equals(NotificationKind.likeComment));
         expect(item.videoAddressableId, isNull);
-        expect(item.videoEventId, equals('video_x'));
+        expect(item.targetEventId, equals('video_x'));
       });
 
-      test('comment with empty referencedEventId leaves addressable id null '
+      test('comment with empty referencedEventId becomes actor-anchored '
           'when root video ownership is unconfirmed', () async {
         // NIP-22 comment whose referenced_event_id is empty carries the video
         // via rootEventId. The page-load path fetches metadata by
@@ -936,16 +959,17 @@ void main() {
             referencedDTag: 'vine-id',
             content: 'nice one',
           ),
-        ]);
+        ], stubOwnedVideoStats: false);
         stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
+        stubMissingVideoStats('video_root');
 
         final page = await repository.getNotifications();
 
         expect(page.items, hasLength(1));
-        final item = page.items.single as VideoNotification;
-        expect(item.type, equals(NotificationKind.comment));
+        final item = page.items.single as ActorNotification;
+        expect(item.type, equals(NotificationKind.reply));
         expect(item.videoAddressableId, isNull);
-        expect(item.videoEventId, equals('video_root'));
+        expect(item.targetEventId, equals('evt1'));
       });
 
       test(
@@ -973,7 +997,13 @@ void main() {
           final item = page.items.single as VideoNotification;
           expect(item.type, equals(NotificationKind.comment));
           expect(item.videoEventId, equals('reply_video_event'));
-          expect(item.videoAddressableId, isNull);
+          expect(
+            item.videoAddressableId,
+            equals(
+              '${NIP71VideoKinds.addressableShortVideo}:$userPubkey:'
+              'd_reply_video_event',
+            ),
+          );
         },
       );
 
@@ -1085,7 +1115,7 @@ void main() {
       );
 
       test(
-        'getVideoStats throws → row still rendered with null thumbnail',
+        'getVideoStats throws → row falls back to actor notification',
         () async {
           stubNotifications([
             makeNotification(
@@ -1094,16 +1124,15 @@ void main() {
             ),
           ]);
           stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
-          when(
-            () => funnelcakeApiClient.getVideoStats('video_x'),
-          ).thenThrow(const FunnelcakeException('boom'));
+          stubMissingVideoStats('video_x');
 
           final page = await repository.getNotifications();
 
           expect(page.items, hasLength(1));
-          final item = page.items.single as VideoNotification;
-          expect(item.videoThumbnailUrl, isNull);
-          expect(item.videoTitle, isNull);
+          final item = page.items.single as ActorNotification;
+          expect(item.type, equals(NotificationKind.likeComment));
+          expect(item.targetEventId, equals('video_x'));
+          expect(item.videoAddressableId, isNull);
         },
       );
     });

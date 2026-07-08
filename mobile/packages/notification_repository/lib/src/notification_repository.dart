@@ -1029,7 +1029,7 @@ class NotificationRepository {
 
     final pubkeys = raw.map((n) => n.sourcePubkey).toSet().toList();
     final eventIds = raw
-        .map((n) => n.referencedEventId)
+        .map((n) => _videoAnchorEventId(_mapNotificationKind(n), n))
         .whereType<String>()
         .where((id) => id.isNotEmpty)
         .toSet()
@@ -1137,21 +1137,25 @@ class NotificationRepository {
       if (!isVideoAnchored(kind)) continue;
       final eventId = _videoAnchorEventId(kind, n);
       if (eventId == null || eventId.isEmpty) continue;
-      if (_hasKnownReferencedVideoOwnerMismatch(
+      final ownership = _referencedVideoOwnership(
         referencedVideoEventId: eventId,
         videosById: videosById,
-      )) {
-        _logReclassifiedOwnerMismatch(
-          notificationId: n.id,
-          sourcePubkey: n.sourcePubkey,
-          referencedVideoEventId: eventId,
-          referencedVideoOwnerPubkey: videosById[eventId]?.pubkey,
-        );
-        misattributed?.add(n);
-        continue;
+      );
+      switch (ownership) {
+        case _ReferencedVideoOwnership.owned:
+          final key = _VideoGroupKey(eventId, kind);
+          (groups[key] ??= []).add(n);
+        case _ReferencedVideoOwnership.foreign:
+          _logReclassifiedOwnerMismatch(
+            notificationId: n.id,
+            sourcePubkey: n.sourcePubkey,
+            referencedVideoEventId: eventId,
+            referencedVideoOwnerPubkey: videosById[eventId]?.pubkey,
+          );
+          misattributed?.add(n);
+        case _ReferencedVideoOwnership.unknown:
+          misattributed?.add(n);
       }
-      final key = _VideoGroupKey(eventId, kind);
-      (groups[key] ??= []).add(n);
     }
 
     final result = <VideoNotification>[];
@@ -1419,13 +1423,16 @@ class NotificationRepository {
     return null;
   }
 
-  bool _hasKnownReferencedVideoOwnerMismatch({
+  _ReferencedVideoOwnership _referencedVideoOwnership({
     required String referencedVideoEventId,
     required Map<String, VideoStats> videosById,
   }) {
     final ownerPubkey = videosById[referencedVideoEventId]?.pubkey;
-    if (ownerPubkey == null || ownerPubkey.isEmpty) return false;
-    return ownerPubkey != _userPubkey;
+    if (ownerPubkey == null || ownerPubkey.isEmpty) {
+      return _ReferencedVideoOwnership.unknown;
+    }
+    if (ownerPubkey == _userPubkey) return _ReferencedVideoOwnership.owned;
+    return _ReferencedVideoOwnership.foreign;
   }
 
   void _logReclassifiedOwnerMismatch({
@@ -1688,6 +1695,8 @@ class NotificationRepository {
     return '${content.substring(0, _maxCommentLength)}...';
   }
 }
+
+enum _ReferencedVideoOwnership { owned, foreign, unknown }
 
 @immutable
 class _VideoGroupKey {
