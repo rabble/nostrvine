@@ -141,6 +141,12 @@ jobs:
         run: |
           git fetch --quiet --depth=1 origin main
           bash scripts/check_untested_services_floor.sh
+      - name: 🧱 Verify every package ships analysis options + a CI workflow (package CI floor)
+        run: |
+          # Issues #3574 / #3575: optionless packages silently inherit the
+          # app's relaxed analyzer config; workflow-less packages get no CI.
+          git fetch --quiet --depth=1 origin main
+          bash scripts/check_package_ci_floor.sh
       - name: 🧯 Verify empty-catch count does not increase (reliability ratchet)
         run: |
           # Reliability ceilings (epic #4336). Each fails closed if the base

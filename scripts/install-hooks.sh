@@ -252,6 +252,28 @@ if [ -n "$CHANGED_SERVICE_FILES" ] || [ -n "$CHANGED_TEST_FILES" ]; then
     echo ""
 fi
 
+# Package CI floor (mirrors CI's check_package_ci_floor.sh). Every package
+# under mobile/packages must ship its own analysis_options.yaml and a
+# per-package workflow (exceptions live in the shrink-only baseline). Trigger
+# on added/deleted/renamed package pubspecs or options files, or any workflow
+# file change, so unrelated pushes are not slowed.
+CHANGED_PKG_CI_FILES=$(git -C "$REPO_ROOT" diff --name-only --diff-filter=ADR "$BASE_BRANCH"...HEAD 2>/dev/null \
+    | grep -E '^(mobile/packages/[^/]+/(pubspec|analysis_options)\.yaml|\.github/workflows/[^/]+\.(yaml|yml))$' || true)
+if [ -n "$CHANGED_PKG_CI_FILES" ]; then
+    echo "Package/workflow file(s) changed; checking package CI floor..."
+    if ! bash "$REPO_ROOT/mobile/scripts/check_package_ci_floor.sh"; then
+        echo ""
+        echo "Package CI floor check failed!"
+        echo "Every package needs its own analysis_options.yaml and a"
+        echo ".github/workflows/<pkg>.yaml. After removing an exception, shrink"
+        echo "the baseline:"
+        echo "  UPDATE_BASELINE=1 bash mobile/scripts/check_package_ci_floor.sh"
+        exit 1
+    fi
+    echo "Package CI floor OK"
+    echo ""
+fi
+
 # Get list of changed Dart files (excluding generated files)
 CHANGED_FILES=$(git -C "$REPO_ROOT" diff --name-only "$BASE_BRANCH"...HEAD 2>/dev/null \
     | grep '^mobile/.*\.dart$' \
