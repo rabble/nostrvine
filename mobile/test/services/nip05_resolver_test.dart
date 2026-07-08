@@ -155,6 +155,21 @@ void main() {
   );
 
   test(
+    'whitespace-normalized compare: padded server value still matches',
+    () async {
+      when(() => dio.get(any())).thenAnswer(
+        (_) async => jsonResponse({
+          'names': {'_': '  $hqHex\n'},
+        }),
+      );
+
+      final result = await resolver.resolve('_@divinehq.divine.video', hqHex);
+
+      expect(result.kind, Nip05ResolutionKind.matched);
+    },
+  );
+
+  test(
     'concurrency: one in-flight fetch serves callers with different expected keys',
     () async {
       var calls = 0;
@@ -179,7 +194,7 @@ void main() {
   );
 
   test(
-    'networkError: oversized response (content-length over cap) is rejected',
+    'networkError: an oversized advertised body is rejected before parsing (parse-guard, not a memory bound)',
     () async {
       when(() => dio.get(any())).thenAnswer(
         (_) async => Response(

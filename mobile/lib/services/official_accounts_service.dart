@@ -61,10 +61,16 @@ class OfficialAccountsService {
        _now = now ?? DateTime.now,
        _accounts = accounts ?? kPinnedOfficialAccounts;
 
+  /// Normalize a hex identifier for comparison/storage. The pin is the trust
+  /// anchor, so caller-supplied and pinned hex are normalized identically —
+  /// trimmed and lowercased — so a padded or checksummed value neither slips
+  /// past the pin nor collides in storage.
+  String _normHex(String hex) => hex.trim().toLowerCase();
+
   OfficialAccount? _pinnedFor(String hex) {
-    final h = hex.toLowerCase();
+    final h = _normHex(hex);
     for (final a in _accounts) {
-      if (a.pubkeyHex.toLowerCase() == h) return a;
+      if (_normHex(a.pubkeyHex) == h) return a;
     }
     return null;
   }
@@ -94,6 +100,13 @@ class OfficialAccountsService {
   ///   window after the first confirms the drop
   /// - networkError -> keep last-known; a pinned account with no record stays
   ///   trusted (the pin blocks attacker addition; do not brick offline support)
+  ///
+  /// The confirming-absence recheck only bites a BENIGN name-server hiccup. A
+  /// network-positioned adversary can choose the signal (return 5xx/RST ->
+  /// networkError -> trust held with no recheck escalation), so the only
+  /// suppression-proof revocation lever is a repoint (differentKey -> immediate
+  /// drop). Revocation runbooks MUST repoint-to-burner, never merely remove the
+  /// name (see support-trust-safety#181).
   Future<bool> isApprovedMinorDmRecipient(String hex) async {
     final account = _pinnedFor(hex);
     if (account == null || !account.minorContactable) return false;
@@ -162,5 +175,5 @@ class OfficialAccountsService {
   Future<void> _save(String hex, _Record record) =>
       _prefs.setString(_key(hex), jsonEncode(record.toJson()));
 
-  String _key(String hex) => 'official_recipient_${hex.toLowerCase()}';
+  String _key(String hex) => 'official_recipient_${_normHex(hex)}';
 }

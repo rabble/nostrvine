@@ -44,8 +44,13 @@ class _RawResolution {
 
 class Nip05Resolver {
   /// A legitimate nostr.json for a handful of names is well under a kilobyte.
-  /// Reject anything that advertises far more so a hostile/MITM'd origin can't
-  /// bloat a send. `receiveTimeout` is the backstop when no length is advertised.
+  /// NOTE: with Dio's default buffering adapter the body is already downloaded
+  /// by the time we read the header, so this check is a parse-guard (skip
+  /// decoding an absurd body), NOT a memory bound. The real bound against a
+  /// slow/huge/chunked body from a hostile or MITM'd origin is `receiveTimeout`.
+  /// A true byte cap would require a streamed read; deliberately not done for a
+  /// tiny, Divine-controlled HTTPS endpoint where a resolver failure fails the
+  /// send closed rather than opening a channel.
   static const int _maxContentLength = 256 * 1024;
 
   final Dio _dio;
@@ -88,7 +93,10 @@ class Nip05Resolver {
       case _RawKind.absent:
         return const Nip05Resolution.absent();
       case _RawKind.found:
-        final resolved = raw.pubkey!;
+        final resolved = raw.pubkey!.trim();
+        // Normalize BOTH sides identically: the pin is the trust anchor, and a
+        // checksummed/padded nostr.json must not read as a different key and
+        // spuriously revoke a live account.
         if (resolved.toLowerCase() == expectedPubkey.trim().toLowerCase()) {
           return Nip05Resolution.matched(resolved);
         }
@@ -105,6 +113,8 @@ class Nip05Resolver {
       final res = await _dio.get(
         'https://$domain/.well-known/nostr.json?name=$name',
       );
+      // Parse-guard only (see _maxContentLength): avoids decoding an absurd
+      // advertised body; the download has already happened by here.
       final advertised = int.tryParse(
         res.headers.value('content-length') ?? '',
       );

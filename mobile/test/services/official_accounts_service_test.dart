@@ -218,4 +218,71 @@ void main() {
       expect(await svc.isApprovedMinorDmRecipient(modHex), isTrue);
     },
   );
+
+  test(
+    'caller hex is normalized (mixed-case + surrounding whitespace)',
+    () async {
+      when(
+        () => resolver.resolve(hqNip05, hqHex),
+      ).thenAnswer((_) async => const Nip05Resolution.matched(hqHex));
+
+      final svc = build();
+      final messy = '  ${hqHex.toUpperCase()}\n';
+      expect(svc.isPinnedMinorContactable(messy), isTrue);
+      expect(await svc.isApprovedMinorDmRecipient(messy), isTrue);
+    },
+  );
+
+  test('empty or whitespace hex is rejected without a network call', () async {
+    final svc = build();
+    expect(await svc.isApprovedMinorDmRecipient('   '), isFalse);
+    expect(await svc.isApprovedMinorDmRecipient(''), isFalse);
+    verifyNever(() => resolver.resolve(any(), any()));
+  });
+
+  test(
+    'a revoked account re-approves when a later resolution matches again',
+    () async {
+      final answers = <Nip05Resolution>[
+        const Nip05Resolution.differentKey(attackerHex),
+        const Nip05Resolution.matched(hqHex),
+      ];
+      var i = 0;
+      when(
+        () => resolver.resolve(hqNip05, hqHex),
+      ).thenAnswer((_) async => answers[i++]);
+
+      final svc = build();
+      expect(await svc.isApprovedMinorDmRecipient(hqHex), isFalse);
+      clock = clock.add(const Duration(hours: 2));
+      expect(await svc.isApprovedMinorDmRecipient(hqHex), isTrue);
+      expect(svc.isApprovedMinorDmRecipientSync(hqHex), isTrue);
+    },
+  );
+
+  test(
+    'a networkError between absences does not reset the confirming-recheck clock',
+    () async {
+      final answers = <Nip05Resolution>[
+        const Nip05Resolution.absent(),
+        const Nip05Resolution.networkError(),
+        const Nip05Resolution.absent(),
+      ];
+      var i = 0;
+      when(
+        () => resolver.resolve(hqNip05, hqHex),
+      ).thenAnswer((_) async => answers[i++]);
+
+      final svc = build();
+      expect(await svc.isApprovedMinorDmRecipient(hqHex), isTrue); // absence #1
+      clock = clock.add(const Duration(minutes: 6));
+      expect(
+        await svc.isApprovedMinorDmRecipient(hqHex),
+        isTrue,
+      ); // networkError
+      clock = clock.add(const Duration(minutes: 1));
+      // firstAbsentAt preserved from #1, so this confirming absence (>5m later) drops
+      expect(await svc.isApprovedMinorDmRecipient(hqHex), isFalse);
+    },
+  );
 }
