@@ -34,8 +34,15 @@ class ProtectedMinorInboxGateImpl implements ProtectedMinorInboxGate {
     final visible = <DmConversation>[];
     for (final c in conversations) {
       var allApproved = true;
+      // Fail closed on a degenerate row with no non-self counterparty: the
+      // `every`-style check below is vacuously true on an empty set, so without
+      // this a self-only conversation would stay visible while the
+      // conversation_page route guard bounces entry. Match the guard's
+      // "non-empty AND all-approved" predicate.
+      var sawCounterparty = false;
       for (final p in c.participantPubkeys) {
         if (p == userPubkey) continue;
+        sawCounterparty = true;
         // Receive-time revalidation (fire-and-forget): refresh the verdict so a
         // server-side revocation is pulled into the sync answer; the async
         // method re-resolves only when the cached verdict is stale. A resulting
@@ -46,7 +53,7 @@ class ProtectedMinorInboxGateImpl implements ProtectedMinorInboxGate {
           allApproved = false;
         }
       }
-      if (allApproved) visible.add(c);
+      if (allApproved && sawCounterparty) visible.add(c);
     }
     return visible;
   }

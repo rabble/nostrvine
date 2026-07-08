@@ -84,6 +84,24 @@ void main() {
   );
 
   test(
+    'restricted -> a conversation with no non-self counterparty is hidden '
+    '(fail-closed on the empty set, matching the route guard)',
+    () {
+      // `every`-style approval is vacuously true on an empty counterparty set,
+      // so a self-only / degenerate row would otherwise stay visible while the
+      // conversation_page route guard bounces entry to it. Fail closed.
+      final gate = build(restricted: true);
+      final out = gate.filter([
+        conv('selfonly', [self]),
+        conv('empty', <String>[]),
+        conv('ok', [self, approved]),
+      ], userPubkey: self);
+
+      expect(out.map((c) => c.id).toList(), ['ok']);
+    },
+  );
+
+  test(
     'restricted -> kicks receive-time revalidation for counterparties',
     () async {
       final gate = build(restricted: true);
