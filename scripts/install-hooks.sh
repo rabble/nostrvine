@@ -274,6 +274,30 @@ if [ -n "$CHANGED_PKG_CI_FILES" ]; then
     echo ""
 fi
 
+# Package coverage floor (mirrors CI's check_package_coverage_floor.sh). Each
+# per-package workflow's min_coverage is locked in a baseline and may only rise.
+# Trigger on any workflow file change or a coverage-baseline edit so unrelated
+# pushes are not slowed.
+CHANGED_COV_FLOOR_FILES=$(git -C "$REPO_ROOT" diff --name-only "$BASE_BRANCH"...HEAD 2>/dev/null \
+    | grep -E '^(\.github/workflows/[^/]+\.(yaml|yml)|mobile/scripts/baseline/package_coverage_floors\.txt)$' || true)
+if [ -n "$CHANGED_COV_FLOOR_FILES" ]; then
+    echo "Workflow/coverage-baseline file(s) changed; checking package coverage floor..."
+    if ! bash "$REPO_ROOT/mobile/scripts/check_package_coverage_floor.sh"; then
+        echo ""
+        echo "Package coverage floor check failed!"
+        echo "Per-package min_coverage floors may only rise. If you intentionally"
+        echo "raised one, set the workflow's min_coverage to the new measured"
+        echo "coverage, then re-lock the baseline:"
+        echo "  UPDATE_BASELINE=1 bash mobile/scripts/check_package_coverage_floor.sh"
+        echo "If it reported 'LOWERED vs origin/main': your branch is behind an"
+        echo "origin/main that raised a floor — rebase instead of re-baselining:"
+        echo "  git fetch origin main && git rebase origin/main"
+        exit 1
+    fi
+    echo "Package coverage floor OK"
+    echo ""
+fi
+
 # Get list of changed Dart files (excluding generated files)
 CHANGED_FILES=$(git -C "$REPO_ROOT" diff --name-only "$BASE_BRANCH"...HEAD 2>/dev/null \
     | grep '^mobile/.*\.dart$' \

@@ -147,6 +147,14 @@ jobs:
           # app's relaxed analyzer config; workflow-less packages get no CI.
           git fetch --quiet --depth=1 origin main
           bash scripts/check_package_ci_floor.sh
+      - name: 🧱 Verify per-package coverage floors do not decrease (coverage floor ratchet)
+        run: |
+          # Follow-up to #3575: each package workflow's min_coverage is locked in
+          # a baseline and may only RISE. VGV already fails when measured coverage
+          # drops below the floor; this stops the floor itself from being lowered.
+          # Fails closed if the base baseline cannot be loaded.
+          git fetch --quiet --depth=1 origin main
+          bash scripts/check_package_coverage_floor.sh
       - name: 🧯 Verify empty-catch count does not increase (reliability ratchet)
         run: |
           # Reliability ceilings (epic #4336). Each fails closed if the base
