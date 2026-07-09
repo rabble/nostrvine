@@ -13,6 +13,22 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+/// Filenames written by [MediaCacheManager] end with
+/// `_<microseconds>_<seq><ext>` (see `_relativePathFor`). Reclamation only
+/// deletes *untracked* files matching this shape, so externally-managed files
+/// that share the cache directory — e.g. bundled seed media keyed by raw event
+/// id, or the alias manifest — are never removed.
+final RegExp _managedCacheFilePattern = RegExp(r'_\d+_\d+\.[A-Za-z0-9]+$');
+
+/// Number of successful downloads between throttled in-session
+/// [MediaCacheManager.enforceCacheLimits] passes.
+const int _downloadsPerSweep = 25;
+
+/// Minimum wall-clock gap between throttled in-session
+/// [MediaCacheManager.enforceCacheLimits] passes, so heavy scrolling cannot
+/// trigger back-to-back directory scans.
+const Duration _minSweepInterval = Duration(seconds: 60);
+
 /// {@template media_cache_config}
 /// Configuration for [MediaCacheManager].
 ///
@@ -24,6 +40,7 @@ class MediaCacheConfig {
     required this.cacheKey,
     this.stalePeriod = const Duration(days: 14),
     this.maxNrOfCacheObjects = 200,
+    this.maxCacheSizeBytes,
     this.connectionTimeout = const Duration(seconds: 15),
     this.idleTimeout = const Duration(seconds: 30),
     this.maxConnectionsPerHost = 6,
@@ -36,6 +53,8 @@ class MediaCacheConfig {
   ///
   /// - Longer stale period (30 days)
   /// - More cache objects (1000)
+  /// - Total on-disk budget of 2 GB, enforced by
+  ///   [MediaCacheManager.enforceCacheLimits]
   /// - Longer timeouts for large downloads
   /// - Sync manifest enabled for instant playback
   const MediaCacheConfig.video({required String cacheKey})
@@ -43,6 +62,7 @@ class MediaCacheConfig {
         cacheKey: cacheKey,
         stalePeriod: const Duration(days: 30),
         maxNrOfCacheObjects: 1000,
+        maxCacheSizeBytes: 2 * 1024 * 1024 * 1024,
         connectionTimeout: const Duration(seconds: 30),
         idleTimeout: const Duration(minutes: 2),
         maxConnectionsPerHost: 4,
@@ -59,6 +79,8 @@ class MediaCacheConfig {
   ///
   /// - Shorter stale period (7 days)
   /// - Fewer cache objects (200)
+  /// - Total on-disk budget of 256 MB, enforced by
+  ///   [MediaCacheManager.enforceCacheLimits]
   /// - Shorter timeouts for smaller downloads
   /// - No sync manifest needed
   const MediaCacheConfig.image({required String cacheKey})
@@ -66,6 +88,7 @@ class MediaCacheConfig {
         cacheKey: cacheKey,
         stalePeriod: const Duration(days: 7),
         maxNrOfCacheObjects: 200,
+        maxCacheSizeBytes: 256 * 1024 * 1024,
         connectionTimeout: const Duration(seconds: 10),
         idleTimeout: const Duration(seconds: 30),
         // Tuning choice (not a measured optimum): raised from 6 → 20 to
@@ -86,6 +109,16 @@ class MediaCacheConfig {
 
   /// Maximum number of objects to keep in cache.
   final int maxNrOfCacheObjects;
+
+  /// Maximum total size of the on-disk cache directory, in bytes.
+  ///
+  /// `flutter_cache_manager` only bounds the cache by *object count*
+  /// ([maxNrOfCacheObjects]); for media where individual files span
+  /// kilobytes to tens of megabytes, a count limit lets the directory grow
+  /// to many gigabytes. When set, [MediaCacheManager.enforceCacheLimits]
+  /// evicts least-recently-used files until the directory is back under this
+  /// budget. `null` disables byte-based eviction (count limit only).
+  final int? maxCacheSizeBytes;
 
   /// Timeout for establishing HTTP connections.
   ///
@@ -291,6 +324,26 @@ class MediaCacheManager extends CacheManager {
   /// Monotonic counter to disambiguate filenames written within the same
   /// millisecond when the same key is downloaded repeatedly.
   int _downloadSeq = 0;
+
+  /// Relative filenames currently being written by an in-flight download.
+  ///
+  /// [enforceCacheLimits] skips these so a reclamation pass never deletes a
+  /// file mid-download (the file exists on disk before its cache-store row
+  /// is written).
+  final Set<String> _inFlightRelativePaths = {};
+
+  /// Successful downloads since the last [enforceCacheLimits] pass. Drives
+  /// the throttled in-session sweep so the directory stays bounded without
+  /// running a full reconciliation after every single download.
+  int _downloadsSinceSweep = 0;
+
+  /// Guards against overlapping [enforceCacheLimits] runs.
+  bool _sweepInProgress = false;
+
+  /// When the last [enforceCacheLimits] pass started. Drives the time-based
+  /// throttle so back-to-back sweeps cannot pile up during heavy scrolling.
+  /// Seeded to the epoch so the first pass is never throttled.
+  DateTime _lastSweepAt = DateTime.fromMillisecondsSinceEpoch(0);
 
   /// In-memory manifest for synchronous lookups.
   /// Maps cache key to file path.
@@ -698,6 +751,9 @@ class MediaCacheManager extends CacheManager {
     }
 
     final relativePath = _relativePathFor(key, url);
+    // Shield the not-yet-registered file from a concurrent reclamation pass
+    // (added before the file exists, removed once the download settles).
+    _inFlightRelativePaths.add(relativePath);
     final completer = Completer<CancellableDownloadResult>();
     // Register before the async download starts so any concurrent caller
     // (cacheFile or another cacheFileCancellable) for the same key joins
@@ -749,6 +805,7 @@ class MediaCacheManager extends CacheManager {
               }
             }
           }
+          _downloadsSinceSweep++;
         }
         if (!completer.isCompleted) completer.complete(downloadResult);
       } on Object catch (error) {
@@ -762,6 +819,8 @@ class MediaCacheManager extends CacheManager {
         }
       } finally {
         _pendingCacheOperations.remove(key);
+        _inFlightRelativePaths.remove(relativePath);
+        _maybeEnforceCacheLimits();
       }
     }
 
@@ -831,6 +890,139 @@ class MediaCacheManager extends CacheManager {
       // Fall through to default.
     }
     return _config.defaultExtension;
+  }
+
+  /// Runs a throttled [enforceCacheLimits] pass once enough downloads have
+  /// accumulated since the last run, keeping the directory bounded during a
+  /// long session without sweeping after every single download.
+  void _maybeEnforceCacheLimits() {
+    if (_downloadsSinceSweep < _downloadsPerSweep) return;
+    _downloadsSinceSweep = 0;
+    unawaited(enforceCacheLimits());
+  }
+
+  /// Reclaims leaked cache files and enforces
+  /// [MediaCacheConfig.maxCacheSizeBytes].
+  ///
+  /// Two passes, both safe to run at any time and never throwing:
+  ///
+  /// 1. **Reclamation** — deletes files in the cache directory that the cache
+  ///    store no longer tracks but that match [_managedCacheFilePattern].
+  ///    `flutter_cache_manager` drops database rows on eviction without
+  ///    reliably deleting the underlying file for this on-disk layout, so
+  ///    evicted and superseded downloads pile up as untracked orphans; this
+  ///    pass removes them. Files that do not match the pattern (bundled seed
+  ///    media, the alias manifest) are left untouched.
+  /// 2. **Byte eviction** — when [MediaCacheConfig.maxCacheSizeBytes] is set,
+  ///    deletes the least-recently-used tracked files until the directory is
+  ///    back under budget, removing both the file and its store row.
+  ///
+  /// Safe to call at startup and repeatedly; overlapping calls are ignored and
+  /// calls within [_minSweepInterval] of the previous pass are skipped.
+  ///
+  /// I/O is intentionally asynchronous: the directory is walked with a
+  /// `Directory.list()` stream and files are removed with `File.delete()` so
+  /// the event loop yields between entries instead of the whole sweep blocking
+  /// the isolate. Cheap metadata reads stay synchronous (`statSync`) per
+  /// `avoid_slow_async_io` — the async variants of those add more overhead
+  /// than they save.
+  Future<void> enforceCacheLimits() async {
+    if (_isClosed || _sweepInProgress) return;
+    if (DateTime.now().difference(_lastSweepAt) < _minSweepInterval) return;
+    _sweepInProgress = true;
+    _lastSweepAt = DateTime.now();
+    try {
+      final repo = _repoOverride ?? config.repo;
+      if (!await repo.open()) return;
+      final objects = await repo.getAllObjects();
+      final baseDir = await _resolveBaseCacheDir();
+
+      final trackedNames = {for (final object in objects) object.relativePath};
+      await _reclaimOrphanedFiles(baseDir, trackedNames);
+
+      final budget = _config.maxCacheSizeBytes;
+      if (budget != null) {
+        await _evictToByteBudget(baseDir, objects, budget, repo);
+      }
+    } on Object catch (error) {
+      Log.warning(
+        'MediaCacheManager: enforceCacheLimits failed: $error',
+        name: 'MediaCache',
+        category: LogCategory.video,
+      );
+    } finally {
+      _sweepInProgress = false;
+    }
+  }
+
+  Future<void> _reclaimOrphanedFiles(
+    String baseDir,
+    Set<String> trackedNames,
+  ) async {
+    final dir = Directory(baseDir);
+    if (!dir.existsSync()) return;
+    // `Directory.list()` yields between entries, so a large reclamation pass
+    // does not block the isolate the way a `listSync()` loop would.
+    await for (final entity in dir.list(followLinks: false)) {
+      if (entity is! File) continue;
+      final name = path.basename(entity.path);
+      if (trackedNames.contains(name)) continue;
+      if (_inFlightRelativePaths.contains(name)) continue;
+      if (!_managedCacheFilePattern.hasMatch(name)) continue;
+      await _deleteFile(entity);
+    }
+  }
+
+  Future<void> _evictToByteBudget(
+    String baseDir,
+    List<CacheObject> objects,
+    int budget,
+    CacheInfoRepository repo,
+  ) async {
+    final entries = <_TrackedCacheFile>[];
+    var total = 0;
+    for (final object in objects) {
+      final file = File(path.join(baseDir, object.relativePath));
+      final stat = file.statSync();
+      if (stat.type == FileSystemEntityType.notFound) continue;
+      total += stat.size;
+      entries.add(
+        _TrackedCacheFile(
+          object: object,
+          file: file,
+          size: stat.size,
+          lastUsed: object.touched ?? stat.modified,
+        ),
+      );
+    }
+    if (total <= budget) return;
+
+    // Least-recently-used first so hot items survive the trim.
+    entries.sort((a, b) => a.lastUsed.compareTo(b.lastUsed));
+    final removedIds = <int>[];
+    for (final entry in entries) {
+      if (total <= budget) break;
+      await _deleteFile(entry.file);
+      total -= entry.size;
+      final id = entry.object.id;
+      if (id != null) removedIds.add(id);
+      _cacheManifest.remove(entry.object.key);
+    }
+    if (removedIds.isNotEmpty) {
+      await repo.deleteAll(removedIds);
+    }
+  }
+
+  /// Deletes [file] asynchronously (best-effort, never throwing). Async so the
+  /// blocking unlink runs off the isolate's main thread and the surrounding
+  /// loop yields between deletions. No existence pre-check: a missing file
+  /// throws [PathNotFoundException], which is swallowed like any other error.
+  Future<void> _deleteFile(File file) async {
+    try {
+      await file.delete();
+    } on Object catch (_) {
+      // Best-effort; anything left behind is retried on the next pass.
+    }
   }
 
   /// Checks if a file is cached (async version).
@@ -953,6 +1145,7 @@ class MediaCacheManager extends CacheManager {
       'manifestSize': _cacheManifest.length,
       'manifestInitialized': _manifestInitialized,
       'maxObjects': _config.maxNrOfCacheObjects,
+      'maxCacheSizeBytes': _config.maxCacheSizeBytes,
       'stalePeriodDays': _config.stalePeriod.inDays,
       'syncManifestEnabled': _config.enableSyncManifest,
       ...metrics.toMap(),
@@ -1005,6 +1198,22 @@ class MediaCacheManager extends CacheManager {
     _fileServiceClient?.close();
     await super.dispose();
   }
+}
+
+/// A tracked cache file paired with its on-disk size and last-used time,
+/// used to order least-recently-used eviction during byte-budget trimming.
+class _TrackedCacheFile {
+  _TrackedCacheFile({
+    required this.object,
+    required this.file,
+    required this.size,
+    required this.lastUsed,
+  });
+
+  final CacheObject object;
+  final File file;
+  final int size;
+  final DateTime lastUsed;
 }
 
 /// Bridges a deferred [Future] (which performs async setup before the real
