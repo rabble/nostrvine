@@ -100,6 +100,10 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreview> {
 
       if (!mounted) return;
 
+      if (result case GallerySaveFailure(:final reason)) {
+        Log.warning('Failed to save clip to gallery: $reason');
+      }
+
       final l10n = context.l10n;
       final destination = GallerySaveService.destinationName;
       final (message, isError) = switch (result) {
