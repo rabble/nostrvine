@@ -5,6 +5,7 @@
 import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/video_editor/transition_geometry.dart';
 
 /// Converts a [sourcePosition] inside one untrimmed clip to the matching
 /// composite playback position on the full timeline.
@@ -303,17 +304,29 @@ class _TimelineMarkerAnchor {
 /// Without this correction the scroll target is up to
 /// `(clipsPassedCount × clipGap)` pixels short of the trim-handle
 /// marker's actual visual position.
+/// A loop transition draws the first/last clips shortened by the wrap-consumed
+/// head/tail (see [LoopWrapDisplay]), so the strip's clip boundaries — and the
+/// [TimelineConstants.clipGap]s at them — sit on the display axis. [position] is
+/// already a display-axis position (the playhead comes from
+/// `SeamTimeline.compositeToTimeline`), so pass [wrap] to count gaps at the
+/// display boundaries; otherwise the boundaries fall on the raw-duration axis
+/// and the playhead drifts from the strip by a gap width near each boundary.
 double timelinePositionToScrollOffset(
   List<DivineVideoClip> clips,
   Duration position,
-  double pixelsPerSecond,
-) {
+  double pixelsPerSecond, {
+  LoopWrapDisplay wrap = LoopWrapDisplay.none,
+}) {
   var acc = Duration.zero;
   var gapPixels = 0.0;
   for (var i = 0; i < clips.length; i++) {
-    final clip = clips[i];
-    if (acc + clip.playbackDuration > position) break;
-    acc += clip.playbackDuration;
+    final display = wrap.displayDuration(
+      clips[i],
+      isFirst: i == 0,
+      isLast: i == clips.length - 1,
+    );
+    if (acc + display > position) break;
+    acc += display;
     if (i < clips.length - 1) {
       gapPixels += TimelineConstants.clipGap;
     }
@@ -325,27 +338,35 @@ double timelinePositionToScrollOffset(
 /// position — the exact inverse of [timelinePositionToScrollOffset].
 ///
 /// The result is clamped to `[Duration.zero, totalDuration]`.
+/// Pass [wrap] so the clip boundaries (and their gaps) are measured on the
+/// display axis the strip draws — the returned position is then a display-axis
+/// position, matching what [timelinePositionToScrollOffset] expects and what
+/// `SeamTimeline` produces. Without a loop transition [wrap] is
+/// [LoopWrapDisplay.none] and the mapping is the plain raw-duration one.
 Duration timelineScrollOffsetToPosition(
   List<DivineVideoClip> clips,
   double scrollOffset,
   double pixelsPerSecond,
-  Duration totalDuration,
-) {
+  Duration totalDuration, {
+  LoopWrapDisplay wrap = LoopWrapDisplay.none,
+}) {
   var acc = Duration.zero;
   var gapPixels = 0.0;
   for (var i = 0; i < clips.length; i++) {
-    final clip = clips[i];
+    final display = wrap.displayDuration(
+      clips[i],
+      isFirst: i == 0,
+      isLast: i == clips.length - 1,
+    );
     final clipEndPx =
-        (acc + clip.playbackDuration).inMicroseconds /
-            1_000_000.0 *
-            pixelsPerSecond +
+        (acc + display).inMicroseconds / 1_000_000.0 * pixelsPerSecond +
         gapPixels;
     if (scrollOffset <= clipEndPx) break;
     final gapEndPx = clipEndPx + TimelineConstants.clipGap;
     if (i < clips.length - 1 && scrollOffset < gapEndPx) {
-      return acc + clip.playbackDuration;
+      return acc + display;
     }
-    acc += clip.playbackDuration;
+    acc += display;
     if (i < clips.length - 1) {
       gapPixels += TimelineConstants.clipGap;
     }

@@ -230,6 +230,7 @@ class _AccessibleClipTile extends StatelessWidget {
     required this.pixelsPerSecond,
     required this.thumbnailNotifier,
     required this.onReorder,
+    this.wrapHeadOffset = 0,
     this.onTap,
     this.isMultiSelectMode = false,
     this.isSelected = false,
@@ -242,6 +243,10 @@ class _AccessibleClipTile extends StatelessWidget {
   final double pixelsPerSecond;
   final ValueNotifier<List<StripThumbnail>> thumbnailNotifier;
   final void Function(int from, int to) onReorder;
+
+  /// Extra pixels to shift thumbnails left (on top of trim-start) so a loop
+  /// wrap's consumed head is skipped on the first clip. Zero otherwise.
+  final double wrapHeadOffset;
   final ValueChanged<int>? onTap;
   final bool isMultiSelectMode;
   final bool isSelected;
@@ -292,9 +297,10 @@ class _AccessibleClipTile extends StatelessWidget {
               clip.durationInSeconds * pixelsPerSecond * clip._playbackScale,
           trimStartOffset:
               clip.trimStart.inMilliseconds /
-              1000.0 *
-              pixelsPerSecond *
-              clip._playbackScale,
+                  1000.0 *
+                  pixelsPerSecond *
+                  clip._playbackScale +
+              wrapHeadOffset,
           thumbnailNotifier: thumbnailNotifier,
           selectionState: isMultiSelectMode
               ? (isSelected

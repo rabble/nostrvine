@@ -5,6 +5,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/video_editor/transition_geometry.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_geometry.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
@@ -33,6 +34,7 @@ DivineVideoClip _clip(
   double? speed,
   Duration trimStart = Duration.zero,
   Duration trimEnd = Duration.zero,
+  ClipTransition? transition,
 }) => DivineVideoClip(
   id: id,
   video: EditorVideo.file('/tmp/$id.mp4'),
@@ -43,6 +45,7 @@ DivineVideoClip _clip(
   playbackSpeed: speed,
   trimStart: trimStart,
   trimEnd: trimEnd,
+  transition: transition,
 );
 
 void main() {
@@ -715,6 +718,101 @@ void main() {
         speedTotal,
       );
       expect(recovered, equals(pos));
+    });
+  });
+
+  // A loop transition draws the first/last clips shortened by the wrap-consumed
+  // head/tail and appends a blend seam at the end (see [LoopWrapDisplay]). The
+  // playhead position is on that display axis, so the scroll mappings must count
+  // clip-gap boundaries on the display axis too — otherwise the playhead drifts
+  // from the drawn strip by a gap width near each boundary.
+  //
+  //   clips: c0 = 4 s, c1 = 4 s with a 500 ms dissolve loop wrap
+  //   → consumed = 1 s per side, display c0 = 3 s, c1 = 3 s, seam = 1.5 s
+  //   display layout @ pps 52, clipGap 1:
+  //     [0…156 px] gap [157…313 px]  seam [313…391 px]  (total 7.5 s → 390 px)
+  group('loop-wrap-aware geometry', () {
+    const dissolve = ClipTransition(type: ClipTransitionType.dissolve);
+    final wrapClips = [
+      _clip('w0', 4),
+      _clip(
+        'w1',
+        4,
+        transition: dissolve.copyWith(
+          duration: const Duration(milliseconds: 500),
+        ),
+      ),
+    ];
+    final wrap = LoopWrapDisplay.fromClips(wrapClips);
+    const displayTotal = Duration(milliseconds: 7500);
+    const clipGap = 1.0;
+
+    test('LoopWrapDisplay carries the expected consumed span', () {
+      expect(wrap.consumedPerSide, equals(const Duration(seconds: 1)));
+      expect(wrap.displayTotal(wrapClips), equals(displayTotal));
+    });
+
+    test('positionToOffset counts the gap on the display boundary', () {
+      // 3.5 s is 0.5 s into c1 on the display axis (c1 starts at display 3 s),
+      // so the gap after c0 is already crossed → +1 gap.
+      const pos = Duration(milliseconds: 3500);
+      expect(
+        timelinePositionToScrollOffset(wrapClips, pos, pps, wrap: wrap),
+        equals(3.5 * pps + clipGap),
+      );
+    });
+
+    test('positionToOffset without the wrap misses the display gap', () {
+      // Without the wrap the raw c0 duration (4 s) still contains 3.5 s, so the
+      // gap is not counted — the drift the wrap parameter fixes.
+      const pos = Duration(milliseconds: 3500);
+      expect(
+        timelinePositionToScrollOffset(wrapClips, pos, pps),
+        equals(3.5 * pps),
+      );
+    });
+
+    test('positionToOffset maps the seam region past every clip gap', () {
+      // 6.5 s is 0.5 s into the seam (bodies end at display 6 s); one gap sits
+      // before it (between c0 and c1).
+      const pos = Duration(milliseconds: 6500);
+      expect(
+        timelinePositionToScrollOffset(wrapClips, pos, pps, wrap: wrap),
+        equals(6.5 * pps + clipGap),
+      );
+    });
+
+    test('offsetToPosition round-trips a display-axis position', () {
+      const pos = Duration(milliseconds: 3500);
+      final offset = timelinePositionToScrollOffset(
+        wrapClips,
+        pos,
+        pps,
+        wrap: wrap,
+      );
+      expect(
+        timelineScrollOffsetToPosition(
+          wrapClips,
+          offset,
+          pps,
+          displayTotal,
+          wrap: wrap,
+        ),
+        equals(pos),
+      );
+    });
+
+    test('offsetToPosition clamps to the shortened display total', () {
+      expect(
+        timelineScrollOffsetToPosition(
+          wrapClips,
+          99999,
+          pps,
+          displayTotal,
+          wrap: wrap,
+        ),
+        equals(displayTotal),
+      );
     });
   });
 

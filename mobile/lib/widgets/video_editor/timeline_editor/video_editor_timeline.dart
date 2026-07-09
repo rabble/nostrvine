@@ -53,6 +53,11 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
   /// that fire outside the build phase.
   Duration _totalDuration = Duration.zero;
 
+  /// Cached loop-wrap display geometry from the last build (suspended while
+  /// trimming, matching the strip) — used by the scroll/pinch mappings that
+  /// fire outside build so the playhead lines up with the shortened strip.
+  LoopWrapDisplay _wrapDisplay = LoopWrapDisplay.none;
+
   /// Playhead time derived from scroll offset — always matches the visual
   /// playhead regardless of zoom level.
   final _playheadPosition = ValueNotifier<Duration>(Duration.zero);
@@ -137,6 +142,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
         : LoopWrapDisplay.fromClips(clips);
     final displayDuration = wrapDisplay.displayTotal(clips);
     _totalDuration = displayDuration;
+    _wrapDisplay = wrapDisplay;
     final screenWidth = MediaQuery.sizeOf(context).width;
     final halfScreen = screenWidth / 2;
     final totalWidth = _contentWidth(displayDuration);
@@ -942,6 +948,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
             _scrollController.offset,
             _pixelsPerSecond,
             _totalDuration,
+            wrap: _wrapDisplay,
           )
         : Duration.zero;
 
@@ -952,6 +959,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
         clips,
         anchorPosition,
         newPps,
+        wrap: _wrapDisplay,
       );
       _scrollController.jumpTo(
         newOffset.clamp(0, _scrollController.position.maxScrollExtent),
@@ -979,6 +987,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
         context.read<ClipEditorBloc>().state.clips,
         position,
         _pixelsPerSecond,
+        wrap: _wrapDisplay,
       );
 
   /// Inverse of [_positionToScrollOffset]: maps a [scrollOffset] back to a
@@ -989,6 +998,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
         scrollOffset,
         _pixelsPerSecond,
         _totalDuration,
+        wrap: _wrapDisplay,
       );
 
   void _syncScrollToPosition(Duration position, Duration totalDuration) {

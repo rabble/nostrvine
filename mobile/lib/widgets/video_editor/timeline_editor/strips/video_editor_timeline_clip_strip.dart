@@ -671,6 +671,7 @@ class _VideoEditorTimelineClipStripState
                   orderedClips: _orderedClips,
                   thumbnails: _thumbnails,
                   layout: layout,
+                  wrap: wrap,
                   dragIndex: _dragIndex,
                   trimmingClipId: widget.trimmingClipId,
                   shouldAnimate: shouldAnimate || volumeAnimating,
@@ -856,6 +857,7 @@ class _NonTrimmingClipPositions extends StatelessWidget {
     required this.orderedClips,
     required this.thumbnails,
     required this.layout,
+    required this.wrap,
     required this.dragIndex,
     required this.trimmingClipId,
     required this.shouldAnimate,
@@ -877,6 +879,13 @@ class _NonTrimmingClipPositions extends StatelessWidget {
   final List<DivineVideoClip> orderedClips;
   final ClipThumbnailManager thumbnails;
   final ({List<double> widths, List<double> offsets, double totalWidth}) layout;
+
+  /// Loop-wrap display geometry (or [LoopWrapDisplay.none]). The first clip's
+  /// head plays inside the blend seam at the loop point, so its thumbnails start
+  /// [LoopWrapDisplay.consumedPerSide] later; the last clip's tail is clipped by
+  /// its shortened [layout] width.
+  final LoopWrapDisplay wrap;
+
   final int? dragIndex;
   final String? trimmingClipId;
   final bool shouldAnimate;
@@ -917,6 +926,14 @@ class _NonTrimmingClipPositions extends StatelessWidget {
                 total: orderedClips.length,
                 clipWidth: layout.widths[i],
                 pixelsPerSecond: pixelsPerSecond,
+                // Shift the first clip's thumbnails past its wrap-consumed head
+                // so they match the shortened strip (and the playhead). Skipped
+                // while reordering, where the tile is a fixed square slot.
+                wrapHeadOffset: !isReordering && wrap.isActive && i == 0
+                    ? wrap.consumedPerSide.inMilliseconds /
+                          1000.0 *
+                          pixelsPerSecond
+                    : 0.0,
                 thumbnailNotifier: thumbnails[orderedClips[i].id],
                 onReorder: onReorder,
                 onTap: onClipTapped,
