@@ -220,6 +220,7 @@ void main() {
         verify: (_) {
           // The whole point of the gate: no hidden request metadata is read
           // for a conversation the current user may not access.
+          verifyNever(() => mockDmRepository.getConversation(any()));
           verifyNever(
             () => mockDmRepository.countMessagesInConversation(any()),
           );
@@ -231,45 +232,12 @@ void main() {
       );
 
       blocTest<RequestPreviewCubit, RequestPreviewState>(
-        'restricted + non-approved counterparty resolved from the DB (direct '
-        'or stale URL) is denied before count/messages are read',
-        setUp: () {
-          when(() => mockDmRepository.getConversation(any())).thenAnswer(
-            (_) async => DmConversation(
-              id: conversationId,
-              participantPubkeys: const [testPubkey, otherPubkey],
-              isGroup: false,
-              createdAt: 1700000000,
-            ),
-          );
-        },
-        build: () => buildCubit(
-          isDmRestricted: true,
-          isApprovedRecipient: (_) => false,
-        ),
-        act: (cubit) => cubit.load(),
-        expect: () => [
-          const RequestPreviewState(status: RequestPreviewStatus.denied),
-        ],
-        verify: (_) {
-          verifyNever(
-            () => mockDmRepository.countMessagesInConversation(any()),
-          );
-          verifyNever(
-            () =>
-                mockDmRepository.getMessages(any(), limit: any(named: 'limit')),
-          );
-        },
-      );
-
-      blocTest<RequestPreviewCubit, RequestPreviewState>(
-        'restricted + conversation not found resolves no counterparty and is '
-        'denied (fail closed on the empty set, matching the route guard)',
-        setUp: () {
-          when(
-            () => mockDmRepository.getConversation(any()),
-          ).thenAnswer((_) async => null);
-        },
+        'restricted + no route extras (direct or stale URL) fails closed '
+        'without any repository read, even with all counterparties approved',
+        // Approval cannot rescue this path: knowing the counterparty would
+        // itself require reading the conversation. No repository stubs on
+        // purpose — any read here is a regression and fails the test
+        // (mocktail missing-stub + verifyNever).
         build: () => buildCubit(
           isDmRestricted: true,
           isApprovedRecipient: (_) => true,
@@ -279,8 +247,13 @@ void main() {
           const RequestPreviewState(status: RequestPreviewStatus.denied),
         ],
         verify: (_) {
+          verifyNever(() => mockDmRepository.getConversation(any()));
           verifyNever(
             () => mockDmRepository.countMessagesInConversation(any()),
+          );
+          verifyNever(
+            () =>
+                mockDmRepository.getMessages(any(), limit: any(named: 'limit')),
           );
         },
       );

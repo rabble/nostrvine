@@ -134,6 +134,51 @@ void main() {
       );
 
       testWidgets(
+        'a DM-restricted user landing via direct link (no route extras) is '
+        'bounced to the inbox without the conversation being read',
+        (tester) async {
+          when(
+            () => mockOfficials.isApprovedMinorDmRecipientSync(any()),
+          ).thenReturn(true);
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              home: MockGoRouterProvider(
+                goRouter: mockGoRouter,
+                child: const RequestPreviewPage(
+                  conversationId: conversationId,
+                ),
+              ),
+              mockAuthService: mockAuthService,
+              additionalOverrides: [
+                dmRepositoryProvider.overrideWithValue(mockDmRepository),
+                goRouterProvider.overrideWithValue(mockGoRouter),
+                isDmRestrictedProvider.overrideWithValue(true),
+                officialAccountsServiceProvider.overrideWithValue(
+                  mockOfficials,
+                ),
+              ],
+            ),
+          );
+          await tester.pump();
+
+          verify(() => mockGoRouter.go(InboxPage.path)).called(1);
+          // Resolving counterparties from the DB is itself a hidden-data
+          // read, so the denied direct-link path must not touch the repo.
+          verifyNever(() => mockDmRepository.getConversation(any()));
+          verifyNever(
+            () => mockDmRepository.countMessagesInConversation(any()),
+          );
+          verifyNever(
+            () => mockDmRepository.getMessages(
+              any(),
+              limit: any(named: 'limit'),
+            ),
+          );
+        },
+      );
+
+      testWidgets(
         'a DM-restricted user with an approved counterparty sees the preview',
         (tester) async {
           when(

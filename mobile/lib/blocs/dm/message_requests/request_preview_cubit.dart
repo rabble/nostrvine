@@ -73,25 +73,33 @@ class RequestPreviewCubit extends Cubit<RequestPreviewState> {
 
   /// Loads message count and resolves participant pubkeys if needed.
   ///
-  /// Counterparties are resolved FIRST and checked against the #176 gate: a
-  /// DM-restricted user reaching this preview via a stale or direct
-  /// `/inbox/message-requests/:id` URL must be denied before any hidden
-  /// request metadata (count, messages) is read — the same fail-closed
-  /// predicate as the conversation route guard and the inbox list filter.
+  /// The #176 gate runs BEFORE any repository read and checks only the
+  /// route-provided pubkeys: resolving counterparties from the DB is itself
+  /// a read of hidden request data, so a DM-restricted user arriving without
+  /// route extras (a stale or direct `/inbox/message-requests/:id` URL)
+  /// fails closed via the predicate's empty-list branch instead of being
+  /// looked up. In-app navigation always passes extras, so only direct
+  /// links are denied this way — the view bounces them to the inbox, where
+  /// the filtered request list still reaches anything they may access.
   Future<void> load() async {
     try {
-      // Use provided pubkeys if available, otherwise load from DB.
-      final pubkeys = _initialParticipantPubkeys.isNotEmpty
-          ? _initialParticipantPubkeys
-          : await _resolveParticipants();
-
       if (_isDmRestricted() &&
-          !allParticipantsApprovedForMinor(pubkeys, _isApprovedRecipient)) {
+          !allParticipantsApprovedForMinor(
+            _initialParticipantPubkeys,
+            _isApprovedRecipient,
+          )) {
         if (!isClosed) {
           emit(state.copyWith(status: RequestPreviewStatus.denied));
         }
         return;
       }
+
+      // Use provided pubkeys if available, otherwise load from DB. Only
+      // non-restricted users reach the DB fallback: a restricted user with
+      // empty extras was already denied above.
+      final pubkeys = _initialParticipantPubkeys.isNotEmpty
+          ? _initialParticipantPubkeys
+          : await _resolveParticipants();
 
       final messageCount = await _dmRepository.countMessagesInConversation(
         conversationId,
