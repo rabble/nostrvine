@@ -98,12 +98,14 @@ void main() {
     OutgoingDmRetryConfig retryConfig = const OutgoingDmRetryConfig(),
     DateTime Function()? now,
     CrashReportingService? crashReporting,
+    Stream<void>? retryTriggerStream,
   }) {
     return OutgoingDmRetryService(
       dmRepository: dmRepository,
       outgoingDmsDao: dao,
       userPubkey: _ownerPubkey,
       appForegroundStream: foregroundController.stream,
+      retryTriggerStream: retryTriggerStream,
       retryConfig: retryConfig,
       now: now ?? () => DateTime.utc(2026, 5, 10, 12),
       crashReporting: crashReporting,
@@ -136,6 +138,26 @@ void main() {
         await service.dispose();
         expect(foregroundController.hasListener, isFalse);
         expect(service.isInitialized, isFalse);
+      });
+
+      test('a retry-trigger event (reconnect) triggers a sweep', () async {
+        final triggerController = StreamController<void>.broadcast();
+        addTearDown(triggerController.close);
+
+        final service = buildService(
+          retryTriggerStream: triggerController.stream,
+        );
+        await service.initialize();
+        triggerController.add(null);
+        await Future<void>.delayed(Duration.zero);
+
+        verify(
+          () => dao.getRetryableForOwner(
+            ownerPubkey: _ownerPubkey,
+            maxRetries: 5,
+          ),
+        ).called(1);
+        await service.dispose();
       });
 
       test(

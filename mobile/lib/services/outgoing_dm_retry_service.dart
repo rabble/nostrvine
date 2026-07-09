@@ -79,6 +79,7 @@ class OutgoingDmRetryService {
     required OutgoingDmsDao outgoingDmsDao,
     required String userPubkey,
     required Stream<bool> appForegroundStream,
+    Stream<void>? retryTriggerStream,
     OutgoingDmRetryConfig retryConfig = const OutgoingDmRetryConfig(),
     DateTime Function() now = DateTime.now,
     CrashReportingService? crashReporting,
@@ -86,6 +87,7 @@ class OutgoingDmRetryService {
        _dao = outgoingDmsDao,
        _userPubkey = userPubkey,
        _appForegroundStream = appForegroundStream,
+       _retryTriggerStream = retryTriggerStream,
        _retryConfig = retryConfig,
        _now = now,
        _crashReporting = crashReporting ?? CrashReportingService.instance;
@@ -94,11 +96,19 @@ class OutgoingDmRetryService {
   final OutgoingDmsDao _dao;
   final String _userPubkey;
   final Stream<bool> _appForegroundStream;
+
+  /// Fires a sweep on each event, independent of foreground transitions.
+  /// Wired to connectivity/relay-reconnection so a message queued during a
+  /// brief network drop is re-driven the moment the network returns — without
+  /// waiting for the user to background and re-foreground the app.
+  final Stream<void>? _retryTriggerStream;
+
   final OutgoingDmRetryConfig _retryConfig;
   final DateTime Function() _now;
   final CrashReportingService _crashReporting;
 
   StreamSubscription<bool>? _foregroundSubscription;
+  StreamSubscription<void>? _retryTriggerSubscription;
   bool _isInitialized = false;
   bool _isSweeping = false;
 
@@ -120,6 +130,10 @@ class OutgoingDmRetryService {
       }
     });
 
+    _retryTriggerSubscription = _retryTriggerStream?.listen((_) {
+      unawaited(sweep());
+    });
+
     Log.info(
       'initialized for $_userPubkey',
       name: 'OutgoingDmRetryService',
@@ -127,11 +141,13 @@ class OutgoingDmRetryService {
     );
   }
 
-  /// Cancel the foreground subscription and mark the service un-init.
+  /// Cancel the trigger subscriptions and mark the service un-init.
   /// Idempotent.
   Future<void> dispose() async {
     await _foregroundSubscription?.cancel();
     _foregroundSubscription = null;
+    await _retryTriggerSubscription?.cancel();
+    _retryTriggerSubscription = null;
     _isInitialized = false;
   }
 

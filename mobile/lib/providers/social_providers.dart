@@ -193,11 +193,21 @@ OutgoingDmRetryService? outgoingDmRetryService(Ref ref) {
   final foregroundController = StreamController<bool>();
   ref.onDispose(foregroundController.close);
 
+  // Re-drive undelivered messages the moment connectivity returns, not only on
+  // app-foreground transitions — a message queued during a brief network drop
+  // would otherwise sit undelivered until the app is backgrounded and
+  // re-foregrounded. Any event carrying some connectivity fires a sweep (the
+  // sweep short-circuits when nothing is retryable).
+  final retryTriggerStream = Connectivity().onConnectivityChanged
+      .where((results) => results.any((r) => r != ConnectivityResult.none))
+      .map<void>((_) {});
+
   final service = OutgoingDmRetryService(
     dmRepository: dmRepository,
     outgoingDmsDao: db.outgoingDmsDao,
     userPubkey: userPubkey,
     appForegroundStream: foregroundController.stream,
+    retryTriggerStream: retryTriggerStream,
   );
 
   // initialize() subscribes to the controller's stream synchronously
