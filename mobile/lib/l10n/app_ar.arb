@@ -1995,6 +1995,8 @@
     "keyManagementBackupSubtitle": "احفظ مفتاحك الخاص (nsec) لاستخدام حسابك في تطبيقات Nostr أخرى.",
     "keyManagementCopyNsec": "نسخ مفتاحي الخاص (nsec)",
     "keyManagementKeycastRemoteSigning": "يوقّع هذا الحساب باستخدام Keycast. لا يوجد مفتاح خاص مخزّن على هذا الجهاز، لذلك لا يوجد nsec لنسخه هنا.",
+  "keyManagementRestrictedTitle": "Your keys are managed by Divine",
+  "keyManagementRestrictedBody": "To keep your account safe, key backup and importing a different key aren't available here.",
     "keyManagementNeverShare": "لا تُشارك nsec مع أي شخص أبدًا!",
     "keyManagementPasteKey": "يُرجى لصق مفتاحك الخاص",
     "keyManagementInvalidFormat": "تنسيق مفتاح غير صالح. يجب أن يبدأ بـ \"nsec1\"",

@@ -4819,6 +4819,13 @@ class AppLocalizationsId extends AppLocalizations {
       'Akun ini menandatangani dengan Keycast. Tidak ada kunci privat yang disimpan di perangkat ini, jadi tidak ada nsec untuk disalin di sini.';
 
   @override
+  String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';
+
+  @override
+  String get keyManagementRestrictedBody =>
+      'To keep your account safe, key backup and importing a different key aren\'t available here.';
+
+  @override
   String get keyManagementPasteKey => 'Silakan tempel kunci privatmu';
 
   @override

@@ -4642,6 +4642,13 @@ class AppLocalizationsKo extends AppLocalizations {
       '이 계정은 Keycast로 서명합니다. 이 기기에는 개인 키가 저장되어 있지 않으므로 여기에서 복사할 nsec가 없습니다.';
 
   @override
+  String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';
+
+  @override
+  String get keyManagementRestrictedBody =>
+      'To keep your account safe, key backup and importing a different key aren\'t available here.';
+
+  @override
   String get keyManagementPasteKey => '개인 키를 붙여넣어 주세요';
 
   @override

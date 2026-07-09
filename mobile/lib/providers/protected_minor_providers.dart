@@ -175,3 +175,23 @@ final isDmRestrictedProvider = Provider<bool>((ref) {
   // restriction; a never-seen account fails closed.
   return store.lastKnownFor(pubkey) ?? true;
 });
+
+/// The #182 key-management seam — gates nsec export ("copy private key") and
+/// key import/change (swapping the account to a self-held key) for protected
+/// minors.
+///
+/// Deliberately the SAME fail-closed verdict as the #176 DM restriction
+/// ([isDmRestrictedProvider]): a protected minor — or any account whose
+/// protected-minor status can't be positively cleared (unknown, cold start,
+/// suppressed check, missing token) — is restricted. A named passthrough (not
+/// a direct reuse) so the call site documents intent, and the two conditions
+/// can diverge later without touching the screen.
+///
+/// Fails closed for the same reason DMs do: the restricted party can trivially
+/// suppress the input that produces "unknown" (airplane mode, cleared storage,
+/// blocked keycast domain, expired token), so a missing answer must hide the
+/// affordance rather than hand over the key. This is why it does NOT reuse the
+/// fail-OPEN [isProtectedMinorProvider] that #175's content lock consumes.
+final isKeyManagementRestrictedProvider = Provider<bool>(
+  (ref) => ref.watch(isDmRestrictedProvider),
+);

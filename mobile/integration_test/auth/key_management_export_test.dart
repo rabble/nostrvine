@@ -85,6 +85,11 @@ void main() {
         );
         await pumpUntilSettled(tester, maxSeconds: 10);
 
+        // The #182 key-management gate fails closed until the protected-minor
+        // status resolves; for this adult account it resolves to not-restricted
+        // and reveals the export section. Wait out that resolution window.
+        await waitForTextGone(tester, 'Your keys are managed by Divine');
+
         expect(find.text('Key Management'), findsOneWidget);
         expect(
           find.text('Copy My Private Key (nsec)', skipOffstage: false),

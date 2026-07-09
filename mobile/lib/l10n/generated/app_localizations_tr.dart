@@ -4826,6 +4826,13 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bu hesap Keycast ile imzalar. Bu cihazda özel anahtar saklanmıyor, bu yüzden burada kopyalanacak bir nsec yok.';
 
   @override
+  String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';
+
+  @override
+  String get keyManagementRestrictedBody =>
+      'To keep your account safe, key backup and importing a different key aren\'t available here.';
+
+  @override
   String get keyManagementPasteKey => 'Lütfen özel anahtarını yapıştır';
 
   @override

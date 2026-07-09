@@ -8448,6 +8448,18 @@ abstract class AppLocalizations {
   /// **'This account signs with Keycast. No private key is stored on this device, so there is no nsec to copy here.'**
   String get keyManagementKeycastRemoteSigning;
 
+  /// Heading shown in place of the key backup/export and key import sections for a protected-minor account whose signing key is managed by Divine (Keycast custody).
+  ///
+  /// In en, this message translates to:
+  /// **'Your keys are managed by Divine'**
+  String get keyManagementRestrictedTitle;
+
+  /// Explanation shown to a protected-minor account for why the copy-private-key and import-key affordances are unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'To keep your account safe, key backup and importing a different key aren\'t available here.'**
+  String get keyManagementRestrictedBody;
+
   /// No description provided for @keyManagementPasteKey.
   ///
   /// In en, this message translates to:

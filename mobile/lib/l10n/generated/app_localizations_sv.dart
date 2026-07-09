@@ -4842,6 +4842,13 @@ class AppLocalizationsSv extends AppLocalizations {
       'Det här kontot signerar med Keycast. Ingen privat nyckel är lagrad på den här enheten, så det finns inget nsec att kopiera här.';
 
   @override
+  String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';
+
+  @override
+  String get keyManagementRestrictedBody =>
+      'To keep your account safe, key backup and importing a different key aren\'t available here.';
+
+  @override
   String get keyManagementPasteKey => 'Klistra in din privata nyckel';
 
   @override

@@ -4809,6 +4809,13 @@ class AppLocalizationsAr extends AppLocalizations {
       'يوقّع هذا الحساب باستخدام Keycast. لا يوجد مفتاح خاص مخزّن على هذا الجهاز، لذلك لا يوجد nsec لنسخه هنا.';
 
   @override
+  String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';
+
+  @override
+  String get keyManagementRestrictedBody =>
+      'To keep your account safe, key backup and importing a different key aren\'t available here.';
+
+  @override
   String get keyManagementPasteKey => 'يُرجى لصق مفتاحك الخاص';
 
   @override

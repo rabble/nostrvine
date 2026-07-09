@@ -11,6 +11,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/authentication_source.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/protected_minor_providers.dart';
 
 class KeyManagementScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.
@@ -39,6 +40,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
   @override
   Widget build(BuildContext context) {
     final nostrService = ref.watch(nostrServiceProvider);
+    final restricted = ref.watch(isKeyManagementRestrictedProvider);
 
     return Scaffold(
       appBar: DiVineAppBar(
@@ -66,12 +68,20 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
               _buildExplanationCard(),
               const SizedBox(height: 24),
 
-              // Import existing key section
-              _buildImportSection(context, nostrService),
-              const SizedBox(height: 24),
+              // Protected minors (#182) cannot export their nsec or swap the
+              // account to a self-held key; the affordances are replaced by an
+              // explanatory locked card. Fails closed via
+              // isKeyManagementRestrictedProvider.
+              if (restricted)
+                const _KeyManagementLockedCard()
+              else ...[
+                // Import existing key section
+                _buildImportSection(context, nostrService),
+                const SizedBox(height: 24),
 
-              // Export/Backup section
-              _buildExportSection(context),
+                // Export/Backup section
+                _buildExportSection(context),
+              ],
             ],
           ),
         ),
@@ -596,5 +606,53 @@ class _NpubDisplayBlock extends ConsumerWidget {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(l10n.keyManagementPublicKeyCopied)));
+  }
+}
+
+/// Shown in place of the key backup/export and import sections for a protected
+/// minor (#182): the account's keys are custodially managed, so those
+/// affordances are removed. The npub display and the key explanation stay.
+class _KeyManagementLockedCard extends StatelessWidget {
+  const _KeyManagementLockedCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: VineTheme.vineGreen.withValues(alpha: 0.15),
+        border: Border.all(color: VineTheme.vineGreen.withValues(alpha: 0.3)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const DivineIcon(
+            icon: DivineIconName.shieldCheck,
+            color: VineTheme.vineGreen,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 8,
+              children: [
+                Text(
+                  l10n.keyManagementRestrictedTitle,
+                  style: VineTheme.titleSmallFont(color: VineTheme.vineGreen),
+                ),
+                Text(
+                  l10n.keyManagementRestrictedBody,
+                  style: VineTheme.bodyMediumFont(
+                    color: VineTheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

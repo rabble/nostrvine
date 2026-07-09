@@ -2003,6 +2003,8 @@
     "keyManagementBackupSubtitle": "Spara din privata nyckel (nsec) för att använda ditt konto i andra Nostr-appar.",
     "keyManagementCopyNsec": "Kopiera min privata nyckel (nsec)",
     "keyManagementKeycastRemoteSigning": "Det här kontot signerar med Keycast. Ingen privat nyckel är lagrad på den här enheten, så det finns inget nsec att kopiera här.",
+  "keyManagementRestrictedTitle": "Your keys are managed by Divine",
+  "keyManagementRestrictedBody": "To keep your account safe, key backup and importing a different key aren't available here.",
     "keyManagementNeverShare": "Dela aldrig din nsec med någon!",
     "keyManagementPasteKey": "Klistra in din privata nyckel",
     "keyManagementInvalidFormat": "Ogiltigt nyckelformat. Måste börja med \"nsec1\"",

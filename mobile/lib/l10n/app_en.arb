@@ -2698,6 +2698,14 @@
   "keyManagementCopyNsec": "Copy My Private Key (nsec)",
   "keyManagementNeverShare": "Never share your nsec with anyone!",
   "keyManagementKeycastRemoteSigning": "This account signs with Keycast. No private key is stored on this device, so there is no nsec to copy here.",
+  "keyManagementRestrictedTitle": "Your keys are managed by Divine",
+  "@keyManagementRestrictedTitle": {
+    "description": "Heading shown in place of the key backup/export and key import sections for a protected-minor account whose signing key is managed by Divine (Keycast custody)."
+  },
+  "keyManagementRestrictedBody": "To keep your account safe, key backup and importing a different key aren't available here.",
+  "@keyManagementRestrictedBody": {
+    "description": "Explanation shown to a protected-minor account for why the copy-private-key and import-key affordances are unavailable."
+  },
   "keyManagementPasteKey": "Please paste your private key",
   "keyManagementInvalidFormat": "Invalid key format. Must start with \"nsec1\"",
   "keyManagementConfirmImportTitle": "Import This Key?",

@@ -4875,6 +4875,13 @@ class AppLocalizationsPt extends AppLocalizations {
       'Esta conta assina com o Keycast. Nenhuma chave privada está armazenada neste dispositivo, portanto não há nsec para copiar aqui.';
 
   @override
+  String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';
+
+  @override
+  String get keyManagementRestrictedBody =>
+      'To keep your account safe, key backup and importing a different key aren\'t available here.';
+
+  @override
   String get keyManagementPasteKey => 'Por favor, cole sua chave privada';
 
   @override

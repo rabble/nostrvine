@@ -2003,6 +2003,8 @@
     "keyManagementBackupSubtitle": "Sichere deinen Private Key (nsec), um dein Konto in anderen Nostr-Apps zu nutzen.",
     "keyManagementCopyNsec": "Meinen Private Key (nsec) kopieren",
     "keyManagementKeycastRemoteSigning": "Dieses Konto signiert mit Keycast. Auf diesem Gerät ist kein privater Schlüssel gespeichert, daher gibt es hier kein nsec zum Kopieren.",
+  "keyManagementRestrictedTitle": "Your keys are managed by Divine",
+  "keyManagementRestrictedBody": "To keep your account safe, key backup and importing a different key aren't available here.",
     "keyManagementNeverShare": "Teile deinen nsec niemals mit jemandem!",
     "keyManagementPasteKey": "Bitte füg deinen Private Key ein",
     "keyManagementInvalidFormat": "Ungültiges Schlüsselformat. Muss mit \"nsec1\" beginnen",

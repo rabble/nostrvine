@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/protected_minor_providers.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 
@@ -73,11 +74,17 @@ void main() {
           );
     });
 
-    Future<void> pumpSubject(WidgetTester tester) async {
+    Future<void> pumpSubject(
+      WidgetTester tester, {
+      bool restricted = false,
+    }) async {
       await tester.pumpWidget(
         testMaterialApp(
           home: const KeyManagementScreen(),
           mockAuthService: authService,
+          additionalOverrides: [
+            isKeyManagementRestrictedProvider.overrideWithValue(restricted),
+          ],
         ),
       );
       await tester.pumpAndSettle();
@@ -169,6 +176,66 @@ void main() {
           ),
           findsOneWidget,
         );
+      },
+    );
+
+    testWidgets(
+      'hides nsec export and key import for a protected minor',
+      (tester) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        // Local, exportable key: without the gate the copy-nsec action would
+        // show, so this proves the gate — not canExportLocalNsec — hides it.
+        authService = _FakeKeyManagementAuthService(
+          currentNpub: testNpub,
+          authenticationSource: AuthenticationSource.divineOAuth,
+          canExportLocalNsec: true,
+        );
+
+        await pumpSubject(tester, restricted: true);
+
+        expect(find.text(l10n.keyManagementRestrictedTitle), findsOneWidget);
+        expect(find.text(l10n.keyManagementRestrictedBody), findsOneWidget);
+
+        expect(
+          find.text(l10n.keyManagementCopyNsec, skipOffstage: false),
+          findsNothing,
+        );
+        expect(
+          find.text(l10n.keyManagementBackupTitle, skipOffstage: false),
+          findsNothing,
+        );
+        expect(
+          find.text(l10n.keyManagementImportButton, skipOffstage: false),
+          findsNothing,
+        );
+        expect(
+          find.text(l10n.keyManagementImportTitle, skipOffstage: false),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'shows nsec export and key import for a normal account',
+      (tester) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        authService = _FakeKeyManagementAuthService(
+          currentNpub: testNpub,
+          authenticationSource: AuthenticationSource.divineOAuth,
+          canExportLocalNsec: true,
+        );
+
+        await pumpSubject(tester);
+
+        expect(
+          find.text(l10n.keyManagementCopyNsec, skipOffstage: false),
+          findsOneWidget,
+        );
+        expect(
+          find.text(l10n.keyManagementImportButton, skipOffstage: false),
+          findsOneWidget,
+        );
+        expect(find.text(l10n.keyManagementRestrictedTitle), findsNothing);
       },
     );
   });

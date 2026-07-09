@@ -2202,6 +2202,8 @@
     "keyManagementBackupSubtitle": "Запази частния си ключ (nsec), за да използваш акаунта си в други Nostr приложения.",
     "keyManagementCopyNsec": "Копирай личния ми ключ (nsec)",
     "keyManagementKeycastRemoteSigning": "Този акаунт подписва с Keycast. На това устройство не е съхранен частен ключ, затова тук няма nsec за копиране.",
+  "keyManagementRestrictedTitle": "Your keys are managed by Divine",
+  "keyManagementRestrictedBody": "To keep your account safe, key backup and importing a different key aren't available here.",
     "keyManagementNeverShare": "Никога не споделяй своя nsec с никого!",
     "keyManagementPasteKey": "Постави частния си ключ",
     "keyManagementInvalidFormat": "Невалиден формат на ключа. Трябва да започва с \"nsec1\"",

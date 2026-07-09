@@ -1995,6 +1995,8 @@
     "keyManagementBackupSubtitle": "秘密鍵 (nsec) を保存して、他の Nostr アプリでもこのアカウントを使えるようにしよう。",
     "keyManagementCopyNsec": "秘密鍵 (nsec) をコピー",
     "keyManagementKeycastRemoteSigning": "このアカウントはKeycastで署名します。このデバイスには秘密鍵が保存されていないため、ここでコピーできるnsecはありません。",
+  "keyManagementRestrictedTitle": "Your keys are managed by Divine",
+  "keyManagementRestrictedBody": "To keep your account safe, key backup and importing a different key aren't available here.",
     "keyManagementNeverShare": "nsec は誰にも共有しないで！",
     "keyManagementPasteKey": "秘密鍵を貼り付けてね",
     "keyManagementInvalidFormat": "鍵の形式が正しくないよ。「nsec1」で始める必要があるよ",

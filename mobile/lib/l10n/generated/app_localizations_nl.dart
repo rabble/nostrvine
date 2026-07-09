@@ -4865,6 +4865,13 @@ class AppLocalizationsNl extends AppLocalizations {
       'Dit account ondertekent met Keycast. Er is geen privésleutel opgeslagen op dit apparaat, dus er is hier geen nsec om te kopiëren.';
 
   @override
+  String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';
+
+  @override
+  String get keyManagementRestrictedBody =>
+      'To keep your account safe, key backup and importing a different key aren\'t available here.';
+
+  @override
   String get keyManagementPasteKey => 'Plak je privésleutel';
 
   @override

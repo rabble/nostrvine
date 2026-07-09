@@ -2007,6 +2007,8 @@
     "keyManagementBackupSubtitle": "Guardá tu clave privada (nsec) para usar tu cuenta en otras apps de Nostr.",
     "keyManagementCopyNsec": "Copiar mi clave privada (nsec)",
     "keyManagementKeycastRemoteSigning": "Esta cuenta firma con Keycast. No hay ninguna clave privada guardada en este dispositivo, así que no hay ningún nsec que copiar aquí.",
+  "keyManagementRestrictedTitle": "Your keys are managed by Divine",
+  "keyManagementRestrictedBody": "To keep your account safe, key backup and importing a different key aren't available here.",
     "keyManagementNeverShare": "¡Nunca compartas tu nsec con nadie!",
     "keyManagementPasteKey": "Pegá tu clave privada",
     "keyManagementInvalidFormat": "Formato de clave inválido. Tiene que empezar con \"nsec1\"",

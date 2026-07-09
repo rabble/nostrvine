@@ -4893,6 +4893,13 @@ class AppLocalizationsBg extends AppLocalizations {
       'Този акаунт подписва с Keycast. На това устройство не е съхранен частен ключ, затова тук няма nsec за копиране.';
 
   @override
+  String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';
+
+  @override
+  String get keyManagementRestrictedBody =>
+      'To keep your account safe, key backup and importing a different key aren\'t available here.';
+
+  @override
   String get keyManagementPasteKey => 'Постави частния си ключ';
 
   @override
