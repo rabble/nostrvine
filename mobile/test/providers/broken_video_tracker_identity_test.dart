@@ -5,9 +5,21 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/providers/video_providers.dart';
+import 'package:openvine/services/dead_media_feed_guard.dart';
+import 'package:openvine/services/media_availability_checker.dart';
 
 import '../helpers/test_helpers.dart';
 import '../helpers/test_provider_overrides.dart';
+
+/// Always reports the checked URL as a confirmed 404 with no network I/O, so
+/// the guard-mark regression below can exercise the real
+/// [DeadMediaFeedGuard.confirmAndMarkMissing] path deterministically.
+class _AlwaysConfirmedMissingChecker implements MediaAvailabilityChecker {
+  const _AlwaysConfirmedMissingChecker();
+
+  @override
+  Future<bool> isConfirmedMissing(String url) async => true;
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -52,9 +64,31 @@ void main() {
     );
 
     test(
-      "a mark made through deadMediaFeedGuardProvider's tracker is reflected "
-      'by VideoEventService.filterVideoList',
+      'a mark made through deadMediaFeedGuardProvider.confirmAndMarkMissing '
+      'is reflected by VideoEventService.filterVideoList',
       () async {
+        // Rebuild the container with deadMediaFeedGuardProvider overridden to
+        // swap in a checker that deterministically reports a confirmed 404 —
+        // everything else about the provider's body (resolving the tracker
+        // via brokenVideoTrackerProvider) matches production exactly, so this
+        // still exercises the real provider identifier and the real
+        // confirmAndMarkMissing mark path, just without a live HEAD request.
+        container.dispose();
+        container = ProviderContainer(
+          overrides: [
+            ...getStandardTestOverrides().cast(),
+            deadMediaFeedGuardProvider.overrideWith((ref) async {
+              final tracker = await ref.watch(
+                brokenVideoTrackerProvider.future,
+              );
+              return DeadMediaFeedGuard(
+                brokenVideoTracker: tracker,
+                availabilityChecker: const _AlwaysConfirmedMissingChecker(),
+              );
+            }),
+          ],
+        );
+
         // Build VideoEventService first (production attaches its tracker via
         // a fire-and-forget ref.read inside the provider's build function).
         final service = container.read(videoEventServiceProvider);
@@ -81,13 +115,12 @@ void main() {
           containsAll(<String>['good1', 'dead1']),
         );
 
-        // deadMediaFeedGuardProvider wraps *the same* brokenVideoTrackerProvider
-        // future with no other logic, so marking through the tracker it
-        // resolves to is equivalent to a guard-confirmed mark.
         final guard = await container.read(deadMediaFeedGuardProvider.future);
-        expect(guard, isA<Object>());
-        final tracker = await container.read(brokenVideoTrackerProvider.future);
-        await tracker.markVideoBroken('dead1', 'test: confirmed 404');
+        final marked = await guard.confirmAndMarkMissing(
+          videoId: 'dead1',
+          videoUrl: dead.videoUrl,
+        );
+        expect(marked, isTrue);
 
         expect(
           service.filterVideoList([good, dead]).map((v) => v.id),
