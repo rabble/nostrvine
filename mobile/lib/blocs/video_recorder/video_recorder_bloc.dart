@@ -184,7 +184,13 @@ class VideoRecorderBloc
     on<VideoRecorderFlashToggled>(_onFlashToggled);
     on<VideoRecorderAspectRatioToggled>(_onAspectRatioToggled);
     on<VideoRecorderAspectRatioSet>(_onAspectRatioSet);
-    on<VideoRecorderCameraSwitched>(_onCameraSwitched);
+    on<VideoRecorderCameraSwitched>(
+      _onCameraSwitched,
+      // A switch drives a native rebind and raises isSwitchingCamera for the
+      // blur transition; drop taps that arrive mid-switch so a rapid double-tap
+      // can't kick off a second rebind (which would just toggle back).
+      transformer: droppable(),
+    );
     on<VideoRecorderStabilizationModeSet>(
       _onStabilizationModeSet,
       // Each change drives a native reconfigure (a CameraX rebind on Android);
@@ -467,8 +473,10 @@ class VideoRecorderBloc
         category: LogCategory.video,
       );
 
-      emit(state.copyWith(zoomLevel: 1, baseZoomLevel: 1));
-      _emitCameraSync(emit);
+      if (!emit.isDone) {
+        emit(state.copyWith(zoomLevel: 1, baseZoomLevel: 1));
+        _emitCameraSync(emit);
+      }
     } finally {
       if (!emit.isDone) {
         emit(state.copyWith(isSwitchingCamera: false));

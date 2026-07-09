@@ -1063,7 +1063,15 @@ class CameraController(
         
         // Disable screen flash when switching cameras
         disableScreenFlash()
-        
+
+        // Only a facing flip (front<->back) needs a fresh preview texture — that
+        // sensor-orientation delta is what produced the upside-down flash. A
+        // same-facing rebind (a stabilization toggle rebinds through this
+        // method) must reuse the existing texture: it reports no new textureId
+        // to Dart, so a fresh one would strand the preview on the retired
+        // texture and freeze it.
+        val previousLens = currentLens
+
         // Map lens string to lens type and facing
         currentLensType = lens
         currentLens = getLensFacingForType(lens)
@@ -1088,6 +1096,7 @@ class CameraController(
             return
         }
 
+        var didSwapTexture = false
         try {
             // Unbind all use cases
             provider.unbindAll()
@@ -1096,12 +1105,16 @@ class CameraController(
             // outgoing one (kept alive so the Dart freeze-gate keeps showing its
             // last frame until the swap). The outgoing texture never receives the
             // new camera's frames, so its rotation can't desync mid-switch — this
-            // is the structural fix for the upside-down flash. The previous
+            // is the structural fix for the upside-down flash. Only done on a
+            // facing flip; same-facing rebinds reuse the texture. The previous
             // switch's retired producer is safe to release now: Dart swapped off
             // it a switch ago.
-            retiringSurfaceProducer?.release()
-            retiringSurfaceProducer = surfaceProducer
-            surfaceProducer = textureRegistry.createSurfaceProducer()
+            if (currentLens != previousLens) {
+                retiringSurfaceProducer?.release()
+                retiringSurfaceProducer = surfaceProducer
+                surfaceProducer = textureRegistry.createSurfaceProducer()
+                didSwapTexture = true
+            }
 
             // Build camera selector for the requested lens
             // For specialized lenses (ultraWide, telephoto, macro), we need to use Camera2 interop
@@ -1118,8 +1131,9 @@ class CameraController(
                 stabilizationMode,
             )
 
-            // Drive the freshly created texture; update its buffer size once we
-            // get the incoming camera's resolution.
+            // Drive the preview texture (fresh on a facing flip, reused on a
+            // same-facing rebind); update its buffer size once we get the
+            // incoming camera's resolution.
             preview?.setSurfaceProvider(ContextCompat.getMainExecutor(context)) { request ->
                 val resolution = request.resolution
                 videoWidth = resolution.width
@@ -1206,6 +1220,15 @@ class CameraController(
             mainHandler.postDelayed(finishSwitch, SWITCH_FIRST_FRAME_TIMEOUT_MS)
 
         } catch (e: Exception) {
+            // Roll back a fresh-texture swap so surfaceProducer again matches the
+            // texture Dart is still showing; otherwise the next switch would
+            // release that on-screen texture (black preview) or a later
+            // getCameraState would swap the preview onto the empty producer.
+            if (didSwapTexture) {
+                surfaceProducer?.release()
+                surfaceProducer = retiringSurfaceProducer
+                retiringSurfaceProducer = null
+            }
             DivineCameraLog.e(TAG, "Failed to switch camera", e)
             mainHandler.post {
                 callback(null, "Failed to switch camera: ${e.message}")

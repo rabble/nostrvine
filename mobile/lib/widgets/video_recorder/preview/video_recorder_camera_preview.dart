@@ -55,7 +55,11 @@ class VideoRecorderCameraPreview extends StatelessWidget {
                 child: ClipRRect(
                   clipBehavior: .hardEdge,
                   borderRadius: borderRadius,
-                  child: _StackItems(enableTapToFocus: enableTapToFocus),
+                  // The blur wraps the whole stack from above its camera-rebuild
+                  // [ValueKey], so a switch's rebuild doesn't dispose the ramp.
+                  child: _CameraSwitchBlur(
+                    child: _StackItems(enableTapToFocus: enableTapToFocus),
+                  ),
                 ),
               );
             },
@@ -85,9 +89,7 @@ class _StackItems extends StatelessWidget {
       key: ValueKey('Camera-Count-${state.cameraRebuildCount}'),
       children: [
         if (state.isCameraInitialized)
-          _CameraSwitchBlur(
-            child: _CameraPreview(enableTapToFocus: enableTapToFocus),
-          )
+          _CameraPreview(enableTapToFocus: enableTapToFocus)
         else
           VideoRecorderCameraPlaceholder(
             errorMessage: state.initializationErrorMessage,
@@ -127,11 +129,12 @@ class _CameraPreview extends StatelessWidget {
             if (!kIsWeb && defaultTargetPlatform == TargetPlatform.linux)
               const SizedBox.shrink()
             else
-              // Keyed on the texture id: a lens switch rebinds the incoming
+              // Keyed on the texture id: a facing flip rebinds the incoming
               // camera onto a fresh texture, so a changed id remounts the
-              // preview to pick up the new camera's frames. This rebuild does
-              // not reset the switch blur — that lives one level up in
-              // [_CameraSwitchBlur], so its ramp-out plays over the new frame.
+              // preview to pick up its frames. Neither this remount nor the
+              // camera-rebuild remount of the enclosing Stack resets the switch
+              // blur — it lives above [_StackItems], so its ramp-out plays over
+              // the new frame.
               VideoRecorderMobilePreview(
                 key: ValueKey(textureId),
                 enableTapToFocus: enableTapToFocus,
@@ -148,6 +151,9 @@ class _CameraPreview extends StatelessWidget {
 /// blur over it, then deblurs as the new lens's first frames arrive — the same
 /// cue the native camera app uses to hide the hard cut and the new sensor's
 /// initial unfocused frames.
+///
+/// Wraps the preview stack from above its camera-rebuild [ValueKey], so the
+/// ramp survives the remount a switch triggers and deblurs over the new frame.
 class _CameraSwitchBlur extends StatelessWidget {
   const _CameraSwitchBlur({required this.child});
 
@@ -158,24 +164,28 @@ class _CameraSwitchBlur extends StatelessWidget {
   /// raster-thread work, and it only runs for the brief switch transition.
   static const double _peakBlurSigma = 16;
 
-  /// Blur ramp duration each way. Matches the aspect-ratio transition above so
-  /// the two camera animations feel of a piece.
+  /// Blur ramp duration each way. Kept short so the new lens is revealed
+  /// quickly once the deblur starts.
   static const Duration _rampDuration = Duration(milliseconds: 50);
+
+  /// Below this sigma the blur is visually a no-op; skip the filter layer so
+  /// there is zero blur cost at rest and once the deblur completes.
+  static const double _blurEpsilon = 0.1;
 
   @override
   Widget build(BuildContext context) {
     final isSwitching = context.select(
       (VideoRecorderBloc b) => b.state.isSwitchingCamera,
     );
+    // Under reduced motion, snap the blur in/out instead of ramping it.
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(end: isSwitching ? _peakBlurSigma : 0),
-      duration: _rampDuration,
+      duration: reduceMotion ? Duration.zero : _rampDuration,
       curve: Curves.easeOut,
       child: child,
       builder: (context, sigma, child) {
-        // Below ~0 the filter is a no-op; skip the layer so there is zero blur
-        // cost at rest and once the deblur completes.
-        if (sigma < 0.1) return child!;
+        if (sigma < _blurEpsilon) return child!;
         return ClipRect(
           child: ImageFiltered(
             imageFilter: ui.ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),

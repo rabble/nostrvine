@@ -69,7 +69,7 @@ void main() {
       expect(find.byType(VideoRecorderCameraPlaceholder), findsOneWidget);
     });
 
-    testWidgets('contains TweenAnimationBuilder for transitions', (
+    testWidgets('applies no blur filter when not switching cameras', (
       tester,
     ) async {
       when(() => recorderBloc.state).thenReturn(
@@ -77,8 +77,25 @@ void main() {
       );
 
       await tester.pumpWidget(buildSubject());
+      await tester.pump();
 
-      expect(find.byType(TweenAnimationBuilder<double>), isNotNull);
+      expect(find.byType(ImageFiltered), findsNothing);
+    });
+
+    testWidgets('blurs the frozen preview while switching cameras', (
+      tester,
+    ) async {
+      when(() => recorderBloc.state).thenReturn(
+        const VideoRecorderBlocState(
+          isCameraInitialized: true,
+          isSwitchingCamera: true,
+        ),
+      );
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pump(const Duration(milliseconds: 60));
+
+      expect(find.byType(ImageFiltered), findsOneWidget);
     });
   });
 }

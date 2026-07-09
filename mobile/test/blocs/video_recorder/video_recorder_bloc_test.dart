@@ -464,6 +464,54 @@ void main() {
       );
     });
 
+    group('VideoRecorderCameraSwitched', () {
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'raises then clears isSwitchingCamera and propagates the new '
+        'previewTextureId on a successful switch',
+        setUp: () {
+          when(
+            () => cameraService.switchCamera(),
+          ).thenAnswer((_) async => true);
+          when(() => cameraService.textureId).thenReturn(42);
+        },
+        build: buildBloc,
+        act: (bloc) => bloc.add(const VideoRecorderCameraSwitched()),
+        expect: () => [
+          isA<VideoRecorderBlocState>().having(
+            (s) => s.isSwitchingCamera,
+            'isSwitchingCamera',
+            isTrue,
+          ),
+          isA<VideoRecorderBlocState>()
+              .having((s) => s.isSwitchingCamera, 'isSwitchingCamera', isFalse)
+              .having((s) => s.previewTextureId, 'previewTextureId', 42),
+        ],
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'still clears isSwitchingCamera via the finally when the switch fails',
+        setUp: () {
+          when(
+            () => cameraService.switchCamera(),
+          ).thenAnswer((_) async => false);
+        },
+        build: buildBloc,
+        act: (bloc) => bloc.add(const VideoRecorderCameraSwitched()),
+        expect: () => [
+          isA<VideoRecorderBlocState>().having(
+            (s) => s.isSwitchingCamera,
+            'isSwitchingCamera',
+            isTrue,
+          ),
+          isA<VideoRecorderBlocState>().having(
+            (s) => s.isSwitchingCamera,
+            'isSwitchingCamera',
+            isFalse,
+          ),
+        ],
+      );
+    });
+
     group('VideoRecorderStabilizationModeSet', () {
       blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
         'persists the new mode when the camera accepts it',
