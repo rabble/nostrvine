@@ -2,6 +2,8 @@
 // ABOUTME: onSkipBrokenVideo exactly once when the active item's playback
 // ABOUTME: status goes non-ready, and only while Auto is effectively active.
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -364,6 +366,198 @@ void main() {
 
         expect(skipCount, equals(1));
         expect(confirmCalls, equals(1));
+      },
+    );
+
+    testWidgets(
+      'manual scroll: retries confirmation once the guard becomes available '
+      'for an item that already failed while it was still null',
+      (tester) async {
+        var confirmCalls = 0;
+        final confirmCompleter = Completer<bool>();
+        final notFound = VideoPlaybackStatusState().withStatus(
+          'video-1',
+          PlaybackStatus.notFound,
+        );
+        when(() => cubit.state).thenReturn(notFound);
+        whenListen(
+          cubit,
+          const Stream<VideoPlaybackStatusState>.empty(),
+          initialState: notFound,
+        );
+
+        // Mounts already-failed with no guard loaded yet (deadMediaFeedGuard
+        // is still resolving its async provider).
+        await tester.pumpWidget(
+          _host(
+            cubit: cubit,
+            videoId: 'video-1',
+            isActive: true,
+            isAutoAdvanceActive: false, // manual scroll
+            onSkip: () => skipCount++,
+          ),
+        );
+        await tester.pump();
+
+        expect(
+          confirmCalls,
+          equals(0),
+          reason: 'no confirm attempt is possible without the guard',
+        );
+        expect(skipCount, equals(0));
+
+        // The guard finishes loading — confirmAndMarkMissing flips null →
+        // non-null for the same still-failed item.
+        await tester.pumpWidget(
+          _host(
+            cubit: cubit,
+            videoId: 'video-1',
+            isActive: true,
+            isAutoAdvanceActive: false,
+            onSkip: () => skipCount++,
+            confirmAndMarkMissing: () {
+              confirmCalls++;
+              return confirmCompleter.future;
+            },
+          ),
+        );
+
+        expect(
+          confirmCalls,
+          equals(1),
+          reason:
+              'didUpdateWidget must retry the confirm attempt as soon as '
+              'confirmAndMarkMissing becomes available for this same item',
+        );
+
+        confirmCompleter.complete(true); // confirmed hard 404
+        // A bare completer resolving outside any widget rebuild doesn't
+        // schedule a frame on its own, so nudge the test binding to draw one
+        // — otherwise pump() only flushes microtasks and the post-frame
+        // callback that fires the skip never runs.
+        tester.binding.scheduleFrame();
+        await tester.pump();
+
+        expect(skipCount, equals(1));
+      },
+    );
+
+    testWidgets(
+      'manual scroll: ignores a stale confirm result once the item is no '
+      'longer active',
+      (tester) async {
+        var confirmCalls = 0;
+        final confirmCompleter = Completer<bool>();
+        final updated = VideoPlaybackStatusState().withStatus(
+          'video-1',
+          PlaybackStatus.notFound,
+        );
+        whenListen(
+          cubit,
+          Stream<VideoPlaybackStatusState>.fromIterable([updated]),
+          initialState: VideoPlaybackStatusState(),
+        );
+        Future<bool> confirm() {
+          confirmCalls++;
+          return confirmCompleter.future;
+        }
+
+        await tester.pumpWidget(
+          _host(
+            cubit: cubit,
+            videoId: 'video-1',
+            isActive: true,
+            isAutoAdvanceActive: false, // manual scroll
+            onSkip: () => skipCount++,
+            confirmAndMarkMissing: confirm,
+          ),
+        );
+        await tester.pump(); // deliver stream event -> starts confirm()
+
+        // The user scrolls away before the HEAD confirmation resolves.
+        await tester.pumpWidget(
+          _host(
+            cubit: cubit,
+            videoId: 'video-1',
+            isActive: false,
+            isAutoAdvanceActive: false,
+            onSkip: () => skipCount++,
+            confirmAndMarkMissing: confirm,
+          ),
+        );
+
+        confirmCompleter.complete(true); // confirms a hard 404, too late
+        await tester.pump();
+        await tester.pump();
+
+        expect(confirmCalls, equals(1));
+        expect(
+          skipCount,
+          equals(0),
+          reason:
+              'a confirmation racing a deactivation must not move a '
+              'page the user is no longer on',
+        );
+      },
+    );
+
+    testWidgets(
+      'manual scroll: ignores a stale confirm result once the item recycled '
+      'to a different video',
+      (tester) async {
+        var confirmCalls = 0;
+        final confirmCompleter = Completer<bool>();
+        final updated = VideoPlaybackStatusState().withStatus(
+          'video-1',
+          PlaybackStatus.notFound,
+        );
+        whenListen(
+          cubit,
+          Stream<VideoPlaybackStatusState>.fromIterable([updated]),
+          initialState: VideoPlaybackStatusState(),
+        );
+        Future<bool> confirm() {
+          confirmCalls++;
+          return confirmCompleter.future;
+        }
+
+        await tester.pumpWidget(
+          _host(
+            cubit: cubit,
+            videoId: 'video-1',
+            isActive: true,
+            isAutoAdvanceActive: false, // manual scroll
+            onSkip: () => skipCount++,
+            confirmAndMarkMissing: confirm,
+          ),
+        );
+        await tester.pump(); // deliver stream event -> starts confirm()
+
+        // The pooled feed item recycles to a different video before the HEAD
+        // confirmation for the old one resolves.
+        await tester.pumpWidget(
+          _host(
+            cubit: cubit,
+            videoId: 'video-2',
+            isActive: true,
+            isAutoAdvanceActive: false,
+            onSkip: () => skipCount++,
+            confirmAndMarkMissing: confirm,
+          ),
+        );
+
+        confirmCompleter.complete(true); // confirms video-1, now stale
+        await tester.pump();
+        await tester.pump();
+
+        expect(confirmCalls, equals(1));
+        expect(
+          skipCount,
+          equals(0),
+          reason:
+              'a stale confirmation for the previous video must not '
+              'skip the newly recycled one',
+        );
       },
     );
   });

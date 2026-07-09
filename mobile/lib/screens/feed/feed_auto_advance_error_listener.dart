@@ -76,10 +76,16 @@ class _FeedAutoAdvancePastErrorListenerState
     }
 
     // Re-evaluate when any gate flips — e.g. user swiped onto an already-
-    // errored video (isActive false → true), or Auto was just enabled.
+    // errored video (isActive false → true), Auto was just enabled, or the
+    // home-feed guard ([confirmAndMarkMissing]) just resolved for an item
+    // that already failed while it was still null. Without this branch, an
+    // item that failed before the guard loaded latches `_firedForCurrentBreak`
+    // and never gets a confirm attempt (see #5953 review).
     if (oldWidget.videoId != widget.videoId ||
         oldWidget.isActive != widget.isActive ||
-        oldWidget.isAutoAdvanceActive != widget.isAutoAdvanceActive) {
+        oldWidget.isAutoAdvanceActive != widget.isAutoAdvanceActive ||
+        (oldWidget.confirmAndMarkMissing == null &&
+            widget.confirmAndMarkMissing != null)) {
       _evaluateCurrentStatus();
     }
   }
@@ -94,24 +100,37 @@ class _FeedAutoAdvancePastErrorListenerState
     if (!widget.isActive) return;
     if (status == PlaybackStatus.ready) return;
 
-    _firedForCurrentBreak = true;
-
     final confirm = widget.confirmAndMarkMissing;
     if (widget.isAutoAdvanceActive) {
       // Auto already skips any non-ready item — preserve that immediately, and
       // mark a hard-404 item broken (fire-and-forget) so it's pruned on refetch.
+      _firedForCurrentBreak = true;
       _deferSkip();
       if (confirm != null) unawaited(confirm());
       return;
     }
 
-    // Manual scroll: only skip past a HEAD-confirmed hard 404 (which also marks
-    // it broken). Transient / non-404 failures keep the error tile.
+    // Manual scroll: only skip past a HEAD-confirmed hard 404 (which also
+    // marks it broken). Transient / non-404 failures keep the error tile.
+    //
+    // Don't latch `_firedForCurrentBreak` when the guard isn't loaded yet —
+    // no confirmation attempt happened, so `didUpdateWidget` must be able to
+    // retry once [confirmAndMarkMissing] becomes available for this same
+    // failed item.
     if (confirm == null) return;
+    _firedForCurrentBreak = true;
+    final videoId = widget.videoId;
     unawaited(
       confirm().then((isMissing) {
         if (!mounted) return;
-        if (isMissing) _deferSkip();
+        if (!isMissing) return;
+        // The result raced a page change, a deactivation, or a recovery —
+        // none of which should move a different/now-ready item.
+        if (!widget.isActive) return;
+        if (widget.videoId != videoId) return;
+        final cubit = context.read<VideoPlaybackStatusCubit>();
+        if (cubit.state.statusFor(videoId) == PlaybackStatus.ready) return;
+        _deferSkip();
       }),
     );
   }

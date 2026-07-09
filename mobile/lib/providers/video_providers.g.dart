@@ -614,12 +614,28 @@ final class VideoMetadataUpdateServiceProvider
 String _$videoMetadataUpdateServiceHash() =>
     r'411d6327e9cdd7e14c307357ac64d337d52dc99d';
 
-/// Broken video tracker service for filtering non-functional videos
+/// Broken video tracker service for filtering non-functional videos.
+///
+/// `keepAlive: true` so this stays the single app-session-stable instance —
+/// [videoEventServiceProvider] attaches it to `VideoEventService` for
+/// `filterVideoList`, and [deadMediaFeedGuardProvider] must mark broken
+/// videos on that *same* instance. Without `keepAlive`, this autodisposes
+/// once its initial watchers drop, so a later read can rebuild a fresh
+/// tracker that `VideoEventService` never sees — the home feed would then
+/// mark an item broken without it ever being filtered. See #5953 review.
 
 @ProviderFor(brokenVideoTracker)
 final brokenVideoTrackerProvider = BrokenVideoTrackerProvider._();
 
-/// Broken video tracker service for filtering non-functional videos
+/// Broken video tracker service for filtering non-functional videos.
+///
+/// `keepAlive: true` so this stays the single app-session-stable instance —
+/// [videoEventServiceProvider] attaches it to `VideoEventService` for
+/// `filterVideoList`, and [deadMediaFeedGuardProvider] must mark broken
+/// videos on that *same* instance. Without `keepAlive`, this autodisposes
+/// once its initial watchers drop, so a later read can rebuild a fresh
+/// tracker that `VideoEventService` never sees — the home feed would then
+/// mark an item broken without it ever being filtered. See #5953 review.
 
 final class BrokenVideoTrackerProvider
     extends
@@ -631,14 +647,22 @@ final class BrokenVideoTrackerProvider
     with
         $FutureModifier<BrokenVideoTracker>,
         $FutureProvider<BrokenVideoTracker> {
-  /// Broken video tracker service for filtering non-functional videos
+  /// Broken video tracker service for filtering non-functional videos.
+  ///
+  /// `keepAlive: true` so this stays the single app-session-stable instance —
+  /// [videoEventServiceProvider] attaches it to `VideoEventService` for
+  /// `filterVideoList`, and [deadMediaFeedGuardProvider] must mark broken
+  /// videos on that *same* instance. Without `keepAlive`, this autodisposes
+  /// once its initial watchers drop, so a later read can rebuild a fresh
+  /// tracker that `VideoEventService` never sees — the home feed would then
+  /// mark an item broken without it ever being filtered. See #5953 review.
   BrokenVideoTrackerProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
         name: r'brokenVideoTrackerProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -659,7 +683,7 @@ final class BrokenVideoTrackerProvider
 }
 
 String _$brokenVideoTrackerHash() =>
-    r'36268bd477659a229f13da325ac23403a20e7fa7';
+    r'c22a5abecce15fbb6194948c3b23af91f1a7ebab';
 
 /// Guard that HEAD-confirms a feed item's media is a hard 404 and marks it
 /// broken so the home feed can skip past + persistently prune it. Reuses the
