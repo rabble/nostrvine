@@ -28,7 +28,8 @@ class RequestPreviewPage extends ConsumerWidget {
 
   /// Pubkeys of the other participants (excludes current user).
   ///
-  /// When empty (e.g. deep link), pubkeys are loaded from the database.
+  /// When empty (e.g. deep link), pubkeys are loaded from the database for
+  /// non-restricted users; a DM-restricted user fails closed instead (#176).
   final List<String> participantPubkeys;
 
   static const routeName = 'requestPreview';

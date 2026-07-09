@@ -49,8 +49,8 @@ List<RouteBase> messagingRoutes() {
         if (id == null || id.isEmpty) {
           return RouteErrorScreen(message: ctx.l10n.routeInvalidRequestId);
         }
-        // Pubkeys are optional — the page loads them from the DB
-        // when not provided (e.g. deep link).
+        // Pubkeys are optional — the page loads them from the DB when not
+        // provided (e.g. deep link); DM-restricted users fail closed (#176).
         final participantPubkeys = stringListRouteExtra(st.extra);
         return RequestPreviewPage(
           conversationId: id,
