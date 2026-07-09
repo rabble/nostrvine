@@ -18,6 +18,9 @@ const _feedTuningSnackbarDuration = Duration(seconds: 4);
 /// until it's manually dismissed. Rendering the Undo button inside the
 /// snackbar content keeps `persist == false`, so the receipt always clears on
 /// its own after [_feedTuningSnackbarDuration].
+///
+/// Tapping Undo hides the receipt before running [onUndo], matching the
+/// dismiss-on-tap and single-fire behavior a [SnackBarAction] provides.
 void showFeedTuningSnackbar(
   BuildContext context, {
   required FeedTuningDirection direction,
@@ -27,14 +30,20 @@ void showFeedTuningSnackbar(
   final label = direction == FeedTuningDirection.more
       ? l10n.feedTuningMoreLabel
       : l10n.feedTuningLessLabel;
-  ScaffoldMessenger.of(context)
-    ..clearSnackBars()
-    ..showSnackBar(
-      DivineSnackbarContainer.snackBar(
-        label,
-        duration: _feedTuningSnackbarDuration,
-        actionLabel: onUndo == null ? null : l10n.feedTuningUndo,
-        onActionPressed: onUndo,
-      ),
-    );
+  final messenger = ScaffoldMessenger.of(context)..clearSnackBars();
+  messenger.showSnackBar(
+    DivineSnackbarContainer.snackBar(
+      label,
+      duration: _feedTuningSnackbarDuration,
+      actionLabel: onUndo == null ? null : l10n.feedTuningUndo,
+      onActionPressed: onUndo == null
+          ? null
+          : () {
+              messenger.removeCurrentSnackBar(
+                reason: SnackBarClosedReason.action,
+              );
+              onUndo();
+            },
+    ),
+  );
 }

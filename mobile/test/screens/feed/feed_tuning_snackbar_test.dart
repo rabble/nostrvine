@@ -59,6 +59,28 @@ void main() {
       },
     );
 
+    testWidgets('dismisses the receipt and fires the callback on Undo tap', (
+      tester,
+    ) async {
+      var undoCount = 0;
+      await tester.pumpWidget(
+        harness(direction: FeedTuningDirection.less, onUndo: () => undoCount++),
+      );
+
+      await tester.tap(find.text('trigger'));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      await tester.tap(find.text(l10n.feedTuningUndo));
+      await tester.pump();
+
+      // The receipt is removed immediately, so Undo cannot fire twice and the
+      // snackbar does not linger for the rest of its 4s window.
+      expect(undoCount, equals(1));
+      expect(find.text(l10n.feedTuningLessLabel), findsNothing);
+      expect(find.text(l10n.feedTuningUndo), findsNothing);
+    });
+
     testWidgets('omits the Undo action when no callback is given', (
       tester,
     ) async {
