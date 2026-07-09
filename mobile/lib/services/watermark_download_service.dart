@@ -184,7 +184,7 @@ class WatermarkDownloadService {
       await _c2paSigningService.resignDerived(
         outputPath: tempOutputPath,
         sourcePath: videoFile.path,
-        action: C2paEditActions.watermarked,
+        action: C2paEditActions.edited,
       );
 
       // Stage 3: Save to gallery

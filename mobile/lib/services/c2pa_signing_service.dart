@@ -13,8 +13,15 @@ import 'package:unified_logger/unified_logger.dart';
 /// C2PA edit actions recorded when carrying a manifest forward onto a
 /// re-encoded ("derived") video via [C2paSigningService.resignDerived].
 abstract class C2paEditActions {
-  /// The derived file had a watermark / overlay burned into the frame.
-  static const String watermarked = 'c2pa.watermarked';
+  /// The derived file is an editorial transformation of its source — e.g. a
+  /// watermark / overlay burned into the frame.
+  ///
+  /// Deliberately not `c2pa.watermarked`: the spec reserves that action for
+  /// *invisible* soft-binding watermarks and requires an accompanying
+  /// soft-binding assertion (C2PA 2.2 §18.14.5). `c2pa.transcoded` is also
+  /// wrong — the spec defines it as a non-editorial transformation, and a
+  /// visible overlay is editorial.
+  static const String edited = 'c2pa.edited';
 }
 
 /// Result of a C2PA signing operation
@@ -170,7 +177,7 @@ class C2paSigningService {
   /// watermark burn-in — that has lost the provenance embedded in its source.
   /// [sourcePath] is the already-signed original it was produced from. The
   /// source's active manifest is attached as a `parentOf` ingredient, [action]
-  /// (a `c2pa.*` edit action such as [C2paEditActions.watermarked]) is recorded,
+  /// (a `c2pa.*` edit action such as [C2paEditActions.edited]) is recorded,
   /// and the result is signed and embedded back into [outputPath] in place.
   ///
   /// Returns `success: false` without touching [outputPath] when [sourcePath]

@@ -2,6 +2,7 @@
 // ABOUTME: Validates the sealed class hierarchy and download flow contracts
 
 import 'dart:io';
+import 'dart:ui' show Size;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:media_cache/media_cache.dart';
@@ -10,13 +11,53 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/services/c2pa_signing_service.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/services/watermark_download_service.dart';
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+
+import '../mocks/mock_path_provider_platform.dart';
 
 class _MockMediaCacheManager extends Mock implements MediaCacheManager {}
 
 class _MockGallerySaveService extends Mock implements GallerySaveService {}
 
 class _MockC2paSigningService extends Mock implements C2paSigningService {}
+
+/// Fake native editor: reports fixed metadata and "renders" by writing the
+/// output file, so [WatermarkDownloadService.downloadWithWatermark] can run
+/// end-to-end without a native platform.
+class _FakeProVideoEditor extends ProVideoEditor {
+  @override
+  void initializeStream() {}
+
+  @override
+  Future<VideoMetadata> getMetadata(
+    EditorVideo value, {
+    bool checkStreamingOptimization = false,
+    NativeLogLevel? nativeLogLevel,
+  }) async {
+    return VideoMetadata(
+      duration: const Duration(seconds: 6),
+      extension: 'mp4',
+      fileSize: 1024,
+      resolution: const Size(320, 568),
+      rotation: 0,
+      bitrate: 1_000_000,
+    );
+  }
+
+  @override
+  Future<String> renderVideoToFile(
+    String filePath,
+    VideoRenderData value, {
+    NativeLogLevel? nativeLogLevel,
+  }) async {
+    File(filePath).writeAsStringSync('watermarked');
+    return filePath;
+  }
+
+  @override
+  Future<void> cancel(String taskId) async {}
+}
 
 VideoEvent _createTestVideo() => VideoEvent(
   id: 'test-video-id-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
@@ -29,6 +70,8 @@ VideoEvent _createTestVideo() => VideoEvent(
 );
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   setUpAll(() {
     registerFallbackValue(EditorVideo.file('/tmp/fallback.mp4'));
   });
@@ -197,6 +240,66 @@ void main() {
           lessThan(WatermarkDownloadStage.saving.index),
         );
       });
+
+      test(
+        'carries the C2PA manifest onto the rendered file before the '
+        'gallery save',
+        () async {
+          final tempDir = await Directory.systemTemp.createTemp(
+            'watermark-c2pa-test',
+          );
+          final videoFile = File('${tempDir.path}/video.mp4');
+          await videoFile.writeAsBytes(const [1, 2, 3, 4]);
+          addTearDown(() async {
+            if (tempDir.existsSync()) await tempDir.delete(recursive: true);
+          });
+
+          final originalPathProvider = PathProviderPlatform.instance;
+          PathProviderPlatform.instance = MockPathProviderPlatform()
+            ..setTemporaryPath(tempDir.path);
+          addTearDown(() {
+            PathProviderPlatform.instance = originalPathProvider;
+          });
+
+          final originalProVideoEditor = ProVideoEditor.instance;
+          ProVideoEditor.instance = _FakeProVideoEditor();
+          addTearDown(() {
+            ProVideoEditor.instance = originalProVideoEditor;
+          });
+
+          when(() => mockCache.getCachedFileSync(any())).thenReturn(videoFile);
+          when(
+            () => mockGallerySave.saveVideoToGallery(any()),
+          ).thenAnswer((_) async => const GallerySaveSuccess());
+
+          final stages = <WatermarkDownloadStage>[];
+          final result = await service.downloadWithWatermark(
+            video: _createTestVideo(),
+            watermarkText: 'alice@divine.video',
+            onProgress: stages.add,
+          );
+
+          expect(result, isA<WatermarkDownloadSuccess>());
+          final outputPath = (result as WatermarkDownloadSuccess).filePath;
+          expect(outputPath, isNot(equals(videoFile.path)));
+
+          final ordered = verifyInOrder([
+            () => mockC2pa.resignDerived(
+              outputPath: outputPath,
+              sourcePath: videoFile.path,
+              action: C2paEditActions.edited,
+            ),
+            () => mockGallerySave.saveVideoToGallery(captureAny()),
+          ]);
+          final savedVideo = ordered.last.captured.single as EditorVideo;
+          expect(savedVideo.file!.path, equals(outputPath));
+          expect(stages, [
+            WatermarkDownloadStage.downloading,
+            WatermarkDownloadStage.watermarking,
+            WatermarkDownloadStage.saving,
+          ]);
+        },
+      );
     });
 
     group('_getVideoFile (cached file fallback)', () {

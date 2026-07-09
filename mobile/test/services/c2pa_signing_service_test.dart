@@ -66,7 +66,7 @@ void main() {
           final result = await service.resignDerived(
             outputPath: output.path,
             sourcePath: source.path,
-            action: C2paEditActions.watermarked,
+            action: C2paEditActions.edited,
           );
 
           expect(result.success, isFalse);
@@ -112,7 +112,7 @@ void main() {
           final result = await service.resignDerived(
             outputPath: output.path,
             sourcePath: source.path,
-            action: C2paEditActions.watermarked,
+            action: C2paEditActions.edited,
           );
 
           expect(result.success, isTrue);
@@ -131,7 +131,8 @@ void main() {
           final recordedAction =
               verify(() => builder.addAction(captureAny())).captured.single
                   as ActionConfig;
-          expect(recordedAction.action, C2paEditActions.watermarked);
+          // Literal token: pins the protocol surface, not just the constant.
+          expect(recordedAction.action, 'c2pa.edited');
 
           verify(() => builder.setIntent(ManifestIntent.edit)).called(1);
           verify(builder.dispose).called(1);
@@ -145,7 +146,7 @@ void main() {
           final result = await service.resignDerived(
             outputPath: '${tempDir.path}/missing.mp4',
             sourcePath: '${tempDir.path}/also-missing.mp4',
-            action: C2paEditActions.watermarked,
+            action: C2paEditActions.edited,
           );
 
           expect(result.success, isFalse);

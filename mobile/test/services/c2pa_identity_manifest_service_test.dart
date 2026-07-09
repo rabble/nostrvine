@@ -35,6 +35,32 @@ void main() {
       expect(trainingAssertion['label'], equals('cawg.training-mining'));
     });
 
+    test(
+      'builds the derived manifest with only the training-mining opt-out',
+      () {
+        final result = service.buildDerivedVideoManifest(
+          claimGenerator: 'DiVine/1.0',
+          title: 'watermarked.mp4',
+        );
+
+        final json = jsonDecode(result.manifestJson) as Map<String, dynamic>;
+        final assertions = json['assertions'] as List<dynamic>;
+        final labels = assertions
+            .map((assertion) => (assertion as Map<String, dynamic>)['label'])
+            .toList();
+
+        expect(result.requiresAdvancedEmbedding, isFalse);
+        expect(json['title'], equals('watermarked.mp4'));
+        expect(json['claim_generator'], equals('DiVine/1.0'));
+        expect(json['format'], equals('video/mp4'));
+        // The parentOf ingredient and the edit action are attached by the
+        // caller via the ManifestBuilder, so the definition must not declare
+        // them — unlike buildCreatedVideoManifest, which does.
+        expect(json.containsKey('ingredients'), isFalse);
+        expect(labels, equals(['cawg.training-mining']));
+      },
+    );
+
     test('includes creator binding and final cawg assertions when available', () {
       final result = service.buildCreatedVideoManifest(
         claimGenerator: 'DiVine/1.0',
