@@ -10,6 +10,13 @@ import 'package:openvine/services/nostr_creator_binding_service.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+/// C2PA edit actions recorded when carrying a manifest forward onto a
+/// re-encoded ("derived") video via [C2paSigningService.resignDerived].
+abstract class C2paEditActions {
+  /// The derived file had a watermark / overlay burned into the frame.
+  static const String watermarked = 'c2pa.edited';
+}
+
 /// Result of a C2PA signing operation
 class C2paSigningResult {
   const C2paSigningResult({
@@ -40,6 +47,8 @@ class C2paSigningService {
 
   final C2pa _c2pa;
   final C2paIdentityManifestService _manifestService;
+
+  static const String _videoMimeType = 'video/mp4';
 
   /// Signs a video file with C2PA content credentials.
   ///
@@ -149,6 +158,121 @@ class C2paSigningService {
       // Return original path - signing is best-effort, not blocking
       return C2paSigningResult(
         signedFilePath: videoPath,
+        success: false,
+        error: e.toString(),
+      );
+    }
+  }
+
+  /// Carries an existing C2PA manifest forward onto a *derived* video file.
+  ///
+  /// [outputPath] is a freshly re-encoded file — an aspect-ratio crop or a
+  /// watermark burn-in — that has lost the provenance embedded in its source.
+  /// [sourcePath] is the already-signed original it was produced from. The
+  /// source's active manifest is attached as a `parentOf` ingredient, [action]
+  /// (a `c2pa.*` edit action such as [C2paEditActions.cropped]) is recorded,
+  /// and the result is signed and embedded back into [outputPath] in place.
+  ///
+  /// Returns `success: false` without touching [outputPath] when [sourcePath]
+  /// carries no manifest — third-party downloads are never given fabricated
+  /// provenance. Signing is best-effort and never throws.
+  Future<C2paSigningResult> resignDerived({
+    required String outputPath,
+    required String sourcePath,
+    required String action,
+  }) async {
+    try {
+      final outputFile = File(outputPath);
+      if (!outputFile.existsSync()) {
+        return C2paSigningResult(
+          signedFilePath: outputPath,
+          success: false,
+          error: 'Output file does not exist',
+        );
+      }
+
+      // Gate: only carry provenance forward when the source actually has some.
+      final sourceManifest = await readManifest(sourcePath);
+      if (sourceManifest?.activeManifest == null) {
+        Log.info(
+          'Skipping derived re-sign: source has no manifest to carry forward',
+          name: 'C2paSigningService',
+          category: LogCategory.video,
+        );
+        return C2paSigningResult(
+          signedFilePath: outputPath,
+          success: false,
+          error: 'Source has no manifest to carry forward',
+        );
+      }
+
+      final PackageInfo packageInfo = await PackageInfo.fromPlatform();
+      final String claimGenerator =
+          '${packageInfo.appName}/${packageInfo.version}';
+      final String outputTitle = outputFile.path.split('/').last;
+
+      final manifestJson = _manifestService
+          .buildDerivedVideoManifest(
+            claimGenerator: claimGenerator,
+            title: outputTitle,
+          )
+          .manifestJson;
+
+      final builder = await _c2pa.createBuilder(manifestJson);
+      try {
+        builder.setIntent(ManifestIntent.edit);
+
+        final sourceBytes = await File(sourcePath).readAsBytes();
+        await builder.addIngredient(
+          data: sourceBytes,
+          mimeType: _videoMimeType,
+          config: IngredientConfig(
+            title: sourcePath.split('/').last,
+            relationship: Relationship.parentOf,
+          ),
+        );
+
+        builder.addAction(
+          ActionConfig(
+            action: action,
+            softwareAgent: claimGenerator,
+            when: DateTime.now().toUtc(),
+          ),
+        );
+
+        final outputBytes = await outputFile.readAsBytes();
+        final signer = await _createSigner();
+        final result = await builder.sign(
+          sourceData: outputBytes,
+          mimeType: _videoMimeType,
+          signer: signer,
+        );
+
+        await outputFile.writeAsBytes(result.signedData, flush: true);
+
+        Log.info(
+          'C2PA manifest carried forward onto derived file '
+          '($action): $outputPath (${result.signedData.length ~/ 1024} KB)',
+          name: 'C2paSigningService',
+          category: LogCategory.video,
+        );
+
+        return C2paSigningResult(signedFilePath: outputPath, success: true);
+      } finally {
+        builder.dispose();
+      }
+    } catch (e, stackTrace) {
+      Log.error(
+        'C2PA derived re-sign failed: $e',
+        name: 'C2paSigningService',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: stackTrace,
+      );
+
+      // Best-effort: leave the (unsigned) re-encoded file as-is on failure.
+      return C2paSigningResult(
+        signedFilePath: outputPath,
         success: false,
         error: e.toString(),
       );

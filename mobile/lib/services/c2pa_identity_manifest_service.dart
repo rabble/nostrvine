@@ -88,6 +88,35 @@ class C2paIdentityManifestService {
     );
   }
 
+  /// Builds the C2PA manifest for a *derived* video — one produced by
+  /// re-encoding an already-signed source (an aspect-ratio crop or a
+  /// watermark burn-in) that has therefore lost its embedded manifest.
+  ///
+  /// The already-signed source is carried forward as a `parentOf` ingredient
+  /// by the caller via [ManifestBuilder.addIngredient], and the transform is
+  /// recorded as a `c2pa.*` edit action via [ManifestBuilder.addAction], so
+  /// this definition intentionally declares neither: it only supplies the
+  /// title, claim generator, and the always-on `cawg.training-mining` opt-out
+  /// (Divine policy — see `mobile/docs/AI_TRAINING_POLICY.md`).
+  C2paIdentityManifestBuildResult buildDerivedVideoManifest({
+    required String claimGenerator,
+    required String title,
+  }) {
+    final manifest = ManifestDefinition(
+      title: title,
+      claimGeneratorInfo: <ClaimGeneratorInfo>[
+        _parseClaimGenerator(claimGenerator),
+      ],
+      format: 'video/mp4',
+      assertions: <AssertionDefinition>[_buildTrainingMiningAssertion()],
+    );
+
+    return C2paIdentityManifestBuildResult(
+      manifestDefinition: manifest,
+      requiresAdvancedEmbedding: false,
+    );
+  }
+
   ClaimGeneratorInfo _parseClaimGenerator(String claimGenerator) {
     final separatorIndex = claimGenerator.lastIndexOf('/');
     if (separatorIndex <= 0 || separatorIndex == claimGenerator.length - 1) {

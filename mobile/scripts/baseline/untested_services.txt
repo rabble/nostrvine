@@ -10,7 +10,6 @@ back_button_handler
 bookmark_service
 broken_video_tracker
 bug_report_service_stub # noise: stub
-c2pa_signing_service
 camera_base_service
 camera_mobile_service
 collaborator_invite_local_state_adapter # noise: local-state adapter

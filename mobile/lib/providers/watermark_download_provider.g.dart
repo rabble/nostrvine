@@ -59,4 +59,4 @@ final class WatermarkDownloadServiceProvider
 }
 
 String _$watermarkDownloadServiceHash() =>
-    r'90e0376eb0765575ba8d07e98c4a1aa550174df2';
+    r'7b6bfd4ec13343e0d7305340455dc2c41b6768ef';

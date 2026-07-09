@@ -2,6 +2,7 @@
 // ABOUTME: Constructs service with MediaCacheManager and GallerySaveService dependencies
 
 import 'package:openvine/providers/permissions_providers.dart';
+import 'package:openvine/services/c2pa_signing_service.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/watermark_download_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -14,5 +15,6 @@ WatermarkDownloadService watermarkDownloadService(Ref ref) {
   return WatermarkDownloadService(
     mediaCache: ref.watch(mediaCacheProvider),
     gallerySaveService: ref.watch(gallerySaveServiceProvider),
+    c2paSigningService: C2paSigningService(),
   );
 }

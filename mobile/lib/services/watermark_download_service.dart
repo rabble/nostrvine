@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/extensions/video_event_extensions.dart';
+import 'package:openvine/services/c2pa_signing_service.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/services/watermark_image_generator.dart';
@@ -77,14 +78,20 @@ String _redownloadCacheKey(String videoId) =>
 /// the result to the device gallery.
 class WatermarkDownloadService {
   /// Creates a [WatermarkDownloadService] with required dependencies.
+  ///
+  /// [c2paSigningService] carries an embedded C2PA manifest forward onto the
+  /// watermarked output, which the render step would otherwise strip.
   const WatermarkDownloadService({
     required MediaCacheManager mediaCache,
     required GallerySaveService gallerySaveService,
+    required C2paSigningService c2paSigningService,
   }) : _mediaCache = mediaCache,
-       _gallerySaveService = gallerySaveService;
+       _gallerySaveService = gallerySaveService,
+       _c2paSigningService = c2paSigningService;
 
   final MediaCacheManager _mediaCache;
   final GallerySaveService _gallerySaveService;
+  final C2paSigningService _c2paSigningService;
 
   static const _logName = 'WatermarkDownloadService';
 
@@ -170,6 +177,15 @@ class WatermarkDownloadService {
           'Failed to render watermarked video',
         );
       }
+
+      // The watermark render re-encodes and strips any embedded C2PA manifest.
+      // Carry the source's manifest forward onto the watermarked file — a
+      // no-op when the source (e.g. a third-party download) was never signed.
+      await _c2paSigningService.resignDerived(
+        outputPath: tempOutputPath,
+        sourcePath: videoFile.path,
+        action: C2paEditActions.watermarked,
+      );
 
       // Stage 3: Save to gallery
       onProgress(WatermarkDownloadStage.saving);

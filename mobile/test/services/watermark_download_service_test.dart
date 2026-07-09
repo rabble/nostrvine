@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/services/c2pa_signing_service.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/services/watermark_download_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -14,6 +15,8 @@ import 'package:pro_video_editor/pro_video_editor.dart';
 class _MockMediaCacheManager extends Mock implements MediaCacheManager {}
 
 class _MockGallerySaveService extends Mock implements GallerySaveService {}
+
+class _MockC2paSigningService extends Mock implements C2paSigningService {}
 
 VideoEvent _createTestVideo() => VideoEvent(
   id: 'test-video-id-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
@@ -103,14 +106,27 @@ void main() {
   group(WatermarkDownloadService, () {
     late _MockMediaCacheManager mockCache;
     late _MockGallerySaveService mockGallerySave;
+    late _MockC2paSigningService mockC2pa;
     late WatermarkDownloadService service;
 
     setUp(() {
       mockCache = _MockMediaCacheManager();
       mockGallerySave = _MockGallerySaveService();
+      mockC2pa = _MockC2paSigningService();
+      when(
+        () => mockC2pa.resignDerived(
+          outputPath: any(named: 'outputPath'),
+          sourcePath: any(named: 'sourcePath'),
+          action: any(named: 'action'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            const C2paSigningResult(signedFilePath: '', success: false),
+      );
       service = WatermarkDownloadService(
         mediaCache: mockCache,
         gallerySaveService: mockGallerySave,
+        c2paSigningService: mockC2pa,
       );
     });
 
