@@ -143,6 +143,9 @@ class MockCameraService extends CameraService {
   bool get isSwitchingCamera => false;
 
   @override
+  int? get textureId => null;
+
+  @override
   bool get hasFlash => true;
 
   @override

@@ -122,6 +122,12 @@ abstract class CameraService {
   /// Used to block recording triggers during the switch.
   bool get isSwitchingCamera;
 
+  /// The Flutter texture id backing the live preview, or null when no camera
+  /// is active. Changes when a lens switch rebinds the preview onto a fresh
+  /// texture; the UI keys the preview on it so the new camera's frames are
+  /// picked up.
+  int? get textureId;
+
   /// Whether the device can active the camera-flash.
   bool get hasFlash;
 

@@ -420,6 +420,9 @@ class CameraMobileService extends CameraService {
   bool get isSwitchingCamera => _isSwitchingCamera;
 
   @override
+  int? get textureId => _camera.textureId;
+
+  @override
   DivineCameraLens get currentLens => _camera.state.lens;
 
   @override

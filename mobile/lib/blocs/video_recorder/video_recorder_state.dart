@@ -18,6 +18,8 @@ class VideoRecorderBlocState extends Equatable {
     this.canRecord = false,
     this.isCameraInitialized = false,
     this.canSwitchCamera = true,
+    this.isSwitchingCamera = false,
+    this.previewTextureId,
     this.hasFlash = true,
     this.countdownValue = 0,
     this.cameraRebuildCount = 0,
@@ -60,6 +62,19 @@ class VideoRecorderBlocState extends Equatable {
 
   /// Whether camera switching is available.
   final bool canSwitchCamera;
+
+  /// Whether a front/back lens switch is currently in progress.
+  ///
+  /// True from the moment the switch is dispatched until the native camera
+  /// has rebound. The preview freezes on its last frame during this window;
+  /// the UI overlays a brief blur over that frozen frame to soften the cut.
+  final bool isSwitchingCamera;
+
+  /// Flutter texture id backing the live preview, or null before the camera
+  /// is ready. A lens switch rebinds the incoming camera onto a fresh texture,
+  /// so this changes on switch; the preview is keyed on it to pick up the new
+  /// camera's frames.
+  final int? previewTextureId;
 
   /// Whether the camera has flash capability.
   final bool hasFlash;
@@ -200,6 +215,8 @@ class VideoRecorderBlocState extends Equatable {
     bool? canRecord,
     bool? isCameraInitialized,
     bool? canSwitchCamera,
+    bool? isSwitchingCamera,
+    int? previewTextureId,
     bool? hasFlash,
     int? countdownValue,
     int? cameraRebuildCount,
@@ -234,6 +251,8 @@ class VideoRecorderBlocState extends Equatable {
       canRecord: canRecord ?? this.canRecord,
       isCameraInitialized: isCameraInitialized ?? this.isCameraInitialized,
       canSwitchCamera: canSwitchCamera ?? this.canSwitchCamera,
+      isSwitchingCamera: isSwitchingCamera ?? this.isSwitchingCamera,
+      previewTextureId: previewTextureId ?? this.previewTextureId,
       hasFlash: hasFlash ?? this.hasFlash,
       countdownValue: countdownValue ?? this.countdownValue,
       cameraRebuildCount: cameraRebuildCount ?? this.cameraRebuildCount,
@@ -277,6 +296,8 @@ class VideoRecorderBlocState extends Equatable {
     canRecord,
     isCameraInitialized,
     canSwitchCamera,
+    isSwitchingCamera,
+    previewTextureId,
     hasFlash,
     countdownValue,
     cameraRebuildCount,

@@ -442,27 +442,38 @@ class VideoRecorderBloc
     VideoRecorderCameraSwitched event,
     Emitter<VideoRecorderBlocState> emit,
   ) async {
-    final success = await _cameraService.switchCamera();
+    // Flag the switch up front so the preview blurs its frozen last frame
+    // while the native camera rebinds. `_emitCameraSync` rebuilds the state
+    // from scratch and drops this flag once the new lens is live; the
+    // `finally` covers the early-return and error paths.
+    emit(state.copyWith(isSwitchingCamera: true));
+    try {
+      final success = await _cameraService.switchCamera();
 
-    if (!success) {
-      Log.warning(
-        '⚠️ Camera switch failed - no available cameras to switch',
+      if (!success) {
+        Log.warning(
+          '⚠️ Camera switch failed - no available cameras to switch',
+          name: 'VideoRecorderBloc',
+          category: LogCategory.video,
+        );
+        return;
+      }
+
+      await _saveCurrentLensPreference();
+
+      Log.info(
+        '🔄 Camera switched successfully - zoom reset to 1.0x',
         name: 'VideoRecorderBloc',
         category: LogCategory.video,
       );
-      return;
+
+      emit(state.copyWith(zoomLevel: 1, baseZoomLevel: 1));
+      _emitCameraSync(emit);
+    } finally {
+      if (!emit.isDone) {
+        emit(state.copyWith(isSwitchingCamera: false));
+      }
     }
-
-    await _saveCurrentLensPreference();
-
-    Log.info(
-      '🔄 Camera switched successfully - zoom reset to 1.0x',
-      name: 'VideoRecorderBloc',
-      category: LogCategory.video,
-    );
-
-    emit(state.copyWith(zoomLevel: 1, baseZoomLevel: 1));
-    _emitCameraSync(emit);
   }
 
   Future<void> _onStabilizationModeSet(
@@ -1461,6 +1472,7 @@ class VideoRecorderBloc
         isCameraInitialized: _cameraService.isInitialized,
         hasFlash: _cameraService.hasFlash,
         canSwitchCamera: _cameraService.canSwitchCamera,
+        previewTextureId: _cameraService.textureId,
         videoStabilizationMode: _cameraService.videoStabilizationMode,
         availableVideoStabilizationModes:
             _cameraService.availableVideoStabilizationModes,

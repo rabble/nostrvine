@@ -68,6 +68,15 @@ class CameraController(
     // black — issue #5865.
     private var surfaceProducer: TextureRegistry.SurfaceProducer? = null
 
+    // The outgoing camera's SurfaceProducer during a lens switch. A switch gives
+    // the incoming camera a brand-new producer/texture and keeps the old one
+    // here so the Dart freeze-gate can keep showing its last (correctly
+    // oriented) frame until the new texture is swapped in. Released at the start
+    // of the next switch — by then Dart has long swapped off it — and on
+    // dispose. This is what fixes the upside-down flash: the outgoing texture
+    // never receives the incoming camera's frames, so its rotation can't desync.
+    private var retiringSurfaceProducer: TextureRegistry.SurfaceProducer? = null
+
     private var cameraExecutor: ExecutorService =
         RejectionTolerantExecutorService(Executors.newSingleThreadExecutor())
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -131,11 +140,17 @@ class CameraController(
                 currentExposureTime = exposureTime
             }
 
-            // First frame after a lens switch: let the switch completion run so
-            // the UI flips lens/rotation only now that the new frame is ready.
+            // Frames after a lens switch: let a few settle so the incoming
+            // camera's pixels are actually on its fresh texture before resolving
+            // the switch — otherwise the UI swaps onto a still-empty (black)
+            // texture. Until then the old frozen frame stays on screen.
             onFirstFrameAfterSwitch?.let { completion ->
-                onFirstFrameAfterSwitch = null
-                completion()
+                if (switchSettleFramesRemaining > 0) {
+                    switchSettleFramesRemaining--
+                } else {
+                    onFirstFrameAfterSwitch = null
+                    completion()
+                }
             }
         }
     }
@@ -196,13 +211,21 @@ class CameraController(
     private var maxDurationRunnable: Runnable? = null
     private var autoStopCallback: ((Map<String, Any?>?, String?) -> Unit)? = null
 
-    // Fires once, on the first frame the incoming camera produces after a lens
-    // switch, so the switch completes (and the UI flips lens/rotation) only when
-    // the new frame is ready — otherwise the frozen preview briefly flips upside
-    // down at the old→new rotation boundary (#5865). Written on the main thread,
-    // read on the Camera2 capture thread, so it must be @Volatile.
+    // Fires once the incoming camera has produced enough frames after a lens
+    // switch (see [switchSettleFramesRemaining]) to resolve the switch. The
+    // incoming camera renders onto a brand-new texture, so completing before it
+    // carries real pixels would swap the UI onto an empty (black) texture;
+    // waiting also keeps the frozen old frame — with its own correct rotation —
+    // on screen until then (#5865). Written on the main thread, read on the
+    // Camera2 capture thread, so it must be @Volatile.
     @Volatile
     private var onFirstFrameAfterSwitch: (() -> Unit)? = null
+
+    // Preview frames still to let pass before [onFirstFrameAfterSwitch] resolves
+    // the switch — see [SWITCH_SETTLE_FRAMES]. Written on the main thread when a
+    // switch starts, decremented on the Camera2 capture thread, so @Volatile.
+    @Volatile
+    private var switchSettleFramesRemaining: Int = 0
 
     // Quality fallback: when the hardware encoder rejects the requested quality
     // (e.g. device falsely reports FHD support), retry with lower quality.
@@ -223,6 +246,15 @@ class CameraController(
         // reports a frame (rare device quirk), so `await switchCamera` on the
         // Dart side can't hang forever.
         private const val SWITCH_FIRST_FRAME_TIMEOUT_MS = 1200L
+
+        // Preview frames to let pass after a lens switch before resolving it.
+        // The incoming camera renders onto a fresh texture; its capture result
+        // completes a frame or two before those pixels reach the surface, so
+        // resolving on the very first completion would swap the UI onto a still-
+        // empty (black) texture. A few settle frames guarantee real pixels are
+        // there before the swap. The extra frozen frames are hidden by the
+        // switch blur, so they're imperceptible.
+        private const val SWITCH_SETTLE_FRAMES = 3
 
         // Canonical cross-platform stabilization mode strings, shared with the
         // iOS/macOS implementations so the Dart layer speaks one vocabulary.
@@ -886,6 +918,9 @@ class CameraController(
                 surfaceProducer?.release()
                 surfaceProducer = null
             }
+            // Drop any producer still retired from an interrupted switch.
+            retiringSurfaceProducer?.release()
+            retiringSurfaceProducer = null
 
             // Create the Flutter surface producer for the preview.
             surfaceProducer = textureRegistry.createSurfaceProducer()
@@ -1057,6 +1092,17 @@ class CameraController(
             // Unbind all use cases
             provider.unbindAll()
 
+            // Give the incoming camera a brand-new texture and retire the
+            // outgoing one (kept alive so the Dart freeze-gate keeps showing its
+            // last frame until the swap). The outgoing texture never receives the
+            // new camera's frames, so its rotation can't desync mid-switch — this
+            // is the structural fix for the upside-down flash. The previous
+            // switch's retired producer is safe to release now: Dart swapped off
+            // it a switch ago.
+            retiringSurfaceProducer?.release()
+            retiringSurfaceProducer = surfaceProducer
+            surfaceProducer = textureRegistry.createSurfaceProducer()
+
             // Build camera selector for the requested lens
             // For specialized lenses (ultraWide, telephoto, macro), we need to use Camera2 interop
             val cameraSelector = buildCameraSelectorForLens(currentLensType, provider)
@@ -1072,7 +1118,8 @@ class CameraController(
                 stabilizationMode,
             )
 
-            // Reuse the existing flutter texture - just update buffer size when we get new resolution
+            // Drive the freshly created texture; update its buffer size once we
+            // get the incoming camera's resolution.
             preview?.setSurfaceProvider(ContextCompat.getMainExecutor(context)) { request ->
                 val resolution = request.resolution
                 videoWidth = resolution.width
@@ -1154,6 +1201,7 @@ class CameraController(
                     callback(getCameraState(), null)
                 }
             }
+            switchSettleFramesRemaining = SWITCH_SETTLE_FRAMES
             onFirstFrameAfterSwitch = { mainHandler.post(finishSwitch) }
             mainHandler.postDelayed(finishSwitch, SWITCH_FIRST_FRAME_TIMEOUT_MS)
 
@@ -2450,6 +2498,8 @@ class CameraController(
             // The SurfaceProducer owns the Surface; release() tears it down.
             surfaceProducer?.release()
             surfaceProducer = null
+            retiringSurfaceProducer?.release()
+            retiringSurfaceProducer = null
 
             // Delay shutdown so CameraX can drain in-flight encoder/muxer
             // tasks. cameraExecutor is rejection-tolerant, so any callback
