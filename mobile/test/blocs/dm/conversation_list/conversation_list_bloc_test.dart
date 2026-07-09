@@ -44,6 +44,9 @@ class _FakeInboxGate implements ProtectedMinorInboxGate {
   Stream<void> get changes => const Stream<void>.empty();
 
   @override
+  void notifyRestrictionChanged() {}
+
+  @override
   List<DmConversation> filter(
     List<DmConversation> conversations, {
     required String userPubkey,
@@ -72,6 +75,9 @@ class _MutableInboxGate implements ProtectedMinorInboxGate {
 
   @override
   Stream<void> get changes => _changes.stream;
+
+  @override
+  void notifyRestrictionChanged() => _changes.add(null);
 
   @override
   List<DmConversation> filter(

@@ -117,6 +117,7 @@ import 'package:openvine/utils/recoverable_flutter_error.dart';
 import 'package:openvine/utils/sensitive_uri_for_logs.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/app_lifecycle_handler.dart';
+import 'package:openvine/widgets/dm_restriction_gate_sync.dart';
 import 'package:openvine/widgets/geo_blocking_gate.dart';
 import 'package:openvine/widgets/upload_failure_sheet.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -2622,7 +2623,9 @@ class _InboxBadgeRepositorySync extends ConsumerWidget {
       ..listen(followRepositoryProvider, (_, _) => syncDmUnread())
       ..listen(contentBlocklistRepositoryProvider, (_, _) => syncDmUnread());
 
-    return child;
+    // #176: pump DM-restriction flips into the shared inbox gate so the badge
+    // (and any mounted list) re-filters without waiting for a new DM event.
+    return DmRestrictionGateSync(child: child);
   }
 }
 

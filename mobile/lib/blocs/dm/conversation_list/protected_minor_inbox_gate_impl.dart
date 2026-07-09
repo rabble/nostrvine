@@ -5,6 +5,7 @@
 
 import 'dart:async';
 
+import 'package:async/async.dart' show StreamGroup;
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation_list/protected_minor_inbox_gate.dart';
 import 'package:openvine/services/official_accounts_service.dart';
@@ -19,10 +20,29 @@ class ProtectedMinorInboxGateImpl implements ProtectedMinorInboxGate {
   final bool Function() _isRestricted;
   final OfficialAccountsService _officials;
 
-  /// A verdict flip persisted by [OfficialAccountsService] re-fires the list so
-  /// the sync filter re-evaluates with the fresh answer.
+  /// Ticks pushed by [notifyRestrictionChanged] when the DM-restriction
+  /// status itself flips (mid-session approval/revocation).
+  final _restrictionChanges = StreamController<void>.broadcast();
+
+  /// A verdict flip persisted by [OfficialAccountsService] — or a flip of the
+  /// DM-restriction status itself — re-fires the list so the sync filter
+  /// re-evaluates with the fresh answer.
   @override
-  Stream<void> get changes => _officials.onVerdictChanged;
+  Stream<void> get changes => StreamGroup.mergeBroadcast([
+    _officials.onVerdictChanged,
+    _restrictionChanges.stream,
+  ]);
+
+  @override
+  void notifyRestrictionChanged() {
+    if (!_restrictionChanges.isClosed) _restrictionChanges.add(null);
+  }
+
+  /// Releases the restriction-change stream. Owned by the Riverpod provider
+  /// (`ref.onDispose`); test-constructed gates should also call this.
+  void dispose() {
+    _restrictionChanges.close();
+  }
 
   @override
   List<DmConversation> filter(

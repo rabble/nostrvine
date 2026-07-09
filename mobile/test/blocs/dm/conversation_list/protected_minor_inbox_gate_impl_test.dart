@@ -128,4 +128,50 @@ void main() {
     expectLater(gate.changes, emits(null));
     controller.add(null);
   });
+
+  test(
+    'changes also emits on notifyRestrictionChanged, so a settled list '
+    're-filters without waiting for the next DM event',
+    () async {
+      final gate = build(restricted: true);
+      addTearDown(gate.dispose);
+
+      final emissions = <void>[];
+      final sub = gate.changes.listen(emissions.add);
+      addTearDown(sub.cancel);
+
+      gate.notifyRestrictionChanged();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(emissions, hasLength(1));
+    },
+  );
+
+  test(
+    'changes merges both sources (verdict flips AND restriction flips)',
+    () async {
+      final verdicts = StreamController<void>.broadcast();
+      addTearDown(verdicts.close);
+      when(() => officials.onVerdictChanged).thenAnswer((_) => verdicts.stream);
+      final gate = build(restricted: true);
+      addTearDown(gate.dispose);
+
+      final emissions = <void>[];
+      final sub = gate.changes.listen(emissions.add);
+      addTearDown(sub.cancel);
+
+      verdicts.add(null);
+      gate.notifyRestrictionChanged();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(emissions, hasLength(2));
+    },
+  );
+
+  test('notifyRestrictionChanged after dispose is a safe no-op', () {
+    final gate = build(restricted: true);
+    gate.dispose();
+
+    expect(gate.notifyRestrictionChanged, returnsNormally);
+  });
 }

@@ -45,11 +45,21 @@ final dmSendPolicyProvider = Provider<DmSendPolicy>((ref) {
 /// status live (send/receive-time) and shares the single officials service, so
 /// its receive-time revalidation + verdict-change stream stay consistent.
 ///
+/// A flip of the restriction itself (mid-session approval/revocation via
+/// `refreshMinorAccountState`, dev toggle) is pushed into the gate's `changes`
+/// stream by [DmRestrictionGateSync] (always mounted at the app shell), so the
+/// inbox list AND the unread badge re-filter immediately instead of waiting
+/// for the next DM event. The push lives in a widget rather than a provider
+/// `ref.listen` because an inactive provider's listener is paused (Riverpod 3
+/// activity semantics) — the badge needs the tick while no DM surface is
+/// mounted.
 final protectedMinorInboxGateProvider = Provider<ProtectedMinorInboxGate>((
   ref,
 ) {
-  return ProtectedMinorInboxGateImpl(
+  final gate = ProtectedMinorInboxGateImpl(
     isRestricted: () => ref.read(isDmRestrictedProvider),
     officials: ref.read(officialAccountsServiceProvider),
   );
+  ref.onDispose(gate.dispose);
+  return gate;
 });

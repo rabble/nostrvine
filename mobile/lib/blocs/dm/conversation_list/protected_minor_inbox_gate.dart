@@ -25,4 +25,10 @@ abstract interface class ProtectedMinorInboxGate {
   /// Emits when a revalidation flips a counterparty's verdict, so the list
   /// re-filters. A non-restricted gate may never emit.
   Stream<void> get changes;
+
+  /// Signals that the DM-restriction status itself may have flipped
+  /// (mid-session approval/revocation), surfaced on [changes] so an
+  /// already-settled list and the unread badge re-filter without waiting for
+  /// the next DM event.
+  void notifyRestrictionChanged();
 }
