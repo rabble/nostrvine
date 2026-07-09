@@ -46,6 +46,17 @@ assert_not_contains() {
   fi
 }
 
+assert_not_file_exists() {
+  local file="$1"
+  local message="$2"
+
+  if [[ -e "$file" ]]; then
+    echo "FAIL: ${message}" >&2
+    echo "  unexpected file: ${file}" >&2
+    exit 1
+  fi
+}
+
 extract_mise_task() {
   local task_name="$1"
   local file="$2"
@@ -90,6 +101,63 @@ chmod +x "${tmp_dir}/bin/emulator"
 PATH="${tmp_dir}/bin:${PATH}"
 assert_eq "Pixel_API_35" "$(first_available_avd_name)" \
   "default AVD should come from emulator -list-avds"
+
+cat > "${tmp_dir}/bin/docker" <<'STUB'
+#!/usr/bin/env bash
+if [[ "${1:-}" == "compose" && "${2:-}" == "-f" && "${4:-}" == "ps" ]]; then
+  printf '%s\n' local-stack-container
+  exit 0
+fi
+exit 2
+STUB
+cat > "${tmp_dir}/bin/adb" <<'STUB'
+#!/usr/bin/env bash
+if [[ "${1:-}" == "devices" ]]; then
+  printf '%s\n' "List of devices attached"
+  printf '%b' "${ADB_DEVICES_OUTPUT:-}"
+  exit 0
+fi
+exit 2
+STUB
+cat > "${tmp_dir}/bin/flutter" <<'STUB'
+#!/usr/bin/env bash
+printf '%s\n' "$*" > "${FLUTTER_ARGS_FILE:?}"
+STUB
+chmod +x "${tmp_dir}/bin/docker" "${tmp_dir}/bin/adb" "${tmp_dir}/bin/flutter"
+
+flutter_args_file="${tmp_dir}/flutter.args"
+env ADB_DEVICES_OUTPUT=$'R58N1234567\tdevice\nemulator-5554\tdevice\n' \
+  FLUTTER_ARGS_FILE="$flutter_args_file" PATH="${tmp_dir}/bin:${PATH}" \
+  bash "${SCRIPT_DIR}/run_android_local.sh" >/dev/null 2>"${tmp_dir}/emulator-selection.err"
+assert_contains '-d emulator-5554' "$flutter_args_file" \
+  "local Android runner should default to the first emulator instead of a physical device"
+
+rm -f "$flutter_args_file"
+set +e
+env ADB_DEVICES_OUTPUT=$'R58N1234567\tdevice\n' FLUTTER_ARGS_FILE="$flutter_args_file" \
+  PATH="${tmp_dir}/bin:${PATH}" \
+  bash "${SCRIPT_DIR}/run_android_local.sh" >/dev/null 2>"${tmp_dir}/physical-only.err"
+physical_only_exit=$?
+set -e
+assert_eq "1" "$physical_only_exit" \
+  "local Android runner should fail when only a physical Android device is connected"
+assert_contains 'No Android emulator connected' "${tmp_dir}/physical-only.err" \
+  "physical-only failure should explain that an emulator is required"
+assert_not_file_exists "$flutter_args_file" \
+  "local Android runner should not start Flutter for physical-only adb output"
+
+set +e
+env ADB_DEVICES_OUTPUT=$'R58N1234567\tdevice\nemulator-5554\tdevice\n' \
+  FLUTTER_ARGS_FILE="$flutter_args_file" PATH="${tmp_dir}/bin:${PATH}" \
+  bash "${SCRIPT_DIR}/run_android_local.sh" R58N1234567 >/dev/null 2>"${tmp_dir}/explicit-physical.err"
+explicit_physical_exit=$?
+set -e
+assert_eq "1" "$explicit_physical_exit" \
+  "local Android runner should reject an explicit physical Android device"
+assert_contains 'is not an Android emulator' "${tmp_dir}/explicit-physical.err" \
+  "explicit physical-device rejection should explain why the device is invalid"
+assert_not_file_exists "$flutter_args_file" \
+  "local Android runner should not start Flutter for explicit physical devices"
 
 assert_contains 'bash ../local_stack/up.sh' "${REPO_ROOT}/mobile/mise.toml" \
   "mise local_up tasks should delegate to the shared stack launcher"

@@ -7,7 +7,7 @@ set -euo pipefail
 # Usage:
 #   local_stack/run_android_local.sh [device_id] [debug|profile|release]
 #
-# Defaults to the first connected Android device and debug mode.
+# Defaults to the first connected Android emulator and debug mode.
 # ---------------------------------------------------------------------------
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -41,17 +41,23 @@ if ! command -v adb >/dev/null 2>&1; then
 fi
 
 if [[ -n "$DEVICE_ARG" ]]; then
+    if [[ "$DEVICE_ARG" != emulator-* ]]; then
+        echo "ERROR: ${DEVICE_ARG} is not an Android emulator." >&2
+        echo "This local-stack command uses Android emulator host URLs. Start one with: mise run emulator" >&2
+        exit 1
+    fi
+
     DEVICE="$DEVICE_ARG"
 else
-    DEVICE="$(adb devices | awk 'NR > 1 && $2 == "device" { print $1; exit }')"
+    DEVICE="$(adb devices | awk 'NR > 1 && $1 ~ /^emulator-/ && $2 == "device" { print $1; exit }')"
 fi
 
 if [[ -z "$DEVICE" ]]; then
-    echo "ERROR: No Android device connected. Start one with: mise run emulator" >&2
+    echo "ERROR: No Android emulator connected. Start one with: mise run emulator" >&2
     exit 1
 fi
 
-echo "Running Divine against the local stack on Android device: ${DEVICE}" >&2
+echo "Running Divine against the local stack on Android emulator: ${DEVICE}" >&2
 echo "Invite server: http://10.0.2.2:43004" >&2
 
 cd "$MOBILE_DIR"
