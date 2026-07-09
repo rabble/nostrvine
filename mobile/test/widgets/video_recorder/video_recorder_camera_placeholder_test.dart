@@ -22,7 +22,7 @@ void main() {
       expect(find.byType(VideoRecorderCameraPlaceholder), findsOneWidget);
     });
 
-    testWidgets('shows videocam icon when no error', (tester) async {
+    testWidgets('shows no icon while initializing (no error)', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -31,8 +31,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.videocam_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.videocam_off_rounded), findsNothing);
+      expect(find.byType(Icon), findsNothing);
     });
 
     testWidgets('shows videocam_off icon when error message provided', (
@@ -51,7 +50,6 @@ void main() {
       );
 
       expect(find.byIcon(Icons.videocam_off_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.videocam_rounded), findsNothing);
     });
 
     testWidgets('displays error message text when provided', (tester) async {

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show AudioEvent, VideoEvent;
 import 'package:openvine/blocs/video_engagement/video_engagement_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/router/fade_upwards_page.dart';
 import 'package:openvine/router/navigator_keys.dart';
 import 'package:openvine/router/pooled_fullscreen_feed_route.dart';
 import 'package:openvine/router/route_error_screen.dart';
@@ -26,7 +27,12 @@ List<RouteBase> videoRoutes() {
     GoRoute(
       path: VideoRecorderScreen.path,
       name: VideoRecorderScreen.routeName,
-      builder: (_, _) => const VideoRecorderRoute(),
+      // The recorder is a modal creation mode, not the next screen in a
+      // flow — open it with the fade-upwards transition.
+      pageBuilder: (_, state) => fadeUpwardsPage(
+        key: state.pageKey,
+        child: const VideoRecorderRoute(),
+      ),
     ),
     GoRoute(
       path: CreatorAnalyticsScreen.path,

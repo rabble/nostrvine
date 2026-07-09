@@ -2,6 +2,7 @@
 // ABOUTME: Split from app_router.dart (#4508)
 
 import 'package:go_router/go_router.dart';
+import 'package:openvine/router/fade_upwards_page.dart';
 import 'package:openvine/screens/library_screen.dart';
 
 List<RouteBase> libraryRoutes() {
@@ -9,23 +10,32 @@ List<RouteBase> libraryRoutes() {
     GoRoute(
       path: LibraryScreen.draftsPath,
       name: LibraryScreen.draftsRouteName,
-      builder: (_, _) => const LibraryScreen(),
+      pageBuilder: (_, state) =>
+          fadeUpwardsPage(key: state.pageKey, child: const LibraryScreen()),
     ),
     GoRoute(
       path: LibraryScreen.clipsPath,
       name: LibraryScreen.clipsRouteName,
-      builder: (_, _) => const LibraryScreen(initialTabIndex: 1),
+      pageBuilder: (_, state) => fadeUpwardsPage(
+        key: state.pageKey,
+        child: const LibraryScreen(initialTabIndex: 1),
+      ),
     ),
     GoRoute(
       path: LibraryScreen.clipsOnlyPath,
       name: LibraryScreen.clipsOnlyRouteName,
-      builder: (_, _) =>
-          const LibraryScreen(tabsMode: LibraryTabsMode.clipsOnly),
+      pageBuilder: (_, state) => fadeUpwardsPage(
+        key: state.pageKey,
+        child: const LibraryScreen(tabsMode: LibraryTabsMode.clipsOnly),
+      ),
     ),
     GoRoute(
       path: LibraryScreen.soundsPath,
       name: LibraryScreen.soundsRouteName,
-      builder: (_, _) => const LibraryScreen(initialTabIndex: 2),
+      pageBuilder: (_, state) => fadeUpwardsPage(
+        key: state.pageKey,
+        child: const LibraryScreen(initialTabIndex: 2),
+      ),
     ),
   ];
 }
