@@ -1,6 +1,7 @@
 // ABOUTME: Renders the short transition "seam" between two adjacent clips so
 // ABOUTME: the preview can play it as a plain clip instead of compositing live.
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -55,6 +56,25 @@ class TransitionSeam {
 /// guarantees no clip is consumed by transitions on both sides at once, so the
 /// preview matches the export and a middle clip is never replayed.
 class TransitionSeamRenderService {
+  /// [documentsDirectoryProvider] and [maxSeamCacheBytes] are injectable for
+  /// tests; in production the directory resolves to the app documents folder
+  /// that holds persisted seams and the budget defaults to 200 MB.
+  TransitionSeamRenderService({
+    @visibleForTesting Future<Directory> Function()? documentsDirectoryProvider,
+    @visibleForTesting int maxSeamCacheBytes = _defaultMaxSeamCacheBytes,
+  }) : _documentsDirectoryProvider =
+           documentsDirectoryProvider ?? getApplicationDocumentsDirectory,
+       _maxSeamCacheBytes = maxSeamCacheBytes;
+
+  /// Default upper bound on the total size of the persisted
+  /// `transition_seams/` directory. Seam files are individually small, but
+  /// every distinct trim/transition tweak mints a new one, so without a cap
+  /// the directory grows without limit across editor sessions.
+  static const int _defaultMaxSeamCacheBytes = 200 * 1024 * 1024;
+
+  final Future<Directory> Function() _documentsDirectoryProvider;
+  final int _maxSeamCacheBytes;
+
   final _cache = <String, TransitionSeam>{};
   final _inFlight = <String, Future<TransitionSeam?>>{};
 
@@ -350,21 +370,66 @@ class TransitionSeamRenderService {
 
   /// Deterministic on-disk path for a seam, keyed by [key] so the same clip
   /// pair + trims + transition reuse the rendered file across editor sessions
-  /// (like thumbnails). Only the in-memory cache is dropped on [clear]; the
-  /// files persist for reuse.
+  /// (like thumbnails). Files persist for reuse, bounded on [clear] by
+  /// [enforceSeamCacheLimit].
   Future<String> _persistentSeamPath(String key) async {
-    final dir = await getApplicationDocumentsDirectory();
-    final seamDir = Directory('${dir.path}/transition_seams');
-    if (!seamDir.existsSync()) seamDir.createSync(recursive: true);
+    final seamDir = await _seamDirectory();
     final hash = sha256.convert(utf8.encode(key)).toString();
     return '${seamDir.path}/$hash.mp4';
   }
 
-  /// Drops the in-memory cache (e.g. when the editor closes). On-disk seams
-  /// stay for the next session.
+  Future<Directory> _seamDirectory() async {
+    final dir = await _documentsDirectoryProvider();
+    final seamDir = Directory('${dir.path}/transition_seams');
+    if (!seamDir.existsSync()) seamDir.createSync(recursive: true);
+    return seamDir;
+  }
+
+  /// Drops the in-memory cache (e.g. when the editor closes) and kicks off a
+  /// best-effort trim of the persisted seam directory (unawaited so it never
+  /// blocks editor teardown). Recent seams survive for cross-session reuse.
   void clear() {
     _cache.clear();
     _version++;
+    unawaited(enforceSeamCacheLimit());
+  }
+
+  /// Trims the persisted `transition_seams/` directory back under
+  /// [_maxSeamCacheBytes], deleting least-recently-modified seams first so the
+  /// current project's freshly-rendered seams survive for reuse. Every
+  /// distinct trim/transition tweak mints a new seam file, so without this the
+  /// directory grows without bound across sessions. Best-effort: never throws.
+  Future<void> enforceSeamCacheLimit() async {
+    try {
+      final seamDir = await _seamDirectory();
+      final entries = <({File file, int size, DateTime modified})>[];
+      var total = 0;
+      for (final entity in seamDir.listSync(followLinks: false)) {
+        if (entity is! File) continue;
+        final stat = entity.statSync();
+        if (stat.type == FileSystemEntityType.notFound) continue;
+        total += stat.size;
+        entries.add((file: entity, size: stat.size, modified: stat.modified));
+      }
+      if (total <= _maxSeamCacheBytes) return;
+
+      entries.sort((a, b) => a.modified.compareTo(b.modified));
+      for (final entry in entries) {
+        if (total <= _maxSeamCacheBytes) break;
+        try {
+          entry.file.deleteSync();
+          total -= entry.size;
+        } on Object {
+          // Best-effort; a file we cannot delete is retried on the next close.
+        }
+      }
+    } on Object catch (error) {
+      Log.warning(
+        'TransitionSeamRenderService: seam cache trim failed: $error',
+        name: 'TransitionSeamRenderService',
+        category: LogCategory.video,
+      );
+    }
   }
 
   /// Seeds the cache directly so [buildSeamAwarePlayerClips] can be exercised

@@ -712,4 +712,61 @@ void main() {
       );
     });
   });
+
+  group('enforceSeamCacheLimit', () {
+    late Directory tempRoot;
+
+    setUp(() {
+      tempRoot = Directory.systemTemp.createTempSync('seam_cache_test_');
+    });
+
+    tearDown(() {
+      if (tempRoot.existsSync()) tempRoot.deleteSync(recursive: true);
+    });
+
+    TransitionSeamRenderService serviceWithBudget(int budget) =>
+        TransitionSeamRenderService(
+          documentsDirectoryProvider: () async => tempRoot,
+          maxSeamCacheBytes: budget,
+        );
+
+    Future<File> seam(String name, int bytes, DateTime modified) async {
+      final dir = Directory('${tempRoot.path}/transition_seams')
+        ..createSync(recursive: true);
+      final file = File('${dir.path}/$name')
+        ..writeAsBytesSync(List<int>.filled(bytes, 0));
+      await file.setLastModified(modified);
+      return file;
+    }
+
+    test('deletes least-recently-modified seams beyond the budget', () async {
+      final oldest = await seam('old.mp4', 60, DateTime(2020));
+      final middle = await seam('mid.mp4', 60, DateTime(2020, 1, 2));
+      final newest = await seam('new.mp4', 60, DateTime(2020, 1, 3));
+
+      await serviceWithBudget(100).enforceSeamCacheLimit();
+
+      // 180 bytes > 100: drop oldest (→120), still over, drop middle (→60).
+      expect(oldest.existsSync(), isFalse);
+      expect(middle.existsSync(), isFalse);
+      expect(newest.existsSync(), isTrue);
+    });
+
+    test('keeps every seam when the directory is within budget', () async {
+      final a = await seam('a.mp4', 40, DateTime(2020));
+      final b = await seam('b.mp4', 40, DateTime(2020, 1, 2));
+
+      await serviceWithBudget(1000).enforceSeamCacheLimit();
+
+      expect(a.existsSync(), isTrue);
+      expect(b.existsSync(), isTrue);
+    });
+
+    test('does not throw when the seam directory is empty', () async {
+      await expectLater(
+        serviceWithBudget(100).enforceSeamCacheLimit(),
+        completes,
+      );
+    });
+  });
 }
