@@ -16,6 +16,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/widgets.dart';
+import 'package:openvine/screens/inbox/inbox_page.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/collaborator_invite_parser.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -31,6 +32,21 @@ class RequestPreviewView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final status = context.select(
+      (RequestPreviewCubit cubit) => cubit.state.status,
+    );
+    // #176 preview gate: a DM-restricted user reaching this route directly is
+    // bounced to the inbox and nothing renders, mirroring the ConversationPage
+    // route guard. A build-time branch (not a BlocListener) because the lazy
+    // cubit emits `denied` synchronously during its `create:`/`load()`, before
+    // any listener could subscribe.
+    if (status == RequestPreviewStatus.denied) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) context.go(InboxPage.path);
+      });
+      return const Scaffold(body: SizedBox.shrink());
+    }
+
     final participantPubkeys = context.select(
       (RequestPreviewCubit cubit) => cubit.state.participantPubkeys,
     );

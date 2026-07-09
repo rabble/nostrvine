@@ -9,23 +9,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/dm/conversation/collaborator_invite_actions_cubit.dart';
 import 'package:openvine/blocs/dm/conversation/conversation_bloc.dart';
+import 'package:openvine/blocs/dm/minor_dm_approval.dart';
 import 'package:openvine/blocs/dm/reactions/conversation_reactions_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/official_accounts_providers.dart';
 import 'package:openvine/providers/protected_minor_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_view.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
-
-/// Whether a protected minor may enter a conversation with [participantPubkeys]
-/// (#176 route-guard predicate). Requires at least one counterparty AND that
-/// every counterparty is an approved official: an empty list is a degenerate
-/// route and must fail closed rather than pass the vacuous truth of
-/// `[].every(...)`.
-@visibleForTesting
-bool allParticipantsApprovedForMinor(
-  List<String> participantPubkeys,
-  bool Function(String) isApproved,
-) => participantPubkeys.isNotEmpty && participantPubkeys.every(isApproved);
 
 /// Conversation detail page (single DM thread).
 ///

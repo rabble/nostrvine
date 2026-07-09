@@ -8,6 +8,8 @@ import 'package:openvine/blocs/dm/conversation/collaborator_invite_actions_cubit
 import 'package:openvine/blocs/dm/message_requests/message_request_actions_cubit.dart';
 import 'package:openvine/blocs/dm/message_requests/request_preview_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/official_accounts_providers.dart';
+import 'package:openvine/providers/protected_minor_providers.dart';
 import 'package:openvine/screens/inbox/message_requests/request_preview_view.dart';
 
 /// Request preview page.
@@ -45,6 +47,12 @@ class RequestPreviewPage extends ConsumerWidget {
             dmRepository: dmRepository,
             conversationId: conversationId,
             initialParticipantPubkeys: participantPubkeys,
+            // #176 preview gate: both callbacks read live state at load time,
+            // mirroring the conversation route guard.
+            isDmRestricted: () => ref.read(isDmRestrictedProvider),
+            isApprovedRecipient: ref
+                .read(officialAccountsServiceProvider)
+                .isApprovedMinorDmRecipientSync,
           )..load(),
         ),
         BlocProvider(
