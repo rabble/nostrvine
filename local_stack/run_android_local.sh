@@ -58,10 +58,34 @@ if [[ -z "$DEVICE" ]]; then
     exit 1
 fi
 
+clear_app_data() {
+    local clear_output
+    local path_output
+
+    if clear_output="$(adb -s "$DEVICE" shell pm clear "$ANDROID_PACKAGE_ID" 2>&1)"; then
+        return 0
+    fi
+
+    if path_output="$(adb -s "$DEVICE" shell pm path "$ANDROID_PACKAGE_ID" 2>&1)"; then
+        echo "ERROR: Failed to clear persisted app data for ${ANDROID_PACKAGE_ID}" >&2
+        printf '%s\n' "$clear_output" >&2
+        exit 1
+    fi
+
+    if [[ -z "$path_output" ]]; then
+        echo "No existing app install found for ${ANDROID_PACKAGE_ID}; continuing with a clean first run" >&2
+        return 0
+    fi
+
+    echo "ERROR: Failed to inspect installed package ${ANDROID_PACKAGE_ID}" >&2
+    printf '%s\n' "$path_output" >&2
+    exit 1
+}
+
 echo "Running Divine against the local stack on Android emulator: ${DEVICE}" >&2
 echo "Invite server: http://10.0.2.2:43004" >&2
 echo "Clearing persisted app data for ${ANDROID_PACKAGE_ID} so LOCAL is deterministic" >&2
-adb -s "$DEVICE" shell pm clear "$ANDROID_PACKAGE_ID" >/dev/null
+clear_app_data
 
 cd "$MOBILE_DIR"
 exec flutter run \

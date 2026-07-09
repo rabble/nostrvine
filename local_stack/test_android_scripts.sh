@@ -119,7 +119,18 @@ if [[ "${1:-}" == "devices" ]]; then
   exit 0
 fi
 if [[ "${1:-}" == "-s" && "${3:-}" == "shell" && "${4:-}" == "pm" && "${5:-}" == "clear" ]]; then
+  if [[ "${ADB_PM_CLEAR_FAIL:-}" == "1" ]]; then
+    printf '%s\n' Failed >&2
+    exit 1
+  fi
   printf '%s\n' Success
+  exit 0
+fi
+if [[ "${1:-}" == "-s" && "${3:-}" == "shell" && "${4:-}" == "pm" && "${5:-}" == "path" ]]; then
+  if [[ "${ADB_PM_PATH_ABSENT:-}" == "1" ]]; then
+    exit 1
+  fi
+  printf '%s\n' 'package:/data/app/co.openvine.app/base.apk'
   exit 0
 fi
 exit 2
@@ -142,6 +153,33 @@ assert_contains 'shell pm clear co.openvine.app' "$adb_args_file" \
   "local Android runner should clear persisted app data before launching"
 assert_contains 'Clearing persisted app data for co.openvine.app' "${tmp_dir}/emulator-selection.err" \
   "local Android runner should make the deterministic reset visible"
+
+rm -f "$adb_args_file" "$flutter_args_file"
+env ADB_DEVICES_OUTPUT=$'emulator-5554\tdevice\n' ADB_ARGS_FILE="$adb_args_file" \
+  ADB_PM_CLEAR_FAIL=1 ADB_PM_PATH_ABSENT=1 FLUTTER_ARGS_FILE="$flutter_args_file" \
+  PATH="${tmp_dir}/bin:${PATH}" \
+  bash "${SCRIPT_DIR}/run_android_local.sh" >/dev/null 2>"${tmp_dir}/missing-package-reset.err"
+assert_contains '-d emulator-5554' "$flutter_args_file" \
+  "local Android runner should still launch Flutter when no app data exists yet"
+assert_contains '--dart-define=DEFAULT_ENV=LOCAL' "$flutter_args_file" \
+  "missing app data should not bypass the LOCAL dart define"
+assert_contains 'No existing app install found for co.openvine.app' "${tmp_dir}/missing-package-reset.err" \
+  "missing app data should be reported as an idempotent first-run reset"
+
+rm -f "$adb_args_file" "$flutter_args_file"
+set +e
+env ADB_DEVICES_OUTPUT=$'emulator-5554\tdevice\n' ADB_ARGS_FILE="$adb_args_file" \
+  ADB_PM_CLEAR_FAIL=1 FLUTTER_ARGS_FILE="$flutter_args_file" \
+  PATH="${tmp_dir}/bin:${PATH}" \
+  bash "${SCRIPT_DIR}/run_android_local.sh" >/dev/null 2>"${tmp_dir}/clear-failure.err"
+clear_failure_exit=$?
+set -e
+assert_eq "1" "$clear_failure_exit" \
+  "local Android runner should fail when app data exists but cannot be cleared"
+assert_contains 'Failed to clear persisted app data for co.openvine.app' "${tmp_dir}/clear-failure.err" \
+  "clear failure should preserve the underlying hard adb error"
+assert_not_file_exists "$flutter_args_file" \
+  "local Android runner should not launch Flutter after a real app-data clear failure"
 
 rm -f "$adb_args_file" "$flutter_args_file"
 set +e
