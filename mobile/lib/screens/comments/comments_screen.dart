@@ -307,9 +307,31 @@ abstract final class CommentsScreen {
         )
         .whenComplete(() {
           surfaceTelemetry.completeDismissed();
-          draggableController.dispose();
+          disposeCommentsSheetController(draggableController);
         });
   }
+}
+
+/// Disposes the comments sheet's [DraggableScrollableController] safely.
+///
+/// The sheet future resolves at pop-start — before the sheet unmounts and
+/// detaches the controller — so a focus-driven expand
+/// ([_MainCommentInputState._expandSheetForKeyboard]) may still be animating.
+/// `DraggableScrollableController.dispose` does not stop that animation, so its
+/// ticks would keep calling `notifyListeners` on the disposed controller and
+/// trip the "used after disposed" assert while the sheet animates out. Cancel
+/// any in-flight animation first — `jumpTo` is the documented cancel path — so
+/// nothing ticks after disposal.
+///
+/// Public-by-test only: production callers should use [CommentsScreen.show].
+@visibleForTesting
+void disposeCommentsSheetController(
+  DraggableScrollableController controller,
+) {
+  if (controller.isAttached) {
+    controller.jumpTo(controller.size);
+  }
+  controller.dispose();
 }
 
 abstract final class _CommentsSheetSizing {

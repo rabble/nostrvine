@@ -994,6 +994,67 @@ void main() {
         },
       );
     });
+
+    group('sheet controller disposal', () {
+      testWidgets(
+        'cancels an in-flight expand before disposing so no '
+        '"used after disposed" assert fires',
+        (tester) async {
+          final controller = DraggableScrollableController();
+
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: DraggableScrollableSheet(
+                  controller: controller,
+                  expand: false,
+                  initialChildSize: 0.7,
+                  minChildSize: 0.5,
+                  maxChildSize: 0.93,
+                  snap: true,
+                  snapSizes: const [0.7, 0.93],
+                  builder: (context, scrollController) => ListView(
+                    controller: scrollController,
+                    children: const [SizedBox(height: 2000)],
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+          expect(controller.isAttached, isTrue);
+
+          // Arm a focus-style expand and interrupt it mid-flight, exactly as a
+          // scrim / back dismiss does while _expandSheetForKeyboard is still
+          // animating. The sheet future disposes the controller at pop-start,
+          // before the sheet unmounts and detaches it.
+          controller.animateTo(
+            0.93,
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOut,
+          );
+          await tester.pump(); // start the animation
+          await tester.pump(const Duration(milliseconds: 80)); // mid-flight
+          expect(controller.size, greaterThan(0.7));
+          expect(controller.size, lessThan(0.93));
+
+          disposeCommentsSheetController(controller);
+
+          // Advance past where the leftover animation ticks would have fired.
+          // The plain-dispose path notifies the disposed controller on each
+          // tick and throws; the cancel-first path leaves nothing ticking.
+          for (var i = 0; i < 6; i++) {
+            await tester.pump(const Duration(milliseconds: 40));
+          }
+          expect(tester.takeException(), isNull);
+
+          // Unmounting the still-mounted sheet detaches the disposed
+          // controller; that path must stay clean too.
+          await tester.pumpWidget(const SizedBox());
+          expect(tester.takeException(), isNull);
+        },
+      );
+    });
   });
 }
 
