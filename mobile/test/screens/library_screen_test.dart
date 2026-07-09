@@ -470,6 +470,50 @@ void main() {
 
         expect(tester.takeException(), isNull);
       });
+
+      testWidgets('renders without an external Scaffold because LibraryScreen '
+          'presents its own', (tester) async {
+        // Regression guard: in production LibraryScreen is a full-screen route
+        // with no ancestor Scaffold, so its floating snackbars (delete undo,
+        // clip download feedback) only render if LibraryScreen provides a
+        // Scaffold itself. `buildWidget` pumps LibraryScreen as `home:` with no
+        // Scaffold wrapper, mirroring that structure. Before the fix this found
+        // nothing.
+        final clip = DivineVideoClip(
+          id: 'undo-clip-2',
+          video: EditorVideo.file('/test/undo2.mp4'),
+          duration: const Duration(seconds: 2),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: models.AspectRatio.vertical,
+          originalAspectRatio: 9 / 16,
+          thumbnailPath: '/test/undo2.jpg',
+          ghostFramePath: '/test/undo2_ghost.jpg',
+        );
+        when(
+          () => mockClipLibraryService.getAllClips(),
+        ).thenAnswer((_) async => [clip]);
+        when(
+          () => mockClipLibraryService.recoverMissingAssets(any()),
+        ).thenAnswer((_) async => [clip]);
+        when(
+          () => mockClipLibraryService.softDelete(any()),
+        ).thenAnswer((_) async => true);
+
+        await tester.pumpWidget(
+          buildWidget(
+            initialTabIndex: 1,
+            tabsMode: LibraryTabsMode.clipsOnly,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        BlocProvider.of<ClipsLibraryBloc>(
+          tester.element(find.byType(ClipsTab)),
+        ).add(ClipsLibraryDeleteClip(clip));
+        await tester.pumpAndSettle();
+
+        expect(find.text(en.libraryClipsDeletedUndoLabel), findsOneWidget);
+      });
     });
 
     group('web', () {

@@ -100,38 +100,32 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreview> {
 
       if (!mounted) return;
 
+      final l10n = context.l10n;
       final destination = GallerySaveService.destinationName;
-      final message = switch (result) {
-        GallerySaveSuccess() => 'Clip saved to $destination',
-        GallerySavePermissionDenied() => '$destination permission denied',
-        GallerySaveFailure(:final reason) => 'Failed to save clip: $reason',
+      final (message, isError) = switch (result) {
+        GallerySaveSuccess() => (
+          l10n.libraryClipsSavedToDestination(1, destination),
+          false,
+        ),
+        GallerySavePermissionDenied() => (
+          l10n.libraryGalleryPermissionDenied(destination),
+          true,
+        ),
+        GallerySaveFailure() => (l10n.videoClipSaveFailed, true),
       };
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: VineTheme.transparent,
-          elevation: 0,
-          behavior: SnackBarBehavior.floating,
-          content: DivineSnackbarContainer(
-            label: message,
-            error: result is! GallerySaveSuccess,
-          ),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(DivineSnackbarContainer.snackBar(message, error: isError));
 
       context.pop();
     } catch (e, s) {
       Log.error('Failed to save clip to gallery', error: e, stackTrace: s);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: VineTheme.transparent,
-            elevation: 0,
-            behavior: SnackBarBehavior.floating,
-            content: DivineSnackbarContainer(
-              label: context.l10n.videoClipSaveFailed,
-              error: true,
-            ),
+          DivineSnackbarContainer.snackBar(
+            context.l10n.videoClipSaveFailed,
+            error: true,
           ),
         );
       }

@@ -467,101 +467,105 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
                     .value
               : null;
 
-          return Stack(
-            children: [
-              Material(
-                color: VineTheme.onPrimary,
-                child: SafeArea(
-                  bottom: false,
-                  child: Column(
-                    children: [
-                      if (!widget.selectionMode)
-                        LibraryToolbar(
-                          isLibrarySelectionMode: isLibrarySelectionMode,
-                          canExitSelectionMode: !selectionLockedToCloseOnly,
-                          isClipsTabActive: isClipsTabActive,
-                          onLeadingPressed: () {
-                            if (isLibrarySelectionMode &&
-                                !selectionLockedToCloseOnly) {
-                              _exitLibrarySelectionMode(clipsBloc);
-                              return;
-                            }
-                            if (context.canPop()) {
-                              context.pop();
-                            } else {
-                              context.go(VideoFeedPage.pathForIndex(0));
-                            }
-                          },
-                          onOpenSortMenu: () => _openSortMenu(
-                            context,
-                            clipsBloc,
-                            clipsState.clipSort,
+          return Scaffold(
+            backgroundColor: VineTheme.onPrimary,
+            body: Stack(
+              children: [
+                Material(
+                  color: VineTheme.onPrimary,
+                  child: SafeArea(
+                    bottom: false,
+                    child: Column(
+                      children: [
+                        if (!widget.selectionMode)
+                          LibraryToolbar(
+                            isLibrarySelectionMode: isLibrarySelectionMode,
+                            canExitSelectionMode: !selectionLockedToCloseOnly,
+                            isClipsTabActive: isClipsTabActive,
+                            onLeadingPressed: () {
+                              if (isLibrarySelectionMode &&
+                                  !selectionLockedToCloseOnly) {
+                                _exitLibrarySelectionMode(clipsBloc);
+                                return;
+                              }
+                              if (context.canPop()) {
+                                context.pop();
+                              } else {
+                                context.go(VideoFeedPage.pathForIndex(0));
+                              }
+                            },
+                            onOpenSortMenu: () => _openSortMenu(
+                              context,
+                              clipsBloc,
+                              clipsState.clipSort,
+                            ),
+                            onEnterSelectionMode: () => clipsBloc.add(
+                              const ClipsLibraryEnterSelectionMode(),
+                            ),
+                            onOpenTrash: () => _openTrash(context, clipsBloc),
+                            onDeleteSelectedClips:
+                                clipsState.selectedClipIds.isNotEmpty
+                                ? () => _softDeleteSelectedClips(clipsBloc)
+                                : null,
                           ),
-                          onEnterSelectionMode: () => clipsBloc.add(
-                            const ClipsLibraryEnterSelectionMode(),
+                        Expanded(
+                          child: _LibraryContent(
+                            isClipsOnlyMode: _isClipsOnlyMode,
+                            tabController: _tabController,
+                            selectionMode: widget.selectionMode,
+                            scrollController: widget.scrollController,
+                            targetAspectRatio: targetAspectRatio,
+                            sortedClips: sortedClips,
+                            selectionEnabled: selectionEnabled,
+                            onCreateVideo: () => _createVideoFromSelected(
+                              context,
+                              selectedClips: clipsState.selectedClips,
+                              clipsBloc: clipsBloc,
+                            ),
                           ),
-                          onOpenTrash: () => _openTrash(context, clipsBloc),
-                          onDeleteSelectedClips:
-                              clipsState.selectedClipIds.isNotEmpty
-                              ? () => _softDeleteSelectedClips(clipsBloc)
-                              : null,
                         ),
-                      Expanded(
-                        child: _LibraryContent(
-                          isClipsOnlyMode: _isClipsOnlyMode,
-                          tabController: _tabController,
-                          selectionMode: widget.selectionMode,
-                          scrollController: widget.scrollController,
-                          targetAspectRatio: targetAspectRatio,
-                          sortedClips: sortedClips,
-                          selectionEnabled: selectionEnabled,
-                          onCreateVideo: () => _createVideoFromSelected(
+                        _CreateVideoBar(
+                          visible:
+                              !widget.selectionMode &&
+                              selectionEnabled &&
+                              (_activeTabIndex == 1 ||
+                                  widget.tabsMode ==
+                                      LibraryTabsMode.clipsOnly) &&
+                              clipsState.selectedClipIds.isNotEmpty,
+                          onPressed: () => _createVideoFromSelected(
                             context,
                             selectedClips: clipsState.selectedClips,
                             clipsBloc: clipsBloc,
                           ),
                         ),
-                      ),
-                      _CreateVideoBar(
-                        visible:
-                            !widget.selectionMode &&
-                            selectionEnabled &&
-                            (_activeTabIndex == 1 ||
-                                widget.tabsMode == LibraryTabsMode.clipsOnly) &&
-                            clipsState.selectedClipIds.isNotEmpty,
-                        onPressed: () => _createVideoFromSelected(
-                          context,
-                          selectedClips: clipsState.selectedClips,
-                          clipsBloc: clipsBloc,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              if (clipsState.isDeleting ||
-                  clipsState.isSavingToGallery ||
-                  isPreparing)
-                Material(
-                  color: VineTheme.scrim65,
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      spacing: 16,
-                      children: [
-                        const CircularProgressIndicator(
-                          color: VineTheme.vineGreen,
-                        ),
-                        if (isPreparing)
-                          Text(
-                            context.l10n.libraryPreparingVideo,
-                            style: VineTheme.bodyMediumFont(),
-                          ),
                       ],
                     ),
                   ),
                 ),
-            ],
+                if (clipsState.isDeleting ||
+                    clipsState.isSavingToGallery ||
+                    isPreparing)
+                  Material(
+                    color: VineTheme.scrim65,
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        spacing: 16,
+                        children: [
+                          const CircularProgressIndicator(
+                            color: VineTheme.vineGreen,
+                          ),
+                          if (isPreparing)
+                            Text(
+                              context.l10n.libraryPreparingVideo,
+                              style: VineTheme.bodyMediumFont(),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           );
         },
       ),
