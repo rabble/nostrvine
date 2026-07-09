@@ -397,6 +397,10 @@ class WatermarkDownloadService {
   }) async {
     try {
       final tempDir = await getTemporaryDirectory();
+      // Each save keeps its render only until the share sheet closes; clearing
+      // leftovers here bounds the temp directory to the single in-progress
+      // render instead of leaking one full-size video per save.
+      deleteStaleWatermarkRenders(tempDir);
       final outputPath =
           '${tempDir.path}/watermarked_${DateTime.now().microsecondsSinceEpoch}.mp4';
 
@@ -425,6 +429,29 @@ class WatermarkDownloadService {
         category: LogCategory.video,
       );
       return null;
+    }
+  }
+
+  /// Deletes leftover `watermarked_*.mp4` renders in [tempDir] from previous
+  /// saves. Called before each new render so at most one watermark temp file
+  /// exists at a time. Best-effort: never throws.
+  @visibleForTesting
+  void deleteStaleWatermarkRenders(Directory tempDir) {
+    try {
+      for (final entity in tempDir.listSync(followLinks: false)) {
+        if (entity is! File) continue;
+        final name = p.basename(entity.path);
+        if (!name.startsWith('watermarked_') || !name.endsWith('.mp4')) {
+          continue;
+        }
+        try {
+          entity.deleteSync();
+        } on Object {
+          // Best-effort; a file we cannot delete is retried on the next save.
+        }
+      }
+    } on Object {
+      // Best-effort; a listing failure must not block the render.
     }
   }
 }

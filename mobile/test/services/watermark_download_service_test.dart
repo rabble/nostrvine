@@ -177,6 +177,43 @@ void main() {
       expect(service, isA<WatermarkDownloadService>());
     });
 
+    group('deleteStaleWatermarkRenders', () {
+      late Directory tempDir;
+
+      setUp(() {
+        tempDir = Directory.systemTemp.createTempSync('watermark_stale_test_');
+      });
+
+      tearDown(() {
+        if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
+      });
+
+      test('removes only stale watermark renders', () {
+        final stale1 = File('${tempDir.path}/watermarked_111.mp4')
+          ..writeAsStringSync('a');
+        final stale2 = File('${tempDir.path}/watermarked_222.mp4')
+          ..writeAsStringSync('b');
+        final unrelatedVideo = File('${tempDir.path}/merged_333.mp4')
+          ..writeAsStringSync('c');
+        final unrelatedImage = File('${tempDir.path}/watermarked_444.jpg')
+          ..writeAsStringSync('d');
+
+        service.deleteStaleWatermarkRenders(tempDir);
+
+        expect(stale1.existsSync(), isFalse);
+        expect(stale2.existsSync(), isFalse);
+        expect(unrelatedVideo.existsSync(), isTrue);
+        expect(unrelatedImage.existsSync(), isTrue);
+      });
+
+      test('does not throw when the directory is empty', () {
+        expect(
+          () => service.deleteStaleWatermarkRenders(tempDir),
+          returnsNormally,
+        );
+      });
+    });
+
     group('downloadOriginal', () {
       test('saves a cached video file successfully', () async {
         final tempDir = await Directory.systemTemp.createTemp(
