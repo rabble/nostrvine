@@ -68,10 +68,11 @@ class ConversationPage extends ConsumerWidget {
     final authService = ref.watch(authServiceProvider);
     final currentPubkey = authService.currentPublicKeyHex ?? '';
 
-    // Route guard (#176): a protected minor must not open a conversation with a
+    // Route guard (#176): a DM-restricted user (protected minor, or an
+    // unresolved status that fails closed) must not open a conversation with a
     // non-approved counterparty, even via a deep-link or a stale route (the send
     // gate and the inbox list already block those paths). Bounce to the inbox.
-    if (ref.watch(isProtectedMinorProvider)) {
+    if (ref.watch(isDmRestrictedProvider)) {
       final officials = ref.watch(officialAccountsServiceProvider);
       final allApproved = allParticipantsApprovedForMinor(
         participantPubkeys,

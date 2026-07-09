@@ -56,4 +56,35 @@ void main() {
     final fresh = ProtectedMinorStickyStore(prefs: prefs);
     expect(fresh.isProtectedMinorFor(pubkey), true);
   });
+
+  group('lastKnownFor (tri-state read, #176)', () {
+    test('never-seen account reads null, distinct from not-protected', () {
+      // The #176 DM gate fails closed on "no verdict yet"; collapsing
+      // never-seen into false would read as a positive not-protected and
+      // lift the restriction before any Keycast answer exists.
+      expect(store.lastKnownFor(pubkey), isNull);
+      expect(store.lastKnownFor(null), isNull);
+    });
+
+    test('reads false after a positive not-protected signal', () async {
+      await store.applyLiveStatus(pubkey, ProtectedMinorStatus.notProtected());
+      expect(store.lastKnownFor(pubkey), isFalse);
+    });
+
+    test('reads true after a confirmed protected signal', () async {
+      await store.applyLiveStatus(pubkey, ProtectedMinorStatus.protected());
+      expect(store.lastKnownFor(pubkey), isTrue);
+    });
+
+    test('unknown retains the last-known verdict', () async {
+      await store.applyLiveStatus(pubkey, ProtectedMinorStatus.notProtected());
+      await store.applyLiveStatus(pubkey, ProtectedMinorStatus.unknown());
+      expect(store.lastKnownFor(pubkey), isFalse);
+    });
+
+    test('is per-account', () async {
+      await store.applyLiveStatus(pubkey, ProtectedMinorStatus.notProtected());
+      expect(store.lastKnownFor(otherPubkey), isNull);
+    });
+  });
 }

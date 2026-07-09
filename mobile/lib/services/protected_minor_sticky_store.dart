@@ -21,6 +21,13 @@ class ProtectedMinorStickyStore {
   bool isProtectedMinorFor(String? pubkey) =>
       pubkey != null && (_prefs.getBool(_key(pubkey)) ?? false);
 
+  /// Tri-state last-known verdict for [pubkey]: `true` (confirmed protected),
+  /// `false` (confirmed not-protected), or `null` (never confirmed either
+  /// way). The #176 DM gate needs the distinction — never-seen must fail
+  /// closed, while a persisted positive not-protected relaxes it.
+  bool? lastKnownFor(String? pubkey) =>
+      pubkey == null ? null : _prefs.getBool(_key(pubkey));
+
   /// Apply a live keycast status: confirmed protected -> persist true;
   /// confirmed not-protected -> persist false; unknown -> retain. A write is
   /// skipped when the persisted value already matches (avoids redundant I/O on

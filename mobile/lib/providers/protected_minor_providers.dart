@@ -137,3 +137,41 @@ final isProtectedMinorProvider = Provider<bool>((ref) {
   // Untrusted / unknown -> last-known persisted value (sticky).
   return store.isProtectedMinorFor(pubkey);
 });
+
+/// The #176 DM-restriction seam — fail CLOSED, a deliberate divergence from
+/// [isProtectedMinorProvider] (which #175's content lock consumes fail-open):
+/// the restricted party can trivially suppress the input that produces an
+/// absent answer (airplane mode, cleared storage, blocked keycast domain,
+/// expired token), so "no answer" must restrict rather than lift.
+///
+/// Restricted unless a positive not-protected verdict exists:
+/// - trusted live `notProtected` -> unrestricted (persisted for cold start);
+/// - persisted last-known `notProtected` -> unrestricted, so adults don't eat
+///   a lockout on every network blip;
+/// - everything else (protected, unknown, loading, missing token, never
+///   resolved, unauthenticated) -> restricted.
+///
+/// Accepted cost per the design doc's fail-safe posture: a brand-new install
+/// during a keycast outage can DM only official accounts until the first
+/// check clears (rare, self-heals).
+final isDmRestrictedProvider = Provider<bool>((ref) {
+  final authState = ref.watch(currentAuthStateProvider);
+  final pubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
+  final store = ref.watch(protectedMinorStickyStoreProvider);
+  final live = ref.watch(protectedMinorStatusProvider);
+
+  final trusted = trustedProtectedMinorStatus(
+    authenticated: authState == AuthState.authenticated,
+    live: live,
+  );
+  if (trusted != null) {
+    // Same fire-and-forget persistence as isProtectedMinorProvider (idempotent
+    // there and here; whichever seam resolves first records the verdict).
+    store.applyLiveStatus(pubkey, trusted);
+    if (trusted.kind == ProtectedMinorStatusKind.protected) return true;
+    if (trusted.kind == ProtectedMinorStatusKind.notProtected) return false;
+  }
+  // No trusted answer: only a persisted positive not-protected lifts the
+  // restriction; a never-seen account fails closed.
+  return store.lastKnownFor(pubkey) ?? true;
+});

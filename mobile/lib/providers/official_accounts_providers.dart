@@ -26,27 +26,30 @@ final officialAccountsServiceProvider = Provider<OfficialAccountsService>((
 
 /// The outbound-DM policy injected into [NIP17MessageService] (#176).
 ///
-/// A non-protected user is unrestricted. A protected minor may only send to an
-/// account currently approved by [OfficialAccountsService] (pin ∩ live NIP-05).
-/// Reads state at call time (send-time) so the decision is fresh: a mid-session
-/// approval/revocation takes effect on the next send without rebuilding.
+/// Keys off [isDmRestrictedProvider], the fail-closed seam: only a positive
+/// not-protected verdict (trusted live or persisted) is unrestricted; a
+/// restricted user may only send to an account currently approved by
+/// [OfficialAccountsService] (pin ∩ live NIP-05). Reads state at call time
+/// (send-time) so the decision is fresh: a mid-session approval/revocation
+/// takes effect on the next send without rebuilding.
 final dmSendPolicyProvider = Provider<DmSendPolicy>((ref) {
   return (String recipientPubkey) async {
-    if (!ref.read(isProtectedMinorProvider)) return true;
+    if (!ref.read(isDmRestrictedProvider)) return true;
     return ref
         .read(officialAccountsServiceProvider)
         .isApprovedMinorDmRecipient(recipientPubkey);
   };
 });
 
-/// Inbound DM filter for ConversationListBloc (#176). Reads the protected-minor
+/// Inbound DM filter for ConversationListBloc (#176). Reads the DM-restriction
 /// status live (send/receive-time) and shares the single officials service, so
 /// its receive-time revalidation + verdict-change stream stay consistent.
+///
 final protectedMinorInboxGateProvider = Provider<ProtectedMinorInboxGate>((
   ref,
 ) {
   return ProtectedMinorInboxGateImpl(
-    isRestricted: () => ref.read(isProtectedMinorProvider),
+    isRestricted: () => ref.read(isDmRestrictedProvider),
     officials: ref.read(officialAccountsServiceProvider),
   );
 });

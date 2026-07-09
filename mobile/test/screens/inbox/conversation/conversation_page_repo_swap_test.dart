@@ -23,6 +23,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation/collaborator_invite_actions_cubit.dart';
 import 'package:openvine/blocs/dm/conversation/conversation_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/protected_minor_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_view.dart';
@@ -101,6 +102,7 @@ void main() {
           testMaterialApp(
             mockAuthService: mockAuthService,
             additionalOverrides: [
+              isDmRestrictedProvider.overrideWithValue(false),
               dmRepositoryProvider.overrideWith((ref) {
                 final v = ref.watch(_dmRepoSwap);
                 return v == 0 ? mockRepoA : mockRepoB;
@@ -156,6 +158,7 @@ void main() {
           testMaterialApp(
             mockAuthService: mockAuthService,
             additionalOverrides: [
+              isDmRestrictedProvider.overrideWithValue(false),
               dmRepositoryProvider.overrideWith((ref) {
                 ref.watch(_dmRepoSwap);
                 return mockRepoA; // identity stays the same
@@ -220,6 +223,7 @@ void main() {
           testMaterialApp(
             mockAuthService: mockAuthService,
             additionalOverrides: [
+              isDmRestrictedProvider.overrideWithValue(false),
               dmRepositoryProvider.overrideWith((ref) {
                 final v = ref.watch(_dmRepoSwap);
                 return v == 0 ? mockRepoA : mockRepoB;
@@ -317,6 +321,7 @@ void main() {
         testMaterialApp(
           mockAuthService: mockAuthService,
           additionalOverrides: [
+            isDmRestrictedProvider.overrideWithValue(false),
             dmRepositoryProvider.overrideWith((ref) => mockDmRepository),
             collaboratorInviteStateStoreProvider.overrideWith(
               (ref) => mockStateStore,
@@ -370,6 +375,7 @@ void main() {
           testMaterialApp(
             mockAuthService: mockAuthService,
             additionalOverrides: [
+              isDmRestrictedProvider.overrideWithValue(false),
               dmRepositoryProvider.overrideWith((ref) => mockDmRepository),
               collaboratorInviteStateStoreProvider.overrideWith(
                 (ref) => mockStateStore,

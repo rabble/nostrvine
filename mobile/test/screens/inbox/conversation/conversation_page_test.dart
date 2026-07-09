@@ -7,6 +7,7 @@ import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/protected_minor_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_view.dart';
@@ -93,6 +94,7 @@ void main() {
             ),
             mockAuthService: mockAuthService,
             additionalOverrides: [
+              isDmRestrictedProvider.overrideWithValue(false),
               dmRepositoryProvider.overrideWithValue(mockDmRepository),
               fetchUserProfileProvider(
                 otherPubkey,

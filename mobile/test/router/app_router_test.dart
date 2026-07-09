@@ -17,6 +17,7 @@ import 'package:openvine/features/feature_flags/providers/feature_flag_providers
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/protected_minor_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/router/routes/settings_routes.dart';
@@ -522,6 +523,9 @@ void main() {
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) async => MinorAccountReviewStatus.active(),
           ),
+          // These navigations model an adult with a confirmed not-protected
+          // verdict; the #176 guard otherwise fails closed and bounces.
+          isDmRestrictedProvider.overrideWithValue(false),
           dmRepositoryProvider.overrideWithValue(mockDmRepository),
           dmReactionsRepositoryProvider.overrideWithValue(
             mockDmReactionsRepository,
@@ -567,6 +571,9 @@ void main() {
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) async => MinorAccountReviewStatus.active(),
           ),
+          // These navigations model an adult with a confirmed not-protected
+          // verdict; the #176 guard otherwise fails closed and bounces.
+          isDmRestrictedProvider.overrideWithValue(false),
           dmRepositoryProvider.overrideWithValue(mockDmRepository),
           dmReactionsRepositoryProvider.overrideWithValue(
             mockDmReactionsRepository,

@@ -163,11 +163,12 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
     super.dispose();
   }
 
-  /// Whether a protected minor (#176) may not DM this profile — the current
-  /// user is restricted and this pubkey is not an approved official recipient.
-  /// Drives hiding the Message affordance and guards the tap itself.
+  /// Whether the current user may not DM this profile (#176) — DM-restricted
+  /// (protected minor, or an unresolved status that fails closed) and this
+  /// pubkey is not an approved official recipient. Drives hiding the Message
+  /// affordance and guards the tap itself.
   bool _messagingBlockedForProtectedMinor() {
-    if (!ref.read(isProtectedMinorProvider)) return false;
+    if (!ref.read(isDmRestrictedProvider)) return false;
     return !ref
         .read(officialAccountsServiceProvider)
         .isApprovedMinorDmRecipientSync(widget.pubkey);
