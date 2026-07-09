@@ -14,7 +14,7 @@ import 'package:unified_logger/unified_logger.dart';
 /// re-encoded ("derived") video via [C2paSigningService.resignDerived].
 abstract class C2paEditActions {
   /// The derived file had a watermark / overlay burned into the frame.
-  static const String watermarked = 'c2pa.edited';
+  static const String watermarked = 'c2pa.watermarked';
 }
 
 /// Result of a C2PA signing operation
@@ -170,7 +170,7 @@ class C2paSigningService {
   /// watermark burn-in — that has lost the provenance embedded in its source.
   /// [sourcePath] is the already-signed original it was produced from. The
   /// source's active manifest is attached as a `parentOf` ingredient, [action]
-  /// (a `c2pa.*` edit action such as [C2paEditActions.cropped]) is recorded,
+  /// (a `c2pa.*` edit action such as [C2paEditActions.watermarked]) is recorded,
   /// and the result is signed and embedded back into [outputPath] in place.
   ///
   /// Returns `success: false` without touching [outputPath] when [sourcePath]
