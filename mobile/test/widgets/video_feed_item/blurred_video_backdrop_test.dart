@@ -215,6 +215,31 @@ void main() {
       });
     });
 
+    group('letterboxBands', () {
+      // Assert the exact band rects (not just the count): a regression that
+      // keeps two bands but shifts or shrinks one — a 1px seam — must fail.
+      test(
+        'tiles full-width top and bottom bars around a letterboxed video',
+        () {
+          const box = Size(400, 800);
+          // 1:1 in a portrait box → 400×400 video centered → 200px top/bottom.
+          final bands = letterboxBands(letterboxVideoRect(1, box), box);
+          expect(bands, hasLength(2));
+          expect(bands, contains(const Rect.fromLTWH(0, 0, 400, 200)));
+          expect(bands, contains(const Rect.fromLTWH(0, 600, 400, 200)));
+        },
+      );
+
+      test('tiles left and right bars around a pillarboxed video', () {
+        const box = Size(800, 400);
+        // 1:1 in a landscape box → 400×400 video centered → 200px left/right.
+        final bands = letterboxBands(letterboxVideoRect(1, box), box);
+        expect(bands, hasLength(2));
+        expect(bands, contains(const Rect.fromLTWH(0, 0, 200, 400)));
+        expect(bands, contains(const Rect.fromLTWH(600, 0, 200, 400)));
+      });
+    });
+
     group('backdropAspectRatio', () {
       test('returns width / height when both dimensions are known', () {
         expect(backdropAspectRatio(1920, 1080), closeTo(16 / 9, 0.0001));
@@ -231,9 +256,11 @@ void main() {
     });
 
     group('videoCoversFeedViewport', () {
-      // Mirrors VideoItem._resolveBoxFit: the video is cover-fit (and so
-      // occludes the backdrop) only when portrait-expand is on and it is not
-      // square. These pin that contract so it can't silently drift.
+      // Mirrors the cover branch of VideoItemWidget._resolveBoxFit: the video
+      // is cover-fit (and so occludes the backdrop) only when portrait-expand
+      // is on and it is not square. These pin the local mirror; the real
+      // _resolveBoxFit is private and driven by the decoded ratio, so nothing
+      // binds the two — keep them in sync by hand.
       test('landscape with portrait-expand covers the viewport', () {
         expect(
           videoCoversFeedViewport(

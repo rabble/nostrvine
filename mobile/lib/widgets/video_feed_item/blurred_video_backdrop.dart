@@ -56,7 +56,7 @@ class BlurredVideoBackdrop extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final size = constraints.biggest;
-        final bands = _letterboxBands(
+        final bands = letterboxBands(
           letterboxVideoRect(aspectRatio, size),
           size,
         );
@@ -127,8 +127,10 @@ class _BackdropContent extends StatelessWidget {
 /// full width (owning the corners); left/right bars span only the video's
 /// height, so bars never overlap and never cover the video area. Each bar is
 /// painted in its own `RepaintBoundary`, keeping it isolated from the video
-/// texture's per-frame repaint.
-List<Rect> _letterboxBands(Rect video, Size box) {
+/// texture's per-frame repaint. Exposed for testing the band tiling, which is
+/// the seam-risk load-bearing logic.
+@visibleForTesting
+List<Rect> letterboxBands(Rect video, Size box) {
   final bands = <Rect>[];
   if (video.top > 0) {
     bands.add(Rect.fromLTWH(0, 0, box.width, video.top));
@@ -190,7 +192,8 @@ double? backdropAspectRatio(int? width, int? height) {
 
 /// Whether a video of [aspectRatio] fully covers (occludes) the feed viewport,
 /// so the backdrop must not be mounted at all. Mirrors the cover branch of
-/// `VideoItem._resolveBoxFit`: with [shouldPortraitExpand] every non-square
+/// `VideoItemWidget._resolveBoxFit`: with [shouldPortraitExpand] every
+/// non-square
 /// video is `BoxFit.cover`-fitted and hides the backdrop, while square (1:1)
 /// and non-expanded videos stay contain-fit and keep their letterbox bars.
 bool videoCoversFeedViewport({
