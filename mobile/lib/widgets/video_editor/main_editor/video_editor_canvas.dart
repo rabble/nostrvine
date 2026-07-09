@@ -575,7 +575,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     // The loop-restart wrap consumes the first clip's head and the last clip's
     // tail eagerly (see buildSeamAwarePlayerClips); those clips stay on live
     // retiming like interior seam-consumed clips.
-    final wrapActive = LoopWrapDisplay.fromClips(clips).isActive;
+    final wrapActive =
+        clips.isNotEmpty &&
+        LoopWrapDisplay.fromClamped(clips, clamped[clips.last.id]).isActive;
     for (var i = 0; i < clips.length; i++) {
       final clip = clips[i];
       // Skip a clip whose body is consumed by a rendered seam on either side:

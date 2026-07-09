@@ -100,11 +100,13 @@ Future<void> editLoopTransition(BuildContext context) async {
 
   final lastClip = clips.last;
   final firstClip = clips.first;
+  final roomPerSide = loopTransitionRoomPerSide(clips);
 
-  // The wrap the neighbours can't constrain: on a single clip the head and tail
-  // split it (half each); otherwise the shorter of the two joined clips.
+  // The room the neighbours can't constrain: on a single clip the head and
+  // tail split it (half each — identical to [roomPerSide], since a lone clip
+  // has no internal transitions); otherwise the shorter of the joined clips.
   final unconstrainedRoom = clips.length == 1
-      ? Duration(microseconds: firstClip.playbackDuration.inMicroseconds ~/ 2)
+      ? roomPerSide
       : (lastClip.playbackDuration < firstClip.playbackDuration
             ? lastClip.playbackDuration
             : firstClip.playbackDuration);
@@ -115,7 +117,7 @@ Future<void> editLoopTransition(BuildContext context) async {
     fromClip: lastClip,
     toClip: firstClip,
     editedClip: lastClip,
-    roomPerSide: loopTransitionRoomPerSide(clips),
+    roomPerSide: roomPerSide,
     unconstrainedRoom: unconstrainedRoom,
     title: context.l10n.videoEditorLoopTransitionSheetTitle,
   );

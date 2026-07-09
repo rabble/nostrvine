@@ -403,8 +403,8 @@ class SeamTimeline {
     // axis (what the timeline draws) excludes them from the clip bodies and
     // appends the seam region at the end — mirroring [buildSeamAwarePlayerClips]
     // and [LoopWrapDisplay] so player, mapping and strips share one axis.
-    final wrapDisplay = LoopWrapDisplay.fromClips(clips);
     final wrapTransition = n > 0 ? clamped[clips[n - 1].id] : null;
+    final wrapDisplay = LoopWrapDisplay.fromClamped(clips, wrapTransition);
     final wrapSeam = wrapTransition != null && wrapDisplay.isActive
         ? seams.cached(clips[n - 1], clips[0], wrapTransition)
         : null;
@@ -615,8 +615,8 @@ List<player.VideoClip> buildSeamAwarePlayerClips(
   // axis (timeline strips shortened by [LoopWrapDisplay]) never shifts under
   // the playhead; the seam is appended once rendered and the loop then restarts
   // seamlessly through the blend, exactly matching the export.
-  final wrapDisplay = LoopWrapDisplay.fromClips(clips);
   final wrapTransition = n > 0 ? clamped[clips[n - 1].id] : null;
+  final wrapDisplay = LoopWrapDisplay.fromClamped(clips, wrapTransition);
   final wrapSeam = wrapTransition != null && wrapDisplay.isActive
       ? seams.cached(clips[n - 1], clips[0], wrapTransition)
       : null;

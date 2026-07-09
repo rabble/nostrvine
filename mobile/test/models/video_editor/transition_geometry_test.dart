@@ -591,13 +591,26 @@ void main() {
       });
     });
 
-    // The loop-restart wrap shortens the exported output native-side only. The
-    // editor↔output map deliberately ignores it, so the ruler and playhead
-    // never go negative or run past the editor timeline.
-    group('does not affect the editor↔output map', () {
-      test('renderedOutputDuration ignores an overlap wrap', () {
+    // The loop-restart wrap's blend plays at the loop point, past the last
+    // clip, so it shortens the output length without adding a blend region to
+    // the position mapping — the ruler and playhead map exactly as without a
+    // wrap and never go negative or run past the editor timeline.
+    group('editor↔output map', () {
+      test('renderedOutputDuration subtracts an overlap wrap blend', () {
         final wrap = dissolve.copyWith(
           duration: const Duration(milliseconds: 800),
+        );
+        expect(
+          renderedOutputDuration([
+            clip('a', const Duration(seconds: 4), transition: wrap),
+          ]),
+          equals(const Duration(milliseconds: 3200)),
+        );
+      });
+
+      test('renderedOutputDuration keeps a dip wrap at full length', () {
+        final wrap = fadeToBlack.copyWith(
+          duration: const Duration(seconds: 1),
         );
         expect(
           renderedOutputDuration([
@@ -607,9 +620,9 @@ void main() {
         );
       });
 
-      test('renderedOutputDuration still subtracts an interior blend', () {
-        // Only the interior a→b dissolve (500ms) is removed; the wrap on b is
-        // not: 4s − 0.5s.
+      test('renderedOutputDuration subtracts interior and wrap blends', () {
+        // The interior a→b dissolve and the wrap on b each remove their 500ms
+        // blend: 4s − 0.5s − 0.5s.
         final t = dissolve.copyWith(
           duration: const Duration(milliseconds: 500),
         );
@@ -620,7 +633,7 @@ void main() {
 
         expect(
           renderedOutputDuration(clips),
-          equals(const Duration(milliseconds: 3500)),
+          equals(const Duration(seconds: 3)),
         );
       });
 

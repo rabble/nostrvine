@@ -242,8 +242,20 @@ class LoopWrapDisplay {
 
   factory LoopWrapDisplay.fromClips(List<DivineVideoClip> clips) {
     if (clips.isEmpty) return none;
-    final wrap = clampTransitions(clips)[clips.last.id];
-    if (wrap == null) return none;
+    return LoopWrapDisplay.fromClamped(
+      clips,
+      clampTransitions(clips)[clips.last.id],
+    );
+  }
+
+  /// Like [LoopWrapDisplay.fromClips], but takes the already-clamped [wrap]
+  /// (`clampTransitions(clips)[clips.last.id]`) so callers that hold the
+  /// clamped map don't run [clampTransitions] a second time.
+  factory LoopWrapDisplay.fromClamped(
+    List<DivineVideoClip> clips,
+    ClipTransition? wrap,
+  ) {
+    if (clips.isEmpty || wrap == null) return none;
     final consumed = transitionConsumedPerSide(
       clips.last.playbackDuration,
       clips.first.playbackDuration,
@@ -283,8 +295,10 @@ class LoopWrapDisplay {
     return d.isNegative ? Duration.zero : d;
   }
 
-  /// Total display-axis duration: shortened clips plus the seam region. Equals
-  /// the exported output length (overlaps shorten by the blend, dips don't).
+  /// Total display-axis duration: shortened clips plus the seam region. The
+  /// wrap is fully reflected (an overlap wrap shortens the total by its blend,
+  /// a dip doesn't); interior overlaps keep their editor-axis length here,
+  /// exactly as the strip draws them.
   Duration displayTotal(List<DivineVideoClip> clips) {
     var total = Duration.zero;
     for (var i = 0; i < clips.length; i++) {
@@ -320,10 +334,11 @@ class _Blend {
 /// clamp guarantees adjacent blend regions never touch, so the mapping is
 /// strictly monotonic and invertible.
 ///
-/// The loop-restart wrap (the last clip's transition) is deliberately **not**
-/// reflected here: the editor timeline stays the editing space (clips at full
-/// length) and the ruler/playhead map exactly as without a wrap. The wrap only
-/// shortens the exported output, which the native renderer handles.
+/// The loop-restart wrap (the last clip's transition) adds **no blend region**
+/// to the position mapping: its blend sits at the loop point, past the last
+/// clip, so the editor timeline stays the editing space (clips at full length)
+/// and the ruler/playhead map exactly as without a wrap. Like any overlap it
+/// does shorten the export, so [outputDuration] subtracts its blend.
 class TransitionTimelineMap {
   TransitionTimelineMap._(
     this._blends, {
@@ -350,6 +365,16 @@ class TransitionTimelineMap {
       removed += blend;
     }
 
+    // The loop-restart wrap's blend plays at the loop point, past the last
+    // clip, so it shortens the output without adding a blend region to the
+    // position mapping.
+    if (clips.isNotEmpty) {
+      final wrap = clamped[clips.last.id];
+      if (wrap != null && _shortensTimeline(wrap.type)) {
+        removed += wrap.duration;
+      }
+    }
+
     return TransitionTimelineMap._(
       blends,
       editorDuration: editorTotal,
@@ -360,9 +385,9 @@ class TransitionTimelineMap {
   /// Length of the editor timeline — clips laid out at full length.
   final Duration editorDuration;
 
-  /// Length of the rendered output — [editorDuration] minus every interior
-  /// overlap blend. (The loop-restart wrap shortens the export separately,
-  /// native-side, and is not counted here.)
+  /// Length of the rendered output — [editorDuration] minus every overlap
+  /// blend, including the loop-restart wrap's. This is what the final export
+  /// lasts.
   final Duration outputDuration;
 
   final List<_Blend> _blends;
@@ -412,9 +437,9 @@ class TransitionTimelineMap {
 }
 
 /// The duration of the rendered output for [clips] — the sum of clip playback
-/// lengths minus the blend each interior overlap transition removes (after the
-/// no-overlap clamp). Dips don't shorten the timeline, so they don't count, and
-/// neither does the loop-restart wrap (shortened native-side on export only).
+/// lengths minus the blend each overlap transition removes (after the
+/// no-overlap clamp), including the loop-restart wrap's. Dips don't shorten
+/// the timeline, so they don't count.
 ///
 /// This is what the final export lasts, which differs from the editor
 /// timeline length (`ClipEditorState.totalDuration`, clips at full length)

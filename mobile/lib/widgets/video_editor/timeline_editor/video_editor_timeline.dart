@@ -158,9 +158,10 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
         BlocListener<ClipEditorBloc, ClipEditorState>(
           listenWhen: (prev, curr) => prev.totalDuration != curr.totalDuration,
           listener: (context, state) {
-            _totalDuration = LoopWrapDisplay.fromClips(
-              state.clips,
-            ).displayTotal(state.clips);
+            // _totalDuration is not updated here: build recomputes it on every
+            // rebuild (all its inputs are in the context.select record above)
+            // and, unlike this listener, correctly suspends the loop-wrap
+            // shortening while a trim gesture is active.
             final overlayBloc = context.read<TimelineOverlayBloc>();
             overlayBloc.add(
               TimelineOverlayTotalDurationChanged(state.totalDuration),

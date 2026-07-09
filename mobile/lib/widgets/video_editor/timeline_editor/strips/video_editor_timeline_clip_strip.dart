@@ -574,8 +574,7 @@ class _VideoEditorTimelineClipStripState
   /// after the last clip (the wrap-consumed head/tail plays there instead of
   /// inside the clips), so strips, playhead, preview and export share one axis.
   ({List<double> widths, List<double> offsets, double totalWidth})
-  _computeLayout() {
-    final wrap = _wrapDisplay;
+  _computeLayout(LoopWrapDisplay wrap) {
     final widths = <double>[];
     final offsets = <double>[];
     var x = 0.0;
@@ -598,7 +597,11 @@ class _VideoEditorTimelineClipStripState
     const animDuration = _animDuration;
     const animCurve = Curves.easeInOut;
 
-    final layout = _computeLayout();
+    // One wrap-display per build: [_wrapDisplay] runs [clampTransitions] on
+    // every call, so compute it once and share it with the layout pass.
+    final wrap = _wrapDisplay;
+    final seamRegionWidth = _seamRegionWidth(wrap);
+    final layout = _computeLayout(wrap);
     final totalWidth = _isReordering
         ? _orderedClips.length * reorderSlotStep - gap
         : layout.totalWidth;
@@ -745,10 +748,10 @@ class _VideoEditorTimelineClipStripState
                       clips: _orderedClips,
                       layout: layout,
                     ),
-                  if (_seamRegionWidth(_wrapDisplay) > 0)
+                  if (seamRegionWidth > 0)
                     _LoopSeamRegion(
-                      left: layout.totalWidth - _seamRegionWidth(_wrapDisplay),
-                      width: _seamRegionWidth(_wrapDisplay),
+                      left: layout.totalWidth - seamRegionWidth,
+                      width: seamRegionWidth,
                       // The same frames the transition picker previews: the
                       // last clip's tail into the first clip's head.
                       tailFramePath:
@@ -1021,12 +1024,6 @@ class _TransitionButtonsLayer extends StatelessWidget {
   }
 }
 
-/// Positions the loop-restart button centred on the last clip's end edge — the
-/// "end" side of the wrap seam where the last clip's tail flows into the first
-/// clip's head so a looping player restarts seamlessly. Straddles the edge like
-/// the between-clip buttons straddle their seams; the strip reserves a
-/// half-button trailing slot so the right half isn't clipped. Shown even for a
-/// single clip, which wraps into itself.
 /// The loop-blend seam region drawn after the last clip: the span where the
 /// last clip's tail dissolves into the first clip's head on restart. Its width
 /// is the seam's real playback length ([LoopWrapDisplay.seamDuration]), so the
@@ -1102,6 +1099,12 @@ class _LoopSeamRegion extends StatelessWidget {
   }
 }
 
+/// Positions the loop-restart button centred on the strip's end edge — the
+/// "end" side of the wrap seam where the last clip's tail flows into the first
+/// clip's head so a looping player restarts seamlessly. Straddles the edge like
+/// the between-clip buttons straddle their seams; the strip reserves a
+/// half-button trailing slot so the right half isn't clipped. Shown even for a
+/// single clip, which wraps into itself.
 class _LoopTransitionButton extends StatelessWidget {
   const _LoopTransitionButton({
     required this.hasTransition,
