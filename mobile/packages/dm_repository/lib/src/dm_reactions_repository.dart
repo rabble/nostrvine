@@ -60,6 +60,32 @@ enum DmReactionWrapOutcome {
   deferred,
 }
 
+/// A pending/failed own reaction the retry sweep can re-drive, projected from
+/// its `dm_message_reactions` row.
+@immutable
+class DmReactionRetryTarget {
+  /// Construct a retry target.
+  const DmReactionRetryTarget({
+    required this.rumorId,
+    required this.targetMessageAuthor,
+    required this.publishStatus,
+    required this.createdAt,
+  });
+
+  /// Reaction rumor id — the argument `retry` expects.
+  final String rumorId;
+
+  /// Author of the reacted message — the reaction's gift-wrap recipient.
+  final String targetMessageAuthor;
+
+  /// Persisted publish status: `'failed'` or `'pending'`.
+  final String publishStatus;
+
+  /// Rumor `created_at` (unix seconds). Lets the sweep hold back a still-in-
+  /// flight `'pending'` reaction until its original publish has resolved.
+  final int createdAt;
+}
+
 /// Repository for DM emoji reactions.
 ///
 /// Public surface:
@@ -254,6 +280,7 @@ class DmReactionsRepository {
         messageService: messageService,
         rumor: rumor,
         recipients: recipients,
+        awaitRecipientOk: true,
       );
       switch (result) {
         case NIP17SendSuccess():
@@ -363,6 +390,7 @@ class DmReactionsRepository {
         messageService: messageService,
         rumor: rumor,
         recipients: recipients,
+        awaitRecipientOk: true,
       );
       switch (result) {
         case NIP17SendSuccess():
@@ -395,6 +423,27 @@ class DmReactionsRepository {
         errorMessage: e.toString(),
       );
     }
+  }
+
+  /// List this user's own outgoing reactions still awaiting durable delivery
+  /// (publish `'failed'`, or `'pending'` from an interrupted send), for the
+  /// foreground retry sweep to re-drive via [retry]. Returns empty when
+  /// credentials have not been wired.
+  Future<List<DmReactionRetryTarget>> retryableReactions() async {
+    if (_userPubkey.isEmpty) return const [];
+    final rows = await _reactionsDao.getRetryableOwnReactions(
+      ownerPubkey: _userPubkey,
+    );
+    return rows
+        .map(
+          (r) => DmReactionRetryTarget(
+            rumorId: r.id,
+            targetMessageAuthor: r.targetMessageAuthor,
+            publishStatus: r.publishStatus ?? 'pending',
+            createdAt: r.createdAt,
+          ),
+        )
+        .toList(growable: false);
   }
 
   /// Soft-delete an own reaction locally and emit a NIP-09 kind-5
@@ -599,9 +648,14 @@ class DmReactionsRepository {
     required NIP17MessageService messageService,
     required Event rumor,
     required String recipientPubkey,
+    bool awaitRecipientOk = false,
   }) {
     return messageService
-        .sendRumor(rumorEvent: rumor, recipientPubkey: recipientPubkey)
+        .sendRumor(
+          rumorEvent: rumor,
+          recipientPubkey: recipientPubkey,
+          awaitRecipientOk: awaitRecipientOk,
+        )
         .timeout(
           _publishTimeout,
           onTimeout: () => NIP17SendResult.failure(
@@ -644,10 +698,17 @@ class DmReactionsRepository {
   /// Wrap [rumor] to each of [recipients] (each send also self-wraps for
   /// cross-device recovery; self-wrap copies dedupe on the rumor id at the
   /// receiver). Succeeds if any recipient wrap lands.
+  ///
+  /// [awaitRecipientOk] requires the relay's NIP-20 `OK true` for each
+  /// recipient wrap before it counts as landed (see
+  /// [NIP17MessageService.sendRumor]). Reaction sends/retries opt in so a
+  /// flaky relay's frame-accept false positive can't mark an undelivered
+  /// reaction as sent; best-effort kind-5 deletions leave it off.
   Future<NIP17SendResult> _fanOutRumor({
     required NIP17MessageService messageService,
     required Event rumor,
     required List<String> recipients,
+    bool awaitRecipientOk = false,
   }) async {
     NIP17SendResult? lastSuccess;
     NIP17SendResult? lastFailure;
@@ -656,6 +717,7 @@ class DmReactionsRepository {
         messageService: messageService,
         rumor: rumor,
         recipientPubkey: recipient,
+        awaitRecipientOk: awaitRecipientOk,
       );
       switch (result) {
         case NIP17SendSuccess():

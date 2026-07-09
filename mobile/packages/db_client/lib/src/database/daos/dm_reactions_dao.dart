@@ -312,6 +312,31 @@ class DmReactionsDao extends DatabaseAccessor<AppDatabase>
     return query.watch();
   }
 
+  /// Fetch this user's own outgoing reactions that a retry sweep should
+  /// re-drive: live rows authored by [ownerPubkey] whose publish is
+  /// `'failed'` or still `'pending'`, that still carry the rumor JSON needed
+  /// to replay the gift wrap.
+  ///
+  /// Soft-deleted rows (superseded / removed) and already-`'sent'` rows (whose
+  /// JSON is cleared on [swapPlaceholderId]) are excluded, so a re-driven
+  /// reaction is always a genuinely undelivered one. Ordered oldest-first so
+  /// retries drain in send order.
+  Future<List<DmReactionRow>> getRetryableOwnReactions({
+    required String ownerPubkey,
+  }) {
+    return (select(dmMessageReactions)
+          ..where(
+            (t) =>
+                t.ownerPubkey.equals(ownerPubkey) &
+                t.reactorPubkey.equals(ownerPubkey) &
+                t.isDeleted.equals(false) &
+                t.rumorEventJson.isNotNull() &
+                t.publishStatus.isIn(const ['failed', 'pending']),
+          )
+          ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+        .get();
+  }
+
   /// Return the stored rumor JSON for a pending/failed outgoing row, or
   /// `null` if no row matches or the row has no stored rumor.
   Future<String?> getRumorJson({

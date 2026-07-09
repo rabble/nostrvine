@@ -319,6 +319,100 @@ void main() {
     });
 
     test(
+      'getRetryableOwnReactions returns failed and pending own reactions '
+      'with stored rumor json',
+      () async {
+        // A pending own reaction (interrupted send).
+        await insertPending();
+
+        // A failed own reaction on a different target message.
+        const failedId =
+            '2222222222222222222222222222222222222222222222222222222222222222';
+        const otherTarget =
+            '3333333333333333333333333333333333333333333333333333333333333333';
+        await dao.insertOwnReactionSuperseding(
+          placeholderId: failedId,
+          conversationId: _conversationId,
+          targetMessageId: otherTarget,
+          targetMessageAuthor: _targetAuthor,
+          reactorPubkey: _reactorA,
+          emoji: '😀',
+          createdAt: 1_700_000_100,
+          ownerPubkey: _ownerA,
+          rumorEventJson: '{"id":"$failedId"}',
+        );
+        await dao.markFailed(placeholderId: failedId, ownerPubkey: _ownerA);
+
+        final retryable = await dao.getRetryableOwnReactions(
+          ownerPubkey: _ownerA,
+        );
+
+        expect(
+          retryable.map((r) => r.id),
+          containsAll(<String>[_pendingId, failedId]),
+        );
+        expect(retryable.every((r) => r.rumorEventJson != null), isTrue);
+      },
+    );
+
+    test(
+      'getRetryableOwnReactions excludes sent, deleted, incoming, and other '
+      "owners' reactions",
+      () async {
+        // Sent own reaction: swap clears json + marks sent.
+        await insertPending();
+        await dao.swapPlaceholderId(
+          placeholderId: _pendingId,
+          realRumorId: _sentId,
+          ownerPubkey: _ownerA,
+        );
+
+        // Soft-deleted own reaction (superseded / removed).
+        const deletedId =
+            '4444444444444444444444444444444444444444444444444444444444444444';
+        const deletedTarget =
+            '5555555555555555555555555555555555555555555555555555555555555555';
+        await dao.insertOwnReactionSuperseding(
+          placeholderId: deletedId,
+          conversationId: _conversationId,
+          targetMessageId: deletedTarget,
+          targetMessageAuthor: _targetAuthor,
+          reactorPubkey: _reactorA,
+          emoji: '😀',
+          createdAt: 1_700_000_100,
+          ownerPubkey: _ownerA,
+          rumorEventJson: '{"id":"$deletedId"}',
+        );
+        await dao.softDelete(id: deletedId, ownerPubkey: _ownerA);
+
+        // Incoming reaction from someone else (publishStatus null, no json).
+        await dao.upsertIncoming(
+          id: _giftWrapId,
+          conversationId: _conversationId,
+          targetMessageId: _targetMessageId,
+          targetMessageAuthor: _ownerA,
+          reactorPubkey: _reactorB,
+          emoji: '❤️',
+          createdAt: 1_700_000_200,
+          giftWrapId: _giftWrapId,
+          ownerPubkey: _ownerA,
+        );
+
+        // A pending reaction belonging to a different owner.
+        await insertPending(
+          ownerPubkey: _ownerB,
+          reactorPubkey: _ownerB,
+        );
+
+        final retryable = await dao.getRetryableOwnReactions(
+          ownerPubkey: _ownerA,
+        );
+
+        expect(retryable, isEmpty);
+      },
+    );
+
+    test(
       'softDelete hides row from live queries but preserves record',
       () async {
         await insertPending(id: _sentId);

@@ -159,6 +159,98 @@ final class OutgoingDmRetryServiceProvider
 String _$outgoingDmRetryServiceHash() =>
     r'ccbee39cf920a0847be410ca804e048200962d38';
 
+/// Auto-sweep service that re-drives undelivered DM reactions (publish failed
+/// or interrupted mid-send) on app-foreground transitions via
+/// [DmReactionsRepository.retry].
+///
+/// Gives reactions the durable delivery that DM messages already get from
+/// [OutgoingDmRetryService] + the `outgoing_dms` queue: a reaction whose
+/// recipient gift wrap failed to land (common on a flaky relay) is otherwise
+/// lost with no automatic recovery. keepAlive with no UI consumer, so it is
+/// read eagerly at app shell startup (`main.dart`) to wire the foreground
+/// subscription.
+///
+/// Returns null until the user is authenticated and the Nostr session is
+/// ready — the same readiness the reaction repository's `setCredentials`
+/// needs before a retry can publish.
+
+@ProviderFor(dmReactionRetryService)
+final dmReactionRetryServiceProvider = DmReactionRetryServiceProvider._();
+
+/// Auto-sweep service that re-drives undelivered DM reactions (publish failed
+/// or interrupted mid-send) on app-foreground transitions via
+/// [DmReactionsRepository.retry].
+///
+/// Gives reactions the durable delivery that DM messages already get from
+/// [OutgoingDmRetryService] + the `outgoing_dms` queue: a reaction whose
+/// recipient gift wrap failed to land (common on a flaky relay) is otherwise
+/// lost with no automatic recovery. keepAlive with no UI consumer, so it is
+/// read eagerly at app shell startup (`main.dart`) to wire the foreground
+/// subscription.
+///
+/// Returns null until the user is authenticated and the Nostr session is
+/// ready — the same readiness the reaction repository's `setCredentials`
+/// needs before a retry can publish.
+
+final class DmReactionRetryServiceProvider
+    extends
+        $FunctionalProvider<
+          DmReactionRetryService?,
+          DmReactionRetryService?,
+          DmReactionRetryService?
+        >
+    with $Provider<DmReactionRetryService?> {
+  /// Auto-sweep service that re-drives undelivered DM reactions (publish failed
+  /// or interrupted mid-send) on app-foreground transitions via
+  /// [DmReactionsRepository.retry].
+  ///
+  /// Gives reactions the durable delivery that DM messages already get from
+  /// [OutgoingDmRetryService] + the `outgoing_dms` queue: a reaction whose
+  /// recipient gift wrap failed to land (common on a flaky relay) is otherwise
+  /// lost with no automatic recovery. keepAlive with no UI consumer, so it is
+  /// read eagerly at app shell startup (`main.dart`) to wire the foreground
+  /// subscription.
+  ///
+  /// Returns null until the user is authenticated and the Nostr session is
+  /// ready — the same readiness the reaction repository's `setCredentials`
+  /// needs before a retry can publish.
+  DmReactionRetryServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'dmReactionRetryServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$dmReactionRetryServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<DmReactionRetryService?> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  DmReactionRetryService? create(Ref ref) {
+    return dmReactionRetryService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(DmReactionRetryService? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<DmReactionRetryService?>(value),
+    );
+  }
+}
+
+String _$dmReactionRetryServiceHash() =>
+    r'6185e5efdb3cd570a6d6a25d4987ee8fc31af88b';
+
 /// Auto-sweep service for the durable `pending_view_events` queue.
 
 @ProviderFor(viewEventRetryService)

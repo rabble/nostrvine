@@ -253,8 +253,21 @@ class NIP17MessageService {
     return Event(_senderPublicKey, eventKind, rumorTags, content);
   }
 
+  /// OK-confirmation window for the recipient wrap when [sendRumor] runs
+  /// with `awaitRecipientOk: true` (reaction sends). Kept under the reaction
+  /// path's outer 15 s publish cap so the confirmation resolves with headroom
+  /// for the subsequent self-wrap before the caller's timeout fires.
+  static const Duration _recipientOkConfirmTimeout = Duration(seconds: 10);
+
   /// Wrap and publish a pre-built [rumorEvent] to the recipient and to
   /// ourselves (self-addressed gift wrap for cross-device recovery).
+  ///
+  /// When [awaitRecipientOk] is `true`, the recipient wrap publish requires
+  /// the relay's NIP-20 `OK true` before it counts as landed, instead of the
+  /// default frame-accept. A bare frame-accept is a false positive on a flaky
+  /// single relay — it reports success even though the relay never stored the
+  /// event — so reaction sends (which have no durable message-style retry
+  /// queue) opt in to confirmation. Message sends keep the default.
   ///
   /// Self-wrap failure is intentionally non-fatal — the message has
   /// already been delivered to the recipient at that point, and
@@ -267,6 +280,7 @@ class NIP17MessageService {
     required Event rumorEvent,
     required String recipientPubkey,
     List<String>? targetRelays,
+    bool awaitRecipientOk = false,
   }) async {
     try {
       // Send gate (#176): the lowest recipient-delivering primitive, so every
@@ -331,14 +345,30 @@ class NIP17MessageService {
       // who only read their own inbox relays actually receive it); fall
       // back to the default pool otherwise. The no-targetRelays call shape
       // is kept identical to preserve existing behavior.
-      final sentEvent = (targetRelays != null && targetRelays.isNotEmpty)
-          ? await _nostrService.publishEvent(
-              giftWrapEvent,
-              targetRelays: targetRelays,
-            )
-          : await _nostrService.publishEvent(giftWrapEvent);
+      final bool recipientPublished;
+      if (awaitRecipientOk) {
+        final outcome = (targetRelays != null && targetRelays.isNotEmpty)
+            ? await _nostrService.publishEventAwaitOk(
+                giftWrapEvent,
+                targetRelays: targetRelays,
+                timeout: _recipientOkConfirmTimeout,
+              )
+            : await _nostrService.publishEventAwaitOk(
+                giftWrapEvent,
+                timeout: _recipientOkConfirmTimeout,
+              );
+        recipientPublished = outcome.confirmed;
+      } else {
+        final sentEvent = (targetRelays != null && targetRelays.isNotEmpty)
+            ? await _nostrService.publishEvent(
+                giftWrapEvent,
+                targetRelays: targetRelays,
+              )
+            : await _nostrService.publishEvent(giftWrapEvent);
+        recipientPublished = sentEvent is PublishSuccess;
+      }
 
-      if (sentEvent is! PublishSuccess) {
+      if (!recipientPublished) {
         const errorMsg = 'Message publish failed to relays';
         Log.error(
           '$errorMsg (rumor=${rumorEvent.id}, recipient=$recipientPubkey)',

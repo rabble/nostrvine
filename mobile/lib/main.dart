@@ -2385,6 +2385,12 @@ class _DivineAppState extends ConsumerState<DivineApp>
     // without an explicit read it would never be created. See #4124.
     ref.watch(outgoingDmRetryServiceProvider);
 
+    // Eagerly create the DM-reaction retry service so its foreground
+    // subscription is wired up at app shell setup. Like the outgoing-DM
+    // retry service it has no UI consumer — it re-drives undelivered
+    // reactions off the dm_message_reactions durable record.
+    ref.watch(dmReactionRetryServiceProvider);
+
     // Eagerly create the view-event retry service so foreground sweeps
     // run for the durable pending_view_events queue without a UI consumer.
     ref.watch(viewEventRetryServiceProvider);

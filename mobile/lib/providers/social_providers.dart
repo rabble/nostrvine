@@ -29,6 +29,7 @@ import 'package:openvine/services/collaborator_invite_state_store.dart';
 import 'package:openvine/services/collaborator_response_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
+import 'package:openvine/services/dm_reaction_retry_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/hashtag_cache_service.dart';
 import 'package:openvine/services/hashtag_service.dart';
@@ -205,6 +206,68 @@ OutgoingDmRetryService? outgoingDmRetryService(Ref ref) {
   service.initialize().catchError((e) {
     Log.error(
       'Failed to initialize OutgoingDmRetryService',
+      name: 'AppProviders',
+      error: e,
+    );
+  });
+
+  ref.listen<bool>(appForegroundProvider, (_, next) {
+    if (!foregroundController.isClosed) {
+      foregroundController.add(next);
+    }
+  }, fireImmediately: true);
+
+  ref.onDispose(service.dispose);
+  return service;
+}
+
+/// Auto-sweep service that re-drives undelivered DM reactions (publish failed
+/// or interrupted mid-send) on app-foreground transitions via
+/// [DmReactionsRepository.retry].
+///
+/// Gives reactions the durable delivery that DM messages already get from
+/// [OutgoingDmRetryService] + the `outgoing_dms` queue: a reaction whose
+/// recipient gift wrap failed to land (common on a flaky relay) is otherwise
+/// lost with no automatic recovery. keepAlive with no UI consumer, so it is
+/// read eagerly at app shell startup (`main.dart`) to wire the foreground
+/// subscription.
+///
+/// Returns null until the user is authenticated and the Nostr session is
+/// ready — the same readiness the reaction repository's `setCredentials`
+/// needs before a retry can publish.
+@Riverpod(keepAlive: true)
+DmReactionRetryService? dmReactionRetryService(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+
+  // Watch auth state to rebuild on sign-in / sign-out / account switch.
+  ref.watch(currentAuthStateProvider);
+
+  final userPubkey = authService.currentPublicKeyHex;
+  if (userPubkey == null) return null;
+
+  // Gate on matching Nostr readiness so the reaction repository's
+  // setCredentials has run by the time the first foreground sweep fires.
+  final readiness = ref.watch(nostrSessionProvider);
+  if (!readiness.isReadyForActiveClient || readiness.pubkey != userPubkey) {
+    return null;
+  }
+
+  final reactionsRepository = ref.watch(dmReactionsRepositoryProvider);
+
+  // Bridge the synchronous AppForeground notifier into a Stream<bool> so the
+  // service's contract stays free of Riverpod types and is easy to drive from
+  // unit tests.
+  final foregroundController = StreamController<bool>();
+  ref.onDispose(foregroundController.close);
+
+  final service = DmReactionRetryService(
+    reactionsRepository: reactionsRepository,
+    appForegroundStream: foregroundController.stream,
+  );
+
+  service.initialize().catchError((e) {
+    Log.error(
+      'Failed to initialize DmReactionRetryService',
       name: 'AppProviders',
       error: e,
     );

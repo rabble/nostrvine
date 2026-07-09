@@ -302,6 +302,7 @@ void main() {
           () => mockMessageService.sendRumor(
             rumorEvent: rumor,
             recipientPubkey: _otherPubkey,
+            awaitRecipientOk: any(named: 'awaitRecipientOk'),
           ),
         ).thenAnswer(
           (_) async => NIP17SendResult.success(
@@ -345,6 +346,15 @@ void main() {
             placeholderId: rumor.id,
             realRumorId: rumor.id,
             ownerPubkey: _ownerPubkey,
+          ),
+        ).called(1);
+        // The reaction send opts into NIP-20 OK-confirmation so a flaky
+        // relay's frame-accept false positive can't mark it delivered.
+        verify(
+          () => mockMessageService.sendRumor(
+            rumorEvent: rumor,
+            recipientPubkey: _otherPubkey,
+            awaitRecipientOk: true,
           ),
         ).called(1);
       },
@@ -398,6 +408,7 @@ void main() {
           () => mockMessageService.sendRumor(
             rumorEvent: any(named: 'rumorEvent'),
             recipientPubkey: any(named: 'recipientPubkey'),
+            awaitRecipientOk: any(named: 'awaitRecipientOk'),
           ),
         ).thenAnswer(
           (_) async => NIP17SendResult.success(
@@ -429,6 +440,7 @@ void main() {
           () => mockMessageService.sendRumor(
             rumorEvent: deletionRumor,
             recipientPubkey: any(named: 'recipientPubkey'),
+            awaitRecipientOk: any(named: 'awaitRecipientOk'),
           ),
         ).called(1);
       },
@@ -461,6 +473,7 @@ void main() {
         () => mockMessageService.sendRumor(
           rumorEvent: rumor,
           recipientPubkey: _otherPubkey,
+          awaitRecipientOk: any(named: 'awaitRecipientOk'),
         ),
       ).thenAnswer((_) async => const NIP17SendResult.failure('relay down'));
       when(
@@ -538,6 +551,7 @@ void main() {
         () => mockMessageService.sendRumor(
           rumorEvent: any(named: 'rumorEvent'),
           recipientPubkey: _otherPubkey,
+          awaitRecipientOk: any(named: 'awaitRecipientOk'),
         ),
       ).thenAnswer(
         (_) async => NIP17SendResult.success(
@@ -603,6 +617,7 @@ void main() {
         () => mockMessageService.sendRumor(
           rumorEvent: any(named: 'rumorEvent'),
           recipientPubkey: _otherPubkey,
+          awaitRecipientOk: any(named: 'awaitRecipientOk'),
         ),
       ).thenAnswer((_) async => const NIP17SendResult.failure('relay down'));
       when(
@@ -626,6 +641,53 @@ void main() {
           ownerPubkey: _ownerPubkey,
         ),
       ).called(1);
+    });
+
+    test(
+      'retryableReactions projects failed and pending own reactions from '
+      'the dao',
+      () async {
+        when(
+          () => mockDao.getRetryableOwnReactions(ownerPubkey: _ownerPubkey),
+        ).thenAnswer(
+          (_) async => [
+            makeRow(
+              publishStatus: 'failed',
+              rumorEventJson: '{}',
+              createdAt: 1_700_000_100,
+            ),
+            makeRow(
+              id: _giftWrapId,
+              publishStatus: 'pending',
+              rumorEventJson: '{}',
+              createdAt: 1_700_000_200,
+            ),
+          ],
+        );
+
+        final repository = createRepository();
+        final targets = await repository.retryableReactions();
+
+        expect(targets, hasLength(2));
+        expect(targets.first.rumorId, _reactionRumorId);
+        expect(targets.first.targetMessageAuthor, _otherPubkey);
+        expect(targets.first.publishStatus, 'failed');
+        expect(targets.first.createdAt, 1_700_000_100);
+        expect(targets.last.publishStatus, 'pending');
+      },
+    );
+
+    test('retryableReactions returns empty when uninitialized', () async {
+      final repository = createRepository(initialized: false);
+
+      final targets = await repository.retryableReactions();
+
+      expect(targets, isEmpty);
+      verifyNever(
+        () => mockDao.getRetryableOwnReactions(
+          ownerPubkey: any(named: 'ownerPubkey'),
+        ),
+      );
     });
 
     test(
@@ -658,6 +720,7 @@ void main() {
           () => mockMessageService.sendRumor(
             rumorEvent: deletionRumor,
             recipientPubkey: _otherPubkey,
+            awaitRecipientOk: any(named: 'awaitRecipientOk'),
           ),
         ).thenAnswer((_) async => const NIP17SendResult.failure('ignored'));
 
@@ -678,6 +741,7 @@ void main() {
           () => mockMessageService.sendRumor(
             rumorEvent: deletionRumor,
             recipientPubkey: _otherPubkey,
+            awaitRecipientOk: any(named: 'awaitRecipientOk'),
           ),
         ).called(1);
       },
@@ -1026,6 +1090,7 @@ void main() {
             () => mockMessageService.sendRumor(
               rumorEvent: any(named: 'rumorEvent'),
               recipientPubkey: any(named: 'recipientPubkey'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
             ),
           ).thenAnswer(
             (_) async => NIP17SendResult.success(
@@ -1058,12 +1123,14 @@ void main() {
             () => mockMessageService.sendRumor(
               rumorEvent: any(named: 'rumorEvent'),
               recipientPubkey: _otherPubkey,
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
             ),
           ).called(1);
           verify(
             () => mockMessageService.sendRumor(
               rumorEvent: any(named: 'rumorEvent'),
               recipientPubkey: thirdPubkey,
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
             ),
           ).called(1);
         },
