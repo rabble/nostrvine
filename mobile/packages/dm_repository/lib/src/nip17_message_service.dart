@@ -345,8 +345,10 @@ class NIP17MessageService {
       // who only read their own inbox relays actually receive it); fall
       // back to the default pool otherwise. The no-targetRelays call shape
       // is kept identical to preserve existing behavior.
-      final bool recipientPublished;
       if (awaitRecipientOk) {
+        // OK-confirm path (reactions): require the relay's NIP-20 OK before
+        // reporting delivery, but keep this device's own durability
+        // independent of it.
         final outcome = (targetRelays != null && targetRelays.isNotEmpty)
             ? await _nostrService.publishEventAwaitOk(
                 giftWrapEvent,
@@ -357,18 +359,65 @@ class NIP17MessageService {
                 giftWrapEvent,
                 timeout: _recipientOkConfirmTimeout,
               );
-        recipientPublished = outcome.confirmed;
-      } else {
-        final sentEvent = (targetRelays != null && targetRelays.isNotEmpty)
-            ? await _nostrService.publishEvent(
-                giftWrapEvent,
-                targetRelays: targetRelays,
-              )
-            : await _nostrService.publishEvent(giftWrapEvent);
-        recipientPublished = sentEvent is PublishSuccess;
+
+        // Always publish the self-addressed wrap, even when the recipient OK
+        // is unconfirmed. The event frame may have been stored+broadcast (so
+        // the recipient already has the reaction) while the OK was lost/late
+        // on a flaky relay; skipping the self-wrap here would strand this
+        // device's own copy on reinstall / other devices. The self-wrap is
+        // p-tagged to the sender only, so publishing it on an unconfirmed
+        // recipient send never double-delivers to the counterparty.
+        final selfWrapPublished = await _publishSelfWrap(
+          nostr: nostr,
+          rumorEvent: rumorEvent,
+          prebuiltSelfWrap: prebuiltSelfWrap,
+        );
+
+        if (outcome.confirmed) {
+          Log.info(
+            'Successfully published NIP-17 reaction '
+            '(selfWrapPublished=$selfWrapPublished)',
+            category: LogCategory.system,
+          );
+          return NIP17SendResult.success(
+            rumorEventId: rumorEvent.id,
+            messageEventId: giftWrapEvent.id,
+            recipientPubkey: recipientPubkey,
+            selfWrapPublished: selfWrapPublished,
+          );
+        }
+
+        // Unconfirmed. An explicit OK-false is a hard rejection; "frame
+        // written, no OK within the window" is inconclusive — surface it as
+        // retryable-pending so the caller keeps a dim, sweep-retryable chip
+        // rather than a red failed one (a lost OK is not proof of loss, and
+        // marking it failed is what let a re-tap delete a delivered reaction).
+        final rejected = outcome.rejectedBy.isNotEmpty;
+        Log.warning(
+          'NIP-17 reaction recipient OK '
+          '${rejected ? 'rejected' : 'unconfirmed'} '
+          '(rumor=${rumorEvent.id}, recipient=$recipientPubkey, '
+          '${outcome.summary}); selfWrapPublished=$selfWrapPublished',
+          category: LogCategory.system,
+        );
+        return NIP17SendResult.failure(
+          rejected
+              ? 'Reaction rejected by relay: ${outcome.summary}'
+              : 'Reaction recipient OK unconfirmed: ${outcome.summary}',
+          retryablePending: !rejected,
+        );
       }
 
-      if (!recipientPublished) {
+      // Frame-accept path (messages): a WebSocket-accepted frame counts as
+      // sent, and the self-wrap runs only after the recipient publish lands.
+      final sentEvent = (targetRelays != null && targetRelays.isNotEmpty)
+          ? await _nostrService.publishEvent(
+              giftWrapEvent,
+              targetRelays: targetRelays,
+            )
+          : await _nostrService.publishEvent(giftWrapEvent);
+
+      if (sentEvent is! PublishSuccess) {
         const errorMsg = 'Message publish failed to relays';
         Log.error(
           '$errorMsg (rumor=${rumorEvent.id}, recipient=$recipientPubkey)',

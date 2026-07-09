@@ -91,6 +91,23 @@ class ConversationReactionsCubit
     // Toggle-off: if we already have a live matching reaction, remove it.
     final existing = _ownLiveReaction(event.messageId, event.emoji);
     if (existing != null) {
+      // A re-tap on a not-yet-delivered own reaction must NOT be read as
+      // toggle-off: removeOwn soft-deletes it locally and emits a kind-5,
+      // permanently losing a reaction the recipient may already have (the OK
+      // was merely lost/late on a flaky relay). Re-drive delivery instead —
+      // mirrors the detail sheet's failed → retry fork.
+      if (existing.publishStatus == DmReactionPublishStatus.pending ||
+          existing.publishStatus == DmReactionPublishStatus.failed) {
+        add(
+          ConversationReactionRetryRequested(
+            rumorId: existing.id,
+            messageId: event.messageId,
+            messageAuthorPubkey: event.messageAuthorPubkey,
+            emoji: event.emoji,
+          ),
+        );
+        return;
+      }
       final key = ReactionPublishKey(
         messageId: event.messageId,
         emoji: event.emoji,
@@ -244,7 +261,11 @@ class ConversationReactionsCubit
         emit(
           state.copyWith(
             pending: newPending,
-            optimistic: _withoutOrphanedAdd(key: key, emoji: emoji),
+            optimistic: _withoutOrphanedAdd(
+              key: key,
+              emoji: emoji,
+              durableRowExists: result.optimisticInsertSucceeded,
+            ),
           ),
         );
       }
@@ -275,11 +296,21 @@ class ConversationReactionsCubit
   /// insert never produced a persisted row — otherwise the chip would linger
   /// forever as a never-settling pending placeholder. When the row exists
   /// (send-failure), the overlay is left for the stream tick to reconcile and
-  /// the persisted `failed` row drives the retry chip via the [pending] map.
+  /// the persisted `failed`/`pending` row drives the retry chip.
+  ///
+  /// [durableRowExists] short-circuits the check to keep the overlay even
+  /// before the DAO stream has ticked the new row into [reactionsByMessageId]:
+  /// on a fast failure the synchronous overlay drop can otherwise beat the
+  /// background-isolate insert tick, briefly collapsing the chip to
+  /// `SizedBox.shrink` and inviting a "repair" re-tap. The publish result
+  /// tells us the durable row was written, so we trust that over the tick-laggy
+  /// state; [_reconcileOptimistic] collapses the overlay once the row lands.
   Map<ReactionPublishKey, OptimisticReactionIntent> _withoutOrphanedAdd({
     required ReactionPublishKey key,
     required String emoji,
+    bool durableRowExists = false,
   }) {
+    if (durableRowExists) return state.optimistic;
     final persisted =
         state.reactionsByMessageId[key.messageId] ?? const <DmReaction>[];
     final hasPersisted = persisted.any((r) => r.isOwn && r.emoji == emoji);

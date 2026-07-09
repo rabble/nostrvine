@@ -167,6 +167,21 @@ void main() {
       publishStatus: DmReactionPublishStatus.sent,
     );
 
+    DmReaction ownReactionStatus(
+      String emoji,
+      DmReactionPublishStatus status,
+    ) => DmReaction(
+      id: 'own-$emoji',
+      conversationId: _convo,
+      targetMessageId: _msgId,
+      targetMessageAuthor: _peer,
+      reactorPubkey: _owner,
+      emoji: emoji,
+      createdAt: 1700000000,
+      ownerPubkey: _owner,
+      publishStatus: status,
+    );
+
     blocTest<ConversationReactionsCubit, ConversationReactionsState>(
       'set publishes when there is no active reaction',
       build: () {
@@ -540,6 +555,111 @@ void main() {
               targetMessageAuthor: _peer,
             ),
           ).called(1);
+        },
+      );
+
+      for (final status in [
+        DmReactionPublishStatus.failed,
+        DmReactionPublishStatus.pending,
+      ]) {
+        blocTest<ConversationReactionsCubit, ConversationReactionsState>(
+          're-tapping a $status own reaction retries instead of removing it',
+          build: () {
+            when(
+              () => repo.retry(
+                rumorId: any(named: 'rumorId'),
+                targetMessageAuthor: any(named: 'targetMessageAuthor'),
+              ),
+            ).thenAnswer(
+              (_) async => const DmReactionPublishResult(
+                success: true,
+                rumorId: 'own-❤️',
+                optimisticInsertSucceeded: true,
+              ),
+            );
+            return ConversationReactionsCubit(
+              reactionsRepository: repo,
+              ownerPubkey: _owner,
+            );
+          },
+          act: (cubit) async {
+            cubit.add(
+              const ConversationReactionsStarted(conversationId: _convo),
+            );
+            await Future<void>.delayed(Duration.zero);
+            streamController.add([ownReactionStatus('❤️', status)]);
+            await Future<void>.delayed(Duration.zero);
+            cubit.add(
+              const ConversationReactionToggled(
+                conversationId: _convo,
+                messageId: _msgId,
+                messageAuthorPubkey: _peer,
+                emoji: '❤️',
+              ),
+            );
+            await Future<void>.delayed(Duration.zero);
+            await Future<void>.delayed(Duration.zero);
+          },
+          verify: (_) {
+            // A re-tap on an undelivered reaction re-drives delivery; it must
+            // NOT be read as toggle-off (which soft-deletes it + emits a
+            // kind-5, permanently losing a reaction the recipient may have).
+            verify(
+              () => repo.retry(rumorId: 'own-❤️', targetMessageAuthor: _peer),
+            ).called(1);
+            verifyNever(
+              () => repo.removeOwn(
+                rumorId: any(named: 'rumorId'),
+                targetMessageAuthor: any(named: 'targetMessageAuthor'),
+              ),
+            );
+          },
+        );
+      }
+
+      blocTest<ConversationReactionsCubit, ConversationReactionsState>(
+        'keeps the optimistic chip on a durable-row publish failure '
+        '(before the DAO stream ticks)',
+        build: () {
+          when(
+            () => repo.publish(
+              conversationId: any(named: 'conversationId'),
+              targetMessageId: any(named: 'targetMessageId'),
+              targetMessageAuthor: any(named: 'targetMessageAuthor'),
+              emoji: any(named: 'emoji'),
+            ),
+          ).thenAnswer(
+            (_) async => const DmReactionPublishResult(
+              success: false,
+              rumorId: 'r-unconf',
+              errorMessage: 'unconfirmed',
+              optimisticInsertSucceeded: true,
+            ),
+          );
+          return ConversationReactionsCubit(
+            reactionsRepository: repo,
+            ownerPubkey: _owner,
+          );
+        },
+        act: (cubit) => cubit.add(
+          const ConversationReactionToggled(
+            conversationId: _convo,
+            messageId: _msgId,
+            messageAuthorPubkey: _peer,
+            emoji: '🔥',
+          ),
+        ),
+        verify: (cubit) {
+          // The durable row exists (the DAO stream just hasn't re-emitted yet),
+          // so the chip must stay visible rather than blank to nothing and
+          // invite a "repair" re-tap.
+          final own = cubit.state
+              .reactionsFor(_msgId)
+              .where((r) => r.isOwn)
+              .toList();
+          expect(own, hasLength(1));
+          expect(own.first.emoji, '🔥');
+          expect(cubit.state.optimistic, isNotEmpty);
         },
       );
 

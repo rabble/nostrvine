@@ -500,6 +500,73 @@ void main() {
       ).called(1);
     });
 
+    test(
+      'publish keeps the row pending (not failed) on an unconfirmed send',
+      () async {
+        final rumor = reactionRumor();
+        when(
+          () => mockMessageService.buildRumor(
+            recipientPubkey: _otherPubkey,
+            content: '🔥',
+            eventKind: EventKind.reaction,
+            additionalTags: any(named: 'additionalTags'),
+          ),
+        ).thenReturn(rumor);
+        when(
+          () => mockDao.insertOwnReactionSuperseding(
+            placeholderId: rumor.id,
+            conversationId: _conversationId,
+            targetMessageId: _targetMessageId,
+            targetMessageAuthor: _otherPubkey,
+            reactorPubkey: _ownerPubkey,
+            emoji: '🔥',
+            createdAt: rumor.createdAt,
+            ownerPubkey: _ownerPubkey,
+            rumorEventJson: jsonEncode(rumor.toJson()),
+          ),
+        ).thenAnswer((_) async => <String>[]);
+        // Frame written, no relay OK within the window (no explicit rejection).
+        when(
+          () => mockMessageService.sendRumor(
+            rumorEvent: rumor,
+            recipientPubkey: _otherPubkey,
+            awaitRecipientOk: any(named: 'awaitRecipientOk'),
+          ),
+        ).thenAnswer(
+          (_) async => const NIP17SendResult.failure(
+            'unconfirmed',
+            retryablePending: true,
+          ),
+        );
+        when(
+          () => mockDao.markPending(id: rumor.id, ownerPubkey: _ownerPubkey),
+        ).thenAnswer((_) async {});
+
+        final repository = createRepository();
+        final result = await repository.publish(
+          conversationId: _conversationId,
+          targetMessageId: _targetMessageId,
+          targetMessageAuthor: _otherPubkey,
+          emoji: '🔥',
+        );
+
+        expect(result.success, isFalse);
+        // A durable row exists, so the cubit keeps the chip; and an unconfirmed
+        // send is not proof of loss, so keep it pending+retryable — never the
+        // red 'failed' state a re-tap could delete.
+        expect(result.optimisticInsertSucceeded, isTrue);
+        verify(
+          () => mockDao.markPending(id: rumor.id, ownerPubkey: _ownerPubkey),
+        ).called(1);
+        verifyNever(
+          () => mockDao.markFailed(
+            placeholderId: any(named: 'placeholderId'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        );
+      },
+    );
+
     test('publish reports optimistic insert failures', () async {
       final rumor = reactionRumor();
       when(
@@ -642,6 +709,48 @@ void main() {
         ),
       ).called(1);
     });
+
+    test(
+      'retry leaves the row pending (does not mark failed) on an unconfirmed '
+      'send',
+      () async {
+        final rumor = reactionRumor();
+        when(
+          () => mockDao.getRumorJson(id: rumor.id, ownerPubkey: _ownerPubkey),
+        ).thenAnswer((_) async => jsonEncode(rumor.toJson()));
+        when(
+          () => mockDao.markPending(id: rumor.id, ownerPubkey: _ownerPubkey),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockMessageService.sendRumor(
+            rumorEvent: any(named: 'rumorEvent'),
+            recipientPubkey: _otherPubkey,
+            awaitRecipientOk: any(named: 'awaitRecipientOk'),
+          ),
+        ).thenAnswer(
+          (_) async => const NIP17SendResult.failure(
+            'unconfirmed',
+            retryablePending: true,
+          ),
+        );
+
+        final repository = createRepository();
+        final result = await repository.retry(
+          rumorId: rumor.id,
+          targetMessageAuthor: _otherPubkey,
+        );
+
+        // The pre-send markPending stands; an unconfirmed retry must not flip
+        // the row to 'failed' (the sweep keeps re-driving it).
+        expect(result.success, isFalse);
+        verifyNever(
+          () => mockDao.markFailed(
+            placeholderId: any(named: 'placeholderId'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        );
+      },
+    );
 
     test(
       'retryableReactions projects failed and pending own reactions from '
@@ -1030,6 +1139,104 @@ void main() {
           contains(
             DmReactionsRepositoryReportableSites
                 .handleIncomingDeletionSoftDelete,
+          ),
+        );
+      },
+    );
+
+    test(
+      'publish addresses the wrap to the counterparty (not self) when '
+      'reacting to your OWN message in a 1:1',
+      () async {
+        const oneToOneConversationId =
+            'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+        final mockConversationsDao = _MockConversationsDao();
+        when(
+          () => mockConversationsDao.getConversation(
+            oneToOneConversationId,
+            ownerPubkey: _ownerPubkey,
+          ),
+        ).thenAnswer(
+          (_) async => ConversationRow(
+            id: oneToOneConversationId,
+            participantPubkeys: jsonEncode([_ownerPubkey, _otherPubkey]),
+            isGroup: false,
+            isRead: true,
+            currentUserHasSent: true,
+            createdAt: 1700000000,
+            ownerPubkey: _ownerPubkey,
+          ),
+        );
+        // Reacting to our OWN sent message: the target author is us.
+        final rumor = reactionRumor();
+        when(
+          () => mockMessageService.buildRumor(
+            recipientPubkey: _ownerPubkey,
+            content: '🔥',
+            eventKind: EventKind.reaction,
+            additionalTags: any(named: 'additionalTags'),
+          ),
+        ).thenReturn(rumor);
+        when(
+          () => mockDao.insertOwnReactionSuperseding(
+            placeholderId: any(named: 'placeholderId'),
+            conversationId: any(named: 'conversationId'),
+            targetMessageId: any(named: 'targetMessageId'),
+            targetMessageAuthor: any(named: 'targetMessageAuthor'),
+            reactorPubkey: any(named: 'reactorPubkey'),
+            emoji: any(named: 'emoji'),
+            createdAt: any(named: 'createdAt'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+            rumorEventJson: any(named: 'rumorEventJson'),
+          ),
+        ).thenAnswer((_) async => <String>[]);
+        when(
+          () => mockMessageService.sendRumor(
+            rumorEvent: any(named: 'rumorEvent'),
+            recipientPubkey: any(named: 'recipientPubkey'),
+            awaitRecipientOk: any(named: 'awaitRecipientOk'),
+          ),
+        ).thenAnswer(
+          (_) async => NIP17SendResult.success(
+            rumorEventId: rumor.id,
+            messageEventId: _giftWrapId,
+            recipientPubkey: _otherPubkey,
+          ),
+        );
+        when(
+          () => mockDao.swapPlaceholderId(
+            placeholderId: any(named: 'placeholderId'),
+            realRumorId: any(named: 'realRumorId'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final repository = createRepository(
+          conversationsDao: mockConversationsDao,
+        );
+        final result = await repository.publish(
+          conversationId: oneToOneConversationId,
+          targetMessageId: _targetMessageId,
+          targetMessageAuthor: _ownerPubkey, // our own message
+          emoji: '🔥',
+        );
+
+        expect(result.success, isTrue);
+        // The reaction wrap must reach the OTHER participant, never only self
+        // — otherwise a reaction on a message the reactor authored is never
+        // delivered to the counterparty.
+        verify(
+          () => mockMessageService.sendRumor(
+            rumorEvent: any(named: 'rumorEvent'),
+            recipientPubkey: _otherPubkey,
+            awaitRecipientOk: any(named: 'awaitRecipientOk'),
+          ),
+        ).called(1);
+        verifyNever(
+          () => mockMessageService.sendRumor(
+            rumorEvent: any(named: 'rumorEvent'),
+            recipientPubkey: _ownerPubkey,
+            awaitRecipientOk: any(named: 'awaitRecipientOk'),
           ),
         );
       },

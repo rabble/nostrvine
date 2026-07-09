@@ -5,11 +5,13 @@
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' show NIP17SendResult;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/nip59/gift_wrap_util.dart';
+import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:nostr_sdk/signer/isolate_decrypt_signer.dart';
 import 'package:nostr_sdk/signer/local_nostr_signer.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
@@ -82,6 +84,7 @@ const _recipientPubkey =
 void main() {
   setUpAll(() {
     registerFallbackValue(_FakeEvent());
+    registerFallbackValue(Duration.zero);
   });
 
   group(NIP17MessageService, () {
@@ -201,6 +204,98 @@ void main() {
           // follows with no targetRelays).
           expect(captured, isNotEmpty);
           expect(captured.first, const ['wss://inbox.example.com']);
+        },
+      );
+    });
+
+    group('sendRumor awaitRecipientOk (reaction OK-confirm path)', () {
+      late NIP17MessageService okService;
+
+      setUp(() {
+        // Real curve self key so the self-addressed wrap actually builds and
+        // reaches publishEvent (the module-level placeholder key does not).
+        okService = NIP17MessageService(
+          signer: LocalNostrSigner(_testPrivateKey),
+          senderPublicKey: getPublicKey(_testPrivateKey),
+          nostrService: mockNostrClient,
+        );
+      });
+
+      PublishOutcome outcome({
+        List<String> accepted = const [],
+        Map<String, String> rejected = const {},
+        List<String> noResponse = const [],
+      }) => PublishOutcome(
+        eventId: 'gift-wrap-id',
+        acceptedBy: accepted,
+        rejectedBy: rejected,
+        noResponseFrom: noResponse,
+      );
+
+      Future<(NIP17SendResult result, int selfWraps)> sendReaction(
+        PublishOutcome recipient,
+      ) async {
+        when(
+          () => mockNostrClient.publishEventAwaitOk(
+            any(),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer((_) async => recipient);
+        var selfWrapPublishes = 0;
+        when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
+          selfWrapPublishes++;
+          return PublishSuccess(event: inv.positionalArguments[0] as Event);
+        });
+        final rumor = okService.buildRumor(
+          recipientPubkey: _recipientPubkey,
+          content: '🔥',
+          eventKind: EventKind.reaction,
+        );
+        final result = await okService.sendRumor(
+          rumorEvent: rumor,
+          recipientPubkey: _recipientPubkey,
+          awaitRecipientOk: true,
+        );
+        return (result, selfWrapPublishes);
+      }
+
+      test('confirmed OK → success; self-wrap published', () async {
+        final (result, selfWraps) = await sendReaction(
+          outcome(accepted: const ['wss://relay.example.com']),
+        );
+
+        expect(result.success, isTrue);
+        expect(result.retryablePending, isFalse);
+        expect(result.selfWrapPublished, isTrue);
+        expect(selfWraps, 1);
+      });
+
+      test(
+        'unconfirmed (frame written, no OK) → retryable-pending failure; '
+        'self-wrap still published',
+        () async {
+          final (result, selfWraps) = await sendReaction(
+            outcome(noResponse: const ['wss://relay.example.com']),
+          );
+
+          expect(result.success, isFalse);
+          expect(result.retryablePending, isTrue);
+          // Own-device durability must NOT hinge on the recipient's OK.
+          expect(selfWraps, 1);
+        },
+      );
+
+      test(
+        'explicit OK-false rejection → hard failure (not retryable-pending); '
+        'self-wrap still published',
+        () async {
+          final (result, selfWraps) = await sendReaction(
+            outcome(rejected: const {'wss://relay.example.com': 'blocked'}),
+          );
+
+          expect(result.success, isFalse);
+          expect(result.retryablePending, isFalse);
+          expect(selfWraps, 1);
         },
       );
     });

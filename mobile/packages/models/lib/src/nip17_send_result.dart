@@ -59,10 +59,19 @@ sealed class NIP17SendResult {
     timestamp: DateTime.now(),
   );
 
-  /// Build a failure result. [NIP17SendFailure] has no
-  /// `selfWrapPublished` field — the self-wrap is never attempted
-  /// when the recipient publish fails.
-  const factory NIP17SendResult.failure(String error) = NIP17SendFailure;
+  /// Build a failure result.
+  ///
+  /// [retryablePending] marks a "soft" failure where the recipient wrap frame
+  /// was written to the relay but no NIP-20 `OK` arrived within the window
+  /// (and no relay explicitly rejected it) — the send is *unconfirmed*, not
+  /// proven-failed. A lost/late `OK` on a flaky relay is indistinguishable from
+  /// actual delivery, so reaction callers keep such a send in a retryable
+  /// pending state rather than flipping it to a hard failure. Defaults to
+  /// `false` (a confirmed rejection or error).
+  const factory NIP17SendResult.failure(
+    String error, {
+    bool retryablePending,
+  }) = NIP17SendFailure;
 
   /// Build a policy-block result (protected-minor DM restriction, #176). Unlike
   /// a transient failure, a blocked send must NOT be retried — retrying only
@@ -77,6 +86,13 @@ sealed class NIP17SendResult {
   /// Whether this failure is a policy block (#176), not a transient/network
   /// error. Blocked sends are not retriable. Always `false` for success.
   bool get blocked => false;
+
+  /// Whether a failure is an *unconfirmed* recipient publish (frame written,
+  /// no relay `OK` within the window, no explicit rejection) rather than a
+  /// confirmed rejection/error. Always `false` on success and on hard
+  /// failures. Reaction callers keep a `retryablePending` send in a pending,
+  /// sweep-retryable state instead of marking it failed.
+  bool get retryablePending => false;
 
   /// The rumor event ID (kind 14/15) — the canonical message
   /// identifier. Use this as the primary key when persisting sent
@@ -175,16 +191,22 @@ final class NIP17SendSuccess extends NIP17SendResult {
 /// the recipient at all. Self-wrap is not attempted on this branch.
 @immutable
 final class NIP17SendFailure extends NIP17SendResult {
-  const NIP17SendFailure(this.error) : blocked = false;
+  const NIP17SendFailure(this.error, {this.retryablePending = false})
+    : blocked = false;
 
   /// A policy block (#176): same non-delivery as a failure, but not retriable.
-  const NIP17SendFailure.blocked(this.error) : blocked = true;
+  const NIP17SendFailure.blocked(this.error)
+    : blocked = true,
+      retryablePending = false;
 
   @override
   final String error;
 
   @override
   final bool blocked;
+
+  @override
+  final bool retryablePending;
 
   @override
   String? get rumorEventId => null;
@@ -206,12 +228,15 @@ final class NIP17SendFailure extends NIP17SendResult {
     if (identical(this, other)) return true;
     return other is NIP17SendFailure &&
         other.error == error &&
-        other.blocked == blocked;
+        other.blocked == blocked &&
+        other.retryablePending == retryablePending;
   }
 
   @override
-  int get hashCode => Object.hash(error, blocked);
+  int get hashCode => Object.hash(error, blocked, retryablePending);
 
   @override
-  String toString() => 'NIP17SendFailure(error: $error, blocked: $blocked)';
+  String toString() =>
+      'NIP17SendFailure(error: $error, blocked: $blocked, '
+      'retryablePending: $retryablePending)';
 }

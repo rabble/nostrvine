@@ -32,6 +32,7 @@ class DmReactionPublishResult {
     required this.success,
     required this.rumorId,
     this.errorMessage,
+    this.optimisticInsertSucceeded = false,
   });
 
   /// Whether the gift-wrap publish landed for the recipient.
@@ -42,6 +43,14 @@ class DmReactionPublishResult {
 
   /// One-line summary for logs; never user-facing copy.
   final String? errorMessage;
+
+  /// Whether the durable optimistic row was written to the DAO before the
+  /// publish attempt. When `true`, even a failed publish leaves a persisted
+  /// row the chip render + retry sweep can recover — so the cubit keeps the
+  /// optimistic chip instead of dropping it as an orphan while the DAO stream
+  /// catches up. `false` only when the repo was uninitialized or the insert
+  /// itself failed (no durable row exists).
+  final bool optimisticInsertSucceeded;
 }
 
 /// Outcome of ingesting an incoming wrapped reaction/deletion rumor, used by
@@ -297,16 +306,31 @@ class DmReactionsRepository {
               site: DmReactionsRepositoryReportableSites.publishSwapPlaceholder,
             );
           }
-          return DmReactionPublishResult(success: true, rumorId: rumorId);
-        case NIP17SendFailure(:final error):
-          await _reactionsDao.markFailed(
-            placeholderId: rumorId,
-            ownerPubkey: _userPubkey,
+          return DmReactionPublishResult(
+            success: true,
+            rumorId: rumorId,
+            optimisticInsertSucceeded: true,
           );
+        case NIP17SendFailure(:final error, :final retryablePending):
+          // Unconfirmed (frame written, no relay OK): keep the row 'pending'
+          // so it stays a dim, sweep-retryable chip — a lost OK is not proof
+          // of loss. Only a confirmed rejection/error flips it to 'failed'.
+          if (retryablePending) {
+            await _reactionsDao.markPending(
+              id: rumorId,
+              ownerPubkey: _userPubkey,
+            );
+          } else {
+            await _reactionsDao.markFailed(
+              placeholderId: rumorId,
+              ownerPubkey: _userPubkey,
+            );
+          }
           return DmReactionPublishResult(
             success: false,
             rumorId: rumorId,
             errorMessage: error,
+            optimisticInsertSucceeded: true,
           );
       }
     } on Object catch (e) {
@@ -322,6 +346,7 @@ class DmReactionsRepository {
         success: false,
         rumorId: rumorId,
         errorMessage: e.toString(),
+        optimisticInsertSucceeded: true,
       );
     }
   }
@@ -399,16 +424,26 @@ class DmReactionsRepository {
             realRumorId: rumorId,
             ownerPubkey: _userPubkey,
           );
-          return DmReactionPublishResult(success: true, rumorId: rumorId);
-        case NIP17SendFailure(:final error):
-          await _reactionsDao.markFailed(
-            placeholderId: rumorId,
-            ownerPubkey: _userPubkey,
+          return DmReactionPublishResult(
+            success: true,
+            rumorId: rumorId,
+            optimisticInsertSucceeded: true,
           );
+        case NIP17SendFailure(:final error, :final retryablePending):
+          // Unconfirmed retry: leave the row 'pending' (the pre-send
+          // markPending stands) so the sweep keeps re-driving it. Only a
+          // confirmed rejection/error flips it to 'failed'.
+          if (!retryablePending) {
+            await _reactionsDao.markFailed(
+              placeholderId: rumorId,
+              ownerPubkey: _userPubkey,
+            );
+          }
           return DmReactionPublishResult(
             success: false,
             rumorId: rumorId,
             errorMessage: error,
+            optimisticInsertSucceeded: true,
           );
       }
     } on Object catch (e) {
@@ -658,19 +693,31 @@ class DmReactionsRepository {
         )
         .timeout(
           _publishTimeout,
+          // A hung socket is inconclusive, not a confirmed rejection — the
+          // frame may already be written. Keep it retryable-pending so the
+          // sweep re-drives it rather than parking a red failed chip.
           onTimeout: () => NIP17SendResult.failure(
             'Reaction publish timed out after '
             '${_publishTimeout.inSeconds}s',
+            retryablePending: true,
           ),
         );
   }
 
-  /// Resolve the gift-wrap recipient set for a reaction in [conversationId].
+  /// Resolve the gift-wrap recipient set for a reaction in [conversationId]:
+  /// every conversation participant except the current user.
   ///
-  /// For a group conversation, returns every participant except the current
-  /// user (the wrap fans out to all members). For a 1:1 (or when the
-  /// conversation can't be resolved), returns `[targetMessageAuthor]` so the
-  /// behavior is byte-identical to the pre-group path.
+  /// Resolved from the conversation's participant set, **not** from
+  /// [targetMessageAuthor]. Reacting to your OWN message makes you the target
+  /// author, and addressing the wrap to the author would send the reaction
+  /// only back to yourself — the counterparty would never receive it (the
+  /// "react to own message isn't delivered" bug). For a 1:1 this yields the
+  /// single other participant; for a group, every other member.
+  ///
+  /// Falls back to `[targetMessageAuthor]` only when the conversation can't be
+  /// resolved (no [ConversationsDao] wired, row missing, or malformed
+  /// participants) — preserving the legacy/test behavior where the reacted
+  /// author is the only recipient we can name.
   Future<List<String>> _resolveWrapRecipients({
     required String conversationId,
     required String targetMessageAuthor,
@@ -682,7 +729,7 @@ class DmReactionsRepository {
         conversationId,
         ownerPubkey: _userPubkey,
       );
-      if (convo == null || !convo.isGroup) return [targetMessageAuthor];
+      if (convo == null) return [targetMessageAuthor];
       final decoded = jsonDecode(convo.participantPubkeys);
       if (decoded is! List) return [targetMessageAuthor];
       final others = decoded
