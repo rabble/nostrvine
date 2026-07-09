@@ -13,6 +13,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MOBILE_DIR="$(cd "${SCRIPT_DIR}/../mobile" && pwd)"
 COMPOSE_FILE="${SCRIPT_DIR}/docker-compose.yml"
+ANDROID_PACKAGE_ID="co.openvine.app"
 
 # shellcheck source=android_sdk.sh
 source "${SCRIPT_DIR}/android_sdk.sh"
@@ -59,6 +60,8 @@ fi
 
 echo "Running Divine against the local stack on Android emulator: ${DEVICE}" >&2
 echo "Invite server: http://10.0.2.2:43004" >&2
+echo "Clearing persisted app data for ${ANDROID_PACKAGE_ID} so LOCAL is deterministic" >&2
+adb -s "$DEVICE" shell pm clear "$ANDROID_PACKAGE_ID" >/dev/null
 
 cd "$MOBILE_DIR"
 exec flutter run \

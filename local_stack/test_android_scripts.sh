@@ -112,9 +112,14 @@ exit 2
 STUB
 cat > "${tmp_dir}/bin/adb" <<'STUB'
 #!/usr/bin/env bash
+printf '%s\n' "$*" >> "${ADB_ARGS_FILE:-/dev/null}"
 if [[ "${1:-}" == "devices" ]]; then
   printf '%s\n' "List of devices attached"
   printf '%b' "${ADB_DEVICES_OUTPUT:-}"
+  exit 0
+fi
+if [[ "${1:-}" == "-s" && "${3:-}" == "shell" && "${4:-}" == "pm" && "${5:-}" == "clear" ]]; then
+  printf '%s\n' Success
   exit 0
 fi
 exit 2
@@ -125,16 +130,23 @@ printf '%s\n' "$*" > "${FLUTTER_ARGS_FILE:?}"
 STUB
 chmod +x "${tmp_dir}/bin/docker" "${tmp_dir}/bin/adb" "${tmp_dir}/bin/flutter"
 
+adb_args_file="${tmp_dir}/adb.args"
 flutter_args_file="${tmp_dir}/flutter.args"
 env ADB_DEVICES_OUTPUT=$'R58N1234567\tdevice\nemulator-5554\tdevice\n' \
-  FLUTTER_ARGS_FILE="$flutter_args_file" PATH="${tmp_dir}/bin:${PATH}" \
+  ADB_ARGS_FILE="$adb_args_file" FLUTTER_ARGS_FILE="$flutter_args_file" \
+  PATH="${tmp_dir}/bin:${PATH}" \
   bash "${SCRIPT_DIR}/run_android_local.sh" >/dev/null 2>"${tmp_dir}/emulator-selection.err"
 assert_contains '-d emulator-5554' "$flutter_args_file" \
   "local Android runner should default to the first emulator instead of a physical device"
+assert_contains 'shell pm clear co.openvine.app' "$adb_args_file" \
+  "local Android runner should clear persisted app data before launching"
+assert_contains 'Clearing persisted app data for co.openvine.app' "${tmp_dir}/emulator-selection.err" \
+  "local Android runner should make the deterministic reset visible"
 
-rm -f "$flutter_args_file"
+rm -f "$adb_args_file" "$flutter_args_file"
 set +e
-env ADB_DEVICES_OUTPUT=$'R58N1234567\tdevice\n' FLUTTER_ARGS_FILE="$flutter_args_file" \
+env ADB_DEVICES_OUTPUT=$'R58N1234567\tdevice\n' ADB_ARGS_FILE="$adb_args_file" \
+  FLUTTER_ARGS_FILE="$flutter_args_file" \
   PATH="${tmp_dir}/bin:${PATH}" \
   bash "${SCRIPT_DIR}/run_android_local.sh" >/dev/null 2>"${tmp_dir}/physical-only.err"
 physical_only_exit=$?
@@ -148,7 +160,8 @@ assert_not_file_exists "$flutter_args_file" \
 
 set +e
 env ADB_DEVICES_OUTPUT=$'R58N1234567\tdevice\nemulator-5554\tdevice\n' \
-  FLUTTER_ARGS_FILE="$flutter_args_file" PATH="${tmp_dir}/bin:${PATH}" \
+  ADB_ARGS_FILE="$adb_args_file" FLUTTER_ARGS_FILE="$flutter_args_file" \
+  PATH="${tmp_dir}/bin:${PATH}" \
   bash "${SCRIPT_DIR}/run_android_local.sh" R58N1234567 >/dev/null 2>"${tmp_dir}/explicit-physical.err"
 explicit_physical_exit=$?
 set -e
