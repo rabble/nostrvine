@@ -2870,6 +2870,8 @@
     "videoEditorTransitionPush": "プッシュ",
     "videoEditorTransitionWipe": "ワイプ",
     "videoEditorTransitionButtonSemanticLabel": "トランジションを編集",
+    "videoEditorLoopTransitionSheetTitle": "ループトランジション",
+    "videoEditorLoopTransitionButtonSemanticLabel": "ループトランジションを編集",
     "videoEditorTransitionDuration": "長さ",
     "videoEditorTransitionDurationLimitedHint": "隣接するトランジションと重ならないように短縮されました。",
     "videoEditorTransitionCurve": "カーブ",

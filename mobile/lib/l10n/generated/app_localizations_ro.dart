@@ -8482,6 +8482,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorTransitionButtonSemanticLabel => 'Editează tranziția';
 
   @override
+  String get videoEditorLoopTransitionSheetTitle => 'Tranziție în buclă';
+
+  @override
+  String get videoEditorLoopTransitionButtonSemanticLabel =>
+      'Editează tranziția în buclă';
+
+  @override
   String get videoEditorTransitionDuration => 'Durată';
 
   @override

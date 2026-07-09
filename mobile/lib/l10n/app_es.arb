@@ -2903,6 +2903,8 @@
     "videoEditorTransitionPush": "Empujar",
     "videoEditorTransitionWipe": "Barrido",
     "videoEditorTransitionButtonSemanticLabel": "Editar transición",
+    "videoEditorLoopTransitionSheetTitle": "Transición de bucle",
+    "videoEditorLoopTransitionButtonSemanticLabel": "Editar transición de bucle",
     "videoEditorTransitionDuration": "Duración",
     "videoEditorTransitionDurationLimitedHint": "Acortada para no superponerse con la transición adyacente.",
     "videoEditorTransitionCurve": "Curva",

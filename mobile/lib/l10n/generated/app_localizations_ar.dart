@@ -8242,6 +8242,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorTransitionButtonSemanticLabel => 'تعديل الانتقال';
 
   @override
+  String get videoEditorLoopTransitionSheetTitle => 'انتقال التكرار';
+
+  @override
+  String get videoEditorLoopTransitionButtonSemanticLabel =>
+      'تعديل انتقال التكرار';
+
+  @override
   String get videoEditorTransitionDuration => 'المدة';
 
   @override

@@ -8416,6 +8416,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Modifier la transition';
 
   @override
+  String get videoEditorLoopTransitionSheetTitle => 'Transition en boucle';
+
+  @override
+  String get videoEditorLoopTransitionButtonSemanticLabel =>
+      'Modifier la transition en boucle';
+
+  @override
   String get videoEditorTransitionDuration => 'Durée';
 
   @override

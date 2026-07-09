@@ -14394,6 +14394,18 @@ abstract class AppLocalizations {
   /// **'Edit transition'**
   String get videoEditorTransitionButtonSemanticLabel;
 
+  /// Title of the bottom sheet for choosing the loop-restart transition, where the last clip's tail blends into the first clip's head so the video loops seamlessly.
+  ///
+  /// In en, this message translates to:
+  /// **'Loop transition'**
+  String get videoEditorLoopTransitionSheetTitle;
+
+  /// Accessibility label for the button at the end of the timeline that opens the loop-restart transition picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit loop transition'**
+  String get videoEditorLoopTransitionButtonSemanticLabel;
+
   /// Section label above the transition duration presets in the transition picker.
   ///
   /// In en, this message translates to:

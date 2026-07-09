@@ -3455,6 +3455,8 @@
     "videoEditorTransitionPush": "መግፋት",
     "videoEditorTransitionWipe": "ማበስ",
     "videoEditorTransitionButtonSemanticLabel": "ሽግግርን አርትዕ",
+    "videoEditorLoopTransitionSheetTitle": "የዙር ሽግግር",
+    "videoEditorLoopTransitionButtonSemanticLabel": "የዙር ሽግግርን አርትዕ",
     "videoEditorTransitionDuration": "ቆይታ",
     "videoEditorTransitionDurationLimitedHint": "በአጎራባች ሽግግር ላይ እንዳይደራረብ ተቀንሷል።",
     "videoEditorTransitionCurve": "ኩርባ",

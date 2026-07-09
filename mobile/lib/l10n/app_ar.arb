@@ -2870,6 +2870,8 @@
     "videoEditorTransitionPush": "دفع",
     "videoEditorTransitionWipe": "مسح",
     "videoEditorTransitionButtonSemanticLabel": "تعديل الانتقال",
+    "videoEditorLoopTransitionSheetTitle": "انتقال التكرار",
+    "videoEditorLoopTransitionButtonSemanticLabel": "تعديل انتقال التكرار",
     "videoEditorTransitionDuration": "المدة",
     "videoEditorTransitionDurationLimitedHint": "تم تقصيرها لتجنّب التداخل مع الانتقال المجاور.",
     "videoEditorTransitionCurve": "المنحنى",

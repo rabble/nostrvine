@@ -8470,6 +8470,13 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoEditorTransitionButtonSemanticLabel => 'Edytuj przejście';
 
   @override
+  String get videoEditorLoopTransitionSheetTitle => 'Przejście pętli';
+
+  @override
+  String get videoEditorLoopTransitionButtonSemanticLabel =>
+      'Edytuj przejście pętli';
+
+  @override
   String get videoEditorTransitionDuration => 'Czas trwania';
 
   @override

@@ -12,6 +12,7 @@ import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.d
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/video_editor/transition_geometry.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/services/video_editor/clip_thumbnail_manager.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
@@ -280,11 +281,25 @@ class _VideoEditorTimelineClipStripState
   /// produce those frames first — giving instant visual coverage.
   Map<String, List<Duration>> _computeSlotTimestamps() {
     final result = <String, List<Duration>>{};
+    final wrap = _wrapDisplay;
 
     for (final clip in widget.clips) {
-      final clipPx = _clipWidth(clip);
-      final trimmedMs = clip.trimmedDuration.inMilliseconds;
-      if (clipPx <= 0 || trimmedMs <= 0) continue;
+      final clipPx = _clipWidth(clip, wrap);
+      // The strip shows the clip's display range: the loop wrap moves the first
+      // clip's head and the last clip's tail into the blend seam at the end, so
+      // their thumbnails start later / end earlier by the consumed span
+      // (converted into this clip's source time).
+      var visibleStart = clip.trimStart;
+      var visibleEnd = clip.duration - clip.trimEnd;
+      if (wrap.isActive) {
+        final consumedSource = clip.playbackDurationToSourceDuration(
+          wrap.consumedPerSide,
+        );
+        if (clip.id == widget.clips.first.id) visibleStart += consumedSource;
+        if (clip.id == widget.clips.last.id) visibleEnd -= consumedSource;
+      }
+      final visibleMs = (visibleEnd - visibleStart).inMilliseconds;
+      if (clipPx <= 0 || visibleMs <= 0) continue;
 
       final slotCount = (clipPx / TimelineConstants.thumbnailWidth)
           .ceil()
@@ -292,7 +307,7 @@ class _VideoEditorTimelineClipStripState
       final timestamps = <Duration>[];
       for (var i = 0; i < slotCount; i++) {
         final centerMs =
-            clip.trimStart.inMilliseconds + trimmedMs * (i + 0.5) / slotCount;
+            visibleStart.inMilliseconds + visibleMs * (i + 0.5) / slotCount;
         timestamps.add(Duration(milliseconds: centerMs.round()));
       }
       result[clip.id] = timestamps;
@@ -301,9 +316,33 @@ class _VideoEditorTimelineClipStripState
     return result;
   }
 
-  double _clipWidth(DivineVideoClip clip) {
-    if (widget.clips.length == 1) return widget.totalWidth;
-    return clip.playbackDurationInSeconds * widget.pixelsPerSecond;
+  /// The loop-wrap display geometry for the current strip order, or
+  /// [LoopWrapDisplay.none] while trimming — trim math maps pixels to durations
+  /// assuming full-length strips, so the wrap shortening is suspended for the
+  /// gesture (like the transition buttons are hidden) and reapplied on release.
+  LoopWrapDisplay get _wrapDisplay => widget.trimmingClipId != null
+      ? LoopWrapDisplay.none
+      : LoopWrapDisplay.fromClips(_orderedClips);
+
+  double _seamRegionWidth(LoopWrapDisplay wrap) =>
+      wrap.seamDuration.inMicroseconds /
+      Duration.microsecondsPerSecond *
+      widget.pixelsPerSecond;
+
+  double _clipWidth(DivineVideoClip clip, LoopWrapDisplay wrap) {
+    if (widget.clips.length == 1) {
+      // The single clip fills the strip minus the loop-blend seam region
+      // appended at the end (widget.totalWidth already spans both).
+      return math.max(0, widget.totalWidth - _seamRegionWidth(wrap));
+    }
+    final display = wrap.displayDuration(
+      clip,
+      isFirst: clip.id == _orderedClips.first.id,
+      isLast: clip.id == _orderedClips.last.id,
+    );
+    return display.inMicroseconds /
+        Duration.microsecondsPerSecond *
+        widget.pixelsPerSecond;
   }
 
   int _clipIndexAtX(double localX) {
@@ -323,10 +362,11 @@ class _VideoEditorTimelineClipStripState
     final fingerX = details.localPosition.dx;
 
     // Find which clip was pressed in the normal layout.
+    final wrap = _wrapDisplay;
     var accX = 0.0;
     var pressedIndex = _orderedClips.length - 1;
     for (var i = 0; i < _orderedClips.length; i++) {
-      final w = _clipWidth(_orderedClips[i]);
+      final w = _clipWidth(_orderedClips[i], wrap);
       if (fingerX < accX + w) {
         pressedIndex = i;
         break;
@@ -335,7 +375,7 @@ class _VideoEditorTimelineClipStripState
     }
 
     // Where in the clip the finger landed (0.0 = left edge, 1.0 = right).
-    final clipW = _clipWidth(_orderedClips[pressedIndex]);
+    final clipW = _clipWidth(_orderedClips[pressedIndex], wrap);
     final fingerInClip = (fingerX - accX).clamp(0.0, clipW);
     final fingerRatio = clipW > 0 ? fingerInClip / clipW : 0.5;
 
@@ -529,19 +569,25 @@ class _VideoEditorTimelineClipStripState
   }
 
   /// Compute clip widths, left offsets and total width in a single pass.
+  ///
+  /// With a loop transition, the total includes the blend seam region appended
+  /// after the last clip (the wrap-consumed head/tail plays there instead of
+  /// inside the clips), so strips, playhead, preview and export share one axis.
   ({List<double> widths, List<double> offsets, double totalWidth})
   _computeLayout() {
+    final wrap = _wrapDisplay;
     final widths = <double>[];
     final offsets = <double>[];
     var x = 0.0;
     for (var i = 0; i < _orderedClips.length; i++) {
-      final w = _clipWidth(_orderedClips[i]);
+      final w = _clipWidth(_orderedClips[i], wrap);
       widths.add(w);
       offsets.add(x);
       x += w + TimelineConstants.clipGap;
     }
-    // Subtract trailing gap.
-    final total = x > 0 ? x - TimelineConstants.clipGap : 0.0;
+    // Subtract trailing gap, then append the loop-blend seam region.
+    var total = x > 0 ? x - TimelineConstants.clipGap : 0.0;
+    total += _seamRegionWidth(wrap);
     return (widths: widths, offsets: offsets, totalWidth: total);
   }
 
@@ -556,6 +602,15 @@ class _VideoEditorTimelineClipStripState
     final totalWidth = _isReordering
         ? _orderedClips.length * reorderSlotStep - gap
         : layout.totalWidth;
+
+    // Reserve a half-button-wide trailing slot so the loop-restart button can
+    // straddle the strip's end edge (centred on the last clip's end) without the
+    // outer Stack's hardEdge clipping its right half. Always reserved when there
+    // are clips so entering/leaving trim/volume/reorder doesn't animate the
+    // strip width.
+    final loopSlotWidth = _orderedClips.isEmpty
+        ? 0.0
+        : _TransitionButtonsLayer._hitWidth / 2;
 
     final shouldAnimate = _isReordering || _isReorderExiting;
 
@@ -598,7 +653,7 @@ class _VideoEditorTimelineClipStripState
           child: AnimatedContainer(
             duration: shouldAnimate || volumeAnimating ? animDuration : .zero,
             curve: animCurve,
-            width: totalWidth,
+            width: totalWidth + loopSlotWidth,
             height: containerHeight,
             child: Stack(
               clipBehavior:
@@ -675,15 +730,37 @@ class _VideoEditorTimelineClipStripState
                     pixelsPerSecond: widget.pixelsPerSecond,
                   ),
 
-                /// Transition buttons on each internal clip boundary. Hidden
-                /// during reorder/trim/volume/multi-select so they never
+                /// Transition buttons on each internal clip boundary, plus the
+                /// loop-blend seam region and the loop-restart button at the
+                /// very end (last clip's tail into the first clip's head).
+                /// Hidden during reorder/trim/volume/multi-select so they never
                 /// overlap those interactions.
                 if (!shouldAnimate &&
                     widget.trimmingClipId == null &&
                     !isVolumeEditMode &&
                     !widget.isMultiSelectMode &&
-                    _orderedClips.length >= 2)
-                  _TransitionButtonsLayer(clips: _orderedClips, layout: layout),
+                    _orderedClips.isNotEmpty) ...[
+                  if (_orderedClips.length >= 2)
+                    _TransitionButtonsLayer(
+                      clips: _orderedClips,
+                      layout: layout,
+                    ),
+                  if (_seamRegionWidth(_wrapDisplay) > 0)
+                    _LoopSeamRegion(
+                      left: layout.totalWidth - _seamRegionWidth(_wrapDisplay),
+                      width: _seamRegionWidth(_wrapDisplay),
+                      // The same frames the transition picker previews: the
+                      // last clip's tail into the first clip's head.
+                      tailFramePath:
+                          _orderedClips.last.ghostFramePath ??
+                          _orderedClips.last.thumbnailPath,
+                      headFramePath: _orderedClips.first.thumbnailPath,
+                    ),
+                  _LoopTransitionButton(
+                    hasTransition: _orderedClips.last.transition != null,
+                    layout: layout,
+                  ),
+                ],
               ],
             ),
           ),
@@ -940,6 +1017,144 @@ class _TransitionButtonsLayer extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// Positions the loop-restart button centred on the last clip's end edge — the
+/// "end" side of the wrap seam where the last clip's tail flows into the first
+/// clip's head so a looping player restarts seamlessly. Straddles the edge like
+/// the between-clip buttons straddle their seams; the strip reserves a
+/// half-button trailing slot so the right half isn't clipped. Shown even for a
+/// single clip, which wraps into itself.
+/// The loop-blend seam region drawn after the last clip: the span where the
+/// last clip's tail dissolves into the first clip's head on restart. Its width
+/// is the seam's real playback length ([LoopWrapDisplay.seamDuration]), so the
+/// playhead traverses it exactly while the blend plays in the preview.
+///
+/// Rendered as the actual blend: the last clip's tail frame cross-fading into
+/// the first clip's head frame along the region — the same frames the
+/// transition picker previews. Falls back to a tinted box when neither frame
+/// resolves.
+class _LoopSeamRegion extends StatelessWidget {
+  const _LoopSeamRegion({
+    required this.left,
+    required this.width,
+    required this.tailFramePath,
+    required this.headFramePath,
+  });
+
+  final double left;
+  final double width;
+
+  /// Last clip's tail frame (ghost frame / thumbnail), fading out.
+  final String? tailFramePath;
+
+  /// First clip's head frame (thumbnail), fading in toward the loop point.
+  final String? headFramePath;
+
+  @override
+  Widget build(BuildContext context) {
+    final fallback = ColoredBox(
+      color: VineTheme.primary.withValues(alpha: 0.18),
+    );
+    final tail = _frame(tailFramePath);
+    final head = _frame(headFramePath);
+    return Positioned(
+      left: left,
+      top: 0,
+      width: width,
+      height: TimelineConstants.thumbnailStripHeight,
+      child: ClipRRect(
+        borderRadius: const BorderRadius.horizontal(
+          right: Radius.circular(TimelineConstants.thumbnailRadius),
+        ),
+        child: ExcludeSemantics(
+          child: Stack(
+            fit: .expand,
+            children: [
+              tail ?? fallback,
+              if (head != null)
+                ShaderMask(
+                  // Only the gradient's alpha matters (dstIn masks the head
+                  // frame in from transparent to opaque across the region).
+                  shaderCallback: (rect) => const LinearGradient(
+                    colors: [Colors.transparent, VineTheme.whiteText],
+                  ).createShader(rect),
+                  blendMode: BlendMode.dstIn,
+                  child: head,
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget? _frame(String? path) {
+    if (path == null) return null;
+    return Image.file(
+      File(path),
+      fit: .cover,
+      gaplessPlayback: true,
+      errorBuilder: (_, _, _) => const SizedBox.shrink(),
+    );
+  }
+}
+
+class _LoopTransitionButton extends StatelessWidget {
+  const _LoopTransitionButton({
+    required this.hasTransition,
+    required this.layout,
+  });
+
+  final bool hasTransition;
+  final ({List<double> widths, List<double> offsets, double totalWidth}) layout;
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = hasTransition
+        ? VineTheme.primary
+        : VineTheme.secondaryText;
+    final left = math.max(
+      0.0,
+      layout.totalWidth - _TransitionButtonsLayer._hitWidth / 2,
+    );
+    return Positioned(
+      left: left,
+      top:
+          (TimelineConstants.thumbnailStripHeight -
+              _TransitionButtonsLayer._hitHeight) /
+          2,
+      width: _TransitionButtonsLayer._hitWidth,
+      height: _TransitionButtonsLayer._hitHeight,
+      child: Semantics(
+        button: true,
+        label: context.l10n.videoEditorLoopTransitionButtonSemanticLabel,
+        child: GestureDetector(
+          onTap: () => editLoopTransition(context),
+          behavior: HitTestBehavior.opaque,
+          child: Center(
+            child: SizedBox.square(
+              dimension: _TransitionButtonsLayer._visualSize,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: VineTheme.surfaceBackground,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: foreground, width: 1.5),
+                ),
+                child: Center(
+                  child: DivineIcon(
+                    icon: DivineIconName.repeat,
+                    size: 14,
+                    color: foreground,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

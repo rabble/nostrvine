@@ -2201,6 +2201,8 @@
     "videoEditorTransitionPush": "밀기",
     "videoEditorTransitionWipe": "와이프",
     "videoEditorTransitionButtonSemanticLabel": "전환 편집",
+    "videoEditorLoopTransitionSheetTitle": "루프 전환",
+    "videoEditorLoopTransitionButtonSemanticLabel": "루프 전환 편집",
     "videoEditorTransitionDuration": "길이",
     "videoEditorTransitionDurationLimitedHint": "인접한 전환과 겹치지 않도록 길이가 제한되었습니다.",
     "videoEditorTransitionCurve": "커브",

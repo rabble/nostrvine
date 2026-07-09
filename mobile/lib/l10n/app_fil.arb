@@ -1833,6 +1833,8 @@
     "videoEditorTransitionPush": "Pagtulak",
     "videoEditorTransitionWipe": "Pagpunas",
     "videoEditorTransitionButtonSemanticLabel": "I-edit ang transisyon",
+    "videoEditorLoopTransitionSheetTitle": "Transisyon ng loop",
+    "videoEditorLoopTransitionButtonSemanticLabel": "I-edit ang transisyon ng loop",
     "videoEditorTransitionDuration": "Tagal",
     "videoEditorTransitionDurationLimitedHint": "Pinaikli para hindi mag-overlap sa katabing transition.",
     "videoEditorTransitionCurve": "Kurba",

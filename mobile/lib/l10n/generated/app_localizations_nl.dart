@@ -8332,6 +8332,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoEditorTransitionButtonSemanticLabel => 'Overgang bewerken';
 
   @override
+  String get videoEditorLoopTransitionSheetTitle => 'Loop-overgang';
+
+  @override
+  String get videoEditorLoopTransitionButtonSemanticLabel =>
+      'Loop-overgang bewerken';
+
+  @override
   String get videoEditorTransitionDuration => 'Duur';
 
   @override

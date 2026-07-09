@@ -51,6 +51,84 @@ void main() {
       expect(result[1].start, equals(Duration.zero));
     });
 
+    test('consumes the wrap head/tail eagerly before its seam is rendered', () {
+      // The last clip's transition is the loop-restart wrap. Its consumption is
+      // applied even before the seam file lands, so the display axis (timeline
+      // strips) never shifts under the playhead; only the blend itself is
+      // missing until rendered. A 500ms dissolve consumes 2×500ms per side.
+      final clips = [clip('a'), clip('b', transition: dissolve)];
+      final result = buildSeamAwarePlayerClips(
+        clips,
+        TransitionSeamRenderService(),
+      );
+
+      expect(result, hasLength(2));
+      expect(result[0].uri, equals('/tmp/a.mp4'));
+      expect(result[0].start, equals(const Duration(seconds: 1)));
+      expect(result[0].end, equals(const Duration(seconds: 3)));
+      expect(result[1].uri, equals('/tmp/b.mp4'));
+      expect(result[1].start, equals(Duration.zero));
+      expect(result[1].end, equals(const Duration(seconds: 2)));
+    });
+
+    test('consumes the first head + last tail and appends the wrap seam', () {
+      // The wrap seam (keyed last→first) consumes the first clip's head (it
+      // starts later) and the last clip's tail (replaced by the seam), then is
+      // appended so the loop restarts seamlessly through the blend.
+      final clipA = clip('a');
+      final clipB = clip('b', transition: dissolve);
+      final service = TransitionSeamRenderService()
+        ..cacheSeamForTest(
+          clipB,
+          clipA,
+          dissolve,
+          const TransitionSeam(
+            path: '/tmp/wrap.mp4',
+            duration: Duration(milliseconds: 500),
+            tailConsumed: Duration(milliseconds: 500),
+            headConsumed: Duration(milliseconds: 500),
+          ),
+        );
+
+      final result = buildSeamAwarePlayerClips([clipA, clipB], service);
+
+      expect(result, hasLength(3));
+      // First clip: head consumed → starts at 500ms.
+      expect(result[0].uri, equals('/tmp/a.mp4'));
+      expect(result[0].start, equals(const Duration(milliseconds: 500)));
+      expect(result[0].end, equals(const Duration(seconds: 3)));
+      // Last clip: tail consumed → ends at 2500ms.
+      expect(result[1].uri, equals('/tmp/b.mp4'));
+      expect(result[1].start, equals(Duration.zero));
+      expect(result[1].end, equals(const Duration(milliseconds: 2500)));
+      expect(result[2].uri, equals('/tmp/wrap.mp4'));
+    });
+
+    test('wraps a single clip into itself (head + tail into the seam)', () {
+      final only = clip('a', transition: dissolve);
+      final service = TransitionSeamRenderService()
+        ..cacheSeamForTest(
+          only,
+          only,
+          dissolve,
+          const TransitionSeam(
+            path: '/tmp/wrap.mp4',
+            duration: Duration(milliseconds: 500),
+            tailConsumed: Duration(milliseconds: 500),
+            headConsumed: Duration(milliseconds: 500),
+          ),
+        );
+
+      final result = buildSeamAwarePlayerClips([only], service);
+
+      expect(result, hasLength(2));
+      // Middle body: [500ms, 2500ms].
+      expect(result[0].uri, equals('/tmp/a.mp4'));
+      expect(result[0].start, equals(const Duration(milliseconds: 500)));
+      expect(result[0].end, equals(const Duration(milliseconds: 2500)));
+      expect(result[1].uri, equals('/tmp/wrap.mp4'));
+    });
+
     test('splices the rendered seam between trimmed neighbours', () {
       final clipA = clip('a', transition: dissolve);
       final clipB = clip('b');
@@ -587,6 +665,51 @@ void main() {
         );
         previous = mapped;
       }
+    });
+
+    test('a single-clip loop wrap maps bodies 1:1 on the display axis', () {
+      // The display axis excludes the wrap-consumed head/tail (they live in
+      // the seam region the strip draws at the end), so the body maps 1:1 —
+      // playhead X = thumbnail X = preview frame X — and the seam segment
+      // covers the appended region.
+      final only = clip('a', transition: dissolve);
+      final service = TransitionSeamRenderService()
+        ..cacheSeamForTest(
+          only,
+          only,
+          dissolve,
+          const TransitionSeam(
+            path: '/tmp/wrap.mp4',
+            duration: Duration(milliseconds: 800),
+            tailConsumed: Duration(milliseconds: 500),
+            headConsumed: Duration(milliseconds: 500),
+          ),
+        );
+      final timeline = SeamTimeline([only], service);
+
+      // Body (composite [0,2000]) is the identity on the display axis.
+      expect(
+        timeline.compositeToTimeline(Duration.zero),
+        equals(Duration.zero),
+      );
+      expect(
+        timeline.compositeToTimeline(const Duration(seconds: 1)),
+        equals(const Duration(seconds: 1)),
+      );
+      expect(
+        timeline.compositeToTimeline(const Duration(seconds: 2)),
+        equals(const Duration(seconds: 2)),
+      );
+      // The seam plays after the body and maps onto the appended seam region.
+      expect(
+        timeline.compositeToTimeline(const Duration(milliseconds: 2800)),
+        greaterThan(const Duration(seconds: 2)),
+      );
+      // Never seeks negative.
+      expect(
+        timeline.timelineToComposite(Duration.zero),
+        equals(Duration.zero),
+      );
     });
   });
 }

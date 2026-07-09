@@ -8394,6 +8394,13 @@ class AppLocalizationsFil extends AppLocalizations {
       'I-edit ang transisyon';
 
   @override
+  String get videoEditorLoopTransitionSheetTitle => 'Transisyon ng loop';
+
+  @override
+  String get videoEditorLoopTransitionButtonSemanticLabel =>
+      'I-edit ang transisyon ng loop';
+
+  @override
   String get videoEditorTransitionDuration => 'Tagal';
 
   @override

@@ -8124,6 +8124,12 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorTransitionButtonSemanticLabel => 'ሽግግርን አርትዕ';
 
   @override
+  String get videoEditorLoopTransitionSheetTitle => 'የዙር ሽግግር';
+
+  @override
+  String get videoEditorLoopTransitionButtonSemanticLabel => 'የዙር ሽግግርን አርትዕ';
+
+  @override
   String get videoEditorTransitionDuration => 'ቆይታ';
 
   @override

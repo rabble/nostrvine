@@ -8269,6 +8269,13 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoEditorTransitionButtonSemanticLabel => 'Edit transisi';
 
   @override
+  String get videoEditorLoopTransitionSheetTitle => 'Transisi loop';
+
+  @override
+  String get videoEditorLoopTransitionButtonSemanticLabel =>
+      'Edit transisi loop';
+
+  @override
   String get videoEditorTransitionDuration => 'Durasi';
 
   @override

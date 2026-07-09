@@ -7959,6 +7959,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorTransitionButtonSemanticLabel => 'トランジションを編集';
 
   @override
+  String get videoEditorLoopTransitionSheetTitle => 'ループトランジション';
+
+  @override
+  String get videoEditorLoopTransitionButtonSemanticLabel => 'ループトランジションを編集';
+
+  @override
   String get videoEditorTransitionDuration => '長さ';
 
   @override

@@ -2895,6 +2895,8 @@
     "videoEditorTransitionPush": "Împingere",
     "videoEditorTransitionWipe": "Ștergere",
     "videoEditorTransitionButtonSemanticLabel": "Editează tranziția",
+    "videoEditorLoopTransitionSheetTitle": "Tranziție în buclă",
+    "videoEditorLoopTransitionButtonSemanticLabel": "Editează tranziția în buclă",
     "videoEditorTransitionDuration": "Durată",
     "videoEditorTransitionDurationLimitedHint": "Scurtată pentru a nu se suprapune cu tranziția alăturată.",
     "videoEditorTransitionCurve": "Curbă",

@@ -8375,6 +8375,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoEditorTransitionButtonSemanticLabel => 'Editar transición';
 
   @override
+  String get videoEditorLoopTransitionSheetTitle => 'Transición de bucle';
+
+  @override
+  String get videoEditorLoopTransitionButtonSemanticLabel =>
+      'Editar transición de bucle';
+
+  @override
   String get videoEditorTransitionDuration => 'Duración';
 
   @override

@@ -8263,6 +8263,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorTransitionButtonSemanticLabel => 'Geçişi düzenle';
 
   @override
+  String get videoEditorLoopTransitionSheetTitle => 'Döngü geçişi';
+
+  @override
+  String get videoEditorLoopTransitionButtonSemanticLabel =>
+      'Döngü geçişini düzenle';
+
+  @override
   String get videoEditorTransitionDuration => 'Süre';
 
   @override

@@ -96,8 +96,10 @@ class DivineVideoClip {
   /// How this clip transitions into the **next** clip on the timeline
   /// (dissolve, fade-to-black, slide, …), or `null` for a hard cut.
   ///
-  /// Ignored on the last clip (there is no following clip). Drives both the
-  /// live editor preview and the final rendered composition.
+  /// On the **last clip** there is no following clip, so this is the
+  /// loop-restart wrap (`pro_video_editor` ≥ 2.5): it blends the last clip's
+  /// tail into the first clip's head so a looping player restarts seamlessly.
+  /// Drives both the live editor preview and the final rendered composition.
   final ClipTransition? transition;
 
   double get durationInSeconds => duration.inMilliseconds / 1000.0;

@@ -4790,6 +4790,14 @@
   "@videoEditorTransitionButtonSemanticLabel": {
     "description": "Accessibility label for the button between two clips that opens the transition picker."
   },
+  "videoEditorLoopTransitionSheetTitle": "Loop transition",
+  "@videoEditorLoopTransitionSheetTitle": {
+    "description": "Title of the bottom sheet for choosing the loop-restart transition, where the last clip's tail blends into the first clip's head so the video loops seamlessly."
+  },
+  "videoEditorLoopTransitionButtonSemanticLabel": "Edit loop transition",
+  "@videoEditorLoopTransitionButtonSemanticLabel": {
+    "description": "Accessibility label for the button at the end of the timeline that opens the loop-restart transition picker."
+  },
   "videoEditorTransitionDuration": "Duration",
   "@videoEditorTransitionDuration": {
     "description": "Section label above the transition duration presets in the transition picker."

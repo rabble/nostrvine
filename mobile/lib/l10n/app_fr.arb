@@ -2895,6 +2895,8 @@
     "videoEditorTransitionPush": "Poussée",
     "videoEditorTransitionWipe": "Balayage",
     "videoEditorTransitionButtonSemanticLabel": "Modifier la transition",
+    "videoEditorLoopTransitionSheetTitle": "Transition en boucle",
+    "videoEditorLoopTransitionButtonSemanticLabel": "Modifier la transition en boucle",
     "videoEditorTransitionDuration": "Durée",
     "videoEditorTransitionDurationLimitedHint": "Raccourcie pour ne pas chevaucher la transition voisine.",
     "videoEditorTransitionCurve": "Courbe",

@@ -396,15 +396,43 @@ class SeamTimeline {
     ClipSpeedRenderService? speedRenders,
   }) {
     final clamped = clampTransitions(clips);
+    final n = clips.length;
+
+    // Loop-restart wrap: the wrap-consumed head of the first clip and tail of
+    // the last clip live in the blend seam at the loop point, so the display
+    // axis (what the timeline draws) excludes them from the clip bodies and
+    // appends the seam region at the end — mirroring [buildSeamAwarePlayerClips]
+    // and [LoopWrapDisplay] so player, mapping and strips share one axis.
+    final wrapDisplay = LoopWrapDisplay.fromClips(clips);
+    final wrapTransition = n > 0 ? clamped[clips[n - 1].id] : null;
+    final wrapSeam = wrapTransition != null && wrapDisplay.isActive
+        ? seams.cached(clips[n - 1], clips[0], wrapTransition)
+        : null;
+    final wrapHeadPb = !wrapDisplay.isActive
+        ? Duration.zero
+        : wrapSeam != null
+        ? clips[0].sourceDurationToPlaybackDuration(wrapSeam.headConsumed)
+        : wrapDisplay.consumedPerSide;
+    final wrapTailPb = !wrapDisplay.isActive
+        ? Duration.zero
+        : wrapSeam != null
+        ? clips[n - 1].sourceDurationToPlaybackDuration(wrapSeam.tailConsumed)
+        : wrapDisplay.consumedPerSide;
+
     var composite = Duration.zero;
     var editor = Duration.zero; // start of the current clip on the editor line
     // Last editor position handed to a segment. Clamping each segment's editor
     // extent to this cursor keeps the axis non-decreasing; it is a no-op
     // whenever clips aren't over-consumed (which the clamp also prevents).
     var editorCursor = Duration.zero;
-    for (var i = 0; i < clips.length; i++) {
+    for (var i = 0; i < n; i++) {
       final clip = clips[i];
-      final clipDuration = clip.playbackDuration;
+      // The wrap-consumed head/tail is cut from the clip's display span, not
+      // offset within it — the axis itself starts at the shifted content.
+      var clipDuration = clip.playbackDuration;
+      if (i == 0) clipDuration -= wrapHeadPb;
+      if (i == n - 1) clipDuration -= wrapTailPb;
+      if (clipDuration.isNegative) clipDuration = Duration.zero;
 
       var headPb = Duration.zero;
       final prevTransition = i > 0 ? clamped[clips[i - 1].id] : null;
@@ -418,7 +446,7 @@ class SeamTimeline {
       TransitionSeam? outgoing;
       var tailPb = Duration.zero;
       final transition = clamped[clip.id];
-      if (i + 1 < clips.length && transition != null) {
+      if (i + 1 < n && transition != null) {
         outgoing = seams.cached(clip, clips[i + 1], transition);
         if (outgoing != null) {
           tailPb = clip.sourceDurationToPlaybackDuration(outgoing.tailConsumed);
@@ -474,6 +502,22 @@ class SeamTimeline {
 
       editor += clipDuration;
     }
+
+    // The wrap seam plays last, previewing the restart blend. On the display
+    // axis it occupies the seam region the timeline draws after the last clip
+    // ([LoopWrapDisplay.seamDuration]); until the seam file lands, playback
+    // simply ends at the bodies' end and the region stays unmapped.
+    if (wrapSeam != null) {
+      final editorStart = _maxDur(editor, editorCursor);
+      _segments.add(
+        _Segment(
+          composite,
+          composite + wrapSeam.duration,
+          editorStart,
+          editorStart + wrapDisplay.seamDuration,
+        ),
+      );
+    }
   }
 
   final List<_Segment> _segments = [];
@@ -504,7 +548,15 @@ class SeamTimeline {
       if (clamped < fromEnd || isLast) {
         final span = fromEnd - fromStart;
         if (span <= Duration.zero) return toStart;
-        final frac = (clamped - fromStart).inMicroseconds / span.inMicroseconds;
+        // Clamp to the segment: a query below the first segment's start (the
+        // loop wrap consumes the first clip's head, so editor 0 falls before the
+        // first body segment) must map to the segment start, never extrapolate
+        // to a negative position that would freeze the player on seek.
+        final frac =
+            ((clamped - fromStart).inMicroseconds / span.inMicroseconds).clamp(
+              0.0,
+              1.0,
+            );
         return toStart +
             Duration(
               microseconds: (frac * (toEnd - toStart).inMicroseconds).round(),
@@ -555,8 +607,22 @@ List<player.VideoClip> buildSeamAwarePlayerClips(
   ClipSpeedRenderService? speedRenders,
 }) {
   final clamped = clampTransitions(clips);
+  final n = clips.length;
+
+  // The last clip's transition is the loop-restart wrap: its rendered seam
+  // blends the last clip's tail into the first clip's head. That head and tail
+  // are consumed *eagerly* — even before the seam file lands — so the display
+  // axis (timeline strips shortened by [LoopWrapDisplay]) never shifts under
+  // the playhead; the seam is appended once rendered and the loop then restarts
+  // seamlessly through the blend, exactly matching the export.
+  final wrapDisplay = LoopWrapDisplay.fromClips(clips);
+  final wrapTransition = n > 0 ? clamped[clips[n - 1].id] : null;
+  final wrapSeam = wrapTransition != null && wrapDisplay.isActive
+      ? seams.cached(clips[n - 1], clips[0], wrapTransition)
+      : null;
+
   final result = <player.VideoClip>[];
-  for (var i = 0; i < clips.length; i++) {
+  for (var i = 0; i < n; i++) {
     final clip = clips[i];
 
     var headConsumed = Duration.zero;
@@ -566,13 +632,23 @@ List<player.VideoClip> buildSeamAwarePlayerClips(
           seams.cached(clips[i - 1], clip, prevTransition)?.headConsumed ??
           Duration.zero;
     }
+    if (i == 0 && wrapDisplay.isActive) {
+      headConsumed +=
+          wrapSeam?.headConsumed ??
+          clip.playbackDurationToSourceDuration(wrapDisplay.consumedPerSide);
+    }
 
     TransitionSeam? outgoingSeam;
     var tailConsumed = Duration.zero;
     final transition = clamped[clip.id];
-    if (i + 1 < clips.length && transition != null) {
+    if (i + 1 < n && transition != null) {
       outgoingSeam = seams.cached(clip, clips[i + 1], transition);
       tailConsumed = outgoingSeam?.tailConsumed ?? Duration.zero;
+    }
+    if (i == n - 1 && wrapDisplay.isActive) {
+      tailConsumed +=
+          wrapSeam?.tailConsumed ??
+          clip.playbackDurationToSourceDuration(wrapDisplay.consumedPerSide);
     }
 
     final bodyStart = clip.trimStart + headConsumed;
@@ -597,6 +673,10 @@ List<player.VideoClip> buildSeamAwarePlayerClips(
     if (outgoingSeam != null) {
       result.add(player.VideoClip.file(outgoingSeam.path));
     }
+  }
+
+  if (wrapSeam != null) {
+    result.add(player.VideoClip.file(wrapSeam.path));
   }
   return result;
 }

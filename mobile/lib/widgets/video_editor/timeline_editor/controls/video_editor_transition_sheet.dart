@@ -59,50 +59,107 @@ const _loopMs = 2800;
 /// [DivineVideoClip.transition] through the editor history.
 ///
 /// A transition describes how a clip flows **into the next** clip, so the
-/// boundary is identified by its left clip; the last clip has no boundary.
+/// boundary is identified by its left clip; the last clip has no internal
+/// boundary — see [editLoopTransition] for its loop-restart wrap.
 Future<void> editClipTransition(
   BuildContext context,
   int leftClipIndex,
 ) async {
-  final bloc = context.read<ClipEditorBloc>();
-  final state = bloc.state;
-  if (leftClipIndex < 0 || leftClipIndex >= state.clips.length - 1) return;
+  final clips = context.read<ClipEditorBloc>().state.clips;
+  if (leftClipIndex < 0 || leftClipIndex >= clips.length - 1) return;
 
-  final clip = state.clips[leftClipIndex];
-  final nextClip = state.clips[leftClipIndex + 1];
-  final editor = VideoEditorScope.of(context).requireEditor;
+  final clip = clips[leftClipIndex];
+  final nextClip = clips[leftClipIndex + 1];
 
   final boundaryShorter = clip.playbackDuration < nextClip.playbackDuration
       ? clip.playbackDuration
       : nextClip.playbackDuration;
-  final roomPerSide = _roomPerSide(state.clips, leftClipIndex);
+
+  await _showTransitionSheet(
+    context,
+    // A transition runs at the boundary: clip A's tail into clip B's head.
+    fromClip: clip,
+    toClip: nextClip,
+    editedClip: clip,
+    roomPerSide: _roomPerSide(clips, leftClipIndex),
+    unconstrainedRoom: boundaryShorter,
+    title: context.l10n.videoEditorTransitionSheetTitle,
+  );
+}
+
+/// Opens the transition picker for the **loop-restart wrap** — the seam where
+/// the last clip's tail dissolves into the first clip's head so a looping
+/// player restarts seamlessly (`pro_video_editor` ≥ 2.5) — then applies the
+/// choice to the last clip's [DivineVideoClip.transition].
+///
+/// On a single-clip timeline the last and first clip are the same, so the wrap
+/// blends that clip's end into its own beginning.
+Future<void> editLoopTransition(BuildContext context) async {
+  final clips = context.read<ClipEditorBloc>().state.clips;
+  if (clips.isEmpty) return;
+
+  final lastClip = clips.last;
+  final firstClip = clips.first;
+
+  // The wrap the neighbours can't constrain: on a single clip the head and tail
+  // split it (half each); otherwise the shorter of the two joined clips.
+  final unconstrainedRoom = clips.length == 1
+      ? Duration(microseconds: firstClip.playbackDuration.inMicroseconds ~/ 2)
+      : (lastClip.playbackDuration < firstClip.playbackDuration
+            ? lastClip.playbackDuration
+            : firstClip.playbackDuration);
+
+  await _showTransitionSheet(
+    context,
+    // The wrap seam: the last clip's tail into the first clip's head.
+    fromClip: lastClip,
+    toClip: firstClip,
+    editedClip: lastClip,
+    roomPerSide: loopTransitionRoomPerSide(clips),
+    unconstrainedRoom: unconstrainedRoom,
+    title: context.l10n.videoEditorLoopTransitionSheetTitle,
+  );
+}
+
+/// Shared picker: previews [fromClip]'s tail flowing into [toClip]'s head, then
+/// applies the chosen transition to [editedClip] through the editor history.
+///
+/// [roomPerSide] is the per-side playback room the transition may consume after
+/// the adjacent clips' own transitions; [unconstrainedRoom] is that room before
+/// any neighbour reduced it, so the picker can hint when it was limited.
+Future<void> _showTransitionSheet(
+  BuildContext context, {
+  required DivineVideoClip fromClip,
+  required DivineVideoClip toClip,
+  required DivineVideoClip editedClip,
+  required Duration roomPerSide,
+  required Duration unconstrainedRoom,
+  required String title,
+}) async {
+  final bloc = context.read<ClipEditorBloc>();
+  final editor = VideoEditorScope.of(context).requireEditor;
 
   final result = await VineBottomSheet.show<({ClipTransition? transition})>(
     context: context,
     expanded: false,
     scrollable: false,
     isScrollControlled: true,
-    title: Text(
-      context.l10n.videoEditorTransitionSheetTitle,
-      style: VineTheme.titleMediumFont(),
-    ),
+    title: Text(title, style: VineTheme.titleMediumFont()),
     body: BlocProvider<TransitionBoundaryCubit>(
-      // A transition runs at the boundary: clip A's tail into clip B's head.
-      // The cubit shows A's ghost frame and B's thumbnail immediately, then
-      // swaps in the exact boundary frames (A at trimEnd, B at trimStart) as
-      // they are extracted fresh.
+      // The cubit shows the outgoing clip's ghost frame and the incoming clip's
+      // thumbnail immediately, then swaps in the exact boundary frames (the
+      // outgoing clip at trimEnd, the incoming at trimStart) as they extract.
       create: (_) => TransitionBoundaryCubit(
-        fromClip: clip,
-        toClip: nextClip,
-        fromPlaceholder: clip.ghostFramePath ?? clip.thumbnailPath,
-        toPlaceholder: nextClip.thumbnailPath,
+        fromClip: fromClip,
+        toClip: toClip,
+        fromPlaceholder: fromClip.ghostFramePath ?? fromClip.thumbnailPath,
+        toPlaceholder: toClip.thumbnailPath,
       ),
       child: TransitionPickerView(
-        // The per-side room a transition at this boundary may use, after the
-        // adjacent clips' own transitions. Overlaps blend both clips at once
-        // (so cap at half the room); dips fade out then in (so up to twice it).
-        // This keeps two transitions from over-consuming a shared clip — which
-        // the native compositor can't render — so they split it instead.
+        // Overlaps blend both clips at once (so cap at half the room); dips fade
+        // out then in (so up to twice it). The room already excludes what the
+        // adjacent clips' own transitions consume, so two transitions never
+        // over-consume a shared clip — which the native compositor can't render.
         overlapMaxMs: _snapDurationMs(
           transitionDurationForConsumed(
             roomPerSide,
@@ -115,8 +172,8 @@ Future<void> editClipTransition(
             ClipTransitionType.fadeToBlack,
           ).inMilliseconds,
         ),
-        limitedByNeighbor: roomPerSide < boundaryShorter,
-        initial: clip.transition,
+        limitedByNeighbor: roomPerSide < unconstrainedRoom,
+        initial: editedClip.transition,
       ),
     ),
   );
@@ -126,17 +183,17 @@ Future<void> editClipTransition(
   final newTransition = result.transition;
   // Re-selecting the current transition is a no-op — avoid a redundant history
   // entry.
-  if (newTransition == clip.transition) return;
+  if (newTransition == editedClip.transition) return;
 
-  final updated = clip.copyWith(
+  final updated = editedClip.copyWith(
     transition: newTransition,
     clearTransition: newTransition == null,
   );
-  final newClips = state.clips
-      .map((c) => c.id == clip.id ? updated : c)
+  final newClips = bloc.state.clips
+      .map((c) => c.id == editedClip.id ? updated : c)
       .toList();
 
-  bloc.add(ClipEditorClipUpdated(clipId: clip.id, clip: updated));
+  bloc.add(ClipEditorClipUpdated(clipId: editedClip.id, clip: updated));
   editor.setClipState(newClips);
 }
 

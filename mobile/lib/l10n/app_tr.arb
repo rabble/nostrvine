@@ -2877,6 +2877,8 @@
     "videoEditorTransitionPush": "İtme",
     "videoEditorTransitionWipe": "Silme",
     "videoEditorTransitionButtonSemanticLabel": "Geçişi düzenle",
+    "videoEditorLoopTransitionSheetTitle": "Döngü geçişi",
+    "videoEditorLoopTransitionButtonSemanticLabel": "Döngü geçişini düzenle",
     "videoEditorTransitionDuration": "Süre",
     "videoEditorTransitionDurationLimitedHint": "Komşu geçişle çakışmaması için kısaltıldı.",
     "videoEditorTransitionCurve": "Eğri",

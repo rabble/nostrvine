@@ -8350,6 +8350,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditorTransitionButtonSemanticLabel => 'Editar transição';
 
   @override
+  String get videoEditorLoopTransitionSheetTitle => 'Transição de loop';
+
+  @override
+  String get videoEditorLoopTransitionButtonSemanticLabel =>
+      'Editar transição de loop';
+
+  @override
   String get videoEditorTransitionDuration => 'Duração';
 
   @override

@@ -2877,6 +2877,8 @@
     "videoEditorTransitionPush": "Dorong",
     "videoEditorTransitionWipe": "Sapu",
     "videoEditorTransitionButtonSemanticLabel": "Edit transisi",
+    "videoEditorLoopTransitionSheetTitle": "Transisi loop",
+    "videoEditorLoopTransitionButtonSemanticLabel": "Edit transisi loop",
     "videoEditorTransitionDuration": "Durasi",
     "videoEditorTransitionDurationLimitedHint": "Dipendekkan agar tidak tumpang tindih dengan transisi di sebelahnya.",
     "videoEditorTransitionCurve": "Kurva",

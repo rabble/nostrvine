@@ -119,13 +119,16 @@ void main() {
       playbackSpeed: playbackSpeed,
     );
 
-    test('drops the transition on the last clip (no following boundary)', () {
+    test('keeps the last clip transition as the loop-restart wrap', () {
+      // The last clip's transition is no longer dropped: it wraps the last
+      // clip's tail into the first clip's head. A 500ms dissolve fits two 2s
+      // clips, so it passes through unchanged.
       final clips = [
         clip('a', const Duration(seconds: 2)),
         clip('b', const Duration(seconds: 2), transition: dissolve),
       ];
 
-      expect(clampTransitions(clips)['b'], isNull);
+      expect(clampTransitions(clips)['b'], equals(dissolve));
     });
 
     test('returns null for a clip with no transition', () {
@@ -525,6 +528,235 @@ void main() {
             equals(const Duration(milliseconds: 1500)),
           );
         });
+      });
+    });
+  });
+
+  group('loop-restart wrap', () {
+    DivineVideoClip clip(
+      String id,
+      Duration duration, {
+      ClipTransition? transition,
+    }) => DivineVideoClip(
+      id: id,
+      video: EditorVideo.file('${Directory.systemTemp.path}/$id.mp4'),
+      duration: duration,
+      recordedAt: DateTime(2026),
+      targetAspectRatio: model.AspectRatio.vertical,
+      originalAspectRatio: 9 / 16,
+      transition: transition,
+    );
+
+    group('clampTransitions', () {
+      test('passes an in-bounds single-clip wrap through unchanged', () {
+        // One 4s clip: an 800ms dissolve carves 1.6s head + 1.6s tail, leaving
+        // an 0.8s middle body, so it fits and is not reduced.
+        final wrap = dissolve.copyWith(
+          duration: const Duration(milliseconds: 800),
+        );
+        expect(
+          clampTransitions([
+            clip('a', const Duration(seconds: 4), transition: wrap),
+          ])['a'],
+          equals(wrap),
+        );
+      });
+
+      test('clamps a single-clip wrap that would consume the whole clip', () {
+        // A 1500ms dissolve on a 2s clip wants 2×(1500×2)=6s of a 2s clip; the
+        // head+tail budget caps it to half the clip per side → 500ms.
+        final tooLong = dissolve.copyWith(
+          duration: const Duration(milliseconds: 1500),
+        );
+        expect(
+          clampTransitions([
+            clip('a', const Duration(seconds: 2), transition: tooLong),
+          ])['a']?.duration,
+          equals(const Duration(milliseconds: 500)),
+        );
+      });
+
+      test('passes an in-bounds multi-clip wrap through unchanged', () {
+        // Two 4s clips, no interior transition: a 500ms dissolve carves 1s from
+        // the last clip's tail and 1s from the first clip's head, both fit.
+        final wrap = dissolve.copyWith(
+          duration: const Duration(milliseconds: 500),
+        );
+        final clips = [
+          clip('a', const Duration(seconds: 4)),
+          clip('b', const Duration(seconds: 4), transition: wrap),
+        ];
+
+        expect(clampTransitions(clips)['b'], equals(wrap));
+      });
+    });
+
+    // The loop-restart wrap shortens the exported output native-side only. The
+    // editor↔output map deliberately ignores it, so the ruler and playhead
+    // never go negative or run past the editor timeline.
+    group('does not affect the editor↔output map', () {
+      test('renderedOutputDuration ignores an overlap wrap', () {
+        final wrap = dissolve.copyWith(
+          duration: const Duration(milliseconds: 800),
+        );
+        expect(
+          renderedOutputDuration([
+            clip('a', const Duration(seconds: 4), transition: wrap),
+          ]),
+          equals(const Duration(seconds: 4)),
+        );
+      });
+
+      test('renderedOutputDuration still subtracts an interior blend', () {
+        // Only the interior a→b dissolve (500ms) is removed; the wrap on b is
+        // not: 4s − 0.5s.
+        final t = dissolve.copyWith(
+          duration: const Duration(milliseconds: 500),
+        );
+        final clips = [
+          clip('a', const Duration(seconds: 2), transition: t),
+          clip('b', const Duration(seconds: 2), transition: t),
+        ];
+
+        expect(
+          renderedOutputDuration(clips),
+          equals(const Duration(milliseconds: 3500)),
+        );
+      });
+
+      test('editorToOutputPosition is the identity for a single-clip wrap', () {
+        final wrap = dissolve.copyWith(
+          duration: const Duration(milliseconds: 800),
+        );
+        final clips = [
+          clip('a', const Duration(seconds: 4), transition: wrap),
+        ];
+        expect(
+          editorToOutputPosition(clips, const Duration(seconds: 2)),
+          equals(const Duration(seconds: 2)),
+        );
+        expect(
+          editorToOutputPosition(clips, const Duration(seconds: 4)),
+          equals(const Duration(seconds: 4)),
+        );
+      });
+    });
+
+    group(LoopWrapDisplay, () {
+      test('is none without a loop transition', () {
+        final display = LoopWrapDisplay.fromClips([
+          clip('a', const Duration(seconds: 3)),
+        ]);
+        expect(display.isActive, isFalse);
+        expect(
+          display.displayTotal([clip('a', const Duration(seconds: 3))]),
+          equals(const Duration(seconds: 3)),
+        );
+      });
+
+      test('shortens first head + last tail and appends the overlap seam', () {
+        // 500ms dissolve → 1s consumed per side, seam 2s−1s/2... = 1.5s.
+        final wrap = dissolve.copyWith(
+          duration: const Duration(milliseconds: 500),
+        );
+        final clips = [
+          clip('a', const Duration(seconds: 3)),
+          clip('b', const Duration(seconds: 3), transition: wrap),
+        ];
+        final display = LoopWrapDisplay.fromClips(clips);
+
+        expect(display.consumedPerSide, equals(const Duration(seconds: 1)));
+        expect(
+          display.seamDuration,
+          equals(const Duration(milliseconds: 1500)),
+        );
+        expect(
+          display.displayDuration(clips.first, isFirst: true, isLast: false),
+          equals(const Duration(seconds: 2)),
+        );
+        expect(
+          display.displayDuration(clips.last, isFirst: false, isLast: true),
+          equals(const Duration(seconds: 2)),
+        );
+        // Total = 6s − 2×1s + 1.5s = 5.5s — exactly the export length
+        // (6s − 500ms blend).
+        expect(
+          display.displayTotal(clips),
+          equals(const Duration(milliseconds: 5500)),
+        );
+      });
+
+      test('keeps the total unchanged for a dip wrap', () {
+        // Dips don't shorten the export; consumed head+tail return in full via
+        // the seam region: total stays Σ.
+        final wrap = fadeToBlack.copyWith(
+          duration: const Duration(seconds: 1),
+        );
+        final clips = [
+          clip('a', const Duration(seconds: 3), transition: wrap),
+        ];
+        final display = LoopWrapDisplay.fromClips(clips);
+
+        expect(
+          display.consumedPerSide,
+          equals(const Duration(milliseconds: 500)),
+        );
+        expect(display.seamDuration, equals(const Duration(seconds: 1)));
+        expect(
+          display.displayTotal(clips),
+          equals(const Duration(seconds: 3)),
+        );
+      });
+
+      test('consumes both ends of a single clip', () {
+        final wrap = dissolve.copyWith(
+          duration: const Duration(milliseconds: 250),
+        );
+        final clips = [
+          clip('a', const Duration(seconds: 3), transition: wrap),
+        ];
+        final display = LoopWrapDisplay.fromClips(clips);
+
+        // 250ms dissolve → 500ms per side, both from the same clip.
+        expect(
+          display.displayDuration(clips.first, isFirst: true, isLast: true),
+          equals(const Duration(seconds: 2)),
+        );
+      });
+    });
+
+    group('loopTransitionRoomPerSide', () {
+      test('is half the playback for a single clip', () {
+        expect(
+          loopTransitionRoomPerSide([clip('a', const Duration(seconds: 4))]),
+          equals(const Duration(seconds: 2)),
+        );
+      });
+
+      test('is the shorter of the joined tail and head', () {
+        expect(
+          loopTransitionRoomPerSide([
+            clip('a', const Duration(seconds: 3)),
+            clip('b', const Duration(seconds: 2)),
+          ]),
+          equals(const Duration(seconds: 2)),
+        );
+      });
+
+      test('excludes the neighbours own internal transitions', () {
+        // a→b dissolve (500ms) consumes 1s of b's head, leaving 1s tail for the
+        // wrap; a's own outgoing consumes 1s of its tail, leaving 2s head. The
+        // tighter side (1s) wins.
+        final internal = dissolve.copyWith(
+          duration: const Duration(milliseconds: 500),
+        );
+        expect(
+          loopTransitionRoomPerSide([
+            clip('a', const Duration(seconds: 3), transition: internal),
+            clip('b', const Duration(seconds: 2)),
+          ]),
+          equals(const Duration(seconds: 1)),
+        );
       });
     });
   });

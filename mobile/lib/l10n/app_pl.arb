@@ -2895,6 +2895,8 @@
     "videoEditorTransitionPush": "Wypychanie",
     "videoEditorTransitionWipe": "Wycieranie",
     "videoEditorTransitionButtonSemanticLabel": "Edytuj przejście",
+    "videoEditorLoopTransitionSheetTitle": "Przejście pętli",
+    "videoEditorLoopTransitionButtonSemanticLabel": "Edytuj przejście pętli",
     "videoEditorTransitionDuration": "Czas trwania",
     "videoEditorTransitionDurationLimitedHint": "Skrócono, aby nie nakładała się na sąsiednie przejście.",
     "videoEditorTransitionCurve": "Krzywa",

@@ -3145,6 +3145,8 @@
     "videoEditorTransitionPush": "Избутване",
     "videoEditorTransitionWipe": "Избърсване",
     "videoEditorTransitionButtonSemanticLabel": "Редактиране на преход",
+    "videoEditorLoopTransitionSheetTitle": "Циклов преход",
+    "videoEditorLoopTransitionButtonSemanticLabel": "Редактиране на циклов преход",
     "videoEditorTransitionDuration": "Продължителност",
     "videoEditorTransitionDurationLimitedHint": "Съкратено, за да не се припокрива със съседния преход.",
     "videoEditorTransitionCurve": "Крива",

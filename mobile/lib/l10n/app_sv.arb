@@ -2895,6 +2895,8 @@
     "videoEditorTransitionPush": "Putta",
     "videoEditorTransitionWipe": "Svep",
     "videoEditorTransitionButtonSemanticLabel": "Redigera övergång",
+    "videoEditorLoopTransitionSheetTitle": "Loopövergång",
+    "videoEditorLoopTransitionButtonSemanticLabel": "Redigera loopövergång",
     "videoEditorTransitionDuration": "Längd",
     "videoEditorTransitionDurationLimitedHint": "Förkortad så att den inte överlappar den intilliggande övergången.",
     "videoEditorTransitionCurve": "Kurva",

@@ -47,6 +47,7 @@ import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timel
 import 'package:openvine/widgets/video_editor/tune_editor/tune_set_timeline_ops.dart';
 import 'package:pro_image_editor/pro_image_editor.dart'
     hide AudioTrack, VideoClip;
+import 'package:pro_video_editor/pro_video_editor.dart' show ClipTransition;
 import 'package:unified_logger/unified_logger.dart';
 
 /// Direction an undo/redo navigation moved, used to bias which way
@@ -532,23 +533,36 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     for (var i = 0; i < clips.length - 1; i++) {
       final transition = clamped[clips[i].id];
       if (transition == null) continue;
-      if (_seamService.cached(clips[i], clips[i + 1], transition) != null) {
-        continue;
-      }
-      // Already counted by an earlier pass whose render is still in flight —
-      // skip so the pending counter (and overlay) is not double-incremented.
-      if (_seamService.isRendering(clips[i], clips[i + 1], transition)) {
-        continue;
-      }
-      _pendingSeamRenders.value++;
-      _seamService
-          .render(clipA: clips[i], clipB: clips[i + 1], transition: transition)
-          .then((seam) {
-            if (!mounted) return;
-            _pendingSeamRenders.value--;
-            if (seam != null) _resyncPlayerClips();
-          });
+      _renderSeam(clips[i], clips[i + 1], transition);
     }
+
+    // Loop-restart wrap: the last clip's transition blends its tail into the
+    // first clip's head (the same clip on a single-clip timeline) so the looping
+    // preview restarts through the blend instead of a hard cut.
+    if (clips.isNotEmpty) {
+      final wrap = clamped[clips.last.id];
+      if (wrap != null) _renderSeam(clips.last, clips.first, wrap);
+    }
+  }
+
+  /// Renders (once) the transition seam blending [clipA]'s tail into [clipB]'s
+  /// head, resyncing the preview when it lands. Idempotent — cached / in-flight
+  /// seams are skipped so the pending counter isn't double-incremented.
+  void _renderSeam(
+    DivineVideoClip clipA,
+    DivineVideoClip clipB,
+    ClipTransition transition,
+  ) {
+    if (_seamService.cached(clipA, clipB, transition) != null) return;
+    if (_seamService.isRendering(clipA, clipB, transition)) return;
+    _pendingSeamRenders.value++;
+    _seamService
+        .render(clipA: clipA, clipB: clipB, transition: transition)
+        .then((seam) {
+          if (!mounted) return;
+          _pendingSeamRenders.value--;
+          if (seam != null) _resyncPlayerClips();
+        });
   }
 
   /// Kicks off background renders of the normal-rate body for any non-1× clip,
@@ -558,6 +572,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
   /// live-retimed clip until the swap lands.
   void _ensureSpeedClipsRendered(List<DivineVideoClip> clips) {
     final clamped = clampTransitions(clips);
+    // The loop-restart wrap consumes the first clip's head and the last clip's
+    // tail eagerly (see buildSeamAwarePlayerClips); those clips stay on live
+    // retiming like interior seam-consumed clips.
+    final wrapActive = LoopWrapDisplay.fromClips(clips).isActive;
     for (var i = 0; i < clips.length; i++) {
       final clip = clips[i];
       // Skip a clip whose body is consumed by a rendered seam on either side:
@@ -574,7 +592,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
           i + 1 < clips.length &&
           outgoing != null &&
           _seamService.cached(clip, clips[i + 1], outgoing) != null;
-      if (consumedByIncoming || consumedByOutgoing) continue;
+      final consumedByWrap = wrapActive && (i == 0 || i == clips.length - 1);
+      if (consumedByIncoming || consumedByOutgoing || consumedByWrap) continue;
 
       if (_speedRenderService.cached(clip) != null) continue;
       if (_speedRenderService.isRendering(clip)) continue;

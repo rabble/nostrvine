@@ -7984,6 +7984,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorTransitionButtonSemanticLabel => '전환 편집';
 
   @override
+  String get videoEditorLoopTransitionSheetTitle => '루프 전환';
+
+  @override
+  String get videoEditorLoopTransitionButtonSemanticLabel => '루프 전환 편집';
+
+  @override
   String get videoEditorTransitionDuration => '길이';
 
   @override

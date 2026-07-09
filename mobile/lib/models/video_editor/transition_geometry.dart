@@ -66,14 +66,24 @@ Duration transitionDurationForConsumed(
 /// and the second half the other). A single transition on a clip is never
 /// reduced.
 ///
-/// Returns `null` for the last clip (no following boundary) and whenever there
-/// is no room for a transition. Keyed by clip id rather than index so it stays
-/// correct even if the render pipeline reorders clips.
+/// The **last clip's transition is the loop-restart wrap** (`pro_video_editor`
+/// ≥ 2.5): it blends the last clip's tail into the first clip's head so a
+/// looping player restarts seamlessly. It is clamped against the room left on
+/// the last clip's tail and the first clip's head after their own internal
+/// transitions — and, on a single clip that is both first and last, so its head
+/// and tail together leave a middle body.
+///
+/// Returns `null` for any boundary (internal or wrap) with no room. Keyed by
+/// clip id rather than index so it stays correct even if the render pipeline
+/// reorders clips.
 Map<String, ClipTransition?> clampTransitions(List<DivineVideoClip> clips) {
   final n = clips.length;
+  if (n == 0) return const {};
 
-  // Per-boundary requested per-side consumption. demand[i] is the boundary
-  // between clip i and clip i+1 (clip i's outgoing transition).
+  // Per-boundary requested per-side consumption. demand[i] is the internal
+  // boundary between clip i and clip i+1 (clip i's outgoing transition); the
+  // last clip has no internal boundary. loopDemand is the wrap boundary between
+  // the last clip's tail and the first clip's head (the same clip when n == 1).
   final demand = List<Duration>.filled(n, Duration.zero);
   for (var i = 0; i < n - 1; i++) {
     final transition = clips[i].transition;
@@ -85,13 +95,23 @@ Map<String, ClipTransition?> clampTransitions(List<DivineVideoClip> clips) {
       );
     }
   }
+  final loopTransition = clips[n - 1].transition;
+  final loopDemand = loopTransition == null
+      ? Duration.zero
+      : transitionConsumedPerSide(
+          clips[n - 1].playbackDuration,
+          clips[0].playbackDuration,
+          loopTransition,
+        );
 
   // Per-clip scale so the head + tail consumption fits the clip's playback
-  // length. A clip touched by only one transition (or none) keeps scale 1.
+  // length. The wrap consumes the first clip's head and the last clip's tail;
+  // on a single clip it consumes both ends of that one clip. A clip touched by
+  // only one transition (or none) keeps scale 1.
   final scale = List<double>.filled(n, 1);
   for (var i = 0; i < n; i++) {
-    final head = i > 0 ? demand[i - 1] : Duration.zero;
-    final tail = i < n - 1 ? demand[i] : Duration.zero;
+    final head = i == 0 ? loopDemand : demand[i - 1];
+    final tail = i == n - 1 ? loopDemand : demand[i];
     final total = head + tail;
     final playback = clips[i].playbackDuration;
     if (total > playback && total > Duration.zero) {
@@ -102,38 +122,180 @@ Map<String, ClipTransition?> clampTransitions(List<DivineVideoClip> clips) {
   // Each boundary is bounded by the tighter scale of the two clips it touches,
   // so neither clip is over-consumed.
   final clamped = <String, ClipTransition?>{};
-  for (var i = 0; i < n; i++) {
-    final transition = clips[i].transition;
-    if (i >= n - 1 || transition == null || demand[i] <= Duration.zero) {
-      clamped[clips[i].id] = null;
-      continue;
-    }
-    final s = scale[i] < scale[i + 1] ? scale[i] : scale[i + 1];
-    final finalConsumed = Duration(
-      microseconds: (demand[i].inMicroseconds * s).round(),
+  for (var i = 0; i < n - 1; i++) {
+    clamped[clips[i].id] = _clampBoundary(
+      transition: clips[i].transition,
+      demand: demand[i],
+      scale: scale[i] < scale[i + 1] ? scale[i] : scale[i + 1],
     );
-    if (finalConsumed <= Duration.zero) {
-      clamped[clips[i].id] = null;
-      continue;
-    }
-    final clampedDuration = transitionDurationForConsumed(
-      finalConsumed,
-      transition.type,
-    );
-    if (clampedDuration < transition.duration) {
-      Log.debug(
-        '✂️ Clamping transition ${transition.duration.inMilliseconds}ms '
-        'to ${clampedDuration.inMilliseconds}ms (avoids overlap on a '
-        'shared clip)',
-        name: _logName,
-        category: .video,
-      );
-      clamped[clips[i].id] = transition.copyWith(duration: clampedDuration);
-    } else {
-      clamped[clips[i].id] = transition;
-    }
   }
+  clamped[clips[n - 1].id] = _clampBoundary(
+    transition: loopTransition,
+    demand: loopDemand,
+    scale: scale[n - 1] < scale[0] ? scale[n - 1] : scale[0],
+  );
   return clamped;
+}
+
+/// Clamps [transition]'s duration to the room its boundary keeps after [scale]
+/// is applied to the requested per-side [demand], logging when it shrinks.
+/// Returns `null` when the boundary has no transition or no room.
+ClipTransition? _clampBoundary({
+  required ClipTransition? transition,
+  required Duration demand,
+  required double scale,
+}) {
+  if (transition == null || demand <= Duration.zero) return null;
+  final finalConsumed = Duration(
+    microseconds: (demand.inMicroseconds * scale).round(),
+  );
+  if (finalConsumed <= Duration.zero) return null;
+  final clampedDuration = transitionDurationForConsumed(
+    finalConsumed,
+    transition.type,
+  );
+  if (clampedDuration < transition.duration) {
+    Log.debug(
+      '✂️ Clamping transition ${transition.duration.inMilliseconds}ms '
+      'to ${clampedDuration.inMilliseconds}ms (avoids overlap on a '
+      'shared clip)',
+      name: _logName,
+      category: .video,
+    );
+    return transition.copyWith(duration: clampedDuration);
+  }
+  return transition;
+}
+
+/// The per-side playback room the loop-restart wrap may consume at the seam
+/// between the last clip's tail and the first clip's head, after those clips'
+/// own internal transitions have taken their share.
+///
+/// On a single clip the wrap carves its head and tail from the *same* clip, so
+/// the two sides split the clip and each may use at most half its playback.
+/// With multiple clips it is the tighter of the last clip's remaining tail and
+/// the first clip's remaining head. Feeds the loop picker's duration ceiling,
+/// mirroring the internal picker's room calculation.
+Duration loopTransitionRoomPerSide(List<DivineVideoClip> clips) {
+  final n = clips.length;
+  if (n == 0) return Duration.zero;
+  final first = clips[0];
+  final last = clips[n - 1];
+  if (n == 1) {
+    return Duration(microseconds: first.playbackDuration.inMicroseconds ~/ 2);
+  }
+
+  // The last clip's head is consumed by its incoming internal transition,
+  // leaving the rest of its tail for the wrap.
+  var tailRoom = last.playbackDuration;
+  final incoming = clips[n - 2].transition;
+  if (incoming != null) {
+    tailRoom -= transitionConsumedPerSide(
+      clips[n - 2].playbackDuration,
+      last.playbackDuration,
+      incoming,
+    );
+  }
+
+  // The first clip's tail is consumed by its outgoing internal transition,
+  // leaving the rest of its head for the wrap.
+  var headRoom = first.playbackDuration;
+  final outgoing = first.transition;
+  if (outgoing != null) {
+    headRoom -= transitionConsumedPerSide(
+      first.playbackDuration,
+      clips[1].playbackDuration,
+      outgoing,
+    );
+  }
+
+  final room = tailRoom < headRoom ? tailRoom : headRoom;
+  return room.isNegative ? Duration.zero : room;
+}
+
+/// Display geometry of the loop-restart wrap — the single source of truth the
+/// timeline strip, the preview player plan and the [SeamTimeline] mapping all
+/// share, so they agree on the same axis.
+///
+/// A loop wrap moves content: the first clip's head and the last clip's tail
+/// live inside the rendered blend seam at the loop point instead of at their
+/// original positions. The timeline therefore draws the first clip starting
+/// [consumedPerSide] later and the last clip ending [consumedPerSide] earlier,
+/// with a [seamDuration]-long blend region appended at the end — making
+/// timeline, preview and export line up 1:1.
+///
+/// Mirrors `TransitionSeamRenderService.computeSeamSpans`: per side an overlap
+/// consumes 2× its duration (solo lead-in/out around the blend) and its seam
+/// plays 1.5× the consumed span; a dip consumes half its duration per side and
+/// its seam plays the full 2× consumed span (dips don't shorten).
+class LoopWrapDisplay {
+  const LoopWrapDisplay._({
+    required this.consumedPerSide,
+    required this.seamDuration,
+  });
+
+  /// No wrap: nothing consumed, no seam region.
+  static const none = LoopWrapDisplay._(
+    consumedPerSide: Duration.zero,
+    seamDuration: Duration.zero,
+  );
+
+  factory LoopWrapDisplay.fromClips(List<DivineVideoClip> clips) {
+    if (clips.isEmpty) return none;
+    final wrap = clampTransitions(clips)[clips.last.id];
+    if (wrap == null) return none;
+    final consumed = transitionConsumedPerSide(
+      clips.last.playbackDuration,
+      clips.first.playbackDuration,
+      wrap,
+    );
+    if (consumed <= Duration.zero) return none;
+    final blend = _isDip(wrap.type)
+        ? Duration.zero
+        : Duration(microseconds: consumed.inMicroseconds ~/ 2);
+    return LoopWrapDisplay._(
+      consumedPerSide: consumed,
+      seamDuration: consumed * 2 - blend,
+    );
+  }
+
+  /// Wall-clock (playback) span the wrap consumes from the first clip's head
+  /// and, equally, from the last clip's tail.
+  final Duration consumedPerSide;
+
+  /// Playback length of the blend seam region appended at the end of the
+  /// timeline (the loop point).
+  final Duration seamDuration;
+
+  bool get isActive => consumedPerSide > Duration.zero;
+
+  /// The span [clip] contributes to the display axis: its playback duration
+  /// minus what the wrap consumed from its head (first clip) and/or tail (last
+  /// clip — the same clip on a single-clip timeline).
+  Duration displayDuration(
+    DivineVideoClip clip, {
+    required bool isFirst,
+    required bool isLast,
+  }) {
+    var d = clip.playbackDuration;
+    if (isFirst) d -= consumedPerSide;
+    if (isLast) d -= consumedPerSide;
+    return d.isNegative ? Duration.zero : d;
+  }
+
+  /// Total display-axis duration: shortened clips plus the seam region. Equals
+  /// the exported output length (overlaps shorten by the blend, dips don't).
+  Duration displayTotal(List<DivineVideoClip> clips) {
+    var total = Duration.zero;
+    for (var i = 0; i < clips.length; i++) {
+      total += displayDuration(
+        clips[i],
+        isFirst: i == 0,
+        isLast: i == clips.length - 1,
+      );
+    }
+    return total + seamDuration;
+  }
 }
 
 /// One overlap blend on the editor axis: the region
@@ -157,6 +319,11 @@ class _Blend {
 /// `duration` of output; positions outside any blend map 1:1. The no-overlap
 /// clamp guarantees adjacent blend regions never touch, so the mapping is
 /// strictly monotonic and invertible.
+///
+/// The loop-restart wrap (the last clip's transition) is deliberately **not**
+/// reflected here: the editor timeline stays the editing space (clips at full
+/// length) and the ruler/playhead map exactly as without a wrap. The wrap only
+/// shortens the exported output, which the native renderer handles.
 class TransitionTimelineMap {
   TransitionTimelineMap._(
     this._blends, {
@@ -193,8 +360,9 @@ class TransitionTimelineMap {
   /// Length of the editor timeline — clips laid out at full length.
   final Duration editorDuration;
 
-  /// Length of the rendered output — [editorDuration] minus every overlap
-  /// blend. This is what the final export lasts.
+  /// Length of the rendered output — [editorDuration] minus every interior
+  /// overlap blend. (The loop-restart wrap shortens the export separately,
+  /// native-side, and is not counted here.)
   final Duration outputDuration;
 
   final List<_Blend> _blends;
@@ -244,8 +412,9 @@ class TransitionTimelineMap {
 }
 
 /// The duration of the rendered output for [clips] — the sum of clip playback
-/// lengths minus the blend each overlap transition removes (after the
-/// no-overlap clamp). Dips don't shorten the timeline, so they don't count.
+/// lengths minus the blend each interior overlap transition removes (after the
+/// no-overlap clamp). Dips don't shorten the timeline, so they don't count, and
+/// neither does the loop-restart wrap (shortened native-side on export only).
 ///
 /// This is what the final export lasts, which differs from the editor
 /// timeline length (`ClipEditorState.totalDuration`, clips at full length)

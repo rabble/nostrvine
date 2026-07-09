@@ -8280,6 +8280,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditorTransitionButtonSemanticLabel => 'Edit transition';
 
   @override
+  String get videoEditorLoopTransitionSheetTitle => 'Loop transition';
+
+  @override
+  String get videoEditorLoopTransitionButtonSemanticLabel =>
+      'Edit loop transition';
+
+  @override
   String get videoEditorTransitionDuration => 'Duration';
 
   @override

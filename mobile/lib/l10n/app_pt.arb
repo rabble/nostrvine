@@ -2895,6 +2895,8 @@
     "videoEditorTransitionPush": "Empurrar",
     "videoEditorTransitionWipe": "Varredura",
     "videoEditorTransitionButtonSemanticLabel": "Editar transição",
+    "videoEditorLoopTransitionSheetTitle": "Transição de loop",
+    "videoEditorLoopTransitionButtonSemanticLabel": "Editar transição de loop",
     "videoEditorTransitionDuration": "Duração",
     "videoEditorTransitionDurationLimitedHint": "Encurtada para não se sobrepor à transição adjacente.",
     "videoEditorTransitionCurve": "Curva",

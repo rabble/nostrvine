@@ -8376,6 +8376,13 @@ class AppLocalizationsBg extends AppLocalizations {
       'Редактиране на преход';
 
   @override
+  String get videoEditorLoopTransitionSheetTitle => 'Циклов преход';
+
+  @override
+  String get videoEditorLoopTransitionButtonSemanticLabel =>
+      'Редактиране на циклов преход';
+
+  @override
   String get videoEditorTransitionDuration => 'Продължителност';
 
   @override
