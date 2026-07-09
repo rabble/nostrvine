@@ -236,6 +236,7 @@ Useful app entry paths from `mobile/`:
 - `./run_dev.sh ios debug`
 - `./run_dev.sh android debug`
 - `./run_dev.sh macos debug`
+- `mise run local_android` - Android emulator against the default local stack
 - `flutter run -d macos`
 - `./build_ios.sh release`
 - `./build_android.sh release`

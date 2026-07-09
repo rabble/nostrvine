@@ -49,6 +49,7 @@ Common alternatives from `mobile/`:
 - `./run_dev.sh ios debug`
 - `./run_dev.sh android debug`
 - `./run_dev.sh macos debug`
+- `mise run local_android` - Android emulator against the default local stack
 
 If a build fails from generated code or CocoaPods state, use the targeted scripts first (from `mobile/`):
 

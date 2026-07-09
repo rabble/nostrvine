@@ -25,7 +25,7 @@ assert_contains() {
   local file="$2"
   local message="$3"
 
-  if ! grep -qF "$needle" "$file"; then
+  if ! grep -qF -- "$needle" "$file"; then
     echo "FAIL: ${message}" >&2
     echo "  missing: ${needle}" >&2
     echo "  file:    ${file}" >&2
@@ -38,7 +38,7 @@ assert_not_contains() {
   local file="$2"
   local message="$3"
 
-  if grep -qF "$needle" "$file"; then
+  if grep -qF -- "$needle" "$file"; then
     echo "FAIL: ${message}" >&2
     echo "  unexpected: ${needle}" >&2
     echo "  file:       ${file}" >&2
@@ -60,7 +60,9 @@ extract_mise_task() {
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT
 local_reset_task="${tmp_dir}/local_reset.mise-task"
+local_android_task="${tmp_dir}/local_android.mise-task"
 extract_mise_task local_reset "${REPO_ROOT}/mobile/mise.toml" > "$local_reset_task"
+extract_mise_task local_android "${REPO_ROOT}/mobile/mise.toml" > "$local_android_task"
 
 mkdir -p "${tmp_dir}/home"
 set +e
@@ -91,6 +93,8 @@ assert_eq "Pixel_API_35" "$(first_available_avd_name)" \
 
 assert_contains 'bash ../local_stack/up.sh' "${REPO_ROOT}/mobile/mise.toml" \
   "mise local_up tasks should delegate to the shared stack launcher"
+assert_contains 'bash ../local_stack/run_android_local.sh' "$local_android_task" \
+  "mise local_android should delegate to the shared local Android runner"
 assert_contains 'docker compose -f ../local_stack/docker-compose.yml down -v' "$local_reset_task" \
   "mise local_reset should wipe local stack volumes before restart"
 assert_contains 'bash ../local_stack/up.sh' "$local_reset_task" \
@@ -103,6 +107,14 @@ assert_contains 'docker compose -f "$COMPOSE_FILE" run --rm e2e-seed' "${SCRIPT_
   "up.sh should run e2e-seed as an explicit lifecycle step"
 assert_contains 'profiles: ["seed"]' "${SCRIPT_DIR}/docker-compose.yml" \
   "e2e-seed should be excluded from default compose up"
+assert_contains 'source "${SCRIPT_DIR}/android_sdk.sh"' "${SCRIPT_DIR}/run_android_local.sh" \
+  "local Android runner should reuse Android SDK discovery"
+assert_contains 'Start with: mise run local_up' "${SCRIPT_DIR}/run_android_local.sh" \
+  "local Android runner should point to the local stack startup task when services are down"
+assert_contains '--dart-define=DEFAULT_ENV=LOCAL' "${SCRIPT_DIR}/run_android_local.sh" \
+  "local Android runner should force the app into LOCAL environment"
+assert_contains '--dart-define=INVITE_SERVER_URL=http://10.0.2.2:43004' "${SCRIPT_DIR}/run_android_local.sh" \
+  "local Android runner should use the Android emulator invite-server URL"
 
 cat > "${tmp_dir}/bin/uname" <<'STUB'
 #!/usr/bin/env bash

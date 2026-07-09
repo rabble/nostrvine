@@ -32,6 +32,10 @@ run = "flutter build apk --debug --dart-define=DEFAULT_ENV=LOCAL"
 description = "Install LOCAL APK on emulator"
 run = "adb install -r build/app/outputs/flutter-apk/app-debug.apk"
 
+[tasks.local_android]
+description = "Run the app on Android against the default local stack"
+run = "bash ../local_stack/run_android_local.sh"
+
 [tasks.local_status]
 description = "Check status of local services"
 run = "docker compose -f ../local_stack/docker-compose.yml ps"
