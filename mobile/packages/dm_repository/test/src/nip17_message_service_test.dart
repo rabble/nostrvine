@@ -298,6 +298,21 @@ void main() {
           expect(selfWraps, 1);
         },
       );
+
+      test(
+        'offline (nothing reached any relay) → non-retryable-pending failure '
+        'so the sweep re-drives it immediately; self-wrap still published',
+        () async {
+          // Empty accepted/rejected/noResponse == nothing was sent anywhere.
+          final (result, selfWraps) = await sendReaction(outcome());
+
+          expect(result.success, isFalse);
+          // Marked failed (not dim pending) so the reconnect sweep re-sends it
+          // without the in-flight min-age guard holding it back.
+          expect(result.retryablePending, isFalse);
+          expect(selfWraps, 1);
+        },
+      );
     });
 
     group('publishSelfApplicationMarker (#4977)', () {

@@ -481,8 +481,10 @@ class DmReactionsRepository {
         .toList(growable: false);
   }
 
-  /// Soft-delete an own reaction locally and emit a NIP-09 kind-5
-  /// deletion on the wire. Returns after the local update.
+  /// Soft-delete an own reaction locally and durably (re)deliver its NIP-09
+  /// kind-5 deletion on the wire. Returns after the local update; the wire
+  /// publish is durable — a failed/offline attempt is re-driven by the retry
+  /// sweep via [retryDeletion] rather than being dropped.
   Future<void> removeOwn({
     required String rumorId,
     required String targetMessageAuthor,
@@ -493,8 +495,34 @@ class DmReactionsRepository {
       id: rumorId,
       ownerPubkey: _userPubkey,
     );
+    final recipients = row != null
+        ? await _resolveWrapRecipients(
+            conversationId: row.conversationId,
+            targetMessageAuthor: targetMessageAuthor,
+          )
+        : <String>[targetMessageAuthor];
+
+    // Build the kind-5 deletion once so every (re)delivery replays an
+    // identical event — recipients treat repeats as idempotent.
+    final deletion = messageService.buildRumor(
+      recipientPubkey: recipients.first,
+      content: '',
+      eventKind: EventKind.eventDeletion,
+      additionalTags: [
+        ['e', rumorId],
+        ['k', EventKind.reaction.toString()],
+      ],
+    );
+
+    // Soft-delete locally AND durably record the deletion so a failed/offline
+    // publish is re-driven by the sweep (the chip hides immediately either
+    // way).
     try {
-      await _reactionsDao.softDelete(id: rumorId, ownerPubkey: _userPubkey);
+      await _reactionsDao.markOwnDeletionPending(
+        id: rumorId,
+        ownerPubkey: _userPubkey,
+        deletionRumorJson: jsonEncode(deletion.toJson()),
+      );
     } on Object catch (e, st) {
       _errorReporter?.call(
         e,
@@ -503,19 +531,141 @@ class DmReactionsRepository {
       );
       return;
     }
-    final recipients = row != null
-        ? await _resolveWrapRecipients(
-            conversationId: row.conversationId,
-            targetMessageAuthor: targetMessageAuthor,
-          )
-        : <String>[targetMessageAuthor];
+
+    // Fire the first attempt without blocking the UI; the durable
+    // `deletion_pending` row lets the sweep recover it if this attempt fails.
     unawaited(
-      _publishKind5Deletion(
-        reactionEventId: rumorId,
+      _driveDeletion(
+        rumorId: rumorId,
+        deletion: deletion,
         recipients: recipients,
         messageService: messageService,
       ),
     );
+  }
+
+  /// List this user's own reaction removals still awaiting durable kind-5
+  /// delivery, for the foreground/reconnect retry sweep to re-drive via
+  /// [retryDeletion]. Empty when credentials have not been wired.
+  Future<List<DmReactionRetryTarget>> retryableDeletions() async {
+    if (_userPubkey.isEmpty) return const [];
+    final rows = await _reactionsDao.getRetryableOwnDeletions(
+      ownerPubkey: _userPubkey,
+    );
+    return rows
+        .map(
+          (r) => DmReactionRetryTarget(
+            rumorId: r.id,
+            targetMessageAuthor: r.targetMessageAuthor,
+            publishStatus: r.publishStatus ?? '',
+            createdAt: r.createdAt,
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  /// Retry a previously-failed/interrupted own reaction removal by replaying
+  /// the stored kind-5 rumor. Clears the pending-deletion marker on a
+  /// confirmed publish; leaves it pending otherwise so the sweep tries again.
+  Future<DmReactionPublishResult> retryDeletion({
+    required String rumorId,
+    required String targetMessageAuthor,
+  }) async {
+    final messageService = _messageService;
+    if (messageService == null || _userPubkey.isEmpty) {
+      return DmReactionPublishResult(
+        success: false,
+        rumorId: rumorId,
+        errorMessage: 'Repository not initialized',
+      );
+    }
+    final row = await _reactionsDao.getById(
+      id: rumorId,
+      ownerPubkey: _userPubkey,
+    );
+    final deletionJson = row?.rumorEventJson;
+    if (row == null || deletionJson == null) {
+      return DmReactionPublishResult(
+        success: false,
+        rumorId: rumorId,
+        errorMessage: 'No stored deletion to retry',
+      );
+    }
+    final deletion = Event.fromJson(
+      jsonDecode(deletionJson) as Map<String, dynamic>,
+    );
+    final recipients = await _resolveWrapRecipients(
+      conversationId: row.conversationId,
+      targetMessageAuthor: targetMessageAuthor,
+    );
+    try {
+      final result = await _fanOutRumor(
+        messageService: messageService,
+        rumor: deletion,
+        recipients: recipients,
+        awaitRecipientOk: true,
+      );
+      switch (result) {
+        case NIP17SendSuccess():
+          await _reactionsDao.markDeletionSent(
+            id: rumorId,
+            ownerPubkey: _userPubkey,
+          );
+          return DmReactionPublishResult(
+            success: true,
+            rumorId: rumorId,
+            optimisticInsertSucceeded: true,
+          );
+        case NIP17SendFailure(:final error):
+          return DmReactionPublishResult(
+            success: false,
+            rumorId: rumorId,
+            errorMessage: error,
+            optimisticInsertSucceeded: true,
+          );
+      }
+    } on Object catch (e) {
+      Log.warning(
+        'DM reaction deletion retry threw: $e',
+        category: LogCategory.system,
+      );
+      return DmReactionPublishResult(
+        success: false,
+        rumorId: rumorId,
+        errorMessage: e.toString(),
+        optimisticInsertSucceeded: true,
+      );
+    }
+  }
+
+  /// Publish [deletion] (OK-confirmed) and clear the pending-deletion marker
+  /// on success; on any non-success the `'deletion_pending'` row is left for
+  /// the retry sweep to re-drive.
+  Future<void> _driveDeletion({
+    required String rumorId,
+    required Event deletion,
+    required List<String> recipients,
+    required NIP17MessageService messageService,
+  }) async {
+    try {
+      final result = await _fanOutRumor(
+        messageService: messageService,
+        rumor: deletion,
+        recipients: recipients,
+        awaitRecipientOk: true,
+      );
+      if (result is NIP17SendSuccess) {
+        await _reactionsDao.markDeletionSent(
+          id: rumorId,
+          ownerPubkey: _userPubkey,
+        );
+      }
+    } on Object catch (e) {
+      Log.warning(
+        'DM reaction deletion publish threw: $e',
+        category: LogCategory.system,
+      );
+    }
   }
 
   /// Persist an incoming kind-7 reaction rumor. Called from

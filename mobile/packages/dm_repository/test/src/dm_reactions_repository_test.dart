@@ -800,7 +800,7 @@ void main() {
     });
 
     test(
-      'removeOwn soft-deletes locally and publishes wrapped kind 5',
+      'removeOwn durably records the kind-5 deletion and publishes it',
       () async {
         final deletionRumor = reactionRumor(
           id: _giftWrapId,
@@ -812,11 +812,12 @@ void main() {
           ],
         );
         when(
-          () => mockDao.softDelete(
+          () => mockDao.markOwnDeletionPending(
             id: _reactionRumorId,
             ownerPubkey: _ownerPubkey,
+            deletionRumorJson: any(named: 'deletionRumorJson'),
           ),
-        ).thenAnswer((_) async => 1);
+        ).thenAnswer((_) async {});
         when(
           () => mockMessageService.buildRumor(
             recipientPubkey: _otherPubkey,
@@ -825,25 +826,29 @@ void main() {
             additionalTags: any(named: 'additionalTags'),
           ),
         ).thenReturn(deletionRumor);
+        // Publish fails (e.g. offline) — the durable row stays pending for the
+        // sweep, so markDeletionSent must NOT be called.
         when(
           () => mockMessageService.sendRumor(
             rumorEvent: deletionRumor,
             recipientPubkey: _otherPubkey,
             awaitRecipientOk: any(named: 'awaitRecipientOk'),
           ),
-        ).thenAnswer((_) async => const NIP17SendResult.failure('ignored'));
+        ).thenAnswer((_) async => const NIP17SendResult.failure('offline'));
 
         final repository = createRepository();
         await repository.removeOwn(
           rumorId: _reactionRumorId,
           targetMessageAuthor: _otherPubkey,
         );
+        // _driveDeletion fires via unawaited; let it run.
         await Future<void>.delayed(Duration.zero);
 
         verify(
-          () => mockDao.softDelete(
+          () => mockDao.markOwnDeletionPending(
             id: _reactionRumorId,
             ownerPubkey: _ownerPubkey,
+            deletionRumorJson: any(named: 'deletionRumorJson'),
           ),
         ).called(1);
         verify(
@@ -853,8 +858,108 @@ void main() {
             awaitRecipientOk: any(named: 'awaitRecipientOk'),
           ),
         ).called(1);
+        verifyNever(
+          () => mockDao.markDeletionSent(
+            id: any(named: 'id'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        );
       },
     );
+
+    test(
+      'retryableDeletions projects pending own deletions from the dao',
+      () async {
+        when(
+          () => mockDao.getRetryableOwnDeletions(ownerPubkey: _ownerPubkey),
+        ).thenAnswer(
+          (_) async => [
+            makeRow(
+              isDeleted: true,
+              publishStatus: 'deletion_pending',
+              rumorEventJson: '{}',
+            ),
+          ],
+        );
+
+        final repository = createRepository();
+        final targets = await repository.retryableDeletions();
+
+        expect(targets, hasLength(1));
+        expect(targets.first.rumorId, _reactionRumorId);
+        expect(targets.first.targetMessageAuthor, _otherPubkey);
+      },
+    );
+
+    test(
+      'retryDeletion replays the stored kind-5 and marks it sent on success',
+      () async {
+        final deletionRumor = reactionRumor(
+          id: _giftWrapId,
+          content: '',
+          kind: EventKind.eventDeletion,
+          tags: [
+            ['e', _reactionRumorId],
+            ['k', EventKind.reaction.toString()],
+          ],
+        );
+        when(
+          () =>
+              mockDao.getById(id: _reactionRumorId, ownerPubkey: _ownerPubkey),
+        ).thenAnswer(
+          (_) async => makeRow(
+            isDeleted: true,
+            publishStatus: 'deletion_pending',
+            rumorEventJson: jsonEncode(deletionRumor.toJson()),
+          ),
+        );
+        when(
+          () => mockMessageService.sendRumor(
+            rumorEvent: any(named: 'rumorEvent'),
+            recipientPubkey: _otherPubkey,
+            awaitRecipientOk: any(named: 'awaitRecipientOk'),
+          ),
+        ).thenAnswer(
+          (_) async => NIP17SendResult.success(
+            rumorEventId: deletionRumor.id,
+            messageEventId: _giftWrapId,
+            recipientPubkey: _otherPubkey,
+          ),
+        );
+        when(
+          () => mockDao.markDeletionSent(
+            id: _reactionRumorId,
+            ownerPubkey: _ownerPubkey,
+          ),
+        ).thenAnswer((_) async {});
+
+        final repository = createRepository();
+        final result = await repository.retryDeletion(
+          rumorId: _reactionRumorId,
+          targetMessageAuthor: _otherPubkey,
+        );
+
+        expect(result.success, isTrue);
+        verify(
+          () => mockDao.markDeletionSent(
+            id: _reactionRumorId,
+            ownerPubkey: _ownerPubkey,
+          ),
+        ).called(1);
+      },
+    );
+
+    test('retryDeletion fails when no stored deletion exists', () async {
+      // getById default stub returns null → nothing to replay.
+      final repository = createRepository();
+      final result = await repository.retryDeletion(
+        rumorId: _reactionRumorId,
+        targetMessageAuthor: _otherPubkey,
+      );
+
+      expect(result.success, isFalse);
+      expect(result.errorMessage, contains('No stored deletion'));
+    });
 
     test('persistIncoming validates event shape before upsert', () async {
       final repository = createRepository();

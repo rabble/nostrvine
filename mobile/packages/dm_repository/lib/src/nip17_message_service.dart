@@ -387,24 +387,38 @@ class NIP17MessageService {
           );
         }
 
-        // Unconfirmed. An explicit OK-false is a hard rejection; "frame
-        // written, no OK within the window" is inconclusive — surface it as
-        // retryable-pending so the caller keeps a dim, sweep-retryable chip
-        // rather than a red failed one (a lost OK is not proof of loss, and
-        // marking it failed is what let a re-tap delete a delivered reaction).
+        // Not confirmed. Three sub-cases decide the caller's chip + retry:
+        //  * explicit OK-false → hard rejection: mark failed.
+        //  * nothing reached any relay (offline) → the send definitively did
+        //    not happen, so the sweep must re-drive it the instant
+        //    connectivity returns. Report a NON-retryable-pending failure so
+        //    the row is marked 'failed' (failed rows skip the in-flight
+        //    min-age guard the sweep applies to 'pending' rows).
+        //  * frame written to a relay but no OK within the window →
+        //    inconclusive; it may already be delivered, so keep it a dim,
+        //    sweep-retryable 'pending' chip (a lost OK is not proof of loss).
         final rejected = outcome.rejectedBy.isNotEmpty;
+        final reachedNoRelay =
+            outcome.acceptedBy.isEmpty &&
+            outcome.rejectedBy.isEmpty &&
+            outcome.noResponseFrom.isEmpty;
+        final String errorMsg;
+        if (rejected) {
+          errorMsg = 'Reaction rejected by relay: ${outcome.summary}';
+        } else if (reachedNoRelay) {
+          errorMsg = 'Reaction not sent: no relay reached';
+        } else {
+          errorMsg = 'Reaction recipient OK unconfirmed: ${outcome.summary}';
+        }
         Log.warning(
-          'NIP-17 reaction recipient OK '
-          '${rejected ? 'rejected' : 'unconfirmed'} '
+          'NIP-17 reaction recipient publish unconfirmed '
           '(rumor=${rumorEvent.id}, recipient=$recipientPubkey, '
           '${outcome.summary}); selfWrapPublished=$selfWrapPublished',
           category: LogCategory.system,
         );
         return NIP17SendResult.failure(
-          rejected
-              ? 'Reaction rejected by relay: ${outcome.summary}'
-              : 'Reaction recipient OK unconfirmed: ${outcome.summary}',
-          retryablePending: !rejected,
+          errorMsg,
+          retryablePending: !rejected && !reachedNoRelay,
         );
       }
 

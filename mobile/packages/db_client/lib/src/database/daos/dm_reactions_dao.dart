@@ -27,6 +27,15 @@ class DmReactionsDao extends DatabaseAccessor<AppDatabase>
     with _$DmReactionsDaoMixin {
   DmReactionsDao(super.attachedDatabase);
 
+  /// `publish_status` value for a soft-deleted own reaction whose NIP-09
+  /// kind-5 deletion still needs durable (re)delivery. The row is
+  /// `is_deleted = 1` (hidden from the chip) but keeps its stored deletion
+  /// rumor in `rumor_event_json` so the retry sweep can re-drive it.
+  static const String _deletionPendingStatus = 'deletion_pending';
+
+  /// Terminal `publish_status` for a deletion whose kind-5 reached a relay.
+  static const String _deletionSentStatus = 'deletion_sent';
+
   /// Insert an optimistic outgoing row before the publish attempt, atomically
   /// superseding any prior LIVE reactions by this reactor on this target.
   ///
@@ -332,6 +341,70 @@ class DmReactionsDao extends DatabaseAccessor<AppDatabase>
                 t.isDeleted.equals(false) &
                 t.rumorEventJson.isNotNull() &
                 t.publishStatus.isIn(const ['failed', 'pending']),
+          )
+          ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+        .get();
+  }
+
+  /// Soft-delete an own reaction AND record its NIP-09 kind-5 deletion rumor
+  /// for durable (re)delivery.
+  ///
+  /// The row leaves the live set immediately (`is_deleted = 1`, so the chip
+  /// hides on the same frame as the tap) but keeps [deletionRumorJson] and
+  /// `publish_status = 'deletion_pending'` so the retry sweep can re-drive the
+  /// kind-5 until a relay confirms it — closing the gap where a removal made
+  /// offline (or on a flaky relay) was silently dropped. Overloads the
+  /// existing `rumor_event_json` column with the deletion rumor: the prior
+  /// add-reaction rumor is no longer needed once the reaction is removed.
+  Future<void> markOwnDeletionPending({
+    required String id,
+    required String ownerPubkey,
+    required String deletionRumorJson,
+  }) async {
+    await (update(dmMessageReactions)..where(
+          (t) => t.id.equals(id) & t.ownerPubkey.equals(ownerPubkey),
+        ))
+        .write(
+          DmMessageReactionsCompanion(
+            isDeleted: const Value(true),
+            publishStatus: const Value(_deletionPendingStatus),
+            rumorEventJson: Value(deletionRumorJson),
+          ),
+        );
+  }
+
+  /// Mark a pending own-reaction deletion as delivered: clears the stored
+  /// deletion rumor and moves the row to the terminal `'deletion_sent'` status
+  /// so the sweep stops re-driving it. The row stays `is_deleted = 1`.
+  Future<void> markDeletionSent({
+    required String id,
+    required String ownerPubkey,
+  }) async {
+    await (update(dmMessageReactions)..where(
+          (t) => t.id.equals(id) & t.ownerPubkey.equals(ownerPubkey),
+        ))
+        .write(
+          const DmMessageReactionsCompanion(
+            publishStatus: Value(_deletionSentStatus),
+            rumorEventJson: Value(null),
+          ),
+        );
+  }
+
+  /// Fetch this user's own soft-deleted reactions whose kind-5 deletion still
+  /// needs durable delivery (`publish_status = 'deletion_pending'` with a
+  /// stored deletion rumor). Ordered oldest-first so removals drain in order.
+  Future<List<DmReactionRow>> getRetryableOwnDeletions({
+    required String ownerPubkey,
+  }) {
+    return (select(dmMessageReactions)
+          ..where(
+            (t) =>
+                t.ownerPubkey.equals(ownerPubkey) &
+                t.reactorPubkey.equals(ownerPubkey) &
+                t.isDeleted.equals(true) &
+                t.rumorEventJson.isNotNull() &
+                t.publishStatus.equals(_deletionPendingStatus),
           )
           ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
         .get();

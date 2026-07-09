@@ -102,17 +102,26 @@ class DmReactionRetryService {
   DmReactionRetryService({
     required DmReactionsRepository reactionsRepository,
     required Stream<bool> appForegroundStream,
+    Stream<void>? retryTriggerStream,
     DmReactionRetryConfig retryConfig = const DmReactionRetryConfig(),
     DateTime Function() now = DateTime.now,
     CrashReportingService? crashReporting,
   }) : _repository = reactionsRepository,
        _appForegroundStream = appForegroundStream,
+       _retryTriggerStream = retryTriggerStream,
        _config = retryConfig,
        _now = now,
        _crashReporting = crashReporting ?? CrashReportingService.instance;
 
   final DmReactionsRepository _repository;
   final Stream<bool> _appForegroundStream;
+
+  /// Fires a sweep on each event, independent of foreground transitions.
+  /// Wired to connectivity/relay-reconnection so a reaction (or removal) made
+  /// during a brief network drop is re-driven the moment the network returns —
+  /// without waiting for the user to background and re-foreground the app.
+  final Stream<void>? _retryTriggerStream;
+
   final DmReactionRetryConfig _config;
   final DateTime Function() _now;
   final CrashReportingService _crashReporting;
@@ -121,6 +130,7 @@ class DmReactionRetryService {
   final Map<String, DateTime> _lastAttempt = {};
 
   StreamSubscription<bool>? _foregroundSubscription;
+  StreamSubscription<void>? _retryTriggerSubscription;
   bool _isInitialized = false;
   bool _isSweeping = false;
 
@@ -141,6 +151,10 @@ class DmReactionRetryService {
       }
     });
 
+    _retryTriggerSubscription = _retryTriggerStream?.listen((_) {
+      unawaited(sweep());
+    });
+
     Log.info(
       'initialized',
       name: 'DmReactionRetryService',
@@ -148,11 +162,13 @@ class DmReactionRetryService {
     );
   }
 
-  /// Cancel the foreground subscription and mark the service un-init.
+  /// Cancel the trigger subscriptions and mark the service un-init.
   /// Idempotent.
   Future<void> dispose() async {
     await _foregroundSubscription?.cancel();
     _foregroundSubscription = null;
+    await _retryTriggerSubscription?.cancel();
+    _retryTriggerSubscription = null;
     _isInitialized = false;
   }
 
@@ -175,88 +191,42 @@ class DmReactionRetryService {
     _isSweeping = true;
 
     try {
-      final targets = await _repository.retryableReactions();
-      _pruneTracking(targets.map((t) => t.rumorId).toSet());
+      final reactionTargets = await _repository.retryableReactions();
+      final deletionTargets = await _repository.retryableDeletions();
+      _pruneTracking(<String>{
+        for (final t in reactionTargets) t.rumorId,
+        for (final t in deletionTargets) t.rumorId,
+      });
 
-      var recovered = 0;
-      var failed = 0;
-      var skippedBackoff = 0;
-      var skippedExhausted = 0;
-      var skippedTooYoung = 0;
-
-      for (final target in targets) {
-        final id = target.rumorId;
-        final attempts = _attempts[id] ?? 0;
-
-        if (attempts >= _config.maxRetries) {
-          skippedExhausted++;
-          continue;
-        }
-
-        final last = _lastAttempt[id];
-        if (last != null) {
-          final gap = _now().difference(last);
-          if (gap < _config.backoffFor(attempts)) {
-            skippedBackoff++;
-            continue;
-          }
-        }
-
-        // A still-`pending` reaction may have an in-flight publish (a reaction
-        // publish caps at 15 s); only treat it as interrupted once it's older
-        // than the guard, so the sweep never races an in-flight attempt.
-        if (target.publishStatus == 'pending') {
-          final age = _now().difference(
-            DateTime.fromMillisecondsSinceEpoch(target.createdAt * 1000),
-          );
-          if (age < _config.interruptedPendingMinAge) {
-            skippedTooYoung++;
-            continue;
-          }
-        }
-
-        try {
-          final result = await _repository.retry(
-            rumorId: id,
-            targetMessageAuthor: target.targetMessageAuthor,
-          );
-          if (result.success) {
-            _attempts.remove(id);
-            _lastAttempt.remove(id);
-            recovered++;
-          } else {
-            _attempts[id] = attempts + 1;
-            _lastAttempt[id] = _now();
-            failed++;
-          }
-        } on Object catch (e, stackTrace) {
-          _attempts[id] = attempts + 1;
-          _lastAttempt[id] = _now();
-          failed++;
-          Log.error(
-            'reaction retry threw for $id: $e',
-            name: 'DmReactionRetryService',
-            category: LogCategory.system,
-            error: e,
-            stackTrace: stackTrace,
-          );
-          unawaited(
-            _crashReporting.recordError(
-              e,
-              stackTrace,
-              reason: DmReactionRetryServiceReportableSites
-                  .perReactionUnexpectedThrow,
-            ),
-          );
-        }
-      }
+      // Adds apply the pending min-age guard (a fresh 'pending' row may still
+      // have its original publish in flight). Removals do not: a
+      // 'deletion_pending' row is never in-flight for the sweep's purposes.
+      final r = await _driveTargets(
+        reactionTargets,
+        applyPendingMinAge: true,
+        driver: (t) => _repository.retry(
+          rumorId: t.rumorId,
+          targetMessageAuthor: t.targetMessageAuthor,
+        ),
+      );
+      final d = await _driveTargets(
+        deletionTargets,
+        applyPendingMinAge: false,
+        driver: (t) => _repository.retryDeletion(
+          rumorId: t.rumorId,
+          targetMessageAuthor: t.targetMessageAuthor,
+        ),
+      );
 
       Log.info(
         'sweep complete: '
-        'recovered=$recovered failed=$failed '
-        'skipped-backoff=$skippedBackoff '
-        'skipped-exhausted=$skippedExhausted '
-        'skipped-too-young=$skippedTooYoung',
+        'reactions(recovered=${r.recovered} failed=${r.failed} '
+        'skipped-backoff=${r.skippedBackoff} '
+        'skipped-exhausted=${r.skippedExhausted} '
+        'skipped-too-young=${r.skippedTooYoung}) '
+        'deletions(recovered=${d.recovered} failed=${d.failed} '
+        'skipped-backoff=${d.skippedBackoff} '
+        'skipped-exhausted=${d.skippedExhausted})',
         name: 'DmReactionRetryService',
         category: LogCategory.system,
       );
@@ -278,6 +248,103 @@ class DmReactionRetryService {
     } finally {
       _isSweeping = false;
     }
+  }
+
+  /// Drive one list of retry [targets] through [driver], sharing the in-memory
+  /// backoff/attempt tracking with every other kind of target (ids are
+  /// disjoint — a reaction is either live or soft-deleted, never both).
+  Future<
+    ({
+      int recovered,
+      int failed,
+      int skippedBackoff,
+      int skippedExhausted,
+      int skippedTooYoung,
+    })
+  >
+  _driveTargets(
+    List<DmReactionRetryTarget> targets, {
+    required bool applyPendingMinAge,
+    required Future<DmReactionPublishResult> Function(DmReactionRetryTarget)
+    driver,
+  }) async {
+    var recovered = 0;
+    var failed = 0;
+    var skippedBackoff = 0;
+    var skippedExhausted = 0;
+    var skippedTooYoung = 0;
+
+    for (final target in targets) {
+      final id = target.rumorId;
+      final attempts = _attempts[id] ?? 0;
+
+      if (attempts >= _config.maxRetries) {
+        skippedExhausted++;
+        continue;
+      }
+
+      final last = _lastAttempt[id];
+      if (last != null) {
+        final gap = _now().difference(last);
+        if (gap < _config.backoffFor(attempts)) {
+          skippedBackoff++;
+          continue;
+        }
+      }
+
+      // A still-`pending` reaction may have an in-flight publish (a reaction
+      // publish caps at 15 s); only treat it as interrupted once it's older
+      // than the guard, so the sweep never races an in-flight attempt.
+      if (applyPendingMinAge && target.publishStatus == 'pending') {
+        final age = _now().difference(
+          DateTime.fromMillisecondsSinceEpoch(target.createdAt * 1000),
+        );
+        if (age < _config.interruptedPendingMinAge) {
+          skippedTooYoung++;
+          continue;
+        }
+      }
+
+      try {
+        final result = await driver(target);
+        if (result.success) {
+          _attempts.remove(id);
+          _lastAttempt.remove(id);
+          recovered++;
+        } else {
+          _attempts[id] = attempts + 1;
+          _lastAttempt[id] = _now();
+          failed++;
+        }
+      } on Object catch (e, stackTrace) {
+        _attempts[id] = attempts + 1;
+        _lastAttempt[id] = _now();
+        failed++;
+        Log.error(
+          'reaction retry threw for $id: $e',
+          name: 'DmReactionRetryService',
+          category: LogCategory.system,
+          error: e,
+          stackTrace: stackTrace,
+        );
+        unawaited(
+          _crashReporting.recordError(
+            e,
+            stackTrace,
+            reason: DmReactionRetryServiceReportableSites
+                .perReactionUnexpectedThrow,
+          ),
+        );
+      }
+    }
+
+    return (
+      recovered: recovered,
+      failed: failed,
+      skippedBackoff: skippedBackoff,
+      skippedExhausted: skippedExhausted,
+      skippedTooYoung: skippedTooYoung,
+    );
   }
 
   void _pruneTracking(Set<String> liveIds) {

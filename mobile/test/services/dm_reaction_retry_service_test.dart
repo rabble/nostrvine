@@ -50,7 +50,16 @@ void main() {
       repository.retryableReactions,
     ).thenAnswer((_) async => const <DmReactionRetryTarget>[]);
     when(
+      repository.retryableDeletions,
+    ).thenAnswer((_) async => const <DmReactionRetryTarget>[]);
+    when(
       () => repository.retry(
+        rumorId: any(named: 'rumorId'),
+        targetMessageAuthor: any(named: 'targetMessageAuthor'),
+      ),
+    ).thenAnswer((_) async => _ok('r'));
+    when(
+      () => repository.retryDeletion(
         rumorId: any(named: 'rumorId'),
         targetMessageAuthor: any(named: 'targetMessageAuthor'),
       ),
@@ -64,10 +73,12 @@ void main() {
   DmReactionRetryService buildService({
     DmReactionRetryConfig retryConfig = const DmReactionRetryConfig(),
     DateTime Function()? now,
+    Stream<void>? retryTriggerStream,
   }) {
     return DmReactionRetryService(
       reactionsRepository: repository,
       appForegroundStream: foregroundController.stream,
+      retryTriggerStream: retryTriggerStream,
       retryConfig: retryConfig,
       now: now ?? () => DateTime.utc(2026, 5, 10, 12),
     );
@@ -298,6 +309,88 @@ void main() {
         verify(
           () => repository.retry(
             rumorId: 'r1',
+            targetMessageAuthor: _authorPubkey,
+          ),
+        ).called(1);
+      },
+    );
+
+    test('a retry-trigger event (reconnect) triggers a sweep', () async {
+      final triggerController = StreamController<void>.broadcast();
+      addTearDown(triggerController.close);
+      when(
+        repository.retryableReactions,
+      ).thenAnswer((_) async => [_target(rumorId: 'r1')]);
+
+      final service = buildService(
+        retryTriggerStream: triggerController.stream,
+      );
+      await service.initialize();
+      triggerController.add(null);
+      await Future<void>.delayed(Duration.zero);
+
+      verify(
+        () => repository.retry(
+          rumorId: 'r1',
+          targetMessageAuthor: _authorPubkey,
+        ),
+      ).called(1);
+      await service.dispose();
+    });
+
+    test('re-drives a pending removal via retryDeletion', () async {
+      when(repository.retryableDeletions).thenAnswer(
+        (_) async => [
+          _target(rumorId: 'd1', publishStatus: 'deletion_pending'),
+        ],
+      );
+      when(
+        () => repository.retryDeletion(
+          rumorId: 'd1',
+          targetMessageAuthor: _authorPubkey,
+        ),
+      ).thenAnswer((_) async => _ok('d1'));
+
+      await buildService().sweep();
+
+      verify(
+        () => repository.retryDeletion(
+          rumorId: 'd1',
+          targetMessageAuthor: _authorPubkey,
+        ),
+      ).called(1);
+    });
+
+    test(
+      'a removal is re-driven regardless of the pending min-age guard',
+      () async {
+        final now = DateTime.utc(2026, 5, 10, 12);
+        final youngCreatedAt =
+            now.subtract(const Duration(seconds: 5)).millisecondsSinceEpoch ~/
+            1000;
+        when(repository.retryableDeletions).thenAnswer(
+          (_) async => [
+            _target(
+              rumorId: 'd1',
+              publishStatus: 'deletion_pending',
+              createdAt: youngCreatedAt,
+            ),
+          ],
+        );
+        when(
+          () => repository.retryDeletion(
+            rumorId: 'd1',
+            targetMessageAuthor: _authorPubkey,
+          ),
+        ).thenAnswer((_) async => _ok('d1'));
+
+        await buildService(now: () => now).sweep();
+
+        // Unlike an add, a 'deletion_pending' row is never in-flight for the
+        // sweep, so the min-age guard must not hold it back.
+        verify(
+          () => repository.retryDeletion(
+            rumorId: 'd1',
             targetMessageAuthor: _authorPubkey,
           ),
         ).called(1);

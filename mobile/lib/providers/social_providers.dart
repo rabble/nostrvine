@@ -5,6 +5,7 @@
 import 'dart:async';
 
 import 'package:collaborator_repository/collaborator_repository.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
@@ -260,9 +261,19 @@ DmReactionRetryService? dmReactionRetryService(Ref ref) {
   final foregroundController = StreamController<bool>();
   ref.onDispose(foregroundController.close);
 
+  // Re-drive undelivered reactions/removals the moment connectivity returns,
+  // not only on app-foreground transitions — a reaction left during a brief
+  // network drop would otherwise sit undelivered until the app is backgrounded
+  // and re-foregrounded. Any event carrying some connectivity fires a sweep
+  // (the sweep short-circuits when nothing is retryable).
+  final retryTriggerStream = Connectivity().onConnectivityChanged
+      .where((results) => results.any((r) => r != ConnectivityResult.none))
+      .map<void>((_) {});
+
   final service = DmReactionRetryService(
     reactionsRepository: reactionsRepository,
     appForegroundStream: foregroundController.stream,
+    retryTriggerStream: retryTriggerStream,
   );
 
   service.initialize().catchError((e) {
