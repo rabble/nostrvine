@@ -10,7 +10,6 @@ import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
-import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/foreground_idle_warmup_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -21,6 +20,7 @@ import 'package:openvine/providers/shell_obscured_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
+import 'package:openvine/screens/feed/feed_tuning_snackbar.dart';
 import 'package:openvine/screens/feed/video_feed_page/feed_empty_widget.dart';
 import 'package:openvine/screens/feed/video_feed_page/feed_error_widget.dart';
 import 'package:openvine/services/startup_performance_service.dart';
@@ -230,25 +230,14 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   }
 
   void _showTuningSnackbar(VideoFeedTuningAction action) {
-    final l10n = context.l10n;
-    final label = action.direction == FeedTuningDirection.more
-        ? l10n.feedTuningMoreLabel
-        : l10n.feedTuningLessLabel;
     final eventId = action.publishedEventId;
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.floating,
-          content: Text(label),
-          action: eventId == null
-              ? null
-              : SnackBarAction(
-                  label: l10n.feedTuningUndo,
-                  onPressed: () => _undoTuning(eventId, action.videoId),
-                ),
-        ),
-      );
+    showFeedTuningSnackbar(
+      context,
+      direction: action.direction,
+      onUndo: eventId == null
+          ? null
+          : () => _undoTuning(eventId, action.videoId),
+    );
   }
 
   void _dismissTuningSnackbar() {

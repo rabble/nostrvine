@@ -29,6 +29,7 @@ import 'package:openvine/screens/feed/dm_reply_context.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_coordinator.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/screens/feed/feed_settings_menu.dart';
+import 'package:openvine/screens/feed/feed_tuning_snackbar.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -496,25 +497,14 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   }
 
   void _showTuningSnackbar(FullscreenFeedTuningAction action) {
-    final l10n = context.l10n;
-    final label = action.direction == FeedTuningDirection.more
-        ? l10n.feedTuningMoreLabel
-        : l10n.feedTuningLessLabel;
     final eventId = action.publishedEventId;
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.floating,
-          content: Text(label),
-          action: eventId == null
-              ? null
-              : SnackBarAction(
-                  label: l10n.feedTuningUndo,
-                  onPressed: () => _undoTuning(eventId, action.videoId),
-                ),
-        ),
-      );
+    showFeedTuningSnackbar(
+      context,
+      direction: action.direction,
+      onUndo: eventId == null
+          ? null
+          : () => _undoTuning(eventId, action.videoId),
+    );
   }
 
   void _undoTuning(String feedTuningEventId, String videoId) {
