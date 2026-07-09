@@ -10,17 +10,27 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/widgets/video_clip/video_clip_preview.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 import '../../helpers/go_router.dart';
 
+class _MockGallerySaveService extends Mock implements GallerySaveService {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late MockGoRouter mockGoRouter;
+  late _MockGallerySaveService mockGallerySaveService;
+
+  setUpAll(() {
+    registerFallbackValue(EditorVideo.file('/fallback.mp4'));
+  });
 
   setUp(() {
+    mockGallerySaveService = _MockGallerySaveService();
     DivineVideoPlayerController.resetIdCounterForTesting();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(const MethodChannel('divine_video_player'), (
@@ -58,6 +68,9 @@ void main() {
 
     Widget buildTestWidget({VoidCallback? onDelete}) {
       return ProviderScope(
+        overrides: [
+          gallerySaveServiceProvider.overrideWithValue(mockGallerySaveService),
+        ],
         child: MockGoRouterProvider(
           goRouter: mockGoRouter,
           child: MaterialApp(
@@ -179,6 +192,73 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+
+    group('save result snackbar', () {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final destination = GallerySaveService.destinationName;
+
+      Future<void> pumpAndSave(
+        WidgetTester tester,
+        GallerySaveResult result,
+      ) async {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('divine_video_player/player_0'),
+              (call) async => null,
+            );
+        addTearDown(() {
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+              .setMockMethodCallHandler(
+                const MethodChannel('divine_video_player/player_0'),
+                null,
+              );
+        });
+
+        when(
+          () => mockGallerySaveService.saveVideoToGallery(any()),
+        ).thenAnswer((_) async => result);
+
+        await tester.pumpWidget(buildTestWidget());
+        await tester.pump(const Duration(milliseconds: 100));
+
+        await tester.tap(
+          find.byWidgetPredicate(
+            (w) => w is DivineIcon && w.icon == DivineIconName.downloadSimple,
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+      }
+
+      testWidgets('shows saved message on $GallerySaveSuccess', (tester) async {
+        await pumpAndSave(tester, const GallerySaveSuccess());
+
+        expect(
+          find.text(l10n.libraryClipsSavedToDestination(1, destination)),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets(
+        'shows permission message on $GallerySavePermissionDenied',
+        (tester) async {
+          await pumpAndSave(tester, const GallerySavePermissionDenied());
+
+          expect(
+            find.text(l10n.libraryGalleryPermissionDenied(destination)),
+            findsOneWidget,
+          );
+        },
+      );
+
+      testWidgets('shows failure message on $GallerySaveFailure', (
+        tester,
+      ) async {
+        await pumpAndSave(tester, const GallerySaveFailure('disk full'));
+
+        expect(find.text(l10n.videoClipSaveFailed), findsOneWidget);
+      });
     });
   });
 }
