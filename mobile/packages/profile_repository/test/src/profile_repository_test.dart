@@ -1236,6 +1236,50 @@ void main() {
             ).called(1);
           },
         );
+
+        test(
+          'keeps a named cached profile when a newer blank kind-0 arrives',
+          () async {
+            final cachedProfile = UserProfile(
+              pubkey: testPubkey,
+              rawData: const {'display_name': 'Cached Name'},
+              createdAt: DateTime.utc(2024),
+              eventId: 'cached_$testEventId',
+              displayName: 'Cached Name',
+              picture: 'https://example.com/cached-avatar.png',
+            );
+            await profileRepository.cacheProfile(cachedProfile);
+            clearInteractions(mockUserProfilesDao);
+
+            final blankProfileEvent = MockEvent();
+            when(() => blankProfileEvent.kind).thenReturn(0);
+            when(() => blankProfileEvent.pubkey).thenReturn(testPubkey);
+            when(() => blankProfileEvent.createdAt).thenReturn(1706745600);
+            when(() => blankProfileEvent.id).thenReturn('blank_$testEventId');
+            when(() => blankProfileEvent.content).thenReturn(jsonEncode({}));
+            when(
+              () => mockNostrClient.fetchProfile(testPubkey),
+            ).thenAnswer((_) async => blankProfileEvent);
+
+            final result = await profileRepository.fetchFreshProfile(
+              pubkey: testPubkey,
+            );
+
+            expect(result, same(cachedProfile));
+            verify(() => mockUserProfilesDao.getProfile(testPubkey)).called(1);
+            verifyNever(
+              () => mockUserProfilesDao.upsertProfile(
+                any(
+                  that: isA<UserProfile>().having(
+                    (profile) => profile.eventId,
+                    'eventId',
+                    'blank_$testEventId',
+                  ),
+                ),
+              ),
+            );
+          },
+        );
       });
 
       group('parallel relay + indexer fetch', () {

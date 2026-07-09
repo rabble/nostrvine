@@ -395,8 +395,13 @@ class ProfileRepository {
       requireRawKind0: requireRawKind0,
     );
     if (relayProfile != null) {
-      await _cacheProfileIfNewer(relayProfile);
-      return relayProfile;
+      final existing = await _userProfilesDao.getProfile(pubkey);
+      final relayWon = await _cacheProfileIfNewer(
+        relayProfile,
+        cached: existing,
+        cachedResolved: true,
+      );
+      return relayWon ? relayProfile : existing;
     }
 
     if (requireRawKind0) {
@@ -439,6 +444,11 @@ class ProfileRepository {
         : await _userProfilesDao.getProfile(profile.pubkey);
     if (cachedProfile != null &&
         !profile.createdAt.isAfter(cachedProfile.createdAt)) {
+      return false;
+    }
+    if (cachedProfile != null &&
+        cachedProfile.hasBasicInfo &&
+        !profile.hasBasicInfo) {
       return false;
     }
 
