@@ -11,13 +11,13 @@ List<RouteBase> libraryRoutes() {
       path: LibraryScreen.draftsPath,
       name: LibraryScreen.draftsRouteName,
       pageBuilder: (_, state) =>
-          fadeUpwardsPage(key: state.pageKey, child: const LibraryScreen()),
+          fadeUpwardsPage(state: state, child: const LibraryScreen()),
     ),
     GoRoute(
       path: LibraryScreen.clipsPath,
       name: LibraryScreen.clipsRouteName,
       pageBuilder: (_, state) => fadeUpwardsPage(
-        key: state.pageKey,
+        state: state,
         child: const LibraryScreen(initialTabIndex: 1),
       ),
     ),
@@ -25,7 +25,7 @@ List<RouteBase> libraryRoutes() {
       path: LibraryScreen.clipsOnlyPath,
       name: LibraryScreen.clipsOnlyRouteName,
       pageBuilder: (_, state) => fadeUpwardsPage(
-        key: state.pageKey,
+        state: state,
         child: const LibraryScreen(tabsMode: LibraryTabsMode.clipsOnly),
       ),
     ),
@@ -33,7 +33,7 @@ List<RouteBase> libraryRoutes() {
       path: LibraryScreen.soundsPath,
       name: LibraryScreen.soundsRouteName,
       pageBuilder: (_, state) => fadeUpwardsPage(
-        key: state.pageKey,
+        state: state,
         child: const LibraryScreen(initialTabIndex: 2),
       ),
     ),
