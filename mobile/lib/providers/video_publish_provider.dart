@@ -71,6 +71,13 @@ MentionResolutionService? createVideoPublishMentionResolutionService(
 
 /// Manages video publish screen state including playback and position.
 class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
+  /// Source-draft ids with a publish currently in flight. Lives outside
+  /// [state] because [clearAll] intentionally resets the state ~600ms
+  /// after navigation while the publish future keeps running for 20s+;
+  /// a state-based guard reopens in that window and admits duplicate
+  /// publishes of the same draft (#6018).
+  final Set<String> _inFlightSourceDraftIds = {};
+
   DraftStorageService get _draftService =>
       ref.read(draftStorageServiceProvider);
   CawgVerifierClient get _cawgVerifierClient =>
@@ -322,8 +329,9 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
     BuildContext context,
     DivineVideoDraft draft,
   ) async {
-    // Only block if actively preparing/uploading
-    if (state.publishState == .preparing || state.publishState == .uploading) {
+    final sourceDraftId = draft.sourceDraftId ?? draft.id;
+    if (state.publishState == .preparing ||
+        _inFlightSourceDraftIds.contains(sourceDraftId)) {
       Log.warning(
         '⚠️ Publish already in progress, ignoring duplicate request',
         name: 'VideoPublishNotifier',
@@ -332,6 +340,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       return;
     }
 
+    _inFlightSourceDraftIds.add(sourceDraftId);
     state = state.copyWith(publishState: .preparing);
 
     try {
@@ -501,6 +510,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         stackTrace: stackTrace,
       );
     } finally {
+      _inFlightSourceDraftIds.remove(sourceDraftId);
       Log.info(
         '🏁 Publish process completed',
         name: 'VideoPublishNotifier',

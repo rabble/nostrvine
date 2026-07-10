@@ -1,6 +1,7 @@
 // ABOUTME: Unit tests for VideoPublishNotifier
 // ABOUTME: Tests state management for video publishing
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -9,15 +10,24 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show NativeProofData;
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/video_publish/video_publish_state.dart';
 import 'package:openvine/models/video_reply_context.dart';
+import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/services/cawg_verifier_client.dart';
+import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/mention_resolution_service.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:profile_repository/profile_repository.dart';
 
 class MockProfileRepository extends Mock implements ProfileRepository {}
+
+class _MockDraftStorageService extends Mock implements DraftStorageService {}
+
+class _FakeDivineVideoDraft extends Fake implements DivineVideoDraft {}
 
 void main() {
   group('VideoPublishNotifier', () {
@@ -208,5 +218,91 @@ void main() {
       expect(destination.path, VideoDetailScreen.pathForId(rootAddressableId));
       expect(destination.extra.autoOpenComments, isTrue);
     });
+  });
+
+  group('VideoPublishNotifier publishVideo duplicate guard (#6018)', () {
+    setUpAll(() {
+      registerFallbackValue(_FakeDivineVideoDraft());
+    });
+
+    DivineVideoDraft createDraft() {
+      final clip = DivineVideoClip(
+        id: 'clip_1',
+        video: EditorVideo.file('/tmp/test.mp4'),
+        duration: const Duration(seconds: 6),
+        recordedAt: DateTime(2025),
+        originalAspectRatio: 9 / 16,
+        targetAspectRatio: .vertical,
+      );
+      return DivineVideoDraft(
+        id: 'draft_1',
+        clips: [clip],
+        title: 'Plants',
+        description: '',
+        hashtags: const {},
+        selectedApproach: 'camera',
+        createdAt: DateTime(2025),
+        lastModified: DateTime(2025),
+        publishStatus: PublishStatus.draft,
+        publishAttempts: 0,
+        finalRenderedClip: clip,
+        // Creator identity metadata present so publishVideo skips the
+        // proof refresh and suspends on the mocked saveDraft below.
+        proofManifestJson: jsonEncode(
+          const NativeProofData(
+            videoHash: 'abc123',
+            creatorBindingAssertionLabel: 'video.divine.nostr.creator_binding',
+            creatorBindingPayloadJson: '{"version":1}',
+          ).toJson(),
+        ),
+      );
+    }
+
+    testWidgets(
+      'reset during an in-flight publish does not reopen the gate for '
+      'the same source draft',
+      (tester) async {
+        final mockDraftStorage = _MockDraftStorageService();
+        // Never completes - keeps the first publish in flight, like the
+        // 20s+ audio-reuse window in production.
+        final saveDraftGate = Completer<void>();
+        when(
+          () => mockDraftStorage.saveDraft(any()),
+        ).thenAnswer((_) => saveDraftGate.future);
+
+        final container = ProviderContainer(
+          overrides: [
+            draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(home: SizedBox()),
+          ),
+        );
+        final context = tester.element(find.byType(SizedBox));
+        final notifier = container.read(videoPublishProvider.notifier);
+        final draft = createDraft();
+
+        unawaited(notifier.publishVideo(context, draft));
+        await tester.pump();
+        expect(
+          container.read(videoPublishProvider).publishState,
+          VideoPublishState.preparing,
+        );
+
+        // clearAll resets the state ~600ms after navigation while the
+        // publish future is still running - simulate that state wipe.
+        notifier.reset();
+
+        unawaited(notifier.publishVideo(context, draft));
+        await tester.pump();
+
+        verify(() => mockDraftStorage.saveDraft(any())).called(1);
+      },
+    );
   });
 }

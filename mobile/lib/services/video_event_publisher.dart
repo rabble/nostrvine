@@ -200,6 +200,12 @@ class VideoEventPublisher {
   int _totalEventsFailed = 0;
   DateTime? _lastPublishTime;
 
+  /// In-flight direct publishes keyed by the upload's d-tag
+  /// ([PendingUpload.videoId]). Coalesces concurrent
+  /// [publishDirectUpload] calls for the same upload so only one
+  /// addressable event is signed and broadcast (#6018).
+  final Map<String, Future<bool>> _inFlightDirectPublishes = {};
+
   /// The outer timeout that will bound the next call into
   /// [NostrClient.publishEventAwaitOk] inside [_publishEventToNostr], computed
   /// live from [outerPublishTimeoutFor] and the current
@@ -850,6 +856,13 @@ class VideoEventPublisher {
   }
 
   /// Publish a video directly without polling (for direct upload)
+  ///
+  /// Concurrent calls for the same [PendingUpload.videoId] (the
+  /// addressable event's d-tag) are coalesced: the second caller awaits
+  /// the in-flight publish's result instead of signing and broadcasting
+  /// a duplicate event with a fresh id (#6018). The audio-reuse step can
+  /// keep a publish in flight for 20s+, which is the window where the
+  /// duplicates were minted.
   Future<bool> publishDirectUpload(
     PendingUpload upload, {
     int? expirationTimestamp,
@@ -868,7 +881,8 @@ class VideoEventPublisher {
     VideoReplyContext? replyContext,
     bool addReplyToFeed = false,
   }) async {
-    if (upload.videoId == null || upload.cdnUrl == null) {
+    final videoId = upload.videoId;
+    if (videoId == null || upload.cdnUrl == null) {
       Log.error(
         'Cannot publish upload - missing videoId or cdnUrl',
         name: 'VideoEventPublisher',
@@ -877,6 +891,61 @@ class VideoEventPublisher {
       return false;
     }
 
+    final inFlight = _inFlightDirectPublishes[videoId];
+    if (inFlight != null) {
+      Log.warning(
+        'Publish already in flight for video $videoId - awaiting its '
+        'result instead of signing a duplicate event',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      return inFlight;
+    }
+
+    final publish = _publishDirectUploadUnlocked(
+      upload,
+      expirationTimestamp: expirationTimestamp,
+      allowAudioReuse: allowAudioReuse,
+      collaboratorPubkeys: collaboratorPubkeys,
+      mentionedPubkeys: mentionedPubkeys,
+      thumbnailTimestamp: thumbnailTimestamp,
+      inspiredByAddressableId: inspiredByAddressableId,
+      inspiredByRelayUrl: inspiredByRelayUrl,
+      inspiredByNpub: inspiredByNpub,
+      selectedAudio: selectedAudio,
+      selectedAudioEventId: selectedAudioEventId,
+      selectedAudioRelay: selectedAudioRelay,
+      language: language,
+      contentWarning: contentWarning,
+      replyContext: replyContext,
+      addReplyToFeed: addReplyToFeed,
+    );
+    _inFlightDirectPublishes[videoId] = publish;
+    try {
+      return await publish;
+    } finally {
+      _inFlightDirectPublishes.remove(videoId);
+    }
+  }
+
+  Future<bool> _publishDirectUploadUnlocked(
+    PendingUpload upload, {
+    int? expirationTimestamp,
+    bool allowAudioReuse = false,
+    List<String> collaboratorPubkeys = const [],
+    List<String> mentionedPubkeys = const [],
+    Duration? thumbnailTimestamp,
+    String? inspiredByAddressableId,
+    String? inspiredByRelayUrl,
+    String? inspiredByNpub,
+    AudioEvent? selectedAudio,
+    String? selectedAudioEventId,
+    String? selectedAudioRelay,
+    String? language,
+    String? contentWarning,
+    VideoReplyContext? replyContext,
+    bool addReplyToFeed = false,
+  }) async {
     // Validate that at least one video URL is a proper HTTP/HTTPS URL
     // This prevents local file paths from being published to Nostr
     final hasValidVideoUrl =
