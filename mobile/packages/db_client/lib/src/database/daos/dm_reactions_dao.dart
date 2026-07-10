@@ -36,6 +36,11 @@ class DmReactionsDao extends DatabaseAccessor<AppDatabase>
   /// Terminal `publish_status` for a deletion whose kind-5 reached a relay.
   static const String _deletionSentStatus = 'deletion_sent';
 
+  /// Terminal `publish_status` for an outgoing reaction the send policy (#176
+  /// protected-minor DM restriction) refused. Not retryable — excluded from
+  /// [getRetryableOwnReactions] — since retrying only re-hits the same policy.
+  static const String _blockedStatus = 'blocked';
+
   /// Insert an optimistic outgoing row before the publish attempt, atomically
   /// superseding any prior LIVE reactions by this reactor on this target.
   ///
@@ -185,6 +190,25 @@ class DmReactionsDao extends DatabaseAccessor<AppDatabase>
     )..where((t) => t.id.equals(id) & t.ownerPubkey.equals(ownerPubkey))).write(
       const DmMessageReactionsCompanion(publishStatus: Value('pending')),
     );
+  }
+
+  /// Mark an outgoing row terminally `'blocked'` — the send policy refused the
+  /// recipient (#176). Clears `rumorEventJson` so the row can never be selected
+  /// by [getRetryableOwnReactions] (which requires a stored rumor), making the
+  /// block terminal on both the status and the rumor-presence predicate.
+  Future<void> markBlocked({
+    required String id,
+    required String ownerPubkey,
+  }) async {
+    await (update(dmMessageReactions)..where(
+          (t) => t.id.equals(id) & t.ownerPubkey.equals(ownerPubkey),
+        ))
+        .write(
+          const DmMessageReactionsCompanion(
+            publishStatus: Value(_blockedStatus),
+            rumorEventJson: Value(null),
+          ),
+        );
   }
 
   /// Soft-delete a row (NIP-09 kind 5 deletion received, or own-reaction

@@ -319,6 +319,37 @@ void main() {
     });
 
     test(
+      'markBlocked marks the row blocked, clears rumor json, and drops it '
+      'from the retryable set so the sweep and a re-tap never re-drive it',
+      () async {
+        await insertPending();
+
+        await dao.markBlocked(id: _pendingId, ownerPubkey: _ownerA);
+
+        final row = await dao.getById(id: _pendingId, ownerPubkey: _ownerA);
+        expect(row!.publishStatus, equals('blocked'));
+        expect(
+          row.rumorEventJson,
+          isNull,
+          reason: 'A blocked send is terminal; no rumor is kept for retry.',
+        );
+        // Still live (not soft-deleted) so it renders as a settled own chip.
+        expect(row.isDeleted, isFalse);
+
+        final retryable = await dao.getRetryableOwnReactions(
+          ownerPubkey: _ownerA,
+        );
+        expect(
+          retryable.map((r) => r.id),
+          isNot(contains(_pendingId)),
+          reason:
+              'blocked is neither failed nor pending, and has no rumor '
+              'json — excluded on both predicates.',
+        );
+      },
+    );
+
+    test(
       'getRetryableOwnReactions returns failed and pending own reactions '
       'with stored rumor json',
       () async {

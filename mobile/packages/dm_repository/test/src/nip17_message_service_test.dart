@@ -287,7 +287,7 @@ void main() {
 
       test(
         'explicit OK-false rejection → hard failure (not retryable-pending); '
-        'self-wrap still published',
+        'self-wrap NOT published (recipient definitely did not get it)',
         () async {
           final (result, selfWraps) = await sendReaction(
             outcome(rejected: const {'wss://relay.example.com': 'blocked'}),
@@ -295,13 +295,23 @@ void main() {
 
           expect(result.success, isFalse);
           expect(result.retryablePending, isFalse);
-          expect(selfWraps, 1);
+          // A hard rejection means the recipient never got the reaction.
+          // Publishing the self-wrap anyway would surface a phantom reaction
+          // on the sender's other devices (ingested as a plain `received` row
+          // with no retry metadata), so it must be skipped.
+          expect(
+            selfWraps,
+            0,
+            reason:
+                'Self-wrap on a rejected send creates a phantom reaction '
+                'the recipient never received.',
+          );
         },
       );
 
       test(
         'offline (nothing reached any relay) → non-retryable-pending failure '
-        'so the sweep re-drives it immediately; self-wrap still published',
+        'so the sweep re-drives it immediately; self-wrap NOT published',
         () async {
           // Empty accepted/rejected/noResponse == nothing was sent anywhere.
           final (result, selfWraps) = await sendReaction(outcome());
@@ -310,7 +320,15 @@ void main() {
           // Marked failed (not dim pending) so the reconnect sweep re-sends it
           // without the in-flight min-age guard holding it back.
           expect(result.retryablePending, isFalse);
-          expect(selfWraps, 1);
+          // Nothing reached a relay, so the recipient has nothing — a self-wrap
+          // would be a phantom. The whole rumor is re-driven on reconnect.
+          expect(
+            selfWraps,
+            0,
+            reason:
+                'Self-wrap while offline creates a phantom reaction on the '
+                "sender's other devices.",
+          );
         },
       );
     });

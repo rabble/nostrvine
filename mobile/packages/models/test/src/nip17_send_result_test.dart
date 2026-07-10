@@ -65,6 +65,52 @@ void main() {
         expect(result.timestamp, isNull);
       });
 
+      test('defaults retryablePending and blocked to false', () {
+        const result = NIP17SendResult.failure('boom');
+
+        expect(result.retryablePending, isFalse);
+        expect(result.blocked, isFalse);
+      });
+
+      test('preserves retryablePending=true when explicitly passed — the '
+          'soft unconfirmed case reaction callers keep sweep-retryable', () {
+        const result = NIP17SendResult.failure(
+          'recipient OK unconfirmed',
+          retryablePending: true,
+        );
+
+        expect(result.success, isFalse);
+        expect(result.retryablePending, isTrue);
+        expect(
+          result.blocked,
+          isFalse,
+          reason: 'A soft unconfirmed failure is not a policy block.',
+        );
+      });
+
+      test('success and blocked never report retryablePending', () {
+        final success = NIP17SendResult.success(
+          rumorEventId: rumorEventId,
+          messageEventId: messageEventId,
+          recipientPubkey: recipientPubkey,
+        );
+        const blocked = NIP17SendResult.blocked('policy');
+
+        expect(success.retryablePending, isFalse);
+        expect(blocked.retryablePending, isFalse);
+      });
+    });
+
+    group('blocked factory', () {
+      test('is a non-retryable failure distinct from a transient one', () {
+        const result = NIP17SendResult.blocked('policy refused recipient');
+
+        expect(result.success, isFalse);
+        expect(result.blocked, isTrue);
+        expect(result.retryablePending, isFalse);
+        expect(result.error, equals('policy refused recipient'));
+      });
+
       test('leaves selfWrapPublished as null on the failure branch — the '
           'field is meaningful only when success is true (self-wrap is '
           'never attempted when the recipient publish fails)', () {
@@ -98,6 +144,20 @@ void main() {
         expect(result.toString(), startsWith('NIP17SendFailure('));
         expect(result.toString(), contains('error: relay timeout'));
         expect(result.toString(), isNot(contains('selfWrapPublished')));
+      });
+
+      test('failure path surfaces blocked and retryablePending so a '
+          'regression dropping either from the shape is visible', () {
+        const soft = NIP17SendResult.failure(
+          'unconfirmed',
+          retryablePending: true,
+        );
+        const blocked = NIP17SendResult.blocked('policy');
+
+        expect(soft.toString(), contains('retryablePending: true'));
+        expect(soft.toString(), contains('blocked: false'));
+        expect(blocked.toString(), contains('blocked: true'));
+        expect(blocked.toString(), contains('retryablePending: false'));
       });
     });
 
@@ -200,6 +260,24 @@ void main() {
           const NIP17SendFailure('boom').hashCode,
           equals(const NIP17SendFailure('boom').hashCode),
         );
+      });
+
+      test('value equality: differing retryablePending breaks equality '
+          '(the field participates in == and hashCode)', () {
+        const hard = NIP17SendFailure('boom');
+        const soft = NIP17SendFailure('boom', retryablePending: true);
+
+        expect(hard, isNot(equals(soft)));
+        expect(hard.hashCode, isNot(equals(soft.hashCode)));
+      });
+
+      test('value equality: blocked and transient failures with the same '
+          'error are never equal (the blocked field participates in ==)', () {
+        const transient = NIP17SendFailure('policy');
+        const blocked = NIP17SendFailure.blocked('policy');
+
+        expect(transient, isNot(equals(blocked)));
+        expect(transient.hashCode, isNot(equals(blocked.hashCode)));
       });
 
       test('value equality: success and failure are never equal', () {

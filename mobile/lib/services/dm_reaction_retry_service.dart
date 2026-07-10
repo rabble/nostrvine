@@ -126,6 +126,18 @@ class DmReactionRetryService {
   final DateTime Function() _now;
   final CrashReportingService _crashReporting;
 
+  /// Tracking-key prefix for the add/publish retry phase.
+  static const String _addPhase = 'add';
+
+  /// Tracking-key prefix for the removal (kind-5) retry phase.
+  static const String _deletionPhase = 'del';
+
+  /// Backoff/attempt tracking, keyed by `'<phase>:<rumorId>'`. The phase prefix
+  /// keeps the add and deletion budgets separate: a row keeps its rumor id when
+  /// it flips from a `failed`/`pending` add to a `deletion_pending` removal, so
+  /// a bare-id key would let a removal inherit the add phase's exhausted budget
+  /// and never re-drive the kind-5 (the counterparty keeps a reaction you
+  /// removed until the next cold start).
   final Map<String, int> _attempts = {};
   final Map<String, DateTime> _lastAttempt = {};
 
@@ -194,8 +206,8 @@ class DmReactionRetryService {
       final reactionTargets = await _repository.retryableReactions();
       final deletionTargets = await _repository.retryableDeletions();
       _pruneTracking(<String>{
-        for (final t in reactionTargets) t.rumorId,
-        for (final t in deletionTargets) t.rumorId,
+        for (final t in reactionTargets) '$_addPhase:${t.rumorId}',
+        for (final t in deletionTargets) '$_deletionPhase:${t.rumorId}',
       });
 
       // Adds apply the pending min-age guard (a fresh 'pending' row may still
@@ -203,6 +215,7 @@ class DmReactionRetryService {
       // 'deletion_pending' row is never in-flight for the sweep's purposes.
       final r = await _driveTargets(
         reactionTargets,
+        phase: _addPhase,
         applyPendingMinAge: true,
         driver: (t) => _repository.retry(
           rumorId: t.rumorId,
@@ -211,6 +224,7 @@ class DmReactionRetryService {
       );
       final d = await _driveTargets(
         deletionTargets,
+        phase: _deletionPhase,
         applyPendingMinAge: false,
         driver: (t) => _repository.retryDeletion(
           rumorId: t.rumorId,
@@ -250,9 +264,10 @@ class DmReactionRetryService {
     }
   }
 
-  /// Drive one list of retry [targets] through [driver], sharing the in-memory
-  /// backoff/attempt tracking with every other kind of target (ids are
-  /// disjoint — a reaction is either live or soft-deleted, never both).
+  /// Drive one list of retry [targets] through [driver]. Backoff/attempt
+  /// tracking is keyed by `'<phase>:<rumorId>'` so the add and deletion phases
+  /// keep independent budgets even though a row keeps its rumor id across the
+  /// `failed`/`pending` → `deletion_pending` lifecycle flip.
   Future<
     ({
       int recovered,
@@ -264,6 +279,7 @@ class DmReactionRetryService {
   >
   _driveTargets(
     List<DmReactionRetryTarget> targets, {
+    required String phase,
     required bool applyPendingMinAge,
     required Future<DmReactionPublishResult> Function(DmReactionRetryTarget)
     driver,
@@ -275,7 +291,7 @@ class DmReactionRetryService {
     var skippedTooYoung = 0;
 
     for (final target in targets) {
-      final id = target.rumorId;
+      final id = '$phase:${target.rumorId}';
       final attempts = _attempts[id] ?? 0;
 
       if (attempts >= _config.maxRetries) {

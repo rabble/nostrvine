@@ -46,6 +46,17 @@ import 'package:unified_logger/unified_logger.dart';
 
 part 'social_providers.g.dart';
 
+/// Reconnect trigger for the DM retry sweeps (messages, reactions, removals):
+/// emits once each time `connectivity_plus` reports any non-`none` result, so
+/// work queued during a brief network drop is re-driven the moment
+/// connectivity returns — without waiting for an app-foreground transition.
+/// The sweeps short-circuit when nothing is retryable. Shared by the message
+/// and reaction retry providers so the trigger shape stays in one place.
+Stream<void> _dmRetryConnectivityTriggerStream() => Connectivity()
+    .onConnectivityChanged
+    .where((results) => results.any((r) => r != ConnectivityResult.none))
+    .map<void>((_) {});
+
 final collaboratorResponseServiceProvider =
     Provider<CollaboratorResponseService>((ref) {
       return CollaboratorResponseService(
@@ -196,11 +207,8 @@ OutgoingDmRetryService? outgoingDmRetryService(Ref ref) {
   // Re-drive undelivered messages the moment connectivity returns, not only on
   // app-foreground transitions — a message queued during a brief network drop
   // would otherwise sit undelivered until the app is backgrounded and
-  // re-foregrounded. Any event carrying some connectivity fires a sweep (the
-  // sweep short-circuits when nothing is retryable).
-  final retryTriggerStream = Connectivity().onConnectivityChanged
-      .where((results) => results.any((r) => r != ConnectivityResult.none))
-      .map<void>((_) {});
+  // re-foregrounded.
+  final retryTriggerStream = _dmRetryConnectivityTriggerStream();
 
   final service = OutgoingDmRetryService(
     dmRepository: dmRepository,
@@ -274,11 +282,8 @@ DmReactionRetryService? dmReactionRetryService(Ref ref) {
   // Re-drive undelivered reactions/removals the moment connectivity returns,
   // not only on app-foreground transitions — a reaction left during a brief
   // network drop would otherwise sit undelivered until the app is backgrounded
-  // and re-foregrounded. Any event carrying some connectivity fires a sweep
-  // (the sweep short-circuits when nothing is retryable).
-  final retryTriggerStream = Connectivity().onConnectivityChanged
-      .where((results) => results.any((r) => r != ConnectivityResult.none))
-      .map<void>((_) {});
+  // and re-foregrounded.
+  final retryTriggerStream = _dmRetryConnectivityTriggerStream();
 
   final service = DmReactionRetryService(
     reactionsRepository: reactionsRepository,

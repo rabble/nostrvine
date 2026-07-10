@@ -860,7 +860,9 @@ class DmMessageReactions extends Table {
       text().nullable().named('rumor_event_json')();
 
   /// Publish status for outgoing rows; null for incoming (received from
-  /// relay). Values: `pending`, `sent`, `failed`.
+  /// relay). Values: `pending`, `sent`, `failed`, `blocked` (send-policy
+  /// refused, terminal), `deletion_pending` (soft-deleted, kind-5 awaiting
+  /// durable delivery), `deletion_sent` (kind-5 confirmed, terminal).
   TextColumn get publishStatus => text().nullable().named('publish_status')();
 
   @override

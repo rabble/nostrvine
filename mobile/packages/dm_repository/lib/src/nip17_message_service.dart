@@ -360,18 +360,38 @@ class NIP17MessageService {
                 timeout: _recipientOkConfirmTimeout,
               );
 
-        // Always publish the self-addressed wrap, even when the recipient OK
-        // is unconfirmed. The event frame may have been stored+broadcast (so
-        // the recipient already has the reaction) while the OK was lost/late
-        // on a flaky relay; skipping the self-wrap here would strand this
-        // device's own copy on reinstall / other devices. The self-wrap is
-        // p-tagged to the sender only, so publishing it on an unconfirmed
-        // recipient send never double-delivers to the counterparty.
-        final selfWrapPublished = await _publishSelfWrap(
-          nostr: nostr,
-          rumorEvent: rumorEvent,
-          prebuiltSelfWrap: prebuiltSelfWrap,
-        );
+        // Classify the outcome BEFORE deciding on the self-wrap. Three cases:
+        //  * explicit OK-false → hard rejection: the recipient definitely did
+        //    not get it.
+        //  * nothing reached any relay (offline) → the send definitively did
+        //    not happen.
+        //  * frame written to a relay but no OK within the window →
+        //    inconclusive soft-unconfirmed; it may already be delivered.
+        final rejected = outcome.rejectedBy.isNotEmpty;
+        final reachedNoRelay =
+            outcome.acceptedBy.isEmpty &&
+            outcome.rejectedBy.isEmpty &&
+            outcome.noResponseFrom.isEmpty;
+        final softUnconfirmed = !rejected && !reachedNoRelay;
+
+        // Publish the self-addressed wrap ONLY when the recipient confirmed OR
+        // the send is soft-unconfirmed (frame written, OK lost/late — the
+        // recipient may already have the reaction). On a hard rejection or an
+        // offline no-relay-reached the recipient definitely did not get it, so
+        // a self-wrap would surface a phantom reaction on the sender's other
+        // devices / reinstall (ingested via persistIncoming as a plain
+        // `received` row with no retry metadata). The self-wrap is p-tagged to
+        // the sender only, so publishing it on a soft-unconfirmed send never
+        // double-delivers to the counterparty.
+        // Short-circuit `&&`: when the gate is false the self-wrap publish is
+        // never awaited, so it is skipped entirely on rejected / reachedNoRelay.
+        final selfWrapPublished =
+            (outcome.confirmed || softUnconfirmed) &&
+            await _publishSelfWrap(
+              nostr: nostr,
+              rumorEvent: rumorEvent,
+              prebuiltSelfWrap: prebuiltSelfWrap,
+            );
 
         if (outcome.confirmed) {
           Log.info(
@@ -387,21 +407,13 @@ class NIP17MessageService {
           );
         }
 
-        // Not confirmed. Three sub-cases decide the caller's chip + retry:
-        //  * explicit OK-false → hard rejection: mark failed.
-        //  * nothing reached any relay (offline) → the send definitively did
-        //    not happen, so the sweep must re-drive it the instant
-        //    connectivity returns. Report a NON-retryable-pending failure so
-        //    the row is marked 'failed' (failed rows skip the in-flight
-        //    min-age guard the sweep applies to 'pending' rows).
-        //  * frame written to a relay but no OK within the window →
-        //    inconclusive; it may already be delivered, so keep it a dim,
-        //    sweep-retryable 'pending' chip (a lost OK is not proof of loss).
-        final rejected = outcome.rejectedBy.isNotEmpty;
-        final reachedNoRelay =
-            outcome.acceptedBy.isEmpty &&
-            outcome.rejectedBy.isEmpty &&
-            outcome.noResponseFrom.isEmpty;
+        // Not confirmed. The caller's chip + retry follow from the sub-case:
+        //  * rejected → mark failed (terminal-ish; failed rows skip the sweep's
+        //    in-flight min-age guard so they re-drive immediately).
+        //  * reachedNoRelay (offline) → mark failed so the sweep re-drives it
+        //    the instant connectivity returns.
+        //  * softUnconfirmed → keep a dim, sweep-retryable 'pending' chip
+        //    (a lost OK is not proof of loss).
         final String errorMsg;
         if (rejected) {
           errorMsg = 'Reaction rejected by relay: ${outcome.summary}';
@@ -418,7 +430,7 @@ class NIP17MessageService {
         );
         return NIP17SendResult.failure(
           errorMsg,
-          retryablePending: !rejected && !reachedNoRelay,
+          retryablePending: softUnconfirmed,
         );
       }
 

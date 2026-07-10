@@ -9,9 +9,13 @@ import 'package:equatable/equatable.dart';
 /// - [sent]: real reaction event id; published and ack'd.
 /// - [pending]: optimistic placeholder id, publish in flight.
 /// - [failed]: publish attempt threw; chip shows retry affordance.
+/// - [blocked]: send policy (#176 protected-minor DM restriction) rejected the
+///   recipient. Terminal and NOT retryable — retrying only re-hits the same
+///   policy — so the retry sweep and a chip re-tap must leave it alone. Renders
+///   as a settled own chip, never a red retry chip.
 /// - [received]: row originated from an incoming relay event (peer's
 ///   reaction or self-wrap copy of our own).
-enum DmReactionPublishStatus { sent, pending, failed, received }
+enum DmReactionPublishStatus { sent, pending, failed, blocked, received }
 
 /// A NIP-25 (kind 7) emoji reaction on a NIP-17 direct message.
 ///

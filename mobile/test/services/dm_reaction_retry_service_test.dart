@@ -396,5 +396,76 @@ void main() {
         ).called(1);
       },
     );
+
+    test(
+      'add-phase retry exhaustion does NOT starve the later removal — the '
+      'attempt budget is namespaced per phase (add vs del) even though the '
+      'row keeps its rumor id across the failed -> deletion_pending flip',
+      () async {
+        var clock = DateTime.utc(2026, 5, 10, 12);
+
+        // Phase 1: the reaction fails its full add-retry budget.
+        when(
+          repository.retryableReactions,
+        ).thenAnswer((_) async => [_target(rumorId: 'x1')]);
+        when(
+          () => repository.retry(
+            rumorId: 'x1',
+            targetMessageAuthor: _authorPubkey,
+          ),
+        ).thenAnswer((_) async => _fail('x1'));
+
+        final service = buildService(
+          retryConfig: const DmReactionRetryConfig(
+            maxRetries: 2,
+            initialDelay: Duration(milliseconds: 1),
+          ),
+          now: () => clock,
+        );
+
+        await service.sweep();
+        clock = clock.add(const Duration(seconds: 10));
+        await service.sweep();
+        clock = clock.add(const Duration(seconds: 10));
+        await service.sweep(); // third add attempt dropped as exhausted
+
+        verify(
+          () => repository.retry(
+            rumorId: 'x1',
+            targetMessageAuthor: _authorPubkey,
+          ),
+        ).called(2);
+
+        // Phase 2: the user removes that reaction. The row keeps rumor id
+        // 'x1' but is now a 'deletion_pending' removal. Its kind-5 must
+        // re-drive with a FRESH budget — a bare-id budget would inherit the
+        // exhausted add count and skip the removal for the rest of the
+        // session, leaving the counterparty with a reaction you removed.
+        when(
+          repository.retryableReactions,
+        ).thenAnswer((_) async => const <DmReactionRetryTarget>[]);
+        when(repository.retryableDeletions).thenAnswer(
+          (_) async => [
+            _target(rumorId: 'x1', publishStatus: 'deletion_pending'),
+          ],
+        );
+        when(
+          () => repository.retryDeletion(
+            rumorId: 'x1',
+            targetMessageAuthor: _authorPubkey,
+          ),
+        ).thenAnswer((_) async => _ok('x1'));
+
+        clock = clock.add(const Duration(seconds: 10));
+        await service.sweep();
+
+        verify(
+          () => repository.retryDeletion(
+            rumorId: 'x1',
+            targetMessageAuthor: _authorPubkey,
+          ),
+        ).called(1);
+      },
+    );
   });
 }

@@ -31,4 +31,9 @@ abstract class DmReactionsRepositoryReportableSites {
   /// kind-5 deleted on the wire — local state will eventually reconcile
   /// from the relay echo.
   static const String removeOwnSoftDelete = 'removeOwn.softDelete';
+
+  /// `publish`: recording the durable `deletion_pending` row for a superseded
+  /// prior reaction (cap-at-one emoji swap) threw. The new reaction still
+  /// publishes; the superseded emoji's kind-5 removal is the part at risk.
+  static const String publishSupersedeDeletion = 'publish.supersedeDeletion';
 }
