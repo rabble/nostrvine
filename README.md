@@ -3,7 +3,7 @@
 Status: Current
 Validated against: repo structure, `mobile/pubspec.yaml`, active build scripts, and current settings/support flows on 2026-03-19.
 
-Divine is a dark-mode-only short-form video app built on Nostr. This repository contains the Flutter mobile app, the shared workspace packages that power it, and the launch and engineering documentation needed to ship P1 to the App Store and Play Console.
+Divine is a decentralized short-form video app reviving Vine's 6-second format, built on Nostr — human-made content only, no AI slop. This repository contains the Flutter mobile app, the shared workspace packages that power it, and the launch and engineering documentation needed to ship P1 to the App Store and Play Console.
 
 ## Current Milestone
 
@@ -79,3 +79,7 @@ Use these docs instead of older deployment notes:
 ## Documentation Policy
 
 If a doc conflicts with current code, tests, or the focused current docs above, trust the implementation first. Older plans, migration notes, and postmortems are preserved for context and tracked from [docs/archive/README.md](docs/archive/README.md).
+
+---
+
+Part of [Divine](https://divine.video) — your playground for human creativity · [Brand guidelines](https://github.com/divinevideo/brand-guidelines)
