@@ -399,12 +399,18 @@ class TransitionSeamRenderService {
   /// current project's freshly-rendered seams survive for reuse. Every
   /// distinct trim/transition tweak mints a new seam file, so without this the
   /// directory grows without bound across sessions. Best-effort: never throws.
+  ///
+  /// I/O is asynchronous — the directory is walked with a `Directory.list()`
+  /// stream and files are removed with `File.delete()` so the event loop
+  /// yields between entries instead of the whole trim blocking the isolate on
+  /// editor teardown. Cheap metadata reads stay synchronous (`statSync`) per
+  /// `avoid_slow_async_io`.
   Future<void> enforceSeamCacheLimit() async {
     try {
       final seamDir = await _seamDirectory();
       final entries = <({File file, int size, DateTime modified})>[];
       var total = 0;
-      for (final entity in seamDir.listSync(followLinks: false)) {
+      await for (final entity in seamDir.list(followLinks: false)) {
         if (entity is! File) continue;
         final stat = entity.statSync();
         if (stat.type == FileSystemEntityType.notFound) continue;
@@ -417,7 +423,7 @@ class TransitionSeamRenderService {
       for (final entry in entries) {
         if (total <= _maxSeamCacheBytes) break;
         try {
-          entry.file.deleteSync();
+          await entry.file.delete();
           total -= entry.size;
         } on Object {
           // Best-effort; a file we cannot delete is retried on the next close.
