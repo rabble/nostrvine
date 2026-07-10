@@ -330,6 +330,25 @@ void main() {
       verify(repo.getAllObjects).called(1);
     });
 
+    test('force bypasses the throttle window', () async {
+      when(repo.getAllObjects).thenAnswer((_) async => []);
+      final (manager, dir) = build();
+      final firstOrphan = writeFile(dir, 'a_1_1.mp4', 10);
+
+      await manager.enforceCacheLimits();
+      expect(firstOrphan.existsSync(), isFalse);
+
+      final secondOrphan = writeFile(dir, 'b_2_2.mp4', 10);
+      await manager.enforceCacheLimits(force: true);
+
+      expect(
+        secondOrphan.existsSync(),
+        isFalse,
+        reason: 'force runs even within the throttle interval',
+      );
+      verify(repo.getAllObjects).called(2);
+    });
+
     test('does not reclaim files still referenced by the sync '
         'manifest', () async {
       final downloader = FakeCancellableDownloader();
@@ -408,6 +427,27 @@ void main() {
 
       downloader.downloads.single.completeWith(target);
       await op.file;
+    });
+
+    test('a runtime maxCacheSizeBytes override drives eviction', () async {
+      final (manager, dir) = build();
+      final oldest = writeFile(dir, 'a_1_1.mp4', 60);
+      final newest = writeFile(dir, 'b_2_2.mp4', 60);
+      when(repo.getAllObjects).thenAnswer(
+        (_) async => [
+          obj('a_1_1.mp4', id: 1, touched: DateTime(2020)),
+          obj('b_2_2.mp4', id: 2, touched: DateTime(2020, 1, 2)),
+        ],
+      );
+
+      // Base config has no byte budget; the override supplies one.
+      manager.maxCacheSizeBytes = 100;
+      expect(manager.maxCacheSizeBytes, 100);
+
+      await manager.enforceCacheLimits();
+
+      expect(oldest.existsSync(), isFalse);
+      expect(newest.existsSync(), isTrue);
     });
 
     test('runs a throttled sweep after enough downloads', () async {

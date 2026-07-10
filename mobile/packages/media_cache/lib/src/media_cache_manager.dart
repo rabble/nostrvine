@@ -368,6 +368,10 @@ class MediaCacheManager extends CacheManager {
   /// Seeded to the epoch so the first pass is never throttled.
   DateTime _lastSweepAt = DateTime.fromMillisecondsSinceEpoch(0);
 
+  /// Runtime override for [MediaCacheConfig.maxCacheSizeBytes], set from a
+  /// user preference. `null` falls back to the config default.
+  int? _maxCacheSizeBytesOverride;
+
   /// In-memory manifest for synchronous lookups.
   /// Maps cache key to file path.
   final Map<String, String> _cacheManifest = {};
@@ -409,6 +413,16 @@ class MediaCacheManager extends CacheManager {
 
   /// The configuration used by this cache manager.
   MediaCacheConfig get mediaConfig => _config;
+
+  /// The effective on-disk byte budget: the runtime override when set,
+  /// otherwise [MediaCacheConfig.maxCacheSizeBytes].
+  int? get maxCacheSizeBytes =>
+      _maxCacheSizeBytesOverride ?? _config.maxCacheSizeBytes;
+
+  /// Overrides the on-disk byte budget at runtime (e.g. from a user setting).
+  /// Pass `null` to fall back to the configured default. Does not itself
+  /// evict — call [enforceCacheLimits] afterwards to apply the new budget.
+  set maxCacheSizeBytes(int? bytes) => _maxCacheSizeBytesOverride = bytes;
 
   static IOClient _buildFileServiceClient(MediaCacheConfig config) {
     final httpClient = HttpClient()
@@ -963,9 +977,11 @@ class MediaCacheManager extends CacheManager {
   /// the isolate. Cheap metadata reads stay synchronous (`statSync`) per
   /// `avoid_slow_async_io` — the async variants of those add more overhead
   /// than they save.
-  Future<void> enforceCacheLimits() async {
+  Future<void> enforceCacheLimits({bool force = false}) async {
     if (_isClosed || _sweepInProgress) return;
-    if (clock.now().difference(_lastSweepAt) < _minSweepInterval) return;
+    if (!force && clock.now().difference(_lastSweepAt) < _minSweepInterval) {
+      return;
+    }
     _sweepInProgress = true;
     var repoOpened = false;
     try {
@@ -978,7 +994,7 @@ class MediaCacheManager extends CacheManager {
       final trackedNames = {for (final object in objects) object.relativePath};
       await _reclaimOrphanedFiles(baseDir, trackedNames);
 
-      final budget = _config.maxCacheSizeBytes;
+      final budget = maxCacheSizeBytes;
       if (budget != null) {
         await _evictToByteBudget(baseDir, objects, budget, repo);
       }
@@ -1208,7 +1224,7 @@ class MediaCacheManager extends CacheManager {
       'manifestSize': _cacheManifest.length,
       'manifestInitialized': _manifestInitialized,
       'maxObjects': _config.maxNrOfCacheObjects,
-      'maxCacheSizeBytes': _config.maxCacheSizeBytes,
+      'maxCacheSizeBytes': maxCacheSizeBytes,
       'stalePeriodDays': _config.stalePeriod.inDays,
       'syncManifestEnabled': _config.enableSyncManifest,
       ...metrics.toMap(),
