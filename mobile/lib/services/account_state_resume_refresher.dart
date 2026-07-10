@@ -31,6 +31,10 @@ class AccountStateResumeRefresher {
   final Duration _minInterval;
   final DateTime Function() _now;
 
+  // Intentionally not keyed by account: an account switch transits a
+  // non-authenticated authState that invalidates the status providers
+  // directly, so this only bounds the resume-triggered refetch, not
+  // switch-time freshness.
   DateTime? _lastRefreshedAt;
 
   /// Invalidate both account-state providers, unless the account is
