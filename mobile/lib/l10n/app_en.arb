@@ -685,6 +685,10 @@
   "communitySuggestSuccess": "Thanks. Your suggestion was sent.",
   "communitySuggestFailure": "Couldn't send your suggestion. Try again.",
   "communitySuggestAlready": "You suggested this",
+  "communitySuggestActionLabel": "Classify",
+  "@communitySuggestActionLabel": {
+    "description": "Short caption under the video overlay action that opens the community content-warning suggestion sheet."
+  },
   "@communitySuggestAlready": {
     "description": "Badge shown next to a label the current viewer has already suggested for this video."
   },

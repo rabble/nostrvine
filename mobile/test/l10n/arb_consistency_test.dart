@@ -206,6 +206,7 @@ const _knownUntranslatedDebt = <String>{
   'communitySuggestSuccess',
   'communitySuggestFailure',
   'communitySuggestAlready',
+  'communitySuggestActionLabel',
 };
 
 const _signatureVerificationKeys = <String>{

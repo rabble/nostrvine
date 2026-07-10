@@ -2506,6 +2506,12 @@ abstract class AppLocalizations {
   /// **'You suggested this'**
   String get communitySuggestAlready;
 
+  /// Short caption under the video overlay action that opens the community content-warning suggestion sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Classify'**
+  String get communitySuggestActionLabel;
+
   /// No description provided for @videoErrorNotFound.
   ///
   /// In en, this message translates to:

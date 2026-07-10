@@ -698,8 +698,10 @@ class VideoOverlayActionColumn extends ConsumerWidget {
           onInteracted: onInteracted,
         ),
         ShareActionButton(video: video, onInteracted: onInteracted),
-        if (!isOwnVideo)
+        if (!isOwnVideo) ...[
           ReportActionButton(video: video, onInteracted: onInteracted),
+          HelpClassifyActionButton(video: video, onInteracted: onInteracted),
+        ],
         MoreActionButton(video: video, onInteracted: onInteracted),
       ],
     );

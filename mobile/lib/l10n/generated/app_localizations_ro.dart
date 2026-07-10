@@ -1443,6 +1443,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get communitySuggestAlready => 'You suggested this';
 
   @override
+  String get communitySuggestActionLabel => 'Classify';
+
+  @override
   String get videoErrorNotFound => 'Videoclipul n-a fost găsit';
 
   @override
