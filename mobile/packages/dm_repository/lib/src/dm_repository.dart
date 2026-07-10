@@ -3404,8 +3404,9 @@ class DmRepository {
   /// recipient publish. Unlike [_finalizeAfterRecipientFailure], a block is
   /// permanent — the send gate refuses every retry — so the row is deleted
   /// rather than left retryable. Non-rethrowing to match the failure path: the
-  /// caller still returns the blocked result. A failed delete leaves the row
-  /// [OutgoingWrapStatus.failed], which self-heals on a later sweep.
+  /// caller still returns the blocked result. A failed delete leaves the row in
+  /// place (still `failed` or `pending`, depending on the drain arm), which
+  /// self-heals on a later sweep — the gate re-blocks and re-drops it.
   Future<void> _finalizeAfterRecipientBlocked({
     required OutgoingDmsDao outgoingDao,
     required String rumorId,

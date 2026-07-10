@@ -14177,6 +14177,66 @@ void main() {
               lastError: any(named: 'lastError'),
             ),
           );
+          // A blocked send never reached the recipient, so nothing is
+          // persisted to direct_messages (the insert rides only the success
+          // branch's transaction).
+          verifyNever(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'on a blocked send: when deleteById throws, swallows the error and '
+        'still returns the blocked result (row self-heals on a later sweep)',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow());
+          stubSendRumor(
+            (_, _) async => const NIP17SendResult.blocked(
+              'blocked: recipient not permitted by send policy',
+            ),
+          );
+          when(
+            () => mockOutgoingDmsDao.deleteById(_rumorEventId),
+          ).thenThrow(Exception('drift busy'));
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final result = await repository.recoverFullSend(
+            rumorId: _rumorEventId,
+          );
+
+          // The delete failed, but the caller still gets the blocked result
+          // and the drain does not throw; the still-present row is re-blocked
+          // and re-dropped on the next sweep.
+          expect(result.blocked, isTrue);
+          verify(() => mockOutgoingDmsDao.deleteById(_rumorEventId)).called(1);
         },
       );
 

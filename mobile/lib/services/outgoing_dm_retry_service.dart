@@ -316,6 +316,7 @@ class OutgoingDmRetryService {
       // duplicates if both wire copies eventually land.
       var processedInterrupted = 0;
       var failedInterrupted = 0;
+      var blockedInterrupted = 0;
       var skippedInterruptedTooYoung = 0;
       if (!abortedNotReady) {
         final processedIds = retryable.map((r) => r.id).toSet();
@@ -355,6 +356,10 @@ class OutgoingDmRetryService {
             );
             if (result.success) {
               processedInterrupted++;
+            } else if (result.blocked) {
+              // Terminal, same as the failed-send arm: recoverFullSend
+              // deleted the row for a #176 policy block, so don't re-arm it.
+              blockedInterrupted++;
             } else {
               await _dao.incrementRetry(row.id);
               failedInterrupted++;
@@ -405,6 +410,7 @@ class OutgoingDmRetryService {
         'full-send-blocked=$blockedFullSend '
         'interrupted-recovered=$processedInterrupted '
         'interrupted-failed=$failedInterrupted '
+        'interrupted-blocked=$blockedInterrupted '
         'skipped-backoff=$skippedBackoff '
         'skipped-interrupted-too-young=$skippedInterruptedTooYoung '
         'aborted-not-ready=$abortedNotReady',

@@ -991,6 +991,36 @@ void main() {
       );
 
       test(
+        'blocked interrupted-send drain is terminal: no incrementRetry',
+        () async {
+          final now = DateTime.utc(2026, 5, 10, 12);
+          final stalePending = _row(
+            id: 'interrupted-blocked',
+            recipient: OutgoingWrapStatus.pending,
+            self: OutgoingWrapStatus.pending,
+            queuedAt: now.subtract(const Duration(minutes: 5)),
+          );
+          when(
+            () => dao.getStillPendingForOwner(any()),
+          ).thenAnswer((_) async => [stalePending]);
+          when(
+            () => dmRepository.recoverFullSend(rumorId: any(named: 'rumorId')),
+          ).thenAnswer(
+            (_) async => const NIP17SendResult.blocked('blocked by policy'),
+          );
+
+          await buildService(now: () => now).sweep();
+
+          verify(
+            () => dmRepository.recoverFullSend(rumorId: 'interrupted-blocked'),
+          ).called(1);
+          // recoverFullSend already deleted the row; a policy block is
+          // terminal, so the interrupted arm must not re-arm it.
+          verifyNever(() => dao.incrementRetry(any()));
+        },
+      );
+
+      test(
         'skips a pending row younger than initialDelay (in-flight send '
         'might still complete in-process)',
         () async {
