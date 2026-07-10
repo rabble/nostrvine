@@ -19,8 +19,10 @@ class ClipEditorState extends Equatable {
     this.trimPosition,
     this.trimmingClipId,
     this.isExtractingAudio = false,
+    this.extractingAudioClipId,
     this.lastAudioExtraction,
     this.isSplitting = false,
+    this.splittingClipId,
     this.lastSplitFailure,
     this.isReversing = false,
     this.reversingClipId,
@@ -86,8 +88,21 @@ class ClipEditorState extends Equatable {
   /// Whether an audio extraction operation is currently running.
   final bool isExtractingAudio;
 
+  /// The ID of the clip whose audio is currently being extracted.
+  ///
+  /// Non-`null` while [isExtractingAudio] is `true`. Lets the controls
+  /// disable audio-dependent actions (Speed) only for the affected clip, so
+  /// switching to and operating on a different clip stays unblocked.
+  final String? extractingAudioClipId;
+
   /// Whether a split operation is currently in progress (rendering).
   final bool isSplitting;
+
+  /// The ID of the clip currently being split (rendering).
+  ///
+  /// Non-`null` while [isSplitting] is `true`. Lets the controls disable
+  /// Split only for the affected clip, leaving other clips unblocked.
+  final String? splittingClipId;
 
   /// One-shot signal emitted when a split rendering operation fails.
   ///
@@ -174,8 +189,12 @@ class ClipEditorState extends Equatable {
     String? trimmingClipId,
     bool clearTrimmingClipId = false,
     bool? isExtractingAudio,
+    String? extractingAudioClipId,
+    bool clearExtractingAudioClipId = false,
     ClipAudioExtractionResult? lastAudioExtraction,
     bool? isSplitting,
+    String? splittingClipId,
+    bool clearSplittingClipId = false,
     ClipSplitFailure? lastSplitFailure,
     bool? isReversing,
     String? reversingClipId,
@@ -208,8 +227,14 @@ class ClipEditorState extends Equatable {
           ? null
           : (trimmingClipId ?? this.trimmingClipId),
       isExtractingAudio: isExtractingAudio ?? this.isExtractingAudio,
+      extractingAudioClipId: clearExtractingAudioClipId
+          ? null
+          : (extractingAudioClipId ?? this.extractingAudioClipId),
       lastAudioExtraction: lastAudioExtraction ?? this.lastAudioExtraction,
       isSplitting: isSplitting ?? this.isSplitting,
+      splittingClipId: clearSplittingClipId
+          ? null
+          : (splittingClipId ?? this.splittingClipId),
       lastSplitFailure: lastSplitFailure ?? this.lastSplitFailure,
       isReversing: isReversing ?? this.isReversing,
       reversingClipId: clearReversingClipId
@@ -246,9 +271,11 @@ class ClipEditorState extends Equatable {
     trimPosition,
     trimmingClipId,
     isExtractingAudio,
+    extractingAudioClipId,
     // Identity-only: each ClipAudioExtractionResult is a fresh instance.
     identityHashCode(lastAudioExtraction),
     isSplitting,
+    splittingClipId,
     // Identity-only: each ClipSplitFailure is a fresh instance per failure.
     identityHashCode(lastSplitFailure),
     isReversing,

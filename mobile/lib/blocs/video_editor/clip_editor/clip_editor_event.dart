@@ -162,11 +162,24 @@ class ClipEditorOriginalClipReplaced extends ClipEditorEvent {
   List<Object?> get props => [sourceClipId, startClip, endClip];
 }
 
-/// Request to split the currently selected clip at the current split position.
+/// Request to split a clip at a split position.
 ///
 /// Validates the split position and stops editing mode before split.
+///
+/// [clipId] and [splitPosition] bind the request to a specific clip and cut
+/// point. They are captured at dispatch time so a queued split (the handler is
+/// `sequential`) still targets the intended clip even if the user selects a
+/// different clip or moves the playhead while an earlier split is rendering.
+/// When omitted, the handler falls back to the current selection and
+/// [ClipEditorState.splitPosition] (used by tests and any legacy caller).
 class ClipEditorSplitRequested extends ClipEditorEvent {
-  const ClipEditorSplitRequested();
+  const ClipEditorSplitRequested({this.clipId, this.splitPosition});
+
+  final String? clipId;
+  final Duration? splitPosition;
+
+  @override
+  List<Object?> get props => [clipId, splitPosition];
 }
 
 // === TRIM ===
@@ -226,13 +239,23 @@ class ClipEditorTrimDragEnded extends ClipEditorEvent {
 ///
 /// [clipTitle] is the l10n-resolved title forwarded to the created
 /// [AudioEvent] so the bloc stays free of Flutter/UI dependencies.
+///
+/// [clipId] binds the request to a specific clip, captured at dispatch time so
+/// a queued extraction (the handler is `sequential`) still targets the intended
+/// clip even if the user selects a different clip while an earlier extraction
+/// is running. When omitted, the handler falls back to the current selection
+/// (used by tests and any legacy caller).
 class ClipEditorAudioExtractionRequested extends ClipEditorEvent {
-  const ClipEditorAudioExtractionRequested({required this.clipTitle});
+  const ClipEditorAudioExtractionRequested({
+    required this.clipTitle,
+    this.clipId,
+  });
 
   final String clipTitle;
+  final String? clipId;
 
   @override
-  List<Object?> get props => [clipTitle];
+  List<Object?> get props => [clipTitle, clipId];
 }
 
 // === REVERSE ===

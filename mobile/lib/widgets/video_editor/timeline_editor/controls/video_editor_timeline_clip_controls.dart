@@ -28,43 +28,54 @@ class TimelineClipControls extends StatefulWidget {
 class _TimelineClipControlsState extends State<TimelineClipControls> {
   @override
   Widget build(BuildContext context) {
-    final (clipCount, isExtractingAudio, isSplitting) = context.select(
-      (ClipEditorBloc b) => (
-        b.state.clips.length,
-        b.state.isExtractingAudio,
-        b.state.isSplitting,
-      ),
-    );
-    final isLastClip = clipCount <= 1;
-    final isReversed = context.select((ClipEditorBloc b) {
-      final index = b.state.currentClipIndex;
-      final clips = b.state.clips;
-      return index >= 0 && index < clips.length && clips[index].reversed;
+    final (
+      clipCount,
+      isExtractingAudioCurrentClip,
+      isSplittingCurrentClip,
+      isReversed,
+    ) = context.select((ClipEditorBloc b) {
+      final state = b.state;
+      final index = state.currentClipIndex;
+      final hasClip = index >= 0 && index < state.clips.length;
+      final currentClipId = hasClip ? state.clips[index].id : null;
+      // Split and Speed are only disabled when the in-flight operation targets
+      // *this* clip. A split or audio extraction rendering on a different clip
+      // (the user can switch clips mid-render) leaves the current clip's
+      // actions available.
+      return (
+        state.clips.length,
+        state.isExtractingAudio &&
+            currentClipId != null &&
+            state.extractingAudioClipId == currentClipId,
+        state.isSplitting &&
+            currentClipId != null &&
+            state.splittingClipId == currentClipId,
+        hasClip && state.clips[index].reversed,
+      );
     });
+    final isLastClip = clipCount <= 1;
 
     return VideoEditorTimelineControls(
       onDelete: isLastClip ? null : () => _deleteClip(context),
       onDuplicated: () => _duplicateClip(context),
-      onSplit: isSplitting ? null : () => _splitClip(context),
-      onSpeed: isExtractingAudio ? null : () => _setPlaybackSpeed(context),
+      // Split/Speed stay mounted and are shown disabled (not removed) while
+      // busy, so the control set doesn't visibly reshuffle mid-operation.
+      onSplit: () => _splitClip(context),
+      onSpeed: () => _setPlaybackSpeed(context),
+      isSplitting: isSplittingCurrentClip,
       onTransform: () => _transformClip(context),
       onExtractAudio: () => _requestExtractAudio(context),
       onReversed: () => _reverseClip(context),
       onMultiSelect: isLastClip ? null : () => _startMultiSelect(context),
       isReversed: isReversed,
-      isExtractingAudio: isExtractingAudio,
-      // Done is gated while extraction is in flight purely as a UX cue —
-      // the success/failure side effect itself is handled by an editor-
-      // session-level listener in [VideoEditorScaffold], so it survives
-      // even if the user Deletes/Duplicates/Splits the clip (which exits
-      // edit mode and unmounts these controls) before extraction returns.
-      onDone: isExtractingAudio
-          ? null
-          : () {
-              context.read<ClipEditorBloc>().add(
-                const ClipEditorEditingStopped(),
-              );
-            },
+      isExtractingAudio: isExtractingAudioCurrentClip,
+      // Done stays enabled during a render: leaving edit mode is safe because
+      // the extraction/split success/failure side effect is handled by an
+      // editor-session-level listener in [VideoEditorScaffold], so it survives
+      // even after these controls unmount.
+      onDone: () {
+        context.read<ClipEditorBloc>().add(const ClipEditorEditingStopped());
+      },
     );
   }
 
@@ -139,14 +150,21 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
 
     if (result == null || !mounted) return;
 
-    final updated = clip.copyWith(playbackSpeed: result);
-    final newClips = state.clips
-        .map((c) => c.id == clip.id ? updated : c)
-        .toList();
+    // Re-read state after the async gap: the clip list may have changed while
+    // the sheet was open — e.g. an audio extraction on another clip finished
+    // and muted it, or a reverse/transform render completed. Rebuild from the
+    // current clips (and apply the speed on top of the current clip version)
+    // so this change doesn't clobber those concurrent mutations.
+    final currentClips = bloc.state.clips;
+    final index = currentClips.indexWhere((c) => c.id == clip.id);
+    if (index == -1) return;
+
+    final updated = currentClips[index].copyWith(playbackSpeed: result);
+    final newClips = List.of(currentClips)..[index] = updated;
     // A speed change rescales the clip's playbackDuration, shifting every
     // later clip — rebase markers by source position so they follow.
     final rebasedMarkers = rebaseTimelineMarkersForClipState(
-      oldClips: state.clips,
+      oldClips: currentClips,
       newClips: newClips,
       markers: overlayBloc.state.timelineMarkers,
     );
@@ -158,8 +176,17 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
   }
 
   void _requestExtractAudio(BuildContext context) {
-    context.read<ClipEditorBloc>().add(
+    final bloc = context.read<ClipEditorBloc>();
+    final state = bloc.state;
+    if (state.currentClipIndex < 0 ||
+        state.currentClipIndex >= state.clips.length) {
+      return;
+    }
+    // Bind the request to this clip so a queued extraction (sequential handler)
+    // still targets the right clip even if the selection changes meanwhile.
+    bloc.add(
       ClipEditorAudioExtractionRequested(
+        clipId: state.clips[state.currentClipIndex].id,
         clipTitle: context.l10n.videoEditorClipAudioTitle,
       ),
     );
@@ -291,9 +318,17 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
       return;
     }
 
-    // Update the split position and request the split.
+    // Update the split position and request the split. Bind the request to
+    // this clip and cut point so a queued split (sequential handler) still
+    // targets the right clip even if the selection changes while an earlier
+    // split renders.
     bloc
       ..add(ClipEditorSplitPositionChanged(localPosition))
-      ..add(const ClipEditorSplitRequested());
+      ..add(
+        ClipEditorSplitRequested(
+          clipId: selectedClip.id,
+          splitPosition: localPosition,
+        ),
+      );
   }
 }

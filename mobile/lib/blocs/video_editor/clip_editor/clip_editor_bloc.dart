@@ -116,7 +116,9 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
 
     // Split
     on<ClipEditorOriginalClipReplaced>(_onOriginalClipReplaced);
-    on<ClipEditorSplitRequested>(_onSplitRequested, transformer: droppable());
+    // sequential (not droppable) so a split requested on a different clip while
+    // one is rendering is queued and runs, rather than being silently dropped.
+    on<ClipEditorSplitRequested>(_onSplitRequested, transformer: sequential());
 
     // Trim
     on<ClipEditorTrimUpdated>(_onTrimUpdated, transformer: restartable());
@@ -124,9 +126,11 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     on<ClipEditorTrimDragEnded>(_onTrimDragEnded);
 
     // Audio extraction
+    // sequential (not droppable) so an extraction requested on a different clip
+    // while one is running is queued and runs, rather than being dropped.
     on<ClipEditorAudioExtractionRequested>(
       _onAudioExtractionRequested,
-      transformer: droppable(),
+      transformer: sequential(),
     );
 
     // Reverse
@@ -510,10 +514,15 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     Emitter<ClipEditorState> emit,
   ) async {
     final clips = state.clips;
-    if (state.currentClipIndex >= clips.length) return;
+    // Resolve the target from the event (captured at dispatch) so a queued
+    // split still hits the intended clip; fall back to the current selection.
+    final index = event.clipId != null
+        ? clips.indexWhere((c) => c.id == event.clipId)
+        : state.currentClipIndex;
+    if (index < 0 || index >= clips.length) return;
 
-    final selectedClip = clips[state.currentClipIndex];
-    final splitPosition = state.splitPosition;
+    final selectedClip = clips[index];
+    final splitPosition = event.splitPosition ?? state.splitPosition;
 
     // Validate split position before changing state
     if (!VideoEditorSplitService.isValidSplitPosition(
@@ -538,7 +547,13 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     );
 
     // Stop editing mode
-    emit(state.copyWith(isEditing: false, isSplitting: true));
+    emit(
+      state.copyWith(
+        isEditing: false,
+        isSplitting: true,
+        splittingClipId: selectedClip.id,
+      ),
+    );
 
     ClipSplitFailure? splitFailure;
     String? splitStartClipId;
@@ -654,6 +669,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
           state.copyWith(
             clips: rollbackClips,
             isSplitting: false,
+            clearSplittingClipId: true,
             lastSplitFailure: splitFailure,
             clearLastSplit: splitFailure != null,
           ),
@@ -1038,9 +1054,14 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     Emitter<ClipEditorState> emit,
   ) async {
     final clips = state.clips;
-    if (state.currentClipIndex >= clips.length) return;
+    // Resolve the target from the event (captured at dispatch) so a queued
+    // extraction still hits the intended clip; fall back to current selection.
+    final index = event.clipId != null
+        ? clips.indexWhere((c) => c.id == event.clipId)
+        : state.currentClipIndex;
+    if (index < 0 || index >= clips.length) return;
 
-    final clip = clips[state.currentClipIndex];
+    final clip = clips[index];
     final videoPath = clip.video.file?.path;
     final extractionSpeed = _effectiveAudioExtractionSpeed(clip);
 
@@ -1056,7 +1077,9 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       return;
     }
 
-    emit(state.copyWith(isExtractingAudio: true));
+    emit(
+      state.copyWith(isExtractingAudio: true, extractingAudioClipId: clip.id),
+    );
 
     try {
       final result = await _audioExtractionService.extractAudio(
@@ -1083,6 +1106,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         emit(
           state.copyWith(
             isExtractingAudio: false,
+            clearExtractingAudioClipId: true,
             lastAudioExtraction: ClipAudioExtractionDiscarded(),
           ),
         );
@@ -1106,6 +1130,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         emit(
           state.copyWith(
             isExtractingAudio: false,
+            clearExtractingAudioClipId: true,
             lastAudioExtraction: ClipAudioExtractionDiscarded(),
           ),
         );
@@ -1153,6 +1178,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         state.copyWith(
           clips: List.unmodifiable(newClips),
           isExtractingAudio: false,
+          clearExtractingAudioClipId: true,
           lastAudioExtraction: ClipAudioExtractionSuccess(
             audioEvent: audioEvent,
           ),
@@ -1172,6 +1198,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       emit(
         state.copyWith(
           isExtractingAudio: false,
+          clearExtractingAudioClipId: true,
           lastAudioExtraction: ClipAudioExtractionFailure(),
         ),
       );
@@ -1190,6 +1217,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       emit(
         state.copyWith(
           isExtractingAudio: false,
+          clearExtractingAudioClipId: true,
           lastAudioExtraction: ClipAudioExtractionFailure(),
         ),
       );

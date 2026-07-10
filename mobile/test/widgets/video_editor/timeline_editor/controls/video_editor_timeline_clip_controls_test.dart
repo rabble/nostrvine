@@ -177,42 +177,116 @@ void main() {
       },
     );
 
-    // Regression test for Fix 2: Done button is disabled while audio
-    // extraction is running so the user cannot dismiss the busy state
-    // mid-flight. The result side effect itself lives on
-    // VideoEditorScaffold and survives even after this widget unmounts.
-    testWidgets(
-      'Done button passes null onDone to controls while isExtractingAudio',
-      (tester) async {
-        when(
-          () => bloc.state,
-        ).thenReturn(const ClipEditorState(isExtractingAudio: true));
-        await tester.pumpWidget(build());
-
-        final controls = tester.widget<VideoEditorTimelineControls>(
-          find.byType(VideoEditorTimelineControls),
-        );
-        expect(
-          controls.onDone,
-          isNull,
-          reason:
-              'onDone must be null while extracting so Done cannot be tapped',
-        );
-      },
-    );
-
-    testWidgets('Speed button is hidden while isExtractingAudio', (
+    // Done stays tappable during a render — leaving edit mode is safe because
+    // the extraction result is committed by an editor-session-level listener
+    // (VideoEditorScaffold) that survives these controls unmounting.
+    testWidgets('Done stays enabled and dispatches stop while extracting', (
       tester,
     ) async {
-      when(
-        () => bloc.state,
-      ).thenReturn(const ClipEditorState(isExtractingAudio: true));
+      when(() => bloc.state).thenReturn(
+        ClipEditorState(
+          clips: [clip('clip-1')],
+          isExtractingAudio: true,
+          extractingAudioClipId: 'clip-1',
+        ),
+      );
       await tester.pumpWidget(build());
 
       final controls = tester.widget<VideoEditorTimelineControls>(
         find.byType(VideoEditorTimelineControls),
       );
-      expect(controls.onSpeed, isNull);
+      expect(controls.onDone, isNotNull);
+
+      await tester.tap(find.byType(DivineIconButton).last);
+      await tester.pump();
+
+      verify(() => bloc.add(const ClipEditorEditingStopped())).called(1);
+    });
+
+    // Regression: the Speed action must stay mounted (disabled), not vanish,
+    // while the *current* clip's audio is extracting — the disappearing
+    // control confused users.
+    testWidgets(
+      "Speed stays mounted and is disabled while the current clip's audio "
+      'extracts',
+      (tester) async {
+        when(() => bloc.state).thenReturn(
+          ClipEditorState(
+            clips: [clip('clip-1'), clip('clip-2')],
+            isExtractingAudio: true,
+            extractingAudioClipId: 'clip-1',
+          ),
+        );
+        await tester.pumpWidget(build());
+
+        final controls = tester.widget<VideoEditorTimelineControls>(
+          find.byType(VideoEditorTimelineControls),
+        );
+        // Action stays wired; the child renders it disabled via
+        // isExtractingAudio.
+        expect(controls.onSpeed, isNotNull);
+        expect(controls.isExtractingAudio, isTrue);
+      },
+    );
+
+    // A render on a *different* clip must not block the current clip's Speed.
+    testWidgets(
+      "Speed stays enabled while a different clip's audio extracts",
+      (tester) async {
+        when(() => bloc.state).thenReturn(
+          ClipEditorState(
+            clips: [clip('clip-1'), clip('clip-2')],
+            currentClipIndex: 1,
+            isExtractingAudio: true,
+            extractingAudioClipId: 'clip-1',
+          ),
+        );
+        await tester.pumpWidget(build());
+
+        final controls = tester.widget<VideoEditorTimelineControls>(
+          find.byType(VideoEditorTimelineControls),
+        );
+        expect(controls.onSpeed, isNotNull);
+        expect(controls.isExtractingAudio, isFalse);
+      },
+    );
+
+    testWidgets('Split stays mounted and is disabled while splitting the '
+        'current clip', (tester) async {
+      when(() => bloc.state).thenReturn(
+        ClipEditorState(
+          clips: [clip('clip-1'), clip('clip-2')],
+          isSplitting: true,
+          splittingClipId: 'clip-1',
+        ),
+      );
+      await tester.pumpWidget(build());
+
+      final controls = tester.widget<VideoEditorTimelineControls>(
+        find.byType(VideoEditorTimelineControls),
+      );
+      expect(controls.onSplit, isNotNull);
+      expect(controls.isSplitting, isTrue);
+    });
+
+    testWidgets('Split stays enabled while a different clip splits', (
+      tester,
+    ) async {
+      when(() => bloc.state).thenReturn(
+        ClipEditorState(
+          clips: [clip('clip-1'), clip('clip-2')],
+          currentClipIndex: 1,
+          isSplitting: true,
+          splittingClipId: 'clip-1',
+        ),
+      );
+      await tester.pumpWidget(build());
+
+      final controls = tester.widget<VideoEditorTimelineControls>(
+        find.byType(VideoEditorTimelineControls),
+      );
+      expect(controls.onSplit, isNotNull);
+      expect(controls.isSplitting, isFalse);
     });
 
     testWidgets('Select button is hidden for a single clip', (tester) async {

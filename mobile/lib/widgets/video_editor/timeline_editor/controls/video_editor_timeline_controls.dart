@@ -17,6 +17,7 @@ class VideoEditorTimelineControls extends StatelessWidget {
     this.isReversed = false,
     this.onExtractAudio,
     this.isExtractingAudio = false,
+    this.isSplitting = false,
     this.onMultiSelect,
     this.multiSelectSemanticLabel,
     super.key,
@@ -35,6 +36,11 @@ class VideoEditorTimelineControls extends StatelessWidget {
   final bool isReversed;
   final VoidCallback? onExtractAudio;
   final bool isExtractingAudio;
+
+  /// Whether a split of the active clip is currently rendering. Renders the
+  /// Split action disabled (rather than removing it) so the control stays in
+  /// place instead of confusingly disappearing mid-operation.
+  final bool isSplitting;
   final VoidCallback? onMultiSelect;
 
   /// Overrides the multi-select button's accessibility label. Defaults to the
@@ -102,7 +108,7 @@ class VideoEditorTimelineControls extends StatelessWidget {
                       semanticLabel: context
                           .l10n
                           .videoEditorSplitSelectedClipSemanticLabel,
-                      onPressed: onSplit,
+                      onPressed: isSplitting ? null : onSplit,
                     ),
                   if (onAnimate != null)
                     _ControlButton(
@@ -119,7 +125,7 @@ class VideoEditorTimelineControls extends StatelessWidget {
                       label: context.l10n.videoEditorSpeedLabel,
                       semanticLabel:
                           context.l10n.videoEditorSetClipSpeedSemanticLabel,
-                      onPressed: onSpeed,
+                      onPressed: isExtractingAudio ? null : onSpeed,
                     ),
                   if (onTransform != null)
                     _ControlButton(

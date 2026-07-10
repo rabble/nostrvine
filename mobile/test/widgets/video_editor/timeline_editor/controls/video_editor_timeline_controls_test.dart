@@ -110,5 +110,111 @@ void main() {
 
       expect(transformCount, equals(1));
     });
+
+    testWidgets('keeps Split mounted but inert while isSplitting', (
+      tester,
+    ) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      var splitCount = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: VideoEditorTimelineControls(
+              onSplit: () => splitCount++,
+              isSplitting: true,
+              onDone: () {},
+            ),
+          ),
+        ),
+      );
+
+      // Still on screen (disabled, not removed)...
+      expect(find.text(l10n.videoEditorSplitLabel), findsOneWidget);
+      // ...but tapping it does nothing.
+      await tester.tap(
+        find.bySemanticsLabel(l10n.videoEditorSplitSelectedClipSemanticLabel),
+      );
+      await tester.pump();
+      expect(splitCount, equals(0));
+    });
+
+    testWidgets('invokes onSplit when not splitting', (tester) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      var splitCount = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: VideoEditorTimelineControls(
+              onSplit: () => splitCount++,
+              onDone: () {},
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(
+        find.bySemanticsLabel(l10n.videoEditorSplitSelectedClipSemanticLabel),
+      );
+      await tester.pump();
+      expect(splitCount, equals(1));
+    });
+
+    testWidgets('keeps Speed mounted but inert while isExtractingAudio', (
+      tester,
+    ) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      var speedCount = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: VideoEditorTimelineControls(
+              onSpeed: () => speedCount++,
+              isExtractingAudio: true,
+              onDone: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text(l10n.videoEditorSpeedLabel), findsOneWidget);
+      await tester.tap(
+        find.bySemanticsLabel(l10n.videoEditorSetClipSpeedSemanticLabel),
+      );
+      await tester.pump();
+      expect(speedCount, equals(0));
+    });
+
+    testWidgets('invokes onSpeed when not extracting audio', (tester) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      var speedCount = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: VideoEditorTimelineControls(
+              onSpeed: () => speedCount++,
+              onDone: () {},
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(
+        find.bySemanticsLabel(l10n.videoEditorSetClipSpeedSemanticLabel),
+      );
+      await tester.pump();
+      expect(speedCount, equals(1));
+    });
   });
 }
