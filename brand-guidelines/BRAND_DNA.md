@@ -44,8 +44,27 @@ When people arrive, we want the feeling to be simple: Welcome Home.
 - Agency over your feed and followers
 - Your content and data stay yours
 - Space to play and experiment
-- Access to 2.1 million archived Vine videos from the original era
+- Access to 2.1 million archived Vines from the original era, preserved by ArchiveTeam and the Internet Archive
 - A place that feels like arrival, not conversion
+
+---
+
+## Mission
+
+Divine's mission is to kick-start a movement to brighten the world by creating a playground for human creativity and connection. Divine will:
+
+- Preserve digital creative legacy
+- Prevent content loss due to corporate decisions
+- Empower creators through decentralized technology
+- Give users agency over their content and feed
+
+---
+
+## The Vine Archive
+
+Between 2013 and 2017, Vine let creators share six-second videos capturing spontaneous moments of creativity. When Twitter shut Vine down, millions of those videos were at risk of being lost. Divine has restored **2.1 million** of them, drawn from the preservation work of [ArchiveTeam](https://archiveteam.org) and the [Internet Archive](https://archive.org), giving these authentic pre-AI-era videos a new home on the decentralized web. We're committed to restoring creator ownership and attribution wherever possible.
+
+**Positioning note (keep this straight in all external copy):** Divine is an independent short-form video app with no affiliation to X (formerly Twitter) or the original Vine platform. It's a separate project built on open-source technology and the Nostr protocol -- it preserves archived videos from the Internet Archive and enables new six-second video creation using similar creative constraints.
 
 ---
 

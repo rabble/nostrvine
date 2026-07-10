@@ -62,7 +62,8 @@ Divine is a decentralized short-form video app reviving Vine's 6-second format, 
 - **User ownership**: Your content, your data, your feed. Built on Nostr where you own everything.
 - **Joy scrolling**: Trade doom scrolling for delight. Quick bursts of real human creativity.
 - **Community-built**: Open source, decentralized, built with and for the community.
-- **Vine nostalgia**: 2.1 million archived Vines brought back to life. The golden days of the internet, reimagined.
+- **Vine nostalgia**: 2.1 million archived Vines brought back to life, preserved by ArchiveTeam and the Internet Archive. The golden days of the internet, reimagined.
+- **Independent project**: Divine has no affiliation with Vine or X/Twitter. It's a separate, open-source app on Nostr that gives archived Internet Archive videos a new home and enables new six-second creation. Keep this clear in external copy.
 
 ---
 

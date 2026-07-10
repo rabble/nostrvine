@@ -12,6 +12,8 @@ The Divine logotype is the most recognizable aspect of the brand. It is built on
 
 **The brand name is always written "Divine."** Standard capitalization: capital D, lowercase rest. Never write it as "DiVine" or "diVine" — any stylized capitalization of the "V" belongs to the logotype artwork only and must never appear in body copy, headings, UI text, code comments, docs, or anywhere the name is set as text.
 
+The stylized "V" in the logotype is a nod to the name's origin — "di-Vine," meaning "from Vine." That origin story lives in the mark and in brand storytelling, but it never changes how the name is spelled in text: always **Divine**.
+
 ### Safe Space
 Always leave at least the x-height of the typography as free space around the logo on all sides.
 
