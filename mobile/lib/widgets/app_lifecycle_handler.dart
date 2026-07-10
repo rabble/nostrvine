@@ -14,6 +14,7 @@ import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
+import 'package:openvine/services/account_state_resume_refresher.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
@@ -128,6 +129,16 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
               ?.refresh(reason: NotificationRefreshReason.appResume),
         );
         unawaited(context.read<InviteStatusCubit?>()?.load());
+
+        // Refetch protected-minor account state so a server-side flip that
+        // landed while idle-authenticated is picked up on resume, rather than
+        // waiting for the next relaunch or re-auth. TTL-guarded internally so a
+        // frequent backgrounder doesn't hit Keycast on every foreground.
+        ref
+            .read(accountStateResumeRefresherProvider)
+            .refreshOnResume(
+              authenticated: ref.read(authServiceProvider).isAuthenticated,
+            );
 
         // Don't force resume playback. Foreground, route, and overlay gates
         // decide which mounted feed may play.
