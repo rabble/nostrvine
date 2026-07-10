@@ -476,6 +476,10 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
     try {
       // Use AuthService for proper session setup and relay discovery
       final authService = ref.read(authServiceProvider);
+      // Re-check the protected-minor gate at the raw-key boundary: the
+      // render-time gate in build() can flip to restricted while the
+      // confirmation dialog above is open, and AuthService is policy-unaware.
+      if (ref.read(isKeyManagementRestrictedProvider)) return;
       final result = await authService.importFromNsec(nsec);
 
       if (!result.success) {
@@ -524,6 +528,10 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
 
   Future<void> _exportKey(BuildContext context) async {
     try {
+      // Consistency guard with _importKey's raw-key boundary check. No dialog
+      // precedes this call, so there is no real flip window here; kept as
+      // defense-in-depth so both key-handover call sites read the gate.
+      if (ref.read(isKeyManagementRestrictedProvider)) return;
       final nsec = await ref.read(authServiceProvider).exportNsec();
 
       if (nsec == null) {
