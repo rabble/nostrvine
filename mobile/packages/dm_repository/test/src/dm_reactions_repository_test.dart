@@ -501,6 +501,68 @@ void main() {
     });
 
     test(
+      'publish contains a thrown send: marks failed and surfaces the error '
+      'instead of leaking the exception',
+      () async {
+        final rumor = reactionRumor();
+        when(
+          () => mockMessageService.buildRumor(
+            recipientPubkey: _otherPubkey,
+            content: '🔥',
+            eventKind: EventKind.reaction,
+            additionalTags: any(named: 'additionalTags'),
+          ),
+        ).thenReturn(rumor);
+        when(
+          () => mockDao.insertOwnReactionSuperseding(
+            placeholderId: rumor.id,
+            conversationId: _conversationId,
+            targetMessageId: _targetMessageId,
+            targetMessageAuthor: _otherPubkey,
+            reactorPubkey: _ownerPubkey,
+            emoji: '🔥',
+            createdAt: rumor.createdAt,
+            ownerPubkey: _ownerPubkey,
+            rumorEventJson: jsonEncode(rumor.toJson()),
+          ),
+        ).thenAnswer((_) async => <String>[]);
+        // A thrown send (not a returned NIP17SendFailure) must still flip the
+        // chip to 'failed' and surface the error — the outer catch must never
+        // let the exception escape to the caller.
+        when(
+          () => mockMessageService.sendRumor(
+            rumorEvent: rumor,
+            recipientPubkey: _otherPubkey,
+            awaitRecipientOk: any(named: 'awaitRecipientOk'),
+          ),
+        ).thenThrow(StateError('socket boom'));
+        when(
+          () => mockDao.markFailed(
+            placeholderId: rumor.id,
+            ownerPubkey: _ownerPubkey,
+          ),
+        ).thenAnswer((_) async {});
+
+        final repository = createRepository();
+        final result = await repository.publish(
+          conversationId: _conversationId,
+          targetMessageId: _targetMessageId,
+          targetMessageAuthor: _otherPubkey,
+          emoji: '🔥',
+        );
+
+        expect(result.success, isFalse);
+        expect(result.errorMessage, contains('socket boom'));
+        verify(
+          () => mockDao.markFailed(
+            placeholderId: rumor.id,
+            ownerPubkey: _ownerPubkey,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
       'publish keeps the row pending (not failed) on an unconfirmed send',
       () async {
         final rumor = reactionRumor();
