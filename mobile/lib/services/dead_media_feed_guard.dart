@@ -47,7 +47,7 @@ class DeadMediaFeedGuard {
     if (!missing) return false;
     await _tracker.markVideoBroken(
       videoId,
-      'Confirmed 404 in home feed (#5953)',
+      'Confirmed 404 in home feed',
     );
     return true;
   }
