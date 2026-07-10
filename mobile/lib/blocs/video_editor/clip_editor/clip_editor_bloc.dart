@@ -580,12 +580,31 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
           final clips = state.clips;
           final index = clips.indexWhere((c) => c.id == selectedClip.id);
           if (index == -1) return;
+          // Preserve the user's live selection identity across the insert. The
+          // split may target a clip *before* the currently-selected one (the
+          // user can switch clips while an earlier split renders), and
+          // inserting the tail shifts every later index by one — re-point
+          // currentClipIndex at the same clip so the selection doesn't
+          // silently jump. When the selected clip *is* the split source, its
+          // id is gone (replaced by startClip); keep the index unchanged so it
+          // lands on startClip.
+          final currentIndex = state.currentClipIndex;
+          final selectedClipId =
+              currentIndex >= 0 && currentIndex < clips.length
+              ? clips[currentIndex].id
+              : null;
           final newClips = List<DivineVideoClip>.of(clips)
             ..[index] = startClip
             ..insert(index + 1, endClip);
+          final newSelectedIndex = selectedClipId == null
+              ? currentIndex
+              : newClips.indexWhere((c) => c.id == selectedClipId);
           emit(
             state.copyWith(
               clips: List.unmodifiable(newClips),
+              currentClipIndex: newSelectedIndex >= 0
+                  ? newSelectedIndex
+                  : currentIndex,
               lastSplit: ClipSplitEvent(
                 sourceClipId: selectedClip.id,
                 startClipId: startClip.id,
@@ -1062,6 +1081,21 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     if (index < 0 || index >= clips.length) return;
 
     final clip = clips[index];
+
+    // Dedupe a queued re-extraction. With sequential(), a second Extract tap
+    // on a clip queues behind the first; once the first mutes the clip, the
+    // second would re-extract and emit another success, adding a duplicate
+    // audio track. Skip when this clip's audio was already extracted and it is
+    // still muted as a result; a manual un-mute (volume > 0) lifts the guard.
+    if (state.extractedAudioClipIds.contains(clip.id) && clip.volume == 0) {
+      Log.info(
+        '🎵 Skipping duplicate audio extraction for clip ${clip.id}',
+        name: 'ClipEditorBloc',
+        category: LogCategory.video,
+      );
+      return;
+    }
+
     final videoPath = clip.video.file?.path;
     final extractionSpeed = _effectiveAudioExtractionSpeed(clip);
 
@@ -1179,6 +1213,10 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
           clips: List.unmodifiable(newClips),
           isExtractingAudio: false,
           clearExtractingAudioClipId: true,
+          extractedAudioClipIds: {
+            ...state.extractedAudioClipIds,
+            currentClip.id,
+          },
           lastAudioExtraction: ClipAudioExtractionSuccess(
             audioEvent: audioEvent,
           ),

@@ -20,6 +20,7 @@ class ClipEditorState extends Equatable {
     this.trimmingClipId,
     this.isExtractingAudio = false,
     this.extractingAudioClipId,
+    this.extractedAudioClipIds = const {},
     this.lastAudioExtraction,
     this.isSplitting = false,
     this.splittingClipId,
@@ -94,6 +95,16 @@ class ClipEditorState extends Equatable {
   /// disable audio-dependent actions (Speed) only for the affected clip, so
   /// switching to and operating on a different clip stays unblocked.
   final String? extractingAudioClipId;
+
+  /// IDs of clips whose audio has been extracted (and muted) this session.
+  ///
+  /// Used to dedupe a queued re-extraction: with the `sequential()`
+  /// transformer a second Extract tap on a clip queues behind the first, and
+  /// without this guard the second run would re-mute the already-muted clip
+  /// and emit a second [ClipAudioExtractionSuccess], adding a duplicate audio
+  /// track. A manual un-mute (volume > 0) lifts the guard, so a deliberate
+  /// re-extraction still works.
+  final Set<String> extractedAudioClipIds;
 
   /// Whether a split operation is currently in progress (rendering).
   final bool isSplitting;
@@ -191,6 +202,7 @@ class ClipEditorState extends Equatable {
     bool? isExtractingAudio,
     String? extractingAudioClipId,
     bool clearExtractingAudioClipId = false,
+    Set<String>? extractedAudioClipIds,
     ClipAudioExtractionResult? lastAudioExtraction,
     bool? isSplitting,
     String? splittingClipId,
@@ -230,6 +242,8 @@ class ClipEditorState extends Equatable {
       extractingAudioClipId: clearExtractingAudioClipId
           ? null
           : (extractingAudioClipId ?? this.extractingAudioClipId),
+      extractedAudioClipIds:
+          extractedAudioClipIds ?? this.extractedAudioClipIds,
       lastAudioExtraction: lastAudioExtraction ?? this.lastAudioExtraction,
       isSplitting: isSplitting ?? this.isSplitting,
       splittingClipId: clearSplittingClipId
@@ -272,6 +286,7 @@ class ClipEditorState extends Equatable {
     trimmingClipId,
     isExtractingAudio,
     extractingAudioClipId,
+    extractedAudioClipIds,
     // Identity-only: each ClipAudioExtractionResult is a fresh instance.
     identityHashCode(lastAudioExtraction),
     isSplitting,
