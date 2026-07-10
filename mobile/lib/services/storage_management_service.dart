@@ -48,7 +48,8 @@ class StorageManagementService {
   /// [videoCache] and [imageCache] are the app's download caches;
   /// [clipLibrary] is scoped to the current account. The directory providers
   /// are injectable for tests and otherwise resolve the OS temp and documents
-  /// directories.
+  /// directories. [protectedTempRenderPaths] supplies upload inputs that still
+  /// need to survive a cache clear.
   StorageManagementService({
     required MediaCacheManager videoCache,
     required MediaCacheManager imageCache,
@@ -56,6 +57,7 @@ class StorageManagementService {
     required SharedPreferences prefs,
     @visibleForTesting Future<Directory> Function()? temporaryDirectoryProvider,
     @visibleForTesting Future<Directory> Function()? documentsDirectoryProvider,
+    Set<String> Function()? protectedTempRenderPaths,
   }) : _videoCache = videoCache,
        _imageCache = imageCache,
        _clipLibrary = clipLibrary,
@@ -63,7 +65,9 @@ class StorageManagementService {
        _temporaryDirectoryProvider =
            temporaryDirectoryProvider ?? getTemporaryDirectory,
        _documentsDirectoryProvider =
-           documentsDirectoryProvider ?? getApplicationDocumentsDirectory;
+           documentsDirectoryProvider ?? getApplicationDocumentsDirectory,
+       _protectedTempRenderPaths =
+           protectedTempRenderPaths ?? _noProtectedPaths;
 
   final MediaCacheManager _videoCache;
   final MediaCacheManager _imageCache;
@@ -71,21 +75,25 @@ class StorageManagementService {
   final SharedPreferences _prefs;
   final Future<Directory> Function() _temporaryDirectoryProvider;
   final Future<Directory> Function() _documentsDirectoryProvider;
+  final Set<String> Function() _protectedTempRenderPaths;
 
   static const String _logName = 'StorageManagementService';
   static const String _videoCacheDir = 'openvine_video_cache';
   static const String _imageCacheDir = 'openvine_image_cache';
   static const String _seamDir = 'transition_seams';
 
+  static Set<String> _noProtectedPaths() => const {};
+
   /// Total bytes currently held by the clearable caches. Best-effort; a
   /// directory that cannot be read contributes zero rather than throwing.
   Future<int> cacheSizeBytes() async {
     final temp = await _temporaryDirectoryProvider();
     final docs = await _documentsDirectoryProvider();
+    final protectedPaths = _normalizedProtectedTempRenderPaths();
     return await _dirSize(Directory(p.join(temp.path, _videoCacheDir))) +
         await _dirSize(Directory(p.join(temp.path, _imageCacheDir))) +
         await _dirSize(Directory(p.join(docs.path, _seamDir))) +
-        await _tempRenderBytes(temp);
+        await _tempRenderBytes(temp, protectedPaths);
   }
 
   /// Clears every re-downloadable / regenerable cache. The clip library and
@@ -99,7 +107,12 @@ class StorageManagementService {
     // directory contents so the freed size matches what cacheSizeBytes counts.
     await _deleteDirContents(Directory(p.join(temp.path, _videoCacheDir)));
     await _deleteDirContents(Directory(p.join(temp.path, _imageCacheDir)));
-    await _forEachTempRender(temp, _deleteQuietly);
+    final protectedPaths = _normalizedProtectedTempRenderPaths();
+    await _forEachTempRender(
+      temp,
+      protectedPaths: protectedPaths,
+      action: _deleteQuietly,
+    );
     final docs = await _documentsDirectoryProvider();
     await _deleteDirContents(Directory(p.join(docs.path, _seamDir)));
   }
@@ -158,20 +171,29 @@ class StorageManagementService {
     return size;
   }
 
-  Future<int> _tempRenderBytes(Directory temp) async {
+  Future<int> _tempRenderBytes(
+    Directory temp,
+    Set<String> protectedPaths,
+  ) async {
     var size = 0;
-    await _forEachTempRender(temp, (file) async => size += await file.length());
+    await _forEachTempRender(
+      temp,
+      protectedPaths: protectedPaths,
+      action: (file) async => size += await file.length(),
+    );
     return size;
   }
 
   Future<void> _forEachTempRender(
-    Directory temp,
-    Future<void> Function(File file) action,
-  ) async {
+    Directory temp, {
+    required Set<String> protectedPaths,
+    required Future<void> Function(File file) action,
+  }) async {
     if (!temp.existsSync()) return;
     try {
       await for (final entity in temp.list(followLinks: false)) {
         if (entity is File && _isTempRender(p.basename(entity.path))) {
+          if (protectedPaths.contains(_normalizePath(entity.path))) continue;
           await action(entity);
         }
       }
@@ -186,6 +208,13 @@ class StorageManagementService {
 
   bool _isTempRender(String name) =>
       name.endsWith('.mp4') && _tempRenderPrefixes.any(name.startsWith);
+
+  Set<String> _normalizedProtectedTempRenderPaths() => {
+    for (final filePath in _protectedTempRenderPaths())
+      _normalizePath(filePath),
+  };
+
+  String _normalizePath(String filePath) => p.normalize(p.absolute(filePath));
 
   Future<void> _deleteDirContents(Directory dir) async {
     if (!dir.existsSync()) return;

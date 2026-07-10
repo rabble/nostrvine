@@ -124,6 +124,28 @@ void main() {
         expect(orphanImage.existsSync(), isFalse);
         expect(await service.cacheSizeBytes(), 0);
       });
+
+      test('keeps temp renders referenced by pending uploads', () async {
+        final active = writeFile('${temp.path}/merged_active.mp4', 100);
+        final stale = writeFile('${temp.path}/merged_stale.mp4', 50);
+        service = StorageManagementService(
+          videoCache: videoCache,
+          imageCache: imageCache,
+          clipLibrary: clipLibrary,
+          prefs: prefs,
+          temporaryDirectoryProvider: () async => temp,
+          documentsDirectoryProvider: () async => docs,
+          protectedTempRenderPaths: () => {active.path},
+        );
+
+        expect(await service.cacheSizeBytes(), 50);
+
+        await service.clearCaches();
+
+        expect(active.existsSync(), isTrue);
+        expect(stale.existsSync(), isFalse);
+        expect(await service.cacheSizeBytes(), 0);
+      });
     });
 
     group('findBrokenClips', () {

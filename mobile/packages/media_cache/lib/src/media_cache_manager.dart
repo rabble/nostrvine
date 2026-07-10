@@ -363,6 +363,13 @@ class MediaCacheManager extends CacheManager {
   /// Guards against overlapping [enforceCacheLimits] runs.
   bool _sweepInProgress = false;
 
+  /// A forced sweep requested while another pass is running.
+  ///
+  /// Ordinary background sweeps may still be coalesced, but callers that lower
+  /// a user-configured budget must be able to await a pass that observes the
+  /// new value instead of silently returning behind an older sweep.
+  Completer<void>? _queuedForceSweep;
+
   /// When the last [enforceCacheLimits] pass started. Drives the time-based
   /// throttle so back-to-back sweeps cannot pile up during heavy scrolling.
   /// Seeded to the epoch so the first pass is never throttled.
@@ -671,6 +678,8 @@ class MediaCacheManager extends CacheManager {
           _cacheManifest[key] = fileInfo.file.path;
         }
 
+        _recordSuccessfulDownload();
+
         if (!completer.isCompleted) {
           completer.complete(
             CancellableDownloadResult(file: _isClosed ? null : fileInfo.file),
@@ -798,6 +807,7 @@ class MediaCacheManager extends CacheManager {
     _pendingCacheOperations[key] = completer;
     CancellableDownload? activeDownload;
     var cancelledBeforeStart = false;
+    var completedDownload = false;
 
     Future<void> startDownload() async {
       try {
@@ -842,7 +852,7 @@ class MediaCacheManager extends CacheManager {
               }
             }
           }
-          _downloadsSinceSweep++;
+          completedDownload = true;
         }
         if (!completer.isCompleted) completer.complete(downloadResult);
       } on Object catch (error) {
@@ -857,7 +867,7 @@ class MediaCacheManager extends CacheManager {
       } finally {
         _pendingCacheOperations.remove(key);
         _inFlightRelativePaths.remove(relativePath);
-        _maybeEnforceCacheLimits();
+        if (completedDownload) _recordSuccessfulDownload();
       }
     }
 
@@ -945,6 +955,11 @@ class MediaCacheManager extends CacheManager {
     unawaited(enforceCacheLimits());
   }
 
+  void _recordSuccessfulDownload() {
+    _downloadsSinceSweep++;
+    _maybeEnforceCacheLimits();
+  }
+
   /// Reclaims leaked cache files and enforces
   /// [MediaCacheConfig.maxCacheSizeBytes].
   ///
@@ -962,14 +977,15 @@ class MediaCacheManager extends CacheManager {
   ///    downloads, and files written within [_reclamationFreshnessWindow]
   ///    are left untouched.
   /// 2. **Byte eviction** — when [MediaCacheConfig.maxCacheSizeBytes] is set,
-  ///    deletes the oldest tracked files first (ordered by the store's
-  ///    last-touch time, falling back to file mtime) until the directory is
-  ///    back under budget, removing both the file and its store row. Note the
-  ///    sync-manifest read path does not refresh `touched`, so in practice
-  ///    this trims by download age rather than true last-access.
+  ///    deletes the oldest managed files first, including files kept alive only
+  ///    by the sync manifest. Store touch time is preferred when available,
+  ///    with file mtime as the fallback, until the directory is back under
+  ///    budget. The sync-manifest read path does not refresh `touched`, so in
+  ///    practice this trims by download age rather than true last-access.
   ///
-  /// Safe to call at startup and repeatedly; overlapping calls are ignored and
-  /// calls within [_minSweepInterval] of the previous pass are skipped.
+  /// Safe to call at startup and repeatedly; overlapping background calls are
+  /// ignored, while an overlapping forced call queues one follow-up pass. Calls
+  /// within [_minSweepInterval] of the previous pass are skipped.
   ///
   /// I/O is intentionally asynchronous: the directory is walked with a
   /// `Directory.list()` stream and files are removed with `File.delete()` so
@@ -978,7 +994,12 @@ class MediaCacheManager extends CacheManager {
   /// `avoid_slow_async_io` — the async variants of those add more overhead
   /// than they save.
   Future<void> enforceCacheLimits({bool force = false}) async {
-    if (_isClosed || _sweepInProgress) return;
+    if (_isClosed) return;
+    if (_sweepInProgress) {
+      if (!force) return;
+      final queued = _queuedForceSweep ??= Completer<void>();
+      return queued.future;
+    }
     if (!force && clock.now().difference(_lastSweepAt) < _minSweepInterval) {
       return;
     }
@@ -1011,6 +1032,13 @@ class MediaCacheManager extends CacheManager {
       // Only stamped for passes that got past open(): a failed repository
       // open (e.g. cold start) must not throttle out the retry.
       if (repoOpened) _lastSweepAt = clock.now();
+
+      final queued = _queuedForceSweep;
+      _queuedForceSweep = null;
+      if (queued != null) {
+        await enforceCacheLimits(force: true);
+        if (!queued.isCompleted) queued.complete();
+      }
     }
   }
 
@@ -1058,49 +1086,96 @@ class MediaCacheManager extends CacheManager {
     int budget,
     CacheInfoRepository repo,
   ) async {
-    final entries = <_TrackedCacheFile>[];
-    var total = 0;
+    final entriesByName = <String, _BudgetedCacheFile>{};
     for (final object in objects) {
       final file = File(path.join(baseDir, object.relativePath));
       final stat = file.statSync();
       if (stat.type == FileSystemEntityType.notFound) continue;
-      total += stat.size;
-      entries.add(
-        _TrackedCacheFile(
-          object: object,
-          file: file,
-          size: stat.size,
-          lastUsed: object.touched ?? stat.modified,
-        ),
+      entriesByName[object.relativePath] = _BudgetedCacheFile(
+        object: object,
+        file: file,
+        size: stat.size,
+        lastUsed: object.touched ?? stat.modified,
       );
     }
+
+    // The sync manifest can keep a cache file live after
+    // flutter_cache_manager has demoted its row past the object-count limit.
+    // Those files must still count towards the byte budget; otherwise they are
+    // protected from orphan reclamation but invisible to byte eviction.
+    final manifestFiles = <String, File>{
+      for (final filePath in _cacheManifest.values)
+        path.basename(filePath): File(filePath),
+    };
+    for (final entry in manifestFiles.entries) {
+      final name = entry.key;
+      if (entriesByName.containsKey(name) ||
+          _inFlightRelativePaths.contains(name)) {
+        continue;
+      }
+      final stat = entry.value.statSync();
+      if (stat.type == FileSystemEntityType.notFound) continue;
+      entriesByName[name] = _BudgetedCacheFile(
+        file: entry.value,
+        size: stat.size,
+        lastUsed: stat.modified,
+      );
+    }
+
+    final entries = entriesByName.values.toList();
+    var total = entries.fold<int>(0, (sum, entry) => sum + entry.size);
     if (total <= budget) return;
 
     // Oldest first (last-touch time, else file mtime) so newer items survive.
     entries.sort((a, b) => a.lastUsed.compareTo(b.lastUsed));
     final removedIds = <int>[];
+    var aliasMapChanged = false;
     for (final entry in entries) {
       if (total <= budget) break;
-      await _deleteFile(entry.file);
+      if (!await _deleteFile(entry.file)) continue;
       total -= entry.size;
-      final id = entry.object.id;
+      final object = entry.object;
+      final id = object?.id;
       if (id != null) removedIds.add(id);
-      _cacheManifest.remove(entry.object.key);
+      final removedManifestKeys = <String>{
+        if (object != null) object.key,
+        for (final manifestEntry in _cacheManifest.entries)
+          if (manifestEntry.value == entry.file.path) manifestEntry.key,
+      };
+      _cacheManifest.removeWhere(
+        (key, value) =>
+            removedManifestKeys.contains(key) || value == entry.file.path,
+      );
+      final aliasesToRemove = _aliasMap.entries
+          .where(
+            (alias) =>
+                removedManifestKeys.contains(alias.key) ||
+                removedManifestKeys.contains(alias.value),
+          )
+          .map((alias) => alias.key)
+          .toList(growable: false);
+      if (aliasesToRemove.isNotEmpty) {
+        aliasMapChanged = true;
+        aliasesToRemove.forEach(_aliasMap.remove);
+      }
     }
     if (removedIds.isNotEmpty) {
       await repo.deleteAll(removedIds);
     }
+    if (aliasMapChanged) await _persistAliasMap();
   }
 
-  /// Deletes [file] asynchronously (best-effort, never throwing). Async so the
-  /// blocking unlink runs off the isolate's main thread and the surrounding
-  /// loop yields between deletions. No existence pre-check: a missing file
-  /// throws [PathNotFoundException], which is swallowed like any other error.
-  Future<void> _deleteFile(File file) async {
+  /// Deletes [file] asynchronously and reports whether it was removed. The
+  /// surrounding loop yields between deletions. No existence pre-check: a
+  /// missing file throws [PathNotFoundException] and is treated like any other
+  /// failed unlink.
+  Future<bool> _deleteFile(File file) async {
     try {
       await file.delete();
+      return true;
     } on Object catch (_) {
       // Best-effort; anything left behind is retried on the next pass.
+      return false;
     }
   }
 
@@ -1279,18 +1354,18 @@ class MediaCacheManager extends CacheManager {
   }
 }
 
-/// A tracked cache file paired with its on-disk size and recency signal
-/// ([lastUsed] = the store's `touched` time, or file mtime when unset), used
-/// to order oldest-first eviction during byte-budget trimming.
-class _TrackedCacheFile {
-  _TrackedCacheFile({
-    required this.object,
+/// A managed cache file paired with its on-disk size and recency signal.
+///
+/// [object] is absent for a file kept alive only by the sync manifest.
+class _BudgetedCacheFile {
+  _BudgetedCacheFile({
     required this.file,
     required this.size,
     required this.lastUsed,
+    this.object,
   });
 
-  final CacheObject object;
+  final CacheObject? object;
   final File file;
   final int size;
   final DateTime lastUsed;
