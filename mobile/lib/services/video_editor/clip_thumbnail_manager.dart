@@ -312,6 +312,9 @@ class ClipThumbnailManager {
     );
     // Latest accumulated fresh batch, for the onDone carried-frame sweep.
     var latestFresh = const <StripThumbnail>[];
+    // Set when the generator hits a native extraction failure mid-stream:
+    // the stream errors and closes with only a partial set delivered.
+    var truncated = false;
 
     final subscription =
         _generateStripThumbnails(
@@ -349,9 +352,16 @@ class ClipThumbnailManager {
                 if (!currentPaths.contains(thumb.path)) thumb,
             ]);
           },
+          onError: (Object error, StackTrace stackTrace) {
+            // Already logged by the generator. Marking the truncation is
+            // enough: the onDone below then keeps the carried gap-fillers
+            // and leaves the clip un-complete, so a later retire/restore
+            // starts a fresh subscription that fills the missing frames.
+            truncated = true;
+          },
           onDone: () {
             final notifier = _notifiers[clip.id];
-            if (notifier == null || latestFresh.isEmpty) return;
+            if (notifier == null || truncated || latestFresh.isEmpty) return;
             _complete.add(clip.id);
             // Long clips cap the generator's frame count, so the final
             // spacing can exceed [keepDistance] and leave carried frames

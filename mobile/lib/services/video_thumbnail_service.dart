@@ -545,6 +545,11 @@ class VideoThumbnailService {
   ///
   /// Each yield contains the **accumulated** list so far, allowing the
   /// caller to simply replace its current list on each event.
+  ///
+  /// If native extraction fails mid-stream, the stream emits the error and
+  /// closes. Batches already delivered stay valid, but the set is truncated
+  /// — listeners must not treat a stream that errored as having reached full
+  /// density.
   static Stream<List<StripThumbnail>> generateStripThumbnails({
     required String videoPath,
     required String clipId,
@@ -654,7 +659,11 @@ class VideoThumbnailService {
           name: 'VideoThumbnailService',
           category: LogCategory.video,
         );
-        break;
+        // Surface the failure as a stream error instead of closing the
+        // stream normally — listeners must be able to tell a truncated set
+        // apart from a complete one (a silent close made partial strips
+        // look final and dropped their gap-filler frames).
+        rethrow;
       }
 
       for (var i = 0; i < bytes.length && i < batchTimestamps.length; i++) {

@@ -1,6 +1,7 @@
 // ABOUTME: Unit tests for video thumbnail extraction service
 // ABOUTME: Tests thumbnail generation, error handling, and edge cases
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -289,6 +290,59 @@ void main() {
         );
         expect(timestamp.inMilliseconds, equals(630)); // 10% of 6300ms
       });
+    });
+
+    group('generateStripThumbnails', () {
+      test(
+        'emits delivered batches then the error when extraction fails '
+        'mid-stream',
+        () async {
+          // First batch succeeds, second batch hits a native failure.
+          var callCount = 0;
+          final fakeJpegBytes = Uint8List.fromList(
+            List<int>.generate(16, (i) => i),
+          );
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+              .setMockMethodCallHandler(channel, (call) async {
+                if (call.method == 'getThumbnails') {
+                  callCount++;
+                  if (callCount > 1) {
+                    throw PlatformException(code: 'DECODER_ERROR');
+                  }
+                  return List<Uint8List>.generate(6, (_) => fakeJpegBytes);
+                }
+                return null;
+              });
+
+          // 12 s at 1 thumb/s with the default batch size of 6 → 2 batches.
+          final batches = <List<StripThumbnail>>[];
+          Object? streamError;
+          final done = Completer<void>();
+          VideoThumbnailService.generateStripThumbnails(
+            videoPath: testVideoPath,
+            clipId: 'clip-truncated',
+            duration: const Duration(seconds: 12),
+            outputSize: const Size(48, 64),
+          ).listen(
+            batches.add,
+            onError: (Object error) => streamError = error,
+            onDone: done.complete,
+          );
+          await done.future;
+
+          // The successful batch was delivered, then the stream errored —
+          // a listener can tell the truncated set apart from a clean close.
+          expect(batches, hasLength(1));
+          expect(batches.single, hasLength(6));
+          expect(streamError, isA<PlatformException>());
+
+          for (final thumbnail in batches.single) {
+            final file = File(thumbnail.path);
+            expect(file.existsSync(), isTrue);
+            file.deleteSync();
+          }
+        },
+      );
     });
   });
 

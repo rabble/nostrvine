@@ -181,14 +181,20 @@ class _VideoMetadataCoverScreenState
           thumbsPerSecond: thumbsPerSecond,
           priorityTimestamps: slotTimestamps,
           batchSize: 10,
-        ).listen((thumbnails) {
-          for (final t in thumbnails) {
-            _allStripThumbnailPaths.add(t.path);
-          }
-          if (mounted) {
-            setState(() => _stripThumbnails = thumbnails);
-          }
-        });
+        ).listen(
+          (thumbnails) {
+            for (final t in thumbnails) {
+              _allStripThumbnailPaths.add(t.path);
+            }
+            if (mounted) {
+              setState(() => _stripThumbnails = thumbnails);
+            }
+          },
+          // A mid-stream extraction failure is already logged by the
+          // service; keep the batches that arrived so the strip stays
+          // usable for cover selection.
+          onError: (Object _, StackTrace _) {},
+        );
   }
 
   Future<void> _seekTo(Duration position) async {

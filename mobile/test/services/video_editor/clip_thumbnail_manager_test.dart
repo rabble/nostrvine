@@ -839,6 +839,78 @@ void main() {
           expect(controllers, hasLength(2));
         },
       );
+
+      // Regression: a native extraction failure mid-stream errors the
+      // subscription with only a partial fresh set delivered. That partial
+      // set must not be treated as complete — the carried gap-fillers stay
+      // on screen (and on disk), and a later retire/restore starts a fresh
+      // subscription instead of parking the truncated strip as final.
+      test(
+        'keeps carried gap-fillers and re-extracts on restore when the '
+        'stream is truncated by an extraction error',
+        () async {
+          final dense = [
+            for (var i = 0; i < 4; i++)
+              File('${tempDir.path}/dense_$i.jpg')..writeAsStringSync('d$i'),
+          ];
+          final clip = _createFileClip(
+            id: 'a',
+            videoPath: '${tempDir.path}/a.mp4',
+            seconds: 4,
+          );
+          fakeStreamManager.sync(clips: [clip], devicePixelRatio: 1);
+          controllers.single.add([
+            for (var i = 0; i < 4; i++)
+              StripThumbnail(
+                path: dense[i].path,
+                timestamp: Duration(milliseconds: 500 + i * 1000),
+              ),
+          ]);
+          await pumpEventQueue();
+
+          // The clip's file is re-rendered — a restart carries the dense
+          // frames as gap-fillers while the new extraction streams in.
+          final rerenderedClip = _createFileClip(
+            id: 'a',
+            videoPath: '${tempDir.path}/a_rerendered.mp4',
+            seconds: 4,
+          );
+          fakeStreamManager.sync(clips: [rerenderedClip], devicePixelRatio: 1);
+          expect(controllers, hasLength(2));
+
+          final fresh = File('${tempDir.path}/fresh.jpg')
+            ..writeAsStringSync('fresh');
+          controllers[1].add([
+            StripThumbnail(
+              path: fresh.path,
+              timestamp: const Duration(milliseconds: 500),
+            ),
+          ]);
+          await pumpEventQueue();
+          expect(fakeStreamManager['a'].value, hasLength(4));
+
+          // Decoder failure truncates the stream after the sparse batch.
+          controllers[1].addError(StateError('decoder died'));
+          await controllers[1].close();
+          await pumpEventQueue();
+
+          // The carried gap-fillers survive — the strip must not collapse
+          // to the single fresh frame — and their files stay on disk.
+          final afterError = fakeStreamManager['a'].value;
+          expect(afterError, hasLength(4));
+          expect(afterError.map((t) => t.path), contains(fresh.path));
+          for (final file in dense.skip(1)) {
+            expect(file.existsSync(), isTrue);
+          }
+
+          // Remove and restore: the strip was truncated, not complete, so
+          // a fresh subscription starts to fill the missing frames.
+          fakeStreamManager.sync(clips: [], devicePixelRatio: 1);
+          fakeStreamManager.sync(clips: [rerenderedClip], devicePixelRatio: 1);
+          expect(fakeStreamManager['a'].value, hasLength(4));
+          expect(controllers, hasLength(3));
+        },
+      );
     });
 
     group('retired strips', () {
