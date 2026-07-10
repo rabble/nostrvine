@@ -8,9 +8,11 @@ import 'dart:html'
     if (dart.library.io) 'package:openvine/services/bug_report_service_stub.dart'
     as html;
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:analytics/analytics.dart';
 import 'package:blossom_upload_service/blossom_upload_service.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:file_selector/file_selector.dart';
@@ -19,6 +21,9 @@ import 'package:models/models.dart'
     show BugReportData, BugReportResult, LogEntry;
 import 'package:nostr_client/nostr_client.dart' show Nip89ClientTag;
 import 'package:openvine/config/bug_report_config.dart';
+import 'package:openvine/services/storage_management_service.dart';
+import 'package:openvine/utils/app_uptime.dart';
+import 'package:openvine/utils/device_memory_util.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -32,14 +37,17 @@ class BugReportService {
     NIP17MessageService? nip17MessageService,
     BlossomUploadService? blossomUploadService,
     ErrorAnalyticsTracker? errorTracker,
+    StorageManagementService? storageManagementService,
   }) : _nip17MessageService = nip17MessageService,
        _blossomUploadService = blossomUploadService,
-       _errorTracker = errorTracker ?? ErrorAnalyticsTracker();
+       _errorTracker = errorTracker ?? ErrorAnalyticsTracker(),
+       _storageManagementService = storageManagementService;
 
   static const _uuid = Uuid();
   final NIP17MessageService? _nip17MessageService;
   final BlossomUploadService? _blossomUploadService;
   final ErrorAnalyticsTracker _errorTracker;
+  final StorageManagementService? _storageManagementService;
 
   /// Collect comprehensive diagnostics for bug report
   Future<BugReportData> collectDiagnostics({
@@ -792,7 +800,12 @@ class BugReportService {
       buffer.writeln('Total Log Lines: ${allLogLines.length}');
       buffer.writeln('Log Files: ${stats['fileCount']}');
       buffer.writeln('Total Size: ${stats['totalSizeMB']} MB');
+      final deviceDescription = await buildDeviceDescription();
+      if (deviceDescription != null) {
+        buffer.writeln('Device: $deviceDescription');
+      }
       buffer.write(buildRuntimeDiagnostics());
+      buffer.write(await buildEnvironmentDiagnostics());
       if (currentScreen != null) {
         buffer.writeln('Current Screen: $currentScreen');
       }
@@ -827,6 +840,127 @@ class BugReportService {
         stackTrace: stackTrace,
       );
       return const LogExportResult(success: false);
+    }
+  }
+
+  /// Environment diagnostics for the export header: network connectivity,
+  /// text scale, active accessibility features, app uptime, device memory
+  /// tier, and cache usage.
+  ///
+  /// Every probe is best-effort — a failing or unavailable source omits its
+  /// line instead of failing the export. Returns an empty string on web.
+  @visibleForTesting
+  Future<String> buildEnvironmentDiagnostics() async {
+    if (kIsWeb) return '';
+    final buffer = StringBuffer();
+    try {
+      final results = await Connectivity().checkConnectivity();
+      buffer.writeln('Network: ${results.map((r) => r.name).join(', ')}');
+    } on Object catch (_) {
+      // Connectivity plugin unavailable (e.g. tests); omit the line.
+    }
+    final dispatcher = ui.PlatformDispatcher.instance;
+    buffer.writeln(
+      'Text Scale: ${dispatcher.textScaleFactor.toStringAsFixed(2)}',
+    );
+    final accessibility = _activeAccessibilityFeatures(
+      dispatcher.accessibilityFeatures,
+    );
+    if (accessibility.isNotEmpty) {
+      buffer.writeln('Accessibility: ${accessibility.join(', ')}');
+    }
+    final uptime = AppUptime.uptime;
+    if (uptime != null) {
+      buffer.writeln('App Uptime: ${_formatDuration(uptime)}');
+    }
+    try {
+      final tier = await DeviceMemoryUtil.getMemoryTier();
+      buffer.writeln('Memory Tier: ${tier.name}');
+    } on Object catch (_) {
+      // Memory tier probe failed; omit the line.
+    }
+    final storage = _storageManagementService;
+    if (storage != null) {
+      try {
+        final usedBytes = await storage.cacheSizeBytes();
+        final limitBytes = storage.cacheLimitBytes();
+        buffer.writeln(
+          'Cache: ${_formatBytesShort(usedBytes)} used '
+          '/ ${_formatBytesShort(limitBytes)} limit',
+        );
+      } on Object catch (_) {
+        // Cache probe failed; omit the line.
+      }
+    }
+    return buffer.toString();
+  }
+
+  static List<String> _activeAccessibilityFeatures(
+    ui.AccessibilityFeatures features,
+  ) {
+    return [
+      if (features.boldText) 'bold text',
+      if (features.reduceMotion) 'reduce motion',
+      if (features.disableAnimations) 'disable animations',
+      if (features.highContrast) 'high contrast',
+      if (features.invertColors) 'invert colors',
+      if (features.accessibleNavigation) 'screen reader',
+    ];
+  }
+
+  static String _formatDuration(Duration duration) {
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes % 60;
+    if (hours > 0) return '${hours}h ${minutes}m';
+    final seconds = duration.inSeconds % 60;
+    return '${minutes}m ${seconds}s';
+  }
+
+  static String _formatBytesShort(int bytes) {
+    const bytesPerMb = 1024 * 1024;
+    final mb = bytes / bytesPerMb;
+    if (mb >= 1024) return '${(mb / 1024).toStringAsFixed(1)} GB';
+    return '${mb.toStringAsFixed(1)} MB';
+  }
+
+  /// Human-readable device identifier for the export header, e.g.
+  /// `iPhone17,2` on iOS or `Google Pixel 8` on Android.
+  ///
+  /// Returns `null` on web and on platforms without a meaningful device
+  /// model, or when the device info probe fails — the header then simply
+  /// omits the line instead of failing the whole export.
+  @visibleForTesting
+  static Future<String?> buildDeviceDescription() async {
+    if (kIsWeb) return null;
+    try {
+      final deviceInfoPlugin = DeviceInfoPlugin();
+      switch (defaultTargetPlatform) {
+        case TargetPlatform.android:
+          final info = await deviceInfoPlugin.androidInfo;
+          final name = '${info.manufacturer} ${info.model}';
+          return info.isPhysicalDevice ? name : '$name (Emulator)';
+        case TargetPlatform.iOS:
+          final info = await deviceInfoPlugin.iosInfo;
+          return info.isPhysicalDevice
+              ? info.utsname.machine
+              : '${info.utsname.machine} (Simulator)';
+        case TargetPlatform.macOS:
+          final info = await deviceInfoPlugin.macOsInfo;
+          return info.model;
+        // Windows exposes no hardware model, only the user-assigned
+        // computerName — personal info that doesn't belong in a shareable
+        // export. Linux likewise only reports the distro.
+        case TargetPlatform.windows:
+        case TargetPlatform.linux:
+        case TargetPlatform.fuchsia:
+          return null;
+      }
+    } on Object catch (e) {
+      Log.warning(
+        'Failed to get device description for log export: $e',
+        category: LogCategory.system,
+      );
+      return null;
     }
   }
 

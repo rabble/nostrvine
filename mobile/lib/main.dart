@@ -110,6 +110,7 @@ import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/startup/database_bootstrap_failure_app.dart';
 import 'package:openvine/startup/startup_splash_release_controller.dart';
+import 'package:openvine/utils/app_uptime.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/platform_support.dart';
@@ -928,6 +929,7 @@ StartupCoordinator createStartupCoordinatorForTesting(
 Future<void> _startOpenVineApp() async {
   // Add timing logs for startup diagnostics
   final startTime = DateTime.now();
+  AppUptime.markStarted();
 
   // Ensure bindings are initialized first (required for everything)
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();

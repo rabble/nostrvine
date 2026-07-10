@@ -10,7 +10,6 @@ import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:openvine/config/app_config.dart';
-import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
@@ -19,11 +18,9 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/relay_providers.dart';
 import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'package:openvine/providers/upload_media_providers.dart';
 import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/services/analytics_ingest_client.dart';
 import 'package:openvine/services/analytics_service.dart';
-import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/collaborator_invite_local_state_adapter.dart';
 import 'package:openvine/services/collaborator_invite_state_store.dart';
@@ -631,24 +628,4 @@ Future<ContentDeletionService> contentDeletionService(Ref ref) async {
   await service.initialize();
 
   return service;
-}
-
-/// Bug report service for collecting diagnostics and sending encrypted reports
-@riverpod
-BugReportService bugReportService(Ref ref) {
-  final nostrService = ref.watch(nostrServiceProvider);
-
-  final nip17Service = NIP17MessageService(
-    signer: nostrService.signer,
-    senderPublicKey: nostrService.publicKey,
-    nostrService: nostrService,
-  );
-
-  final blossomService = ref.watch(blossomUploadServiceProvider);
-
-  return BugReportService(
-    nip17MessageService: nip17Service,
-    blossomUploadService: blossomService,
-    errorTracker: ref.watch(errorAnalyticsTrackerProvider),
-  );
 }
