@@ -7,7 +7,10 @@ The Divine logotype is the most recognizable aspect of the brand. It is built on
 ### Versions
 - **Primary**: Green and Dark Green
 - **On images**: Dark Green or White versions are permitted, provided strong contrast is maintained
-- The name is always written as "Divine" (capital D, lowercase remainder)
+
+### Brand Name
+
+**The brand name is always written "Divine."** Standard capitalization: capital D, lowercase rest. Never write it as "DiVine" or "diVine" — any stylized capitalization of the "V" belongs to the logotype artwork only and must never appear in body copy, headings, UI text, code comments, docs, or anywhere the name is set as text.
 
 ### Safe Space
 Always leave at least the x-height of the typography as free space around the logo on all sides.

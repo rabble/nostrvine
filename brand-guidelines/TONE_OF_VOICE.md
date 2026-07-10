@@ -57,7 +57,7 @@ We have three tone of voice principles that shape how we sound. They ensure cons
 | Instead of | Try |
 |------------|-----|
 | "Vine Revisited - A Return to the Halcyon Days of the Internet" | "Our Divine right to AI-free, human-made creativity" |
-| "Divine includes access to more than 100,000 archived Vine videos and lets people create their own six-second looping videos. We are aiming to provide an experience that is free of AI-generated content." | "We've brought back to life 100,000 Vines from the original archives. At Divine, we want everyone to show up as they are to our human-made, no-slop playground." |
+| "Divine includes access to more than 2.1 million archived Vine videos and lets people create their own six-second looping videos. We are aiming to provide an experience that is free of AI-generated content." | "We've brought back to life 2.1 million Vines from the original archives. At Divine, we want everyone to show up as they are to our human-made, no-slop playground." |
 
 ---
 
@@ -80,6 +80,10 @@ We have three tone of voice principles that shape how we sound. They ensure cons
 - Unnecessary disclaimers or legalese in user-facing copy
 - Calling AI-generated content "creative" -- this is a human creativity space
 - Sounding polished or sterile -- a little rough around the edges is on brand
+
+### Arrival Language
+
+When someone is arriving for the first time or coming back, use "Welcome Home" as the default greeting if the copy needs to feel warm, direct, and inclusive.
 
 ### Tone Dial by Context
 
