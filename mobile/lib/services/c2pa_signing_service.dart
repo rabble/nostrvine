@@ -327,6 +327,7 @@ class C2paSigningService {
     if (_containsAny(message, const [
       'network',
       'not connected',
+      'connect',
       'connection',
       'timed out',
       'timeout',

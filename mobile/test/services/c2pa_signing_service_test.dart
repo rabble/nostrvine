@@ -2,7 +2,6 @@
 // ABOUTME: Covers typed failures, manifest gates, and parent ingredients
 
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:c2pa_flutter/c2pa.dart';
 import 'package:flutter/services.dart';
@@ -69,6 +68,17 @@ void main() {
           PlatformException(
             code: 'C2PA_ERROR',
             message: 'Connection reset by peer',
+          ),
+        );
+
+        expect(reason, C2paSigningFailureReason.network);
+      });
+
+      test('classifies cannot-connect failures as network errors', () {
+        final reason = C2paSigningService.classifyFailureReason(
+          PlatformException(
+            code: 'C2PA_ERROR',
+            message: 'Could not connect to the server.',
           ),
         );
 
