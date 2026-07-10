@@ -113,6 +113,39 @@ void main() {
     );
 
     testWidgets(
+      'clears the engine-side client on dismiss after the platform closed '
+      'the connection during background/resume',
+      (tester) async {
+        final focusNode = await pumpHostAndOpenSheet(tester);
+        await severConnectionPlatformSide(tester, focusNode);
+
+        // In the split-brain state the framework never sends its own
+        // TextInput.clearClient, and TextInput.hide alone leaves the engine
+        // with a stale client id whose in-hierarchy view iOS 26 can
+        // re-present on its own (#6007). The guard must clear the client
+        // explicitly, and must do so before the hide so the engine removes
+        // the input view during the hide's resign (the engine's own reset
+        // order).
+        tester.testTextInput.log.clear();
+        Navigator.of(tester.element(find.byType(UnfocusOnSheetDismiss))).pop();
+        await tester.pumpAndSettle();
+
+        final teardownCalls = tester.testTextInput.log
+            .map((call) => call.method)
+            .where(
+              (method) =>
+                  method == 'TextInput.clearClient' ||
+                  method == 'TextInput.hide',
+            )
+            .toList();
+        expect(
+          teardownCalls,
+          equals(['TextInput.clearClient', 'TextInput.hide']),
+        );
+      },
+    );
+
+    testWidgets(
       'hides the stranded keyboard when a chrome drag rides the route '
       'controller to its 0.0 clamp without ever reversing',
       (tester) async {

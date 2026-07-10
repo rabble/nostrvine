@@ -31,6 +31,20 @@ import 'package:flutter/services.dart';
 /// an explicit `TextInput.hide` — which resigns the first responder
 /// engine-side regardless of framework connection state — is sent as well.
 ///
+/// `TextInput.hide` alone is still not enough (#6007): the engine's
+/// `hideTextInput` resigns the first responder but never zeroes
+/// `_textInputClient`, and in the split-brain state the framework never sends
+/// its own `TextInput.clearClient` either. The dismissal then leaves an
+/// in-hierarchy `FlutterTextInputView` whose `canBecomeFirstResponder` is
+/// still `YES` — a session iOS 26 re-presents on its own (observed in #5959
+/// on resume, and stranded over the feed in #6007 with no resume at all). An
+/// explicit `TextInput.clearClient` is therefore sent before the hide — the
+/// engine's own reset order — so every dismissal ends with client 0, first
+/// responder resigned, and the input view removed: nothing left for UIKit to
+/// re-present. In the healthy case both raw messages are no-ops racing the
+/// framework's identical `clearClient` + scheduled hide, and the resign
+/// delegate reports client 0, which the framework's client-id guard drops.
+///
 /// The [dispose] fallback runs only when no route-status change already
 /// dismissed the keyboard and only when there was an enclosing modal route, so
 /// it is scoped to a sheet actually tearing down rather than firing on every
@@ -82,8 +96,14 @@ class _UnfocusOnSheetDismissState extends State<UnfocusOnSheetDismiss> {
     FocusManager.instance.primaryFocus?.unfocus();
     // unfocus() sends nothing over the text-input channel when the framework
     // side of the connection is already gone (platform-initiated teardown
-    // during background/resume — see the class doc). Hide explicitly; this is
-    // a harmless no-op when the keyboard is already down.
+    // during background/resume — see the class doc). clearClient zeroes the
+    // engine's stale client id so the orphaned FlutterTextInputView stops
+    // being re-presentable (#6007); hide then resigns the first responder and
+    // removes the view. Both are harmless no-ops when the keyboard is already
+    // down or the framework connection is healthy.
+    unawaited(
+      SystemChannels.textInput.invokeMethod<void>('TextInput.clearClient'),
+    );
     unawaited(SystemChannels.textInput.invokeMethod<void>('TextInput.hide'));
   }
 
