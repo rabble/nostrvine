@@ -1556,6 +1556,76 @@ void main() {
         },
       );
 
+      // Splitting a reversed clip accumulates sourceStartOffset in
+      // reversed-file coordinates and clears both cache paths, so
+      // un-reversing goes through the render path. The fresh forward mirror
+      // has no recording continuity — keeping the stale offset would
+      // phase-shift its thumbnail raster by a meaningless amount.
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'zeroes sourceStartOffset when un-reversing renders a fresh '
+        'forward file',
+        build: () => buildBloc(reverseClip: _fakeReverseClip),
+        seed: () => ClipEditorState(
+          clips: [
+            _createClipWithFile().copyWith(
+              video: EditorVideo.file('/path/clip-local-reversed.mp4'),
+              reversed: true,
+              sourceStartOffset: const Duration(milliseconds: 1300),
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const ClipEditorClipReverseRequested(clipId: 'clip-local'),
+        ),
+        expect: () => [
+          isA<ClipEditorState>().having(
+            (s) => s.isReversing,
+            'isReversing',
+            isTrue,
+          ),
+          isA<ClipEditorState>()
+              .having((s) => s.clips.first.reversed, 'reversed', isFalse)
+              .having(
+                (s) => s.clips.first.sourceStartOffset,
+                'sourceStartOffset',
+                Duration.zero,
+              ),
+        ],
+      );
+
+      // The offset pairs with the forward file cached as forwardVideoPath:
+      // the cached un-reverse branch restores that file with the clip's
+      // current offset, so a forward → reversed render must keep it.
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'keeps sourceStartOffset when reversing a forward clip so the '
+        'cached un-reverse restores the forward file anchored correctly',
+        build: () => buildBloc(reverseClip: _fakeReverseClip),
+        seed: () => ClipEditorState(
+          clips: [
+            _createClipWithFile().copyWith(
+              sourceStartOffset: const Duration(milliseconds: 1300),
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const ClipEditorClipReverseRequested(clipId: 'clip-local'),
+        ),
+        expect: () => [
+          isA<ClipEditorState>().having(
+            (s) => s.isReversing,
+            'isReversing',
+            isTrue,
+          ),
+          isA<ClipEditorState>()
+              .having((s) => s.clips.first.reversed, 'reversed', isTrue)
+              .having(
+                (s) => s.clips.first.sourceStartOffset,
+                'sourceStartOffset',
+                const Duration(milliseconds: 1300),
+              ),
+        ],
+      );
+
       blocTest<ClipEditorBloc, ClipEditorState>(
         'emits failure result and reports unexpected errors when the reverse '
         'render throws',

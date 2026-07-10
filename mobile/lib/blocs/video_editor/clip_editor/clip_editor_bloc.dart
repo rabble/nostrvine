@@ -892,6 +892,14 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         reversedVideoPath = renderedPath ?? currentClip.reversedVideoPath;
       }
 
+      // Un-reversing via render produces a fresh mirror file with no
+      // recording continuity, and any stored sourceStartOffset was
+      // accumulated in reversed-file coordinates (splitting a reversed clip
+      // adds the split position to it) — keeping it would phase-shift the
+      // forward clip's thumbnail raster by a meaningless amount. Zero it so
+      // the raster anchors at the new file's start. Reversing forward →
+      // reversed keeps the offset: it pairs with the forward file cached in
+      // [forwardVideoPath], which the cached un-reverse branch restores.
       final updatedClip = currentClip.copyWith(
         video: reversedVideo,
         trimStart: currentClip.trimEnd,
@@ -899,6 +907,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         reversed: !clip.reversed,
         forwardVideoPath: forwardVideoPath,
         reversedVideoPath: reversedVideoPath,
+        sourceStartOffset: clip.reversed ? Duration.zero : null,
       );
       final newClips = List<DivineVideoClip>.of(currentClips)
         ..[currentIndex] = updatedClip;
