@@ -3193,6 +3193,11 @@ class DmRepository {
         // surfaces only as a sender-side gap until the self-wrap
         // arrives via the receive pipeline.
       }
+    } else if (result.blocked) {
+      // A #176 policy block is a permanent decision, not a transient error:
+      // drop the row so the retry sweep stops re-attempting a send the gate
+      // refuses every time. The recipient never received anything.
+      await _finalizeAfterRecipientBlocked(outgoingDao: dao, rumorId: rumorId);
     } else {
       await _finalizeAfterRecipientFailure(
         outgoingDao: dao,
@@ -3392,6 +3397,33 @@ class DmRepository {
       );
       // Don't rethrow — caller already gets the failure result. The
       // queue row stays retryable and the next sweep can pick it up.
+    }
+  }
+
+  /// Apply the terminal queue-row transition for a policy-blocked (#176)
+  /// recipient publish. Unlike [_finalizeAfterRecipientFailure], a block is
+  /// permanent — the send gate refuses every retry — so the row is deleted
+  /// rather than left retryable. Non-rethrowing to match the failure path: the
+  /// caller still returns the blocked result. A failed delete leaves the row
+  /// [OutgoingWrapStatus.failed], which self-heals on a later sweep.
+  Future<void> _finalizeAfterRecipientBlocked({
+    required OutgoingDmsDao outgoingDao,
+    required String rumorId,
+  }) async {
+    try {
+      await outgoingDao.deleteById(rumorId);
+    } on Object catch (e, stackTrace) {
+      Log.error(
+        'Failed to delete blocked outgoing_dms row $rumorId: $e',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      _errorReporter?.call(
+        e,
+        stackTrace,
+        site: DmRepositoryReportableSites.finalizeAfterRecipientBlocked,
+      );
     }
   }
 

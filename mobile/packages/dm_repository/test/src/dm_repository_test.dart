@@ -14136,6 +14136,51 @@ void main() {
       );
 
       test(
+        'on a blocked send: deletes the queue row instead of marking it '
+        'failed, so the drain stops re-attempting a policy-blocked send',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow());
+          stubSendRumor(
+            (_, _) async => const NIP17SendResult.blocked(
+              'blocked: recipient not permitted by send policy',
+            ),
+          );
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final result = await repository.recoverFullSend(
+            rumorId: _rumorEventId,
+          );
+
+          // A policy block is terminal, not a transient failure.
+          expect(result.success, isFalse);
+          expect(result.blocked, isTrue);
+          // The row is dropped so the retry sweep can never pick it up again.
+          verify(() => mockOutgoingDmsDao.deleteById(_rumorEventId)).called(1);
+          verifyNever(
+            () => mockOutgoingDmsDao.markRecipientWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              eventId: any(named: 'eventId'),
+              lastError: any(named: 'lastError'),
+            ),
+          );
+          verifyNever(
+            () => mockOutgoingDmsDao.markSelfWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              eventId: any(named: 'eventId'),
+              lastError: any(named: 'lastError'),
+            ),
+          );
+        },
+      );
+
+      test(
         'idempotent: when recipient_wrap_status is already sent, '
         'defers to recoverSelfWrap and never republishes the recipient '
         'wrap',

@@ -271,6 +271,39 @@ void main() {
         },
       );
 
+      test(
+        'recoverFullSend blocked path is terminal: no incrementRetry',
+        () async {
+          final row = _row(
+            id: 'rumor2c',
+            recipient: OutgoingWrapStatus.failed,
+            self: OutgoingWrapStatus.failed,
+            retryCount: 1,
+            lastAttemptAt: DateTime.utc(2025),
+          );
+          when(
+            () => dao.getRetryableForOwner(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenAnswer((_) async => [row]);
+          when(
+            () => dmRepository.recoverFullSend(rumorId: any(named: 'rumorId')),
+          ).thenAnswer(
+            (_) async => const NIP17SendResult.blocked('blocked by policy'),
+          );
+
+          await buildService().sweep();
+
+          verify(
+            () => dmRepository.recoverFullSend(rumorId: 'rumor2c'),
+          ).called(1);
+          // A policy block is terminal: recoverFullSend already dropped the
+          // row, so the sweep must not re-arm it with a retry bump.
+          verifyNever(() => dao.incrementRetry(any()));
+        },
+      );
+
       test('publish-failure path bumps incrementRetry once', () async {
         final row = _row(
           id: 'rumor3',

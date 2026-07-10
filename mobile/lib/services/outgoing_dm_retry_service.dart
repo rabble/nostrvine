@@ -159,6 +159,7 @@ class OutgoingDmRetryService {
       var failedSelfWrap = 0;
       var processedFullSend = 0;
       var failedFullSend = 0;
+      var blockedFullSend = 0;
       var skippedBackoff = 0;
       var abortedNotReady = false;
 
@@ -259,6 +260,12 @@ class OutgoingDmRetryService {
               // way the row exits the recipient-failed filter, so
               // skip incrementRetry.
               processedFullSend++;
+            } else if (result.blocked) {
+              // recoverFullSend deleted the row: a #176 policy block is
+              // terminal, not transient. Don't bump the retry counter (the
+              // row is gone and the gate would refuse every retry anyway),
+              // and count it as terminal rather than a failure.
+              blockedFullSend++;
             } else {
               // Publish failed again. recoverFullSend already
               // re-marked both wraps failed with the new error via
@@ -395,6 +402,7 @@ class OutgoingDmRetryService {
         'self-wrap-failed=$failedSelfWrap '
         'full-send-recovered=$processedFullSend '
         'full-send-failed=$failedFullSend '
+        'full-send-blocked=$blockedFullSend '
         'interrupted-recovered=$processedInterrupted '
         'interrupted-failed=$failedInterrupted '
         'skipped-backoff=$skippedBackoff '
