@@ -121,10 +121,6 @@ class StorageManagementService {
   int cacheLimitBytes() =>
       _prefs.getInt(kCacheLimitPrefKey) ?? kCacheLimitDefaultBytes;
 
-  /// Applies the stored budget to the video cache without trimming. Call once
-  /// at startup so the user's choice takes effect before any sweep runs.
-  void applyStoredLimit() => _videoCache.maxCacheSizeBytes = cacheLimitBytes();
-
   /// Persists [bytes] (clamped to
   /// `[kCacheLimitMinBytes, kCacheLimitMaxBytes]`) as the video-cache budget,
   /// applies it, and trims immediately so a lowered limit shrinks the cache

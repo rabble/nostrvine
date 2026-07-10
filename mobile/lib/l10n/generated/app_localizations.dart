@@ -16935,6 +16935,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'≈ {count} videos'**
   String settingsStorageApproxVideos(int count);
+
+  /// Title of the confirmation sheet before permanently removing broken clips whose video file is gone.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove broken clips?'**
+  String get settingsStorageRemoveBrokenConfirmTitle;
 }
 
 class _AppLocalizationsDelegate

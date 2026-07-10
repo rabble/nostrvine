@@ -9904,4 +9904,8 @@ class AppLocalizationsFil extends AppLocalizations {
   String settingsStorageApproxVideos(int count) {
     return '≈ $count video';
   }
+
+  @override
+  String get settingsStorageRemoveBrokenConfirmTitle =>
+      'Alisin ang mga sirang clip?';
 }

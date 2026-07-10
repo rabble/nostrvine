@@ -9840,4 +9840,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String settingsStorageApproxVideos(int count) {
     return '≈ $count video\'s';
   }
+
+  @override
+  String get settingsStorageRemoveBrokenConfirmTitle =>
+      'Kapotte clips verwijderen?';
 }

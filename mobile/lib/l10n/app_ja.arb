@@ -4507,5 +4507,6 @@
   "settingsStorageBrokenClipsRemoved": "壊れたクリップを削除しました",
   "settingsStorageError": "問題が発生しました",
   "settingsStorageMaxSizeLabel": "最大キャッシュサイズ",
-  "settingsStorageApproxVideos": "≈ {count} 本の動画"
+  "settingsStorageApproxVideos": "≈ {count} 本の動画",
+  "settingsStorageRemoveBrokenConfirmTitle": "壊れたクリップを削除しますか？"
 }

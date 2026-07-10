@@ -4507,5 +4507,6 @@
   "settingsStorageBrokenClipsRemoved": "Clipes quebrados removidos",
   "settingsStorageError": "Algo deu errado",
   "settingsStorageMaxSizeLabel": "Tamanho máximo do cache",
-  "settingsStorageApproxVideos": "≈ {count} vídeos"
+  "settingsStorageApproxVideos": "≈ {count} vídeos",
+  "settingsStorageRemoveBrokenConfirmTitle": "Remover clipes quebrados?"
 }

@@ -4507,5 +4507,6 @@
   "settingsStorageBrokenClipsRemoved": "Klip rusak dihapus",
   "settingsStorageError": "Terjadi kesalahan",
   "settingsStorageMaxSizeLabel": "Ukuran cache maksimum",
-  "settingsStorageApproxVideos": "≈ {count} video"
+  "settingsStorageApproxVideos": "≈ {count} video",
+  "settingsStorageRemoveBrokenConfirmTitle": "Hapus klip rusak?"
 }

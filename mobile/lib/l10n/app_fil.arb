@@ -3090,5 +3090,6 @@
   "settingsStorageBrokenClipsRemoved": "Naalis ang mga sirang clip",
   "settingsStorageError": "May nangyaring mali",
   "settingsStorageMaxSizeLabel": "Pinakamataas na laki ng cache",
-  "settingsStorageApproxVideos": "≈ {count} video"
+  "settingsStorageApproxVideos": "≈ {count} video",
+  "settingsStorageRemoveBrokenConfirmTitle": "Alisin ang mga sirang clip?"
 }

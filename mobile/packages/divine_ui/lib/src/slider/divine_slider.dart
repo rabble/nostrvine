@@ -14,6 +14,7 @@ class DivineSlider extends StatelessWidget {
   const DivineSlider({
     required this.value,
     required this.onChanged,
+    this.onChangeEnd,
     this.min = 0,
     this.max = 1,
     this.divisions,
@@ -35,6 +36,12 @@ class DivineSlider extends StatelessWidget {
 
   /// Called when the user changes the slider value.
   final ValueChanged<double>? onChanged;
+
+  /// Called with the final value when the user stops dragging (finger up).
+  ///
+  /// Use this to commit an expensive side effect once, instead of on every
+  /// [onChanged] tick during the drag.
+  final ValueChanged<double>? onChangeEnd;
 
   /// The minimum value. Defaults to `0`.
   final double min;
@@ -87,6 +94,7 @@ class DivineSlider extends StatelessWidget {
         max: max,
         divisions: divisions,
         onChanged: onChanged,
+        onChangeEnd: onChangeEnd,
       ),
     );
   }

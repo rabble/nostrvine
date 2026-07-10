@@ -9800,4 +9800,8 @@ class AppLocalizationsSv extends AppLocalizations {
   String settingsStorageApproxVideos(int count) {
     return '≈ $count videor';
   }
+
+  @override
+  String get settingsStorageRemoveBrokenConfirmTitle =>
+      'Ta bort trasiga klipp?';
 }

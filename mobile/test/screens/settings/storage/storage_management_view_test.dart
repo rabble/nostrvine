@@ -115,6 +115,33 @@ void main() {
     await tester.tap(find.text(l10n.settingsStorageRemoveBrokenButton));
     await tester.pumpAndSettle();
 
+    // A confirmation sheet gates the permanent removal.
+    expect(
+      find.text(l10n.settingsStorageRemoveBrokenConfirmTitle),
+      findsOneWidget,
+    );
+    verifyNever(() => service.removeBrokenClips(any()));
+
+    await tester.tap(find.text(l10n.commonDelete));
+    await tester.pumpAndSettle();
+
     verify(() => service.removeBrokenClips(any())).called(1);
+  });
+
+  testWidgets('dragging the cache-size slider commits a new limit', (
+    tester,
+  ) async {
+    when(() => service.setCacheLimit(any())).thenAnswer((_) async {});
+    final cubit = StorageCubit(service: service)..loadCacheSize();
+    addTearDown(cubit.close);
+
+    await tester.pumpWidget(wrap(cubit));
+    await tester.pumpAndSettle();
+
+    // Drag ends -> onChangeEnd -> commitCacheLimit -> setCacheLimit.
+    await tester.drag(find.byType(Slider), const Offset(120, 0));
+    await tester.pumpAndSettle();
+
+    verify(() => service.setCacheLimit(any())).called(1);
   });
 }

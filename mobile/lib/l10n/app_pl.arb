@@ -4507,5 +4507,6 @@
   "settingsStorageBrokenClipsRemoved": "Uszkodzone klipy usunięte",
   "settingsStorageError": "Coś poszło nie tak",
   "settingsStorageMaxSizeLabel": "Maksymalny rozmiar pamięci podręcznej",
-  "settingsStorageApproxVideos": "≈ {count} filmów"
+  "settingsStorageApproxVideos": "≈ {count} filmów",
+  "settingsStorageRemoveBrokenConfirmTitle": "Usunąć uszkodzone klipy?"
 }

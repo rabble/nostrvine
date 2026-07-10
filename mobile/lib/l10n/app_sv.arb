@@ -4507,5 +4507,6 @@
   "settingsStorageBrokenClipsRemoved": "Trasiga klipp borttagna",
   "settingsStorageError": "Något gick fel",
   "settingsStorageMaxSizeLabel": "Maximal cachestorlek",
-  "settingsStorageApproxVideos": "≈ {count} videor"
+  "settingsStorageApproxVideos": "≈ {count} videor",
+  "settingsStorageRemoveBrokenConfirmTitle": "Ta bort trasiga klipp?"
 }

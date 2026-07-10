@@ -18,14 +18,21 @@ class StorageCubit extends Cubit<StorageState> {
 
   /// Loads the current clearable cache size and configured limit.
   Future<void> loadCacheSize() async {
-    emit(state.copyWith(cacheStatus: StorageCacheStatus.loading));
+    // Read the persisted limit up front — a cheap in-memory prefs read that
+    // can't fail — so a size-measurement failure below still leaves the slider
+    // on the user's saved budget instead of resetting it to the default.
+    emit(
+      state.copyWith(
+        cacheStatus: StorageCacheStatus.loading,
+        cacheLimitBytes: _service.cacheLimitBytes(),
+      ),
+    );
     try {
       final bytes = await _service.cacheSizeBytes();
       emit(
         state.copyWith(
           cacheStatus: StorageCacheStatus.ready,
           cacheSizeBytes: bytes,
-          cacheLimitBytes: _service.cacheLimitBytes(),
         ),
       );
     } catch (error, stackTrace) {
@@ -40,14 +47,21 @@ class StorageCubit extends Cubit<StorageState> {
       emit(state.copyWith(cacheLimitBytes: bytes));
 
   /// Persists the chosen [bytes] limit, applies it, and refreshes the size
-  /// (the cache may have been trimmed).
+  /// (the cache may have been trimmed). Surfaces a busy status while the
+  /// forced trim + re-measure runs so the stale size can't be acted on.
   Future<void> commitCacheLimit(int bytes) async {
-    emit(state.copyWith(cacheLimitBytes: bytes));
+    emit(
+      state.copyWith(
+        cacheStatus: StorageCacheStatus.loading,
+        cacheLimitBytes: bytes,
+      ),
+    );
     try {
       await _service.setCacheLimit(bytes);
       final size = await _service.cacheSizeBytes();
       emit(
         state.copyWith(
+          cacheStatus: StorageCacheStatus.ready,
           cacheSizeBytes: size,
           cacheLimitBytes: _service.cacheLimitBytes(),
         ),
@@ -66,7 +80,7 @@ class StorageCubit extends Cubit<StorageState> {
       final bytes = await _service.cacheSizeBytes();
       emit(
         state.copyWith(
-          cacheStatus: StorageCacheStatus.ready,
+          cacheStatus: StorageCacheStatus.cleared,
           cacheSizeBytes: bytes,
         ),
       );

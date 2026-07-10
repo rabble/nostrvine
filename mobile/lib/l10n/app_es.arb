@@ -4507,5 +4507,6 @@
   "settingsStorageBrokenClipsRemoved": "Clips dañados eliminados",
   "settingsStorageError": "Algo salió mal",
   "settingsStorageMaxSizeLabel": "Tamaño máximo de caché",
-  "settingsStorageApproxVideos": "≈ {count} videos"
+  "settingsStorageApproxVideos": "≈ {count} videos",
+  "settingsStorageRemoveBrokenConfirmTitle": "¿Eliminar clips dañados?"
 }

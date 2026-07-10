@@ -4507,5 +4507,6 @@
   "settingsStorageBrokenClipsRemoved": "Kapotte clips verwijderd",
   "settingsStorageError": "Er ging iets mis",
   "settingsStorageMaxSizeLabel": "Maximale cachegrootte",
-  "settingsStorageApproxVideos": "≈ {count} video's"
+  "settingsStorageApproxVideos": "≈ {count} video's",
+  "settingsStorageRemoveBrokenConfirmTitle": "Kapotte clips verwijderen?"
 }

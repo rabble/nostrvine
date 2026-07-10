@@ -5700,5 +5700,7 @@
   "settingsStorageMaxSizeLabel": "Maximum cache size",
   "@settingsStorageMaxSizeLabel": {"description": "Label above the slider that sets the maximum video-cache size."},
   "settingsStorageApproxVideos": "≈ {count} videos",
-  "@settingsStorageApproxVideos": {"description": "Approximate number of videos that fit in the chosen cache size.", "placeholders": {"count": {"type": "int"}}}
+  "@settingsStorageApproxVideos": {"description": "Approximate number of videos that fit in the chosen cache size.", "placeholders": {"count": {"type": "int"}}},
+  "settingsStorageRemoveBrokenConfirmTitle": "Remove broken clips?",
+  "@settingsStorageRemoveBrokenConfirmTitle": {"description": "Title of the confirmation sheet before permanently removing broken clips whose video file is gone."}
 }

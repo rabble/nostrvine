@@ -3831,5 +3831,6 @@
   "settingsStorageBrokenClipsRemoved": "손상된 클립을 제거했습니다",
   "settingsStorageError": "문제가 발생했습니다",
   "settingsStorageMaxSizeLabel": "최대 캐시 크기",
-  "settingsStorageApproxVideos": "≈ 동영상 {count}개"
+  "settingsStorageApproxVideos": "≈ 동영상 {count}개",
+  "settingsStorageRemoveBrokenConfirmTitle": "손상된 클립을 제거할까요?"
 }

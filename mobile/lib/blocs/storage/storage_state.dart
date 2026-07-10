@@ -14,6 +14,11 @@ enum StorageCacheStatus {
   /// A clear operation is running.
   clearing,
 
+  /// A clear operation just finished. Idle like [ready], but distinct so the
+  /// UI can announce the clear to screen readers without inferring it from a
+  /// zero size (which also happens when an already-empty cache is loaded).
+  cleared,
+
   /// The last cache operation failed.
   failure,
 }

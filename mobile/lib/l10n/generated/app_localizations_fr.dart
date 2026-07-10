@@ -9936,4 +9936,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String settingsStorageApproxVideos(int count) {
     return '≈ $count vidéos';
   }
+
+  @override
+  String get settingsStorageRemoveBrokenConfirmTitle =>
+      'Supprimer les clips défectueux ?';
 }

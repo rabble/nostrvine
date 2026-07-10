@@ -9595,4 +9595,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String settingsStorageApproxVideos(int count) {
     return '≈ $count ቪዲዮዎች';
   }
+
+  @override
+  String get settingsStorageRemoveBrokenConfirmTitle => 'የተበላሹ ክሊፖችን ማስወገድ?';
 }

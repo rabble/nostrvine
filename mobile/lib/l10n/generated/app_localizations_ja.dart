@@ -9420,4 +9420,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String settingsStorageApproxVideos(int count) {
     return '≈ $count 本の動画';
   }
+
+  @override
+  String get settingsStorageRemoveBrokenConfirmTitle => '壊れたクリップを削除しますか？';
 }

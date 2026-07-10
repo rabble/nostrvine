@@ -10003,4 +10003,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String settingsStorageApproxVideos(int count) {
     return '≈ $count videoclipuri';
   }
+
+  @override
+  String get settingsStorageRemoveBrokenConfirmTitle =>
+      'Elimini clipurile deteriorate?';
 }

@@ -83,10 +83,7 @@ class StorageManagementView extends StatelessWidget {
   void _announceOutcomes(BuildContext context, StorageState state) {
     final l10n = context.l10n;
     String? message;
-    if (state.cacheStatus == StorageCacheStatus.ready &&
-        state.cacheSizeBytes == 0) {
-      // Reached ready with nothing left implies a clear just finished; a plain
-      // load of an already-empty cache announces the same harmless line.
+    if (state.cacheStatus == StorageCacheStatus.cleared) {
       message = l10n.settingsStorageCleared;
     } else if (state.libraryStatus == StorageLibraryStatus.cleaned) {
       message = l10n.settingsStorageBrokenClipsRemoved;
@@ -120,12 +117,7 @@ class _SectionHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
       child: Text(
         title,
-        style: const TextStyle(
-          color: VineTheme.vineGreen,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 1.2,
-        ),
+        style: VineTheme.labelMediumFont(color: VineTheme.vineGreen),
       ),
     );
   }
@@ -247,14 +239,13 @@ class _CacheLimitControl extends StatelessWidget {
             ),
           ],
         ),
-        Slider(
+        DivineSlider(
           min: kCacheLimitMinBytes.toDouble(),
           max: kCacheLimitMaxBytes.toDouble(),
           divisions:
               (kCacheLimitMaxBytes - kCacheLimitMinBytes) ~/
               (512 * 1024 * 1024),
           value: clamped,
-          activeColor: VineTheme.vineGreen,
           onChanged: (value) => cubit.previewCacheLimit(value.round()),
           onChangeEnd: (value) => cubit.commitCacheLimit(value.round()),
         ),
@@ -307,7 +298,7 @@ class _LibrarySection extends StatelessWidget {
               label: l10n.settingsStorageRemoveBrokenButton,
               type: DivineButtonType.error,
               expanded: true,
-              onPressed: () => context.read<StorageCubit>().removeBrokenClips(),
+              onPressed: () => _confirmRemoveBroken(context),
             )
           else
             DivineButton(
@@ -321,6 +312,43 @@ class _LibrarySection extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _confirmRemoveBroken(BuildContext context) async {
+    final l10n = context.l10n;
+    final cubit = context.read<StorageCubit>();
+    final confirmed = await VineBottomSheet.show<bool>(
+      context: context,
+      scrollable: false,
+      contentTitle: l10n.settingsStorageRemoveBrokenConfirmTitle,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+          child: Row(
+            spacing: 16,
+            children: [
+              Expanded(
+                child: DivineButton(
+                  label: l10n.settingsCancel,
+                  type: DivineButtonType.secondary,
+                  expanded: true,
+                  onPressed: () => Navigator.of(context).pop(false),
+                ),
+              ),
+              Expanded(
+                child: DivineButton(
+                  label: l10n.commonDelete,
+                  type: DivineButtonType.error,
+                  expanded: true,
+                  onPressed: () => Navigator.of(context).pop(true),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+    if (confirmed ?? false) await cubit.removeBrokenClips();
   }
 }
 

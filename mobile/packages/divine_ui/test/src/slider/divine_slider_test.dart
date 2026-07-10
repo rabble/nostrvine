@@ -10,6 +10,7 @@ void main() {
     Widget buildSlider({
       double value = 0.5,
       ValueChanged<double>? onChanged,
+      ValueChanged<double>? onChangeEnd,
       double min = 0,
       double max = 1,
       int? divisions,
@@ -28,6 +29,7 @@ void main() {
               child: DivineSlider(
                 value: value,
                 onChanged: onChanged,
+                onChangeEnd: onChangeEnd,
                 min: min,
                 max: max,
                 divisions: divisions,
@@ -161,6 +163,27 @@ void main() {
         for (final v in values) {
           expect(v, inInclusiveRange(0, 1));
         }
+      });
+
+      testWidgets('calls onChangeEnd with the final value when drag ends', (
+        tester,
+      ) async {
+        double? endedValue;
+
+        await tester.pumpWidget(
+          buildSlider(
+            value: 0,
+            max: 100,
+            onChanged: (_) {},
+            onChangeEnd: (v) => endedValue = v,
+          ),
+        );
+
+        await tester.drag(find.byType(Slider), const Offset(150, 0));
+        await tester.pump();
+
+        expect(endedValue, isNotNull);
+        expect(endedValue, inInclusiveRange(0, 100));
       });
 
       testWidgets('does not call onChanged when disabled', (tester) async {

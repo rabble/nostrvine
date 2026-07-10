@@ -212,13 +212,6 @@ void main() {
 
         expect(prefs.getInt(kCacheLimitPrefKey), kCacheLimitMinBytes);
       });
-
-      test('applyStoredLimit applies the stored budget', () {
-        service.applyStoredLimit();
-        verify(
-          () => videoCache.maxCacheSizeBytes = kCacheLimitDefaultBytes,
-        ).called(1);
-      });
     });
   });
 }

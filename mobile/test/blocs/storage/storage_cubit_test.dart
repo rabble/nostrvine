@@ -32,6 +32,10 @@ void main() {
     StorageCubit build() => StorageCubit(service: service);
 
     group('loadCacheSize', () {
+      // A non-default saved budget so the failure test proves the limit
+      // survives a size-measurement failure rather than resetting to default.
+      const savedLimit = 3 * 1024 * 1024 * 1024;
+
       blocTest<StorageCubit, StorageState>(
         'emits loading then ready with the size',
         setUp: () {
@@ -50,13 +54,22 @@ void main() {
       );
 
       blocTest<StorageCubit, StorageState>(
-        'emits failure and reports the error when sizing throws',
-        setUp: () => when(service.cacheSizeBytes).thenThrow(Exception('boom')),
+        'keeps the saved limit and emits failure when sizing throws',
+        setUp: () {
+          when(service.cacheLimitBytes).thenReturn(savedLimit);
+          when(service.cacheSizeBytes).thenThrow(Exception('boom'));
+        },
         build: build,
         act: (cubit) => cubit.loadCacheSize(),
         expect: () => const [
-          StorageState(cacheStatus: StorageCacheStatus.loading),
-          StorageState(cacheStatus: StorageCacheStatus.failure),
+          StorageState(
+            cacheStatus: StorageCacheStatus.loading,
+            cacheLimitBytes: savedLimit,
+          ),
+          StorageState(
+            cacheStatus: StorageCacheStatus.failure,
+            cacheLimitBytes: savedLimit,
+          ),
         ],
         errors: () => [isA<Exception>()],
       );
@@ -77,7 +90,7 @@ void main() {
             cacheStatus: StorageCacheStatus.clearing,
             cacheSizeBytes: 4096,
           ),
-          StorageState(cacheStatus: StorageCacheStatus.ready),
+          StorageState(cacheStatus: StorageCacheStatus.cleared),
         ],
       );
     });
@@ -153,8 +166,15 @@ void main() {
         build: build,
         act: (cubit) => cubit.commitCacheLimit(oneGb),
         expect: () => const [
-          StorageState(cacheLimitBytes: oneGb),
-          StorageState(cacheLimitBytes: oneGb, cacheSizeBytes: 512),
+          StorageState(
+            cacheStatus: StorageCacheStatus.loading,
+            cacheLimitBytes: oneGb,
+          ),
+          StorageState(
+            cacheStatus: StorageCacheStatus.ready,
+            cacheLimitBytes: oneGb,
+            cacheSizeBytes: 512,
+          ),
         ],
         verify: (_) => verify(() => service.setCacheLimit(oneGb)).called(1),
       );

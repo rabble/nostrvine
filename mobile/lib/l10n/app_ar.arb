@@ -4507,5 +4507,6 @@
   "settingsStorageBrokenClipsRemoved": "تمت إزالة المقاطع التالفة",
   "settingsStorageError": "حدث خطأ ما",
   "settingsStorageMaxSizeLabel": "الحد الأقصى لحجم ذاكرة التخزين المؤقت",
-  "settingsStorageApproxVideos": "≈ {count} مقطع فيديو"
+  "settingsStorageApproxVideos": "≈ {count} مقطع فيديو",
+  "settingsStorageRemoveBrokenConfirmTitle": "إزالة المقاطع التالفة؟"
 }

@@ -9900,4 +9900,8 @@ class AppLocalizationsBg extends AppLocalizations {
   String settingsStorageApproxVideos(int count) {
     return '≈ $count видеа';
   }
+
+  @override
+  String get settingsStorageRemoveBrokenConfirmTitle =>
+      'Премахване на повредените клипове?';
 }

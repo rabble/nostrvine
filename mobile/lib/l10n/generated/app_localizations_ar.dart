@@ -9730,4 +9730,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String settingsStorageApproxVideos(int count) {
     return '≈ $count مقطع فيديو';
   }
+
+  @override
+  String get settingsStorageRemoveBrokenConfirmTitle =>
+      'إزالة المقاطع التالفة؟';
 }

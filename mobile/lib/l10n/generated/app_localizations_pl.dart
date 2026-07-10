@@ -9983,4 +9983,8 @@ class AppLocalizationsPl extends AppLocalizations {
   String settingsStorageApproxVideos(int count) {
     return '≈ $count filmów';
   }
+
+  @override
+  String get settingsStorageRemoveBrokenConfirmTitle =>
+      'Usunąć uszkodzone klipy?';
 }
