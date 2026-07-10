@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Unfocuses the active text field and hides the software keyboard the moment
 /// the enclosing [ModalRoute] begins its dismiss transition.
@@ -84,16 +85,30 @@ class _UnfocusOnSheetDismissState extends State<UnfocusOnSheetDismiss> {
     // entirely — see the class doc.
     if (status == AnimationStatus.reverse ||
         status == AnimationStatus.dismissed) {
-      _dismissKeyboard();
+      _dismissKeyboard(trigger: status.name);
     }
   }
 
-  void _dismissKeyboard() {
+  void _dismissKeyboard({required String trigger}) {
     // A single teardown can surface more than one signal (a pop emits reverse
     // then dismissed); dismiss exactly once so we don't re-send TextInput.hide.
     if (_dismissed) return;
     _dismissed = true;
-    FocusManager.instance.primaryFocus?.unfocus();
+    final primaryFocus = FocusManager.instance.primaryFocus;
+    // Field forensics for the stranded-keyboard reports (#5959, #6007): the
+    // trigger names the dismissal path, and the focus shape distinguishes a
+    // healthy teardown (a focused field node) from the split-brain state
+    // (focus already fell back to a scope, so unfocus() will be silent).
+    Log.info(
+      'Keyboard teardown (trigger=$trigger, focus=${switch (primaryFocus) {
+        null => 'none',
+        FocusScopeNode() => 'scope',
+        FocusNode() => 'node',
+      }}): unfocus + clearClient + hide',
+      name: 'UnfocusOnSheetDismiss',
+      category: LogCategory.ui,
+    );
+    primaryFocus?.unfocus();
     // unfocus() sends nothing over the text-input channel when the framework
     // side of the connection is already gone (platform-initiated teardown
     // during background/resume — see the class doc). clearClient zeroes the
@@ -116,7 +131,7 @@ class _UnfocusOnSheetDismissState extends State<UnfocusOnSheetDismiss> {
     // existed so a generic non-sheet host that never stranded a keyboard
     // doesn't yank global focus / hide another route's keyboard on disposal.
     if (!_dismissed && _animation != null) {
-      _dismissKeyboard();
+      _dismissKeyboard(trigger: 'dispose');
     }
     super.dispose();
   }
