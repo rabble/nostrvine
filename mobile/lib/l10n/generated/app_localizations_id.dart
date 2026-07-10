@@ -9703,4 +9703,66 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get profileTipSheetBody =>
       'Tips open outside Divine. They are optional and do not unlock content, subscriptions, features, or access in Divine.';
+
+  @override
+  String get settingsStorageTitle => 'Penyimpanan';
+
+  @override
+  String get settingsStorageCacheSectionTitle => 'Media tersimpan';
+
+  @override
+  String get settingsStorageCacheDescription =>
+      'Video feed, thumbnail, dan render sementara yang tersimpan. Menghapusnya aman — akan diunduh atau dibuat ulang saat diperlukan.';
+
+  @override
+  String get settingsStorageMeasuring => 'Menghitung…';
+
+  @override
+  String settingsStorageCacheInUse(String size) {
+    return '$size terpakai';
+  }
+
+  @override
+  String get settingsStorageClearButton => 'Hapus cache';
+
+  @override
+  String get settingsStorageClearConfirmTitle => 'Hapus media tersimpan?';
+
+  @override
+  String settingsStorageClearConfirmMessage(String size) {
+    return 'Ini mengosongkan $size. Pustaka klipmu tidak terpengaruh.';
+  }
+
+  @override
+  String get settingsStorageClearConfirmAction => 'Hapus';
+
+  @override
+  String get settingsStorageCleared => 'Cache dihapus';
+
+  @override
+  String get settingsStorageLibrarySectionTitle => 'Pustaka klip';
+
+  @override
+  String get settingsStorageLibraryDescription =>
+      'Periksa klip rusak yang berkas videonya hilang.';
+
+  @override
+  String get settingsStorageScanButton => 'Periksa pustaka';
+
+  @override
+  String get settingsStorageLibraryHealthy => 'Tidak ada klip rusak ditemukan';
+
+  @override
+  String settingsStorageBrokenClipsFound(int count) {
+    return 'Klip rusak ditemukan: $count';
+  }
+
+  @override
+  String get settingsStorageRemoveBrokenButton => 'Hapus klip rusak';
+
+  @override
+  String get settingsStorageBrokenClipsRemoved => 'Klip rusak dihapus';
+
+  @override
+  String get settingsStorageError => 'Terjadi kesalahan';
 }

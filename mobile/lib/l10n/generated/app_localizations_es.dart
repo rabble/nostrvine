@@ -9823,4 +9823,67 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get profileTipSheetBody =>
       'Tips open outside Divine. They are optional and do not unlock content, subscriptions, features, or access in Divine.';
+
+  @override
+  String get settingsStorageTitle => 'Almacenamiento';
+
+  @override
+  String get settingsStorageCacheSectionTitle => 'Contenido en caché';
+
+  @override
+  String get settingsStorageCacheDescription =>
+      'Videos del feed, miniaturas y renders temporales en caché. Borrarlos es seguro: se vuelven a descargar o regenerar cuando se necesitan.';
+
+  @override
+  String get settingsStorageMeasuring => 'Calculando…';
+
+  @override
+  String settingsStorageCacheInUse(String size) {
+    return '$size en uso';
+  }
+
+  @override
+  String get settingsStorageClearButton => 'Borrar caché';
+
+  @override
+  String get settingsStorageClearConfirmTitle =>
+      '¿Borrar el contenido en caché?';
+
+  @override
+  String settingsStorageClearConfirmMessage(String size) {
+    return 'Esto libera $size. Tu biblioteca de clips no se ve afectada.';
+  }
+
+  @override
+  String get settingsStorageClearConfirmAction => 'Borrar';
+
+  @override
+  String get settingsStorageCleared => 'Caché borrada';
+
+  @override
+  String get settingsStorageLibrarySectionTitle => 'Biblioteca de clips';
+
+  @override
+  String get settingsStorageLibraryDescription =>
+      'Busca clips dañados cuyo archivo de video falta.';
+
+  @override
+  String get settingsStorageScanButton => 'Comprobar biblioteca';
+
+  @override
+  String get settingsStorageLibraryHealthy => 'No se encontraron clips dañados';
+
+  @override
+  String settingsStorageBrokenClipsFound(int count) {
+    return 'Clips dañados encontrados: $count';
+  }
+
+  @override
+  String get settingsStorageRemoveBrokenButton => 'Eliminar clips dañados';
+
+  @override
+  String get settingsStorageBrokenClipsRemoved => 'Clips dañados eliminados';
+
+  @override
+  String get settingsStorageError => 'Algo salió mal';
 }

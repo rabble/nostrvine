@@ -25,6 +25,7 @@ import 'package:openvine/screens/settings/monetization_links_settings_screen.dar
 import 'package:openvine/screens/settings/nip05_settings_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
+import 'package:openvine/screens/settings/storage/storage_management_page.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
 
 List<RouteBase> settingsRoutes(Ref ref) {
@@ -63,6 +64,11 @@ List<RouteBase> settingsRoutes(Ref ref) {
       path: GeneralSettingsScreen.path,
       name: GeneralSettingsScreen.routeName,
       builder: (_, _) => const GeneralSettingsScreen(),
+    ),
+    GoRoute(
+      path: StorageManagementPage.path,
+      name: StorageManagementPage.routeName,
+      builder: (_, _) => const StorageManagementPage(),
     ),
     GoRoute(
       path: MonetizationLinksSettingsScreen.path,

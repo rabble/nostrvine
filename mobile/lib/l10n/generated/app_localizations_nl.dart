@@ -9770,4 +9770,66 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get profileTipSheetBody =>
       'Tips open outside Divine. They are optional and do not unlock content, subscriptions, features, or access in Divine.';
+
+  @override
+  String get settingsStorageTitle => 'Opslag';
+
+  @override
+  String get settingsStorageCacheSectionTitle => 'Media in cache';
+
+  @override
+  String get settingsStorageCacheDescription =>
+      'Feedvideo\'s, miniaturen en tijdelijke renders in cache. Wissen is veilig: ze worden opnieuw gedownload of gegenereerd wanneer nodig.';
+
+  @override
+  String get settingsStorageMeasuring => 'Berekenen…';
+
+  @override
+  String settingsStorageCacheInUse(String size) {
+    return '$size in gebruik';
+  }
+
+  @override
+  String get settingsStorageClearButton => 'Cache wissen';
+
+  @override
+  String get settingsStorageClearConfirmTitle => 'Media in cache wissen?';
+
+  @override
+  String settingsStorageClearConfirmMessage(String size) {
+    return 'Dit maakt $size vrij. Je clipbibliotheek blijft ongemoeid.';
+  }
+
+  @override
+  String get settingsStorageClearConfirmAction => 'Wissen';
+
+  @override
+  String get settingsStorageCleared => 'Cache gewist';
+
+  @override
+  String get settingsStorageLibrarySectionTitle => 'Clipbibliotheek';
+
+  @override
+  String get settingsStorageLibraryDescription =>
+      'Controleer op kapotte clips waarvan het videobestand ontbreekt.';
+
+  @override
+  String get settingsStorageScanButton => 'Bibliotheek controleren';
+
+  @override
+  String get settingsStorageLibraryHealthy => 'Geen kapotte clips gevonden';
+
+  @override
+  String settingsStorageBrokenClipsFound(int count) {
+    return 'Kapotte clips gevonden: $count';
+  }
+
+  @override
+  String get settingsStorageRemoveBrokenButton => 'Kapotte clips verwijderen';
+
+  @override
+  String get settingsStorageBrokenClipsRemoved => 'Kapotte clips verwijderd';
+
+  @override
+  String get settingsStorageError => 'Er ging iets mis';
 }

@@ -9790,4 +9790,67 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get profileTipSheetBody =>
       'Tips open outside Divine. They are optional and do not unlock content, subscriptions, features, or access in Divine.';
+
+  @override
+  String get settingsStorageTitle => 'Armazenamento';
+
+  @override
+  String get settingsStorageCacheSectionTitle => 'Mídia em cache';
+
+  @override
+  String get settingsStorageCacheDescription =>
+      'Vídeos do feed, miniaturas e renderizações temporárias em cache. Limpá-los é seguro: são baixados ou gerados novamente quando necessário.';
+
+  @override
+  String get settingsStorageMeasuring => 'Calculando…';
+
+  @override
+  String settingsStorageCacheInUse(String size) {
+    return '$size em uso';
+  }
+
+  @override
+  String get settingsStorageClearButton => 'Limpar cache';
+
+  @override
+  String get settingsStorageClearConfirmTitle => 'Limpar mídia em cache?';
+
+  @override
+  String settingsStorageClearConfirmMessage(String size) {
+    return 'Isso libera $size. Sua biblioteca de clipes não é afetada.';
+  }
+
+  @override
+  String get settingsStorageClearConfirmAction => 'Limpar';
+
+  @override
+  String get settingsStorageCleared => 'Cache limpo';
+
+  @override
+  String get settingsStorageLibrarySectionTitle => 'Biblioteca de clipes';
+
+  @override
+  String get settingsStorageLibraryDescription =>
+      'Verificar clipes quebrados cujo arquivo de vídeo está faltando.';
+
+  @override
+  String get settingsStorageScanButton => 'Verificar biblioteca';
+
+  @override
+  String get settingsStorageLibraryHealthy =>
+      'Nenhum clipe quebrado encontrado';
+
+  @override
+  String settingsStorageBrokenClipsFound(int count) {
+    return 'Clipes quebrados encontrados: $count';
+  }
+
+  @override
+  String get settingsStorageRemoveBrokenButton => 'Remover clipes quebrados';
+
+  @override
+  String get settingsStorageBrokenClipsRemoved => 'Clipes quebrados removidos';
+
+  @override
+  String get settingsStorageError => 'Algo deu errado';
 }

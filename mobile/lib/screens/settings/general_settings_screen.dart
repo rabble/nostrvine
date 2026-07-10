@@ -16,6 +16,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/screens/settings/app_language_screen.dart';
 import 'package:openvine/screens/settings/bluesky_settings_screen.dart';
+import 'package:openvine/screens/settings/storage/storage_management_page.dart';
 import 'package:openvine/services/feed_aspect_ratio_preference_service.dart';
 import 'package:openvine/services/locale_preference_service.dart';
 
@@ -74,6 +75,21 @@ class GeneralSettingsScreen extends ConsumerWidget {
               const _LongPressRecordingToggle(),
               _SectionHeader(context.l10n.generalSettingsSectionApp),
               const _AppLanguageTile(),
+              ListTile(
+                leading: const DivineIcon(
+                  icon: DivineIconName.stackSimple,
+                  color: VineTheme.vineGreen,
+                ),
+                title: Text(
+                  context.l10n.settingsStorageTitle,
+                  style: _titleStyle,
+                ),
+                trailing: const DivineIcon(
+                  icon: DivineIconName.caretRight,
+                  color: VineTheme.lightText,
+                ),
+                onTap: () => context.push(StorageManagementPage.path),
+              ),
             ],
           ),
         ),

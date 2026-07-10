@@ -9697,4 +9697,67 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get profileTipSheetBody =>
       'Tips open outside Divine. They are optional and do not unlock content, subscriptions, features, or access in Divine.';
+
+  @override
+  String get settingsStorageTitle => 'Depolama';
+
+  @override
+  String get settingsStorageCacheSectionTitle => 'Önbelleğe alınan medya';
+
+  @override
+  String get settingsStorageCacheDescription =>
+      'Önbelleğe alınan akış videoları, küçük resimler ve geçici işlemeler. Bunları temizlemek güvenlidir – gerektiğinde yeniden indirilir veya oluşturulur.';
+
+  @override
+  String get settingsStorageMeasuring => 'Hesaplanıyor…';
+
+  @override
+  String settingsStorageCacheInUse(String size) {
+    return '$size kullanımda';
+  }
+
+  @override
+  String get settingsStorageClearButton => 'Önbelleği temizle';
+
+  @override
+  String get settingsStorageClearConfirmTitle =>
+      'Önbelleğe alınan medya temizlensin mi?';
+
+  @override
+  String settingsStorageClearConfirmMessage(String size) {
+    return 'Bu, $size yer açar. Klip kitaplığın etkilenmez.';
+  }
+
+  @override
+  String get settingsStorageClearConfirmAction => 'Temizle';
+
+  @override
+  String get settingsStorageCleared => 'Önbellek temizlendi';
+
+  @override
+  String get settingsStorageLibrarySectionTitle => 'Klip kitaplığı';
+
+  @override
+  String get settingsStorageLibraryDescription =>
+      'Video dosyası eksik olan bozuk klipleri denetle.';
+
+  @override
+  String get settingsStorageScanButton => 'Kitaplığı denetle';
+
+  @override
+  String get settingsStorageLibraryHealthy => 'Bozuk klip bulunamadı';
+
+  @override
+  String settingsStorageBrokenClipsFound(int count) {
+    return 'Bulunan bozuk klipler: $count';
+  }
+
+  @override
+  String get settingsStorageRemoveBrokenButton => 'Bozuk klipleri kaldır';
+
+  @override
+  String get settingsStorageBrokenClipsRemoved => 'Bozuk klipler kaldırıldı';
+
+  @override
+  String get settingsStorageError => 'Bir şeyler ters gitti';
 }

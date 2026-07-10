@@ -9730,4 +9730,66 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get profileTipSheetBody =>
       'Tips open outside Divine. They are optional and do not unlock content, subscriptions, features, or access in Divine.';
+
+  @override
+  String get settingsStorageTitle => 'Lagring';
+
+  @override
+  String get settingsStorageCacheSectionTitle => 'Cachad media';
+
+  @override
+  String get settingsStorageCacheDescription =>
+      'Cachade flödesvideor, miniatyrer och tillfälliga renderingar. Att rensa dem är säkert – de laddas ner eller skapas igen vid behov.';
+
+  @override
+  String get settingsStorageMeasuring => 'Beräknar…';
+
+  @override
+  String settingsStorageCacheInUse(String size) {
+    return '$size används';
+  }
+
+  @override
+  String get settingsStorageClearButton => 'Rensa cache';
+
+  @override
+  String get settingsStorageClearConfirmTitle => 'Rensa cachad media?';
+
+  @override
+  String settingsStorageClearConfirmMessage(String size) {
+    return 'Detta frigör $size. Ditt klippbibliotek påverkas inte.';
+  }
+
+  @override
+  String get settingsStorageClearConfirmAction => 'Rensa';
+
+  @override
+  String get settingsStorageCleared => 'Cache rensad';
+
+  @override
+  String get settingsStorageLibrarySectionTitle => 'Klippbibliotek';
+
+  @override
+  String get settingsStorageLibraryDescription =>
+      'Sök efter trasiga klipp vars videofil saknas.';
+
+  @override
+  String get settingsStorageScanButton => 'Kontrollera bibliotek';
+
+  @override
+  String get settingsStorageLibraryHealthy => 'Inga trasiga klipp hittades';
+
+  @override
+  String settingsStorageBrokenClipsFound(int count) {
+    return 'Trasiga klipp hittade: $count';
+  }
+
+  @override
+  String get settingsStorageRemoveBrokenButton => 'Ta bort trasiga klipp';
+
+  @override
+  String get settingsStorageBrokenClipsRemoved => 'Trasiga klipp borttagna';
+
+  @override
+  String get settingsStorageError => 'Något gick fel';
 }

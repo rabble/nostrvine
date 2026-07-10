@@ -9833,4 +9833,67 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get profileTipSheetBody =>
       'Tips open outside Divine. They are optional and do not unlock content, subscriptions, features, or access in Divine.';
+
+  @override
+  String get settingsStorageTitle => 'Storage';
+
+  @override
+  String get settingsStorageCacheSectionTitle => 'Naka-cache na media';
+
+  @override
+  String get settingsStorageCacheDescription =>
+      'Mga naka-cache na video ng feed, thumbnail, at pansamantalang render. Ligtas itong burahin — muli itong made-download o magagawa kapag kailangan.';
+
+  @override
+  String get settingsStorageMeasuring => 'Kinokompute…';
+
+  @override
+  String settingsStorageCacheInUse(String size) {
+    return '$size ang ginagamit';
+  }
+
+  @override
+  String get settingsStorageClearButton => 'I-clear ang cache';
+
+  @override
+  String get settingsStorageClearConfirmTitle =>
+      'I-clear ang naka-cache na media?';
+
+  @override
+  String settingsStorageClearConfirmMessage(String size) {
+    return 'Nagbabakante ito ng $size. Hindi maaapektuhan ang iyong clip library.';
+  }
+
+  @override
+  String get settingsStorageClearConfirmAction => 'I-clear';
+
+  @override
+  String get settingsStorageCleared => 'Na-clear ang cache';
+
+  @override
+  String get settingsStorageLibrarySectionTitle => 'Clip library';
+
+  @override
+  String get settingsStorageLibraryDescription =>
+      'Maghanap ng mga sirang clip na nawawala ang video file.';
+
+  @override
+  String get settingsStorageScanButton => 'Suriin ang library';
+
+  @override
+  String get settingsStorageLibraryHealthy => 'Walang nakitang sirang clip';
+
+  @override
+  String settingsStorageBrokenClipsFound(int count) {
+    return 'Mga nakitang sirang clip: $count';
+  }
+
+  @override
+  String get settingsStorageRemoveBrokenButton => 'Alisin ang mga sirang clip';
+
+  @override
+  String get settingsStorageBrokenClipsRemoved => 'Naalis ang mga sirang clip';
+
+  @override
+  String get settingsStorageError => 'May nangyaring mali';
 }

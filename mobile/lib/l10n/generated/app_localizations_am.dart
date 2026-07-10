@@ -9525,4 +9525,66 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get profileTipSheetBody =>
       'Tips open outside Divine. They are optional and do not unlock content, subscriptions, features, or access in Divine.';
+
+  @override
+  String get settingsStorageTitle => 'ማከማቻ';
+
+  @override
+  String get settingsStorageCacheSectionTitle => 'የተሸጎጠ ሚዲያ';
+
+  @override
+  String get settingsStorageCacheDescription =>
+      'የተሸጎጡ የፊድ ቪዲዮዎች፣ ድንክዬዎች እና ጊዜያዊ ሬንደሮች። ማጽዳት ደህና ነው — ሲያስፈልግ እንደገና ይወርዳሉ ወይም ይፈጠራሉ።';
+
+  @override
+  String get settingsStorageMeasuring => 'በማስላት ላይ…';
+
+  @override
+  String settingsStorageCacheInUse(String size) {
+    return '$size ጥቅም ላይ ውሏል';
+  }
+
+  @override
+  String get settingsStorageClearButton => 'መሸጎጫ አጽዳ';
+
+  @override
+  String get settingsStorageClearConfirmTitle => 'የተሸጎጠውን ሚዲያ ማጽዳት?';
+
+  @override
+  String settingsStorageClearConfirmMessage(String size) {
+    return 'ይህ $size ነጻ ያደርጋል። የክሊፕ ቤተ-መጻሕፍትህ አይነካም።';
+  }
+
+  @override
+  String get settingsStorageClearConfirmAction => 'አጽዳ';
+
+  @override
+  String get settingsStorageCleared => 'መሸጎጫ ጸድቷል';
+
+  @override
+  String get settingsStorageLibrarySectionTitle => 'የክሊፕ ቤተ-መጻሕፍት';
+
+  @override
+  String get settingsStorageLibraryDescription =>
+      'የቪዲዮ ፋይላቸው የጠፋ የተበላሹ ክሊፖችን ፈትሽ።';
+
+  @override
+  String get settingsStorageScanButton => 'ቤተ-መጻሕፍትን ፈትሽ';
+
+  @override
+  String get settingsStorageLibraryHealthy => 'የተበላሹ ክሊፖች አልተገኙም';
+
+  @override
+  String settingsStorageBrokenClipsFound(int count) {
+    return 'የተገኙ የተበላሹ ክሊፖች፦ $count';
+  }
+
+  @override
+  String get settingsStorageRemoveBrokenButton => 'የተበላሹ ክሊፖችን አስወግድ';
+
+  @override
+  String get settingsStorageBrokenClipsRemoved => 'የተበላሹ ክሊፖች ተወግደዋል';
+
+  @override
+  String get settingsStorageError => 'የሆነ ችግር ተፈጥሯል';
 }

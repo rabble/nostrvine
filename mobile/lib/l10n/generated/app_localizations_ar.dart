@@ -9659,4 +9659,66 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get profileTipSheetBody =>
       'Tips open outside Divine. They are optional and do not unlock content, subscriptions, features, or access in Divine.';
+
+  @override
+  String get settingsStorageTitle => 'التخزين';
+
+  @override
+  String get settingsStorageCacheSectionTitle => 'الوسائط المخزّنة مؤقتًا';
+
+  @override
+  String get settingsStorageCacheDescription =>
+      'مقاطع فيديو الخلاصة والصور المصغّرة والمعالجات المؤقتة المخزّنة. حذفها آمن — تتم إعادة تنزيلها أو إنشاؤها عند الحاجة.';
+
+  @override
+  String get settingsStorageMeasuring => 'جارٍ الحساب…';
+
+  @override
+  String settingsStorageCacheInUse(String size) {
+    return '$size قيد الاستخدام';
+  }
+
+  @override
+  String get settingsStorageClearButton => 'مسح ذاكرة التخزين المؤقت';
+
+  @override
+  String get settingsStorageClearConfirmTitle => 'مسح الوسائط المخزّنة مؤقتًا؟';
+
+  @override
+  String settingsStorageClearConfirmMessage(String size) {
+    return 'سيؤدي ذلك إلى تحرير $size. لن تتأثر مكتبة المقاطع لديك.';
+  }
+
+  @override
+  String get settingsStorageClearConfirmAction => 'مسح';
+
+  @override
+  String get settingsStorageCleared => 'تم مسح ذاكرة التخزين المؤقت';
+
+  @override
+  String get settingsStorageLibrarySectionTitle => 'مكتبة المقاطع';
+
+  @override
+  String get settingsStorageLibraryDescription =>
+      'ابحث عن المقاطع التالفة التي يفتقد ملف الفيديو الخاص بها.';
+
+  @override
+  String get settingsStorageScanButton => 'فحص المكتبة';
+
+  @override
+  String get settingsStorageLibraryHealthy => 'لم يتم العثور على مقاطع تالفة';
+
+  @override
+  String settingsStorageBrokenClipsFound(int count) {
+    return 'المقاطع التالفة التي تم العثور عليها: $count';
+  }
+
+  @override
+  String get settingsStorageRemoveBrokenButton => 'إزالة المقاطع التالفة';
+
+  @override
+  String get settingsStorageBrokenClipsRemoved => 'تمت إزالة المقاطع التالفة';
+
+  @override
+  String get settingsStorageError => 'حدث خطأ ما';
 }

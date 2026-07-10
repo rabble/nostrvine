@@ -9839,4 +9839,66 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get profileTipSheetBody =>
       'Tips open outside Divine. They are optional and do not unlock content, subscriptions, features, or access in Divine.';
+
+  @override
+  String get settingsStorageTitle => 'Speicher';
+
+  @override
+  String get settingsStorageCacheSectionTitle => 'Zwischenspeicher';
+
+  @override
+  String get settingsStorageCacheDescription =>
+      'Gecachte Feed-Videos, Vorschaubilder und temporäre Renders. Löschen ist unbedenklich – sie werden bei Bedarf neu geladen oder neu erzeugt.';
+
+  @override
+  String get settingsStorageMeasuring => 'Wird berechnet…';
+
+  @override
+  String settingsStorageCacheInUse(String size) {
+    return '$size belegt';
+  }
+
+  @override
+  String get settingsStorageClearButton => 'Zwischenspeicher leeren';
+
+  @override
+  String get settingsStorageClearConfirmTitle => 'Zwischenspeicher leeren?';
+
+  @override
+  String settingsStorageClearConfirmMessage(String size) {
+    return 'Das gibt $size frei. Deine Clip-Bibliothek bleibt unberührt.';
+  }
+
+  @override
+  String get settingsStorageClearConfirmAction => 'Leeren';
+
+  @override
+  String get settingsStorageCleared => 'Zwischenspeicher geleert';
+
+  @override
+  String get settingsStorageLibrarySectionTitle => 'Clip-Bibliothek';
+
+  @override
+  String get settingsStorageLibraryDescription =>
+      'Nach defekten Clips suchen, deren Videodatei fehlt.';
+
+  @override
+  String get settingsStorageScanButton => 'Bibliothek prüfen';
+
+  @override
+  String get settingsStorageLibraryHealthy => 'Keine defekten Clips gefunden';
+
+  @override
+  String settingsStorageBrokenClipsFound(int count) {
+    return 'Defekte Clips gefunden: $count';
+  }
+
+  @override
+  String get settingsStorageRemoveBrokenButton => 'Defekte Clips entfernen';
+
+  @override
+  String get settingsStorageBrokenClipsRemoved => 'Defekte Clips entfernt';
+
+  @override
+  String get settingsStorageError => 'Etwas ist schiefgelaufen';
 }

@@ -9376,4 +9376,65 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get profileTipSheetBody =>
       'Tips open outside Divine. They are optional and do not unlock content, subscriptions, features, or access in Divine.';
+
+  @override
+  String get settingsStorageTitle => '저장공간';
+
+  @override
+  String get settingsStorageCacheSectionTitle => '캐시된 미디어';
+
+  @override
+  String get settingsStorageCacheDescription =>
+      '캐시된 피드 동영상, 썸네일, 임시 렌더입니다. 삭제해도 안전하며 필요할 때 다시 다운로드되거나 생성됩니다.';
+
+  @override
+  String get settingsStorageMeasuring => '계산 중…';
+
+  @override
+  String settingsStorageCacheInUse(String size) {
+    return '$size 사용 중';
+  }
+
+  @override
+  String get settingsStorageClearButton => '캐시 지우기';
+
+  @override
+  String get settingsStorageClearConfirmTitle => '캐시된 미디어를 지울까요?';
+
+  @override
+  String settingsStorageClearConfirmMessage(String size) {
+    return '$size을(를) 확보합니다. 클립 라이브러리는 영향을 받지 않습니다.';
+  }
+
+  @override
+  String get settingsStorageClearConfirmAction => '지우기';
+
+  @override
+  String get settingsStorageCleared => '캐시를 지웠습니다';
+
+  @override
+  String get settingsStorageLibrarySectionTitle => '클립 라이브러리';
+
+  @override
+  String get settingsStorageLibraryDescription => '동영상 파일이 없는 손상된 클립을 확인합니다.';
+
+  @override
+  String get settingsStorageScanButton => '라이브러리 확인';
+
+  @override
+  String get settingsStorageLibraryHealthy => '손상된 클립이 없습니다';
+
+  @override
+  String settingsStorageBrokenClipsFound(int count) {
+    return '발견된 손상된 클립: $count';
+  }
+
+  @override
+  String get settingsStorageRemoveBrokenButton => '손상된 클립 제거';
+
+  @override
+  String get settingsStorageBrokenClipsRemoved => '손상된 클립을 제거했습니다';
+
+  @override
+  String get settingsStorageError => '문제가 발생했습니다';
 }

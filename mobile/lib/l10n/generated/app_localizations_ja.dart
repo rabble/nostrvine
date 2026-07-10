@@ -9351,4 +9351,65 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get profileTipSheetBody =>
       'Tips open outside Divine. They are optional and do not unlock content, subscriptions, features, or access in Divine.';
+
+  @override
+  String get settingsStorageTitle => 'ストレージ';
+
+  @override
+  String get settingsStorageCacheSectionTitle => 'キャッシュされたメディア';
+
+  @override
+  String get settingsStorageCacheDescription =>
+      'キャッシュされたフィード動画、サムネイル、一時レンダー。削除しても安全です。必要なときに再ダウンロードまたは再生成されます。';
+
+  @override
+  String get settingsStorageMeasuring => '計算中…';
+
+  @override
+  String settingsStorageCacheInUse(String size) {
+    return '$size 使用中';
+  }
+
+  @override
+  String get settingsStorageClearButton => 'キャッシュを消去';
+
+  @override
+  String get settingsStorageClearConfirmTitle => 'キャッシュされたメディアを消去しますか？';
+
+  @override
+  String settingsStorageClearConfirmMessage(String size) {
+    return '$size を解放します。クリップライブラリには影響しません。';
+  }
+
+  @override
+  String get settingsStorageClearConfirmAction => '消去';
+
+  @override
+  String get settingsStorageCleared => 'キャッシュを消去しました';
+
+  @override
+  String get settingsStorageLibrarySectionTitle => 'クリップライブラリ';
+
+  @override
+  String get settingsStorageLibraryDescription => '動画ファイルが見つからない壊れたクリップを確認します。';
+
+  @override
+  String get settingsStorageScanButton => 'ライブラリを確認';
+
+  @override
+  String get settingsStorageLibraryHealthy => '壊れたクリップは見つかりませんでした';
+
+  @override
+  String settingsStorageBrokenClipsFound(int count) {
+    return '見つかった壊れたクリップ: $count';
+  }
+
+  @override
+  String get settingsStorageRemoveBrokenButton => '壊れたクリップを削除';
+
+  @override
+  String get settingsStorageBrokenClipsRemoved => '壊れたクリップを削除しました';
+
+  @override
+  String get settingsStorageError => '問題が発生しました';
 }

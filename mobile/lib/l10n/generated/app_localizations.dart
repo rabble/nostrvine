@@ -16815,6 +16815,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tips open outside Divine. They are optional and do not unlock content, subscriptions, features, or access in Divine.'**
   String get profileTipSheetBody;
+
+  /// Title of the Storage settings screen and its entry in the settings list.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage'**
+  String get settingsStorageTitle;
+
+  /// Section header for the clearable media caches on the Storage screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Cached media'**
+  String get settingsStorageCacheSectionTitle;
+
+  /// Explains what the cached-media section clears and that it is safe.
+  ///
+  /// In en, this message translates to:
+  /// **'Cached feed videos, thumbnails and temporary renders. Clearing them is safe — they\'re re-downloaded or regenerated when needed.'**
+  String get settingsStorageCacheDescription;
+
+  /// Placeholder shown while the cache size is being computed.
+  ///
+  /// In en, this message translates to:
+  /// **'Measuring…'**
+  String get settingsStorageMeasuring;
+
+  /// Shows how much disk the caches currently use.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} in use'**
+  String settingsStorageCacheInUse(String size);
+
+  /// Button that clears the media caches.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear cache'**
+  String get settingsStorageClearButton;
+
+  /// Title of the confirmation sheet before clearing caches.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear cached media?'**
+  String get settingsStorageClearConfirmTitle;
+
+  /// Body of the clear-cache confirmation sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'This frees up {size}. Your clip library is not affected.'**
+  String settingsStorageClearConfirmMessage(String size);
+
+  /// Confirm button that performs the cache clear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get settingsStorageClearConfirmAction;
+
+  /// Accessibility announcement after the cache is cleared.
+  ///
+  /// In en, this message translates to:
+  /// **'Cache cleared'**
+  String get settingsStorageCleared;
+
+  /// Section header for the clip-library audit on the Storage screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Clip library'**
+  String get settingsStorageLibrarySectionTitle;
+
+  /// Explains what the clip-library check does.
+  ///
+  /// In en, this message translates to:
+  /// **'Check for broken clips whose video file is missing.'**
+  String get settingsStorageLibraryDescription;
+
+  /// Button that scans the clip library for broken clips.
+  ///
+  /// In en, this message translates to:
+  /// **'Check library'**
+  String get settingsStorageScanButton;
+
+  /// Shown when the library scan finds no broken clips.
+  ///
+  /// In en, this message translates to:
+  /// **'No broken clips found'**
+  String get settingsStorageLibraryHealthy;
+
+  /// Shows how many broken clips the scan found.
+  ///
+  /// In en, this message translates to:
+  /// **'Broken clips found: {count}'**
+  String settingsStorageBrokenClipsFound(int count);
+
+  /// Button that removes the broken clips found by the scan.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove broken clips'**
+  String get settingsStorageRemoveBrokenButton;
+
+  /// Accessibility announcement after broken clips are removed.
+  ///
+  /// In en, this message translates to:
+  /// **'Broken clips removed'**
+  String get settingsStorageBrokenClipsRemoved;
+
+  /// Generic error shown when a storage operation fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong'**
+  String get settingsStorageError;
 }
 
 class _AppLocalizationsDelegate

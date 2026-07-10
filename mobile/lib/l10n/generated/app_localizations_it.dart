@@ -9820,4 +9820,67 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get profileTipSheetBody =>
       'Tips open outside Divine. They are optional and do not unlock content, subscriptions, features, or access in Divine.';
+
+  @override
+  String get settingsStorageTitle => 'Archiviazione';
+
+  @override
+  String get settingsStorageCacheSectionTitle => 'Media in cache';
+
+  @override
+  String get settingsStorageCacheDescription =>
+      'Video del feed, miniature e render temporanei in cache. Eliminarli è sicuro: vengono riscaricati o rigenerati quando servono.';
+
+  @override
+  String get settingsStorageMeasuring => 'Calcolo in corso…';
+
+  @override
+  String settingsStorageCacheInUse(String size) {
+    return '$size in uso';
+  }
+
+  @override
+  String get settingsStorageClearButton => 'Svuota cache';
+
+  @override
+  String get settingsStorageClearConfirmTitle => 'Svuotare i media in cache?';
+
+  @override
+  String settingsStorageClearConfirmMessage(String size) {
+    return 'Libera $size. La tua libreria di clip non viene toccata.';
+  }
+
+  @override
+  String get settingsStorageClearConfirmAction => 'Svuota';
+
+  @override
+  String get settingsStorageCleared => 'Cache svuotata';
+
+  @override
+  String get settingsStorageLibrarySectionTitle => 'Libreria di clip';
+
+  @override
+  String get settingsStorageLibraryDescription =>
+      'Cerca clip danneggiate il cui file video è mancante.';
+
+  @override
+  String get settingsStorageScanButton => 'Controlla libreria';
+
+  @override
+  String get settingsStorageLibraryHealthy =>
+      'Nessuna clip danneggiata trovata';
+
+  @override
+  String settingsStorageBrokenClipsFound(int count) {
+    return 'Clip danneggiate trovate: $count';
+  }
+
+  @override
+  String get settingsStorageRemoveBrokenButton => 'Rimuovi clip danneggiate';
+
+  @override
+  String get settingsStorageBrokenClipsRemoved => 'Clip danneggiate rimosse';
+
+  @override
+  String get settingsStorageError => 'Qualcosa è andato storto';
 }

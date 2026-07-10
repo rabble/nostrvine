@@ -9909,4 +9909,69 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get profileTipSheetBody =>
       'Tips open outside Divine. They are optional and do not unlock content, subscriptions, features, or access in Divine.';
+
+  @override
+  String get settingsStorageTitle => 'Pamięć';
+
+  @override
+  String get settingsStorageCacheSectionTitle =>
+      'Multimedia w pamięci podręcznej';
+
+  @override
+  String get settingsStorageCacheDescription =>
+      'Filmy z kanału, miniatury i tymczasowe rendery w pamięci podręcznej. Ich wyczyszczenie jest bezpieczne – zostaną ponownie pobrane lub wygenerowane w razie potrzeby.';
+
+  @override
+  String get settingsStorageMeasuring => 'Obliczanie…';
+
+  @override
+  String settingsStorageCacheInUse(String size) {
+    return 'Zajęte: $size';
+  }
+
+  @override
+  String get settingsStorageClearButton => 'Wyczyść pamięć podręczną';
+
+  @override
+  String get settingsStorageClearConfirmTitle =>
+      'Wyczyścić multimedia z pamięci podręcznej?';
+
+  @override
+  String settingsStorageClearConfirmMessage(String size) {
+    return 'To zwolni $size. Twoja biblioteka klipów nie zostanie naruszona.';
+  }
+
+  @override
+  String get settingsStorageClearConfirmAction => 'Wyczyść';
+
+  @override
+  String get settingsStorageCleared => 'Pamięć podręczna wyczyszczona';
+
+  @override
+  String get settingsStorageLibrarySectionTitle => 'Biblioteka klipów';
+
+  @override
+  String get settingsStorageLibraryDescription =>
+      'Sprawdź uszkodzone klipy, których plik wideo jest niedostępny.';
+
+  @override
+  String get settingsStorageScanButton => 'Sprawdź bibliotekę';
+
+  @override
+  String get settingsStorageLibraryHealthy =>
+      'Nie znaleziono uszkodzonych klipów';
+
+  @override
+  String settingsStorageBrokenClipsFound(int count) {
+    return 'Znalezione uszkodzone klipy: $count';
+  }
+
+  @override
+  String get settingsStorageRemoveBrokenButton => 'Usuń uszkodzone klipy';
+
+  @override
+  String get settingsStorageBrokenClipsRemoved => 'Uszkodzone klipy usunięte';
+
+  @override
+  String get settingsStorageError => 'Coś poszło nie tak';
 }

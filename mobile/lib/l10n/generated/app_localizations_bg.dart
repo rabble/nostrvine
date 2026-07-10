@@ -9825,4 +9825,71 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get profileTipSheetBody =>
       'Tips open outside Divine. They are optional and do not unlock content, subscriptions, features, or access in Divine.';
+
+  @override
+  String get settingsStorageTitle => 'Хранилище';
+
+  @override
+  String get settingsStorageCacheSectionTitle =>
+      'Кеширани мултимедийни файлове';
+
+  @override
+  String get settingsStorageCacheDescription =>
+      'Кеширани видеа от емисията, миниатюри и временни рендери. Изчистването им е безопасно – изтеглят се или се генерират отново при нужда.';
+
+  @override
+  String get settingsStorageMeasuring => 'Изчисляване…';
+
+  @override
+  String settingsStorageCacheInUse(String size) {
+    return '$size се използват';
+  }
+
+  @override
+  String get settingsStorageClearButton => 'Изчисти кеша';
+
+  @override
+  String get settingsStorageClearConfirmTitle =>
+      'Да се изчистят ли кешираните файлове?';
+
+  @override
+  String settingsStorageClearConfirmMessage(String size) {
+    return 'Това освобождава $size. Библиотеката ви с клипове не се засяга.';
+  }
+
+  @override
+  String get settingsStorageClearConfirmAction => 'Изчисти';
+
+  @override
+  String get settingsStorageCleared => 'Кешът е изчистен';
+
+  @override
+  String get settingsStorageLibrarySectionTitle => 'Библиотека с клипове';
+
+  @override
+  String get settingsStorageLibraryDescription =>
+      'Проверете за повредени клипове, чийто видеофайл липсва.';
+
+  @override
+  String get settingsStorageScanButton => 'Провери библиотеката';
+
+  @override
+  String get settingsStorageLibraryHealthy =>
+      'Не са намерени повредени клипове';
+
+  @override
+  String settingsStorageBrokenClipsFound(int count) {
+    return 'Намерени повредени клипове: $count';
+  }
+
+  @override
+  String get settingsStorageRemoveBrokenButton =>
+      'Премахни повредените клипове';
+
+  @override
+  String get settingsStorageBrokenClipsRemoved =>
+      'Повредените клипове са премахнати';
+
+  @override
+  String get settingsStorageError => 'Нещо се обърка';
 }

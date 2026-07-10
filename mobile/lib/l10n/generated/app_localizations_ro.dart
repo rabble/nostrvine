@@ -9930,4 +9930,69 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get profileTipSheetBody =>
       'Tips open outside Divine. They are optional and do not unlock content, subscriptions, features, or access in Divine.';
+
+  @override
+  String get settingsStorageTitle => 'Stocare';
+
+  @override
+  String get settingsStorageCacheSectionTitle => 'Media din cache';
+
+  @override
+  String get settingsStorageCacheDescription =>
+      'Videoclipuri din feed, miniaturi și randări temporare din cache. Ștergerea lor este sigură – sunt descărcate sau regenerate din nou când e nevoie.';
+
+  @override
+  String get settingsStorageMeasuring => 'Se calculează…';
+
+  @override
+  String settingsStorageCacheInUse(String size) {
+    return '$size utilizați';
+  }
+
+  @override
+  String get settingsStorageClearButton => 'Golește cache-ul';
+
+  @override
+  String get settingsStorageClearConfirmTitle => 'Golești media din cache?';
+
+  @override
+  String settingsStorageClearConfirmMessage(String size) {
+    return 'Astfel eliberezi $size. Biblioteca ta de clipuri nu este afectată.';
+  }
+
+  @override
+  String get settingsStorageClearConfirmAction => 'Golește';
+
+  @override
+  String get settingsStorageCleared => 'Cache golit';
+
+  @override
+  String get settingsStorageLibrarySectionTitle => 'Bibliotecă de clipuri';
+
+  @override
+  String get settingsStorageLibraryDescription =>
+      'Caută clipuri deteriorate al căror fișier video lipsește.';
+
+  @override
+  String get settingsStorageScanButton => 'Verifică biblioteca';
+
+  @override
+  String get settingsStorageLibraryHealthy =>
+      'Nu s-au găsit clipuri deteriorate';
+
+  @override
+  String settingsStorageBrokenClipsFound(int count) {
+    return 'Clipuri deteriorate găsite: $count';
+  }
+
+  @override
+  String get settingsStorageRemoveBrokenButton =>
+      'Elimină clipurile deteriorate';
+
+  @override
+  String get settingsStorageBrokenClipsRemoved =>
+      'Clipuri deteriorate eliminate';
+
+  @override
+  String get settingsStorageError => 'Ceva n-a mers bine';
 }

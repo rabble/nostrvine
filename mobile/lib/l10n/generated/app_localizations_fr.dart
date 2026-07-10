@@ -9865,4 +9865,67 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get profileTipSheetBody =>
       'Tips open outside Divine. They are optional and do not unlock content, subscriptions, features, or access in Divine.';
+
+  @override
+  String get settingsStorageTitle => 'Stockage';
+
+  @override
+  String get settingsStorageCacheSectionTitle => 'Médias en cache';
+
+  @override
+  String get settingsStorageCacheDescription =>
+      'Vidéos du fil, miniatures et rendus temporaires en cache. Les effacer est sans risque : ils sont retéléchargés ou régénérés si nécessaire.';
+
+  @override
+  String get settingsStorageMeasuring => 'Calcul en cours…';
+
+  @override
+  String settingsStorageCacheInUse(String size) {
+    return '$size utilisés';
+  }
+
+  @override
+  String get settingsStorageClearButton => 'Vider le cache';
+
+  @override
+  String get settingsStorageClearConfirmTitle => 'Vider les médias en cache ?';
+
+  @override
+  String settingsStorageClearConfirmMessage(String size) {
+    return 'Cela libère $size. Votre bibliothèque de clips n\'est pas affectée.';
+  }
+
+  @override
+  String get settingsStorageClearConfirmAction => 'Vider';
+
+  @override
+  String get settingsStorageCleared => 'Cache vidé';
+
+  @override
+  String get settingsStorageLibrarySectionTitle => 'Bibliothèque de clips';
+
+  @override
+  String get settingsStorageLibraryDescription =>
+      'Rechercher les clips défectueux dont le fichier vidéo est manquant.';
+
+  @override
+  String get settingsStorageScanButton => 'Vérifier la bibliothèque';
+
+  @override
+  String get settingsStorageLibraryHealthy => 'Aucun clip défectueux trouvé';
+
+  @override
+  String settingsStorageBrokenClipsFound(int count) {
+    return 'Clips défectueux trouvés : $count';
+  }
+
+  @override
+  String get settingsStorageRemoveBrokenButton =>
+      'Supprimer les clips défectueux';
+
+  @override
+  String get settingsStorageBrokenClipsRemoved => 'Clips défectueux supprimés';
+
+  @override
+  String get settingsStorageError => 'Une erreur s\'est produite';
 }

@@ -9704,4 +9704,66 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get profileTipSheetBody =>
       'Tips open outside Divine. They are optional and do not unlock content, subscriptions, features, or access in Divine.';
+
+  @override
+  String get settingsStorageTitle => 'Storage';
+
+  @override
+  String get settingsStorageCacheSectionTitle => 'Cached media';
+
+  @override
+  String get settingsStorageCacheDescription =>
+      'Cached feed videos, thumbnails and temporary renders. Clearing them is safe — they\'re re-downloaded or regenerated when needed.';
+
+  @override
+  String get settingsStorageMeasuring => 'Measuring…';
+
+  @override
+  String settingsStorageCacheInUse(String size) {
+    return '$size in use';
+  }
+
+  @override
+  String get settingsStorageClearButton => 'Clear cache';
+
+  @override
+  String get settingsStorageClearConfirmTitle => 'Clear cached media?';
+
+  @override
+  String settingsStorageClearConfirmMessage(String size) {
+    return 'This frees up $size. Your clip library is not affected.';
+  }
+
+  @override
+  String get settingsStorageClearConfirmAction => 'Clear';
+
+  @override
+  String get settingsStorageCleared => 'Cache cleared';
+
+  @override
+  String get settingsStorageLibrarySectionTitle => 'Clip library';
+
+  @override
+  String get settingsStorageLibraryDescription =>
+      'Check for broken clips whose video file is missing.';
+
+  @override
+  String get settingsStorageScanButton => 'Check library';
+
+  @override
+  String get settingsStorageLibraryHealthy => 'No broken clips found';
+
+  @override
+  String settingsStorageBrokenClipsFound(int count) {
+    return 'Broken clips found: $count';
+  }
+
+  @override
+  String get settingsStorageRemoveBrokenButton => 'Remove broken clips';
+
+  @override
+  String get settingsStorageBrokenClipsRemoved => 'Broken clips removed';
+
+  @override
+  String get settingsStorageError => 'Something went wrong';
 }
