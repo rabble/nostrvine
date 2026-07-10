@@ -66,3 +66,18 @@ detect_x11_display() {
 first_available_avd_name() {
     emulator -list-avds 2>/dev/null | sed -n '1p'
 }
+
+local_stack_has_running_container() {
+    local compose_file="$1"
+    local container_ids
+
+    if ! container_ids="$(docker compose -f "$compose_file" ps --status running -q 2>/dev/null)"; then
+        return 1
+    fi
+
+    [[ -n "$container_ids" ]]
+}
+
+android_emulator_invite_server_url() {
+    printf '%s\n' 'http://10.0.2.2:43004'
+}

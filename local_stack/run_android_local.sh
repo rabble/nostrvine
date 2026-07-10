@@ -17,6 +17,7 @@ ANDROID_PACKAGE_ID="co.openvine.app"
 
 # shellcheck source=android_sdk.sh
 source "${SCRIPT_DIR}/android_sdk.sh"
+INVITE_SERVER_URL="$(android_emulator_invite_server_url)"
 
 DEVICE_ARG="${1:-}"
 BUILD_MODE="${2:-debug}"
@@ -30,7 +31,7 @@ case "$BUILD_MODE" in
         ;;
 esac
 
-if ! docker compose -f "$COMPOSE_FILE" ps --status running -q 2>/dev/null | head -1 | grep -q .; then
+if ! local_stack_has_running_container "$COMPOSE_FILE"; then
     echo "ERROR: Docker stack is not running. Start with: mise run local_up" >&2
     exit 1
 fi
@@ -83,7 +84,7 @@ clear_app_data() {
 }
 
 echo "Running Divine against the local stack on Android emulator: ${DEVICE}" >&2
-echo "Invite server: http://10.0.2.2:43004" >&2
+echo "Invite server: ${INVITE_SERVER_URL}" >&2
 echo "Clearing persisted app data for ${ANDROID_PACKAGE_ID} so LOCAL is deterministic" >&2
 clear_app_data
 
@@ -92,4 +93,4 @@ exec flutter run \
     -d "$DEVICE" \
     --"$BUILD_MODE" \
     --dart-define=DEFAULT_ENV=LOCAL \
-    --dart-define=INVITE_SERVER_URL=http://10.0.2.2:43004
+    --dart-define=INVITE_SERVER_URL="$INVITE_SERVER_URL"

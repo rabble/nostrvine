@@ -20,6 +20,7 @@ MERGE_SCRIPT="${SCRIPT_DIR}/merge_logs.py"
 
 # shellcheck source=android_sdk.sh
 source "${SCRIPT_DIR}/android_sdk.sh"
+INVITE_SERVER_URL="$(android_emulator_invite_server_url)"
 
 # --- Ensure DISPLAY is set for emulator (Hyprland/XWayland) ---
 DISPLAY_TO_USE="$(detect_x11_display)"
@@ -56,7 +57,7 @@ echo "Report:     ${REPORT_FILE}" >&2
 echo "" >&2
 
 # --- Verify docker stack is running ---
-if ! docker compose -f "$COMPOSE_FILE" ps --status running -q 2>/dev/null | head -1 | grep -q .; then
+if ! local_stack_has_running_container "$COMPOSE_FILE"; then
     echo "ERROR: Docker stack is not running. Start with: mise run local_up" >&2
     exit 1
 fi
@@ -95,7 +96,7 @@ set +e
 PATH="$HOME/.pub-cache/bin:$PATH" patrol test \
     --target "$TEST_PATH" \
     --dart-define=DEFAULT_ENV=LOCAL \
-    --dart-define=INVITE_SERVER_URL=http://10.0.2.2:43004 \
+    --dart-define=INVITE_SERVER_URL="$INVITE_SERVER_URL" \
     "${PATROL_EXTRA_ARGS[@]}" \
     2>&1 | tee "$APP_LOG"
 TEST_EXIT="${PIPESTATUS[0]}"
