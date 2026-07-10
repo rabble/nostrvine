@@ -611,6 +611,9 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
             duration: clip.duration,
             trimStart: clip.trimStart,
             trimEnd: clip.trimEnd,
+            // The rendered end half's file starts at the split point \u2014 carry
+            // the shift so the thumbnail raster stays recording-anchored.
+            sourceStartOffset: clip.sourceStartOffset,
           );
           emit(state.copyWith(clips: List.unmodifiable(newClips)));
           Log.debug(

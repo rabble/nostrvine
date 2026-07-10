@@ -28,6 +28,7 @@ class DivineVideoClip {
     this.ghostFramePath,
     this.trimStart = Duration.zero,
     this.trimEnd = Duration.zero,
+    this.sourceStartOffset = Duration.zero,
     this.volume = 1,
     this.playbackSpeed,
     this.reversed = false,
@@ -68,6 +69,14 @@ class DivineVideoClip {
 
   /// How much has been trimmed from the end of the clip.
   final Duration trimEnd;
+
+  /// Where this clip's video file starts within the original source
+  /// recording it was cut from. `Duration.zero` for clips whose file *is*
+  /// the original recording; a split render sets it on the end half (its
+  /// file starts at the split point) so downstream consumers — notably the
+  /// timeline thumbnail raster — can stay anchored to the original
+  /// recording's timeline instead of re-anchoring at the new file's zero.
+  final Duration sourceStartOffset;
 
   /// Playback volume for this clip, between 0 (muted) and 1 (full volume).
   final double volume;
@@ -196,6 +205,7 @@ class DivineVideoClip {
     String? ghostFramePath,
     Duration? trimStart,
     Duration? trimEnd,
+    Duration? sourceStartOffset,
     double? volume,
     double? playbackSpeed,
     bool clearPlaybackSpeed = false,
@@ -229,6 +239,7 @@ class DivineVideoClip {
       ghostFramePath: ghostFramePath ?? this.ghostFramePath,
       trimStart: trimStart ?? this.trimStart,
       trimEnd: trimEnd ?? this.trimEnd,
+      sourceStartOffset: sourceStartOffset ?? this.sourceStartOffset,
       volume: volume ?? this.volume,
       playbackSpeed: clearPlaybackSpeed
           ? null
@@ -274,6 +285,8 @@ class DivineVideoClip {
           : null,
       'trimStartMs': trimStart.inMilliseconds,
       'trimEndMs': trimEnd.inMilliseconds,
+      if (sourceStartOffset > Duration.zero)
+        'sourceStartOffsetMs': sourceStartOffset.inMilliseconds,
       'volume': volume,
       if (playbackSpeed != null) 'playbackSpeed': playbackSpeed,
       if (reversed) 'reversed': true,
@@ -353,6 +366,9 @@ class DivineVideoClip {
       ),
       trimStart: Duration(milliseconds: (json['trimStartMs'] as int?) ?? 0),
       trimEnd: Duration(milliseconds: (json['trimEndMs'] as int?) ?? 0),
+      sourceStartOffset: Duration(
+        milliseconds: (json['sourceStartOffsetMs'] as int?) ?? 0,
+      ),
       volume: (json['volume'] as num?)?.toDouble() ?? 1,
       playbackSpeed: (json['playbackSpeed'] as num?)?.toDouble(),
       reversed: (json['reversed'] as bool?) ?? false,

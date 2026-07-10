@@ -142,6 +142,7 @@ Future<void> _fakeSplitClipThenRenderEnd({
   final renderedEndClip = previewEndClip.copyWith(
     duration: sourceClip.duration - absoluteSplitPos,
     trimStart: Duration.zero,
+    sourceStartOffset: sourceClip.sourceStartOffset + absoluteSplitPos,
   );
   onClipsCreated?.call(startClip, previewEndClip);
   onClipRendered?.call(startClip, startClip.video);
@@ -741,6 +742,13 @@ void main() {
           expect(endClip.duration, const Duration(milliseconds: 1500));
           expect(endClip.trimStart, Duration.zero);
           expect(endClip.trimmedDuration, const Duration(milliseconds: 1500));
+          // The rendered end file starts at the split point — the offset
+          // must reach the state clip, or the thumbnail raster re-anchors
+          // and the strip's frames visibly shift when the render lands.
+          expect(
+            endClip.sourceStartOffset,
+            const Duration(milliseconds: 500),
+          );
 
           await bloc.close();
         },

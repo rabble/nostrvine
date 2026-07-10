@@ -301,13 +301,27 @@ class _VideoEditorTimelineClipStripState
       final visibleMs = (visibleEnd - visibleStart).inMilliseconds;
       if (clipPx <= 0 || visibleMs <= 0) continue;
 
-      final slotCount = (clipPx / TimelineConstants.thumbnailWidth)
-          .ceil()
-          .clamp(1, 1000);
+      // Mirror the tile's recording-anchored slot raster (fixed pitch,
+      // phase-shifted by sourceStartOffset) so the priority frames land on
+      // the exact window centers the visible slots will look up.
+      final speed = clip.playbackSpeed ?? 1.0;
+      final spanMs =
+          TimelineConstants.thumbnailWidth *
+          1000 *
+          (speed > 0 ? speed : 1.0) /
+          widget.pixelsPerSecond;
+      final phaseMs = clip.sourceStartOffset.inMilliseconds % spanMs;
+      final startMs = visibleStart.inMilliseconds;
+      final endMs = visibleEnd.inMilliseconds;
+      final firstSlot = ((startMs + phaseMs) / spanMs).floor();
       final timestamps = <Duration>[];
-      for (var i = 0; i < slotCount; i++) {
-        final centerMs =
-            visibleStart.inMilliseconds + visibleMs * (i + 0.5) / slotCount;
+      for (var m = firstSlot; timestamps.length < 1000; m++) {
+        final slotStartMs = m * spanMs - phaseMs;
+        if (slotStartMs >= endMs) break;
+        final centerMs = (slotStartMs + spanMs / 2).clamp(
+          startMs.toDouble(),
+          endMs.toDouble() - 1,
+        );
         timestamps.add(Duration(milliseconds: centerMs.round()));
       }
       result[clip.id] = timestamps;

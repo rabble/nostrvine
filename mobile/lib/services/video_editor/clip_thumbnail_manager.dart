@@ -53,6 +53,17 @@ class ClipThumbnailManager {
   // zero-based), the same shift is applied here so the frames stay
   // aligned until fresh thumbnails replace them.
   final Map<String, Duration> _pendingRebase = {};
+  // IDs whose subscription has delivered its final batch — the strip is at
+  // full density and only a source-file change warrants re-extraction.
+  final Set<String> _complete = {};
+  // Strips of recently removed clips, kept (files included) for an instant
+  // restore when the same id returns — undo re-adds the pre-split clip,
+  // redo re-adds the split halves. Without this the returning clip starts
+  // with an empty notifier: every slot falls back to the poster frame and
+  // the whole strip re-extracts from scratch. Insertion-ordered for FIFO
+  // eviction.
+  final Map<String, _RetiredStrip> _retired = {};
+  static const _maxRetiredStrips = 8;
 
   /// When true, newly started subscriptions begin paused and existing ones are
   /// held. See [pauseAll].
@@ -76,31 +87,74 @@ class ClipThumbnailManager {
   }) {
     final currentIds = clips.map((c) => c.id).toSet();
 
-    // Remove stale entries.
+    // Retire stale entries — the strip is kept for an instant restore if
+    // the id returns (undo re-adds the pre-split clip, redo the halves).
     final staleIds = _notifiers.keys
         .where((id) => !currentIds.contains(id))
         .toList();
     for (final id in staleIds) {
       _subscriptions.remove(id)?.cancel();
-      _videoPaths.remove(id);
-      _seeded.remove(id);
+      final videoPath = _videoPaths.remove(id);
+      final wasSeeded = _seeded.remove(id);
       _pendingRebase.remove(id);
+      final wasComplete = _complete.remove(id);
       final notifier = _notifiers.remove(id);
-      if (notifier != null) {
-        // Files borrowed by seeded clips (split halves) stay alive; only
-        // files no other notifier references are deleted.
-        _deleteUnreferencedFiles(notifier.value);
-        notifier.dispose();
+      if (notifier == null) continue;
+      final frames = notifier.value;
+      notifier.dispose();
+      // Seeded strips are not retired: their frames are borrowed from the
+      // (retired) source strip and carry a pending rebase that is lost
+      // here — restoring them later would misalign timestamps. The
+      // unreferenced check keeps the borrowed files alive through the
+      // source's retired entry.
+      if (frames.isEmpty || videoPath == null || wasSeeded) {
+        _deleteUnreferencedFiles(frames);
+        continue;
       }
+      _retire(
+        id,
+        _RetiredStrip(
+          videoPath: videoPath,
+          frames: frames,
+          complete: wasComplete,
+        ),
+      );
     }
 
     // Ensure notifiers exist and start (or restart) loading.
     for (final clip in clips) {
-      _notifiers.putIfAbsent(clip.id, () => ValueNotifier(const []));
+      final notifier = _notifiers.putIfAbsent(
+        clip.id,
+        () => ValueNotifier(const []),
+      );
       final newPath = clip.video.file?.path;
-      final currentPath = _videoPaths[clip.id];
       final hasSubscription = _subscriptions.containsKey(clip.id);
       final isSeeded = _seeded.contains(clip.id);
+
+      // Instant restore for a returning clip id (undo/redo): reuse the
+      // retired strip instead of flashing posters and re-extracting.
+      if (!hasSubscription && !isSeeded && notifier.value.isEmpty) {
+        final retired = _retired.remove(clip.id);
+        if (retired != null) {
+          if (newPath != null && newPath == retired.videoPath) {
+            notifier.value = retired.frames;
+            _videoPaths[clip.id] = newPath;
+            if (retired.complete) {
+              _complete.add(clip.id);
+              continue;
+            }
+            // Partial strip (removed mid-extraction): fall through so a
+            // fresh subscription fills the gaps — the restored frames
+            // stay visible as gap-fillers via the batch merge.
+          } else {
+            // Same id but a different source file — the frames would show
+            // stale content, so drop them (borrowed files stay protected).
+            _deleteUnreferencedFiles(retired.frames);
+          }
+        }
+      }
+
+      final currentPath = _videoPaths[clip.id];
 
       if (!hasSubscription) {
         if (isSeeded) {
@@ -109,10 +163,15 @@ class ClipThumbnailManager {
           if (newPath == null || newPath == currentPath) continue;
           // The rendered (trimmed) file path arrived — start the real
           // subscription. The seeded frames stay visible (rebased into
-          // the rendered file's timebase where needed) until the first
-          // fresh batch replaces them; their files are deleted then.
+          // the rendered file's timebase where needed) until fresh
+          // frames cover their spots; their files are deleted then.
           _seeded.remove(clip.id);
           _rebaseThumbnails(clip.id);
+        } else if (_complete.contains(clip.id)) {
+          // Restored from the retired cache at full density — only a
+          // source-file change warrants re-extraction.
+          if (newPath == null || newPath == currentPath) continue;
+          _complete.remove(clip.id);
         }
         _loadThumbnails(
           clip,
@@ -124,7 +183,9 @@ class ClipThumbnailManager {
         // re-rendered to a trimmed file). Restart against the new file
         // but keep the current frames on screen — clearing them here
         // would flash black until the first fresh batch arrives. The old
-        // files are deleted once the new subscription replaces them.
+        // frames are merged out progressively as fresh batches cover
+        // their spots (see [_mergeCarriedFrames]); their files are
+        // deleted as they drop out.
         //
         // Seeded split halves never reach this branch: they carry no
         // subscription until their rendered path arrives via the
@@ -157,7 +218,8 @@ class ClipThumbnailManager {
   /// — that would overwrite these correct frames with the wrong
   /// range. The real subscription starts once the rendered file
   /// path arrives via the path-change branch in [sync]; the seeded
-  /// frames stay visible until its first batch lands.
+  /// frames stay visible as gap-fillers until fresh frames cover
+  /// their spots (see [_mergeCarriedFrames]).
   ///
   /// [rebaseOnPathChange] is subtracted from every seeded timestamp
   /// when the rendered file path arrives. Use it when the rendered
@@ -227,6 +289,7 @@ class ClipThumbnailManager {
     if (videoPath == null) return;
 
     _videoPaths[clip.id] = videoPath;
+    _complete.remove(clip.id);
 
     final outputSize = Size(
       TimelineConstants.thumbnailWidth * devicePixelRatio,
@@ -240,6 +303,16 @@ class ClipThumbnailManager {
                 TimelineConstants.thumbnailWidth)
             .ceil();
 
+    // A carried frame (seeded split frame, pre-restart frame) is kept as a
+    // gap-filler until a fresh frame lands within half the generator's final
+    // frame spacing — at full density every spot is covered, so all carried
+    // frames are pruned by then (the onDone sweep catches any residue).
+    final keepDistance = Duration(
+      milliseconds: (1000 / thumbsPerSecond / 2).round(),
+    );
+    // Latest accumulated fresh batch, for the onDone carried-frame sweep.
+    var latestFresh = const <StripThumbnail>[];
+
     final subscription =
         _generateStripThumbnails(
           videoPath: videoPath,
@@ -248,29 +321,108 @@ class ClipThumbnailManager {
           outputSize: outputSize,
           thumbsPerSecond: thumbsPerSecond,
           priorityTimestamps: priorityTimestamps,
-        ).listen((thumbnails) {
-          final notifier = _notifiers[clip.id];
-          if (notifier == null) return;
-          final replaced = notifier.value;
-          notifier.value = thumbnails;
-          if (replaced.isEmpty) return;
-          // Frames carried over across a restart (seeded split frames,
-          // pre-render frames) are superseded now — delete their files
-          // unless another clip still shows them. Each batch is a
-          // superset of the previous (the generator accumulates), so in
-          // steady state every replaced path is still in [thumbnails];
-          // filtering to the genuinely dropped paths first skips the
-          // cross-notifier scan on every normal accumulation batch.
-          final currentPaths = {for (final thumb in thumbnails) thumb.path};
-          _deleteUnreferencedFiles([
-            for (final thumb in replaced)
-              if (!currentPaths.contains(thumb.path)) thumb,
-          ]);
-        });
+        ).listen(
+          (thumbnails) {
+            latestFresh = thumbnails;
+            final notifier = _notifiers[clip.id];
+            if (notifier == null) return;
+            final replaced = notifier.value;
+            // Merge instead of replacing wholesale: early batches are sparse
+            // (a handful of frames), while the carried frames are dense.
+            // Dropping the carried frames here would collapse the strip to a
+            // few frames + poster fallbacks and visibly reshuffle it while
+            // batches stream in (worst after a split, where the carried
+            // frames already show the correct content).
+            final merged = _mergeCarriedFrames(
+              fresh: thumbnails,
+              previous: replaced,
+              clipDuration: clip.duration,
+              keepDistance: keepDistance,
+            );
+            notifier.value = merged;
+            if (replaced.isEmpty) return;
+            // Delete files of frames that dropped out of the merged strip,
+            // unless another clip still shows them.
+            final currentPaths = {for (final thumb in merged) thumb.path};
+            _deleteUnreferencedFiles([
+              for (final thumb in replaced)
+                if (!currentPaths.contains(thumb.path)) thumb,
+            ]);
+          },
+          onDone: () {
+            final notifier = _notifiers[clip.id];
+            if (notifier == null || latestFresh.isEmpty) return;
+            _complete.add(clip.id);
+            // Long clips cap the generator's frame count, so the final
+            // spacing can exceed [keepDistance] and leave carried frames
+            // behind — sweep them now that the fresh set is complete.
+            final freshPaths = {for (final thumb in latestFresh) thumb.path};
+            final dropped = [
+              for (final thumb in notifier.value)
+                if (!freshPaths.contains(thumb.path)) thumb,
+            ];
+            if (dropped.isEmpty) return;
+            notifier.value = latestFresh;
+            _deleteUnreferencedFiles(dropped);
+          },
+        );
     // If the owner paused while this clip was (re)synced, keep the new
     // subscription paused too so it doesn't start extracting off-screen.
     if (_paused) subscription.pause();
     _subscriptions[clip.id] = subscription;
+  }
+
+  /// Merges carried-over frames into a fresh accumulated batch.
+  ///
+  /// Fresh frames win; a carried frame from [previous] survives only while
+  /// its timestamp is inside the clip and no fresh frame sits within
+  /// [keepDistance] of it. As batches accumulate, fresh frames blanket the
+  /// timeline and the carried set shrinks to empty on its own.
+  static List<StripThumbnail> _mergeCarriedFrames({
+    required List<StripThumbnail> fresh,
+    required List<StripThumbnail> previous,
+    required Duration clipDuration,
+    required Duration keepDistance,
+  }) {
+    if (previous.isEmpty) return fresh;
+    if (fresh.isEmpty) return previous;
+    final freshPaths = {for (final thumb in fresh) thumb.path};
+    final carried = <StripThumbnail>[
+      for (final thumb in previous)
+        if (!freshPaths.contains(thumb.path) &&
+            thumb.timestamp >= Duration.zero &&
+            thumb.timestamp <= clipDuration &&
+            !_hasFrameNear(fresh, thumb.timestamp, keepDistance))
+          thumb,
+    ];
+    if (carried.isEmpty) return fresh;
+    final merged = [...fresh, ...carried]
+      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    return List.unmodifiable(merged);
+  }
+
+  /// Whether [frames] (sorted by timestamp) contains a frame within
+  /// [distance] of [timestamp].
+  static bool _hasFrameNear(
+    List<StripThumbnail> frames,
+    Duration timestamp,
+    Duration distance,
+  ) {
+    var lo = 0;
+    var hi = frames.length;
+    while (lo < hi) {
+      final mid = (lo + hi) ~/ 2;
+      if (frames[mid].timestamp < timestamp) {
+        lo = mid + 1;
+      } else {
+        hi = mid;
+      }
+    }
+    if (lo < frames.length &&
+        (frames[lo].timestamp - timestamp).abs() <= distance) {
+      return true;
+    }
+    return lo > 0 && (timestamp - frames[lo - 1].timestamp).abs() <= distance;
   }
 
   /// Pauses all in-flight thumbnail subscriptions — e.g. while the editor is
@@ -292,15 +444,31 @@ class ClipThumbnailManager {
     }
   }
 
+  /// Parks a removed clip's strip in the retired cache, evicting the
+  /// oldest entries beyond [_maxRetiredStrips]. Evicted files are only
+  /// deleted when nothing else references them.
+  void _retire(String clipId, _RetiredStrip strip) {
+    _retired
+      ..remove(clipId)
+      ..[clipId] = strip;
+    while (_retired.length > _maxRetiredStrips) {
+      final evicted = _retired.remove(_retired.keys.first);
+      if (evicted != null) _deleteUnreferencedFiles(evicted.frames);
+    }
+  }
+
   /// Deletes the files of [thumbnails] that no current notifier value
-  /// references anymore. Seeded clips borrow the source clip's files,
-  /// so a plain delete would pull decoded frames out from under a
-  /// live tile.
+  /// and no retired strip references anymore. Seeded clips borrow the
+  /// source clip's files, so a plain delete would pull decoded frames
+  /// out from under a live tile; retired strips keep borrowing them
+  /// for undo/redo restores.
   void _deleteUnreferencedFiles(List<StripThumbnail> thumbnails) {
     if (thumbnails.isEmpty) return;
     final live = <String>{
       for (final notifier in _notifiers.values)
         for (final thumbnail in notifier.value) thumbnail.path,
+      for (final strip in _retired.values)
+        for (final thumbnail in strip.frames) thumbnail.path,
     };
     for (final thumb in thumbnails) {
       if (live.contains(thumb.path)) continue;
@@ -327,12 +495,36 @@ class ClipThumbnailManager {
       _deleteFiles(notifier.value);
       notifier.dispose();
     }
+    for (final strip in _retired.values) {
+      _deleteFiles(strip.frames);
+    }
     _subscriptions.clear();
     _notifiers.clear();
     _videoPaths.clear();
     _seeded.clear();
     _pendingRebase.clear();
+    _complete.clear();
+    _retired.clear();
   }
+}
+
+/// A removed clip's strip, parked for an instant restore when the same
+/// clip id returns with the same source file (undo/redo).
+class _RetiredStrip {
+  const _RetiredStrip({
+    required this.videoPath,
+    required this.frames,
+    required this.complete,
+  });
+
+  /// Source video path the frames were extracted from (or borrowed for).
+  final String videoPath;
+
+  final List<StripThumbnail> frames;
+
+  /// Whether the strip's subscription had delivered its final batch, i.e.
+  /// the frames are at full density and need no re-extraction on restore.
+  final bool complete;
 }
 
 /// Inclusive-exclusive duration range `[start, end)`.

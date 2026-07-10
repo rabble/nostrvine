@@ -122,6 +122,125 @@ void main() {
       });
     });
 
+    group('raster stability', () {
+      // Regression for the visible leftward frame shift when a split's end
+      // half finishes rendering: the render rebases the clip from source
+      // time (trimStart = split point) to file time (trimStart = 0,
+      // sourceStartOffset = split point). The thumbnail slot raster is
+      // anchored to the original recording via sourceStartOffset, so every
+      // frame must keep its exact on-screen position across that swap.
+      testWidgets(
+        'keeps each frame at the same x-position when the split end half '
+        'swaps from source-timed preview to rebased rendered geometry',
+        (tester) async {
+          final manager = ClipThumbnailManager(
+            stripThumbnailStreamFactory:
+                ({
+                  required String videoPath,
+                  required String clipId,
+                  required Duration duration,
+                  required Size outputSize,
+                  required int thumbsPerSecond,
+                  List<Duration>? priorityTimestamps,
+                }) => const Stream.empty(),
+          );
+
+          // Split of a 3 s source at 1.3 s; visible width 1.7 s × 100 px/s.
+          const pps = 100.0;
+          const totalWidth = 170.0;
+
+          // Preview phase: still source-timed against the source video.
+          final previewEnd = _createTestClip(id: 'end', seconds: 3).copyWith(
+            trimStart: const Duration(milliseconds: 1300),
+          );
+          await tester.pumpWidget(
+            buildWidget(
+              clips: [previewEnd],
+              totalWidth: totalWidth,
+              pixelsPerSecond: pps,
+              thumbnailManager: manager,
+              scrollable: false,
+            ),
+          );
+          manager['end'].value = const [
+            StripThumbnail(
+              path: '/t/f1.jpg',
+              timestamp: Duration(milliseconds: 1500),
+            ),
+            StripThumbnail(
+              path: '/t/f2.jpg',
+              timestamp: Duration(milliseconds: 2000),
+            ),
+            StripThumbnail(
+              path: '/t/f3.jpg',
+              timestamp: Duration(milliseconds: 2500),
+            ),
+          ];
+          await tester.pump();
+
+          // Strip thumbnails set cacheHeight, so the FileImage is wrapped
+          // in a ResizeImage — unwrap before comparing the file path.
+          bool providerHasPath(ImageProvider provider, String path) {
+            if (provider is ResizeImage) {
+              return providerHasPath(provider.imageProvider, path);
+            }
+            return provider is FileImage && provider.file.path == path;
+          }
+
+          Finder frame(String path) => find.byWidgetPredicate(
+            (w) => w is Image && providerHasPath(w.image, path),
+          );
+
+          final previewX = {
+            for (final path in ['/t/f1.jpg', '/t/f2.jpg', '/t/f3.jpg'])
+              path: tester.getTopLeft(frame(path)).dx,
+          };
+
+          // Rendered phase: the file starts at the split point, timestamps
+          // are rebased by -1.3 s and sourceStartOffset records the shift.
+          final renderedEnd = _createTestClip(id: 'end', seconds: 3).copyWith(
+            duration: const Duration(milliseconds: 1700),
+            sourceStartOffset: const Duration(milliseconds: 1300),
+          );
+          await tester.pumpWidget(
+            buildWidget(
+              clips: [renderedEnd],
+              totalWidth: totalWidth,
+              pixelsPerSecond: pps,
+              thumbnailManager: manager,
+              scrollable: false,
+            ),
+          );
+          manager['end'].value = const [
+            StripThumbnail(
+              path: '/t/f1.jpg',
+              timestamp: Duration(milliseconds: 200),
+            ),
+            StripThumbnail(
+              path: '/t/f2.jpg',
+              timestamp: Duration(milliseconds: 700),
+            ),
+            StripThumbnail(
+              path: '/t/f3.jpg',
+              timestamp: Duration(milliseconds: 1200),
+            ),
+          ];
+          await tester.pump();
+
+          for (final entry in previewX.entries) {
+            expect(
+              tester.getTopLeft(frame(entry.key)).dx,
+              moreOrLessEquals(entry.value),
+              reason:
+                  '${entry.key} must stay at its pre-render x-position — '
+                  'a shift means the slot raster re-anchored on the '
+                  'rendered file instead of the original recording',
+            );
+          }
+        },
+      );
+    });
+
     group('layout', () {
       testWidgets('uses correct strip height', (tester) async {
         await tester.pumpWidget(buildWidget());

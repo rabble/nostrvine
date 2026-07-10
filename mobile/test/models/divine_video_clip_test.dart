@@ -40,4 +40,41 @@ void main() {
       );
     });
   });
+
+  group('DivineVideoClip.sourceStartOffset', () {
+    test('defaults to zero and survives copyWith', () {
+      final original = clip('/videos/clip.mp4');
+      expect(original.sourceStartOffset, equals(Duration.zero));
+
+      final shifted = original.copyWith(
+        sourceStartOffset: const Duration(seconds: 3),
+      );
+      expect(shifted.sourceStartOffset, equals(const Duration(seconds: 3)));
+
+      // Unrelated copyWith calls (e.g. the render swapping the video file)
+      // must not reset the offset — losing it re-anchors the timeline
+      // thumbnail raster and visibly shifts the strip.
+      final trimmed = shifted.copyWith(trimStart: const Duration(seconds: 1));
+      expect(trimmed.sourceStartOffset, equals(const Duration(seconds: 3)));
+    });
+
+    test('round-trips through JSON and defaults to zero when absent', () {
+      final shifted = clip('/videos/clip.mp4').copyWith(
+        sourceStartOffset: const Duration(milliseconds: 3210),
+      );
+
+      final restored = DivineVideoClip.fromJson(shifted.toJson(), '/videos');
+      expect(
+        restored.sourceStartOffset,
+        equals(const Duration(milliseconds: 3210)),
+      );
+
+      // Old drafts/history entries have no key — must default to zero.
+      final legacy = DivineVideoClip.fromJson(
+        clip('/videos/clip.mp4').toJson(),
+        '/videos',
+      );
+      expect(legacy.sourceStartOffset, equals(Duration.zero));
+    });
+  });
 }

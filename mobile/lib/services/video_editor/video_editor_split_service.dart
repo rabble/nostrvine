@@ -104,9 +104,14 @@ class VideoEditorSplitService {
       trimStart: absoluteSplitPos,
       processingCompleter: Completer<bool>(),
     );
+    // The rendered end file starts at the split point, so its zero-based
+    // timeline sits absoluteSplitPos into the source recording. Recording
+    // that shift keeps the timeline thumbnail raster anchored to the
+    // original recording (no visible frame shift when the render lands).
     final renderedEndClip = previewEndClip.copyWith(
       duration: sourceClip.duration - absoluteSplitPos,
       trimStart: Duration.zero,
+      sourceStartOffset: sourceClip.sourceStartOffset + absoluteSplitPos,
     );
 
     final documentsPath = await getDocumentsPath();

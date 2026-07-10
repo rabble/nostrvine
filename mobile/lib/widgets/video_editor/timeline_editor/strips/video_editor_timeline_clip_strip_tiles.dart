@@ -15,6 +15,24 @@ extension _DivineVideoClipTimelineScale on DivineVideoClip {
   }
 }
 
+/// How far (in px) the clip's thumbnail slot grid is shifted left so its
+/// grid lines stay glued to the *original recording's* timeline.
+///
+/// A split's rendered end half starts [DivineVideoClip.sourceStartOffset]
+/// into the recording; without this phase the grid would re-anchor at the
+/// new file's zero and every frame in the tile would visibly jump by up to
+/// one slot when the render lands. The same phase shifts the slot windows
+/// (in [_ClipContainer]) and the tile's content translation (in
+/// [_ClipTile]), which together keep each frame's on-screen position
+/// exactly invariant across the preview → rendered swap.
+double _rasterPhasePx(DivineVideoClip clip, double contentWidth) {
+  final durationMs = clip.duration.inMilliseconds;
+  if (durationMs <= 0 || contentWidth <= 0) return 0;
+  final offsetPx =
+      clip.sourceStartOffset.inMilliseconds * contentWidth / durationMs;
+  return offsetPx % TimelineConstants.thumbnailWidth;
+}
+
 class _TrimmableClipTile extends StatefulWidget {
   const _TrimmableClipTile({
     required this.clip,
@@ -346,6 +364,9 @@ class _ClipTile extends StatelessWidget {
           // thumbnail count — never changes during the reorder animation so
           // thumbnails don't swap content while the tile shrinks/grows.
           final displayWidth = math.max(fullWidth, constraints.maxWidth);
+          // Shift content by the raster phase in lockstep with the slot
+          // windows so frames keep their recording-anchored positions.
+          final phasePx = _rasterPhasePx(clip, fullWidth);
           return SizedBox(
             width: displayWidth,
             height: TimelineConstants.thumbnailStripHeight,
@@ -354,7 +375,7 @@ class _ClipTile extends StatelessWidget {
                 maxWidth: double.infinity,
                 alignment: Alignment.centerLeft,
                 child: Transform.translate(
-                  offset: Offset(-trimStartOffset, 0),
+                  offset: Offset(-trimStartOffset - phasePx, 0),
                   child: ValueListenableBuilder<List<StripThumbnail>>(
                     valueListenable: thumbnailNotifier,
                     builder: (context, stripThumbnails, _) {
@@ -466,11 +487,27 @@ class _ClipContainer extends StatelessWidget {
   final List<StripThumbnail> stripThumbnails;
 
   int get _thumbnailCount {
-    final natural = (contentWidth / TimelineConstants.thumbnailWidth).ceil();
+    // The raster phase shifts every slot left, so one extra slot may be
+    // needed to keep the tile's right edge covered.
+    final natural =
+        ((contentWidth + _rasterPhasePx(clip, contentWidth)) /
+                TimelineConstants.thumbnailWidth)
+            .ceil();
     // Keep visual slot count independent from loading progress so the strip
     // does not collapse to a single slot while thumbnails are still streaming in.
     return natural.clamp(1, 1000);
   }
+
+  /// Time (in ms) one [TimelineConstants.thumbnailWidth]-wide slot covers.
+  ///
+  /// The window pitch matches the slot box pitch exactly, so a frame's
+  /// on-screen position is linear in its timestamp — the `duration/count`
+  /// pitch used previously was slightly narrower than a box (ceil rounding),
+  /// drifting frames rightward toward the tile's end.
+  double get _slotSpanMs =>
+      TimelineConstants.thumbnailWidth *
+      clip.duration.inMilliseconds /
+      contentWidth;
 
   /// Maps a visual slot index to a [StripThumbnail] path that falls
   /// within the slot's time range.
@@ -480,15 +517,23 @@ class _ClipContainer extends StatelessWidget {
   /// This guarantees a slot never changes its image once a matching
   /// thumbnail has been loaded — new thumbnails for *other* slots
   /// don't cause a reassignment.
+  ///
+  /// Windows are anchored to the original recording's timeline (shifted by
+  /// the raster phase, see [_rasterPhasePx]), so a split render landing —
+  /// which rebases the clip's file timeline — never re-buckets frames.
   String? _thumbnailForSlot(int slotIndex, int slotCount) {
     if (stripThumbnails.isEmpty) return null;
 
     final durationMs = clip.duration.inMilliseconds;
     if (durationMs <= 0) return stripThumbnails.first.path;
 
-    // Fixed time window for this slot.
-    final slotStartMs = durationMs * slotIndex / slotCount;
-    final slotEndMs = durationMs * (slotIndex + 1) / slotCount;
+    final spanMs = _slotSpanMs;
+    final phaseMs =
+        _rasterPhasePx(clip, contentWidth) * durationMs / contentWidth;
+
+    // Fixed, recording-anchored time window for this slot.
+    final slotStartMs = slotIndex * spanMs - phaseMs;
+    final slotEndMs = (slotIndex + 1) * spanMs - phaseMs;
     final slotCenterMs = (slotStartMs + slotEndMs) / 2;
 
     // Binary search for the first thumbnail at or after slotStartMs.
