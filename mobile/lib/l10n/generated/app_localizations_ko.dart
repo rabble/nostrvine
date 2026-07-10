@@ -9437,4 +9437,12 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get settingsStorageError => '문제가 발생했습니다';
+
+  @override
+  String get settingsStorageMaxSizeLabel => '최대 캐시 크기';
+
+  @override
+  String settingsStorageApproxVideos(int count) {
+    return '≈ 동영상 $count개';
+  }
 }

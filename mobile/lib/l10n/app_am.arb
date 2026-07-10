@@ -4630,5 +4630,7 @@
   "settingsStorageBrokenClipsFound": "የተገኙ የተበላሹ ክሊፖች፦ {count}",
   "settingsStorageRemoveBrokenButton": "የተበላሹ ክሊፖችን አስወግድ",
   "settingsStorageBrokenClipsRemoved": "የተበላሹ ክሊፖች ተወግደዋል",
-  "settingsStorageError": "የሆነ ችግር ተፈጥሯል"
+  "settingsStorageError": "የሆነ ችግር ተፈጥሯል",
+  "settingsStorageMaxSizeLabel": "ከፍተኛ የመሸጎጫ መጠን",
+  "settingsStorageApproxVideos": "≈ {count} ቪዲዮዎች"
 }

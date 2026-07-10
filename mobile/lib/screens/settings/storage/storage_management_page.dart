@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/storage_providers.dart';
 import 'package:openvine/screens/settings/storage/storage_cubit.dart';
+import 'package:openvine/services/storage_management_service.dart';
 
 /// Settings screen for clearing caches and auditing the clip library.
 class StorageManagementPage extends ConsumerWidget {
@@ -153,6 +154,7 @@ class _CacheSection extends StatelessWidget {
                 : l10n.settingsStorageCacheInUse(_formatBytes(bytes)),
             style: VineTheme.titleMediumFont(),
           ),
+          const _CacheLimitControl(),
           DivineButton(
             label: l10n.settingsStorageClearButton,
             type: DivineButtonType.secondary,
@@ -208,6 +210,55 @@ class _CacheSection extends StatelessWidget {
       ],
     );
     if (confirmed ?? false) await cubit.clearCaches();
+  }
+}
+
+class _CacheLimitControl extends StatelessWidget {
+  const _CacheLimitControl();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final cubit = context.read<StorageCubit>();
+    final limit = context.select((StorageCubit c) => c.state.cacheLimitBytes);
+    final clamped = limit
+        .clamp(kCacheLimitMinBytes, kCacheLimitMaxBytes)
+        .toDouble();
+    final approxVideos = (limit ~/ kApproxVideoBytes).clamp(0, 1000);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              l10n.settingsStorageMaxSizeLabel,
+              style: VineTheme.bodyMediumFont(),
+            ),
+            Text(
+              _formatBytes(limit),
+              style: VineTheme.bodyMediumFont(color: VineTheme.vineGreen),
+            ),
+          ],
+        ),
+        Slider(
+          min: kCacheLimitMinBytes.toDouble(),
+          max: kCacheLimitMaxBytes.toDouble(),
+          divisions:
+              (kCacheLimitMaxBytes - kCacheLimitMinBytes) ~/
+              (512 * 1024 * 1024),
+          value: clamped,
+          activeColor: VineTheme.vineGreen,
+          onChanged: (value) => cubit.previewCacheLimit(value.round()),
+          onChangeEnd: (value) => cubit.commitCacheLimit(value.round()),
+        ),
+        Text(
+          l10n.settingsStorageApproxVideos(approxVideos),
+          style: VineTheme.bodySmallFont(color: VineTheme.lightText),
+        ),
+      ],
+    );
   }
 }
 

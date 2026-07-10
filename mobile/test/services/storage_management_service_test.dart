@@ -8,6 +8,7 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/storage_management_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart' as editor;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockCache extends Mock implements MediaCacheManager {}
 
@@ -20,20 +21,24 @@ void main() {
     late _MockClipLibrary clipLibrary;
     late Directory temp;
     late Directory docs;
+    late SharedPreferences prefs;
     late StorageManagementService service;
 
-    setUp(() {
+    setUp(() async {
       videoCache = _MockCache();
       imageCache = _MockCache();
       clipLibrary = _MockClipLibrary();
       temp = Directory.systemTemp.createTempSync('storage_temp_');
       docs = Directory.systemTemp.createTempSync('storage_docs_');
+      SharedPreferences.setMockInitialValues({});
+      prefs = await SharedPreferences.getInstance();
       when(() => videoCache.clearCache()).thenAnswer((_) async {});
       when(() => imageCache.clearCache()).thenAnswer((_) async {});
       service = StorageManagementService(
         videoCache: videoCache,
         imageCache: imageCache,
         clipLibrary: clipLibrary,
+        prefs: prefs,
         temporaryDirectoryProvider: () async => temp,
         documentsDirectoryProvider: () async => docs,
       );
@@ -129,6 +134,48 @@ void main() {
 
         verify(() => clipLibrary.hardDelete('a')).called(1);
         verify(() => clipLibrary.hardDelete('b')).called(1);
+      });
+    });
+
+    group('cache limit', () {
+      const oneGb = 1024 * 1024 * 1024;
+
+      test('cacheLimitBytes returns the default when unset', () {
+        expect(service.cacheLimitBytes(), kCacheLimitDefaultBytes);
+      });
+
+      test('cacheLimitBytes returns the stored value', () async {
+        await prefs.setInt(kCacheLimitPrefKey, 3 * oneGb);
+        expect(service.cacheLimitBytes(), 3 * oneGb);
+      });
+
+      test('setCacheLimit persists, applies and force-trims', () async {
+        when(
+          () => videoCache.enforceCacheLimits(force: any(named: 'force')),
+        ).thenAnswer((_) async {});
+
+        await service.setCacheLimit(oneGb);
+
+        expect(prefs.getInt(kCacheLimitPrefKey), oneGb);
+        verify(() => videoCache.maxCacheSizeBytes = oneGb).called(1);
+        verify(() => videoCache.enforceCacheLimits(force: true)).called(1);
+      });
+
+      test('setCacheLimit clamps below the minimum', () async {
+        when(
+          () => videoCache.enforceCacheLimits(force: any(named: 'force')),
+        ).thenAnswer((_) async {});
+
+        await service.setCacheLimit(1);
+
+        expect(prefs.getInt(kCacheLimitPrefKey), kCacheLimitMinBytes);
+      });
+
+      test('applyStoredLimit applies the stored budget', () {
+        service.applyStoredLimit();
+        verify(
+          () => videoCache.maxCacheSizeBytes = kCacheLimitDefaultBytes,
+        ).called(1);
       });
     });
   });

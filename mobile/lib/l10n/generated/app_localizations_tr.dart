@@ -9760,4 +9760,12 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get settingsStorageError => 'Bir şeyler ters gitti';
+
+  @override
+  String get settingsStorageMaxSizeLabel => 'Maksimum önbellek boyutu';
+
+  @override
+  String settingsStorageApproxVideos(int count) {
+    return '≈ $count video';
+  }
 }

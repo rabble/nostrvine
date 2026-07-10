@@ -4505,5 +4505,7 @@
   "settingsStorageBrokenClipsFound": "Clips défectueux trouvés : {count}",
   "settingsStorageRemoveBrokenButton": "Supprimer les clips défectueux",
   "settingsStorageBrokenClipsRemoved": "Clips défectueux supprimés",
-  "settingsStorageError": "Une erreur s'est produite"
+  "settingsStorageError": "Une erreur s'est produite",
+  "settingsStorageMaxSizeLabel": "Taille maximale du cache",
+  "settingsStorageApproxVideos": "≈ {count} vidéos"
 }

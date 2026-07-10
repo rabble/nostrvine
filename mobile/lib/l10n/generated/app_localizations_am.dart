@@ -9587,4 +9587,12 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get settingsStorageError => 'የሆነ ችግር ተፈጥሯል';
+
+  @override
+  String get settingsStorageMaxSizeLabel => 'ከፍተኛ የመሸጎጫ መጠን';
+
+  @override
+  String settingsStorageApproxVideos(int count) {
+    return '≈ $count ቪዲዮዎች';
+  }
 }

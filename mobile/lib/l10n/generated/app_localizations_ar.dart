@@ -9721,4 +9721,13 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get settingsStorageError => 'حدث خطأ ما';
+
+  @override
+  String get settingsStorageMaxSizeLabel =>
+      'الحد الأقصى لحجم ذاكرة التخزين المؤقت';
+
+  @override
+  String settingsStorageApproxVideos(int count) {
+    return '≈ $count مقطع فيديو';
+  }
 }

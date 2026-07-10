@@ -4505,5 +4505,7 @@
   "settingsStorageBrokenClipsFound": "Klip rusak ditemukan: {count}",
   "settingsStorageRemoveBrokenButton": "Hapus klip rusak",
   "settingsStorageBrokenClipsRemoved": "Klip rusak dihapus",
-  "settingsStorageError": "Terjadi kesalahan"
+  "settingsStorageError": "Terjadi kesalahan",
+  "settingsStorageMaxSizeLabel": "Ukuran cache maksimum",
+  "settingsStorageApproxVideos": "≈ {count} video"
 }

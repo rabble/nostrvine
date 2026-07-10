@@ -10,12 +10,29 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Filename prefixes of temp-dir render leftovers that are safe to delete —
 /// each is regenerated on the next save/upload (see
 /// `WatermarkDownloadService` and `UploadManager`).
 const List<String> _tempRenderPrefixes = ['watermarked_', 'merged_'];
+
+/// Smallest selectable video-cache byte budget (0.5 GB).
+const int kCacheLimitMinBytes = 512 * 1024 * 1024;
+
+/// Largest selectable video-cache byte budget (10 GB).
+const int kCacheLimitMaxBytes = 10 * 1024 * 1024 * 1024;
+
+/// Default video-cache byte budget when the user hasn't chosen one (2 GB).
+const int kCacheLimitDefaultBytes = 2 * 1024 * 1024 * 1024;
+
+/// SharedPreferences key holding the user-chosen video-cache byte budget.
+const String kCacheLimitPrefKey = 'video_cache_max_bytes';
+
+/// Rough average size of one cached short video, used to translate a byte
+/// budget into an approximate video count in the UI.
+const int kApproxVideoBytes = 4 * 1024 * 1024;
 
 /// Clears re-downloadable / regenerable media caches and audits the clip
 /// library for broken entries.
@@ -36,11 +53,13 @@ class StorageManagementService {
     required MediaCacheManager videoCache,
     required MediaCacheManager imageCache,
     required ClipLibraryService clipLibrary,
+    required SharedPreferences prefs,
     @visibleForTesting Future<Directory> Function()? temporaryDirectoryProvider,
     @visibleForTesting Future<Directory> Function()? documentsDirectoryProvider,
   }) : _videoCache = videoCache,
        _imageCache = imageCache,
        _clipLibrary = clipLibrary,
+       _prefs = prefs,
        _temporaryDirectoryProvider =
            temporaryDirectoryProvider ?? getTemporaryDirectory,
        _documentsDirectoryProvider =
@@ -49,6 +68,7 @@ class StorageManagementService {
   final MediaCacheManager _videoCache;
   final MediaCacheManager _imageCache;
   final ClipLibraryService _clipLibrary;
+  final SharedPreferences _prefs;
   final Future<Directory> Function() _temporaryDirectoryProvider;
   final Future<Directory> Function() _documentsDirectoryProvider;
 
@@ -91,6 +111,26 @@ class StorageManagementService {
     for (final clip in clips) {
       await _clipLibrary.hardDelete(clip.id);
     }
+  }
+
+  /// The user-configured video-cache byte budget, or
+  /// [kCacheLimitDefaultBytes] when none is set.
+  int cacheLimitBytes() =>
+      _prefs.getInt(kCacheLimitPrefKey) ?? kCacheLimitDefaultBytes;
+
+  /// Applies the stored budget to the video cache without trimming. Call once
+  /// at startup so the user's choice takes effect before any sweep runs.
+  void applyStoredLimit() => _videoCache.maxCacheSizeBytes = cacheLimitBytes();
+
+  /// Persists [bytes] (clamped to
+  /// `[kCacheLimitMinBytes, kCacheLimitMaxBytes]`) as the video-cache budget,
+  /// applies it, and trims immediately so a lowered limit shrinks the cache
+  /// right away.
+  Future<void> setCacheLimit(int bytes) async {
+    final clamped = bytes.clamp(kCacheLimitMinBytes, kCacheLimitMaxBytes);
+    await _prefs.setInt(kCacheLimitPrefKey, clamped);
+    _videoCache.maxCacheSizeBytes = clamped;
+    await _videoCache.enforceCacheLimits(force: true);
   }
 
   Future<int> _dirSize(Directory dir) async {

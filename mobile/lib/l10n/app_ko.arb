@@ -3829,5 +3829,7 @@
   "settingsStorageBrokenClipsFound": "발견된 손상된 클립: {count}",
   "settingsStorageRemoveBrokenButton": "손상된 클립 제거",
   "settingsStorageBrokenClipsRemoved": "손상된 클립을 제거했습니다",
-  "settingsStorageError": "문제가 발생했습니다"
+  "settingsStorageError": "문제가 발생했습니다",
+  "settingsStorageMaxSizeLabel": "최대 캐시 크기",
+  "settingsStorageApproxVideos": "≈ 동영상 {count}개"
 }

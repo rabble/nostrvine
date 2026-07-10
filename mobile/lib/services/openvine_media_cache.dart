@@ -5,7 +5,9 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:media_cache/media_cache.dart';
+import 'package:openvine/services/storage_management_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 part 'openvine_media_cache.g.dart';
 
@@ -44,14 +46,20 @@ MediaCacheManager mediaCache(Ref ref) => openVineMediaCache;
 
 /// Initialize video file cache on app startup.
 ///
-/// Loads the in-memory manifest for synchronous cache lookups, then kicks off
-/// a background pass that reclaims leaked cache files and trims the directory
-/// back under its byte budget (see [MediaCacheManager.enforceCacheLimits]).
-/// The trim runs unawaited so it never blocks startup.
+/// Loads the in-memory manifest for synchronous cache lookups, applies the
+/// user's configured byte budget (if any), then kicks off a background pass
+/// that reclaims leaked cache files and trims the directory back under that
+/// budget (see [MediaCacheManager.enforceCacheLimits]). The trim runs
+/// unawaited so it never blocks startup.
 /// Call this in main.dart after WidgetsFlutterBinding.ensureInitialized().
 /// Skipped on web where file-based caching is not available.
 Future<void> initializeMediaCache() async {
   if (kIsWeb) return;
   await openVineMediaCache.initialize();
+  final prefs = await SharedPreferences.getInstance();
+  final storedLimit = prefs.getInt(kCacheLimitPrefKey);
+  if (storedLimit != null) {
+    openVineMediaCache.maxCacheSizeBytes = storedLimit;
+  }
   unawaited(openVineMediaCache.enforceCacheLimits());
 }

@@ -33,7 +33,10 @@ void main() {
     group('loadCacheSize', () {
       blocTest<StorageCubit, StorageState>(
         'emits loading then ready with the size',
-        setUp: () => when(service.cacheSizeBytes).thenAnswer((_) async => 2048),
+        setUp: () {
+          when(service.cacheSizeBytes).thenAnswer((_) async => 2048);
+          when(service.cacheLimitBytes).thenReturn(kCacheLimitDefaultBytes);
+        },
         build: build,
         act: (cubit) => cubit.loadCacheSize(),
         expect: () => const [
@@ -125,6 +128,34 @@ void main() {
         build: build,
         act: (cubit) => cubit.removeBrokenClips(),
         expect: () => const <StorageState>[],
+      );
+    });
+
+    group('cache limit', () {
+      const oneGb = 1024 * 1024 * 1024;
+
+      blocTest<StorageCubit, StorageState>(
+        'previewCacheLimit updates the limit without persisting',
+        build: build,
+        act: (cubit) => cubit.previewCacheLimit(oneGb),
+        expect: () => const [StorageState(cacheLimitBytes: oneGb)],
+        verify: (_) => verifyNever(() => service.setCacheLimit(any())),
+      );
+
+      blocTest<StorageCubit, StorageState>(
+        'commitCacheLimit persists the limit and refreshes the size',
+        setUp: () {
+          when(() => service.setCacheLimit(any())).thenAnswer((_) async {});
+          when(service.cacheSizeBytes).thenAnswer((_) async => 512);
+          when(service.cacheLimitBytes).thenReturn(oneGb);
+        },
+        build: build,
+        act: (cubit) => cubit.commitCacheLimit(oneGb),
+        expect: () => const [
+          StorageState(cacheLimitBytes: oneGb),
+          StorageState(cacheLimitBytes: oneGb, cacheSizeBytes: 512),
+        ],
+        verify: (_) => verify(() => service.setCacheLimit(oneGb)).called(1),
       );
     });
   });

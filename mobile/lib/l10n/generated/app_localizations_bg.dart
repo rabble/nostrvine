@@ -9892,4 +9892,12 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get settingsStorageError => 'Нещо се обърка';
+
+  @override
+  String get settingsStorageMaxSizeLabel => 'Максимален размер на кеша';
+
+  @override
+  String settingsStorageApproxVideos(int count) {
+    return '≈ $count видеа';
+  }
 }

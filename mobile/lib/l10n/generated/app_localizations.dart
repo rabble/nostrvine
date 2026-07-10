@@ -16923,6 +16923,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Something went wrong'**
   String get settingsStorageError;
+
+  /// Label above the slider that sets the maximum video-cache size.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum cache size'**
+  String get settingsStorageMaxSizeLabel;
+
+  /// Approximate number of videos that fit in the chosen cache size.
+  ///
+  /// In en, this message translates to:
+  /// **'≈ {count} videos'**
+  String settingsStorageApproxVideos(int count);
 }
 
 class _AppLocalizationsDelegate

@@ -45,6 +45,7 @@ class StorageState extends Equatable {
   const StorageState({
     this.cacheStatus = StorageCacheStatus.initial,
     this.cacheSizeBytes = 0,
+    this.cacheLimitBytes = kCacheLimitDefaultBytes,
     this.libraryStatus = StorageLibraryStatus.idle,
     this.brokenClips = const [],
   });
@@ -54,6 +55,9 @@ class StorageState extends Equatable {
 
   /// Bytes currently held by the clearable caches.
   final int cacheSizeBytes;
+
+  /// The configured maximum video-cache size, in bytes.
+  final int cacheLimitBytes;
 
   /// Lifecycle of the clip-library audit section.
   final StorageLibraryStatus libraryStatus;
@@ -65,12 +69,14 @@ class StorageState extends Equatable {
   StorageState copyWith({
     StorageCacheStatus? cacheStatus,
     int? cacheSizeBytes,
+    int? cacheLimitBytes,
     StorageLibraryStatus? libraryStatus,
     List<DivineVideoClip>? brokenClips,
   }) {
     return StorageState(
       cacheStatus: cacheStatus ?? this.cacheStatus,
       cacheSizeBytes: cacheSizeBytes ?? this.cacheSizeBytes,
+      cacheLimitBytes: cacheLimitBytes ?? this.cacheLimitBytes,
       libraryStatus: libraryStatus ?? this.libraryStatus,
       brokenClips: brokenClips ?? this.brokenClips,
     );
@@ -80,6 +86,7 @@ class StorageState extends Equatable {
   List<Object?> get props => [
     cacheStatus,
     cacheSizeBytes,
+    cacheLimitBytes,
     libraryStatus,
     brokenClips,
   ];

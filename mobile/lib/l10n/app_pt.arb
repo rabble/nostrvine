@@ -4505,5 +4505,7 @@
   "settingsStorageBrokenClipsFound": "Clipes quebrados encontrados: {count}",
   "settingsStorageRemoveBrokenButton": "Remover clipes quebrados",
   "settingsStorageBrokenClipsRemoved": "Clipes quebrados removidos",
-  "settingsStorageError": "Algo deu errado"
+  "settingsStorageError": "Algo deu errado",
+  "settingsStorageMaxSizeLabel": "Tamanho máximo do cache",
+  "settingsStorageApproxVideos": "≈ {count} vídeos"
 }

@@ -9832,4 +9832,12 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get settingsStorageError => 'Er ging iets mis';
+
+  @override
+  String get settingsStorageMaxSizeLabel => 'Maximale cachegrootte';
+
+  @override
+  String settingsStorageApproxVideos(int count) {
+    return '≈ $count video\'s';
+  }
 }

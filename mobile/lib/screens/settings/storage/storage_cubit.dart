@@ -15,7 +15,7 @@ class StorageCubit extends Cubit<StorageState> {
 
   final StorageManagementService _service;
 
-  /// Loads the current clearable cache size.
+  /// Loads the current clearable cache size and configured limit.
   Future<void> loadCacheSize() async {
     emit(state.copyWith(cacheStatus: StorageCacheStatus.loading));
     try {
@@ -24,6 +24,31 @@ class StorageCubit extends Cubit<StorageState> {
         state.copyWith(
           cacheStatus: StorageCacheStatus.ready,
           cacheSizeBytes: bytes,
+          cacheLimitBytes: _service.cacheLimitBytes(),
+        ),
+      );
+    } catch (error, stackTrace) {
+      addError(error, stackTrace);
+      emit(state.copyWith(cacheStatus: StorageCacheStatus.failure));
+    }
+  }
+
+  /// Reflects a slider drag without persisting — keeps the label live while
+  /// the user is still choosing.
+  void previewCacheLimit(int bytes) =>
+      emit(state.copyWith(cacheLimitBytes: bytes));
+
+  /// Persists the chosen [bytes] limit, applies it, and refreshes the size
+  /// (the cache may have been trimmed).
+  Future<void> commitCacheLimit(int bytes) async {
+    emit(state.copyWith(cacheLimitBytes: bytes));
+    try {
+      await _service.setCacheLimit(bytes);
+      final size = await _service.cacheSizeBytes();
+      emit(
+        state.copyWith(
+          cacheSizeBytes: size,
+          cacheLimitBytes: _service.cacheLimitBytes(),
         ),
       );
     } catch (error, stackTrace) {

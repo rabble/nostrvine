@@ -4505,5 +4505,7 @@
   "settingsStorageBrokenClipsFound": "Bulunan bozuk klipler: {count}",
   "settingsStorageRemoveBrokenButton": "Bozuk klipleri kaldır",
   "settingsStorageBrokenClipsRemoved": "Bozuk klipler kaldırıldı",
-  "settingsStorageError": "Bir şeyler ters gitti"
+  "settingsStorageError": "Bir şeyler ters gitti",
+  "settingsStorageMaxSizeLabel": "Maksimum önbellek boyutu",
+  "settingsStorageApproxVideos": "≈ {count} video"
 }

@@ -9974,4 +9974,13 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get settingsStorageError => 'Coś poszło nie tak';
+
+  @override
+  String get settingsStorageMaxSizeLabel =>
+      'Maksymalny rozmiar pamięci podręcznej';
+
+  @override
+  String settingsStorageApproxVideos(int count) {
+    return '≈ $count filmów';
+  }
 }

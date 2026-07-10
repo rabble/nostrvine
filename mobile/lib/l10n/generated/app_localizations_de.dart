@@ -9901,4 +9901,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsStorageError => 'Etwas ist schiefgelaufen';
+
+  @override
+  String get settingsStorageMaxSizeLabel => 'Maximale Cache-Größe';
+
+  @override
+  String settingsStorageApproxVideos(int count) {
+    return '≈ $count Videos';
+  }
 }

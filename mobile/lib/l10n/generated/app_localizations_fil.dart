@@ -9896,4 +9896,12 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get settingsStorageError => 'May nangyaring mali';
+
+  @override
+  String get settingsStorageMaxSizeLabel => 'Pinakamataas na laki ng cache';
+
+  @override
+  String settingsStorageApproxVideos(int count) {
+    return '≈ $count video';
+  }
 }

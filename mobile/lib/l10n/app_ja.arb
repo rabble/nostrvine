@@ -4505,5 +4505,7 @@
   "settingsStorageBrokenClipsFound": "見つかった壊れたクリップ: {count}",
   "settingsStorageRemoveBrokenButton": "壊れたクリップを削除",
   "settingsStorageBrokenClipsRemoved": "壊れたクリップを削除しました",
-  "settingsStorageError": "問題が発生しました"
+  "settingsStorageError": "問題が発生しました",
+  "settingsStorageMaxSizeLabel": "最大キャッシュサイズ",
+  "settingsStorageApproxVideos": "≈ {count} 本の動画"
 }

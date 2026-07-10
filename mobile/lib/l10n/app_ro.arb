@@ -4505,5 +4505,7 @@
   "settingsStorageBrokenClipsFound": "Clipuri deteriorate găsite: {count}",
   "settingsStorageRemoveBrokenButton": "Elimină clipurile deteriorate",
   "settingsStorageBrokenClipsRemoved": "Clipuri deteriorate eliminate",
-  "settingsStorageError": "Ceva n-a mers bine"
+  "settingsStorageError": "Ceva n-a mers bine",
+  "settingsStorageMaxSizeLabel": "Dimensiune maximă cache",
+  "settingsStorageApproxVideos": "≈ {count} videoclipuri"
 }

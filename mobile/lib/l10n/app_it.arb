@@ -4505,5 +4505,7 @@
   "settingsStorageBrokenClipsFound": "Clip danneggiate trovate: {count}",
   "settingsStorageRemoveBrokenButton": "Rimuovi clip danneggiate",
   "settingsStorageBrokenClipsRemoved": "Clip danneggiate rimosse",
-  "settingsStorageError": "Qualcosa è andato storto"
+  "settingsStorageError": "Qualcosa è andato storto",
+  "settingsStorageMaxSizeLabel": "Dimensione massima cache",
+  "settingsStorageApproxVideos": "≈ {count} video"
 }

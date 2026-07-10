@@ -9412,4 +9412,12 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get settingsStorageError => '問題が発生しました';
+
+  @override
+  String get settingsStorageMaxSizeLabel => '最大キャッシュサイズ';
+
+  @override
+  String settingsStorageApproxVideos(int count) {
+    return '≈ $count 本の動画';
+  }
 }

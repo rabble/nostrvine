@@ -9766,4 +9766,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsStorageError => 'Something went wrong';
+
+  @override
+  String get settingsStorageMaxSizeLabel => 'Maximum cache size';
+
+  @override
+  String settingsStorageApproxVideos(int count) {
+    return '≈ $count videos';
+  }
 }

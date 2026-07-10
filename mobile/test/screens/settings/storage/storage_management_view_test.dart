@@ -42,6 +42,7 @@ void main() {
   setUp(() {
     service = _MockService();
     when(service.cacheSizeBytes).thenAnswer((_) async => 3 * 1024 * 1024);
+    when(service.cacheLimitBytes).thenReturn(kCacheLimitDefaultBytes);
   });
 
   testWidgets('shows the cache size and both action buttons', (tester) async {
@@ -57,6 +58,24 @@ void main() {
     );
     expect(find.text(l10n.settingsStorageClearButton), findsOneWidget);
     expect(find.text(l10n.settingsStorageScanButton), findsOneWidget);
+  });
+
+  testWidgets('shows the cache-limit slider and approximate video count', (
+    tester,
+  ) async {
+    final cubit = StorageCubit(service: service)..loadCacheSize();
+    addTearDown(cubit.close);
+
+    await tester.pumpWidget(wrap(cubit));
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.settingsStorageMaxSizeLabel), findsOneWidget);
+    expect(find.byType(Slider), findsOneWidget);
+    // Default 2 GB budget / ~4 MB per video ≈ 512 videos.
+    expect(
+      find.text(l10n.settingsStorageApproxVideos(512)),
+      findsOneWidget,
+    );
   });
 
   testWidgets('a scan with no broken clips reports a healthy library', (

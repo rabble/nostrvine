@@ -1,6 +1,7 @@
 // ABOUTME: Riverpod provider for the settings "Storage" screen service.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/storage_management_service.dart';
@@ -14,5 +15,6 @@ final storageManagementServiceProvider = Provider<StorageManagementService>(
     videoCache: openVineMediaCache,
     imageCache: openVineImageCache,
     clipLibrary: ref.watch(clipLibraryServiceProvider),
+    prefs: ref.watch(sharedPreferencesProvider),
   ),
 );
