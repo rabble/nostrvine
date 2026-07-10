@@ -109,6 +109,25 @@ definitions:
     - &setup_local_properties
       name: Set up local.properties
       script: echo "flutter.sdk=$FLUTTER_ROOT" > "$CM_BUILD_DIR/mobile/android/local.properties"
+    - &configure_gradle_memory
+      name: Configure Gradle JVM memory
+      script: |
+        # Codemagic does NOT honor org.gradle.jvmargs from the project
+        # gradle.properties (its GRADLE_USER_HOME gradle.properties takes
+        # precedence), so the release build's L8/dex step has been OOMing at
+        # Codemagic's small default heap regardless of what the project file
+        # says. Set the daemon heap where Gradle actually reads it. Sized for
+        # the 16 GB mac_mini_m4, shared with the Kotlin and Dart JVMs; values
+        # appended last win over any Codemagic default in the same file.
+        GRADLE_HOME="${GRADLE_USER_HOME:-$HOME/.gradle}"
+        mkdir -p "$GRADLE_HOME"
+        {
+          echo "org.gradle.jvmargs=-Xmx10g -XX:MaxMetaspaceSize=2g -XX:ReservedCodeCacheSize=512m -XX:+HeapDumpOnOutOfMemoryError"
+          echo "kotlin.daemon.jvmargs=-Xmx2g"
+          echo "org.gradle.workers.max=4"
+        } >> "$GRADLE_HOME/gradle.properties"
+        echo "Effective $GRADLE_HOME/gradle.properties:"
+        cat "$GRADLE_HOME/gradle.properties"
     - &build_apk
       name: Build Android APK
       script: |
@@ -505,7 +524,9 @@ workflows:
     name: Android Build
     working_directory: mobile
     max_build_duration: 60
-    instance_type: mac_mini_m2
+    # Release R8 + core-library desugaring (L8) is memory-hungry; the 16 GB
+    # M4 gives the Gradle daemon headroom the 12 GB M2 could not.
+    instance_type: mac_mini_m4
     inputs:
       DEFAULT_ENV:
         description: Default environment for fresh app installs
@@ -542,6 +563,7 @@ workflows:
     scripts:
       - *enable_spm
       - *setup_local_properties
+      - *configure_gradle_memory
       - *build_apk
       - *build_aab
       - *publish_github_release
