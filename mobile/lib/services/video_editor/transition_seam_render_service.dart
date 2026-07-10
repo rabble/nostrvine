@@ -233,6 +233,13 @@ class TransitionSeamRenderService {
         await _deleteQuietly(path);
         return null;
       }
+      try {
+        // The trim in enforceSeamCacheLimit evicts by mtime; touch the file
+        // so a seam being actively reused isn't the first eviction candidate.
+        File(path).setLastModifiedSync(DateTime.now());
+      } on Object {
+        // Best-effort LRU touch; reuse must not fail because of it.
+      }
       return TransitionSeam(
         path: path,
         duration: metadata.duration,
@@ -424,6 +431,10 @@ class TransitionSeamRenderService {
         if (total <= _maxSeamCacheBytes) break;
         try {
           await entry.file.delete();
+          total -= entry.size;
+        } on PathNotFoundException {
+          // An overlapping trim already removed it; its bytes are off disk
+          // either way, so count them to avoid over-evicting newer seams.
           total -= entry.size;
         } on Object {
           // Best-effort; a file we cannot delete is retried on the next close.

@@ -762,11 +762,33 @@ void main() {
       expect(b.existsSync(), isTrue);
     });
 
-    test('does not throw when the seam directory is empty', () async {
-      await expectLater(
-        serviceWithBudget(100).enforceSeamCacheLimit(),
-        completes,
+    test('completes when the documents directory cannot be '
+        'resolved', () async {
+      final service = TransitionSeamRenderService(
+        documentsDirectoryProvider: () async =>
+            throw const FileSystemException('unavailable'),
+        maxSeamCacheBytes: 100,
       );
+
+      await expectLater(service.enforceSeamCacheLimit(), completes);
+    });
+
+    test('clear() kicks off a trim of the persisted seam '
+        'directory', () async {
+      final oldest = await seam('old.mp4', 60, DateTime(2020));
+      final newest = await seam('new.mp4', 60, DateTime(2020, 1, 2));
+
+      serviceWithBudget(100).clear();
+
+      // The trim is unawaited by design (it must not block editor teardown);
+      // poll until it lands.
+      for (var i = 0; i < 400 && oldest.existsSync(); i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 1));
+      }
+
+      // 120 bytes > 100: drop oldest (→60), newest survives.
+      expect(oldest.existsSync(), isFalse);
+      expect(newest.existsSync(), isTrue);
     });
   });
 }
