@@ -284,11 +284,17 @@ class BackgroundUploadService : Service() {
       @Suppress("DEPRECATION")
       Notification.Builder(this)
     }
-    return builder
+    builder
       .setContentTitle(notificationTitle)
       .setSmallIcon(android.R.drawable.stat_sys_upload)
       .setOngoing(true)
-      .build()
+    // Show the upload notification immediately instead of letting the system
+    // defer it up to ~10s (Android 12+ FGS notification deferral), which would
+    // otherwise hide it for most of a short upload.
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      builder.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
+    }
+    return builder.build()
   }
 
   private fun createNotificationChannel() {
