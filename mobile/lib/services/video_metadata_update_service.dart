@@ -72,7 +72,11 @@ bool _isEditRebuiltTag(List<String> tag) {
     return true;
   }
   // Collaborator p-tags; mention/reply p-tags are preserved.
-  if (name == 'p' && tag.length >= 4 && tag[3] == 'collaborator') return true;
+  if (name == 'p' &&
+      tag.length >= 4 &&
+      tag[3].toLowerCase() == 'collaborator') {
+    return true;
+  }
   // Inspired-by a-tags (publish writes a 'mention' marker, edit writes
   // 'inspired-by'); unmarked reply-root a-tags are preserved.
   if (name == 'a' &&
@@ -281,7 +285,10 @@ class VideoMetadataUpdateService {
         tags.add(buildCollaboratorPTag(pubkey));
       }
 
-      if (editorState.inspiredByVideo != null) {
+      // The parser exposes an unmarked lowercase reply-root a-tag through
+      // inspiredByVideo too. Do not turn that parent reference into creator
+      // attribution when republishing a video reply.
+      if (editorState.inspiredByVideo != null && !originalVideo.isVideoReply) {
         tags.add([
           'a',
           editorState.inspiredByVideo!.addressableId,

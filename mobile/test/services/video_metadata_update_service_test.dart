@@ -303,20 +303,41 @@ void main() {
             'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
         const rootAuthorPubkey =
             'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
-        final video = _testVideo(
-          extraTags: const [
-            ['E', rootEventId, '', rootAuthorPubkey],
-            ['K', '34236'],
-            ['e', rootEventId, '', rootAuthorPubkey],
-            ['a', '34236:$rootAuthorPubkey:root-vid', ''],
-            ['p', rootAuthorPubkey],
-            ['p', rootAuthorPubkey, 'wss://relay.divine.video', 'mention'],
-          ],
+        const rootAddressableId = '34236:$rootAuthorPubkey:root-vid';
+        final video = VideoEvent.fromNostrEvent(
+          Event(
+            _ownerPubkey,
+            NIP71VideoKinds.addressableShortVideo,
+            const [
+              ['d', 'video-d-tag'],
+              [
+                'imeta',
+                'url https://cdn.example.com/video.mp4',
+                'm video/mp4',
+              ],
+              ['A', rootAddressableId, ''],
+              ['P', rootAuthorPubkey],
+              ['k', '34236'],
+              ['p', rootAuthorPubkey],
+              ['a', rootAddressableId, ''],
+              ['p', rootAuthorPubkey, 'wss://relay.divine.video', 'mention'],
+              ['E', rootEventId, '', rootAuthorPubkey],
+              ['K', '34236'],
+              ['e', rootEventId, '', rootAuthorPubkey],
+            ],
+            'Reply video',
+            createdAt: 1757385263,
+          ),
         );
+
+        expect(video.isVideoReply, isTrue);
+        expect(video.inspiredByVideo, isNotNull);
 
         final result = await service.updateVideo(
           originalVideo: video,
-          editorState: VideoEditorProviderState(),
+          editorState: VideoEditorProviderState(
+            inspiredByVideo: video.inspiredByVideo,
+          ),
           initialCollaboratorPubkeys: const {},
         );
 
@@ -330,10 +351,12 @@ void main() {
           capturedTags,
           contains(equals(['e', rootEventId, '', rootAuthorPubkey])),
         );
-        expect(
-          capturedTags,
-          contains(equals(['a', '34236:$rootAuthorPubkey:root-vid', ''])),
-        );
+        final addressableTags = capturedTags
+            .where((tag) => tag.isNotEmpty && tag.first == 'a')
+            .toList();
+        expect(addressableTags, [
+          ['a', rootAddressableId, ''],
+        ]);
         expect(capturedTags, contains(equals(['p', rootAuthorPubkey])));
         expect(
           capturedTags,
@@ -345,6 +368,51 @@ void main() {
               'mention',
             ]),
           ),
+        );
+      });
+
+      test('removes collaborator tags with mixed-case markers', () async {
+        const removedCollaborator =
+            'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+        final video = _testVideo(
+          extraTags: const [
+            [
+              'p',
+              removedCollaborator,
+              'wss://relay.divine.video',
+              'Collaborator',
+            ],
+          ],
+        );
+
+        final result = await service.updateVideo(
+          originalVideo: video,
+          editorState: VideoEditorProviderState(),
+          initialCollaboratorPubkeys: const {removedCollaborator},
+        );
+
+        expect(result, isA<VideoUpdateSuccess>());
+        expect(
+          capturedTags,
+          isNot(
+            contains(
+              equals([
+                'p',
+                removedCollaborator,
+                'wss://relay.divine.video',
+                'Collaborator',
+              ]),
+            ),
+          ),
+        );
+        expect(
+          capturedTags.where(
+            (tag) =>
+                tag.length >= 2 &&
+                tag.first == 'p' &&
+                tag[1] == removedCollaborator,
+          ),
+          isEmpty,
         );
       });
 
