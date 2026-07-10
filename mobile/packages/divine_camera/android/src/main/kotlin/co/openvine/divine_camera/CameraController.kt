@@ -1046,10 +1046,13 @@ class CameraController(
 
     /**
      * Switches to a different camera lens.
-     * Reuses the same texture to avoid black screen during switch.
+     * Uses a fresh preview texture for front/back facing flips so the outgoing
+     * frozen frame cannot receive incoming-camera pixels with the wrong
+     * rotation. Same-facing rebinds reuse the current texture because Dart keeps
+     * displaying it.
      *
      * [onBound] runs synchronously once the new camera is bound, before the
-     * switch is gated on the first frame and while the preview is still frozen
+     * switch is gated on settled frames and while the preview is still frozen
      * on the old frame. Use it for adjustments (e.g. restoring zoom) that must
      * already be in effect when the incoming frame becomes visible, so the
      * preview doesn't visibly unfreeze at the default and then jump.
@@ -1200,13 +1203,14 @@ class CameraController(
             // becomes visible instead of unfreezing at the reset default.
             onBound?.invoke()
 
-            // Resolve the switch only once the incoming camera has produced its
-            // first frame. Until then the SurfaceProducer keeps showing the old
-            // frame (frozen) and the state (lens/rotation) stays on the old
-            // camera, so the frozen frame never flips to the new rotation early.
-            // Whichever path runs first (first frame or the timeout) cancels the
-            // other queued copy via removeCallbacks, so this runs exactly once
-            // and no stale timeout lingers on the main looper afterwards.
+            // Resolve the switch only once the incoming camera has produced
+            // enough frames for its fresh texture to carry pixels. Until then
+            // the SurfaceProducer keeps showing the old frame (frozen) and the
+            // state (lens/rotation) stays on the old camera, so the frozen
+            // frame never flips to the new rotation early. Whichever path runs
+            // first (settled frames or the timeout) cancels the other queued
+            // copy via removeCallbacks, so this runs exactly once and no stale
+            // timeout lingers on the main looper afterwards.
             val finishSwitch = object : Runnable {
                 override fun run() {
                     mainHandler.removeCallbacks(this)
