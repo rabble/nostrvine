@@ -188,15 +188,20 @@ void main() {
         if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
       });
 
-      test('removes only stale watermark renders', () {
+      test('removes only aged watermark renders', () {
+        final oldMtime = DateTime.now().subtract(const Duration(hours: 2));
         final stale1 = File('${tempDir.path}/watermarked_111.mp4')
-          ..writeAsStringSync('a');
+          ..writeAsStringSync('a')
+          ..setLastModifiedSync(oldMtime);
         final stale2 = File('${tempDir.path}/watermarked_222.mp4')
-          ..writeAsStringSync('b');
+          ..writeAsStringSync('b')
+          ..setLastModifiedSync(oldMtime);
         final unrelatedVideo = File('${tempDir.path}/merged_333.mp4')
-          ..writeAsStringSync('c');
+          ..writeAsStringSync('c')
+          ..setLastModifiedSync(oldMtime);
         final unrelatedImage = File('${tempDir.path}/watermarked_444.jpg')
-          ..writeAsStringSync('d');
+          ..writeAsStringSync('d')
+          ..setLastModifiedSync(oldMtime);
 
         service.deleteStaleWatermarkRenders(tempDir);
 
@@ -206,9 +211,22 @@ void main() {
         expect(unrelatedImage.existsSync(), isTrue);
       });
 
-      test('does not throw when the directory is empty', () {
+      test('keeps renders younger than the stale window', () {
+        // A dismissed save can still be rendering into this file, and a
+        // completed save's file may still be presented in the share sheet.
+        final recent = File('${tempDir.path}/watermarked_555.mp4')
+          ..writeAsStringSync('e');
+
+        service.deleteStaleWatermarkRenders(tempDir);
+
+        expect(recent.existsSync(), isTrue);
+      });
+
+      test('does not throw when the directory does not exist', () {
+        final missing = Directory('${tempDir.path}/missing');
+
         expect(
-          () => service.deleteStaleWatermarkRenders(tempDir),
+          () => service.deleteStaleWatermarkRenders(missing),
           returnsNormally,
         );
       });

@@ -397,9 +397,6 @@ class WatermarkDownloadService {
   }) async {
     try {
       final tempDir = await getTemporaryDirectory();
-      // Each save keeps its render only until the share sheet closes; clearing
-      // leftovers here bounds the temp directory to the single in-progress
-      // render instead of leaking one full-size video per save.
       deleteStaleWatermarkRenders(tempDir);
       final outputPath =
           '${tempDir.path}/watermarked_${DateTime.now().microsecondsSinceEpoch}.mp4';
@@ -432,11 +429,20 @@ class WatermarkDownloadService {
     }
   }
 
+  /// Renders older than this are safe to delete: no in-flight save can still
+  /// own them. A save whose progress sheet was dismissed keeps rendering in
+  /// the background, and a completed save's file may still be handed to the
+  /// platform share sheet — both live far shorter than this window.
+  static const _staleRenderAge = Duration(hours: 1);
+
   /// Deletes leftover `watermarked_*.mp4` renders in [tempDir] from previous
-  /// saves. Called before each new render so at most one watermark temp file
-  /// exists at a time. Best-effort: never throws.
+  /// saves that are older than [_staleRenderAge]. Called before each new
+  /// render so the temp directory stays bounded to roughly the last hour of
+  /// renders instead of leaking one full-size video per save.
+  /// Best-effort: never throws.
   @visibleForTesting
   void deleteStaleWatermarkRenders(Directory tempDir) {
+    final cutoff = DateTime.now().subtract(_staleRenderAge);
     try {
       for (final entity in tempDir.listSync(followLinks: false)) {
         if (entity is! File) continue;
@@ -445,6 +451,7 @@ class WatermarkDownloadService {
           continue;
         }
         try {
+          if (entity.statSync().modified.isAfter(cutoff)) continue;
           entity.deleteSync();
         } on Object {
           // Best-effort; a file we cannot delete is retried on the next save.
