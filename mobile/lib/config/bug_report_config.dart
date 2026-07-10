@@ -1,4 +1,4 @@
-// ABOUTME: Configuration for bug report system including support pubkey and limits
+// ABOUTME: Configuration for bug report system including support email and limits
 // ABOUTME: Defines sensitive data patterns for sanitization and report size constraints
 
 import 'package:unified_logger/unified_logger.dart';
@@ -10,11 +10,6 @@ class BugReportConfig {
   /// Will move to reports.divine.video once custom domain is configured
   static const String bugReportApiUrl =
       'https://bug-reports.protestnet.workers.dev/api/bug-reports';
-
-  /// Pubkey for receiving bug reports (hex format)
-  /// Currently set to Rabble's personal Nostr key
-  static const String supportPubkey =
-      '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738';
 
   /// Email address for receiving bug reports (fallback only)
   static const String supportEmail = 'contact@divine.video';
