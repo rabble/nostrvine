@@ -236,6 +236,44 @@ void main() {
       verify(repo.getAllObjects).called(1);
     });
 
+    test('does not reclaim files still referenced by the sync '
+        'manifest', () async {
+      final downloader = FakeCancellableDownloader();
+      final cacheKey = 'manifest_${DateTime.now().microsecondsSinceEpoch}';
+      Directory('$testTempPath/$cacheKey').createSync(recursive: true);
+      when(() => repo.updateOrInsert(any())).thenAnswer((_) async => 0);
+      // The store reports nothing — as if flutter_cache_manager demoted the
+      // row past its object cap while the file stays live in the manifest.
+      when(repo.getAllObjects).thenAnswer((_) async => []);
+
+      final manager = MediaCacheManager(
+        config: MediaCacheConfig(cacheKey: cacheKey, enableSyncManifest: true),
+        repoOverride: repo,
+        downloaderOverride: downloader,
+      );
+
+      final op = manager.cacheFileCancellable(
+        'https://example.com/v.mp4',
+        key: 'k',
+      );
+      for (var i = 0; i < 400 && downloader.downloads.isEmpty; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 1));
+      }
+      final target = downloader.downloads.single.targetFile
+        ..writeAsBytesSync(const [1, 2, 3]);
+      downloader.downloads.single.completeWith(target);
+      await op.file;
+      expect(target.existsSync(), isTrue);
+
+      await manager.enforceCacheLimits();
+
+      expect(
+        target.existsSync(),
+        isTrue,
+        reason: 'a manifest-referenced file must survive reclamation',
+      );
+    });
+
     test('runs a throttled sweep after enough downloads', () async {
       final downloader = FakeCancellableDownloader();
       final cacheKey = 'throttle_${DateTime.now().microsecondsSinceEpoch}';

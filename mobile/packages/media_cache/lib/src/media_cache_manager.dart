@@ -116,8 +116,9 @@ class MediaCacheConfig {
   /// ([maxNrOfCacheObjects]); for media where individual files span
   /// kilobytes to tens of megabytes, a count limit lets the directory grow
   /// to many gigabytes. When set, [MediaCacheManager.enforceCacheLimits]
-  /// evicts least-recently-used files until the directory is back under this
-  /// budget. `null` disables byte-based eviction (count limit only).
+  /// evicts the oldest files first — ordered by the store's last-touch time,
+  /// falling back to file mtime when it is unset — until the directory is back
+  /// under this budget. `null` disables byte-based eviction (count limit only).
   final int? maxCacheSizeBytes;
 
   /// Timeout for establishing HTTP connections.
@@ -906,16 +907,21 @@ class MediaCacheManager extends CacheManager {
   ///
   /// Two passes, both safe to run at any time and never throwing:
   ///
-  /// 1. **Reclamation** — deletes files in the cache directory that the cache
-  ///    store no longer tracks but that match [_managedCacheFilePattern].
-  ///    `flutter_cache_manager` drops database rows on eviction without
-  ///    reliably deleting the underlying file for this on-disk layout, so
-  ///    evicted and superseded downloads pile up as untracked orphans; this
-  ///    pass removes them. Files that do not match the pattern (bundled seed
-  ///    media, the alias manifest) are left untouched.
+  /// 1. **Reclamation** — deletes files in the cache directory that neither the
+  ///    cache store nor the sync manifest still tracks and that match
+  ///    [_managedCacheFilePattern]. `flutter_cache_manager` drops database rows
+  ///    on eviction without reliably deleting the underlying file for this
+  ///    on-disk layout, so evicted and superseded downloads pile up as
+  ///    untracked orphans; this pass removes them. Files still referenced by
+  ///    the manifest (live entries the store's object cap has demoted), files
+  ///    that do not match the pattern (bundled seed media, the alias manifest),
+  ///    and in-flight downloads are left untouched.
   /// 2. **Byte eviction** — when [MediaCacheConfig.maxCacheSizeBytes] is set,
-  ///    deletes the least-recently-used tracked files until the directory is
-  ///    back under budget, removing both the file and its store row.
+  ///    deletes the oldest tracked files first (ordered by the store's
+  ///    last-touch time, falling back to file mtime) until the directory is
+  ///    back under budget, removing both the file and its store row. Note the
+  ///    sync-manifest read path does not refresh `touched`, so in practice
+  ///    this trims by download age rather than true last-access.
   ///
   /// Safe to call at startup and repeatedly; overlapping calls are ignored and
   /// calls within [_minSweepInterval] of the previous pass are skipped.
@@ -930,7 +936,6 @@ class MediaCacheManager extends CacheManager {
     if (_isClosed || _sweepInProgress) return;
     if (DateTime.now().difference(_lastSweepAt) < _minSweepInterval) return;
     _sweepInProgress = true;
-    _lastSweepAt = DateTime.now();
     try {
       final repo = _repoOverride ?? config.repo;
       if (!await repo.open()) return;
@@ -952,6 +957,9 @@ class MediaCacheManager extends CacheManager {
       );
     } finally {
       _sweepInProgress = false;
+      // Measure the throttle window from completion, not start, so a slow
+      // sweep can't immediately re-trigger back-to-back and monopolise I/O.
+      _lastSweepAt = DateTime.now();
     }
   }
 
@@ -961,12 +969,23 @@ class MediaCacheManager extends CacheManager {
   ) async {
     final dir = Directory(baseDir);
     if (!dir.existsSync()) return;
+    // Files the sync manifest still points at are live cache entries — even
+    // when flutter_cache_manager has dropped their row from its capped store
+    // (its object cap is far smaller than the manifest can grow). Treating
+    // those as orphans deletes files getCachedFileSync is actively serving,
+    // which forces an immediate re-download that re-populates the manifest and
+    // triggers the next sweep — a churn storm that reads as constant jank.
+    // Protect anything the manifest references.
+    final manifestNames = {
+      for (final filePath in _cacheManifest.values) path.basename(filePath),
+    };
     // `Directory.list()` yields between entries, so a large reclamation pass
     // does not block the isolate the way a `listSync()` loop would.
     await for (final entity in dir.list(followLinks: false)) {
       if (entity is! File) continue;
       final name = path.basename(entity.path);
       if (trackedNames.contains(name)) continue;
+      if (manifestNames.contains(name)) continue;
       if (_inFlightRelativePaths.contains(name)) continue;
       if (!_managedCacheFilePattern.hasMatch(name)) continue;
       await _deleteFile(entity);
@@ -997,7 +1016,7 @@ class MediaCacheManager extends CacheManager {
     }
     if (total <= budget) return;
 
-    // Least-recently-used first so hot items survive the trim.
+    // Oldest first (last-touch time, else file mtime) so newer items survive.
     entries.sort((a, b) => a.lastUsed.compareTo(b.lastUsed));
     final removedIds = <int>[];
     for (final entry in entries) {
@@ -1200,8 +1219,9 @@ class MediaCacheManager extends CacheManager {
   }
 }
 
-/// A tracked cache file paired with its on-disk size and last-used time,
-/// used to order least-recently-used eviction during byte-budget trimming.
+/// A tracked cache file paired with its on-disk size and recency signal
+/// ([lastUsed] = the store's `touched` time, or file mtime when unset), used
+/// to order oldest-first eviction during byte-budget trimming.
 class _TrackedCacheFile {
   _TrackedCacheFile({
     required this.object,
