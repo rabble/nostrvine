@@ -297,6 +297,12 @@ void main() {
         'emits delivered batches then the error when extraction fails '
         'mid-stream',
         () async {
+          // In the merged VGV isolate a widget test that tears down while a
+          // strip generator awaits the static batch queue strands it on a
+          // future from its dead FakeAsync zone (see the cover screen
+          // tests); reset it or the first batch below never runs.
+          VideoThumbnailService.resetStripBatchQueueForTesting();
+
           // First batch succeeds, second batch hits a native failure.
           var callCount = 0;
           final fakeJpegBytes = Uint8List.fromList(
