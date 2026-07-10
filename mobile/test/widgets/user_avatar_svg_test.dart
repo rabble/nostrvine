@@ -240,19 +240,38 @@ void main() {
       expect(AvatarFailureCache.instance.isFailed(failedUrl), isTrue);
     });
 
-    testWidgets('SVG load cancellations are not cached', (tester) async {
-      const cancelledUrl = 'https://divine.video/divine-logo.svg';
+    testWidgets('caches malformed SVG errors from the real parser', (
+      tester,
+    ) async {
+      const failedUrl = 'https://divine.video/malformed-avatar.svg';
+      Object? parsingError;
 
-      await pumpAvatarWithValidSvgResponse(tester, cancelledUrl);
+      await tester.pumpWidget(
+        SvgPicture.string(
+          '<!-- invalid svg -->',
+          errorBuilder: (context, error, stackTrace) {
+            parsingError = error;
+            return const SizedBox.shrink();
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(parsingError, isNotNull);
+      expect(
+        AvatarFailureCache.classifyFailure(parsingError!),
+        AvatarFailureKind.deterministic,
+      );
+
+      await pumpAvatarWithValidSvgResponse(tester, failedUrl);
       final svg = tester.widget<SvgPicture>(find.byType(SvgPicture));
-
       svg.errorBuilder!(
         tester.element(find.byType(SvgPicture)),
-        Exception('SvgPicture load cancelled'),
+        parsingError!,
         StackTrace.current,
       );
 
-      expect(AvatarFailureCache.instance.isFailed(cancelledUrl), isFalse);
+      expect(AvatarFailureCache.instance.isFailed(failedUrl), isTrue);
     });
 
     testWidgets('raster completed download failures are cached', (

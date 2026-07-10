@@ -120,7 +120,7 @@ void main() {
       expect(cache.isFailed(url), isTrue);
     });
 
-    test('does not record genuine load cancellations', () {
+    test('caches surfaced cancellation-shaped errors transiently', () {
       const url = 'https://example.com/avatar.png';
 
       final kind = cache.recordFailureForError(
@@ -128,8 +128,8 @@ void main() {
         Exception('SvgPicture load cancelled'),
       );
 
-      expect(kind, AvatarFailureKind.cancelled);
-      expect(cache.isFailed(url), isFalse);
+      expect(kind, AvatarFailureKind.transient);
+      expect(cache.isFailed(url), isTrue);
     });
 
     test('evicts least recently used entries when bounded', () {

@@ -6,7 +6,7 @@ import 'package:media_cache/media_cache.dart';
 
 typedef AvatarFailureClock = DateTime Function();
 
-enum AvatarFailureKind { deterministic, transient, cancelled }
+enum AvatarFailureKind { deterministic, transient }
 
 class AvatarFailureCache {
   AvatarFailureCache._({
@@ -66,8 +66,6 @@ class AvatarFailureCache {
         recordFailure(url, ttl: deterministicFailureTtl);
       case AvatarFailureKind.transient:
         recordFailure(url, ttl: transientFailureTtl);
-      case AvatarFailureKind.cancelled:
-        break;
     }
     return kind;
   }
@@ -92,12 +90,6 @@ class AvatarFailureCache {
         message.contains('invalid svg data') ||
         message.contains('empty and cannot be loaded')) {
       return AvatarFailureKind.deterministic;
-    }
-
-    // A genuine in-flight cancellation (e.g. flutter_svg aborting a request)
-    // says nothing about whether the URL is broken, so never cache it.
-    if (message.contains('load cancelled')) {
-      return AvatarFailureKind.cancelled;
     }
 
     return AvatarFailureKind.transient;
