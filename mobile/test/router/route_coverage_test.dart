@@ -28,6 +28,7 @@ import 'package:openvine/screens/settings/monetization_links_settings_screen.dar
 import 'package:openvine/screens/settings/nip05_settings_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
+import 'package:openvine/screens/settings/storage/storage_management_page.dart';
 import 'package:openvine/screens/subtitle_editor/subtitle_editor_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
@@ -135,6 +136,25 @@ void main() {
             parseRoute(MonetizationLinksSettingsScreen.path),
           );
           expect(canonical, MonetizationLinksSettingsScreen.path);
+        },
+      );
+
+      // Regression: a nested `/settings/storage` path fell through to
+      // RouteType.settings, so routeNormalizationProvider rewrote it to
+      // /settings the instant the screen opened — bouncing the user off it.
+      test(
+        '${StorageManagementPage.path} parses to RouteType.storageManagement',
+        () {
+          final context = parseRoute(StorageManagementPage.path);
+          expect(context.type, RouteType.storageManagement);
+        },
+      );
+
+      test(
+        '${StorageManagementPage.path} round-trips through buildRoute(parseRoute())',
+        () {
+          final canonical = buildRoute(parseRoute(StorageManagementPage.path));
+          expect(canonical, StorageManagementPage.path);
         },
       );
 

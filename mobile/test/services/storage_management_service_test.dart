@@ -105,6 +105,25 @@ void main() {
       test('does not throw when nothing exists to clear', () async {
         await expectLater(service.clearCaches(), completes);
       });
+
+      test('deletes orphaned files left behind in the cache dirs', () async {
+        // clearCache() (mocked here, as in flutter_cache_manager) removes only
+        // DB-tracked entries; these leaked files are what inflated the cache.
+        final orphanVideo = writeFile(
+          '${temp.path}/openvine_video_cache/leaked.mp4',
+          100,
+        );
+        final orphanImage = writeFile(
+          '${temp.path}/openvine_image_cache/leaked.jpg',
+          50,
+        );
+
+        await service.clearCaches();
+
+        expect(orphanVideo.existsSync(), isFalse);
+        expect(orphanImage.existsSync(), isFalse);
+        expect(await service.cacheSizeBytes(), 0);
+      });
     });
 
     group('findBrokenClips', () {

@@ -94,6 +94,11 @@ class StorageManagementService {
     await _guard(_videoCache.clearCache);
     await _guard(_imageCache.clearCache);
     final temp = await _temporaryDirectoryProvider();
+    // clearCache() only removes DB-tracked entries; orphaned/leaked files in
+    // the cache directories survive (the leak from #5986). Delete the
+    // directory contents so the freed size matches what cacheSizeBytes counts.
+    await _deleteDirContents(Directory(p.join(temp.path, _videoCacheDir)));
+    await _deleteDirContents(Directory(p.join(temp.path, _imageCacheDir)));
     await _forEachTempRender(temp, _deleteQuietly);
     final docs = await _documentsDirectoryProvider();
     await _deleteDirContents(Directory(p.join(docs.path, _seamDir)));

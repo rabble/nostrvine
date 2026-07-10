@@ -21,7 +21,13 @@ class StorageManagementPage extends ConsumerWidget {
   static const String routeName = 'storage-management';
 
   /// Route path.
-  static const String path = '/settings/storage';
+  ///
+  /// A flat, first-class path (not nested under `/settings`) so
+  /// `routeNormalizationProvider` can round-trip it through
+  /// `parseRoute`/`buildRoute`. A `/settings/…` path collapses to
+  /// `RouteType.settings` and gets normalized straight back to the
+  /// Settings screen.
+  static const String path = '/storage-management';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -221,10 +227,9 @@ class _CacheLimitControl extends StatelessWidget {
     final l10n = context.l10n;
     final cubit = context.read<StorageCubit>();
     final limit = context.select((StorageCubit c) => c.state.cacheLimitBytes);
-    final clamped = limit
-        .clamp(kCacheLimitMinBytes, kCacheLimitMaxBytes)
-        .toDouble();
-    final approxVideos = (limit ~/ kApproxVideoBytes).clamp(0, 1000);
+    final clampedBytes = limit.clamp(kCacheLimitMinBytes, kCacheLimitMaxBytes);
+    final clamped = clampedBytes.toDouble();
+    final approxVideos = clampedBytes ~/ kApproxVideoBytes;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

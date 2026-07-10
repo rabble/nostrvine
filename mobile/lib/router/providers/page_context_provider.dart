@@ -46,6 +46,7 @@ import 'package:openvine/screens/settings/monetization_links_settings_screen.dar
 import 'package:openvine/screens/settings/nip05_settings_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
+import 'package:openvine/screens/settings/storage/storage_management_page.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/screens/subtitle_editor/subtitle_editor_screen.dart';
@@ -103,6 +104,7 @@ enum RouteType {
   originalSound, // Original sound detail screen (creator's own audio)
   contentPreferences, // Content preferences (language, audio, filters)
   generalSettings, // General app behavior and integration settings
+  storageManagement, // Storage screen (clear caches, audit clip library)
   monetizationLinksSettings, // Creator monetization link settings
   appLanguage, // App language picker (UI locale override)
   supportCenter, // Support center (bug reports, logs, FAQ, legal links)
@@ -343,6 +345,9 @@ RouteContext parseRoute(String path) {
 
     case 'general-settings':
       return const RouteContext(type: RouteType.generalSettings);
+
+    case 'storage-management':
+      return const RouteContext(type: RouteType.storageManagement);
 
     case 'invites':
       return const RouteContext(type: RouteType.invites);
@@ -606,6 +611,9 @@ String buildRoute(RouteContext context) {
 
     case RouteType.generalSettings:
       return GeneralSettingsScreen.path;
+
+    case RouteType.storageManagement:
+      return StorageManagementPage.path;
 
     case RouteType.monetizationLinksSettings:
       return MonetizationLinksSettingsScreen.path;
