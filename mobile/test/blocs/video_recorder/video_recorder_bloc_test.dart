@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_camera/divine_camera.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -465,6 +466,8 @@ void main() {
     });
 
     group('VideoRecorderCameraSwitched', () {
+      late Completer<bool> switchGate;
+
       blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
         'raises then clears isSwitchingCamera and propagates the new '
         'previewTextureId on a successful switch',
@@ -509,6 +512,69 @@ void main() {
             isFalse,
           ),
         ],
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'clears isSwitchingCamera and surfaces the error when the switch '
+        'throws',
+        // Production CameraService catches internally and returns false; the
+        // finally exists for an implementation that violates that contract.
+        // Without it the blur would stick and block every later switch.
+        setUp: () {
+          when(
+            () => cameraService.switchCamera(),
+          ).thenThrow(PlatformException(code: 'SWITCH_FAILED'));
+        },
+        build: buildBloc,
+        act: (bloc) => bloc.add(const VideoRecorderCameraSwitched()),
+        expect: () => [
+          isA<VideoRecorderBlocState>().having(
+            (s) => s.isSwitchingCamera,
+            'isSwitchingCamera',
+            isTrue,
+          ),
+          isA<VideoRecorderBlocState>().having(
+            (s) => s.isSwitchingCamera,
+            'isSwitchingCamera',
+            isFalse,
+          ),
+        ],
+        errors: () => [isA<PlatformException>()],
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'drops a second switch tap that lands mid-switch (droppable)',
+        setUp: () {
+          switchGate = Completer<bool>();
+          when(
+            () => cameraService.switchCamera(),
+          ).thenAnswer((_) => switchGate.future);
+          when(() => cameraService.textureId).thenReturn(42);
+        },
+        build: buildBloc,
+        act: (bloc) async {
+          bloc
+            ..add(const VideoRecorderCameraSwitched())
+            ..add(const VideoRecorderCameraSwitched());
+          await Future<void>.delayed(Duration.zero);
+          switchGate.complete(true);
+          await Future<void>.delayed(Duration.zero);
+        },
+        // Only the first tap's emit pair — a rapid double-tap must not queue
+        // a second rebind that would just toggle straight back.
+        expect: () => [
+          isA<VideoRecorderBlocState>().having(
+            (s) => s.isSwitchingCamera,
+            'isSwitchingCamera',
+            isTrue,
+          ),
+          isA<VideoRecorderBlocState>()
+              .having((s) => s.isSwitchingCamera, 'isSwitchingCamera', isFalse)
+              .having((s) => s.previewTextureId, 'previewTextureId', 42),
+        ],
+        verify: (_) {
+          verify(() => cameraService.switchCamera()).called(1);
+        },
       );
     });
 

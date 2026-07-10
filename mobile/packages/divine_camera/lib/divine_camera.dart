@@ -263,10 +263,14 @@ class DivineCamera {
   /// support (macOS, Linux) this is a no-op that returns false.
   ///
   /// [mode] the stabilization mode to apply.
-  /// Returns true if the requested mode was applied.
+  /// Returns true if the requested mode was applied. Returns false while a
+  /// lens switch is in flight: on Android the mode change rebinds through the
+  /// same native switch path, so it would clobber the switch's pending
+  /// first-frame completion and hold the frozen preview until its timeout.
   Future<bool> setVideoStabilizationMode(
     DivineVideoStabilizationMode mode,
   ) async {
+    if (_state.isSwitchingCamera) return false;
     final success = await _platform.setVideoStabilizationMode(mode);
     if (success) {
       _state = _state.copyWith(videoStabilizationMode: mode);

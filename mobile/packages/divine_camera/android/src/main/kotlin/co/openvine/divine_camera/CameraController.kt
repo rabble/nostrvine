@@ -1113,9 +1113,15 @@ class CameraController(
             // switch's retired producer is safe to release now: Dart swapped off
             // it a switch ago.
             if (currentLens != previousLens) {
+                // Created before the swap mutations: createSurfaceProducer()
+                // can throw, and the catch rollback only covers a committed
+                // swap — mutating first would alias retiringSurfaceProducer
+                // to the live producer, so the next flip would release the
+                // on-screen texture.
+                val freshSurfaceProducer = textureRegistry.createSurfaceProducer()
                 retiringSurfaceProducer?.release()
                 retiringSurfaceProducer = surfaceProducer
-                surfaceProducer = textureRegistry.createSurfaceProducer()
+                surfaceProducer = freshSurfaceProducer
                 didSwapTexture = true
             }
 

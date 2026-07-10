@@ -178,7 +178,7 @@ class _CameraSwitchBlur extends StatelessWidget {
       (VideoRecorderBloc b) => b.state.isSwitchingCamera,
     );
     // Under reduced motion, snap the blur in/out instead of ramping it.
-    final reduceMotion = MediaQuery.of(context).disableAnimations;
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(end: isSwitching ? _peakBlurSigma : 0),
       duration: reduceMotion ? Duration.zero : _rampDuration,

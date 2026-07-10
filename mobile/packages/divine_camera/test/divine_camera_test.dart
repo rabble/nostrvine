@@ -422,6 +422,33 @@ void main() {
           DivineCamera.instance.state.isVideoStabilizationSupported,
         );
       });
+
+      test('rejects a mode change while a lens switch is in flight', () async {
+        await DivineCamera.instance.initialize();
+
+        final gate = Completer<void>();
+        mockPlatform.switchGate = gate;
+        final switching = DivineCamera.instance.switchCamera();
+
+        // Mid-switch the change would rebind through the same native switch
+        // path and clobber the switch's pending first-frame completion.
+        final rejected = await DivineCamera.instance.setVideoStabilizationMode(
+          DivineVideoStabilizationMode.cinematic,
+        );
+        expect(rejected, isFalse);
+        expect(
+          DivineCamera.instance.videoStabilizationMode,
+          DivineVideoStabilizationMode.off,
+        );
+
+        gate.complete();
+        expect(await switching, isTrue);
+
+        final applied = await DivineCamera.instance.setVideoStabilizationMode(
+          DivineVideoStabilizationMode.cinematic,
+        );
+        expect(applied, isTrue);
+      });
     });
 
     group('focus and exposure', () {
