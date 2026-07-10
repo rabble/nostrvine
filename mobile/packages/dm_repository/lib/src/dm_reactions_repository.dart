@@ -277,6 +277,14 @@ class DmReactionsRepository {
     // the recipient. Only the durable DAO write is awaited; the wire publish is
     // fire-and-forget inside the helper, kept OUTSIDE the optimistic insert
     // transaction so a stalled socket never blocks the local write.
+    //
+    // Intentional ordering tradeoff: the removal commits before the new
+    // emoji's fan-out below is confirmed, so a hard-failed swap degrades into
+    // a bare removal on the recipient rather than rolling back to the old
+    // emoji. That matches the sender's view — the old row is already
+    // soft-deleted locally and the new emoji stays as a retryable failed
+    // chip — whereas a wire rollback would desync the two sides. Recovery is
+    // re-tapping (or the sweep re-driving) the new emoji.
     for (final priorId in superseded) {
       await _durablyDeleteReaction(
         rumorId: priorId,
@@ -458,9 +466,10 @@ class DmReactionsRepository {
               ownerPubkey: _userPubkey,
             );
           } else if (!retryablePending) {
-            // Unconfirmed retry: leave the row 'pending' (the pre-send
-            // markPending stands) so the sweep keeps re-driving it. Only a
-            // confirmed rejection/error flips it to 'failed'.
+            // Confirmed rejection/error: flip to 'failed' so the chip is
+            // tappable again. A soft (retryablePending) failure instead
+            // falls through untouched, leaving the pre-send 'pending' so
+            // the sweep keeps re-driving it.
             await _reactionsDao.markFailed(
               placeholderId: rumorId,
               ownerPubkey: _userPubkey,
@@ -546,8 +555,12 @@ class DmReactionsRepository {
   /// — recipients treat repeats as idempotent. The `deletion_pending` row is
   /// awaited (durability boundary) so a crash before it lands can't lose the
   /// removal; the wire publish itself is `unawaited` and re-driven by the sweep
-  /// via [retryDeletion] on any failed/offline attempt. On a DAO write failure
-  /// the deletion is reported to [reportSite] and skipped (no wire attempt).
+  /// via [retryDeletion] on any failed/offline attempt. That unawaited first
+  /// attempt can race a concurrent sweep's [retryDeletion] on the same
+  /// kind-5; both replay the identical stored event, so the worst case is a
+  /// redundant (idempotent) publish, not a divergent delete. On a DAO write
+  /// failure the deletion is reported to [reportSite] and skipped (no wire
+  /// attempt).
   Future<void> _durablyDeleteReaction({
     required String rumorId,
     required List<String> recipients,
