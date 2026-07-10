@@ -402,6 +402,83 @@ void main() {
         expect(renderedClips.length, 2);
       });
 
+      test('anchors the rendered end half to the source recording', () async {
+        final clip = DivineVideoClip(
+          id: 'test-clip',
+          video: EditorVideo.file('/test/video.mp4'),
+          duration: const Duration(seconds: 5),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: model.AspectRatio.square,
+          originalAspectRatio: 9 / 16,
+        );
+
+        final renderedClips = <DivineVideoClip>[];
+        await VideoEditorSplitService.splitClip(
+          sourceClip: clip,
+          splitPosition: const Duration(seconds: 2),
+          onClipsCreated: null,
+          onThumbnailExtracted: null,
+          onClipRendered: (clip, _) => renderedClips.add(clip),
+        );
+
+        // The end half's rendered file starts at the split point, so its
+        // zero-based timeline sits the split position into the recording.
+        // The start half's file still begins at the recording's start.
+        final startClip = renderedClips.singleWhere(
+          (c) => c.id.endsWith('_start'),
+        );
+        final endClip = renderedClips.singleWhere((c) => c.id.endsWith('_end'));
+        expect(startClip.sourceStartOffset, equals(Duration.zero));
+        expect(endClip.sourceStartOffset, equals(const Duration(seconds: 2)));
+      });
+
+      test(
+        'accumulates sourceStartOffset when splitting an already-shifted '
+        'clip (nested split)',
+        () async {
+          // End half of a previous split: its file starts 3 s into the
+          // original recording and is trimmed 1 s at its own start.
+          final clip = DivineVideoClip(
+            id: 'test-clip',
+            video: EditorVideo.file('/test/video.mp4'),
+            duration: const Duration(seconds: 5),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: model.AspectRatio.square,
+            originalAspectRatio: 9 / 16,
+            sourceStartOffset: const Duration(seconds: 3),
+            trimStart: const Duration(seconds: 1),
+          );
+
+          final renderedClips = <DivineVideoClip>[];
+          await VideoEditorSplitService.splitClip(
+            sourceClip: clip,
+            splitPosition: const Duration(milliseconds: 1500),
+            onClipsCreated: null,
+            onThumbnailExtracted: null,
+            onClipRendered: (clip, _) => renderedClips.add(clip),
+          );
+
+          // absoluteSplitPos = trimStart + splitPosition = 2.5 s into this
+          // clip's file, which itself starts 3 s into the recording — the
+          // end half's file starts 5.5 s into the recording. The start
+          // half keeps its file, so its anchor is unchanged.
+          final startClip = renderedClips.singleWhere(
+            (c) => c.id.endsWith('_start'),
+          );
+          final endClip = renderedClips.singleWhere(
+            (c) => c.id.endsWith('_end'),
+          );
+          expect(
+            startClip.sourceStartOffset,
+            equals(const Duration(seconds: 3)),
+          );
+          expect(
+            endClip.sourceStartOffset,
+            equals(const Duration(milliseconds: 5500)),
+          );
+        },
+      );
+
       test('completes processing completers on success', () async {
         final clip = DivineVideoClip(
           id: 'test-clip',
