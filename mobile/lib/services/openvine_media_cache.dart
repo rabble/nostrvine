@@ -5,7 +5,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:media_cache/media_cache.dart';
-import 'package:openvine/services/storage_management_service.dart';
+import 'package:openvine/constants/storage_cache_constants.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

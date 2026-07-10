@@ -6,6 +6,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:media_cache/media_cache.dart';
+import 'package:openvine/constants/storage_cache_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:path/path.dart' as p;
@@ -17,22 +18,6 @@ import 'package:unified_logger/unified_logger.dart';
 /// each is regenerated on the next save/upload (see
 /// `WatermarkDownloadService` and `UploadManager`).
 const List<String> _tempRenderPrefixes = ['watermarked_', 'merged_'];
-
-/// Smallest selectable video-cache byte budget (0.5 GB).
-const int kCacheLimitMinBytes = 512 * 1024 * 1024;
-
-/// Largest selectable video-cache byte budget (10 GB).
-const int kCacheLimitMaxBytes = 10 * 1024 * 1024 * 1024;
-
-/// Default video-cache byte budget when the user hasn't chosen one (2 GB).
-const int kCacheLimitDefaultBytes = 2 * 1024 * 1024 * 1024;
-
-/// SharedPreferences key holding the user-chosen video-cache byte budget.
-const String kCacheLimitPrefKey = 'video_cache_max_bytes';
-
-/// Rough average size of one cached short video, used to translate a byte
-/// budget into an approximate video count in the UI.
-const int kApproxVideoBytes = 4 * 1024 * 1024;
 
 /// Clears re-downloadable / regenerable media caches and audits the clip
 /// library for broken entries.
