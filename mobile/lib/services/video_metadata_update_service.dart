@@ -39,26 +39,49 @@ class VideoUpdateFailure extends VideoUpdateResult {
   final Object error;
 }
 
-/// Tag names that carry engagement counts on Vine-imported video events.
-///
-/// These must survive a metadata edit so that `originalLoops` /
-/// `originalLikes` / `originalComments` are not zeroed on the replacement
-/// event.
-const _engagementCountTagNames = {
-  'loops',
-  'likes',
-  'reposts',
-  'views',
-  'comments',
+/// Tag names the metadata-edit flow always rebuilds from the editor state
+/// or re-derives from the original event's parsed fields.
+const _editRebuiltTagNames = {
+  'd',
+  'imeta',
+  'title',
+  'summary',
+  't',
+  'published_at',
+  'duration',
+  'alt',
+  'allow_audio_reuse',
 };
 
-/// Returns the subset of [tags] that carry engagement counts.
-List<List<String>> extractEngagementCountTags(List<List<String>> tags) {
-  return tags
-      .where(
-        (tag) => tag.length >= 2 && _engagementCountTagNames.contains(tag[0]),
-      )
-      .toList();
+/// Whether [tag] is rebuilt by the edit flow instead of copied verbatim.
+///
+/// Every other tag on the original event — audio-attribution `e` tags,
+/// engagement counts, expiration, client, relay hints, ProofMode/C2PA
+/// provenance, reply threading, subtitle text-tracks, … — is preserved
+/// unchanged so a metadata edit never drops data it does not own.
+bool _isEditRebuiltTag(List<String> tag) {
+  if (tag.isEmpty) return false;
+  final name = tag.first;
+  if (_editRebuiltTagNames.contains(name)) return true;
+  // NIP-36 / NIP-32 content-warning group.
+  if (name == 'content-warning') return true;
+  if (name == 'L' && tag.length >= 2 && tag[1] == 'content-warning') {
+    return true;
+  }
+  if (name == 'l' && tag.length >= 3 && tag[2] == 'content-warning') {
+    return true;
+  }
+  // Collaborator p-tags; mention/reply p-tags are preserved.
+  if (name == 'p' && tag.length >= 4 && tag[3] == 'collaborator') return true;
+  // Inspired-by a-tags (publish writes a 'mention' marker, edit writes
+  // 'inspired-by'); unmarked reply-root a-tags are preserved.
+  if (name == 'a' &&
+      tag.length >= 4 &&
+      (tag[3] == 'mention' || tag[3] == 'inspired-by') &&
+      tag[1].startsWith('${NIP71VideoKinds.addressableShortVideo}:')) {
+    return true;
+  }
+  return false;
 }
 
 /// Sends collaborator invites to any pubkeys added since the last publish.
@@ -160,6 +183,12 @@ class VideoMetadataUpdateService {
         throw Exception('User not authenticated');
       }
 
+      // Preserve every tag the edit flow does not own; the owned ones are
+      // rebuilt from the editor state below.
+      final preservedTags = originalVideo.nostrEventTags
+          .where((tag) => !_isEditRebuiltTag(tag))
+          .toList();
+
       final tags = <List<String>>[];
 
       // Required 'd' tag — must match the original to replace the event.
@@ -219,17 +248,24 @@ class VideoMetadataUpdateService {
         tags.add(['title', title]);
       }
 
+      final summary = editorState.description.trim();
+      if (summary.isNotEmpty) {
+        tags.add(['summary', summary]);
+      }
+
       for (final hashtag in editorState.tags) {
         tags.add(['t', hashtag]);
       }
 
-      for (final label in editorState.contentWarnings) {
-        tags.add(['l', label.value, 'content-warning']);
+      // Mirror the NIP-36 / NIP-32 tag group written at original publish.
+      if (editorState.contentWarnings.isNotEmpty) {
+        tags
+          ..add(['content-warning', editorState.contentWarnings.first.value])
+          ..add(['L', 'content-warning']);
+        for (final label in editorState.contentWarnings) {
+          tags.add(['l', label.value, 'content-warning']);
+        }
       }
-
-      // Preserve engagement count tags so Vine-imported metrics survive
-      // the metadata edit.
-      tags.addAll(extractEngagementCountTags(originalVideo.nostrEventTags));
 
       if (originalVideo.publishedAt != null) {
         tags.add(['published_at', originalVideo.publishedAt!]);
@@ -257,6 +293,8 @@ class VideoMetadataUpdateService {
       if (editorState.allowAudioReuse) {
         tags.add(['allow_audio_reuse', 'true']);
       }
+
+      tags.addAll(preservedTags);
 
       var content = editorState.description.trim();
       final inspiredByNpub = editorState.inspiredByNpub;
