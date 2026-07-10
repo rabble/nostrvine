@@ -188,7 +188,7 @@ rg -n "TO""DO|TB""D|PLACE""HOLDER" \
 
 Expected: no whitespace errors, no placeholders, and only the plan/report are changed.
 
-- [ ] **Step 4: Commit the report**
+- [x] **Step 4: Commit the report**
 
 ```bash
 git add docs/superpowers/plans/2026-07-10-test-performance-investigation.md \
