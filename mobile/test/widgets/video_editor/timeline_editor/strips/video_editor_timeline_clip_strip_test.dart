@@ -144,6 +144,7 @@ void main() {
                   List<Duration>? priorityTimestamps,
                 }) => const Stream.empty(),
           );
+          addTearDown(manager.dispose);
 
           // Split of a 3 s source at 1.3 s; visible width 1.7 s × 100 px/s.
           const pps = 100.0;
