@@ -123,6 +123,19 @@ void main() {
     });
 
     group('raster stability', () {
+      // Strip thumbnails set cacheHeight, so the FileImage is wrapped
+      // in a ResizeImage — unwrap before comparing the file path.
+      bool providerHasPath(ImageProvider provider, String path) {
+        if (provider is ResizeImage) {
+          return providerHasPath(provider.imageProvider, path);
+        }
+        return provider is FileImage && provider.file.path == path;
+      }
+
+      Finder frame(String path) => find.byWidgetPredicate(
+        (w) => w is Image && providerHasPath(w.image, path),
+      );
+
       // Regression for the visible leftward frame shift when a split's end
       // half finishes rendering: the render rebases the clip from source
       // time (trimStart = split point) to file time (trimStart = 0,
@@ -179,19 +192,6 @@ void main() {
           ];
           await tester.pump();
 
-          // Strip thumbnails set cacheHeight, so the FileImage is wrapped
-          // in a ResizeImage — unwrap before comparing the file path.
-          bool providerHasPath(ImageProvider provider, String path) {
-            if (provider is ResizeImage) {
-              return providerHasPath(provider.imageProvider, path);
-            }
-            return provider is FileImage && provider.file.path == path;
-          }
-
-          Finder frame(String path) => find.byWidgetPredicate(
-            (w) => w is Image && providerHasPath(w.image, path),
-          );
-
           final previewX = {
             for (final path in ['/t/f1.jpg', '/t/f2.jpg', '/t/f3.jpg'])
               path: tester.getTopLeft(frame(path)).dx,
@@ -236,6 +236,97 @@ void main() {
                   '${entry.key} must stay at its pre-render x-position — '
                   'a shift means the slot raster re-anchored on the '
                   'rendered file instead of the original recording',
+            );
+          }
+        },
+      );
+
+      // Reversing keeps sourceStartOffset (it survives copyWith), but the
+      // reversed file is physically mirrored — there is no recording
+      // continuity to preserve, so the raster must stay file-anchored
+      // instead of phase-shifting by the stale offset.
+      testWidgets(
+        'ignores sourceStartOffset for reversed clips — their slot raster '
+        'stays file-anchored',
+        (tester) async {
+          final manager = ClipThumbnailManager(
+            stripThumbnailStreamFactory:
+                ({
+                  required String videoPath,
+                  required String clipId,
+                  required Duration duration,
+                  required Size outputSize,
+                  required int thumbsPerSecond,
+                  List<Duration>? priorityTimestamps,
+                }) => const Stream.empty(),
+          );
+          addTearDown(manager.dispose);
+
+          const pps = 100.0;
+          const totalWidth = 170.0;
+          const frames = [
+            StripThumbnail(
+              path: '/t/r1.jpg',
+              timestamp: Duration(milliseconds: 200),
+            ),
+            StripThumbnail(
+              path: '/t/r2.jpg',
+              timestamp: Duration(milliseconds: 700),
+            ),
+            StripThumbnail(
+              path: '/t/r3.jpg',
+              timestamp: Duration(milliseconds: 1200),
+            ),
+          ];
+
+          // File-anchored reference: identical geometry with no offset.
+          final plain = _createTestClip(id: 'end', seconds: 3).copyWith(
+            duration: const Duration(milliseconds: 1700),
+          );
+          await tester.pumpWidget(
+            buildWidget(
+              clips: [plain],
+              totalWidth: totalWidth,
+              pixelsPerSecond: pps,
+              thumbnailManager: manager,
+              scrollable: false,
+            ),
+          );
+          manager['end'].value = frames;
+          await tester.pump();
+
+          final fileAnchoredX = {
+            for (final path in ['/t/r1.jpg', '/t/r2.jpg', '/t/r3.jpg'])
+              path: tester.getTopLeft(frame(path)).dx,
+          };
+
+          // Same clip reversed, carrying the offset of a rendered split end
+          // half — the raster must not move.
+          final reversedEnd = _createTestClip(id: 'end', seconds: 3).copyWith(
+            duration: const Duration(milliseconds: 1700),
+            sourceStartOffset: const Duration(milliseconds: 1300),
+            reversed: true,
+          );
+          await tester.pumpWidget(
+            buildWidget(
+              clips: [reversedEnd],
+              totalWidth: totalWidth,
+              pixelsPerSecond: pps,
+              thumbnailManager: manager,
+              scrollable: false,
+            ),
+          );
+          manager['end'].value = frames;
+          await tester.pump();
+
+          for (final entry in fileAnchoredX.entries) {
+            expect(
+              tester.getTopLeft(frame(entry.key)).dx,
+              moreOrLessEquals(entry.value),
+              reason:
+                  '${entry.key} must sit at its file-anchored position — '
+                  'a shift means the reversed clip still applies the '
+                  'recording-anchored raster phase',
             );
           }
         },

@@ -310,7 +310,7 @@ class _VideoEditorTimelineClipStripState
           1000 *
           (speed > 0 ? speed : 1.0) /
           widget.pixelsPerSecond;
-      final phaseMs = clip.sourceStartOffset.inMilliseconds % spanMs;
+      final phaseMs = _rasterAnchorOffset(clip).inMilliseconds % spanMs;
       final startMs = visibleStart.inMilliseconds;
       final endMs = visibleEnd.inMilliseconds;
       final firstSlot = ((startMs + phaseMs) / spanMs).floor();

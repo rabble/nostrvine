@@ -15,6 +15,16 @@ extension _DivineVideoClipTimelineScale on DivineVideoClip {
   }
 }
 
+/// Raster anchor offset for [clip]'s thumbnail slot grid.
+///
+/// Reversed clips return zero: reversing keeps [DivineVideoClip
+/// .sourceStartOffset] (it survives `copyWith`), but the reversed file is
+/// physically mirrored — there is no recording continuity to preserve, so
+/// the raster stays file-anchored instead of phase-shifting by the stale
+/// offset.
+Duration _rasterAnchorOffset(DivineVideoClip clip) =>
+    clip.reversed ? Duration.zero : clip.sourceStartOffset;
+
 /// How far (in px) the clip's thumbnail slot grid is shifted left so its
 /// grid lines stay glued to the *original recording's* timeline.
 ///
@@ -29,7 +39,7 @@ double _rasterPhasePx(DivineVideoClip clip, double contentWidth) {
   final durationMs = clip.duration.inMilliseconds;
   if (durationMs <= 0 || contentWidth <= 0) return 0;
   final offsetPx =
-      clip.sourceStartOffset.inMilliseconds * contentWidth / durationMs;
+      _rasterAnchorOffset(clip).inMilliseconds * contentWidth / durationMs;
   return offsetPx % TimelineConstants.thumbnailWidth;
 }
 
