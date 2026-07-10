@@ -575,6 +575,12 @@ workflows:
       google_play:
         credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
         track: production
+        # Upload as a draft instead of rolling out a release. Rolling out a
+        # production release fails the build until the one-time Play Console
+        # "Foreground service permissions" declaration is completed (required
+        # on every track). A draft upload succeeds; promote it to a live
+        # release in the Play Console after completing that declaration.
+        submit_as_draft: true
 
   macos-build:
     name: macOS Build
