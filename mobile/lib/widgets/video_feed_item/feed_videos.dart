@@ -19,6 +19,7 @@ import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/community_content_label_provider.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_coordinator.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
@@ -501,6 +502,28 @@ class __OverlayState extends ConsumerState<_Overlay> {
   ValueListenable<double>? _pagePositionListenable;
 
   @override
+  void initState() {
+    super.initState();
+    _prefetchCommunityLabels();
+  }
+
+  @override
+  void didUpdateWidget(covariant _Overlay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.video.id != widget.video.id) {
+      _prefetchCommunityLabels();
+    }
+  }
+
+  // Bounded to feed items that actually mount, so this only queries community
+  // labels for videos the viewer is near. Idempotent inside the service.
+  void _prefetchCommunityLabels() {
+    unawaited(
+      ref.read(communityContentLabelServiceProvider).prefetch(widget.video),
+    );
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _feedState = context.findAncestorStateOfType<InfiniteVideoFeedState>();
@@ -631,13 +654,25 @@ class __OverlayState extends ConsumerState<_Overlay> {
     final autoAdvanceAvailable = !MediaQuery.disableAnimationsOf(context);
     final effectiveAutoEnabled = autoAdvanceAvailable && autoEnabled;
 
+    // Merge community-suggested warnings (#4771) into the creator/trusted
+    // warn labels so a crossed-threshold community label drives the same
+    // blur overlay. Advisory only; the service returns an empty set until
+    // its background prefetch resolves.
+    final communityWarnLabels = ref
+        .watch(communityContentLabelServiceProvider)
+        .warnLabelsFor(video);
+    final effectiveWarnLabels = <String>{
+      ...video.warnLabels,
+      ...communityWarnLabels,
+    }.toList();
+
     final overlayLabels = contentWarningOverlayLabels(
       contentWarningLabels: video.contentWarningLabels,
-      warnLabels: video.warnLabels,
+      warnLabels: effectiveWarnLabels,
     );
     final showContentWarningOverlay = shouldShowContentWarningOverlay(
       contentWarningLabels: video.contentWarningLabels,
-      warnLabels: video.warnLabels,
+      warnLabels: effectiveWarnLabels,
     );
 
     final effectiveAutoActive = autoAdvanceAvailable && autoEffectivelyActive;

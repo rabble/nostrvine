@@ -20,9 +20,14 @@ import 'package:openvine/blocs/video_playback_status/video_playback_status_state
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/viewer_auth_result.dart';
+import 'package:openvine/models/content_label.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/community_content_label_provider.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
+import 'package:openvine/repositories/community_content_label_repository.dart';
+import 'package:openvine/services/community_content_label_service.dart';
+import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/services/analytics_service.dart';
@@ -75,6 +80,11 @@ class _MockLikesRepository extends Mock implements LikesRepository {}
 class _MockCommentsRepository extends Mock implements CommentsRepository {}
 
 class _MockRepostsRepository extends Mock implements RepostsRepository {}
+
+class _MockCommunityContentLabelRepository extends Mock
+    implements CommunityContentLabelRepository {}
+
+class _MockContentFilterService extends Mock implements ContentFilterService {}
 
 class _NoopAnalyticsService extends AnalyticsService {
   @override
@@ -263,6 +273,7 @@ Future<void> _pumpFeedVideos(
   bool isLoadingMore = false,
   void Function(VideoEvent, int)? onActiveVideoChanged,
   List<NavigatorObserver> navigatorObservers = const <NavigatorObserver>[],
+  List<dynamic> additionalOverrides = const [],
 }) async {
   final mockPlaybackCubit =
       videoPlaybackStatusCubit ??
@@ -275,14 +286,17 @@ Future<void> _pumpFeedVideos(
       (_MockFeedAutoAdvanceCubit()..stub(const FeedAutoAdvanceState()));
   final mockVolumeCubit = videoVolumeCubit ?? (_MockVideoVolumeCubit()..stub());
   final container = ProviderContainer(
-    overrides: _buildOverrides(
-      moderationService: moderationService,
-      mediaAuthInterceptor: mediaAuthInterceptor,
-      likesRepository: likesRepository,
-      commentsRepository: commentsRepository,
-      repostsRepository: repostsRepository,
-      authService: authService,
-    ).cast(),
+    overrides: [
+      ..._buildOverrides(
+        moderationService: moderationService,
+        mediaAuthInterceptor: mediaAuthInterceptor,
+        likesRepository: likesRepository,
+        commentsRepository: commentsRepository,
+        repostsRepository: repostsRepository,
+        authService: authService,
+      ),
+      ...additionalOverrides,
+    ].cast(),
   );
   container.read(appForegroundProvider.notifier).setForeground(appForeground);
   addTearDown(container.dispose);
@@ -576,6 +590,42 @@ void main() {
       // Neither moderation overlay should be showing.
       expect(find.byType(ModeratedContentOverlay), findsNothing);
     });
+
+    testWidgets(
+      'shows $ContentWarningBlurOverlay when the community surfaces a warn '
+      'label on an otherwise-unwarned video',
+      (tester) async {
+        final video = _makeVideo(); // no creator/trusted warn labels
+        final repository = _MockCommunityContentLabelRepository();
+        when(
+          () => repository.communityLabelsForVideo(video),
+        ).thenAnswer((_) async => {'gambling'});
+        final filter = _MockContentFilterService();
+        when(
+          () => filter.getPreference(ContentLabel.gambling),
+        ).thenReturn(ContentFilterPreference.warn);
+        final service = CommunityContentLabelService(
+          repository: repository,
+          contentFilterService: filter,
+        );
+        final cubit = _MockVideoPlaybackStatusCubit()
+          ..stub(PlaybackStatus.ready, video.id);
+
+        await _pumpFeedVideos(
+          tester,
+          videos: [video],
+          videoPlaybackStatusCubit: cubit,
+          additionalOverrides: [
+            communityContentLabelServiceProvider.overrideWith((ref) => service),
+          ],
+        );
+        // Let the background prefetch resolve and the notifier rebuild.
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byType(ContentWarningBlurOverlay), findsOneWidget);
+      },
+    );
 
     testWidgets(
       'shows interactive overlay when status is ready and no content warning',
