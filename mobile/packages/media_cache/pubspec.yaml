@@ -9,6 +9,7 @@ environment:
   flutter: ^3.41.1
 
 dependencies:
+  clock: ^1.1.2
   cronet_http: ^1.8.0
   cupertino_http: ^3.0.2
   file: ^7.0.0

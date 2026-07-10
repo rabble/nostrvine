@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:http/io_client.dart';
@@ -15,10 +16,31 @@ import 'package:unified_logger/unified_logger.dart';
 
 /// Filenames written by [MediaCacheManager] end with
 /// `_<microseconds>_<seq><ext>` (see `_relativePathFor`). Reclamation only
-/// deletes *untracked* files matching this shape, so externally-managed files
-/// that share the cache directory — e.g. bundled seed media keyed by raw event
-/// id, or the alias manifest — are never removed.
+/// deletes *untracked* files matching this shape or
+/// [_webHelperCacheFilePattern], so externally-managed files that share the
+/// cache directory — e.g. bundled seed media keyed by raw event id, or the
+/// alias manifest — are never removed.
 final RegExp _managedCacheFilePattern = RegExp(r'_\d+_\d+\.[A-Za-z0-9]+$');
+
+/// Filenames written by `flutter_cache_manager`'s WebHelper — the path behind
+/// the inherited [CacheManager.downloadFile] / [CacheManager.getSingleFile] —
+/// are `<uuid-v1><ext>` (and `<uuid-v1>.file` for not-modified responses).
+/// Its eviction never deletes these files for this on-disk layout (it resolves
+/// the relative path against the process CWD), so they orphan just like the
+/// cancellable path's files. Cannot collide with seed media (raw hex event
+/// ids have no dashes) or the alias manifest.
+final RegExp _webHelperCacheFilePattern = RegExp(
+  '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}'
+  r'-[0-9a-fA-F]{12}\.[A-Za-z0-9]+$',
+);
+
+/// Untracked files younger than this are never reclaimed. Covers the window
+/// where a download settled after the sweep's snapshots were taken (its store
+/// row and manifest entry land after the snapshot but before the walk reaches
+/// the file), and WebHelper's in-flight writes, which carry no in-flight
+/// shield at all. A real orphan is simply picked up by a later sweep once it
+/// has aged past the window.
+const Duration _reclamationFreshnessWindow = Duration(minutes: 5);
 
 /// Number of successful downloads between throttled in-session
 /// [MediaCacheManager.enforceCacheLimits] passes.
@@ -898,6 +920,13 @@ class MediaCacheManager extends CacheManager {
   /// long session without sweeping after every single download.
   void _maybeEnforceCacheLimits() {
     if (_downloadsSinceSweep < _downloadsPerSweep) return;
+    // Keep the counter while a sweep would be skipped anyway (one is already
+    // running, or the throttle window is still open) so these downloads count
+    // toward the next eligible pass instead of being consumed silently.
+    if (_sweepInProgress ||
+        clock.now().difference(_lastSweepAt) < _minSweepInterval) {
+      return;
+    }
     _downloadsSinceSweep = 0;
     unawaited(enforceCacheLimits());
   }
@@ -909,13 +938,15 @@ class MediaCacheManager extends CacheManager {
   ///
   /// 1. **Reclamation** — deletes files in the cache directory that neither the
   ///    cache store nor the sync manifest still tracks and that match
-  ///    [_managedCacheFilePattern]. `flutter_cache_manager` drops database rows
-  ///    on eviction without reliably deleting the underlying file for this
-  ///    on-disk layout, so evicted and superseded downloads pile up as
-  ///    untracked orphans; this pass removes them. Files still referenced by
-  ///    the manifest (live entries the store's object cap has demoted), files
-  ///    that do not match the pattern (bundled seed media, the alias manifest),
-  ///    and in-flight downloads are left untouched.
+  ///    [_managedCacheFilePattern] or [_webHelperCacheFilePattern].
+  ///    `flutter_cache_manager` drops database rows on eviction without
+  ///    reliably deleting the underlying file for this on-disk layout, so
+  ///    evicted and superseded downloads pile up as untracked orphans; this
+  ///    pass removes them. Files still referenced by the manifest (live
+  ///    entries the store's object cap has demoted), files that match neither
+  ///    pattern (bundled seed media, the alias manifest), in-flight
+  ///    downloads, and files written within [_reclamationFreshnessWindow]
+  ///    are left untouched.
   /// 2. **Byte eviction** — when [MediaCacheConfig.maxCacheSizeBytes] is set,
   ///    deletes the oldest tracked files first (ordered by the store's
   ///    last-touch time, falling back to file mtime) until the directory is
@@ -934,11 +965,13 @@ class MediaCacheManager extends CacheManager {
   /// than they save.
   Future<void> enforceCacheLimits() async {
     if (_isClosed || _sweepInProgress) return;
-    if (DateTime.now().difference(_lastSweepAt) < _minSweepInterval) return;
+    if (clock.now().difference(_lastSweepAt) < _minSweepInterval) return;
     _sweepInProgress = true;
+    var repoOpened = false;
     try {
       final repo = _repoOverride ?? config.repo;
       if (!await repo.open()) return;
+      repoOpened = true;
       final objects = await repo.getAllObjects();
       final baseDir = await _resolveBaseCacheDir();
 
@@ -959,7 +992,9 @@ class MediaCacheManager extends CacheManager {
       _sweepInProgress = false;
       // Measure the throttle window from completion, not start, so a slow
       // sweep can't immediately re-trigger back-to-back and monopolise I/O.
-      _lastSweepAt = DateTime.now();
+      // Only stamped for passes that got past open(): a failed repository
+      // open (e.g. cold start) must not throttle out the retry.
+      if (repoOpened) _lastSweepAt = clock.now();
     }
   }
 
@@ -979,6 +1014,7 @@ class MediaCacheManager extends CacheManager {
     final manifestNames = {
       for (final filePath in _cacheManifest.values) path.basename(filePath),
     };
+    final freshnessCutoff = clock.now().subtract(_reclamationFreshnessWindow);
     // `Directory.list()` yields between entries, so a large reclamation pass
     // does not block the isolate the way a `listSync()` loop would.
     await for (final entity in dir.list(followLinks: false)) {
@@ -987,7 +1023,15 @@ class MediaCacheManager extends CacheManager {
       if (trackedNames.contains(name)) continue;
       if (manifestNames.contains(name)) continue;
       if (_inFlightRelativePaths.contains(name)) continue;
-      if (!_managedCacheFilePattern.hasMatch(name)) continue;
+      if (!_managedCacheFilePattern.hasMatch(name) &&
+          !_webHelperCacheFilePattern.hasMatch(name)) {
+        continue;
+      }
+      // Freshness guard (see [_reclamationFreshnessWindow]): a download that
+      // settled after the snapshots above were taken is untracked here yet
+      // fully live, and WebHelper's in-flight writes have no shield entry.
+      // Both carry a fresh mtime, so recently-written files stay untouched.
+      if (entity.statSync().modified.isAfter(freshnessCutoff)) continue;
       await _deleteFile(entity);
     }
   }

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:media_cache/media_cache.dart';
@@ -49,9 +50,18 @@ void main() {
       return (manager, dir);
     }
 
-    File writeFile(Directory dir, String name, int bytes) {
+    // Files are written with an old mtime by default so they sit outside the
+    // reclamation freshness window — leaked orphans in the wild are old.
+    // Pass [modified] to model a freshly-written file.
+    File writeFile(
+      Directory dir,
+      String name,
+      int bytes, {
+      DateTime? modified,
+    }) {
       return File('${dir.path}/$name')
-        ..writeAsBytesSync(List<int>.filled(bytes, 0));
+        ..writeAsBytesSync(List<int>.filled(bytes, 0))
+        ..setLastModifiedSync(modified ?? DateTime(2020));
     }
 
     CacheObject obj(String relativePath, {int? id, DateTime? touched}) {
@@ -87,6 +97,68 @@ void main() {
       expect(seedThumb.existsSync(), isTrue, reason: 'seed thumbnail kept');
       expect(aliases.existsSync(), isTrue, reason: 'alias manifest kept');
       expect(nested.existsSync(), isTrue, reason: 'subdirectory kept');
+    });
+
+    test('reclaims aged uuid-named orphans from the inherited '
+        'downloadFile path', () async {
+      final (manager, dir) = build();
+      final uuidVideo = writeFile(
+        dir,
+        '1b4e28ba-2fa1-11d2-883f-0016d3cca427.mp4',
+        10,
+      );
+      final uuidPartial = writeFile(
+        dir,
+        '5c0e8de0-4f9a-11ee-a3b2-0242ac120002.file',
+        10,
+      );
+      final seedVideo = writeFile(dir, 'a1b2c3d4e5f6', 10);
+
+      when(repo.getAllObjects).thenAnswer((_) async => []);
+
+      await manager.enforceCacheLimits();
+
+      expect(uuidVideo.existsSync(), isFalse, reason: 'uuid orphan removed');
+      expect(
+        uuidPartial.existsSync(),
+        isFalse,
+        reason: 'uuid .file orphan removed',
+      );
+      expect(seedVideo.existsSync(), isTrue, reason: 'seed video kept');
+    });
+
+    test('leaves freshly-written untracked files for a later sweep', () async {
+      final (manager, dir) = build();
+      final freshManaged = writeFile(
+        dir,
+        'vid_key_300_3.mp4',
+        10,
+        modified: DateTime.now(),
+      );
+      final freshUuid = writeFile(
+        dir,
+        '1b4e28ba-2fa1-11d2-883f-0016d3cca427.jpg',
+        10,
+        modified: DateTime.now(),
+      );
+      when(repo.getAllObjects).thenAnswer((_) async => []);
+
+      await manager.enforceCacheLimits();
+
+      expect(
+        freshManaged.existsSync(),
+        isTrue,
+        reason:
+            'a file inside the freshness window may be a download that '
+            'settled after the sweep snapshots were taken',
+      );
+      expect(
+        freshUuid.existsSync(),
+        isTrue,
+        reason:
+            'WebHelper writes carry no in-flight shield; freshness is '
+            'their only protection',
+      );
     });
 
     test('evicts least-recently-used tracked files until under '
@@ -174,6 +246,28 @@ void main() {
 
       expect(orphan.existsSync(), isTrue);
       verifyNever(repo.getAllObjects);
+    });
+
+    test('does not throttle the retry after a failed repository '
+        'open', () async {
+      when(repo.open).thenAnswer((_) async => false);
+      final (manager, dir) = build();
+      final orphan = writeFile(dir, 'x_1_1.mp4', 10);
+
+      await manager.enforceCacheLimits();
+      expect(orphan.existsSync(), isTrue, reason: 'first pass could not run');
+
+      when(repo.open).thenAnswer((_) async => true);
+      when(repo.getAllObjects).thenAnswer((_) async => []);
+      await manager.enforceCacheLimits();
+
+      expect(
+        orphan.existsSync(),
+        isFalse,
+        reason:
+            'a pass that never opened the repo must not start the '
+            'throttle window',
+      );
     });
 
     test('swallows repository errors without throwing', () async {
@@ -264,6 +358,9 @@ void main() {
       downloader.downloads.single.completeWith(target);
       await op.file;
       expect(target.existsSync(), isTrue);
+      // Age the file past the freshness window so this test pins the
+      // manifest protection, not the freshness guard.
+      target.setLastModifiedSync(DateTime(2020));
 
       await manager.enforceCacheLimits();
 
@@ -272,6 +369,45 @@ void main() {
         isTrue,
         reason: 'a manifest-referenced file must survive reclamation',
       );
+    });
+
+    test('keeps a file a stalled in-flight download is still '
+        'writing', () async {
+      final downloader = FakeCancellableDownloader();
+      final cacheKey = 'inflight_${DateTime.now().microsecondsSinceEpoch}';
+      Directory('$testTempPath/$cacheKey').createSync(recursive: true);
+      when(repo.getAllObjects).thenAnswer((_) async => []);
+      when(() => repo.updateOrInsert(any())).thenAnswer((_) async => 0);
+
+      final manager = MediaCacheManager(
+        config: MediaCacheConfig(cacheKey: cacheKey, enableSyncManifest: true),
+        repoOverride: repo,
+        downloaderOverride: downloader,
+      );
+
+      final op = manager.cacheFileCancellable(
+        'https://example.com/v.mp4',
+        key: 'k',
+      );
+      for (var i = 0; i < 400 && downloader.downloads.isEmpty; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 1));
+      }
+      // A long-stalled download: partial bytes on disk with an old mtime, so
+      // only the in-flight shield (not the freshness guard) protects it.
+      final target = downloader.downloads.single.targetFile
+        ..writeAsBytesSync(const [1, 2, 3])
+        ..setLastModifiedSync(DateTime(2020));
+
+      await manager.enforceCacheLimits();
+
+      expect(
+        target.existsSync(),
+        isTrue,
+        reason: 'an in-flight download must never be reclaimed',
+      );
+
+      downloader.downloads.single.completeWith(target);
+      await op.file;
     });
 
     test('runs a throttled sweep after enough downloads', () async {
@@ -310,6 +446,84 @@ void main() {
 
       verify(repo.getAllObjects).called(greaterThanOrEqualTo(1));
       sourceDir.deleteSync(recursive: true);
+    });
+
+    test('retains the download counter while the sweep is '
+        'throttled', () async {
+      var offset = Duration.zero;
+      await withClock(Clock(() => DateTime.now().add(offset)), () async {
+        final downloader = FakeCancellableDownloader();
+        final cacheKey = 'counter_${DateTime.now().microsecondsSinceEpoch}';
+        Directory('$testTempPath/$cacheKey').createSync(recursive: true);
+        var sweeps = 0;
+        when(repo.getAllObjects).thenAnswer((_) async {
+          sweeps++;
+          return [];
+        });
+        when(() => repo.updateOrInsert(any())).thenAnswer((_) async => 0);
+
+        final manager = MediaCacheManager(
+          config: MediaCacheConfig(
+            cacheKey: cacheKey,
+            enableSyncManifest: true,
+          ),
+          repoOverride: repo,
+          downloaderOverride: downloader,
+        );
+
+        final sourceDir = Directory.systemTemp.createTempSync('counter_src_');
+        addTearDown(() => sourceDir.deleteSync(recursive: true));
+        final file = File('${sourceDir.path}/v.mp4')
+          ..writeAsBytesSync(const [1, 2, 3]);
+
+        Future<void> drive(int from, int count) async {
+          final ops = [
+            for (var i = from; i < from + count; i++)
+              manager.cacheFileCancellable(
+                'https://example.com/v$i.mp4',
+                key: 'k$i',
+              ),
+          ];
+          for (
+            var i = 0;
+            i < 400 && downloader.downloads.length < from + count;
+            i++
+          ) {
+            await Future<void>.delayed(const Duration(milliseconds: 1));
+          }
+          for (final download in downloader.downloads.sublist(from)) {
+            download.completeWith(file);
+          }
+          await Future.wait(ops.map((op) => op.file));
+        }
+
+        await drive(0, 25);
+        for (var i = 0; i < 400 && sweeps < 1; i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 1));
+        }
+        expect(sweeps, 1, reason: 'first batch triggers a sweep');
+        // Let the sweep finish so _lastSweepAt is stamped.
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+
+        // A second full batch inside the throttle window: no sweep runs, but
+        // the counter must be retained instead of consumed.
+        await drive(25, 25);
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+        expect(sweeps, 1, reason: 'second batch is throttled');
+
+        // Once the window has passed, the retained counter means a single
+        // further download is enough to trigger the deferred sweep.
+        offset += const Duration(minutes: 2);
+        await drive(50, 1);
+        for (var i = 0; i < 400 && sweeps < 2; i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 1));
+        }
+        expect(
+          sweeps,
+          2,
+          reason: 'throttled downloads still count toward the next pass',
+        );
+      });
     });
 
     test('reports the byte budget via getCacheStats', () {
