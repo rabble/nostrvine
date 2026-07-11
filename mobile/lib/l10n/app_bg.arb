@@ -3434,6 +3434,14 @@
             }
         }
     },
+    "nostrSettingsSignatureVerification": "Проверка на подпис",
+    "nostrSettingsSignatureVerificationIntro": "Избери кога Divine проверява подписите на събитията от релеите. ID-тата на събитията винаги се валидират първо.",
+    "nostrSettingsSignatureVerificationAll": "Всички релеи",
+    "nostrSettingsSignatureVerificationAllSubtitle": "Най-сигурно. Проверявай подписа на всяко събитие от всеки релей.",
+    "nostrSettingsSignatureVerificationUntrusted": "Недоверени релеи",
+    "nostrSettingsSignatureVerificationUntrustedSubtitle": "Пропускай проверките за релеи, които вече са в конфигурирания ти пул.",
+    "nostrSettingsSignatureVerificationNonDivine": "Релеи извън Divine",
+    "nostrSettingsSignatureVerificationNonDivineSubtitle": "Довери се на релеите на Divine, проверявай останалите.",
     "nostrSettingsIntro": "Divine използва протокола Nostr за децентрализирано публикуване. Съдържанието ти живее на релета, които сам избираш, а ключовете ти са твоята самоличност.",
     "nostrSettingsSectionNetwork": "Мрежа",
     "nostrSettingsSectionAccount": "Акаунт",

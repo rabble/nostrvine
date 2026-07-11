@@ -9927,30 +9927,31 @@ class AppLocalizationsIt extends AppLocalizations {
       'Rimuovere le clip danneggiate?';
 
   @override
-  String get nostrSettingsSignatureVerification => 'Signature verification';
+  String get nostrSettingsSignatureVerification => 'Verifica della firma';
 
   @override
   String get nostrSettingsSignatureVerificationIntro =>
-      'Choose when Divine checks relay event signatures. Event IDs are always validated first.';
+      'Scegli quando Divine controlla le firme degli eventi dei relay. Gli ID evento vengono sempre validati per primi.';
 
   @override
-  String get nostrSettingsSignatureVerificationAll => 'All relays';
+  String get nostrSettingsSignatureVerificationAll => 'Tutti i relay';
 
   @override
   String get nostrSettingsSignatureVerificationAllSubtitle =>
-      'Safest. Verify every relay event signature.';
+      'Più sicuro. Verifica la firma di ogni evento relay.';
 
   @override
-  String get nostrSettingsSignatureVerificationUntrusted => 'Untrusted relays';
+  String get nostrSettingsSignatureVerificationUntrusted =>
+      'Relay non attendibili';
 
   @override
   String get nostrSettingsSignatureVerificationUntrustedSubtitle =>
-      'Skip checks for relays already in your configured pool.';
+      'Salta i controlli per i relay già nel tuo pool configurato.';
 
   @override
-  String get nostrSettingsSignatureVerificationNonDivine => 'Non-Divine relays';
+  String get nostrSettingsSignatureVerificationNonDivine => 'Relay non Divine';
 
   @override
   String get nostrSettingsSignatureVerificationNonDivineSubtitle =>
-      'Trust Divine relays, verify the rest.';
+      'Fidati dei relay Divine, verifica il resto.';
 }

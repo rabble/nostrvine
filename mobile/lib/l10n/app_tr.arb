@@ -3303,6 +3303,14 @@
             }
         }
     },
+    "nostrSettingsSignatureVerification": "İmza doğrulaması",
+    "nostrSettingsSignatureVerificationIntro": "Divine'ın relay etkinlik imzalarını ne zaman kontrol edeceğini seç. Etkinlik ID'leri her zaman önce doğrulanır.",
+    "nostrSettingsSignatureVerificationAll": "Tüm relay'ler",
+    "nostrSettingsSignatureVerificationAllSubtitle": "En güvenlisi. Her relay etkinlik imzasını doğrula.",
+    "nostrSettingsSignatureVerificationUntrusted": "Güvenilmeyen relay'ler",
+    "nostrSettingsSignatureVerificationUntrustedSubtitle": "Yapılandırılmış havuzunda zaten bulunan relay'ler için kontrolleri atla.",
+    "nostrSettingsSignatureVerificationNonDivine": "Divine dışı relay'ler",
+    "nostrSettingsSignatureVerificationNonDivineSubtitle": "Divine relay'lerine güven, geri kalanını doğrula.",
     "nostrSettingsIntro": "Divine, merkeziyetsiz yayıncılık için Nostr protokolünü kullanır. İçeriğin seçtiğin rölelerde yaşar ve anahtarların senin kimliğindir.",
     "nostrSettingsSectionNetwork": "Ağ",
     "nostrSettingsSectionAccount": "Hesap",

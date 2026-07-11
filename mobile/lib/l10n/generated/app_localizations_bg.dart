@@ -9936,30 +9936,31 @@ class AppLocalizationsBg extends AppLocalizations {
       'Премахване на повредените клипове?';
 
   @override
-  String get nostrSettingsSignatureVerification => 'Signature verification';
+  String get nostrSettingsSignatureVerification => 'Проверка на подпис';
 
   @override
   String get nostrSettingsSignatureVerificationIntro =>
-      'Choose when Divine checks relay event signatures. Event IDs are always validated first.';
+      'Избери кога Divine проверява подписите на събитията от релеите. ID-тата на събитията винаги се валидират първо.';
 
   @override
-  String get nostrSettingsSignatureVerificationAll => 'All relays';
+  String get nostrSettingsSignatureVerificationAll => 'Всички релеи';
 
   @override
   String get nostrSettingsSignatureVerificationAllSubtitle =>
-      'Safest. Verify every relay event signature.';
+      'Най-сигурно. Проверявай подписа на всяко събитие от всеки релей.';
 
   @override
-  String get nostrSettingsSignatureVerificationUntrusted => 'Untrusted relays';
+  String get nostrSettingsSignatureVerificationUntrusted => 'Недоверени релеи';
 
   @override
   String get nostrSettingsSignatureVerificationUntrustedSubtitle =>
-      'Skip checks for relays already in your configured pool.';
+      'Пропускай проверките за релеи, които вече са в конфигурирания ти пул.';
 
   @override
-  String get nostrSettingsSignatureVerificationNonDivine => 'Non-Divine relays';
+  String get nostrSettingsSignatureVerificationNonDivine =>
+      'Релеи извън Divine';
 
   @override
   String get nostrSettingsSignatureVerificationNonDivineSubtitle =>
-      'Trust Divine relays, verify the rest.';
+      'Довери се на релеите на Divine, проверявай останалите.';
 }

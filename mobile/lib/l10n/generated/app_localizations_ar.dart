@@ -9767,30 +9767,31 @@ class AppLocalizationsAr extends AppLocalizations {
       'إزالة المقاطع التالفة؟';
 
   @override
-  String get nostrSettingsSignatureVerification => 'Signature verification';
+  String get nostrSettingsSignatureVerification => 'التحقق من التوقيع';
 
   @override
   String get nostrSettingsSignatureVerificationIntro =>
-      'Choose when Divine checks relay event signatures. Event IDs are always validated first.';
+      'اختر متى يتحقق Divine من توقيعات أحداث المرحلات. يتم التحقق من معرّفات الأحداث أولاً دائماً.';
 
   @override
-  String get nostrSettingsSignatureVerificationAll => 'All relays';
+  String get nostrSettingsSignatureVerificationAll => 'كل المرحلات';
 
   @override
   String get nostrSettingsSignatureVerificationAllSubtitle =>
-      'Safest. Verify every relay event signature.';
+      'الأكثر أماناً. تحقق من توقيع كل حدث من كل مرحل.';
 
   @override
-  String get nostrSettingsSignatureVerificationUntrusted => 'Untrusted relays';
+  String get nostrSettingsSignatureVerificationUntrusted =>
+      'المرحلات غير الموثوقة';
 
   @override
   String get nostrSettingsSignatureVerificationUntrustedSubtitle =>
-      'Skip checks for relays already in your configured pool.';
+      'تجاوز الفحوصات للمرحلات الموجودة بالفعل في مجموعتك المضبوطة.';
 
   @override
-  String get nostrSettingsSignatureVerificationNonDivine => 'Non-Divine relays';
+  String get nostrSettingsSignatureVerificationNonDivine => 'مرحلات غير Divine';
 
   @override
   String get nostrSettingsSignatureVerificationNonDivineSubtitle =>
-      'Trust Divine relays, verify the rest.';
+      'ثق بمرحلات Divine، وتحقق من الباقي.';
 }

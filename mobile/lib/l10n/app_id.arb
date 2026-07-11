@@ -3303,6 +3303,14 @@
             }
         }
     },
+    "nostrSettingsSignatureVerification": "Verifikasi tanda tangan",
+    "nostrSettingsSignatureVerificationIntro": "Pilih kapan Divine memeriksa tanda tangan event relay. ID event selalu divalidasi terlebih dahulu.",
+    "nostrSettingsSignatureVerificationAll": "Semua relay",
+    "nostrSettingsSignatureVerificationAllSubtitle": "Paling aman. Verifikasi tanda tangan setiap event relay.",
+    "nostrSettingsSignatureVerificationUntrusted": "Relay tidak tepercaya",
+    "nostrSettingsSignatureVerificationUntrustedSubtitle": "Lewati pemeriksaan untuk relay yang sudah ada di pool yang kamu konfigurasi.",
+    "nostrSettingsSignatureVerificationNonDivine": "Relay non-Divine",
+    "nostrSettingsSignatureVerificationNonDivineSubtitle": "Percayai relay Divine, verifikasi sisanya.",
     "nostrSettingsIntro": "Divine memakai protokol Nostr untuk publikasi terdesentralisasi. Kontenmu hidup di relay yang kamu pilih, dan kuncimu adalah identitasmu.",
     "nostrSettingsSectionNetwork": "Jaringan",
     "nostrSettingsSectionAccount": "Akun",

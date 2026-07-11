@@ -9834,30 +9834,32 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ta bort trasiga klipp?';
 
   @override
-  String get nostrSettingsSignatureVerification => 'Signature verification';
+  String get nostrSettingsSignatureVerification => 'Signaturverifiering';
 
   @override
   String get nostrSettingsSignatureVerificationIntro =>
-      'Choose when Divine checks relay event signatures. Event IDs are always validated first.';
+      'Välj när Divine kontrollerar signaturer för relay-händelser. Händelse-ID:n valideras alltid först.';
 
   @override
-  String get nostrSettingsSignatureVerificationAll => 'All relays';
+  String get nostrSettingsSignatureVerificationAll => 'Alla relays';
 
   @override
   String get nostrSettingsSignatureVerificationAllSubtitle =>
-      'Safest. Verify every relay event signature.';
+      'Säkrast. Verifiera signaturen för varje relay-händelse.';
 
   @override
-  String get nostrSettingsSignatureVerificationUntrusted => 'Untrusted relays';
+  String get nostrSettingsSignatureVerificationUntrusted =>
+      'Ej betrodda relays';
 
   @override
   String get nostrSettingsSignatureVerificationUntrustedSubtitle =>
-      'Skip checks for relays already in your configured pool.';
+      'Hoppa över kontroller för relays som redan finns i din konfigurerade pool.';
 
   @override
-  String get nostrSettingsSignatureVerificationNonDivine => 'Non-Divine relays';
+  String get nostrSettingsSignatureVerificationNonDivine =>
+      'Icke-Divine-relays';
 
   @override
   String get nostrSettingsSignatureVerificationNonDivineSubtitle =>
-      'Trust Divine relays, verify the rest.';
+      'Lita på Divine-relays, verifiera resten.';
 }

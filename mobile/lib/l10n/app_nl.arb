@@ -3303,6 +3303,14 @@
             }
         }
     },
+    "nostrSettingsSignatureVerification": "Handtekeningverificatie",
+    "nostrSettingsSignatureVerificationIntro": "Kies wanneer Divine handtekeningen van relay-events controleert. Event-ID's worden altijd eerst gevalideerd.",
+    "nostrSettingsSignatureVerificationAll": "Alle relays",
+    "nostrSettingsSignatureVerificationAllSubtitle": "Veiligst. Verifieer elke handtekening van een relay-event.",
+    "nostrSettingsSignatureVerificationUntrusted": "Niet-vertrouwde relays",
+    "nostrSettingsSignatureVerificationUntrustedSubtitle": "Sla controles over voor relays die al in je geconfigureerde pool staan.",
+    "nostrSettingsSignatureVerificationNonDivine": "Niet-Divine-relays",
+    "nostrSettingsSignatureVerificationNonDivineSubtitle": "Vertrouw Divine-relays, verifieer de rest.",
     "nostrSettingsIntro": "Divine gebruikt het Nostr-protocol voor decentraal publiceren. Je inhoud staat op relays die jij kiest, en je sleutels zijn je identiteit.",
     "nostrSettingsSectionNetwork": "Netwerk",
     "nostrSettingsSectionAccount": "Account",

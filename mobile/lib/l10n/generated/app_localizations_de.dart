@@ -9944,30 +9944,32 @@ class AppLocalizationsDe extends AppLocalizations {
       'Defekte Clips entfernen?';
 
   @override
-  String get nostrSettingsSignatureVerification => 'Signature verification';
+  String get nostrSettingsSignatureVerification => 'Signaturprüfung';
 
   @override
   String get nostrSettingsSignatureVerificationIntro =>
-      'Choose when Divine checks relay event signatures. Event IDs are always validated first.';
+      'Wähle, wann Divine Signaturen von Relay-Events prüft. Event-IDs werden immer zuerst validiert.';
 
   @override
-  String get nostrSettingsSignatureVerificationAll => 'All relays';
+  String get nostrSettingsSignatureVerificationAll => 'Alle Relays';
 
   @override
   String get nostrSettingsSignatureVerificationAllSubtitle =>
-      'Safest. Verify every relay event signature.';
+      'Am sichersten. Prüft jede Relay-Event-Signatur.';
 
   @override
-  String get nostrSettingsSignatureVerificationUntrusted => 'Untrusted relays';
+  String get nostrSettingsSignatureVerificationUntrusted =>
+      'Nicht vertrauenswürdige Relays';
 
   @override
   String get nostrSettingsSignatureVerificationUntrustedSubtitle =>
-      'Skip checks for relays already in your configured pool.';
+      'Überspringt Prüfungen für Relays, die bereits in deinem konfigurierten Pool sind.';
 
   @override
-  String get nostrSettingsSignatureVerificationNonDivine => 'Non-Divine relays';
+  String get nostrSettingsSignatureVerificationNonDivine =>
+      'Nicht-Divine-Relays';
 
   @override
   String get nostrSettingsSignatureVerificationNonDivineSubtitle =>
-      'Trust Divine relays, verify the rest.';
+      'Vertraue Divine-Relays, prüfe den Rest.';
 }

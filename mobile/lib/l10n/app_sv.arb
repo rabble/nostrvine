@@ -3303,6 +3303,14 @@
             }
         }
     },
+    "nostrSettingsSignatureVerification": "Signaturverifiering",
+    "nostrSettingsSignatureVerificationIntro": "Välj när Divine kontrollerar signaturer för relay-händelser. Händelse-ID:n valideras alltid först.",
+    "nostrSettingsSignatureVerificationAll": "Alla relays",
+    "nostrSettingsSignatureVerificationAllSubtitle": "Säkrast. Verifiera signaturen för varje relay-händelse.",
+    "nostrSettingsSignatureVerificationUntrusted": "Ej betrodda relays",
+    "nostrSettingsSignatureVerificationUntrustedSubtitle": "Hoppa över kontroller för relays som redan finns i din konfigurerade pool.",
+    "nostrSettingsSignatureVerificationNonDivine": "Icke-Divine-relays",
+    "nostrSettingsSignatureVerificationNonDivineSubtitle": "Lita på Divine-relays, verifiera resten.",
     "nostrSettingsIntro": "Divine använder Nostr-protokollet för decentraliserad publicering. Ditt innehåll lever på reler du väljer, och dina nycklar är din identitet.",
     "nostrSettingsSectionNetwork": "Nätverk",
     "nostrSettingsSectionAccount": "Konto",

@@ -1008,6 +1008,14 @@
             }
         }
     },
+    "nostrSettingsSignatureVerification": "የፊርማ ማረጋገጫ",
+    "nostrSettingsSignatureVerificationIntro": "Divine የሬሌይ ክስተት ፊርማዎችን መቼ እንደሚፈትሽ ይምረጡ። የክስተት IDዎች ሁልጊዜ መጀመሪያ ይረጋገጣሉ።",
+    "nostrSettingsSignatureVerificationAll": "ሁሉም ሬሌዮች",
+    "nostrSettingsSignatureVerificationAllSubtitle": "በጣም ደህና። የእያንዳንዱን ሬሌይ ክስተት ፊርማ አረጋግጥ።",
+    "nostrSettingsSignatureVerificationUntrusted": "ያልታመኑ ሬሌዮች",
+    "nostrSettingsSignatureVerificationUntrustedSubtitle": "ቀድሞ በተዋቀረው የሬሌይ ስብስብዎ ውስጥ ላሉ ሬሌዮች ፍተሻዎችን ዝለል።",
+    "nostrSettingsSignatureVerificationNonDivine": "Divine ያልሆኑ ሬሌዮች",
+    "nostrSettingsSignatureVerificationNonDivineSubtitle": "የDivine ሬሌዮችን እመን፣ የቀሩትን አረጋግጥ።",
     "nostrSettingsIntro": "Divine ለያልተማከለ ማተም Nostr ፕሮቶኮልን ይጠቀማል። ይዘትዎ በሚመርጧቸው ቅብብሎሾች ላይ ይኖራል፣ ቁልፎችዎም ማንነትዎ ናቸው።",
     "nostrSettingsSectionNetwork": "አውታረ መረብ",
     "nostrSettingsSectionAccount": "መለያ",

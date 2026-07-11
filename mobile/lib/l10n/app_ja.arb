@@ -3296,6 +3296,14 @@
             }
         }
     },
+    "nostrSettingsSignatureVerification": "署名の検証",
+    "nostrSettingsSignatureVerificationIntro": "Divine がリレーイベントの署名をチェックするタイミングを選択します。イベント ID は常に先に検証されます。",
+    "nostrSettingsSignatureVerificationAll": "すべてのリレー",
+    "nostrSettingsSignatureVerificationAllSubtitle": "最も安全です。すべてのリレーイベント署名を検証します。",
+    "nostrSettingsSignatureVerificationUntrusted": "信頼されていないリレー",
+    "nostrSettingsSignatureVerificationUntrustedSubtitle": "設定済みのプールにあるリレーのチェックをスキップします。",
+    "nostrSettingsSignatureVerificationNonDivine": "Divine 以外のリレー",
+    "nostrSettingsSignatureVerificationNonDivineSubtitle": "Divine リレーを信頼し、それ以外を検証します。",
     "nostrSettingsIntro": "Divine は分散型パブリッシングに Nostr プロトコルを使ってるよ。コンテンツは選んだリレーに置かれて、鍵があなたの ID になる。",
     "nostrSettingsSectionNetwork": "ネットワーク",
     "nostrSettingsSectionAccount": "アカウント",

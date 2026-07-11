@@ -9452,30 +9452,30 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsStorageRemoveBrokenConfirmTitle => '壊れたクリップを削除しますか？';
 
   @override
-  String get nostrSettingsSignatureVerification => 'Signature verification';
+  String get nostrSettingsSignatureVerification => '署名の検証';
 
   @override
   String get nostrSettingsSignatureVerificationIntro =>
-      'Choose when Divine checks relay event signatures. Event IDs are always validated first.';
+      'Divine がリレーイベントの署名をチェックするタイミングを選択します。イベント ID は常に先に検証されます。';
 
   @override
-  String get nostrSettingsSignatureVerificationAll => 'All relays';
+  String get nostrSettingsSignatureVerificationAll => 'すべてのリレー';
 
   @override
   String get nostrSettingsSignatureVerificationAllSubtitle =>
-      'Safest. Verify every relay event signature.';
+      '最も安全です。すべてのリレーイベント署名を検証します。';
 
   @override
-  String get nostrSettingsSignatureVerificationUntrusted => 'Untrusted relays';
+  String get nostrSettingsSignatureVerificationUntrusted => '信頼されていないリレー';
 
   @override
   String get nostrSettingsSignatureVerificationUntrustedSubtitle =>
-      'Skip checks for relays already in your configured pool.';
+      '設定済みのプールにあるリレーのチェックをスキップします。';
 
   @override
-  String get nostrSettingsSignatureVerificationNonDivine => 'Non-Divine relays';
+  String get nostrSettingsSignatureVerificationNonDivine => 'Divine 以外のリレー';
 
   @override
   String get nostrSettingsSignatureVerificationNonDivineSubtitle =>
-      'Trust Divine relays, verify the rest.';
+      'Divine リレーを信頼し、それ以外を検証します。';
 }

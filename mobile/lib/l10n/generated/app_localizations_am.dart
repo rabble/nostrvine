@@ -9626,30 +9626,30 @@ class AppLocalizationsAm extends AppLocalizations {
   String get settingsStorageRemoveBrokenConfirmTitle => 'የተበላሹ ክሊፖችን ማስወገድ?';
 
   @override
-  String get nostrSettingsSignatureVerification => 'Signature verification';
+  String get nostrSettingsSignatureVerification => 'የፊርማ ማረጋገጫ';
 
   @override
   String get nostrSettingsSignatureVerificationIntro =>
-      'Choose when Divine checks relay event signatures. Event IDs are always validated first.';
+      'Divine የሬሌይ ክስተት ፊርማዎችን መቼ እንደሚፈትሽ ይምረጡ። የክስተት IDዎች ሁልጊዜ መጀመሪያ ይረጋገጣሉ።';
 
   @override
-  String get nostrSettingsSignatureVerificationAll => 'All relays';
+  String get nostrSettingsSignatureVerificationAll => 'ሁሉም ሬሌዮች';
 
   @override
   String get nostrSettingsSignatureVerificationAllSubtitle =>
-      'Safest. Verify every relay event signature.';
+      'በጣም ደህና። የእያንዳንዱን ሬሌይ ክስተት ፊርማ አረጋግጥ።';
 
   @override
-  String get nostrSettingsSignatureVerificationUntrusted => 'Untrusted relays';
+  String get nostrSettingsSignatureVerificationUntrusted => 'ያልታመኑ ሬሌዮች';
 
   @override
   String get nostrSettingsSignatureVerificationUntrustedSubtitle =>
-      'Skip checks for relays already in your configured pool.';
+      'ቀድሞ በተዋቀረው የሬሌይ ስብስብዎ ውስጥ ላሉ ሬሌዮች ፍተሻዎችን ዝለል።';
 
   @override
-  String get nostrSettingsSignatureVerificationNonDivine => 'Non-Divine relays';
+  String get nostrSettingsSignatureVerificationNonDivine => 'Divine ያልሆኑ ሬሌዮች';
 
   @override
   String get nostrSettingsSignatureVerificationNonDivineSubtitle =>
-      'Trust Divine relays, verify the rest.';
+      'የDivine ሬሌዮችን እመን፣ የቀሩትን አረጋግጥ።';
 }

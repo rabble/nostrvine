@@ -9939,30 +9939,32 @@ class AppLocalizationsFil extends AppLocalizations {
       'Alisin ang mga sirang clip?';
 
   @override
-  String get nostrSettingsSignatureVerification => 'Signature verification';
+  String get nostrSettingsSignatureVerification => 'Pag-verify ng lagda';
 
   @override
   String get nostrSettingsSignatureVerificationIntro =>
-      'Choose when Divine checks relay event signatures. Event IDs are always validated first.';
+      'Piliin kung kailan susuriin ng Divine ang mga lagda ng event mula sa mga relay. Palaging unang bine-validate ang mga event ID.';
 
   @override
-  String get nostrSettingsSignatureVerificationAll => 'All relays';
+  String get nostrSettingsSignatureVerificationAll => 'Lahat ng relay';
 
   @override
   String get nostrSettingsSignatureVerificationAllSubtitle =>
-      'Safest. Verify every relay event signature.';
+      'Pinakaligtas. I-verify ang lagda ng bawat event mula sa relay.';
 
   @override
-  String get nostrSettingsSignatureVerificationUntrusted => 'Untrusted relays';
+  String get nostrSettingsSignatureVerificationUntrusted =>
+      'Hindi pinagkakatiwalaang relay';
 
   @override
   String get nostrSettingsSignatureVerificationUntrustedSubtitle =>
-      'Skip checks for relays already in your configured pool.';
+      'Laktawan ang mga pagsusuri para sa mga relay na nasa naka-configure mong pool na.';
 
   @override
-  String get nostrSettingsSignatureVerificationNonDivine => 'Non-Divine relays';
+  String get nostrSettingsSignatureVerificationNonDivine =>
+      'Mga relay na hindi Divine';
 
   @override
   String get nostrSettingsSignatureVerificationNonDivineSubtitle =>
-      'Trust Divine relays, verify the rest.';
+      'Pagkatiwalaan ang mga Divine relay, i-verify ang iba.';
 }

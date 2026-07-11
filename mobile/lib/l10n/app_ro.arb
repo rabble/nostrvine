@@ -3303,6 +3303,14 @@
             }
         }
     },
+    "nostrSettingsSignatureVerification": "Verificarea semnăturii",
+    "nostrSettingsSignatureVerificationIntro": "Alege când Divine verifică semnăturile evenimentelor de pe relee. ID-urile evenimentelor sunt validate întotdeauna primele.",
+    "nostrSettingsSignatureVerificationAll": "Toate releele",
+    "nostrSettingsSignatureVerificationAllSubtitle": "Cel mai sigur. Verifică semnătura fiecărui eveniment de pe releu.",
+    "nostrSettingsSignatureVerificationUntrusted": "Relee nesigure",
+    "nostrSettingsSignatureVerificationUntrustedSubtitle": "Sari peste verificări pentru releele deja aflate în pool-ul tău configurat.",
+    "nostrSettingsSignatureVerificationNonDivine": "Relee non-Divine",
+    "nostrSettingsSignatureVerificationNonDivineSubtitle": "Ai încredere în releele Divine, verifică restul.",
     "nostrSettingsIntro": "Divine folosește protocolul Nostr pentru publicare descentralizată. Conținutul tău trăiește pe relay-urile pe care le alegi, iar cheile tale sunt identitatea ta.",
     "nostrSettingsSectionNetwork": "Rețea",
     "nostrSettingsSectionAccount": "Cont",

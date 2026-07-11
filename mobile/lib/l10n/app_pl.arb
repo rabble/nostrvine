@@ -3303,6 +3303,14 @@
             }
         }
     },
+    "nostrSettingsSignatureVerification": "Weryfikacja podpisu",
+    "nostrSettingsSignatureVerificationIntro": "Wybierz, kiedy Divine sprawdza podpisy zdarzeń z relayów. ID zdarzeń są zawsze walidowane jako pierwsze.",
+    "nostrSettingsSignatureVerificationAll": "Wszystkie relaye",
+    "nostrSettingsSignatureVerificationAllSubtitle": "Najbezpieczniej. Weryfikuj podpis każdego zdarzenia z relaya.",
+    "nostrSettingsSignatureVerificationUntrusted": "Niezaufane relaye",
+    "nostrSettingsSignatureVerificationUntrustedSubtitle": "Pomiń sprawdzanie relayów, które są już w skonfigurowanej puli.",
+    "nostrSettingsSignatureVerificationNonDivine": "Relaye spoza Divine",
+    "nostrSettingsSignatureVerificationNonDivineSubtitle": "Ufaj relayom Divine, weryfikuj resztę.",
     "nostrSettingsIntro": "Divine używa protokołu Nostr do zdecentralizowanego publikowania. Twoje treści żyją na przekaźnikach, które wybierasz, a twoje klucze są twoją tożsamością.",
     "nostrSettingsSectionNetwork": "Sieć",
     "nostrSettingsSectionAccount": "Konto",

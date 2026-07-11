@@ -3296,6 +3296,14 @@
             }
         }
     },
+    "nostrSettingsSignatureVerification": "التحقق من التوقيع",
+    "nostrSettingsSignatureVerificationIntro": "اختر متى يتحقق Divine من توقيعات أحداث المرحلات. يتم التحقق من معرّفات الأحداث أولاً دائماً.",
+    "nostrSettingsSignatureVerificationAll": "كل المرحلات",
+    "nostrSettingsSignatureVerificationAllSubtitle": "الأكثر أماناً. تحقق من توقيع كل حدث من كل مرحل.",
+    "nostrSettingsSignatureVerificationUntrusted": "المرحلات غير الموثوقة",
+    "nostrSettingsSignatureVerificationUntrustedSubtitle": "تجاوز الفحوصات للمرحلات الموجودة بالفعل في مجموعتك المضبوطة.",
+    "nostrSettingsSignatureVerificationNonDivine": "مرحلات غير Divine",
+    "nostrSettingsSignatureVerificationNonDivineSubtitle": "ثق بمرحلات Divine، وتحقق من الباقي.",
     "nostrSettingsIntro": "يستخدم Divine بروتوكول Nostr للنشر اللامركزي. يعيش محتواك على المحولات التي تختارها، ومفاتيحك هي هويتك.",
     "nostrSettingsSectionNetwork": "الشبكة",
     "nostrSettingsSectionAccount": "الحساب",

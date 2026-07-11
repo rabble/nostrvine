@@ -3307,6 +3307,14 @@
             }
         }
     },
+    "nostrSettingsSignatureVerification": "Verificación de firma",
+    "nostrSettingsSignatureVerificationIntro": "Elige cuándo Divine comprueba las firmas de eventos de los relays. Los ID de evento siempre se validan primero.",
+    "nostrSettingsSignatureVerificationAll": "Todos los relays",
+    "nostrSettingsSignatureVerificationAllSubtitle": "Lo más seguro. Verifica la firma de cada evento de relay.",
+    "nostrSettingsSignatureVerificationUntrusted": "Relays no confiables",
+    "nostrSettingsSignatureVerificationUntrustedSubtitle": "Omite las comprobaciones de relays que ya estén en tu conjunto configurado.",
+    "nostrSettingsSignatureVerificationNonDivine": "Relays que no son de Divine",
+    "nostrSettingsSignatureVerificationNonDivineSubtitle": "Confía en los relays de Divine y verifica el resto.",
     "nostrSettingsIntro": "Divine usa el protocolo Nostr para publicar de forma descentralizada. Tu contenido vive en los relays que vos elegís, y tus claves son tu identidad.",
     "nostrSettingsSectionNetwork": "Red",
     "nostrSettingsSectionAccount": "Cuenta",

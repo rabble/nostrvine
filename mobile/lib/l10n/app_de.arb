@@ -3303,6 +3303,14 @@
             }
         }
     },
+    "nostrSettingsSignatureVerification": "Signaturprüfung",
+    "nostrSettingsSignatureVerificationIntro": "Wähle, wann Divine Signaturen von Relay-Events prüft. Event-IDs werden immer zuerst validiert.",
+    "nostrSettingsSignatureVerificationAll": "Alle Relays",
+    "nostrSettingsSignatureVerificationAllSubtitle": "Am sichersten. Prüft jede Relay-Event-Signatur.",
+    "nostrSettingsSignatureVerificationUntrusted": "Nicht vertrauenswürdige Relays",
+    "nostrSettingsSignatureVerificationUntrustedSubtitle": "Überspringt Prüfungen für Relays, die bereits in deinem konfigurierten Pool sind.",
+    "nostrSettingsSignatureVerificationNonDivine": "Nicht-Divine-Relays",
+    "nostrSettingsSignatureVerificationNonDivineSubtitle": "Vertraue Divine-Relays, prüfe den Rest.",
     "nostrSettingsIntro": "Divine nutzt das Nostr-Protokoll für dezentrales Veröffentlichen. Deine Inhalte liegen auf Relays deiner Wahl, und deine Schlüssel sind deine Identität.",
     "nostrSettingsSectionNetwork": "Netzwerk",
     "nostrSettingsSectionAccount": "Konto",

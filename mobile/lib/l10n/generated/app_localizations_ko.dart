@@ -9477,30 +9477,30 @@ class AppLocalizationsKo extends AppLocalizations {
   String get settingsStorageRemoveBrokenConfirmTitle => '손상된 클립을 제거할까요?';
 
   @override
-  String get nostrSettingsSignatureVerification => 'Signature verification';
+  String get nostrSettingsSignatureVerification => '서명 확인';
 
   @override
   String get nostrSettingsSignatureVerificationIntro =>
-      'Choose when Divine checks relay event signatures. Event IDs are always validated first.';
+      'Divine이 릴레이 이벤트 서명을 언제 확인할지 선택하세요. 이벤트 ID는 항상 먼저 검증됩니다.';
 
   @override
-  String get nostrSettingsSignatureVerificationAll => 'All relays';
+  String get nostrSettingsSignatureVerificationAll => '모든 릴레이';
 
   @override
   String get nostrSettingsSignatureVerificationAllSubtitle =>
-      'Safest. Verify every relay event signature.';
+      '가장 안전합니다. 모든 릴레이 이벤트 서명을 확인합니다.';
 
   @override
-  String get nostrSettingsSignatureVerificationUntrusted => 'Untrusted relays';
+  String get nostrSettingsSignatureVerificationUntrusted => '신뢰할 수 없는 릴레이';
 
   @override
   String get nostrSettingsSignatureVerificationUntrustedSubtitle =>
-      'Skip checks for relays already in your configured pool.';
+      '이미 구성된 풀에 있는 릴레이는 확인을 건너뜁니다.';
 
   @override
-  String get nostrSettingsSignatureVerificationNonDivine => 'Non-Divine relays';
+  String get nostrSettingsSignatureVerificationNonDivine => 'Divine 외 릴레이';
 
   @override
   String get nostrSettingsSignatureVerificationNonDivineSubtitle =>
-      'Trust Divine relays, verify the rest.';
+      'Divine 릴레이는 신뢰하고 나머지는 확인합니다.';
 }

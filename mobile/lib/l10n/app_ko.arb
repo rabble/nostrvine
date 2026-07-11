@@ -2627,6 +2627,14 @@
             }
         }
     },
+    "nostrSettingsSignatureVerification": "서명 확인",
+    "nostrSettingsSignatureVerificationIntro": "Divine이 릴레이 이벤트 서명을 언제 확인할지 선택하세요. 이벤트 ID는 항상 먼저 검증됩니다.",
+    "nostrSettingsSignatureVerificationAll": "모든 릴레이",
+    "nostrSettingsSignatureVerificationAllSubtitle": "가장 안전합니다. 모든 릴레이 이벤트 서명을 확인합니다.",
+    "nostrSettingsSignatureVerificationUntrusted": "신뢰할 수 없는 릴레이",
+    "nostrSettingsSignatureVerificationUntrustedSubtitle": "이미 구성된 풀에 있는 릴레이는 확인을 건너뜁니다.",
+    "nostrSettingsSignatureVerificationNonDivine": "Divine 외 릴레이",
+    "nostrSettingsSignatureVerificationNonDivineSubtitle": "Divine 릴레이는 신뢰하고 나머지는 확인합니다.",
     "nostrSettingsIntro": "Divine은 분산형 게시를 위해 Nostr 프로토콜을 써요. 콘텐츠는 당신이 고른 릴레이에 저장되고, 키가 곧 당신의 신원이에요.",
     "nostrSettingsSectionNetwork": "네트워크",
     "nostrSettingsSectionAccount": "계정",

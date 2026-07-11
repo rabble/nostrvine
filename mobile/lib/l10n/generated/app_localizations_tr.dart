@@ -9804,30 +9804,32 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bozuk klipler kaldırılsın mı?';
 
   @override
-  String get nostrSettingsSignatureVerification => 'Signature verification';
+  String get nostrSettingsSignatureVerification => 'İmza doğrulaması';
 
   @override
   String get nostrSettingsSignatureVerificationIntro =>
-      'Choose when Divine checks relay event signatures. Event IDs are always validated first.';
+      'Divine\'ın relay etkinlik imzalarını ne zaman kontrol edeceğini seç. Etkinlik ID\'leri her zaman önce doğrulanır.';
 
   @override
-  String get nostrSettingsSignatureVerificationAll => 'All relays';
+  String get nostrSettingsSignatureVerificationAll => 'Tüm relay\'ler';
 
   @override
   String get nostrSettingsSignatureVerificationAllSubtitle =>
-      'Safest. Verify every relay event signature.';
+      'En güvenlisi. Her relay etkinlik imzasını doğrula.';
 
   @override
-  String get nostrSettingsSignatureVerificationUntrusted => 'Untrusted relays';
+  String get nostrSettingsSignatureVerificationUntrusted =>
+      'Güvenilmeyen relay\'ler';
 
   @override
   String get nostrSettingsSignatureVerificationUntrustedSubtitle =>
-      'Skip checks for relays already in your configured pool.';
+      'Yapılandırılmış havuzunda zaten bulunan relay\'ler için kontrolleri atla.';
 
   @override
-  String get nostrSettingsSignatureVerificationNonDivine => 'Non-Divine relays';
+  String get nostrSettingsSignatureVerificationNonDivine =>
+      'Divine dışı relay\'ler';
 
   @override
   String get nostrSettingsSignatureVerificationNonDivineSubtitle =>
-      'Trust Divine relays, verify the rest.';
+      'Divine relay\'lerine güven, geri kalanını doğrula.';
 }

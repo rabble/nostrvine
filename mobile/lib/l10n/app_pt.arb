@@ -3303,6 +3303,14 @@
             }
         }
     },
+    "nostrSettingsSignatureVerification": "Verificação de assinatura",
+    "nostrSettingsSignatureVerificationIntro": "Escolha quando o Divine verifica as assinaturas de eventos dos relays. Os IDs de evento são sempre validados primeiro.",
+    "nostrSettingsSignatureVerificationAll": "Todos os relays",
+    "nostrSettingsSignatureVerificationAllSubtitle": "Mais seguro. Verifique a assinatura de cada evento de relay.",
+    "nostrSettingsSignatureVerificationUntrusted": "Relays não confiáveis",
+    "nostrSettingsSignatureVerificationUntrustedSubtitle": "Pule as verificações para relays que já estão no seu pool configurado.",
+    "nostrSettingsSignatureVerificationNonDivine": "Relays que não são Divine",
+    "nostrSettingsSignatureVerificationNonDivineSubtitle": "Confie nos relays Divine, verifique o restante.",
     "nostrSettingsIntro": "O Divine usa o protocolo Nostr para publicação descentralizada. Seu conteúdo vive nos relays que você escolher, e suas chaves são sua identidade.",
     "nostrSettingsSectionNetwork": "Rede",
     "nostrSettingsSectionAccount": "Conta",

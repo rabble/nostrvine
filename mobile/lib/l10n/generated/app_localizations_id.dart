@@ -9807,30 +9807,31 @@ class AppLocalizationsId extends AppLocalizations {
   String get settingsStorageRemoveBrokenConfirmTitle => 'Hapus klip rusak?';
 
   @override
-  String get nostrSettingsSignatureVerification => 'Signature verification';
+  String get nostrSettingsSignatureVerification => 'Verifikasi tanda tangan';
 
   @override
   String get nostrSettingsSignatureVerificationIntro =>
-      'Choose when Divine checks relay event signatures. Event IDs are always validated first.';
+      'Pilih kapan Divine memeriksa tanda tangan event relay. ID event selalu divalidasi terlebih dahulu.';
 
   @override
-  String get nostrSettingsSignatureVerificationAll => 'All relays';
+  String get nostrSettingsSignatureVerificationAll => 'Semua relay';
 
   @override
   String get nostrSettingsSignatureVerificationAllSubtitle =>
-      'Safest. Verify every relay event signature.';
+      'Paling aman. Verifikasi tanda tangan setiap event relay.';
 
   @override
-  String get nostrSettingsSignatureVerificationUntrusted => 'Untrusted relays';
+  String get nostrSettingsSignatureVerificationUntrusted =>
+      'Relay tidak tepercaya';
 
   @override
   String get nostrSettingsSignatureVerificationUntrustedSubtitle =>
-      'Skip checks for relays already in your configured pool.';
+      'Lewati pemeriksaan untuk relay yang sudah ada di pool yang kamu konfigurasi.';
 
   @override
-  String get nostrSettingsSignatureVerificationNonDivine => 'Non-Divine relays';
+  String get nostrSettingsSignatureVerificationNonDivine => 'Relay non-Divine';
 
   @override
   String get nostrSettingsSignatureVerificationNonDivineSubtitle =>
-      'Trust Divine relays, verify the rest.';
+      'Percayai relay Divine, verifikasi sisanya.';
 }

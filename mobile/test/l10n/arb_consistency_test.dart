@@ -64,6 +64,41 @@ void main() {
       }
     });
 
+    test('Nostr signature verification copy is localized for every locale', () {
+      final l10nDir = Directory('lib/l10n');
+      final arbFiles =
+          l10nDir
+              .listSync()
+              .whereType<File>()
+              .where((file) => file.path.endsWith('.arb'))
+              .where((file) => !file.path.endsWith('app_en.arb'))
+              .toList()
+            ..sort((a, b) => a.path.compareTo(b.path));
+
+      final template = _readArb(File('lib/l10n/app_en.arb'));
+
+      for (final file in arbFiles) {
+        final arb = _readArb(file);
+
+        for (final key in _signatureVerificationKeys) {
+          final value = arb[key];
+
+          expect(
+            value,
+            isA<String>().having((s) => s.isNotEmpty, 'isNotEmpty', isTrue),
+            reason: '${file.path} must define a non-empty $key message',
+          );
+          expect(
+            value,
+            isNot(template[key]),
+            reason:
+                '${file.path} must not fall back to English for Nostr '
+                'signature verification copy',
+          );
+        }
+      }
+    });
+
     test('CSAM report reason does not collapse into child safety copy', () {
       final l10nDir = Directory('lib/l10n');
       final arbFiles =
@@ -142,10 +177,11 @@ void main() {
   });
 }
 
-// Every key in app_en.arb is currently translated in all 16 locales.
+// Every key in app_en.arb is currently translated in all non-English locales.
 // Add keys here only when a translation pass is intentionally deferred.
-const _knownUntranslatedDebt = <String>{
-  // Nostr signature verification settings; English fallback until translated.
+const _knownUntranslatedDebt = <String>{};
+
+const _signatureVerificationKeys = <String>{
   'nostrSettingsSignatureVerification',
   'nostrSettingsSignatureVerificationIntro',
   'nostrSettingsSignatureVerificationAll',
