@@ -8,9 +8,13 @@ import 'package:models/models.dart';
 /// [VideoEvent.videoUrl]. For Divine blob URLs the list is expanded with
 /// canonical HLS and raw variants so the runtime can fail over between them.
 ///
-/// **Fallback order rationale**: the progressive source (raw blob or
-/// `<hash>/720p.mp4`) is always attempted first, and HLS is only a fallback.
-/// We deliberately do NOT prefer HLS, for two reasons specific to Divine:
+/// **Fallback order rationale**: when the resolved source is progressive (raw
+/// blob or `<hash>/720p.mp4`) it is attempted first and HLS is only a fallback.
+/// (When the resolved source is itself an HLS URL — a Developer Options HLS
+/// override or an HLS-only event — that HLS URL is honoured first; the
+/// progressive-first ordering below applies to raw/MP4 resolved sources.)
+/// We deliberately do NOT prefer HLS for progressive sources, for two reasons
+/// specific to Divine:
 ///
 /// 1. Divine videos are short (≤ 6.3s). HLS pays a fixed startup cost — fetch
 ///    the master playlist, then a media playlist, then the first segment

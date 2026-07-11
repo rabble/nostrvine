@@ -228,41 +228,43 @@ void main() {
       expect(resolvedUrl, contains('/720p.mp4'));
     });
 
-    test('end-to-end: MP4 params + fallback storage + cache lookup', () {
+    test('end-to-end: MP4 params + raw blob fallback storage + cache lookup', () {
       final video = _createDivineVideo();
       final params = VideoControllerParams.fromVideoEvent(video);
 
       // Step 1: Primary URL is MP4
       expect(params.videoUrl, contains('/720p.mp4'));
 
-      // Step 2: Simulate failure — store fallback (mirrors error handler logic)
-      final fallbackUrl = video.getFallbackUrl();
-      expect(fallbackUrl, isNotNull);
+      // Step 2: Simulate failure — a Divine quality variant stores the raw blob
+      // fallback (mirrors error handler logic), not HLS.
+      const rawBlobFallback = 'https://media.divine.video/$_hash';
 
       final currentCache = container.read(fallbackUrlCacheProvider);
       if (!currentCache.containsKey(params.videoId)) {
         container.read(fallbackUrlCacheProvider.notifier).state = {
           ...currentCache,
-          params.videoId: fallbackUrl!,
+          params.videoId: rawBlobFallback,
         };
       }
 
-      // Step 3: On retry, resolved URL is HLS
+      // Step 3: On retry, resolved URL is the raw blob
       final retryCache = container.read(fallbackUrlCacheProvider);
       final retryUrl = retryCache[params.videoId] ?? params.videoUrl;
 
-      expect(retryUrl, equals(fallbackUrl));
-      expect(retryUrl, contains('.m3u8'));
-      expect(retryUrl, isNot(contains('.mp4')));
+      expect(retryUrl, equals(rawBlobFallback));
+      expect(retryUrl, isNot(contains('.m3u8')));
+      expect(retryUrl, isNot(contains('/720p.mp4')));
     });
   });
 
   group('quality variant error handler fallback path', () {
-    // Mirrors the error handler logic at individual_video_providers.dart ~line 729:
+    // Mirrors the error handler logic in individual_video_providers.dart:
     //   final isQualityVariant = videoUrl.contains('/720p') || videoUrl.contains('/480p');
     //   if (isQualityVariant && params.videoEvent is VideoEvent) {
-    //     final fallbackUrl = params.videoEvent?.getFallbackUrl();
-    //     if (fallbackUrl != null && !currentFallbackCache.containsKey(params.videoId))
+    //     // Divine quality variants fall back to the guaranteed raw blob
+    //     // (media.divine.video/<sha256>), not HLS — matching the feed's
+    //     // progressive-first ordering. HLS is used only when no raw blob
+    //     // hash is resolvable (non-Divine).
 
     late ProviderContainer container;
 
@@ -274,7 +276,7 @@ void main() {
       container.dispose();
     });
 
-    test('720p MP4 failure triggers HLS fallback storage', () {
+    test('720p MP4 failure stores the guaranteed raw blob as fallback', () {
       final video = _createDivineVideo();
       final params = VideoControllerParams.fromVideoEvent(video);
       final videoUrl = params.videoUrl;
@@ -284,23 +286,27 @@ void main() {
           videoUrl.contains('/720p') || videoUrl.contains('/480p');
       expect(isQualityVariant, isTrue, reason: 'primary URL must be 720p MP4');
 
-      // Simulate error handler: resolve fallback
-      final fallbackUrl = video.getFallbackUrl();
-      expect(fallbackUrl, isNotNull);
+      // Simulate error handler: a Divine quality variant falls back to the raw
+      // blob (always published), so a not-yet-transcoded 720p.mp4 drops to a
+      // source that exists rather than an equally-unready HLS rendition.
+      const rawBlobFallback = 'https://media.divine.video/$_hash';
 
-      // Store in cache (mirroring error handler guard)
       final currentCache = container.read(fallbackUrlCacheProvider);
       if (!currentCache.containsKey(params.videoId)) {
         container.read(fallbackUrlCacheProvider.notifier).state = {
           ...currentCache,
-          params.videoId: fallbackUrl!,
+          params.videoId: rawBlobFallback,
         };
       }
 
-      // Verify fallback is HLS, not the same MP4
+      // Verify fallback is the raw blob, not HLS and not the failing variant
       final stored = container.read(fallbackUrlCacheProvider)[params.videoId];
-      expect(stored, equals(fallbackUrl));
-      expect(stored, contains('.m3u8'), reason: 'fallback must be HLS');
+      expect(stored, equals(rawBlobFallback));
+      expect(
+        stored,
+        isNot(contains('.m3u8')),
+        reason: 'fallback is the raw blob, not HLS',
+      );
       expect(
         stored,
         isNot(equals(videoUrl)),
@@ -313,18 +319,17 @@ void main() {
       );
     });
 
-    test('480p MP4 failure also triggers fallback', () {
-      final video = _createDivineVideo();
+    test('480p MP4 is also recognised as a quality variant', () {
       const videoUrl480 = 'https://media.divine.video/$_hash/480p.mp4';
 
       final isQualityVariant =
           videoUrl480.contains('/720p') || videoUrl480.contains('/480p');
       expect(isQualityVariant, isTrue);
 
-      final fallbackUrl = video.getFallbackUrl();
-      expect(fallbackUrl, isNotNull);
-      expect(fallbackUrl, contains('.m3u8'));
-      expect(fallbackUrl, isNot(equals(videoUrl480)));
+      // Its raw blob fallback is the same hash-derived source, never HLS.
+      const rawBlobFallback = 'https://media.divine.video/$_hash';
+      expect(rawBlobFallback, isNot(contains('.m3u8')));
+      expect(rawBlobFallback, isNot(equals(videoUrl480)));
     });
 
     test('non-quality-variant URL does not trigger quality fallback path', () {
@@ -561,25 +566,25 @@ void main() {
       container.dispose();
     });
 
-    test('rebuild after quality variant failure uses HLS URL', () {
+    test('rebuild after quality variant failure uses the raw blob URL', () {
       final video = _createDivineVideo();
       final params = VideoControllerParams.fromVideoEvent(video);
 
       // Step 1: initial URL is MP4 720p
       expect(params.videoUrl, contains('/720p.mp4'));
 
-      // Step 2: simulate quality variant failure -> store HLS fallback
-      final fallbackUrl = video.getFallbackUrl()!;
+      // Step 2: simulate quality variant failure -> store raw blob fallback
+      const rawBlobFallback = 'https://media.divine.video/$_hash';
       container.read(fallbackUrlCacheProvider.notifier).state = {
-        params.videoId: fallbackUrl,
+        params.videoId: rawBlobFallback,
       };
 
-      // Step 3: on rebuild, provider reads from cache (line 349-350 of provider)
+      // Step 3: on rebuild, provider reads from cache
       final cache = container.read(fallbackUrlCacheProvider);
       final resolvedUrl = cache[params.videoId] ?? params.videoUrl;
 
-      expect(resolvedUrl, equals(fallbackUrl));
-      expect(resolvedUrl, contains('.m3u8'));
+      expect(resolvedUrl, equals(rawBlobFallback));
+      expect(resolvedUrl, isNot(contains('.m3u8')));
       expect(resolvedUrl, isNot(contains('/720p.mp4')));
     });
 

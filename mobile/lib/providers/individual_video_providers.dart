@@ -780,17 +780,31 @@ VideoPlayerController individualVideoController(
         }
 
         // Check if this was a quality variant URL (720p/480p) that failed.
-        // If so, fall back to HLS (proven reliable format) instead of retrying
-        // the same URL. This handles both MP4 not-yet-ready after upload and
-        // transient server errors.
+        // If so, fall back to the guaranteed raw blob (the published Blossom
+        // source, which always exists) rather than HLS. A fresh raw-only upload
+        // publishes the raw blob before its 720p.mp4/HLS derivatives finish
+        // transcoding, so HLS can be just as unready as the failed variant,
+        // whereas the raw blob plays immediately. This mirrors the feed's
+        // progressive-first order (720p → raw → HLS). HLS remains the fallback
+        // only when no raw blob hash is resolvable (non-Divine).
         final isQualityVariant =
             videoUrl.contains('/720p') || videoUrl.contains('/480p');
         if (isQualityVariant && params.videoEvent is VideoEvent) {
-          final fallbackUrl = params.videoEvent?.getFallbackUrl();
+          final videoEvent = params.videoEvent!;
+          final sha256 = (videoEvent.sha256?.isNotEmpty ?? false)
+              ? videoEvent.sha256
+              : _extractSha256FromUrl(videoUrl);
+          final canUseRawBlob =
+              videoEvent.isFromDivineServer &&
+              sha256 != null &&
+              sha256.isNotEmpty;
+          final fallbackUrl = canUseRawBlob
+              ? '$_blossomFallbackServer/$sha256'
+              : videoEvent.getFallbackUrl();
           if (fallbackUrl != null) {
             Log.info(
               '📱 Quality variant failed for ${params.videoId} ($videoUrl) - '
-              'falling back to HLS: $fallbackUrl',
+              'falling back to: $fallbackUrl',
               name: 'IndividualVideoController',
               category: LogCategory.video,
             );
