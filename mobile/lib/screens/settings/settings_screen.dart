@@ -304,7 +304,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 if (isDeveloperMode)
                   _SettingsTile(
-                    icon: Icons.developer_mode,
+                    divineIcon: DivineIconName.bracketsAngle,
                     title: context.l10n.settingsDeveloperOptions,
                     subtitle: context.l10n.settingsDeveloperOptionsSubtitle,
                     iconColor: VineTheme.warning,

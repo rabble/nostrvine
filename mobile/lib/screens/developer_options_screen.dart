@@ -540,8 +540,8 @@ class _DeveloperOptionsScreenState
 
               const Divider(color: VineTheme.outlineVariant, height: 32),
               ListTile(
-                leading: const Icon(
-                  Icons.developer_mode,
+                leading: const DivineIcon(
+                  icon: DivineIconName.bracketsAngle,
                   color: VineTheme.warning,
                 ),
                 title: Text(
