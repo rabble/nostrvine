@@ -93,7 +93,6 @@ void main() {
 
     group('searchLists()', () {
       test('finds lists by name', () async {
-        // FIXME: Test isolation issue - passes individually, fails in batch
         await service.createList(name: 'Cooking Videos');
         await service.createList(name: 'Travel Adventures');
         await service.createList(name: 'Cooking Recipes');
@@ -103,8 +102,7 @@ void main() {
         expect(results.length, 2);
         expect(results.map((l) => l.name), contains('Cooking Videos'));
         expect(results.map((l) => l.name), contains('Cooking Recipes'));
-        // TODO(any): Fix and re-enable this test
-      }, skip: true);
+      });
 
       test('finds lists by description', () async {
         await service.createList(
@@ -446,8 +444,6 @@ void main() {
       });
 
       test('search performance with many lists', () async {
-        // FIXME: Test isolation issue - passes individually,
-        // fails in batch
         // Create 50 lists
         for (var i = 0; i < 50; i++) {
           await service.createList(
@@ -466,8 +462,7 @@ void main() {
           greaterThanOrEqualTo(25),
         ); // Should find at least 25
         expect(stopwatch.elapsedMilliseconds, lessThan(100)); // Should be fast
-        // TODO(any): Fix and re-enable this test
-      }, skip: true);
+      });
     });
 
     group('streamPublicListsFromRelays()', () {
