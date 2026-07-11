@@ -254,9 +254,9 @@ class NIP17MessageService {
   }
 
   /// OK-confirmation window for the recipient wrap when [sendRumor] runs
-  /// with `awaitRecipientOk: true` (reaction sends). Kept under the reaction
-  /// path's outer 15 s publish cap so the confirmation resolves with headroom
-  /// for the subsequent self-wrap before the caller's timeout fires.
+  /// with `awaitRecipientOk: true` (reaction sends and message sends). Kept
+  /// under the caller's outer 15 s publish cap so the confirmation resolves
+  /// with headroom for the subsequent self-wrap before that timeout fires.
   static const Duration _recipientOkConfirmTimeout = Duration(seconds: 10);
 
   /// Wrap and publish a pre-built [rumorEvent] to the recipient and to
@@ -266,8 +266,10 @@ class NIP17MessageService {
   /// the relay's NIP-20 `OK true` before it counts as landed, instead of the
   /// default frame-accept. A bare frame-accept is a false positive on a flaky
   /// single relay — it reports success even though the relay never stored the
-  /// event — so reaction sends (which have no durable message-style retry
-  /// queue) opt in to confirmation. Message sends keep the default.
+  /// event — so both reaction and message sends opt in to confirmation and
+  /// lean on their durable retry queues to re-drive a soft, unconfirmed
+  /// outcome. The default (`false`) frame-accept path is retained for callers
+  /// with no confirmation need.
   ///
   /// Self-wrap failure is intentionally non-fatal — the message has
   /// already been delivered to the recipient at that point, and

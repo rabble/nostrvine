@@ -43,6 +43,13 @@ abstract class DmRepositoryReportableSites {
   static const String finalizeAfterRecipientBlocked =
       'finalizeAfterRecipientBlocked';
 
+  /// `_finalizeAfterRecipientUnconfirmed`: bumping the retry count for a
+  /// soft, retryable-pending send threw. Caller already has the
+  /// retryable-pending result; the row stays pending and the next sweep
+  /// re-drives it.
+  static const String finalizeAfterRecipientUnconfirmed =
+      'finalizeAfterRecipientUnconfirmed';
+
   /// `retryPendingCollaboratorInvites*`: `recoverFullSend` threw an
   /// unexpected error while replaying a queued collaborator invite row.
   /// The expected `ArgumentError` race (row deleted by a concurrent drain

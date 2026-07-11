@@ -186,6 +186,14 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
             emit(state.copyWith(sendStatus: SendStatus.blocked));
             return;
           }
+          if (result.retryablePending) {
+            // Soft-unconfirmed: the recipient frame was written but no NIP-20
+            // OK arrived yet. The durable queue keeps the pending (clock)
+            // bubble and the retry sweep re-drives it — a lost OK is not proof
+            // of loss, so surface no red failure. Treat as optimistically sent.
+            emit(state.copyWith(sendStatus: SendStatus.sent));
+            return;
+          }
           throw Exception(result.error ?? 'Failed to send message');
         }
         if (result.selfWrapPublished == false) {
@@ -200,6 +208,17 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           if (results.isNotEmpty && results.every((r) => r.blocked)) {
             // Group all-or-nothing block (#176): refused, not retriable.
             emit(state.copyWith(sendStatus: SendStatus.blocked));
+            return;
+          }
+          // No recipient confirmed. If every unconfirmed recipient is soft
+          // (frame written, OK pending) with no hard failure, treat the group
+          // send as optimistically sent — the durable queue re-drives each
+          // pending row. Only a genuine hard failure raises the red SnackBar.
+          final anyHard = results.any(
+            (r) => !r.success && !r.blocked && !r.retryablePending,
+          );
+          if (!anyHard && results.any((r) => r.retryablePending)) {
+            emit(state.copyWith(sendStatus: SendStatus.sent));
             return;
           }
           throw Exception(

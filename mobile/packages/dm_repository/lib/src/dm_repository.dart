@@ -150,6 +150,17 @@ const bool _classifyDiagnostics =
 /// See #4974.
 const Duration _dmRelayListSignTimeout = Duration(seconds: 10);
 
+/// Hard cap on a single NIP-17 message publish (recipient wrap OK-confirm
+/// plus self-wrap). Nostr publishes have no built-in timeout — a stalled
+/// socket or a hung remote signer would keep the `sendRumor` await pending
+/// forever. On timeout the send is reported as a soft, retryable-pending
+/// failure (the frame may already be written), so the durable queue keeps
+/// the row and the retry sweep re-drives it rather than parking a red chip.
+/// Sits above `NIP17MessageService`'s 10 s recipient-OK window so the OK
+/// confirm resolves with headroom before this outer cap fires. Mirrors the
+/// reaction path's `_publishTimeout` (#5977).
+const Duration _messagePublishTimeout = Duration(seconds: 15);
+
 /// Outcome of resolving a user's own kind-10050 DM inbox relay list (#4974).
 ///
 /// Distinguishes a genuine absence from a transient query failure so callers
@@ -2603,10 +2614,17 @@ class DmRepository {
     // above so the optimistic UI echo is never delayed by this lookup.
     final inboxRelays = await resolveDmInboxRelays(recipientPubkey);
 
-    final result = await _messageService!.sendRumor(
-      rumorEvent: rumor,
+    // OK-confirm the recipient wrap: a WebSocket frame-accept is a false
+    // positive on a flaky single relay (the relay may never store the event),
+    // so require a NIP-20 `OK` before treating the message as delivered. A
+    // lost/late OK comes back soft (retryablePending) and keeps the durable
+    // queue row pending for the sweep — never a false "delivered". See #5977
+    // for the reaction precedent this mirrors.
+    final result = await _sendRumorWithTimeout(
+      rumor: rumor,
       recipientPubkey: recipientPubkey,
       targetRelays: inboxRelays,
+      awaitRecipientOk: true,
     );
 
     if (result.success) {
@@ -2706,9 +2724,19 @@ class DmRepository {
         // Don't rethrow — the message was published successfully.
         // Local persistence failure is a degraded state, not a send failure.
       }
+    } else if (result.retryablePending && outgoingDao != null) {
+      // Soft-unconfirmed: the recipient frame was written but no NIP-20 OK
+      // arrived (and no explicit rejection). Keep the row pending — it renders
+      // as the in-flight clock, never a red failure — and let the retry sweep
+      // re-drive it. A lost OK is not proof of loss.
+      await _finalizeAfterRecipientUnconfirmed(
+        outgoingDao: outgoingDao,
+        rumorId: rumor.id,
+      );
     } else if (outgoingDao != null) {
-      // Recipient publish failed before the self-wrap could land, so
-      // both wrap statuses remain retryable on the queue row.
+      // Recipient publish hard-failed (explicit rejection / offline / error)
+      // before the self-wrap could land, so both wrap statuses remain
+      // retryable on the queue row.
       await _finalizeAfterRecipientFailure(
         outgoingDao: outgoingDao,
         rumorId: rumor.id,
@@ -3111,9 +3139,20 @@ class DmRepository {
       return NIP17SendResult.failure('rumor JSON parse failed: $e');
     }
 
-    final result = await _messageService!.sendRumor(
-      rumorEvent: rumor,
+    // Re-resolve the recipient's kind-10050 DM inbox at retry time (10050 is
+    // replaceable, so it may have changed since the original send) and route
+    // the wrap there; null falls back to the default pool. Without this the
+    // OK-confirm below would be satisfied by the default pool rather than the
+    // recipient's own inbox — a false "confirmed" for a recipient who only
+    // reads their advertised inbox. Resolution never throws (it degrades to
+    // null), so it cannot abort a sweep pass.
+    final inboxRelays = await resolveDmInboxRelays(row.recipientPubkey);
+
+    final result = await _sendRumorWithTimeout(
+      rumor: rumor,
       recipientPubkey: row.recipientPubkey,
+      targetRelays: inboxRelays,
+      awaitRecipientOk: true,
     );
 
     if (result.success) {
@@ -3198,6 +3237,14 @@ class DmRepository {
       // drop the row so the retry sweep stops re-attempting a send the gate
       // refuses every time. This attempt delivered nothing.
       await _finalizeAfterRecipientBlocked(outgoingDao: dao, rumorId: rumorId);
+    } else if (result.retryablePending) {
+      // Soft-unconfirmed retry: frame written, no OK yet. Keep the row
+      // pending (in-flight clock, not a red failure) and let the next sweep
+      // re-drive it; only bump the retry count so it eventually exhausts.
+      await _finalizeAfterRecipientUnconfirmed(
+        outgoingDao: dao,
+        rumorId: rumorId,
+      );
     } else {
       await _finalizeAfterRecipientFailure(
         outgoingDao: dao,
@@ -3456,6 +3503,74 @@ class DmRepository {
         site: DmRepositoryReportableSites.finalizeAfterRecipientBlocked,
       );
     }
+  }
+
+  /// Apply the queue-row transition for a soft, retryable-pending recipient
+  /// publish — the relay frame was written but no NIP-20 `OK` arrived within
+  /// the confirm window (and no explicit rejection). A lost OK is not proof
+  /// of loss, so the row stays `pending` (rendering as the in-flight clock,
+  /// never a red failure) and the retry sweep re-drives it.
+  ///
+  /// Only `incrementRetry` runs: it records the attempt timestamp so the
+  /// next sweep applies backoff, and counts this attempt toward the retry
+  /// budget so a permanently-unconfirmable send eventually exhausts to a
+  /// terminal `failed` state instead of retrying forever. Deliberately does
+  /// NOT mark either wrap `failed` (that is the hard-failure path) and does
+  /// NOT delete the row (that is the terminal-blocked path). Non-rethrowing:
+  /// the caller already has the retryable-pending result.
+  Future<void> _finalizeAfterRecipientUnconfirmed({
+    required OutgoingDmsDao outgoingDao,
+    required String rumorId,
+  }) async {
+    try {
+      await outgoingDao.incrementRetry(rumorId);
+    } on Object catch (e, stackTrace) {
+      Log.error(
+        'Failed to record unconfirmed attempt for outgoing_dms row '
+        '$rumorId: $e',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      _errorReporter?.call(
+        e,
+        stackTrace,
+        site: DmRepositoryReportableSites.finalizeAfterRecipientUnconfirmed,
+      );
+      // Don't rethrow — the row stays pending and the next sweep re-drives
+      // it; a missed retry-count bump only means one extra retry.
+    }
+  }
+
+  /// Wrap [NIP17MessageService.sendRumor] with a hard [_messagePublishTimeout]
+  /// so a stalled socket or hung remote signer surfaces as a soft,
+  /// retryable-pending failure instead of an indefinitely pending await
+  /// (which, under the bloc's `sequential()` transformer, would swallow every
+  /// later send). Shared by [sendMessage], [recoverFullSend], and
+  /// [sendGroupMessage] so all three publish paths share one timeout and
+  /// classification discipline. Mirrors the reaction repository's
+  /// `_sendRumorWithTimeout` (#5977).
+  Future<NIP17SendResult> _sendRumorWithTimeout({
+    required Event rumor,
+    required String recipientPubkey,
+    List<String>? targetRelays,
+    bool awaitRecipientOk = false,
+  }) {
+    return _messageService!
+        .sendRumor(
+          rumorEvent: rumor,
+          recipientPubkey: recipientPubkey,
+          targetRelays: targetRelays,
+          awaitRecipientOk: awaitRecipientOk,
+        )
+        .timeout(
+          _messagePublishTimeout,
+          onTimeout: () => NIP17SendResult.failure(
+            'Message publish timed out after '
+            '${_messagePublishTimeout.inSeconds}s',
+            retryablePending: true,
+          ),
+        );
   }
 
   PendingCollaboratorInvite? _tryParsePendingCollaboratorInvite(

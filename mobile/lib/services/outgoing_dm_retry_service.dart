@@ -1,6 +1,6 @@
 // ABOUTME: Service that auto-sweeps the outgoing_dms queue for partial-
-// ABOUTME: delivery rows and dispatches each to DmRepository.recoverSelfWrap.
-// ABOUTME: Triggered by app-foreground transitions, mirrors PendingActionService.
+// ABOUTME: delivery, hard-failed, and soft-unconfirmed rows and re-drives each
+// ABOUTME: via DmRepository. Triggered by app-foreground + connectivity events.
 
 import 'dart:async';
 
@@ -45,20 +45,21 @@ class OutgoingDmRetryConfig {
 /// gift wrap landed but whose self-wrap did not, and re-publishes the
 /// missing self-wrap via [DmRepository.recoverSelfWrap].
 ///
-/// **Trigger:** [appForegroundStream] transitions to `true`. The
-/// provider seeds the stream with the current foreground state on
-/// subscription, so the cold-start sweep fires automatically.
+/// **Triggers:** [appForegroundStream] transitions to `true` (the provider
+/// seeds the stream with the current foreground state on subscription, so the
+/// cold-start sweep fires automatically) and, when wired, [retryTriggerStream]
+/// — connectivity/relay-reconnection events — so a send queued while offline
+/// re-drives the instant the network returns.
 ///
 /// **Re-entrancy:** a sweep already in progress short-circuits the
-/// next trigger; the deferred work is picked up on the next foreground
-/// transition.
+/// next trigger; the deferred work is picked up on the next trigger.
 ///
 /// **Per-row backoff:** rows whose `lastAttemptAt + backoff(retryCount)`
 /// is in the future are skipped this pass. `incrementRetry` is called
 /// only on a real publish failure so transient repo-not-ready states
 /// don't burn the retry budget.
 ///
-/// **Scope:** three sweep arms run on each foreground transition:
+/// **Scope:** three sweep arms run on each trigger:
 ///
 /// 1. `recipient: sent / self: failed` → [DmRepository.recoverSelfWrap]
 ///    (the canonical partial-delivery recovery from #4124).
@@ -67,12 +68,16 @@ class OutgoingDmRetryConfig {
 ///    drops the duplicate copy if the original publish actually landed).
 /// 3. Either wrap still `pending` and the row queuedAt is older than the
 ///    interrupted-send threshold → [DmRepository.recoverFullSend]. This
-///    catches app-killed mid-send rows surfaced by
-///    [OutgoingDmsDao.getStillPendingForOwner] — the case that fulfills
-///    epic #3912's "outgoing DM survives the app being killed mid-send"
-///    acceptance criterion. The min-age guard avoids racing with a
-///    `sendMessage` still in flight in the same process; idempotency at
-///    the receiver makes the race safe even if the guard fires false.
+///    catches both app-killed mid-send rows (epic #3912's "outgoing DM
+///    survives the app being killed mid-send") and soft-unconfirmed sends
+///    (recipient frame written, no NIP-20 OK yet), both surfaced by
+///    [OutgoingDmsDao.getStillPendingForOwner]. The min-age guard avoids
+///    racing with a `sendMessage` still in flight in the same process;
+///    idempotency at the receiver makes the race safe even if it fires false.
+///    A pending row that has burned the retry budget (`retry_count >=
+///    maxRetries`) is terminalized to `failed` here, since
+///    `getStillPendingForOwner` — unlike the failed arm's
+///    `getRetryableForOwner` — has no retry-count cap of its own.
 class OutgoingDmRetryService {
   OutgoingDmRetryService({
     required DmRepository dmRepository,
@@ -333,6 +338,7 @@ class OutgoingDmRetryService {
       var processedInterrupted = 0;
       var failedInterrupted = 0;
       var blockedInterrupted = 0;
+      var exhaustedInterrupted = 0;
       var skippedInterruptedTooYoung = 0;
       if (!abortedNotReady) {
         final processedIds = retryable.map((r) => r.id).toSet();
@@ -342,6 +348,20 @@ class OutgoingDmRetryService {
           // (a row with recipient=pending + self=failed appears in both
           // filters; the failed arm owns the dispatch).
           if (processedIds.contains(row.id)) continue;
+
+          // Exhausted guard: a pending row that has burned the retry budget
+          // is terminally unconfirmable — a soft-unconfirmed send whose OK
+          // never arrived, or an app-killed row that can never reach a relay.
+          // Flip it to `failed` so it stops re-driving, renders as a red
+          // failed bubble, and becomes a manual-retry candidate. The failed
+          // arm's `getRetryableForOwner` already caps at `retry_count <
+          // maxRetries`; `getStillPendingForOwner` does not, so without this
+          // an unconfirmable pending row would re-drive forever.
+          if (row.retryCount >= _retryConfig.maxRetries) {
+            await _markInterruptedExhausted(row.id);
+            exhaustedInterrupted++;
+            continue;
+          }
 
           // Min-age guard: if the row was just enqueued, the originating
           // sendMessage call may still be in flight in this process. Wait
@@ -427,6 +447,7 @@ class OutgoingDmRetryService {
         'interrupted-recovered=$processedInterrupted '
         'interrupted-failed=$failedInterrupted '
         'interrupted-blocked=$blockedInterrupted '
+        'interrupted-exhausted=$exhaustedInterrupted '
         'skipped-backoff=$skippedBackoff '
         'skipped-interrupted-too-young=$skippedInterruptedTooYoung '
         'aborted-not-ready=$abortedNotReady',
@@ -450,6 +471,33 @@ class OutgoingDmRetryService {
       );
     } finally {
       _isSweeping = false;
+    }
+  }
+
+  /// Terminalize a pending row that has exhausted its retry budget: mark both
+  /// wraps `failed` so it leaves the pending set, renders as a red failed
+  /// bubble, and stays out of `getRetryableForOwner` (which caps at
+  /// `retry_count < maxRetries`). Swallows DAO errors — a failed mark just
+  /// means the row is re-evaluated next sweep and terminalized then.
+  Future<void> _markInterruptedExhausted(String rumorId) async {
+    const error = 'Exhausted retries without recipient confirmation';
+    try {
+      await _dao.markRecipientWrapStatus(
+        id: rumorId,
+        status: OutgoingWrapStatus.failed,
+        lastError: error,
+      );
+      await _dao.markSelfWrapStatus(
+        id: rumorId,
+        status: OutgoingWrapStatus.failed,
+        lastError: error,
+      );
+    } on Object catch (e) {
+      Log.warning(
+        'failed to terminalize exhausted interrupted row $rumorId: $e',
+        name: 'OutgoingDmRetryService',
+        category: LogCategory.system,
+      );
     }
   }
 }

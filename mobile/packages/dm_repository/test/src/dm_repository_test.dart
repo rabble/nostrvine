@@ -663,6 +663,8 @@ void main() {
         () => mockMessageService.sendRumor(
           rumorEvent: any(named: 'rumorEvent'),
           recipientPubkey: any(named: 'recipientPubkey'),
+          targetRelays: any(named: 'targetRelays'),
+          awaitRecipientOk: any(named: 'awaitRecipientOk'),
         ),
       ).thenAnswer((inv) async {
         final rumorEvent = inv.namedArguments[#rumorEvent] as Event;
@@ -827,6 +829,8 @@ void main() {
                   () => mockMessageService.sendRumor(
                     rumorEvent: captureAny(named: 'rumorEvent'),
                     recipientPubkey: _validPubkeyB,
+                    targetRelays: any(named: 'targetRelays'),
+                    awaitRecipientOk: any(named: 'awaitRecipientOk'),
                   ),
                 ).captured.single
                 as Event;
@@ -862,6 +866,8 @@ void main() {
                   () => mockMessageService.sendRumor(
                     rumorEvent: captureAny(named: 'rumorEvent'),
                     recipientPubkey: _validPubkeyB,
+                    targetRelays: any(named: 'targetRelays'),
+                    awaitRecipientOk: any(named: 'awaitRecipientOk'),
                   ),
                 ).captured.single
                 as Event;
@@ -907,6 +913,8 @@ void main() {
                   () => mockMessageService.sendRumor(
                     rumorEvent: captureAny(named: 'rumorEvent'),
                     recipientPubkey: _validPubkeyB,
+                    targetRelays: any(named: 'targetRelays'),
+                    awaitRecipientOk: any(named: 'awaitRecipientOk'),
                   ),
                 ).captured.single
                 as Event;
@@ -1381,6 +1389,8 @@ void main() {
             () => mockMessageService.sendRumor(
               rumorEvent: any(named: 'rumorEvent'),
               recipientPubkey: any(named: 'recipientPubkey'),
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
             ),
           );
         },
@@ -6055,6 +6065,7 @@ void main() {
               rumorEvent: any(named: 'rumorEvent'),
               recipientPubkey: any(named: 'recipientPubkey'),
               targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
             ),
           );
         },
@@ -7395,6 +7406,8 @@ void main() {
             () => mockMessageService.sendRumor(
               rumorEvent: any(named: 'rumorEvent'),
               recipientPubkey: moderationPubkey,
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
             ),
           ).called(1);
 
@@ -7622,6 +7635,8 @@ void main() {
             () => mockMessageService.sendRumor(
               rumorEvent: any(named: 'rumorEvent'),
               recipientPubkey: externalUserPubkey,
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
             ),
           ).called(1);
         },
@@ -8418,6 +8433,8 @@ void main() {
             () => mockMessageService.sendRumor(
               rumorEvent: any(named: 'rumorEvent'),
               recipientPubkey: any(named: 'recipientPubkey'),
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
             ),
           ).called(1);
 
@@ -8474,6 +8491,8 @@ void main() {
             () => mockMessageService.sendRumor(
               rumorEvent: any(named: 'rumorEvent'),
               recipientPubkey: any(named: 'recipientPubkey'),
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
             ),
           ).called(1);
 
@@ -11002,6 +11021,8 @@ void main() {
                   () => mockMessageService.sendRumor(
                     rumorEvent: captureAny(named: 'rumorEvent'),
                     recipientPubkey: any(named: 'recipientPubkey'),
+                    targetRelays: any(named: 'targetRelays'),
+                    awaitRecipientOk: any(named: 'awaitRecipientOk'),
                   ),
                 ).captured.single
                 as Event;
@@ -11096,6 +11117,8 @@ void main() {
             () => mockMessageService.sendRumor(
               rumorEvent: any(named: 'rumorEvent'),
               recipientPubkey: any(named: 'recipientPubkey'),
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
             ),
           ).called(2);
 
@@ -11245,6 +11268,8 @@ void main() {
             () => mockMessageService.sendRumor(
               rumorEvent: captureAny(named: 'rumorEvent'),
               recipientPubkey: any(named: 'recipientPubkey'),
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
             ),
           ).captured.cast<Event>();
           expect(sentRumors, hasLength(2));
@@ -11413,6 +11438,8 @@ void main() {
             () => mockMessageService.sendRumor(
               rumorEvent: captureAny(named: 'rumorEvent'),
               recipientPubkey: any(named: 'recipientPubkey'),
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
             ),
           ).captured.cast<Event>();
           expect(sentRumors, hasLength(2));
@@ -11467,6 +11494,8 @@ void main() {
             () => mockMessageService.sendRumor(
               rumorEvent: captureAny(named: 'rumorEvent'),
               recipientPubkey: any(named: 'recipientPubkey'),
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
             ),
           ).captured.cast<Event>();
           expect(sentRumors, hasLength(2));
@@ -12466,6 +12495,9 @@ void main() {
             lastError: any(named: 'lastError'),
           ),
         ).thenAnswer((_) async => true);
+        when(
+          () => mockOutgoingDmsDao.incrementRetry(any()),
+        ).thenAnswer((_) async => true);
 
         // Surrounding stubs the success path needs (insertMessage,
         // upsertConversation, getConversation, publishEvent for the
@@ -12583,6 +12615,85 @@ void main() {
       );
 
       test(
+        'a soft-unconfirmed send keeps the enqueued row pending via '
+        'incrementRetry, does NOT mark it failed, delete it, or persist '
+        'locally',
+        () async {
+          stubSendRumor(
+            (_, _) async => const NIP17SendResult.failure(
+              'Message recipient OK unconfirmed',
+              retryablePending: true,
+            ),
+          );
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final result = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'unconfirmed message',
+          );
+
+          expect(result.success, isFalse);
+          expect(result.retryablePending, isTrue);
+          // Row was enqueued pending; the soft outcome only bumps the retry
+          // counter — it never flips to failed, never deletes, and (since the
+          // recipient is unconfirmed) never persists to direct_messages.
+          final enqueued =
+              verify(
+                    () => mockOutgoingDmsDao.enqueue(captureAny()),
+                  ).captured.single
+                  as OutgoingDm;
+          verify(
+            () => mockOutgoingDmsDao.incrementRetry(enqueued.id),
+          ).called(1);
+          verifyNever(
+            () => mockOutgoingDmsDao.markRecipientWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              eventId: any(named: 'eventId'),
+              lastError: any(named: 'lastError'),
+            ),
+          );
+          verifyNever(
+            () => mockOutgoingDmsDao.markSelfWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              eventId: any(named: 'eventId'),
+              lastError: any(named: 'lastError'),
+            ),
+          );
+          verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
+          verifyNever(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+            ),
+          );
+        },
+      );
+
+      test(
         'a policy-blocked recipient is neither enqueued nor sent (#176)',
         () async {
           when(
@@ -12605,6 +12716,8 @@ void main() {
             () => mockMessageService.sendRumor(
               rumorEvent: any(named: 'rumorEvent'),
               recipientPubkey: any(named: 'recipientPubkey'),
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
             ),
           );
         },
@@ -13332,6 +13445,8 @@ void main() {
             () => mockMessageService.sendRumor(
               rumorEvent: any(named: 'rumorEvent'),
               recipientPubkey: any(named: 'recipientPubkey'),
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
             ),
           );
           verifyNever(
@@ -13803,6 +13918,9 @@ void main() {
             lastError: any(named: 'lastError'),
           ),
         ).thenAnswer((_) async => true);
+        when(
+          () => mockOutgoingDmsDao.incrementRetry(any()),
+        ).thenAnswer((_) async => true);
 
         // Local persistence stubs for the happy-path transaction.
         when(
@@ -14136,6 +14254,81 @@ void main() {
       );
 
       test(
+        'on a soft-unconfirmed send: keeps the row pending via incrementRetry '
+        'and does NOT mark either wrap failed, delete, or persist locally',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow());
+          stubSendRumor(
+            (_, _) async => const NIP17SendResult.failure(
+              'Message recipient OK unconfirmed',
+              retryablePending: true,
+            ),
+          );
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final result = await repository.recoverFullSend(
+            rumorId: _rumorEventId,
+          );
+
+          // Soft: frame written, no OK yet. The row stays retryable-pending —
+          // only the retry counter is bumped so it renders as the in-flight
+          // clock (never a red failed bubble) and the next sweep re-drives it.
+          expect(result.success, isFalse);
+          expect(result.retryablePending, isTrue);
+          verify(
+            () => mockOutgoingDmsDao.incrementRetry(_rumorEventId),
+          ).called(1);
+          verifyNever(
+            () => mockOutgoingDmsDao.markRecipientWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              eventId: any(named: 'eventId'),
+              lastError: any(named: 'lastError'),
+            ),
+          );
+          verifyNever(
+            () => mockOutgoingDmsDao.markSelfWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              eventId: any(named: 'eventId'),
+              lastError: any(named: 'lastError'),
+            ),
+          );
+          verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
+          verifyNever(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+            ),
+          );
+        },
+      );
+
+      test(
         'on a blocked send: deletes the queue row instead of marking it '
         'failed, so the drain stops re-attempting a policy-blocked send',
         () async {
@@ -14285,6 +14478,8 @@ void main() {
             () => mockMessageService.sendRumor(
               rumorEvent: any(named: 'rumorEvent'),
               recipientPubkey: any(named: 'recipientPubkey'),
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
             ),
           );
           verifyNever(
@@ -14341,6 +14536,8 @@ void main() {
             () => mockMessageService.sendRumor(
               rumorEvent: any(named: 'rumorEvent'),
               recipientPubkey: any(named: 'recipientPubkey'),
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
             ),
           );
         },
@@ -14412,6 +14609,8 @@ void main() {
             () => mockMessageService.sendRumor(
               rumorEvent: any(named: 'rumorEvent'),
               recipientPubkey: any(named: 'recipientPubkey'),
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
             ),
           );
         },

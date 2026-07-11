@@ -402,6 +402,44 @@ void main() {
         );
 
         blocTest<ConversationBloc, ConversationState>(
+          'emits [sending, sent] with no lastFailedSend on a '
+          'soft-unconfirmed send (retryablePending) — no red retry SnackBar',
+          setUp: () {
+            when(
+              () => mockDmRepository.sendMessage(
+                recipientPubkey: recipientPubkey,
+                content: 'Hello',
+              ),
+            ).thenAnswer(
+              (_) async => const NIP17SendResult.failure(
+                'Message recipient OK unconfirmed',
+                retryablePending: true,
+              ),
+            );
+          },
+          build: buildBloc,
+          act: (bloc) => bloc.add(
+            const ConversationMessageSent(
+              recipientPubkeys: [recipientPubkey],
+              content: 'Hello',
+            ),
+          ),
+          expect: () => [
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sending,
+            ),
+            // Soft-unconfirmed: the durable queue keeps the pending bubble and
+            // the retry sweep re-drives it, so surface no failure — treated as
+            // optimistically sent with no retry payload.
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sent)
+                .having((s) => s.lastFailedSend, 'lastFailedSend', isNull),
+          ],
+        );
+
+        blocTest<ConversationBloc, ConversationState>(
           'emits [sending with optimistic message, failed without '
           'optimistic and with lastFailedSend] on failed sendMessage',
           setUp: () {

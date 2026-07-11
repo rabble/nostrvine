@@ -70,6 +70,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(StackTrace.empty);
+    registerFallbackValue(OutgoingWrapStatus.pending);
   });
 
   setUp(() {
@@ -1038,6 +1039,64 @@ void main() {
           ).called(1);
           // recoverFullSend already deleted the row; a policy block is
           // terminal, so the interrupted arm must not re-arm it.
+          verifyNever(() => dao.incrementRetry(any()));
+        },
+      );
+
+      test(
+        'terminalizes an exhausted pending row (retryCount >= maxRetries) to '
+        'failed instead of re-driving it forever',
+        () async {
+          final now = DateTime.utc(2026, 5, 10, 12);
+          // getStillPendingForOwner has no retry-count cap of its own, so a
+          // soft-unconfirmed / interrupted row that never confirms would
+          // re-drive on every trigger without this guard.
+          final exhausted = _row(
+            id: 'exhausted-1',
+            recipient: OutgoingWrapStatus.pending,
+            self: OutgoingWrapStatus.pending,
+            retryCount: 5, // == default maxRetries
+            queuedAt: now.subtract(const Duration(minutes: 5)),
+          );
+          when(
+            () => dao.getStillPendingForOwner(any()),
+          ).thenAnswer((_) async => [exhausted]);
+          when(
+            () => dao.markRecipientWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              lastError: any(named: 'lastError'),
+            ),
+          ).thenAnswer((_) async => true);
+          when(
+            () => dao.markSelfWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              lastError: any(named: 'lastError'),
+            ),
+          ).thenAnswer((_) async => true);
+
+          await buildService(now: () => now).sweep();
+
+          // Both wraps are flipped to failed (red bubble + manual-retry
+          // candidate); the row is never dispatched to recoverFullSend again.
+          verify(
+            () => dao.markRecipientWrapStatus(
+              id: 'exhausted-1',
+              status: OutgoingWrapStatus.failed,
+              lastError: any(named: 'lastError'),
+            ),
+          ).called(1);
+          verify(
+            () => dao.markSelfWrapStatus(
+              id: 'exhausted-1',
+              status: OutgoingWrapStatus.failed,
+              lastError: any(named: 'lastError'),
+            ),
+          ).called(1);
+          verifyNever(
+            () => dmRepository.recoverFullSend(rumorId: 'exhausted-1'),
+          );
           verifyNever(() => dao.incrementRetry(any()));
         },
       );
