@@ -4,6 +4,7 @@
 
 import 'dart:async';
 
+import 'package:dm_repository/dm_repository.dart' show DmSendPolicyDecision;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -36,6 +37,7 @@ void main() {
       ProviderContainer(
         overrides: [
           isDmRestrictedProvider.overrideWithValue(isRestricted),
+          hasConfirmedDmRestrictionProvider.overrideWithValue(isRestricted),
           officialAccountsServiceProvider.overrideWithValue(officials),
         ],
       );
@@ -46,7 +48,7 @@ void main() {
       final container = containerWith(isRestricted: false);
       final policy = container.read(dmSendPolicyProvider);
 
-      expect(await policy(strangerHex), isTrue);
+      expect(await policy(strangerHex), DmSendPolicyDecision.allowed);
       verifyNever(() => officials.isApprovedMinorDmRecipient(any()));
     },
   );
@@ -58,7 +60,7 @@ void main() {
     final container = containerWith(isRestricted: true);
     final policy = container.read(dmSendPolicyProvider);
 
-    expect(await policy(hqHex), isTrue);
+    expect(await policy(hqHex), DmSendPolicyDecision.allowed);
   });
 
   test('a restricted user may not send to a non-approved recipient', () async {
@@ -68,7 +70,10 @@ void main() {
     final container = containerWith(isRestricted: true);
     final policy = container.read(dmSendPolicyProvider);
 
-    expect(await policy(strangerHex), isFalse);
+    expect(
+      await policy(strangerHex),
+      DmSendPolicyDecision.terminallyBlocked,
+    );
   });
 
   test(
@@ -108,13 +113,46 @@ void main() {
 
       expect(
         await policy(strangerHex),
-        isFalse,
+        DmSendPolicyDecision.temporarilyBlocked,
         reason: 'unresolved + never-seen must restrict (fail closed)',
       );
       expect(
         await policy(hqHex),
-        isTrue,
+        DmSendPolicyDecision.allowed,
         reason: 'a pinned approved official stays reachable while restricted',
+      );
+    },
+  );
+
+  test(
+    'unresolved fail-closed denial is temporary, not a terminal policy block',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final authService = _MockAuthService();
+      when(() => authService.currentPublicKeyHex).thenReturn('a' * 64);
+      when(
+        () => officials.isApprovedMinorDmRecipient(strangerHex),
+      ).thenAnswer((_) async => false);
+
+      final container = ProviderContainer(
+        overrides: [
+          currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          authServiceProvider.overrideWithValue(authService),
+          protectedMinorStatusProvider.overrideWith(
+            (ref) => Completer<ProtectedMinorStatus>().future,
+          ),
+          officialAccountsServiceProvider.overrideWithValue(officials),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final decision = await container.read(dmSendPolicyProvider)(strangerHex);
+
+      expect(
+        decision,
+        DmSendPolicyDecision.temporarilyBlocked,
       );
     },
   );

@@ -2,7 +2,8 @@
 // ABOUTME: the discriminated NIP-05 resolver, the pin ∩ NIP-05 gate service, and
 // ABOUTME: the DmSendPolicy that NIP17MessageService consults on every send.
 
-import 'package:dm_repository/dm_repository.dart' show DmSendPolicy;
+import 'package:dm_repository/dm_repository.dart'
+    show DmSendPolicy, DmSendPolicyDecision;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/dm/conversation_list/protected_minor_inbox_gate.dart';
 import 'package:openvine/blocs/dm/conversation_list/protected_minor_inbox_gate_impl.dart';
@@ -31,13 +32,21 @@ final officialAccountsServiceProvider = Provider<OfficialAccountsService>((
 /// restricted user may only send to an account currently approved by
 /// [OfficialAccountsService] (pin ∩ live NIP-05). Reads state at call time
 /// (send-time) so the decision is fresh: a mid-session approval/revocation
-/// takes effect on the next send without rebuilding.
+/// takes effect on the next send without rebuilding. An unknown/loading
+/// protected-minor status still denies the send, but marks the denial temporary
+/// so a durable queue row is retained until Keycast provides a trusted verdict.
 final dmSendPolicyProvider = Provider<DmSendPolicy>((ref) {
   return (String recipientPubkey) async {
-    if (!ref.read(isDmRestrictedProvider)) return true;
-    return ref
+    if (!ref.read(isDmRestrictedProvider)) {
+      return DmSendPolicyDecision.allowed;
+    }
+    final approved = await ref
         .read(officialAccountsServiceProvider)
         .isApprovedMinorDmRecipient(recipientPubkey);
+    if (approved) return DmSendPolicyDecision.allowed;
+    return ref.read(hasConfirmedDmRestrictionProvider)
+        ? DmSendPolicyDecision.terminallyBlocked
+        : DmSendPolicyDecision.temporarilyBlocked;
   };
 });
 

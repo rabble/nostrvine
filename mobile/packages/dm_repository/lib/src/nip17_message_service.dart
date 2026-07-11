@@ -87,8 +87,8 @@ class NIP17MessageService {
   /// any per-recipient send. The per-send gate in [sendRumor] remains the
   /// authoritative choke point (covers the drain replay); this is the earlier,
   /// cheaper check.
-  Future<bool> canSendTo(String recipientPubkey) =>
-      _sendPolicy(recipientPubkey);
+  Future<bool> canSendTo(String recipientPubkey) async =>
+      await _sendPolicy(recipientPubkey) == DmSendPolicyDecision.allowed;
 
   /// Builds a single NIP-17 gift wrap for [receiverPublicKey] from
   /// [rumorEvent].
@@ -275,11 +275,17 @@ class NIP17MessageService {
       // recipient outside the approved official set. Checked before any wrap
       // build or publish, so a blocked send leaks no metadata to relays and
       // performs no signing work.
-      if (!await _sendPolicy(recipientPubkey)) {
+      final policyDecision = await _sendPolicy(recipientPubkey);
+      if (policyDecision != DmSendPolicyDecision.allowed) {
         Log.info(
           'NIP-17 send blocked by policy for recipient',
           category: LogCategory.system,
         );
+        if (policyDecision == DmSendPolicyDecision.temporarilyBlocked) {
+          return const NIP17SendResult.failure(
+            'temporarily blocked: protected-minor status unresolved',
+          );
+        }
         return const NIP17SendResult.blocked(
           'blocked: recipient not permitted by send policy',
         );

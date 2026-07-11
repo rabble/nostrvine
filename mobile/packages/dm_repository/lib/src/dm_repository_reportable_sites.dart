@@ -39,7 +39,7 @@ abstract class DmRepositoryReportableSites {
 
   /// `_finalizeAfterRecipientBlocked`: deleting the terminally-blocked
   /// queue row threw. Caller already has the blocked result; the row
-  /// stays failed and self-heals on a later sweep.
+  /// stays failed or pending and self-heals on a later sweep.
   static const String finalizeAfterRecipientBlocked =
       'finalizeAfterRecipientBlocked';
 

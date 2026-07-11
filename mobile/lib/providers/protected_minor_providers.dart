@@ -176,6 +176,22 @@ final isDmRestrictedProvider = Provider<bool>((ref) {
   return store.lastKnownFor(pubkey) ?? true;
 });
 
+/// Whether the current DM restriction comes from a confirmed protected-minor
+/// verdict rather than the fail-closed unknown/loading fallback.
+final hasConfirmedDmRestrictionProvider = Provider<bool>((ref) {
+  final authState = ref.watch(currentAuthStateProvider);
+  final pubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
+  final store = ref.watch(protectedMinorStickyStoreProvider);
+  final live = ref.watch(protectedMinorStatusProvider);
+  final trusted = trustedProtectedMinorStatus(
+    authenticated: authState == AuthState.authenticated,
+    live: live,
+  );
+  if (trusted?.kind == ProtectedMinorStatusKind.protected) return true;
+  if (trusted?.kind == ProtectedMinorStatusKind.notProtected) return false;
+  return store.lastKnownFor(pubkey) == true;
+});
+
 /// The #182 key-management seam — gates nsec export ("copy private key") and
 /// key import/change (swapping the account to a self-held key) for protected
 /// minors.

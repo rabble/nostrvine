@@ -3194,9 +3194,9 @@ class DmRepository {
         // arrives via the receive pipeline.
       }
     } else if (result.blocked) {
-      // A #176 policy block is a permanent decision, not a transient error:
+      // A confirmed #176 policy block is terminal, not a transient error:
       // drop the row so the retry sweep stops re-attempting a send the gate
-      // refuses every time. The recipient never received anything.
+      // refuses every time. This attempt delivered nothing.
       await _finalizeAfterRecipientBlocked(outgoingDao: dao, rumorId: rumorId);
     } else {
       await _finalizeAfterRecipientFailure(
@@ -3402,7 +3402,7 @@ class DmRepository {
 
   /// Apply the terminal queue-row transition for a policy-blocked (#176)
   /// recipient publish. Unlike [_finalizeAfterRecipientFailure], a block is
-  /// permanent — the send gate refuses every retry — so the row is deleted
+  /// terminal — the send gate refuses every retry — so the row is deleted
   /// rather than left retryable. Non-rethrowing to match the failure path: the
   /// caller still returns the blocked result. A failed delete leaves the row in
   /// place (still `failed` or `pending`, depending on the drain arm), which

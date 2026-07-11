@@ -14237,6 +14237,11 @@ void main() {
           // and re-dropped on the next sweep.
           expect(result.blocked, isTrue);
           verify(() => mockOutgoingDmsDao.deleteById(_rumorEventId)).called(1);
+          expect(reporterCalls, hasLength(1));
+          expect(
+            reporterCalls.single.site,
+            DmRepositoryReportableSites.finalizeAfterRecipientBlocked,
+          );
         },
       );
 

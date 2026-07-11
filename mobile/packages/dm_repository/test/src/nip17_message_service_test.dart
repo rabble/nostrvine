@@ -23,7 +23,12 @@ class _FakeEvent extends Fake implements Event {}
 
 /// Denies every recipient — stands in for a protected minor's policy where the
 /// counterparty is not in the approved official set.
-Future<bool> _denyAllPolicy(String recipientPubkey) async => false;
+Future<DmSendPolicyDecision> _denyAllPolicy(String recipientPubkey) async =>
+    DmSendPolicyDecision.terminallyBlocked;
+
+Future<DmSendPolicyDecision> _temporarilyDenyPolicy(
+  String recipientPubkey,
+) async => DmSendPolicyDecision.temporarilyBlocked;
 
 /// A local-key signer that advertises the isolate-offload capability,
 /// delegating all crypto to a real [LocalNostrSigner]. Used to exercise the
@@ -145,6 +150,31 @@ void main() {
 
           expect(await service.canSendTo(_recipientPubkey), isTrue);
           expect(await blocked.canSendTo(_recipientPubkey), isFalse);
+        },
+      );
+
+      test(
+        'temporary fail-closed policy denial stays retryable in the drain',
+        () async {
+          final temporarilyBlocked = NIP17MessageService(
+            signer: LocalNostrSigner(_testPrivateKey),
+            senderPublicKey: _testPublicKey,
+            nostrService: mockNostrClient,
+            sendPolicy: _temporarilyDenyPolicy,
+          );
+          final rumor = temporarilyBlocked.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'wait for account state',
+          );
+
+          final result = await temporarilyBlocked.sendRumor(
+            rumorEvent: rumor,
+            recipientPubkey: _recipientPubkey,
+          );
+
+          expect(result.success, isFalse);
+          expect(result.blocked, isFalse);
+          verifyNever(() => mockNostrClient.publishEvent(any()));
         },
       );
 
