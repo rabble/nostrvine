@@ -873,12 +873,8 @@ class BugReportService {
     if (uptime != null) {
       buffer.writeln('App Uptime: ${_formatDuration(uptime)}');
     }
-    try {
-      final tier = await DeviceMemoryUtil.getMemoryTier();
-      buffer.writeln('Memory Tier: ${tier.name}');
-    } on Object catch (_) {
-      // Memory tier probe failed; omit the line.
-    }
+    final tier = await DeviceMemoryUtil.getMemoryTier();
+    buffer.writeln('Memory Tier: ${tier.name}');
     final storage = _storageManagementService;
     if (storage != null) {
       try {
