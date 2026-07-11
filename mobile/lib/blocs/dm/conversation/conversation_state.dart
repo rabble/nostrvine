@@ -25,7 +25,8 @@ enum SendStatus { idle, sending, sent, sentPartial, failed, blocked }
 /// [pending] → [failed] on a recipient-side publish failure. Persisted
 /// rows with no queue row remaining are always [delivered].
 enum DmDeliveryStatus {
-  /// Neither wrap has landed yet. Clock indicator.
+  /// Neither wrap has landed yet. Renders as a plain sent bubble — sends are
+  /// optimistic, so there is no in-flight indicator (only [failed] is shown).
   pending,
 
   /// Both wraps landed, or the row is persisted with no queue row
@@ -35,11 +36,13 @@ enum DmDeliveryStatus {
 
   /// Recipient gift wrap landed, self-addressed gift wrap did not.
   /// The recipient sees the message; the sender's other devices will
-  /// not on relay-only restore. Warning indicator.
+  /// not on relay-only restore. Renders as a plain sent bubble (the
+  /// self-wrap recovery runs silently); no distinct indicator.
   deliveredSelfFailed,
 
-  /// Recipient gift wrap failed. The retry service will replay; the
-  /// user can also tap to retry. Error indicator.
+  /// Recipient gift wrap failed. The only status with a visible indicator:
+  /// the bubble shows the red "Not delivered" row and is tappable to
+  /// resend/cancel, and the retry service replays it on reconnect.
   failed,
 }
 

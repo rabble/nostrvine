@@ -54,6 +54,18 @@ Stream<void> _dmRetryConnectivityTriggerStream() => Connectivity()
     .where((results) => results.any((r) => r != ConnectivityResult.none))
     .map<void>((_) {});
 
+/// Reports whether the device currently has no network connectivity. Wired into
+/// `NIP17MessageService` so an offline DM send fails hard (a red "Not delivered"
+/// bubble that re-drives on reconnect) instead of being misread as a soft "OK
+/// lost" send — the misclassification a stale-`connected` relay socket causes in
+/// airplane mode. Mirrors the online predicate in
+/// [_dmRetryConnectivityTriggerStream] so the connectivity contract stays in one
+/// place. See #6046.
+Future<bool> dmSendConnectivityIsOffline() async {
+  final results = await Connectivity().checkConnectivity();
+  return !results.any((r) => r != ConnectivityResult.none);
+}
+
 final collaboratorResponseServiceProvider =
     Provider<CollaboratorResponseService>((ref) {
       return CollaboratorResponseService(

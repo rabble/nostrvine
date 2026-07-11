@@ -361,6 +361,104 @@ void main() {
           );
         },
       );
+
+      test(
+        'device offline (probe) → hard failure BEFORE any publish; no '
+        'OK-confirm attempt, no self-wrap (#6046)',
+        () async {
+          // Regression for #6046: on a real device, airplane mode does not
+          // flip the relay socket out of ConnectionState.connected
+          // synchronously, so publishEventAwaitOk would buffer the frame to a
+          // stale-connected socket and time out with noResponseFrom=[relay] —
+          // misclassified as soft/pending, leaving the bubble looking sent
+          // instead of red. The injected offline probe short-circuits that: no
+          // publish is attempted, and the send is a hard failure so the durable
+          // queue marks the row failed (red bubble) and the sweep re-drives it.
+          final offlineService = NIP17MessageService(
+            signer: LocalNostrSigner(_testPrivateKey),
+            senderPublicKey: getPublicKey(_testPrivateKey),
+            nostrService: mockNostrClient,
+            isOffline: () async => true,
+          );
+          var selfWraps = 0;
+          when(() => mockNostrClient.publishEvent(any())).thenAnswer((
+            inv,
+          ) async {
+            selfWraps++;
+            return PublishSuccess(event: inv.positionalArguments[0] as Event);
+          });
+
+          final rumor = offlineService.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'hi',
+          );
+          final result = await offlineService.sendRumor(
+            rumorEvent: rumor,
+            recipientPubkey: _recipientPubkey,
+            awaitRecipientOk: true,
+          );
+
+          expect(result.success, isFalse);
+          // Hard failure, not soft-pending: failed rows skip the sweep's
+          // in-flight min-age guard and re-drive on the next reconnect.
+          expect(result.retryablePending, isFalse);
+          expect(result.blocked, isFalse);
+          // Offline short-circuits before any relay round-trip: nothing is
+          // buffered to a stale socket, so there is no doomed OK-confirm wait…
+          verifyNever(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              timeout: any(named: 'timeout'),
+            ),
+          );
+          // …and no phantom self-wrap on the sender's other devices.
+          expect(selfWraps, 0);
+        },
+      );
+
+      test(
+        'probe reports online → unconfirmed send stays soft/retryable-pending '
+        '(behaviour unchanged when there IS connectivity) (#6046)',
+        () async {
+          // The offline guard must NOT fire when the device has connectivity: a
+          // genuine "frame written, OK lost" send on a live network is still
+          // soft-unconfirmed (a lost OK is not proof of loss). This pins that
+          // the guard is scoped to real offline, not any unconfirmed send.
+          final onlineService = NIP17MessageService(
+            signer: LocalNostrSigner(_testPrivateKey),
+            senderPublicKey: getPublicKey(_testPrivateKey),
+            nostrService: mockNostrClient,
+            isOffline: () async => false,
+          );
+          when(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer(
+            (_) async => outcome(noResponse: const ['wss://relay.example.com']),
+          );
+          when(() => mockNostrClient.publishEvent(any())).thenAnswer(
+            (
+              inv,
+            ) async =>
+                PublishSuccess(event: inv.positionalArguments[0] as Event),
+          );
+
+          final rumor = onlineService.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'hi',
+          );
+          final result = await onlineService.sendRumor(
+            rumorEvent: rumor,
+            recipientPubkey: _recipientPubkey,
+            awaitRecipientOk: true,
+          );
+
+          expect(result.success, isFalse);
+          expect(result.retryablePending, isTrue);
+        },
+      );
     });
 
     group('publishSelfApplicationMarker (#4977)', () {

@@ -43,6 +43,21 @@ typedef GiftWrapBuilder =
 typedef IsolateGiftWrapBatchBuilder =
     Future<List<BuiltGiftWrapResult>> Function(BuildGiftWrapRequest request);
 
+/// Reports whether the device currently has no network connectivity.
+///
+/// Injected by the app layer (wired to `connectivity_plus`). Lets `sendRumor`
+/// distinguish a genuine offline send — which must surface as a hard failure
+/// (a red "Not delivered" bubble that re-drives on reconnect) — from a soft
+/// "frame written, OK lost" send on a live network. Without it, an offline send
+/// whose relay socket is still stale-`connected` (airplane mode is not detected
+/// synchronously) buffers the frame to a dead socket, the recipient OK never
+/// arrives, and the send is misclassified as soft-unconfirmed — so the bubble
+/// keeps looking sent instead of turning red. See #6046.
+///
+/// Defaults to always-online (`false`) so callers and tests that do not wire
+/// connectivity in keep their prior classification behavior.
+typedef OfflineProbe = Future<bool> Function();
+
 /// Service for sending encrypted private messages using NIP-17 gift wrapping.
 ///
 /// Accepts any [NostrSigner] implementation, supporting both local key
@@ -54,12 +69,14 @@ class NIP17MessageService {
     required String senderPublicKey,
     required NostrClient nostrService,
     DmSendPolicy? sendPolicy,
+    OfflineProbe? isOffline,
     @visibleForTesting GiftWrapBuilder? giftWrapBuilder,
     @visibleForTesting IsolateGiftWrapBatchBuilder? isolateGiftWrapBatchBuilder,
   }) : _signer = signer,
        _senderPublicKey = senderPublicKey,
        _nostrService = nostrService,
        _sendPolicy = sendPolicy ?? allowAllDmSendPolicy,
+       _isOffline = isOffline ?? _alwaysOnline,
        _giftWrapBuilder = giftWrapBuilder ?? GiftWrapUtil.getGiftWrapEvent,
        _isolateGiftWrapBatchBuilder =
            isolateGiftWrapBatchBuilder ?? _computeGiftWrapBatch;
@@ -68,8 +85,13 @@ class NIP17MessageService {
   final String _senderPublicKey;
   final NostrClient _nostrService;
   final DmSendPolicy _sendPolicy;
+  final OfflineProbe _isOffline;
   final GiftWrapBuilder _giftWrapBuilder;
   final IsolateGiftWrapBatchBuilder _isolateGiftWrapBatchBuilder;
+
+  /// Default connectivity probe: assumes the device is online. Kept as a
+  /// static tear-off so the constructor's default captures no instance state.
+  static Future<bool> _alwaysOnline() async => false;
 
   /// Default off-main-isolate builder: runs [buildGiftWrapBatch] in a
   /// [compute] isolate. Kept as a static tear-off so the constructor's
@@ -307,6 +329,25 @@ class NIP17MessageService {
         );
       }
 
+      // Fail fast when the device has no connectivity. A publish while offline
+      // only buffers the frame to a relay socket still stale-`connected`
+      // (airplane mode is not detected synchronously — the WebSocket flips to
+      // disconnected only on an async OS close or the heartbeat idle timeout),
+      // so the OK-confirm path below would misread it as a soft "frame written,
+      // OK lost" send and keep the bubble looking sent. With no connectivity
+      // the send definitively did not happen: return a hard failure so the
+      // durable queue marks the row failed (red bubble) and the reconnect sweep
+      // re-drives it. See #6046.
+      if (await _isOfflineSafely()) {
+        Log.info(
+          'NIP-17 send skipped: device reports no connectivity',
+          category: LogCategory.system,
+        );
+        return const NIP17SendResult.failure(
+          'Message not sent: device offline',
+        );
+      }
+
       Log.info(
         'Sending NIP-17 encrypted message to recipient',
         category: LogCategory.system,
@@ -494,6 +535,20 @@ class NIP17MessageService {
         stackTrace: stackTrace,
       );
       return NIP17SendResult.failure('Failed to send message: $e');
+    }
+  }
+
+  /// Runs the injected connectivity probe, defaulting to online on any error so
+  /// a flaky probe never blocks a send that might otherwise succeed.
+  Future<bool> _isOfflineSafely() async {
+    try {
+      return await _isOffline();
+    } on Object catch (e) {
+      Log.warning(
+        'Offline probe failed; assuming online: $e',
+        category: LogCategory.system,
+      );
+      return false;
     }
   }
 
