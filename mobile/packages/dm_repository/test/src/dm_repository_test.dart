@@ -13027,6 +13027,9 @@ void main() {
             lastError: any(named: 'lastError'),
           ),
         ).thenAnswer((_) async => true);
+        when(
+          () => mockOutgoingDmsDao.incrementRetry(any()),
+        ).thenAnswer((_) async => true);
 
         when(
           () => mockDirectMessagesDao.insertMessage(
@@ -13311,6 +13314,101 @@ void main() {
               eventId: any(named: 'eventId'),
             ),
           );
+        },
+      );
+
+      test(
+        'keeps a soft-unconfirmed recipient pending via incrementRetry '
+        'while the others fully deliver',
+        () async {
+          stubSendRumor((_, recipient) async {
+            if (recipient == _validPubkeyC) {
+              return const NIP17SendResult.failure(
+                'recipient OK unconfirmed',
+                retryablePending: true,
+              );
+            }
+            return NIP17SendResult.success(
+              rumorEventId: 'rumor-$recipient',
+              messageEventId: 'wrap-$recipient',
+              recipientPubkey: recipient,
+            );
+          });
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          await repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'one soft recipient',
+          );
+
+          final captured = verify(
+            () => mockOutgoingDmsDao.enqueue(captureAny()),
+          ).captured;
+          final enqueuedB = captured.first as OutgoingDm;
+          final enqueuedC = captured.last as OutgoingDm;
+
+          verify(() => mockOutgoingDmsDao.deleteById(enqueuedB.id)).called(1);
+          // Soft recipient: row stays pending (in-flight clock), only the
+          // retry counter bumps — never marked failed, never deleted.
+          verify(
+            () => mockOutgoingDmsDao.incrementRetry(enqueuedC.id),
+          ).called(1);
+          verifyNever(() => mockOutgoingDmsDao.deleteById(enqueuedC.id));
+          verifyNever(
+            () => mockOutgoingDmsDao.markRecipientWrapStatus(
+              id: enqueuedC.id,
+              status: OutgoingWrapStatus.failed,
+              lastError: any(named: 'lastError'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'drops a mid-flight policy-blocked recipient row while the others '
+        'fully deliver',
+        () async {
+          stubSendRumor((_, recipient) async {
+            if (recipient == _validPubkeyC) {
+              return const NIP17SendResult.blocked('blocked by policy');
+            }
+            return NIP17SendResult.success(
+              rumorEventId: 'rumor-$recipient',
+              messageEventId: 'wrap-$recipient',
+              recipientPubkey: recipient,
+            );
+          });
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          await repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'one blocked recipient',
+          );
+
+          final captured = verify(
+            () => mockOutgoingDmsDao.enqueue(captureAny()),
+          ).captured;
+          final enqueuedB = captured.first as OutgoingDm;
+          final enqueuedC = captured.last as OutgoingDm;
+
+          // Both the delivered row and the terminally-blocked row are
+          // deleted; a block is terminal, not a retryable failure.
+          verify(() => mockOutgoingDmsDao.deleteById(enqueuedB.id)).called(1);
+          verify(() => mockOutgoingDmsDao.deleteById(enqueuedC.id)).called(1);
+          verifyNever(
+            () => mockOutgoingDmsDao.markRecipientWrapStatus(
+              id: enqueuedC.id,
+              status: OutgoingWrapStatus.failed,
+              lastError: any(named: 'lastError'),
+            ),
+          );
+          verifyNever(() => mockOutgoingDmsDao.incrementRetry(enqueuedC.id));
         },
       );
 
