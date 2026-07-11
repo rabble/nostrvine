@@ -3,6 +3,8 @@
 
 import 'dart:convert';
 
+import 'package:dm_repository/dm_repository.dart'
+    show CollaboratorInviteRetrySummary;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -137,6 +139,61 @@ void main() {
       expect(
         notifier.collaboratorInviteWarningMessage(l10n, 2),
         l10n.videoPublishCollaboratorInviteWarning(2),
+      );
+    });
+
+    test(
+      'collaborator invite retry message prioritizes transient failures',
+      () {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        expect(
+          notifier.collaboratorInviteRetryResultMessage(
+            l10n,
+            const CollaboratorInviteRetrySummary(
+              attemptedCount: 3,
+              successCount: 1,
+              failureCount: 1,
+              blockedCount: 1,
+            ),
+          ),
+          l10n.videoPublishCollaboratorInviteWarning(1),
+        );
+      },
+    );
+
+    test('collaborator invite retry message reports terminal blocks apart '
+        'from failures', () {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      expect(
+        notifier.collaboratorInviteRetryResultMessage(
+          l10n,
+          const CollaboratorInviteRetrySummary(
+            attemptedCount: 1,
+            successCount: 0,
+            failureCount: 0,
+            blockedCount: 1,
+          ),
+        ),
+        l10n.profileCollaboratorInviteBlockedResult(1),
+      );
+    });
+
+    test('collaborator invite retry message reads as sent when all '
+        'delivered', () {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      expect(
+        notifier.collaboratorInviteRetryResultMessage(
+          l10n,
+          const CollaboratorInviteRetrySummary(
+            attemptedCount: 2,
+            successCount: 2,
+            failureCount: 0,
+          ),
+        ),
+        l10n.profileCollaboratorInviteRetryResult(0),
       );
     });
 

@@ -16,26 +16,41 @@ class PendingCollaboratorInviteBannerState extends Equatable {
     this.isRetrying = false,
     this.feedback = PendingCollaboratorInviteBannerFeedback.none,
     this.remainingInviteCount = 0,
+    this.blockedInviteCount = 0,
   });
 
   final bool isRetrying;
   final PendingCollaboratorInviteBannerFeedback feedback;
+
+  /// Invites that failed transiently and remain queued for a later retry.
   final int remainingInviteCount;
+
+  /// Invites terminally dropped because the collaborator cannot receive DMs
+  /// (a confirmed #176 policy block). Their queue rows are deleted, so they
+  /// are surfaced apart from [remainingInviteCount].
+  final int blockedInviteCount;
 
   PendingCollaboratorInviteBannerState copyWith({
     bool? isRetrying,
     PendingCollaboratorInviteBannerFeedback? feedback,
     int? remainingInviteCount,
+    int? blockedInviteCount,
   }) {
     return PendingCollaboratorInviteBannerState(
       isRetrying: isRetrying ?? this.isRetrying,
       feedback: feedback ?? this.feedback,
       remainingInviteCount: remainingInviteCount ?? this.remainingInviteCount,
+      blockedInviteCount: blockedInviteCount ?? this.blockedInviteCount,
     );
   }
 
   @override
-  List<Object?> get props => [isRetrying, feedback, remainingInviteCount];
+  List<Object?> get props => [
+    isRetrying,
+    feedback,
+    remainingInviteCount,
+    blockedInviteCount,
+  ];
 }
 
 class PendingCollaboratorInviteBannerCubit
@@ -72,6 +87,7 @@ class PendingCollaboratorInviteBannerCubit
         isRetrying: false,
         feedback: PendingCollaboratorInviteBannerFeedback.retryCompleted,
         remainingInviteCount: summary.failureCount,
+        blockedInviteCount: summary.blockedCount,
       ),
     );
   }

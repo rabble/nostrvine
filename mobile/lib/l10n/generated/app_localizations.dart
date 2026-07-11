@@ -820,6 +820,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{Collaborator invites sent.} =1{1 collaborator invite still needs to send.} other{{count} collaborator invites still need to send.}}'**
   String profileCollaboratorInviteRetryResult(int count);
 
+  /// Shown after retrying queued collaborator invites when some were terminally dropped because the collaborator is not an approved DM recipient (a confirmed #176 protected-minor policy block). The invite can never be delivered, so it is reported separately from invites that still need to send.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 collaborator can\'t receive invites.} other{{count} collaborators can\'t receive invites.}}'**
+  String profileCollaboratorInviteBlockedResult(int count);
+
   /// No description provided for @profileFollowerCountUsers.
   ///
   /// In en, this message translates to:

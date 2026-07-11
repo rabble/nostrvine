@@ -4076,6 +4076,8 @@
     "profileCollaboratorInviteRetryUnavailable": "إعادة محاولة دعوة التعاون غير متاحة الآن.",
     "profileCollaboratorInviteRetryResult": "{count, plural, =0{تم إرسال دعوات التعاون.} one{دعوة تعاون واحدة ما زالت بحاجة للإرسال.} two{دعوتا تعاون ما زالتا بحاجة للإرسال.} few{{count} دعوات تعاون ما زالت بحاجة للإرسال.} many{{count} دعوة تعاون ما زالت بحاجة للإرسال.} other{{count} دعوة تعاون ما زالت بحاجة للإرسال.}}",
     "@profileCollaboratorInviteRetryResult": {"placeholders": {"count": {"type": "int"}}},
+    "profileCollaboratorInviteBlockedResult": "{count, plural, one{متعاون واحد لا يمكنه استقبال الدعوات.} two{متعاونان لا يمكنهما استقبال الدعوات.} few{{count} متعاونين لا يمكنهم استقبال الدعوات.} many{{count} متعاونًا لا يمكنه استقبال الدعوات.} other{{count} متعاون لا يمكنه استقبال الدعوات.}}",
+    "@profileCollaboratorInviteBlockedResult": {"placeholders": {"count": {"type": "int"}}},
     "videoErrorAdultContentHidden": "المحتوى للبالغين مُعطَّل. يمكنك تفعيله من الإعدادات ← مرشّحات المحتوى.",
     "@videoErrorAdultContentHidden": {"description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."},
     "videoDetailLoadError": "فشل تحميل الفيديو: {error}",

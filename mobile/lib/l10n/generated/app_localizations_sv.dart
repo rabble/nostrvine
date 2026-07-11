@@ -421,6 +421,17 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String profileCollaboratorInviteBlockedResult(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count samarbetspartner kan inte ta emot inbjudningar.',
+      one: '1 samarbetspartner kan inte ta emot inbjudningar.',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String profileFollowerCountUsers(int count) {
     return '$count användare';
   }

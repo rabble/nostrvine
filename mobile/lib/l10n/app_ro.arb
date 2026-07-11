@@ -4076,6 +4076,8 @@
     "profileCollaboratorInviteRetryUnavailable": "Reîncercarea invitației de colaborator nu e disponibilă acum.",
     "profileCollaboratorInviteRetryResult": "{count, plural, =0{Invitațiile de colaborator au fost trimise.} =1{1 invitație de colaborator încă trebuie trimisă.} few{{count} invitații de colaborator încă trebuie trimise.} other{{count} de invitații de colaborator încă trebuie trimise.}}",
     "@profileCollaboratorInviteRetryResult": {"placeholders": {"count": {"type": "int"}}},
+    "profileCollaboratorInviteBlockedResult": "{count, plural, =1{1 colaborator nu poate primi invitații.} few{{count} colaboratori nu pot primi invitații.} other{{count} de colaboratori nu pot primi invitații.}}",
+    "@profileCollaboratorInviteBlockedResult": {"placeholders": {"count": {"type": "int"}}},
     "videoErrorAdultContentHidden": "Conținutul pentru adulți este dezactivat. Îl poți activa în Setări → Filtre de conținut.",
     "@videoErrorAdultContentHidden": {"description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."},
     "videoDetailLoadError": "N-am putut încărca videoclipul: {error}",

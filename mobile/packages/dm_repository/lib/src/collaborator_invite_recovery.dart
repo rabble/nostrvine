@@ -220,6 +220,7 @@ class CollaboratorInviteRetrySummary extends Equatable {
     required this.attemptedCount,
     required this.successCount,
     required this.failureCount,
+    this.blockedCount = 0,
   });
 
   /// Number of invites considered for retry.
@@ -228,14 +229,27 @@ class CollaboratorInviteRetrySummary extends Equatable {
   /// Number of invites successfully recovered.
   final int successCount;
 
-  /// Number of invites that still failed.
+  /// Number of invites that failed transiently and remain queued for a later
+  /// retry. Excludes [blockedCount]: a confirmed #176 policy block is terminal,
+  /// not "still needs to send".
   final int failureCount;
+
+  /// Number of invites terminally dropped because the recipient is not an
+  /// approved DM recipient (a confirmed #176 policy block). The queue rows are
+  /// deleted and are never retryable, so they are surfaced apart from
+  /// [failureCount].
+  final int blockedCount;
 
   /// Whether every attempted recovery succeeded.
   bool get allSucceeded => attemptedCount == successCount;
 
   @override
-  List<Object?> get props => [attemptedCount, successCount, failureCount];
+  List<Object?> get props => [
+    attemptedCount,
+    successCount,
+    failureCount,
+    blockedCount,
+  ];
 }
 
 /// Parses collaborator-invite metadata from a rumor event.

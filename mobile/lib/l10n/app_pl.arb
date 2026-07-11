@@ -4076,6 +4076,8 @@
     "profileCollaboratorInviteRetryUnavailable": "Ponawianie zaproszenia dla współtwórcy jest teraz niedostępne.",
     "profileCollaboratorInviteRetryResult": "{count, plural, =0{Zaproszenia dla współtwórców wysłane.} =1{1 zaproszenie dla współtwórcy wciąż czeka na wysłanie.} few{{count} zaproszenia dla współtwórców wciąż czekają na wysłanie.} many{{count} zaproszeń dla współtwórców wciąż czeka na wysłanie.} other{{count} zaproszenia dla współtwórców wciąż czeka na wysłanie.}}",
     "@profileCollaboratorInviteRetryResult": {"placeholders": {"count": {"type": "int"}}},
+    "profileCollaboratorInviteBlockedResult": "{count, plural, =1{1 współtwórca nie może otrzymywać zaproszeń.} few{{count} współtwórcy nie mogą otrzymywać zaproszeń.} many{{count} współtwórców nie może otrzymywać zaproszeń.} other{{count} współtwórcy nie może otrzymywać zaproszeń.}}",
+    "@profileCollaboratorInviteBlockedResult": {"placeholders": {"count": {"type": "int"}}},
     "videoErrorAdultContentHidden": "Treści dla dorosłych są wyłączone. Możesz je włączyć w Ustawienia → Filtry treści.",
     "@videoErrorAdultContentHidden": {"description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."},
     "videoDetailLoadError": "Nie udało się wczytać filmu: {error}",

@@ -4076,6 +4076,8 @@
     "profileCollaboratorInviteRetryUnavailable": "İş birlikçi davetini tekrar deneme şu anda kullanılamıyor.",
     "profileCollaboratorInviteRetryResult": "{count, plural, =0{İş birlikçi davetleri gönderildi.} =1{1 iş birlikçi daveti hâlâ gönderilmeyi bekliyor.} other{{count} iş birlikçi daveti hâlâ gönderilmeyi bekliyor.}}",
     "@profileCollaboratorInviteRetryResult": {"placeholders": {"count": {"type": "int"}}},
+    "profileCollaboratorInviteBlockedResult": "{count, plural, =1{1 iş birlikçi davet alamıyor.} other{{count} iş birlikçi davet alamıyor.}}",
+    "@profileCollaboratorInviteBlockedResult": {"placeholders": {"count": {"type": "int"}}},
     "videoErrorAdultContentHidden": "Yetişkin içeriği kapalı. Ayarlar → İçerik Filtreleri'nden açabilirsin.",
     "@videoErrorAdultContentHidden": {"description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."},
     "videoDetailLoadError": "Video yüklenemedi: {error}",

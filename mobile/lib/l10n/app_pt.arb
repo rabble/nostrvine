@@ -4076,6 +4076,8 @@
     "profileCollaboratorInviteRetryUnavailable": "Não é possível reenviar o convite de colaborador agora.",
     "profileCollaboratorInviteRetryResult": "{count, plural, =0{Convites de colaborador enviados.} =1{1 convite de colaborador ainda precisa ser enviado.} other{{count} convites de colaborador ainda precisam ser enviados.}}",
     "@profileCollaboratorInviteRetryResult": {"placeholders": {"count": {"type": "int"}}},
+    "profileCollaboratorInviteBlockedResult": "{count, plural, =1{1 colaborador não pode receber convites.} other{{count} colaboradores não podem receber convites.}}",
+    "@profileCollaboratorInviteBlockedResult": {"placeholders": {"count": {"type": "int"}}},
     "videoErrorAdultContentHidden": "O conteúdo adulto está desativado. Você pode ativá-lo em Configurações → Filtros de conteúdo.",
     "@videoErrorAdultContentHidden": {"description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."},
     "videoDetailLoadError": "Falha ao carregar o vídeo: {error}",

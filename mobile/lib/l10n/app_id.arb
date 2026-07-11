@@ -4076,6 +4076,8 @@
     "profileCollaboratorInviteRetryUnavailable": "Kirim ulang undangan kolaborator sedang tidak tersedia saat ini.",
     "profileCollaboratorInviteRetryResult": "{count, plural, =0{Undangan kolaborator terkirim.} =1{1 undangan kolaborator masih perlu dikirim.} other{{count} undangan kolaborator masih perlu dikirim.}}",
     "@profileCollaboratorInviteRetryResult": {"placeholders": {"count": {"type": "int"}}},
+    "profileCollaboratorInviteBlockedResult": "{count, plural, =1{1 kolaborator tidak bisa menerima undangan.} other{{count} kolaborator tidak bisa menerima undangan.}}",
+    "@profileCollaboratorInviteBlockedResult": {"placeholders": {"count": {"type": "int"}}},
     "videoErrorAdultContentHidden": "Konten dewasa sedang dimatikan. Kamu bisa mengaktifkannya di Pengaturan → Filter Konten.",
     "@videoErrorAdultContentHidden": {"description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."},
     "videoDetailLoadError": "Gagal memuat video: {error}",

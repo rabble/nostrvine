@@ -3400,6 +3400,8 @@
     "profileCollaboratorInviteRetryUnavailable": "지금은 콜라보 초대를 다시 보낼 수 없어요.",
     "profileCollaboratorInviteRetryResult": "{count, plural, =0{콜라보 초대를 보냈어요.} =1{보내야 할 콜라보 초대가 1건 남아 있어요.} other{보내야 할 콜라보 초대가 {count}건 남아 있어요.}}",
     "@profileCollaboratorInviteRetryResult": {"placeholders": {"count": {"type": "int"}}},
+    "profileCollaboratorInviteBlockedResult": "{count, plural, =1{콜라보 상대 1명이 초대를 받을 수 없어요.} other{콜라보 상대 {count}명이 초대를 받을 수 없어요.}}",
+    "@profileCollaboratorInviteBlockedResult": {"placeholders": {"count": {"type": "int"}}},
     "videoErrorAdultContentHidden": "성인 콘텐츠가 꺼져 있어요. 설정 → 콘텐츠 필터에서 켤 수 있어요.",
     "@videoErrorAdultContentHidden": {"description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."},
     "videoDetailLoadError": "영상을 불러오지 못했어요: {error}",

@@ -4076,6 +4076,8 @@
     "profileCollaboratorInviteRetryUnavailable": "Det går inte att skicka samarbetsinbjudan igen just nu.",
     "profileCollaboratorInviteRetryResult": "{count, plural, =0{Samarbetsinbjudningar skickade.} =1{1 samarbetsinbjudan behöver fortfarande skickas.} other{{count} samarbetsinbjudningar behöver fortfarande skickas.}}",
     "@profileCollaboratorInviteRetryResult": {"placeholders": {"count": {"type": "int"}}},
+    "profileCollaboratorInviteBlockedResult": "{count, plural, =1{1 samarbetspartner kan inte ta emot inbjudningar.} other{{count} samarbetspartner kan inte ta emot inbjudningar.}}",
+    "@profileCollaboratorInviteBlockedResult": {"placeholders": {"count": {"type": "int"}}},
     "videoErrorAdultContentHidden": "Innehåll för vuxna är avstängt. Du kan slå på det i Inställningar → Innehållsfilter.",
     "@videoErrorAdultContentHidden": {"description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."},
     "videoDetailLoadError": "Kunde inte läsa in videon: {error}",

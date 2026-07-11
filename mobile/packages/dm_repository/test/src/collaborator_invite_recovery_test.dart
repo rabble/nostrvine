@@ -588,6 +588,101 @@ void main() {
       );
     },
   );
+
+  test(
+    'retryPendingCollaboratorInvites counts a confirmed policy block as '
+    'terminal, not a retryable failure',
+    () async {
+      recoverFullSendHandler = (rumorId) async {
+        if (rumorId == 'blocked-b') {
+          return const NIP17SendResult.blocked(
+            'blocked: recipient not permitted by send policy',
+          );
+        }
+        return NIP17SendResult.success(
+          rumorEventId: rumorId,
+          messageEventId: 'wrap:$rumorId',
+          recipientPubkey: _collaboratorA,
+        );
+      };
+
+      final summary = await repository.retryPendingCollaboratorInvites([
+        _toPendingInvite(
+          _inviteRow(
+            id: 'target-a',
+            collaboratorPubkey: _collaboratorA,
+            recipient: OutgoingWrapStatus.failed,
+            self: OutgoingWrapStatus.failed,
+          ),
+        ),
+        _toPendingInvite(
+          _inviteRow(
+            id: 'blocked-b',
+            collaboratorPubkey: _collaboratorB,
+            recipient: OutgoingWrapStatus.failed,
+            self: OutgoingWrapStatus.failed,
+          ),
+        ),
+      ]);
+
+      expect(summary.attemptedCount, 2);
+      expect(summary.successCount, 1);
+      expect(summary.blockedCount, 1);
+      // A terminal block is neither delivered nor retryable, so it must not
+      // inflate the "still needs to send" failure count...
+      expect(summary.failureCount, 0);
+      // ...and it is an expected outcome, not a crash to report.
+      expect(reportedErrors, isEmpty);
+    },
+  );
+
+  test(
+    'retryPendingCollaboratorInvites skips a row removed by a concurrent '
+    'sweep without reporting it',
+    () async {
+      recoverFullSendHandler = (rumorId) async {
+        if (rumorId == 'raced') {
+          throw ArgumentError.value(
+            rumorId,
+            'rumorId',
+            'no queued outgoing DM with this id',
+          );
+        }
+        return NIP17SendResult.success(
+          rumorEventId: rumorId,
+          messageEventId: 'wrap:$rumorId',
+          recipientPubkey: _collaboratorA,
+        );
+      };
+
+      final summary = await repository.retryPendingCollaboratorInvites([
+        _toPendingInvite(
+          _inviteRow(
+            id: 'target-a',
+            collaboratorPubkey: _collaboratorA,
+            recipient: OutgoingWrapStatus.failed,
+            self: OutgoingWrapStatus.failed,
+          ),
+        ),
+        _toPendingInvite(
+          _inviteRow(
+            id: 'raced',
+            collaboratorPubkey: _collaboratorB,
+            recipient: OutgoingWrapStatus.failed,
+            self: OutgoingWrapStatus.failed,
+          ),
+        ),
+      ]);
+
+      expect(summary.attemptedCount, 2);
+      expect(summary.successCount, 1);
+      // The raced row is terminal for this invite but not a retryable
+      // failure, and the expected race must not reach Crashlytics.
+      expect(summary.failureCount, 0);
+      expect(summary.blockedCount, 0);
+      expect(reportedErrors, isEmpty);
+    },
+  );
 }
 
 PendingCollaboratorInvite _toPendingInvite(OutgoingDm row) {

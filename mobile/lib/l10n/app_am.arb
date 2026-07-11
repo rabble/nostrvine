@@ -4201,6 +4201,8 @@
     "profileCollaboratorInviteRetryUnavailable": "የተባባሪ ግብዣ እንደገና መሞከር አሁን አይገኝም።",
     "profileCollaboratorInviteRetryResult": "{count, plural, =0{የተባባሪ ግብዣዎች ተልከዋል።} =1{1 የተባባሪ ግብዣ አሁንም መላክ ይፈልጋል።} other{{count} የተባባሪ ግብዣዎች አሁንም መላክ ይፈልጋሉ።}}",
     "@profileCollaboratorInviteRetryResult": {"placeholders": {"count": {"type": "int"}}},
+    "profileCollaboratorInviteBlockedResult": "{count, plural, =1{1 ተባባሪ ግብዣ መቀበል አይችልም።} other{{count} ተባባሪዎች ግብዣ መቀበል አይችሉም።}}",
+    "@profileCollaboratorInviteBlockedResult": {"placeholders": {"count": {"type": "int"}}},
     "videoErrorAdultContentHidden": "የአዋቂዎች ይዘት ጠፍቷል። በቅንብሮች → የይዘት ማጣሪያዎች ውስጥ ማብራት ይችላሉ።",
     "@videoErrorAdultContentHidden": {"description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."},
     "videoDetailLoadError": "ቪዲዮ መጫን አልተሳካም፦ {error}",

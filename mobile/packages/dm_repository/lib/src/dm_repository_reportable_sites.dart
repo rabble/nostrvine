@@ -43,8 +43,10 @@ abstract class DmRepositoryReportableSites {
   static const String finalizeAfterRecipientBlocked =
       'finalizeAfterRecipientBlocked';
 
-  /// `retryPendingCollaboratorInvites*`: `recoverFullSend` threw while
-  /// replaying a queued collaborator invite row.
+  /// `retryPendingCollaboratorInvites*`: `recoverFullSend` threw an
+  /// unexpected error while replaying a queued collaborator invite row.
+  /// The expected `ArgumentError` race (row deleted by a concurrent drain
+  /// sweep, or a foreign-owner row) is skipped and does NOT report here.
   static const String retryPendingCollaboratorInviteUnexpectedThrow =
       'retryPendingCollaboratorInvite.unexpectedThrow';
 

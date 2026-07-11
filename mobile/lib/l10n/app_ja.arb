@@ -4076,6 +4076,8 @@
     "profileCollaboratorInviteRetryUnavailable": "今はコラボ招待の再送信ができないよ。",
     "profileCollaboratorInviteRetryResult": "{count, plural, =0{コラボの招待を送信したよ。} =1{コラボの招待が1件まだ送信されてないよ。} other{コラボの招待が{count}件まだ送信されてないよ。}}",
     "@profileCollaboratorInviteRetryResult": {"placeholders": {"count": {"type": "int"}}},
+    "profileCollaboratorInviteBlockedResult": "{count, plural, =1{コラボ相手1人が招待を受け取れないよ。} other{コラボ相手{count}人が招待を受け取れないよ。}}",
+    "@profileCollaboratorInviteBlockedResult": {"placeholders": {"count": {"type": "int"}}},
     "videoErrorAdultContentHidden": "アダルトコンテンツはオフになってるよ。[設定]→[コンテンツフィルター]でオンにできるよ。",
     "@videoErrorAdultContentHidden": {"description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."},
     "videoDetailLoadError": "動画の読み込みに失敗したよ: {error}",

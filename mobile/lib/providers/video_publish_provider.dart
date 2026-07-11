@@ -5,6 +5,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:dm_repository/dm_repository.dart'
+    show CollaboratorInviteRetrySummary;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -316,6 +318,25 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
     return l10n.videoPublishCollaboratorInviteWarning(failedCount);
   }
 
+  /// Picks the snackbar line for a finished collaborator-invite retry.
+  ///
+  /// Transient failures (still queued) take priority; a confirmed #176 policy
+  /// block is terminal and reported apart from "still needs to send"; otherwise
+  /// every invite was delivered.
+  @visibleForTesting
+  String collaboratorInviteRetryResultMessage(
+    AppLocalizations l10n,
+    CollaboratorInviteRetrySummary summary,
+  ) {
+    if (summary.failureCount > 0) {
+      return collaboratorInviteWarningMessage(l10n, summary.failureCount);
+    }
+    if (summary.blockedCount > 0) {
+      return l10n.profileCollaboratorInviteBlockedResult(summary.blockedCount);
+    }
+    return l10n.profileCollaboratorInviteRetryResult(0);
+  }
+
   /// Publishes the video with ProofMode attestation and navigates to
   /// profile on success.
   Future<void> publishVideo(
@@ -563,13 +584,10 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         (warning) => warning.collaboratorPubkey,
       ),
     );
+    final message = collaboratorInviteRetryResultMessage(l10n, summary);
     messenger.showSnackBar(
       SnackBar(
-        content: Text(
-          summary.failureCount == 0
-              ? l10n.profileCollaboratorInviteRetryResult(0)
-              : collaboratorInviteWarningMessage(l10n, summary.failureCount),
-        ),
+        content: Text(message),
         behavior: SnackBarBehavior.floating,
       ),
     );

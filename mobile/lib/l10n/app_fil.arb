@@ -2659,6 +2659,8 @@
     "profileCollaboratorInviteRetryUnavailable": "Hindi available ngayon ang pag-retry ng collaborator invite.",
     "profileCollaboratorInviteRetryResult": "{count, plural, =0{Naipadala na ang mga collaborator invite.} =1{1 collaborator invite ang kailangan pang ipadala.} other{{count} collaborator invite ang kailangan pang ipadala.}}",
     "@profileCollaboratorInviteRetryResult": {"placeholders": {"count": {"type": "int"}}},
+    "profileCollaboratorInviteBlockedResult": "{count, plural, =1{1 collaborator ang hindi makakatanggap ng mga invite.} other{{count} collaborator ang hindi makakatanggap ng mga invite.}}",
+    "@profileCollaboratorInviteBlockedResult": {"placeholders": {"count": {"type": "int"}}},
     "videoErrorAdultContentHidden": "Naka-off ang adult content. Puwede mong i-on sa Settings → Content Filters.",
     "@videoErrorAdultContentHidden": {"description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."},
     "videoDetailLoadError": "Hindi ma-load ang video: {error}",

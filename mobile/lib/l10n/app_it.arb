@@ -4076,6 +4076,8 @@
     "profileCollaboratorInviteRetryUnavailable": "Il nuovo invio degli inviti a collaborare non è disponibile al momento.",
     "profileCollaboratorInviteRetryResult": "{count, plural, =0{Inviti a collaborare inviati.} =1{1 invito a collaborare deve ancora essere inviato.} other{{count} inviti a collaborare devono ancora essere inviati.}}",
     "@profileCollaboratorInviteRetryResult": {"placeholders": {"count": {"type": "int"}}},
+    "profileCollaboratorInviteBlockedResult": "{count, plural, =1{1 collaboratore non può ricevere inviti.} other{{count} collaboratori non possono ricevere inviti.}}",
+    "@profileCollaboratorInviteBlockedResult": {"placeholders": {"count": {"type": "int"}}},
     "videoErrorAdultContentHidden": "I contenuti per adulti sono disattivati. Puoi attivarli in Impostazioni → Filtri contenuti.",
     "@videoErrorAdultContentHidden": {"description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."},
     "videoDetailLoadError": "Impossibile caricare il video: {error}",

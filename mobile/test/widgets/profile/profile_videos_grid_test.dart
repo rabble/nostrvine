@@ -518,6 +518,63 @@ void main() {
           findsOneWidget,
         );
       });
+
+      testWidgets('retry banner surfaces a blocked message when a '
+          'collaborator cannot receive invites', (tester) async {
+        when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+        when(
+          () => mockDmRepository.retryPendingCollaboratorInvites(any()),
+        ).thenAnswer(
+          (_) async => const CollaboratorInviteRetrySummary(
+            attemptedCount: 1,
+            successCount: 0,
+            failureCount: 0,
+            blockedCount: 1,
+          ),
+        );
+        final pendingInviteGroups = [
+          PendingCollaboratorInviteGroup(
+            creatorPubkey: _ownPubkey,
+            videoAddress: '34236:$_ownPubkey:video-1',
+            invites: [
+              PendingCollaboratorInvite(
+                rumorId: 'rumor-1',
+                collaboratorPubkey: _otherPubkey,
+                creatorPubkey: _ownPubkey,
+                videoAddress: '34236:$_ownPubkey:video-1',
+                recipientWrapStatus: OutgoingWrapStatus.failed,
+                selfWrapStatus: OutgoingWrapStatus.failed,
+                retryCount: 1,
+                queuedAt: DateTime.utc(2026, 5, 22, 13),
+              ),
+            ],
+          ),
+        ];
+
+        await tester.pumpWidget(
+          buildSubject(
+            userIdHex: _ownPubkey,
+            videos: _createTestVideos(pubkey: _ownPubkey),
+            pendingInviteGroups: pendingInviteGroups,
+          ),
+        );
+        await tester.pump();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.profileCollaboratorInviteRetryAction));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(
+          find.text(l10n.profileCollaboratorInviteBlockedResult(1)),
+          findsOneWidget,
+        );
+        // A blocked-only batch must not read as "all invites sent".
+        expect(
+          find.text(l10n.profileCollaboratorInviteRetryResult(0)),
+          findsNothing,
+        );
+      });
     });
 
     group('background uploads', () {

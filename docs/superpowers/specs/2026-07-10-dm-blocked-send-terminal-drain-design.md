@@ -77,6 +77,19 @@ terminal block as a failure. Add an `else if (result.blocked)` that treats the
 row as terminal: skip `incrementRetry`, and count it as terminal rather than
 failed. This keeps "blocked is terminal" true end-to-end.
 
+**3. `dm_repository.dart` — `retryPendingCollaboratorInvites`.** The third
+`recoverFullSend` caller (the collaborator-invite banner + video-publish
+retry) routed a `blocked` result through its generic `else`, counting a
+just-deleted terminal row into `failureCount`. That surfaced as a misleading
+"still needs to send" snackbar, and — for a row a concurrent sweep had
+already removed — reported the expected `ArgumentError` race to Crashlytics.
+Add an `else if (result.blocked)` that tallies a separate `blockedCount`
+(excluded from `failureCount`), and treat the row-missing `ArgumentError`
+as an expected race: skip it without reporting, mirroring
+`OutgoingDmRetryService`'s dispatch-error policy. A new
+`profileCollaboratorInviteBlockedResult` string tells the user the
+collaborator can't receive invites instead of implying a pending retry.
+
 ## Test plan
 
 - **dm_repository:** a queued row (`recipientWrapStatus == failed`) whose
@@ -92,6 +105,11 @@ failed. This keeps "blocked is terminal" true end-to-end.
 - **outgoing_dm_retry_service:** a sweep over a row that drains to blocked
   drops the row and does not call `incrementRetry` / count it as a retry
   failure.
+- **collaborator-invite recovery:** `retryPendingCollaboratorInvites` counts a
+  `blocked` result as terminal (`blockedCount`, not `failureCount`) with no
+  Crashlytics report, and skips a row removed by a concurrent sweep
+  (`ArgumentError`) without reporting it. The UI helpers surface the blocked
+  message apart from "still needs to send" and "all sent".
 
 ## Out of scope
 

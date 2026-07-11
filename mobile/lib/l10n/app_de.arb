@@ -4076,6 +4076,8 @@
     "profileCollaboratorInviteRetryUnavailable": "Das erneute Senden der Mitwirkenden-Einladung ist gerade nicht möglich.",
     "profileCollaboratorInviteRetryResult": "{count, plural, =0{Mitwirkenden-Einladungen gesendet.} =1{1 Mitwirkenden-Einladung muss noch gesendet werden.} other{{count} Mitwirkenden-Einladungen müssen noch gesendet werden.}}",
     "@profileCollaboratorInviteRetryResult": {"placeholders": {"count": {"type": "int"}}},
+    "profileCollaboratorInviteBlockedResult": "{count, plural, =1{1 Mitwirkender kann keine Einladungen empfangen.} other{{count} Mitwirkende können keine Einladungen empfangen.}}",
+    "@profileCollaboratorInviteBlockedResult": {"placeholders": {"count": {"type": "int"}}},
     "videoErrorAdultContentHidden": "Inhalte für Erwachsene sind ausgeschaltet. Du kannst sie unter Einstellungen → Inhaltsfilter aktivieren.",
     "@videoErrorAdultContentHidden": {"description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."},
     "videoDetailLoadError": "Video konnte nicht geladen werden: {error}",

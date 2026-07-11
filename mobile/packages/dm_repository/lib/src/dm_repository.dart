@@ -3277,13 +3277,28 @@ class DmRepository {
 
     var attempted = 0;
     var success = 0;
+    var blocked = 0;
+    var failure = 0;
     for (final invite in matchingInvites) {
       attempted++;
       try {
         final result = await recoverFullSend(rumorId: invite.rumorId);
         if (result.success) {
           success++;
+        } else if (result.blocked) {
+          // A confirmed #176 policy block is terminal: recoverFullSend already
+          // deleted the row, so the invite is neither delivered nor retryable.
+          // Count it apart from transient failures so the banner does not
+          // report a dropped row as "still needs to send".
+          blocked++;
+          Log.warning(
+            'Collaborator invite blocked by policy for rumor '
+            '${invite.rumorId} (recipient=${invite.collaboratorPubkey}, '
+            'video=${invite.videoAddress}); row dropped',
+            category: LogCategory.system,
+          );
         } else {
+          failure++;
           Log.warning(
             'Collaborator invite retry failed for rumor ${invite.rumorId} '
             '(recipient=${invite.collaboratorPubkey}, '
@@ -3292,6 +3307,20 @@ class DmRepository {
           );
         }
       } on Object catch (error, stackTrace) {
+        if (error is ArgumentError) {
+          // recoverFullSend throws ArgumentError when the queue row is missing
+          // or owned by another account. A concurrent drain sweep
+          // recovering/deleting the row between the banner's read and this
+          // retry is an expected race, not a defect — terminal for this
+          // invite, so skip it without a Crashlytics report (mirrors
+          // OutgoingDmRetryService's dispatch-error policy).
+          Log.warning(
+            'Skipping collaborator invite ${invite.rumorId}: $error',
+            category: LogCategory.system,
+          );
+          continue;
+        }
+        failure++;
         Log.error(
           'Collaborator invite retry threw for rumor ${invite.rumorId} '
           '(recipient=${invite.collaboratorPubkey}, '
@@ -3312,7 +3341,8 @@ class DmRepository {
     return CollaboratorInviteRetrySummary(
       attemptedCount: attempted,
       successCount: success,
-      failureCount: attempted - success,
+      failureCount: failure,
+      blockedCount: blocked,
     );
   }
 

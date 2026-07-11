@@ -4076,6 +4076,8 @@
     "profileCollaboratorInviteRetryUnavailable": "Opnieuw proberen van samenwerkingsuitnodiging is nu niet beschikbaar.",
     "profileCollaboratorInviteRetryResult": "{count, plural, =0{Samenwerkingsuitnodigingen verzonden.} =1{1 samenwerkingsuitnodiging moet nog verzonden worden.} other{{count} samenwerkingsuitnodigingen moeten nog verzonden worden.}}",
     "@profileCollaboratorInviteRetryResult": {"placeholders": {"count": {"type": "int"}}},
+    "profileCollaboratorInviteBlockedResult": "{count, plural, =1{1 samenwerker kan geen uitnodigingen ontvangen.} other{{count} samenwerkers kunnen geen uitnodigingen ontvangen.}}",
+    "@profileCollaboratorInviteBlockedResult": {"placeholders": {"count": {"type": "int"}}},
     "videoErrorAdultContentHidden": "Inhoud voor volwassenen staat uit. Je kunt dit aanzetten via Instellingen → Inhoudsfilters.",
     "@videoErrorAdultContentHidden": {"description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."},
     "videoDetailLoadError": "Video laden mislukt: {error}",

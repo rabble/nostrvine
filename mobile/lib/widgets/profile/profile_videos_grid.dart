@@ -504,9 +504,14 @@ class _PendingCollaboratorInviteBanner extends ConsumerWidget {
                 PendingCollaboratorInviteBannerFeedback.retryUnavailable =>
                   l10n.profileCollaboratorInviteRetryUnavailable,
                 PendingCollaboratorInviteBannerFeedback.retryCompleted =>
-                  l10n.profileCollaboratorInviteRetryResult(
-                    state.remainingInviteCount,
-                  ),
+                  state.remainingInviteCount == 0 &&
+                          state.blockedInviteCount > 0
+                      ? l10n.profileCollaboratorInviteBlockedResult(
+                          state.blockedInviteCount,
+                        )
+                      : l10n.profileCollaboratorInviteRetryResult(
+                          state.remainingInviteCount,
+                        ),
                 PendingCollaboratorInviteBannerFeedback.none => null,
               };
               if (message == null) return;

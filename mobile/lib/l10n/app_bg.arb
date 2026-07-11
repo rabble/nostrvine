@@ -4207,6 +4207,8 @@
     "profileCollaboratorInviteRetryUnavailable": "Повторното изпращане на покани за сътрудници не е налично в момента.",
     "profileCollaboratorInviteRetryResult": "{count, plural, =0{Поканите за сътрудници са изпратени.} =1{1 покана за сътрудник още чака да бъде изпратена.} other{{count} покани за сътрудници още чакат да бъдат изпратени.}}",
     "@profileCollaboratorInviteRetryResult": {"placeholders": {"count": {"type": "int"}}},
+    "profileCollaboratorInviteBlockedResult": "{count, plural, =1{1 сътрудник не може да получава покани.} other{{count} сътрудници не могат да получават покани.}}",
+    "@profileCollaboratorInviteBlockedResult": {"placeholders": {"count": {"type": "int"}}},
     "videoErrorAdultContentHidden": "Съдържанието за възрастни е изключено. Можеш да го включиш от Настройки → Филтри за съдържание.",
     "@videoErrorAdultContentHidden": {"description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."},
     "videoDetailLoadError": "Неуспешно зареждане на видеото: {error}",
