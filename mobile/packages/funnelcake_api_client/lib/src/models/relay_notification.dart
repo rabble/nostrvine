@@ -19,6 +19,7 @@ class RelayNotification {
     this.referencedVideoThumbnail,
     this.referencedDTag,
     this.rootEventId,
+    this.rootEventPubkey,
     this.targetCommentId,
   });
 
@@ -68,6 +69,7 @@ class RelayNotification {
           : null,
       referencedDTag: (rawDTag != null && rawDTag.isNotEmpty) ? rawDTag : null,
       rootEventId: _nonEmpty(json['root_event_id'] as String?),
+      rootEventPubkey: _nonEmpty(json['root_event_pubkey'] as String?),
       targetCommentId: _nonEmpty(json['target_comment_id'] as String?),
     );
   }
@@ -130,6 +132,13 @@ class RelayNotification {
   /// the notification directly to the video instead of resolving the comment
   /// event through a relay round-trip.
   final String? rootEventId;
+
+  /// Authoritative pubkey of the root video owner, when Funnelcake includes it.
+  ///
+  /// This tells app layers whether a video-anchored notification points at the
+  /// recipient's own video or at another creator's video where the recipient
+  /// participated in the comments.
+  final String? rootEventPubkey;
 
   /// Comment event ID included by Funnelcake for NIP-22 comment notifications.
   final String? targetCommentId;

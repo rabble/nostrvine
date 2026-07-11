@@ -1138,8 +1138,7 @@ class NotificationRepository {
       final eventId = _videoAnchorEventId(kind, n);
       if (eventId == null || eventId.isEmpty) continue;
       final ownership = _referencedVideoOwnership(
-        referencedVideoEventId: eventId,
-        videosById: videosById,
+        rootEventPubkey: n.rootEventPubkey,
       );
       switch (ownership) {
         case _ReferencedVideoOwnership.owned:
@@ -1150,10 +1149,8 @@ class NotificationRepository {
             notificationId: n.id,
             sourcePubkey: n.sourcePubkey,
             referencedVideoEventId: eventId,
-            referencedVideoOwnerPubkey: videosById[eventId]?.pubkey,
+            referencedVideoOwnerPubkey: n.rootEventPubkey,
           );
-          misattributed?.add(n);
-        case _ReferencedVideoOwnership.unknown:
           misattributed?.add(n);
       }
     }
@@ -1385,11 +1382,10 @@ class NotificationRepository {
   /// Builds the stable NIP-33 addressable route for the video a video-anchored
   /// notification (like/comment/repost) points at, scoped to [_userPubkey].
   ///
-  /// A payload d-tag is only safe after [video] confirms ownership. Without
-  /// that owner proof, synthesizing `34236:<recipient>:<d-tag>` can make a
-  /// misattributed notification for another creator's video look like it was
-  /// for the recipient's own video. Metadata misses therefore keep the raw
-  /// event-id fallback instead of manufacturing a recipient-scoped coordinate.
+  /// A payload d-tag is only safe after the caller has confirmed ownership
+  /// from `root_event_pubkey`. Without that owner proof, synthesizing
+  /// `34236:<recipient>:<d-tag>` can make a misattributed notification for
+  /// another creator's video look like it was for the recipient's own video.
   ///
   /// Prefers the authoritative `VideoStats` d-tag over the payload [dTag] so a
   /// `referenced_video` block disagreeing with `referenced_event_id` cannot
@@ -1398,8 +1394,7 @@ class NotificationRepository {
     required String? dTag,
     required VideoStats? video,
   }) {
-    if (video == null || video.pubkey != _userPubkey) return null;
-    final resolvedDTag = _nonEmpty(video.dTag) ?? _nonEmpty(dTag);
+    final resolvedDTag = _nonEmpty(video?.dTag) ?? _nonEmpty(dTag);
     if (resolvedDTag == null) return null;
     return '${NIP71VideoKinds.addressableShortVideo}'
         ':$_userPubkey:$resolvedDTag';
@@ -1424,12 +1419,11 @@ class NotificationRepository {
   }
 
   _ReferencedVideoOwnership _referencedVideoOwnership({
-    required String referencedVideoEventId,
-    required Map<String, VideoStats> videosById,
+    required String? rootEventPubkey,
   }) {
-    final ownerPubkey = videosById[referencedVideoEventId]?.pubkey;
+    final ownerPubkey = _nonEmpty(rootEventPubkey);
     if (ownerPubkey == null || ownerPubkey.isEmpty) {
-      return _ReferencedVideoOwnership.unknown;
+      return _ReferencedVideoOwnership.foreign;
     }
     if (ownerPubkey == _userPubkey) return _ReferencedVideoOwnership.owned;
     return _ReferencedVideoOwnership.foreign;
@@ -1696,7 +1690,7 @@ class NotificationRepository {
   }
 }
 
-enum _ReferencedVideoOwnership { owned, foreign, unknown }
+enum _ReferencedVideoOwnership { owned, foreign }
 
 @immutable
 class _VideoGroupKey {

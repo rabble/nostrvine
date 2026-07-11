@@ -117,6 +117,7 @@ void main() {
     String? referencedEventId = 'video_default',
     String? referencedDTag,
     String? rootEventId,
+    String? rootEventPubkey = userPubkey,
     String? targetCommentId,
     String? content,
     bool isReferencedVideo = true,
@@ -134,6 +135,7 @@ void main() {
       referencedEventId: referencedEventId,
       referencedDTag: referencedDTag,
       rootEventId: rootEventId,
+      rootEventPubkey: rootEventPubkey,
       targetCommentId: targetCommentId,
       content: content,
       isReferencedVideo: isReferencedVideo,
@@ -179,7 +181,7 @@ void main() {
     ).thenAnswer((_) async => stats);
   }
 
-  /// Stubs `getVideoStats(eventId)` to miss, leaving video ownership unknown.
+  /// Stubs `getVideoStats(eventId)` to miss, leaving video metadata unknown.
   void stubMissingVideoStats(String eventId) {
     when(
       () => funnelcakeApiClient.getVideoStats(eventId),
@@ -831,10 +833,9 @@ void main() {
           'pub_b': makeProfile('pub_b', displayName: 'Bob'),
         });
         stubMissingVideoStats('video_x');
-        // Authoritative ownership: video stats resolve and the owner is the
-        // recipient (makeVideoStats defaults pubkey == userPubkey, d-tag
-        // 'd_video_x'). The payload referencedDTag intentionally DIFFERS so the
-        // assertion proves the route uses the authoritative VideoStats d-tag,
+        // Authoritative ownership comes from rootEventPubkey. VideoStats still
+        // supplies the d-tag metadata. The payload referencedDTag intentionally
+        // DIFFERS so the assertion proves the route uses the VideoStats d-tag,
         // not the payload — a mismatched referenced_video block can't poison
         // the route.
         stubVideoStats('video_x', makeVideoStats(id: 'video_x'));
@@ -863,8 +864,8 @@ void main() {
           ),
         ], stubOwnedVideoStats: false);
         stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
-        // Owner confirmed, but VideoStats carries no d-tag → use the payload
-        // d-tag rather than drop the stable route.
+        // Owner confirmed by rootEventPubkey, but VideoStats carries no d-tag
+        // → use the payload d-tag rather than drop the stable route.
         stubVideoStats('video_x', makeVideoStats(id: 'video_x', dTag: ''));
 
         final page = await repository.getNotifications();
@@ -880,32 +881,32 @@ void main() {
         );
       });
 
-      test('metadata-missing video likes become actor-anchored fallback even '
-          'if the payload has a d-tag', () async {
-        // No video stats stubbed → ownership cannot be confirmed (e.g. a
-        // stale/edited event id whose old metadata no longer resolves). A
-        // server-provided d-tag alone is not proof that the d-tag belongs to
-        // the recipient, so synthesizing `34236:<recipient>:<d-tag>` here can
-        // make another creator's video look like "your video".
+      test('video likes with foreign root owner become actor-anchored fallback '
+          'even if VideoStats says the recipient owns the event', () async {
+        // rootEventPubkey is the backend's authoritative video owner. A
+        // stale or mismatched getVideoStats response must not override it,
+        // because that is the source of the "liked your video" mislabel.
         stubNotifications([
           makeNotification(
             id: 'l1',
             sourcePubkey: 'pub_a',
             referencedEventId: 'video_x',
             referencedDTag: 'vine-id',
+            rootEventPubkey: 'other_owner_pubkey',
           ),
           makeNotification(
             id: 'l2',
             sourcePubkey: 'pub_b',
             referencedEventId: 'video_x',
             referencedDTag: 'vine-id',
+            rootEventPubkey: 'other_owner_pubkey',
           ),
         ], stubOwnedVideoStats: false);
         stubProfiles({
           'pub_a': makeProfile('pub_a', displayName: 'Alice'),
           'pub_b': makeProfile('pub_b', displayName: 'Bob'),
         });
-        stubMissingVideoStats('video_x');
+        stubVideoStats('video_x', makeVideoStats(id: 'video_x'));
 
         final page = await repository.getNotifications();
 
@@ -917,20 +918,21 @@ void main() {
         expect(first.targetEventId, equals('video_x'));
       });
 
-      test('metadata-missing video like without a d-tag becomes '
-          'actor-anchored fallback', () async {
-        // Metadata miss means ownership is unknown, so even without a d-tag the
-        // row must not claim this was the recipient's video.
+      test('video like without root owner becomes actor-anchored fallback '
+          'even if VideoStats says the recipient owns the event', () async {
+        // Missing rootEventPubkey is treated as not-your-video. Do not fall
+        // back to ownership guessed from getVideoStats.
         stubNotifications([
           makeNotification(
             id: 'l1',
             sourcePubkey: 'pub_a',
             referencedEventId: 'video_x',
             referencedDTag: '',
+            rootEventPubkey: null,
           ),
         ], stubOwnedVideoStats: false);
         stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
-        stubMissingVideoStats('video_x');
+        stubVideoStats('video_x', makeVideoStats(id: 'video_x'));
 
         final page = await repository.getNotifications();
 
@@ -956,6 +958,7 @@ void main() {
             notificationType: 'comment',
             referencedEventId: '',
             rootEventId: 'video_root',
+            rootEventPubkey: 'other_owner_pubkey',
             referencedDTag: 'vine-id',
             content: 'nice one',
           ),
@@ -1026,9 +1029,8 @@ void main() {
           'pub_a': makeProfile('pub_a', displayName: 'Alice'),
           'pub_b': makeProfile('pub_b', displayName: 'Bob'),
         });
-        // Owner confirmed, but no d-tag from either source → cannot synthesize.
-        // (Without this stub the row would be null for the unrelated
-        // ownership-unknown reason, masking the d-tag branch under test.)
+        // Owner confirmed by rootEventPubkey, but no d-tag from either source
+        // → cannot synthesize.
         stubVideoStats('video_x', makeVideoStats(id: 'video_x', dTag: ''));
 
         final page = await repository.getNotifications();
@@ -1115,7 +1117,7 @@ void main() {
       );
 
       test(
-        'getVideoStats throws → row falls back to actor notification',
+        'owned root pubkey keeps video notification when getVideoStats throws',
         () async {
           stubNotifications([
             makeNotification(
@@ -1129,9 +1131,9 @@ void main() {
           final page = await repository.getNotifications();
 
           expect(page.items, hasLength(1));
-          final item = page.items.single as ActorNotification;
-          expect(item.type, equals(NotificationKind.likeComment));
-          expect(item.targetEventId, equals('video_x'));
+          final item = page.items.single as VideoNotification;
+          expect(item.type, equals(NotificationKind.like));
+          expect(item.videoEventId, equals('video_x'));
           expect(item.videoAddressableId, isNull);
         },
       );
@@ -1325,7 +1327,10 @@ void main() {
         // #4813 path rewrites to likeComment. A comment-like that *does* carry
         // a targetCommentId is covered by the direct-classification test above.
         stubNotifications([
-          makeNotification(referencedEventId: 'foreign_video'),
+          makeNotification(
+            referencedEventId: 'foreign_video',
+            rootEventPubkey: 'other_owner_pubkey',
+          ),
         ]);
         stubProfiles({});
         stubVideoStats(
@@ -1349,6 +1354,7 @@ void main() {
             sourceKind: 1,
             referencedEventId: 'foreign_video',
             rootEventId: 'foreign_video',
+            rootEventPubkey: 'other_owner_pubkey',
             targetCommentId: 'comment_event_xyz',
           ),
         ]);
@@ -1372,6 +1378,7 @@ void main() {
             notificationType: 'repost',
             sourceKind: 6,
             referencedEventId: 'foreign_video',
+            rootEventPubkey: 'other_owner_pubkey',
           ),
         ]);
         stubProfiles({});

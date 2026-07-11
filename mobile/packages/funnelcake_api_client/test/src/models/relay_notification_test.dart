@@ -392,12 +392,14 @@ void main() {
             'referenced_event_title': 'Codex staging comment notification test',
             'target_comment_id': '11223344' * 8,
             'root_event_id': '55667788' * 8,
+            'root_event_pubkey': '77889900' * 8,
           };
 
           final notification = RelayNotification.fromJson(json);
 
           expect(notification.referencedEventId, equals(''));
           expect(notification.rootEventId, equals('55667788' * 8));
+          expect(notification.rootEventPubkey, equals('77889900' * 8));
           expect(notification.targetCommentId, equals('11223344' * 8));
           expect(
             notification.referencedVideoTitle,
@@ -416,12 +418,14 @@ void main() {
           'created_at': 1712345678,
           'read': false,
           'root_event_id': '',
+          'root_event_pubkey': '',
           'target_comment_id': '',
         };
 
         final notification = RelayNotification.fromJson(json);
 
         expect(notification.rootEventId, isNull);
+        expect(notification.rootEventPubkey, isNull);
         expect(notification.targetCommentId, isNull);
       });
     });
