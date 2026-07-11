@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/utils/app_uptime.dart';
+import 'package:openvine/utils/device_memory_util.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -165,6 +166,7 @@ void main() {
     tearDown(() {
       messenger.setMockMethodCallHandler(connectivityChannel, null);
       AppUptime.reset();
+      DeviceMemoryUtil.resetCache();
     });
 
     test('reports network, text scale and memory tier', () async {
