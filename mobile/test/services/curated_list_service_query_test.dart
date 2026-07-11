@@ -128,10 +128,7 @@ void main() {
 
         expect(results.length, 1);
         expect(results.first.name, 'List 1');
-        // TODO(Any): Fix and re-enable these tests
-        // This test fails only when the whole suite is run, likely due
-        // to test isolation issues
-      }, skip: true);
+      });
 
       test('is case-insensitive', () async {
         await service.createList(name: 'Cooking Videos');
@@ -400,8 +397,7 @@ void main() {
 
         expect(results1.first.name, 'C++ Programming');
         expect(results2.first.name, 'C# Development');
-        // TODO(any): Fix and re-enable this test
-      }, skip: true);
+      });
 
       test('search handles unicode characters', () async {
         await service.createList(name: 'Español Videos');
@@ -412,8 +408,7 @@ void main() {
 
         expect(results1.first.name, 'Español Videos');
         expect(results2.first.name, '日本語 Content');
-        // TODO(any): Fix and re-enable this test
-      }, skip: true);
+      });
 
       test('search with partial match', () async {
         await service.createList(name: 'Programming Tutorials');
