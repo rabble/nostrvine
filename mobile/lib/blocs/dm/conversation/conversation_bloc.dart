@@ -162,12 +162,11 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     // before any signer round-trip, so the watch tick that carries the
     // optimistic lands within microseconds of dispatch — without any
     // bloc-side in-memory tracking. This handler is responsible only
-    // for transient `sendStatus` transitions and the SnackBar
-    // affordance state (`lastFailedSend` / `lastPartialSend`).
+    // for transient `sendStatus` transitions and the partial-delivery
+    // SnackBar affordance state (`lastPartialSend`).
     emit(
       state.copyWith(
         sendStatus: SendStatus.sending,
-        clearLastFailedSend: true,
         clearLastPartialSend: true,
       ),
     );
@@ -256,21 +255,13 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       // Dominated by the explicit `throw Exception(result.error)` above
       // and repo IO — per .claude/rules/error_handling.md, matrix-NO.
       addError(e, stackTrace);
-      emit(
-        state.copyWith(
-          sendStatus: SendStatus.failed,
-          lastFailedSend: FailedSend(
-            content: event.content,
-            recipientPubkeys: event.recipientPubkeys,
-          ),
-        ),
-      );
+      emit(state.copyWith(sendStatus: SendStatus.failed));
     }
-    // Note: the in-flight queue row remains in `state.pendingOutgoing`
-    // on failure/partial. The retry service (`OutgoingDmRetryService`)
-    // sweeps it independently. The user-facing SnackBar still offers
-    // a manual retry for fast-fail (`lastFailedSend`) and self-wrap
-    // recovery (`lastPartialSend`) — same UX as #3908.
+    // The in-flight queue row remains in `state.pendingOutgoing` on
+    // failure/partial. The retry service (`OutgoingDmRetryService`) sweeps it
+    // independently, and the failed bubble is tappable (resend/delete) — so
+    // there is no failed toast; a partial self-wrap recovery is offered via
+    // `lastPartialSend`.
   }
 
   Future<void> _onSelfWrapRecoveryRequested(
@@ -382,16 +373,10 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     }
 
     if (stillFailing.isEmpty) {
-      emit(
-        state.copyWith(
-          sendStatus: SendStatus.sent,
-          clearLastFailedSend: true,
-        ),
-      );
+      emit(state.copyWith(sendStatus: SendStatus.sent));
     } else {
       // Some rows are still hard-failing. They remain `failed` in the queue
-      // (red bubbles), so a later Retry re-derives them from
-      // `failedOutgoingRumorIds`; just re-raise the failed status.
+      // (red bubbles) and are re-tappable to resend; just re-raise the status.
       emit(state.copyWith(sendStatus: SendStatus.failed));
     }
   }
@@ -402,10 +387,8 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
   ) async {
     try {
       // Drop the durable row; the failed bubble leaves `pendingOutgoing` on
-      // the next watch tick. No status emit — the removal speaks for itself,
-      // and any stale failed SnackBar is cleared so its Retry can't re-add it.
+      // the next watch tick. No status emit — the removal speaks for itself.
       await _dmRepository.cancelOutgoingSend(rumorId: event.rumorId);
-      emit(state.copyWith(clearLastFailedSend: true));
     } on Object catch (e, stackTrace) {
       // A foreign-owner row surfaces as ArgumentError — terminal and expected,
       // so it is not Reportable (matrix-NO). Anything else is unexpected.

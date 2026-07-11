@@ -5368,10 +5368,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get dmMessageActionReport => '신고';
 
   @override
-  String get dmMessageActionRetrySend => '다시 시도';
+  String get dmMessageActionRetrySend => '다시 보내기';
 
   @override
-  String get dmMessageActionCancelSend => '전송 취소';
+  String get dmMessageActionCancelSend => '메시지 삭제';
 
   @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
@@ -5451,13 +5451,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get dmFormatCode => '코드';
 
   @override
-  String get dmStatusPending => '보내는 중';
-
-  @override
   String get dmStatusFailed => '보내지 못했어요';
-
-  @override
-  String get dmStatusDeliveredSelfFailed => '전달됐어요. 다른 기기에는 동기화되지 않아요.';
 
   @override
   String get inboxConversationActionsSheetLabel => '대화 작업';

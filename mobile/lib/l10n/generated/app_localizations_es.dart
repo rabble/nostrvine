@@ -5622,10 +5622,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dmMessageActionReport => 'Reportar';
 
   @override
-  String get dmMessageActionRetrySend => 'Reintentar';
+  String get dmMessageActionRetrySend => 'Reenviar';
 
   @override
-  String get dmMessageActionCancelSend => 'Cancelar envío';
+  String get dmMessageActionCancelSend => 'Eliminar mensaje';
 
   @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
@@ -5705,14 +5705,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dmFormatCode => 'Código';
 
   @override
-  String get dmStatusPending => 'Enviando';
-
-  @override
   String get dmStatusFailed => 'No se pudo enviar';
-
-  @override
-  String get dmStatusDeliveredSelfFailed =>
-      'Entregado. No se sincronizará con tus otros dispositivos.';
 
   @override
   String get inboxConversationActionsSheetLabel =>

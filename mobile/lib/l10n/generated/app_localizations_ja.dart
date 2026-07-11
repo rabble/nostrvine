@@ -5348,10 +5348,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get dmMessageActionReport => '報告';
 
   @override
-  String get dmMessageActionRetrySend => '再試行';
+  String get dmMessageActionRetrySend => '再送信';
 
   @override
-  String get dmMessageActionCancelSend => '送信をキャンセル';
+  String get dmMessageActionCancelSend => 'メッセージを削除';
 
   @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
@@ -5431,13 +5431,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get dmFormatCode => 'コード';
 
   @override
-  String get dmStatusPending => '送信中';
-
-  @override
   String get dmStatusFailed => '送信できなかった';
-
-  @override
-  String get dmStatusDeliveredSelfFailed => '配信済み。ほかのデバイスには同期されない。';
 
   @override
   String get inboxConversationActionsSheetLabel => '会話の操作';

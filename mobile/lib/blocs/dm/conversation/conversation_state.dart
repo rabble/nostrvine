@@ -43,29 +43,6 @@ enum DmDeliveryStatus {
   failed,
 }
 
-/// Snapshot of the most recent send attempt that did not reach the relay.
-///
-/// Carried in [ConversationState] so the UI can offer a full-resend retry
-/// action without re-collecting the input from the user. Cleared on the
-/// next send attempt (success or failure path both replace it).
-///
-/// Distinct from [PartialSend], which carries the rumor ids needed for a
-/// self-wrap-only recovery on a [SendStatus.sentPartial] outcome — that
-/// path must NOT republish to recipients, and so cannot use [content] +
-/// [recipientPubkeys].
-class FailedSend extends Equatable {
-  const FailedSend({required this.content, required this.recipientPubkeys});
-
-  /// Plaintext content the user attempted to send.
-  final String content;
-
-  /// Recipient pubkeys for the failed attempt (1 for 1:1, ≥2 for groups).
-  final List<String> recipientPubkeys;
-
-  @override
-  List<Object?> get props => [content, recipientPubkeys];
-}
-
 /// Snapshot of the rumor ids whose recipient publish landed but whose
 /// self-addressed gift wrap did not, on the most recent send attempt.
 ///
@@ -92,7 +69,6 @@ class ConversationState extends Equatable {
     this.status = ConversationStatus.initial,
     this.messages = const [],
     this.sendStatus = SendStatus.idle,
-    this.lastFailedSend,
     this.lastPartialSend,
     this.pendingOutgoing = const <OutgoingDm>[],
   });
@@ -104,13 +80,6 @@ class ConversationState extends Equatable {
   /// Replaced wholesale on every watch tick.
   final List<DmMessage> messages;
   final SendStatus sendStatus;
-
-  /// The last send attempt that failed (recipient never received it) and
-  /// has not yet been retried.
-  ///
-  /// `null` when the most recent transition was a successful send, when no
-  /// send has been attempted, or once the user has retried.
-  final FailedSend? lastFailedSend;
 
   /// The last send attempt that delivered to recipients but failed to
   /// publish the sender self-addressed gift wrap, paired with the rumor
@@ -170,16 +139,6 @@ class ConversationState extends Equatable {
     return DmDeliveryStatus.delivered;
   }
 
-  /// Rumor ids of the conversation's hard-failed outgoing rows (recipient
-  /// publish failed). A failed bubble's id is its rumor id, so this is the
-  /// exact set a queue-aware manual retry replays via
-  /// [ConversationFullSendRecoveryRequested] — sourced at Retry-tap time so
-  /// it reflects the settled queue state, never a fresh rumor.
-  List<String> get failedOutgoingRumorIds => [
-    for (final row in pendingOutgoing)
-      if (row.recipientWrapStatus == OutgoingWrapStatus.failed) row.id,
-  ];
-
   /// Merged user-visible message list: in-flight queue rows projected
   /// as [DmMessage] bubbles on top of persisted ones from [messages],
   /// sorted newest first.
@@ -212,19 +171,14 @@ class ConversationState extends Equatable {
     ConversationStatus? status,
     List<DmMessage>? messages,
     SendStatus? sendStatus,
-    FailedSend? lastFailedSend,
     PartialSend? lastPartialSend,
     List<OutgoingDm>? pendingOutgoing,
-    bool clearLastFailedSend = false,
     bool clearLastPartialSend = false,
   }) {
     return ConversationState(
       status: status ?? this.status,
       messages: messages ?? this.messages,
       sendStatus: sendStatus ?? this.sendStatus,
-      lastFailedSend: clearLastFailedSend
-          ? null
-          : (lastFailedSend ?? this.lastFailedSend),
       lastPartialSend: clearLastPartialSend
           ? null
           : (lastPartialSend ?? this.lastPartialSend),
@@ -237,7 +191,6 @@ class ConversationState extends Equatable {
     status,
     messages,
     sendStatus,
-    lastFailedSend,
     lastPartialSend,
     pendingOutgoing,
   ];

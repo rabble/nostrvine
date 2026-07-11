@@ -5723,10 +5723,10 @@ class AppLocalizationsPl extends AppLocalizations {
   String get dmMessageActionReport => 'Zgłoś';
 
   @override
-  String get dmMessageActionRetrySend => 'Spróbuj ponownie';
+  String get dmMessageActionRetrySend => 'Wyślij ponownie';
 
   @override
-  String get dmMessageActionCancelSend => 'Anuluj wysyłanie';
+  String get dmMessageActionCancelSend => 'Usuń wiadomość';
 
   @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
@@ -5806,14 +5806,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get dmFormatCode => 'Kod';
 
   @override
-  String get dmStatusPending => 'Wysyłanie';
-
-  @override
   String get dmStatusFailed => 'Nie udało się wysłać';
-
-  @override
-  String get dmStatusDeliveredSelfFailed =>
-      'Dostarczone. Nie zsynchronizuje się z twoimi innymi urządzeniami.';
 
   @override
   String get inboxConversationActionsSheetLabel => 'Akcje konwersacji';

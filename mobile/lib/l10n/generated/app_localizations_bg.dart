@@ -5631,10 +5631,10 @@ class AppLocalizationsBg extends AppLocalizations {
   String get dmMessageActionReport => 'Докладвай';
 
   @override
-  String get dmMessageActionRetrySend => 'Опитай отново';
+  String get dmMessageActionRetrySend => 'Изпрати отново';
 
   @override
-  String get dmMessageActionCancelSend => 'Отмяна на изпращането';
+  String get dmMessageActionCancelSend => 'Изтрий съобщението';
 
   @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
@@ -5714,14 +5714,7 @@ class AppLocalizationsBg extends AppLocalizations {
   String get dmFormatCode => 'Код';
 
   @override
-  String get dmStatusPending => 'Изпращаме';
-
-  @override
   String get dmStatusFailed => 'Изпращането не успя';
-
-  @override
-  String get dmStatusDeliveredSelfFailed =>
-      'Доставено. Няма да се синхронизира с другите ти устройства.';
 
   @override
   String get inboxConversationActionsSheetLabel => 'Действия за разговора';

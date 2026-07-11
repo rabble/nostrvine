@@ -18,12 +18,6 @@ enum MessageAction {
 
   /// Report the message.
   report,
-
-  /// Re-attempt delivery of a failed own send (queue-aware retry).
-  retrySend,
-
-  /// Give up on a failed own send and drop its queued row.
-  cancelSend,
 }
 
 /// Shows a bottom sheet with actions for a single DM message.

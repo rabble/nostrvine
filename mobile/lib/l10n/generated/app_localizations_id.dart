@@ -5552,10 +5552,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get dmMessageActionReport => 'Laporkan';
 
   @override
-  String get dmMessageActionRetrySend => 'Coba lagi';
+  String get dmMessageActionRetrySend => 'Kirim ulang';
 
   @override
-  String get dmMessageActionCancelSend => 'Batalkan pengiriman';
+  String get dmMessageActionCancelSend => 'Hapus pesan';
 
   @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
@@ -5635,14 +5635,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get dmFormatCode => 'Kode';
 
   @override
-  String get dmStatusPending => 'Mengirim';
-
-  @override
   String get dmStatusFailed => 'Gagal mengirim';
-
-  @override
-  String get dmStatusDeliveredSelfFailed =>
-      'Terkirim. Tidak akan tersinkron ke perangkat lainmu.';
 
   @override
   String get inboxConversationActionsSheetLabel => 'Tindakan percakapan';

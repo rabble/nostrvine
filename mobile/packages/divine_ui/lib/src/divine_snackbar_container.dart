@@ -11,6 +11,8 @@ class DivineSnackbarContainer extends StatelessWidget {
     this.error = false,
     this.actionLabel,
     this.onActionPressed,
+    this.secondaryActionLabel,
+    this.onSecondaryActionPressed,
     super.key,
   });
 
@@ -20,6 +22,8 @@ class DivineSnackbarContainer extends StatelessWidget {
     bool error = false,
     String? actionLabel,
     VoidCallback? onActionPressed,
+    String? secondaryActionLabel,
+    VoidCallback? onSecondaryActionPressed,
     Duration? duration,
     EdgeInsetsGeometry? margin,
     EdgeInsetsGeometry? padding,
@@ -35,6 +39,8 @@ class DivineSnackbarContainer extends StatelessWidget {
       error: error,
       actionLabel: actionLabel,
       onActionPressed: onActionPressed,
+      secondaryActionLabel: secondaryActionLabel,
+      onSecondaryActionPressed: onSecondaryActionPressed,
     ),
   );
 
@@ -44,15 +50,26 @@ class DivineSnackbarContainer extends StatelessWidget {
   /// If the snackbar indicates an error.
   final bool error;
 
-  /// The label of the action button.
+  /// The label of the primary action button.
   final String? actionLabel;
 
-  /// Callback when the action button is pressed.
+  /// Callback when the primary action button is pressed.
   final VoidCallback? onActionPressed;
+
+  /// The label of an optional secondary action button, rendered next to the
+  /// primary action in the destructive colour (e.g. a "Delete" alongside a
+  /// "Resend"). Shown only when both this and [onSecondaryActionPressed] are
+  /// non-null.
+  final String? secondaryActionLabel;
+
+  /// Callback when the secondary action button is pressed.
+  final VoidCallback? onSecondaryActionPressed;
 
   @override
   Widget build(BuildContext context) {
     final textStyle = VineTheme.labelLargeFont();
+    final hasSecondary =
+        secondaryActionLabel != null && onSecondaryActionPressed != null;
     late final Widget bannerText;
     if (error) {
       bannerText = Text(
@@ -75,23 +92,57 @@ class DivineSnackbarContainer extends StatelessWidget {
           children: [
             Expanded(child: bannerText),
             if (actionLabel != null && onActionPressed != null)
-              TextButton(
-                onPressed: onActionPressed,
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  minimumSize: const Size(48, 36),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Text(
-                  actionLabel!,
-                  style: textStyle.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: error ? VineTheme.likeRed : VineTheme.vineGreen,
-                  ),
-                ),
+              _ActionButton(
+                label: actionLabel!,
+                onPressed: onActionPressed!,
+                // With a destructive secondary action present, the primary is
+                // the affirmative choice (green) even in an error snackbar;
+                // a lone action follows the error flag (red on error).
+                color: (hasSecondary || !error)
+                    ? VineTheme.vineGreen
+                    : VineTheme.likeRed,
+                textStyle: textStyle,
+              ),
+            if (hasSecondary)
+              _ActionButton(
+                label: secondaryActionLabel!,
+                onPressed: onSecondaryActionPressed!,
+                // Secondary is the destructive choice (e.g. Delete).
+                color: VineTheme.likeRed,
+                textStyle: textStyle,
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    required this.label,
+    required this.onPressed,
+    required this.color,
+    required this.textStyle,
+  });
+
+  final String label;
+  final VoidCallback onPressed;
+  final Color color;
+  final TextStyle textStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton(
+      onPressed: onPressed,
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        minimumSize: const Size(48, 36),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: Text(
+        label,
+        style: textStyle.copyWith(fontWeight: FontWeight.w800, color: color),
       ),
     );
   }

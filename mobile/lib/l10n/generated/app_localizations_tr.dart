@@ -5559,10 +5559,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get dmMessageActionReport => 'Bildir';
 
   @override
-  String get dmMessageActionRetrySend => 'Yeniden dene';
+  String get dmMessageActionRetrySend => 'Yeniden gönder';
 
   @override
-  String get dmMessageActionCancelSend => 'Göndermeyi iptal et';
+  String get dmMessageActionCancelSend => 'Mesajı sil';
 
   @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
@@ -5642,14 +5642,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get dmFormatCode => 'Kod';
 
   @override
-  String get dmStatusPending => 'Gönderiliyor';
-
-  @override
   String get dmStatusFailed => 'Gönderilemedi';
-
-  @override
-  String get dmStatusDeliveredSelfFailed =>
-      'Teslim edildi. Diğer cihazlarınla eşitlenmeyecek.';
 
   @override
   String get inboxConversationActionsSheetLabel => 'Sohbet işlemleri';

@@ -5645,10 +5645,10 @@ class AppLocalizationsFil extends AppLocalizations {
   String get dmMessageActionReport => 'I-report';
 
   @override
-  String get dmMessageActionRetrySend => 'Subukan ulit';
+  String get dmMessageActionRetrySend => 'Ipadala muli';
 
   @override
-  String get dmMessageActionCancelSend => 'Kanselahin ang pagpapadala';
+  String get dmMessageActionCancelSend => 'Burahin ang mensahe';
 
   @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
@@ -5728,14 +5728,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get dmFormatCode => 'Code';
 
   @override
-  String get dmStatusPending => 'Nagpapadala';
-
-  @override
   String get dmStatusFailed => 'Nabigong ipadala';
-
-  @override
-  String get dmStatusDeliveredSelfFailed =>
-      'Naipadala. Hindi mag-sync sa iba mong device.';
 
   @override
   String get inboxConversationActionsSheetLabel => 'Mga aksyon sa usapan';

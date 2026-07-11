@@ -5577,10 +5577,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dmMessageActionReport => 'Rapportera';
 
   @override
-  String get dmMessageActionRetrySend => 'Försök igen';
+  String get dmMessageActionRetrySend => 'Skicka igen';
 
   @override
-  String get dmMessageActionCancelSend => 'Avbryt sändning';
+  String get dmMessageActionCancelSend => 'Ta bort meddelande';
 
   @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
@@ -5660,14 +5660,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dmFormatCode => 'Kod';
 
   @override
-  String get dmStatusPending => 'Skickar';
-
-  @override
   String get dmStatusFailed => 'Kunde inte skicka';
-
-  @override
-  String get dmStatusDeliveredSelfFailed =>
-      'Levererat. Synkas inte till dina andra enheter.';
 
   @override
   String get inboxConversationActionsSheetLabel => 'Konversationsåtgärder';

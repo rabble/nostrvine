@@ -9,6 +9,8 @@ void main() {
       bool error = false,
       String? actionLabel,
       VoidCallback? onActionPressed,
+      String? secondaryActionLabel,
+      VoidCallback? onSecondaryActionPressed,
     }) {
       return MaterialApp(
         theme: VineTheme.theme,
@@ -18,6 +20,8 @@ void main() {
             error: error,
             actionLabel: actionLabel,
             onActionPressed: onActionPressed,
+            secondaryActionLabel: secondaryActionLabel,
+            onSecondaryActionPressed: onSecondaryActionPressed,
           ),
         ),
       );
@@ -149,6 +153,80 @@ void main() {
       expect(actionText.style?.color, VineTheme.likeRed);
     });
 
+    group('secondary action', () {
+      testWidgets('renders both actions when a secondary is provided', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            label: 'Message not delivered',
+            error: true,
+            actionLabel: 'Resend',
+            onActionPressed: () {},
+            secondaryActionLabel: 'Delete',
+            onSecondaryActionPressed: () {},
+          ),
+        );
+
+        expect(find.text('Resend'), findsOneWidget);
+        expect(find.text('Delete'), findsOneWidget);
+      });
+
+      testWidgets('primary stays green and secondary is red even in an '
+          'error snackbar', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            label: 'Message not delivered',
+            error: true,
+            actionLabel: 'Resend',
+            onActionPressed: () {},
+            secondaryActionLabel: 'Delete',
+            onSecondaryActionPressed: () {},
+          ),
+        );
+
+        expect(
+          tester.widget<Text>(find.text('Resend')).style?.color,
+          VineTheme.vineGreen,
+        );
+        expect(
+          tester.widget<Text>(find.text('Delete')).style?.color,
+          VineTheme.likeRed,
+        );
+      });
+
+      testWidgets('calls onSecondaryActionPressed when tapped', (tester) async {
+        var deletePressed = false;
+        await tester.pumpWidget(
+          buildTestWidget(
+            label: 'Message not delivered',
+            actionLabel: 'Resend',
+            onActionPressed: () {},
+            secondaryActionLabel: 'Delete',
+            onSecondaryActionPressed: () => deletePressed = true,
+          ),
+        );
+
+        await tester.tap(find.text('Delete'));
+        expect(deletePressed, isTrue);
+      });
+
+      testWidgets('omits the secondary when its callback is null', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            label: 'Message not delivered',
+            actionLabel: 'Resend',
+            onActionPressed: () {},
+            secondaryActionLabel: 'Delete',
+          ),
+        );
+
+        expect(find.text('Delete'), findsNothing);
+      });
+    });
+
     group('snackBar factory', () {
       testWidgets('returns a $SnackBar wrapping $DivineSnackbarContainer', (
         tester,
@@ -174,11 +252,15 @@ void main() {
       ) async {
         void onAction() {}
 
+        void onDelete() {}
+
         final snackBar = DivineSnackbarContainer.snackBar(
           'Error occurred',
           error: true,
           actionLabel: 'Retry',
           onActionPressed: onAction,
+          secondaryActionLabel: 'Delete',
+          onSecondaryActionPressed: onDelete,
         );
 
         final container = snackBar.content as DivineSnackbarContainer;
@@ -186,6 +268,8 @@ void main() {
         expect(container.error, isTrue);
         expect(container.actionLabel, 'Retry');
         expect(container.onActionPressed, equals(onAction));
+        expect(container.secondaryActionLabel, 'Delete');
+        expect(container.onSecondaryActionPressed, equals(onDelete));
       });
     });
 

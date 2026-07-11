@@ -9780,16 +9780,16 @@ abstract class AppLocalizations {
   /// **'Report'**
   String get dmMessageActionReport;
 
-  /// Long-press menu action on a failed own DM bubble that re-attempts delivery of that queued message.
+  /// Action in the snackbar shown when a failed own DM bubble is tapped; re-attempts delivery of that queued message.
   ///
   /// In en, this message translates to:
-  /// **'Try again'**
+  /// **'Resend'**
   String get dmMessageActionRetrySend;
 
-  /// Long-press menu action on a failed own DM bubble that gives up on the queued message and removes it.
+  /// Action in the snackbar shown when a failed own DM bubble is tapped; gives up on the queued message and removes it.
   ///
   /// In en, this message translates to:
-  /// **'Cancel send'**
+  /// **'Delete message'**
   String get dmMessageActionCancelSend;
 
   /// Screen-reader label for the '+' button at the end of the quick-row that opens the full emoji picker.
@@ -9924,23 +9924,11 @@ abstract class AppLocalizations {
   /// **'Code'**
   String get dmFormatCode;
 
-  /// Accessibility label / tooltip on the clock indicator at the bottom of a sent DM bubble whose recipient gift wrap has not yet landed.
-  ///
-  /// In en, this message translates to:
-  /// **'Sending'**
-  String get dmStatusPending;
-
   /// Accessibility label / tooltip on the error indicator at the bottom of a sent DM bubble whose recipient gift wrap publish has failed and is awaiting retry.
   ///
   /// In en, this message translates to:
   /// **'Failed to send'**
   String get dmStatusFailed;
-
-  /// Accessibility label / tooltip on the warning indicator at the bottom of a sent DM bubble whose recipient gift wrap landed but whose self-addressed gift wrap did not, so the sender's other devices will not see this message on relay-only restore. Paired with `dmSendPartialMessage` which surfaces the same state in the SnackBar.
-  ///
-  /// In en, this message translates to:
-  /// **'Delivered. Won\'t sync to your other devices.'**
-  String get dmStatusDeliveredSelfFailed;
 
   /// Accessibility label announced by screen readers when the long-press actions bottom sheet for a conversation row opens.
   ///

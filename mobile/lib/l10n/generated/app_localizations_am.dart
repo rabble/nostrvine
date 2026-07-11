@@ -5465,10 +5465,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get dmMessageActionReport => 'ሪፖርት አድርግ';
 
   @override
-  String get dmMessageActionRetrySend => 'እንደገና ይሞክሩ';
+  String get dmMessageActionRetrySend => 'እንደገና ላክ';
 
   @override
-  String get dmMessageActionCancelSend => 'መላክን ሰርዝ';
+  String get dmMessageActionCancelSend => 'መልእክቱን ሰርዝ';
 
   @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
@@ -5548,13 +5548,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get dmFormatCode => 'ኮድ';
 
   @override
-  String get dmStatusPending => 'በመላክ ላይ';
-
-  @override
   String get dmStatusFailed => 'መላክ አልተሳካም';
-
-  @override
-  String get dmStatusDeliveredSelfFailed => 'ተልኳል። ወደ ሌሎች መሣሪያዎችህ አይመሳሰልም።';
 
   @override
   String get inboxConversationActionsSheetLabel => 'የውይይት እርምጃዎች';

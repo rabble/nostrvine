@@ -251,10 +251,6 @@ void main() {
           const ConversationState(
             status: ConversationStatus.loaded,
             sendStatus: SendStatus.failed,
-            lastFailedSend: FailedSend(
-              content: 'Hello',
-              recipientPubkeys: [otherPubkey],
-            ),
           ),
         );
 
@@ -268,9 +264,8 @@ void main() {
           tester.element(find.byType(ConversationView)),
         );
         expect(blocAfter, isNot(same(blocBefore)));
-        // Fresh bloc starts from initial state.
+        // Fresh bloc starts from initial state (the failed status is lost).
         expect(blocAfter.state.sendStatus, equals(SendStatus.idle));
-        expect(blocAfter.state.lastFailedSend, isNull);
       },
     );
   });
