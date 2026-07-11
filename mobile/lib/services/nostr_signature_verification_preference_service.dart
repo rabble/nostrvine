@@ -38,7 +38,7 @@ class NostrSignatureVerificationPreferenceService {
   static const prefsKey = 'nostr_signature_verification_policy';
 
   static const NostrSignatureVerificationPolicy defaultPolicy =
-      NostrSignatureVerificationPolicy.nonDivineRelays;
+      NostrSignatureVerificationPolicy.all;
 
   final SharedPreferences _prefs;
 

@@ -145,6 +145,7 @@ void main() {
 // Every key in app_en.arb is currently translated in all 16 locales.
 // Add keys here only when a translation pass is intentionally deferred.
 const _knownUntranslatedDebt = <String>{
+  // Nostr signature verification settings; English fallback until translated.
   'nostrSettingsSignatureVerification',
   'nostrSettingsSignatureVerificationIntro',
   'nostrSettingsSignatureVerificationAll',

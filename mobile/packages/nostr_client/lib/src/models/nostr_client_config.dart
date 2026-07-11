@@ -13,8 +13,7 @@ class NostrClientConfig {
     this.enableGateway = false,
     this.webSocketChannelFactory,
     this.eventVerifyWorkerSpawner,
-    this.signatureVerificationPolicy =
-        SignatureVerificationPolicy.nonDivineRelays,
+    this.signatureVerificationPolicy = SignatureVerificationPolicy.all,
   });
 
   /// Signer for event signing - the single source of truth for the public key.

@@ -12,13 +12,13 @@ void main() {
       SharedPreferences.setMockInitialValues({});
     });
 
-    test('defaults to non-Divine relays', () async {
+    test('defaults to verifying all relays', () async {
       final prefs = await SharedPreferences.getInstance();
       final service = NostrSignatureVerificationPreferenceService(prefs);
 
       expect(
         service.currentPolicy,
-        NostrSignatureVerificationPolicy.nonDivineRelays,
+        NostrSignatureVerificationPolicy.all,
       );
     });
 
@@ -45,7 +45,7 @@ void main() {
 
       expect(
         service.currentPolicy,
-        NostrSignatureVerificationPolicy.nonDivineRelays,
+        NostrSignatureVerificationPolicy.all,
       );
     });
 

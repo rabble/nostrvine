@@ -36,7 +36,7 @@ class Nostr {
     this.onNotice,
     WebSocketChannelFactory? channelFactory,
     SignatureVerificationPolicy signatureVerificationPolicy =
-        SignatureVerificationPolicy.nonDivineRelays,
+        SignatureVerificationPolicy.all,
   }) {
     // Public key starts empty - call refreshPublicKey() after construction
     // to populate from the signer (single source of truth).

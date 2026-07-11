@@ -75,6 +75,12 @@ Nostr _nostr(SignatureVerificationPolicy policy) => Nostr(
   signatureVerificationPolicy: policy,
 );
 
+Nostr _nostrWithDefaultPolicy() => Nostr(
+  LocalNostrSigner(generatePrivateKey()),
+  [],
+  (url) => RelayBase(url, RelayStatus(url)),
+);
+
 List<Event> _subscribe(Nostr nostr) {
   final delivered = <Event>[];
   nostr.subscribe(
@@ -91,6 +97,21 @@ List<Event> _subscribe(Nostr nostr) {
 
 void main() {
   group('RelayPool signature verification policy', () {
+    test('defaults to verifying events from all relays', () async {
+      final nostr = _nostrWithDefaultPolicy();
+      final worker = _FakeVerifyWorker((_) => false);
+      nostr.relayPool.eventVerifyWorker = worker;
+      final relay = _FakeRelay('wss://relay.divine.video');
+      expect(await nostr.relayPool.add(relay), isTrue);
+      final delivered = _subscribe(nostr);
+
+      final event = await _signedEvent('default-policy');
+      await relay.deliver(['EVENT', 'sub', event.toJson()]);
+
+      expect(worker.calls, 1);
+      expect(delivered, isEmpty);
+    });
+
     test('all relays policy verifies through the worker', () async {
       final nostr = _nostr(SignatureVerificationPolicy.all);
       final worker = _FakeVerifyWorker((_) => false);
@@ -163,6 +184,23 @@ void main() {
 
       final eventJson = (await _signedEvent('empty-signature')).toJson()
         ..['sig'] = '';
+      await relay.deliver(['EVENT', 'sub', eventJson]);
+
+      expect(worker.calls, 0);
+      expect(nostr.relayPool.verifiesSkippedByPolicy, 0);
+      expect(delivered, isEmpty);
+    });
+
+    test('policy-skipped relays still reject mismatched event ids', () async {
+      final nostr = _nostr(SignatureVerificationPolicy.nonDivineRelays);
+      final worker = _FakeVerifyWorker((_) => true);
+      nostr.relayPool.eventVerifyWorker = worker;
+      final relay = _FakeRelay('wss://relay.divine.video');
+      expect(await nostr.relayPool.add(relay), isTrue);
+      final delivered = _subscribe(nostr);
+
+      final eventJson = (await _signedEvent('original-body')).toJson()
+        ..['content'] = 'tampered-body';
       await relay.deliver(['EVENT', 'sub', eventJson]);
 
       expect(worker.calls, 0);

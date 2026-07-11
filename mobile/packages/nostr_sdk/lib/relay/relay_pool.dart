@@ -97,8 +97,7 @@ class RelayPool {
     this.eventFilters,
     this.tempRelayGener, {
     this.onNotice,
-    this.signatureVerificationPolicy =
-        SignatureVerificationPolicy.nonDivineRelays,
+    this.signatureVerificationPolicy = SignatureVerificationPolicy.all,
   });
 
   /// Controls whether [_dispatchTypedFrame] performs expensive Schnorr

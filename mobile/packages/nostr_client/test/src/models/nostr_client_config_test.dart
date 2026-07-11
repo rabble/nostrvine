@@ -24,6 +24,10 @@ void main() {
         expect(config.onNotice, isNull);
         expect(config.gatewayUrl, isNull);
         expect(config.enableGateway, isFalse);
+        expect(
+          config.signatureVerificationPolicy,
+          SignatureVerificationPolicy.all,
+        );
       });
 
       test('creates config with all fields', () {
@@ -56,6 +60,10 @@ void main() {
         expect(config.onNotice, isNull);
         expect(config.gatewayUrl, isNull);
         expect(config.enableGateway, isFalse);
+        expect(
+          config.signatureVerificationPolicy,
+          SignatureVerificationPolicy.all,
+        );
       });
     });
   });
