@@ -54,6 +54,7 @@ class ReactionPickerOverlay {
     required bool isSent,
     bool showPicker = true,
     bool isVideoShare = false,
+    bool isFailedSend = false,
     List<String> emojis = kDefaultDmReactionEmojis,
   }) async {
     unawaited(HapticFeedback.mediumImpact());
@@ -91,6 +92,7 @@ class ReactionPickerOverlay {
                 _ActionList(
                   isSent: isSent,
                   isVideoShare: isVideoShare,
+                  isFailedSend: isFailedSend,
                   onSelected: (action) => Navigator.of(sheetContext).pop(
                     ReactionPickerResult(action: action),
                   ),
@@ -216,17 +218,34 @@ class _ActionList extends StatelessWidget {
   const _ActionList({
     required this.isSent,
     required this.isVideoShare,
+    required this.isFailedSend,
     required this.onSelected,
   });
 
   final bool isSent;
   final bool isVideoShare;
+  final bool isFailedSend;
   final ValueChanged<MessageAction> onSelected;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final tiles = <Widget>[
+      // Failed own send: offer to re-attempt delivery or drop it. Shown first
+      // so the recovery actions are the primary affordance on a red bubble.
+      if (isFailedSend) ...[
+        _ActionTile(
+          icon: DivineIconName.arrowClockwise,
+          label: l10n.dmMessageActionRetrySend,
+          onTap: () => onSelected(MessageAction.retrySend),
+        ),
+        _ActionTile(
+          icon: DivineIconName.x,
+          label: l10n.dmMessageActionCancelSend,
+          onTap: () => onSelected(MessageAction.cancelSend),
+          color: VineTheme.error,
+        ),
+      ],
       _ActionTile(
         icon: DivineIconName.copy,
         label: l10n.dmMessageActionCopyText,

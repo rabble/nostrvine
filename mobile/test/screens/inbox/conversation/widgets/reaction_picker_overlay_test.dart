@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/reaction_picker_overlay.dart';
 
 import '../../../../helpers/test_provider_overrides.dart';
@@ -17,6 +18,7 @@ void main() {
     bool isSent = false,
     bool showPicker = true,
     bool isVideoShare = false,
+    bool isFailedSend = false,
   }) async {
     await tester.pumpWidget(
       testMaterialApp(
@@ -31,6 +33,7 @@ void main() {
                       isSent: isSent,
                       showPicker: showPicker,
                       isVideoShare: isVideoShare,
+                      isFailedSend: isFailedSend,
                     ),
                   );
                 },
@@ -127,6 +130,35 @@ void main() {
       expect(find.text('🔥'), findsNothing);
       expect(find.bySemanticsLabel('Add custom emoji reaction'), findsNothing);
       expect(find.text('Copy text'), findsOneWidget);
+    });
+
+    testWidgets(
+      'shows retry + cancel actions (and hides the picker) on a failed send',
+      (tester) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await openOverlay(
+          tester,
+          isSent: true,
+          showPicker: false,
+          isFailedSend: true,
+        );
+
+        expect(find.text(l10n.dmMessageActionRetrySend), findsOneWidget);
+        expect(find.text(l10n.dmMessageActionCancelSend), findsOneWidget);
+        // The reaction picker is meaningless on a message the recipient
+        // never received.
+        expect(find.text('🔥'), findsNothing);
+      },
+    );
+
+    testWidgets('omits retry + cancel actions when the send did not fail', (
+      tester,
+    ) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await openOverlay(tester, isSent: true);
+
+      expect(find.text(l10n.dmMessageActionRetrySend), findsNothing);
+      expect(find.text(l10n.dmMessageActionCancelSend), findsNothing);
     });
   });
 }

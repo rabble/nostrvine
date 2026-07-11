@@ -5650,6 +5650,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dmMessageActionReport => 'Signaler';
 
   @override
+  String get dmMessageActionRetrySend => 'Réessayer';
+
+  @override
+  String get dmMessageActionCancelSend => 'Annuler l\'envoi';
+
+  @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
 
   @override

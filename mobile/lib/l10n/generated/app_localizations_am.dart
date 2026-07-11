@@ -5465,6 +5465,12 @@ class AppLocalizationsAm extends AppLocalizations {
   String get dmMessageActionReport => 'ሪፖርት አድርግ';
 
   @override
+  String get dmMessageActionRetrySend => 'እንደገና ይሞክሩ';
+
+  @override
+  String get dmMessageActionCancelSend => 'መላክን ሰርዝ';
+
+  @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
 
   @override

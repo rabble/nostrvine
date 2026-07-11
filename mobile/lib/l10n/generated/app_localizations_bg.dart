@@ -5631,6 +5631,12 @@ class AppLocalizationsBg extends AppLocalizations {
   String get dmMessageActionReport => 'Докладвай';
 
   @override
+  String get dmMessageActionRetrySend => 'Опитай отново';
+
+  @override
+  String get dmMessageActionCancelSend => 'Отмяна на изпращането';
+
+  @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
 
   @override

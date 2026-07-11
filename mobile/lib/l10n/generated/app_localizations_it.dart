@@ -5628,6 +5628,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String get dmMessageActionReport => 'Segnala';
 
   @override
+  String get dmMessageActionRetrySend => 'Riprova';
+
+  @override
+  String get dmMessageActionCancelSend => 'Annulla invio';
+
+  @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
 
   @override

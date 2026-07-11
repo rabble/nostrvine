@@ -5731,6 +5731,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dmMessageActionReport => 'Raportează';
 
   @override
+  String get dmMessageActionRetrySend => 'Încearcă din nou';
+
+  @override
+  String get dmMessageActionCancelSend => 'Anulează trimiterea';
+
+  @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
 
   @override

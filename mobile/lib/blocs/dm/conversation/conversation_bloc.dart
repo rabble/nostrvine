@@ -49,6 +49,10 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       _onFullSendRecoveryRequested,
       transformer: sequential(),
     );
+    on<ConversationOutgoingSendCancelled>(
+      _onOutgoingSendCancelled,
+      transformer: sequential(),
+    );
   }
 
   final DmRepository _dmRepository;
@@ -389,6 +393,30 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       // (red bubbles), so a later Retry re-derives them from
       // `failedOutgoingRumorIds`; just re-raise the failed status.
       emit(state.copyWith(sendStatus: SendStatus.failed));
+    }
+  }
+
+  Future<void> _onOutgoingSendCancelled(
+    ConversationOutgoingSendCancelled event,
+    Emitter<ConversationState> emit,
+  ) async {
+    try {
+      // Drop the durable row; the failed bubble leaves `pendingOutgoing` on
+      // the next watch tick. No status emit — the removal speaks for itself,
+      // and any stale failed SnackBar is cleared so its Retry can't re-add it.
+      await _dmRepository.cancelOutgoingSend(rumorId: event.rumorId);
+      emit(state.copyWith(clearLastFailedSend: true));
+    } on Object catch (e, stackTrace) {
+      // A foreign-owner row surfaces as ArgumentError — terminal and expected,
+      // so it is not Reportable (matrix-NO). Anything else is unexpected.
+      if (e is ArgumentError) return;
+      addError(
+        Reportable(
+          e,
+          context: ConversationBlocReportableSites.onOutgoingSendCancelled,
+        ),
+        stackTrace,
+      );
     }
   }
 }

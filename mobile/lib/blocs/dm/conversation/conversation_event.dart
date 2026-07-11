@@ -80,3 +80,16 @@ class ConversationFullSendRecoveryRequested extends ConversationEvent {
   @override
   List<Object?> get props => [rumorIds];
 }
+
+/// Cancel a queued outgoing DM — drop its durable row so the failed bubble
+/// disappears and the retry sweep stops re-driving it. Dispatched from the
+/// per-bubble long-press "Cancel send" action on a failed own message.
+class ConversationOutgoingSendCancelled extends ConversationEvent {
+  const ConversationOutgoingSendCancelled({required this.rumorId});
+
+  /// Rumor id (== the failed bubble's id) of the queue row to drop.
+  final String rumorId;
+
+  @override
+  List<Object?> get props => [rumorId];
+}

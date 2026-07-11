@@ -5546,6 +5546,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dmMessageActionReport => 'إبلاغ';
 
   @override
+  String get dmMessageActionRetrySend => 'أعد المحاولة';
+
+  @override
+  String get dmMessageActionCancelSend => 'إلغاء الإرسال';
+
+  @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
 
   @override

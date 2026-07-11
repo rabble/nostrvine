@@ -5577,6 +5577,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dmMessageActionReport => 'Rapportera';
 
   @override
+  String get dmMessageActionRetrySend => 'Försök igen';
+
+  @override
+  String get dmMessageActionCancelSend => 'Avbryt sändning';
+
+  @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
 
   @override

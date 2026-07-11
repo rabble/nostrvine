@@ -5552,6 +5552,12 @@ class AppLocalizationsId extends AppLocalizations {
   String get dmMessageActionReport => 'Laporkan';
 
   @override
+  String get dmMessageActionRetrySend => 'Coba lagi';
+
+  @override
+  String get dmMessageActionCancelSend => 'Batalkan pengiriman';
+
+  @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
 
   @override

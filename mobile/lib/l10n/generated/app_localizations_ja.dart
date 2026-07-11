@@ -5348,6 +5348,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get dmMessageActionReport => '報告';
 
   @override
+  String get dmMessageActionRetrySend => '再試行';
+
+  @override
+  String get dmMessageActionCancelSend => '送信をキャンセル';
+
+  @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
 
   @override

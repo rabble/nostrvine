@@ -1694,6 +1694,66 @@ void main() {
         ],
       );
     });
+
+    group(ConversationOutgoingSendCancelled, () {
+      const rumorId =
+          '9999999999999999999999999999999999999999999999999999999999999999';
+
+      blocTest<ConversationBloc, ConversationState>(
+        'cancels the queued row via cancelOutgoingSend and clears '
+        'lastFailedSend',
+        setUp: () {
+          when(
+            () => mockDmRepository.cancelOutgoingSend(
+              rumorId: any(named: 'rumorId'),
+            ),
+          ).thenAnswer((_) async {});
+        },
+        seed: () => const ConversationState(
+          status: ConversationStatus.loaded,
+          sendStatus: SendStatus.failed,
+          lastFailedSend: FailedSend(
+            content: 'Hello',
+            recipientPubkeys: [recipientPubkey],
+          ),
+        ),
+        build: buildBloc,
+        act: (bloc) => bloc.add(
+          const ConversationOutgoingSendCancelled(rumorId: rumorId),
+        ),
+        expect: () => [
+          isA<ConversationState>().having(
+            (s) => s.lastFailedSend,
+            'lastFailedSend cleared on cancel',
+            isNull,
+          ),
+        ],
+        verify: (_) {
+          verify(
+            () => mockDmRepository.cancelOutgoingSend(rumorId: rumorId),
+          ).called(1);
+        },
+      );
+
+      blocTest<ConversationBloc, ConversationState>(
+        'swallows an ArgumentError (foreign/already-gone row) with no error '
+        'emit',
+        setUp: () {
+          when(
+            () => mockDmRepository.cancelOutgoingSend(
+              rumorId: any(named: 'rumorId'),
+            ),
+          ).thenThrow(ArgumentError('foreign owner'));
+        },
+        seed: () => const ConversationState(status: ConversationStatus.loaded),
+        build: buildBloc,
+        act: (bloc) => bloc.add(
+          const ConversationOutgoingSendCancelled(rumorId: rumorId),
+        ),
+        expect: () => const <ConversationState>[],
+        errors: () => const <Object>[],
+      );
+    });
   });
 
   group(ConversationState, () {

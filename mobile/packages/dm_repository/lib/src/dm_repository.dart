@@ -3419,6 +3419,35 @@ class DmRepository {
   /// so both call sites agree on the partial-vs-full delivery
   /// bookkeeping. The caller is responsible for invoking this inside
   /// the same transaction that persists the local message row.
+  /// Cancel a queued outgoing DM: drop its `outgoing_dms` row so the failed
+  /// bubble disappears and the retry sweep never re-drives it. The user's
+  /// explicit "give up" on a send that keeps failing.
+  ///
+  /// Idempotent — a missing row (already delivered, already cancelled, or
+  /// swept away) is a no-op. Throws [StateError] if the queue DAO is not
+  /// wired in, and [ArgumentError] if the row belongs to a different account
+  /// (never delete another identity's queued send).
+  Future<void> cancelOutgoingSend({required String rumorId}) async {
+    _assertInitialized();
+    final dao = _outgoingDmsDao;
+    if (dao == null) {
+      throw StateError(
+        'cancelOutgoingSend requires the outgoing_dms queue DAO; '
+        'wire OutgoingDmsDao into DmRepository before calling.',
+      );
+    }
+    final row = await dao.getById(rumorId);
+    if (row == null) return;
+    if (row.ownerPubkey != _userPubkey) {
+      throw ArgumentError.value(
+        rumorId,
+        'rumorId',
+        'queue row belongs to a different account',
+      );
+    }
+    await dao.deleteById(rumorId);
+  }
+
   Future<void> _finalizeAfterRecipientSuccess({
     required OutgoingDmsDao outgoingDao,
     required String rumorId,

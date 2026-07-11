@@ -5645,6 +5645,12 @@ class AppLocalizationsFil extends AppLocalizations {
   String get dmMessageActionReport => 'I-report';
 
   @override
+  String get dmMessageActionRetrySend => 'Subukan ulit';
+
+  @override
+  String get dmMessageActionCancelSend => 'Kanselahin ang pagpapadala';
+
+  @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
 
   @override

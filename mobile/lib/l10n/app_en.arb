@@ -3184,6 +3184,14 @@
   "@dmMessageActionReport": {
     "description": "Long-press menu action on a received DM bubble that opens the report flow for that specific message."
   },
+  "dmMessageActionRetrySend": "Try again",
+  "@dmMessageActionRetrySend": {
+    "description": "Long-press menu action on a failed own DM bubble that re-attempts delivery of that queued message."
+  },
+  "dmMessageActionCancelSend": "Cancel send",
+  "@dmMessageActionCancelSend": {
+    "description": "Long-press menu action on a failed own DM bubble that gives up on the queued message and removes it."
+  },
   "dmReactionAddCustomA11yLabel": "Add custom emoji reaction",
   "@dmReactionAddCustomA11yLabel": {
     "description": "Screen-reader label for the '+' button at the end of the quick-row that opens the full emoji picker."

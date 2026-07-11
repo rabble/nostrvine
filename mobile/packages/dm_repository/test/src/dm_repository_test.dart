@@ -14815,6 +14815,86 @@ void main() {
       );
     });
 
+    group('cancelOutgoingSend', () {
+      late _MockOutgoingDmsDao mockOutgoingDmsDao;
+
+      OutgoingDm row({String ownerPubkey = _validPubkeyA}) => OutgoingDm(
+        id: _rumorEventId,
+        conversationId: 'conv',
+        recipientPubkey: _validPubkeyB,
+        content: 'queued message',
+        createdAt: 1700000000,
+        rumorEventJson: '{}',
+        recipientWrapStatus: OutgoingWrapStatus.failed,
+        selfWrapStatus: OutgoingWrapStatus.failed,
+        queuedAt: DateTime.fromMillisecondsSinceEpoch(0),
+        ownerPubkey: ownerPubkey,
+      );
+
+      setUp(() {
+        mockOutgoingDmsDao = _MockOutgoingDmsDao();
+        when(
+          () => mockOutgoingDmsDao.deleteById(any()),
+        ).thenAnswer((_) async => 1);
+      });
+
+      test('deletes the queue row for the owner', () async {
+        when(
+          () => mockOutgoingDmsDao.getById(_rumorEventId),
+        ).thenAnswer((_) async => row());
+
+        final repository = createRepository(
+          outgoingDmsDao: mockOutgoingDmsDao,
+        );
+        await repository.cancelOutgoingSend(rumorId: _rumorEventId);
+
+        verify(() => mockOutgoingDmsDao.deleteById(_rumorEventId)).called(1);
+      });
+
+      test('is a no-op when the row is already gone', () async {
+        when(
+          () => mockOutgoingDmsDao.getById(_rumorEventId),
+        ).thenAnswer((_) async => null);
+
+        final repository = createRepository(
+          outgoingDmsDao: mockOutgoingDmsDao,
+        );
+        await repository.cancelOutgoingSend(rumorId: _rumorEventId);
+
+        verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
+      });
+
+      test(
+        'throws ArgumentError and never deletes a foreign-owner row',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => row(ownerPubkey: _validPubkeyB));
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          await expectLater(
+            () => repository.cancelOutgoingSend(rumorId: _rumorEventId),
+            throwsArgumentError,
+          );
+          verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
+        },
+      );
+
+      test(
+        'throws StateError when the outgoing_dms DAO is not wired in',
+        () async {
+          final repository = createRepository();
+          await expectLater(
+            () => repository.cancelOutgoingSend(rumorId: _rumorEventId),
+            throwsStateError,
+          );
+        },
+      );
+    });
+
     group(
       '_mergeDuplicateConversations creates canonical row from phantoms',
       () {

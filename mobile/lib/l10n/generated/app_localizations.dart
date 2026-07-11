@@ -9780,6 +9780,18 @@ abstract class AppLocalizations {
   /// **'Report'**
   String get dmMessageActionReport;
 
+  /// Long-press menu action on a failed own DM bubble that re-attempts delivery of that queued message.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get dmMessageActionRetrySend;
+
+  /// Long-press menu action on a failed own DM bubble that gives up on the queued message and removes it.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel send'**
+  String get dmMessageActionCancelSend;
+
   /// Screen-reader label for the '+' button at the end of the quick-row that opens the full emoji picker.
   ///
   /// In en, this message translates to:

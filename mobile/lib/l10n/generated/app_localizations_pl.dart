@@ -5723,6 +5723,12 @@ class AppLocalizationsPl extends AppLocalizations {
   String get dmMessageActionReport => 'Zgłoś';
 
   @override
+  String get dmMessageActionRetrySend => 'Spróbuj ponownie';
+
+  @override
+  String get dmMessageActionCancelSend => 'Anuluj wysyłanie';
+
+  @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
 
   @override

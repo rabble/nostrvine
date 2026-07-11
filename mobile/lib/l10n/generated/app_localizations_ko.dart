@@ -5368,6 +5368,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get dmMessageActionReport => '신고';
 
   @override
+  String get dmMessageActionRetrySend => '다시 시도';
+
+  @override
+  String get dmMessageActionCancelSend => '전송 취소';
+
+  @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
 
   @override

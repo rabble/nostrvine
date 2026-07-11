@@ -449,12 +449,14 @@ class _MessageList extends StatelessWidget {
     final videoUrl = tryExtractDivineVideoUrl(message.content);
     // Reaction picker hidden on failed-send own DMs — reacting to a
     // message the recipient never received is meaningless (#4633 round 25).
-    final showPicker = !(isSent && deliveryStatus == DmDeliveryStatus.failed);
+    final isFailedSend = isSent && deliveryStatus == DmDeliveryStatus.failed;
+    final showPicker = !isFailedSend;
     final result = await ReactionPickerOverlay.show(
       context: context,
       isSent: isSent,
       isVideoShare: videoUrl != null,
       showPicker: showPicker,
+      isFailedSend: isFailedSend,
     );
     if (result == null) return;
     if (!context.mounted) return;
@@ -487,6 +489,17 @@ class _MessageList extends StatelessWidget {
           context,
           messageId: message.id,
           senderPubkey: message.senderPubkey,
+        );
+      case MessageAction.retrySend:
+        // Queue-aware retry of this one failed row. A manual retry bypasses
+        // the sweep's retry-count cap, so an exhausted row can still be
+        // re-driven. The bubble id is the rumor id.
+        context.read<ConversationBloc>().add(
+          ConversationFullSendRecoveryRequested(rumorIds: [message.id]),
+        );
+      case MessageAction.cancelSend:
+        context.read<ConversationBloc>().add(
+          ConversationOutgoingSendCancelled(rumorId: message.id),
         );
     }
   }

@@ -27,4 +27,9 @@ abstract class ConversationBlocReportableSites {
   /// `DmRepository.deleteMessageForEveryone` — typically the
   /// `StateError('Failed to sign kind 5 deletion event')` invariant.
   static const String onMessageDeleted = '_onMessageDeleted';
+
+  /// `_onOutgoingSendCancelled`: non-`ArgumentError` throw from
+  /// `DmRepository.cancelOutgoingSend` (missing DAO wiring is the
+  /// invariant-violation example).
+  static const String onOutgoingSendCancelled = '_onOutgoingSendCancelled';
 }
