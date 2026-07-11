@@ -1778,6 +1778,17 @@ class AppLocalizationsFil extends AppLocalizations {
   String get devOptionsTitle => 'Developer Options';
 
   @override
+  String get devOptionsDisableDeveloperMode => 'I-disable ang Developer Mode';
+
+  @override
+  String get devOptionsDisableDeveloperModeSubtitle =>
+      'Itago ang developer options mula sa settings';
+
+  @override
+  String get devOptionsDisableDeveloperModeToast =>
+      'Na-disable ang developer mode';
+
+  @override
   String get devOptionsPageLoadTimes => 'Mga Oras ng Page Load';
 
   @override
@@ -2126,10 +2137,10 @@ class AppLocalizationsFil extends AppLocalizations {
       'I-configure ang mga Blossom upload server';
 
   @override
-  String get nostrSettingsDeveloperOptions => 'Developer Options';
+  String get settingsDeveloperOptions => 'Developer Options';
 
   @override
-  String get nostrSettingsDeveloperOptionsSubtitle =>
+  String get settingsDeveloperOptionsSubtitle =>
       'Environment switcher at debug settings';
 
   @override

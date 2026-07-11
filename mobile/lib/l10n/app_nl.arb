@@ -676,6 +676,9 @@
     "@devOptionsTitle": {
         "description": "Developer options screen app bar title"
     },
+    "devOptionsDisableDeveloperMode": "Ontwikkelaarsmodus uitschakelen",
+    "devOptionsDisableDeveloperModeSubtitle": "Ontwikkelaarsopties verbergen in instellingen",
+    "devOptionsDisableDeveloperModeToast": "Ontwikkelaarsmodus uitgeschakeld",
     "devOptionsPageLoadTimes": "Laadtijden per pagina",
     "devOptionsNoPageLoads": "Nog geen paginaladingen geregistreerd.\nNavigeer door de app om timingdata te zien.",
     "devOptionsPageLoadVisible": "Zichtbaar: {visibleMs}ms  |  Data: {dataMs}ms",
@@ -3310,8 +3313,8 @@
     "nostrSettingsRelayDiagnosticsSubtitle": "Debug relayverbinding en netwerkproblemen",
     "nostrSettingsMediaServers": "Mediaservers",
     "nostrSettingsMediaServersSubtitle": "Configureer Blossom-uploadservers",
-    "nostrSettingsDeveloperOptions": "Ontwikkelaarsopties",
-    "nostrSettingsDeveloperOptionsSubtitle": "Omgevingswisselaar en debug-instellingen",
+    "settingsDeveloperOptions": "Ontwikkelaarsopties",
+    "settingsDeveloperOptionsSubtitle": "Omgevingswisselaar en debug-instellingen",
     "nostrSettingsExperimentalFeaturesSubtitle": "Zet feature flags aan die soms haperen.",
     "nostrSettingsKeyManagement": "Sleutelbeheer",
     "nostrSettingsKeyManagementSubtitle": "Exporteer, back-up en herstel je Nostr-sleutels",

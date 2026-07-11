@@ -673,6 +673,9 @@
     "@devOptionsTitle": {
         "description": "Developer options screen app bar title"
     },
+    "devOptionsDisableDeveloperMode": "Geliştirici Modunu Devre Dışı Bırak",
+    "devOptionsDisableDeveloperModeSubtitle": "Geliştirici seçeneklerini ayarlardan gizle",
+    "devOptionsDisableDeveloperModeToast": "Geliştirici modu devre dışı bırakıldı",
     "devOptionsPageLoadTimes": "Sayfa Yükleme Süreleri",
     "devOptionsNoPageLoads": "Henüz sayfa yüklemesi kaydedilmedi.\nZamanlama verisini görmek için uygulamada gezin.",
     "devOptionsPageLoadVisible": "Görünür: {visibleMs}ms  |  Veri: {dataMs}ms",
@@ -3310,8 +3313,8 @@
     "nostrSettingsRelayDiagnosticsSubtitle": "Röle bağlantısı ve ağ sorunlarını ayıkla",
     "nostrSettingsMediaServers": "Medya Sunucuları",
     "nostrSettingsMediaServersSubtitle": "Blossom yükleme sunucularını yapılandır",
-    "nostrSettingsDeveloperOptions": "Geliştirici Seçenekleri",
-    "nostrSettingsDeveloperOptionsSubtitle": "Ortam değiştirici ve hata ayıklama ayarları",
+    "settingsDeveloperOptions": "Geliştirici Seçenekleri",
+    "settingsDeveloperOptionsSubtitle": "Ortam değiştirici ve hata ayıklama ayarları",
     "nostrSettingsExperimentalFeaturesSubtitle": "Aksaklık çıkarabilecek özellik bayraklarını aç/kapat.",
     "nostrSettingsKeyManagement": "Anahtar Yönetimi",
     "nostrSettingsKeyManagementSubtitle": "Nostr anahtarlarını dışa aktar, yedekle ve geri yükle",

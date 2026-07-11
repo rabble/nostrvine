@@ -1726,6 +1726,18 @@ class AppLocalizationsTr extends AppLocalizations {
   String get devOptionsTitle => 'Geliştirici Seçenekleri';
 
   @override
+  String get devOptionsDisableDeveloperMode =>
+      'Geliştirici Modunu Devre Dışı Bırak';
+
+  @override
+  String get devOptionsDisableDeveloperModeSubtitle =>
+      'Geliştirici seçeneklerini ayarlardan gizle';
+
+  @override
+  String get devOptionsDisableDeveloperModeToast =>
+      'Geliştirici modu devre dışı bırakıldı';
+
+  @override
   String get devOptionsPageLoadTimes => 'Sayfa Yükleme Süreleri';
 
   @override
@@ -2072,10 +2084,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Blossom yükleme sunucularını yapılandır';
 
   @override
-  String get nostrSettingsDeveloperOptions => 'Geliştirici Seçenekleri';
+  String get settingsDeveloperOptions => 'Geliştirici Seçenekleri';
 
   @override
-  String get nostrSettingsDeveloperOptionsSubtitle =>
+  String get settingsDeveloperOptionsSubtitle =>
       'Ortam değiştirici ve hata ayıklama ayarları';
 
   @override

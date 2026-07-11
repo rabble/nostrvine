@@ -5,9 +5,12 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
+import 'package:openvine/services/environment_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<SharedPreferences> mockPrefs() async {
@@ -59,6 +62,67 @@ void main() {
 
       final listViewWidth = tester.getSize(find.byType(ListView).first).width;
       expect(listViewWidth, moreOrLessEquals(600));
+    },
+  );
+
+  testWidgets(
+    'disabling developer mode turns off the flag and pops back',
+    (tester) async {
+      final prefs = await mockPrefs();
+      final envService = EnvironmentService();
+      await envService.initialize(sharedPreferences: prefs);
+      await envService.enableDeveloperMode();
+      expect(envService.isDeveloperModeEnabled, isTrue);
+
+      final router = GoRouter(
+        initialLocation: '/settings',
+        routes: [
+          GoRoute(
+            path: '/settings',
+            builder: (context, state) => Scaffold(
+              body: Center(
+                child: TextButton(
+                  onPressed: () => context.push(DeveloperOptionsScreen.path),
+                  child: const Text('open-developer-options'),
+                ),
+              ),
+            ),
+          ),
+          GoRoute(
+            path: DeveloperOptionsScreen.path,
+            builder: (context, state) => const DeveloperOptionsScreen(),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            environmentServiceProvider.overrideWithValue(envService),
+          ],
+          child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: VineTheme.theme,
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('open-developer-options'));
+      await tester.pumpAndSettle();
+      expect(find.byType(DeveloperOptionsScreen), findsOneWidget);
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await tapTile(tester, l10n.devOptionsDisableDeveloperMode);
+
+      expect(envService.isDeveloperModeEnabled, isFalse);
+      expect(prefs.getBool('developer_mode_enabled'), isFalse);
+      // Returned to the previous screen; the dev options entry is gone.
+      expect(find.byType(DeveloperOptionsScreen), findsNothing);
+      expect(find.text('open-developer-options'), findsOneWidget);
     },
   );
 

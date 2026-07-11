@@ -1711,6 +1711,15 @@ class AppLocalizationsAm extends AppLocalizations {
   String get devOptionsTitle => 'የገንቢ አማራጮች';
 
   @override
+  String get devOptionsDisableDeveloperMode => 'የገንቢ ሁነታን አሰናክል';
+
+  @override
+  String get devOptionsDisableDeveloperModeSubtitle => 'የገንቢ አማራጮችን ከቅንብሮች ደብቅ';
+
+  @override
+  String get devOptionsDisableDeveloperModeToast => 'የገንቢ ሁነታ ተሰናክሏል';
+
+  @override
   String get devOptionsPageLoadTimes => 'የገጽ ጭነት ጊዜያት';
 
   @override
@@ -2052,11 +2061,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get nostrSettingsMediaServersSubtitle => 'የBlossom ማስጫኛ አገልጋዮችን ያቀናብሩ';
 
   @override
-  String get nostrSettingsDeveloperOptions => 'የገንቢ አማራጮች';
+  String get settingsDeveloperOptions => 'የገንቢ አማራጮች';
 
   @override
-  String get nostrSettingsDeveloperOptionsSubtitle =>
-      'የአካባቢ መቀየሪያ እና የማረሚያ ቅንብሮች';
+  String get settingsDeveloperOptionsSubtitle => 'የአካባቢ መቀየሪያ እና የማረሚያ ቅንብሮች';
 
   @override
   String get nostrSettingsExperimentalFeaturesSubtitle =>

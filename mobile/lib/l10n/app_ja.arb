@@ -673,6 +673,9 @@
     "@devOptionsTitle": {
         "description": "Developer options screen app bar title"
     },
+    "devOptionsDisableDeveloperMode": "開発者モードを無効にする",
+    "devOptionsDisableDeveloperModeSubtitle": "設定から開発者オプションを非表示にする",
+    "devOptionsDisableDeveloperModeToast": "開発者モードを無効にしました",
     "devOptionsPageLoadTimes": "ページ読み込み時間",
     "devOptionsNoPageLoads": "まだページ読み込みの記録がないよ。\nアプリ内を移動するとタイミングデータが出るよ。",
     "devOptionsPageLoadVisible": "表示: {visibleMs}ms  |  データ: {dataMs}ms",
@@ -3303,8 +3306,8 @@
     "nostrSettingsRelayDiagnosticsSubtitle": "リレー接続とネットワークの問題をデバッグ",
     "nostrSettingsMediaServers": "メディアサーバー",
     "nostrSettingsMediaServersSubtitle": "Blossom アップロードサーバーを設定",
-    "nostrSettingsDeveloperOptions": "開発者オプション",
-    "nostrSettingsDeveloperOptionsSubtitle": "環境スイッチャーとデバッグ設定",
+    "settingsDeveloperOptions": "開発者オプション",
+    "settingsDeveloperOptionsSubtitle": "環境スイッチャーとデバッグ設定",
     "nostrSettingsExperimentalFeaturesSubtitle": "バグるかもしれない機能フラグを切り替える。",
     "nostrSettingsKeyManagement": "鍵の管理",
     "nostrSettingsKeyManagementSubtitle": "Nostr 鍵をエクスポート、バックアップ、復元",

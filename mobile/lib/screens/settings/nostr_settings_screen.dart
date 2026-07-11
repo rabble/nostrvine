@@ -15,11 +15,9 @@ import 'package:openvine/features/feature_flags/providers/feature_flag_providers
 import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
-import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
@@ -35,7 +33,6 @@ class NostrSettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isDeveloperMode = ref.watch(isDeveloperModeEnabledProvider);
     final showAdvancedRelaySettings = ref.watch(
       isFeatureEnabledProvider(FeatureFlag.advancedRelaySettings),
     );
@@ -88,14 +85,6 @@ class NostrSettingsScreen extends ConsumerWidget {
                 subtitle: context.l10n.nostrSettingsMediaServersSubtitle,
                 onTap: () => context.push(BlossomSettingsScreen.path),
               ),
-              if (isDeveloperMode)
-                _SettingsTile(
-                  icon: Icons.developer_mode,
-                  title: context.l10n.nostrSettingsDeveloperOptions,
-                  subtitle: context.l10n.nostrSettingsDeveloperOptionsSubtitle,
-                  onTap: () => context.push(DeveloperOptionsScreen.path),
-                  iconColor: VineTheme.warning,
-                ),
               _SettingsTile(
                 icon: Icons.science,
                 title: context.l10n.settingsExperimentalFeatures,

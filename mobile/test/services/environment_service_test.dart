@@ -72,6 +72,26 @@ void main() {
       expect(prefs.getBool('developer_mode_enabled'), true);
     });
 
+    test('disableDeveloperMode persists state and notifies', () async {
+      SharedPreferences.setMockInitialValues({
+        'developer_mode_enabled': true,
+      });
+      service = EnvironmentService();
+      await service.initialize();
+      expect(service.isDeveloperModeEnabled, true);
+
+      var notified = false;
+      service.addListener(() => notified = true);
+
+      await service.disableDeveloperMode();
+
+      expect(service.isDeveloperModeEnabled, false);
+      expect(notified, true);
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getBool('developer_mode_enabled'), false);
+    });
+
     test('setEnvironment persists and notifies', () async {
       service = EnvironmentService();
       await service.initialize();

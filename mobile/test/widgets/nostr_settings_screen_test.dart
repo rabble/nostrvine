@@ -12,7 +12,6 @@ import 'package:openvine/features/feature_flags/providers/feature_flag_providers
 import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
@@ -60,7 +59,6 @@ void main() {
           currentAuthStateProvider.overrideWith(
             (ref) => AuthState.authenticated,
           ),
-          isDeveloperModeEnabledProvider.overrideWithValue(false),
           isFeatureEnabledProvider(
             FeatureFlag.advancedRelaySettings,
           ).overrideWith((ref) => advancedRelaySettingsEnabled),

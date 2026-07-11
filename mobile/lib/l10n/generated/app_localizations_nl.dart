@@ -1756,6 +1756,18 @@ class AppLocalizationsNl extends AppLocalizations {
   String get devOptionsTitle => 'Ontwikkelaarsopties';
 
   @override
+  String get devOptionsDisableDeveloperMode =>
+      'Ontwikkelaarsmodus uitschakelen';
+
+  @override
+  String get devOptionsDisableDeveloperModeSubtitle =>
+      'Ontwikkelaarsopties verbergen in instellingen';
+
+  @override
+  String get devOptionsDisableDeveloperModeToast =>
+      'Ontwikkelaarsmodus uitgeschakeld';
+
+  @override
   String get devOptionsPageLoadTimes => 'Laadtijden per pagina';
 
   @override
@@ -2102,10 +2114,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Configureer Blossom-uploadservers';
 
   @override
-  String get nostrSettingsDeveloperOptions => 'Ontwikkelaarsopties';
+  String get settingsDeveloperOptions => 'Ontwikkelaarsopties';
 
   @override
-  String get nostrSettingsDeveloperOptionsSubtitle =>
+  String get settingsDeveloperOptionsSubtitle =>
       'Omgevingswisselaar en debug-instellingen';
 
   @override

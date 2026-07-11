@@ -27,6 +27,7 @@ import 'package:openvine/screens/apps/apps_permissions_screen.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/badges/badges_screen.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
+import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings/general_settings_screen.dart';
@@ -181,6 +182,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final monetizationLinksEnabled = ref.watch(
       isFeatureEnabledProvider(FeatureFlag.profileMonetizationLinks),
     );
+    // Watched here (not just in _VersionTile) so the Developer Options tile
+    // appears immediately when dev mode is unlocked via the version tap.
+    final isDeveloperMode = ref.watch(isDeveloperModeEnabledProvider);
     final appStoreTipPolicy = usesAppleAppStoreTipPolicy;
     return BlocProvider.value(
       value: _accountCubit,
@@ -298,6 +302,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   subtitle: context.l10n.settingsIntegrationPermissionsSubtitle,
                   onTap: () => context.push(AppsPermissionsScreen.path),
                 ),
+                if (isDeveloperMode)
+                  _SettingsTile(
+                    icon: Icons.developer_mode,
+                    title: context.l10n.settingsDeveloperOptions,
+                    subtitle: context.l10n.settingsDeveloperOptionsSubtitle,
+                    iconColor: VineTheme.warning,
+                    onTap: () => context.push(DeveloperOptionsScreen.path),
+                  ),
 
                 const SizedBox(height: 24),
                 _VersionTile(appVersion: _appVersion),

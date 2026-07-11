@@ -676,6 +676,9 @@
     "@devOptionsTitle": {
         "description": "Developer options screen app bar title"
     },
+    "devOptionsDisableDeveloperMode": "Entwicklermodus deaktivieren",
+    "devOptionsDisableDeveloperModeSubtitle": "Entwickleroptionen aus den Einstellungen ausblenden",
+    "devOptionsDisableDeveloperModeToast": "Entwicklermodus deaktiviert",
     "devOptionsPageLoadTimes": "Seiten-Ladezeiten",
     "devOptionsNoPageLoads": "Noch keine Seitenladevorgänge aufgezeichnet.\nNavigiere durch die App, um Timing-Daten zu sehen.",
     "devOptionsPageLoadVisible": "Sichtbar: {visibleMs}ms  |  Daten: {dataMs}ms",
@@ -3310,8 +3313,8 @@
     "nostrSettingsRelayDiagnosticsSubtitle": "Relay-Verbindungen und Netzwerkprobleme debuggen",
     "nostrSettingsMediaServers": "Medienserver",
     "nostrSettingsMediaServersSubtitle": "Blossom-Upload-Server konfigurieren",
-    "nostrSettingsDeveloperOptions": "Entwickleroptionen",
-    "nostrSettingsDeveloperOptionsSubtitle": "Umgebungswechsler und Debug-Einstellungen",
+    "settingsDeveloperOptions": "Entwickleroptionen",
+    "settingsDeveloperOptionsSubtitle": "Umgebungswechsler und Debug-Einstellungen",
     "nostrSettingsExperimentalFeaturesSubtitle": "Feature-Flags an- und ausschalten — kann holpern.",
     "nostrSettingsKeyManagement": "Schlüsselverwaltung",
     "nostrSettingsKeyManagementSubtitle": "Deine Nostr-Schlüssel exportieren, sichern und wiederherstellen",

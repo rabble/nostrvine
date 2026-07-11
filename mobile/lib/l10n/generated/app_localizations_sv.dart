@@ -1741,6 +1741,16 @@ class AppLocalizationsSv extends AppLocalizations {
   String get devOptionsTitle => 'Utvecklaralternativ';
 
   @override
+  String get devOptionsDisableDeveloperMode => 'Inaktivera utvecklarläge';
+
+  @override
+  String get devOptionsDisableDeveloperModeSubtitle =>
+      'Dölj utvecklaralternativ från inställningarna';
+
+  @override
+  String get devOptionsDisableDeveloperModeToast => 'Utvecklarläge inaktiverat';
+
+  @override
   String get devOptionsPageLoadTimes => 'Sidladdningstider';
 
   @override
@@ -2087,10 +2097,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Konfigurera Blossom-uppladdningsservrar';
 
   @override
-  String get nostrSettingsDeveloperOptions => 'Utvecklaralternativ';
+  String get settingsDeveloperOptions => 'Utvecklaralternativ';
 
   @override
-  String get nostrSettingsDeveloperOptionsSubtitle =>
+  String get settingsDeveloperOptionsSubtitle =>
       'Miljöväxlare och felsökningsinställningar';
 
   @override

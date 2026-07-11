@@ -537,11 +537,47 @@ class _DeveloperOptionsScreenState
                   onTap: _clearProtectedMinorOverride,
                 ),
               ],
+
+              const Divider(color: VineTheme.outlineVariant, height: 32),
+              ListTile(
+                leading: const Icon(
+                  Icons.developer_mode,
+                  color: VineTheme.warning,
+                ),
+                title: Text(
+                  context.l10n.devOptionsDisableDeveloperMode,
+                  style: const TextStyle(
+                    color: VineTheme.warning,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                subtitle: Text(
+                  context.l10n.devOptionsDisableDeveloperModeSubtitle,
+                  style: const TextStyle(
+                    color: VineTheme.secondaryText,
+                    fontSize: 14,
+                  ),
+                ),
+                onTap: _disableDeveloperMode,
+              ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _disableDeveloperMode() async {
+    await ref.read(environmentServiceProvider).disableDeveloperMode();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(context.l10n.devOptionsDisableDeveloperModeToast),
+        backgroundColor: VineTheme.vineGreen,
+      ),
+    );
+    context.pop();
   }
 
   String _protectedMinorStateText(BuildContext context) {

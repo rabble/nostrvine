@@ -673,6 +673,9 @@
     "@devOptionsTitle": {
         "description": "Developer options screen app bar title"
     },
+    "devOptionsDisableDeveloperMode": "Nonaktifkan Mode Pengembang",
+    "devOptionsDisableDeveloperModeSubtitle": "Sembunyikan opsi pengembang dari pengaturan",
+    "devOptionsDisableDeveloperModeToast": "Mode pengembang dinonaktifkan",
     "devOptionsPageLoadTimes": "Waktu Muat Halaman",
     "devOptionsNoPageLoads": "Belum ada pemuatan halaman yang tercatat.\nNavigasi ke seluruh aplikasi untuk melihat data waktu.",
     "devOptionsPageLoadVisible": "Terlihat: {visibleMs}ms  |  Data: {dataMs}ms",
@@ -3310,8 +3313,8 @@
     "nostrSettingsRelayDiagnosticsSubtitle": "Debug konektivitas relay dan masalah jaringan",
     "nostrSettingsMediaServers": "Server Media",
     "nostrSettingsMediaServersSubtitle": "Konfigurasi server upload Blossom",
-    "nostrSettingsDeveloperOptions": "Opsi Pengembang",
-    "nostrSettingsDeveloperOptionsSubtitle": "Pengubah environment dan pengaturan debug",
+    "settingsDeveloperOptions": "Opsi Pengembang",
+    "settingsDeveloperOptionsSubtitle": "Pengubah environment dan pengaturan debug",
     "nostrSettingsExperimentalFeaturesSubtitle": "Aktifkan fitur eksperimen yang mungkin bermasalah.",
     "nostrSettingsKeyManagement": "Manajemen Kunci",
     "nostrSettingsKeyManagementSubtitle": "Ekspor, backup, dan pulihkan kunci Nostr-mu",

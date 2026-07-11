@@ -750,6 +750,9 @@
     "@devOptionsTitle": {
         "description": "Developer options screen app bar title"
     },
+    "devOptionsDisableDeveloperMode": "Изключване на режим за разработчици",
+    "devOptionsDisableDeveloperModeSubtitle": "Скриване на опциите за разработчици от настройките",
+    "devOptionsDisableDeveloperModeToast": "Режимът за разработчици е изключен",
     "devOptionsPageLoadTimes": "Време за зареждане на страницата",
     "devOptionsNoPageLoads": "Още няма регистрирани зареждания на страници.\nРазгледай приложението, за да видиш данните за времето.",
     "devOptionsPageLoadVisible": "Видим: {visibleMs}ms |  Данни: {dataMs}ms",
@@ -3441,8 +3444,8 @@
     "nostrSettingsRelayDiagnosticsSubtitle": "Дебъг на свързаността с релетата и мрежови проблеми",
     "nostrSettingsMediaServers": "Медийни сървъри",
     "nostrSettingsMediaServersSubtitle": "Настрой Blossom сървъри за качване",
-    "nostrSettingsDeveloperOptions": "Опции за разработчици",
-    "nostrSettingsDeveloperOptionsSubtitle": "Превключвател на средата и настройки за дебъг",
+    "settingsDeveloperOptions": "Опции за разработчици",
+    "settingsDeveloperOptionsSubtitle": "Превключвател на средата и настройки за дебъг",
     "nostrSettingsExperimentalFeaturesSubtitle": "Превключвай функции, които може да се държат странно.",
     "nostrSettingsKeyManagement": "Управление на ключове",
     "nostrSettingsKeyManagementSubtitle": "Експортирай, архивирай и възстановявай Nostr ключовете си",

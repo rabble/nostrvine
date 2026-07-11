@@ -1658,6 +1658,15 @@ class AppLocalizationsKo extends AppLocalizations {
   String get devOptionsTitle => '개발자 옵션';
 
   @override
+  String get devOptionsDisableDeveloperMode => '개발자 모드 비활성화';
+
+  @override
+  String get devOptionsDisableDeveloperModeSubtitle => '설정에서 개발자 옵션 숨기기';
+
+  @override
+  String get devOptionsDisableDeveloperModeToast => '개발자 모드가 비활성화됨';
+
+  @override
   String get devOptionsPageLoadTimes => '페이지 로딩 시간';
 
   @override
@@ -1994,10 +2003,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get nostrSettingsMediaServersSubtitle => 'Blossom 업로드 서버를 설정해요';
 
   @override
-  String get nostrSettingsDeveloperOptions => '개발자 옵션';
+  String get settingsDeveloperOptions => '개발자 옵션';
 
   @override
-  String get nostrSettingsDeveloperOptionsSubtitle => '환경 전환과 디버그 설정';
+  String get settingsDeveloperOptionsSubtitle => '환경 전환과 디버그 설정';
 
   @override
   String get nostrSettingsExperimentalFeaturesSubtitle =>

@@ -20,14 +20,17 @@ import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/invite_models.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/apps/apps_directory_screen.dart';
 import 'package:openvine/screens/apps/apps_permissions_screen.dart';
 import 'package:openvine/screens/badges/badges_screen.dart';
+import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
+import 'package:openvine/services/environment_service.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -114,6 +117,7 @@ void main() {
       List<KnownAccount> knownAccounts = const [],
       _MockInviteStatusCubit? inviteCubit,
       _MockBackgroundPublishBloc? publishBloc,
+      bool developerMode = false,
     }) {
       when(
         () => mockAuthService.getKnownAccounts(),
@@ -146,6 +150,8 @@ void main() {
           userProfileReactiveProvider.overrideWith(
             (ref, pubkey) => Stream.value(null),
           ),
+          if (developerMode)
+            isDeveloperModeEnabledProvider.overrideWithValue(true),
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -713,6 +719,116 @@ void main() {
         verify(
           () => mockGoRouter.go(any(that: contains('login-options'))),
         ).called(1);
+
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      },
+    );
+
+    testWidgets('hides Developer Options tile when developer mode is off', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.settingsDeveloperOptions), findsNothing);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets(
+      'shows Developer Options tile and navigates to it when developer mode '
+      'is on',
+      (tester) async {
+        final mockGoRouter = MockGoRouter();
+        when(() => mockGoRouter.push(any())).thenAnswer((_) async => null);
+
+        await tester.pumpWidget(
+          buildSubject(goRouter: mockGoRouter, developerMode: true),
+        );
+        await tester.pumpAndSettle();
+
+        final scrollable = find.byType(Scrollable);
+        await tester.scrollUntilVisible(
+          find.text(l10n.settingsDeveloperOptions),
+          200,
+          scrollable: scrollable,
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.settingsDeveloperOptions), findsOneWidget);
+
+        await tester.tap(find.text(l10n.settingsDeveloperOptions));
+        await tester.pumpAndSettle();
+
+        verify(() => mockGoRouter.push(DeveloperOptionsScreen.path)).called(1);
+
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'reveals Developer Options tile immediately when developer mode is '
+      'unlocked at runtime',
+      (tester) async {
+        // The user's emphasis: enabling developer mode (7 taps on the version
+        // tile calls EnvironmentService.enableDeveloperMode) must surface the
+        // tile without leaving and re-entering the screen. This exercises the
+        // real service -> notifyListeners -> isDeveloperModeEnabledProvider ->
+        // rebuild path, so it fails if the hub stops watching the provider.
+        final environmentService = EnvironmentService();
+        await environmentService.initialize(
+          sharedPreferences: sharedPreferences,
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+              authServiceProvider.overrideWithValue(mockAuthService),
+              draftStorageServiceProvider.overrideWithValue(
+                mockDraftStorageService,
+              ),
+              currentAuthStateProvider.overrideWith(
+                (ref) => AuthState.authenticated,
+              ),
+              userProfileReactiveProvider.overrideWith(
+                (ref, pubkey) => Stream.value(null),
+              ),
+              environmentServiceProvider.overrideWithValue(environmentService),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: MultiBlocProvider(
+                providers: [
+                  BlocProvider<InviteStatusCubit>.value(
+                    value: _createMockInviteCubit(),
+                  ),
+                  BlocProvider<LocaleCubit>.value(value: mockLocaleCubit),
+                ],
+                child: const SettingsScreen(),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.settingsDeveloperOptions), findsNothing);
+
+        await environmentService.enableDeveloperMode();
+        await tester.pumpAndSettle();
+
+        final scrollable = find.byType(Scrollable);
+        await tester.scrollUntilVisible(
+          find.text(l10n.settingsDeveloperOptions),
+          200,
+          scrollable: scrollable,
+        );
+
+        expect(find.text(l10n.settingsDeveloperOptions), findsOneWidget);
 
         await tester.pumpWidget(const SizedBox());
         await tester.pump();

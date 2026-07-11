@@ -1649,6 +1649,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get devOptionsTitle => '開発者オプション';
 
   @override
+  String get devOptionsDisableDeveloperMode => '開発者モードを無効にする';
+
+  @override
+  String get devOptionsDisableDeveloperModeSubtitle => '設定から開発者オプションを非表示にする';
+
+  @override
+  String get devOptionsDisableDeveloperModeToast => '開発者モードを無効にしました';
+
+  @override
   String get devOptionsPageLoadTimes => 'ページ読み込み時間';
 
   @override
@@ -1984,10 +1993,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get nostrSettingsMediaServersSubtitle => 'Blossom アップロードサーバーを設定';
 
   @override
-  String get nostrSettingsDeveloperOptions => '開発者オプション';
+  String get settingsDeveloperOptions => '開発者オプション';
 
   @override
-  String get nostrSettingsDeveloperOptionsSubtitle => '環境スイッチャーとデバッグ設定';
+  String get settingsDeveloperOptionsSubtitle => '環境スイッチャーとデバッグ設定';
 
   @override
   String get nostrSettingsExperimentalFeaturesSubtitle =>

@@ -676,6 +676,9 @@
     "@devOptionsTitle": {
         "description": "Developer options screen app bar title"
     },
+    "devOptionsDisableDeveloperMode": "Desativar modo de desenvolvedor",
+    "devOptionsDisableDeveloperModeSubtitle": "Ocultar opções de desenvolvedor das configurações",
+    "devOptionsDisableDeveloperModeToast": "Modo de desenvolvedor desativado",
     "devOptionsPageLoadTimes": "Tempos de carregamento de página",
     "devOptionsNoPageLoads": "Nenhum carregamento de página registrado ainda.\nNavegue pelo app para ver os dados de tempo.",
     "devOptionsPageLoadVisible": "Visível: {visibleMs}ms  |  Dados: {dataMs}ms",
@@ -3310,8 +3313,8 @@
     "nostrSettingsRelayDiagnosticsSubtitle": "Depure conectividade de relay e problemas de rede",
     "nostrSettingsMediaServers": "Servidores de mídia",
     "nostrSettingsMediaServersSubtitle": "Configurar servidores de upload Blossom",
-    "nostrSettingsDeveloperOptions": "Opções de desenvolvedor",
-    "nostrSettingsDeveloperOptionsSubtitle": "Seletor de ambiente e opções de depuração",
+    "settingsDeveloperOptions": "Opções de desenvolvedor",
+    "settingsDeveloperOptionsSubtitle": "Seletor de ambiente e opções de depuração",
     "nostrSettingsExperimentalFeaturesSubtitle": "Ative flags de recursos que podem dar chilique.",
     "nostrSettingsKeyManagement": "Gerenciamento de chaves",
     "nostrSettingsKeyManagementSubtitle": "Exporte, faça backup e restaure suas chaves Nostr",

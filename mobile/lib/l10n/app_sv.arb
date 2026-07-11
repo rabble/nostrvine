@@ -676,6 +676,9 @@
     "@devOptionsTitle": {
         "description": "Developer options screen app bar title"
     },
+    "devOptionsDisableDeveloperMode": "Inaktivera utvecklarläge",
+    "devOptionsDisableDeveloperModeSubtitle": "Dölj utvecklaralternativ från inställningarna",
+    "devOptionsDisableDeveloperModeToast": "Utvecklarläge inaktiverat",
     "devOptionsPageLoadTimes": "Sidladdningstider",
     "devOptionsNoPageLoads": "Inga sidladdningar registrerade än.\nNavigera i appen för att se tidsdata.",
     "devOptionsPageLoadVisible": "Synlig: {visibleMs} ms  |  Data: {dataMs} ms",
@@ -3310,8 +3313,8 @@
     "nostrSettingsRelayDiagnosticsSubtitle": "Felsök relanslutningar och nätverksproblem",
     "nostrSettingsMediaServers": "Mediaservrar",
     "nostrSettingsMediaServersSubtitle": "Konfigurera Blossom-uppladdningsservrar",
-    "nostrSettingsDeveloperOptions": "Utvecklaralternativ",
-    "nostrSettingsDeveloperOptionsSubtitle": "Miljöväxlare och felsökningsinställningar",
+    "settingsDeveloperOptions": "Utvecklaralternativ",
+    "settingsDeveloperOptionsSubtitle": "Miljöväxlare och felsökningsinställningar",
     "nostrSettingsExperimentalFeaturesSubtitle": "Slå på funktioner som kan hicka.",
     "nostrSettingsKeyManagement": "Nyckelhantering",
     "nostrSettingsKeyManagementSubtitle": "Exportera, säkerhetskopiera och återställ dina Nostr-nycklar",

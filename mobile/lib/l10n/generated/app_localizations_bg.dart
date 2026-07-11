@@ -1777,6 +1777,18 @@ class AppLocalizationsBg extends AppLocalizations {
   String get devOptionsTitle => 'Опции за разработчици';
 
   @override
+  String get devOptionsDisableDeveloperMode =>
+      'Изключване на режим за разработчици';
+
+  @override
+  String get devOptionsDisableDeveloperModeSubtitle =>
+      'Скриване на опциите за разработчици от настройките';
+
+  @override
+  String get devOptionsDisableDeveloperModeToast =>
+      'Режимът за разработчици е изключен';
+
+  @override
   String get devOptionsPageLoadTimes => 'Време за зареждане на страницата';
 
   @override
@@ -2130,10 +2142,10 @@ class AppLocalizationsBg extends AppLocalizations {
       'Настрой Blossom сървъри за качване';
 
   @override
-  String get nostrSettingsDeveloperOptions => 'Опции за разработчици';
+  String get settingsDeveloperOptions => 'Опции за разработчици';
 
   @override
-  String get nostrSettingsDeveloperOptionsSubtitle =>
+  String get settingsDeveloperOptionsSubtitle =>
       'Превключвател на средата и настройки за дебъг';
 
   @override

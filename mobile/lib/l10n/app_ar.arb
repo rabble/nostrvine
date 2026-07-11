@@ -673,6 +673,9 @@
     "@devOptionsTitle": {
         "description": "Developer options screen app bar title"
     },
+    "devOptionsDisableDeveloperMode": "تعطيل وضع المطوّر",
+    "devOptionsDisableDeveloperModeSubtitle": "إخفاء خيارات المطوّر من الإعدادات",
+    "devOptionsDisableDeveloperModeToast": "تم تعطيل وضع المطوّر",
     "devOptionsPageLoadTimes": "أوقات تحميل الصفحات",
     "devOptionsNoPageLoads": "لم يتم تسجيل أي تحميل صفحة بعد.\nتنقّل في التطبيق لرؤية بيانات التوقيت.",
     "devOptionsPageLoadVisible": "مرئي: {visibleMs} ملليثانية  |  البيانات: {dataMs} ملليثانية",
@@ -3303,8 +3306,8 @@
     "nostrSettingsRelayDiagnosticsSubtitle": "تصحيح اتصال المحولات ومشكلات الشبكة",
     "nostrSettingsMediaServers": "خوادم الوسائط",
     "nostrSettingsMediaServersSubtitle": "إعداد خوادم الرفع Blossom",
-    "nostrSettingsDeveloperOptions": "خيارات المطوّر",
-    "nostrSettingsDeveloperOptionsSubtitle": "مبدّل البيئة وإعدادات التصحيح",
+    "settingsDeveloperOptions": "خيارات المطوّر",
+    "settingsDeveloperOptionsSubtitle": "مبدّل البيئة وإعدادات التصحيح",
     "nostrSettingsExperimentalFeaturesSubtitle": "تعديلات قد تتعثّر.",
     "nostrSettingsKeyManagement": "إدارة المفاتيح",
     "nostrSettingsKeyManagementSubtitle": "تصدير مفاتيح Nostr ونسخها واستعادتها",

@@ -49,6 +49,16 @@ class EnvironmentService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Disable developer mode (hides the developer options entry point).
+  ///
+  /// Reversible via [enableDeveloperMode] (7 taps on the version label).
+  Future<void> disableDeveloperMode() async {
+    _ensureInitialized();
+    _developerModeEnabled = false;
+    await _prefs!.setBool(_keyDeveloperMode, false);
+    notifyListeners();
+  }
+
   /// Set the app environment
   Future<void> setEnvironment(AppEnvironment environment) async {
     _ensureInitialized();

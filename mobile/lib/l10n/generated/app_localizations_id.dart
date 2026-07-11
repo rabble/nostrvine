@@ -1719,6 +1719,17 @@ class AppLocalizationsId extends AppLocalizations {
   String get devOptionsTitle => 'Opsi Pengembang';
 
   @override
+  String get devOptionsDisableDeveloperMode => 'Nonaktifkan Mode Pengembang';
+
+  @override
+  String get devOptionsDisableDeveloperModeSubtitle =>
+      'Sembunyikan opsi pengembang dari pengaturan';
+
+  @override
+  String get devOptionsDisableDeveloperModeToast =>
+      'Mode pengembang dinonaktifkan';
+
+  @override
   String get devOptionsPageLoadTimes => 'Waktu Muat Halaman';
 
   @override
@@ -2065,10 +2076,10 @@ class AppLocalizationsId extends AppLocalizations {
       'Konfigurasi server upload Blossom';
 
   @override
-  String get nostrSettingsDeveloperOptions => 'Opsi Pengembang';
+  String get settingsDeveloperOptions => 'Opsi Pengembang';
 
   @override
-  String get nostrSettingsDeveloperOptionsSubtitle =>
+  String get settingsDeveloperOptionsSubtitle =>
       'Pengubah environment dan pengaturan debug';
 
   @override

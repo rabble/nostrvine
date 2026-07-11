@@ -1786,6 +1786,17 @@ class AppLocalizationsRo extends AppLocalizations {
   String get devOptionsTitle => 'Opțiuni dezvoltator';
 
   @override
+  String get devOptionsDisableDeveloperMode => 'Dezactivează modul dezvoltator';
+
+  @override
+  String get devOptionsDisableDeveloperModeSubtitle =>
+      'Ascunde opțiunile de dezvoltator din setări';
+
+  @override
+  String get devOptionsDisableDeveloperModeToast =>
+      'Modul dezvoltator a fost dezactivat';
+
+  @override
   String get devOptionsPageLoadTimes => 'Timpi de încărcare a paginilor';
 
   @override
@@ -2150,10 +2161,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Configurează serverele de încărcare Blossom';
 
   @override
-  String get nostrSettingsDeveloperOptions => 'Opțiuni dezvoltator';
+  String get settingsDeveloperOptions => 'Opțiuni dezvoltator';
 
   @override
-  String get nostrSettingsDeveloperOptionsSubtitle =>
+  String get settingsDeveloperOptionsSubtitle =>
       'Comutator de mediu și setări de depanare';
 
   @override

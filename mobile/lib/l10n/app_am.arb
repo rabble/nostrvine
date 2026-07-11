@@ -803,6 +803,9 @@
     "@devOptionsTitle": {
         "description": "Developer options screen app bar title"
     },
+    "devOptionsDisableDeveloperMode": "የገንቢ ሁነታን አሰናክል",
+    "devOptionsDisableDeveloperModeSubtitle": "የገንቢ አማራጮችን ከቅንብሮች ደብቅ",
+    "devOptionsDisableDeveloperModeToast": "የገንቢ ሁነታ ተሰናክሏል",
     "devOptionsPageLoadTimes": "የገጽ ጭነት ጊዜያት",
     "devOptionsNoPageLoads": "እስካሁን ምንም የገጽ ጭነቶች አልተመዘገበም።\nየጊዜ ውሂብን ለማየት በመተግበሪያው ውስጥ ያስሱ።",
     "devOptionsPageLoadVisible": "የሚታይ፡ {visibleMs}ms | ውሂብ፡ {dataMs}ms",
@@ -1015,8 +1018,8 @@
     "nostrSettingsRelayDiagnosticsSubtitle": "የቅብብሎሽ ግንኙነትን እና የአውታረ መረብ ችግሮችን ያስሱ",
     "nostrSettingsMediaServers": "የሚዲያ አገልጋዮች",
     "nostrSettingsMediaServersSubtitle": "የBlossom ማስጫኛ አገልጋዮችን ያቀናብሩ",
-    "nostrSettingsDeveloperOptions": "የገንቢ አማራጮች",
-    "nostrSettingsDeveloperOptionsSubtitle": "የአካባቢ መቀየሪያ እና የማረሚያ ቅንብሮች",
+    "settingsDeveloperOptions": "የገንቢ አማራጮች",
+    "settingsDeveloperOptionsSubtitle": "የአካባቢ መቀየሪያ እና የማረሚያ ቅንብሮች",
     "nostrSettingsExperimentalFeaturesSubtitle": "ሊያደናቅፉ የሚችሉ የባህሪ ባንዲራዎችን ቀይር።",
     "nostrSettingsKeyManagement": "የቁልፍ አስተዳደር",
     "nostrSettingsKeyManagementSubtitle": "የNostr ቁልፎችዎን ወደ ውጭ ይላኩ፣ ምትኬ ያስቀምጡ እና ይመልሱ",

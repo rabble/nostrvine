@@ -3080,6 +3080,24 @@ abstract class AppLocalizations {
   /// **'Developer Options'**
   String get devOptionsTitle;
 
+  /// Button that turns developer mode off and hides the developer options entry from settings
+  ///
+  /// In en, this message translates to:
+  /// **'Disable Developer Mode'**
+  String get devOptionsDisableDeveloperMode;
+
+  /// No description provided for @devOptionsDisableDeveloperModeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide developer options from settings'**
+  String get devOptionsDisableDeveloperModeSubtitle;
+
+  /// No description provided for @devOptionsDisableDeveloperModeToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Developer mode disabled'**
+  String get devOptionsDisableDeveloperModeToast;
+
   /// No description provided for @devOptionsPageLoadTimes.
   ///
   /// In en, this message translates to:
@@ -3668,17 +3686,17 @@ abstract class AppLocalizations {
   /// **'Configure Blossom upload servers'**
   String get nostrSettingsMediaServersSubtitle;
 
-  /// No description provided for @nostrSettingsDeveloperOptions.
+  /// No description provided for @settingsDeveloperOptions.
   ///
   /// In en, this message translates to:
   /// **'Developer Options'**
-  String get nostrSettingsDeveloperOptions;
+  String get settingsDeveloperOptions;
 
-  /// No description provided for @nostrSettingsDeveloperOptionsSubtitle.
+  /// No description provided for @settingsDeveloperOptionsSubtitle.
   ///
   /// In en, this message translates to:
   /// **'Environment switcher and debug settings'**
-  String get nostrSettingsDeveloperOptionsSubtitle;
+  String get settingsDeveloperOptionsSubtitle;
 
   /// No description provided for @nostrSettingsExperimentalFeaturesSubtitle.
   ///

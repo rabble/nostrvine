@@ -991,6 +991,12 @@
   "@devOptionsTitle": {
     "description": "Developer options screen app bar title"
   },
+  "devOptionsDisableDeveloperMode": "Disable Developer Mode",
+  "@devOptionsDisableDeveloperMode": {
+    "description": "Button that turns developer mode off and hides the developer options entry from settings"
+  },
+  "devOptionsDisableDeveloperModeSubtitle": "Hide developer options from settings",
+  "devOptionsDisableDeveloperModeToast": "Developer mode disabled",
   "devOptionsPageLoadTimes": "Page Load Times",
   "devOptionsNoPageLoads": "No page loads recorded yet.\nNavigate around the app to see timing data.",
   "devOptionsPageLoadVisible": "Visible: {visibleMs}ms  |  Data: {dataMs}ms",
@@ -1206,8 +1212,8 @@
   "nostrSettingsRelayDiagnosticsSubtitle": "Debug relay connectivity and network issues",
   "nostrSettingsMediaServers": "Media Servers",
   "nostrSettingsMediaServersSubtitle": "Configure Blossom upload servers",
-  "nostrSettingsDeveloperOptions": "Developer Options",
-  "nostrSettingsDeveloperOptionsSubtitle": "Environment switcher and debug settings",
+  "settingsDeveloperOptions": "Developer Options",
+  "settingsDeveloperOptionsSubtitle": "Environment switcher and debug settings",
   "nostrSettingsExperimentalFeaturesSubtitle": "Toggle feature flags that may hiccup.",
   "nostrSettingsKeyManagement": "Key Management",
   "nostrSettingsKeyManagementSubtitle": "Export, backup, and restore your Nostr keys",

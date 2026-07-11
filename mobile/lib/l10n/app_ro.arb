@@ -676,6 +676,9 @@
     "@devOptionsTitle": {
         "description": "Developer options screen app bar title"
     },
+    "devOptionsDisableDeveloperMode": "Dezactivează modul dezvoltator",
+    "devOptionsDisableDeveloperModeSubtitle": "Ascunde opțiunile de dezvoltator din setări",
+    "devOptionsDisableDeveloperModeToast": "Modul dezvoltator a fost dezactivat",
     "devOptionsPageLoadTimes": "Timpi de încărcare a paginilor",
     "devOptionsNoPageLoads": "Nicio încărcare de pagină înregistrată încă.\nNavighează prin aplicație ca să vezi datele de timing.",
     "devOptionsPageLoadVisible": "Vizibil: {visibleMs}ms  |  Date: {dataMs}ms",
@@ -3310,8 +3313,8 @@
     "nostrSettingsRelayDiagnosticsSubtitle": "Depanează conectivitatea relay-ului și problemele de rețea",
     "nostrSettingsMediaServers": "Servere media",
     "nostrSettingsMediaServersSubtitle": "Configurează serverele de încărcare Blossom",
-    "nostrSettingsDeveloperOptions": "Opțiuni dezvoltator",
-    "nostrSettingsDeveloperOptionsSubtitle": "Comutator de mediu și setări de depanare",
+    "settingsDeveloperOptions": "Opțiuni dezvoltator",
+    "settingsDeveloperOptionsSubtitle": "Comutator de mediu și setări de depanare",
     "nostrSettingsExperimentalFeaturesSubtitle": "Activează indicatoare de funcții care s-ar putea să sughițe.",
     "nostrSettingsKeyManagement": "Gestionare chei",
     "nostrSettingsKeyManagementSubtitle": "Exportă, fă backup și restaurează cheile tale Nostr",

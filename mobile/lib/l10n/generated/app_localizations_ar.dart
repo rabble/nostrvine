@@ -1736,6 +1736,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get devOptionsTitle => 'خيارات المطور';
 
   @override
+  String get devOptionsDisableDeveloperMode => 'تعطيل وضع المطوّر';
+
+  @override
+  String get devOptionsDisableDeveloperModeSubtitle =>
+      'إخفاء خيارات المطوّر من الإعدادات';
+
+  @override
+  String get devOptionsDisableDeveloperModeToast => 'تم تعطيل وضع المطوّر';
+
+  @override
   String get devOptionsPageLoadTimes => 'أوقات تحميل الصفحات';
 
   @override
@@ -2080,10 +2090,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get nostrSettingsMediaServersSubtitle => 'إعداد خوادم الرفع Blossom';
 
   @override
-  String get nostrSettingsDeveloperOptions => 'خيارات المطوّر';
+  String get settingsDeveloperOptions => 'خيارات المطوّر';
 
   @override
-  String get nostrSettingsDeveloperOptionsSubtitle =>
+  String get settingsDeveloperOptionsSubtitle =>
       'مبدّل البيئة وإعدادات التصحيح';
 
   @override
