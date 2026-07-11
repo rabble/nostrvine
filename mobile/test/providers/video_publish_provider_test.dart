@@ -80,6 +80,16 @@ class _ReadyThenTearingDownNostrSession extends NostrSession {
   }
 }
 
+class _ReadyNostrSession extends NostrSession {
+  static late NostrClient client;
+
+  @override
+  NostrSessionReadiness build() => NostrSessionReadiness.nostrReady(
+    pubkey: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    client: client,
+  );
+}
+
 DivineVideoClip _createTestClip() => DivineVideoClip(
   id: 'clip_1',
   video: EditorVideo.file('/tmp/test.mp4'),
@@ -566,16 +576,23 @@ void main() {
       'the same source draft',
       (tester) async {
         final mockDraftStorage = MockDraftStorageService();
+        final nostrClient = MockNostrClient();
+        _ReadyNostrSession.client = nostrClient;
         // Never completes - keeps the first publish in flight, like the
         // 20s+ audio-reuse window in production.
         final saveDraftGate = Completer<void>();
         when(
           () => mockDraftStorage.saveDraft(any()),
         ).thenAnswer((_) => saveDraftGate.future);
+        when(() => nostrClient.hasKeys).thenReturn(true);
+        when(() => nostrClient.publicKey).thenReturn(
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        );
 
         final container = ProviderContainer(
           overrides: [
             draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
+            nostrSessionProvider.overrideWith(_ReadyNostrSession.new),
           ],
         );
         addTearDown(container.dispose);
