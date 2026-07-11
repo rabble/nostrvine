@@ -928,6 +928,12 @@ class VideoEventPublisher {
     }
   }
 
+  /// Signs and broadcasts the video event. Must only be called from
+  /// [publishDirectUpload], which holds the [_inFlightDirectPublishes]
+  /// coalescing lock (#6018); calling it directly bypasses that lock and
+  /// can mint a duplicate event. Keep this parameter list in lockstep with
+  /// [publishDirectUpload] — every param has a default, so a forgotten
+  /// forward at the call site fails silently rather than at compile time.
   Future<bool> _publishDirectUploadUnlocked(
     PendingUpload upload, {
     int? expirationTimestamp,

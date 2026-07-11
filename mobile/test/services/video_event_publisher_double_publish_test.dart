@@ -34,82 +34,86 @@ class _MockPersonalEventCacheService extends Mock
 class _FakeEvent extends Fake implements Event {}
 
 void main() {
-  late _MockUploadManager mockUploadManager;
-  late _MockNostrClient mockNostrClient;
-  late _MockAuthService mockAuthService;
-  late _MockBlossomUploadService mockBlossomUploadService;
-  late _MockAudioExtractionService mockAudioExtractionService;
-  late _MockPersonalEventCacheService mockPersonalEventCache;
-  late VideoEventPublisher publisher;
-
-  const testPubkey =
-      '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd';
-
-  setUpAll(() {
-    registerFallbackValue(_FakeEvent());
-    registerFallbackValue(UploadStatus.pending);
-    registerFallbackValue(File(''));
-    registerFallbackValue(Duration.zero);
-  });
-
-  setUp(() {
-    mockUploadManager = _MockUploadManager();
-    mockNostrClient = _MockNostrClient();
-    mockAuthService = _MockAuthService();
-    mockBlossomUploadService = _MockBlossomUploadService();
-    mockAudioExtractionService = _MockAudioExtractionService();
-    mockPersonalEventCache = _MockPersonalEventCacheService();
-
-    publisher = VideoEventPublisher(
-      uploadManager: mockUploadManager,
-      nostrService: mockNostrClient,
-      authService: mockAuthService,
-      personalEventCache: mockPersonalEventCache,
-      blossomUploadService: mockBlossomUploadService,
-      audioExtractionService: mockAudioExtractionService,
-    );
-
-    when(() => mockAuthService.isAuthenticated).thenReturn(true);
-    when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPubkey);
-
-    when(() => mockNostrClient.isInitialized).thenReturn(true);
-    when(() => mockNostrClient.configuredRelayCount).thenReturn(1);
-    when(() => mockNostrClient.connectedRelayCount).thenReturn(1);
-    when(
-      () => mockNostrClient.configuredRelays,
-    ).thenReturn(const ['wss://relay.divine.video']);
-    when(
-      () => mockNostrClient.connectedRelays,
-    ).thenReturn(const ['wss://relay.divine.video']);
-    when(() => mockNostrClient.publicKey).thenReturn(testPubkey);
-
-    when(
-      () => mockUploadManager.updateUploadStatus(
-        any(),
-        any(),
-        nostrEventId: any(named: 'nostrEventId'),
-      ),
-    ).thenAnswer((_) async {});
-
-    when(() => mockPersonalEventCache.cacheUserEvent(any())).thenReturn(null);
-    when(() => mockPersonalEventCache.getEventById(any())).thenReturn(null);
-  });
-
-  PendingUpload createUpload() {
-    return PendingUpload(
-      id: 'test-upload-id',
-      localVideoPath: '/tmp/test.mp4',
-      nostrPubkey: testPubkey,
-      status: UploadStatus.readyToPublish,
-      createdAt: DateTime.now(),
-      videoId: 'test-video-id',
-      title: 'Plants',
-      cdnUrl: 'https://cdn.example.com/video.mp4',
-      fallbackUrl: 'https://cdn.example.com/video.mp4',
-    );
-  }
-
   group('VideoEventPublisher concurrent publishDirectUpload (#6018)', () {
+    late _MockUploadManager mockUploadManager;
+    late _MockNostrClient mockNostrClient;
+    late _MockAuthService mockAuthService;
+    late _MockBlossomUploadService mockBlossomUploadService;
+    late _MockAudioExtractionService mockAudioExtractionService;
+    late _MockPersonalEventCacheService mockPersonalEventCache;
+    late VideoEventPublisher publisher;
+
+    const testPubkey =
+        '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd';
+
+    setUpAll(() {
+      registerFallbackValue(_FakeEvent());
+      registerFallbackValue(UploadStatus.pending);
+      registerFallbackValue(File(''));
+      registerFallbackValue(Duration.zero);
+    });
+
+    setUp(() {
+      mockUploadManager = _MockUploadManager();
+      mockNostrClient = _MockNostrClient();
+      mockAuthService = _MockAuthService();
+      mockBlossomUploadService = _MockBlossomUploadService();
+      mockAudioExtractionService = _MockAudioExtractionService();
+      mockPersonalEventCache = _MockPersonalEventCacheService();
+
+      publisher = VideoEventPublisher(
+        uploadManager: mockUploadManager,
+        nostrService: mockNostrClient,
+        authService: mockAuthService,
+        personalEventCache: mockPersonalEventCache,
+        blossomUploadService: mockBlossomUploadService,
+        audioExtractionService: mockAudioExtractionService,
+      );
+
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPubkey);
+
+      when(() => mockNostrClient.isInitialized).thenReturn(true);
+      when(() => mockNostrClient.configuredRelayCount).thenReturn(1);
+      when(() => mockNostrClient.connectedRelayCount).thenReturn(1);
+      when(
+        () => mockNostrClient.configuredRelays,
+      ).thenReturn(const ['wss://relay.divine.video']);
+      when(
+        () => mockNostrClient.connectedRelays,
+      ).thenReturn(const ['wss://relay.divine.video']);
+      when(() => mockNostrClient.publicKey).thenReturn(testPubkey);
+
+      when(
+        () => mockUploadManager.updateUploadStatus(
+          any(),
+          any(),
+          nostrEventId: any(named: 'nostrEventId'),
+        ),
+      ).thenAnswer((_) async {});
+
+      when(() => mockPersonalEventCache.cacheUserEvent(any())).thenReturn(null);
+      when(() => mockPersonalEventCache.getEventById(any())).thenReturn(null);
+    });
+
+    // Only the audio-reuse test needs a non-empty localVideoPath (it gates the
+    // audio-extraction step). The other tests pass '' so publishDirectUpload
+    // skips the thumbnail/blurhash branch and its real pro_video_editor plugin
+    // channel + retry timers.
+    PendingUpload createUpload({String localVideoPath = ''}) {
+      return PendingUpload(
+        id: 'test-upload-id',
+        localVideoPath: localVideoPath,
+        nostrPubkey: testPubkey,
+        status: UploadStatus.readyToPublish,
+        createdAt: DateTime.now(),
+        videoId: 'test-video-id',
+        title: 'Plants',
+        cdnUrl: 'https://cdn.example.com/video.mp4',
+        fallbackUrl: 'https://cdn.example.com/video.mp4',
+      );
+    }
+
     test(
       'second call during a slow failing audio-reuse step reuses the '
       'in-flight publish instead of signing a duplicate event',
@@ -162,7 +166,7 @@ void main() {
           );
         });
 
-        final upload = createUpload();
+        final upload = createUpload(localVideoPath: '/tmp/test.mp4');
         final firstPublish = publisher.publishDirectUpload(
           upload,
           allowAudioReuse: true,
