@@ -654,16 +654,56 @@ void main() {
         // for "no messages" — so unlike signCanonicalPayload, the batch verb
         // does not catch TimeoutException.
         mockClient = MockClient((request) => Completer<http.Response>().future);
+        // The batch verb is bounded by batchRequestTimeout (not the shorter
+        // single-op requestTimeout), so shorten that one to exercise the
+        // timeout-propagation path.
         final rpc = KeycastRpc(
           nostrApi: 'https://login.divine.video/api/nostr',
           accessToken: 'test_token',
           httpClient: mockClient,
-          requestTimeout: const Duration(milliseconds: 50),
+          batchRequestTimeout: const Duration(milliseconds: 50),
         );
         await expectLater(
           rpc.nip17UnwrapBatch([giftWrap('1')]),
           throwsA(isA<TimeoutException>()),
         );
+      });
+
+      test('is bounded by batchRequestTimeout, not the shorter single-op '
+          'requestTimeout', () async {
+        // The heavier batch verb must NOT be aborted by the short single-op
+        // requestTimeout — only batchRequestTimeout bounds it. Answer after the
+        // single-op bound would have fired but well within the batch bound.
+        final rumor = {
+          'id': 'c' * 64,
+          'pubkey': 'd' * 64,
+          'created_at': 1700000001,
+          'kind': 14,
+          'tags': <List<String>>[],
+          'content': 'hello',
+        };
+        mockClient = MockClient((request) async {
+          await Future<void>.delayed(const Duration(milliseconds: 200));
+          return http.Response(
+            jsonEncode({
+              'result': [
+                {'rumor': rumor, 'sender': 'd' * 64},
+              ],
+            }),
+            200,
+          );
+        });
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'test_token',
+          httpClient: mockClient,
+          requestTimeout: const Duration(milliseconds: 50),
+          batchRequestTimeout: const Duration(seconds: 5),
+        );
+
+        final slots = await rpc.nip17UnwrapBatch([giftWrap('1')]);
+        expect(slots, hasLength(1));
+        expect(slots![0].isSuccess, isTrue);
       });
     });
   });

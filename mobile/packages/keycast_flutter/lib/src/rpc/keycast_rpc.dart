@@ -24,6 +24,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
     http.Client? httpClient,
     TokenRefreshCallback? onTokenRefresh,
     this.requestTimeout = defaultRequestTimeout,
+    this.batchRequestTimeout = defaultBatchRequestTimeout,
   }) : _accessToken = accessToken,
        _client = httpClient ?? http.Client(),
        _onTokenRefresh = onTokenRefresh;
@@ -33,6 +34,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
     KeycastSession session, {
     TokenRefreshCallback? onTokenRefresh,
     Duration requestTimeout = defaultRequestTimeout,
+    Duration batchRequestTimeout = defaultBatchRequestTimeout,
   }) {
     if (!session.hasRpcAccess) {
       throw SessionExpiredException();
@@ -42,15 +44,31 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
       accessToken: session.accessToken!,
       onTokenRefresh: onTokenRefresh,
       requestTimeout: requestTimeout,
+      batchRequestTimeout: batchRequestTimeout,
     );
   }
 
-  /// Default timeout applied to every RPC HTTP request.
+  /// Default timeout applied to a single signing/encryption RPC
+  /// (`sign_event`, `nip44_encrypt`, `nip44_decrypt`, …).
   ///
   /// Without a bound, a dead socket (e.g. Android Doze killing the
   /// connection while backgrounded) hangs the request forever and wedges
   /// every caller awaiting it.
-  static const Duration defaultRequestTimeout = Duration(seconds: 30);
+  ///
+  /// Kept UNDER the DM send budget (`_messagePublishTimeout` = 15s in
+  /// `dm_repository`) so a stalled remote-signer call fails fast — surfacing a
+  /// red "Not delivered" the durable outgoing-DM queue re-drives — instead of
+  /// hanging past the send cap and leaving the bubble looking sent while
+  /// nothing was ever published. See the Keycast RPC latency investigation
+  /// (#6046). A single crypto op is sub-second in the healthy path, so 12s is
+  /// generous while still a tighter dead-socket bound than the old 30s.
+  static const Duration defaultRequestTimeout = Duration(seconds: 12);
+
+  /// Default timeout for the multi-wrap `nip17_unwrap_batch` verb, which does
+  /// materially more server-side work than a single op and legitimately runs
+  /// longer. Held at the historical single-op bound so batch decrypt is not
+  /// regressed by the tighter [defaultRequestTimeout] above.
+  static const Duration defaultBatchRequestTimeout = Duration(seconds: 30);
 
   final String nostrApi;
   String _accessToken;
@@ -58,17 +76,21 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
   final TokenRefreshCallback? _onTokenRefresh;
   bool _signCanonicalUnsupported = false;
 
-  /// Maximum time to wait for any single RPC request before failing
-  /// with a [TimeoutException].
+  /// Maximum time to wait for a single-op RPC request before failing with a
+  /// [TimeoutException].
   final Duration requestTimeout;
+
+  /// Maximum time to wait for the heavier `nip17_unwrap_batch` RPC.
+  final Duration batchRequestTimeout;
 
   Future<T> _call<T>(
     String method,
     List<dynamic> params,
     T Function(dynamic) fromResult, {
     bool logHttpErrors = true,
+    Duration? timeout,
   }) async {
-    var response = await _sendRequest(method, params);
+    var response = await _sendRequest(method, params, timeout: timeout);
 
     if (response.statusCode == 401 && _onTokenRefresh != null) {
       Log.info(
@@ -79,7 +101,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
       final newToken = await _onTokenRefresh();
       if (newToken != null) {
         _accessToken = newToken;
-        response = await _sendRequest(method, params);
+        response = await _sendRequest(method, params, timeout: timeout);
       }
     }
 
@@ -112,8 +134,9 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
 
   Future<http.Response> _sendRequest(
     String method,
-    List<dynamic> params,
-  ) async {
+    List<dynamic> params, {
+    Duration? timeout,
+  }) async {
     Log.debug(
       '[Keycast RPC] Calling $method...',
       name: 'KeycastRpc',
@@ -129,7 +152,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
           },
           body: jsonEncode({'method': method, 'params': params}),
         )
-        .timeout(requestTimeout);
+        .timeout(timeout ?? requestTimeout);
     stopwatch.stop();
     Log.debug(
       '[Keycast RPC] $method completed in '
@@ -292,6 +315,10 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
           for (final slot in result as List)
             _parseUnwrapSlot(slot as Map<String, dynamic>),
         ],
+        // The batch verb decrypts many wraps server-side and legitimately runs
+        // longer than a single op, so keep it on the longer bound rather than
+        // the tighter single-op [requestTimeout].
+        timeout: batchRequestTimeout,
       );
     } on RpcException {
       // Older keycast without the verb, or a server-level error: degrade so the
