@@ -241,6 +241,7 @@ void main() {
       String? contextTitle,
       ViewTrafficSource trafficSource = ViewTrafficSource.unknown,
       String? sourceDetail,
+      VoidCallback? onBack,
     }) {
       return MultiBlocProvider(
         providers: [
@@ -254,6 +255,7 @@ void main() {
           contextTitle: contextTitle,
           trafficSource: trafficSource,
           sourceDetail: sourceDetail,
+          onBack: onBack,
         ),
       );
     }
@@ -265,6 +267,7 @@ void main() {
       String? contextTitle,
       ViewTrafficSource trafficSource = ViewTrafficSource.unknown,
       String? sourceDetail,
+      VoidCallback? onBack,
     }) {
       final effectiveState = state ?? const FullscreenFeedState();
       when(() => mockBloc.state).thenReturn(effectiveState);
@@ -278,6 +281,7 @@ void main() {
           contextTitle: contextTitle,
           trafficSource: trafficSource,
           sourceDetail: sourceDetail,
+          onBack: onBack,
         ),
       );
     }
@@ -582,6 +586,131 @@ void main() {
 
           expect(sentinelBuilt, isTrue);
           expect(find.text('home-sentinel'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'ready-state back button calls onBack instead of popping when the '
+        'feed is embedded as a parent screen video mode',
+        (tester) async {
+          final videos = createTestVideos(count: 1);
+          when(() => mockBloc.state).thenReturn(
+            FullscreenFeedState(
+              status: FullscreenFeedStatus.ready,
+              videos: videos,
+            ),
+          );
+
+          var onBackCalls = 0;
+          var popCount = 0;
+          final observer = _PopCountingObserver(onPop: () => popCount++);
+
+          await tester.pumpWidget(
+            testProviderScope(
+              mockProfileRepository: mockProfileRepository,
+              mockNip05VerificationService: mockNip05VerificationService,
+              child: MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                navigatorObservers: [observer],
+                home: Builder(
+                  builder: (context) => Scaffold(
+                    body: ElevatedButton(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => buildContent(
+                            contextTitle: 'Embedded',
+                            onBack: () => onBackCalls++,
+                          ),
+                        ),
+                      ),
+                      child: const Text('open'),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.tap(find.text('open'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+          expect(find.byType(FeedVideos), findsOneWidget);
+
+          tester
+              .widget<DiVineAppBarIconButton>(
+                find.byType(DiVineAppBarIconButton).first,
+              )
+              .onPressed
+              ?.call();
+          await tester.pump();
+
+          expect(onBackCalls, 1);
+          // The app-bar back must NOT pop the route in embedded mode — it
+          // hands control back to the parent grid via onBack.
+          expect(popCount, 0);
+          expect(find.byType(FeedVideos), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'hands back to onBack instead of popping when status becomes '
+        'emptyAfterRemoval in embedded video mode',
+        (tester) async {
+          final videos = createTestVideos(count: 1);
+          final initialState = FullscreenFeedState(
+            status: FullscreenFeedStatus.ready,
+            videos: videos,
+          );
+          final emptyState = FullscreenFeedState(
+            status: FullscreenFeedStatus.emptyAfterRemoval,
+            removedVideoIds: {videos.first.id},
+          );
+          final controller = StreamController<FullscreenFeedState>();
+          addTearDown(controller.close);
+          whenListen(mockBloc, controller.stream, initialState: initialState);
+
+          var onBackCalls = 0;
+          var popCount = 0;
+          final observer = _PopCountingObserver(onPop: () => popCount++);
+
+          await tester.pumpWidget(
+            testProviderScope(
+              mockProfileRepository: mockProfileRepository,
+              mockNip05VerificationService: mockNip05VerificationService,
+              child: MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                navigatorObservers: [observer],
+                home: Builder(
+                  builder: (context) => Scaffold(
+                    body: ElevatedButton(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => buildContent(
+                            contextTitle: 'Embedded',
+                            onBack: () => onBackCalls++,
+                          ),
+                        ),
+                      ),
+                      child: const Text('open'),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.tap(find.text('open'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+
+          controller.add(emptyState);
+          await tester.pump();
+
+          expect(onBackCalls, 1);
+          // Auto-empty must return to the parent grid, not pop the route.
+          expect(popCount, 0);
         },
       );
 

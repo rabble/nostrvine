@@ -627,6 +627,13 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                   prev.status != curr.status &&
                   curr.status == FullscreenFeedStatus.emptyAfterRemoval,
               listener: (context, _) {
+                // Embedded video mode: hand back to the parent (grid) instead
+                // of popping the whole route, matching the app-bar back button.
+                final onBack = widget.onBack;
+                if (onBack != null) {
+                  onBack();
+                  return;
+                }
                 unawaited(Navigator.of(context).maybePop());
               },
             ),
