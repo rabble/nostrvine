@@ -45,6 +45,10 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       _onSelfWrapRecoveryRequested,
       transformer: sequential(),
     );
+    on<ConversationFullSendRecoveryRequested>(
+      _onFullSendRecoveryRequested,
+      transformer: sequential(),
+    );
   }
 
   final DmRepository _dmRepository;
@@ -326,6 +330,65 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           lastPartialSend: PartialSend(rumorIds: stillFailing),
         ),
       );
+    }
+  }
+
+  Future<void> _onFullSendRecoveryRequested(
+    ConversationFullSendRecoveryRequested event,
+    Emitter<ConversationState> emit,
+  ) async {
+    if (event.rumorIds.isEmpty) return;
+
+    emit(state.copyWith(sendStatus: SendStatus.sending));
+
+    final stillFailing = <String>[];
+    Object? lastError;
+    StackTrace? lastStackTrace;
+
+    for (final rumorId in event.rumorIds) {
+      try {
+        // Replay the SAME rumor from the durable row — never a fresh send —
+        // so the receiver dedups on the stable rumor id. A soft-unconfirmed
+        // replay counts as still-pending (not a hard failure): the sweep
+        // keeps re-driving it, so it should not re-raise the red SnackBar.
+        final result = await _dmRepository.recoverFullSend(rumorId: rumorId);
+        if (!result.success && !result.retryablePending) {
+          stillFailing.add(rumorId);
+        }
+      } on Object catch (e, stackTrace) {
+        if (e is ArgumentError) {
+          // Row already recovered/removed or belongs to another account —
+          // terminal for this id, drop it from the retry set.
+          continue;
+        }
+        stillFailing.add(rumorId);
+        lastError = e;
+        lastStackTrace = stackTrace;
+      }
+    }
+
+    if (lastError != null) {
+      addError(
+        Reportable(
+          lastError,
+          context: ConversationBlocReportableSites.onFullSendRecoveryRequested,
+        ),
+        lastStackTrace,
+      );
+    }
+
+    if (stillFailing.isEmpty) {
+      emit(
+        state.copyWith(
+          sendStatus: SendStatus.sent,
+          clearLastFailedSend: true,
+        ),
+      );
+    } else {
+      // Some rows are still hard-failing. They remain `failed` in the queue
+      // (red bubbles), so a later Retry re-derives them from
+      // `failedOutgoingRumorIds`; just re-raise the failed status.
+      emit(state.copyWith(sendStatus: SendStatus.failed));
     }
   }
 }

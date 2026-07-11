@@ -1550,6 +1550,150 @@ void main() {
         ],
       );
     });
+    group(ConversationFullSendRecoveryRequested, () {
+      // Queue-aware manual retry (gap 3): replay the EXISTING failed rows via
+      // recoverFullSend — never a fresh ConversationMessageSent, which would
+      // mint a new rumor id and risk a duplicate at the recipient.
+      const rumorId1 =
+          '7777777777777777777777777777777777777777777777777777777777777777';
+      const rumorId2 =
+          '8888888888888888888888888888888888888888888888888888888888888888';
+
+      blocTest<ConversationBloc, ConversationState>(
+        'replays each failed row via recoverFullSend (never a fresh send) '
+        'and emits [sending, sent] clearing lastFailedSend on full recovery',
+        setUp: () {
+          when(
+            () => mockDmRepository.recoverFullSend(
+              rumorId: any(named: 'rumorId'),
+            ),
+          ).thenAnswer(
+            (inv) async => NIP17SendResult.success(
+              rumorEventId: inv.namedArguments[#rumorId] as String,
+              messageEventId: inv.namedArguments[#rumorId] as String,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+        },
+        seed: () => const ConversationState(
+          status: ConversationStatus.loaded,
+          sendStatus: SendStatus.failed,
+          lastFailedSend: FailedSend(
+            content: 'Hello',
+            recipientPubkeys: [recipientPubkey],
+          ),
+        ),
+        build: buildBloc,
+        act: (bloc) => bloc.add(
+          const ConversationFullSendRecoveryRequested(
+            rumorIds: [rumorId1, rumorId2],
+          ),
+        ),
+        expect: () => [
+          isA<ConversationState>().having(
+            (s) => s.sendStatus,
+            'sendStatus',
+            SendStatus.sending,
+          ),
+          isA<ConversationState>()
+              .having((s) => s.sendStatus, 'sendStatus', SendStatus.sent)
+              .having(
+                (s) => s.lastFailedSend,
+                'lastFailedSend cleared on full recovery',
+                isNull,
+              ),
+        ],
+        verify: (_) {
+          verify(
+            () => mockDmRepository.recoverFullSend(rumorId: rumorId1),
+          ).called(1);
+          verify(
+            () => mockDmRepository.recoverFullSend(rumorId: rumorId2),
+          ).called(1);
+          // The anti-duplication contract: no fresh rumor is ever minted.
+          verifyNever(
+            () => mockDmRepository.sendMessage(
+              recipientPubkey: any(named: 'recipientPubkey'),
+              content: any(named: 'content'),
+            ),
+          );
+          verifyNever(
+            () => mockDmRepository.sendGroupMessage(
+              recipientPubkeys: any(named: 'recipientPubkeys'),
+              content: any(named: 'content'),
+            ),
+          );
+        },
+      );
+
+      blocTest<ConversationBloc, ConversationState>(
+        'treats a soft-unconfirmed replay as recovered (not still-failing) — '
+        'emits [sending, sent] with no red failure',
+        setUp: () {
+          when(
+            () => mockDmRepository.recoverFullSend(
+              rumorId: any(named: 'rumorId'),
+            ),
+          ).thenAnswer(
+            (_) async => const NIP17SendResult.failure(
+              'Message recipient OK unconfirmed',
+              retryablePending: true,
+            ),
+          );
+        },
+        seed: () => const ConversationState(
+          status: ConversationStatus.loaded,
+          sendStatus: SendStatus.failed,
+        ),
+        build: buildBloc,
+        act: (bloc) => bloc.add(
+          const ConversationFullSendRecoveryRequested(rumorIds: [rumorId1]),
+        ),
+        expect: () => [
+          isA<ConversationState>().having(
+            (s) => s.sendStatus,
+            'sendStatus',
+            SendStatus.sending,
+          ),
+          isA<ConversationState>().having(
+            (s) => s.sendStatus,
+            'sendStatus',
+            SendStatus.sent,
+          ),
+        ],
+      );
+
+      blocTest<ConversationBloc, ConversationState>(
+        're-raises failed when a hard-failed row still cannot be recovered',
+        setUp: () {
+          when(
+            () => mockDmRepository.recoverFullSend(rumorId: rumorId1),
+          ).thenAnswer(
+            (_) async => const NIP17SendResult.failure('relay still down'),
+          );
+        },
+        seed: () => const ConversationState(
+          status: ConversationStatus.loaded,
+          sendStatus: SendStatus.failed,
+        ),
+        build: buildBloc,
+        act: (bloc) => bloc.add(
+          const ConversationFullSendRecoveryRequested(rumorIds: [rumorId1]),
+        ),
+        expect: () => [
+          isA<ConversationState>().having(
+            (s) => s.sendStatus,
+            'sendStatus',
+            SendStatus.sending,
+          ),
+          isA<ConversationState>().having(
+            (s) => s.sendStatus,
+            'sendStatus',
+            SendStatus.failed,
+          ),
+        ],
+      );
+    });
   });
 
   group(ConversationState, () {
@@ -1661,6 +1805,36 @@ void main() {
         );
         final view = state.displayedMessages;
         expect(() => view.add(persisted0), throwsUnsupportedError);
+      });
+    });
+
+    group('failedOutgoingRumorIds', () {
+      test('returns the ids of rows whose recipient wrap failed only', () {
+        final state = ConversationState(
+          pendingOutgoing: [
+            _outgoingDm(
+              id: 'failed-a',
+              recipientWrap: OutgoingWrapStatus.failed,
+            ),
+            // recipientWrap defaults to pending.
+            _outgoingDm(id: 'pending-b'),
+            _outgoingDm(
+              id: 'sent-c',
+              recipientWrap: OutgoingWrapStatus.sent,
+              selfWrap: OutgoingWrapStatus.failed,
+            ),
+            _outgoingDm(
+              id: 'failed-d',
+              recipientWrap: OutgoingWrapStatus.failed,
+            ),
+          ],
+        );
+        expect(state.failedOutgoingRumorIds, ['failed-a', 'failed-d']);
+      });
+
+      test('is empty when there are no outgoing rows', () {
+        const state = ConversationState();
+        expect(state.failedOutgoingRumorIds, isEmpty);
       });
     });
 

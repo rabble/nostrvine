@@ -57,3 +57,26 @@ class ConversationSelfWrapRecoveryRequested extends ConversationEvent {
   @override
   List<Object?> get props => [rumorIds];
 }
+
+/// Re-drive a previously-failed full send for the existing queue rows with
+/// the given [rumorIds] via `DmRepository.recoverFullSend`.
+///
+/// This is the queue-aware manual retry: it replays the SAME rumor from the
+/// durable `outgoing_dms` row (preserving `rumor.id` so NIP-17 receiver
+/// dedup collapses any redundant copy). It must be used instead of
+/// re-dispatching [ConversationMessageSent], which would build a fresh rumor
+/// with a new id — leaving the old failed row still sweep-retryable and
+/// risking a duplicate at the recipient.
+///
+/// Ids are sourced from the conversation's failed outgoing rows (a failed
+/// bubble's id is its rumor id) either at SnackBar-Retry tap time or from a
+/// per-bubble retry affordance.
+class ConversationFullSendRecoveryRequested extends ConversationEvent {
+  const ConversationFullSendRecoveryRequested({required this.rumorIds});
+
+  /// Rumor ids of failed queue rows to replay in full.
+  final List<String> rumorIds;
+
+  @override
+  List<Object?> get props => [rumorIds];
+}

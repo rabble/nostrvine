@@ -271,12 +271,17 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                 ),
               );
             } else {
-              bloc.add(
-                ConversationMessageSent(
-                  recipientPubkeys: failedSend!.recipientPubkeys,
-                  content: failedSend.content,
-                ),
-              );
+              // Queue-aware retry: replay the existing failed rows via
+              // recoverFullSend (stable rumor id, receiver-dedup safe) rather
+              // than re-dispatching ConversationMessageSent, which would mint
+              // a new rumor and could double-deliver. Ids are read from the
+              // settled queue state at tap time.
+              final rumorIds = bloc.state.failedOutgoingRumorIds;
+              if (rumorIds.isNotEmpty) {
+                bloc.add(
+                  ConversationFullSendRecoveryRequested(rumorIds: rumorIds),
+                );
+              }
             }
           },
         ),

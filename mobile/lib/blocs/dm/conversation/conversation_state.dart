@@ -170,6 +170,16 @@ class ConversationState extends Equatable {
     return DmDeliveryStatus.delivered;
   }
 
+  /// Rumor ids of the conversation's hard-failed outgoing rows (recipient
+  /// publish failed). A failed bubble's id is its rumor id, so this is the
+  /// exact set a queue-aware manual retry replays via
+  /// [ConversationFullSendRecoveryRequested] — sourced at Retry-tap time so
+  /// it reflects the settled queue state, never a fresh rumor.
+  List<String> get failedOutgoingRumorIds => [
+    for (final row in pendingOutgoing)
+      if (row.recipientWrapStatus == OutgoingWrapStatus.failed) row.id,
+  ];
+
   /// Merged user-visible message list: in-flight queue rows projected
   /// as [DmMessage] bubbles on top of persisted ones from [messages],
   /// sorted newest first.

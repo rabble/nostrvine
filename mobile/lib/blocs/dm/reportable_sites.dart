@@ -17,6 +17,12 @@ abstract class ConversationBlocReportableSites {
   static const String onSelfWrapRecoveryRequested =
       '_onSelfWrapRecoveryRequested';
 
+  /// `_onFullSendRecoveryRequested`: non-`ArgumentError` throw from
+  /// `DmRepository.recoverFullSend` while replaying a failed queue row
+  /// (missing DAO wiring is the invariant-violation example).
+  static const String onFullSendRecoveryRequested =
+      '_onFullSendRecoveryRequested';
+
   /// `_onMessageDeleted`: non-`ArgumentError` throw from
   /// `DmRepository.deleteMessageForEveryone` — typically the
   /// `StateError('Failed to sign kind 5 deletion event')` invariant.

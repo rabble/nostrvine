@@ -964,18 +964,34 @@ void main() {
       );
 
       testWidgets(
-        'tapping Retry redispatches ConversationMessageSent with the '
-        'last failed content + recipients',
+        'tapping Retry replays the failed queue rows via '
+        'ConversationFullSendRecoveryRequested — never a fresh '
+        'ConversationMessageSent (no duplicate delivery)',
         (tester) async {
+          final failedRow = OutgoingDm(
+            id: 'rumor-failed-id',
+            conversationId:
+                'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+            recipientPubkey: otherPubkey,
+            content: failedSendContent,
+            createdAt: DateTime(2026).millisecondsSinceEpoch ~/ 1000,
+            rumorEventJson: '{}',
+            recipientWrapStatus: OutgoingWrapStatus.failed,
+            selfWrapStatus: OutgoingWrapStatus.failed,
+            queuedAt: DateTime(2026),
+            ownerPubkey: currentPubkey,
+          );
+          final failedState = ConversationState(
+            status: ConversationStatus.loaded,
+            sendStatus: SendStatus.failed,
+            lastFailedSend: failedSend,
+            pendingOutgoing: [failedRow],
+          );
           whenListen(
             mockBloc,
-            Stream<ConversationState>.fromIterable(const [
-              ConversationState(status: ConversationStatus.loaded),
-              ConversationState(
-                status: ConversationStatus.loaded,
-                sendStatus: SendStatus.failed,
-                lastFailedSend: failedSend,
-              ),
+            Stream<ConversationState>.fromIterable([
+              const ConversationState(status: ConversationStatus.loaded),
+              failedState,
             ]),
             initialState: const ConversationState(
               status: ConversationStatus.loaded,
@@ -985,17 +1001,29 @@ void main() {
           await tester.pumpWidget(
             testMaterialApp(
               mockAuthService: mockAuthService,
+              mockNostrService: mockNostrClient,
               additionalOverrides: [
+                videosRepositoryProvider.overrideWithValue(
+                  mockVideosRepository,
+                ),
                 fetchUserProfileProvider(
                   otherPubkey,
                 ).overrideWith((ref) async => null),
+                contentBlocklistRepositoryProvider.overrideWithValue(
+                  mockBlocklist,
+                ),
               ],
+              // The failed row projects a bubble, so the full provider tree
+              // (reactions cubit) is required — mirror buildSubject.
               home: BlocProvider<ConversationBloc>.value(
                 value: mockBloc,
                 child: BlocProvider<CollaboratorInviteActionsCubit>.value(
                   value: mockInviteActionsCubit,
-                  child: const ConversationView(
-                    participantPubkeys: [otherPubkey],
+                  child: BlocProvider<ConversationReactionsCubit>.value(
+                    value: mockReactionsCubit,
+                    child: const ConversationView(
+                      participantPubkeys: [otherPubkey],
+                    ),
                   ),
                 ),
               ),
@@ -1009,10 +1037,17 @@ void main() {
           await tester.pump();
 
           final captured = verify(() => mockBloc.add(captureAny())).captured;
-          expect(captured, isNotEmpty);
-          final retryEvent = captured.last as ConversationMessageSent;
-          expect(retryEvent.content, equals(failedSendContent));
-          expect(retryEvent.recipientPubkeys, equals(const [otherPubkey]));
+          final retryEvent =
+              captured.last as ConversationFullSendRecoveryRequested;
+          expect(retryEvent.rumorIds, equals(const ['rumor-failed-id']));
+          // The anti-duplication contract: retry never mints a fresh rumor.
+          expect(
+            captured.whereType<ConversationMessageSent>(),
+            isEmpty,
+            reason:
+                'a failed-send retry must replay the existing row, never '
+                'redispatch ConversationMessageSent',
+          );
         },
       );
 
