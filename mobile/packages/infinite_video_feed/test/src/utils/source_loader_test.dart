@@ -65,14 +65,11 @@ void main() {
       expect(logs.first, contains('badUrl'));
     });
 
-    test('retries same source for HTTP 202 before falling back', () async {
+    test('advances immediately on HTTP 202 when a fallback remains', () async {
       final clips = <VideoClip>[];
       final controller = _RecordingControllerWithFailures(
         clips.add,
-        failures: [
-          Exception('CoreMediaErrorDomain error -12667 - HTTP 202'),
-          Exception('Response code: 202'),
-        ],
+        failures: [Exception('CoreMediaErrorDomain error -12667 - HTTP 202')],
       );
       addTearDown(controller.dispose);
 
@@ -80,22 +77,24 @@ void main() {
       final result = await setSourceWithFallbacks(
         index: 2,
         controller: controller,
-        sources: ['processingUrl', 'hlsUrl'],
+        sources: ['processingUrl', 'rawUrl'],
         log: logs.add,
         delay: (duration) async => delays.add(duration),
       );
 
-      expect(result, equals(('processingUrl', 0)));
+      // The processing source is not the last resort, so we do not stall on it:
+      // the guaranteed raw fallback is preferred immediately.
+      expect(result, equals(('rawUrl', 1)));
       expect(
         clips.map((clip) => clip.uri),
-        equals(['processingUrl', 'processingUrl', 'processingUrl']),
+        equals(['processingUrl', 'rawUrl']),
       );
-      expect(delays, hasLength(2));
+      expect(delays, isEmpty);
       expect(
         logs.where((line) => line.contains('Source processing')),
-        hasLength(2),
+        isEmpty,
       );
-      expect(logs.any((line) => line.contains('retrySource=hlsUrl')), isFalse);
+      expect(logs.any((line) => line.contains('retrySource=rawUrl')), isTrue);
     });
 
     test('uses source headers when retrying after HTTP 202', () async {
@@ -123,7 +122,7 @@ void main() {
     });
 
     test(
-      'falls back after bounded HTTP 202 retry budget is exhausted',
+      'retries the last source across the HTTP 202 budget then gives up',
       () async {
         final clips = <VideoClip>[];
         final controller = _RecordingControllerWithFailures(
@@ -135,32 +134,31 @@ void main() {
         );
         addTearDown(controller.dispose);
 
-        final result = await setSourceWithFallbacks(
-          index: 2,
-          controller: controller,
-          sources: ['processingUrl', 'hlsUrl'],
-          log: logs.add,
-          delay: (_) async {},
+        await expectLater(
+          () => setSourceWithFallbacks(
+            index: 2,
+            controller: controller,
+            sources: ['processingUrl'],
+            log: logs.add,
+            delay: (_) async {},
+          ),
+          throwsA(isA<Exception>()),
         );
 
-        expect(result, equals(('hlsUrl', 1)));
+        // The last source is the only resort, so it is retried across the full
+        // 202 budget (initial attempt + 5 delayed retries) before giving up.
         expect(
           clips.map((clip) => clip.uri),
-          equals([
-            'processingUrl',
-            'processingUrl',
-            'processingUrl',
-            'processingUrl',
-            'processingUrl',
-            'processingUrl',
-            'hlsUrl',
-          ]),
+          equals(List<String>.filled(6, 'processingUrl')),
         );
         expect(
           logs.where((line) => line.contains('Source processing')),
           hasLength(5),
         );
-        expect(logs.any((line) => line.contains('retrySource=hlsUrl')), isTrue);
+        expect(
+          logs.any((line) => line.contains('All sources failed')),
+          isTrue,
+        );
       },
     );
 

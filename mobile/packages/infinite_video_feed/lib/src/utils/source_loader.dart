@@ -70,7 +70,12 @@ Future<(String, int)> setSourceWithFallbacks({
       abortIfStale(source);
       lastError = error;
       lastStackTrace = stackTrace;
-      if (isMediaProcessingError(error)) {
+      // Only wait-and-retry a processing (HTTP 202) source when it is the last
+      // resort. While a fallback is still queued — for Divine that is always
+      // the guaranteed raw blob — prefer it immediately instead of stalling up
+      // to ~19s for a derivative that is still transcoding.
+      final isLastSource = attemptIndex == sources.length - 1;
+      if (isLastSource && isMediaProcessingError(error)) {
         for (final retryDelay in _mediaProcessingRetryDelays) {
           log(
             'Source processing index $index: '

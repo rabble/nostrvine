@@ -73,52 +73,6 @@ extension VideoEventAppExtensions on VideoEvent {
     }
   }
 
-  /// Check for `media.divine.video` URLs that are just a bare sha256 hash path.
-  ///
-  /// These URLs look like `https://media.divine.video/{hash}` with no file
-  /// extension or quality suffix. Some of these assets do not expose a direct
-  /// downloadable file and are only playable via the derived HLS manifest.
-  bool get hasBareDivineHashPath {
-    final url = videoUrl;
-    if (url == null || url.isEmpty || !isFromDivineServer) {
-      return false;
-    }
-
-    try {
-      final uri = Uri.parse(url);
-      if (uri.host.toLowerCase() != 'media.divine.video') {
-        return false;
-      }
-
-      final segments = uri.pathSegments.where((segment) => segment.isNotEmpty);
-      if (segments.length != 1) {
-        return false;
-      }
-
-      final segment = segments.first;
-      return segment.length == 64 &&
-          RegExp(r'^[a-fA-F0-9]+$').hasMatch(segment);
-    } catch (_) {
-      return false;
-    }
-  }
-
-  /// Whether the event explicitly advertises only the raw Blossom blob URL.
-  ///
-  /// Fresh direct uploads can publish before `/720p.mp4` or HLS derivatives
-  /// exist. When the event's `imeta` contains a single raw
-  /// `https://media.divine.video/{sha256}` URL, prefer that proven source for
-  /// initial playback instead of speculatively probing derived variants.
-  bool get hasRawOnlyDivineImetaUrl {
-    final url = videoUrl;
-    if (url == null || url.isEmpty || !hasBareDivineHashPath) {
-      return false;
-    }
-
-    final imetaUrls = imetaVideoUrls;
-    return imetaUrls.length == 1 && imetaUrls.single == url;
-  }
-
   /// Check if we should show the "Not Divine" badge.
   ///
   /// Shows badge for content that is:
@@ -218,13 +172,13 @@ extension VideoEventAppExtensions on VideoEvent {
   /// - Classic Vine originals use the raw blob directly (/{hash}) because the
   ///   source is already 480p or lower — transcoded variants are upscales at
   ///   best and may not exist, causing needless 404s.
-  /// - Raw-only uploads use their published raw blob URL, since derived
-  ///   MP4/HLS variants may not exist yet.
-  /// - Other Divine videos default to progressive MP4 720p (faststart, moov at
-  ///   front) for fastest startup with short videos (1 request, no manifest
-  ///   overhead).
-  /// - If MP4 fails (e.g. not yet transcoded after upload), [getFallbackUrl]
-  ///   provides an HLS fallback via the quality variant error handler.
+  /// - All other Divine videos default to progressive MP4 720p (faststart,
+  ///   moov at front) for fastest startup with short videos (1 request, no
+  ///   manifest overhead) — it is 3-8x smaller than the raw blob. This covers
+  ///   raw-only uploads too: their `imeta` lists only the raw blob because it
+  ///   is a publish-time snapshot taken before the derivatives transcode, but
+  ///   by playback time the 720p.mp4 almost always exists, and the runtime
+  ///   fallback chain drops to the raw blob when it does not yet.
   ///
   /// Non-Divine videos always use original (no transcoded variants exist).
   String? getOptimalVideoUrlForPlatform() {
@@ -259,14 +213,11 @@ extension VideoEventAppExtensions on VideoEvent {
     // Transcoded 720p variants are pointless upscales and may not exist.
     if (isOriginalVine) return '$_divineMediaBase/$hash';
 
-    // Direct Blossom uploads that only advertise the raw blob should start
-    // from that actual published URL. Derived MP4/HLS variants may not exist
-    // yet and can generate avoidable parser errors before falling back.
-    if (hasRawOnlyDivineImetaUrl) return videoUrl;
-
-    // Production default: progressive MP4 720p (faststart).
-    // Fastest startup (1 request, moov at front), correct colors on all
-    // platforms, and 3-8x smaller than the raw blob.
+    // Production default: progressive MP4 720p (faststart). Fastest startup
+    // (1 request, moov at front), correct colors on all platforms, and 3-8x
+    // smaller than the raw blob. Raw-only uploads take this path too; the
+    // runtime fallback chain drops to the raw blob if the 720p.mp4 is not
+    // transcoded yet.
     return '$_divineMediaBase/$hash/720p.mp4';
   }
 

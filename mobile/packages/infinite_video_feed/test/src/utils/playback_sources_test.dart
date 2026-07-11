@@ -91,12 +91,12 @@ void main() {
       const variantUrl = 'https://media.divine.video/$_hash/720p.mp4';
 
       test(
-        'returns [variantUrl, hlsUrl, rawUrl, originalUrl] deduplicated',
+        'returns [variantUrl, rawUrl, hlsUrl, originalUrl] deduplicated',
         () {
           final video = _makeVideo(videoUrl: variantUrl);
           expect(
             resolvePlaybackSources(video),
-            equals([variantUrl, _hlsUrl, _rawUrl]),
+            equals([variantUrl, _rawUrl, _hlsUrl]),
           );
         },
       );

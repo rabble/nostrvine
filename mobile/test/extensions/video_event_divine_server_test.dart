@@ -162,7 +162,6 @@ void main() {
           '191679cbbeea3e4e3539d46b558e66fbadb673733af1ada0161a6e8b1cf61bea';
       final video = _createVideoWithUrl('https://media.divine.video/$hash');
 
-      expect(video.hasBareDivineHashPath, isTrue);
       expect(video.shouldPreferHlsPlayback, isFalse);
       expect(
         video.getOptimalVideoUrlForPlatform(),
@@ -170,7 +169,7 @@ void main() {
       );
     });
 
-    test('uses raw URL when imeta only advertises a direct Blossom blob', () {
+    test('uses MP4 720p even when imeta only advertises the raw blob', () {
       const hash =
           'e770667c1a62cc394602fc07462fa0d7ba83441002d9aac662fb88d0cc575338';
       final video = _createVideoWithUrl(
@@ -185,15 +184,16 @@ void main() {
         ],
       );
 
-      expect(video.hasBareDivineHashPath, isTrue);
-      expect(video.hasRawOnlyDivineImetaUrl, isTrue);
+      // A raw-only imeta is a publish-time snapshot; the 720p.mp4 usually
+      // exists by playback time, and the runtime chain falls back to the raw
+      // blob when it does not.
       expect(
         video.getOptimalVideoUrlForPlatform(),
-        equals('https://media.divine.video/$hash'),
+        equals('https://media.divine.video/$hash/720p.mp4'),
       );
       expect(
         video.getCacheableVideoUrlForPlatform(),
-        equals('https://media.divine.video/$hash'),
+        equals('https://media.divine.video/$hash/720p.mp4'),
       );
     });
 
@@ -217,7 +217,6 @@ void main() {
         ],
       );
 
-      expect(video.hasRawOnlyDivineImetaUrl, isFalse);
       expect(
         video.getOptimalVideoUrlForPlatform(),
         equals('https://media.divine.video/$hash/720p.mp4'),
@@ -242,29 +241,36 @@ void main() {
     // test so the forced format does not leak into other suites.
     tearDown(() => videoFormatPreference.setFormat(null));
 
-    test('mp4_720p override wins over raw-only imeta upload', () async {
-      const hash =
-          'e770667c1a62cc394602fc07462fa0d7ba83441002d9aac662fb88d0cc575338';
-      final video = _createVideoWithUrl(
-        'https://media.divine.video/$hash',
-        tags: const [
-          [
-            'imeta',
-            'url https://media.divine.video/$hash',
-            'm video/mp4',
-            'x $hash',
+    test(
+      'raw override wins over the default MP4 for a raw-only upload',
+      () async {
+        const hash =
+            'e770667c1a62cc394602fc07462fa0d7ba83441002d9aac662fb88d0cc575338';
+        final video = _createVideoWithUrl(
+          'https://media.divine.video/$hash',
+          tags: const [
+            [
+              'imeta',
+              'url https://media.divine.video/$hash',
+              'm video/mp4',
+              'x $hash',
+            ],
           ],
-        ],
-      );
-      expect(video.hasRawOnlyDivineImetaUrl, isTrue);
+        );
+        // Default (no override) would be 720p.mp4; the override must force raw.
+        expect(
+          video.getOptimalVideoUrlForPlatform(),
+          equals('https://media.divine.video/$hash/720p.mp4'),
+        );
 
-      await videoFormatPreference.setFormat(VideoPlaybackFormat.mp4_720p);
+        await videoFormatPreference.setFormat(VideoPlaybackFormat.raw);
 
-      expect(
-        video.getOptimalVideoUrlForPlatform(),
-        equals('https://media.divine.video/$hash/720p.mp4'),
-      );
-    });
+        expect(
+          video.getOptimalVideoUrlForPlatform(),
+          equals('https://media.divine.video/$hash'),
+        );
+      },
+    );
 
     test('mp4_480p override wins over classic Vine original', () async {
       const hash =
@@ -309,15 +315,6 @@ void main() {
         equals('https://media.divine.video/$hash'),
       );
       expect(video.getCacheableVideoUrlForPlatform(), isNull);
-    });
-
-    test('do not treat quality variants as bare hash paths', () {
-      final video = _createVideoWithUrl(
-        'https://media.divine.video/$hash/720p',
-      );
-
-      expect(video.hasBareDivineHashPath, isFalse);
-      expect(video.shouldPreferHlsPlayback, isFalse);
     });
 
     test('uses MP4 720p for all Divine hosts including cdn.divine.video', () {

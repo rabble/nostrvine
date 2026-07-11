@@ -49,12 +49,13 @@ List<String> resolvePlaybackSources(
     }
 
     final isRawBlob = resolvedSource == rawUrl;
-    // Always try the progressive source first (raw blob or 720p.mp4). HLS is
-    // only a fallback: its rendition may not exist yet for fresh uploads, and
-    // probing a track-less master first stalls playback on every video.
+    // Progressive first, HLS last. For a quality variant (e.g. 720p.mp4) the
+    // guaranteed raw blob comes before HLS: if the variant is not transcoded
+    // yet, the raw blob plays immediately, whereas HLS may also be mid-encode
+    // and only pays the manifest-round-trip cost. HLS stays the last resort.
     return isRawBlob
         ? orderedUniqueSources([resolvedSource, hlsUrl, originalUrl])
-        : orderedUniqueSources([resolvedSource, hlsUrl, rawUrl, originalUrl]);
+        : orderedUniqueSources([resolvedSource, rawUrl, hlsUrl, originalUrl]);
   }
 
   return orderedUniqueSources([resolvedSource, originalUrl]);
