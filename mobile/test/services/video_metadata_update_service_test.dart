@@ -357,6 +357,11 @@ void main() {
         expect(addressableTags, [
           ['a', rootAddressableId, ''],
         ]);
+        expect(
+          capturedTags,
+          contains(equals(['A', rootAddressableId, ''])),
+        );
+        expect(capturedTags, contains(equals(['P', rootAuthorPubkey])));
         expect(capturedTags, contains(equals(['p', rootAuthorPubkey])));
         expect(
           capturedTags,
@@ -370,6 +375,86 @@ void main() {
           ),
         );
       });
+
+      test(
+        'preserves a genuine inspired-by a-tag on a reply instead of '
+        'dropping it',
+        () async {
+          const rootEventId =
+              'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+          const rootAuthorPubkey =
+              'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+          const rootAddressableId = '34236:$rootAuthorPubkey:root-vid';
+          const inspiringAuthorPubkey =
+              '2222222222222222222222222222222222222222222222222222222222222222';
+          const inspiringAddressableId =
+              '34236:$inspiringAuthorPubkey:inspiring-vid';
+          final video = VideoEvent.fromNostrEvent(
+            Event(
+              _ownerPubkey,
+              NIP71VideoKinds.addressableShortVideo,
+              const [
+                ['d', 'video-d-tag'],
+                [
+                  'imeta',
+                  'url https://cdn.example.com/video.mp4',
+                  'm video/mp4',
+                ],
+                ['A', rootAddressableId, ''],
+                ['K', '34236'],
+                ['E', rootEventId, '', rootAuthorPubkey],
+                ['a', rootAddressableId, ''],
+                // A genuine inspired-by reference that co-exists with the
+                // reply threading tags.
+                [
+                  'a',
+                  inspiringAddressableId,
+                  'wss://relay.divine.video',
+                  'mention',
+                ],
+              ],
+              'Reply video that is also inspired by another',
+              createdAt: 1757385263,
+            ),
+          );
+
+          expect(video.isVideoReply, isTrue);
+
+          final result = await service.updateVideo(
+            originalVideo: video,
+            editorState: VideoEditorProviderState(
+              inspiredByVideo: video.inspiredByVideo,
+            ),
+            initialCollaboratorPubkeys: const {},
+          );
+
+          expect(result, isA<VideoUpdateSuccess>());
+          // The genuine inspired-by tag survives verbatim.
+          expect(
+            capturedTags,
+            contains(
+              equals([
+                'a',
+                inspiringAddressableId,
+                'wss://relay.divine.video',
+                'mention',
+              ]),
+            ),
+          );
+          // The reply-parent a-tag survives.
+          expect(capturedTags, contains(equals(['a', rootAddressableId, ''])));
+          // No parent reference is turned into 'inspired-by' attribution.
+          expect(
+            capturedTags.where(
+              (tag) =>
+                  tag.length >= 4 &&
+                  tag.first == 'a' &&
+                  tag[3] == 'inspired-by',
+            ),
+            isEmpty,
+          );
+        },
+      );
 
       test('removes collaborator tags with mixed-case markers', () async {
         const removedCollaborator =
@@ -437,6 +522,95 @@ void main() {
           );
           expect(dTags, hasLength(1));
           expect(capturedTags, contains(equals(['d', 'video-d-tag'])));
+        },
+      );
+
+      test(
+        'recovers preserved tags from the personal cache when '
+        'nostrEventTags is empty',
+        () async {
+          final cachedEvent = Event(
+            _ownerPubkey,
+            NIP71VideoKinds.addressableShortVideo,
+            const [
+              ['d', 'video-d-tag'],
+              [
+                'imeta',
+                'url https://cdn.example.com/video.mp4',
+                'm video/mp4',
+              ],
+              ['e', audioEventId, 'wss://relay.divine.video', 'audio'],
+              ['expiration', '1799999999'],
+            ],
+            'Test video content',
+          );
+          // A VideoEvent rehydrated from a JSON cache has empty
+          // nostrEventTags; the raw event still lives in the personal cache.
+          final video = VideoEvent(
+            id: 'event-id',
+            pubkey: _ownerPubkey,
+            createdAt: 1757385263,
+            content: 'Test video content',
+            timestamp: DateTime.fromMillisecondsSinceEpoch(1757385263 * 1000),
+            videoUrl: 'https://cdn.example.com/video.mp4',
+            title: 'Test Video Title',
+            vineId: 'video-d-tag',
+          );
+          when(
+            () => mockPersonalEventCacheService.getEventById('event-id'),
+          ).thenReturn(cachedEvent);
+
+          final result = await service.updateVideo(
+            originalVideo: video,
+            editorState: VideoEditorProviderState(),
+            initialCollaboratorPubkeys: const {},
+          );
+
+          expect(result, isA<VideoUpdateSuccess>());
+          expect(
+            capturedTags,
+            contains(
+              equals(['e', audioEventId, 'wss://relay.divine.video', 'audio']),
+            ),
+          );
+          expect(capturedTags, contains(equals(['expiration', '1799999999'])));
+        },
+      );
+
+      test(
+        'rebuilds imeta from videoUrl when nostrEventTags is empty and the '
+        'event is not cached',
+        () async {
+          final video = VideoEvent(
+            id: 'uncached-event-id',
+            pubkey: _ownerPubkey,
+            createdAt: 1757385263,
+            content: 'Test video content',
+            timestamp: DateTime.fromMillisecondsSinceEpoch(1757385263 * 1000),
+            videoUrl: 'https://cdn.example.com/video.mp4',
+            title: 'Test Video Title',
+            vineId: 'video-d-tag',
+          );
+          when(
+            () =>
+                mockPersonalEventCacheService.getEventById('uncached-event-id'),
+          ).thenReturn(null);
+
+          final result = await service.updateVideo(
+            originalVideo: video,
+            editorState: VideoEditorProviderState(),
+            initialCollaboratorPubkeys: const {},
+          );
+
+          expect(result, isA<VideoUpdateSuccess>());
+          final imetaTags = capturedTags
+              .where((t) => t.isNotEmpty && t.first == 'imeta')
+              .toList();
+          expect(imetaTags, hasLength(1));
+          expect(
+            imetaTags.single,
+            contains('url https://cdn.example.com/video.mp4'),
+          );
         },
       );
     });
@@ -655,6 +829,125 @@ void main() {
           ),
         );
       });
+
+      test(
+        'drops a mention p-tag when its pubkey is promoted to collaborator',
+        () async {
+          const promoted =
+              '1111111111111111111111111111111111111111111111111111111111111111';
+          final video = _testVideo(
+            extraTags: const [
+              ['p', promoted, 'wss://relay.divine.video', 'mention'],
+            ],
+          );
+
+          final result = await service.updateVideo(
+            originalVideo: video,
+            editorState: VideoEditorProviderState(
+              collaboratorPubkeys: {promoted},
+            ),
+            // Already known as a collaborator so no invite DM is attempted.
+            initialCollaboratorPubkeys: const {promoted},
+          );
+
+          expect(result, isA<VideoUpdateSuccess>());
+          final pTagsForPromoted = capturedTags
+              .where(
+                (tag) =>
+                    tag.length >= 2 && tag.first == 'p' && tag[1] == promoted,
+              )
+              .toList();
+          expect(pTagsForPromoted, hasLength(1));
+          expect(
+            pTagsForPromoted.single,
+            equals(['p', promoted, 'wss://relay.divine.video', 'collaborator']),
+          );
+        },
+      );
+
+      test(
+        'strips an uppercase-marker inspired-by a-tag without duplicating it',
+        () async {
+          final video = _testVideo(
+            extraTags: const [
+              [
+                'a',
+                '34236:$_ownerPubkey:old-vid',
+                'wss://relay.divine.video',
+                'MENTION',
+              ],
+            ],
+          );
+          final editorState = VideoEditorProviderState(
+            inspiredByVideo: const InspiredByInfo(
+              addressableId: '34236:$_ownerPubkey:new-vid',
+              relayUrl: 'wss://relay.divine.video',
+            ),
+          );
+
+          final result = await service.updateVideo(
+            originalVideo: video,
+            editorState: editorState,
+            initialCollaboratorPubkeys: const {},
+          );
+
+          expect(result, isA<VideoUpdateSuccess>());
+          final aTags = capturedTags
+              .where((tag) => tag.isNotEmpty && tag.first == 'a')
+              .toList();
+          expect(aTags, [
+            [
+              'a',
+              '34236:$_ownerPubkey:new-vid',
+              'wss://relay.divine.video',
+              'inspired-by',
+            ],
+          ]);
+        },
+      );
+
+      test(
+        'does not accrete the inspired-by a-tag when re-editing an edited video',
+        () async {
+          // The original already carries the edit-written 'inspired-by' marker
+          // (i.e. it was produced by a previous metadata edit).
+          final video = _testVideo(
+            extraTags: const [
+              [
+                'a',
+                '34236:$_ownerPubkey:vid',
+                'wss://relay.divine.video',
+                'inspired-by',
+              ],
+            ],
+          );
+          final editorState = VideoEditorProviderState(
+            inspiredByVideo: const InspiredByInfo(
+              addressableId: '34236:$_ownerPubkey:vid',
+              relayUrl: 'wss://relay.divine.video',
+            ),
+          );
+
+          final result = await service.updateVideo(
+            originalVideo: video,
+            editorState: editorState,
+            initialCollaboratorPubkeys: const {},
+          );
+
+          expect(result, isA<VideoUpdateSuccess>());
+          final aTags = capturedTags
+              .where((tag) => tag.isNotEmpty && tag.first == 'a')
+              .toList();
+          expect(aTags, [
+            [
+              'a',
+              '34236:$_ownerPubkey:vid',
+              'wss://relay.divine.video',
+              'inspired-by',
+            ],
+          ]);
+        },
+      );
     });
 
     group('successful publish', () {
