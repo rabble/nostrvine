@@ -240,42 +240,20 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
       );
     }
 
-    // Use Stack with back button overlay to exit video mode
-    return Stack(
-      children: [
-        PooledFullscreenVideoFeedScreen(
-          source: VideoListViewSource(videos),
-          feedRepository: StaticFeedRepository(),
-          initialIndex: _activeVideoIndex!,
-          contextTitle: widget.listName,
-          trafficSource: ViewTrafficSource.search,
-        ),
-        // Back button overlay to exit video mode
-        PositionedDirectional(
-          top: 50,
-          start: 16,
-          child: SafeArea(
-            child: IconButton(
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: const BoxDecoration(
-                  color: VineTheme.scrim50,
-                  shape: BoxShape.circle,
-                ),
-                child: const DivineIcon(
-                  icon: DivineIconName.arrowLeft,
-                  color: VineTheme.whiteText,
-                ),
-              ),
-              onPressed: () {
-                setState(() {
-                  _activeVideoIndex = null;
-                });
-              },
-            ),
-          ),
-        ),
-      ],
+    // Embedded as this screen's "video mode": the feed's own app-bar back
+    // button returns to the grid instead of popping the whole route, so the
+    // user sees a single back button.
+    return PooledFullscreenVideoFeedScreen(
+      source: VideoListViewSource(videos),
+      feedRepository: StaticFeedRepository(),
+      initialIndex: _activeVideoIndex!,
+      contextTitle: widget.listName,
+      trafficSource: ViewTrafficSource.search,
+      onBack: () {
+        setState(() {
+          _activeVideoIndex = null;
+        });
+      },
     );
   }
 

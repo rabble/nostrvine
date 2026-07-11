@@ -163,6 +163,7 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
     this.autoOpenComments = false,
     this.onPageChanged,
     this.dmReplyContext,
+    this.onBack,
     super.key,
   });
 
@@ -192,6 +193,15 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
   /// Receives the new feed index. Used by embedded surfaces (e.g. explore,
   /// search) to keep the URL in sync for deep-linking.
   final void Function(int index)? onPageChanged;
+
+  /// Overrides the app-bar back action.
+  ///
+  /// When the fullscreen feed is embedded as a "video mode" of a parent screen
+  /// (e.g. a curated list grid) rather than pushed as its own route, the parent
+  /// passes this to return to its grid instead of popping the whole route — so
+  /// the feed's own app-bar back button is the single back affordance the user
+  /// sees.
+  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -294,6 +304,7 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
         autoOpenComments: autoOpenComments,
         onPageChanged: onPageChanged,
         dmReplyContext: dmReplyContext,
+        onBack: onBack,
       ),
     );
   }
@@ -314,6 +325,7 @@ class FullscreenFeedContent extends ConsumerStatefulWidget {
     this.autoOpenComments = false,
     this.onPageChanged,
     this.dmReplyContext,
+    this.onBack,
     super.key,
   });
 
@@ -339,6 +351,10 @@ class FullscreenFeedContent extends ConsumerStatefulWidget {
   /// Present when the reel was opened from a DM thread — drives the in-player
   /// reply/reaction bar in the body footer.
   final DmReplyContext? dmReplyContext;
+
+  /// Overrides the app-bar back action when the feed is embedded as a parent
+  /// screen's video mode (see [PooledFullscreenVideoFeedScreen.onBack]).
+  final VoidCallback? onBack;
 
   @override
   ConsumerState<FullscreenFeedContent> createState() =>
@@ -404,6 +420,11 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   }
 
   void _handleBack(BuildContext context) {
+    final onBack = widget.onBack;
+    if (onBack != null) {
+      onBack();
+      return;
+    }
     if (context.canPop()) {
       context.pop();
       return;
