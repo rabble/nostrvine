@@ -3665,6 +3665,19 @@ class DmRepository {
     final conversationId = computeConversationId(participants);
     final outgoingDao = _outgoingDmsDao;
 
+    // Resolve every recipient's kind-10050 DM inbox concurrently BEFORE the
+    // per-recipient send loop. Each wrap must route to its own recipient's
+    // inbox (NIP-17), and OK-confirm below is only meaningful against that
+    // inbox. Doing this up front (rather than one await per loop iteration)
+    // keeps N sequential ~5s inbox queries from stacking and delaying the
+    // visible group bubble. Resolution never throws (it degrades to null →
+    // default pool), so a failed lookup just falls back.
+    final inboxByRecipient = <String, List<String>?>{};
+    await Future.wait([
+      for (final pubkey in recipientPubkeys)
+        resolveDmInboxRelays(pubkey).then((r) => inboxByRecipient[pubkey] = r),
+    ]);
+
     final rumors = <Event>[];
     final results = <NIP17SendResult>[];
 
@@ -3716,9 +3729,11 @@ class DmRepository {
         );
       }
 
-      final result = await _messageService!.sendRumor(
-        rumorEvent: rumor,
+      final result = await _sendRumorWithTimeout(
+        rumor: rumor,
         recipientPubkey: pubkey,
+        targetRelays: inboxByRecipient[pubkey],
+        awaitRecipientOk: true,
       );
       rumors.add(rumor);
       results.add(result);
@@ -3781,19 +3796,33 @@ class DmRepository {
       });
     }
 
-    // Recipient publish failures: mark both wraps failed so the row
-    // stays retryable. Lives outside the success-transaction, mirroring
-    // sendMessage's split: a recipient-failed tuple has nothing to
-    // atomically tie the queue update to (no message row insert).
+    // Per-recipient non-success finalize. Lives outside the success
+    // transaction, mirroring sendMessage's split: a non-success tuple has
+    // nothing to atomically tie a queue update to (no message row insert).
+    // Classify each the same way the 1:1 path does — soft-unconfirmed stays
+    // pending (retryable clock), a policy block is terminal (row dropped),
+    // and a hard failure marks both wraps failed.
     if (outgoingDao != null) {
       for (var i = 0; i < rumors.length; i++) {
         final result = results[i];
         if (result.success) continue;
-        await _finalizeAfterRecipientFailure(
-          outgoingDao: outgoingDao,
-          rumorId: rumors[i].id,
-          errorMessage: result.error ?? 'Unknown publish failure',
-        );
+        if (result.blocked) {
+          await _finalizeAfterRecipientBlocked(
+            outgoingDao: outgoingDao,
+            rumorId: rumors[i].id,
+          );
+        } else if (result.retryablePending) {
+          await _finalizeAfterRecipientUnconfirmed(
+            outgoingDao: outgoingDao,
+            rumorId: rumors[i].id,
+          );
+        } else {
+          await _finalizeAfterRecipientFailure(
+            outgoingDao: outgoingDao,
+            rumorId: rumors[i].id,
+            errorMessage: result.error ?? 'Unknown publish failure',
+          );
+        }
       }
     }
 

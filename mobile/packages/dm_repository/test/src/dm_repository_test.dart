@@ -13141,6 +13141,62 @@ void main() {
       );
 
       test(
+        'resolves each recipient kind-10050 inbox and OK-confirms every '
+        'per-recipient wrap against it',
+        () async {
+          // Both recipients advertise a DM inbox (the stub returns it for any
+          // author query); each wrap must route there with OK-confirm, not the
+          // default pool.
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              Event(
+                _validPubkeyB,
+                EventKind.dmRelaysList,
+                [
+                  ['relay', 'wss://inbox.example'],
+                ],
+                '',
+                createdAt: 1700000000,
+              ),
+            ],
+          );
+          stubSendRumor((_, recipient) async {
+            return NIP17SendResult.success(
+              rumorEventId: 'rumor-$recipient',
+              messageEventId: 'wrap-$recipient',
+              recipientPubkey: recipient,
+            );
+          });
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          await repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'group routed to inboxes',
+          );
+
+          for (final recipient in [_validPubkeyB, _validPubkeyC]) {
+            verify(
+              () => mockMessageService.sendRumor(
+                rumorEvent: any(named: 'rumorEvent'),
+                recipientPubkey: recipient,
+                targetRelays: ['wss://inbox.example'],
+                awaitRecipientOk: true,
+              ),
+            ).called(1);
+          }
+        },
+      );
+
+      test(
         'marks recipient sent + self failed only for the recipients '
         'whose self-wrap failed, deletes rows for fully-delivered ones',
         () async {
@@ -14250,6 +14306,93 @@ void main() {
               tagsJson: any(named: 'tagsJson'),
             ),
           );
+        },
+      );
+
+      test(
+        'routes the retry wrap to the recipient kind-10050 inbox and '
+        'OK-confirms it (not the default pool)',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow());
+          // Recipient advertises a DM inbox — the retry must target it so the
+          // OK-confirm is meaningful for an inbox-only reader, not satisfied
+          // by an unrelated default-pool relay.
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              Event(
+                _validPubkeyB,
+                EventKind.dmRelaysList,
+                [
+                  ['relay', 'wss://inbox.example'],
+                ],
+                '',
+                createdAt: 1700000000,
+              ),
+            ],
+          );
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          await repository.recoverFullSend(rumorId: _rumorEventId);
+
+          verify(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: _validPubkeyB,
+              targetRelays: ['wss://inbox.example'],
+              awaitRecipientOk: true,
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'falls back to the default pool (targetRelays null) when the '
+        'recipient has no kind-10050 inbox',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow());
+          // setUp's file-level queryEvents stub returns [] → null inbox.
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          await repository.recoverFullSend(rumorId: _rumorEventId);
+
+          verify(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: _validPubkeyB,
+              targetRelays: any(named: 'targetRelays', that: isNull),
+              awaitRecipientOk: true,
+            ),
+          ).called(1);
         },
       );
 
