@@ -6,6 +6,7 @@ import 'package:models/models.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
+import 'package:openvine/services/video_format_preference.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 VideoEvent _createVideoWithUrl(
@@ -232,6 +233,53 @@ void main() {
       expect(
         video.getOptimalVideoUrlForPlatform(),
         equals('https://blossom.primal.net/test/video.mp4'),
+      );
+    });
+  });
+
+  group('getOptimalVideoUrlForPlatform developer override', () {
+    // videoFormatPreference is a process-global singleton; reset it after each
+    // test so the forced format does not leak into other suites.
+    tearDown(() => videoFormatPreference.setFormat(null));
+
+    test('mp4_720p override wins over raw-only imeta upload', () async {
+      const hash =
+          'e770667c1a62cc394602fc07462fa0d7ba83441002d9aac662fb88d0cc575338';
+      final video = _createVideoWithUrl(
+        'https://media.divine.video/$hash',
+        tags: const [
+          [
+            'imeta',
+            'url https://media.divine.video/$hash',
+            'm video/mp4',
+            'x $hash',
+          ],
+        ],
+      );
+      expect(video.hasRawOnlyDivineImetaUrl, isTrue);
+
+      await videoFormatPreference.setFormat(VideoPlaybackFormat.mp4_720p);
+
+      expect(
+        video.getOptimalVideoUrlForPlatform(),
+        equals('https://media.divine.video/$hash/720p.mp4'),
+      );
+    });
+
+    test('mp4_480p override wins over classic Vine original', () async {
+      const hash =
+          'cfb5cf3415ec4ad3f45eff478570d898ff9a660ecea63d0c058892b22468a90d';
+      final video = _createVideoWithUrl(
+        'https://media.divine.video/$hash',
+        rawTags: const {'platform': 'vine'},
+      );
+      expect(video.isOriginalVine, isTrue);
+
+      await videoFormatPreference.setFormat(VideoPlaybackFormat.mp4_480p);
+
+      expect(
+        video.getOptimalVideoUrlForPlatform(),
+        equals('https://media.divine.video/$hash/480p.mp4'),
       );
     });
   });

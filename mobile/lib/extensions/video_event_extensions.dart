@@ -211,14 +211,18 @@ extension VideoEventAppExtensions on VideoEvent {
 
   /// Get the optimal video URL for initial playback.
   ///
-  /// **Strategy**:
+  /// **Strategy** (first match wins):
+  /// - A developer format override (Developer Options) forces that server
+  ///   format on any Divine video for A/B testing, ahead of every heuristic
+  ///   below.
   /// - Classic Vine originals use the raw blob directly (/{hash}) because the
   ///   source is already 480p or lower — transcoded variants are upscales at
   ///   best and may not exist, causing needless 404s.
+  /// - Raw-only uploads use their published raw blob URL, since derived
+  ///   MP4/HLS variants may not exist yet.
   /// - Other Divine videos default to progressive MP4 720p (faststart, moov at
   ///   front) for fastest startup with short videos (1 request, no manifest
   ///   overhead).
-  /// - Developer options can override to HLS or other formats for A/B testing.
   /// - If MP4 fails (e.g. not yet transcoded after upload), [getFallbackUrl]
   ///   provides an HLS fallback via the quality variant error handler.
   ///
@@ -230,18 +234,11 @@ extension VideoEventAppExtensions on VideoEvent {
     final hash = _extractVideoHash(videoUrl);
     if (hash == null) return videoUrl;
 
-    // Classic Vine originals are 480p or lower — serve the raw blob directly.
-    // Transcoded 720p variants are pointless upscales and may not exist.
-    if (isOriginalVine) return '$_divineMediaBase/$hash';
-
-    // Direct Blossom uploads that only advertise the raw blob should start
-    // from that actual published URL. Derived MP4/HLS variants may not exist
-    // yet and can generate avoidable parser errors before falling back. This
-    // intentionally precedes the developer format override below: forcing a
-    // derived variant on a raw-only upload would just 404.
-    if (hasRawOnlyDivineImetaUrl) return videoUrl;
-
-    // Developer format override takes priority
+    // Developer format override takes priority over every heuristic below so
+    // A/B testing can force a specific server format on any Divine video,
+    // including classic Vine originals and raw-only uploads. If the forced
+    // variant does not exist yet the runtime fallback chain recovers, and
+    // seeing that is the point of the test switch.
     final override = videoFormatPreference.format;
     if (override != null) {
       return switch (override) {
@@ -257,6 +254,15 @@ extension VideoEventAppExtensions on VideoEvent {
           } ??
           videoUrl;
     }
+
+    // Classic Vine originals are 480p or lower — serve the raw blob directly.
+    // Transcoded 720p variants are pointless upscales and may not exist.
+    if (isOriginalVine) return '$_divineMediaBase/$hash';
+
+    // Direct Blossom uploads that only advertise the raw blob should start
+    // from that actual published URL. Derived MP4/HLS variants may not exist
+    // yet and can generate avoidable parser errors before falling back.
+    if (hasRawOnlyDivineImetaUrl) return videoUrl;
 
     // Production default: progressive MP4 720p (faststart).
     // Fastest startup (1 request, moov at front), correct colors on all
