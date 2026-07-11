@@ -360,6 +360,29 @@ void main() {
       });
 
       testWidgets(
+        'bordered type keeps the same outer size as an unbordered one',
+        (tester) async {
+          // The secondary type draws a 2px border via the Ink decoration,
+          // which the framework adds around its child. The inner padding
+          // compensates so a bordered button does not render larger than an
+          // unbordered one of the same size (regression: secondary was 4px
+          // wider and taller than primary).
+          await tester.pumpWidget(
+            buildTestWidget(onPressed: () {}),
+          );
+          final unbordered = tester.getSize(find.byType(DivineButton));
+
+          await tester.pumpWidget(
+            buildTestWidget(type: DivineButtonType.secondary, onPressed: () {}),
+          );
+          final bordered = tester.getSize(find.byType(DivineButton));
+
+          expect(bordered, equals(unbordered));
+          expect(bordered.height, equals(48));
+        },
+      );
+
+      testWidgets(
         'tiny outer == inner == 32px (no tap-padding inflation)',
         (tester) async {
           await tester.pumpWidget(

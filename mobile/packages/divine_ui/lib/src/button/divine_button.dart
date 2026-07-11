@@ -186,6 +186,9 @@ class _DivineButtonContent extends StatelessWidget {
   final bool expanded;
   final bool isLoading;
 
+  /// Thickness of the visible border on bordered [type]s (e.g. secondary).
+  static const double _kBorderWidth = 2;
+
   bool get _isEnabled => onPressed != null && !isLoading;
 
   /// Icon size scales with [size]: tiny uses a smaller 20px icon to fit
@@ -203,22 +206,36 @@ class _DivineButtonContent extends StatelessWidget {
   /// `DivineIconButton`.
   bool get _noLabel => label.isEmpty;
 
+  /// Border thickness that the `Ink` decoration adds around its child.
+  /// It is subtracted back out of the inner padding ([_verticalPadding],
+  /// [_looseHorizontalPadding]) so a bordered button keeps the exact same
+  /// outer bounds — and the same content position — as an unbordered one
+  /// of the same [size]. Without this, a secondary button renders 2px
+  /// larger on every edge than a primary one.
+  double get _borderInset => _borderColor != null ? _kBorderWidth : 0;
+
   /// Vertical inner padding. Fixed per size — it sets the button height
-  /// (32 / 40 / 48px) and never changes with stretch state.
-  double get _verticalPadding => switch (size) {
-    DivineButtonSize.tiny => 6,
-    DivineButtonSize.small => 8,
-    DivineButtonSize.base => 12,
-  };
+  /// (32 / 40 / 48px) and never changes with stretch state. The border
+  /// thickness is subtracted so the total height stays constant across
+  /// bordered and unbordered types (see [_borderInset]).
+  double get _verticalPadding =>
+      switch (size) {
+        DivineButtonSize.tiny => 6,
+        DivineButtonSize.small => 8,
+        DivineButtonSize.base => 12,
+      } -
+      _borderInset;
 
   /// Horizontal inner padding for a content-hugging button (the wider,
   /// visually-balanced inset). A stretched button instead uses
   /// [_verticalPadding] for symmetric insets — see [_AdaptiveButtonPadding].
-  double get _looseHorizontalPadding => switch (size) {
-    DivineButtonSize.tiny => 12,
-    DivineButtonSize.small => 16,
-    DivineButtonSize.base => 24,
-  };
+  double get _looseHorizontalPadding =>
+      switch (size) {
+        DivineButtonSize.tiny => 12,
+        DivineButtonSize.small => 16,
+        DivineButtonSize.base => 24,
+      } -
+      _borderInset;
 
   /// Whether the button always uses the narrower symmetric padding,
   /// regardless of incoming constraints: icon-only buttons (to match
@@ -352,7 +369,7 @@ class _DivineButtonContent extends StatelessWidget {
       color: _backgroundColor,
       borderRadius: BorderRadius.circular(_borderRadius),
       border: _borderColor != null
-          ? Border.all(color: _borderColor!, width: 2)
+          ? Border.all(color: _borderColor!, width: _kBorderWidth)
           : null,
       boxShadow: _isEnabled ? _boxShadow : null,
     );
