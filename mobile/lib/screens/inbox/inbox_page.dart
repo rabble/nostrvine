@@ -43,19 +43,43 @@ class InboxPage extends ConsumerWidget {
     final reportingService = ref.watch(contentReportingServiceProvider).value;
     final currentUserPubkey =
         ref.watch(authServiceProvider).currentPublicKeyHex ?? '';
+    final protectedMinorInboxGate = ref.watch(protectedMinorInboxGateProvider);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: MultiBlocProvider(
+        // `dmRepositoryProvider` is keepAlive but its body rebuilds a
+        // brand-new DmRepository whenever the nostr session advances
+        // (identityKnown -> nostrReady) or on account switch, and only the
+        // *ready* instance ever gets setCredentials()/startListening(). A
+        // BlocProvider factory runs once and captures whichever instance was
+        // current at mount; if the inbox is opened during the not-ready
+        // window the ConversationListBloc stays wired to that orphaned repo,
+        // whose userPubkeyStream never fires — so the list spins forever
+        // while DMs ingest on the new instance. Re-key on the captured
+        // repositories' identities so the blocs are rebuilt bound to the
+        // fresh instances on every flip. The tuple carries EVERY watched
+        // value a create: factory below captures whose identity can change
+        // at runtime — reportingService resolves from null asynchronously,
+        // and currentUserPubkey flips on account switch — or the cubits
+        // capturing them silently keep the stale instance. See
+        // .claude/rules/state_management.md ("Bridging Riverpod-provided
+        // dependencies into BlocProvider").
+        key: ValueKey((
+          dmRepository,
+          followRepository,
+          blocklistRepository,
+          reportingService,
+          currentUserPubkey,
+          protectedMinorInboxGate,
+        )),
         providers: [
           BlocProvider(
             create: (_) => ConversationListBloc(
               dmRepository: dmRepository,
               followRepository: followRepository,
               contentBlocklistRepository: blocklistRepository,
-              protectedMinorInboxGate: ref.watch(
-                protectedMinorInboxGateProvider,
-              ),
+              protectedMinorInboxGate: protectedMinorInboxGate,
             )..add(const ConversationListStarted()),
           ),
           // Inbox-scope NotificationBadgeCubit feeds the segmented

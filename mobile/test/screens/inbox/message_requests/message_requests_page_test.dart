@@ -3,9 +3,13 @@
 // ABOUTME: with ConversationListBloc and MessageRequestActionsCubit provided.
 
 import 'package:dm_repository/dm_repository.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/inbox/message_requests/message_requests_page.dart';
@@ -20,6 +24,11 @@ class _MockDmRepository extends Mock implements DmRepository {}
 class _MockAuthService extends Mock implements AuthService {}
 
 class _MockFollowRepository extends Mock implements FollowRepository {}
+
+/// Flip to force `dmRepositoryProvider` to hand over a different DmRepository
+/// instance — mirrors the keepAlive provider rebuilding a fresh repository as
+/// the nostr session advances identityKnown -> nostrReady.
+final _dmRepoSwap = StateProvider<int>((ref) => 0);
 
 void main() {
   const testPubkey =
@@ -105,5 +114,77 @@ void main() {
         expect(find.byType(MessageRequestsView), findsOneWidget);
       });
     });
+
+    // Same defect as InboxPage: the keepAlive `dmRepositoryProvider` rebuilds a
+    // fresh DmRepository on the identityKnown -> nostrReady transition, and only
+    // the ready instance's userPubkeyStream ever delivers a pubkey. A keyless
+    // BlocProvider strands the requests list on the orphaned not-ready repo.
+    // Pins the ValueKey rebind fix in message_requests_page.dart.
+    testWidgets(
+      'recreates ConversationListBloc when dmRepositoryProvider hands over '
+      'the ready instance',
+      (tester) async {
+        final notReadyRepo = _MockDmRepository();
+        when(
+          () => notReadyRepo.watchAcceptedConversations(
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) => Stream.value(const []));
+        when(
+          notReadyRepo.watchPotentialRequests,
+        ).thenAnswer((_) => Stream.value(const []));
+        when(() => notReadyRepo.isRecoveringHistory).thenReturn(false);
+        when(
+          () => notReadyRepo.historyRecoveryStream,
+        ).thenAnswer((_) => const Stream<bool>.empty());
+        when(() => notReadyRepo.isHistoryRecoveryComplete).thenReturn(true);
+        when(() => notReadyRepo.userPubkey).thenReturn('');
+        when(
+          () => notReadyRepo.userPubkeyStream,
+        ).thenAnswer((_) => const Stream<String>.empty());
+        when(notReadyRepo.backfillHistoryIfNeeded).thenAnswer((_) async {});
+        when(notReadyRepo.retryPendingDecryptions).thenAnswer((_) async {});
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            home: const MessageRequestsPage(),
+            mockAuthService: mockAuthService,
+            mockFollowRepository: mockFollowRepository,
+            additionalOverrides: [
+              // swap 0 -> not-ready instance, swap 1 -> ready (setUp mock).
+              dmRepositoryProvider.overrideWith(
+                (ref) => ref.watch(_dmRepoSwap) == 0
+                    ? notReadyRepo
+                    : mockDmRepository,
+              ),
+              goRouterProvider.overrideWithValue(mockGoRouter),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        final blocA = BlocProvider.of<ConversationListBloc>(
+          tester.element(find.byType(MessageRequestsView)),
+        );
+
+        // Session advances identityKnown -> nostrReady: fresh ready repo.
+        ProviderScope.containerOf(
+          tester.element(find.byType(MessageRequestsPage)),
+          listen: false,
+        ).read(_dmRepoSwap.notifier).state = 1;
+        await tester.pump();
+
+        expect(
+          BlocProvider.of<ConversationListBloc>(
+            tester.element(find.byType(MessageRequestsView)),
+          ),
+          isNot(same(blocA)),
+          reason:
+              'a keyless BlocProvider strands the requests list on the '
+              'orphaned not-ready DmRepository; the ValueKey must rebuild it '
+              'bound to the ready instance',
+        );
+      },
+    );
   });
 }
