@@ -47,9 +47,11 @@ class OutgoingDmRetryConfig {
 ///
 /// **Triggers:** [appForegroundStream] transitions to `true` (the provider
 /// seeds the stream with the current foreground state on subscription, so the
-/// cold-start sweep fires automatically) and, when wired, [retryTriggerStream]
+/// cold-start sweep fires automatically); when wired, [retryTriggerStream]
 /// — connectivity/relay-reconnection events — so a send queued while offline
-/// re-drives the instant the network returns.
+/// re-drives the instant the network returns; and a self-scheduled follow-up
+/// timer ([_followUpSweepGap]) whenever a pass leaves retryable work behind,
+/// so rows converge during an uninterrupted foreground session too.
 ///
 /// **Re-entrancy:** a sweep already in progress short-circuits the
 /// next trigger; the deferred work is picked up on the next trigger.
@@ -85,6 +87,7 @@ class OutgoingDmRetryService {
     required String userPubkey,
     required Stream<bool> appForegroundStream,
     Stream<void>? retryTriggerStream,
+    OfflineProbe? isOffline,
     OutgoingDmRetryConfig retryConfig = const OutgoingDmRetryConfig(),
     DateTime Function() now = DateTime.now,
     CrashReportingService? crashReporting,
@@ -93,6 +96,7 @@ class OutgoingDmRetryService {
        _userPubkey = userPubkey,
        _appForegroundStream = appForegroundStream,
        _retryTriggerStream = retryTriggerStream,
+       _isOffline = isOffline,
        _retryConfig = retryConfig,
        _now = now,
        _crashReporting = crashReporting ?? CrashReportingService.instance;
@@ -108,12 +112,37 @@ class OutgoingDmRetryService {
   /// waiting for the user to background and re-foreground the app.
   final Stream<void>? _retryTriggerStream;
 
+  /// Connectivity probe (same contract as `NIP17MessageService`'s). When it
+  /// reports offline the whole pass is skipped WITHOUT touching any row's
+  /// retry budget — every dispatch would deterministically hit the send
+  /// path's own offline fail-fast, and five backgrounded/foregrounded
+  /// cycles in airplane mode would otherwise exhaust a row into a terminal
+  /// red bubble before the network ever came back. The connectivity
+  /// trigger stream re-fires the sweep the moment the network returns.
+  final OfflineProbe? _isOffline;
+
   final OutgoingDmRetryConfig _retryConfig;
   final DateTime Function() _now;
   final CrashReportingService _crashReporting;
 
+  /// Minimum age of a still-`pending` row before the interrupted-send arm
+  /// may re-drive it. Must exceed the worst-case legitimately-in-flight
+  /// send (inbox resolution plus the 90s `_messagePublishTimeout` backstop
+  /// in `dm_repository`), or a foreground/connectivity trigger fired during
+  /// a live send dispatches a concurrent duplicate publish of the same
+  /// rumor. Receiver dedup makes that safe but wasteful; the old value
+  /// (the 2s `initialDelay`) made it the common case.
+  static const Duration _interruptedMinAge = Duration(seconds: 120);
+
+  /// Gap between a sweep that left retryable work behind and the follow-up
+  /// sweep it schedules. Without an in-session heartbeat, a soft-unconfirmed
+  /// row created while the app stays foregrounded on stable connectivity was
+  /// never re-driven until the next background/foreground flip.
+  static const Duration _followUpSweepGap = Duration(seconds: 30);
+
   StreamSubscription<bool>? _foregroundSubscription;
   StreamSubscription<void>? _retryTriggerSubscription;
+  Timer? _followUpTimer;
   bool _isInitialized = false;
   bool _isSweeping = false;
 
@@ -153,6 +182,8 @@ class OutgoingDmRetryService {
     _foregroundSubscription = null;
     await _retryTriggerSubscription?.cancel();
     _retryTriggerSubscription = null;
+    _followUpTimer?.cancel();
+    _followUpTimer = null;
     _isInitialized = false;
   }
 
@@ -171,6 +202,20 @@ class OutgoingDmRetryService {
     _isSweeping = true;
 
     try {
+      // Offline gate: dispatching while offline deterministically fails
+      // every row via the send path's own offline fail-fast and burns the
+      // retry budget for attempts that never had a chance. Skip the pass;
+      // the connectivity trigger re-fires it the moment the network is
+      // back. Probe errors fall through to sweeping (assume online).
+      if (await _isOfflineSafely()) {
+        Log.debug(
+          'device offline, skipping sweep pass',
+          name: 'OutgoingDmRetryService',
+          category: LogCategory.system,
+        );
+        return;
+      }
+
       final retryable = await _dao.getRetryableForOwner(
         ownerPubkey: _userPubkey,
         maxRetries: _retryConfig.maxRetries,
@@ -287,6 +332,12 @@ class OutgoingDmRetryService {
               // row is gone and the gate would refuse every retry anyway),
               // and count it as terminal rather than a failure.
               blockedFullSend++;
+            } else if (result.retryablePending) {
+              // Soft-unconfirmed: recoverFullSend already bumped the retry
+              // counter via _finalizeAfterRecipientUnconfirmed. Bumping
+              // again here double-charged every soft attempt and halved
+              // the effective retry budget.
+              failedFullSend++;
             } else {
               // Publish failed again. recoverFullSend already
               // re-marked both wraps failed with the new error via
@@ -363,14 +414,16 @@ class OutgoingDmRetryService {
             continue;
           }
 
-          // Min-age guard: if the row was just enqueued, the originating
-          // sendMessage call may still be in flight in this process. Wait
-          // for at least the initial-delay window before treating the row
-          // as interrupted. Idempotent receiver dedup makes this purely
-          // a politeness — false negatives mean a one-cycle delay, not
-          // data loss.
+          // Min-age guard: if the row was recently enqueued, the
+          // originating sendMessage call may still be in flight in this
+          // process (inbox resolution + the 90s publish backstop). Wait
+          // out that window before treating the row as interrupted, or a
+          // trigger fired mid-send dispatches a concurrent duplicate
+          // publish of the same rumor. Idempotent receiver dedup makes a
+          // false negative safe — it means a one-cycle delay, not data
+          // loss.
           final age = _now().difference(row.queuedAt);
-          if (age < _retryConfig.initialDelay) {
+          if (age < _interruptedMinAge) {
             skippedInterruptedTooYoung++;
             continue;
           }
@@ -396,6 +449,10 @@ class OutgoingDmRetryService {
               // Terminal, same as the failed-send arm: recoverFullSend
               // deleted the row for a #176 policy block, so don't re-arm it.
               blockedInterrupted++;
+            } else if (result.retryablePending) {
+              // Soft-unconfirmed: the repo already bumped the counter via
+              // _finalizeAfterRecipientUnconfirmed — no double charge.
+              failedInterrupted++;
             } else {
               await _dao.incrementRetry(row.id);
               failedInterrupted++;
@@ -454,6 +511,21 @@ class OutgoingDmRetryService {
         name: 'OutgoingDmRetryService',
         category: LogCategory.system,
       );
+
+      // Everything that neither delivered nor terminalized this pass is
+      // still driveable work: failed re-attempts, rows skipped by backoff
+      // or the min-age guard, and an aborted not-ready pass (rows
+      // untouched). Derived from the pass's own counters so no extra DAO
+      // round-trip is spent on the decision.
+      _scheduleFollowUp(
+        workRemains:
+            abortedNotReady ||
+            failedSelfWrap > 0 ||
+            failedFullSend > 0 ||
+            failedInterrupted > 0 ||
+            skippedBackoff > 0 ||
+            skippedInterruptedTooYoung > 0,
+      );
     } on Object catch (e, stackTrace) {
       Log.error(
         'sweep failed: $e',
@@ -472,6 +544,39 @@ class OutgoingDmRetryService {
     } finally {
       _isSweeping = false;
     }
+  }
+
+  /// Runs the injected connectivity probe, defaulting to online on any error
+  /// (and when no probe is wired) so a flaky probe never starves the sweep.
+  Future<bool> _isOfflineSafely() async {
+    final probe = _isOffline;
+    if (probe == null) return false;
+    try {
+      return await probe();
+    } on Object catch (e) {
+      Log.warning(
+        'offline probe failed; assuming online: $e',
+        name: 'OutgoingDmRetryService',
+        category: LogCategory.system,
+      );
+      return false;
+    }
+  }
+
+  /// Schedule a follow-up sweep while retryable work remains, so rows
+  /// converge during an uninterrupted foreground session instead of waiting
+  /// for the next background/foreground flip or connectivity change. The
+  /// timer self-cancels once a pass leaves nothing to drive (every row
+  /// delivered, cancelled, or terminalized at the retry cap).
+  void _scheduleFollowUp({required bool workRemains}) {
+    _followUpTimer?.cancel();
+    _followUpTimer = null;
+    if (!workRemains || !_isInitialized) return;
+    _followUpTimer = Timer(_followUpSweepGap, () {
+      _followUpTimer = null;
+      if (!_isInitialized) return;
+      unawaited(sweep());
+    });
   }
 
   /// Terminalize a pending row that has exhausted its retry budget: mark both

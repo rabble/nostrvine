@@ -225,6 +225,9 @@ OutgoingDmRetryService? outgoingDmRetryService(Ref ref) {
     userPubkey: userPubkey,
     appForegroundStream: foregroundController.stream,
     retryTriggerStream: retryTriggerStream,
+    // Same probe the send path uses: an offline sweep pass would burn every
+    // row's retry budget on attempts that deterministically fail.
+    isOffline: dmSendConnectivityIsOffline,
   );
 
   // initialize() subscribes to the controller's stream synchronously
