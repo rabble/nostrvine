@@ -75,22 +75,41 @@ void main() {
       },
     );
 
-    test(
-      'backdates the gift-wrap timestamp within 2 days and never to the future',
-      () async {
-        final rumor = buildRumor();
-        final base = rumor.createdAt;
-        final wrap = (await buildGiftWrapFromHex(
-          senderPrivateKeyHex: senderPrivateKey,
-          rumorJson: rumor.toJson(),
-          receiverPublicKey: recipientPubkey,
-        ))!;
+    test('backdates the gift-wrap timestamp within 2 days of NOW and never to '
+        'the future', () async {
+      final rumor = buildRumor();
+      final wrap = (await buildGiftWrapFromHex(
+        senderPrivateKeyHex: senderPrivateKey,
+        rumorJson: rumor.toJson(),
+        receiverPublicKey: recipientPubkey,
+      ))!;
 
-        const twoDays = 60 * 60 * 24 * 2;
-        expect(wrap.createdAt, lessThanOrEqualTo(base));
-        expect(wrap.createdAt, greaterThanOrEqualTo(base - twoDays));
-      },
-    );
+      const twoDays = 60 * 60 * 24 * 2;
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      expect(wrap.createdAt, lessThanOrEqualTo(now));
+      expect(wrap.createdAt, greaterThanOrEqualTo(now - twoDays));
+    });
+
+    test('wrap timestamp is anchored to now, not the rumor — a re-wrapped '
+        'retry of an old rumor must not inherit its age', () async {
+      // A retry replays the SAME rumor days later. If the wrap timestamp
+      // were derived from the rumor's created_at, the retry would land
+      // before recipients' `since` subscription cursors (never seen) and
+      // outside relay recency windows (rejected). See PR #6046.
+      const tenDays = 60 * 60 * 24 * 10;
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      final oldRumorJson = buildRumor().toJson()
+        ..['created_at'] = now - tenDays;
+      final wrap = (await buildGiftWrapFromHex(
+        senderPrivateKeyHex: senderPrivateKey,
+        rumorJson: oldRumorJson,
+        receiverPublicKey: recipientPubkey,
+      ))!;
+
+      const twoDays = 60 * 60 * 24 * 2;
+      expect(wrap.createdAt, greaterThanOrEqualTo(now - twoDays));
+      expect(wrap.createdAt, lessThanOrEqualTo(now));
+    });
 
     test(
       'uses a fresh CSPRNG per call (distinct ephemeral keys and wrap ids)',
