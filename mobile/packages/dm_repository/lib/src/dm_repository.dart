@@ -477,6 +477,30 @@ class DmRepository {
   final StreamController<bool> _recoveryStateController =
       StreamController<bool>.broadcast();
 
+  /// Fires whenever a send or recovery leaves a retryable row behind in the
+  /// `outgoing_dms` queue — a soft-unconfirmed publish, a hard failure, or a
+  /// partial delivery whose self-wrap is still missing. The retry service
+  /// listens to bootstrap its in-session follow-up sweep: without this, a
+  /// row created while the app stays foregrounded on stable connectivity sat
+  /// pending (a delivered-looking bubble) until the next background/
+  /// foreground flip or connectivity change.
+  ///
+  /// Some emissions fire from inside a database transaction, so listeners
+  /// MUST NOT touch the database synchronously — schedule work (e.g. arm a
+  /// timer) instead.
+  final StreamController<void> _retryableWorkController =
+      StreamController<void>.broadcast();
+
+  /// See [_retryableWorkController]. App-scoped like [historyRecoveryStream];
+  /// never closed.
+  Stream<void> get retryableOutgoingWork => _retryableWorkController.stream;
+
+  void _notifyRetryableWork() {
+    if (!_retryableWorkController.isClosed) {
+      _retryableWorkController.add(null);
+    }
+  }
+
   /// Per-row recovery attempts currently in flight, keyed by primitive
   /// (`full:<id>` / `self:<id>`). A manual Resend and a sweep pass can race
   /// [recoverFullSend] on the same queue row: the second entrant would only
@@ -3095,6 +3119,8 @@ class DmRepository {
         );
         // Swallow — caller still gets the failure result below.
       }
+      // Row stays retryable (self-wrap failed) — nudge the sweep.
+      _notifyRetryableWork();
       return NIP17SendResult.failure('rumor JSON parse failed: $e');
     }
 
@@ -3171,6 +3197,11 @@ class DmRepository {
               .recoverSelfWrapMarkFailedAfterPublishFailure,
         );
         // Don't rethrow — caller already gets the failure result.
+      } finally {
+        // The self-wrap is still missing — nudge the sweep. Manual
+        // recoveries (sentPartial Retry) reach here without a sweep pass
+        // to reschedule them.
+        _notifyRetryableWork();
       }
     }
 
@@ -3806,6 +3837,8 @@ class DmRepository {
         status: OutgoingWrapStatus.failed,
         lastError: 'Recipient delivered, but self-wrap publish failed',
       );
+      // The row survives with a retryable self-wrap — nudge the sweep.
+      _notifyRetryableWork();
     }
   }
 
@@ -3843,6 +3876,10 @@ class DmRepository {
       );
       // Don't rethrow — caller already gets the failure result. The
       // queue row stays retryable and the next sweep can pick it up.
+    } finally {
+      // Whether the marks landed or threw, the row is still retryable —
+      // nudge the sweep so it converges without a foreground flip.
+      _notifyRetryableWork();
     }
   }
 
@@ -3908,6 +3945,10 @@ class DmRepository {
       );
       // Don't rethrow — the row stays pending and the next sweep re-drives
       // it; a missed retry-count bump only means one extra retry.
+    } finally {
+      // The row stays pending either way — nudge the sweep so a
+      // soft-unconfirmed send converges without a foreground flip.
+      _notifyRetryableWork();
     }
   }
 

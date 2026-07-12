@@ -13058,6 +13058,116 @@ void main() {
         },
       );
 
+      group('retryableOutgoingWork nudge', () {
+        Future<List<void>> collectedEvents(
+          DmRepository repository,
+          Future<void> Function() act,
+        ) async {
+          final events = <void>[];
+          final subscription = repository.retryableOutgoingWork.listen(
+            events.add,
+          );
+          await act();
+          await pumpEventQueue();
+          await subscription.cancel();
+          return events;
+        }
+
+        test('fires when a send finishes soft-unconfirmed', () async {
+          stubSendRumor(
+            (_, _) async => const NIP17SendResult.failure(
+              'Message recipient OK unconfirmed',
+              retryablePending: true,
+            ),
+          );
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final events = await collectedEvents(repository, () async {
+            await repository.sendMessage(
+              recipientPubkey: _validPubkeyB,
+              content: 'soft unconfirmed',
+            );
+          });
+
+          expect(
+            events,
+            hasLength(1),
+            reason:
+                'a pending row was left behind — the retry service needs '
+                'the nudge to bootstrap its follow-up sweep',
+          );
+        });
+
+        test('fires when a send hard-fails', () async {
+          stubSendRumor(
+            (_, _) async => const NIP17SendResult.failure('relay refused'),
+          );
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final events = await collectedEvents(repository, () async {
+            await repository.sendMessage(
+              recipientPubkey: _validPubkeyB,
+              content: 'hard fail',
+            );
+          });
+
+          expect(events, hasLength(1));
+        });
+
+        test(
+          'fires when a delivery is partial — self-wrap still missing',
+          () async {
+            stubSendRumor(
+              (_, recipientPubkey) async => NIP17SendResult.success(
+                rumorEventId: _rumorEventId,
+                messageEventId: _giftWrapEventId,
+                recipientPubkey: recipientPubkey,
+                selfWrapPublished: false,
+              ),
+            );
+            final repository = createRepository(
+              outgoingDmsDao: mockOutgoingDmsDao,
+            );
+
+            final events = await collectedEvents(repository, () async {
+              await repository.sendMessage(
+                recipientPubkey: _validPubkeyB,
+                content: 'partial delivery',
+              );
+            });
+
+            expect(events, hasLength(1));
+          },
+        );
+
+        test('stays silent on full delivery — nothing left to retry', () async {
+          // success() defaults to selfWrapPublished: true — full delivery.
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final events = await collectedEvents(repository, () async {
+            await repository.sendMessage(
+              recipientPubkey: _validPubkeyB,
+              content: 'full delivery',
+            );
+          });
+
+          expect(events, isEmpty);
+        });
+      });
+
       test(
         'on publish failure: when markRecipientWrapStatus throws inside '
         '_finalizeAfterRecipientFailure, the swallow is reported and '
@@ -14290,6 +14400,37 @@ void main() {
             ),
           ).called(1);
           verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
+        },
+      );
+
+      test(
+        'on self-wrap publish failure: nudges retryableOutgoingWork so a '
+        'manual recovery failure re-arms the sweep heartbeat',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow());
+          when(
+            () => mockMessageService.publishSelfWrap(
+              rumorEvent: any(named: 'rumorEvent'),
+            ),
+          ).thenAnswer(
+            (_) async => const NIP17SendResult.failure('relay timeout'),
+          );
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+          final events = <void>[];
+          final subscription = repository.retryableOutgoingWork.listen(
+            events.add,
+          );
+
+          await repository.recoverSelfWrap(rumorId: _rumorEventId);
+          await pumpEventQueue();
+          await subscription.cancel();
+
+          expect(events, hasLength(1));
         },
       );
 

@@ -8,6 +8,7 @@ import 'dart:async';
 
 import 'package:db_client/db_client.dart';
 import 'package:dm_repository/dm_repository.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show NIP17SendResult;
@@ -67,6 +68,7 @@ void main() {
   late _MockDmRepository dmRepository;
   late _MockOutgoingDmsDao dao;
   late StreamController<bool> foregroundController;
+  late StreamController<void> retryableWorkController;
 
   setUpAll(() {
     registerFallbackValue(StackTrace.empty);
@@ -77,6 +79,12 @@ void main() {
     dmRepository = _MockDmRepository();
     dao = _MockOutgoingDmsDao();
     foregroundController = StreamController<bool>.broadcast();
+    // Sync so fakeAsync tests deliver nudges without a real-time hop;
+    // initialize() subscribes to this stream unconditionally.
+    retryableWorkController = StreamController<void>.broadcast(sync: true);
+    when(
+      () => dmRepository.retryableOutgoingWork,
+    ).thenAnswer((_) => retryableWorkController.stream);
 
     // Permissive defaults so individual tests only stub what they care about.
     when(
@@ -93,6 +101,7 @@ void main() {
 
   tearDown(() async {
     await foregroundController.close();
+    await retryableWorkController.close();
   });
 
   OutgoingDmRetryService buildService({
@@ -197,6 +206,273 @@ void main() {
           await service.dispose();
         },
       );
+    });
+
+    group('retryable-work nudge bootstraps the follow-up heartbeat', () {
+      void verifySweepCount(int count) {
+        if (count == 0) {
+          verifyNever(
+            () => dao.getRetryableForOwner(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          );
+        } else {
+          verify(
+            () => dao.getRetryableForOwner(
+              ownerPubkey: _ownerPubkey,
+              maxRetries: 5,
+            ),
+          ).called(count);
+        }
+      }
+
+      test(
+        'a nudge while idle arms the 30s follow-up timer, and the sweep '
+        'fires when it elapses — the cold-start bootstrap',
+        () {
+          fakeAsync((async) {
+            final service = buildService();
+            unawaited(service.initialize());
+            async.flushMicrotasks();
+
+            retryableWorkController.add(null);
+            async.flushMicrotasks();
+            // The nudge only arms the timer — no immediate sweep.
+            verifySweepCount(0);
+
+            async
+              ..elapse(const Duration(seconds: 30))
+              ..flushMicrotasks();
+            verifySweepCount(1);
+
+            unawaited(service.dispose());
+            async.flushMicrotasks();
+          });
+        },
+      );
+
+      test(
+        'a second nudge never postpones an armed deadline — one sweep '
+        'fires 30s after the FIRST nudge',
+        () {
+          fakeAsync((async) {
+            final service = buildService();
+            unawaited(service.initialize());
+            async.flushMicrotasks();
+
+            retryableWorkController.add(null);
+            async
+              ..elapse(const Duration(seconds: 10))
+              ..flushMicrotasks();
+            retryableWorkController.add(null);
+            async
+              ..elapse(const Duration(seconds: 19))
+              ..flushMicrotasks();
+            // 29s after the first nudge: not yet.
+            verifySweepCount(0);
+
+            async
+              ..elapse(const Duration(seconds: 1))
+              ..flushMicrotasks();
+            // 30s after the FIRST nudge (20s after the second): exactly one
+            // sweep — the second nudge neither postponed nor duplicated it.
+            verifySweepCount(1);
+
+            unawaited(service.dispose());
+            async.flushMicrotasks();
+          });
+        },
+      );
+
+      test(
+        'a nudge that lands mid-sweep still arms the follow-up even when '
+        'that pass ends with no work remaining',
+        () {
+          fakeAsync((async) {
+            // Park the sweep on a gated DAO read so the nudge arrives while
+            // _isSweeping is true.
+            final gate = Completer<List<OutgoingDm>>();
+            when(
+              () => dao.getRetryableForOwner(
+                ownerPubkey: any(named: 'ownerPubkey'),
+                maxRetries: any(named: 'maxRetries'),
+              ),
+            ).thenAnswer((_) => gate.future);
+
+            final service = buildService();
+            unawaited(service.initialize());
+            async.flushMicrotasks();
+
+            unawaited(service.sweep());
+            async.flushMicrotasks();
+            expect(service.isSweeping, isTrue);
+
+            retryableWorkController.add(null);
+            async.flushMicrotasks();
+
+            // The pass ends with an empty queue → workRemains=false → its
+            // own scheduling disarms. The buffered nudge must re-arm.
+            gate.complete(const <OutgoingDm>[]);
+            async.flushMicrotasks();
+            expect(service.isSweeping, isFalse);
+
+            async
+              ..elapse(const Duration(seconds: 30))
+              ..flushMicrotasks();
+            verify(
+              () => dao.getRetryableForOwner(
+                ownerPubkey: _ownerPubkey,
+                maxRetries: 5,
+              ),
+            ).called(2);
+
+            unawaited(service.dispose());
+            async.flushMicrotasks();
+          });
+        },
+      );
+
+      test('dispose cancels the armed timer and later nudges are no-ops', () {
+        fakeAsync((async) {
+          final service = buildService();
+          unawaited(service.initialize());
+          async.flushMicrotasks();
+
+          retryableWorkController.add(null);
+          async.flushMicrotasks();
+
+          unawaited(service.dispose());
+          async.flushMicrotasks();
+
+          // The armed timer was cancelled with the service.
+          async
+            ..elapse(const Duration(minutes: 5))
+            ..flushMicrotasks();
+          verifySweepCount(0);
+
+          // Post-dispose nudges reach a cancelled subscription — no-op.
+          retryableWorkController.add(null);
+          async
+            ..elapse(const Duration(minutes: 5))
+            ..flushMicrotasks();
+          verifySweepCount(0);
+        });
+      });
+
+      test(
+        'offline pass keeps re-examining young pending rows: too young to '
+        'flip → follow-up armed; aged past the guard → terminalized; '
+        'nothing pending → heartbeat disarms',
+        () {
+          fakeAsync((async) {
+            final base = DateTime.utc(2026, 5, 10, 12);
+            // The row was queued 60s before the first pass: too young for
+            // the 120s min-age at t=0 and t=30, old enough at t=60.
+            final row = _row(
+              id: 'young-pending',
+              recipient: OutgoingWrapStatus.pending,
+              self: OutgoingWrapStatus.pending,
+              queuedAt: base.subtract(const Duration(seconds: 60)),
+            );
+            var terminalized = false;
+            when(
+              () => dao.getStillPendingForOwner(any()),
+            ).thenAnswer((_) async => terminalized ? const [] : [row]);
+            when(
+              () => dao.markRecipientWrapStatus(
+                id: any(named: 'id'),
+                status: any(named: 'status'),
+                lastError: any(named: 'lastError'),
+              ),
+            ).thenAnswer((_) async {
+              terminalized = true;
+              return true;
+            });
+            when(
+              () => dao.markSelfWrapStatus(
+                id: any(named: 'id'),
+                status: any(named: 'status'),
+                lastError: any(named: 'lastError'),
+              ),
+            ).thenAnswer((_) async => true);
+
+            final service = buildService(
+              isOffline: () async => true,
+              now: () => base.add(async.elapsed),
+            );
+            unawaited(service.initialize());
+            async.flushMicrotasks();
+
+            unawaited(service.sweep());
+            async.flushMicrotasks();
+            // Age 60s < 120s: nothing flipped, but the follow-up is armed.
+            verifyNever(
+              () => dao.markRecipientWrapStatus(
+                id: any(named: 'id'),
+                status: any(named: 'status'),
+                lastError: any(named: 'lastError'),
+              ),
+            );
+
+            async
+              ..elapse(const Duration(seconds: 30))
+              ..flushMicrotasks();
+            // Age 90s: still young, chain re-armed.
+            verifyNever(
+              () => dao.markRecipientWrapStatus(
+                id: any(named: 'id'),
+                status: any(named: 'status'),
+                lastError: any(named: 'lastError'),
+              ),
+            );
+
+            async
+              ..elapse(const Duration(seconds: 30))
+              ..flushMicrotasks();
+            // Age 120s: flipped to failed so it stops looking delivered.
+            verify(
+              () => dao.markRecipientWrapStatus(
+                id: 'young-pending',
+                status: OutgoingWrapStatus.failed,
+                lastError: any(named: 'lastError'),
+              ),
+            ).called(1);
+
+            // Nothing pending anymore → the pass reports no remaining work
+            // and the heartbeat disarms: three passes ran (t=0, 30, 60),
+            // then silence.
+            verify(() => dao.getStillPendingForOwner(any())).called(3);
+            async
+              ..elapse(const Duration(minutes: 5))
+              ..flushMicrotasks();
+            verifyNever(() => dao.getStillPendingForOwner(any()));
+
+            unawaited(service.dispose());
+            async.flushMicrotasks();
+          });
+        },
+      );
+
+      test('offline pass with an empty queue arms no follow-up', () {
+        fakeAsync((async) {
+          final service = buildService(isOffline: () async => true);
+          unawaited(service.initialize());
+          async.flushMicrotasks();
+
+          unawaited(service.sweep());
+          async.flushMicrotasks();
+          verify(() => dao.getStillPendingForOwner(any())).called(1);
+
+          async
+            ..elapse(const Duration(minutes: 5))
+            ..flushMicrotasks();
+          verifyNever(() => dao.getStillPendingForOwner(any()));
+
+          unawaited(service.dispose());
+          async.flushMicrotasks();
+        });
+      });
     });
 
     group('sweep dispatch', () {
