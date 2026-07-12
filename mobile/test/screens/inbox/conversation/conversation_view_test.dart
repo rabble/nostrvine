@@ -1049,6 +1049,148 @@ void main() {
         },
       );
 
+      testWidgets(
+        'on a partially delivered group bubble: Resend targets only the '
+        'FAILED sibling; Delete cancels pending AND failed siblings but '
+        'never one whose recipient already got the message',
+        (tester) async {
+          const groupConversationId =
+              'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+          final batchCreatedAt = DateTime(2026).millisecondsSinceEpoch ~/ 1000;
+          OutgoingDm sibling({
+            required String id,
+            required String recipientPubkey,
+            required OutgoingWrapStatus recipientWrap,
+            OutgoingWrapStatus selfWrap = OutgoingWrapStatus.pending,
+          }) => OutgoingDm(
+            id: id,
+            conversationId: groupConversationId,
+            recipientPubkey: recipientPubkey,
+            content: failedSendContent,
+            createdAt: batchCreatedAt,
+            rumorEventJson: '{}',
+            recipientWrapStatus: recipientWrap,
+            selfWrapStatus: selfWrap,
+            queuedAt: DateTime(2026),
+            ownerPubkey: currentPubkey,
+          );
+          // The batch winner is persisted; three siblings survive in mixed
+          // states.
+          final persistedWinner = DmMessage(
+            id: 'rumor-winner',
+            conversationId: groupConversationId,
+            senderPubkey: currentPubkey,
+            content: failedSendContent,
+            createdAt: batchCreatedAt,
+            giftWrapId: 'wrap-winner',
+          );
+          final state = ConversationState(
+            status: ConversationStatus.loaded,
+            messages: [persistedWinner],
+            pendingOutgoing: [
+              sibling(
+                id: 'rumor-pending',
+                recipientPubkey: otherPubkey,
+                recipientWrap: OutgoingWrapStatus.pending,
+              ),
+              sibling(
+                id: 'rumor-failed',
+                recipientPubkey:
+                    '4444444444444444444444444444444444444444444444444444444444444444',
+                recipientWrap: OutgoingWrapStatus.failed,
+                selfWrap: OutgoingWrapStatus.failed,
+              ),
+              sibling(
+                id: 'rumor-delivered-selffailed',
+                recipientPubkey:
+                    '5555555555555555555555555555555555555555555555555555555555555555',
+                recipientWrap: OutgoingWrapStatus.sent,
+                selfWrap: OutgoingWrapStatus.failed,
+              ),
+            ],
+          );
+          whenListen(
+            mockBloc,
+            Stream<ConversationState>.value(state),
+            initialState: state,
+          );
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              mockAuthService: mockAuthService,
+              mockNostrService: mockNostrClient,
+              additionalOverrides: [
+                videosRepositoryProvider.overrideWithValue(
+                  mockVideosRepository,
+                ),
+                fetchUserProfileProvider(
+                  otherPubkey,
+                ).overrideWith((ref) async => null),
+                contentBlocklistRepositoryProvider.overrideWithValue(
+                  mockBlocklist,
+                ),
+              ],
+              home: BlocProvider<ConversationBloc>.value(
+                value: mockBloc,
+                child: BlocProvider<CollaboratorInviteActionsCubit>.value(
+                  value: mockInviteActionsCubit,
+                  child: BlocProvider<ConversationReactionsCubit>.value(
+                    value: mockReactionsCubit,
+                    child: const ConversationView(
+                      participantPubkeys: [otherPubkey],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          // Exactly one bubble: the persisted winner, carrying the batch's
+          // aggregated failed status (the surviving siblings are folded in).
+          expect(find.text(failedSendContent), findsOneWidget);
+
+          await tester.tap(find.text(failedSendContent));
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.text(l10n.dmMessageActionRetrySend));
+          await tester.pump();
+          final afterResend = verify(() => mockBloc.add(captureAny())).captured;
+          expect(
+            afterResend.whereType<ConversationFullSendRecoveryRequested>(),
+            hasLength(1),
+          );
+          expect(
+            afterResend
+                .whereType<ConversationFullSendRecoveryRequested>()
+                .single
+                .rumorIds,
+            equals(const ['rumor-failed']),
+            reason:
+                'resend must never re-deliver to recipients that '
+                'already confirmed or are still pending',
+          );
+
+          // Re-open and Delete → cancels the undelivered siblings only.
+          await tester.tap(find.text(failedSendContent));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text(l10n.dmMessageActionCancelSend));
+          await tester.pump();
+          final cancelled = verify(() => mockBloc.add(captureAny())).captured
+              .whereType<ConversationOutgoingSendCancelled>()
+              .map((e) => e.rumorId)
+              .toList();
+          expect(
+            cancelled,
+            unorderedEquals(const ['rumor-pending', 'rumor-failed']),
+            reason:
+                'cancel-send drops every undelivered sibling, but a '
+                'recipient that already has the message keeps its row '
+                '(only its self-wrap sync is outstanding)',
+          );
+        },
+      );
+
       // The recipient-only partial-delivery path: NIP17MessageService
       // returned `success: true, selfWrapPublished: false`, so the bloc
       // emits SendStatus.sentPartial. The UI must show distinct copy

@@ -138,16 +138,18 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     ConversationMessageDeleted event,
     Emitter<ConversationState> emit,
   ) async {
-    // Drop any durable queue row first, whether the bubble is queue-only
-    // (optimistic/failed — no persisted row yet, so the kind-5 path below
-    // would no-op and the "deleted" bubble would keep re-sending via the
-    // sweep) or persisted with a retry row still alive (deleting the
-    // message must also stop the sweep from re-publishing it).
+    // Drop every durable queue row of the bubble's batch first, whether the
+    // bubble is queue-only (optimistic/failed — no persisted row yet, so the
+    // kind-5 path below would no-op and the "deleted" bubble would keep
+    // re-sending via the sweep) or persisted with sibling retry rows still
+    // alive. A group bubble carries the persisted winner's rumor id whose
+    // own row is already gone — cancelling just that id would leave the
+    // pending and failed siblings for the sweep to re-publish, so the
+    // repository resolves and cancels the WHOLE batch.
     var cancelledQueueRow = false;
     try {
-      cancelledQueueRow = await _dmRepository.cancelOutgoingSend(
-        rumorId: event.rumorId,
-      );
+      cancelledQueueRow =
+          await _dmRepository.cancelOutgoingBatch(rumorId: event.rumorId) > 0;
     } on Object catch (e, stackTrace) {
       // StateError = queue DAO not wired (legacy fixtures); ArgumentError =
       // foreign-owner row. Neither blocks the kind-5 delete below.
@@ -192,12 +194,13 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     // bloc-side in-memory tracking. This handler is responsible only
     // for transient `sendStatus` transitions and the partial-delivery
     // SnackBar affordance state (`lastPartialSend`).
-    emit(
-      state.copyWith(
-        sendStatus: SendStatus.sending,
-        clearLastPartialSend: true,
-      ),
-    );
+    // Deliberately does NOT clear lastPartialSend: with the concurrent()
+    // transformer, send B's `sending` emit can land between send A's
+    // sentPartial and B's own — an eager clear here wiped A's rumor ids
+    // before the partial union below could fold them in. Outstanding ids
+    // self-heal: recovery drops recovered/removed rows (ArgumentError →
+    // skipped), and a full recovery success clears the whole snapshot.
+    emit(state.copyWith(sendStatus: SendStatus.sending));
 
     try {
       // Partial-delivery: recipient got the message and DmRepository
@@ -271,10 +274,19 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         }
       }
       if (partialRumorIds.isNotEmpty) {
+        // Union with any outstanding partial: two concurrent sends that
+        // both end sentPartial must accumulate their rumor ids — the
+        // second overwrite silently orphaned the first send's self-wrap
+        // recovery set. Stale ids (already recovered by the sweep) are
+        // dropped by the recovery handler's ArgumentError-skip.
+        final unioned = <String>{
+          ...?state.lastPartialSend?.rumorIds,
+          ...partialRumorIds,
+        };
         emit(
           state.copyWith(
             sendStatus: SendStatus.sentPartial,
-            lastPartialSend: PartialSend(rumorIds: partialRumorIds),
+            lastPartialSend: PartialSend(rumorIds: unioned.toList()),
           ),
         );
         return;
@@ -368,7 +380,15 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       );
     }
 
-    if (stillFailing.isEmpty) {
+    // Reduce lastPartialSend by this recovery's outcome while PRESERVING
+    // ids a concurrent partial send unioned in mid-recovery: remove the
+    // ids this pass attempted, re-add the ones still failing. A plain
+    // `PartialSend(stillFailing)` overwrite clobbered the concurrent set.
+    final remaining = <String>{...?state.lastPartialSend?.rumorIds}
+      ..removeAll(event.rumorIds)
+      ..addAll(stillFailing);
+
+    if (remaining.isEmpty) {
       emit(
         state.copyWith(
           sendStatus: SendStatus.sent,
@@ -376,13 +396,12 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         ),
       );
     } else {
-      // Reduce lastPartialSend to only the rumors that are still
-      // failing, so a second Retry tap targets exactly those — never
-      // the ones that already recovered.
+      // A second Retry tap targets exactly the outstanding rumors —
+      // never the ones that already recovered.
       emit(
         state.copyWith(
           sendStatus: SendStatus.sentPartial,
-          lastPartialSend: PartialSend(rumorIds: stillFailing),
+          lastPartialSend: PartialSend(rumorIds: remaining.toList()),
         ),
       );
     }

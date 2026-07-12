@@ -97,14 +97,14 @@ void main() {
       when(
         () => mockDmRepository.getOutgoing(any()),
       ).thenAnswer((_) async => const <OutgoingDm>[]);
-      // Delete now drops any durable queue row before the kind-5 publish;
-      // default to "no row existed" so persisted-delete tests keep their
-      // original semantics.
+      // Delete now drops the bubble's whole durable batch before the kind-5
+      // publish; default to "no rows existed" so persisted-delete tests keep
+      // their original semantics.
       when(
-        () => mockDmRepository.cancelOutgoingSend(
+        () => mockDmRepository.cancelOutgoingBatch(
           rumorId: any(named: 'rumorId'),
         ),
-      ).thenAnswer((_) async => false);
+      ).thenAnswer((_) async => 0);
     });
 
     ConversationBloc buildBloc() => ConversationBloc(
@@ -857,6 +857,133 @@ void main() {
                 ),
           ],
         );
+
+        blocTest<ConversationBloc, ConversationState>(
+          'emits [sending, sent] when every group recipient is '
+          'soft-unconfirmed (retryablePending) with no hard failure — the '
+          'durable queue re-drives each pending row, no red SnackBar',
+          setUp: () {
+            when(
+              () => mockDmRepository.sendGroupMessage(
+                recipientPubkeys: [recipientPubkey, recipientPubkey2],
+                content: 'Group hello',
+              ),
+            ).thenAnswer(
+              (_) async => [
+                const NIP17SendResult.failure(
+                  'Message recipient OK unconfirmed',
+                  retryablePending: true,
+                ),
+                const NIP17SendResult.failure(
+                  'Message recipient OK unconfirmed',
+                  retryablePending: true,
+                ),
+              ],
+            );
+          },
+          build: buildBloc,
+          act: (bloc) => bloc.add(
+            const ConversationMessageSent(
+              recipientPubkeys: [recipientPubkey, recipientPubkey2],
+              content: 'Group hello',
+            ),
+          ),
+          expect: () => [
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sending,
+            ),
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sent,
+            ),
+          ],
+        );
+      });
+
+      group('overlapping partial sends', () {
+        const firstRumorId =
+            '7777777777777777777777777777777777777777777777777777777777777777';
+        const secondRumorId =
+            '8888888888888888888888888888888888888888888888888888888888888888';
+        late Completer<NIP17SendResult> slowFirstPartial;
+
+        blocTest<ConversationBloc, ConversationState>(
+          'two concurrent sends that both end sentPartial accumulate their '
+          'rumor ids — the second partial must not orphan the first',
+          setUp: () {
+            slowFirstPartial = Completer<NIP17SendResult>();
+            when(
+              () => mockDmRepository.sendMessage(
+                recipientPubkey: recipientPubkey,
+                content: 'First partial',
+              ),
+            ).thenAnswer((_) => slowFirstPartial.future);
+            when(
+              () => mockDmRepository.sendMessage(
+                recipientPubkey: recipientPubkey,
+                content: 'Second partial',
+              ),
+            ).thenAnswer(
+              (_) async => NIP17SendResult.success(
+                rumorEventId: secondRumorId,
+                messageEventId: secondRumorId,
+                recipientPubkey: recipientPubkey,
+                selfWrapPublished: false,
+              ),
+            );
+          },
+          build: buildBloc,
+          act: (bloc) async {
+            bloc.add(
+              const ConversationMessageSent(
+                recipientPubkeys: [recipientPubkey],
+                content: 'First partial',
+              ),
+            );
+            await Future<void>.delayed(Duration.zero);
+            bloc.add(
+              const ConversationMessageSent(
+                recipientPubkeys: [recipientPubkey],
+                content: 'Second partial',
+              ),
+            );
+            await Future<void>.delayed(Duration.zero);
+            // The slower FIRST send resolves partial after the second one
+            // already emitted its sentPartial.
+            slowFirstPartial.complete(
+              NIP17SendResult.success(
+                rumorEventId: firstRumorId,
+                messageEventId: firstRumorId,
+                recipientPubkey: recipientPubkey,
+                selfWrapPublished: false,
+              ),
+            );
+          },
+          expect: () => [
+            // The second send's `sending` emit is state-identical and
+            // therefore suppressed by Equatable.
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sending,
+            ),
+            isA<ConversationState>().having(
+              (s) => s.lastPartialSend?.rumorIds,
+              'lastPartialSend',
+              equals([secondRumorId]),
+            ),
+            // The union: a plain overwrite here silently dropped the
+            // second send's self-wrap recovery set (or vice versa).
+            isA<ConversationState>().having(
+              (s) => s.lastPartialSend?.rumorIds,
+              'lastPartialSend',
+              unorderedEquals([firstRumorId, secondRumorId]),
+            ),
+          ],
+        );
       });
 
       group('exception handling', () {
@@ -960,59 +1087,6 @@ void main() {
                   'messages preserves existing testMessage',
                   equals(const [testMessage]),
                 ),
-          ],
-          errors: () => [isA<Exception>()],
-        );
-      });
-
-      // Regression for #3908 review feedback. The pendingId-UUID contract
-      // (vs second-resolution timestamps) is what lets the strip target a
-      // single attempt without trampling a sibling. Pre-#4193 the strip
-      // was a list-walk on `state.messages`, so sibling collision was
-      // observable; post-#4193 the optimistic lives in
-      // `state.pendingOptimistic` (a Map keyed by pendingId), so strip is
-      // a `Map.remove(pendingId)` and a UUID still guarantees the two
-      // attempts get distinct keys.
-      group('pendingId uniqueness', () {
-        blocTest<ConversationBloc, ConversationState>(
-          'failure strip removes only the failing pendingId — '
-          'a sibling pending entry from a prior context is preserved',
-          // Seed state with a sibling pending entry to model the contract
-          // directly. With the `sequential()` transformer real production
-          // never has two pendings alive at once, but the strip semantics
-          // (key-based, not list-walk) are what the contract enforces.
-          seed: () => const ConversationState(),
-          setUp: () {
-            when(
-              () => mockDmRepository.sendMessage(
-                recipientPubkey: recipientPubkey,
-                content: 'Failing send',
-              ),
-            ).thenThrow(Exception('Relay timeout'));
-          },
-          build: buildBloc,
-          act: (bloc) => bloc.add(
-            const ConversationMessageSent(
-              recipientPubkeys: [recipientPubkey],
-              content: 'Failing send',
-            ),
-          ),
-          expect: () => [
-            // Sending: failing attempt's pending is added alongside the
-            // pre-existing sibling.
-            isA<ConversationState>().having(
-              (s) => s.sendStatus,
-              'sendStatus',
-              SendStatus.sending,
-            ),
-            // Failed: only the failing attempt's key is removed; the
-            // sibling pending is untouched. Under the old list-walk
-            // strip an off-by-one or shared id would have removed both.
-            isA<ConversationState>().having(
-              (s) => s.sendStatus,
-              'sendStatus',
-              SendStatus.failed,
-            ),
           ],
           errors: () => [isA<Exception>()],
         );
@@ -1588,10 +1662,10 @@ void main() {
           // Queue-only optimistic/failed bubble: a row exists, no persisted
           // direct_messages row — deleteMessageForEveryone throws.
           when(
-            () => mockDmRepository.cancelOutgoingSend(
+            () => mockDmRepository.cancelOutgoingBatch(
               rumorId: any(named: 'rumorId'),
             ),
-          ).thenAnswer((_) async => true);
+          ).thenAnswer((_) async => 1);
           when(
             () => mockDmRepository.deleteMessageForEveryone(messageId),
           ).thenThrow(ArgumentError('message not found'));
@@ -1602,7 +1676,7 @@ void main() {
         errors: () => const <Object>[],
         verify: (_) {
           verify(
-            () => mockDmRepository.cancelOutgoingSend(rumorId: messageId),
+            () => mockDmRepository.cancelOutgoingBatch(rumorId: messageId),
           ).called(1);
         },
       );

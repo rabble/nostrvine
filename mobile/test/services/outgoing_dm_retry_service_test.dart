@@ -475,6 +475,78 @@ void main() {
       });
     });
 
+    group('cancelled batch rows are never re-published', () {
+      test(
+        'after every sibling row of a partially delivered group send is '
+        'cancelled, the sweep publishes nothing',
+        () async {
+          // Mutable store standing in for outgoing_dms: the surviving
+          // siblings of a group send whose winner already persisted — one
+          // still pending (old enough for the interrupted arm), one hard
+          // failed.
+          final now = DateTime.utc(2026, 5, 10, 12);
+          final store = <OutgoingDm>[
+            _row(
+              id: 'sibling-pending',
+              recipient: OutgoingWrapStatus.pending,
+              self: OutgoingWrapStatus.pending,
+              queuedAt: now.subtract(const Duration(minutes: 10)),
+            ),
+            _row(
+              id: 'sibling-failed',
+              recipient: OutgoingWrapStatus.failed,
+              self: OutgoingWrapStatus.failed,
+            ),
+          ];
+          when(
+            () => dao.getRetryableForOwner(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              for (final r in store)
+                if (r.hasRetryableFailure) r,
+            ],
+          );
+          when(() => dao.getStillPendingForOwner(any())).thenAnswer(
+            (_) async => [
+              for (final r in store)
+                if (r.recipientWrapStatus == OutgoingWrapStatus.pending ||
+                    r.selfWrapStatus == OutgoingWrapStatus.pending)
+                  r,
+            ],
+          );
+          when(
+            () => dmRepository.recoverFullSend(rumorId: any(named: 'rumorId')),
+          ).thenAnswer((_) async => _successResult('recovered'));
+
+          final service = buildService(now: () => now);
+
+          // Control: with the rows live, the sweep re-drives both siblings.
+          await service.sweep();
+          verify(
+            () => dmRepository.recoverFullSend(rumorId: 'sibling-failed'),
+          ).called(1);
+          verify(
+            () => dmRepository.recoverFullSend(rumorId: 'sibling-pending'),
+          ).called(1);
+
+          // The user deletes the group message: cancelOutgoingBatch drops
+          // every sibling row (pending AND failed).
+          store.clear();
+
+          await service.sweep();
+          verifyNever(
+            () => dmRepository.recoverFullSend(rumorId: any(named: 'rumorId')),
+          );
+          verifyNever(
+            () => dmRepository.recoverSelfWrap(rumorId: any(named: 'rumorId')),
+          );
+        },
+      );
+    });
+
     group('sweep dispatch', () {
       test(
         'dispatches recipient: sent / self: failed rows to recoverSelfWrap',

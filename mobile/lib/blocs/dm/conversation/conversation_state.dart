@@ -114,23 +114,41 @@ class ConversationState extends Equatable {
     for (final row in pendingOutgoing) row.id: row,
   };
 
+  /// Whether [q] belongs to a GROUP send — the repository's own
+  /// discriminator (mirrors `_recoverFullSendLocked`): a group row's
+  /// conversation id differs from the 1:1 pair id of (owner, recipient).
+  ///
+  /// This is deliberately per-row, not derived from how many siblings
+  /// currently survive: a 2-recipient group whose first recipient confirmed
+  /// (row deleted) leaves a single surviving sibling, which a
+  /// count-your-siblings heuristic misclassifies as 1:1 — hiding the
+  /// persisted bubble's failure aggregation exactly when it matters.
+  bool _isGroupRow(OutgoingDm q) =>
+      q.conversationId !=
+      DmRepository.computeConversationId([q.ownerPubkey, q.recipientPubkey]);
+
   /// The fan-out batch containing [id] — a queue-row rumor id or a
   /// persisted message id.
   ///
   /// A group send enqueues one queue row PER RECIPIENT for one logical
   /// message; siblings share (content, createdAt) — `sendGroupMessage`
-  /// stamps every sibling rumor with one shared batch timestamp — and have
-  /// pairwise-distinct recipients. Identical text sent twice in the same
-  /// second to the SAME recipient is two separate messages, never a batch,
-  /// so same-recipient collisions fall back to the row itself.
+  /// stamps every sibling rumor with one shared batch timestamp. Batch
+  /// membership additionally requires the same owner and a group-shaped
+  /// conversation id, so an incoming persisted message coincidentally
+  /// sharing (content, createdAt) can never aggregate someone else's
+  /// bubble, and two identical 1:1 sends in the same second stay
+  /// independent rows.
   List<OutgoingDm> _siblingRowsFor(String id) {
     if (pendingOutgoing.isEmpty) return const [];
     final row = _outgoingByRumorId[id];
+    if (row != null && !_isGroupRow(row)) return [row];
     final int createdAt;
     final String content;
+    final String owner;
     if (row != null) {
       createdAt = row.createdAt;
       content = row.content;
+      owner = row.ownerPubkey;
     } else {
       DmMessage? match;
       for (final m in messages) {
@@ -142,23 +160,40 @@ class ConversationState extends Equatable {
       if (match == null) return const [];
       createdAt = match.createdAt;
       content = match.content;
+      // Own messages only: for an incoming message this is the peer's
+      // pubkey, which no owner-scoped queue row carries — resolving to
+      // an empty batch (delivered), never to our own in-flight rows.
+      owner = match.senderPubkey;
     }
-    final batch = [
+    return [
       for (final q in pendingOutgoing)
-        if (q.createdAt == createdAt && q.content == content) q,
+        if (q.ownerPubkey == owner &&
+            q.createdAt == createdAt &&
+            q.content == content &&
+            _isGroupRow(q))
+          q,
     ];
-    final recipients = {for (final q in batch) q.recipientPubkey};
-    final isFanOut = batch.length > 1 && recipients.length == batch.length;
-    if (isFanOut) return batch;
-    return row != null ? [row] : const [];
   }
 
   /// Rumor ids of the hard-failed queue rows in [id]'s fan-out batch —
-  /// the exact set a manual Resend must replay (and a Delete must cancel).
-  /// For a 1:1 failed bubble this is just `[id]`.
+  /// the exact set a manual Resend must replay. For a 1:1 failed bubble
+  /// this is just `[id]`.
   List<String> failedSiblingRumorIdsFor(String id) => [
     for (final q in _siblingRowsFor(id))
       if (q.recipientWrapStatus == OutgoingWrapStatus.failed) q.id,
+  ];
+
+  /// Rumor ids of every sibling in [id]'s fan-out batch whose recipient
+  /// has NOT received the message (pending + failed) — the set a snackbar
+  /// "cancel send" must drop. Deliberately EXCLUDES delivered-awaiting-
+  /// self-wrap rows: those recipients already have the message, and
+  /// cancelling their rows would only break the sender's own cross-device
+  /// sync for a message that is being kept. (Deleting the message for
+  /// everyone goes through `DmRepository.cancelOutgoingBatch` instead,
+  /// which drops the whole batch.)
+  List<String> undeliveredSiblingRumorIdsFor(String id) => [
+    for (final q in _siblingRowsFor(id))
+      if (q.recipientWrapStatus != OutgoingWrapStatus.sent) q.id,
   ];
 
   /// Delivery status for the bubble with rumor id (or persisted message
@@ -206,32 +241,41 @@ class ConversationState extends Equatable {
   /// Defends against the brief tick window where a queue row and its
   /// matching persisted row appear together by letting the persisted
   /// row win on rumor-id collision. A fan-out batch (group send: one row
-  /// per recipient, same content + batch timestamp, distinct recipients)
-  /// projects ONE bubble, not N — and none at all once any sibling is
-  /// persisted, since the persisted bubble represents the whole batch
-  /// (with [statusFor] surfacing remaining sibling failures on it).
+  /// per recipient, same content + batch timestamp) projects ONE bubble,
+  /// not N — and none at all once the batch's message is persisted.
+  /// Because the persisted winner is keyed to a sibling whose queue row
+  /// was deleted on confirm, suppression matches the batch identity
+  /// (own sender + content + createdAt) against persisted messages, not
+  /// surviving queue-row ids; [statusFor] then surfaces remaining
+  /// sibling failures on the persisted bubble.
   List<DmMessage> get displayedMessages {
     if (pendingOutgoing.isEmpty) return messages;
     final persistedIds = messages.map((m) => m.id).toSet();
+    final persistedBatchKeys = <(String, int, String)>{
+      for (final m in messages) (m.senderPubkey, m.createdAt, m.content),
+    };
 
-    final grouped = <String, List<OutgoingDm>>{};
-    for (final q in pendingOutgoing) {
-      grouped.putIfAbsent('${q.createdAt} ${q.content}', () => []).add(q);
-    }
+    final grouped = <(int, String), List<OutgoingDm>>{};
     final pendingBubbles = <DmMessage>[];
-    for (final batch in grouped.values) {
-      final recipients = {for (final q in batch) q.recipientPubkey};
-      final isFanOut = batch.length > 1 && recipients.length == batch.length;
-      if (isFanOut) {
-        if (batch.any((q) => persistedIds.contains(q.id))) continue;
-        batch.sort((a, b) => a.id.compareTo(b.id));
-        pendingBubbles.add(_outgoingToBubble(batch.first));
+    for (final q in pendingOutgoing) {
+      if (persistedIds.contains(q.id)) continue;
+      if (_isGroupRow(q)) {
+        grouped.putIfAbsent((q.createdAt, q.content), () => []).add(q);
       } else {
-        for (final q in batch) {
-          if (persistedIds.contains(q.id)) continue;
-          pendingBubbles.add(_outgoingToBubble(q));
-        }
+        pendingBubbles.add(_outgoingToBubble(q));
       }
+    }
+    for (final batch in grouped.values) {
+      final first = batch.first;
+      if (persistedBatchKeys.contains((
+        first.ownerPubkey,
+        first.createdAt,
+        first.content,
+      ))) {
+        continue;
+      }
+      batch.sort((a, b) => a.id.compareTo(b.id));
+      pendingBubbles.add(_outgoingToBubble(batch.first));
     }
 
     final merged = <DmMessage>[...pendingBubbles, ...messages]

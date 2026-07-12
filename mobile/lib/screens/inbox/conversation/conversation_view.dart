@@ -141,8 +141,14 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
         // a policy block and a partial (self-wrap) delivery — plus a
         // screen-reader announcement (no toast) for hard failures, since
         // the red in-bubble row is silent to assistive tech until focused.
+        // Also fire on a sentPartial → sentPartial transition whose rumor-id
+        // set changed: with concurrent() sends, a second overlapping partial
+        // keeps the same sendStatus and would otherwise never surface its
+        // recovery snackbar.
         listenWhen: (previous, current) =>
-            previous.sendStatus != current.sendStatus &&
+            (previous.sendStatus != current.sendStatus ||
+                (current.sendStatus == SendStatus.sentPartial &&
+                    previous.lastPartialSend != current.lastPartialSend)) &&
             (current.sendStatus == SendStatus.sentPartial ||
                 current.sendStatus == SendStatus.blocked ||
                 current.sendStatus == SendStatus.failed),
@@ -497,19 +503,26 @@ class _MessageList extends StatelessWidget {
   }
 
   /// Tapping a failed own bubble surfaces a native divine snackbar offering a
-  /// queue-aware resend or a delete. Resend replays the existing row(s) via
-  /// [ConversationFullSendRecoveryRequested] (a manual retry bypasses the
-  /// sweep's retry-count cap); delete drops the queued row(s) via
-  /// [ConversationOutgoingSendCancelled]. For a group bubble the batch's
-  /// FAILED sibling rows are targeted — never the siblings that already
-  /// delivered. Both actions are one-shot, dismiss the snackbar, and no-op
+  /// queue-aware resend or a delete. Resend replays the batch's FAILED
+  /// row(s) via [ConversationFullSendRecoveryRequested] (a manual retry
+  /// bypasses the sweep's retry-count cap) — never the siblings that
+  /// already delivered. Delete ("cancel send") drops every UNDELIVERED
+  /// sibling row (pending + failed) via [ConversationOutgoingSendCancelled]:
+  /// cancelling only the failed ones left pending siblings for the retry
+  /// sweep to publish after the user said give up. Delivered-awaiting-
+  /// self-wrap rows are excluded — those recipients already have the
+  /// message. Both actions are one-shot, dismiss the snackbar, and no-op
   /// once the bloc is closed (the snackbar can outlive the route).
   void _onFailedMessageTap(BuildContext context, DmMessage message) {
     final l10n = context.l10n;
     final bloc = context.read<ConversationBloc>();
     final messenger = ScaffoldMessenger.of(context);
     final failedIds = bloc.state.failedSiblingRumorIdsFor(message.id);
-    final rumorIds = failedIds.isEmpty ? [message.id] : failedIds;
+    final resendIds = failedIds.isEmpty ? [message.id] : failedIds;
+    final undeliveredIds = bloc.state.undeliveredSiblingRumorIdsFor(
+      message.id,
+    );
+    final cancelIds = undeliveredIds.isEmpty ? [message.id] : undeliveredIds;
     var handled = false;
     void runOnce(void Function() action) {
       if (handled || bloc.isClosed) return;
@@ -527,12 +540,12 @@ class _MessageList extends StatelessWidget {
           actionLabel: l10n.dmMessageActionRetrySend,
           onActionPressed: () => runOnce(
             () => bloc.add(
-              ConversationFullSendRecoveryRequested(rumorIds: rumorIds),
+              ConversationFullSendRecoveryRequested(rumorIds: resendIds),
             ),
           ),
           secondaryActionLabel: l10n.dmMessageActionCancelSend,
           onSecondaryActionPressed: () => runOnce(() {
-            for (final id in rumorIds) {
+            for (final id in cancelIds) {
               bloc.add(ConversationOutgoingSendCancelled(rumorId: id));
             }
           }),
