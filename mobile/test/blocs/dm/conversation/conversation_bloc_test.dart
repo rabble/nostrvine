@@ -1678,8 +1678,9 @@ void main() {
       );
 
       blocTest<ConversationBloc, ConversationState>(
-        'treats a soft-unconfirmed replay as recovered (not still-failing) — '
-        'emits [sending, sent] with no red failure',
+        'treats a soft-unconfirmed replay as STILL FAILING — the targeted '
+        'row is failed and the soft finalize never rewrites its status, so '
+        'claiming sent would swallow the red bubble without a delivery',
         setUp: () {
           when(
             () => mockDmRepository.recoverFullSend(
@@ -1709,7 +1710,7 @@ void main() {
           isA<ConversationState>().having(
             (s) => s.sendStatus,
             'sendStatus',
-            SendStatus.sent,
+            SendStatus.failed,
           ),
         ],
       );

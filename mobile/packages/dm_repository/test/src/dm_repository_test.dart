@@ -13582,6 +13582,45 @@ void main() {
       });
 
       test(
+        'returns a soft retryable-pending failure without a second publish '
+        'when a self-wrap recovery for the same rumor is already in flight',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow());
+          final firstPublishGate = Completer<NIP17SendResult>();
+          when(
+            () => mockMessageService.publishSelfWrap(
+              rumorEvent: any(named: 'rumorEvent'),
+            ),
+          ).thenAnswer((_) => firstPublishGate.future);
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final first = repository.recoverSelfWrap(rumorId: _rumorEventId);
+          final second = await repository.recoverSelfWrap(
+            rumorId: _rumorEventId,
+          );
+
+          expect(second.success, isFalse);
+          expect(second.retryablePending, isTrue);
+
+          firstPublishGate.complete(
+            const NIP17SendResult.failure('relay still down'),
+          );
+          await first;
+
+          verify(
+            () => mockMessageService.publishSelfWrap(
+              rumorEvent: any(named: 'rumorEvent'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
         'on successful self-wrap publish: deletes the queue row and '
         'returns success',
         () async {
@@ -14218,6 +14257,64 @@ void main() {
             ),
           );
           verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
+        },
+      );
+
+      test(
+        'returns a soft retryable-pending failure without a second publish '
+        'when a recovery for the same rumor is already in flight — a manual '
+        'Resend racing the reconnect sweep must not double-sign',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow());
+          final firstPublishGate = Completer<NIP17SendResult>();
+          stubSendRumor((_, _) => firstPublishGate.future);
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          // First recovery suspends inside its (gated) publish. The guard is
+          // registered synchronously before the first await, so the racing
+          // second call short-circuits deterministically.
+          final first = repository.recoverFullSend(rumorId: _rumorEventId);
+          final second = await repository.recoverFullSend(
+            rumorId: _rumorEventId,
+          );
+
+          expect(second.success, isFalse);
+          expect(second.retryablePending, isTrue);
+
+          firstPublishGate.complete(
+            const NIP17SendResult.failure('relay still down'),
+          );
+          final firstResult = await first;
+          expect(firstResult.success, isFalse);
+
+          // Only the gated first attempt ever reached the publish primitive.
+          verify(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: any(named: 'recipientPubkey'),
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
+            ),
+          ).called(1);
+
+          // Guard released with the first attempt: a later retry publishes.
+          stubSendRumor(
+            (_, _) async => const NIP17SendResult.failure('still down'),
+          );
+          await repository.recoverFullSend(rumorId: _rumorEventId);
+          verify(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: any(named: 'recipientPubkey'),
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
+            ),
+          ).called(1);
         },
       );
 

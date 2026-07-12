@@ -100,6 +100,7 @@ void main() {
     DateTime Function()? now,
     CrashReportingService? crashReporting,
     Stream<void>? retryTriggerStream,
+    Future<bool> Function()? isOffline,
   }) {
     return OutgoingDmRetryService(
       dmRepository: dmRepository,
@@ -107,6 +108,7 @@ void main() {
       userPubkey: _ownerPubkey,
       appForegroundStream: foregroundController.stream,
       retryTriggerStream: retryTriggerStream,
+      isOffline: isOffline,
       retryConfig: retryConfig,
       now: now ?? () => DateTime.utc(2026, 5, 10, 12),
       crashReporting: crashReporting,
@@ -1182,6 +1184,145 @@ void main() {
           verify(() => dao.incrementRetry('interrupted-fail')).called(1);
         },
       );
+    });
+
+    group('offline pass (probe reports no connectivity)', () {
+      test(
+        'surfaces an aged unconfirmed pending row as failed — both wraps '
+        'marked with the offline error, no publish, no budget charge',
+        () async {
+          final now = DateTime.utc(2026, 5, 10, 12);
+          final stalePending = _row(
+            id: 'offline-stale',
+            recipient: OutgoingWrapStatus.pending,
+            self: OutgoingWrapStatus.pending,
+            queuedAt: now.subtract(const Duration(minutes: 5)),
+          );
+          when(
+            () => dao.getStillPendingForOwner(any()),
+          ).thenAnswer((_) async => [stalePending]);
+          when(
+            () => dao.markRecipientWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              lastError: any(named: 'lastError'),
+            ),
+          ).thenAnswer((_) async => true);
+          when(
+            () => dao.markSelfWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              lastError: any(named: 'lastError'),
+            ),
+          ).thenAnswer((_) async => true);
+
+          await buildService(
+            now: () => now,
+            isOffline: () async => true,
+          ).sweep();
+
+          verify(
+            () => dao.markRecipientWrapStatus(
+              id: 'offline-stale',
+              status: OutgoingWrapStatus.failed,
+              lastError: 'Message not sent: device offline',
+            ),
+          ).called(1);
+          verify(
+            () => dao.markSelfWrapStatus(
+              id: 'offline-stale',
+              status: OutgoingWrapStatus.failed,
+              lastError: 'Message not sent: device offline',
+            ),
+          ).called(1);
+          verifyNever(
+            () => dmRepository.recoverFullSend(rumorId: any(named: 'rumorId')),
+          );
+          verifyNever(
+            () => dmRepository.recoverSelfWrap(rumorId: any(named: 'rumorId')),
+          );
+          verifyNever(() => dao.incrementRetry(any()));
+          // The retryable (failed) arm is never enumerated offline — those
+          // rows are already red and re-drive on reconnect.
+          verifyNever(
+            () => dao.getRetryableForOwner(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'leaves a young pending row alone — its own in-flight sendMessage '
+        'offline fail-fast owns the failure transition',
+        () async {
+          final now = DateTime.utc(2026, 5, 10, 12);
+          final young = _row(
+            id: 'offline-young',
+            recipient: OutgoingWrapStatus.pending,
+            self: OutgoingWrapStatus.pending,
+            queuedAt: now.subtract(const Duration(seconds: 30)),
+          );
+          when(
+            () => dao.getStillPendingForOwner(any()),
+          ).thenAnswer((_) async => [young]);
+
+          await buildService(
+            now: () => now,
+            isOffline: () async => true,
+          ).sweep();
+
+          verifyNever(
+            () => dao.markRecipientWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              lastError: any(named: 'lastError'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'leaves a delivered row with only the self-wrap outstanding alone — '
+        'the recipient already has the message, so no red bubble',
+        () async {
+          final now = DateTime.utc(2026, 5, 10, 12);
+          final delivered = _row(
+            id: 'offline-delivered',
+            recipient: OutgoingWrapStatus.sent,
+            self: OutgoingWrapStatus.pending,
+            queuedAt: now.subtract(const Duration(minutes: 5)),
+          );
+          when(
+            () => dao.getStillPendingForOwner(any()),
+          ).thenAnswer((_) async => [delivered]);
+
+          await buildService(
+            now: () => now,
+            isOffline: () async => true,
+          ).sweep();
+
+          verifyNever(
+            () => dao.markRecipientWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              lastError: any(named: 'lastError'),
+            ),
+          );
+        },
+      );
+
+      test('probe reporting online runs the normal pass', () async {
+        await buildService(isOffline: () async => false).sweep();
+
+        verify(
+          () => dao.getRetryableForOwner(
+            ownerPubkey: any(named: 'ownerPubkey'),
+            maxRetries: any(named: 'maxRetries'),
+          ),
+        ).called(1);
+      });
     });
   });
 

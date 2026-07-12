@@ -157,7 +157,7 @@ final class OutgoingDmRetryServiceProvider
 }
 
 String _$outgoingDmRetryServiceHash() =>
-    r'44b96c260811f171532983749ebb16d6fb6967c5';
+    r'0d1f75d5a6ae6ca4d87838c8008acb9e1976331a';
 
 /// Auto-sweep service that re-drives undelivered DM reactions (publish failed
 /// or interrupted mid-send) on app-foreground transitions via

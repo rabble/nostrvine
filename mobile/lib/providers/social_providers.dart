@@ -43,16 +43,27 @@ import 'package:unified_logger/unified_logger.dart';
 
 part 'social_providers.g.dart';
 
-/// Reconnect trigger for the DM retry sweeps (messages, reactions, removals):
-/// emits once each time `connectivity_plus` reports any non-`none` result, so
-/// work queued during a brief network drop is re-driven the moment
-/// connectivity returns — without waiting for an app-foreground transition.
-/// The sweeps short-circuit when nothing is retryable. Shared by the message
-/// and reaction retry providers so the trigger shape stays in one place.
+/// Reconnect trigger for the DM reaction retry sweep: emits once each time
+/// `connectivity_plus` reports any non-`none` result, so work queued during a
+/// brief network drop is re-driven the moment connectivity returns — without
+/// waiting for an app-foreground transition. The sweep short-circuits when
+/// nothing is retryable. `→ none` transitions are filtered out because
+/// [DmReactionRetryService] has no offline gate of its own — an offline pass
+/// would burn each row's retry budget on attempts that deterministically fail.
 Stream<void> _dmRetryConnectivityTriggerStream() => Connectivity()
     .onConnectivityChanged
     .where((results) => results.any((r) => r != ConnectivityResult.none))
     .map<void>((_) {});
+
+/// Connectivity trigger for the message retry sweep: fires on EVERY
+/// connectivity transition, including `→ none`. [OutgoingDmRetryService] runs
+/// its own offline probe per pass: an online pass re-drives retryable rows,
+/// and an offline pass surfaces aged still-`pending` rows as red failed
+/// bubbles (a pending row renders identically to a delivered one, so without
+/// this a send that went unconfirmed just before the network dropped stays
+/// sent-looking — and untappable — for the whole offline window). See #6046.
+Stream<void> _dmMessageRetryConnectivityTriggerStream() =>
+    Connectivity().onConnectivityChanged.map<void>((_) {});
 
 /// Reports whether the device currently has no network connectivity. Wired into
 /// `NIP17MessageService` so an offline DM send fails hard (a red "Not delivered"
@@ -216,8 +227,9 @@ OutgoingDmRetryService? outgoingDmRetryService(Ref ref) {
   // Re-drive undelivered messages the moment connectivity returns, not only on
   // app-foreground transitions — a message queued during a brief network drop
   // would otherwise sit undelivered until the app is backgrounded and
-  // re-foregrounded.
-  final retryTriggerStream = _dmRetryConnectivityTriggerStream();
+  // re-foregrounded. Fires on `→ none` too, so the service's offline pass can
+  // surface unconfirmed pending rows as failed the moment the network drops.
+  final retryTriggerStream = _dmMessageRetryConnectivityTriggerStream();
 
   final service = OutgoingDmRetryService(
     dmRepository: dmRepository,

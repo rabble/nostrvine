@@ -404,10 +404,15 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       try {
         // Replay the SAME rumor from the durable row — never a fresh send —
         // so the receiver dedups on the stable rumor id. A soft-unconfirmed
-        // replay counts as still-pending (not a hard failure): the sweep
-        // keeps re-driving it, so it should not re-raise the red SnackBar.
+        // replay (retryablePending) counts as STILL FAILING: manual-resend
+        // targets are `failed` queue rows, and the soft finalize only bumps
+        // the retry counter without rewriting wrap statuses, so the row —
+        // and its red bubble — remain failed. Reporting `sent` for it
+        // claimed a delivery nothing confirmed while the bubble stayed red
+        // (the "resend swallows the failed message" report on #6046). The
+        // sweep keeps re-driving the row either way.
         final result = await _dmRepository.recoverFullSend(rumorId: rumorId);
-        if (!result.success && !result.retryablePending) {
+        if (!result.success) {
           stillFailing.add(rumorId);
         }
       } on Object catch (e, stackTrace) {

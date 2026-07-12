@@ -477,6 +477,15 @@ class DmRepository {
   final StreamController<bool> _recoveryStateController =
       StreamController<bool>.broadcast();
 
+  /// Rumor ids with a per-row recovery currently in flight, namespaced by
+  /// primitive (`full:<id>` / `self:<id>`). A manual Resend and a sweep pass
+  /// can race [recoverFullSend] on the same queue row: the second entrant
+  /// would only duplicate signer round-trips and wire copies (receiver-side
+  /// rumor-id dedup absorbs them) and then trip the cancel interlock in the
+  /// winner's shadow. The loser returns a soft retryable-pending failure
+  /// instead, deferring to the in-flight attempt's outcome.
+  final Set<String> _recoveriesInFlight = <String>{};
+
   /// Broadcasts the user's pubkey whenever credentials change.
   ///
   /// Consumers that classify rows by identity (e.g. the conversation-list
@@ -2965,6 +2974,23 @@ class DmRepository {
         'wire OutgoingDmsDao into DmRepository before calling.',
       );
     }
+    if (!_recoveriesInFlight.add('self:$rumorId')) {
+      return const NIP17SendResult.failure(
+        'self-wrap recovery already in flight for this message',
+        retryablePending: true,
+      );
+    }
+    try {
+      return await _recoverSelfWrapLocked(dao: dao, rumorId: rumorId);
+    } finally {
+      _recoveriesInFlight.remove('self:$rumorId');
+    }
+  }
+
+  Future<NIP17SendResult> _recoverSelfWrapLocked({
+    required OutgoingDmsDao dao,
+    required String rumorId,
+  }) async {
     final row = await dao.getById(rumorId);
     if (row == null) {
       throw ArgumentError.value(
@@ -3151,6 +3177,11 @@ class DmRepository {
   /// Throws [StateError] if the repository or its queue DAO are not
   /// wired in. Throws [ArgumentError] if no row exists for [rumorId]
   /// or the row belongs to a different account.
+  ///
+  /// Returns a soft retryable-pending failure without publishing when a
+  /// recovery for the same rumor is already in flight (a manual Resend
+  /// racing the reconnect sweep) — the caller defers to that attempt's
+  /// outcome and the row stays retryable.
   Future<NIP17SendResult> recoverFullSend({required String rumorId}) async {
     _assertInitialized();
     final dao = _outgoingDmsDao;
@@ -3160,6 +3191,23 @@ class DmRepository {
         'wire OutgoingDmsDao into DmRepository before calling.',
       );
     }
+    if (!_recoveriesInFlight.add('full:$rumorId')) {
+      return const NIP17SendResult.failure(
+        'full-send recovery already in flight for this message',
+        retryablePending: true,
+      );
+    }
+    try {
+      return await _recoverFullSendLocked(dao: dao, rumorId: rumorId);
+    } finally {
+      _recoveriesInFlight.remove('full:$rumorId');
+    }
+  }
+
+  Future<NIP17SendResult> _recoverFullSendLocked({
+    required OutgoingDmsDao dao,
+    required String rumorId,
+  }) async {
     final row = await dao.getById(rumorId);
     if (row == null) {
       throw ArgumentError.value(
@@ -3239,17 +3287,22 @@ class DmRepository {
         final pairParticipants = [_userPubkey, row.recipientPubkey]..sort();
         final isGroupRow =
             row.conversationId != computeConversationId(pairParticipants);
+        var persistedLocally = false;
         await _conversationsDao.runInTransaction(() async {
-          // Cancel interlock: the user may have deleted this send
-          // (cancelOutgoingSend) while the publish was in flight. The wire
-          // copy is out — receiver dedup keeps it single — but locally the
-          // user said "give up": do NOT resurrect the message or the
-          // conversation from a row that no longer exists.
+          // Cancel interlock: the queue row may be gone by the time this
+          // publish lands — the user deleted the send (cancelOutgoingSend),
+          // or a concurrent recovery of the same rumor already finalized
+          // (and persisted) it. The wire copy is out — receiver dedup keeps
+          // it single — but do NOT resurrect the message or the conversation
+          // from a row that no longer exists: for a cancel the user said
+          // "give up", and for a concurrent recovery the winner has already
+          // persisted the message.
           final liveRow = await dao.getById(rumorId);
           if (liveRow == null) {
             Log.info(
-              'Recovered publish for $rumorId landed after the row was '
-              'cancelled; skipping local persist.',
+              'Recovered publish for $rumorId landed after the queue row '
+              'was already removed (cancelled, or finalized by a concurrent '
+              'recovery); skipping local persist.',
               category: LogCategory.system,
             );
             return;
@@ -3348,13 +3401,19 @@ class DmRepository {
             rumorId: rumorId,
             result: result,
           );
+          persistedLocally = true;
         });
 
-        Log.debug(
-          'Recovered full send and persisted locally in conversation '
-          '${row.conversationId}',
-          category: LogCategory.system,
-        );
+        // Guarded: the interlock's early return above skips the persist, and
+        // logging success for it made the race read as a delivered-and-saved
+        // message in field logs.
+        if (persistedLocally) {
+          Log.debug(
+            'Recovered full send and persisted locally in conversation '
+            '${row.conversationId}',
+            category: LogCategory.system,
+          );
+        }
       } on Object catch (e, stackTrace) {
         Log.error(
           'Failed to persist recovered send locally for $rumorId: $e',

@@ -113,12 +113,14 @@ class OutgoingDmRetryService {
   final Stream<void>? _retryTriggerStream;
 
   /// Connectivity probe (same contract as `NIP17MessageService`'s). When it
-  /// reports offline the whole pass is skipped WITHOUT touching any row's
-  /// retry budget — every dispatch would deterministically hit the send
-  /// path's own offline fail-fast, and five backgrounded/foregrounded
-  /// cycles in airplane mode would otherwise exhaust a row into a terminal
-  /// red bubble before the network ever came back. The connectivity
-  /// trigger stream re-fires the sweep the moment the network returns.
+  /// reports offline no publish is dispatched and no row's retry budget is
+  /// charged — every dispatch would deterministically hit the send path's
+  /// own offline fail-fast, and five backgrounded/foregrounded cycles in
+  /// airplane mode would otherwise exhaust a row into a terminal red bubble
+  /// before the network ever came back. The pass instead surfaces aged
+  /// unconfirmed `pending` rows as failed ([_surfaceOfflinePendingRows]) so
+  /// they stop rendering as delivered, and the connectivity trigger stream
+  /// re-fires the sweep the moment the network returns.
   final OfflineProbe? _isOffline;
 
   final OutgoingDmRetryConfig _retryConfig;
@@ -204,15 +206,13 @@ class OutgoingDmRetryService {
     try {
       // Offline gate: dispatching while offline deterministically fails
       // every row via the send path's own offline fail-fast and burns the
-      // retry budget for attempts that never had a chance. Skip the pass;
-      // the connectivity trigger re-fires it the moment the network is
-      // back. Probe errors fall through to sweeping (assume online).
+      // retry budget for attempts that never had a chance. Instead of
+      // publishing, surface aged unconfirmed rows as failed (see
+      // [_surfaceOfflinePendingRows]) and skip the rest of the pass; the
+      // connectivity trigger re-fires it the moment the network is back.
+      // Probe errors fall through to sweeping (assume online).
       if (await _isOfflineSafely()) {
-        Log.debug(
-          'device offline, skipping sweep pass',
-          name: 'OutgoingDmRetryService',
-          category: LogCategory.system,
-        );
+        await _surfaceOfflinePendingRows();
         return;
       }
 
@@ -253,6 +253,11 @@ class OutgoingDmRetryService {
               // recoverSelfWrap deleted the row on success. The bumped
               // retryCount would be moot anyway, so skip incrementRetry.
               processedSelfWrap++;
+            } else if (result.retryablePending) {
+              // Soft outcome — typically the repository's in-flight guard
+              // reporting another attempt (a manual retry) already owns this
+              // row. No publish was made here, so don't charge the budget.
+              failedSelfWrap++;
             } else {
               // Publish failed. recoverSelfWrap already wrote
               // selfWrapStatus=failed + lastError + lastAttemptAt via
@@ -584,8 +589,57 @@ class OutgoingDmRetryService {
   /// bubble, and stays out of `getRetryableForOwner` (which caps at
   /// `retry_count < maxRetries`). Swallows DAO errors — a failed mark just
   /// means the row is re-evaluated next sweep and terminalized then.
-  Future<void> _markInterruptedExhausted(String rumorId) async {
-    const error = 'Exhausted retries without recipient confirmation';
+  Future<void> _markInterruptedExhausted(String rumorId) => _terminalizeRow(
+    rumorId,
+    error: 'Exhausted retries without recipient confirmation',
+  );
+
+  /// Offline pass: no publish can succeed, so instead of leaving the queue
+  /// untouched, surface the rows the user would otherwise misread as
+  /// delivered. A still-`pending` recipient wrap renders as a plain sent
+  /// bubble — no indicator, no tap affordance — so while the device is
+  /// offline an unconfirmed send is indistinguishable from a delivered one
+  /// and unreachable from the UI (#6046 "resend swallows the failed
+  /// message"). Flip aged pending rows to `failed` (red "Not delivered",
+  /// tappable, re-driven by the reconnect sweep) WITHOUT charging the retry
+  /// budget — no publish attempt was made. The min-age guard keeps a
+  /// legitimately in-flight `sendMessage` row out of this pass; its own
+  /// offline fail-fast marks it failed within the publish window anyway.
+  /// Rows whose recipient wrap already landed are left alone — the message
+  /// was delivered; only the invisible self-wrap sync is outstanding.
+  Future<void> _surfaceOfflinePendingRows() async {
+    var flipped = 0;
+    try {
+      final pending = await _dao.getStillPendingForOwner(_userPubkey);
+      for (final row in pending) {
+        if (row.recipientWrapStatus != OutgoingWrapStatus.pending) continue;
+        final age = _now().difference(row.queuedAt);
+        if (age < _interruptedMinAge) continue;
+        await _terminalizeRow(
+          row.id,
+          error: 'Message not sent: device offline',
+        );
+        flipped++;
+      }
+    } on Object catch (e) {
+      Log.warning(
+        'offline pending-row surfacing failed: $e',
+        name: 'OutgoingDmRetryService',
+        category: LogCategory.system,
+      );
+    }
+    Log.debug(
+      'device offline, skipping sweep pass '
+      '(unconfirmed rows surfaced as failed: $flipped)',
+      name: 'OutgoingDmRetryService',
+      category: LogCategory.system,
+    );
+  }
+
+  /// Mark both wraps of [rumorId] `failed` with [error]. Swallows DAO
+  /// errors — a failed mark just means the row is re-evaluated on a later
+  /// pass and terminalized then.
+  Future<void> _terminalizeRow(String rumorId, {required String error}) async {
     try {
       await _dao.markRecipientWrapStatus(
         id: rumorId,
@@ -599,7 +653,7 @@ class OutgoingDmRetryService {
       );
     } on Object catch (e) {
       Log.warning(
-        'failed to terminalize exhausted interrupted row $rumorId: $e',
+        'failed to terminalize row $rumorId: $e',
         name: 'OutgoingDmRetryService',
         category: LogCategory.system,
       );
