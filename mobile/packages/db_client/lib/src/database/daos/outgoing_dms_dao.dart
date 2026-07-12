@@ -164,13 +164,56 @@ class OutgoingDm {
     ownerPubkey: ownerPubkey ?? this.ownerPubkey,
   );
 
+  // Full value equality. `id` alone is NOT sufficient: bloc states carry
+  // `List<OutgoingDm>` inside Equatable props, so an id-only == makes a
+  // pending row compare equal to the same row re-read as failed — Bloc.emit
+  // then suppresses the state change and the failed bubble never repaints
+  // while the conversation is open.
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is OutgoingDm && runtimeType == other.runtimeType && id == other.id;
+      other is OutgoingDm &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          conversationId == other.conversationId &&
+          recipientPubkey == other.recipientPubkey &&
+          content == other.content &&
+          createdAt == other.createdAt &&
+          rumorEventJson == other.rumorEventJson &&
+          messageKind == other.messageKind &&
+          replyToId == other.replyToId &&
+          recipientWrapStatus == other.recipientWrapStatus &&
+          selfWrapStatus == other.selfWrapStatus &&
+          recipientWrapEventId == other.recipientWrapEventId &&
+          selfWrapEventId == other.selfWrapEventId &&
+          retryCount == other.retryCount &&
+          recipientWrapLastError == other.recipientWrapLastError &&
+          selfWrapLastError == other.selfWrapLastError &&
+          lastAttemptAt == other.lastAttemptAt &&
+          queuedAt == other.queuedAt &&
+          ownerPubkey == other.ownerPubkey;
 
   @override
-  int get hashCode => id.hashCode;
+  int get hashCode => Object.hash(
+    id,
+    conversationId,
+    recipientPubkey,
+    content,
+    createdAt,
+    rumorEventJson,
+    messageKind,
+    replyToId,
+    recipientWrapStatus,
+    selfWrapStatus,
+    recipientWrapEventId,
+    selfWrapEventId,
+    retryCount,
+    recipientWrapLastError,
+    selfWrapLastError,
+    lastAttemptAt,
+    queuedAt,
+    ownerPubkey,
+  );
 
   @override
   String toString() =>
@@ -404,6 +447,31 @@ class OutgoingDmsDao extends DatabaseAccessor<AppDatabase>
         ),
       ]);
     return query.watch().map((rows) => rows.map(_rowToModel).toList());
+  }
+
+  /// One-shot read of the durable queue rows for [conversationId], scoped to
+  /// [ownerPubkey], newest first — the non-reactive companion to
+  /// [watchForConversation]. The conversation bloc uses it to reflect a send's
+  /// terminal outcome immediately, rather than waiting on a watch tick that can
+  /// be dropped when it fires while a bloc event handler is mid-flight.
+  Future<List<OutgoingDm>> getForConversation({
+    required String conversationId,
+    required String ownerPubkey,
+  }) async {
+    final query = select(outgoingDms)
+      ..where(
+        (t) =>
+            t.conversationId.equals(conversationId) &
+            t.ownerPubkey.equals(ownerPubkey),
+      )
+      ..orderBy([
+        (t) => OrderingTerm(
+          expression: t.createdAt,
+          mode: OrderingMode.desc,
+        ),
+      ]);
+    final rows = await query.get();
+    return rows.map(_rowToModel).toList();
   }
 
   /// Watch every row for the given account, oldest first.

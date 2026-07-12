@@ -74,6 +74,33 @@ void main() {
     }
   });
 
+  group('OutgoingDm value equality', () {
+    test(
+      'rows differing only in wrap status are NOT equal — id-only equality '
+      'made a pending row compare equal to its failed re-read, so Bloc.emit '
+      'suppressed the red-bubble repaint',
+      () {
+        final pending = makeDm(id: 'eq-check-1');
+        final failed = pending.copyWith(
+          recipientWrapStatus: OutgoingWrapStatus.failed,
+          selfWrapStatus: OutgoingWrapStatus.failed,
+          recipientWrapLastError: 'device offline',
+        );
+
+        expect(pending, isNot(equals(failed)));
+        expect(pending.hashCode, isNot(equals(failed.hashCode)));
+      },
+    );
+
+    test('field-identical copies are equal with equal hash codes', () {
+      final row = makeDm(id: 'eq-check-2', retryCount: 3);
+      final copy = row.copyWith();
+
+      expect(row, equals(copy));
+      expect(row.hashCode, equals(copy.hashCode));
+    });
+  });
+
   group('OutgoingDmsDao', () {
     group('enqueue', () {
       test('inserts a new row in pending/pending state', () async {
@@ -382,6 +409,49 @@ void main() {
           ),
         );
       });
+
+      test(
+        're-emits on a LIVE subscription when a row is marked failed',
+        () async {
+          // The open conversation relies on watchForConversation re-emitting
+          // when a row transitions pending -> failed WHILE the subscription is
+          // already live. The tests above enqueue/mark BEFORE subscribing, so
+          // they only prove the initial snapshot, not a live UPDATE re-emit.
+          final expectation = expectLater(
+            dao.watchForConversation(
+              conversationId: conversationId,
+              ownerPubkey: ownerA,
+            ),
+            emitsInOrder([
+              isEmpty,
+              predicate<List<OutgoingDm>>(
+                (rows) =>
+                    rows.length == 1 &&
+                    rows.single.recipientWrapStatus ==
+                        OutgoingWrapStatus.pending,
+                'one pending row',
+              ),
+              predicate<List<OutgoingDm>>(
+                (rows) =>
+                    rows.length == 1 &&
+                    rows.single.recipientWrapStatus ==
+                        OutgoingWrapStatus.failed,
+                'one failed row',
+              ),
+            ]),
+          );
+
+          await pumpEventQueue();
+          await dao.enqueue(makeDm(id: 'live1'));
+          await pumpEventQueue();
+          await dao.markRecipientWrapStatus(
+            id: 'live1',
+            status: OutgoingWrapStatus.failed,
+            lastError: 'offline',
+          );
+          await expectation;
+        },
+      );
 
       test('emits empty after deleteById', () async {
         await dao.enqueue(makeDm(id: 'aaaa'));
