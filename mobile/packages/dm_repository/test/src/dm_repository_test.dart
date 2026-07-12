@@ -13144,6 +13144,35 @@ void main() {
           },
         );
 
+        test(
+          'still fires when the soft-unconfirmed bookkeeping write throws '
+          '— the row remains retryable either way',
+          () async {
+            stubSendRumor(
+              (_, _) async => const NIP17SendResult.failure(
+                'Message recipient OK unconfirmed',
+                retryablePending: true,
+              ),
+            );
+            when(
+              () => mockOutgoingDmsDao.incrementRetry(any()),
+            ).thenThrow(Exception('drift busy'));
+            final repository = createRepository(
+              outgoingDmsDao: mockOutgoingDmsDao,
+            );
+
+            final events = await collectedEvents(repository, () async {
+              final result = await repository.sendMessage(
+                recipientPubkey: _validPubkeyB,
+                content: 'soft unconfirmed, bookkeeping down',
+              );
+              expect(result.retryablePending, isTrue);
+            });
+
+            expect(events, hasLength(1));
+          },
+        );
+
         test('stays silent on full delivery — nothing left to retry', () async {
           // success() defaults to selfWrapPublished: true — full delivery.
           stubSendRumor(
@@ -14094,6 +14123,79 @@ void main() {
           );
         },
       );
+
+      test(
+        'a throwing per-recipient publish is converted to a plain failure '
+        'and never aborts the rest of the batch',
+        () async {
+          stubSendRumor((_, recipient) {
+            if (recipient == _validPubkeyB) {
+              throw StateError('signer wedged');
+            }
+            return NIP17SendResult.success(
+              rumorEventId: 'rumor-$recipient',
+              messageEventId: 'wrap-$recipient',
+              recipientPubkey: recipient,
+            );
+          });
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final results = await repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'one recipient throws',
+          );
+
+          expect(results, hasLength(2));
+          expect(results.first.success, isFalse);
+          expect(
+            results.first.error,
+            contains('joined in-flight recovery failed'),
+          );
+          expect(
+            results.last.success,
+            isTrue,
+            reason: 'the second recipient must still be attempted',
+          );
+        },
+      );
+    });
+
+    group('getOutgoing', () {
+      test('delegates to the owner-scoped conversation read', () async {
+        final mockOutgoingDmsDao = _MockOutgoingDmsDao();
+        final row = OutgoingDm(
+          id: _rumorEventId,
+          conversationId: 'conv',
+          recipientPubkey: _validPubkeyB,
+          content: 'queued',
+          createdAt: 1700000000,
+          rumorEventJson: '{}',
+          recipientWrapStatus: OutgoingWrapStatus.failed,
+          selfWrapStatus: OutgoingWrapStatus.failed,
+          queuedAt: DateTime.fromMillisecondsSinceEpoch(0),
+          ownerPubkey: _validPubkeyA,
+        );
+        when(
+          () => mockOutgoingDmsDao.getForConversation(
+            conversationId: 'conv',
+            ownerPubkey: _validPubkeyA,
+          ),
+        ).thenAnswer((_) async => [row]);
+
+        final repository = createRepository(
+          outgoingDmsDao: mockOutgoingDmsDao,
+        );
+
+        expect(await repository.getOutgoing('conv'), equals([row]));
+      });
+
+      test('returns an empty list when no queue DAO is wired', () async {
+        final repository = createRepository();
+        expect(await repository.getOutgoing('conv'), isEmpty);
+      });
     });
 
     group('recoverSelfWrap', () {
@@ -15003,6 +15105,29 @@ void main() {
               resetRetryBudget: true,
             ),
             throwsArgumentError,
+          );
+          verifyNever(() => mockOutgoingDmsDao.resetRetryCount(any()));
+        },
+      );
+
+      test(
+        'resetRetryBudget swallows a throwing owner-check read — the reset '
+        'is skipped and the locked body surfaces the underlying error',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenThrow(Exception('drift busy'));
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          await expectLater(
+            () => repository.recoverFullSend(
+              rumorId: _rumorEventId,
+              resetRetryBudget: true,
+            ),
+            throwsException,
           );
           verifyNever(() => mockOutgoingDmsDao.resetRetryCount(any()));
         },
