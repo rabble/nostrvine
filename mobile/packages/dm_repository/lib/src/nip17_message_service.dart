@@ -3,6 +3,8 @@
 // ABOUTME: (kind 14 rumor → kind 13 seal → kind 1059 gift wrap)
 // ABOUTME: Works with any NostrSigner (local keys, Keycast RPC, Amber, etc.)
 
+import 'dart:async';
+
 import 'package:dm_repository/src/dm_send_policy.dart';
 import 'package:dm_repository/src/gift_wrap_build_worker.dart';
 import 'package:flutter/foundation.dart' show compute;
@@ -266,20 +268,36 @@ class NIP17MessageService {
     required String content,
     int eventKind = EventKind.privateDirectMessage,
     List<List<String>> additionalTags = const [],
+    int? createdAt,
   }) {
     final rumorTags = <List<String>>[
       ['p', recipientPubkey],
       ...additionalTags,
     ];
 
-    return Event(_senderPublicKey, eventKind, rumorTags, content);
+    // [createdAt] lets a group fan-out stamp every per-recipient rumor with
+    // one shared batch timestamp, so the sender-side sibling rows of a single
+    // logical group message are identifiable by (content, createdAt).
+    return Event(
+      _senderPublicKey,
+      eventKind,
+      rumorTags,
+      content,
+      createdAt: createdAt,
+    );
   }
 
   /// OK-confirmation window for the recipient wrap when [sendRumor] runs
   /// with `awaitRecipientOk: true` (reaction sends and message sends). Kept
-  /// under the caller's outer 15 s publish cap so the confirmation resolves
+  /// well under the caller's outer publish cap so the confirmation resolves
   /// with headroom for the subsequent self-wrap before that timeout fires.
   static const Duration _recipientOkConfirmTimeout = Duration(seconds: 10);
+
+  /// Hard bound on the self-wrap publish. `publishEvent` is frame-accept
+  /// with no timeout of its own, so a stalled socket would otherwise hang
+  /// the send's tail past the caller's outer cap and misclassify a
+  /// recipient-confirmed send as retryable-pending.
+  static const Duration _selfWrapPublishTimeout = Duration(seconds: 10);
 
   /// Wrap and publish a pre-built [rumorEvent] to the recipient and to
   /// ourselves (self-addressed gift wrap for cross-device recovery).
@@ -355,6 +373,11 @@ class NIP17MessageService {
 
       // Create a minimal Nostr instance for GiftWrapUtil.
       // Uses the injected signer (works with local or remote signing).
+      // Create a minimal Nostr instance for GiftWrapUtil.
+      // Uses the injected signer (works with local or remote signing). The
+      // signer stays the source of truth for the seal pubkey (it MUST match
+      // the signing key, NIP-59); Keycast caches getPublicKey locally, so
+      // this refresh is not an RPC round-trip.
       final nostr = Nostr(
         _signer,
         [], // Empty filters - not using for subscriptions
@@ -572,6 +595,19 @@ class NIP17MessageService {
   /// or did not reach a relay.
   Future<NIP17SendResult> publishSelfWrap({required Event rumorEvent}) async {
     try {
+      // Same fail-fast as sendRumor: a frame buffered to a stale-`connected`
+      // socket while offline would count as PublishSuccess and mark the
+      // self-wrap `sent` even though it never left the device.
+      if (await _isOfflineSafely()) {
+        Log.info(
+          'Self-wrap recovery skipped: device reports no connectivity',
+          category: LogCategory.system,
+        );
+        return const NIP17SendResult.failure(
+          'Self-wrap not sent: device offline',
+        );
+      }
+
       Log.info(
         'Publishing self-addressed NIP-17 gift wrap for rumor recovery',
         category: LogCategory.system,
@@ -637,7 +673,19 @@ class NIP17MessageService {
         );
         return false;
       }
-      final published = await _nostrService.publishEvent(selfWrapEvent);
+      // Bounded: publishEvent is frame-accept with no timeout of its own, so
+      // a stalled socket would hang the send's tail past the caller's outer
+      // cap and misclassify a recipient-confirmed send as retryable-pending.
+      // try/on rather than onTimeout: the future's reified type can be a
+      // PublishResult subtype, which an onTimeout closure cannot satisfy.
+      PublishResult published;
+      try {
+        published = await _nostrService
+            .publishEvent(selfWrapEvent)
+            .timeout(_selfWrapPublishTimeout);
+      } on TimeoutException {
+        published = const PublishFailed();
+      }
       if (published is! PublishSuccess) {
         Log.warning(
           'Self-wrap publish failed — the sender will not see this '

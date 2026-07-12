@@ -150,16 +150,22 @@ const bool _classifyDiagnostics =
 /// See #4974.
 const Duration _dmRelayListSignTimeout = Duration(seconds: 10);
 
-/// Hard cap on a single NIP-17 message publish (recipient wrap OK-confirm
-/// plus self-wrap). Nostr publishes have no built-in timeout — a stalled
-/// socket or a hung remote signer would keep the `sendRumor` await pending
-/// forever. On timeout the send is reported as a soft, retryable-pending
-/// failure (the frame may already be written), so the durable queue keeps
-/// the row and the retry sweep re-drives it rather than parking a red chip.
-/// Sits above `NIP17MessageService`'s 10 s recipient-OK window so the OK
-/// confirm resolves with headroom before this outer cap fires. Mirrors the
-/// reaction path's `_publishTimeout` (#5977).
-const Duration _messagePublishTimeout = Duration(seconds: 15);
+/// Hard backstop on a single NIP-17 message publish (wrap build + recipient
+/// wrap OK-confirm + self-wrap). On timeout the send is reported as a soft,
+/// retryable-pending failure (the frame may already be written), so the
+/// durable queue keeps the row and the retry sweep re-drives it rather than
+/// parking a red chip.
+///
+/// Every sub-step now carries its own tight bound — Keycast RPCs 12s each
+/// (`KeycastRpc.defaultRequestTimeout`), the recipient OK window 10s, the
+/// self-wrap publish 10s — so this cap exists only to bound a truly hung
+/// await, and it must sit ABOVE the capped worst case or it fires mid-send
+/// and misclassifies it. Remote-signer worst case: recipient wrap build
+/// (2 RPCs, 24s) + OK window (10s) + deferred self-wrap build (2 RPCs, 24s)
+/// + self-wrap publish (10s) ≈ 68s + overhead → 90s. A 15s cap here (the
+/// original value) fired during routine slow-Keycast sends, turning sends
+/// that were still legitimately in flight into eternally-retrying rows.
+const Duration _messagePublishTimeout = Duration(seconds: 90);
 
 /// Outcome of resolving a user's own kind-10050 DM inbox relay list (#4974).
 ///
@@ -2527,6 +2533,47 @@ class DmRepository {
     await _conversationsDao.markAsRead(id, ownerPubkey: ownerPubkey);
   }
 
+  /// Make a conversation whose FIRST send did not deliver visible in the
+  /// inbox list. Creates the `dm_conversations` row only when none exists —
+  /// without this, the first-ever message of a new thread composed offline
+  /// (or otherwise hard-failed) leaves no conversation row at all, so the
+  /// thread is invisible in the inbox and the user cannot find the failed
+  /// bubble to retry or delete it. Established threads are left untouched.
+  /// Non-throwing: visibility is best-effort on an already-failing path.
+  Future<void> _ensureConversationVisibleAfterSendFailure({
+    required String conversationId,
+    required List<String> participants,
+    required bool isGroup,
+    required String content,
+  }) async {
+    try {
+      final existing = await _conversationsDao.getConversation(
+        conversationId,
+        ownerPubkey: _userPubkey,
+      );
+      if (existing != null) return;
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      await _conversationsDao.runInTransaction(() async {
+        await _upsertSentConversationAndMarkRead(
+          id: conversationId,
+          participantPubkeys: jsonEncode(participants),
+          isGroup: isGroup,
+          createdAt: now,
+          lastMessageContent: content,
+          lastMessageTimestamp: now,
+          lastMessageSenderPubkey: _userPubkey,
+          ownerPubkey: _userPubkey,
+        );
+      });
+    } on Object catch (e) {
+      Log.warning(
+        'Failed to surface conversation $conversationId after send failure: '
+        '$e',
+        category: LogCategory.system,
+      );
+    }
+  }
+
   /// Send a text message to a 1:1 conversation.
   ///
   /// Throws [StateError] if the repository has not been initialized.
@@ -2644,7 +2691,11 @@ class DmRepository {
             conversationId: conversationId,
             senderPubkey: _userPubkey,
             content: content,
-            createdAt: now,
+            // The rumor's canonical timestamp, NOT confirm-time `now`: the
+            // optimistic bubble sorts by rumor.createdAt, so stamping the
+            // persisted row with a later time (OK-confirm adds up to tens of
+            // seconds) made the bubble jump on confirm.
+            createdAt: rumor.createdAt,
             giftWrapId: result.messageEventId!,
             replyToId: replyToId,
             tagsJson: rumorTags.isEmpty ? null : jsonEncode(rumorTags),
@@ -2726,12 +2777,18 @@ class DmRepository {
       }
     } else if (result.retryablePending && outgoingDao != null) {
       // Soft-unconfirmed: the recipient frame was written but no NIP-20 OK
-      // arrived (and no explicit rejection). Keep the row pending — it renders
-      // as the in-flight clock, never a red failure — and let the retry sweep
-      // re-drive it. A lost OK is not proof of loss.
+      // arrived (and no explicit rejection). Keep the row pending — it
+      // renders as a plain optimistic bubble, never a red failure — and let
+      // the retry sweep re-drive it. A lost OK is not proof of loss.
       await _finalizeAfterRecipientUnconfirmed(
         outgoingDao: outgoingDao,
         rumorId: rumor.id,
+      );
+      await _ensureConversationVisibleAfterSendFailure(
+        conversationId: conversationId,
+        participants: participants,
+        isGroup: false,
+        content: content,
       );
     } else if (outgoingDao != null) {
       // Recipient publish hard-failed (explicit rejection / offline / error)
@@ -2742,6 +2799,17 @@ class DmRepository {
         rumorId: rumor.id,
         errorMessage: result.error ?? 'Unknown publish failure',
       );
+      // A blocked send never enqueues a bubble, but a failed/pending one
+      // did — make sure a brand-new thread is visible so the user can find
+      // the red bubble to retry or delete it.
+      if (!result.blocked) {
+        await _ensureConversationVisibleAfterSendFailure(
+          conversationId: conversationId,
+          participants: participants,
+          isGroup: false,
+          content: content,
+        );
+      }
     }
 
     return result;
@@ -3163,41 +3231,110 @@ class DmRepository {
       // retry row.
       try {
         final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-        final participants = [_userPubkey, row.recipientPubkey]..sort();
+        // Recovered rows may belong to a GROUP send (one queue row per
+        // recipient, all sharing the group conversationId). Derive the
+        // topology instead of hardcoding 1:1: the pair id differing from the
+        // row's conversationId proves a group row, and the rumor's p-tags
+        // carry the other members when no conversation row survives.
+        final pairParticipants = [_userPubkey, row.recipientPubkey]..sort();
+        final isGroupRow =
+            row.conversationId != computeConversationId(pairParticipants);
         await _conversationsDao.runInTransaction(() async {
-          await _directMessagesDao.insertMessage(
-            id: result.rumorEventId!,
-            conversationId: row.conversationId,
-            senderPubkey: _userPubkey,
-            content: row.content,
-            createdAt: now,
-            giftWrapId: result.messageEventId!,
-            messageKind: row.messageKind,
-            replyToId: row.replyToId,
-            // Reconstruct tagsJson from the rebuilt rumor so a recovered row
-            // hydrates the same read-time-derived fields (e.g. sharedVideoRef
-            // from a NIP-18 q tag) as the happy-path send. Without this the
-            // queue-recovery row drops its tags and the sender loses the
-            // shared-video reference locally. This intentionally also persists
-            // the rumor's leading recipient `p` tag — matching the receive
-            // path (L1121), not the happy-path 1:1 send which stores only its
-            // own rumorTags; harmless since only the `q` tag is read back.
-            tagsJson: rumor.tags.isEmpty ? null : jsonEncode(rumor.tags),
-            ownerPubkey: _userPubkey,
-          );
+          // Cancel interlock: the user may have deleted this send
+          // (cancelOutgoingSend) while the publish was in flight. The wire
+          // copy is out — receiver dedup keeps it single — but locally the
+          // user said "give up": do NOT resurrect the message or the
+          // conversation from a row that no longer exists.
+          final liveRow = await dao.getById(rumorId);
+          if (liveRow == null) {
+            Log.info(
+              'Recovered publish for $rumorId landed after the row was '
+              'cancelled; skipping local persist.',
+              category: LogCategory.system,
+            );
+            return;
+          }
+
+          // Sibling dedup: a group send persists ONE local message for the
+          // whole batch (keyed to the first confirmed sibling). When a later
+          // sibling row of the same batch is recovered, the message is
+          // already there — only finalize the queue row. Batch identity is
+          // (conversationId, content, createdAt): sendGroupMessage stamps
+          // every sibling rumor with one shared batch timestamp.
+          final alreadyPersisted =
+              isGroupRow &&
+              await _directMessagesDao.hasMatchingMessage(
+                conversationId: row.conversationId,
+                senderPubkey: _userPubkey,
+                content: row.content,
+                createdAt: row.createdAt,
+                ownerPubkey: _userPubkey,
+              );
+
+          if (!alreadyPersisted) {
+            await _directMessagesDao.insertMessage(
+              id: result.rumorEventId!,
+              conversationId: row.conversationId,
+              senderPubkey: _userPubkey,
+              content: row.content,
+              // The rumor's canonical timestamp (row.createdAt mirrors it),
+              // NOT recovery-time `now` — keeps the bubble from jumping and
+              // keys the sibling dedup above.
+              createdAt: row.createdAt,
+              giftWrapId: result.messageEventId!,
+              messageKind: row.messageKind,
+              replyToId: row.replyToId,
+              // Reconstruct tagsJson from the rebuilt rumor so a recovered
+              // row hydrates the same read-time-derived fields (e.g.
+              // sharedVideoRef from a NIP-18 q tag) as the happy-path send.
+              // Without this the queue-recovery row drops its tags and the
+              // sender loses the shared-video reference locally. This
+              // intentionally also persists the rumor's leading recipient
+              // `p` tag — matching the receive path (L1121), not the
+              // happy-path 1:1 send which stores only its own rumorTags;
+              // harmless since only the `q` tag is read back.
+              tagsJson: rumor.tags.isEmpty ? null : jsonEncode(rumor.tags),
+              ownerPubkey: _userPubkey,
+            );
+          }
 
           final existing = await _conversationsDao.getConversation(
             row.conversationId,
             ownerPubkey: _userPubkey,
           );
+          // Preserve the existing conversation's topology — a group row
+          // recovered through this path must NOT rewrite the group as a
+          // 1:1 (participants reduced to [self, recipient], isGroup false),
+          // which corrupted the thread for every future render and send.
+          // With no surviving conversation row, reconstruct the membership
+          // from the rumor's p-tags (the other members) for group rows, or
+          // fall back to the plain pair for 1:1 rows.
+          final String participantsJson;
+          final bool isGroup;
+          if (existing != null) {
+            participantsJson = existing.participantPubkeys;
+            isGroup = existing.isGroup;
+          } else if (isGroupRow) {
+            final members = <String>{
+              _userPubkey,
+              row.recipientPubkey,
+              for (final tag in rumor.tags)
+                if (tag.length >= 2 && tag[0] == 'p') tag[1],
+            }.toList()..sort();
+            participantsJson = jsonEncode(members);
+            isGroup = true;
+          } else {
+            participantsJson = jsonEncode(pairParticipants);
+            isGroup = false;
+          }
           // Mirror sendMessage: once we successfully publish a NIP-17
           // message ourselves, mark the conversation NIP-17 so the
           // legacy NIP-04 fallback path doesn't fire on future sends.
           final nextProtocol = existing?.dmProtocol ?? 'nip17';
           await _upsertSentConversationAndMarkRead(
             id: row.conversationId,
-            participantPubkeys: jsonEncode(participants),
-            isGroup: false,
+            participantPubkeys: participantsJson,
+            isGroup: isGroup,
             createdAt: existing?.createdAt ?? now,
             lastMessageContent: row.content,
             lastMessageTimestamp: now,
@@ -3239,8 +3376,9 @@ class DmRepository {
       await _finalizeAfterRecipientBlocked(outgoingDao: dao, rumorId: rumorId);
     } else if (result.retryablePending) {
       // Soft-unconfirmed retry: frame written, no OK yet. Keep the row
-      // pending (in-flight clock, not a red failure) and let the next sweep
-      // re-drive it; only bump the retry count so it eventually exhausts.
+      // pending (plain optimistic bubble, not a red failure) and let the
+      // next sweep re-drive it; only bump the retry count so it eventually
+      // exhausts.
       await _finalizeAfterRecipientUnconfirmed(
         outgoingDao: dao,
         rumorId: rumorId,
@@ -3414,20 +3552,19 @@ class DmRepository {
     return retryPendingCollaboratorInvites(matchingInvites);
   }
 
-  /// Apply the queue-row transition for a successful per-recipient
-  /// rumor publish. Shared between [sendMessage] and [sendGroupMessage]
-  /// so both call sites agree on the partial-vs-full delivery
-  /// bookkeeping. The caller is responsible for invoking this inside
-  /// the same transaction that persists the local message row.
   /// Cancel a queued outgoing DM: drop its `outgoing_dms` row so the failed
   /// bubble disappears and the retry sweep never re-drives it. The user's
   /// explicit "give up" on a send that keeps failing.
   ///
   /// Idempotent — a missing row (already delivered, already cancelled, or
-  /// swept away) is a no-op. Throws [StateError] if the queue DAO is not
-  /// wired in, and [ArgumentError] if the row belongs to a different account
-  /// (never delete another identity's queued send).
-  Future<void> cancelOutgoingSend({required String rumorId}) async {
+  /// swept away) is a no-op returning `false`; returns `true` when a row
+  /// was actually dropped. A replay already in flight for this row
+  /// re-checks the row inside its success transaction ([recoverFullSend]),
+  /// so a cancel that lands mid-publish does not resurrect the message
+  /// locally. Throws [StateError] if the queue DAO is not wired in, and
+  /// [ArgumentError] if the row belongs to a different account (never
+  /// delete another identity's queued send).
+  Future<bool> cancelOutgoingSend({required String rumorId}) async {
     _assertInitialized();
     final dao = _outgoingDmsDao;
     if (dao == null) {
@@ -3437,7 +3574,7 @@ class DmRepository {
       );
     }
     final row = await dao.getById(rumorId);
-    if (row == null) return;
+    if (row == null) return false;
     if (row.ownerPubkey != _userPubkey) {
       throw ArgumentError.value(
         rumorId,
@@ -3446,8 +3583,14 @@ class DmRepository {
       );
     }
     await dao.deleteById(rumorId);
+    return true;
   }
 
+  /// Apply the queue-row transition for a successful per-recipient
+  /// rumor publish. Shared between [sendMessage] and [sendGroupMessage]
+  /// so both call sites agree on the partial-vs-full delivery
+  /// bookkeeping. The caller is responsible for invoking this inside
+  /// the same transaction that persists the local message row.
   Future<void> _finalizeAfterRecipientSuccess({
     required OutgoingDmsDao outgoingDao,
     required String rumorId,
@@ -3537,8 +3680,8 @@ class DmRepository {
   /// Apply the queue-row transition for a soft, retryable-pending recipient
   /// publish — the relay frame was written but no NIP-20 `OK` arrived within
   /// the confirm window (and no explicit rejection). A lost OK is not proof
-  /// of loss, so the row stays `pending` (rendering as the in-flight clock,
-  /// never a red failure) and the retry sweep re-drives it.
+  /// of loss, so the row stays `pending` (rendering as a plain optimistic
+  /// bubble, never a red failure) and the retry sweep re-drives it.
   ///
   /// Only `incrementRetry` runs: it records the attempt timestamp so the
   /// next sweep applies backoff, and counts this attempt toward the retry
@@ -3572,13 +3715,13 @@ class DmRepository {
   }
 
   /// Wrap [NIP17MessageService.sendRumor] with a hard [_messagePublishTimeout]
-  /// so a stalled socket or hung remote signer surfaces as a soft,
-  /// retryable-pending failure instead of an indefinitely pending await
-  /// (which, under the bloc's `sequential()` transformer, would swallow every
-  /// later send). Shared by [sendMessage], [recoverFullSend], and
-  /// [sendGroupMessage] so all three publish paths share one timeout and
-  /// classification discipline. Mirrors the reaction repository's
-  /// `_sendRumorWithTimeout` (#5977).
+  /// backstop so a truly hung await (stalled socket, wedged signer) surfaces
+  /// as a soft, retryable-pending failure instead of pending forever. Shared
+  /// by [sendMessage], [recoverFullSend], and [sendGroupMessage] so all three
+  /// publish paths share one timeout and classification discipline. Note
+  /// `Future.timeout` does NOT cancel the underlying publish — it may still
+  /// land after the cap, which is why the timeout result is classified
+  /// retryable-pending (receiver-side rumor-id dedup absorbs the overlap).
   Future<NIP17SendResult> _sendRumorWithTimeout({
     required Event rumor,
     required String recipientPubkey,
@@ -3710,12 +3853,19 @@ class DmRepository {
     final rumors = <Event>[];
     final results = <NIP17SendResult>[];
 
-    // Delivery below is per-recipient and NOT atomic: a mid-loop publish
-    // failure can leave the group partially delivered. That is a reliability/UX
-    // concern only, not a safety leak for the #176 restriction — the
-    // all-or-nothing gate above already guarantees EVERY recipient is approved,
-    // so a partial send can only ever reach approved recipients, never a
-    // blocked one.
+    // Build and enqueue EVERY per-recipient rumor up front, stamped with one
+    // shared batch timestamp, before any publish. Two reasons:
+    //  1. The queue rows of one logical group message become identifiable as
+    //     siblings by (conversationId, content, createdAt) — the UI collapses
+    //     them into a single bubble and the recovery path dedups the local
+    //     persist. Publishing between builds (the previous shape) spread the
+    //     timestamps across the sequential publish loop, breaking that key.
+    //  2. All N optimistic bubbles' rows exist before the first (potentially
+    //     slow) publish, instead of materializing one by one between
+    //     publishes.
+    // Each recipient still gets a distinct rumor id (their p-tag set
+    // differs), so queue rows never collide across a single group send.
+    final batchCreatedAt = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     for (final pubkey in recipientPubkeys) {
       final rumorTags = <List<String>>[
         ...additionalTags,
@@ -3725,15 +3875,13 @@ class DmRepository {
         if (replyToId != null) ['e', replyToId],
       ];
 
-      // Build the rumor up front so the queue row PK matches the rumor
-      // id the relay will see (each recipient gets a distinct rumor —
-      // their p-tag set differs — so queue rows never collide across
-      // a single group send).
       final rumor = _messageService!.buildRumor(
         recipientPubkey: pubkey,
         content: content,
         additionalTags: rumorTags,
+        createdAt: batchCreatedAt,
       );
+      rumors.add(rumor);
 
       // Enqueue before publish so an app crash mid-send leaves a
       // recoverable trace per recipient. Same contract as sendMessage:
@@ -3757,14 +3905,22 @@ class DmRepository {
           ),
         );
       }
+    }
 
+    // Delivery below is per-recipient and NOT atomic: a mid-loop publish
+    // failure can leave the group partially delivered. That is a reliability/UX
+    // concern only, not a safety leak for the #176 restriction — the
+    // all-or-nothing gate above already guarantees EVERY recipient is approved,
+    // so a partial send can only ever reach approved recipients, never a
+    // blocked one.
+    for (var i = 0; i < recipientPubkeys.length; i++) {
+      final pubkey = recipientPubkeys[i];
       final result = await _sendRumorWithTimeout(
-        rumor: rumor,
+        rumor: rumors[i],
         recipientPubkey: pubkey,
         targetRelays: inboxByRecipient[pubkey],
         awaitRecipientOk: true,
       );
-      rumors.add(rumor);
       results.add(result);
     }
 
@@ -3788,7 +3944,11 @@ class DmRepository {
           conversationId: conversationId,
           senderPubkey: _userPubkey,
           content: content,
-          createdAt: now,
+          // The rumor's canonical batch timestamp, NOT confirm-time `now`:
+          // the optimistic bubble sorts by rumor.createdAt, so stamping the
+          // persisted row with a later time made the bubble jump on confirm.
+          // It is also the sibling-dedup key the recovery path matches on.
+          createdAt: batchCreatedAt,
           giftWrapId: firstSuccess.messageEventId!,
           replyToId: replyToId,
           tagsJson: localTags.isEmpty ? null : jsonEncode(localTags),
@@ -3829,8 +3989,8 @@ class DmRepository {
     // transaction, mirroring sendMessage's split: a non-success tuple has
     // nothing to atomically tie a queue update to (no message row insert).
     // Classify each the same way the 1:1 path does — soft-unconfirmed stays
-    // pending (retryable clock), a policy block is terminal (row dropped),
-    // and a hard failure marks both wraps failed.
+    // pending (plain optimistic bubble), a policy block is terminal (row
+    // dropped), and a hard failure marks both wraps failed.
     if (outgoingDao != null) {
       for (var i = 0; i < rumors.length; i++) {
         final result = results[i];
@@ -3853,6 +4013,19 @@ class DmRepository {
           );
         }
       }
+    }
+
+    // No recipient succeeded but retryable rows exist: make sure a
+    // brand-new group thread is visible in the inbox so the user can find
+    // the failed bubbles to retry or delete. All-blocked sends leave no
+    // rows behind (terminal), so they create no thread cruft.
+    if (!results.any((r) => r.success) && results.any((r) => !r.blocked)) {
+      await _ensureConversationVisibleAfterSendFailure(
+        conversationId: conversationId,
+        participants: participants,
+        isGroup: true,
+        content: content,
+      );
     }
 
     return results;
@@ -4599,6 +4772,25 @@ class DmRepository {
       return Stream<List<OutgoingDm>>.value(const []);
     }
     return dao.watchForConversation(
+      conversationId: conversationId,
+      ownerPubkey: owner,
+    );
+  }
+
+  /// One-shot read of the durable `outgoing_dms` queue rows for
+  /// [conversationId], scoped to the active owner — the non-reactive companion
+  /// to [watchOutgoing]. Returns `[]` when no row is queued or when no
+  /// [OutgoingDmsDao] / owner is wired.
+  ///
+  /// The conversation bloc calls this right after a send resolves so a failed
+  /// (or partial) bubble repaints immediately, without depending on a
+  /// `watchOutgoing` tick that the bloc's stream subscription can miss when the
+  /// row transitions while the send event handler is still in flight.
+  Future<List<OutgoingDm>> getOutgoing(String conversationId) async {
+    final dao = _outgoingDmsDao;
+    final owner = _ownerPubkey;
+    if (dao == null || owner == null) return const [];
+    return dao.getForConversation(
       conversationId: conversationId,
       ownerPubkey: owner,
     );

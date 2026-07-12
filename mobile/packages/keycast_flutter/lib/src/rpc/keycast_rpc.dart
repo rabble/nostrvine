@@ -55,13 +55,14 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
   /// connection while backgrounded) hangs the request forever and wedges
   /// every caller awaiting it.
   ///
-  /// Kept UNDER the DM send budget (`_messagePublishTimeout` = 15s in
-  /// `dm_repository`) so a stalled remote-signer call fails fast — surfacing a
-  /// red "Not delivered" the durable outgoing-DM queue re-drives — instead of
-  /// hanging past the send cap and leaving the bubble looking sent while
-  /// nothing was ever published. See the Keycast RPC latency investigation
-  /// (#6046). A single crypto op is sub-second in the healthy path, so 12s is
-  /// generous while still a tighter dead-socket bound than the old 30s.
+  /// Sized so the DM send pipeline's full remote-signer RPC chain (up to
+  /// four single ops per send: encrypt+sign for the recipient wrap, then for
+  /// the self wrap) fits comfortably under `dm_repository`'s 90s
+  /// `_messagePublishTimeout` backstop, while a stalled call still fails
+  /// fast enough for the durable outgoing-DM queue to re-drive it. See the
+  /// Keycast RPC latency investigation (#6046). A single crypto op is
+  /// sub-second in the healthy path, so 12s is generous while still a
+  /// tighter dead-socket bound than the old 30s.
   static const Duration defaultRequestTimeout = Duration(seconds: 12);
 
   /// Default timeout for the multi-wrap `nip17_unwrap_batch` verb, which does
@@ -98,7 +99,17 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
         name: 'KeycastRpc',
         category: LogCategory.auth,
       );
-      final newToken = await _onTokenRefresh();
+      // Bounded like the RPC itself: the refresh callback does its own HTTP
+      // round-trip, and an unbounded await here would make one logical
+      // signer op hang past every caller's budget despite [requestTimeout].
+      // A timed-out refresh counts as a failed refresh (null), so the
+      // original 401 response flows to the error handling below.
+      String? newToken;
+      try {
+        newToken = await _onTokenRefresh().timeout(timeout ?? requestTimeout);
+      } on TimeoutException {
+        newToken = null;
+      }
       if (newToken != null) {
         _accessToken = newToken;
         response = await _sendRequest(method, params, timeout: timeout);

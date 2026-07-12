@@ -515,6 +515,21 @@ void main() {
         await callback();
       });
 
+      // Global stub for the recovery path's group-sibling dedup probe: by
+      // default no batch sibling is persisted yet, so recoverFullSend
+      // inserts normally. Group-recovery tests that exercise the dedup
+      // restub this to true.
+      when(
+        () => mockDirectMessagesDao.hasMatchingMessage(
+          conversationId: any(named: 'conversationId'),
+          senderPubkey: any(named: 'senderPubkey'),
+          content: any(named: 'content'),
+          createdAt: any(named: 'createdAt'),
+          windowSeconds: any(named: 'windowSeconds'),
+          ownerPubkey: any(named: 'ownerPubkey'),
+        ),
+      ).thenAnswer((_) async => false);
+
       // Global stub for markAsRead — every live-send path now marks the
       // conversation read in the same transaction (#5515: sending implies
       // read). Default to a successful flip so send tests don't restub it.
@@ -561,6 +576,7 @@ void main() {
           content: any(named: 'content'),
           eventKind: any(named: 'eventKind'),
           additionalTags: any(named: 'additionalTags'),
+          createdAt: any(named: 'createdAt'),
         ),
       ).thenAnswer((inv) {
         final recipient = inv.namedArguments[#recipientPubkey] as String;
@@ -571,6 +587,7 @@ void main() {
         final additionalTags =
             (inv.namedArguments[#additionalTags] as List<List<String>>?) ??
             const <List<String>>[];
+        final createdAt = inv.namedArguments[#createdAt] as int?;
         return Event(
           _validPubkeyA,
           eventKind,
@@ -579,6 +596,7 @@ void main() {
             ...additionalTags,
           ],
           content,
+          createdAt: createdAt,
         );
       });
 
@@ -14125,6 +14143,217 @@ void main() {
           ),
         ).thenAnswer((_) async => null);
       });
+
+      test(
+        'skips the local persist when the row is cancelled while the '
+        'replay publish is in flight — the message must not resurrect',
+        () async {
+          var getByIdCalls = 0;
+          when(() => mockOutgoingDmsDao.getById(_rumorEventId)).thenAnswer((
+            _,
+          ) async {
+            getByIdCalls++;
+            // First read: the pre-publish snapshot. Second read (inside the
+            // success transaction): the user cancelled the send mid-flight.
+            return getByIdCalls == 1 ? queuedRow() : null;
+          });
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId2,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final result = await repository.recoverFullSend(
+            rumorId: _rumorEventId,
+          );
+
+          // The wire copy is out (receiver dedup keeps it single), but
+          // locally the cancel wins: nothing is persisted or upserted.
+          expect(result.success, isTrue);
+          verifyNever(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+            ),
+          );
+          verifyNever(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          );
+          verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
+        },
+      );
+
+      test(
+        'preserves an existing GROUP conversation topology — never rewrites '
+        'the group as a 1:1 with reduced participants',
+        () async {
+          final groupParticipants = jsonEncode(
+            [_validPubkeyA, _validPubkeyB, _validPubkeyC]..sort(),
+          );
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow());
+          when(
+            () => mockConversationsDao.getConversation(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => ConversationRow(
+              id: 'conv',
+              participantPubkeys: groupParticipants,
+              isGroup: true,
+              createdAt: 1690000000,
+              lastMessageContent: 'earlier',
+              lastMessageTimestamp: 1690000000,
+              lastMessageSenderPubkey: _validPubkeyB,
+              isRead: true,
+              currentUserHasSent: true,
+              ownerPubkey: _validPubkeyA,
+              dmProtocol: 'nip17',
+            ),
+          );
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId2,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final result = await repository.recoverFullSend(
+            rumorId: _rumorEventId,
+          );
+
+          expect(result.success, isTrue);
+          verify(
+            () => mockConversationsDao.upsertConversation(
+              id: 'conv',
+              participantPubkeys: groupParticipants,
+              isGroup: true,
+              createdAt: 1690000000,
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'group-row recovery skips the direct_messages insert when a batch '
+        'sibling already persisted the message (no duplicate group bubble)',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow());
+          // queuedRow's conversationId ('conv') differs from the computed
+          // 1:1 pair id, so the row classifies as a group sibling.
+          when(
+            () => mockDirectMessagesDao.hasMatchingMessage(
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              windowSeconds: any(named: 'windowSeconds'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => true);
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId2,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final result = await repository.recoverFullSend(
+            rumorId: _rumorEventId,
+          );
+
+          expect(result.success, isTrue);
+          verifyNever(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+            ),
+          );
+          // The queue row still finalizes — full delivery deletes it.
+          verify(
+            () => mockOutgoingDmsDao.deleteById(_rumorEventId),
+          ).called(1);
+        },
+      );
 
       test(
         'on full delivery: deletes the queue row, inserts '
