@@ -39,7 +39,14 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
        _conversationId = conversationId,
        super(const ConversationState()) {
     on<ConversationStarted>(_onStarted, transformer: restartable());
-    on<ConversationMessageSent>(_onMessageSent, transformer: sequential());
+    // Sends are optimistic and independent per rumor: `sequential()` made
+    // one slow OK-confirm (tens of seconds on a slow relay / remote signer)
+    // queue every later send BEHIND it, so the next message's bubble did
+    // not even appear until the previous publish finished. The repository
+    // enqueues each row before any signer round-trip, so concurrent
+    // handlers stay per-rumor isolated; `sendStatus` is last-writer-wins,
+    // which only drives the bubble-less toasts (blocked / partial).
+    on<ConversationMessageSent>(_onMessageSent, transformer: concurrent());
     on<ConversationMessageDeleted>(_onMessageDeleted, transformer: droppable());
     on<ConversationSelfWrapRecoveryRequested>(
       _onSelfWrapRecoveryRequested,
@@ -131,12 +138,33 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     ConversationMessageDeleted event,
     Emitter<ConversationState> emit,
   ) async {
+    // Drop any durable queue row first, whether the bubble is queue-only
+    // (optimistic/failed — no persisted row yet, so the kind-5 path below
+    // would no-op and the "deleted" bubble would keep re-sending via the
+    // sweep) or persisted with a retry row still alive (deleting the
+    // message must also stop the sweep from re-publishing it).
+    var cancelledQueueRow = false;
+    try {
+      cancelledQueueRow = await _dmRepository.cancelOutgoingSend(
+        rumorId: event.rumorId,
+      );
+    } on Object catch (e, stackTrace) {
+      // StateError = queue DAO not wired (legacy fixtures); ArgumentError =
+      // foreign-owner row. Neither blocks the kind-5 delete below.
+      if (e is! StateError && e is! ArgumentError) {
+        addError(e, stackTrace);
+      }
+    }
+
     try {
       await _dmRepository.deleteMessageForEveryone(event.rumorId);
       // The watchMessages stream automatically excludes deleted messages,
       // so the UI updates reactively — no manual state mutation needed.
     } on Object catch (e, stackTrace) {
       if (e is ArgumentError) {
+        // No persisted row. For a queue-only bubble whose row we just
+        // cancelled this is the EXPECTED outcome, not an error.
+        if (cancelledQueueRow) return;
         // Rumor gone or not ours — recoverable; matrix-NO.
         addError(e, stackTrace);
         return;
@@ -195,9 +223,10 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           }
           if (result.retryablePending) {
             // Soft-unconfirmed: the recipient frame was written but no NIP-20
-            // OK arrived yet. The durable queue keeps the pending (clock)
+            // OK arrived yet. The durable queue keeps the plain optimistic
             // bubble and the retry sweep re-drives it — a lost OK is not proof
-            // of loss, so surface no red failure. Treat as optimistically sent.
+            // of loss, so surface no red failure. Treat as optimistically
+            // sent.
             emit(state.copyWith(sendStatus: SendStatus.sent));
             return;
           }
@@ -256,12 +285,43 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       // and repo IO — per .claude/rules/error_handling.md, matrix-NO.
       addError(e, stackTrace);
       emit(state.copyWith(sendStatus: SendStatus.failed));
+      // The repository has just marked the queue row `failed`, but the
+      // watchOutgoing tick that carries that transition back can be dropped
+      // when it fires while this handler is still in flight — so the red
+      // "Not delivered" bubble would not repaint until the conversation is
+      // re-opened. Re-read the rows and emit them directly so the failed
+      // bubble surfaces immediately.
+      await _refreshPendingOutgoing(emit);
     }
     // The in-flight queue row remains in `state.pendingOutgoing` on
     // failure/partial. The retry service (`OutgoingDmRetryService`) sweeps it
     // independently, and the failed bubble is tappable (resend/delete) — so
     // there is no failed toast; a partial self-wrap recovery is offered via
     // `lastPartialSend`.
+  }
+
+  /// Re-read the durable queue rows and emit them straight into
+  /// [ConversationState.pendingOutgoing].
+  ///
+  /// The repository writes a send's terminal status (row → `failed`, or the
+  /// row's removal on success) to `outgoing_dms`, and `watchOutgoing` normally
+  /// carries it back reactively. But when that write lands while a send event
+  /// handler is still in flight, the bloc's dual-stream subscription can miss
+  /// the resulting tick, leaving the bubble showing its stale (pre-failure)
+  /// status until the conversation is re-opened. Re-reading here, from the
+  /// handler's own emitter, repaints it immediately and idempotently — a later
+  /// watch tick simply re-emits the same rows.
+  Future<void> _refreshPendingOutgoing(
+    Emitter<ConversationState> emit,
+  ) async {
+    try {
+      final rows = await _dmRepository.getOutgoing(_conversationId);
+      emit(state.copyWith(pendingOutgoing: rows));
+    } on Object catch (e, stackTrace) {
+      // A refresh miss just defers the repaint to the next watch tick or the
+      // conversation re-open; it is never itself a send failure. Matrix-NO.
+      addError(e, stackTrace);
+    }
   }
 
   Future<void> _onSelfWrapRecoveryRequested(
@@ -379,6 +439,10 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       // (red bubbles) and are re-tappable to resend; just re-raise the status.
       emit(state.copyWith(sendStatus: SendStatus.failed));
     }
+    // Reflect the recovery's queue-row transitions (a row re-marked `failed`,
+    // or deleted on success) immediately — a watch tick fired mid-handler can
+    // be dropped, same as the initial send path.
+    await _refreshPendingOutgoing(emit);
   }
 
   Future<void> _onOutgoingSendCancelled(

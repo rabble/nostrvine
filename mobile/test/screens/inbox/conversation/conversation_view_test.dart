@@ -108,6 +108,9 @@ void main() {
     setUp(() {
       VisibilityDetectorController.instance.updateInterval = Duration.zero;
       mockBloc = _MockConversationBloc();
+      // The snackbar action callbacks guard on `bloc.isClosed` (the snackbar
+      // can outlive the route); MockBloc leaves the getter unstubbed.
+      when(() => mockBloc.isClosed).thenReturn(false);
       mockInviteActionsCubit = _MockCollaboratorInviteActionsCubit();
       mockReactionsCubit = _MockConversationReactionsCubit();
       mockVideosRepository = _MockVideosRepository();

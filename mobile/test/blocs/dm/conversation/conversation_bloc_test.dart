@@ -57,7 +57,8 @@ Future<void> _waitForConversationState(
   bool Function(ConversationState state) matches,
 ) async {
   if (matches(bloc.state)) return;
-  await bloc.stream.firstWhere(matches);
+  // Bounded so a regression fails the test instead of hanging the suite.
+  await bloc.stream.firstWhere(matches).timeout(const Duration(seconds: 10));
 }
 
 void main() {
@@ -91,6 +92,19 @@ void main() {
 
     setUp(() {
       mockDmRepository = _MockDmRepository();
+      // Safe default for the post-send repaint re-read; failure tests that
+      // care override it with the actual rows.
+      when(
+        () => mockDmRepository.getOutgoing(any()),
+      ).thenAnswer((_) async => const <OutgoingDm>[]);
+      // Delete now drops any durable queue row before the kind-5 publish;
+      // default to "no row existed" so persisted-delete tests keep their
+      // original semantics.
+      when(
+        () => mockDmRepository.cancelOutgoingSend(
+          rumorId: any(named: 'rumorId'),
+        ),
+      ).thenAnswer((_) async => false);
     });
 
     ConversationBloc buildBloc() => ConversationBloc(
@@ -476,6 +490,88 @@ void main() {
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.failed)
                 .having((s) => s.messages, 'messages untouched', isEmpty),
           ],
+          errors: () => [isA<Exception>()],
+        );
+
+        late StreamController<List<DmMessage>> failMsgCtrl;
+        late StreamController<List<OutgoingDm>> failOutCtrl;
+        blocTest<ConversationBloc, ConversationState>(
+          'reactively surfaces the failed bubble (statusFor) when '
+          'watchOutgoing emits the failed row after a hard-failed send',
+          setUp: () {
+            failMsgCtrl = StreamController<List<DmMessage>>();
+            failOutCtrl = StreamController<List<OutgoingDm>>();
+            when(
+              () => mockDmRepository.markConversationAsRead(any()),
+            ).thenAnswer((_) async {});
+            when(
+              () => mockDmRepository.watchMessages(conversationId),
+            ).thenAnswer((_) => failMsgCtrl.stream);
+            when(
+              () => mockDmRepository.watchOutgoing(any()),
+            ).thenAnswer((_) => failOutCtrl.stream);
+            when(
+              () => mockDmRepository.sendMessage(
+                recipientPubkey: recipientPubkey,
+                content: 'Hello',
+              ),
+            ).thenAnswer((_) async {
+              // Mirror the real repository: enqueue (pending) then, on a hard
+              // failure (e.g. offline), mark the row failed — both surface via
+              // watchOutgoing while _onMessageSent is in flight.
+              failOutCtrl.add([_outgoingDm(id: messageId)]);
+              await Future<void>.delayed(Duration.zero);
+              failOutCtrl.add([
+                _outgoingDm(
+                  id: messageId,
+                  recipientWrap: OutgoingWrapStatus.failed,
+                  selfWrap: OutgoingWrapStatus.failed,
+                ),
+              ]);
+              return const NIP17SendResult.failure(
+                'Message not sent: device offline',
+              );
+            });
+            // The repository has marked the row failed by the time the bloc
+            // re-reads (the one-shot read the bloc uses to repaint immediately
+            // instead of waiting on a watchOutgoing tick that can be dropped
+            // mid-handler).
+            when(() => mockDmRepository.getOutgoing(any())).thenAnswer(
+              (_) async => [
+                _outgoingDm(
+                  id: messageId,
+                  recipientWrap: OutgoingWrapStatus.failed,
+                  selfWrap: OutgoingWrapStatus.failed,
+                ),
+              ],
+            );
+            addTearDown(() async {
+              if (!failMsgCtrl.isClosed) await failMsgCtrl.close();
+              if (!failOutCtrl.isClosed) await failOutCtrl.close();
+            });
+          },
+          build: buildBloc,
+          act: (bloc) async {
+            bloc.add(const ConversationStarted());
+            await untilCalled(() => mockDmRepository.watchOutgoing(any()));
+            failMsgCtrl.add(const <DmMessage>[]);
+            bloc.add(
+              const ConversationMessageSent(
+                recipientPubkeys: [recipientPubkey],
+                content: 'Hello',
+              ),
+            );
+            await _waitForConversationState(
+              bloc,
+              (s) => s.statusFor(messageId) == DmDeliveryStatus.failed,
+            );
+          },
+          verify: (bloc) {
+            expect(
+              bloc.state.statusFor(messageId),
+              DmDeliveryStatus.failed,
+            );
+          },
           errors: () => [isA<Exception>()],
         );
 
@@ -924,30 +1020,35 @@ void main() {
     });
 
     group('event transformers', () {
-      group('sequential() on $ConversationMessageSent', () {
+      group('concurrent() on $ConversationMessageSent', () {
+        late Completer<NIP17SendResult> slowFirstSend;
+
         blocTest<ConversationBloc, ConversationState>(
-          'processes two rapid sends in order '
-          '(second waits for first to complete)',
+          'a slow first send does not block the second — the second send '
+          'dispatches and completes while the first is still in flight',
           setUp: () {
-            // First send completes after a delay, second completes instantly.
-            // With sequential(), the second handler waits for the first to
-            // finish, so we observe: sending1 -> sent1 -> sending2 -> sent2.
+            // First send parks on a completer that is only released after
+            // the second send has already finished. Under the previous
+            // sequential() transformer the second sendMessage call could not
+            // even START until the first completed — so `called(2)` before
+            // the release, and a `sent` emission driven by the second send,
+            // both pin the concurrent behavior.
+            slowFirstSend = Completer<NIP17SendResult>();
             var callCount = 0;
             when(
               () => mockDmRepository.sendMessage(
                 recipientPubkey: recipientPubkey,
                 content: any(named: 'content'),
               ),
-            ).thenAnswer((_) async {
+            ).thenAnswer((_) {
               callCount++;
-              if (callCount == 1) {
-                // Simulate slow first send
-                await Future<void>.delayed(const Duration(milliseconds: 50));
-              }
-              return NIP17SendResult.success(
-                rumorEventId: sentEventId,
-                messageEventId: sentEventId,
-                recipientPubkey: recipientPubkey,
+              if (callCount == 1) return slowFirstSend.future;
+              return Future.value(
+                NIP17SendResult.success(
+                  rumorEventId: sentEventId,
+                  messageEventId: sentEventId,
+                  recipientPubkey: recipientPubkey,
+                ),
               );
             });
           },
@@ -966,42 +1067,39 @@ void main() {
                 content: 'Second message',
               ),
             );
-          },
-          wait: const Duration(milliseconds: 200),
-          expect: () => [
-            // First send starts (with optimistic message)
-            isA<ConversationState>().having(
-              (s) => s.sendStatus,
-              'sendStatus',
-              SendStatus.sending,
-            ),
-            // First send completes
-            isA<ConversationState>().having(
-              (s) => s.sendStatus,
-              'sendStatus',
-              SendStatus.sent,
-            ),
-            // Second send starts (sequential: waited for first)
-            isA<ConversationState>().having(
-              (s) => s.sendStatus,
-              'sendStatus',
-              SendStatus.sending,
-            ),
-            // Second send completes
-            isA<ConversationState>().having(
-              (s) => s.sendStatus,
-              'sendStatus',
-              SendStatus.sent,
-            ),
-          ],
-          verify: (_) {
+            // Both sends must be in flight BEFORE the first completes.
+            await Future<void>.delayed(const Duration(milliseconds: 20));
             verify(
               () => mockDmRepository.sendMessage(
                 recipientPubkey: recipientPubkey,
                 content: any(named: 'content'),
               ),
             ).called(2);
+            slowFirstSend.complete(
+              NIP17SendResult.success(
+                rumorEventId: sentEventId,
+                messageEventId: sentEventId,
+                recipientPubkey: recipientPubkey,
+              ),
+            );
           },
+          wait: const Duration(milliseconds: 100),
+          expect: () => [
+            // First send starts; the second's identical `sending` emit is
+            // suppressed by state equality.
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sending,
+            ),
+            // The SECOND send completes while the first is still parked —
+            // this emission proves the second never waited.
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sent,
+            ),
+          ],
         );
 
         blocTest<ConversationBloc, ConversationState>(
@@ -1021,8 +1119,8 @@ void main() {
               return completer2.future;
             });
 
-            // Complete both after a short delay so sequential gets to
-            // process them one-by-one.
+            // Complete both after a short delay; with concurrent() both
+            // handlers are already in flight when the first resolves.
             Future<void>.delayed(const Duration(milliseconds: 30)).then((_) {
               completer1.complete(
                 NIP17SendResult.success(
@@ -1060,18 +1158,10 @@ void main() {
           },
           wait: const Duration(milliseconds: 150),
           expect: () => [
-            // First send (with optimistic message)
-            isA<ConversationState>().having(
-              (s) => s.sendStatus,
-              'sendStatus',
-              SendStatus.sending,
-            ),
-            isA<ConversationState>().having(
-              (s) => s.sendStatus,
-              'sendStatus',
-              SendStatus.sent,
-            ),
-            // Second send (not dropped)
+            // Both handlers start together; the second's identical `sending`
+            // emit is suppressed by state equality, as is the second `sent`.
+            // The two repository calls verified below prove the second event
+            // was processed, not dropped.
             isA<ConversationState>().having(
               (s) => s.sendStatus,
               'sendStatus',
@@ -1083,6 +1173,14 @@ void main() {
               SendStatus.sent,
             ),
           ],
+          verify: (_) {
+            verify(
+              () => mockDmRepository.sendMessage(
+                recipientPubkey: recipientPubkey,
+                content: any(named: 'content'),
+              ),
+            ).called(2);
+          },
         );
       });
 
@@ -1482,6 +1580,32 @@ void main() {
           ),
         ],
       );
+
+      blocTest<ConversationBloc, ConversationState>(
+        'deletes a queue-only bubble by cancelling its durable row; the '
+        'persisted-delete ArgumentError is expected and silent',
+        setUp: () {
+          // Queue-only optimistic/failed bubble: a row exists, no persisted
+          // direct_messages row — deleteMessageForEveryone throws.
+          when(
+            () => mockDmRepository.cancelOutgoingSend(
+              rumorId: any(named: 'rumorId'),
+            ),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockDmRepository.deleteMessageForEveryone(messageId),
+          ).thenThrow(ArgumentError('message not found'));
+        },
+        build: buildBloc,
+        act: (bloc) =>
+            bloc.add(const ConversationMessageDeleted(rumorId: messageId)),
+        errors: () => const <Object>[],
+        verify: (_) {
+          verify(
+            () => mockDmRepository.cancelOutgoingSend(rumorId: messageId),
+          ).called(1);
+        },
+      );
     });
     group(ConversationFullSendRecoveryRequested, () {
       // Queue-aware manual retry (gap 3): replay the EXISTING failed rows via
@@ -1634,7 +1758,7 @@ void main() {
             () => mockDmRepository.cancelOutgoingSend(
               rumorId: any(named: 'rumorId'),
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => true);
         },
         seed: () => const ConversationState(
           status: ConversationStatus.loaded,
