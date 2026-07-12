@@ -9756,6 +9756,12 @@ abstract class AppLocalizations {
   /// **'Message actions'**
   String get dmMessageBubbleLongPressHint;
 
+  /// Accessibility tap hint on a failed own message bubble: tapping opens the resend-or-delete actions
+  ///
+  /// In en, this message translates to:
+  /// **'Resend or delete this message'**
+  String get dmMessageBubbleFailedTapHint;
+
   /// Long-press menu action on a DM bubble that copies the message's plaintext content to the clipboard.
   ///
   /// In en, this message translates to:

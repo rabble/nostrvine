@@ -24,14 +24,9 @@ const String codeDelimiter = '`';
 /// Features a text field with surfaceContainer background, 20px radius,
 /// and a green send button that appears when text is entered.
 class MessageInputBar extends StatefulWidget {
-  const MessageInputBar({
-    required this.onSend,
-    this.isSending = false,
-    super.key,
-  });
+  const MessageInputBar({required this.onSend, super.key});
 
   final ValueChanged<String> onSend;
-  final bool isSending;
 
   @override
   State<MessageInputBar> createState() => _MessageInputBarState();
@@ -64,7 +59,7 @@ class _MessageInputBarState extends State<MessageInputBar> {
 
   void _handleSend() {
     final text = _controller.text.trim();
-    if (text.isEmpty || widget.isSending) return;
+    if (text.isEmpty) return;
     widget.onSend(text);
     _controller.clear();
   }
@@ -127,26 +122,15 @@ class _MessageInputBarState extends State<MessageInputBar> {
                           color: VineTheme.primary,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: widget.isSending
-                            ? const Center(
-                                child: SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    color: VineTheme.surfaceBackground,
-                                    strokeWidth: 2,
-                                  ),
-                                ),
-                              )
-                            : IconButton(
-                                onPressed: _handleSend,
-                                padding: EdgeInsets.zero,
-                                icon: const DivineIcon(
-                                  icon: DivineIconName.arrowUp,
-                                  color: VineTheme.surfaceBackground,
-                                  size: 20,
-                                ),
-                              ),
+                        child: IconButton(
+                          onPressed: _handleSend,
+                          padding: EdgeInsets.zero,
+                          icon: const DivineIcon(
+                            icon: DivineIconName.arrowUp,
+                            color: VineTheme.surfaceBackground,
+                            size: 20,
+                          ),
+                        ),
                       ),
                     ),
                   ),

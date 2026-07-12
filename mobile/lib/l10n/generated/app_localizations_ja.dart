@@ -5336,6 +5336,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get dmMessageBubbleLongPressHint => 'メッセージの操作';
 
   @override
+  String get dmMessageBubbleFailedTapHint => 'このメッセージを再送信または削除';
+
+  @override
   String get dmMessageActionCopyText => 'テキストをコピー';
 
   @override

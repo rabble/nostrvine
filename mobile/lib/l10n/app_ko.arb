@@ -3463,6 +3463,8 @@
     "@dmMessageBubbleReceivedHint": {"description": "Accessibility hint announcing that a direct message bubble was received from another user"},
     "dmMessageBubbleLongPressHint": "메시지 작업",
     "@dmMessageBubbleLongPressHint": {"description": "Accessibility hint announcing that a direct message bubble supports a long-press action menu"},
+    "dmMessageBubbleFailedTapHint": "이 메시지 다시 보내기 또는 삭제",
+    "@dmMessageBubbleFailedTapHint": {"description": "Accessibility tap hint on a failed own message bubble: tapping opens the resend-or-delete actions"},
     "dmMessageActionCopyText": "텍스트 복사",
     "@dmMessageActionCopyText": {"description": "Long-press menu action on a DM bubble that copies the message's plaintext content to the clipboard."},
     "dmMessageActionCopyVideoUrl": "영상 URL 복사",

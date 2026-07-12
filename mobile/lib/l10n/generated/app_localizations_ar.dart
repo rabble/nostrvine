@@ -5534,6 +5534,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dmMessageBubbleLongPressHint => 'إجراءات الرسالة';
 
   @override
+  String get dmMessageBubbleFailedTapHint => 'أعد إرسال هذه الرسالة أو احذفها';
+
+  @override
   String get dmMessageActionCopyText => 'نسخ النص';
 
   @override

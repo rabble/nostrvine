@@ -246,6 +246,13 @@ class MessageBubble extends StatelessWidget {
           hint: isSent
               ? context.l10n.dmMessageBubbleSentHint
               : context.l10n.dmMessageBubbleReceivedHint,
+          // The failed-own-bubble tap affordance (resend/delete) is
+          // otherwise invisible to assistive tech — onTap is only wired
+          // for that case, so key the button semantics off it.
+          button: onTap != null,
+          onTapHint: onTap != null
+              ? context.l10n.dmMessageBubbleFailedTapHint
+              : null,
           onLongPressHint: onLongPress != null
               ? context.l10n.dmMessageBubbleLongPressHint
               : null,
@@ -1151,9 +1158,9 @@ class _NotDeliveredIndicator extends StatelessWidget {
       label: label,
       child: Row(
         mainAxisSize: MainAxisSize.min,
+        spacing: 4,
         children: [
           const Icon(Icons.error_outline, size: 14, color: VineTheme.error),
-          const SizedBox(width: 4),
           Text(
             label,
             style: VineTheme.labelSmallFont(color: VineTheme.error),

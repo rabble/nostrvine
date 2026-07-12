@@ -5719,6 +5719,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dmMessageBubbleLongPressHint => 'Acțiuni pentru mesaj';
 
   @override
+  String get dmMessageBubbleFailedTapHint => 'Retrimite sau șterge acest mesaj';
+
+  @override
   String get dmMessageActionCopyText => 'Copiază textul';
 
   @override

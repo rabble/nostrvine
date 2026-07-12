@@ -345,6 +345,41 @@ void main() {
       });
     });
 
+    group('getForConversation', () {
+      test(
+        'returns only the conversation-and-owner scoped rows, newest '
+        'createdAt first',
+        () async {
+          await dao.enqueue(makeDm(id: 'older'));
+          await dao.enqueue(makeDm(id: 'newer', createdAt: 1700000060));
+          await dao.enqueue(
+            makeDm(
+              id: 'other-conversation',
+              conversationIdValue: conversationId2,
+            ),
+          );
+          await dao.enqueue(makeDm(id: 'other-owner', owner: ownerB));
+
+          final rows = await dao.getForConversation(
+            conversationId: conversationId,
+            ownerPubkey: ownerA,
+          );
+
+          expect(rows.map((r) => r.id), equals(['newer', 'older']));
+        },
+      );
+
+      test('returns an empty list when nothing matches', () async {
+        expect(
+          await dao.getForConversation(
+            conversationId: conversationId,
+            ownerPubkey: ownerA,
+          ),
+          isEmpty,
+        );
+      });
+    });
+
     group('clearAllForUser', () {
       test('removes only rows owned by the given pubkey', () async {
         await dao.enqueue(makeDm(id: 'a1'));

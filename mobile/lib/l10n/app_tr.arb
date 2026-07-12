@@ -4139,6 +4139,8 @@
     "@dmMessageBubbleReceivedHint": {"description": "Accessibility hint announcing that a direct message bubble was received from another user"},
     "dmMessageBubbleLongPressHint": "Mesaj işlemleri",
     "@dmMessageBubbleLongPressHint": {"description": "Accessibility hint announcing that a direct message bubble supports a long-press action menu"},
+    "dmMessageBubbleFailedTapHint": "Bu mesajı yeniden gönder veya sil",
+    "@dmMessageBubbleFailedTapHint": {"description": "Accessibility tap hint on a failed own message bubble: tapping opens the resend-or-delete actions"},
     "dmMessageActionCopyText": "Metni kopyala",
     "@dmMessageActionCopyText": {"description": "Long-press menu action on a DM bubble that copies the message's plaintext content to the clipboard."},
     "dmMessageActionCopyVideoUrl": "Video URL'sini kopyala",

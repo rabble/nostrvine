@@ -5540,6 +5540,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get dmMessageBubbleLongPressHint => 'Tindakan pesan';
 
   @override
+  String get dmMessageBubbleFailedTapHint => 'Kirim ulang atau hapus pesan ini';
+
+  @override
   String get dmMessageActionCopyText => 'Salin teks';
 
   @override

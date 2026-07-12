@@ -2722,6 +2722,8 @@
     "@dmMessageBubbleReceivedHint": {"description": "Accessibility hint announcing that a direct message bubble was received from another user"},
     "dmMessageBubbleLongPressHint": "Mga aksyon sa mensahe",
     "@dmMessageBubbleLongPressHint": {"description": "Accessibility hint announcing that a direct message bubble supports a long-press action menu"},
+    "dmMessageBubbleFailedTapHint": "I-resend o burahin ang mensaheng ito",
+    "@dmMessageBubbleFailedTapHint": {"description": "Accessibility tap hint on a failed own message bubble: tapping opens the resend-or-delete actions"},
     "dmMessageActionCopyText": "Kopyahin ang text",
     "@dmMessageActionCopyText": {"description": "Long-press menu action on a DM bubble that copies the message's plaintext content to the clipboard."},
     "dmMessageActionCopyVideoUrl": "Kopyahin ang video URL",

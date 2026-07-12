@@ -5547,6 +5547,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get dmMessageBubbleLongPressHint => 'Mesaj işlemleri';
 
   @override
+  String get dmMessageBubbleFailedTapHint =>
+      'Bu mesajı yeniden gönder veya sil';
+
+  @override
   String get dmMessageActionCopyText => 'Metni kopyala';
 
   @override

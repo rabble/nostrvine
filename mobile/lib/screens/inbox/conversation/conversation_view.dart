@@ -551,6 +551,14 @@ class _MessageList extends StatelessWidget {
           }),
         ),
       );
+    // Per `accessibility.md`, async visible state changes must announce
+    // explicitly — same rule as the blocked/partial snackbars in
+    // [_onSendOutcome].
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      l10n.dmSendFailedMessage,
+      Directionality.of(context),
+    );
   }
 
   void _toggleReaction(BuildContext context, DmMessage message, String emoji) {

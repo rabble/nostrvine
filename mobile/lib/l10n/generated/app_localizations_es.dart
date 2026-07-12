@@ -5610,6 +5610,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dmMessageBubbleLongPressHint => 'Acciones del mensaje';
 
   @override
+  String get dmMessageBubbleFailedTapHint => 'Reenviar o eliminar este mensaje';
+
+  @override
   String get dmMessageActionCopyText => 'Copiar texto';
 
   @override

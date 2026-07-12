@@ -7,6 +7,7 @@ import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:db_client/db_client.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -1187,6 +1188,101 @@ void main() {
                 'cancel-send drops every undelivered sibling, but a '
                 'recipient that already has the message keeps its row '
                 '(only its self-wrap sync is outstanding)',
+          );
+        },
+      );
+
+      // accessibility.md requires explicit SemanticsService announcements
+      // on async visible state changes. A hard failure shows NO snackbar
+      // (the red in-bubble row is the visual affordance), so the
+      // announcement is the ONLY signal assistive tech gets. The test
+      // intercepts the platform accessibility channel, where
+      // sendAnnouncement ultimately delivers, and pins the localized
+      // failure string.
+      testWidgets(
+        'announces the localized failure message via SemanticsService '
+        'when sendStatus transitions to failed',
+        (tester) async {
+          final announcements = <Map<Object?, Object?>>[];
+          tester.binding.defaultBinaryMessenger
+              .setMockDecodedMessageHandler<Object?>(
+                SystemChannels.accessibility,
+                (Object? message) async {
+                  if (message is Map) announcements.add(message);
+                  return null;
+                },
+              );
+          addTearDown(
+            () => tester.binding.defaultBinaryMessenger
+                .setMockDecodedMessageHandler<Object?>(
+                  SystemChannels.accessibility,
+                  null,
+                ),
+          );
+
+          whenListen(
+            mockBloc,
+            Stream<ConversationState>.fromIterable(const [
+              ConversationState(status: ConversationStatus.loaded),
+              ConversationState(
+                status: ConversationStatus.loaded,
+                sendStatus: SendStatus.failed,
+              ),
+            ]),
+            initialState: const ConversationState(
+              status: ConversationStatus.loaded,
+            ),
+          );
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              mockAuthService: mockAuthService,
+              mockNostrService: mockNostrClient,
+              additionalOverrides: [
+                videosRepositoryProvider.overrideWithValue(
+                  mockVideosRepository,
+                ),
+                fetchUserProfileProvider(
+                  otherPubkey,
+                ).overrideWith((ref) async => null),
+                contentBlocklistRepositoryProvider.overrideWithValue(
+                  mockBlocklist,
+                ),
+              ],
+              home: BlocProvider<ConversationBloc>.value(
+                value: mockBloc,
+                child: BlocProvider<CollaboratorInviteActionsCubit>.value(
+                  value: mockInviteActionsCubit,
+                  child: BlocProvider<ConversationReactionsCubit>.value(
+                    value: mockReactionsCubit,
+                    child: const ConversationView(
+                      participantPubkeys: [otherPubkey],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+
+          final announceCalls = announcements.where(
+            (m) => m['type'] == 'announce',
+          );
+          expect(
+            announceCalls,
+            isNotEmpty,
+            reason:
+                'expected SemanticsService.sendAnnouncement to deliver an '
+                "'announce' event on SystemChannels.accessibility",
+          );
+          final announcedMessages = announceCalls.map(
+            (m) => (m['data'] as Map?)?['message'],
+          );
+          expect(
+            announcedMessages,
+            contains(l10n.dmSendFailedMessage),
+            reason: 'announce payload must carry the localized failure copy',
           );
         },
       );

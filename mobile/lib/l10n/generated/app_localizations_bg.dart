@@ -5619,6 +5619,10 @@ class AppLocalizationsBg extends AppLocalizations {
   String get dmMessageBubbleLongPressHint => 'Действия за съобщението';
 
   @override
+  String get dmMessageBubbleFailedTapHint =>
+      'Изпратете отново или изтрийте това съобщение';
+
+  @override
   String get dmMessageActionCopyText => 'Копирай текста';
 
   @override

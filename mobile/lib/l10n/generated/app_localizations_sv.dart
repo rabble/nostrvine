@@ -5565,6 +5565,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dmMessageBubbleLongPressHint => 'Meddelandeåtgärder';
 
   @override
+  String get dmMessageBubbleFailedTapHint =>
+      'Skicka om eller radera det här meddelandet';
+
+  @override
   String get dmMessageActionCopyText => 'Kopiera text';
 
   @override

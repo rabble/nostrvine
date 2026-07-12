@@ -5453,6 +5453,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get dmMessageBubbleLongPressHint => 'የመልእክት እርምጃዎች';
 
   @override
+  String get dmMessageBubbleFailedTapHint => 'መልእክቱን እንደገና ይላኩ ወይም ይሰርዙ';
+
+  @override
   String get dmMessageActionCopyText => 'ጽሑፍ ቅዳ';
 
   @override

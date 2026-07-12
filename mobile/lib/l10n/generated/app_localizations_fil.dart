@@ -5633,6 +5633,10 @@ class AppLocalizationsFil extends AppLocalizations {
   String get dmMessageBubbleLongPressHint => 'Mga aksyon sa mensahe';
 
   @override
+  String get dmMessageBubbleFailedTapHint =>
+      'I-resend o burahin ang mensaheng ito';
+
+  @override
   String get dmMessageActionCopyText => 'Kopyahin ang text';
 
   @override

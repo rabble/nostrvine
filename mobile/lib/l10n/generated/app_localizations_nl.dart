@@ -5592,6 +5592,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dmMessageBubbleLongPressHint => 'Berichtacties';
 
   @override
+  String get dmMessageBubbleFailedTapHint =>
+      'Bericht opnieuw verzenden of verwijderen';
+
+  @override
   String get dmMessageActionCopyText => 'Tekst kopiëren';
 
   @override

@@ -5356,6 +5356,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get dmMessageBubbleLongPressHint => '메시지 작업';
 
   @override
+  String get dmMessageBubbleFailedTapHint => '이 메시지 다시 보내기 또는 삭제';
+
+  @override
   String get dmMessageActionCopyText => '텍스트 복사';
 
   @override
