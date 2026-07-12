@@ -384,8 +384,6 @@ class NIP17MessageService {
       );
 
       // Create a minimal Nostr instance for GiftWrapUtil.
-      // Uses the injected signer (works with local or remote signing).
-      // Create a minimal Nostr instance for GiftWrapUtil.
       // Uses the injected signer (works with local or remote signing). The
       // signer stays the source of truth for the seal pubkey (it MUST match
       // the signing key, NIP-59); Keycast caches getPublicKey locally, so

@@ -2714,7 +2714,24 @@ class DmRepository {
         // so a watcher never observes a window where the message is in
         // neither table and so partial delivery preserves the retry row.
         String? protocol;
+        var persistedLocally = false;
         await _conversationsDao.runInTransaction(() async {
+          // Cancel interlock (mirrors _recoverFullSendLocked): the user may
+          // have deleted the send (cancelOutgoingSend) during the publish
+          // window — OK-confirmation can legitimately take tens of seconds.
+          // The wire copy is out and receiver dedup keeps it single, but do
+          // NOT resurrect the message locally from a row that no longer
+          // exists.
+          if (outgoingDao != null &&
+              await outgoingDao.getById(rumor.id) == null) {
+            Log.info(
+              'Publish for ${rumor.id} landed after the queue row was '
+              'already removed (cancelled mid-flight); skipping local '
+              'persist.',
+              category: LogCategory.system,
+            );
+            return;
+          }
           await _directMessagesDao.insertMessage(
             id: result.rumorEventId!,
             conversationId: conversationId,
@@ -2761,20 +2778,25 @@ class DmRepository {
               result: result,
             );
           }
+          persistedLocally = true;
         });
 
-        Log.debug(
-          'Persisted sent message locally in conversation '
-          '$conversationId',
-          category: LogCategory.system,
-        );
+        if (persistedLocally) {
+          Log.debug(
+            'Persisted sent message locally in conversation '
+            '$conversationId',
+            category: LogCategory.system,
+          );
+        }
 
         // Fire NIP-04 fallback for interop with legacy clients. Skip
         // when the conversation is known NIP-17-only, or when the caller
         // opts out — structured DMs that cannot be represented in NIP-04
         // (e.g. collaborator invites) would degrade to a plaintext
-        // duplicate.
-        if (protocol != 'nip17' && !skipNip04Fallback) {
+        // duplicate. Also skip when the cancel interlock fired: `protocol`
+        // stays null on that path, and a plaintext copy of a message the
+        // user just deleted must not go out.
+        if (persistedLocally && protocol != 'nip17' && !skipNip04Fallback) {
           unawaited(
             _sendNip04Message(
               recipientPubkey: recipientPubkey,
@@ -3214,10 +3236,16 @@ class DmRepository {
     }
     if (resetRetryBudget) {
       // Before the in-flight join, so a resend that lands mid-sweep still
-      // refreshes the budget for the sweep's follow-up passes. Non-fatal:
-      // a missed reset only means the sweep may give up earlier.
+      // refreshes the budget for the sweep's follow-up passes. Owner-checked
+      // first (same pattern as cancelOutgoingSend): resetRetryCount is not
+      // owner-scoped, so without the check a foreign account's row would get
+      // its budget re-armed before the locked body's ArgumentError fires.
+      // Non-fatal: a missed reset only means the sweep may give up earlier.
       try {
-        await dao.resetRetryCount(rumorId);
+        final row = await dao.getById(rumorId);
+        if (row != null && row.ownerPubkey == _userPubkey) {
+          await dao.resetRetryCount(rumorId);
+        }
       } on Object catch (e) {
         Log.warning(
           'Failed to reset retry budget for $rumorId: $e',
@@ -3672,6 +3700,89 @@ class DmRepository {
     return true;
   }
 
+  /// Cancel every queued row of the send batch containing [rumorId] — the
+  /// group-send counterpart of [cancelOutgoingSend], for deleting a message.
+  ///
+  /// A group send enqueues one row per recipient (siblings share
+  /// `(conversationId, content, createdAt)` — the identity
+  /// [sendGroupMessage] stamps and the recovery path dedups on). Deleting a
+  /// partially delivered group bubble must drop ALL of them: the persisted
+  /// bubble carries the first confirmed sibling's rumor id, whose own row is
+  /// already gone, so cancelling just that id leaves pending and failed
+  /// siblings for the retry sweep to re-publish — and a surviving
+  /// delivered-awaiting-self-wrap row would re-persist the deleted message
+  /// on the sender's own devices via the self-wrap recovery.
+  ///
+  /// [rumorId] may be a live queue row's id or the persisted batch winner's
+  /// message id; the batch identity is resolved from whichever exists.
+  /// Returns the number of rows dropped (`0` when nothing matched — already
+  /// delivered everywhere, already cancelled, or not ours). A 1:1 row has no
+  /// siblings and cancels exactly itself.
+  ///
+  /// Throws [StateError] if the queue DAO is not wired in, and
+  /// [ArgumentError] if the queue row belongs to a different account (a
+  /// foreign persisted message resolves to `0` instead, matching
+  /// [deleteMessageForEveryone]'s sender-only contract enforced upstream).
+  Future<int> cancelOutgoingBatch({required String rumorId}) async {
+    _assertInitialized();
+    final dao = _outgoingDmsDao;
+    if (dao == null) {
+      throw StateError(
+        'cancelOutgoingBatch requires the outgoing_dms queue DAO; '
+        'wire OutgoingDmsDao into DmRepository before calling.',
+      );
+    }
+
+    final String conversationId;
+    final int createdAt;
+    final String content;
+    final row = await dao.getById(rumorId);
+    if (row != null) {
+      if (row.ownerPubkey != _userPubkey) {
+        throw ArgumentError.value(
+          rumorId,
+          'rumorId',
+          'queue row belongs to a different account',
+        );
+      }
+      final pairParticipants = [_userPubkey, row.recipientPubkey]..sort();
+      if (row.conversationId == computeConversationId(pairParticipants)) {
+        // 1:1 rows have no siblings.
+        await dao.deleteById(rumorId);
+        return 1;
+      }
+      conversationId = row.conversationId;
+      createdAt = row.createdAt;
+      content = row.content;
+    } else {
+      // No queue row — the bubble may be the persisted group winner whose
+      // own row was deleted on confirm. Resolve the batch identity from the
+      // persisted message instead.
+      final message = await _directMessagesDao.getMessageById(
+        rumorId,
+        ownerPubkey: _ownerPubkey,
+      );
+      if (message == null || message.senderPubkey != _userPubkey) return 0;
+      conversationId = message.conversationId;
+      createdAt = message.createdAt;
+      content = message.content;
+    }
+
+    final rows = await dao.getForConversation(
+      conversationId: conversationId,
+      ownerPubkey: _userPubkey,
+    );
+    var cancelled = 0;
+    for (final sibling in rows) {
+      if (sibling.createdAt != createdAt || sibling.content != content) {
+        continue;
+      }
+      await dao.deleteById(sibling.id);
+      cancelled++;
+    }
+    return cancelled;
+  }
+
   /// Apply the queue-row transition for a successful per-recipient
   /// rumor publish. Shared between [sendMessage] and [sendGroupMessage]
   /// so both call sites agree on the partial-vs-full delivery
@@ -4024,7 +4135,6 @@ class DmRepository {
     // the retry row for the recovery path.
     if (results.any((r) => r.success)) {
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      final firstSuccess = results.firstWhere((r) => r.success);
       final localTags = <List<String>>[
         ...additionalTags,
         for (final pk in recipientPubkeys) ['p', pk],
@@ -4032,21 +4142,68 @@ class DmRepository {
       ];
 
       await _conversationsDao.runInTransaction(() async {
-        await _directMessagesDao.insertMessage(
-          id: firstSuccess.rumorEventId!,
-          conversationId: conversationId,
-          senderPubkey: _userPubkey,
-          content: content,
-          // The rumor's canonical batch timestamp, NOT confirm-time `now`:
-          // the optimistic bubble sorts by rumor.createdAt, so stamping the
-          // persisted row with a later time made the bubble jump on confirm.
-          // It is also the sibling-dedup key the recovery path matches on.
-          createdAt: batchCreatedAt,
-          giftWrapId: firstSuccess.messageEventId!,
-          replyToId: replyToId,
-          tagsJson: localTags.isEmpty ? null : jsonEncode(localTags),
-          ownerPubkey: _userPubkey,
-        );
+        // Cancel interlock (mirrors _recoverFullSendLocked, per successful
+        // sibling): the user may have deleted the whole batch
+        // (cancelOutgoingBatch) while the sequential per-recipient publishes
+        // were still running. Successful tuples whose queue row is gone must
+        // not be persisted or finalized; if none survive, persist nothing —
+        // the wire copies are out, receiver dedup keeps them single, but the
+        // local message must not resurrect.
+        final liveSuccessIndexes = <int>[];
+        for (var i = 0; i < results.length; i++) {
+          if (!results[i].success) continue;
+          if (outgoingDao != null &&
+              await outgoingDao.getById(rumors[i].id) == null) {
+            continue;
+          }
+          liveSuccessIndexes.add(i);
+        }
+        if (liveSuccessIndexes.isEmpty) {
+          Log.info(
+            'Group publish landed after every successful sibling row was '
+            'already removed (cancelled mid-flight); skipping local persist '
+            'for conversation $conversationId.',
+            category: LogCategory.system,
+          );
+          return;
+        }
+
+        // Sibling dedup (same guard as _recoverFullSendLocked): a group
+        // send's sequential publishes can outlive the retry sweep's
+        // interrupted-send min-age, so the sweep may recover a sibling and
+        // persist the batch's ONE local message first. Batch identity is
+        // (conversationId, content, createdAt).
+        final alreadyPersisted =
+            outgoingDao != null &&
+            await _directMessagesDao.hasMatchingMessage(
+              conversationId: conversationId,
+              senderPubkey: _userPubkey,
+              content: content,
+              createdAt: batchCreatedAt,
+              ownerPubkey: _userPubkey,
+            );
+
+        // Key the insert off the first LIVE success — a cancelled sibling's
+        // rumor id must not name the persisted message.
+        final firstLiveSuccess = results[liveSuccessIndexes.first];
+        if (!alreadyPersisted) {
+          await _directMessagesDao.insertMessage(
+            id: firstLiveSuccess.rumorEventId!,
+            conversationId: conversationId,
+            senderPubkey: _userPubkey,
+            content: content,
+            // The rumor's canonical batch timestamp, NOT confirm-time `now`:
+            // the optimistic bubble sorts by rumor.createdAt, so stamping the
+            // persisted row with a later time made the bubble jump on
+            // confirm. It is also the sibling-dedup key the recovery path
+            // matches on.
+            createdAt: batchCreatedAt,
+            giftWrapId: firstLiveSuccess.messageEventId!,
+            replyToId: replyToId,
+            tagsJson: localTags.isEmpty ? null : jsonEncode(localTags),
+            ownerPubkey: _userPubkey,
+          );
+        }
 
         final existingGroup = await _conversationsDao.getConversation(
           conversationId,
@@ -4065,13 +4222,11 @@ class DmRepository {
         );
 
         if (outgoingDao != null) {
-          for (var i = 0; i < rumors.length; i++) {
-            final result = results[i];
-            if (!result.success) continue;
+          for (final i in liveSuccessIndexes) {
             await _finalizeAfterRecipientSuccess(
               outgoingDao: outgoingDao,
               rumorId: rumors[i].id,
-              result: result,
+              result: results[i],
             );
           }
         }
