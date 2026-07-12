@@ -1623,6 +1623,7 @@ void main() {
           when(
             () => mockDmRepository.recoverFullSend(
               rumorId: any(named: 'rumorId'),
+              resetRetryBudget: any(named: 'resetRetryBudget'),
             ),
           ).thenAnswer(
             (inv) async => NIP17SendResult.success(
@@ -1656,10 +1657,16 @@ void main() {
         ],
         verify: (_) {
           verify(
-            () => mockDmRepository.recoverFullSend(rumorId: rumorId1),
+            () => mockDmRepository.recoverFullSend(
+              rumorId: rumorId1,
+              resetRetryBudget: true,
+            ),
           ).called(1);
           verify(
-            () => mockDmRepository.recoverFullSend(rumorId: rumorId2),
+            () => mockDmRepository.recoverFullSend(
+              rumorId: rumorId2,
+              resetRetryBudget: true,
+            ),
           ).called(1);
           // The anti-duplication contract: no fresh rumor is ever minted.
           verifyNever(
@@ -1685,6 +1692,7 @@ void main() {
           when(
             () => mockDmRepository.recoverFullSend(
               rumorId: any(named: 'rumorId'),
+              resetRetryBudget: any(named: 'resetRetryBudget'),
             ),
           ).thenAnswer(
             (_) async => const NIP17SendResult.failure(
@@ -1719,7 +1727,10 @@ void main() {
         're-raises failed when a hard-failed row still cannot be recovered',
         setUp: () {
           when(
-            () => mockDmRepository.recoverFullSend(rumorId: rumorId1),
+            () => mockDmRepository.recoverFullSend(
+              rumorId: rumorId1,
+              resetRetryBudget: true,
+            ),
           ).thenAnswer(
             (_) async => const NIP17SendResult.failure('relay still down'),
           );

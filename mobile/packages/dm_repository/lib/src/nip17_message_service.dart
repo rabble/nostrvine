@@ -318,11 +318,23 @@ class NIP17MessageService {
   /// retry the recipient publish, double-delivering. A future revision
   /// (PR #3910) will surface the self-wrap outcome separately so the
   /// repository can mark each wrap status independently.
+  ///
+  /// [selfWrapOnSoftUnconfirmed] controls whether the self-addressed wrap is
+  /// still published when the recipient publish ends soft-unconfirmed (frame
+  /// written, no OK). Reactions keep the default `true` — a lost OK may mean
+  /// the recipient already has the reaction, and their retry service owns
+  /// the follow-up (#5977). Message sends pass `false`: their durable queue
+  /// re-drives the FULL send until the recipient wrap confirms (publishing
+  /// both wraps on success), so a soft self-wrap buys no durability — but if
+  /// it lands, its round-trip through the receive pipeline persists the
+  /// message as a plain sent row, seeding a sent-looking bubble for a
+  /// message the recipient may never have received (#6046).
   Future<NIP17SendResult> sendRumor({
     required Event rumorEvent,
     required String recipientPubkey,
     List<String>? targetRelays,
     bool awaitRecipientOk = false,
+    bool selfWrapOnSoftUnconfirmed = true,
   }) async {
     try {
       // Send gate (#176): the lowest recipient-delivering primitive, so every
@@ -446,19 +458,28 @@ class NIP17MessageService {
             outcome.noResponseFrom.isEmpty;
         final softUnconfirmed = !rejected && !reachedNoRelay;
 
-        // Publish the self-addressed wrap ONLY when the recipient confirmed OR
-        // the send is soft-unconfirmed (frame written, OK lost/late — the
-        // recipient may already have the reaction). On a hard rejection or an
-        // offline no-relay-reached the recipient definitely did not get it, so
-        // a self-wrap would surface a phantom reaction on the sender's other
+        // Kind-aware noun for logs and error strings: this path serves both
+        // reaction (kind 7) and message (kind 14/15) sends, and a log that
+        // says "reaction" for a text message misdirects field debugging.
+        final isReaction = rumorEvent.kind == EventKind.reaction;
+        final rumorNoun = isReaction ? 'reaction' : 'message';
+        final rumorNounCapitalized = isReaction ? 'Reaction' : 'Message';
+
+        // Publish the self-addressed wrap ONLY when the recipient confirmed
+        // OR the send is soft-unconfirmed AND the caller opted in
+        // ([selfWrapOnSoftUnconfirmed] — reactions only; see the doc above
+        // for why message sends opt out). On a hard rejection or an offline
+        // no-relay-reached the recipient definitely did not get it, so a
+        // self-wrap would surface a phantom rumor on the sender's other
         // devices / reinstall (ingested via persistIncoming as a plain
-        // `received` row with no retry metadata). The self-wrap is p-tagged to
-        // the sender only, so publishing it on a soft-unconfirmed send never
-        // double-delivers to the counterparty.
+        // `received` row with no retry metadata). The self-wrap is p-tagged
+        // to the sender only, so publishing it on a soft-unconfirmed send
+        // never double-delivers to the counterparty.
         // Short-circuit `&&`: when the gate is false the self-wrap publish is
         // never awaited, so it is skipped entirely on rejected / reachedNoRelay.
         final selfWrapPublished =
-            (outcome.confirmed || softUnconfirmed) &&
+            (outcome.confirmed ||
+                (softUnconfirmed && selfWrapOnSoftUnconfirmed)) &&
             await _publishSelfWrap(
               nostr: nostr,
               rumorEvent: rumorEvent,
@@ -467,7 +488,7 @@ class NIP17MessageService {
 
         if (outcome.confirmed) {
           Log.info(
-            'Successfully published NIP-17 reaction '
+            'Successfully published NIP-17 $rumorNoun '
             '(selfWrapPublished=$selfWrapPublished)',
             category: LogCategory.system,
           );
@@ -488,14 +509,17 @@ class NIP17MessageService {
         //    (a lost OK is not proof of loss).
         final String errorMsg;
         if (rejected) {
-          errorMsg = 'Reaction rejected by relay: ${outcome.summary}';
+          errorMsg =
+              '$rumorNounCapitalized rejected by relay: ${outcome.summary}';
         } else if (reachedNoRelay) {
-          errorMsg = 'Reaction not sent: no relay reached';
+          errorMsg = '$rumorNounCapitalized not sent: no relay reached';
         } else {
-          errorMsg = 'Reaction recipient OK unconfirmed: ${outcome.summary}';
+          errorMsg =
+              '$rumorNounCapitalized recipient OK unconfirmed: '
+              '${outcome.summary}';
         }
         Log.warning(
-          'NIP-17 reaction recipient publish unconfirmed '
+          'NIP-17 $rumorNoun recipient publish unconfirmed '
           '(rumor=${rumorEvent.id}, recipient=$recipientPubkey, '
           '${outcome.summary}); selfWrapPublished=$selfWrapPublished',
           category: LogCategory.system,

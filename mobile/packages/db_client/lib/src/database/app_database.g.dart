@@ -9952,7 +9952,9 @@ class DmReactionRow extends DataClass implements Insertable<DmReactionRow> {
   final String? rumorEventJson;
 
   /// Publish status for outgoing rows; null for incoming (received from
-  /// relay). Values: `pending`, `sent`, `failed`.
+  /// relay). Values: `pending`, `sent`, `failed`, `blocked` (send-policy
+  /// refused, terminal), `deletion_pending` (soft-deleted, kind-5 awaiting
+  /// durable delivery), `deletion_sent` (kind-5 confirmed, terminal).
   final String? publishStatus;
   const DmReactionRow({
     required this.id,

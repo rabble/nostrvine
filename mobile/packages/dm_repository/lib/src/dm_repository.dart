@@ -477,14 +477,34 @@ class DmRepository {
   final StreamController<bool> _recoveryStateController =
       StreamController<bool>.broadcast();
 
-  /// Rumor ids with a per-row recovery currently in flight, namespaced by
-  /// primitive (`full:<id>` / `self:<id>`). A manual Resend and a sweep pass
-  /// can race [recoverFullSend] on the same queue row: the second entrant
-  /// would only duplicate signer round-trips and wire copies (receiver-side
-  /// rumor-id dedup absorbs them) and then trip the cancel interlock in the
-  /// winner's shadow. The loser returns a soft retryable-pending failure
-  /// instead, deferring to the in-flight attempt's outcome.
-  final Set<String> _recoveriesInFlight = <String>{};
+  /// Per-row recovery attempts currently in flight, keyed by primitive
+  /// (`full:<id>` / `self:<id>`). A manual Resend and a sweep pass can race
+  /// [recoverFullSend] on the same queue row: the second entrant would only
+  /// duplicate signer round-trips and wire copies (receiver-side rumor-id
+  /// dedup absorbs them) and then trip the cancel interlock in the winner's
+  /// shadow. The second entrant instead JOINS the in-flight attempt — it
+  /// awaits the stored future and returns that attempt's real outcome. The
+  /// previous shape (an instant synthetic retryable-pending failure) made a
+  /// manual Resend racing the 30s sweep a silent no-op: nothing was
+  /// published, no feedback surfaced, and the user read it as "resend does
+  /// nothing" (#6046).
+  final Map<String, Future<NIP17SendResult>> _recoveriesInFlight =
+      <String, Future<NIP17SendResult>>{};
+
+  /// Runs [attempt] under the per-row in-flight key [key], or joins an
+  /// attempt already running under the same key. Exceptions propagate to
+  /// every joiner (both callers handle the documented [StateError] /
+  /// [ArgumentError] contract).
+  Future<NIP17SendResult> _joinOrStartRecovery(
+    String key,
+    Future<NIP17SendResult> Function() attempt,
+  ) {
+    final existing = _recoveriesInFlight[key];
+    if (existing != null) return existing;
+    final future = attempt();
+    _recoveriesInFlight[key] = future;
+    return future.whenComplete(() => _recoveriesInFlight.remove(key));
+  }
 
   /// Broadcasts the user's pubkey whenever credentials change.
   ///
@@ -2974,17 +2994,10 @@ class DmRepository {
         'wire OutgoingDmsDao into DmRepository before calling.',
       );
     }
-    if (!_recoveriesInFlight.add('self:$rumorId')) {
-      return const NIP17SendResult.failure(
-        'self-wrap recovery already in flight for this message',
-        retryablePending: true,
-      );
-    }
-    try {
-      return await _recoverSelfWrapLocked(dao: dao, rumorId: rumorId);
-    } finally {
-      _recoveriesInFlight.remove('self:$rumorId');
-    }
+    return _joinOrStartRecovery(
+      'self:$rumorId',
+      () => _recoverSelfWrapLocked(dao: dao, rumorId: rumorId),
+    );
   }
 
   Future<NIP17SendResult> _recoverSelfWrapLocked({
@@ -3178,11 +3191,19 @@ class DmRepository {
   /// wired in. Throws [ArgumentError] if no row exists for [rumorId]
   /// or the row belongs to a different account.
   ///
-  /// Returns a soft retryable-pending failure without publishing when a
-  /// recovery for the same rumor is already in flight (a manual Resend
-  /// racing the reconnect sweep) — the caller defers to that attempt's
-  /// outcome and the row stays retryable.
-  Future<NIP17SendResult> recoverFullSend({required String rumorId}) async {
+  /// When a recovery for the same rumor is already in flight (a manual
+  /// Resend racing the reconnect sweep), the call JOINS that attempt and
+  /// returns its outcome instead of publishing a duplicate.
+  ///
+  /// [resetRetryBudget] zeroes the row's retry counter before dispatch. Pass
+  /// `true` from the manual Resend path: each soft-unconfirmed attempt burns
+  /// the shared sweep budget, and once `retry_count` reaches the sweep's
+  /// `maxRetries` the sweep abandons the row permanently — an explicit user
+  /// resend is the signal to hand it back with a fresh budget.
+  Future<NIP17SendResult> recoverFullSend({
+    required String rumorId,
+    bool resetRetryBudget = false,
+  }) async {
     _assertInitialized();
     final dao = _outgoingDmsDao;
     if (dao == null) {
@@ -3191,17 +3212,23 @@ class DmRepository {
         'wire OutgoingDmsDao into DmRepository before calling.',
       );
     }
-    if (!_recoveriesInFlight.add('full:$rumorId')) {
-      return const NIP17SendResult.failure(
-        'full-send recovery already in flight for this message',
-        retryablePending: true,
-      );
+    if (resetRetryBudget) {
+      // Before the in-flight join, so a resend that lands mid-sweep still
+      // refreshes the budget for the sweep's follow-up passes. Non-fatal:
+      // a missed reset only means the sweep may give up earlier.
+      try {
+        await dao.resetRetryCount(rumorId);
+      } on Object catch (e) {
+        Log.warning(
+          'Failed to reset retry budget for $rumorId: $e',
+          category: LogCategory.system,
+        );
+      }
     }
-    try {
-      return await _recoverFullSendLocked(dao: dao, rumorId: rumorId);
-    } finally {
-      _recoveriesInFlight.remove('full:$rumorId');
-    }
+    return _joinOrStartRecovery(
+      'full:$rumorId',
+      () => _recoverFullSendLocked(dao: dao, rumorId: rumorId),
+    );
   }
 
   Future<NIP17SendResult> _recoverFullSendLocked({
@@ -3793,6 +3820,13 @@ class DmRepository {
           recipientPubkey: recipientPubkey,
           targetRelays: targetRelays,
           awaitRecipientOk: awaitRecipientOk,
+          // A soft-unconfirmed message send must NOT publish the self-wrap:
+          // the durable queue replays the full send until the recipient wrap
+          // confirms (publishing both wraps then), while a soft self-wrap
+          // that lands echoes back through the receive pipeline and persists
+          // a sent-looking row for a message the recipient may never have
+          // received (#6046). Reactions keep the service default.
+          selfWrapOnSoftUnconfirmed: false,
         )
         .timeout(
           _messagePublishTimeout,

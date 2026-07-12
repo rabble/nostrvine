@@ -410,8 +410,14 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         // and its red bubble — remain failed. Reporting `sent` for it
         // claimed a delivery nothing confirmed while the bubble stayed red
         // (the "resend swallows the failed message" report on #6046). The
-        // sweep keeps re-driving the row either way.
-        final result = await _dmRepository.recoverFullSend(rumorId: rumorId);
+        // sweep keeps re-driving the row either way; resetRetryBudget hands
+        // it back with a fresh budget when soft attempts already exhausted
+        // the sweep's cap — an explicit resend must re-arm the sweep, not
+        // get one last manual-only attempt.
+        final result = await _dmRepository.recoverFullSend(
+          rumorId: rumorId,
+          resetRetryBudget: true,
+        );
         if (!result.success) {
           stillFailing.add(rumorId);
         }

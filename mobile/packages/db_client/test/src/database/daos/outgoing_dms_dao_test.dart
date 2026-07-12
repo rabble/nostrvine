@@ -306,6 +306,30 @@ void main() {
       });
     });
 
+    group('resetRetryCount', () {
+      test('zeroes retry_count while preserving lastAttemptAt', () async {
+        await dao.enqueue(makeDm(id: 'aaaa'));
+        await dao.incrementRetry('aaaa');
+        await dao.incrementRetry('aaaa');
+        final charged = await dao.getById('aaaa');
+        expect(charged!.retryCount, equals(2));
+        expect(charged.lastAttemptAt, isNotNull);
+
+        final reset = await dao.resetRetryCount('aaaa');
+
+        expect(reset, isTrue);
+        final after = await dao.getById('aaaa');
+        expect(after!.retryCount, equals(0));
+        // The attempt clock stays: backoff is derived from retryCount, so a
+        // zeroed count is enough to re-arm the sweep immediately.
+        expect(after.lastAttemptAt, equals(charged.lastAttemptAt));
+      });
+
+      test('returns false when the row does not exist', () async {
+        expect(await dao.resetRetryCount('missing'), isFalse);
+      });
+    });
+
     group('deleteById', () {
       test('removes the row and returns the affected count', () async {
         await dao.enqueue(makeDm(id: 'aaaa'));

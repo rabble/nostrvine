@@ -393,6 +393,22 @@ class OutgoingDmsDao extends DatabaseAccessor<AppDatabase>
     });
   }
 
+  /// Reset the retry count for [id] to zero, handing the row back to the
+  /// retry sweep with a fresh budget. Called by the repository's manual
+  /// Resend path: soft-unconfirmed attempts burn the shared budget, and a
+  /// row at the sweep's `maxRetries` cap is otherwise abandoned by
+  /// [getRetryableForOwner] forever — an explicit user resend is the signal
+  /// to re-arm it. Returns `false` when no row exists for [id].
+  Future<bool> resetRetryCount(String id) async {
+    final affected =
+        await (update(
+          outgoingDms,
+        )..where((t) => t.id.equals(id))).write(
+          const OutgoingDmsCompanion(retryCount: Value(0)),
+        );
+    return affected > 0;
+  }
+
   /// Delete the row for [id]. Called by the repository in the same
   /// transaction that promotes the message to `direct_messages` once
   /// both wraps are sent (atomicity prevents a watcher window where the

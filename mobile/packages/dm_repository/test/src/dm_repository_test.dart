@@ -683,6 +683,7 @@ void main() {
           recipientPubkey: any(named: 'recipientPubkey'),
           targetRelays: any(named: 'targetRelays'),
           awaitRecipientOk: any(named: 'awaitRecipientOk'),
+          selfWrapOnSoftUnconfirmed: any(named: 'selfWrapOnSoftUnconfirmed'),
         ),
       ).thenAnswer((inv) async {
         final rumorEvent = inv.namedArguments[#rumorEvent] as Event;
@@ -849,6 +850,9 @@ void main() {
                     recipientPubkey: _validPubkeyB,
                     targetRelays: any(named: 'targetRelays'),
                     awaitRecipientOk: any(named: 'awaitRecipientOk'),
+                    selfWrapOnSoftUnconfirmed: any(
+                      named: 'selfWrapOnSoftUnconfirmed',
+                    ),
                   ),
                 ).captured.single
                 as Event;
@@ -886,6 +890,9 @@ void main() {
                     recipientPubkey: _validPubkeyB,
                     targetRelays: any(named: 'targetRelays'),
                     awaitRecipientOk: any(named: 'awaitRecipientOk'),
+                    selfWrapOnSoftUnconfirmed: any(
+                      named: 'selfWrapOnSoftUnconfirmed',
+                    ),
                   ),
                 ).captured.single
                 as Event;
@@ -933,6 +940,9 @@ void main() {
                     recipientPubkey: _validPubkeyB,
                     targetRelays: any(named: 'targetRelays'),
                     awaitRecipientOk: any(named: 'awaitRecipientOk'),
+                    selfWrapOnSoftUnconfirmed: any(
+                      named: 'selfWrapOnSoftUnconfirmed',
+                    ),
                   ),
                 ).captured.single
                 as Event;
@@ -1409,6 +1419,9 @@ void main() {
               recipientPubkey: any(named: 'recipientPubkey'),
               targetRelays: any(named: 'targetRelays'),
               awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
             ),
           );
         },
@@ -6084,6 +6097,9 @@ void main() {
               recipientPubkey: any(named: 'recipientPubkey'),
               targetRelays: any(named: 'targetRelays'),
               awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
             ),
           );
         },
@@ -7426,6 +7442,9 @@ void main() {
               recipientPubkey: moderationPubkey,
               targetRelays: any(named: 'targetRelays'),
               awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
             ),
           ).called(1);
 
@@ -7655,6 +7674,9 @@ void main() {
               recipientPubkey: externalUserPubkey,
               targetRelays: any(named: 'targetRelays'),
               awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
             ),
           ).called(1);
         },
@@ -8453,6 +8475,9 @@ void main() {
               recipientPubkey: any(named: 'recipientPubkey'),
               targetRelays: any(named: 'targetRelays'),
               awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
             ),
           ).called(1);
 
@@ -8511,6 +8536,9 @@ void main() {
               recipientPubkey: any(named: 'recipientPubkey'),
               targetRelays: any(named: 'targetRelays'),
               awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
             ),
           ).called(1);
 
@@ -11041,6 +11069,9 @@ void main() {
                     recipientPubkey: any(named: 'recipientPubkey'),
                     targetRelays: any(named: 'targetRelays'),
                     awaitRecipientOk: any(named: 'awaitRecipientOk'),
+                    selfWrapOnSoftUnconfirmed: any(
+                      named: 'selfWrapOnSoftUnconfirmed',
+                    ),
                   ),
                 ).captured.single
                 as Event;
@@ -11137,6 +11168,9 @@ void main() {
               recipientPubkey: any(named: 'recipientPubkey'),
               targetRelays: any(named: 'targetRelays'),
               awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
             ),
           ).called(2);
 
@@ -11288,6 +11322,9 @@ void main() {
               recipientPubkey: any(named: 'recipientPubkey'),
               targetRelays: any(named: 'targetRelays'),
               awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
             ),
           ).captured.cast<Event>();
           expect(sentRumors, hasLength(2));
@@ -11458,6 +11495,9 @@ void main() {
               recipientPubkey: any(named: 'recipientPubkey'),
               targetRelays: any(named: 'targetRelays'),
               awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
             ),
           ).captured.cast<Event>();
           expect(sentRumors, hasLength(2));
@@ -11514,6 +11554,9 @@ void main() {
               recipientPubkey: any(named: 'recipientPubkey'),
               targetRelays: any(named: 'targetRelays'),
               awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
             ),
           ).captured.cast<Event>();
           expect(sentRumors, hasLength(2));
@@ -12736,6 +12779,9 @@ void main() {
               recipientPubkey: any(named: 'recipientPubkey'),
               targetRelays: any(named: 'targetRelays'),
               awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
             ),
           );
         },
@@ -13211,6 +13257,9 @@ void main() {
                 recipientPubkey: recipient,
                 targetRelays: ['wss://inbox.example'],
                 awaitRecipientOk: true,
+                selfWrapOnSoftUnconfirmed: any(
+                  named: 'selfWrapOnSoftUnconfirmed',
+                ),
               ),
             ).called(1);
           }
@@ -13582,8 +13631,8 @@ void main() {
       });
 
       test(
-        'returns a soft retryable-pending failure without a second publish '
-        'when a self-wrap recovery for the same rumor is already in flight',
+        'joins an in-flight self-wrap recovery for the same rumor without a '
+        "second publish — the joiner gets that attempt's real outcome",
         () async {
           when(
             () => mockOutgoingDmsDao.getById(_rumorEventId),
@@ -13600,17 +13649,16 @@ void main() {
           );
 
           final first = repository.recoverSelfWrap(rumorId: _rumorEventId);
-          final second = await repository.recoverSelfWrap(
-            rumorId: _rumorEventId,
-          );
-
-          expect(second.success, isFalse);
-          expect(second.retryablePending, isTrue);
+          final second = repository.recoverSelfWrap(rumorId: _rumorEventId);
 
           firstPublishGate.complete(
             const NIP17SendResult.failure('relay still down'),
           );
-          await first;
+          final firstResult = await first;
+          final secondResult = await second;
+
+          expect(firstResult.success, isFalse);
+          expect(secondResult, same(firstResult));
 
           verify(
             () => mockMessageService.publishSelfWrap(
@@ -13658,6 +13706,9 @@ void main() {
               recipientPubkey: any(named: 'recipientPubkey'),
               targetRelays: any(named: 'targetRelays'),
               awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
             ),
           );
           verifyNever(
@@ -14261,9 +14312,9 @@ void main() {
       );
 
       test(
-        'returns a soft retryable-pending failure without a second publish '
-        'when a recovery for the same rumor is already in flight — a manual '
-        'Resend racing the reconnect sweep must not double-sign',
+        'joins an in-flight recovery for the same rumor without a second '
+        'publish — a manual Resend racing the reconnect sweep gets that '
+        "attempt's real outcome instead of a synthetic soft failure",
         () async {
           when(
             () => mockOutgoingDmsDao.getById(_rumorEventId),
@@ -14275,22 +14326,23 @@ void main() {
             outgoingDmsDao: mockOutgoingDmsDao,
           );
 
-          // First recovery suspends inside its (gated) publish. The guard is
+          // First recovery suspends inside its (gated) publish. The join is
           // registered synchronously before the first await, so the racing
-          // second call short-circuits deterministically.
+          // second call deterministically attaches to the same attempt.
           final first = repository.recoverFullSend(rumorId: _rumorEventId);
-          final second = await repository.recoverFullSend(
-            rumorId: _rumorEventId,
-          );
-
-          expect(second.success, isFalse);
-          expect(second.retryablePending, isTrue);
+          final second = repository.recoverFullSend(rumorId: _rumorEventId);
 
           firstPublishGate.complete(
             const NIP17SendResult.failure('relay still down'),
           );
           final firstResult = await first;
+          final secondResult = await second;
+
+          // Both callers observe the single real attempt's outcome. The old
+          // synthetic retryable-pending placeholder made a manual Resend
+          // racing the sweep a silent no-op (#6046).
           expect(firstResult.success, isFalse);
+          expect(secondResult, same(firstResult));
 
           // Only the gated first attempt ever reached the publish primitive.
           verify(
@@ -14299,6 +14351,9 @@ void main() {
               recipientPubkey: any(named: 'recipientPubkey'),
               targetRelays: any(named: 'targetRelays'),
               awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
             ),
           ).called(1);
 
@@ -14313,8 +14368,46 @@ void main() {
               recipientPubkey: any(named: 'recipientPubkey'),
               targetRelays: any(named: 'targetRelays'),
               awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
             ),
           ).called(1);
+        },
+      );
+
+      test(
+        'resetRetryBudget zeroes the retry counter before dispatch — an '
+        'explicit user Resend re-arms the sweep for a row whose soft '
+        'attempts exhausted the budget; the default path never touches it',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow());
+          when(
+            () => mockOutgoingDmsDao.resetRetryCount(_rumorEventId),
+          ).thenAnswer((_) async => true);
+          stubSendRumor(
+            (_, _) async => const NIP17SendResult.failure(
+              'Message recipient OK unconfirmed',
+              retryablePending: true,
+            ),
+          );
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          await repository.recoverFullSend(
+            rumorId: _rumorEventId,
+            resetRetryBudget: true,
+          );
+          verify(
+            () => mockOutgoingDmsDao.resetRetryCount(_rumorEventId),
+          ).called(1);
+
+          await repository.recoverFullSend(rumorId: _rumorEventId);
+          verifyNever(() => mockOutgoingDmsDao.resetRetryCount(any()));
         },
       );
 
@@ -14782,6 +14875,9 @@ void main() {
               recipientPubkey: _validPubkeyB,
               targetRelays: ['wss://inbox.example'],
               awaitRecipientOk: true,
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
             ),
           ).called(1);
         },
@@ -14815,6 +14911,9 @@ void main() {
               recipientPubkey: _validPubkeyB,
               targetRelays: any(named: 'targetRelays', that: isNull),
               awaitRecipientOk: true,
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
             ),
           ).called(1);
         },
@@ -15047,6 +15146,9 @@ void main() {
               recipientPubkey: any(named: 'recipientPubkey'),
               targetRelays: any(named: 'targetRelays'),
               awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
             ),
           );
           verifyNever(
@@ -15105,6 +15207,9 @@ void main() {
               recipientPubkey: any(named: 'recipientPubkey'),
               targetRelays: any(named: 'targetRelays'),
               awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
             ),
           );
         },
@@ -15178,6 +15283,9 @@ void main() {
               recipientPubkey: any(named: 'recipientPubkey'),
               targetRelays: any(named: 'targetRelays'),
               awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
             ),
           );
         },

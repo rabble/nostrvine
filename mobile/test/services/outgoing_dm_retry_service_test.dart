@@ -268,6 +268,62 @@ void main() {
       );
 
       test(
+        'soft-unconfirmed recoverFullSend replay of a FAILED row charges no '
+        'sweep-side budget and rewrites no wrap status — the row (and its '
+        'red bubble) stay exactly as the repository left them',
+        () async {
+          // The #6046 incident loop: a red offline-failed row re-driven into
+          // a zombie socket comes back retryablePending on every pass
+          // (full-send-failed=1 forever). The sweep must neither
+          // double-charge the budget (the repo's soft finalize already
+          // incremented) nor touch wrap statuses (the row must stay failed,
+          // never masquerade as pending/sent).
+          final row = _row(
+            id: 'soft-failed',
+            recipient: OutgoingWrapStatus.failed,
+            self: OutgoingWrapStatus.failed,
+          );
+          when(
+            () => dao.getRetryableForOwner(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenAnswer((_) async => [row]);
+          when(
+            () => dmRepository.recoverFullSend(rumorId: any(named: 'rumorId')),
+          ).thenAnswer(
+            (_) async => const NIP17SendResult.failure(
+              'Message recipient OK unconfirmed',
+              retryablePending: true,
+            ),
+          );
+
+          await buildService().sweep();
+
+          verify(
+            () => dmRepository.recoverFullSend(rumorId: 'soft-failed'),
+          ).called(1);
+          verifyNever(() => dao.incrementRetry(any()));
+          verifyNever(
+            () => dao.markRecipientWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              eventId: any(named: 'eventId'),
+              lastError: any(named: 'lastError'),
+            ),
+          );
+          verifyNever(
+            () => dao.markSelfWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              eventId: any(named: 'eventId'),
+              lastError: any(named: 'lastError'),
+            ),
+          );
+        },
+      );
+
+      test(
         'recoverFullSend publish-failure path bumps incrementRetry once',
         () async {
           final row = _row(
@@ -1131,9 +1187,49 @@ void main() {
         'does not double-dispatch a row already handled by the failed arm',
         () async {
           final now = DateTime.utc(2026, 5, 10, 12);
-          // Same id appears in both filters (e.g. recipient=pending,
-          // self=failed). The failed arm owns this dispatch.
-          final hybridRow = _row(
+          // A recipient=failed row with a still-pending self wrap appears in
+          // BOTH filters; the failed arm owns the dispatch and the
+          // interrupted arm must skip it.
+          final dualFilterRow = _row(
+            id: 'dual-1',
+            recipient: OutgoingWrapStatus.failed,
+            self: OutgoingWrapStatus.pending,
+            queuedAt: now.subtract(const Duration(minutes: 5)),
+          );
+          when(
+            () => dao.getRetryableForOwner(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenAnswer((_) async => [dualFilterRow]);
+          when(
+            () => dao.getStillPendingForOwner(any()),
+          ).thenAnswer((_) async => [dualFilterRow]);
+          when(
+            () => dmRepository.recoverFullSend(rumorId: any(named: 'rumorId')),
+          ).thenAnswer((_) async => _failureResult('relay still down'));
+
+          await buildService(now: () => now).sweep();
+
+          // Exactly one dispatch — the failed arm's.
+          verify(
+            () => dmRepository.recoverFullSend(rumorId: 'dual-1'),
+          ).called(1);
+        },
+      );
+
+      test(
+        'a recipient=pending/self=failed row that matches neither failed-arm '
+        'state is picked up by the interrupted arm — never stranded',
+        () async {
+          final now = DateTime.utc(2026, 5, 10, 12);
+          // This shape is in getRetryableForOwner (self=failed) but matches
+          // neither State A (needs recipient=sent) nor State B (needs
+          // recipient=failed). Before the dispatchedIds fix, the interrupted
+          // arm skipped every retryable id wholesale, so the row was never
+          // dispatched and never terminalized — a permanently sent-looking
+          // pending bubble.
+          final strandedHybrid = _row(
             id: 'hybrid-1',
             recipient: OutgoingWrapStatus.pending,
             self: OutgoingWrapStatus.failed,
@@ -1144,20 +1240,74 @@ void main() {
               ownerPubkey: any(named: 'ownerPubkey'),
               maxRetries: any(named: 'maxRetries'),
             ),
-          ).thenAnswer((_) async => [hybridRow]);
+          ).thenAnswer((_) async => [strandedHybrid]);
           when(
             () => dao.getStillPendingForOwner(any()),
-          ).thenAnswer((_) async => [hybridRow]);
+          ).thenAnswer((_) async => [strandedHybrid]);
           when(
-            () => dmRepository.recoverSelfWrap(rumorId: any(named: 'rumorId')),
+            () => dmRepository.recoverFullSend(rumorId: any(named: 'rumorId')),
           ).thenAnswer((_) async => _successResult('hybrid-1'));
 
           await buildService(now: () => now).sweep();
 
-          // recoverFullSend must NOT be called for this row — the
-          // failed-arm's recoverSelfWrap owns it.
-          verifyNever(
+          verify(
             () => dmRepository.recoverFullSend(rumorId: 'hybrid-1'),
+          ).called(1);
+          verifyNever(
+            () => dmRepository.recoverSelfWrap(rumorId: any(named: 'rumorId')),
+          );
+        },
+      );
+
+      test(
+        'soft-unconfirmed interrupted replay charges no sweep-side budget '
+        'and rewrites no wrap status — the repository already recorded the '
+        'attempt',
+        () async {
+          final now = DateTime.utc(2026, 5, 10, 12);
+          final stalePending = _row(
+            id: 'soft-interrupted',
+            recipient: OutgoingWrapStatus.pending,
+            self: OutgoingWrapStatus.pending,
+            queuedAt: now.subtract(const Duration(minutes: 5)),
+          );
+          when(
+            () => dao.getStillPendingForOwner(any()),
+          ).thenAnswer((_) async => [stalePending]);
+          when(
+            () => dmRepository.recoverFullSend(rumorId: any(named: 'rumorId')),
+          ).thenAnswer(
+            (_) async => const NIP17SendResult.failure(
+              'Message recipient OK unconfirmed',
+              retryablePending: true,
+            ),
+          );
+
+          await buildService(now: () => now).sweep();
+
+          verify(
+            () => dmRepository.recoverFullSend(rumorId: 'soft-interrupted'),
+          ).called(1);
+          // The repo's soft finalize already bumped the counter; a sweep-side
+          // bump would double-charge and halve the effective budget.
+          verifyNever(() => dao.incrementRetry(any()));
+          // And the sweep never rewrites wrap statuses on a soft outcome —
+          // the row keeps rendering exactly as the repository left it.
+          verifyNever(
+            () => dao.markRecipientWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              eventId: any(named: 'eventId'),
+              lastError: any(named: 'lastError'),
+            ),
+          );
+          verifyNever(
+            () => dao.markSelfWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              eventId: any(named: 'eventId'),
+              lastError: any(named: 'lastError'),
+            ),
           );
         },
       );

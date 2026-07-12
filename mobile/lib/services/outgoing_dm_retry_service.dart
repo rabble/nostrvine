@@ -229,6 +229,13 @@ class OutgoingDmRetryService {
       var skippedBackoff = 0;
       var abortedNotReady = false;
 
+      // Rows this loop actually dispatched (or owned when the dispatch
+      // threw). The interrupted arm below skips these — but ONLY these: a
+      // row that matches neither arm (e.g. recipient=pending/self=failed)
+      // must stay visible to the interrupted arm, or it is stranded forever
+      // as a permanently sent-looking pending bubble.
+      final dispatchedIds = <String>{};
+
       for (final row in retryable) {
         if (abortedNotReady) break;
 
@@ -247,6 +254,7 @@ class OutgoingDmRetryService {
             row.selfWrapStatus == OutgoingWrapStatus.failed) {
           // State A: recipient delivered, self-wrap missing. The
           // canonical case #4124 is closing.
+          dispatchedIds.add(row.id);
           try {
             final result = await _dmRepository.recoverSelfWrap(rumorId: row.id);
             if (result.success) {
@@ -320,6 +328,7 @@ class OutgoingDmRetryService {
           // id (preserved across retries via `rumor_event_json`), so
           // re-publishing is safe even when the original publish
           // actually landed but the local persist failed.
+          dispatchedIds.add(row.id);
           try {
             final result = await _dmRepository.recoverFullSend(
               rumorId: row.id,
@@ -397,13 +406,13 @@ class OutgoingDmRetryService {
       var exhaustedInterrupted = 0;
       var skippedInterruptedTooYoung = 0;
       if (!abortedNotReady) {
-        final processedIds = retryable.map((r) => r.id).toSet();
         final pending = await _dao.getStillPendingForOwner(_userPubkey);
         for (final row in pending) {
-          // Skip rows already dispatched by the failed-status arm above
-          // (a row with recipient=pending + self=failed appears in both
-          // filters; the failed arm owns the dispatch).
-          if (processedIds.contains(row.id)) continue;
+          // Skip rows already dispatched above (a recipient=failed +
+          // self=pending row appears in both filters; the failed arm owns
+          // that dispatch). Rows the arms did NOT match — e.g.
+          // recipient=pending / self=failed — fall through to this arm.
+          if (dispatchedIds.contains(row.id)) continue;
 
           // Exhausted guard: a pending row that has burned the retry budget
           // is terminally unconfirmable — a soft-unconfirmed send whose OK

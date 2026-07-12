@@ -315,6 +315,73 @@ void main() {
         },
       );
 
+      Future<(NIP17SendResult result, int selfWraps)> sendMessage(
+        PublishOutcome recipient, {
+        required bool selfWrapOnSoftUnconfirmed,
+      }) async {
+        when(
+          () => mockNostrClient.publishEventAwaitOk(
+            any(),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer((_) async => recipient);
+        var selfWrapPublishes = 0;
+        when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
+          selfWrapPublishes++;
+          return PublishSuccess(event: inv.positionalArguments[0] as Event);
+        });
+        final rumor = okService.buildRumor(
+          recipientPubkey: _recipientPubkey,
+          content: 'hi',
+        );
+        final result = await okService.sendRumor(
+          rumorEvent: rumor,
+          recipientPubkey: _recipientPubkey,
+          awaitRecipientOk: true,
+          selfWrapOnSoftUnconfirmed: selfWrapOnSoftUnconfirmed,
+        );
+        return (result, selfWrapPublishes);
+      }
+
+      test(
+        'unconfirmed MESSAGE send with selfWrapOnSoftUnconfirmed:false → '
+        'retryable-pending failure and NO self-wrap (#6046)',
+        () async {
+          // A soft self-wrap that lands echoes back through the receive
+          // pipeline and persists the message as a plain sent row — a
+          // sent-looking bubble for a message the recipient may never have
+          // received. Message sends therefore defer the self-wrap until the
+          // recipient wrap confirms (the durable queue republishes both).
+          final (result, selfWraps) = await sendMessage(
+            outcome(noResponse: const ['wss://relay.example.com']),
+            selfWrapOnSoftUnconfirmed: false,
+          );
+
+          expect(result.success, isFalse);
+          expect(result.retryablePending, isTrue);
+          expect(selfWraps, 0);
+          // Kind-aware error string: this is a kind-14 message, and the
+          // wording must not claim it was a reaction (misdirected the #6046
+          // field debugging).
+          expect(result.error, contains('Message recipient OK unconfirmed'));
+        },
+      );
+
+      test(
+        'confirmed MESSAGE send with selfWrapOnSoftUnconfirmed:false still '
+        'publishes the self-wrap — the opt-out is scoped to the soft case',
+        () async {
+          final (result, selfWraps) = await sendMessage(
+            outcome(accepted: const ['wss://relay.example.com']),
+            selfWrapOnSoftUnconfirmed: false,
+          );
+
+          expect(result.success, isTrue);
+          expect(result.selfWrapPublished, isTrue);
+          expect(selfWraps, 1);
+        },
+      );
+
       test(
         'explicit OK-false rejection → hard failure (not retryable-pending); '
         'self-wrap NOT published (recipient definitely did not get it)',

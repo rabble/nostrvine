@@ -33,7 +33,10 @@ class _StubDmRepository extends DmRepository {
   final Future<NIP17SendResult> Function(String rumorId) onRecoverFullSend;
 
   @override
-  Future<NIP17SendResult> recoverFullSend({required String rumorId}) {
+  Future<NIP17SendResult> recoverFullSend({
+    required String rumorId,
+    bool resetRetryBudget = false,
+  }) {
     return onRecoverFullSend(rumorId);
   }
 }
