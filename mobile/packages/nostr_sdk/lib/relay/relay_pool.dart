@@ -1536,7 +1536,18 @@ class RelayPool {
                 'noResponseFrom=${outcome.noResponseFrom}',
               );
             }
-            _repairSilentRelays(outcome.noResponseFrom, sentAt);
+            // Repair only when the publish went UNCONFIRMED. The tracker
+            // resolves on the FIRST OK-true, so on a multi-relay publish the
+            // slower healthy siblings land in `noResponseFrom` while
+            // `isSilentSince(sentAt)` passes trivially over the few-hundred-ms
+            // race window — cycling them on every send churns connections and
+            // fails concurrent `skipReconnect` publishes. A genuinely zombie
+            // sibling is repaired by the next publish that needs it (its own
+            // OK window then times out) or by the connectivity-transition
+            // forceReconnectAll.
+            if (!outcome.confirmed) {
+              _repairSilentRelays(outcome.noResponseFrom, sentAt);
+            }
           })
           .whenComplete(() => _pendingPublishes.remove(eventId)),
     );

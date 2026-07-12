@@ -206,5 +206,52 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 50));
       expect(factory.createdChannels, hasLength(1));
     });
+
+    test('on a multi-relay publish, a healthy sibling that merely lost the '
+        'OK race to a faster relay is not force-cycled', () async {
+      // The tracker resolves on the FIRST OK-true, so the sibling relay
+      // lands in noResponseFrom after only the few-ms race window — far too
+      // short for its silence to mean anything. Cycling it would tear down
+      // a healthy inbox relay on every send.
+      const siblingUrl = 'wss://inbox.example.com';
+      final siblingFactory = _FakeChannelFactory();
+      final sibling = RelayBase(
+        siblingUrl,
+        RelayStatus(siblingUrl),
+        channelFactory: siblingFactory,
+      );
+      await nostr.relayPool.add(sibling);
+      expect(siblingFactory.createdChannels, hasLength(1));
+
+      final fastChannel = factory.createdChannels.single;
+      final outcomeFuture = nostr.relayPool.sendEventAwaitOk(
+        [
+          'EVENT',
+          {'id': 'zombie-event-id', 'kind': 14},
+        ],
+        eventId: 'zombie-event-id',
+        eventKind: 14,
+        targetRelays: [relayUrl, siblingUrl],
+        timeout: const Duration(milliseconds: 100),
+      );
+      await Future<void>.delayed(Duration.zero);
+      fastChannel.simulateMessage(
+        jsonEncode(['OK', 'zombie-event-id', true, '']),
+      );
+
+      final outcome = await outcomeFuture;
+      expect(outcome.confirmed, isTrue);
+      expect(outcome.noResponseFrom, contains(siblingUrl));
+
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(
+        siblingFactory.createdChannels,
+        hasLength(1),
+        reason:
+            'a confirmed publish must not cycle the slower sibling relay '
+            'that never got a chance to respond',
+      );
+      expect(factory.createdChannels, hasLength(1));
+    });
   });
 }
