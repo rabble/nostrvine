@@ -4119,12 +4119,34 @@ class DmRepository {
     // blocked one.
     for (var i = 0; i < recipientPubkeys.length; i++) {
       final pubkey = recipientPubkeys[i];
-      final result = await _sendRumorWithTimeout(
-        rumor: rumors[i],
-        recipientPubkey: pubkey,
-        targetRelays: inboxByRecipient[pubkey],
-        awaitRecipientOk: true,
-      );
+      // Coalesce through the recovery lock: the sequential publishes of a
+      // group send can outlive the retry sweep's interrupted-send min-age
+      // (all sibling rows share the batch queuedAt), so a sweep
+      // recoverFullSend for this rumor may fire while THIS publish is still
+      // in flight. Registering the publish under the same per-rumor key
+      // makes the sweep JOIN the live attempt instead of dispatching a
+      // concurrent duplicate. The reverse interleaving (sweep registered
+      // first) hands back the recovery's real outcome, and the persistence
+      // transaction below dedups on it. A joined recovery can throw
+      // (ArgumentError after a mid-flight cancel); convert it to a plain
+      // failure so one bad join cannot abort the rest of the batch —
+      // _sendRumorWithTimeout itself classifies instead of throwing.
+      NIP17SendResult result;
+      try {
+        result = await _joinOrStartRecovery(
+          'full:${rumors[i].id}',
+          () => _sendRumorWithTimeout(
+            rumor: rumors[i],
+            recipientPubkey: pubkey,
+            targetRelays: inboxByRecipient[pubkey],
+            awaitRecipientOk: true,
+          ),
+        );
+      } on Object catch (e) {
+        result = NIP17SendResult.failure(
+          'joined in-flight recovery failed: $e',
+        );
+      }
       results.add(result);
     }
 

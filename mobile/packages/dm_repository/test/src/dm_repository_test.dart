@@ -13918,6 +13918,72 @@ void main() {
           );
         },
       );
+
+      test(
+        'a recoverFullSend fired mid-publish JOINS the group send '
+        'in-flight attempt instead of dispatching a duplicate publish',
+        () async {
+          final firstPublish = Completer<NIP17SendResult>();
+          var sendRumorCalls = 0;
+          stubSendRumor((_, recipient) {
+            sendRumorCalls++;
+            if (recipient == _validPubkeyB) return firstPublish.future;
+            return NIP17SendResult.success(
+              rumorEventId: 'rumor-$recipient',
+              messageEventId: 'wrap-$recipient',
+              recipientPubkey: recipient,
+            );
+          });
+          final enqueued = <OutgoingDm>[];
+          when(() => mockOutgoingDmsDao.enqueue(any())).thenAnswer((inv) {
+            enqueued.add(inv.positionalArguments.first as OutgoingDm);
+            return Future.value();
+          });
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final sendFuture = repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'joined by the sweep',
+          );
+          // Drain microtasks until the send parks on B's publish — both
+          // rows are enqueued up front, before the first publish.
+          await pumpEventQueue();
+          expect(enqueued, hasLength(2));
+
+          // The sweep fires for B's rumor while its publish is in flight.
+          final recoveryFuture = repository.recoverFullSend(
+            rumorId: enqueued.first.id,
+          );
+
+          firstPublish.complete(
+            NIP17SendResult.success(
+              rumorEventId: 'rumor-$_validPubkeyB',
+              messageEventId: 'wrap-$_validPubkeyB',
+              recipientPubkey: _validPubkeyB,
+            ),
+          );
+
+          final results = await sendFuture;
+          final recovered = await recoveryFuture;
+
+          expect(results.every((r) => r.success), isTrue);
+          expect(
+            recovered.success,
+            isTrue,
+            reason: "the joiner gets the live attempt's real outcome",
+          );
+          expect(
+            sendRumorCalls,
+            equals(2),
+            reason:
+                'exactly one publish per recipient — the sweep must join '
+                'the in-flight attempt, never dispatch its own',
+          );
+        },
+      );
     });
 
     group('recoverSelfWrap', () {
