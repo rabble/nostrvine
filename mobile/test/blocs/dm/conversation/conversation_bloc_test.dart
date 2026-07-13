@@ -57,7 +57,8 @@ Future<void> _waitForConversationState(
   bool Function(ConversationState state) matches,
 ) async {
   if (matches(bloc.state)) return;
-  await bloc.stream.firstWhere(matches);
+  // Bounded so a regression fails the test instead of hanging the suite.
+  await bloc.stream.firstWhere(matches).timeout(const Duration(seconds: 10));
 }
 
 void main() {
@@ -91,6 +92,19 @@ void main() {
 
     setUp(() {
       mockDmRepository = _MockDmRepository();
+      // Safe default for the post-send repaint re-read; failure tests that
+      // care override it with the actual rows.
+      when(
+        () => mockDmRepository.getOutgoing(any()),
+      ).thenAnswer((_) async => const <OutgoingDm>[]);
+      // Delete now drops the bubble's whole durable batch before the kind-5
+      // publish; default to "no rows existed" so persisted-delete tests keep
+      // their original semantics.
+      when(
+        () => mockDmRepository.cancelOutgoingBatch(
+          rumorId: any(named: 'rumorId'),
+        ),
+      ).thenAnswer((_) async => 0);
     });
 
     ConversationBloc buildBloc() => ConversationBloc(
@@ -394,16 +408,58 @@ void main() {
               'sendStatus',
               SendStatus.sending,
             ),
-            // Blocked, not failed: no lastFailedSend, so the UI shows no retry.
-            isA<ConversationState>()
-                .having((s) => s.sendStatus, 'sendStatus', SendStatus.blocked)
-                .having((s) => s.lastFailedSend, 'lastFailedSend', isNull),
+            // Blocked, not failed: no toast retry — the send was refused.
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.blocked,
+            ),
           ],
         );
 
         blocTest<ConversationBloc, ConversationState>(
-          'emits [sending with optimistic message, failed without '
-          'optimistic and with lastFailedSend] on failed sendMessage',
+          'emits [sending, sent] on a soft-unconfirmed send '
+          '(retryablePending) — surfaced as sent, no red failure',
+          setUp: () {
+            when(
+              () => mockDmRepository.sendMessage(
+                recipientPubkey: recipientPubkey,
+                content: 'Hello',
+              ),
+            ).thenAnswer(
+              (_) async => const NIP17SendResult.failure(
+                'Message recipient OK unconfirmed',
+                retryablePending: true,
+              ),
+            );
+          },
+          build: buildBloc,
+          act: (bloc) => bloc.add(
+            const ConversationMessageSent(
+              recipientPubkeys: [recipientPubkey],
+              content: 'Hello',
+            ),
+          ),
+          expect: () => [
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sending,
+            ),
+            // Soft-unconfirmed: the durable queue keeps the pending bubble and
+            // the retry sweep re-drives it, so surface no failure — treated as
+            // optimistically sent with no retry payload.
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sent,
+            ),
+          ],
+        );
+
+        blocTest<ConversationBloc, ConversationState>(
+          'emits [sending, failed] on a hard-failed sendMessage — the failure '
+          'is surfaced on the bubble (statusFor), not a toast',
           setUp: () {
             when(
               () => mockDmRepository.sendMessage(
@@ -423,33 +479,99 @@ void main() {
             ),
           ),
           expect: () => [
-            // Sending: optimistic added to the pendingOptimistic slice.
-            isA<ConversationState>()
-                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
-                .having(
-                  (s) => s.lastFailedSend,
-                  'lastFailedSend cleared on new attempt',
-                  isNull,
-                ),
-            // Failed: pendingOptimistic stripped, lastFailedSend populated
-            // so the UI can offer a retry. Without the strip, the
-            // optimistic would survive in bloc memory until pop, then
-            // vanish on re-entry — the "looks sent, then disappeared" bug
-            // (#3902 / #3908).
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sending,
+            ),
+            // The durable queue row (pendingOutgoing) carries the failed
+            // bubble; there is no toast state to populate.
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.failed)
-                .having((s) => s.messages, 'messages untouched', isEmpty)
-                .having(
-                  (s) => s.lastFailedSend,
-                  'lastFailedSend',
-                  equals(
-                    const FailedSend(
-                      content: 'Hello',
-                      recipientPubkeys: [recipientPubkey],
-                    ),
-                  ),
-                ),
+                .having((s) => s.messages, 'messages untouched', isEmpty),
           ],
+          errors: () => [isA<Exception>()],
+        );
+
+        late StreamController<List<DmMessage>> failMsgCtrl;
+        late StreamController<List<OutgoingDm>> failOutCtrl;
+        blocTest<ConversationBloc, ConversationState>(
+          'reactively surfaces the failed bubble (statusFor) when '
+          'watchOutgoing emits the failed row after a hard-failed send',
+          setUp: () {
+            failMsgCtrl = StreamController<List<DmMessage>>();
+            failOutCtrl = StreamController<List<OutgoingDm>>();
+            when(
+              () => mockDmRepository.markConversationAsRead(any()),
+            ).thenAnswer((_) async {});
+            when(
+              () => mockDmRepository.watchMessages(conversationId),
+            ).thenAnswer((_) => failMsgCtrl.stream);
+            when(
+              () => mockDmRepository.watchOutgoing(any()),
+            ).thenAnswer((_) => failOutCtrl.stream);
+            when(
+              () => mockDmRepository.sendMessage(
+                recipientPubkey: recipientPubkey,
+                content: 'Hello',
+              ),
+            ).thenAnswer((_) async {
+              // Mirror the real repository: enqueue (pending) then, on a hard
+              // failure (e.g. offline), mark the row failed — both surface via
+              // watchOutgoing while _onMessageSent is in flight.
+              failOutCtrl.add([_outgoingDm(id: messageId)]);
+              await Future<void>.delayed(Duration.zero);
+              failOutCtrl.add([
+                _outgoingDm(
+                  id: messageId,
+                  recipientWrap: OutgoingWrapStatus.failed,
+                  selfWrap: OutgoingWrapStatus.failed,
+                ),
+              ]);
+              return const NIP17SendResult.failure(
+                'Message not sent: device offline',
+              );
+            });
+            // The repository has marked the row failed by the time the bloc
+            // re-reads (the one-shot read the bloc uses to repaint immediately
+            // instead of waiting on a watchOutgoing tick that can be dropped
+            // mid-handler).
+            when(() => mockDmRepository.getOutgoing(any())).thenAnswer(
+              (_) async => [
+                _outgoingDm(
+                  id: messageId,
+                  recipientWrap: OutgoingWrapStatus.failed,
+                  selfWrap: OutgoingWrapStatus.failed,
+                ),
+              ],
+            );
+            addTearDown(() async {
+              if (!failMsgCtrl.isClosed) await failMsgCtrl.close();
+              if (!failOutCtrl.isClosed) await failOutCtrl.close();
+            });
+          },
+          build: buildBloc,
+          act: (bloc) async {
+            bloc.add(const ConversationStarted());
+            await untilCalled(() => mockDmRepository.watchOutgoing(any()));
+            failMsgCtrl.add(const <DmMessage>[]);
+            bloc.add(
+              const ConversationMessageSent(
+                recipientPubkeys: [recipientPubkey],
+                content: 'Hello',
+              ),
+            );
+            await _waitForConversationState(
+              bloc,
+              (s) => s.statusFor(messageId) == DmDeliveryStatus.failed,
+            );
+          },
+          verify: (bloc) {
+            expect(
+              bloc.state.statusFor(messageId),
+              DmDeliveryStatus.failed,
+            );
+          },
           errors: () => [isA<Exception>()],
         );
 
@@ -499,15 +621,9 @@ void main() {
         );
 
         blocTest<ConversationBloc, ConversationState>(
-          'retry attempt clears prior lastFailedSend and reinserts '
-          'an optimistic row',
-          seed: () => const ConversationState(
-            sendStatus: SendStatus.failed,
-            lastFailedSend: FailedSend(
-              content: 'Hello',
-              recipientPubkeys: [recipientPubkey],
-            ),
-          ),
+          'a fresh send from a previously-failed conversation transitions '
+          'through [sending, sent]',
+          seed: () => const ConversationState(sendStatus: SendStatus.failed),
           setUp: () {
             when(
               () => mockDmRepository.sendMessage(
@@ -530,17 +646,16 @@ void main() {
             ),
           ),
           expect: () => [
-            // New attempt: optimistic added to pendingOptimistic,
-            // lastFailedSend cleared so a stale SnackBar can't refire
-            // from a previous failure.
-            isA<ConversationState>()
-                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
-                .having((s) => s.lastFailedSend, 'lastFailedSend', isNull),
-            // Success: status flips, pending stripped, lastFailedSend
-            // stays null.
-            isA<ConversationState>()
-                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sent)
-                .having((s) => s.lastFailedSend, 'lastFailedSend', isNull),
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sending,
+            ),
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sent,
+            ),
           ],
         );
 
@@ -594,12 +709,6 @@ void main() {
                   (s) => s.lastPartialSend,
                   'lastPartialSend',
                   equals(const PartialSend(rumorIds: [sentEventId])),
-                )
-                .having(
-                  (s) => s.lastFailedSend,
-                  'lastFailedSend stays null on partial — it drives '
-                  'a different recovery path',
-                  isNull,
                 ),
           ],
         );
@@ -649,7 +758,7 @@ void main() {
 
         blocTest<ConversationBloc, ConversationState>(
           'emits [sending with optimistic message, failed without '
-          'optimistic and with lastFailedSend] when all sendGroupMessage fail',
+          'failed] when all recipients of a group send fail',
           setUp: () {
             when(
               () => mockDmRepository.sendGroupMessage(
@@ -678,17 +787,7 @@ void main() {
             ),
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.failed)
-                .having((s) => s.messages, 'messages untouched', isEmpty)
-                .having(
-                  (s) => s.lastFailedSend,
-                  'lastFailedSend',
-                  equals(
-                    const FailedSend(
-                      content: 'Group hello',
-                      recipientPubkeys: [recipientPubkey, recipientPubkey2],
-                    ),
-                  ),
-                ),
+                .having((s) => s.messages, 'messages untouched', isEmpty),
           ],
           errors: () => [isA<Exception>()],
         );
@@ -755,19 +854,141 @@ void main() {
                       ],
                     ),
                   ),
-                )
-                .having(
-                  (s) => s.lastFailedSend,
-                  'lastFailedSend stays null on partial',
-                  isNull,
                 ),
+          ],
+        );
+
+        blocTest<ConversationBloc, ConversationState>(
+          'emits [sending, sent] when every group recipient is '
+          'soft-unconfirmed (retryablePending) with no hard failure — the '
+          'durable queue re-drives each pending row, no red SnackBar',
+          setUp: () {
+            when(
+              () => mockDmRepository.sendGroupMessage(
+                recipientPubkeys: [recipientPubkey, recipientPubkey2],
+                content: 'Group hello',
+              ),
+            ).thenAnswer(
+              (_) async => [
+                const NIP17SendResult.failure(
+                  'Message recipient OK unconfirmed',
+                  retryablePending: true,
+                ),
+                const NIP17SendResult.failure(
+                  'Message recipient OK unconfirmed',
+                  retryablePending: true,
+                ),
+              ],
+            );
+          },
+          build: buildBloc,
+          act: (bloc) => bloc.add(
+            const ConversationMessageSent(
+              recipientPubkeys: [recipientPubkey, recipientPubkey2],
+              content: 'Group hello',
+            ),
+          ),
+          expect: () => [
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sending,
+            ),
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sent,
+            ),
+          ],
+        );
+      });
+
+      group('overlapping partial sends', () {
+        const firstRumorId =
+            '7777777777777777777777777777777777777777777777777777777777777777';
+        const secondRumorId =
+            '8888888888888888888888888888888888888888888888888888888888888888';
+        late Completer<NIP17SendResult> slowFirstPartial;
+
+        blocTest<ConversationBloc, ConversationState>(
+          'two concurrent sends that both end sentPartial accumulate their '
+          'rumor ids — the second partial must not orphan the first',
+          setUp: () {
+            slowFirstPartial = Completer<NIP17SendResult>();
+            when(
+              () => mockDmRepository.sendMessage(
+                recipientPubkey: recipientPubkey,
+                content: 'First partial',
+              ),
+            ).thenAnswer((_) => slowFirstPartial.future);
+            when(
+              () => mockDmRepository.sendMessage(
+                recipientPubkey: recipientPubkey,
+                content: 'Second partial',
+              ),
+            ).thenAnswer(
+              (_) async => NIP17SendResult.success(
+                rumorEventId: secondRumorId,
+                messageEventId: secondRumorId,
+                recipientPubkey: recipientPubkey,
+                selfWrapPublished: false,
+              ),
+            );
+          },
+          build: buildBloc,
+          act: (bloc) async {
+            bloc.add(
+              const ConversationMessageSent(
+                recipientPubkeys: [recipientPubkey],
+                content: 'First partial',
+              ),
+            );
+            await Future<void>.delayed(Duration.zero);
+            bloc.add(
+              const ConversationMessageSent(
+                recipientPubkeys: [recipientPubkey],
+                content: 'Second partial',
+              ),
+            );
+            await Future<void>.delayed(Duration.zero);
+            // The slower FIRST send resolves partial after the second one
+            // already emitted its sentPartial.
+            slowFirstPartial.complete(
+              NIP17SendResult.success(
+                rumorEventId: firstRumorId,
+                messageEventId: firstRumorId,
+                recipientPubkey: recipientPubkey,
+                selfWrapPublished: false,
+              ),
+            );
+          },
+          expect: () => [
+            // The second send's `sending` emit is state-identical and
+            // therefore suppressed by Equatable.
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sending,
+            ),
+            isA<ConversationState>().having(
+              (s) => s.lastPartialSend?.rumorIds,
+              'lastPartialSend',
+              equals([secondRumorId]),
+            ),
+            // The union: a plain overwrite here silently dropped the
+            // second send's self-wrap recovery set (or vice versa).
+            isA<ConversationState>().having(
+              (s) => s.lastPartialSend?.rumorIds,
+              'lastPartialSend',
+              unorderedEquals([firstRumorId, secondRumorId]),
+            ),
           ],
         );
       });
 
       group('exception handling', () {
         blocTest<ConversationBloc, ConversationState>(
-          'strips optimistic and records lastFailedSend '
+          'strips optimistic and marks failed '
           'when sendMessage throws an exception',
           setUp: () {
             when(
@@ -792,23 +1013,13 @@ void main() {
             ),
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.failed)
-                .having((s) => s.messages, 'messages untouched', isEmpty)
-                .having(
-                  (s) => s.lastFailedSend,
-                  'lastFailedSend',
-                  equals(
-                    const FailedSend(
-                      content: 'Hello',
-                      recipientPubkeys: [recipientPubkey],
-                    ),
-                  ),
-                ),
+                .having((s) => s.messages, 'messages untouched', isEmpty),
           ],
           errors: () => [isA<Exception>()],
         );
 
         blocTest<ConversationBloc, ConversationState>(
-          'strips optimistic and records lastFailedSend '
+          'strips optimistic and marks failed '
           'when sendGroupMessage throws an exception',
           setUp: () {
             when(
@@ -833,17 +1044,7 @@ void main() {
             ),
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.failed)
-                .having((s) => s.messages, 'messages untouched', isEmpty)
-                .having(
-                  (s) => s.lastFailedSend,
-                  'lastFailedSend',
-                  equals(
-                    const FailedSend(
-                      content: 'Group hello',
-                      recipientPubkeys: [recipientPubkey, recipientPubkey2],
-                    ),
-                  ),
-                ),
+                .having((s) => s.messages, 'messages untouched', isEmpty),
           ],
           errors: () => [isA<Exception>()],
         );
@@ -890,93 +1091,38 @@ void main() {
           errors: () => [isA<Exception>()],
         );
       });
-
-      // Regression for #3908 review feedback. The pendingId-UUID contract
-      // (vs second-resolution timestamps) is what lets the strip target a
-      // single attempt without trampling a sibling. Pre-#4193 the strip
-      // was a list-walk on `state.messages`, so sibling collision was
-      // observable; post-#4193 the optimistic lives in
-      // `state.pendingOptimistic` (a Map keyed by pendingId), so strip is
-      // a `Map.remove(pendingId)` and a UUID still guarantees the two
-      // attempts get distinct keys.
-      group('pendingId uniqueness', () {
-        blocTest<ConversationBloc, ConversationState>(
-          'failure strip removes only the failing pendingId — '
-          'a sibling pending entry from a prior context is preserved',
-          // Seed state with a sibling pending entry to model the contract
-          // directly. With the `sequential()` transformer real production
-          // never has two pendings alive at once, but the strip semantics
-          // (key-based, not list-walk) are what the contract enforces.
-          seed: () => const ConversationState(),
-          setUp: () {
-            when(
-              () => mockDmRepository.sendMessage(
-                recipientPubkey: recipientPubkey,
-                content: 'Failing send',
-              ),
-            ).thenThrow(Exception('Relay timeout'));
-          },
-          build: buildBloc,
-          act: (bloc) => bloc.add(
-            const ConversationMessageSent(
-              recipientPubkeys: [recipientPubkey],
-              content: 'Failing send',
-            ),
-          ),
-          expect: () => [
-            // Sending: failing attempt's pending is added alongside the
-            // pre-existing sibling.
-            isA<ConversationState>().having(
-              (s) => s.sendStatus,
-              'sendStatus',
-              SendStatus.sending,
-            ),
-            // Failed: only the failing attempt's key is removed; the
-            // sibling pending is untouched. Under the old list-walk
-            // strip an off-by-one or shared id would have removed both.
-            isA<ConversationState>()
-                .having((s) => s.sendStatus, 'sendStatus', SendStatus.failed)
-                .having(
-                  (s) => s.lastFailedSend,
-                  'lastFailedSend records the failing attempt only',
-                  equals(
-                    const FailedSend(
-                      content: 'Failing send',
-                      recipientPubkeys: [recipientPubkey],
-                    ),
-                  ),
-                ),
-          ],
-          errors: () => [isA<Exception>()],
-        );
-      });
     });
 
     group('event transformers', () {
-      group('sequential() on $ConversationMessageSent', () {
+      group('concurrent() on $ConversationMessageSent', () {
+        late Completer<NIP17SendResult> slowFirstSend;
+
         blocTest<ConversationBloc, ConversationState>(
-          'processes two rapid sends in order '
-          '(second waits for first to complete)',
+          'a slow first send does not block the second — the second send '
+          'dispatches and completes while the first is still in flight',
           setUp: () {
-            // First send completes after a delay, second completes instantly.
-            // With sequential(), the second handler waits for the first to
-            // finish, so we observe: sending1 -> sent1 -> sending2 -> sent2.
+            // First send parks on a completer that is only released after
+            // the second send has already finished. Under the previous
+            // sequential() transformer the second sendMessage call could not
+            // even START until the first completed — so `called(2)` before
+            // the release, and a `sent` emission driven by the second send,
+            // both pin the concurrent behavior.
+            slowFirstSend = Completer<NIP17SendResult>();
             var callCount = 0;
             when(
               () => mockDmRepository.sendMessage(
                 recipientPubkey: recipientPubkey,
                 content: any(named: 'content'),
               ),
-            ).thenAnswer((_) async {
+            ).thenAnswer((_) {
               callCount++;
-              if (callCount == 1) {
-                // Simulate slow first send
-                await Future<void>.delayed(const Duration(milliseconds: 50));
-              }
-              return NIP17SendResult.success(
-                rumorEventId: sentEventId,
-                messageEventId: sentEventId,
-                recipientPubkey: recipientPubkey,
+              if (callCount == 1) return slowFirstSend.future;
+              return Future.value(
+                NIP17SendResult.success(
+                  rumorEventId: sentEventId,
+                  messageEventId: sentEventId,
+                  recipientPubkey: recipientPubkey,
+                ),
               );
             });
           },
@@ -995,42 +1141,39 @@ void main() {
                 content: 'Second message',
               ),
             );
-          },
-          wait: const Duration(milliseconds: 200),
-          expect: () => [
-            // First send starts (with optimistic message)
-            isA<ConversationState>().having(
-              (s) => s.sendStatus,
-              'sendStatus',
-              SendStatus.sending,
-            ),
-            // First send completes
-            isA<ConversationState>().having(
-              (s) => s.sendStatus,
-              'sendStatus',
-              SendStatus.sent,
-            ),
-            // Second send starts (sequential: waited for first)
-            isA<ConversationState>().having(
-              (s) => s.sendStatus,
-              'sendStatus',
-              SendStatus.sending,
-            ),
-            // Second send completes
-            isA<ConversationState>().having(
-              (s) => s.sendStatus,
-              'sendStatus',
-              SendStatus.sent,
-            ),
-          ],
-          verify: (_) {
+            // Both sends must be in flight BEFORE the first completes.
+            await Future<void>.delayed(const Duration(milliseconds: 20));
             verify(
               () => mockDmRepository.sendMessage(
                 recipientPubkey: recipientPubkey,
                 content: any(named: 'content'),
               ),
             ).called(2);
+            slowFirstSend.complete(
+              NIP17SendResult.success(
+                rumorEventId: sentEventId,
+                messageEventId: sentEventId,
+                recipientPubkey: recipientPubkey,
+              ),
+            );
           },
+          wait: const Duration(milliseconds: 100),
+          expect: () => [
+            // First send starts; the second's identical `sending` emit is
+            // suppressed by state equality.
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sending,
+            ),
+            // The SECOND send completes while the first is still parked —
+            // this emission proves the second never waited.
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sent,
+            ),
+          ],
         );
 
         blocTest<ConversationBloc, ConversationState>(
@@ -1050,8 +1193,8 @@ void main() {
               return completer2.future;
             });
 
-            // Complete both after a short delay so sequential gets to
-            // process them one-by-one.
+            // Complete both after a short delay; with concurrent() both
+            // handlers are already in flight when the first resolves.
             Future<void>.delayed(const Duration(milliseconds: 30)).then((_) {
               completer1.complete(
                 NIP17SendResult.success(
@@ -1089,18 +1232,10 @@ void main() {
           },
           wait: const Duration(milliseconds: 150),
           expect: () => [
-            // First send (with optimistic message)
-            isA<ConversationState>().having(
-              (s) => s.sendStatus,
-              'sendStatus',
-              SendStatus.sending,
-            ),
-            isA<ConversationState>().having(
-              (s) => s.sendStatus,
-              'sendStatus',
-              SendStatus.sent,
-            ),
-            // Second send (not dropped)
+            // Both handlers start together; the second's identical `sending`
+            // emit is suppressed by state equality, as is the second `sent`.
+            // The two repository calls verified below prove the second event
+            // was processed, not dropped.
             isA<ConversationState>().having(
               (s) => s.sendStatus,
               'sendStatus',
@@ -1112,6 +1247,14 @@ void main() {
               SendStatus.sent,
             ),
           ],
+          verify: (_) {
+            verify(
+              () => mockDmRepository.sendMessage(
+                recipientPubkey: recipientPubkey,
+                content: any(named: 'content'),
+              ),
+            ).called(2);
+          },
         );
       });
 
@@ -1511,6 +1654,232 @@ void main() {
           ),
         ],
       );
+
+      blocTest<ConversationBloc, ConversationState>(
+        'deletes a queue-only bubble by cancelling its durable row; the '
+        'persisted-delete ArgumentError is expected and silent',
+        setUp: () {
+          // Queue-only optimistic/failed bubble: a row exists, no persisted
+          // direct_messages row — deleteMessageForEveryone throws.
+          when(
+            () => mockDmRepository.cancelOutgoingBatch(
+              rumorId: any(named: 'rumorId'),
+            ),
+          ).thenAnswer((_) async => 1);
+          when(
+            () => mockDmRepository.deleteMessageForEveryone(messageId),
+          ).thenThrow(ArgumentError('message not found'));
+        },
+        build: buildBloc,
+        act: (bloc) =>
+            bloc.add(const ConversationMessageDeleted(rumorId: messageId)),
+        errors: () => const <Object>[],
+        verify: (_) {
+          verify(
+            () => mockDmRepository.cancelOutgoingBatch(rumorId: messageId),
+          ).called(1);
+        },
+      );
+    });
+    group(ConversationFullSendRecoveryRequested, () {
+      // Queue-aware manual retry (gap 3): replay the EXISTING failed rows via
+      // recoverFullSend — never a fresh ConversationMessageSent, which would
+      // mint a new rumor id and risk a duplicate at the recipient.
+      const rumorId1 =
+          '7777777777777777777777777777777777777777777777777777777777777777';
+      const rumorId2 =
+          '8888888888888888888888888888888888888888888888888888888888888888';
+
+      blocTest<ConversationBloc, ConversationState>(
+        'replays each failed row via recoverFullSend (never a fresh send) '
+        'and emits [sending, sent] on full recovery',
+        setUp: () {
+          when(
+            () => mockDmRepository.recoverFullSend(
+              rumorId: any(named: 'rumorId'),
+              resetRetryBudget: any(named: 'resetRetryBudget'),
+            ),
+          ).thenAnswer(
+            (inv) async => NIP17SendResult.success(
+              rumorEventId: inv.namedArguments[#rumorId] as String,
+              messageEventId: inv.namedArguments[#rumorId] as String,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+        },
+        seed: () => const ConversationState(
+          status: ConversationStatus.loaded,
+          sendStatus: SendStatus.failed,
+        ),
+        build: buildBloc,
+        act: (bloc) => bloc.add(
+          const ConversationFullSendRecoveryRequested(
+            rumorIds: [rumorId1, rumorId2],
+          ),
+        ),
+        expect: () => [
+          isA<ConversationState>().having(
+            (s) => s.sendStatus,
+            'sendStatus',
+            SendStatus.sending,
+          ),
+          isA<ConversationState>().having(
+            (s) => s.sendStatus,
+            'sendStatus',
+            SendStatus.sent,
+          ),
+        ],
+        verify: (_) {
+          verify(
+            () => mockDmRepository.recoverFullSend(
+              rumorId: rumorId1,
+              resetRetryBudget: true,
+            ),
+          ).called(1);
+          verify(
+            () => mockDmRepository.recoverFullSend(
+              rumorId: rumorId2,
+              resetRetryBudget: true,
+            ),
+          ).called(1);
+          // The anti-duplication contract: no fresh rumor is ever minted.
+          verifyNever(
+            () => mockDmRepository.sendMessage(
+              recipientPubkey: any(named: 'recipientPubkey'),
+              content: any(named: 'content'),
+            ),
+          );
+          verifyNever(
+            () => mockDmRepository.sendGroupMessage(
+              recipientPubkeys: any(named: 'recipientPubkeys'),
+              content: any(named: 'content'),
+            ),
+          );
+        },
+      );
+
+      blocTest<ConversationBloc, ConversationState>(
+        'treats a soft-unconfirmed replay as STILL FAILING — the targeted '
+        'row is failed and the soft finalize never rewrites its status, so '
+        'claiming sent would swallow the red bubble without a delivery',
+        setUp: () {
+          when(
+            () => mockDmRepository.recoverFullSend(
+              rumorId: any(named: 'rumorId'),
+              resetRetryBudget: any(named: 'resetRetryBudget'),
+            ),
+          ).thenAnswer(
+            (_) async => const NIP17SendResult.failure(
+              'Message recipient OK unconfirmed',
+              retryablePending: true,
+            ),
+          );
+        },
+        seed: () => const ConversationState(
+          status: ConversationStatus.loaded,
+          sendStatus: SendStatus.failed,
+        ),
+        build: buildBloc,
+        act: (bloc) => bloc.add(
+          const ConversationFullSendRecoveryRequested(rumorIds: [rumorId1]),
+        ),
+        expect: () => [
+          isA<ConversationState>().having(
+            (s) => s.sendStatus,
+            'sendStatus',
+            SendStatus.sending,
+          ),
+          isA<ConversationState>().having(
+            (s) => s.sendStatus,
+            'sendStatus',
+            SendStatus.failed,
+          ),
+        ],
+      );
+
+      blocTest<ConversationBloc, ConversationState>(
+        're-raises failed when a hard-failed row still cannot be recovered',
+        setUp: () {
+          when(
+            () => mockDmRepository.recoverFullSend(
+              rumorId: rumorId1,
+              resetRetryBudget: true,
+            ),
+          ).thenAnswer(
+            (_) async => const NIP17SendResult.failure('relay still down'),
+          );
+        },
+        seed: () => const ConversationState(
+          status: ConversationStatus.loaded,
+          sendStatus: SendStatus.failed,
+        ),
+        build: buildBloc,
+        act: (bloc) => bloc.add(
+          const ConversationFullSendRecoveryRequested(rumorIds: [rumorId1]),
+        ),
+        expect: () => [
+          isA<ConversationState>().having(
+            (s) => s.sendStatus,
+            'sendStatus',
+            SendStatus.sending,
+          ),
+          isA<ConversationState>().having(
+            (s) => s.sendStatus,
+            'sendStatus',
+            SendStatus.failed,
+          ),
+        ],
+      );
+    });
+
+    group(ConversationOutgoingSendCancelled, () {
+      const rumorId =
+          '9999999999999999999999999999999999999999999999999999999999999999';
+
+      blocTest<ConversationBloc, ConversationState>(
+        'drops the queued row via cancelOutgoingSend with no state emit — '
+        'the bubble leaves on the next pendingOutgoing tick',
+        setUp: () {
+          when(
+            () => mockDmRepository.cancelOutgoingSend(
+              rumorId: any(named: 'rumorId'),
+            ),
+          ).thenAnswer((_) async => true);
+        },
+        seed: () => const ConversationState(
+          status: ConversationStatus.loaded,
+          sendStatus: SendStatus.failed,
+        ),
+        build: buildBloc,
+        act: (bloc) => bloc.add(
+          const ConversationOutgoingSendCancelled(rumorId: rumorId),
+        ),
+        expect: () => const <ConversationState>[],
+        verify: (_) {
+          verify(
+            () => mockDmRepository.cancelOutgoingSend(rumorId: rumorId),
+          ).called(1);
+        },
+      );
+
+      blocTest<ConversationBloc, ConversationState>(
+        'swallows an ArgumentError (foreign/already-gone row) with no error '
+        'emit',
+        setUp: () {
+          when(
+            () => mockDmRepository.cancelOutgoingSend(
+              rumorId: any(named: 'rumorId'),
+            ),
+          ).thenThrow(ArgumentError('foreign owner'));
+        },
+        seed: () => const ConversationState(status: ConversationStatus.loaded),
+        build: buildBloc,
+        act: (bloc) => bloc.add(
+          const ConversationOutgoingSendCancelled(rumorId: rumorId),
+        ),
+        expect: () => const <ConversationState>[],
+        errors: () => const <Object>[],
+      );
     });
   });
 
@@ -1526,7 +1895,6 @@ void main() {
           ConversationStatus.initial,
           <DmMessage>[],
           SendStatus.idle,
-          null,
           null,
           <OutgoingDm>[],
         ]),
@@ -1740,46 +2108,6 @@ void main() {
         );
       },
     );
-
-    test('states with different lastFailedSend are not equal', () {
-      expect(
-        const ConversationState(),
-        isNot(
-          equals(
-            const ConversationState(
-              lastFailedSend: FailedSend(
-                content: 'Hello',
-                recipientPubkeys: [recipientPubkey],
-              ),
-            ),
-          ),
-        ),
-      );
-    });
-
-    test('copyWith carries lastFailedSend forward when not overridden', () {
-      const failed = FailedSend(
-        content: 'Hello',
-        recipientPubkeys: [recipientPubkey],
-      );
-      const seeded = ConversationState(lastFailedSend: failed);
-
-      // Copying without specifying lastFailedSend keeps the existing value.
-      expect(
-        seeded.copyWith(sendStatus: SendStatus.sending).lastFailedSend,
-        equals(failed),
-      );
-    });
-
-    test('copyWith(clearLastFailedSend: true) wipes lastFailedSend', () {
-      const failed = FailedSend(
-        content: 'Hello',
-        recipientPubkeys: [recipientPubkey],
-      );
-      const seeded = ConversationState(lastFailedSend: failed);
-
-      expect(seeded.copyWith(clearLastFailedSend: true).lastFailedSend, isNull);
-    });
 
     test('states with different status are not equal', () {
       expect(

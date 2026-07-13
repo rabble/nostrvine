@@ -83,6 +83,7 @@ class MessageBubble extends StatelessWidget {
     this.isLastInGroup = true,
     this.onLongPress,
     this.onDoubleTap,
+    this.onTap,
     this.deliveryStatus = DmDeliveryStatus.delivered,
     this.dmReplyContext,
     this.sharedVideoRef,
@@ -114,6 +115,11 @@ class MessageBubble extends StatelessWidget {
   /// double-tap is the AT activation gesture — so the long-press picker stays
   /// the a11y path.
   final VoidCallback? onDoubleTap;
+
+  /// Called when the user taps the bubble. Wired only for failed own sends
+  /// (opens the resend/delete snackbar); null for every other bubble so a
+  /// normal message keeps its default tap behaviour.
+  final VoidCallback? onTap;
 
   /// Per-bubble delivery state. Only rendered for sent messages; received
   /// bubbles ignore it. Defaults to [DmDeliveryStatus.delivered] so test
@@ -240,10 +246,18 @@ class MessageBubble extends StatelessWidget {
           hint: isSent
               ? context.l10n.dmMessageBubbleSentHint
               : context.l10n.dmMessageBubbleReceivedHint,
+          // The failed-own-bubble tap affordance (resend/delete) is
+          // otherwise invisible to assistive tech — onTap is only wired
+          // for that case, so key the button semantics off it.
+          button: onTap != null,
+          onTapHint: onTap != null
+              ? context.l10n.dmMessageBubbleFailedTapHint
+              : null,
           onLongPressHint: onLongPress != null
               ? context.l10n.dmMessageBubbleLongPressHint
               : null,
           child: GestureDetector(
+            onTap: onTap,
             onLongPress: onLongPress,
             // Suppress double-tap-to-like on bubbles whose dominant content is
             // itself a tap target — the shared-video card and the quoted-video
@@ -347,10 +361,14 @@ class MessageBubble extends StatelessWidget {
                         dmReplyContext: dmReplyContext,
                       ),
                   ],
-                  if (isSent && deliveryStatus != DmDeliveryStatus.delivered)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: _DeliveryStatusIndicator(status: deliveryStatus),
+                  // Sends are optimistic: pending / delivered / self-wrap
+                  // states show nothing — the message just looks sent. Only a
+                  // hard failure surfaces, as an in-bubble "Not delivered" row
+                  // (the whole bubble is tappable to resend or delete).
+                  if (isSent && deliveryStatus == DmDeliveryStatus.failed)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 4),
+                      child: _NotDeliveredIndicator(),
                     ),
                 ],
               ),
@@ -1125,44 +1143,29 @@ class _VideoCard extends ConsumerWidget {
 }
 
 /// Small trailing icon at the bottom of a sent bubble that surfaces
-/// the row's outgoing-queue status. Rendered only when the row is in a
-/// non-delivered state — a fully delivered bubble shows no indicator
-/// to keep the chat-typical visual rhythm.
-class _DeliveryStatusIndicator extends StatelessWidget {
-  const _DeliveryStatusIndicator({required this.status});
-
-  final DmDeliveryStatus status;
+/// The in-bubble "Not delivered" affordance for a hard-failed own send.
+///
+/// Sends are optimistic, so this is the ONLY delivery state ever shown on a
+/// bubble — pending, delivered, and self-wrap-failed all render as a plain
+/// sent message. The enclosing bubble is tappable to resend or delete.
+class _NotDeliveredIndicator extends StatelessWidget {
+  const _NotDeliveredIndicator();
 
   @override
   Widget build(BuildContext context) {
-    final (icon, color, label) = switch (status) {
-      DmDeliveryStatus.pending => (
-        Icons.access_time,
-        VineTheme.whiteText.withValues(alpha: 0.7),
-        context.l10n.dmStatusPending,
-      ),
-      DmDeliveryStatus.deliveredSelfFailed => (
-        Icons.warning_amber_rounded,
-        VineTheme.warning,
-        context.l10n.dmStatusDeliveredSelfFailed,
-      ),
-      DmDeliveryStatus.failed => (
-        Icons.error_outline,
-        VineTheme.error,
-        context.l10n.dmStatusFailed,
-      ),
-      // Filtered out at the bubble level — included for exhaustiveness.
-      DmDeliveryStatus.delivered => (
-        Icons.check,
-        VineTheme.whiteText.withValues(alpha: 0.7),
-        '',
-      ),
-    };
+    final label = context.l10n.dmStatusFailed;
     return Semantics(
       label: label,
-      child: Tooltip(
-        message: label,
-        child: Icon(icon, size: 14, color: color),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 4,
+        children: [
+          const Icon(Icons.error_outline, size: 14, color: VineTheme.error),
+          Text(
+            label,
+            style: VineTheme.labelSmallFont(color: VineTheme.error),
+          ),
+        ],
       ),
     );
   }

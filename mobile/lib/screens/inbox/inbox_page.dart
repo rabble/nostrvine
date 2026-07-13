@@ -43,19 +43,48 @@ class InboxPage extends ConsumerWidget {
     final reportingService = ref.watch(contentReportingServiceProvider).value;
     final currentUserPubkey =
         ref.watch(authServiceProvider).currentPublicKeyHex ?? '';
+    final protectedMinorInboxGate = ref.watch(protectedMinorInboxGateProvider);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: MultiBlocProvider(
+        // `dmRepositoryProvider` is keepAlive but its body rebuilds a
+        // brand-new DmRepository whenever the nostr session advances
+        // (identityKnown -> nostrReady) or on account switch, and only the
+        // *ready* instance ever gets setCredentials()/startListening(). A
+        // BlocProvider factory runs once and captures whichever instance was
+        // current at mount; if the inbox is opened during the not-ready
+        // window the ConversationListBloc stays wired to that orphaned repo,
+        // whose userPubkeyStream never fires — so the list spins forever
+        // while DMs ingest on the new instance. Re-key on the captured
+        // repositories' identities so the blocs are rebuilt bound to the
+        // fresh instances on every flip. The tuple carries EVERY watched
+        // value a create: factory below captures whose identity can change
+        // at runtime (currentUserPubkey flips on account switch) — or the
+        // cubits capturing them silently keep the stale instance. See
+        // .claude/rules/state_management.md ("Bridging Riverpod-provided
+        // dependencies into BlocProvider").
+        //
+        // reportingService is deliberately NOT in this tuple: it resolves
+        // from null asynchronously shortly after every inbox mount, and
+        // keying the whole MultiBlocProvider on it tore down and recreated
+        // all five blocs (double ConversationListStarted + list reload)
+        // right after every open. Only its consumer — the
+        // ConversationActionsCubit provider below — is re-keyed on it.
+        key: ValueKey((
+          dmRepository,
+          followRepository,
+          blocklistRepository,
+          currentUserPubkey,
+          protectedMinorInboxGate,
+        )),
         providers: [
           BlocProvider(
             create: (_) => ConversationListBloc(
               dmRepository: dmRepository,
               followRepository: followRepository,
               contentBlocklistRepository: blocklistRepository,
-              protectedMinorInboxGate: ref.watch(
-                protectedMinorInboxGateProvider,
-              ),
+              protectedMinorInboxGate: protectedMinorInboxGate,
             )..add(const ConversationListStarted()),
           ),
           // Inbox-scope NotificationBadgeCubit feeds the segmented
@@ -74,7 +103,13 @@ class InboxPage extends ConsumerWidget {
             )..add(const MyFollowingListLoadRequested()),
           ),
           BlocProvider(create: (_) => ConversationMuteCubit(prefs: prefs)),
+          // Re-keyed on the async-resolving reportingService alone (last in
+          // the list so the swap recreates the smallest possible subtree):
+          // the actions cubit is action-only state and cheap to rebuild,
+          // and without the key it would capture the pre-resolution null
+          // forever, silently failing every report.
           BlocProvider(
+            key: ValueKey(reportingService),
             create: (_) => ConversationActionsCubit(
               contentReportingService: reportingService,
               contentBlocklistRepository: blocklistRepository,

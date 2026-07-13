@@ -5719,6 +5719,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dmMessageBubbleLongPressHint => 'Acțiuni pentru mesaj';
 
   @override
+  String get dmMessageBubbleFailedTapHint => 'Retrimite sau șterge acest mesaj';
+
+  @override
   String get dmMessageActionCopyText => 'Copiază textul';
 
   @override
@@ -5729,6 +5732,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dmMessageActionReport => 'Raportează';
+
+  @override
+  String get dmMessageActionRetrySend => 'Retrimite';
+
+  @override
+  String get dmMessageActionCancelSend => 'Șterge mesajul';
 
   @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
@@ -5808,14 +5817,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dmFormatCode => 'Cod';
 
   @override
-  String get dmStatusPending => 'Se trimite';
-
-  @override
   String get dmStatusFailed => 'N-am putut trimite';
-
-  @override
-  String get dmStatusDeliveredSelfFailed =>
-      'Livrat. Nu se va sincroniza cu celelalte dispozitive.';
 
   @override
   String get inboxConversationActionsSheetLabel => 'Acțiuni pentru conversație';

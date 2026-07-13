@@ -1753,6 +1753,16 @@
             "default_dart": null,
             "default_client_dart": null,
             "dsl_features": []
+          },
+          {
+            "name": "send_batch_id",
+            "getter_name": "sendBatchId",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
           }
         ],
         "is_virtual": false,
@@ -2247,6 +2257,16 @@
             "getter_name": "ownerPubkey",
             "moor_type": "string",
             "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "send_batch_id",
+            "getter_name": "sendBatchId",
+            "moor_type": "string",
+            "nullable": true,
             "customConstraints": null,
             "default_dart": null,
             "default_client_dart": null,
@@ -2774,7 +2794,7 @@
       "sql": [
         {
           "dialect": "sqlite",
-          "sql": "CREATE TABLE IF NOT EXISTS \"direct_messages\" (\"id\" TEXT NOT NULL, \"conversation_id\" TEXT NOT NULL, \"sender_pubkey\" TEXT NOT NULL, \"content\" TEXT NOT NULL, \"created_at\" INTEGER NOT NULL, \"reply_to_id\" TEXT NULL, \"gift_wrap_id\" TEXT NOT NULL, \"subject\" TEXT NULL, \"tags_json\" TEXT NULL, \"message_kind\" INTEGER NOT NULL DEFAULT 14, \"file_type\" TEXT NULL, \"encryption_algorithm\" TEXT NULL, \"decryption_key\" TEXT NULL, \"decryption_nonce\" TEXT NULL, \"file_hash\" TEXT NULL, \"original_file_hash\" TEXT NULL, \"file_size\" INTEGER NULL, \"dimensions\" TEXT NULL, \"blurhash\" TEXT NULL, \"thumbnail_url\" TEXT NULL, \"is_deleted\" INTEGER NOT NULL DEFAULT 0 CHECK (\"is_deleted\" IN (0, 1)), \"owner_pubkey\" TEXT NULL, PRIMARY KEY (\"id\"));"
+          "sql": "CREATE TABLE IF NOT EXISTS \"direct_messages\" (\"id\" TEXT NOT NULL, \"conversation_id\" TEXT NOT NULL, \"sender_pubkey\" TEXT NOT NULL, \"content\" TEXT NOT NULL, \"created_at\" INTEGER NOT NULL, \"reply_to_id\" TEXT NULL, \"gift_wrap_id\" TEXT NOT NULL, \"subject\" TEXT NULL, \"tags_json\" TEXT NULL, \"message_kind\" INTEGER NOT NULL DEFAULT 14, \"file_type\" TEXT NULL, \"encryption_algorithm\" TEXT NULL, \"decryption_key\" TEXT NULL, \"decryption_nonce\" TEXT NULL, \"file_hash\" TEXT NULL, \"original_file_hash\" TEXT NULL, \"file_size\" INTEGER NULL, \"dimensions\" TEXT NULL, \"blurhash\" TEXT NULL, \"thumbnail_url\" TEXT NULL, \"is_deleted\" INTEGER NOT NULL DEFAULT 0 CHECK (\"is_deleted\" IN (0, 1)), \"owner_pubkey\" TEXT NULL, \"send_batch_id\" TEXT NULL, PRIMARY KEY (\"id\"));"
         }
       ]
     },
@@ -2801,7 +2821,7 @@
       "sql": [
         {
           "dialect": "sqlite",
-          "sql": "CREATE TABLE IF NOT EXISTS \"outgoing_dms\" (\"id\" TEXT NOT NULL, \"conversation_id\" TEXT NOT NULL, \"recipient_pubkey\" TEXT NOT NULL, \"content\" TEXT NOT NULL, \"created_at\" INTEGER NOT NULL, \"rumor_event_json\" TEXT NOT NULL, \"message_kind\" INTEGER NOT NULL DEFAULT 14, \"reply_to_id\" TEXT NULL, \"recipient_wrap_status\" TEXT NOT NULL, \"self_wrap_status\" TEXT NOT NULL, \"recipient_wrap_event_id\" TEXT NULL, \"self_wrap_event_id\" TEXT NULL, \"retry_count\" INTEGER NOT NULL DEFAULT 0, \"recipient_wrap_last_error\" TEXT NULL, \"self_wrap_last_error\" TEXT NULL, \"last_attempt_at\" INTEGER NULL, \"queued_at\" INTEGER NOT NULL, \"owner_pubkey\" TEXT NOT NULL, PRIMARY KEY (\"id\"));"
+          "sql": "CREATE TABLE IF NOT EXISTS \"outgoing_dms\" (\"id\" TEXT NOT NULL, \"conversation_id\" TEXT NOT NULL, \"recipient_pubkey\" TEXT NOT NULL, \"content\" TEXT NOT NULL, \"created_at\" INTEGER NOT NULL, \"rumor_event_json\" TEXT NOT NULL, \"message_kind\" INTEGER NOT NULL DEFAULT 14, \"reply_to_id\" TEXT NULL, \"recipient_wrap_status\" TEXT NOT NULL, \"self_wrap_status\" TEXT NOT NULL, \"recipient_wrap_event_id\" TEXT NULL, \"self_wrap_event_id\" TEXT NULL, \"retry_count\" INTEGER NOT NULL DEFAULT 0, \"recipient_wrap_last_error\" TEXT NULL, \"self_wrap_last_error\" TEXT NULL, \"last_attempt_at\" INTEGER NULL, \"queued_at\" INTEGER NOT NULL, \"owner_pubkey\" TEXT NOT NULL, \"send_batch_id\" TEXT NULL, PRIMARY KEY (\"id\"));"
         }
       ]
     },

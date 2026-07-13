@@ -3,6 +3,8 @@
 // ABOUTME: (kind 14 rumor → kind 13 seal → kind 1059 gift wrap)
 // ABOUTME: Works with any NostrSigner (local keys, Keycast RPC, Amber, etc.)
 
+import 'dart:async';
+
 import 'package:dm_repository/src/dm_send_policy.dart';
 import 'package:dm_repository/src/gift_wrap_build_worker.dart';
 import 'package:flutter/foundation.dart' show compute;
@@ -43,6 +45,21 @@ typedef GiftWrapBuilder =
 typedef IsolateGiftWrapBatchBuilder =
     Future<List<BuiltGiftWrapResult>> Function(BuildGiftWrapRequest request);
 
+/// Reports whether the device currently has no network connectivity.
+///
+/// Injected by the app layer (wired to `connectivity_plus`). Lets `sendRumor`
+/// distinguish a genuine offline send — which must surface as a hard failure
+/// (a red "Not delivered" bubble that re-drives on reconnect) — from a soft
+/// "frame written, OK lost" send on a live network. Without it, an offline send
+/// whose relay socket is still stale-`connected` (airplane mode is not detected
+/// synchronously) buffers the frame to a dead socket, the recipient OK never
+/// arrives, and the send is misclassified as soft-unconfirmed — so the bubble
+/// keeps looking sent instead of turning red. See #6046.
+///
+/// Defaults to always-online (`false`) so callers and tests that do not wire
+/// connectivity in keep their prior classification behavior.
+typedef OfflineProbe = Future<bool> Function();
+
 /// Service for sending encrypted private messages using NIP-17 gift wrapping.
 ///
 /// Accepts any [NostrSigner] implementation, supporting both local key
@@ -54,12 +71,14 @@ class NIP17MessageService {
     required String senderPublicKey,
     required NostrClient nostrService,
     DmSendPolicy? sendPolicy,
+    OfflineProbe? isOffline,
     @visibleForTesting GiftWrapBuilder? giftWrapBuilder,
     @visibleForTesting IsolateGiftWrapBatchBuilder? isolateGiftWrapBatchBuilder,
   }) : _signer = signer,
        _senderPublicKey = senderPublicKey,
        _nostrService = nostrService,
        _sendPolicy = sendPolicy ?? allowAllDmSendPolicy,
+       _isOffline = isOffline ?? _alwaysOnline,
        _giftWrapBuilder = giftWrapBuilder ?? GiftWrapUtil.getGiftWrapEvent,
        _isolateGiftWrapBatchBuilder =
            isolateGiftWrapBatchBuilder ?? _computeGiftWrapBatch;
@@ -68,8 +87,13 @@ class NIP17MessageService {
   final String _senderPublicKey;
   final NostrClient _nostrService;
   final DmSendPolicy _sendPolicy;
+  final OfflineProbe _isOffline;
   final GiftWrapBuilder _giftWrapBuilder;
   final IsolateGiftWrapBatchBuilder _isolateGiftWrapBatchBuilder;
+
+  /// Default connectivity probe: assumes the device is online. Kept as a
+  /// static tear-off so the constructor's default captures no instance state.
+  static Future<bool> _alwaysOnline() async => false;
 
   /// Default off-main-isolate builder: runs [buildGiftWrapBatch] in a
   /// [compute] isolate. Kept as a static tear-off so the constructor's
@@ -244,20 +268,37 @@ class NIP17MessageService {
     required String content,
     int eventKind = EventKind.privateDirectMessage,
     List<List<String>> additionalTags = const [],
+    int? createdAt,
   }) {
     final rumorTags = <List<String>>[
       ['p', recipientPubkey],
       ...additionalTags,
     ];
 
-    return Event(_senderPublicKey, eventKind, rumorTags, content);
+    // [createdAt] lets a group fan-out stamp every per-recipient rumor with
+    // one shared batch timestamp, so all sibling rows sort together on the
+    // sender-side timeline. (The batch identity used for dedup/grouping is a
+    // separate durable id — see `OutgoingDms.sendBatchId`.)
+    return Event(
+      _senderPublicKey,
+      eventKind,
+      rumorTags,
+      content,
+      createdAt: createdAt,
+    );
   }
 
   /// OK-confirmation window for the recipient wrap when [sendRumor] runs
-  /// with `awaitRecipientOk: true` (reaction sends). Kept under the reaction
-  /// path's outer 15 s publish cap so the confirmation resolves with headroom
-  /// for the subsequent self-wrap before the caller's timeout fires.
+  /// with `awaitRecipientOk: true` (reaction sends and message sends). Kept
+  /// well under the caller's outer publish cap so the confirmation resolves
+  /// with headroom for the subsequent self-wrap before that timeout fires.
   static const Duration _recipientOkConfirmTimeout = Duration(seconds: 10);
+
+  /// Hard bound on the self-wrap publish. `publishEvent` is frame-accept
+  /// with no timeout of its own, so a stalled socket would otherwise hang
+  /// the send's tail past the caller's outer cap and misclassify a
+  /// recipient-confirmed send as retryable-pending.
+  static const Duration _selfWrapPublishTimeout = Duration(seconds: 10);
 
   /// Wrap and publish a pre-built [rumorEvent] to the recipient and to
   /// ourselves (self-addressed gift wrap for cross-device recovery).
@@ -266,8 +307,10 @@ class NIP17MessageService {
   /// the relay's NIP-20 `OK true` before it counts as landed, instead of the
   /// default frame-accept. A bare frame-accept is a false positive on a flaky
   /// single relay — it reports success even though the relay never stored the
-  /// event — so reaction sends (which have no durable message-style retry
-  /// queue) opt in to confirmation. Message sends keep the default.
+  /// event — so both reaction and message sends opt in to confirmation and
+  /// lean on their durable retry queues to re-drive a soft, unconfirmed
+  /// outcome. The default (`false`) frame-accept path is retained for callers
+  /// with no confirmation need.
   ///
   /// Self-wrap failure is intentionally non-fatal — the message has
   /// already been delivered to the recipient at that point, and
@@ -276,11 +319,23 @@ class NIP17MessageService {
   /// retry the recipient publish, double-delivering. A future revision
   /// (PR #3910) will surface the self-wrap outcome separately so the
   /// repository can mark each wrap status independently.
+  ///
+  /// [selfWrapOnSoftUnconfirmed] controls whether the self-addressed wrap is
+  /// still published when the recipient publish ends soft-unconfirmed (frame
+  /// written, no OK). Reactions keep the default `true` — a lost OK may mean
+  /// the recipient already has the reaction, and their retry service owns
+  /// the follow-up (#5977). Message sends pass `false`: their durable queue
+  /// re-drives the FULL send until the recipient wrap confirms (publishing
+  /// both wraps on success), so a soft self-wrap buys no durability — but if
+  /// it lands, its round-trip through the receive pipeline persists the
+  /// message as a plain sent row, seeding a sent-looking bubble for a
+  /// message the recipient may never have received (#6046).
   Future<NIP17SendResult> sendRumor({
     required Event rumorEvent,
     required String recipientPubkey,
     List<String>? targetRelays,
     bool awaitRecipientOk = false,
+    bool selfWrapOnSoftUnconfirmed = true,
   }) async {
     try {
       // Send gate (#176): the lowest recipient-delivering primitive, so every
@@ -305,13 +360,35 @@ class NIP17MessageService {
         );
       }
 
+      // Fail fast when the device has no connectivity. A publish while offline
+      // only buffers the frame to a relay socket still stale-`connected`
+      // (airplane mode is not detected synchronously — the WebSocket flips to
+      // disconnected only on an async OS close or the heartbeat idle timeout),
+      // so the OK-confirm path below would misread it as a soft "frame written,
+      // OK lost" send and keep the bubble looking sent. With no connectivity
+      // the send definitively did not happen: return a hard failure so the
+      // durable queue marks the row failed (red bubble) and the reconnect sweep
+      // re-drives it. See #6046.
+      if (await _isOfflineSafely()) {
+        Log.info(
+          'NIP-17 send skipped: device reports no connectivity',
+          category: LogCategory.system,
+        );
+        return const NIP17SendResult.failure(
+          'Message not sent: device offline',
+        );
+      }
+
       Log.info(
         'Sending NIP-17 encrypted message to recipient',
         category: LogCategory.system,
       );
 
       // Create a minimal Nostr instance for GiftWrapUtil.
-      // Uses the injected signer (works with local or remote signing).
+      // Uses the injected signer (works with local or remote signing). The
+      // signer stays the source of truth for the seal pubkey (it MUST match
+      // the signing key, NIP-59); Keycast caches getPublicKey locally, so
+      // this refresh is not an RPC round-trip.
       final nostr = Nostr(
         _signer,
         [], // Empty filters - not using for subscriptions
@@ -380,19 +457,28 @@ class NIP17MessageService {
             outcome.noResponseFrom.isEmpty;
         final softUnconfirmed = !rejected && !reachedNoRelay;
 
-        // Publish the self-addressed wrap ONLY when the recipient confirmed OR
-        // the send is soft-unconfirmed (frame written, OK lost/late — the
-        // recipient may already have the reaction). On a hard rejection or an
-        // offline no-relay-reached the recipient definitely did not get it, so
-        // a self-wrap would surface a phantom reaction on the sender's other
+        // Kind-aware noun for logs and error strings: this path serves both
+        // reaction (kind 7) and message (kind 14/15) sends, and a log that
+        // says "reaction" for a text message misdirects field debugging.
+        final isReaction = rumorEvent.kind == EventKind.reaction;
+        final rumorNoun = isReaction ? 'reaction' : 'message';
+        final rumorNounCapitalized = isReaction ? 'Reaction' : 'Message';
+
+        // Publish the self-addressed wrap ONLY when the recipient confirmed
+        // OR the send is soft-unconfirmed AND the caller opted in
+        // ([selfWrapOnSoftUnconfirmed] — reactions only; see the doc above
+        // for why message sends opt out). On a hard rejection or an offline
+        // no-relay-reached the recipient definitely did not get it, so a
+        // self-wrap would surface a phantom rumor on the sender's other
         // devices / reinstall (ingested via persistIncoming as a plain
-        // `received` row with no retry metadata). The self-wrap is p-tagged to
-        // the sender only, so publishing it on a soft-unconfirmed send never
-        // double-delivers to the counterparty.
+        // `received` row with no retry metadata). The self-wrap is p-tagged
+        // to the sender only, so publishing it on a soft-unconfirmed send
+        // never double-delivers to the counterparty.
         // Short-circuit `&&`: when the gate is false the self-wrap publish is
         // never awaited, so it is skipped entirely on rejected / reachedNoRelay.
         final selfWrapPublished =
-            (outcome.confirmed || softUnconfirmed) &&
+            (outcome.confirmed ||
+                (softUnconfirmed && selfWrapOnSoftUnconfirmed)) &&
             await _publishSelfWrap(
               nostr: nostr,
               rumorEvent: rumorEvent,
@@ -401,7 +487,7 @@ class NIP17MessageService {
 
         if (outcome.confirmed) {
           Log.info(
-            'Successfully published NIP-17 reaction '
+            'Successfully published NIP-17 $rumorNoun '
             '(selfWrapPublished=$selfWrapPublished)',
             category: LogCategory.system,
           );
@@ -422,14 +508,17 @@ class NIP17MessageService {
         //    (a lost OK is not proof of loss).
         final String errorMsg;
         if (rejected) {
-          errorMsg = 'Reaction rejected by relay: ${outcome.summary}';
+          errorMsg =
+              '$rumorNounCapitalized rejected by relay: ${outcome.summary}';
         } else if (reachedNoRelay) {
-          errorMsg = 'Reaction not sent: no relay reached';
+          errorMsg = '$rumorNounCapitalized not sent: no relay reached';
         } else {
-          errorMsg = 'Reaction recipient OK unconfirmed: ${outcome.summary}';
+          errorMsg =
+              '$rumorNounCapitalized recipient OK unconfirmed: '
+              '${outcome.summary}';
         }
         Log.warning(
-          'NIP-17 reaction recipient publish unconfirmed '
+          'NIP-17 $rumorNoun recipient publish unconfirmed '
           '(rumor=${rumorEvent.id}, recipient=$recipientPubkey, '
           '${outcome.summary}); selfWrapPublished=$selfWrapPublished',
           category: LogCategory.system,
@@ -495,6 +584,20 @@ class NIP17MessageService {
     }
   }
 
+  /// Runs the injected connectivity probe, defaulting to online on any error so
+  /// a flaky probe never blocks a send that might otherwise succeed.
+  Future<bool> _isOfflineSafely() async {
+    try {
+      return await _isOffline();
+    } on Object catch (e) {
+      Log.warning(
+        'Offline probe failed; assuming online: $e',
+        category: LogCategory.system,
+      );
+      return false;
+    }
+  }
+
   /// Publish only the sender self-addressed gift wrap for an
   /// already-sent [rumorEvent].
   ///
@@ -515,6 +618,19 @@ class NIP17MessageService {
   /// or did not reach a relay.
   Future<NIP17SendResult> publishSelfWrap({required Event rumorEvent}) async {
     try {
+      // Same fail-fast as sendRumor: a frame buffered to a stale-`connected`
+      // socket while offline would count as PublishSuccess and mark the
+      // self-wrap `sent` even though it never left the device.
+      if (await _isOfflineSafely()) {
+        Log.info(
+          'Self-wrap recovery skipped: device reports no connectivity',
+          category: LogCategory.system,
+        );
+        return const NIP17SendResult.failure(
+          'Self-wrap not sent: device offline',
+        );
+      }
+
       Log.info(
         'Publishing self-addressed NIP-17 gift wrap for rumor recovery',
         category: LogCategory.system,
@@ -580,7 +696,19 @@ class NIP17MessageService {
         );
         return false;
       }
-      final published = await _nostrService.publishEvent(selfWrapEvent);
+      // Bounded: publishEvent is frame-accept with no timeout of its own, so
+      // a stalled socket would hang the send's tail past the caller's outer
+      // cap and misclassify a recipient-confirmed send as retryable-pending.
+      // try/on rather than onTimeout: the future's reified type can be a
+      // PublishResult subtype, which an onTimeout closure cannot satisfy.
+      PublishResult published;
+      try {
+        published = await _nostrService
+            .publishEvent(selfWrapEvent)
+            .timeout(_selfWrapPublishTimeout);
+      } on TimeoutException {
+        published = const PublishFailed();
+      }
       if (published is! PublishSuccess) {
         Log.warning(
           'Self-wrap publish failed — the sender will not see this '

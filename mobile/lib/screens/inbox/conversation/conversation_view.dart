@@ -136,11 +136,22 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
     return Scaffold(
       backgroundColor: VineTheme.surfaceBackground,
       body: BlocListener<ConversationBloc, ConversationState>(
+        // A hard failure is shown on the bubble itself (tap → resend/delete),
+        // so this listener only handles the toasts that have no bubble —
+        // a policy block and a partial (self-wrap) delivery — plus a
+        // screen-reader announcement (no toast) for hard failures, since
+        // the red in-bubble row is silent to assistive tech until focused.
+        // Also fire on a sentPartial → sentPartial transition whose rumor-id
+        // set changed: with concurrent() sends, a second overlapping partial
+        // keeps the same sendStatus and would otherwise never surface its
+        // recovery snackbar.
         listenWhen: (previous, current) =>
-            previous.sendStatus != current.sendStatus &&
-            (current.sendStatus == SendStatus.failed ||
-                current.sendStatus == SendStatus.sentPartial ||
-                current.sendStatus == SendStatus.blocked),
+            (previous.sendStatus != current.sendStatus ||
+                (current.sendStatus == SendStatus.sentPartial &&
+                    previous.lastPartialSend != current.lastPartialSend)) &&
+            (current.sendStatus == SendStatus.sentPartial ||
+                current.sendStatus == SendStatus.blocked ||
+                current.sendStatus == SendStatus.failed),
         listener: _onSendOutcome,
         child: Column(
           children: [
@@ -224,15 +235,16 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
   }
 
   void _onSendOutcome(BuildContext context, ConversationState state) {
-    // Protected-minor DM restriction (#176): the send was refused by policy,
-    // not a transient failure — show distinct copy with NO retry (retrying only
-    // re-hits the same block).
+    final l10n = context.l10n;
+
+    // Protected-minor DM restriction (#176): the send was refused by policy.
+    // No bubble is created for a blocked send, so surface it as a toast (no
+    // retry — retrying only re-hits the same block).
     if (state.sendStatus == SendStatus.blocked) {
-      final l10n = context.l10n;
       final message = l10n.dmSendBlockedMessage;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(message)));
+        ..showSnackBar(DivineSnackbarContainer.snackBar(message, error: true));
       SemanticsService.sendAnnouncement(
         View.of(context),
         message,
@@ -241,50 +253,53 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
       return;
     }
 
-    final isPartial = state.sendStatus == SendStatus.sentPartial;
-    // Pick the retry payload based on which outcome we're recovering
-    // from: failed → full resend (content + recipients), sentPartial →
-    // self-wrap-only recovery (rumor ids). Either side may be null on
-    // an out-of-band emit; bail out rather than show a SnackBar that
-    // does nothing.
-    final partialSend = state.lastPartialSend;
-    final failedSend = state.lastFailedSend;
-    if (isPartial && partialSend == null) return;
-    if (!isPartial && failedSend == null) return;
+    // Hard failure: the red "Not delivered" row on the bubble is the visual
+    // affordance, so no toast — but announce it, per `accessibility.md`,
+    // because the bubble's state change is silent to assistive tech.
+    if (state.sendStatus == SendStatus.failed) {
+      SemanticsService.sendAnnouncement(
+        View.of(context),
+        l10n.dmSendFailedMessage,
+        Directionality.of(context),
+      );
+      return;
+    }
 
-    final l10n = context.l10n;
-    final message = isPartial
-        ? l10n.dmSendPartialMessage
-        : l10n.dmSendFailedMessage;
-    final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(message),
-        action: SnackBarAction(
-          label: l10n.dmSendFailedRetry,
-          onPressed: () {
-            final bloc = context.read<ConversationBloc>();
-            if (isPartial) {
-              bloc.add(
-                ConversationSelfWrapRecoveryRequested(
-                  rumorIds: partialSend!.rumorIds,
-                ),
-              );
-            } else {
-              bloc.add(
-                ConversationMessageSent(
-                  recipientPubkeys: failedSend!.recipientPubkeys,
-                  content: failedSend.content,
-                ),
-              );
-            }
+    // Partial delivery (#4102): the recipient got the message but our
+    // self-addressed wrap didn't land, so it won't sync to our other devices.
+    // Not a failure (the bubble shows delivered) — a one-tap self-wrap-only
+    // recovery. Hard failures are surfaced on the bubble itself, not here.
+    final partialSend = state.lastPartialSend;
+    if (partialSend == null) return;
+
+    final message = l10n.dmSendPartialMessage;
+    final bloc = context.read<ConversationBloc>();
+    final messenger = ScaffoldMessenger.of(context);
+    var handled = false;
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        DivineSnackbarContainer.snackBar(
+          message,
+          actionLabel: l10n.dmSendFailedRetry,
+          // One-shot + dismiss + closed-bloc guard: the snackbar can outlive
+          // the route (and its bloc), and the plain buttons in
+          // DivineSnackbarContainer neither auto-dismiss nor debounce.
+          onActionPressed: () {
+            if (handled || bloc.isClosed) return;
+            handled = true;
+            messenger.hideCurrentSnackBar();
+            bloc.add(
+              ConversationSelfWrapRecoveryRequested(
+                rumorIds: partialSend.rumorIds,
+              ),
+            );
           },
         ),
-      ),
-    );
+      );
     // Per `accessibility.md`, async visible state changes must announce
-    // explicitly — relying on Material's default SnackBar semantics is
-    // weaker than the written rule and not guaranteed across platforms.
+    // explicitly — Material's default SnackBar semantics are weaker than the
+    // written rule and not guaranteed across platforms.
     SemanticsService.sendAnnouncement(
       View.of(context),
       message,
@@ -293,7 +308,12 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
   }
 }
 
-/// Selects [SendStatus] from the bloc and renders [MessageInputBar].
+/// Renders [MessageInputBar]. Deliberately NOT gated on
+/// [ConversationState.sendStatus]: sends are optimistic (the bubble comes
+/// from the durable queue row the instant the event is dispatched), and the
+/// OK-confirmed publish can legitimately run for tens of seconds on a slow
+/// relay or remote signer — freezing the composer for that window swallowed
+/// every follow-up message the user tried to type.
 class _SendBar extends StatelessWidget {
   const _SendBar({required this.participantPubkeys});
 
@@ -301,19 +321,13 @@ class _SendBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocSelector<ConversationBloc, ConversationState, SendStatus>(
-      selector: (state) => state.sendStatus,
-      builder: (context, sendStatus) {
-        return MessageInputBar(
-          isSending: sendStatus == SendStatus.sending,
-          onSend: (text) {
-            context.read<ConversationBloc>().add(
-              ConversationMessageSent(
-                recipientPubkeys: participantPubkeys,
-                content: text,
-              ),
-            );
-          },
+    return MessageInputBar(
+      onSend: (text) {
+        context.read<ConversationBloc>().add(
+          ConversationMessageSent(
+            recipientPubkeys: participantPubkeys,
+            content: text,
+          ),
         );
       },
     );
@@ -444,6 +458,8 @@ class _MessageList extends StatelessWidget {
     final videoUrl = tryExtractDivineVideoUrl(message.content);
     // Reaction picker hidden on failed-send own DMs — reacting to a
     // message the recipient never received is meaningless (#4633 round 25).
+    // A failed bubble's resend/delete affordance lives on a single TAP
+    // (see [_onFailedMessageTap]), not this long-press menu.
     final showPicker = !(isSent && deliveryStatus == DmDeliveryStatus.failed);
     final result = await ReactionPickerOverlay.show(
       context: context,
@@ -484,6 +500,65 @@ class _MessageList extends StatelessWidget {
           senderPubkey: message.senderPubkey,
         );
     }
+  }
+
+  /// Tapping a failed own bubble surfaces a native divine snackbar offering a
+  /// queue-aware resend or a delete. Resend replays the batch's FAILED
+  /// row(s) via [ConversationFullSendRecoveryRequested] (a manual retry
+  /// bypasses the sweep's retry-count cap) — never the siblings that
+  /// already delivered. Delete ("cancel send") drops every UNDELIVERED
+  /// sibling row (pending + failed) via [ConversationOutgoingSendCancelled]:
+  /// cancelling only the failed ones left pending siblings for the retry
+  /// sweep to publish after the user said give up. Delivered-awaiting-
+  /// self-wrap rows are excluded — those recipients already have the
+  /// message. Both actions are one-shot, dismiss the snackbar, and no-op
+  /// once the bloc is closed (the snackbar can outlive the route).
+  void _onFailedMessageTap(BuildContext context, DmMessage message) {
+    final l10n = context.l10n;
+    final bloc = context.read<ConversationBloc>();
+    final messenger = ScaffoldMessenger.of(context);
+    final failedIds = bloc.state.failedSiblingRumorIdsFor(message.id);
+    final resendIds = failedIds.isEmpty ? [message.id] : failedIds;
+    final undeliveredIds = bloc.state.undeliveredSiblingRumorIdsFor(
+      message.id,
+    );
+    final cancelIds = undeliveredIds.isEmpty ? [message.id] : undeliveredIds;
+    var handled = false;
+    void runOnce(void Function() action) {
+      if (handled || bloc.isClosed) return;
+      handled = true;
+      messenger.hideCurrentSnackBar();
+      action();
+    }
+
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        DivineSnackbarContainer.snackBar(
+          l10n.dmSendFailedMessage,
+          error: true,
+          actionLabel: l10n.dmMessageActionRetrySend,
+          onActionPressed: () => runOnce(
+            () => bloc.add(
+              ConversationFullSendRecoveryRequested(rumorIds: resendIds),
+            ),
+          ),
+          secondaryActionLabel: l10n.dmMessageActionCancelSend,
+          onSecondaryActionPressed: () => runOnce(() {
+            for (final id in cancelIds) {
+              bloc.add(ConversationOutgoingSendCancelled(rumorId: id));
+            }
+          }),
+        ),
+      );
+    // Per `accessibility.md`, async visible state changes must announce
+    // explicitly — same rule as the blocked/partial snackbars in
+    // [_onSendOutcome].
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      l10n.dmSendFailedMessage,
+      Directionality.of(context),
+    );
   }
 
   void _toggleReaction(BuildContext context, DmMessage message, String emoji) {
@@ -598,6 +673,11 @@ class _MessageList extends StatelessWidget {
             isLastInGroup: isLastInGroup,
             onLongPress: () =>
                 _onMessageLongPress(context, message, isSent, status),
+            // A single tap on a failed own bubble opens the resend/delete
+            // divine snackbar; every other bubble keeps its default tap.
+            onTap: isSent && status == DmDeliveryStatus.failed
+                ? () => _onFailedMessageTap(context, message)
+                : null,
             // Double-tap-to-like, hidden on failed own sends to mirror the
             // long-press picker guard (reacting to a message the recipient
             // never received is meaningless).

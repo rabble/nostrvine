@@ -7,9 +7,12 @@ import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -35,6 +38,12 @@ class _MockInviteStatusCubit extends MockCubit<InviteStatusState>
 
 class _MockDmUnreadCountCubit extends MockCubit<int>
     implements DmUnreadCountCubit {}
+
+/// Flip this to force `dmRepositoryProvider` to hand over a different
+/// DmRepository instance — mirrors production, where the keepAlive provider
+/// rebuilds a fresh repository (initially not-ready, then ready) as the nostr
+/// session advances identityKnown -> nostrReady. See repository_providers.dart.
+final _dmRepoSwap = StateProvider<int>((ref) => 0);
 
 void main() {
   const testPubkey =
@@ -174,6 +183,136 @@ void main() {
 
         expect(find.byType(InboxView), findsOneWidget);
       });
+    });
+
+    // The keepAlive `dmRepositoryProvider` rebuilds a brand-new DmRepository
+    // on the identityKnown -> nostrReady transition, and only the *ready*
+    // instance ever gets setCredentials() — so only its userPubkeyStream
+    // delivers a pubkey. A keyless BlocProvider strands the bloc on the
+    // orphaned not-ready instance and the inbox spins forever while DMs
+    // ingest on the fresh one. These pin the ValueKey rebind fix in
+    // inbox_page.dart. See .claude/rules/state_management.md.
+    group('rebinds ConversationListBloc when dmRepositoryProvider flips', () {
+      void stubInbox(_MockDmRepository repo, {required String userPubkey}) {
+        when(
+          () => repo.watchAcceptedConversations(limit: any(named: 'limit')),
+        ).thenAnswer((_) => Stream.value(const []));
+        when(
+          () => repo.watchPotentialRequests(),
+        ).thenAnswer((_) => Stream.value(const []));
+        when(() => repo.userPubkey).thenReturn(userPubkey);
+        when(
+          () => repo.userPubkeyStream,
+        ).thenAnswer((_) => Stream.value(userPubkey));
+        when(
+          () => repo.historyRecoveryStream,
+        ).thenAnswer((_) => const Stream<bool>.empty());
+        when(() => repo.isRecoveringHistory).thenReturn(false);
+        when(() => repo.isHistoryRecoveryComplete).thenReturn(true);
+        when(() => repo.backfillHistoryIfNeeded()).thenAnswer((_) async {});
+        when(() => repo.retryPendingDecryptions()).thenAnswer((_) async {});
+        when(() => repo.startListening()).thenAnswer((_) async {});
+        when(() => repo.stopListening()).thenAnswer((_) async {});
+      }
+
+      Widget buildApp(DmRepository readyRepo) {
+        return testMaterialApp(
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider<DmUnreadCountCubit>.value(
+                value: mockDmUnreadCountCubit,
+              ),
+              BlocProvider<InviteStatusCubit>.value(value: mockInviteCubit),
+            ],
+            child: const InboxPage(),
+          ),
+          mockAuthService: mockAuthService,
+          mockFollowRepository: mockFollowRepository,
+          additionalOverrides: [
+            dmRepositoryProvider.overrideWith(
+              (ref) =>
+                  ref.watch(_dmRepoSwap) == 0 ? mockDmRepository : readyRepo,
+            ),
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              mockBlocklistRepository,
+            ),
+            goRouterProvider.overrideWithValue(mockGoRouter),
+          ],
+        );
+      }
+
+      ConversationListBloc readBloc(WidgetTester tester) =>
+          BlocProvider.of<ConversationListBloc>(
+            tester.element(find.byType(InboxView)),
+          );
+
+      void flipToReady(WidgetTester tester) {
+        ProviderScope.containerOf(
+          tester.element(find.byType(InboxPage)),
+          listen: false,
+        ).read(_dmRepoSwap.notifier).state = 1;
+      }
+
+      testWidgets(
+        'recreates the bloc bound to the ready repo when the provider hands '
+        'over a fresh instance',
+        (tester) async {
+          final readyRepo = _MockDmRepository();
+          // Bloc mounts against the not-ready instance (empty pubkey).
+          stubInbox(mockDmRepository, userPubkey: '');
+          stubInbox(readyRepo, userPubkey: testPubkey);
+
+          await tester.pumpWidget(buildApp(readyRepo));
+          await tester.pump();
+
+          final blocA = readBloc(tester);
+          expect(
+            blocA.state.status,
+            isNot(ConversationListStatus.loaded),
+            reason:
+                'bound to the not-ready repo (empty pubkey), so onData holds '
+                'the loading spinner — the reported stuck inbox',
+          );
+
+          // Session advances identityKnown -> nostrReady: the provider hands
+          // over a fresh, ready DmRepository.
+          flipToReady(tester);
+          await tester.pump();
+
+          expect(
+            readBloc(tester),
+            isNot(same(blocA)),
+            reason:
+                'a keyless BlocProvider leaves the bloc wired to the orphaned '
+                'not-ready DmRepository so the inbox never loads; the ValueKey '
+                'must rebuild it bound to the ready instance',
+          );
+        },
+      );
+
+      testWidgets(
+        'keeps the same bloc when the repository identity does not change',
+        (tester) async {
+          stubInbox(mockDmRepository, userPubkey: testPubkey);
+
+          // Both swap states resolve to the same instance.
+          await tester.pumpWidget(buildApp(mockDmRepository));
+          await tester.pump();
+
+          final blocA = readBloc(tester);
+
+          flipToReady(tester);
+          await tester.pump();
+
+          expect(
+            readBloc(tester),
+            same(blocA),
+            reason:
+                'an identical repo identity yields an equal record key, so the '
+                'bloc must not churn on unrelated provider rebuilds',
+          );
+        },
+      );
     });
   });
 }

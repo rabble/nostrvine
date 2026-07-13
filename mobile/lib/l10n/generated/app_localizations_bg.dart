@@ -5619,6 +5619,10 @@ class AppLocalizationsBg extends AppLocalizations {
   String get dmMessageBubbleLongPressHint => 'Действия за съобщението';
 
   @override
+  String get dmMessageBubbleFailedTapHint =>
+      'Изпратете отново или изтрийте това съобщение';
+
+  @override
   String get dmMessageActionCopyText => 'Копирай текста';
 
   @override
@@ -5629,6 +5633,12 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get dmMessageActionReport => 'Докладвай';
+
+  @override
+  String get dmMessageActionRetrySend => 'Изпрати отново';
+
+  @override
+  String get dmMessageActionCancelSend => 'Изтрий съобщението';
 
   @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
@@ -5708,14 +5718,7 @@ class AppLocalizationsBg extends AppLocalizations {
   String get dmFormatCode => 'Код';
 
   @override
-  String get dmStatusPending => 'Изпращаме';
-
-  @override
   String get dmStatusFailed => 'Изпращането не успя';
-
-  @override
-  String get dmStatusDeliveredSelfFailed =>
-      'Доставено. Няма да се синхронизира с другите ти устройства.';
 
   @override
   String get inboxConversationActionsSheetLabel => 'Действия за разговора';

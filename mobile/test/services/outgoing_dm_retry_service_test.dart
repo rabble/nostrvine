@@ -8,6 +8,7 @@ import 'dart:async';
 
 import 'package:db_client/db_client.dart';
 import 'package:dm_repository/dm_repository.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show NIP17SendResult;
@@ -67,15 +68,23 @@ void main() {
   late _MockDmRepository dmRepository;
   late _MockOutgoingDmsDao dao;
   late StreamController<bool> foregroundController;
+  late StreamController<void> retryableWorkController;
 
   setUpAll(() {
     registerFallbackValue(StackTrace.empty);
+    registerFallbackValue(OutgoingWrapStatus.pending);
   });
 
   setUp(() {
     dmRepository = _MockDmRepository();
     dao = _MockOutgoingDmsDao();
     foregroundController = StreamController<bool>.broadcast();
+    // Sync so fakeAsync tests deliver nudges without a real-time hop;
+    // initialize() subscribes to this stream unconditionally.
+    retryableWorkController = StreamController<void>.broadcast(sync: true);
+    when(
+      () => dmRepository.retryableOutgoingWork,
+    ).thenAnswer((_) => retryableWorkController.stream);
 
     // Permissive defaults so individual tests only stub what they care about.
     when(
@@ -92,6 +101,7 @@ void main() {
 
   tearDown(() async {
     await foregroundController.close();
+    await retryableWorkController.close();
   });
 
   OutgoingDmRetryService buildService({
@@ -99,6 +109,7 @@ void main() {
     DateTime Function()? now,
     CrashReportingService? crashReporting,
     Stream<void>? retryTriggerStream,
+    Future<bool> Function()? isOffline,
   }) {
     return OutgoingDmRetryService(
       dmRepository: dmRepository,
@@ -106,6 +117,7 @@ void main() {
       userPubkey: _ownerPubkey,
       appForegroundStream: foregroundController.stream,
       retryTriggerStream: retryTriggerStream,
+      isOffline: isOffline,
       retryConfig: retryConfig,
       now: now ?? () => DateTime.utc(2026, 5, 10, 12),
       crashReporting: crashReporting,
@@ -196,6 +208,345 @@ void main() {
       );
     });
 
+    group('retryable-work nudge bootstraps the follow-up heartbeat', () {
+      void verifySweepCount(int count) {
+        if (count == 0) {
+          verifyNever(
+            () => dao.getRetryableForOwner(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          );
+        } else {
+          verify(
+            () => dao.getRetryableForOwner(
+              ownerPubkey: _ownerPubkey,
+              maxRetries: 5,
+            ),
+          ).called(count);
+        }
+      }
+
+      test(
+        'a nudge while idle arms the 30s follow-up timer, and the sweep '
+        'fires when it elapses — the cold-start bootstrap',
+        () {
+          fakeAsync((async) {
+            final service = buildService();
+            unawaited(service.initialize());
+            async.flushMicrotasks();
+
+            retryableWorkController.add(null);
+            async.flushMicrotasks();
+            // The nudge only arms the timer — no immediate sweep.
+            verifySweepCount(0);
+
+            async
+              ..elapse(const Duration(seconds: 30))
+              ..flushMicrotasks();
+            verifySweepCount(1);
+
+            unawaited(service.dispose());
+            async.flushMicrotasks();
+          });
+        },
+      );
+
+      test(
+        'a second nudge never postpones an armed deadline — one sweep '
+        'fires 30s after the FIRST nudge',
+        () {
+          fakeAsync((async) {
+            final service = buildService();
+            unawaited(service.initialize());
+            async.flushMicrotasks();
+
+            retryableWorkController.add(null);
+            async
+              ..elapse(const Duration(seconds: 10))
+              ..flushMicrotasks();
+            retryableWorkController.add(null);
+            async
+              ..elapse(const Duration(seconds: 19))
+              ..flushMicrotasks();
+            // 29s after the first nudge: not yet.
+            verifySweepCount(0);
+
+            async
+              ..elapse(const Duration(seconds: 1))
+              ..flushMicrotasks();
+            // 30s after the FIRST nudge (20s after the second): exactly one
+            // sweep — the second nudge neither postponed nor duplicated it.
+            verifySweepCount(1);
+
+            unawaited(service.dispose());
+            async.flushMicrotasks();
+          });
+        },
+      );
+
+      test(
+        'a nudge that lands mid-sweep still arms the follow-up even when '
+        'that pass ends with no work remaining',
+        () {
+          fakeAsync((async) {
+            // Park the sweep on a gated DAO read so the nudge arrives while
+            // _isSweeping is true.
+            final gate = Completer<List<OutgoingDm>>();
+            when(
+              () => dao.getRetryableForOwner(
+                ownerPubkey: any(named: 'ownerPubkey'),
+                maxRetries: any(named: 'maxRetries'),
+              ),
+            ).thenAnswer((_) => gate.future);
+
+            final service = buildService();
+            unawaited(service.initialize());
+            async.flushMicrotasks();
+
+            unawaited(service.sweep());
+            async.flushMicrotasks();
+            expect(service.isSweeping, isTrue);
+
+            retryableWorkController.add(null);
+            async.flushMicrotasks();
+
+            // The pass ends with an empty queue → workRemains=false → its
+            // own scheduling disarms. The buffered nudge must re-arm.
+            gate.complete(const <OutgoingDm>[]);
+            async.flushMicrotasks();
+            expect(service.isSweeping, isFalse);
+
+            async
+              ..elapse(const Duration(seconds: 30))
+              ..flushMicrotasks();
+            verify(
+              () => dao.getRetryableForOwner(
+                ownerPubkey: _ownerPubkey,
+                maxRetries: 5,
+              ),
+            ).called(2);
+
+            unawaited(service.dispose());
+            async.flushMicrotasks();
+          });
+        },
+      );
+
+      test('dispose cancels the armed timer and later nudges are no-ops', () {
+        fakeAsync((async) {
+          final service = buildService();
+          unawaited(service.initialize());
+          async.flushMicrotasks();
+
+          retryableWorkController.add(null);
+          async.flushMicrotasks();
+
+          unawaited(service.dispose());
+          async.flushMicrotasks();
+
+          // The armed timer was cancelled with the service.
+          async
+            ..elapse(const Duration(minutes: 5))
+            ..flushMicrotasks();
+          verifySweepCount(0);
+
+          // Post-dispose nudges reach a cancelled subscription — no-op.
+          retryableWorkController.add(null);
+          async
+            ..elapse(const Duration(minutes: 5))
+            ..flushMicrotasks();
+          verifySweepCount(0);
+        });
+      });
+
+      test(
+        'offline pass keeps re-examining young pending rows: too young to '
+        'flip → follow-up armed; aged past the guard → terminalized; '
+        'nothing pending → heartbeat disarms',
+        () {
+          fakeAsync((async) {
+            final base = DateTime.utc(2026, 5, 10, 12);
+            // The row was queued 60s before the first pass: too young for
+            // the 120s min-age at t=0 and t=30, old enough at t=60.
+            final row = _row(
+              id: 'young-pending',
+              recipient: OutgoingWrapStatus.pending,
+              self: OutgoingWrapStatus.pending,
+              queuedAt: base.subtract(const Duration(seconds: 60)),
+            );
+            var terminalized = false;
+            when(
+              () => dao.getStillPendingForOwner(any()),
+            ).thenAnswer((_) async => terminalized ? const [] : [row]);
+            when(
+              () => dao.markRecipientWrapStatus(
+                id: any(named: 'id'),
+                status: any(named: 'status'),
+                lastError: any(named: 'lastError'),
+              ),
+            ).thenAnswer((_) async {
+              terminalized = true;
+              return true;
+            });
+            when(
+              () => dao.markSelfWrapStatus(
+                id: any(named: 'id'),
+                status: any(named: 'status'),
+                lastError: any(named: 'lastError'),
+              ),
+            ).thenAnswer((_) async => true);
+
+            final service = buildService(
+              isOffline: () async => true,
+              now: () => base.add(async.elapsed),
+            );
+            unawaited(service.initialize());
+            async.flushMicrotasks();
+
+            unawaited(service.sweep());
+            async.flushMicrotasks();
+            // Age 60s < 120s: nothing flipped, but the follow-up is armed.
+            verifyNever(
+              () => dao.markRecipientWrapStatus(
+                id: any(named: 'id'),
+                status: any(named: 'status'),
+                lastError: any(named: 'lastError'),
+              ),
+            );
+
+            async
+              ..elapse(const Duration(seconds: 30))
+              ..flushMicrotasks();
+            // Age 90s: still young, chain re-armed.
+            verifyNever(
+              () => dao.markRecipientWrapStatus(
+                id: any(named: 'id'),
+                status: any(named: 'status'),
+                lastError: any(named: 'lastError'),
+              ),
+            );
+
+            async
+              ..elapse(const Duration(seconds: 30))
+              ..flushMicrotasks();
+            // Age 120s: flipped to failed so it stops looking delivered.
+            verify(
+              () => dao.markRecipientWrapStatus(
+                id: 'young-pending',
+                status: OutgoingWrapStatus.failed,
+                lastError: any(named: 'lastError'),
+              ),
+            ).called(1);
+
+            // Nothing pending anymore → the pass reports no remaining work
+            // and the heartbeat disarms: three passes ran (t=0, 30, 60),
+            // then silence.
+            verify(() => dao.getStillPendingForOwner(any())).called(3);
+            async
+              ..elapse(const Duration(minutes: 5))
+              ..flushMicrotasks();
+            verifyNever(() => dao.getStillPendingForOwner(any()));
+
+            unawaited(service.dispose());
+            async.flushMicrotasks();
+          });
+        },
+      );
+
+      test('offline pass with an empty queue arms no follow-up', () {
+        fakeAsync((async) {
+          final service = buildService(isOffline: () async => true);
+          unawaited(service.initialize());
+          async.flushMicrotasks();
+
+          unawaited(service.sweep());
+          async.flushMicrotasks();
+          verify(() => dao.getStillPendingForOwner(any())).called(1);
+
+          async
+            ..elapse(const Duration(minutes: 5))
+            ..flushMicrotasks();
+          verifyNever(() => dao.getStillPendingForOwner(any()));
+
+          unawaited(service.dispose());
+          async.flushMicrotasks();
+        });
+      });
+    });
+
+    group('cancelled batch rows are never re-published', () {
+      test(
+        'after every sibling row of a partially delivered group send is '
+        'cancelled, the sweep publishes nothing',
+        () async {
+          // Mutable store standing in for outgoing_dms: the surviving
+          // siblings of a group send whose winner already persisted — one
+          // still pending (old enough for the interrupted arm), one hard
+          // failed.
+          final now = DateTime.utc(2026, 5, 10, 12);
+          final store = <OutgoingDm>[
+            _row(
+              id: 'sibling-pending',
+              recipient: OutgoingWrapStatus.pending,
+              self: OutgoingWrapStatus.pending,
+              queuedAt: now.subtract(const Duration(minutes: 10)),
+            ),
+            _row(
+              id: 'sibling-failed',
+              recipient: OutgoingWrapStatus.failed,
+              self: OutgoingWrapStatus.failed,
+            ),
+          ];
+          when(
+            () => dao.getRetryableForOwner(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              for (final r in store)
+                if (r.hasRetryableFailure) r,
+            ],
+          );
+          when(() => dao.getStillPendingForOwner(any())).thenAnswer(
+            (_) async => [
+              for (final r in store)
+                if (r.recipientWrapStatus == OutgoingWrapStatus.pending ||
+                    r.selfWrapStatus == OutgoingWrapStatus.pending)
+                  r,
+            ],
+          );
+          when(
+            () => dmRepository.recoverFullSend(rumorId: any(named: 'rumorId')),
+          ).thenAnswer((_) async => _successResult('recovered'));
+
+          final service = buildService(now: () => now);
+
+          // Control: with the rows live, the sweep re-drives both siblings.
+          await service.sweep();
+          verify(
+            () => dmRepository.recoverFullSend(rumorId: 'sibling-failed'),
+          ).called(1);
+          verify(
+            () => dmRepository.recoverFullSend(rumorId: 'sibling-pending'),
+          ).called(1);
+
+          // The user deletes the group message: cancelOutgoingBatch drops
+          // every sibling row (pending AND failed).
+          store.clear();
+
+          await service.sweep();
+          verifyNever(
+            () => dmRepository.recoverFullSend(rumorId: any(named: 'rumorId')),
+          );
+          verifyNever(
+            () => dmRepository.recoverSelfWrap(rumorId: any(named: 'rumorId')),
+          );
+        },
+      );
+    });
+
     group('sweep dispatch', () {
       test(
         'dispatches recipient: sent / self: failed rows to recoverSelfWrap',
@@ -261,6 +612,62 @@ void main() {
           // deleting it (full delivery) or marking recipient sent / self
           // failed (partial). Either way no retry bump is needed.
           verifyNever(() => dao.incrementRetry(any()));
+        },
+      );
+
+      test(
+        'soft-unconfirmed recoverFullSend replay of a FAILED row charges no '
+        'sweep-side budget and rewrites no wrap status — the row (and its '
+        'red bubble) stay exactly as the repository left them',
+        () async {
+          // The #6046 incident loop: a red offline-failed row re-driven into
+          // a zombie socket comes back retryablePending on every pass
+          // (full-send-failed=1 forever). The sweep must neither
+          // double-charge the budget (the repo's soft finalize already
+          // incremented) nor touch wrap statuses (the row must stay failed,
+          // never masquerade as pending/sent).
+          final row = _row(
+            id: 'soft-failed',
+            recipient: OutgoingWrapStatus.failed,
+            self: OutgoingWrapStatus.failed,
+          );
+          when(
+            () => dao.getRetryableForOwner(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenAnswer((_) async => [row]);
+          when(
+            () => dmRepository.recoverFullSend(rumorId: any(named: 'rumorId')),
+          ).thenAnswer(
+            (_) async => const NIP17SendResult.failure(
+              'Message recipient OK unconfirmed',
+              retryablePending: true,
+            ),
+          );
+
+          await buildService().sweep();
+
+          verify(
+            () => dmRepository.recoverFullSend(rumorId: 'soft-failed'),
+          ).called(1);
+          verifyNever(() => dao.incrementRetry(any()));
+          verifyNever(
+            () => dao.markRecipientWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              eventId: any(named: 'eventId'),
+              lastError: any(named: 'lastError'),
+            ),
+          );
+          verifyNever(
+            () => dao.markSelfWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              eventId: any(named: 'eventId'),
+              lastError: any(named: 'lastError'),
+            ),
+          );
         },
       );
 
@@ -1043,6 +1450,64 @@ void main() {
       );
 
       test(
+        'terminalizes an exhausted pending row (retryCount >= maxRetries) to '
+        'failed instead of re-driving it forever',
+        () async {
+          final now = DateTime.utc(2026, 5, 10, 12);
+          // getStillPendingForOwner has no retry-count cap of its own, so a
+          // soft-unconfirmed / interrupted row that never confirms would
+          // re-drive on every trigger without this guard.
+          final exhausted = _row(
+            id: 'exhausted-1',
+            recipient: OutgoingWrapStatus.pending,
+            self: OutgoingWrapStatus.pending,
+            retryCount: 5, // == default maxRetries
+            queuedAt: now.subtract(const Duration(minutes: 5)),
+          );
+          when(
+            () => dao.getStillPendingForOwner(any()),
+          ).thenAnswer((_) async => [exhausted]);
+          when(
+            () => dao.markRecipientWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              lastError: any(named: 'lastError'),
+            ),
+          ).thenAnswer((_) async => true);
+          when(
+            () => dao.markSelfWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              lastError: any(named: 'lastError'),
+            ),
+          ).thenAnswer((_) async => true);
+
+          await buildService(now: () => now).sweep();
+
+          // Both wraps are flipped to failed (red bubble + manual-retry
+          // candidate); the row is never dispatched to recoverFullSend again.
+          verify(
+            () => dao.markRecipientWrapStatus(
+              id: 'exhausted-1',
+              status: OutgoingWrapStatus.failed,
+              lastError: any(named: 'lastError'),
+            ),
+          ).called(1);
+          verify(
+            () => dao.markSelfWrapStatus(
+              id: 'exhausted-1',
+              status: OutgoingWrapStatus.failed,
+              lastError: any(named: 'lastError'),
+            ),
+          ).called(1);
+          verifyNever(
+            () => dmRepository.recoverFullSend(rumorId: 'exhausted-1'),
+          );
+          verifyNever(() => dao.incrementRetry(any()));
+        },
+      );
+
+      test(
         'skips a pending row younger than initialDelay (in-flight send '
         'might still complete in-process)',
         () async {
@@ -1070,9 +1535,49 @@ void main() {
         'does not double-dispatch a row already handled by the failed arm',
         () async {
           final now = DateTime.utc(2026, 5, 10, 12);
-          // Same id appears in both filters (e.g. recipient=pending,
-          // self=failed). The failed arm owns this dispatch.
-          final hybridRow = _row(
+          // A recipient=failed row with a still-pending self wrap appears in
+          // BOTH filters; the failed arm owns the dispatch and the
+          // interrupted arm must skip it.
+          final dualFilterRow = _row(
+            id: 'dual-1',
+            recipient: OutgoingWrapStatus.failed,
+            self: OutgoingWrapStatus.pending,
+            queuedAt: now.subtract(const Duration(minutes: 5)),
+          );
+          when(
+            () => dao.getRetryableForOwner(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenAnswer((_) async => [dualFilterRow]);
+          when(
+            () => dao.getStillPendingForOwner(any()),
+          ).thenAnswer((_) async => [dualFilterRow]);
+          when(
+            () => dmRepository.recoverFullSend(rumorId: any(named: 'rumorId')),
+          ).thenAnswer((_) async => _failureResult('relay still down'));
+
+          await buildService(now: () => now).sweep();
+
+          // Exactly one dispatch — the failed arm's.
+          verify(
+            () => dmRepository.recoverFullSend(rumorId: 'dual-1'),
+          ).called(1);
+        },
+      );
+
+      test(
+        'a recipient=pending/self=failed row that matches neither failed-arm '
+        'state is picked up by the interrupted arm — never stranded',
+        () async {
+          final now = DateTime.utc(2026, 5, 10, 12);
+          // This shape is in getRetryableForOwner (self=failed) but matches
+          // neither State A (needs recipient=sent) nor State B (needs
+          // recipient=failed). Before the dispatchedIds fix, the interrupted
+          // arm skipped every retryable id wholesale, so the row was never
+          // dispatched and never terminalized — a permanently sent-looking
+          // pending bubble.
+          final strandedHybrid = _row(
             id: 'hybrid-1',
             recipient: OutgoingWrapStatus.pending,
             self: OutgoingWrapStatus.failed,
@@ -1083,20 +1588,74 @@ void main() {
               ownerPubkey: any(named: 'ownerPubkey'),
               maxRetries: any(named: 'maxRetries'),
             ),
-          ).thenAnswer((_) async => [hybridRow]);
+          ).thenAnswer((_) async => [strandedHybrid]);
           when(
             () => dao.getStillPendingForOwner(any()),
-          ).thenAnswer((_) async => [hybridRow]);
+          ).thenAnswer((_) async => [strandedHybrid]);
           when(
-            () => dmRepository.recoverSelfWrap(rumorId: any(named: 'rumorId')),
+            () => dmRepository.recoverFullSend(rumorId: any(named: 'rumorId')),
           ).thenAnswer((_) async => _successResult('hybrid-1'));
 
           await buildService(now: () => now).sweep();
 
-          // recoverFullSend must NOT be called for this row — the
-          // failed-arm's recoverSelfWrap owns it.
-          verifyNever(
+          verify(
             () => dmRepository.recoverFullSend(rumorId: 'hybrid-1'),
+          ).called(1);
+          verifyNever(
+            () => dmRepository.recoverSelfWrap(rumorId: any(named: 'rumorId')),
+          );
+        },
+      );
+
+      test(
+        'soft-unconfirmed interrupted replay charges no sweep-side budget '
+        'and rewrites no wrap status — the repository already recorded the '
+        'attempt',
+        () async {
+          final now = DateTime.utc(2026, 5, 10, 12);
+          final stalePending = _row(
+            id: 'soft-interrupted',
+            recipient: OutgoingWrapStatus.pending,
+            self: OutgoingWrapStatus.pending,
+            queuedAt: now.subtract(const Duration(minutes: 5)),
+          );
+          when(
+            () => dao.getStillPendingForOwner(any()),
+          ).thenAnswer((_) async => [stalePending]);
+          when(
+            () => dmRepository.recoverFullSend(rumorId: any(named: 'rumorId')),
+          ).thenAnswer(
+            (_) async => const NIP17SendResult.failure(
+              'Message recipient OK unconfirmed',
+              retryablePending: true,
+            ),
+          );
+
+          await buildService(now: () => now).sweep();
+
+          verify(
+            () => dmRepository.recoverFullSend(rumorId: 'soft-interrupted'),
+          ).called(1);
+          // The repo's soft finalize already bumped the counter; a sweep-side
+          // bump would double-charge and halve the effective budget.
+          verifyNever(() => dao.incrementRetry(any()));
+          // And the sweep never rewrites wrap statuses on a soft outcome —
+          // the row keeps rendering exactly as the repository left it.
+          verifyNever(
+            () => dao.markRecipientWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              eventId: any(named: 'eventId'),
+              lastError: any(named: 'lastError'),
+            ),
+          );
+          verifyNever(
+            () => dao.markSelfWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              eventId: any(named: 'eventId'),
+              lastError: any(named: 'lastError'),
+            ),
           );
         },
       );
@@ -1123,6 +1682,145 @@ void main() {
           verify(() => dao.incrementRetry('interrupted-fail')).called(1);
         },
       );
+    });
+
+    group('offline pass (probe reports no connectivity)', () {
+      test(
+        'surfaces an aged unconfirmed pending row as failed — both wraps '
+        'marked with the offline error, no publish, no budget charge',
+        () async {
+          final now = DateTime.utc(2026, 5, 10, 12);
+          final stalePending = _row(
+            id: 'offline-stale',
+            recipient: OutgoingWrapStatus.pending,
+            self: OutgoingWrapStatus.pending,
+            queuedAt: now.subtract(const Duration(minutes: 5)),
+          );
+          when(
+            () => dao.getStillPendingForOwner(any()),
+          ).thenAnswer((_) async => [stalePending]);
+          when(
+            () => dao.markRecipientWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              lastError: any(named: 'lastError'),
+            ),
+          ).thenAnswer((_) async => true);
+          when(
+            () => dao.markSelfWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              lastError: any(named: 'lastError'),
+            ),
+          ).thenAnswer((_) async => true);
+
+          await buildService(
+            now: () => now,
+            isOffline: () async => true,
+          ).sweep();
+
+          verify(
+            () => dao.markRecipientWrapStatus(
+              id: 'offline-stale',
+              status: OutgoingWrapStatus.failed,
+              lastError: 'Message not sent: device offline',
+            ),
+          ).called(1);
+          verify(
+            () => dao.markSelfWrapStatus(
+              id: 'offline-stale',
+              status: OutgoingWrapStatus.failed,
+              lastError: 'Message not sent: device offline',
+            ),
+          ).called(1);
+          verifyNever(
+            () => dmRepository.recoverFullSend(rumorId: any(named: 'rumorId')),
+          );
+          verifyNever(
+            () => dmRepository.recoverSelfWrap(rumorId: any(named: 'rumorId')),
+          );
+          verifyNever(() => dao.incrementRetry(any()));
+          // The retryable (failed) arm is never enumerated offline — those
+          // rows are already red and re-drive on reconnect.
+          verifyNever(
+            () => dao.getRetryableForOwner(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'leaves a young pending row alone — its own in-flight sendMessage '
+        'offline fail-fast owns the failure transition',
+        () async {
+          final now = DateTime.utc(2026, 5, 10, 12);
+          final young = _row(
+            id: 'offline-young',
+            recipient: OutgoingWrapStatus.pending,
+            self: OutgoingWrapStatus.pending,
+            queuedAt: now.subtract(const Duration(seconds: 30)),
+          );
+          when(
+            () => dao.getStillPendingForOwner(any()),
+          ).thenAnswer((_) async => [young]);
+
+          await buildService(
+            now: () => now,
+            isOffline: () async => true,
+          ).sweep();
+
+          verifyNever(
+            () => dao.markRecipientWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              lastError: any(named: 'lastError'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'leaves a delivered row with only the self-wrap outstanding alone — '
+        'the recipient already has the message, so no red bubble',
+        () async {
+          final now = DateTime.utc(2026, 5, 10, 12);
+          final delivered = _row(
+            id: 'offline-delivered',
+            recipient: OutgoingWrapStatus.sent,
+            self: OutgoingWrapStatus.pending,
+            queuedAt: now.subtract(const Duration(minutes: 5)),
+          );
+          when(
+            () => dao.getStillPendingForOwner(any()),
+          ).thenAnswer((_) async => [delivered]);
+
+          await buildService(
+            now: () => now,
+            isOffline: () async => true,
+          ).sweep();
+
+          verifyNever(
+            () => dao.markRecipientWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              lastError: any(named: 'lastError'),
+            ),
+          );
+        },
+      );
+
+      test('probe reporting online runs the normal pass', () async {
+        await buildService(isOffline: () async => false).sweep();
+
+        verify(
+          () => dao.getRetryableForOwner(
+            ownerPubkey: any(named: 'ownerPubkey'),
+            maxRetries: any(named: 'maxRetries'),
+          ),
+        ).called(1);
+      });
     });
   });
 

@@ -39,10 +39,25 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
        _conversationId = conversationId,
        super(const ConversationState()) {
     on<ConversationStarted>(_onStarted, transformer: restartable());
-    on<ConversationMessageSent>(_onMessageSent, transformer: sequential());
+    // Sends are optimistic and independent per rumor: `sequential()` made
+    // one slow OK-confirm (tens of seconds on a slow relay / remote signer)
+    // queue every later send BEHIND it, so the next message's bubble did
+    // not even appear until the previous publish finished. The repository
+    // enqueues each row before any signer round-trip, so concurrent
+    // handlers stay per-rumor isolated; `sendStatus` is last-writer-wins,
+    // which only drives the bubble-less toasts (blocked / partial).
+    on<ConversationMessageSent>(_onMessageSent, transformer: concurrent());
     on<ConversationMessageDeleted>(_onMessageDeleted, transformer: droppable());
     on<ConversationSelfWrapRecoveryRequested>(
       _onSelfWrapRecoveryRequested,
+      transformer: sequential(),
+    );
+    on<ConversationFullSendRecoveryRequested>(
+      _onFullSendRecoveryRequested,
+      transformer: sequential(),
+    );
+    on<ConversationOutgoingSendCancelled>(
+      _onOutgoingSendCancelled,
       transformer: sequential(),
     );
   }
@@ -123,12 +138,35 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     ConversationMessageDeleted event,
     Emitter<ConversationState> emit,
   ) async {
+    // Drop every durable queue row of the bubble's batch first, whether the
+    // bubble is queue-only (optimistic/failed — no persisted row yet, so the
+    // kind-5 path below would no-op and the "deleted" bubble would keep
+    // re-sending via the sweep) or persisted with sibling retry rows still
+    // alive. A group bubble carries the persisted winner's rumor id whose
+    // own row is already gone — cancelling just that id would leave the
+    // pending and failed siblings for the sweep to re-publish, so the
+    // repository resolves and cancels the WHOLE batch.
+    var cancelledQueueRow = false;
+    try {
+      cancelledQueueRow =
+          await _dmRepository.cancelOutgoingBatch(rumorId: event.rumorId) > 0;
+    } on Object catch (e, stackTrace) {
+      // StateError = queue DAO not wired (legacy fixtures); ArgumentError =
+      // foreign-owner row. Neither blocks the kind-5 delete below.
+      if (e is! StateError && e is! ArgumentError) {
+        addError(e, stackTrace);
+      }
+    }
+
     try {
       await _dmRepository.deleteMessageForEveryone(event.rumorId);
       // The watchMessages stream automatically excludes deleted messages,
       // so the UI updates reactively — no manual state mutation needed.
     } on Object catch (e, stackTrace) {
       if (e is ArgumentError) {
+        // No persisted row. For a queue-only bubble whose row we just
+        // cancelled this is the EXPECTED outcome, not an error.
+        if (cancelledQueueRow) return;
         // Rumor gone or not ours — recoverable; matrix-NO.
         addError(e, stackTrace);
         return;
@@ -154,15 +192,15 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     // before any signer round-trip, so the watch tick that carries the
     // optimistic lands within microseconds of dispatch — without any
     // bloc-side in-memory tracking. This handler is responsible only
-    // for transient `sendStatus` transitions and the SnackBar
-    // affordance state (`lastFailedSend` / `lastPartialSend`).
-    emit(
-      state.copyWith(
-        sendStatus: SendStatus.sending,
-        clearLastFailedSend: true,
-        clearLastPartialSend: true,
-      ),
-    );
+    // for transient `sendStatus` transitions and the partial-delivery
+    // SnackBar affordance state (`lastPartialSend`).
+    // Deliberately does NOT clear lastPartialSend: with the concurrent()
+    // transformer, send B's `sending` emit can land between send A's
+    // sentPartial and B's own — an eager clear here wiped A's rumor ids
+    // before the partial union below could fold them in. Outstanding ids
+    // self-heal: recovery drops recovered/removed rows (ArgumentError →
+    // skipped), and a full recovery success clears the whole snapshot.
+    emit(state.copyWith(sendStatus: SendStatus.sending));
 
     try {
       // Partial-delivery: recipient got the message and DmRepository
@@ -186,6 +224,15 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
             emit(state.copyWith(sendStatus: SendStatus.blocked));
             return;
           }
+          if (result.retryablePending) {
+            // Soft-unconfirmed: the recipient frame was written but no NIP-20
+            // OK arrived yet. The durable queue keeps the plain optimistic
+            // bubble and the retry sweep re-drives it — a lost OK is not proof
+            // of loss, so surface no red failure. Treat as optimistically
+            // sent.
+            emit(state.copyWith(sendStatus: SendStatus.sent));
+            return;
+          }
           throw Exception(result.error ?? 'Failed to send message');
         }
         if (result.selfWrapPublished == false) {
@@ -202,6 +249,17 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
             emit(state.copyWith(sendStatus: SendStatus.blocked));
             return;
           }
+          // No recipient confirmed. If every unconfirmed recipient is soft
+          // (frame written, OK pending) with no hard failure, treat the group
+          // send as optimistically sent — the durable queue re-drives each
+          // pending row. Only a genuine hard failure raises the red SnackBar.
+          final anyHard = results.any(
+            (r) => !r.success && !r.blocked && !r.retryablePending,
+          );
+          if (!anyHard && results.any((r) => r.retryablePending)) {
+            emit(state.copyWith(sendStatus: SendStatus.sent));
+            return;
+          }
           throw Exception(
             results.first.error ?? 'Failed to send group message',
           );
@@ -216,10 +274,19 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         }
       }
       if (partialRumorIds.isNotEmpty) {
+        // Union with any outstanding partial: two concurrent sends that
+        // both end sentPartial must accumulate their rumor ids — the
+        // second overwrite silently orphaned the first send's self-wrap
+        // recovery set. Stale ids (already recovered by the sweep) are
+        // dropped by the recovery handler's ArgumentError-skip.
+        final unioned = <String>{
+          ...?state.lastPartialSend?.rumorIds,
+          ...partialRumorIds,
+        };
         emit(
           state.copyWith(
             sendStatus: SendStatus.sentPartial,
-            lastPartialSend: PartialSend(rumorIds: partialRumorIds),
+            lastPartialSend: PartialSend(rumorIds: unioned.toList()),
           ),
         );
         return;
@@ -229,21 +296,44 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       // Dominated by the explicit `throw Exception(result.error)` above
       // and repo IO — per .claude/rules/error_handling.md, matrix-NO.
       addError(e, stackTrace);
-      emit(
-        state.copyWith(
-          sendStatus: SendStatus.failed,
-          lastFailedSend: FailedSend(
-            content: event.content,
-            recipientPubkeys: event.recipientPubkeys,
-          ),
-        ),
-      );
+      emit(state.copyWith(sendStatus: SendStatus.failed));
+      // The repository has just marked the queue row `failed`, but the
+      // watchOutgoing tick that carries that transition back can be dropped
+      // when it fires while this handler is still in flight — so the red
+      // "Not delivered" bubble would not repaint until the conversation is
+      // re-opened. Re-read the rows and emit them directly so the failed
+      // bubble surfaces immediately.
+      await _refreshPendingOutgoing(emit);
     }
-    // Note: the in-flight queue row remains in `state.pendingOutgoing`
-    // on failure/partial. The retry service (`OutgoingDmRetryService`)
-    // sweeps it independently. The user-facing SnackBar still offers
-    // a manual retry for fast-fail (`lastFailedSend`) and self-wrap
-    // recovery (`lastPartialSend`) — same UX as #3908.
+    // The in-flight queue row remains in `state.pendingOutgoing` on
+    // failure/partial. The retry service (`OutgoingDmRetryService`) sweeps it
+    // independently, and the failed bubble is tappable (resend/delete) — so
+    // there is no failed toast; a partial self-wrap recovery is offered via
+    // `lastPartialSend`.
+  }
+
+  /// Re-read the durable queue rows and emit them straight into
+  /// [ConversationState.pendingOutgoing].
+  ///
+  /// The repository writes a send's terminal status (row → `failed`, or the
+  /// row's removal on success) to `outgoing_dms`, and `watchOutgoing` normally
+  /// carries it back reactively. But when that write lands while a send event
+  /// handler is still in flight, the bloc's dual-stream subscription can miss
+  /// the resulting tick, leaving the bubble showing its stale (pre-failure)
+  /// status until the conversation is re-opened. Re-reading here, from the
+  /// handler's own emitter, repaints it immediately and idempotently — a later
+  /// watch tick simply re-emits the same rows.
+  Future<void> _refreshPendingOutgoing(
+    Emitter<ConversationState> emit,
+  ) async {
+    try {
+      final rows = await _dmRepository.getOutgoing(_conversationId);
+      emit(state.copyWith(pendingOutgoing: rows));
+    } on Object catch (e, stackTrace) {
+      // A refresh miss just defers the repaint to the next watch tick or the
+      // conversation re-open; it is never itself a send failure. Matrix-NO.
+      addError(e, stackTrace);
+    }
   }
 
   Future<void> _onSelfWrapRecoveryRequested(
@@ -290,7 +380,15 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       );
     }
 
-    if (stillFailing.isEmpty) {
+    // Reduce lastPartialSend by this recovery's outcome while PRESERVING
+    // ids a concurrent partial send unioned in mid-recovery: remove the
+    // ids this pass attempted, re-add the ones still failing. A plain
+    // `PartialSend(stillFailing)` overwrite clobbered the concurrent set.
+    final remaining = <String>{...?state.lastPartialSend?.rumorIds}
+      ..removeAll(event.rumorIds)
+      ..addAll(stillFailing);
+
+    if (remaining.isEmpty) {
       emit(
         state.copyWith(
           sendStatus: SendStatus.sent,
@@ -298,14 +396,103 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         ),
       );
     } else {
-      // Reduce lastPartialSend to only the rumors that are still
-      // failing, so a second Retry tap targets exactly those — never
-      // the ones that already recovered.
+      // A second Retry tap targets exactly the outstanding rumors —
+      // never the ones that already recovered.
       emit(
         state.copyWith(
           sendStatus: SendStatus.sentPartial,
-          lastPartialSend: PartialSend(rumorIds: stillFailing),
+          lastPartialSend: PartialSend(rumorIds: remaining.toList()),
         ),
+      );
+    }
+  }
+
+  Future<void> _onFullSendRecoveryRequested(
+    ConversationFullSendRecoveryRequested event,
+    Emitter<ConversationState> emit,
+  ) async {
+    if (event.rumorIds.isEmpty) return;
+
+    emit(state.copyWith(sendStatus: SendStatus.sending));
+
+    final stillFailing = <String>[];
+    Object? lastError;
+    StackTrace? lastStackTrace;
+
+    for (final rumorId in event.rumorIds) {
+      try {
+        // Replay the SAME rumor from the durable row — never a fresh send —
+        // so the receiver dedups on the stable rumor id. A soft-unconfirmed
+        // replay (retryablePending) counts as STILL FAILING: manual-resend
+        // targets are `failed` queue rows, and the soft finalize only bumps
+        // the retry counter without rewriting wrap statuses, so the row —
+        // and its red bubble — remain failed. Reporting `sent` for it
+        // claimed a delivery nothing confirmed while the bubble stayed red
+        // (the "resend swallows the failed message" report on #6046). The
+        // sweep keeps re-driving the row either way; resetRetryBudget hands
+        // it back with a fresh budget when soft attempts already exhausted
+        // the sweep's cap — an explicit resend must re-arm the sweep, not
+        // get one last manual-only attempt.
+        final result = await _dmRepository.recoverFullSend(
+          rumorId: rumorId,
+          resetRetryBudget: true,
+        );
+        if (!result.success) {
+          stillFailing.add(rumorId);
+        }
+      } on Object catch (e, stackTrace) {
+        if (e is ArgumentError) {
+          // Row already recovered/removed or belongs to another account —
+          // terminal for this id, drop it from the retry set.
+          continue;
+        }
+        stillFailing.add(rumorId);
+        lastError = e;
+        lastStackTrace = stackTrace;
+      }
+    }
+
+    if (lastError != null) {
+      addError(
+        Reportable(
+          lastError,
+          context: ConversationBlocReportableSites.onFullSendRecoveryRequested,
+        ),
+        lastStackTrace,
+      );
+    }
+
+    if (stillFailing.isEmpty) {
+      emit(state.copyWith(sendStatus: SendStatus.sent));
+    } else {
+      // Some rows are still hard-failing. They remain `failed` in the queue
+      // (red bubbles) and are re-tappable to resend; just re-raise the status.
+      emit(state.copyWith(sendStatus: SendStatus.failed));
+    }
+    // Reflect the recovery's queue-row transitions (a row re-marked `failed`,
+    // or deleted on success) immediately — a watch tick fired mid-handler can
+    // be dropped, same as the initial send path.
+    await _refreshPendingOutgoing(emit);
+  }
+
+  Future<void> _onOutgoingSendCancelled(
+    ConversationOutgoingSendCancelled event,
+    Emitter<ConversationState> emit,
+  ) async {
+    try {
+      // Drop the durable row; the failed bubble leaves `pendingOutgoing` on
+      // the next watch tick. No status emit — the removal speaks for itself.
+      await _dmRepository.cancelOutgoingSend(rumorId: event.rumorId);
+    } on Object catch (e, stackTrace) {
+      // A foreign-owner row surfaces as ArgumentError — terminal and expected,
+      // so it is not Reportable (matrix-NO). Anything else is unexpected.
+      if (e is ArgumentError) return;
+      addError(
+        Reportable(
+          e,
+          context: ConversationBlocReportableSites.onOutgoingSendCancelled,
+        ),
+        stackTrace,
       );
     }
   }

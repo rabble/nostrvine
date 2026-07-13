@@ -109,6 +109,9 @@ void main() {
     setUp(() {
       VisibilityDetectorController.instance.updateInterval = Duration.zero;
       mockBloc = _MockConversationBloc();
+      // The snackbar action callbacks guard on `bloc.isClosed` (the snackbar
+      // can outlive the route); MockBloc leaves the getter unstubbed.
+      when(() => mockBloc.isClosed).thenReturn(false);
       mockInviteActionsCubit = _MockCollaboratorInviteActionsCubit();
       mockReactionsCubit = _MockConversationReactionsCubit();
       mockVideosRepository = _MockVideosRepository();
@@ -849,18 +852,14 @@ void main() {
     // Without this listener, the only visible change would be a brief
     // spinner flicker, and the user would discover the loss only after
     // navigating away and back — the "looks sent, then disappeared" bug.
-    group('send-failure SnackBar', () {
+    group('send-outcome toasts + failed-bubble tap', () {
       const failedSendContent = 'Hi there';
-      const failedSend = FailedSend(
-        content: failedSendContent,
-        recipientPubkeys: [otherPubkey],
-      );
 
       testWidgets(
-        'shows a localized retry SnackBar when sendStatus transitions to '
-        'failed',
+        'shows NO toast on a hard failure — the failure is surfaced on the '
+        'bubble (tap → resend/delete), not a snackbar',
         (tester) async {
-          // Emit loaded → failed so the listenWhen guard fires.
+          // Emit loaded → failed. listenWhen no longer fires for `failed`.
           whenListen(
             mockBloc,
             Stream<ConversationState>.fromIterable(const [
@@ -868,7 +867,6 @@ void main() {
               ConversationState(
                 status: ConversationStatus.loaded,
                 sendStatus: SendStatus.failed,
-                lastFailedSend: failedSend,
               ),
             ]),
             initialState: const ConversationState(
@@ -895,24 +893,11 @@ void main() {
               ),
             ),
           );
-          // Drain the controlled stream + SnackBar enter animation.
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 100));
 
-          expect(
-            find.text(l10n.dmSendFailedMessage),
-            findsOneWidget,
-            reason: 'localized failure message must come from context.l10n',
-          );
-          expect(find.text(l10n.dmSendFailedRetry), findsOneWidget);
-          // Hardcoded English would silently regress if the widget stopped
-          // reading l10n — guard via the German variant.
-          final lookupGermanFailureMessage = lookupAppLocalizations(
-            const Locale('de'),
-          ).dmSendFailedMessage;
-          if (lookupGermanFailureMessage != l10n.dmSendFailedMessage) {
-            expect(find.text(lookupGermanFailureMessage), findsNothing);
-          }
+          expect(find.text(l10n.dmSendFailedMessage), findsNothing);
+          expect(find.text(l10n.dmMessageActionRetrySend), findsNothing);
         },
       );
 
@@ -964,67 +949,259 @@ void main() {
       );
 
       testWidgets(
-        'tapping Retry redispatches ConversationMessageSent with the '
-        'last failed content + recipients',
+        'tapping a failed bubble opens the divine snackbar; Resend replays '
+        'the row and Delete drops it (never a fresh ConversationMessageSent)',
         (tester) async {
+          final failedRow = OutgoingDm(
+            id: 'rumor-failed-id',
+            conversationId:
+                'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+            recipientPubkey: otherPubkey,
+            content: failedSendContent,
+            createdAt: DateTime(2026).millisecondsSinceEpoch ~/ 1000,
+            rumorEventJson: '{}',
+            recipientWrapStatus: OutgoingWrapStatus.failed,
+            selfWrapStatus: OutgoingWrapStatus.failed,
+            queuedAt: DateTime(2026),
+            ownerPubkey: currentPubkey,
+          );
+          final failedState = ConversationState(
+            status: ConversationStatus.loaded,
+            sendStatus: SendStatus.failed,
+            pendingOutgoing: [failedRow],
+          );
           whenListen(
             mockBloc,
-            Stream<ConversationState>.fromIterable(const [
-              ConversationState(status: ConversationStatus.loaded),
-              ConversationState(
-                status: ConversationStatus.loaded,
-                sendStatus: SendStatus.failed,
-                lastFailedSend: failedSend,
-              ),
-            ]),
-            initialState: const ConversationState(
-              status: ConversationStatus.loaded,
-            ),
+            Stream<ConversationState>.value(failedState),
+            initialState: failedState,
           );
 
           await tester.pumpWidget(
             testMaterialApp(
               mockAuthService: mockAuthService,
+              mockNostrService: mockNostrClient,
               additionalOverrides: [
+                videosRepositoryProvider.overrideWithValue(
+                  mockVideosRepository,
+                ),
                 fetchUserProfileProvider(
                   otherPubkey,
                 ).overrideWith((ref) async => null),
+                contentBlocklistRepositoryProvider.overrideWithValue(
+                  mockBlocklist,
+                ),
               ],
               home: BlocProvider<ConversationBloc>.value(
                 value: mockBloc,
                 child: BlocProvider<CollaboratorInviteActionsCubit>.value(
                   value: mockInviteActionsCubit,
-                  child: const ConversationView(
-                    participantPubkeys: [otherPubkey],
+                  child: BlocProvider<ConversationReactionsCubit>.value(
+                    value: mockReactionsCubit,
+                    child: const ConversationView(
+                      participantPubkeys: [otherPubkey],
+                    ),
                   ),
                 ),
               ),
             ),
           );
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 100));
+          await tester.pumpAndSettle();
 
-          await tester.tap(find.text(l10n.dmSendFailedRetry));
-          // Allow the SnackBar dismissal to settle.
-          await tester.pump();
+          // Tap the failed bubble to open the resend/delete snackbar.
+          await tester.tap(find.text(failedSendContent));
+          await tester.pumpAndSettle();
 
-          final captured = verify(() => mockBloc.add(captureAny())).captured;
-          expect(captured, isNotEmpty);
-          final retryEvent = captured.last as ConversationMessageSent;
-          expect(retryEvent.content, equals(failedSendContent));
-          expect(retryEvent.recipientPubkeys, equals(const [otherPubkey]));
+          expect(find.text(l10n.dmMessageActionRetrySend), findsOneWidget);
+          expect(find.text(l10n.dmMessageActionCancelSend), findsOneWidget);
+
+          // Resend replays the existing row via recoverFullSend — never a
+          // fresh ConversationMessageSent (no duplicate delivery).
+          await tester.tap(find.text(l10n.dmMessageActionRetrySend));
+          await tester.pump();
+          final afterResend = verify(() => mockBloc.add(captureAny())).captured;
+          expect(
+            afterResend.last,
+            isA<ConversationFullSendRecoveryRequested>().having(
+              (e) => e.rumorIds,
+              'rumorIds',
+              equals(const ['rumor-failed-id']),
+            ),
+          );
+          expect(
+            afterResend.whereType<ConversationMessageSent>(),
+            isEmpty,
+            reason: 'resend must replay the row, never redispatch a send',
+          );
+
+          // Re-open and tap Delete → drops the queued row.
+          await tester.tap(find.text(failedSendContent));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text(l10n.dmMessageActionCancelSend));
+          await tester.pump();
+          final afterDelete = verify(() => mockBloc.add(captureAny())).captured;
+          expect(
+            afterDelete.last,
+            isA<ConversationOutgoingSendCancelled>().having(
+              (e) => e.rumorId,
+              'rumorId',
+              equals('rumor-failed-id'),
+            ),
+          );
         },
       );
 
-      // accessibility.md requires explicit `SemanticsService.announce` (or
-      // its non-deprecated `sendAnnouncement` form) on async visible state
-      // changes — Material's default SnackBar semantics are platform-
-      // dependent and weaker than the written rule. The test intercepts
-      // the platform's accessibility channel, where both APIs ultimately
-      // deliver the announcement, and pins the localized failure string.
+      testWidgets(
+        'on a partially delivered group bubble: Resend targets only the '
+        'FAILED sibling; Delete cancels pending AND failed siblings but '
+        'never one whose recipient already got the message',
+        (tester) async {
+          const groupConversationId =
+              'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+          final batchCreatedAt = DateTime(2026).millisecondsSinceEpoch ~/ 1000;
+          OutgoingDm sibling({
+            required String id,
+            required String recipientPubkey,
+            required OutgoingWrapStatus recipientWrap,
+            OutgoingWrapStatus selfWrap = OutgoingWrapStatus.pending,
+          }) => OutgoingDm(
+            id: id,
+            conversationId: groupConversationId,
+            recipientPubkey: recipientPubkey,
+            content: failedSendContent,
+            createdAt: batchCreatedAt,
+            rumorEventJson: '{}',
+            recipientWrapStatus: recipientWrap,
+            selfWrapStatus: selfWrap,
+            queuedAt: DateTime(2026),
+            ownerPubkey: currentPubkey,
+          );
+          // The batch winner is persisted; three siblings survive in mixed
+          // states.
+          final persistedWinner = DmMessage(
+            id: 'rumor-winner',
+            conversationId: groupConversationId,
+            senderPubkey: currentPubkey,
+            content: failedSendContent,
+            createdAt: batchCreatedAt,
+            giftWrapId: 'wrap-winner',
+          );
+          final state = ConversationState(
+            status: ConversationStatus.loaded,
+            messages: [persistedWinner],
+            pendingOutgoing: [
+              sibling(
+                id: 'rumor-pending',
+                recipientPubkey: otherPubkey,
+                recipientWrap: OutgoingWrapStatus.pending,
+              ),
+              sibling(
+                id: 'rumor-failed',
+                recipientPubkey:
+                    '4444444444444444444444444444444444444444444444444444444444444444',
+                recipientWrap: OutgoingWrapStatus.failed,
+                selfWrap: OutgoingWrapStatus.failed,
+              ),
+              sibling(
+                id: 'rumor-delivered-selffailed',
+                recipientPubkey:
+                    '5555555555555555555555555555555555555555555555555555555555555555',
+                recipientWrap: OutgoingWrapStatus.sent,
+                selfWrap: OutgoingWrapStatus.failed,
+              ),
+            ],
+          );
+          whenListen(
+            mockBloc,
+            Stream<ConversationState>.value(state),
+            initialState: state,
+          );
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              mockAuthService: mockAuthService,
+              mockNostrService: mockNostrClient,
+              additionalOverrides: [
+                videosRepositoryProvider.overrideWithValue(
+                  mockVideosRepository,
+                ),
+                fetchUserProfileProvider(
+                  otherPubkey,
+                ).overrideWith((ref) async => null),
+                contentBlocklistRepositoryProvider.overrideWithValue(
+                  mockBlocklist,
+                ),
+              ],
+              home: BlocProvider<ConversationBloc>.value(
+                value: mockBloc,
+                child: BlocProvider<CollaboratorInviteActionsCubit>.value(
+                  value: mockInviteActionsCubit,
+                  child: BlocProvider<ConversationReactionsCubit>.value(
+                    value: mockReactionsCubit,
+                    child: const ConversationView(
+                      participantPubkeys: [otherPubkey],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          // Exactly one bubble: the persisted winner, carrying the batch's
+          // aggregated failed status (the surviving siblings are folded in).
+          expect(find.text(failedSendContent), findsOneWidget);
+
+          await tester.tap(find.text(failedSendContent));
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.text(l10n.dmMessageActionRetrySend));
+          await tester.pump();
+          final afterResend = verify(() => mockBloc.add(captureAny())).captured;
+          expect(
+            afterResend.whereType<ConversationFullSendRecoveryRequested>(),
+            hasLength(1),
+          );
+          expect(
+            afterResend
+                .whereType<ConversationFullSendRecoveryRequested>()
+                .single
+                .rumorIds,
+            equals(const ['rumor-failed']),
+            reason:
+                'resend must never re-deliver to recipients that '
+                'already confirmed or are still pending',
+          );
+
+          // Re-open and Delete → cancels the undelivered siblings only.
+          await tester.tap(find.text(failedSendContent));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text(l10n.dmMessageActionCancelSend));
+          await tester.pump();
+          final cancelled = verify(() => mockBloc.add(captureAny())).captured
+              .whereType<ConversationOutgoingSendCancelled>()
+              .map((e) => e.rumorId)
+              .toList();
+          expect(
+            cancelled,
+            unorderedEquals(const ['rumor-pending', 'rumor-failed']),
+            reason:
+                'cancel-send drops every undelivered sibling, but a '
+                'recipient that already has the message keeps its row '
+                '(only its self-wrap sync is outstanding)',
+          );
+        },
+      );
+
+      // accessibility.md requires explicit SemanticsService announcements
+      // on async visible state changes. A hard failure shows NO snackbar
+      // (the red in-bubble row is the visual affordance), so the
+      // announcement is the ONLY signal assistive tech gets. The test
+      // intercepts the platform accessibility channel, where
+      // sendAnnouncement ultimately delivers, and pins the localized
+      // failure string.
       testWidgets(
         'announces the localized failure message via SemanticsService '
-        'when the SnackBar fires',
+        'when sendStatus transitions to failed',
         (tester) async {
           final announcements = <Map<Object?, Object?>>[];
           tester.binding.defaultBinaryMessenger
@@ -1050,7 +1227,6 @@ void main() {
               ConversationState(
                 status: ConversationStatus.loaded,
                 sendStatus: SendStatus.failed,
-                lastFailedSend: failedSend,
               ),
             ]),
             initialState: const ConversationState(
@@ -1061,17 +1237,27 @@ void main() {
           await tester.pumpWidget(
             testMaterialApp(
               mockAuthService: mockAuthService,
+              mockNostrService: mockNostrClient,
               additionalOverrides: [
+                videosRepositoryProvider.overrideWithValue(
+                  mockVideosRepository,
+                ),
                 fetchUserProfileProvider(
                   otherPubkey,
                 ).overrideWith((ref) async => null),
+                contentBlocklistRepositoryProvider.overrideWithValue(
+                  mockBlocklist,
+                ),
               ],
               home: BlocProvider<ConversationBloc>.value(
                 value: mockBloc,
                 child: BlocProvider<CollaboratorInviteActionsCubit>.value(
                   value: mockInviteActionsCubit,
-                  child: const ConversationView(
-                    participantPubkeys: [otherPubkey],
+                  child: BlocProvider<ConversationReactionsCubit>.value(
+                    value: mockReactionsCubit,
+                    child: const ConversationView(
+                      participantPubkeys: [otherPubkey],
+                    ),
                   ),
                 ),
               ),
@@ -1090,9 +1276,9 @@ void main() {
                 'expected SemanticsService.sendAnnouncement to deliver an '
                 "'announce' event on SystemChannels.accessibility",
           );
-          final announcedMessages = announceCalls
-              .map((m) => (m['data'] as Map?)?['message'])
-              .toList();
+          final announcedMessages = announceCalls.map(
+            (m) => (m['data'] as Map?)?['message'],
+          );
           expect(
             announcedMessages,
             contains(l10n.dmSendFailedMessage),
@@ -1205,7 +1391,9 @@ void main() {
             ),
           );
           await tester.pump();
-          await tester.pump(const Duration(milliseconds: 100));
+          // Settle the floating divine snackbar's entrance animation so its
+          // action is at its final, tappable position.
+          await tester.pumpAndSettle();
 
           await tester.tap(find.text(l10n.dmSendFailedRetry));
           await tester.pump();

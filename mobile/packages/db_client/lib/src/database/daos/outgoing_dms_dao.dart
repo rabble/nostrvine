@@ -80,6 +80,7 @@ class OutgoingDm {
     this.recipientWrapLastError,
     this.selfWrapLastError,
     this.lastAttemptAt,
+    this.sendBatchId,
   });
 
   /// Rumor event id (kind 14/15). Stable across retries.
@@ -109,6 +110,13 @@ class OutgoingDm {
   final DateTime? lastAttemptAt;
   final DateTime queuedAt;
   final String ownerPubkey;
+
+  /// Durable, collision-proof id of the group-send fan-out this row belongs
+  /// to (the first sibling rumor's event id, stamped identically on every
+  /// per-recipient sibling). NULL for 1:1 sends, which have no siblings.
+  /// The repository and the conversation state key batch membership off this
+  /// instead of the collision-prone `(content, createdAt)` tuple.
+  final String? sendBatchId;
 
   /// Whether **both** wraps have landed. The repository deletes the
   /// queue row only when this is true (in the same transaction that
@@ -142,6 +150,7 @@ class OutgoingDm {
     DateTime? lastAttemptAt,
     DateTime? queuedAt,
     String? ownerPubkey,
+    String? sendBatchId,
   }) => OutgoingDm(
     id: id ?? this.id,
     conversationId: conversationId ?? this.conversationId,
@@ -162,15 +171,61 @@ class OutgoingDm {
     lastAttemptAt: lastAttemptAt ?? this.lastAttemptAt,
     queuedAt: queuedAt ?? this.queuedAt,
     ownerPubkey: ownerPubkey ?? this.ownerPubkey,
+    sendBatchId: sendBatchId ?? this.sendBatchId,
   );
 
+  // Full value equality. `id` alone is NOT sufficient: bloc states carry
+  // `List<OutgoingDm>` inside Equatable props, so an id-only == makes a
+  // pending row compare equal to the same row re-read as failed — Bloc.emit
+  // then suppresses the state change and the failed bubble never repaints
+  // while the conversation is open.
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is OutgoingDm && runtimeType == other.runtimeType && id == other.id;
+      other is OutgoingDm &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          conversationId == other.conversationId &&
+          recipientPubkey == other.recipientPubkey &&
+          content == other.content &&
+          createdAt == other.createdAt &&
+          rumorEventJson == other.rumorEventJson &&
+          messageKind == other.messageKind &&
+          replyToId == other.replyToId &&
+          recipientWrapStatus == other.recipientWrapStatus &&
+          selfWrapStatus == other.selfWrapStatus &&
+          recipientWrapEventId == other.recipientWrapEventId &&
+          selfWrapEventId == other.selfWrapEventId &&
+          retryCount == other.retryCount &&
+          recipientWrapLastError == other.recipientWrapLastError &&
+          selfWrapLastError == other.selfWrapLastError &&
+          lastAttemptAt == other.lastAttemptAt &&
+          queuedAt == other.queuedAt &&
+          ownerPubkey == other.ownerPubkey &&
+          sendBatchId == other.sendBatchId;
 
   @override
-  int get hashCode => id.hashCode;
+  int get hashCode => Object.hash(
+    id,
+    conversationId,
+    recipientPubkey,
+    content,
+    createdAt,
+    rumorEventJson,
+    messageKind,
+    replyToId,
+    recipientWrapStatus,
+    selfWrapStatus,
+    recipientWrapEventId,
+    selfWrapEventId,
+    retryCount,
+    recipientWrapLastError,
+    selfWrapLastError,
+    lastAttemptAt,
+    queuedAt,
+    ownerPubkey,
+    sendBatchId,
+  );
 
   @override
   String toString() =>
@@ -208,6 +263,7 @@ class OutgoingDmsDao extends DatabaseAccessor<AppDatabase>
       lastAttemptAt: Value(dm.lastAttemptAt),
       queuedAt: dm.queuedAt,
       ownerPubkey: dm.ownerPubkey,
+      sendBatchId: Value(dm.sendBatchId),
     );
   }
 
@@ -231,6 +287,7 @@ class OutgoingDmsDao extends DatabaseAccessor<AppDatabase>
       lastAttemptAt: row.lastAttemptAt,
       queuedAt: row.queuedAt,
       ownerPubkey: row.ownerPubkey,
+      sendBatchId: row.sendBatchId,
     );
   }
 
@@ -350,6 +407,22 @@ class OutgoingDmsDao extends DatabaseAccessor<AppDatabase>
     });
   }
 
+  /// Reset the retry count for [id] to zero, handing the row back to the
+  /// retry sweep with a fresh budget. Called by the repository's manual
+  /// Resend path: soft-unconfirmed attempts burn the shared budget, and a
+  /// row at the sweep's `maxRetries` cap is otherwise abandoned by
+  /// [getRetryableForOwner] forever — an explicit user resend is the signal
+  /// to re-arm it. Returns `false` when no row exists for [id].
+  Future<bool> resetRetryCount(String id) async {
+    final affected =
+        await (update(
+          outgoingDms,
+        )..where((t) => t.id.equals(id))).write(
+          const OutgoingDmsCompanion(retryCount: Value(0)),
+        );
+    return affected > 0;
+  }
+
   /// Delete the row for [id]. Called by the repository in the same
   /// transaction that promotes the message to `direct_messages` once
   /// both wraps are sent (atomicity prevents a watcher window where the
@@ -404,6 +477,31 @@ class OutgoingDmsDao extends DatabaseAccessor<AppDatabase>
         ),
       ]);
     return query.watch().map((rows) => rows.map(_rowToModel).toList());
+  }
+
+  /// One-shot read of the durable queue rows for [conversationId], scoped to
+  /// [ownerPubkey], newest first — the non-reactive companion to
+  /// [watchForConversation]. The conversation bloc uses it to reflect a send's
+  /// terminal outcome immediately, rather than waiting on a watch tick that can
+  /// be dropped when it fires while a bloc event handler is mid-flight.
+  Future<List<OutgoingDm>> getForConversation({
+    required String conversationId,
+    required String ownerPubkey,
+  }) async {
+    final query = select(outgoingDms)
+      ..where(
+        (t) =>
+            t.conversationId.equals(conversationId) &
+            t.ownerPubkey.equals(ownerPubkey),
+      )
+      ..orderBy([
+        (t) => OrderingTerm(
+          expression: t.createdAt,
+          mode: OrderingMode.desc,
+        ),
+      ]);
+    final rows = await query.get();
+    return rows.map(_rowToModel).toList();
   }
 
   /// Watch every row for the given account, oldest first.

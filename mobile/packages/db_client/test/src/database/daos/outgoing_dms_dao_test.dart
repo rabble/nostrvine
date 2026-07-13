@@ -38,6 +38,7 @@ void main() {
     int retryCount = 0,
     DateTime? queuedAt,
     int createdAt = 1700000000,
+    String? sendBatchId,
   }) {
     return OutgoingDm(
       id: id,
@@ -51,6 +52,7 @@ void main() {
       retryCount: retryCount,
       queuedAt: queuedAt ?? DateTime.utc(2026, 5),
       ownerPubkey: owner,
+      sendBatchId: sendBatchId,
     );
   }
 
@@ -72,6 +74,49 @@ void main() {
     if (dir.existsSync()) {
       dir.deleteSync(recursive: true);
     }
+  });
+
+  group('OutgoingDm value equality', () {
+    test(
+      'rows differing only in wrap status are NOT equal — id-only equality '
+      'made a pending row compare equal to its failed re-read, so Bloc.emit '
+      'suppressed the red-bubble repaint',
+      () {
+        final pending = makeDm(id: 'eq-check-1');
+        final failed = pending.copyWith(
+          recipientWrapStatus: OutgoingWrapStatus.failed,
+          selfWrapStatus: OutgoingWrapStatus.failed,
+          recipientWrapLastError: 'device offline',
+        );
+
+        expect(pending, isNot(equals(failed)));
+        expect(pending.hashCode, isNot(equals(failed.hashCode)));
+      },
+    );
+
+    test('field-identical copies are equal with equal hash codes', () {
+      final row = makeDm(id: 'eq-check-2', retryCount: 3);
+      final copy = row.copyWith();
+
+      expect(row, equals(copy));
+      expect(row.hashCode, equals(copy.hashCode));
+    });
+
+    test('rows differing only in sendBatchId are NOT equal', () {
+      final batchOne = makeDm(id: 'eq-batch', sendBatchId: 'batch-1');
+      final batchTwo = makeDm(id: 'eq-batch', sendBatchId: 'batch-2');
+
+      expect(batchOne, isNot(equals(batchTwo)));
+      expect(batchOne.hashCode, isNot(equals(batchTwo.hashCode)));
+    });
+
+    test('copyWith(sendBatchId:) round-trips the field', () {
+      final base = makeDm(id: 'eq-batch-rt');
+      expect(base.sendBatchId, isNull);
+
+      final withBatch = base.copyWith(sendBatchId: 'batch-x');
+      expect(withBatch.sendBatchId, equals('batch-x'));
+    });
   });
 
   group('OutgoingDmsDao', () {
@@ -129,6 +174,21 @@ void main() {
           expect(fetched.retryCount, equals(1));
         },
       );
+
+      test('persists sendBatchId through enqueue and getById', () async {
+        await dao.enqueue(makeDm(id: 'batched', sendBatchId: 'batch-e'));
+
+        final fetched = await dao.getById('batched');
+        expect(fetched, isNotNull);
+        expect(fetched!.sendBatchId, equals('batch-e'));
+      });
+
+      test('leaves sendBatchId null for a 1:1 send', () async {
+        await dao.enqueue(makeDm(id: 'solo'));
+
+        final fetched = await dao.getById('solo');
+        expect(fetched!.sendBatchId, isNull);
+      });
     });
 
     group('markRecipientWrapStatus / markSelfWrapStatus', () {
@@ -279,6 +339,30 @@ void main() {
       });
     });
 
+    group('resetRetryCount', () {
+      test('zeroes retry_count while preserving lastAttemptAt', () async {
+        await dao.enqueue(makeDm(id: 'aaaa'));
+        await dao.incrementRetry('aaaa');
+        await dao.incrementRetry('aaaa');
+        final charged = await dao.getById('aaaa');
+        expect(charged!.retryCount, equals(2));
+        expect(charged.lastAttemptAt, isNotNull);
+
+        final reset = await dao.resetRetryCount('aaaa');
+
+        expect(reset, isTrue);
+        final after = await dao.getById('aaaa');
+        expect(after!.retryCount, equals(0));
+        // The attempt clock stays: backoff is derived from retryCount, so a
+        // zeroed count is enough to re-arm the sweep immediately.
+        expect(after.lastAttemptAt, equals(charged.lastAttemptAt));
+      });
+
+      test('returns false when the row does not exist', () async {
+        expect(await dao.resetRetryCount('missing'), isFalse);
+      });
+    });
+
     group('deleteById', () {
       test('removes the row and returns the affected count', () async {
         await dao.enqueue(makeDm(id: 'aaaa'));
@@ -291,6 +375,41 @@ void main() {
 
       test('returns 0 when the row does not exist', () async {
         expect(await dao.deleteById('missing'), equals(0));
+      });
+    });
+
+    group('getForConversation', () {
+      test(
+        'returns only the conversation-and-owner scoped rows, newest '
+        'createdAt first',
+        () async {
+          await dao.enqueue(makeDm(id: 'older'));
+          await dao.enqueue(makeDm(id: 'newer', createdAt: 1700000060));
+          await dao.enqueue(
+            makeDm(
+              id: 'other-conversation',
+              conversationIdValue: conversationId2,
+            ),
+          );
+          await dao.enqueue(makeDm(id: 'other-owner', owner: ownerB));
+
+          final rows = await dao.getForConversation(
+            conversationId: conversationId,
+            ownerPubkey: ownerA,
+          );
+
+          expect(rows.map((r) => r.id), equals(['newer', 'older']));
+        },
+      );
+
+      test('returns an empty list when nothing matches', () async {
+        expect(
+          await dao.getForConversation(
+            conversationId: conversationId,
+            ownerPubkey: ownerA,
+          ),
+          isEmpty,
+        );
       });
     });
 
@@ -382,6 +501,49 @@ void main() {
           ),
         );
       });
+
+      test(
+        're-emits on a LIVE subscription when a row is marked failed',
+        () async {
+          // The open conversation relies on watchForConversation re-emitting
+          // when a row transitions pending -> failed WHILE the subscription is
+          // already live. The tests above enqueue/mark BEFORE subscribing, so
+          // they only prove the initial snapshot, not a live UPDATE re-emit.
+          final expectation = expectLater(
+            dao.watchForConversation(
+              conversationId: conversationId,
+              ownerPubkey: ownerA,
+            ),
+            emitsInOrder([
+              isEmpty,
+              predicate<List<OutgoingDm>>(
+                (rows) =>
+                    rows.length == 1 &&
+                    rows.single.recipientWrapStatus ==
+                        OutgoingWrapStatus.pending,
+                'one pending row',
+              ),
+              predicate<List<OutgoingDm>>(
+                (rows) =>
+                    rows.length == 1 &&
+                    rows.single.recipientWrapStatus ==
+                        OutgoingWrapStatus.failed,
+                'one failed row',
+              ),
+            ]),
+          );
+
+          await pumpEventQueue();
+          await dao.enqueue(makeDm(id: 'live1'));
+          await pumpEventQueue();
+          await dao.markRecipientWrapStatus(
+            id: 'live1',
+            status: OutgoingWrapStatus.failed,
+            lastError: 'offline',
+          );
+          await expectation;
+        },
+      );
 
       test('emits empty after deleteById', () async {
         await dao.enqueue(makeDm(id: 'aaaa'));

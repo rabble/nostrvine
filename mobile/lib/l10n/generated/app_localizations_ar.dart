@@ -5534,6 +5534,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dmMessageBubbleLongPressHint => 'إجراءات الرسالة';
 
   @override
+  String get dmMessageBubbleFailedTapHint => 'أعد إرسال هذه الرسالة أو احذفها';
+
+  @override
   String get dmMessageActionCopyText => 'نسخ النص';
 
   @override
@@ -5544,6 +5547,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get dmMessageActionReport => 'إبلاغ';
+
+  @override
+  String get dmMessageActionRetrySend => 'إعادة الإرسال';
+
+  @override
+  String get dmMessageActionCancelSend => 'حذف الرسالة';
 
   @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
@@ -5623,14 +5632,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dmFormatCode => 'رمز';
 
   @override
-  String get dmStatusPending => 'جاري الإرسال';
-
-  @override
   String get dmStatusFailed => 'فشل الإرسال';
-
-  @override
-  String get dmStatusDeliveredSelfFailed =>
-      'تم التسليم. لن تتم المزامنة مع أجهزتك الأخرى.';
 
   @override
   String get inboxConversationActionsSheetLabel => 'إجراءات المحادثة';

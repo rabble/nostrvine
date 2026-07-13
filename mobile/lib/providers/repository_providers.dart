@@ -537,6 +537,7 @@ DmReactionsRepository dmReactionsRepository(Ref ref) {
       senderPublicKey: publicKey,
       nostrService: nostrService,
       sendPolicy: ref.read(dmSendPolicyProvider),
+      isOffline: dmSendConnectivityIsOffline,
     ),
   );
   return repository;
@@ -621,6 +622,7 @@ DmRepository dmRepository(Ref ref) {
         senderPublicKey: publicKey,
         nostrService: nostrService,
         sendPolicy: ref.read(dmSendPolicyProvider),
+        isOffline: dmSendConnectivityIsOffline,
       );
 
       repository.setCredentials(

@@ -9,6 +9,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'package:meta/meta.dart';
 import 'package:openvine/config/app_config.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/auth_providers.dart';
@@ -44,16 +45,99 @@ import 'package:unified_logger/unified_logger.dart';
 
 part 'social_providers.g.dart';
 
-/// Reconnect trigger for the DM retry sweeps (messages, reactions, removals):
-/// emits once each time `connectivity_plus` reports any non-`none` result, so
-/// work queued during a brief network drop is re-driven the moment
-/// connectivity returns — without waiting for an app-foreground transition.
-/// The sweeps short-circuit when nothing is retryable. Shared by the message
-/// and reaction retry providers so the trigger shape stays in one place.
+/// Reconnect trigger for the DM reaction retry sweep: emits once each time
+/// `connectivity_plus` reports any non-`none` result, so work queued during a
+/// brief network drop is re-driven the moment connectivity returns — without
+/// waiting for an app-foreground transition. The sweep short-circuits when
+/// nothing is retryable. `→ none` transitions are filtered out because
+/// [DmReactionRetryService] has no offline gate of its own — an offline pass
+/// would burn each row's retry budget on attempts that deterministically fail.
 Stream<void> _dmRetryConnectivityTriggerStream() => Connectivity()
     .onConnectivityChanged
     .where((results) => results.any((r) => r != ConnectivityResult.none))
     .map<void>((_) {});
+
+/// Upper bound on the pool repair awaited inside
+/// [dmMessageRetryTriggerWithRelayRepair] before the sweep trigger is emitted
+/// anyway. `forceReconnectAll` reconnects relays serially, so a slow relay
+/// must not starve the retry sweep indefinitely — on timeout the sweep runs
+/// and the SDK's own OK-timeout remediation backstops any still-stale socket.
+const _relayRepairTimeout = Duration(seconds: 15);
+
+/// Connectivity trigger for the message retry sweep: fires on EVERY
+/// connectivity transition, including `→ none`. [OutgoingDmRetryService] runs
+/// its own offline probe per pass: an online pass re-drives retryable rows,
+/// and an offline pass surfaces aged still-`pending` rows as red failed
+/// bubbles (a pending row renders identically to a delivered one, so without
+/// this a send that went unconfirmed just before the network dropped stays
+/// sent-looking — and untappable — for the whole offline window). See #6046.
+///
+/// Before an ONLINE transition's trigger is emitted, [repairRelayPool] (wired
+/// to `NostrClient.forceReconnectAll`) is awaited: after an interface change
+/// the pool's WebSockets are half-open zombies that still report `connected`
+/// — publishes buffer into them and no OK ever arrives — and nothing else
+/// repairs the pool while the app stays foregrounded (`forceReconnectAll`
+/// otherwise only runs on app-resume, relay-set change, or a manual settings
+/// action). Without the repair, the sweep fired by the same connectivity
+/// event races the zombie window and every re-driven row soft-fails, leaving
+/// red bubbles unresendable until the 90s idle detector fires. The first
+/// emission after subscribe describes the current state, not a transition,
+/// so it never triggers a repair (app start must not cycle sockets that are
+/// still connecting). Repair failures and timeouts are logged and the
+/// trigger is emitted regardless. Public for testing; production wiring is
+/// in [outgoingDmRetryService].
+@visibleForTesting
+Stream<void> dmMessageRetryTriggerWithRelayRepair({
+  required Stream<List<ConnectivityResult>> connectivityChanges,
+  required Future<void> Function() repairRelayPool,
+}) {
+  // asyncMap rather than an async* generator: a generator suspended at its
+  // `await for` only processes a subscription cancel when the source emits
+  // again, so cancelling on dispose would leave the subscription dangling
+  // until the next connectivity event. asyncMap cancels the source promptly
+  // while keeping the same serialization (the source is paused while a
+  // repair is awaited, so triggers never overtake their repair).
+  List<ConnectivityResult>? previous;
+  return connectivityChanges.asyncMap((results) async {
+    final prior = previous;
+    previous = results;
+    final online = results.any((r) => r != ConnectivityResult.none);
+    if (online && prior != null && !_sameConnectivity(prior, results)) {
+      try {
+        await repairRelayPool().timeout(_relayRepairTimeout);
+      } on Object catch (e) {
+        Log.warning(
+          'Relay pool repair on connectivity change failed: $e',
+          name: 'SocialProviders',
+          category: LogCategory.system,
+        );
+      }
+    }
+  });
+}
+
+/// Whether two connectivity reports describe the same set of transports.
+/// Order-insensitive: `connectivity_plus` gives no ordering guarantee.
+bool _sameConnectivity(
+  List<ConnectivityResult> a,
+  List<ConnectivityResult> b,
+) {
+  final aSet = a.toSet();
+  final bSet = b.toSet();
+  return aSet.length == bSet.length && aSet.containsAll(bSet);
+}
+
+/// Reports whether the device currently has no network connectivity. Wired into
+/// `NIP17MessageService` so an offline DM send fails hard (a red "Not delivered"
+/// bubble that re-drives on reconnect) instead of being misread as a soft "OK
+/// lost" send — the misclassification a stale-`connected` relay socket causes in
+/// airplane mode. Mirrors the online predicate in
+/// [_dmRetryConnectivityTriggerStream] so the connectivity contract stays in one
+/// place. See #6046.
+Future<bool> dmSendConnectivityIsOffline() async {
+  final results = await Connectivity().checkConnectivity();
+  return !results.any((r) => r != ConnectivityResult.none);
+}
 
 final collaboratorResponseServiceProvider =
     Provider<CollaboratorResponseService>((ref) {
@@ -205,8 +289,16 @@ OutgoingDmRetryService? outgoingDmRetryService(Ref ref) {
   // Re-drive undelivered messages the moment connectivity returns, not only on
   // app-foreground transitions — a message queued during a brief network drop
   // would otherwise sit undelivered until the app is backgrounded and
-  // re-foregrounded.
-  final retryTriggerStream = _dmRetryConnectivityTriggerStream();
+  // re-foregrounded. Fires on `→ none` too, so the service's offline pass can
+  // surface unconfirmed pending rows as failed the moment the network drops.
+  // Online transitions force-reconnect the relay pool first, so the sweep
+  // publishes on fresh sockets instead of the zombies the old network left
+  // behind (see dmMessageRetryTriggerWithRelayRepair).
+  final nostrService = ref.watch(nostrServiceProvider);
+  final retryTriggerStream = dmMessageRetryTriggerWithRelayRepair(
+    connectivityChanges: Connectivity().onConnectivityChanged,
+    repairRelayPool: nostrService.forceReconnectAll,
+  );
 
   final service = OutgoingDmRetryService(
     dmRepository: dmRepository,
@@ -214,6 +306,9 @@ OutgoingDmRetryService? outgoingDmRetryService(Ref ref) {
     userPubkey: userPubkey,
     appForegroundStream: foregroundController.stream,
     retryTriggerStream: retryTriggerStream,
+    // Same probe the send path uses: an offline sweep pass would burn every
+    // row's retry budget on attempts that deterministically fail.
+    isOffline: dmSendConnectivityIsOffline,
   );
 
   // initialize() subscribes to the controller's stream synchronously

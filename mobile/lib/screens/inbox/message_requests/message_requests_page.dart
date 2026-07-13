@@ -26,17 +26,29 @@ class MessageRequestsPage extends ConsumerWidget {
     final dmRepository = ref.watch(dmRepositoryProvider);
     final followRepository = ref.watch(followRepositoryProvider);
     final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
+    final protectedMinorInboxGate = ref.watch(protectedMinorInboxGateProvider);
 
     return MultiBlocProvider(
+      // Re-key on the captured dependencies' identities so the blocs are
+      // rebuilt bound to fresh instances when `dmRepositoryProvider` (keepAlive
+      // but rebuilt as the nostr session advances / on account switch) hands
+      // over a new DmRepository — otherwise a keyless BlocProvider strands the
+      // list on an orphaned repo whose userPubkeyStream never fires and the
+      // requests list spins forever. See .claude/rules/state_management.md
+      // ("Bridging Riverpod-provided dependencies into BlocProvider").
+      key: ValueKey((
+        dmRepository,
+        followRepository,
+        blocklistRepository,
+        protectedMinorInboxGate,
+      )),
       providers: [
         BlocProvider(
           create: (_) => ConversationListBloc(
             dmRepository: dmRepository,
             followRepository: followRepository,
             contentBlocklistRepository: blocklistRepository,
-            protectedMinorInboxGate: ref.watch(
-              protectedMinorInboxGateProvider,
-            ),
+            protectedMinorInboxGate: protectedMinorInboxGate,
           )..add(const ConversationListStarted()),
         ),
         BlocProvider(

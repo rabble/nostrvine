@@ -264,7 +264,9 @@ void main() {
         expect(find.byIcon(Icons.error_outline), findsNothing);
       });
 
-      testWidgets('renders clock icon while pending', (tester) async {
+      testWidgets('shows no indicator while pending (optimistic send)', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -280,15 +282,14 @@ void main() {
           ),
         );
 
-        expect(find.byIcon(Icons.access_time), findsOneWidget);
-        expect(
-          find.byTooltip(strings.dmStatusPending),
-          findsOneWidget,
-        );
+        // Optimistic: a pending send just looks sent — no clock, no caption.
+        expect(find.byIcon(Icons.access_time), findsNothing);
+        expect(find.byIcon(Icons.error_outline), findsNothing);
+        expect(find.text(strings.dmStatusFailed), findsNothing);
       });
 
       testWidgets(
-        'renders warning icon for deliveredSelfFailed status',
+        'shows no indicator for deliveredSelfFailed (background self-heal)',
         (tester) async {
           await tester.pumpWidget(
             const MaterialApp(
@@ -305,15 +306,15 @@ void main() {
             ),
           );
 
-          expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
-          expect(
-            find.byTooltip(strings.dmStatusDeliveredSelfFailed),
-            findsOneWidget,
-          );
+          expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
+          expect(find.byIcon(Icons.error_outline), findsNothing);
+          expect(find.text(strings.dmStatusFailed), findsNothing);
         },
       );
 
-      testWidgets('renders error icon for failed status', (tester) async {
+      testWidgets('renders the Not-delivered caption for failed status', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -329,11 +330,9 @@ void main() {
           ),
         );
 
+        // The only surfaced state: an in-bubble error icon + caption.
         expect(find.byIcon(Icons.error_outline), findsOneWidget);
-        expect(
-          find.byTooltip(strings.dmStatusFailed),
-          findsOneWidget,
-        );
+        expect(find.text(strings.dmStatusFailed), findsOneWidget);
       });
 
       testWidgets(

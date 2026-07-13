@@ -1510,11 +1510,12 @@ class RelayPool {
     );
     _pendingPublishes[eventId] = tracker;
 
+    final sentAt = DateTime.now();
     final sentTo = await _sendCollect(
       message,
       tempRelays: tempRelays,
       targetRelays: targetRelays,
-      deadline: DateTime.now().add(timeout),
+      deadline: sentAt.add(timeout),
       diagnosticTag: diagnosticTag,
       onSent: (relayUrl) => tracker.expectedRelays.add(relayUrl),
     );
@@ -1535,10 +1536,68 @@ class RelayPool {
                 'noResponseFrom=${outcome.noResponseFrom}',
               );
             }
+            // Repair only when the publish went UNCONFIRMED. The tracker
+            // resolves on the FIRST OK-true, so on a multi-relay publish the
+            // slower healthy siblings land in `noResponseFrom` while
+            // `isSilentSince(sentAt)` passes trivially over the few-hundred-ms
+            // race window — cycling them on every send churns connections and
+            // fails concurrent `skipReconnect` publishes. A genuinely zombie
+            // sibling is repaired by the next publish that needs it (its own
+            // OK window then times out) or by the connectivity-transition
+            // forceReconnectAll.
+            if (!outcome.confirmed) {
+              _repairSilentRelays(outcome.noResponseFrom, sentAt);
+            }
           })
           .whenComplete(() => _pendingPublishes.remove(eventId)),
     );
     return tracker.future;
+  }
+
+  /// Relays with an OK-timeout repair cycle already in flight, so concurrent
+  /// publish timeouts don't stack reconnects on the same connection.
+  final Set<String> _silentRelayRepairsInFlight = {};
+
+  /// Repair pass for OK-awaiting publishes that timed out in silence.
+  ///
+  /// A relay lands in [PublishOutcome.noResponseFrom] when its WebSocket sink
+  /// accepted the EVENT frame but no OK of either polarity came back within
+  /// the confirm window. When the same connection ALSO received no inbound
+  /// frame of any kind since the publish was written, the socket is a
+  /// half-open zombie (typically left behind by a connectivity flap). Nothing
+  /// else repairs it: publish sends pass `skipReconnect`, the idle heartbeat
+  /// needs 90s+ of silence, and a zombie still reports `connected` to every
+  /// health gate — so every retry inside that window would deterministically
+  /// time out again. Force-cycle the connection and re-send the relay's
+  /// subscriptions (mirroring [add]'s autoSubscribe and the post-AUTH replay)
+  /// so the next attempt runs on a live socket.
+  void _repairSilentRelays(List<String> silentRelayUrls, DateTime sentAt) {
+    for (final url in silentRelayUrls) {
+      final relay = _relays[url] ?? _cacheRelays[url] ?? _tempRelays[url];
+      if (relay is! RelayBase) continue;
+      if (!relay.isSilentSince(sentAt)) continue;
+      if (!_silentRelayRepairsInFlight.add(url)) continue;
+      log(
+        '📡 $url accepted a publish frame but sent nothing back for the '
+        'whole OK window; reconnecting the stale connection',
+      );
+      unawaited(
+        _reconnectAndResubscribe(
+          relay,
+        ).whenComplete(() => _silentRelayRepairsInFlight.remove(url)),
+      );
+    }
+  }
+
+  Future<void> _reconnectAndResubscribe(RelayBase relay) async {
+    try {
+      if (!await relay.forceReconnect()) return;
+      for (final subscription in relay.getSubscriptions()) {
+        await relay.send(subscription.toJson());
+      }
+    } catch (e) {
+      log('OK-timeout reconnect failed for ${relay.url}: $e');
+    }
   }
 
   void reconnect() {

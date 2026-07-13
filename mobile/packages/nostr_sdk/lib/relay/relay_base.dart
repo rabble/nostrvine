@@ -220,6 +220,34 @@ class RelayBase extends Relay {
   /// When the last message was received from this relay.
   DateTime? get lastActivityAt => _connectionManager?.lastActivityAt;
 
+  /// Whether the connection still reports `connected` yet has received no
+  /// inbound frame since [since].
+  ///
+  /// This is the signature of a half-open "zombie" socket left behind by a
+  /// connectivity flap: outbound frames buffer into a dead TCP connection
+  /// without erroring, so the socket keeps claiming to be connected while
+  /// nothing ever arrives. A connection stamps its activity clock at connect
+  /// time, so a socket (re)established after [since] never reads as silent.
+  bool isSilentSince(DateTime since) {
+    final manager = _connectionManager;
+    if (manager == null || !manager.isConnected) return false;
+    final lastInbound = manager.lastActivityAt;
+    return lastInbound == null || !lastInbound.isAfter(since);
+  }
+
+  /// Force-cycle the underlying WebSocket connection.
+  ///
+  /// Unlike [connect], this bypasses [doConnect]'s already-connected
+  /// short-circuit, which would keep a zombie socket alive. The fresh
+  /// connection starts unauthenticated, so the auth flag is reset the same
+  /// way [Relay.connect] resets it.
+  Future<bool> forceReconnect() async {
+    final manager = _connectionManager;
+    relayStatus.authed = false;
+    if (manager == null) return connect();
+    return manager.reconnect();
+  }
+
   @override
   void dispose() {
     _stateSubscription?.cancel();

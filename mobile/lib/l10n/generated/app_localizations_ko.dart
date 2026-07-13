@@ -5356,6 +5356,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get dmMessageBubbleLongPressHint => '메시지 작업';
 
   @override
+  String get dmMessageBubbleFailedTapHint => '이 메시지 다시 보내기 또는 삭제';
+
+  @override
   String get dmMessageActionCopyText => '텍스트 복사';
 
   @override
@@ -5366,6 +5369,12 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get dmMessageActionReport => '신고';
+
+  @override
+  String get dmMessageActionRetrySend => '다시 보내기';
+
+  @override
+  String get dmMessageActionCancelSend => '메시지 삭제';
 
   @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
@@ -5445,13 +5454,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get dmFormatCode => '코드';
 
   @override
-  String get dmStatusPending => '보내는 중';
-
-  @override
   String get dmStatusFailed => '보내지 못했어요';
-
-  @override
-  String get dmStatusDeliveredSelfFailed => '전달됐어요. 다른 기기에는 동기화되지 않아요.';
 
   @override
   String get inboxConversationActionsSheetLabel => '대화 작업';

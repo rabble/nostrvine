@@ -5602,6 +5602,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dmMessageBubbleLongPressHint => 'Ações da mensagem';
 
   @override
+  String get dmMessageBubbleFailedTapHint =>
+      'Reenviar ou excluir esta mensagem';
+
+  @override
   String get dmMessageActionCopyText => 'Copiar texto';
 
   @override
@@ -5612,6 +5616,12 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get dmMessageActionReport => 'Denunciar';
+
+  @override
+  String get dmMessageActionRetrySend => 'Reenviar';
+
+  @override
+  String get dmMessageActionCancelSend => 'Excluir mensagem';
 
   @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
@@ -5691,14 +5701,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dmFormatCode => 'Código';
 
   @override
-  String get dmStatusPending => 'Enviando';
-
-  @override
   String get dmStatusFailed => 'Falha ao enviar';
-
-  @override
-  String get dmStatusDeliveredSelfFailed =>
-      'Entregue. Não será sincronizado com seus outros dispositivos.';
 
   @override
   String get inboxConversationActionsSheetLabel => 'Ações da conversa';

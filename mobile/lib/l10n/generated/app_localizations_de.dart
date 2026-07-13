@@ -5634,6 +5634,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dmMessageBubbleLongPressHint => 'Nachrichtenaktionen';
 
   @override
+  String get dmMessageBubbleFailedTapHint =>
+      'Nachricht erneut senden oder löschen';
+
+  @override
   String get dmMessageActionCopyText => 'Text kopieren';
 
   @override
@@ -5644,6 +5648,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dmMessageActionReport => 'Melden';
+
+  @override
+  String get dmMessageActionRetrySend => 'Erneut senden';
+
+  @override
+  String get dmMessageActionCancelSend => 'Nachricht löschen';
 
   @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
@@ -5723,14 +5733,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dmFormatCode => 'Code';
 
   @override
-  String get dmStatusPending => 'Wird gesendet';
-
-  @override
   String get dmStatusFailed => 'Senden fehlgeschlagen';
-
-  @override
-  String get dmStatusDeliveredSelfFailed =>
-      'Zugestellt. Wird nicht mit deinen anderen Geräten synchronisiert.';
 
   @override
   String get inboxConversationActionsSheetLabel => 'Unterhaltungsaktionen';

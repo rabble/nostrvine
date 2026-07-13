@@ -42,11 +42,19 @@ class GiftWrapUtil {
   /// Two days in seconds — the NIP-17 upper bound for created_at jitter.
   static const int _maxBackdateSeconds = 60 * 60 * 24 * 2;
 
-  /// Returns [base] shifted into the past by a CSPRNG offset of 0..2 days.
-  /// Call once per layer (seal, gift wrap) so each gets an independent
-  /// offset, per NIP-17/NIP-59 metadata-protection guidance.
-  static int _randomizedPastTimestamp(int base) =>
-      base - _secureRandom.nextInt(_maxBackdateSeconds);
+  /// Returns wall-clock now shifted into the past by a CSPRNG offset of
+  /// 0..2 days. Call once per layer (seal, gift wrap) so each gets an
+  /// independent offset, per NIP-17/NIP-59 metadata-protection guidance.
+  ///
+  /// Deliberately based on NOW, not the rumor's `created_at`: a retry
+  /// re-wraps the SAME rumor hours or days after the original attempt, and
+  /// a wrap stamped relative to the old rumor time lands before recipients'
+  /// `since` subscription cursors (they never see the retry) and outside
+  /// relay recency windows (the retry is rejected outright). The unsigned
+  /// inner rumor keeps the canonical send time.
+  static int _randomizedPastTimestamp() =>
+      DateTime.now().millisecondsSinceEpoch ~/ 1000 -
+      _secureRandom.nextInt(_maxBackdateSeconds);
 
   /// Unwraps a NIP-17 gift wrap (kind 1059) → seal (kind 13) → rumor and
   /// returns the inner rumor, or `null` if any layer fails.
@@ -144,8 +152,8 @@ class GiftWrapUtil {
     // independently, up to two days into the past, using a CSPRNG — so a relay
     // observer cannot correlate the two layers by timestamp nor learn the true
     // send time. The canonical time stays on the (unsigned) inner rumor.
-    final sealCreatedAt = _randomizedPastTimestamp(e.createdAt);
-    final giftEventCreatedAt = _randomizedPastTimestamp(e.createdAt);
+    final sealCreatedAt = _randomizedPastTimestamp();
+    final giftEventCreatedAt = _randomizedPastTimestamp();
     var rumorEventMap = e.toJson();
     rumorEventMap.remove("sig");
 
@@ -210,11 +218,8 @@ Future<Event?> buildGiftWrapFromHex({
   required Map<String, dynamic> rumorJson,
   required String receiverPublicKey,
 }) async {
-  final baseCreatedAt = rumorJson['created_at'] as int;
-  final sealCreatedAt = GiftWrapUtil._randomizedPastTimestamp(baseCreatedAt);
-  final giftEventCreatedAt = GiftWrapUtil._randomizedPastTimestamp(
-    baseCreatedAt,
-  );
+  final sealCreatedAt = GiftWrapUtil._randomizedPastTimestamp();
+  final giftEventCreatedAt = GiftWrapUtil._randomizedPastTimestamp();
 
   final rumorEventMap = Map<String, dynamic>.from(rumorJson)..remove('sig');
 

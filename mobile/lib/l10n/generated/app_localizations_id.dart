@@ -5540,6 +5540,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get dmMessageBubbleLongPressHint => 'Tindakan pesan';
 
   @override
+  String get dmMessageBubbleFailedTapHint => 'Kirim ulang atau hapus pesan ini';
+
+  @override
   String get dmMessageActionCopyText => 'Salin teks';
 
   @override
@@ -5550,6 +5553,12 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get dmMessageActionReport => 'Laporkan';
+
+  @override
+  String get dmMessageActionRetrySend => 'Kirim ulang';
+
+  @override
+  String get dmMessageActionCancelSend => 'Hapus pesan';
 
   @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
@@ -5629,14 +5638,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get dmFormatCode => 'Kode';
 
   @override
-  String get dmStatusPending => 'Mengirim';
-
-  @override
   String get dmStatusFailed => 'Gagal mengirim';
-
-  @override
-  String get dmStatusDeliveredSelfFailed =>
-      'Terkirim. Tidak akan tersinkron ke perangkat lainmu.';
 
   @override
   String get inboxConversationActionsSheetLabel => 'Tindakan percakapan';

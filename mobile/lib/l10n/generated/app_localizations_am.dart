@@ -5453,6 +5453,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get dmMessageBubbleLongPressHint => 'የመልእክት እርምጃዎች';
 
   @override
+  String get dmMessageBubbleFailedTapHint => 'መልእክቱን እንደገና ይላኩ ወይም ይሰርዙ';
+
+  @override
   String get dmMessageActionCopyText => 'ጽሑፍ ቅዳ';
 
   @override
@@ -5463,6 +5466,12 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get dmMessageActionReport => 'ሪፖርት አድርግ';
+
+  @override
+  String get dmMessageActionRetrySend => 'እንደገና ላክ';
+
+  @override
+  String get dmMessageActionCancelSend => 'መልእክቱን ሰርዝ';
 
   @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
@@ -5542,13 +5551,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get dmFormatCode => 'ኮድ';
 
   @override
-  String get dmStatusPending => 'በመላክ ላይ';
-
-  @override
   String get dmStatusFailed => 'መላክ አልተሳካም';
-
-  @override
-  String get dmStatusDeliveredSelfFailed => 'ተልኳል። ወደ ሌሎች መሣሪያዎችህ አይመሳሰልም።';
 
   @override
   String get inboxConversationActionsSheetLabel => 'የውይይት እርምጃዎች';

@@ -743,6 +743,14 @@ class AppDatabase extends _$AppDatabase {
     // (pubkey, kind) row (on-device profiling: ~23% of main-isolate CPU).
     await _addColumnIfMissing('event', 'd_tag', 'TEXT');
 
+    // Durable group-send batch identity (PR #6046). Nullable TEXT on both DM
+    // tables so an existing install gets the column without a schema-version
+    // bump — same runtime ADD-COLUMN-IF-MISSING pattern as d_tag above. Fresh
+    // installs get it from Drift's createAll(); this ALTER only fires for DBs
+    // created before the column existed. See tables.dart for the semantics.
+    await _addColumnIfMissing('outgoing_dms', 'send_batch_id', 'TEXT');
+    await _addColumnIfMissing('direct_messages', 'send_batch_id', 'TEXT');
+
     // Create the event indexes unconditionally. The `List<Index> get
     // indexes` getter on NostrEvents is not wired through
     // `@DriftDatabase(...)`, so Drift's m.createAll() never creates them —

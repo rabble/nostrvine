@@ -828,7 +828,7 @@ final class DmReactionsRepositoryProvider
 }
 
 String _$dmReactionsRepositoryHash() =>
-    r'33284449fde241e41b3fa8cd55d2f186da151489';
+    r'36d7b49d2bef6347e8cd624e7b137bdeaa83cee9';
 
 /// Provider for [FeedTuningRepository] — publishes swipe "more/less like this"
 /// feed-tuning signals.
@@ -943,7 +943,7 @@ final class DmRepositoryProvider
   }
 }
 
-String _$dmRepositoryHash() => r'718b03d3f473c07995a4715dfb67dd25b5c70d30';
+String _$dmRepositoryHash() => r'5b7295eef792fea6f99ef0eb28efd9d48b48db7d';
 
 /// Provider for CommentsRepository instance
 ///

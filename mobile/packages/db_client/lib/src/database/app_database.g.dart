@@ -8508,6 +8508,17 @@ class $DirectMessagesTable extends DirectMessages
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _sendBatchIdMeta = const VerificationMeta(
+    'sendBatchId',
+  );
+  @override
+  late final GeneratedColumn<String> sendBatchId = GeneratedColumn<String>(
+    'send_batch_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -8532,6 +8543,7 @@ class $DirectMessagesTable extends DirectMessages
     thumbnailUrl,
     isDeleted,
     ownerPubkey,
+    sendBatchId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -8716,6 +8728,15 @@ class $DirectMessagesTable extends DirectMessages
         ),
       );
     }
+    if (data.containsKey('send_batch_id')) {
+      context.handle(
+        _sendBatchIdMeta,
+        sendBatchId.isAcceptableOrUnknown(
+          data['send_batch_id']!,
+          _sendBatchIdMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -8813,6 +8834,10 @@ class $DirectMessagesTable extends DirectMessages
         DriftSqlType.string,
         data['${effectivePrefix}owner_pubkey'],
       ),
+      sendBatchId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}send_batch_id'],
+      ),
     );
   }
 
@@ -8896,6 +8921,16 @@ class DirectMessageRow extends DataClass
   /// Hex public key of the account that received/sent this message.
   /// NULL for legacy messages created before multi-account support.
   final String? ownerPubkey;
+
+  /// Durable, collision-proof identity of the group-send fan-out this message
+  /// belongs to (the first sibling rumor's event id). Set ONLY when persisting
+  /// a group send's single local message; NULL for 1:1 sends and every received
+  /// message. Lets the send / recovery dedup and the UI's optimistic grouping
+  /// match a batch by an exact stored value instead of the collision-prone
+  /// `(sender, content, created_at ±5s)` heuristic that `hasMatchingMessage`
+  /// uses — two distinct group sends of identical text seconds apart no longer
+  /// collapse into one.
+  final String? sendBatchId;
   const DirectMessageRow({
     required this.id,
     required this.conversationId,
@@ -8919,6 +8954,7 @@ class DirectMessageRow extends DataClass
     this.thumbnailUrl,
     required this.isDeleted,
     this.ownerPubkey,
+    this.sendBatchId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -8972,6 +9008,9 @@ class DirectMessageRow extends DataClass
     map['is_deleted'] = Variable<bool>(isDeleted);
     if (!nullToAbsent || ownerPubkey != null) {
       map['owner_pubkey'] = Variable<String>(ownerPubkey);
+    }
+    if (!nullToAbsent || sendBatchId != null) {
+      map['send_batch_id'] = Variable<String>(sendBatchId);
     }
     return map;
   }
@@ -9028,6 +9067,9 @@ class DirectMessageRow extends DataClass
       ownerPubkey: ownerPubkey == null && nullToAbsent
           ? const Value.absent()
           : Value(ownerPubkey),
+      sendBatchId: sendBatchId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sendBatchId),
     );
   }
 
@@ -9061,6 +9103,7 @@ class DirectMessageRow extends DataClass
       thumbnailUrl: serializer.fromJson<String?>(json['thumbnailUrl']),
       isDeleted: serializer.fromJson<bool>(json['isDeleted']),
       ownerPubkey: serializer.fromJson<String?>(json['ownerPubkey']),
+      sendBatchId: serializer.fromJson<String?>(json['sendBatchId']),
     );
   }
   @override
@@ -9089,6 +9132,7 @@ class DirectMessageRow extends DataClass
       'thumbnailUrl': serializer.toJson<String?>(thumbnailUrl),
       'isDeleted': serializer.toJson<bool>(isDeleted),
       'ownerPubkey': serializer.toJson<String?>(ownerPubkey),
+      'sendBatchId': serializer.toJson<String?>(sendBatchId),
     };
   }
 
@@ -9115,6 +9159,7 @@ class DirectMessageRow extends DataClass
     Value<String?> thumbnailUrl = const Value.absent(),
     bool? isDeleted,
     Value<String?> ownerPubkey = const Value.absent(),
+    Value<String?> sendBatchId = const Value.absent(),
   }) => DirectMessageRow(
     id: id ?? this.id,
     conversationId: conversationId ?? this.conversationId,
@@ -9146,6 +9191,7 @@ class DirectMessageRow extends DataClass
     thumbnailUrl: thumbnailUrl.present ? thumbnailUrl.value : this.thumbnailUrl,
     isDeleted: isDeleted ?? this.isDeleted,
     ownerPubkey: ownerPubkey.present ? ownerPubkey.value : this.ownerPubkey,
+    sendBatchId: sendBatchId.present ? sendBatchId.value : this.sendBatchId,
   );
   DirectMessageRow copyWithCompanion(DirectMessagesCompanion data) {
     return DirectMessageRow(
@@ -9193,6 +9239,9 @@ class DirectMessageRow extends DataClass
       ownerPubkey: data.ownerPubkey.present
           ? data.ownerPubkey.value
           : this.ownerPubkey,
+      sendBatchId: data.sendBatchId.present
+          ? data.sendBatchId.value
+          : this.sendBatchId,
     );
   }
 
@@ -9220,7 +9269,8 @@ class DirectMessageRow extends DataClass
           ..write('blurhash: $blurhash, ')
           ..write('thumbnailUrl: $thumbnailUrl, ')
           ..write('isDeleted: $isDeleted, ')
-          ..write('ownerPubkey: $ownerPubkey')
+          ..write('ownerPubkey: $ownerPubkey, ')
+          ..write('sendBatchId: $sendBatchId')
           ..write(')'))
         .toString();
   }
@@ -9249,6 +9299,7 @@ class DirectMessageRow extends DataClass
     thumbnailUrl,
     isDeleted,
     ownerPubkey,
+    sendBatchId,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -9275,7 +9326,8 @@ class DirectMessageRow extends DataClass
           other.blurhash == this.blurhash &&
           other.thumbnailUrl == this.thumbnailUrl &&
           other.isDeleted == this.isDeleted &&
-          other.ownerPubkey == this.ownerPubkey);
+          other.ownerPubkey == this.ownerPubkey &&
+          other.sendBatchId == this.sendBatchId);
 }
 
 class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
@@ -9301,6 +9353,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
   final Value<String?> thumbnailUrl;
   final Value<bool> isDeleted;
   final Value<String?> ownerPubkey;
+  final Value<String?> sendBatchId;
   final Value<int> rowid;
   const DirectMessagesCompanion({
     this.id = const Value.absent(),
@@ -9325,6 +9378,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
     this.thumbnailUrl = const Value.absent(),
     this.isDeleted = const Value.absent(),
     this.ownerPubkey = const Value.absent(),
+    this.sendBatchId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   DirectMessagesCompanion.insert({
@@ -9350,6 +9404,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
     this.thumbnailUrl = const Value.absent(),
     this.isDeleted = const Value.absent(),
     this.ownerPubkey = const Value.absent(),
+    this.sendBatchId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        conversationId = Value(conversationId),
@@ -9380,6 +9435,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
     Expression<String>? thumbnailUrl,
     Expression<bool>? isDeleted,
     Expression<String>? ownerPubkey,
+    Expression<String>? sendBatchId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -9406,6 +9462,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
       if (thumbnailUrl != null) 'thumbnail_url': thumbnailUrl,
       if (isDeleted != null) 'is_deleted': isDeleted,
       if (ownerPubkey != null) 'owner_pubkey': ownerPubkey,
+      if (sendBatchId != null) 'send_batch_id': sendBatchId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -9433,6 +9490,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
     Value<String?>? thumbnailUrl,
     Value<bool>? isDeleted,
     Value<String?>? ownerPubkey,
+    Value<String?>? sendBatchId,
     Value<int>? rowid,
   }) {
     return DirectMessagesCompanion(
@@ -9458,6 +9516,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
       isDeleted: isDeleted ?? this.isDeleted,
       ownerPubkey: ownerPubkey ?? this.ownerPubkey,
+      sendBatchId: sendBatchId ?? this.sendBatchId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -9531,6 +9590,9 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
     if (ownerPubkey.present) {
       map['owner_pubkey'] = Variable<String>(ownerPubkey.value);
     }
+    if (sendBatchId.present) {
+      map['send_batch_id'] = Variable<String>(sendBatchId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -9562,6 +9624,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
           ..write('thumbnailUrl: $thumbnailUrl, ')
           ..write('isDeleted: $isDeleted, ')
           ..write('ownerPubkey: $ownerPubkey, ')
+          ..write('sendBatchId: $sendBatchId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -11420,6 +11483,17 @@ class $OutgoingDmsTable extends OutgoingDms
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _sendBatchIdMeta = const VerificationMeta(
+    'sendBatchId',
+  );
+  @override
+  late final GeneratedColumn<String> sendBatchId = GeneratedColumn<String>(
+    'send_batch_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -11440,6 +11514,7 @@ class $OutgoingDmsTable extends OutgoingDms
     lastAttemptAt,
     queuedAt,
     ownerPubkey,
+    sendBatchId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -11614,6 +11689,15 @@ class $OutgoingDmsTable extends OutgoingDms
     } else if (isInserting) {
       context.missing(_ownerPubkeyMeta);
     }
+    if (data.containsKey('send_batch_id')) {
+      context.handle(
+        _sendBatchIdMeta,
+        sendBatchId.isAcceptableOrUnknown(
+          data['send_batch_id']!,
+          _sendBatchIdMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -11695,6 +11779,10 @@ class $OutgoingDmsTable extends OutgoingDms
         DriftSqlType.string,
         data['${effectivePrefix}owner_pubkey'],
       )!,
+      sendBatchId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}send_batch_id'],
+      ),
     );
   }
 
@@ -11798,6 +11886,14 @@ class OutgoingDmRow extends DataClass implements Insertable<OutgoingDmRow> {
   /// Hex pubkey of the account that queued this send. Mirrors
   /// `direct_messages.owner_pubkey` for multi-account isolation.
   final String ownerPubkey;
+
+  /// Durable, collision-proof identity of the group-send fan-out this row
+  /// belongs to (the first sibling rumor's event id, stamped identically on
+  /// every per-recipient sibling by `sendGroupMessage`). NULL for 1:1 sends,
+  /// which have no siblings. Persistence dedup, optimistic grouping, sibling
+  /// lookup, and cancellation all key off this instead of the collision-prone
+  /// `(content, created_at)` tuple. See `DirectMessages.sendBatchId`.
+  final String? sendBatchId;
   const OutgoingDmRow({
     required this.id,
     required this.conversationId,
@@ -11817,6 +11913,7 @@ class OutgoingDmRow extends DataClass implements Insertable<OutgoingDmRow> {
     this.lastAttemptAt,
     required this.queuedAt,
     required this.ownerPubkey,
+    this.sendBatchId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -11853,6 +11950,9 @@ class OutgoingDmRow extends DataClass implements Insertable<OutgoingDmRow> {
     }
     map['queued_at'] = Variable<DateTime>(queuedAt);
     map['owner_pubkey'] = Variable<String>(ownerPubkey);
+    if (!nullToAbsent || sendBatchId != null) {
+      map['send_batch_id'] = Variable<String>(sendBatchId);
+    }
     return map;
   }
 
@@ -11888,6 +11988,9 @@ class OutgoingDmRow extends DataClass implements Insertable<OutgoingDmRow> {
           : Value(lastAttemptAt),
       queuedAt: Value(queuedAt),
       ownerPubkey: Value(ownerPubkey),
+      sendBatchId: sendBatchId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sendBatchId),
     );
   }
 
@@ -11923,6 +12026,7 @@ class OutgoingDmRow extends DataClass implements Insertable<OutgoingDmRow> {
       lastAttemptAt: serializer.fromJson<DateTime?>(json['lastAttemptAt']),
       queuedAt: serializer.fromJson<DateTime>(json['queuedAt']),
       ownerPubkey: serializer.fromJson<String>(json['ownerPubkey']),
+      sendBatchId: serializer.fromJson<String?>(json['sendBatchId']),
     );
   }
   @override
@@ -11949,6 +12053,7 @@ class OutgoingDmRow extends DataClass implements Insertable<OutgoingDmRow> {
       'lastAttemptAt': serializer.toJson<DateTime?>(lastAttemptAt),
       'queuedAt': serializer.toJson<DateTime>(queuedAt),
       'ownerPubkey': serializer.toJson<String>(ownerPubkey),
+      'sendBatchId': serializer.toJson<String?>(sendBatchId),
     };
   }
 
@@ -11971,6 +12076,7 @@ class OutgoingDmRow extends DataClass implements Insertable<OutgoingDmRow> {
     Value<DateTime?> lastAttemptAt = const Value.absent(),
     DateTime? queuedAt,
     String? ownerPubkey,
+    Value<String?> sendBatchId = const Value.absent(),
   }) => OutgoingDmRow(
     id: id ?? this.id,
     conversationId: conversationId ?? this.conversationId,
@@ -12000,6 +12106,7 @@ class OutgoingDmRow extends DataClass implements Insertable<OutgoingDmRow> {
         : this.lastAttemptAt,
     queuedAt: queuedAt ?? this.queuedAt,
     ownerPubkey: ownerPubkey ?? this.ownerPubkey,
+    sendBatchId: sendBatchId.present ? sendBatchId.value : this.sendBatchId,
   );
   OutgoingDmRow copyWithCompanion(OutgoingDmsCompanion data) {
     return OutgoingDmRow(
@@ -12047,6 +12154,9 @@ class OutgoingDmRow extends DataClass implements Insertable<OutgoingDmRow> {
       ownerPubkey: data.ownerPubkey.present
           ? data.ownerPubkey.value
           : this.ownerPubkey,
+      sendBatchId: data.sendBatchId.present
+          ? data.sendBatchId.value
+          : this.sendBatchId,
     );
   }
 
@@ -12070,7 +12180,8 @@ class OutgoingDmRow extends DataClass implements Insertable<OutgoingDmRow> {
           ..write('selfWrapLastError: $selfWrapLastError, ')
           ..write('lastAttemptAt: $lastAttemptAt, ')
           ..write('queuedAt: $queuedAt, ')
-          ..write('ownerPubkey: $ownerPubkey')
+          ..write('ownerPubkey: $ownerPubkey, ')
+          ..write('sendBatchId: $sendBatchId')
           ..write(')'))
         .toString();
   }
@@ -12095,6 +12206,7 @@ class OutgoingDmRow extends DataClass implements Insertable<OutgoingDmRow> {
     lastAttemptAt,
     queuedAt,
     ownerPubkey,
+    sendBatchId,
   );
   @override
   bool operator ==(Object other) =>
@@ -12117,7 +12229,8 @@ class OutgoingDmRow extends DataClass implements Insertable<OutgoingDmRow> {
           other.selfWrapLastError == this.selfWrapLastError &&
           other.lastAttemptAt == this.lastAttemptAt &&
           other.queuedAt == this.queuedAt &&
-          other.ownerPubkey == this.ownerPubkey);
+          other.ownerPubkey == this.ownerPubkey &&
+          other.sendBatchId == this.sendBatchId);
 }
 
 class OutgoingDmsCompanion extends UpdateCompanion<OutgoingDmRow> {
@@ -12139,6 +12252,7 @@ class OutgoingDmsCompanion extends UpdateCompanion<OutgoingDmRow> {
   final Value<DateTime?> lastAttemptAt;
   final Value<DateTime> queuedAt;
   final Value<String> ownerPubkey;
+  final Value<String?> sendBatchId;
   final Value<int> rowid;
   const OutgoingDmsCompanion({
     this.id = const Value.absent(),
@@ -12159,6 +12273,7 @@ class OutgoingDmsCompanion extends UpdateCompanion<OutgoingDmRow> {
     this.lastAttemptAt = const Value.absent(),
     this.queuedAt = const Value.absent(),
     this.ownerPubkey = const Value.absent(),
+    this.sendBatchId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   OutgoingDmsCompanion.insert({
@@ -12180,6 +12295,7 @@ class OutgoingDmsCompanion extends UpdateCompanion<OutgoingDmRow> {
     this.lastAttemptAt = const Value.absent(),
     required DateTime queuedAt,
     required String ownerPubkey,
+    this.sendBatchId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        conversationId = Value(conversationId),
@@ -12210,6 +12326,7 @@ class OutgoingDmsCompanion extends UpdateCompanion<OutgoingDmRow> {
     Expression<DateTime>? lastAttemptAt,
     Expression<DateTime>? queuedAt,
     Expression<String>? ownerPubkey,
+    Expression<String>? sendBatchId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -12234,6 +12351,7 @@ class OutgoingDmsCompanion extends UpdateCompanion<OutgoingDmRow> {
       if (lastAttemptAt != null) 'last_attempt_at': lastAttemptAt,
       if (queuedAt != null) 'queued_at': queuedAt,
       if (ownerPubkey != null) 'owner_pubkey': ownerPubkey,
+      if (sendBatchId != null) 'send_batch_id': sendBatchId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -12257,6 +12375,7 @@ class OutgoingDmsCompanion extends UpdateCompanion<OutgoingDmRow> {
     Value<DateTime?>? lastAttemptAt,
     Value<DateTime>? queuedAt,
     Value<String>? ownerPubkey,
+    Value<String?>? sendBatchId,
     Value<int>? rowid,
   }) {
     return OutgoingDmsCompanion(
@@ -12279,6 +12398,7 @@ class OutgoingDmsCompanion extends UpdateCompanion<OutgoingDmRow> {
       lastAttemptAt: lastAttemptAt ?? this.lastAttemptAt,
       queuedAt: queuedAt ?? this.queuedAt,
       ownerPubkey: ownerPubkey ?? this.ownerPubkey,
+      sendBatchId: sendBatchId ?? this.sendBatchId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -12346,6 +12466,9 @@ class OutgoingDmsCompanion extends UpdateCompanion<OutgoingDmRow> {
     if (ownerPubkey.present) {
       map['owner_pubkey'] = Variable<String>(ownerPubkey.value);
     }
+    if (sendBatchId.present) {
+      map['send_batch_id'] = Variable<String>(sendBatchId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -12373,6 +12496,7 @@ class OutgoingDmsCompanion extends UpdateCompanion<OutgoingDmRow> {
           ..write('lastAttemptAt: $lastAttemptAt, ')
           ..write('queuedAt: $queuedAt, ')
           ..write('ownerPubkey: $ownerPubkey, ')
+          ..write('sendBatchId: $sendBatchId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -19271,6 +19395,7 @@ typedef $$DirectMessagesTableCreateCompanionBuilder =
       Value<String?> thumbnailUrl,
       Value<bool> isDeleted,
       Value<String?> ownerPubkey,
+      Value<String?> sendBatchId,
       Value<int> rowid,
     });
 typedef $$DirectMessagesTableUpdateCompanionBuilder =
@@ -19297,6 +19422,7 @@ typedef $$DirectMessagesTableUpdateCompanionBuilder =
       Value<String?> thumbnailUrl,
       Value<bool> isDeleted,
       Value<String?> ownerPubkey,
+      Value<String?> sendBatchId,
       Value<int> rowid,
     });
 
@@ -19416,6 +19542,11 @@ class $$DirectMessagesTableFilterComposer
 
   ColumnFilters<String> get ownerPubkey => $composableBuilder(
     column: $table.ownerPubkey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sendBatchId => $composableBuilder(
+    column: $table.sendBatchId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -19538,6 +19669,11 @@ class $$DirectMessagesTableOrderingComposer
     column: $table.ownerPubkey,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get sendBatchId => $composableBuilder(
+    column: $table.sendBatchId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$DirectMessagesTableAnnotationComposer
@@ -19636,6 +19772,11 @@ class $$DirectMessagesTableAnnotationComposer
     column: $table.ownerPubkey,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get sendBatchId => $composableBuilder(
+    column: $table.sendBatchId,
+    builder: (column) => column,
+  );
 }
 
 class $$DirectMessagesTableTableManager
@@ -19697,6 +19838,7 @@ class $$DirectMessagesTableTableManager
                 Value<String?> thumbnailUrl = const Value.absent(),
                 Value<bool> isDeleted = const Value.absent(),
                 Value<String?> ownerPubkey = const Value.absent(),
+                Value<String?> sendBatchId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DirectMessagesCompanion(
                 id: id,
@@ -19721,6 +19863,7 @@ class $$DirectMessagesTableTableManager
                 thumbnailUrl: thumbnailUrl,
                 isDeleted: isDeleted,
                 ownerPubkey: ownerPubkey,
+                sendBatchId: sendBatchId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -19747,6 +19890,7 @@ class $$DirectMessagesTableTableManager
                 Value<String?> thumbnailUrl = const Value.absent(),
                 Value<bool> isDeleted = const Value.absent(),
                 Value<String?> ownerPubkey = const Value.absent(),
+                Value<String?> sendBatchId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DirectMessagesCompanion.insert(
                 id: id,
@@ -19771,6 +19915,7 @@ class $$DirectMessagesTableTableManager
                 thumbnailUrl: thumbnailUrl,
                 isDeleted: isDeleted,
                 ownerPubkey: ownerPubkey,
+                sendBatchId: sendBatchId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -20544,6 +20689,7 @@ typedef $$OutgoingDmsTableCreateCompanionBuilder =
       Value<DateTime?> lastAttemptAt,
       required DateTime queuedAt,
       required String ownerPubkey,
+      Value<String?> sendBatchId,
       Value<int> rowid,
     });
 typedef $$OutgoingDmsTableUpdateCompanionBuilder =
@@ -20566,6 +20712,7 @@ typedef $$OutgoingDmsTableUpdateCompanionBuilder =
       Value<DateTime?> lastAttemptAt,
       Value<DateTime> queuedAt,
       Value<String> ownerPubkey,
+      Value<String?> sendBatchId,
       Value<int> rowid,
     });
 
@@ -20665,6 +20812,11 @@ class $$OutgoingDmsTableFilterComposer
 
   ColumnFilters<String> get ownerPubkey => $composableBuilder(
     column: $table.ownerPubkey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sendBatchId => $composableBuilder(
+    column: $table.sendBatchId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -20767,6 +20919,11 @@ class $$OutgoingDmsTableOrderingComposer
     column: $table.ownerPubkey,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get sendBatchId => $composableBuilder(
+    column: $table.sendBatchId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$OutgoingDmsTableAnnotationComposer
@@ -20857,6 +21014,11 @@ class $$OutgoingDmsTableAnnotationComposer
     column: $table.ownerPubkey,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get sendBatchId => $composableBuilder(
+    column: $table.sendBatchId,
+    builder: (column) => column,
+  );
 }
 
 class $$OutgoingDmsTableTableManager
@@ -20908,6 +21070,7 @@ class $$OutgoingDmsTableTableManager
                 Value<DateTime?> lastAttemptAt = const Value.absent(),
                 Value<DateTime> queuedAt = const Value.absent(),
                 Value<String> ownerPubkey = const Value.absent(),
+                Value<String?> sendBatchId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => OutgoingDmsCompanion(
                 id: id,
@@ -20928,6 +21091,7 @@ class $$OutgoingDmsTableTableManager
                 lastAttemptAt: lastAttemptAt,
                 queuedAt: queuedAt,
                 ownerPubkey: ownerPubkey,
+                sendBatchId: sendBatchId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -20950,6 +21114,7 @@ class $$OutgoingDmsTableTableManager
                 Value<DateTime?> lastAttemptAt = const Value.absent(),
                 required DateTime queuedAt,
                 required String ownerPubkey,
+                Value<String?> sendBatchId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => OutgoingDmsCompanion.insert(
                 id: id,
@@ -20970,6 +21135,7 @@ class $$OutgoingDmsTableTableManager
                 lastAttemptAt: lastAttemptAt,
                 queuedAt: queuedAt,
                 ownerPubkey: ownerPubkey,
+                sendBatchId: sendBatchId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

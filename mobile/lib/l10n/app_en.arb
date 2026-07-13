@@ -3168,6 +3168,10 @@
   "@dmMessageBubbleLongPressHint": {
     "description": "Accessibility hint announcing that a direct message bubble supports a long-press action menu"
   },
+  "dmMessageBubbleFailedTapHint": "Resend or delete this message",
+  "@dmMessageBubbleFailedTapHint": {
+    "description": "Accessibility tap hint on a failed own message bubble: tapping opens the resend-or-delete actions"
+  },
   "dmMessageActionCopyText": "Copy text",
   "@dmMessageActionCopyText": {
     "description": "Long-press menu action on a DM bubble that copies the message's plaintext content to the clipboard."
@@ -3183,6 +3187,14 @@
   "dmMessageActionReport": "Report",
   "@dmMessageActionReport": {
     "description": "Long-press menu action on a received DM bubble that opens the report flow for that specific message."
+  },
+  "dmMessageActionRetrySend": "Resend",
+  "@dmMessageActionRetrySend": {
+    "description": "Action in the snackbar shown when a failed own DM bubble is tapped; re-attempts delivery of that queued message."
+  },
+  "dmMessageActionCancelSend": "Delete message",
+  "@dmMessageActionCancelSend": {
+    "description": "Action in the snackbar shown when a failed own DM bubble is tapped; gives up on the queued message and removes it."
   },
   "dmReactionAddCustomA11yLabel": "Add custom emoji reaction",
   "@dmReactionAddCustomA11yLabel": {
@@ -3300,17 +3312,9 @@
   "@dmFormatCode": {
     "description": "Label for the inline-code formatting action in the DM composer's text-selection context menu. Wraps the selected text with markdown inline-code markers (e.g. `text`)."
   },
-  "dmStatusPending": "Sending",
-  "@dmStatusPending": {
-    "description": "Accessibility label / tooltip on the clock indicator at the bottom of a sent DM bubble whose recipient gift wrap has not yet landed."
-  },
   "dmStatusFailed": "Failed to send",
   "@dmStatusFailed": {
     "description": "Accessibility label / tooltip on the error indicator at the bottom of a sent DM bubble whose recipient gift wrap publish has failed and is awaiting retry."
-  },
-  "dmStatusDeliveredSelfFailed": "Delivered. Won't sync to your other devices.",
-  "@dmStatusDeliveredSelfFailed": {
-    "description": "Accessibility label / tooltip on the warning indicator at the bottom of a sent DM bubble whose recipient gift wrap landed but whose self-addressed gift wrap did not, so the sender's other devices will not see this message on relay-only restore. Paired with `dmSendPartialMessage` which surfaces the same state in the SnackBar."
   },
   "inboxConversationActionsSheetLabel": "Conversation actions",
   "@inboxConversationActionsSheetLabel": {
