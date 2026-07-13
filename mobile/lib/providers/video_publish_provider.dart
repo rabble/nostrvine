@@ -530,6 +530,11 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         error: error,
         stackTrace: stackTrace,
       );
+      // Clear the `.preparing` guard and surface the failure so the user can
+      // restart the publish instead of being stuck on the preparing overlay
+      // (#6058). Without this, the re-entry guard rejects every retry.
+      final l10n = currentAppL10n(ref.read(sharedPreferencesProvider));
+      setError(l10n.publishErrorMessage(PublishErrorKind.generic));
     } finally {
       _inFlightSourceDraftIds.remove(sourceDraftId);
       Log.info(

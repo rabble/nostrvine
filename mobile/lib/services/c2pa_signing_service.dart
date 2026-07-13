@@ -1,6 +1,7 @@
 // ABOUTME: Service for signing videos with C2PA content credentials
 // ABOUTME: Embeds provenance information into video files before upload
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:c2pa_flutter/c2pa.dart';
@@ -62,14 +63,39 @@ class C2paSigningResult {
 /// cryptographic provenance information directly into media files,
 /// establishing the origin and history of digital content.
 class C2paSigningService {
-  C2paSigningService({C2pa? c2pa, C2paIdentityManifestService? manifestService})
-    : _c2pa = c2pa ?? C2pa(),
-      _manifestService = manifestService ?? C2paIdentityManifestService();
+  C2paSigningService({
+    C2pa? c2pa,
+    C2paIdentityManifestService? manifestService,
+    Duration? signingTimeout,
+  }) : _c2pa = c2pa ?? C2pa(),
+       _manifestService = manifestService ?? C2paIdentityManifestService(),
+       _signingTimeout = signingTimeout ?? defaultSigningTimeout;
 
   final C2pa _c2pa;
   final C2paIdentityManifestService _manifestService;
+  final Duration _signingTimeout;
 
   static const String _videoMimeType = 'video/mp4';
+
+  /// Upper bound on the remote-signing network call.
+  ///
+  /// [RemoteSigner] fetches its signer configuration and an RFC-3161 timestamp
+  /// over the network, and the native call carries no timeout of its own. On a
+  /// half-open connection (e.g. network dropped mid-generation) that leaves the
+  /// signing future suspended forever, wedging the whole publish/render flow so
+  /// it can neither finish nor be restarted (#6058). Bounding it converts a
+  /// hang into a normal best-effort failure: the video publishes without C2PA
+  /// instead of getting stuck.
+  static const Duration defaultSigningTimeout = Duration(seconds: 30);
+
+  /// Whether the remote signing pipeline is configured for this build.
+  ///
+  /// Signing is a network call to [SIGNING_SERVER_ENDPOINT], which is injected
+  /// as a `--dart-define` only in builds that opt in (see `build_*.sh` /
+  /// `run_dev.sh`). CI and unconfigured builds leave it empty, so a missing
+  /// C2PA signature there is expected and must never be surfaced to the user —
+  /// callers gate the "sign or skip" prompt on this (#6058).
+  static bool get isSigningConfigured => SIGNING_SERVER_ENDPOINT.isNotEmpty;
 
   /// Signs a video file with C2PA content credentials.
   ///
@@ -136,13 +162,16 @@ class C2paSigningService {
       // Create signer for RemoteSigning against proofsign
       final signer = _createSigner();
 
-      // Sign the file
-      await _c2pa.signFile(
-        sourcePath: videoPath,
-        destPath: signedPath,
-        manifestJson: manifestResult.manifestJson,
-        signer: await signer,
-      );
+      // Sign the file. Bounded so a network hang surfaces as a best-effort
+      // failure instead of wedging the generation (#6058).
+      await _c2pa
+          .signFile(
+            sourcePath: videoPath,
+            destPath: signedPath,
+            manifestJson: manifestResult.manifestJson,
+            signer: await signer,
+          )
+          .timeout(_signingTimeout);
 
       // Verify signed file was created
       final signedFile = File(signedPath);
@@ -306,6 +335,10 @@ class C2paSigningService {
 
   @visibleForTesting
   static C2paSigningFailureReason classifyFailureReason(Object error) {
+    if (error is TimeoutException) {
+      return C2paSigningFailureReason.network;
+    }
+
     final message = switch (error) {
       PlatformException(:final code, :final message, :final details) =>
         '$code $message $details'.toLowerCase(),

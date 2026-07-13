@@ -20,6 +20,8 @@ class VideoEditorProviderState {
   /// Creates a video editor state with optional initial values.
   VideoEditorProviderState({
     this.isProcessing = false,
+    this.renderFailed = false,
+    this.c2paSigningFailed = false,
     this.isSavingDraft = false,
     this.isAutosavedDraft = true,
     this.allowAudioReuse = false,
@@ -47,6 +49,23 @@ class VideoEditorProviderState {
   /// Whether a long-running operation (e.g., export, processing) is in
   /// progress.
   final bool isProcessing;
+
+  /// Whether the last render attempt failed to produce a [finalRenderedClip].
+  ///
+  /// Drives the metadata screen's failure overlay (error + retry) instead of an
+  /// endless spinner, so a failed generation can be restarted in place (#6058).
+  /// Cleared when a new render starts and whenever [finalRenderedClip] is set or
+  /// invalidated.
+  final bool renderFailed;
+
+  /// Whether the render produced a clip but the C2PA content credential could
+  /// not be attached (signing configured but failed).
+  ///
+  /// Only ever true in builds with signing configured (never in CI). Drives the
+  /// "regenerate or post without provenance" prompt on the metadata screen
+  /// (#6058). Cleared once the user acts on it, when a new render starts, and
+  /// whenever [finalRenderedClip] is invalidated.
+  final bool c2paSigningFailed;
 
   /// Whether a draft save operation is currently in progress.
   final bool isSavingDraft;
@@ -180,6 +199,8 @@ class VideoEditorProviderState {
   /// [selectedSound] to null.
   VideoEditorProviderState copyWith({
     bool? isProcessing,
+    bool? renderFailed,
+    bool? c2paSigningFailed,
     bool? isSavingDraft,
     bool? isAutosavedDraft,
     bool? allowAudioReuse,
@@ -213,6 +234,13 @@ class VideoEditorProviderState {
   }) {
     return VideoEditorProviderState(
       isProcessing: isProcessing ?? this.isProcessing,
+      // A produced or invalidated clip always ends the failed state.
+      renderFailed:
+          !clearFinalRenderedClip && (renderFailed ?? this.renderFailed),
+      // Invalidating the rendered clip also drops any pending C2PA prompt.
+      c2paSigningFailed:
+          !clearFinalRenderedClip &&
+          (c2paSigningFailed ?? this.c2paSigningFailed),
       isSavingDraft: isSavingDraft ?? this.isSavingDraft,
       isAutosavedDraft: isAutosavedDraft ?? this.isAutosavedDraft,
       allowAudioReuse: allowAudioReuse ?? this.allowAudioReuse,

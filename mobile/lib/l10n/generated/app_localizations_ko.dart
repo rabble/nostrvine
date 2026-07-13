@@ -5620,6 +5620,22 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoMetadataEditCoverSuccessAnnouncement => '커버 업데이트됨';
 
   @override
+  String get videoMetadataC2paMissingTitle => '정품 인증 없이 게시할까요?';
+
+  @override
+  String get videoMetadataC2paMissingBody =>
+      '콘텐츠 자격 증명을 추가할 수 없어 이 동영상은 사람이 제작한 것으로 확인되지 않습니다. 다시 시도하려면 재생성하거나 그대로 게시하세요.';
+
+  @override
+  String get videoMetadataC2paMissingRegenerate => '재생성';
+
+  @override
+  String get videoMetadataC2paMissingPostAnyway => '그래도 게시';
+
+  @override
+  String get videoMetadataGenerationFailed => '생성 실패';
+
+  @override
   String get videoMetadataTags => '태그';
 
   @override

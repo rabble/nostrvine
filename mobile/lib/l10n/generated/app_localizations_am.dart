@@ -5717,6 +5717,22 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoMetadataEditCoverSuccessAnnouncement => 'Cover updated';
 
   @override
+  String get videoMetadataC2paMissingTitle => 'ያለ የእውነተኛነት ማረጋገጫ ይለጠፍ?';
+
+  @override
+  String get videoMetadataC2paMissingBody =>
+      'የይዘት መታወቂያዎችን መጨመር አልቻልንም፣ ስለዚህ ይህ ቪዲዮ በሰው እንደተሰራ አይረጋገጥም። እንደገና ለመሞከር እንደገና ይፍጠሩ ወይም እንዳለ ይለጥፉ።';
+
+  @override
+  String get videoMetadataC2paMissingRegenerate => 'እንደገና ፍጠር';
+
+  @override
+  String get videoMetadataC2paMissingPostAnyway => 'ለማንኛውም ለጥፍ';
+
+  @override
+  String get videoMetadataGenerationFailed => 'ማመንጨት አልተሳካም';
+
+  @override
   String get videoMetadataTags => 'መለያዎች';
 
   @override

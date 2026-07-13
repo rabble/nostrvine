@@ -5599,6 +5599,22 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoMetadataEditCoverSuccessAnnouncement => 'カバーを更新しました';
 
   @override
+  String get videoMetadataC2paMissingTitle => '本物確認なしで投稿しますか？';
+
+  @override
+  String get videoMetadataC2paMissingBody =>
+      'コンテンツ認証情報を追加できなかったため、この動画は人間が作成したものとして確認されません。もう一度試すには再生成するか、このまま投稿してください。';
+
+  @override
+  String get videoMetadataC2paMissingRegenerate => '再生成';
+
+  @override
+  String get videoMetadataC2paMissingPostAnyway => 'そのまま投稿';
+
+  @override
+  String get videoMetadataGenerationFailed => '生成に失敗しました';
+
+  @override
   String get videoMetadataTags => 'タグ';
 
   @override

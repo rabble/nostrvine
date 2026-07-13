@@ -175,6 +175,68 @@ void main() {
       });
     });
 
+    group('C2PA signing prompt (#6058)', () {
+      testWidgets(
+        'prompts to regenerate or post anyway when signing fails, and '
+        '"Post anyway" clears the flag',
+        (tester) async {
+          final container = ProviderContainer(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              clipManagerProvider.overrideWith(
+                () => _MockClipManagerNotifier([testClip]),
+              ),
+              videoEditorProvider.overrideWith(
+                () => _MockVideoEditorNotifier(
+                  VideoEditorProviderState(finalRenderedClip: testClip),
+                ),
+              ),
+            ],
+          );
+          addTearDown(container.dispose);
+
+          await tester.pumpWidget(
+            UncontrolledProviderScope(
+              container: container,
+              child: const MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: VideoMetadataScreen(),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          // Nothing while signing hasn't failed.
+          expect(find.text(l10n.videoMetadataC2paMissingTitle), findsNothing);
+
+          // The render finishes without a C2PA content credential.
+          final notifier = container.read(videoEditorProvider.notifier);
+          notifier.state = notifier.state.copyWith(c2paSigningFailed: true);
+          await tester.pumpAndSettle();
+
+          expect(find.text(l10n.videoMetadataC2paMissingTitle), findsOneWidget);
+          expect(
+            find.text(l10n.videoMetadataC2paMissingRegenerate),
+            findsOneWidget,
+          );
+
+          await tester.tap(
+            find.text(l10n.videoMetadataC2paMissingPostAnyway),
+          );
+          await tester.pumpAndSettle();
+
+          expect(
+            container.read(videoEditorProvider).c2paSigningFailed,
+            isFalse,
+            reason: 'posting anyway clears the pending prompt',
+          );
+          expect(find.text(l10n.videoMetadataC2paMissingTitle), findsNothing);
+        },
+      );
+    });
+
     group('recorder mode switch', () {
       testWidgets('renders $VideoMetadataCaptureStack when mode is capture', (
         tester,

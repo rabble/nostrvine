@@ -5858,6 +5858,23 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoMetadataEditCoverSuccessAnnouncement => 'Omslag bijgewerkt';
 
   @override
+  String get videoMetadataC2paMissingTitle =>
+      'Plaatsen zonder echtheidscontrole?';
+
+  @override
+  String get videoMetadataC2paMissingBody =>
+      'We konden geen content credentials toevoegen, dus deze video wordt niet bevestigd als door mensen gemaakt. Genereer opnieuw om het nog eens te proberen, of plaats hem zo.';
+
+  @override
+  String get videoMetadataC2paMissingRegenerate => 'Opnieuw genereren';
+
+  @override
+  String get videoMetadataC2paMissingPostAnyway => 'Toch plaatsen';
+
+  @override
+  String get videoMetadataGenerationFailed => 'Genereren mislukt';
+
+  @override
   String get videoMetadataTags => 'Tags';
 
   @override

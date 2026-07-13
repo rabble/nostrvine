@@ -5798,6 +5798,23 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoMetadataEditCoverSuccessAnnouncement => 'تم تحديث الغلاف';
 
   @override
+  String get videoMetadataC2paMissingTitle =>
+      'هل تريد النشر دون التحقق من الأصالة؟';
+
+  @override
+  String get videoMetadataC2paMissingBody =>
+      'تعذّر علينا إضافة بيانات اعتماد المحتوى، لذا لن يتم تأكيد هذا الفيديو على أنه من صنع إنسان. أعد الإنشاء للمحاولة مرة أخرى، أو انشره كما هو.';
+
+  @override
+  String get videoMetadataC2paMissingRegenerate => 'إعادة الإنشاء';
+
+  @override
+  String get videoMetadataC2paMissingPostAnyway => 'النشر على أي حال';
+
+  @override
+  String get videoMetadataGenerationFailed => 'فشل الإنشاء';
+
+  @override
   String get videoMetadataTags => 'الوسوم';
 
   @override

@@ -5901,6 +5901,23 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoMetadataEditCoverSuccessAnnouncement => 'Cover updated';
 
   @override
+  String get videoMetadataC2paMissingTitle =>
+      'I-post nang walang human-made check?';
+
+  @override
+  String get videoMetadataC2paMissingBody =>
+      'Hindi kami nakapaglagay ng content credentials, kaya hindi makukumpirma na gawa ng tao ang video na ito. I-regenerate para subukan ulit, o i-post na lang ito.';
+
+  @override
+  String get videoMetadataC2paMissingRegenerate => 'I-regenerate';
+
+  @override
+  String get videoMetadataC2paMissingPostAnyway => 'I-post pa rin';
+
+  @override
+  String get videoMetadataGenerationFailed => 'Nabigo ang paggawa';
+
+  @override
   String get videoMetadataTags => 'Mga Tag';
 
   @override

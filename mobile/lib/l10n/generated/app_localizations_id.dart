@@ -5807,6 +5807,23 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoMetadataEditCoverSuccessAnnouncement => 'Sampul diperbarui';
 
   @override
+  String get videoMetadataC2paMissingTitle =>
+      'Posting tanpa verifikasi keaslian?';
+
+  @override
+  String get videoMetadataC2paMissingBody =>
+      'Kami tidak dapat menambahkan kredensial konten, jadi video ini tidak akan dikonfirmasi sebagai buatan manusia. Buat ulang untuk mencoba lagi, atau posting apa adanya.';
+
+  @override
+  String get videoMetadataC2paMissingRegenerate => 'Buat ulang';
+
+  @override
+  String get videoMetadataC2paMissingPostAnyway => 'Tetap posting';
+
+  @override
+  String get videoMetadataGenerationFailed => 'Pembuatan gagal';
+
+  @override
   String get videoMetadataTags => 'Tag';
 
   @override

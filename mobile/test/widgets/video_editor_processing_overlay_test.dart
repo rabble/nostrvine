@@ -124,6 +124,47 @@ void main() {
       expect(overlayFinder, findsNothing);
     });
 
+    testWidgets(
+      'shows an error + retry affordance instead of a spinner when the render '
+      'failed, and invokes onRetry (#6058)',
+      (tester) async {
+        final clip = _createClip();
+        var retried = false;
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: VideoEditorProcessingOverlay(
+                  clip: clip,
+                  // Failure must win even while isProcessing is still true.
+                  isProcessing: true,
+                  hasFailed: true,
+                  onRetry: () => retried = true,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.videoMetadataGenerationFailed), findsOneWidget);
+        expect(
+          find.byType(PartialCircleSpinner),
+          findsNothing,
+          reason: 'the failed overlay must not show the render spinner',
+        );
+
+        await tester.tap(find.byType(DivineIconButton));
+        await tester.pump();
+        expect(retried, isTrue);
+      },
+    );
+
     testWidgets('renders composed export progress', (
       tester,
     ) async {

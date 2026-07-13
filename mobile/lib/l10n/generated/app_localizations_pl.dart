@@ -5978,6 +5978,23 @@ class AppLocalizationsPl extends AppLocalizations {
       'Zaktualizowano okładkę';
 
   @override
+  String get videoMetadataC2paMissingTitle =>
+      'Opublikować bez weryfikacji autentyczności?';
+
+  @override
+  String get videoMetadataC2paMissingBody =>
+      'Nie udało się dodać poświadczeń treści, więc ten film nie zostanie potwierdzony jako stworzony przez człowieka. Wygeneruj ponownie, aby spróbować jeszcze raz, lub opublikuj bez zmian.';
+
+  @override
+  String get videoMetadataC2paMissingRegenerate => 'Wygeneruj ponownie';
+
+  @override
+  String get videoMetadataC2paMissingPostAnyway => 'Opublikuj mimo to';
+
+  @override
+  String get videoMetadataGenerationFailed => 'Generowanie nie powiodło się';
+
+  @override
   String get videoMetadataTags => 'Tagi';
 
   @override

@@ -5902,6 +5902,22 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoMetadataEditCoverSuccessAnnouncement => 'Cover aktualisiert';
 
   @override
+  String get videoMetadataC2paMissingTitle => 'Ohne Echtheitsnachweis posten?';
+
+  @override
+  String get videoMetadataC2paMissingBody =>
+      'Wir konnten keine Content Credentials hinzufügen – dieses Video wird daher nicht als von Menschen gemacht bestätigt. Neu generieren, um es erneut zu versuchen, oder so posten.';
+
+  @override
+  String get videoMetadataC2paMissingRegenerate => 'Neu generieren';
+
+  @override
+  String get videoMetadataC2paMissingPostAnyway => 'Trotzdem posten';
+
+  @override
+  String get videoMetadataGenerationFailed => 'Generierung fehlgeschlagen';
+
+  @override
   String get videoMetadataTags => 'Tags';
 
   @override

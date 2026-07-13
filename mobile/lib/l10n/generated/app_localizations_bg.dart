@@ -5884,6 +5884,23 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoMetadataEditCoverSuccessAnnouncement => 'Cover updated';
 
   @override
+  String get videoMetadataC2paMissingTitle =>
+      'Публикуване без проверка за автентичност?';
+
+  @override
+  String get videoMetadataC2paMissingBody =>
+      'Не успяхме да добавим удостоверения за съдържанието, затова това видео няма да бъде потвърдено като създадено от човек. Генерирайте отново, за да опитате пак, или го публикувайте както е.';
+
+  @override
+  String get videoMetadataC2paMissingRegenerate => 'Генерирай отново';
+
+  @override
+  String get videoMetadataC2paMissingPostAnyway => 'Публикувай въпреки това';
+
+  @override
+  String get videoMetadataGenerationFailed => 'Генерирането е неуспешно';
+
+  @override
   String get videoMetadataTags => 'Етикети';
 
   @override

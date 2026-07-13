@@ -5868,6 +5868,23 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoMetadataEditCoverSuccessAnnouncement => 'Capa atualizada';
 
   @override
+  String get videoMetadataC2paMissingTitle =>
+      'Publicar sem a verificação de autenticidade?';
+
+  @override
+  String get videoMetadataC2paMissingBody =>
+      'Não foi possível adicionar as credenciais de conteúdo, por isso este vídeo não será confirmado como feito por humano. Gere novamente para tentar outra vez ou publique como está.';
+
+  @override
+  String get videoMetadataC2paMissingRegenerate => 'Gerar novamente';
+
+  @override
+  String get videoMetadataC2paMissingPostAnyway => 'Publicar mesmo assim';
+
+  @override
+  String get videoMetadataGenerationFailed => 'Falha na geração';
+
+  @override
   String get videoMetadataTags => 'Tags';
 
   @override

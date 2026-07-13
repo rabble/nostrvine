@@ -10230,6 +10230,36 @@ abstract class AppLocalizations {
   /// **'Cover updated'**
   String get videoMetadataEditCoverSuccessAnnouncement;
 
+  /// Title of a bottom sheet shown after rendering a video when the C2PA content-credential signature could not be created (e.g. offline). Asks whether to regenerate or post without provenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Post without the human-made check?'**
+  String get videoMetadataC2paMissingTitle;
+
+  /// Body text of the bottom sheet warning that a video will be published without a C2PA content credential, meaning it will not be verifiably confirmed as human-made.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t add content credentials, so this video won\'t be confirmed as Human-Made. Regenerate to try again, or post it as-is.'**
+  String get videoMetadataC2paMissingBody;
+
+  /// Primary button on the missing-content-credential bottom sheet. Re-renders the video to attempt the C2PA signature again.
+  ///
+  /// In en, this message translates to:
+  /// **'Regenerate'**
+  String get videoMetadataC2paMissingRegenerate;
+
+  /// Secondary button on the missing-content-credential bottom sheet. Publishes the video without a C2PA content credential.
+  ///
+  /// In en, this message translates to:
+  /// **'Post anyway'**
+  String get videoMetadataC2paMissingPostAnyway;
+
+  /// Warning shown over the metadata screen preview when rendering (generating) the final video failed and no clip was produced. Sits above a retry icon button.
+  ///
+  /// In en, this message translates to:
+  /// **'Generation failed'**
+  String get videoMetadataGenerationFailed;
+
   /// No description provided for @videoMetadataTags.
   ///
   /// In en, this message translates to:

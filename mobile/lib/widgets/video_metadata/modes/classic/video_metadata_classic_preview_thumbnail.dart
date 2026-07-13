@@ -98,8 +98,10 @@ class _VideoMetadataClassicPreviewThumbnailState
     if (clips.isEmpty) return const SizedBox.shrink();
     final clip = clips.first;
 
-    final (finalRenderedClip, isProcessing) = ref.watch(
-      videoEditorProvider.select((s) => (s.finalRenderedClip, s.isProcessing)),
+    final (finalRenderedClip, isProcessing, renderFailed) = ref.watch(
+      videoEditorProvider.select(
+        (s) => (s.finalRenderedClip, s.isProcessing, s.renderFailed),
+      ),
     );
 
     return AspectRatio(
@@ -132,6 +134,10 @@ class _VideoMetadataClassicPreviewThumbnailState
                               clip: clip,
                               isProcessing:
                                   finalRenderedClip == null && isProcessing,
+                              hasFailed: renderFailed,
+                              onRetry: () => ref
+                                  .read(videoEditorProvider.notifier)
+                                  .startRenderVideo(),
                             ),
                           ],
                         ),
