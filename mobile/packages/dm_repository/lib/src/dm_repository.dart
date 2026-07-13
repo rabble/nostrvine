@@ -386,6 +386,15 @@ class DmRepository {
     );
   }
 
+  static final _sendBatchIdPattern = RegExp(r'^[0-9a-f]{64}$');
+
+  /// Whether [value] is a well-formed batch token — the 64-char lowercase-hex
+  /// shape [_defaultSendBatchId] mints. Ingest only stamps a self-wrap's
+  /// `batch` tag onto the persisted row when it matches, keeping the batch-id
+  /// keyspace disjoint from the legacy (content, createdAt) dedup tuple.
+  static bool _isValidSendBatchId(String value) =>
+      _sendBatchIdPattern.hasMatch(value);
+
   static const _readMarkerDTag = 'divine/dm-read/v1';
   static const _readMarkerPayloadVersion = 1;
 
@@ -1752,10 +1761,25 @@ class DmRepository {
       // Extract common tags
       String? replyToId;
       String? subject;
+      String? sendBatchId;
       for (final tag in rumor.tags) {
         if (tag.length >= 2) {
           if (tag[0] == 'e') replyToId = tag[1];
           if (tag[0] == 'subject') subject = tag[1];
+          // Stamp the batch id from the sender's OWN self-wrap echo so a
+          // group send's local persist / recovery dedups (both owner-scoped
+          // via hasMessageWithSendBatchId) against this pre-persisted row
+          // instead of inserting a duplicate bubble. Honour the tag only on
+          // a self-authored rumor: hasMessageWithSendBatchId is owner-scoped,
+          // so accepting a peer-authored 'batch' tag would let a sender
+          // suppress the local user's own in-flight group persist. The
+          // well-formed-hex check keeps this keyspace disjoint from the
+          // legacy (content, createdAt) dedup tuple.
+          if (tag[0] == _sendBatchTagKey &&
+              rumor.pubkey == _userPubkey &&
+              _isValidSendBatchId(tag[1])) {
+            sendBatchId = tag[1];
+          }
         }
       }
 
@@ -1815,6 +1839,7 @@ class DmRepository {
           blurhash: fileMetadata?.blurhash,
           thumbnailUrl: fileMetadata?.thumbnailUrl,
           ownerPubkey: _userPubkey,
+          sendBatchId: sendBatchId,
         );
 
         final existing = await _conversationsDao.getConversation(
@@ -4226,8 +4251,30 @@ class DmRepository {
     // all-or-nothing gate above already guarantees EVERY recipient is approved,
     // so a partial send can only ever reach approved recipients, never a
     // blocked one.
+    // Siblings whose queue row was deleted (cancelOutgoingBatch, reachable
+    // via long-press delete on the pending bubble) before this loop reached
+    // them. Recorded so the finalize below skips them too — a cancelled
+    // index must never resurrect a queue transition or a thread.
+    final cancelledBeforePublish = <int>{};
     for (var i = 0; i < recipientPubkeys.length; i++) {
       final pubkey = recipientPubkeys[i];
+      // Cancel interlock, mirroring _recoverFullSendLocked's pre-publish row
+      // re-read: each publish can take up to the OK-confirm timeout, a long
+      // window in which the user may delete the whole batch. Re-read the
+      // sibling row immediately before publishing; if it is gone, record a
+      // non-success and skip the publish entirely. Otherwise this rumor would
+      // reach the recipient after the sender cancelled — invisible to the
+      // sender and unretractable, since no local row survives to build a
+      // kind-5 from. The currently-publishing sibling's inherent TOCTOU is
+      // accepted, the same trade-off as recoverFullSend.
+      if (outgoingDao != null &&
+          await outgoingDao.getById(rumors[i].id) == null) {
+        cancelledBeforePublish.add(i);
+        results.add(
+          const NIP17SendResult.failure('send cancelled before publish'),
+        );
+        continue;
+      }
       // Coalesce through the recovery lock: the sequential publishes of a
       // group send can outlive the retry sweep's interrupted-send min-age
       // (all sibling rows share the batch queuedAt), so a sweep
@@ -4372,6 +4419,10 @@ class DmRepository {
     // dropped), and a hard failure marks both wraps failed.
     if (outgoingDao != null) {
       for (var i = 0; i < rumors.length; i++) {
+        // A sibling skipped for cancellation has no live row to transition;
+        // an update-by-id would match zero rows anyway, but skipping is
+        // explicit and keeps a cancelled index from resurrecting anything.
+        if (cancelledBeforePublish.contains(i)) continue;
         final result = results[i];
         if (result.success) continue;
         if (result.blocked) {
@@ -4397,8 +4448,14 @@ class DmRepository {
     // No recipient succeeded but retryable rows exist: make sure a
     // brand-new group thread is visible in the inbox so the user can find
     // the failed bubbles to retry or delete. All-blocked sends leave no
-    // rows behind (terminal), so they create no thread cruft.
-    if (!results.any((r) => r.success) && results.any((r) => !r.blocked)) {
+    // rows behind (terminal), so they create no thread cruft. A fully
+    // cancelled batch must NOT resurrect the thread the user just deleted,
+    // so cancelled indexes don't count as retryable failures here.
+    final hasNonCancelledFailure = results.asMap().entries.any(
+      (entry) =>
+          !cancelledBeforePublish.contains(entry.key) && !entry.value.blocked,
+    );
+    if (!results.any((r) => r.success) && hasNonCancelledFailure) {
       await _ensureConversationVisibleAfterSendFailure(
         conversationId: conversationId,
         participants: participants,
