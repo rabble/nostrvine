@@ -1309,6 +1309,12 @@ class VideoRecorderBloc
         snappedTo1x: snapped,
         snapTime: snapTime,
         showZoomIndicator: true,
+        // Re-assert for the whole gesture. A two-finger pinch held stationary
+        // for >1s emits no update, so the auto-hide timer fires while the
+        // pinch is still down and clears isPinchActive. A resumed update must
+        // restore it — otherwise the ruler shows interactive again and
+        // swallows the lower pinch finger.
+        isPinchActive: true,
       ),
     );
     _armZoomIndicatorHideTimer();
@@ -1337,8 +1343,11 @@ class VideoRecorderBloc
     // isPinchActive is cleared as a safety net for the timer-armed paths
     // (a real two-pointer pinch, or a programmatic zoom set): the timer only
     // fires after a full second without gesture activity, so a still-set flag
-    // there means the scale-end callback was lost (e.g. gesture cancelled by
-    // navigation) and would otherwise leave the ruler non-interactive. A pure
+    // there usually means the scale-end callback was lost (e.g. gesture
+    // cancelled by navigation) and would otherwise leave the ruler
+    // non-interactive. Clearing it is safe even when the pinch is in fact
+    // still down (held stationary >1s): _onScaleUpdated re-asserts the flag on
+    // the next update, so the ruler can't turn interactive mid-gesture. A pure
     // one-finger pan arms no timer, so if its scale-end is lost the flag
     // instead self-heals on the next pinch or zoom set.
     emit(state.copyWith(showZoomIndicator: false, isPinchActive: false));

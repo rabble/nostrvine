@@ -342,6 +342,37 @@ void main() {
           async.flushMicrotasks();
         });
       });
+
+      test('is re-asserted when a stationary pinch resumes after the timer '
+          'fired mid-gesture', () {
+        fakeAsync((async) {
+          final bloc = buildBloc();
+
+          bloc.add(
+            VideoRecorderScaleStarted(ScaleStartDetails(pointerCount: 2)),
+          );
+          async.flushMicrotasks();
+          // Held stationary >1s: no updates, so the auto-hide timer fires
+          // while the two fingers are still down and clears the guard.
+          async.elapse(const Duration(milliseconds: 1000));
+          async.flushMicrotasks();
+          expect(bloc.state.isPinchActive, isFalse);
+
+          // The pinch resumes (second finger still down, unchanged scale):
+          // the flag must come back so the ruler can't turn interactive and
+          // swallow the lower pinch finger.
+          bloc.add(
+            VideoRecorderScaleUpdated(ScaleUpdateDetails(pointerCount: 2)),
+          );
+          async.flushMicrotasks();
+
+          expect(bloc.state.isPinchActive, isTrue);
+          expect(bloc.state.showZoomIndicator, isTrue);
+
+          unawaited(bloc.close());
+          async.flushMicrotasks();
+        });
+      });
     });
 
     group('pinch-to-zoom snap', () {
