@@ -653,9 +653,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     content = content.replaceFirst(npubPattern, '');
 
     state = VideoEditorProviderState(
-      // Sourced via VideoEvent.allowAudioReuse so the toggle seeds ON even when
-      // the event was rehydrated from a JSON cache that drops nostrEventTags
-      // (the value is recovered from the persisted rawTags fallback).
+      // Getter falls back to rawTags so the toggle survives a cache round-trip.
       allowAudioReuse: video.allowAudioReuse,
       title: video.title ?? '',
       description: content,
