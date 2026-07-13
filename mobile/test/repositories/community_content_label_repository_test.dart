@@ -282,6 +282,51 @@ void main() {
 
         expect(result, equals({'gambling'}));
       });
+
+      test(
+        'includes a just-published suggestion before the relay echoes it '
+        '(read-after-write gap)',
+        () async {
+          // The relay read model lags writes by a few seconds; the relay
+          // query returns nothing yet.
+          stubQuery(const []);
+          when(() => nostrClient.publicKey).thenReturn(authorA);
+          when(() => nostrClient.publishEvent(any())).thenAnswer(
+            (_) async => PublishSuccess(
+              event: Event(_placeholderPubkey, EventKind.label, const [], ''),
+            ),
+          );
+
+          await repository.suggestLabels(
+            video: video,
+            labels: {ContentLabel.gambling},
+          );
+
+          final result = await repository.mySuggestedLabels(video, authorA);
+
+          expect(result, equals({'gambling'}));
+        },
+      );
+
+      test('does not remember a suggestion whose publish failed', () async {
+        stubQuery(const []);
+        when(() => nostrClient.publicKey).thenReturn(authorA);
+        when(
+          () => nostrClient.publishEvent(any()),
+        ).thenAnswer((_) async => const PublishNoRelays());
+
+        await expectLater(
+          repository.suggestLabels(
+            video: video,
+            labels: {ContentLabel.gambling},
+          ),
+          throwsA(isA<CommunityLabelPublishException>()),
+        );
+
+        final result = await repository.mySuggestedLabels(video, authorA);
+
+        expect(result, isEmpty);
+      });
     });
   });
 }

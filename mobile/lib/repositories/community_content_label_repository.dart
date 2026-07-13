@@ -42,6 +42,13 @@ class CommunityContentLabelRepository {
   final NostrClient _nostrClient;
   final ProfileRepository _profileRepository;
 
+  /// Labels this session successfully published, keyed by video event id.
+  /// The relay's read model lags writes by a few seconds, so a reopened
+  /// sheet would otherwise not see a suggestion the user just made (and
+  /// could double-submit it). Session-scoped; the relay is authoritative
+  /// across restarts.
+  final Map<String, Set<String>> _ownSuggestionsThisSession = {};
+
   /// Content-warning labels the community has surfaced for [video].
   ///
   /// Returns the set of normalized label values suggested by at least
@@ -115,6 +122,9 @@ class CommunityContentLabelRepository {
     if (result is! PublishSuccess) {
       throw CommunityLabelPublishException(result.runtimeType.toString());
     }
+    (_ownSuggestionsThisSession[video.id] ??= <String>{}).addAll(
+      labels.map((label) => label.value),
+    );
   }
 
   /// Content-warning labels [myPubkey] has already suggested for [video].
@@ -126,7 +136,7 @@ class CommunityContentLabelRepository {
     String myPubkey,
   ) async {
     final events = await _queryLabelEvents(video);
-    final labels = <String>{};
+    final labels = <String>{...?_ownSuggestionsThisSession[video.id]};
     for (final event in events.where((event) => event.pubkey == myPubkey)) {
       labels.addAll(_contentWarningValues(event));
     }
