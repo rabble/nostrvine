@@ -29,6 +29,9 @@ class _MockUserProfilesDao extends Mock implements UserProfilesDao {}
 
 class _MockProfileStatsDao extends Mock implements ProfileStatsDao {}
 
+class _MockPendingProfileSavesDao extends Mock
+    implements PendingProfileSavesDao {}
+
 class _TestNostrSession extends NostrSession {
   _TestNostrSession(this._readiness);
 
@@ -200,12 +203,16 @@ void main() {
         final database = _MockAppDatabase();
         final userProfilesDao = _MockUserProfilesDao();
         final profileStatsDao = _MockProfileStatsDao();
+        final pendingProfileSavesDao = _MockPendingProfileSavesDao();
         final funnelcakeClient = FunnelcakeApiClient(
           baseUrl: 'https://api.divine.video',
         );
 
         when(() => database.userProfilesDao).thenReturn(userProfilesDao);
         when(() => database.profileStatsDao).thenReturn(profileStatsDao);
+        when(
+          () => database.pendingProfileSavesDao,
+        ).thenReturn(pendingProfileSavesDao);
 
         final container = ProviderContainer(
           overrides: [
