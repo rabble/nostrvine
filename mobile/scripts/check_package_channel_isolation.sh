@@ -65,7 +65,15 @@ emit_current() {
       continue
     fi
     # Disciplined: nulls at least one handler back down (paired teardown).
-    if grep -qE 'setMockMethodCallHandler\([^,]*,[[:space:]]*null|setMockStreamHandler\([^,]*,[[:space:]]*null' "$f"; then
+    # Flatten newlines first, because `dart format` wraps a long teardown across
+    # lines — setMockMethodCallHandler(\n  const MethodChannel('…'),\n  null,\n) —
+    # which a per-line grep would miss, wrongly flagging a disciplined file as a
+    # leaker (that file can never then be shrunk out via the documented remedy,
+    # since it already has the teardown). The `[^,]*` stays comma-bounded to the
+    # channel arg, so an installed handler that *returns* null —
+    # setMockMethodCallHandler(channel, (call) async => null) — is not mistaken
+    # for a teardown (after the comma comes `(call)`, not `null`).
+    if tr '\n' ' ' <"$f" | grep -qE 'setMockMethodCallHandler\([^,]*,[[:space:]]*null|setMockStreamHandler\([^,]*,[[:space:]]*null'; then
       continue
     fi
     printf '%s\n' "$rel"

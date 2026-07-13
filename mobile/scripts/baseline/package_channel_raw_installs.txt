@@ -8,6 +8,4 @@
 # baseline. Packages analogue of check_shared_channel_overrides.sh (#5738).
 packages/divine_video_player/test/src/divine_video_player_controller_test.dart
 packages/divine_video_player/test/src/divine_video_player_widget_test.dart
-packages/infinite_video_feed/test/src/widgets/infinite_video_feed_test.dart
 packages/nostr_key_manager/test/src/secure_key_storage_delete_test.dart
-packages/permissions_service/test/src/permissions_service_test.dart
