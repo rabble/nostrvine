@@ -516,8 +516,14 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// [inspiredByVideo] from the sound's [sourceVideoReference] if not
   /// already set.
   DivineVideoDraft getActiveDraft({bool isAutosave = false, String? draftId}) {
-    // Read selected sound from local state
-    final selectedSound = state.selectedSound;
+    // Read selected sound from local state. The recorder flow sets
+    // [selectedSound]; the editor's "add music" flow instead appends reused
+    // sounds as timeline tracks, so fall back to the first attributable track
+    // for the publish draft. Skipped for autosave to keep draft round-trips
+    // from re-seeding an editor track as the recorder's selected sound.
+    final selectedSound =
+        state.selectedSound ??
+        (isAutosave ? null : _attributionSoundFromEditorTracks());
 
     // Auto-populate inspired-by from selected sound's source video
     var inspiredByVideo = state.inspiredByVideo;
@@ -591,7 +597,17 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     final old = state.editorEditingParameters;
     if (old != null) {
       final diffs = old.diff(editingParameters);
-      if (diffs.isEmpty) {
+      // `diff` compares the render-time `audioTracks` field, which is empty in
+      // the editor's complete-callback parameters — it is only populated later
+      // in `_buildRenderParameters`. Audio add/remove instead lives in the
+      // `audio` meta key, so compare that too; otherwise a complete whose only
+      // change is audio is invisible here and the snapshot (and the reuse
+      // toggle / publish attribution that read it) go stale (#6057).
+      final audioMetaChanged = !listEquals(
+        old.audioTracksFromMeta,
+        editingParameters.audioTracksFromMeta,
+      );
+      if (diffs.isEmpty && !audioMetaChanged) {
         Log.debug(
           '🎨 Editor editing parameters unchanged - skipping update',
           name: 'VideoEditorNotifier',
@@ -600,7 +616,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         return;
       }
       Log.debug(
-        '🎨 Editor editing parameters changed: ${diffs.join(", ")}',
+        '🎨 Editor editing parameters changed: '
+        '${[...diffs, if (audioMetaChanged) 'audioMeta'].join(", ")}',
         name: 'VideoEditorNotifier',
         category: LogCategory.video,
       );
@@ -1203,6 +1220,24 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   }
 
   // === PRIVATE HELPERS ===
+
+  /// The reused sound to attribute when publishing a video assembled through
+  /// the editor's "add music" flow, which appends sounds as timeline tracks
+  /// rather than setting the recorder's [selectedSound].
+  ///
+  /// Returns the first added track that references a real Nostr event — a
+  /// published or imported Kind 1063 sound, or another video's original sound
+  /// (`video_<eventId>`). Skips the video's own clip-anchored audio, which
+  /// credits no other creator.
+  AudioEvent? _attributionSoundFromEditorTracks() {
+    final tracks =
+        state.editorEditingParameters?.audioTracksFromMeta ?? const [];
+    for (final track in tracks) {
+      if (track.isClipAnchoredOriginalSound) continue;
+      if (track.attributionEventId != null) return track;
+    }
+    return null;
+  }
 
   /// Build render parameters for video export.
   ///

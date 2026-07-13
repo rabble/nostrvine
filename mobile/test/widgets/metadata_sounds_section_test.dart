@@ -5,9 +5,11 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/sounds_providers.dart';
+import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_sounds_section.dart';
 
 Finder _divineIcon(DivineIconName name) =>
@@ -185,6 +187,138 @@ void main() {
         // Should fall back to original sound
         expect(find.text('Original sound'), findsOneWidget);
       });
+    });
+
+    group('Reused sound fallback', () {
+      const reusedCreatorPubkey =
+          'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
+
+      VideoEvent reusedVideo() {
+        final now = DateTime.now();
+        return VideoEvent(
+          id: testVideoId,
+          pubkey: testPubkey,
+          content: 'Reused audio',
+          videoUrl: 'https://example.com/video.mp4',
+          createdAt: now.millisecondsSinceEpoch ~/ 1000,
+          timestamp: now,
+          title: 'Test Video',
+          authorName: 'Jake Lara',
+          audioEventId: testAudioEventId,
+          inspiredByVideo: const InspiredByInfo(
+            addressableId: '34236:$reusedCreatorPubkey:vine-xyz',
+          ),
+        );
+      }
+
+      testWidgets(
+        'credits the source creator when the shared audio is unresolved',
+        (tester) async {
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                soundByIdProvider(
+                  testAudioEventId,
+                ).overrideWith((ref) async => null),
+              ],
+              child: MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                theme: VineTheme.theme,
+                home: Scaffold(
+                  backgroundColor: Colors.black,
+                  body: MetadataSoundsSection(video: reusedVideo()),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text('Original sound'), findsOneWidget);
+          expect(
+            find.text(UserProfile.defaultDisplayNameFor(reusedCreatorPubkey)),
+            findsOneWidget,
+          );
+          // The reusing user's own author name must not be credited.
+          expect(find.text('Jake Lara'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'tapping a resolved reused sound opens the detail (no dead-end)',
+        (tester) async {
+          const sourceVideoId =
+              'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
+          const reusedSynth = AudioEvent(
+            id: 'video_$sourceVideoId',
+            pubkey: reusedCreatorPubkey,
+            createdAt: 1704067200,
+            title: 'Original sound - Source Creator',
+            source: 'Original Sound',
+          );
+
+          final router = GoRouter(
+            initialLocation: '/',
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (_, _) => const Scaffold(body: Text('HOME')),
+              ),
+              GoRoute(
+                path: '/sheet',
+                builder: (_, _) => Scaffold(
+                  body: MetadataSoundsSection(video: createVideoWithAudio()),
+                ),
+              ),
+              GoRoute(
+                path: SoundDetailScreen.path,
+                name: SoundDetailScreen.routeName,
+                builder: (context, state) {
+                  // Mirrors the real sound route: a resolved sound arrives via
+                  // `extra`; without it the loader re-fetches and dead-ends.
+                  final extra = state.extra;
+                  final sound = extra is Map<String, dynamic>
+                      ? extra['sound'] as AudioEvent?
+                      : null;
+                  return Scaffold(
+                    body: Text(
+                      sound != null ? 'DETAIL ${sound.id}' : 'NOT FOUND',
+                    ),
+                  );
+                },
+              ),
+            ],
+          );
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                soundByIdProvider(
+                  testAudioEventId,
+                ).overrideWith((ref) async => reusedSynth),
+              ],
+              child: MaterialApp.router(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                theme: VineTheme.theme,
+                routerConfig: router,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          router.push('/sheet');
+          await tester.pumpAndSettle();
+
+          expect(find.text('Original sound - Source Creator'), findsOneWidget);
+
+          await tester.tap(find.text('Original sound - Source Creator'));
+          await tester.pumpAndSettle();
+
+          expect(find.text('DETAIL video_$sourceVideoId'), findsOneWidget);
+          expect(find.text('NOT FOUND'), findsNothing);
+        },
+      );
     });
   });
 }

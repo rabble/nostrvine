@@ -67,6 +67,13 @@ class _VideoMetadataFormFieldsState
 
   @override
   Widget build(BuildContext context) {
+    // Reusing another creator's audio isn't the user's to offer for reuse, and
+    // the publisher skips the reuse tag in that case, so hide the toggle
+    // entirely rather than showing a control that does nothing.
+    final reusesExternalAudio = ref.watch(
+      videoEditorProvider.select((state) => state.reusesExternalAudio),
+    );
+
     return Padding(
       padding: const .symmetric(horizontal: 16),
       child: Column(
@@ -163,7 +170,7 @@ class _VideoMetadataFormFieldsState
           if (widget.enableContentWarning)
             const _InputWrapper(child: VideoMetadataContentWarningSelector()),
 
-          if (widget.enableAudioReuse)
+          if (widget.enableAudioReuse && !reusesExternalAudio)
             const _InputWrapper(child: _VideoMetadataAudioReuseToggle()),
 
           if (widget.enableVideoReply)

@@ -621,6 +621,79 @@ void main() {
       );
     });
 
+    group('reused audio attribution', () {
+      // A reused original sound carries the source video's event id behind a
+      // `video_` prefix; the reference must survive so the audio is credited
+      // to the original creator instead of the reusing user (#6057).
+      final sourceVideoId = 'b' * 64;
+      final sourceCreator = 'c' * 64;
+
+      test(
+        'references the source video when reusing an original sound',
+        () async {
+          stubSignAndPublish();
+
+          final reusedSound = AudioEvent(
+            id: 'video_$sourceVideoId',
+            pubkey: sourceCreator,
+            createdAt: 1700000000,
+            sourceVideoReference: '34236:$sourceCreator:vine-xyz',
+          );
+
+          final result = await publisher.publishVideoEvent(
+            upload: createUpload(),
+            selectedAudio: reusedSound,
+            selectedAudioEventId: reusedSound.id,
+            selectedAudioRelay: reusedSound.sourceVideoRelay,
+          );
+
+          expect(result, isTrue);
+          expect(
+            _containsTag(capturedTags, [
+              'e',
+              sourceVideoId,
+              'wss://relay.divine.video',
+              'audio',
+            ]),
+            isTrue,
+          );
+        },
+      );
+
+      test(
+        'recovers the reference from an editor timeline track id',
+        () async {
+          stubSignAndPublish();
+
+          // The editor appends a `-<timestamp>` uniqueness suffix to timeline
+          // track ids; the reference must still resolve to the source video.
+          final reusedTrack = AudioEvent(
+            id: 'video_$sourceVideoId-1700000000000',
+            pubkey: sourceCreator,
+            createdAt: 1700000000,
+            sourceVideoReference: '34236:$sourceCreator:vine-xyz',
+          );
+
+          final result = await publisher.publishVideoEvent(
+            upload: createUpload(),
+            selectedAudio: reusedTrack,
+            selectedAudioEventId: reusedTrack.id,
+          );
+
+          expect(result, isTrue);
+          expect(
+            _containsTag(capturedTags, [
+              'e',
+              sourceVideoId,
+              'wss://relay.divine.video',
+              'audio',
+            ]),
+            isTrue,
+          );
+        },
+      );
+    });
+
     group('local imported audio', () {
       late _MockBlossomUploadService blossomUploadService;
       late _MockSavedSoundsService savedSoundsService;

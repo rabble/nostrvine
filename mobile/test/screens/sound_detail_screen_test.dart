@@ -690,9 +690,7 @@ void main() {
               videosUsingSoundProvider(
                 testSound.id,
               ).overrideWith((ref) => Future.value(<String>[])),
-              audioPlaybackServiceProvider.overrideWithValue(
-                mockAudioService,
-              ),
+              audioPlaybackServiceProvider.overrideWithValue(mockAudioService),
             ],
           );
           addTearDown(container.dispose);
@@ -797,6 +795,40 @@ void main() {
 
         expect(find.text('Videos using this sound'), findsOneWidget);
         expect(_divineIcon(DivineIconName.videoCamera), findsOneWidget);
+      });
+
+      testWidgets('reused original sound queries usage/grid by recovered id', (
+        tester,
+      ) async {
+        const sourceVideoId =
+            'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
+        final reusedSynth = createTestAudioEvent(
+          id: 'video_$sourceVideoId',
+          title: 'Original sound',
+        );
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        await tester.pumpWidget(
+          createTestWidget(
+            child: SoundDetailScreen(sound: reusedSynth),
+            overrides: [
+              // Only the recovered raw id is overridden — a query by the
+              // synthetic `video_` id would miss these entirely.
+              soundUsageCountProvider(
+                sourceVideoId,
+              ).overrideWith((ref) => Future.value(7)),
+              videosUsingSoundProvider(
+                sourceVideoId,
+              ).overrideWith((ref) => Future.value(<String>[])),
+              audioPlaybackServiceProvider.overrideWithValue(mockAudioService),
+            ],
+          ),
+        );
+
+        await tester.pump();
+
+        expect(find.textContaining(l10n.soundVideoCount(7)), findsOneWidget);
+        expect(find.text('Videos using this sound'), findsOneWidget);
       });
 
       testWidgets('shows empty state when no videos', (tester) async {

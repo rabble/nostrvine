@@ -343,6 +343,38 @@ void main() {
 
         expect(sound, isNull);
       });
+
+      test(
+        'synthesizes an original sound crediting the video creator when the '
+        'reference is a Kind 34236 video',
+        () async {
+          final videoEvent = Event.fromJson({
+            'id': testVideoEventId,
+            'pubkey': testPubkey1,
+            'kind': NIP71VideoKinds.addressableShortVideo,
+            'tags': <List<dynamic>>[
+              ['d', 'vine-abc'],
+              ['url', 'https://example.com/video.mp4'],
+            ],
+            'content': 'reused original sound',
+            'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            'sig': '',
+          });
+
+          when(
+            () => mockNostrClient.fetchEventById(testVideoEventId),
+          ).thenAnswer((_) async => videoEvent);
+
+          final sound = await repository.fetchSoundById(testVideoEventId);
+
+          expect(sound, isNotNull);
+          // Credits the original video creator, not the reusing user.
+          expect(sound!.pubkey, equals(testPubkey1));
+          expect(sound.isOriginalSound, isTrue);
+          // Title left null so the reader localizes "Original sound".
+          expect(sound.title, isNull);
+        },
+      );
     });
 
     group('getSoundFromCache', () {

@@ -50,8 +50,14 @@ class _SharedAudioSection extends ConsumerWidget {
     return audioAsync.when(
       data: (audio) {
         if (audio == null) {
-          // Audio event not found, fall back to original sound display
-          return _OriginalSoundSection(video: video);
+          // The shared audio event couldn't be resolved (e.g. the source
+          // video isn't reachable by id). This video still reused a sound, so
+          // credit the reused sound's original creator rather than the
+          // reusing user.
+          return _OriginalSoundSection(
+            video: video,
+            reusedCreatorPubkey: _reusedCreatorPubkey,
+          );
         }
         return MetadataSection(
           label: context.l10n.metadataSoundsLabel,
@@ -68,9 +74,20 @@ class _SharedAudioSection extends ConsumerWidget {
           name: 'MetadataSoundsSection',
           category: LogCategory.ui,
         );
-        return _OriginalSoundSection(video: video);
+        return _OriginalSoundSection(
+          video: video,
+          reusedCreatorPubkey: _reusedCreatorPubkey,
+        );
       },
     );
+  }
+
+  /// The reused sound's original creator, carried on the video via its
+  /// inspired-by source (a reused sound auto-populates inspired-by from the
+  /// source video). Null when absent, so the fallback keeps its default.
+  String? get _reusedCreatorPubkey {
+    final pubkey = video.inspiredByVideo?.creatorPubkey;
+    return (pubkey != null && pubkey.isNotEmpty) ? pubkey : null;
   }
 }
 
@@ -78,19 +95,26 @@ class _SharedAudioSection extends ConsumerWidget {
 /// audio. Tapping navigates to [SoundDetailScreen] where the user can
 /// preview and select the sound for recording.
 class _OriginalSoundSection extends ConsumerWidget {
-  const _OriginalSoundSection({required this.video});
+  const _OriginalSoundSection({required this.video, this.reusedCreatorPubkey});
 
   final VideoEvent video;
 
+  /// When set, the audio was reused from another creator (resolved via the
+  /// video's inspired-by source) but the shared audio event couldn't be
+  /// fetched. This pubkey is credited instead of the reusing user.
+  final String? reusedCreatorPubkey;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final creatorPubkey = reusedCreatorPubkey ?? video.pubkey;
     final creatorProfile = ref
-        .watch(userProfileReactiveProvider(video.pubkey))
+        .watch(userProfileReactiveProvider(creatorPubkey))
         .value;
     final creatorName =
         creatorProfile?.bestDisplayName ??
-        video.authorName ??
-        UserProfile.generatedNameFor(video.pubkey);
+        (reusedCreatorPubkey != null
+            ? UserProfile.defaultDisplayNameFor(creatorPubkey)
+            : video.authorName ?? UserProfile.generatedNameFor(video.pubkey));
 
     return MetadataSection(
       label: context.l10n.metadataSoundsLabel,
@@ -147,10 +171,19 @@ class _OriginalSoundSection extends ConsumerWidget {
       category: LogCategory.ui,
     );
 
-    final syntheticAudio = AudioEvent.fromVideoOriginalSound(
-      video,
-      creatorName: creatorName,
-    );
+    // For a reused sound the attribution belongs to the source video, so build
+    // the sound around the referenced source (credited to its creator) rather
+    // than this video's own audio.
+    final syntheticAudio = reusedCreatorPubkey != null
+        ? AudioEvent(
+            id: 'video_${video.audioEventId ?? video.id}',
+            pubkey: reusedCreatorPubkey!,
+            createdAt: video.createdAt,
+            title: 'Original sound - $creatorName',
+            source: 'Original Sound',
+            sourceVideoReference: video.inspiredByVideo?.addressableId,
+          )
+        : AudioEvent.fromVideoOriginalSound(video, creatorName: creatorName);
 
     // Dismiss the sheet first, then navigate from the root navigator
     // context.
@@ -249,7 +282,14 @@ class _SoundListItem extends ConsumerWidget {
     Navigator.of(context).pop();
     Future<void>.delayed(Duration.zero).then((_) {
       if (!hostContext.mounted) return;
-      hostContext.pushWithVideoPause(SoundDetailScreen.pathForId(audio.id));
+      // Pass the resolved sound via `extra` (like [_OriginalSoundSection]):
+      // a reused original sound's synthetic `video_<id>` id can't be
+      // re-fetched by the detail loader, so without this it dead-ends at
+      // "Sound not found".
+      hostContext.pushWithVideoPause(
+        SoundDetailScreen.pathForId(audio.id),
+        extra: <String, dynamic>{'sound': audio},
+      );
     });
   }
 }

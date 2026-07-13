@@ -3,6 +3,7 @@
 
 import 'package:flutter/widgets.dart';
 import 'package:models/models.dart' show AudioEvent, InspiredByInfo;
+import 'package:openvine/extensions/complete_parameters_extensions.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_metadata/video_metadata_expiration.dart';
@@ -140,6 +141,29 @@ class VideoEditorProviderState {
   /// - Final rendered clip is available
   bool get isValidToPost =>
       !metadataLimitReached && !isProcessing && finalRenderedClip != null;
+
+  /// Whether the video's audio is reused from *another creator* — a sound the
+  /// user is not entitled to re-offer for reuse.
+  ///
+  /// True only when the selected sound (recorder flow) or an added editor
+  /// timeline track references another creator's Nostr event: a reused
+  /// original sound (`video_<eventId>`) or a published Kind 1063, i.e. it has
+  /// an [AudioEvent.attributionEventId]. Bundled "divine" sounds, self-imported
+  /// audio, voice-over takes, and the video's own clip-anchored original sound
+  /// are all the user's own to offer, so they keep the toggle.
+  ///
+  /// In the reused-from-another case "Publish this sound" ([allowAudioReuse])
+  /// is a no-op — the publisher references the source event instead of
+  /// republishing the audio under the reusing user — so the metadata toggle is
+  /// hidden to match.
+  bool get reusesExternalAudio {
+    bool isReusedFromAnotherCreator(AudioEvent audio) =>
+        !audio.isClipAnchoredOriginalSound && audio.attributionEventId != null;
+    final sound = selectedSound;
+    if (sound != null && isReusedFromAnotherCreator(sound)) return true;
+    final tracks = editorEditingParameters?.audioTracksFromMeta ?? const [];
+    return tracks.any(isReusedFromAnotherCreator);
+  }
 
   /// Creates a copy of this state with updated fields.
   ///
