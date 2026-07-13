@@ -2,7 +2,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:models/models.dart' show AudioEvent;
+import 'package:models/models.dart' show AudioEvent, VineSound;
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/models/video_reply_context.dart';
@@ -246,16 +246,48 @@ void main() {
       );
     });
 
-    testWidgets('audio reuse toggle is hidden when reusing external audio', (
+    testWidgets(
+      "audio reuse toggle is hidden when reusing another creator's sound",
+      (tester) async {
+        await tester.pumpWidget(
+          buildWidget(
+            state: VideoEditorProviderState(
+              selectedSound: AudioEvent(
+                id: 'video_${'b' * 64}',
+                pubkey: 'c' * 64,
+                createdAt: 1700000000,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = AppLocalizations.of(
+          tester.element(find.byType(VideoMetadataFormFields)),
+        );
+        expect(
+          find.widgetWithText(
+            SwitchListTile,
+            l10n.videoMetadataAudioReuseTitle,
+          ),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets('audio reuse toggle is shown for a bundled divine sound', (
       tester,
     ) async {
       await tester.pumpWidget(
         buildWidget(
           state: VideoEditorProviderState(
-            selectedSound: AudioEvent(
-              id: 'video_${'b' * 64}',
-              pubkey: 'c' * 64,
-              createdAt: 1700000000,
+            selectedSound: AudioEvent.fromBundledSound(
+              VineSound(
+                id: 'boom',
+                title: 'Vine Boom',
+                assetPath: 'assets/sounds/vine-boom.mp3',
+                duration: const Duration(seconds: 1),
+              ),
             ),
           ),
         ),
@@ -270,7 +302,7 @@ void main() {
           SwitchListTile,
           l10n.videoMetadataAudioReuseTitle,
         ),
-        findsNothing,
+        findsOneWidget,
       );
     });
   });

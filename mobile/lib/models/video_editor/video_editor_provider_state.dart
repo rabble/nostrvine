@@ -142,19 +142,27 @@ class VideoEditorProviderState {
   bool get isValidToPost =>
       !metadataLimitReached && !isProcessing && finalRenderedClip != null;
 
-  /// Whether the video's audio comes from a reused or added sound rather than
-  /// the user's own recording.
+  /// Whether the video's audio is reused from *another creator* — a sound the
+  /// user is not entitled to re-offer for reuse.
   ///
-  /// True when a sound is selected (recorder flow) or the editor timeline
-  /// holds an added audio track that is not the video's own clip-anchored
-  /// original sound. In that case "Publish this sound" ([allowAudioReuse])
-  /// does not apply — the audio isn't the user's to offer for reuse, and the
-  /// publisher already skips the reuse tag — so the metadata toggle is
-  /// disabled to match.
+  /// True only when the selected sound (recorder flow) or an added editor
+  /// timeline track references another creator's Nostr event: a reused
+  /// original sound (`video_<eventId>`) or a published Kind 1063, i.e. it has
+  /// an [AudioEvent.attributionEventId]. Bundled "divine" sounds, self-imported
+  /// audio, voice-over takes, and the video's own clip-anchored original sound
+  /// are all the user's own to offer, so they keep the toggle.
+  ///
+  /// In the reused-from-another case "Publish this sound" ([allowAudioReuse])
+  /// is a no-op — the publisher references the source event instead of
+  /// republishing the audio under the reusing user — so the metadata toggle is
+  /// hidden to match.
   bool get reusesExternalAudio {
-    if (selectedSound != null) return true;
+    bool isReusedFromAnotherCreator(AudioEvent audio) =>
+        !audio.isClipAnchoredOriginalSound && audio.attributionEventId != null;
+    final sound = selectedSound;
+    if (sound != null && isReusedFromAnotherCreator(sound)) return true;
     final tracks = editorEditingParameters?.audioTracksFromMeta ?? const [];
-    return tracks.any((track) => !track.isClipAnchoredOriginalSound);
+    return tracks.any(isReusedFromAnotherCreator);
   }
 
   /// Creates a copy of this state with updated fields.

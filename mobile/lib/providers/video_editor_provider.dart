@@ -597,7 +597,17 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     final old = state.editorEditingParameters;
     if (old != null) {
       final diffs = old.diff(editingParameters);
-      if (diffs.isEmpty) {
+      // `diff` compares the render-time `audioTracks` field, which is empty in
+      // the editor's complete-callback parameters — it is only populated later
+      // in `_buildRenderParameters`. Audio add/remove instead lives in the
+      // `audio` meta key, so compare that too; otherwise a complete whose only
+      // change is audio is invisible here and the snapshot (and the reuse
+      // toggle / publish attribution that read it) go stale (#6057).
+      final audioMetaChanged = !listEquals(
+        old.audioTracksFromMeta,
+        editingParameters.audioTracksFromMeta,
+      );
+      if (diffs.isEmpty && !audioMetaChanged) {
         Log.debug(
           '🎨 Editor editing parameters unchanged - skipping update',
           name: 'VideoEditorNotifier',
@@ -606,7 +616,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         return;
       }
       Log.debug(
-        '🎨 Editor editing parameters changed: ${diffs.join(", ")}',
+        '🎨 Editor editing parameters changed: '
+        '${[...diffs, if (audioMetaChanged) 'audioMeta'].join(", ")}',
         name: 'VideoEditorNotifier',
         category: LogCategory.video,
       );
