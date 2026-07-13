@@ -266,12 +266,20 @@ class SoundsRepository {
           _cache[eventId] = audioEvent;
           return audioEvent;
         } on Object catch (e) {
+          // coverage:ignore-start
+          // Defensive net for adversarial relay data. For a video-kind event
+          // `VideoEvent.fromNostrEvent` does not throw (the kind is already
+          // validated by the `isVideoKind` gate above and `Event.tags` is
+          // strictly typed), so this is unreachable in practice; kept to
+          // downgrade a hypothetical parse failure to a warning + null instead
+          // of the outer error + rethrow.
           Log.warning(
             'Failed to synthesize original sound from video $eventId: $e',
             name: 'SoundsRepository',
             category: LogCategory.api,
           );
           return null;
+          // coverage:ignore-end
         }
       }
 
