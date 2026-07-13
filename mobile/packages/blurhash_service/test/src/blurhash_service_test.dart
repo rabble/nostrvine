@@ -114,23 +114,64 @@ void main() {
       expect(data!.isValid, isTrue);
     });
 
+    test('decodes grayscale content without a color tint', () async {
+      // Regression: blurhash_dart's decodeAc misses the spec's integer
+      // division, which inflates red/green in every AC component — a
+      // white→black gradient decoded with navy blue shadows and a cream
+      // top. The spec-correct decode must keep gray pixels gray.
+      final gradient = img.Image(width: 128, height: 227);
+      for (var y = 0; y < gradient.height; y++) {
+        final v = (230 - (y / gradient.height) * 215).round();
+        for (var x = 0; x < gradient.width; x++) {
+          gradient.setPixelRgb(x, y, v, v, v);
+        }
+      }
+      final hash = await BlurhashService.generateBlurhash(
+        Uint8List.fromList(img.encodePng(gradient)),
+      );
+      expect(hash, isNotNull);
+
+      final data = BlurhashService.decodeBlurhash(hash!);
+      expect(data, isNotNull);
+      final pixels = data!.pixels!;
+      for (var i = 0; i + 3 < pixels.length; i += 4) {
+        final r = pixels[i];
+        final g = pixels[i + 1];
+        final b = pixels[i + 2];
+        expect(
+          (r - g).abs() <= 2 && (g - b).abs() <= 2 && (r - b).abs() <= 2,
+          isTrue,
+          reason: 'pixel ${i ~/ 4} is tinted: r=$r g=$g b=$b',
+        );
+      }
+    });
+
     group('generateBlurhash aspect-ratio component selection', () {
       // Blurhash length = 6 + 2 * (compX * compY - 1)
-      // Portrait 4×7 → 6 + 2*27 = 60 chars
-      // Square   4×4 → 6 + 2*15 = 36 chars
+      // Portrait 3×4 → 6 + 2*11 = 28 chars
+      // Square   3×3 → 6 + 2*8  = 22 chars
 
-      test('uses 4×7 components for 9:16 portrait image', () async {
+      test('uses 3×4 components for 9:16 portrait image', () async {
         final bytes = _makeJpeg(width: 90, height: 160);
         final hash = await BlurhashService.generateBlurhash(bytes);
         expect(hash, isNotNull);
-        expect(hash!.length, equals(60));
+        expect(hash!.length, equals(28));
       });
 
-      test('uses 4×4 components for 1:1 square image', () async {
+      test('uses 3×3 components for 1:1 square image', () async {
         final bytes = _makeJpeg(width: 100, height: 100);
         final hash = await BlurhashService.generateBlurhash(bytes);
         expect(hash, isNotNull);
-        expect(hash!.length, equals(36));
+        expect(hash!.length, equals(22));
+      });
+
+      test('falls back to square components for landscape input', () async {
+        // Divine only produces 9:16 and 1:1 videos; wider input (e.g.
+        // imported media) shares the square components.
+        final bytes = _makeJpeg(width: 160, height: 90);
+        final hash = await BlurhashService.generateBlurhash(bytes);
+        expect(hash, isNotNull);
+        expect(hash!.length, equals(22));
       });
 
       test('accepts valid square hashes that do not start with L', () async {
@@ -151,7 +192,7 @@ void main() {
           await thumbnailFile.readAsBytes(),
         );
         expect(hash, isNotNull);
-        expect(hash!.length, equals(60));
+        expect(hash!.length, equals(28));
       });
 
       test('runs encoding in a background isolate '

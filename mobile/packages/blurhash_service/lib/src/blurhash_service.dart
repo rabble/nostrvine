@@ -3,6 +3,7 @@
 // ABOUTME: Creates compact representations of images
 // for better UX during vine loading
 
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:blurhash_dart/blurhash_dart.dart' as blurhash_dart;
@@ -22,8 +23,15 @@ String? _generateBlurhashSync(Uint8List imageBytes) {
     image.height,
   );
 
+  // Average (box) interpolation: the default (nearest) picks single source
+  // pixels when downscaling, which skews the encoded colors on high-detail
+  // frames.
   final resized = image.width > BlurhashService._encodeMaxWidth
-      ? img.copyResize(image, width: BlurhashService._encodeMaxWidth)
+      ? img.copyResize(
+          image,
+          width: BlurhashService._encodeMaxWidth,
+          interpolation: img.Interpolation.average,
+        )
       : image;
 
   return blurhash_dart.BlurHash.encode(
@@ -36,19 +44,22 @@ String? _generateBlurhashSync(Uint8List imageBytes) {
 /// Service for generating and decoding Blurhash
 /// placeholders.
 class BlurhashService {
-  /// Components for 9:16 portrait videos (4:7 ≈ 0.57, matches 9:16 ≈ 0.5625).
-  static const int _portraitComponentX = 4;
-  static const int _portraitComponentY = 7;
+  /// Components for 9:16 portrait videos. Kept low on purpose: high counts
+  /// (the previous 4×7) cause visible DCT ringing — dark/bright blobs that
+  /// aren't in the source frame.
+  static const int _portraitComponentX = 3;
+  static const int _portraitComponentY = 4;
 
-  /// Components for 1:1 square and landscape videos (balanced).
-  static const int _squareComponentX = 4;
-  static const int _squareComponentY = 4;
+  /// Components for 1:1 square videos.
+  static const int _squareComponentX = 3;
+  static const int _squareComponentY = 3;
 
   /// Max width used when downscaling before encoding.
   static const int _encodeMaxWidth = 128;
 
-  /// Default punch (contrast) value.
-  static const double defaultPunch = 1;
+  /// Default punch (contrast) value. Below 1 to soften DCT overshoot from
+  /// already-published high-component hashes (see [decodeBlurhash]).
+  static const double defaultPunch = 0.8;
 
   /// Process-wide memo for [decodeBlurhash]. Decoding is a pure function
   /// of (hash, width, height, punch) and runs synchronously on the UI
@@ -63,7 +74,8 @@ class BlurhashService {
   );
 
   /// Returns component counts suited to the image's aspect ratio.
-  /// Supports 9:16 portrait, 1:1 square, and landscape; falls back to portrait.
+  /// Divine only produces 9:16 portrait and 1:1 square videos; anything
+  /// square-or-wider gets square components, tall formats get portrait.
   static (int compX, int compY) _componentsForAspectRatio(
     int width,
     int height,
@@ -72,10 +84,77 @@ class BlurhashService {
       return (_portraitComponentX, _portraitComponentY);
     }
     final ratio = width / height;
-    // Square or landscape: ratio ≥ 0.9 (covers 1:1 and any wider format)
+    // 1:1 square (and any wider format)
     if (ratio >= 0.9) return (_squareComponentX, _squareComponentY);
     // Portrait 9:16 (and any other tall format)
     return (_portraitComponentX, _portraitComponentY);
+  }
+
+  /// Base83 alphabet from the blurhash spec.
+  static const String _base83Chars =
+      '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+      'abcdefghijklmnopqrstuvwxyz'
+      r'#$%*+,-.:;=?@[]^_{|}~';
+
+  static int _decode83(String value, int from, int to) {
+    var result = 0;
+    for (var i = from; i < to; i++) {
+      result = result * 83 + _base83Chars.indexOf(value[i]);
+    }
+    return result;
+  }
+
+  static double _sRgbToLinear(int value) {
+    final v = value / 255.0;
+    if (v <= 0.04045) return v / 12.92;
+    return math.pow((v + 0.055) / 1.055, 2.4).toDouble();
+  }
+
+  static double _signPow(double value, double exp) =>
+      math.pow(value.abs(), exp) * value.sign;
+
+  /// Spec-correct extraction of the DCT components from [blurhash].
+  ///
+  /// blurhash_dart's decodeAc divides with `/` where the spec requires
+  /// integer division, so the quantised red/green values pick up a
+  /// fractional positive shift (up to ~23% of maxAc) while blue stays
+  /// exact — dark regions of grayscale content decode as navy blue.
+  ///
+  /// [punch] scales every AC component uniformly (baked into maxAc).
+  /// Returns `null` when the hash length doesn't match its size flag.
+  static List<List<blurhash_dart.ColorTriplet>>? _decodeComponents(
+    String blurhash, {
+    double punch = 1.0,
+  }) {
+    final sizeFlag = _decode83(blurhash, 0, 1);
+    final numCompX = (sizeFlag % 9) + 1;
+    final numCompY = (sizeFlag ~/ 9) + 1;
+    if (blurhash.length != 4 + 2 * numCompX * numCompY) return null;
+
+    final maxAc = (_decode83(blurhash, 1, 2) + 1) / 166.0 * punch;
+    final dcValue = _decode83(blurhash, 2, 6);
+
+    return List.generate(numCompY, (j) {
+      return List.generate(numCompX, (i) {
+        if (i == 0 && j == 0) {
+          return blurhash_dart.ColorTriplet(
+            _sRgbToLinear(dcValue >> 16),
+            _sRgbToLinear((dcValue >> 8) & 255),
+            _sRgbToLinear(dcValue & 255),
+          );
+        }
+        final index = i + j * numCompX;
+        final value = _decode83(blurhash, 4 + index * 2, 6 + index * 2);
+        final quantR = value ~/ (19 * 19);
+        final quantG = (value ~/ 19) % 19;
+        final quantB = value % 19;
+        return blurhash_dart.ColorTriplet(
+          _signPow((quantR - 9) / 9, 2) * maxAc,
+          _signPow((quantG - 9) / 9, 2) * maxAc,
+          _signPow((quantB - 9) / 9, 2) * maxAc,
+        );
+      });
+    });
   }
 
   /// Generate blurhash from image bytes.
@@ -148,12 +227,16 @@ class BlurhashService {
         return cached;
       }
 
-      // Use real blurhash_dart library to decode
-      final blurHashObject = blurhash_dart.BlurHash.decode(
-        blurhash,
-        punch: punch,
-      );
-      final image = blurHashObject.toImage(width, height);
+      // Extract the DCT components ourselves instead of using
+      // blurhash_dart's BlurHash.decode: its decodeAc misses the spec's
+      // integer division, inflating red/green in every AC component —
+      // grayscale content decodes with a blue/cream tint. Its `punch` is
+      // also broken (skips the first AC row and column).
+      final components = _decodeComponents(blurhash, punch: punch);
+      if (components == null) return null;
+      final image = blurhash_dart.BlurHash.components(
+        components,
+      ).toImage(width, height);
 
       // RGBA pixel data of the decoded image (getBytes already returns a
       // buffer we own — no defensive copy needed)
