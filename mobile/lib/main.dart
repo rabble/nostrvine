@@ -2406,6 +2406,11 @@ class _DivineAppState extends ConsumerState<DivineApp>
     // durable pending_product_events queue without a UI consumer.
     ref.watch(productEventQueueProvider);
 
+    // Eagerly create the profile-save retry service so its foreground +
+    // connectivity subscriptions are wired at app shell setup. It re-drives
+    // the durable pending_profile_saves slot with no UI consumer (#3161).
+    ref.watch(profileSaveRetryServiceProvider);
+
     // Wrap with geo-blocking check first, then lifecycle handler
     Widget wrapped = MultiRepositoryProvider(
       providers: [

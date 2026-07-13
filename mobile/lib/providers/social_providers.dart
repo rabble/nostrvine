@@ -34,6 +34,7 @@ import 'package:openvine/services/hashtag_service.dart';
 import 'package:openvine/services/outgoing_dm_retry_service.dart';
 import 'package:openvine/services/pending_action_service.dart';
 import 'package:openvine/services/product_event_queue.dart';
+import 'package:openvine/services/profile_save_retry_service.dart';
 import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
@@ -236,6 +237,67 @@ OutgoingDmRetryService? outgoingDmRetryService(Ref ref) {
   ref.onDispose(service.dispose);
   return service;
 }
+
+/// Auto-sweep service that re-drives the durable pending profile/username save
+/// slot (#3161) so a save attempted while relays were unreachable is delivered
+/// when connectivity returns. keepAlive with no UI consumer — read eagerly at
+/// app shell startup (`main.dart`) so the foreground + connectivity
+/// subscriptions are wired.
+///
+/// Returns null until the user is authenticated and the Nostr session is ready
+/// for the active identity (the same readiness [profileRepository] gates on),
+/// so drivePendingSave's claim + publish have a live signer and client.
+final profileSaveRetryServiceProvider = Provider<ProfileSaveRetryService?>((
+  ref,
+) {
+  final authService = ref.watch(authServiceProvider);
+
+  // Rebuild on sign-in / sign-out / account switch.
+  ref.watch(currentAuthStateProvider);
+
+  final userPubkey = authService.currentPublicKeyHex;
+  if (userPubkey == null || userPubkey.isEmpty) return null;
+
+  final readiness = ref.watch(nostrSessionProvider);
+  if (!readiness.isReadyForActiveClient || readiness.pubkey != userPubkey) {
+    return null;
+  }
+
+  final profileRepository = ref.watch(profileRepositoryProvider);
+  if (profileRepository == null) return null;
+
+  final db = ref.watch(databaseProvider);
+
+  final foregroundController = StreamController<bool>();
+  ref.onDispose(foregroundController.close);
+
+  final service = ProfileSaveRetryService(
+    profileRepository: profileRepository,
+    pendingProfileSavesDao: db.pendingProfileSavesDao,
+    userPubkey: userPubkey,
+    appForegroundStream: foregroundController.stream,
+    // Shared connectivity trigger: re-drive the moment the network returns,
+    // not only on an app-foreground transition.
+    retryTriggerStream: _dmRetryConnectivityTriggerStream(),
+  );
+
+  service.initialize().catchError((Object e) {
+    Log.error(
+      'Failed to initialize ProfileSaveRetryService',
+      name: 'AppProviders',
+      error: e,
+    );
+  });
+
+  ref.listen<bool>(appForegroundProvider, (_, next) {
+    if (!foregroundController.isClosed) {
+      foregroundController.add(next);
+    }
+  }, fireImmediately: true);
+
+  ref.onDispose(service.dispose);
+  return service;
+});
 
 /// Auto-sweep service that re-drives undelivered DM reactions (publish failed
 /// or interrupted mid-send) on app-foreground transitions via
