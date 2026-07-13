@@ -10,6 +10,9 @@
 # A file is in the merge UNLESS it is tagged @Tags(['skip_very_good_optimization']).
 # Being under test/manual/ does NOT exclude it — only the tag does (the very_good
 # --optimization globber does not honor dart_test.yaml's exclude: test/manual/**).
+# Tag matching is whitespace-normalized so dart-format-wrapped @Tags([...])
+# annotations are honored. A commented-out @Tags line remains ignored by this
+# stricter gate; do not rely on commented annotations as an optimizer escape hatch.
 #
 # Two detection classes, each HARD-ZERO (no baseline, no tolerated debt):
 #
@@ -103,6 +106,13 @@ RESET_TO_DEFAULT_GLOBALS=(
 # Scan target — overridable for --selftest; defaults to the app merged-isolate tree.
 SCAN_DIR="${SCAN_DIR:-$MOBILE_DIR/test}"
 
+is_skip_vgv_tagged() {
+  local f="$1" tag_body tag_flat
+  tag_body=$(grep -vE '^[[:space:]]*//' "$f" || true)
+  tag_flat=$(tr -d '[:space:]' <<<"$tag_body")
+  grep -qE "@Tags\(\[[^]]*['\"]skip_very_good_optimization['\"]" <<<"$tag_flat"
+}
+
 run_scan() {
   local violations="" core files f body def
 
@@ -116,9 +126,9 @@ run_scan() {
       if ! grep -qE "(^|[^A-Za-z0-9_.])([A-Za-z_][A-Za-z0-9_]*\.)?${core}[[:space:]]*=([^=>]|$)" <<<"$body"; then
         continue
       fi
-      # Tagged out of the merge? Line-anchored, whole-file (a @Tags below class
-      # defs / above main() still counts, matching the very_good text-scan).
-      if grep -qE "^[[:space:]]*@Tags\([^)]*skip_very_good_optimization" "$f"; then
+      # Tagged out of the merge? Whole-file and whitespace-normalized, matching
+      # the very_good text-scan shape for dart-format-wrapped @Tags([...]).
+      if is_skip_vgv_tagged "$f"; then
         continue
       fi
       # SNAPSHOT: identifiers that hold a value READ FROM the global. Seed with
@@ -152,17 +162,18 @@ run_scan() {
       done
 
       # RESTORE: `<Global> = <origId>` (block `= origId;`, arrow `=> ... = origId)`,
-      # or dart-format-wrapped trailing-comma `= origId,`) where <origId> is one of
-      # the captured-original identifiers above — hence the `[;,)]` terminator. Tying the
-      # RHS to a captured value — not any bare identifier — rejects the bare-id
-      # install `<Global> = observer;` and the null-strand `<Global> = null;`, and
-      # excludes null/true/false for free (they can never be a capture LHS).
+      # nullable promotion `= origId!`, or dart-format-wrapped trailing-comma
+      # `= origId,`) where <origId> is one of the captured-original identifiers
+      # above. Tying the RHS to a captured value — not any bare identifier —
+      # rejects the bare-id install `<Global> = observer;` and the null-strand
+      # `<Global> = null;`, and excludes null/true/false for free (they can never
+      # be a capture LHS).
       local has_restore=0
       if [[ "$has_capture" -eq 1 ]]; then
         local id_alt
         id_alt="${orig_ids//$'\n'/|}"
         if grep -qE \
-          "([A-Za-z_][A-Za-z0-9_]*\.)?${core}[[:space:]]*=[[:space:]]*(${id_alt})[[:space:]]*[;,)]" \
+          "([A-Za-z_][A-Za-z0-9_]*\.)?${core}[[:space:]]*=[[:space:]]*(${id_alt})!?[[:space:]]*[;,)]" \
           <<<"$body"; then
           has_restore=1
         fi
@@ -187,7 +198,7 @@ run_scan() {
       if ! grep -qE "(^|[^A-Za-z0-9_.])([A-Za-z_][A-Za-z0-9_]*\.)?${core}[[:space:]]*=([^=>]|$)" <<<"$body"; then
         continue
       fi
-      if grep -qE "^[[:space:]]*@Tags\([^)]*skip_very_good_optimization" "$f"; then
+      if is_skip_vgv_tagged "$f"; then
         continue
       fi
       # RESET-TO-DEFAULT present: `<Global> = <default>` (block, arrow, or
@@ -307,6 +318,14 @@ void main() {
   WebViewPlatform.instance = _FakeWebViewPlatform();
 }
 '
+  _case "restore via nullable promotion (= original!) → PASS" 0 \
+'import "x";
+void main() {
+  final original = WebViewPlatform.instance;
+  WebViewPlatform.instance = _FakeWebViewPlatform();
+  addTearDown(() => WebViewPlatform.instance = original!);
+}
+'
   _case "reset-to-default leaker (debugDefaultTargetPlatformOverride, no = null) → FAIL" 1 \
 'import "x";
 void main() { debugDefaultTargetPlatformOverride = TargetPlatform.iOS; }
@@ -355,6 +374,18 @@ void main() {
 @Tags(["skip_very_good_optimization"])
 import "x";
 void main() { debugDefaultTargetPlatformOverride = TargetPlatform.iOS; }
+'
+  _case "multi-line tagged leaker (dart-format-wrapped @Tags) → PASS" 0 \
+'@Tags([
+  "skip_very_good_optimization",
+])
+import "x";
+void main() { Bloc.observer = MyObserver(); }
+'
+  _case "commented-out tag does not exclude a leaker → FAIL" 1 \
+'// @Tags(["skip_very_good_optimization"])
+import "x";
+void main() { Bloc.observer = MyObserver(); }
 '
   _case "commented-out install → PASS" 0 \
 'import "x";
