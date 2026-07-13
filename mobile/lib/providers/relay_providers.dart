@@ -4,6 +4,7 @@
 
 import 'dart:async';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nostr_client/nostr_client.dart'
     show RelayConnectionStatus, RelayState;
@@ -242,3 +243,39 @@ bool _setsEqual<T>(Set<T> a, Set<T> b) {
   if (a.length != b.length) return false;
   return a.containsAll(b);
 }
+
+/// Force-reconnects the relay pool whenever `connectivity_plus` reports the
+/// network returning, so a pool that collapsed to zero connections during an
+/// offline window self-heals app-wide — not only on an app-foreground
+/// transition (#3161). Debounced so a burst of connectivity events collapses
+/// into one reconnect. keepAlive with no UI consumer: read eagerly at app
+/// shell startup so the subscription is wired.
+final connectivityRelayReconnectProvider = Provider<void>((ref) {
+  final nostrService = ref.watch(nostrServiceProvider);
+  Timer? debounce;
+  final subscription = Connectivity().onConnectivityChanged
+      .where((results) => results.any((r) => r != ConnectivityResult.none))
+      .listen((_) {
+        debounce?.cancel();
+        debounce = Timer(const Duration(seconds: 2), () async {
+          try {
+            await nostrService.forceReconnectAll();
+            Log.info(
+              'Reconnected relays after connectivity returned',
+              name: 'ConnectivityRelayReconnect',
+              category: LogCategory.relay,
+            );
+          } catch (e) {
+            Log.error(
+              'connectivity-triggered relay reconnect failed: $e',
+              name: 'ConnectivityRelayReconnect',
+              category: LogCategory.relay,
+            );
+          }
+        });
+      });
+  ref.onDispose(() {
+    debounce?.cancel();
+    subscription.cancel();
+  });
+});

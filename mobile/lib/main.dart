@@ -2411,6 +2411,10 @@ class _DivineAppState extends ConsumerState<DivineApp>
     // the durable pending_profile_saves slot with no UI consumer (#3161).
     ref.watch(profileSaveRetryServiceProvider);
 
+    // Eagerly wire the connectivity → relay force-reconnect bridge so the
+    // relay pool self-heals app-wide the moment the network returns (#3161).
+    ref.watch(connectivityRelayReconnectProvider);
+
     // Wrap with geo-blocking check first, then lifecycle handler
     Widget wrapped = MultiRepositoryProvider(
       providers: [
