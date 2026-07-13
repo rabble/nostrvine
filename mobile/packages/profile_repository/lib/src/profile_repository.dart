@@ -69,6 +69,7 @@ class ProfileRepository {
     FunnelcakeApiClient? funnelcakeApiClient,
     ProfileSearchFilter? profileSearchFilter,
     BlockedProfileFilter? blockFilter,
+    PendingProfileSavesDao? pendingProfileSavesDao,
     List<String> indexerRelays = defaultProfileIndexerRelays,
   }) : _nostrClient = nostrClient,
        _userProfilesDao = userProfilesDao,
@@ -77,6 +78,7 @@ class ProfileRepository {
        _funnelcakeApiClient = funnelcakeApiClient,
        _profileSearchFilter = profileSearchFilter,
        _blockFilter = blockFilter,
+       _pendingProfileSavesDao = pendingProfileSavesDao,
        _indexerRelays = indexerRelays;
 
   final NostrClient _nostrClient;
@@ -86,6 +88,12 @@ class ProfileRepository {
   final FunnelcakeApiClient? _funnelcakeApiClient;
   final ProfileSearchFilter? _profileSearchFilter;
   final BlockedProfileFilter? _blockFilter;
+
+  /// Durable single-row-per-user slot for a save whose kind-0 publish is not
+  /// yet relay-confirmed (#3161). Null when the caller does not wire the
+  /// offline-tolerant save path (e.g. legacy tests) — the queue methods
+  /// no-op in that case.
+  final PendingProfileSavesDao? _pendingProfileSavesDao;
   final List<String> _indexerRelays;
 
   /// In-flight relay fetches keyed by pubkey. Concurrent callers for the
@@ -703,6 +711,118 @@ class ProfileRepository {
         throw const ProfilePublishFailedException(
           'Failed to publish profile. Please try again.',
         );
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Pending-save slot (#3161): durable, background-re-driven profile save.
+  // -------------------------------------------------------------------------
+
+  /// Persist [payload] to the durable pending-save slot so a failed kind-0
+  /// publish is re-driven in the background when connectivity returns.
+  ///
+  /// Latest intent wins — a fresh save replaces any in-flight row (kind 0 is
+  /// replaceable). Pass [claimConfirmed] true when the divine.video username
+  /// claim already succeeded for this payload (or when no claim is needed), so
+  /// the re-drive skips the idempotent HTTP claim round-trip.
+  ///
+  /// No-op when no [PendingProfileSavesDao] was injected.
+  Future<void> enqueuePendingSave(
+    PendingProfileSave payload, {
+    required bool claimConfirmed,
+  }) async {
+    final dao = _pendingProfileSavesDao;
+    if (dao == null) return;
+    await dao.upsert(
+      PendingProfileSaveEntry(
+        userPubkey: payload.pubkey,
+        payloadJson: payload.encode(),
+        claimConfirmed: claimConfirmed,
+        queuedAt: DateTime.now(),
+      ),
+    );
+  }
+
+  /// Reactive view of the pending save for [pubkey], or null when none is
+  /// queued (e.g. after a confirmed publish clears it). Emits nothing when no
+  /// [PendingProfileSavesDao] was injected.
+  Stream<PendingProfileSaveEntry?> watchPendingSave(String pubkey) {
+    final dao = _pendingProfileSavesDao;
+    if (dao == null) return const Stream.empty();
+    return dao.watch(pubkey);
+  }
+
+  /// The current pending save for [pubkey], or null.
+  Future<PendingProfileSaveEntry?> getPendingSave(String pubkey) async {
+    return _pendingProfileSavesDao?.get(pubkey);
+  }
+
+  /// Delete the pending save for [pubkey] (e.g. on an explicit user discard).
+  Future<void> clearPendingSave(String pubkey) async {
+    await _pendingProfileSavesDao?.clear(pubkey);
+  }
+
+  /// Reset a `syncing` slot back to `pending` for [pubkey] — call once on cold
+  /// start so a save interrupted mid-publish is retried.
+  Future<void> resetInterruptedPendingSave(String pubkey) async {
+    await _pendingProfileSavesDao?.resetSyncingToPending(pubkey);
+  }
+
+  /// Attempt to publish the queued save for [pubkey] once.
+  ///
+  /// Claim-first (only when not yet confirmed and a divine.video username is
+  /// requested), then publish the kind-0 re-seeded from the freshest cached
+  /// profile. On a relay-confirmed publish the slot is cleared and the profile
+  /// cached, returning [PendingSaveDriveOutcome.confirmed]. Slot bookkeeping on
+  /// failure (retry count, mark-failed) is the caller's (retry service's) job —
+  /// this method only reports the typed outcome and never increments retries.
+  ///
+  /// Throws only unexpected (non-[ProfileRepositoryException]) errors, which
+  /// the retry service treats as a retryable failure.
+  Future<PendingSaveDriveOutcome> drivePendingSave(String pubkey) async {
+    final dao = _pendingProfileSavesDao;
+    if (dao == null) return PendingSaveDriveOutcome.noPendingSave;
+
+    final entry = await dao.get(pubkey);
+    if (entry == null) return PendingSaveDriveOutcome.noPendingSave;
+
+    final payload = PendingProfileSave.decode(entry.payloadJson);
+
+    if (!entry.claimConfirmed && payload.requiresClaim) {
+      final result = await claimUsername(username: payload.username!);
+      switch (result) {
+        case UsernameClaimSuccess():
+          await dao.markClaimConfirmed(pubkey);
+        case UsernameClaimTaken():
+        case UsernameClaimReserved():
+          return PendingSaveDriveOutcome.permanentFailure;
+        case UsernameClaimNetworkError():
+        case UsernameClaimError():
+          return PendingSaveDriveOutcome.retryableFailure;
+      }
+    }
+
+    final currentProfile = await getCachedProfile(pubkey: pubkey);
+    try {
+      final saved = await saveProfileEvent(
+        displayName: payload.displayName,
+        about: payload.about,
+        website: payload.website,
+        username: payload.username,
+        nip05: payload.nip05,
+        clearNip05: payload.clearNip05,
+        picture: payload.picture,
+        banner: payload.banner,
+        monetizationLinks: payload.monetizationLinks,
+        currentProfile: currentProfile,
+      );
+      await cacheProfile(saved);
+      await dao.clear(pubkey);
+      return PendingSaveDriveOutcome.confirmed;
+    } on NoRelaysConnectedException {
+      return PendingSaveDriveOutcome.retryableFailure;
+    } on ProfilePublishFailedException {
+      return PendingSaveDriveOutcome.retryableFailure;
     }
   }
 
