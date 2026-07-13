@@ -38,6 +38,7 @@ const _notificationRetentionDays = 7;
     PendingProductEvents,
     PendingGiftWraps,
     ProcessedGiftWraps,
+    PendingProfileSaves,
   ],
   daos: [
     UserProfilesDao,
@@ -61,6 +62,7 @@ const _notificationRetentionDays = 7;
     PendingProductEventsDao,
     PendingGiftWrapsDao,
     ProcessedGiftWrapsDao,
+    PendingProfileSavesDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -516,6 +518,33 @@ class AppDatabase extends _$AppDatabase {
       CREATE INDEX IF NOT EXISTS idx_outgoing_dms_queued_at
       ON outgoing_dms (queued_at)
     ''');
+
+    // Check if pending_profile_saves table exists, create if missing.
+    // Added for #3161 (durable profile/username save + background re-drive).
+    // Schema version stays at 1 — same runtime CREATE-IF-NOT-EXISTS pattern as
+    // outgoing_dms above. Column order/types/defaults must match Drift's
+    // `m.createAll()` output (pinned by the pending_profile_saves schema-parity
+    // test in app_database_test.dart): bool → INTEGER DEFAULT 0 with a
+    // CHECK (x IN (0,1)); DateTime columns → INTEGER (seconds codec).
+    final pendingProfileSavesResult = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type='table' "
+      "AND name='pending_profile_saves'",
+    ).get();
+
+    if (pendingProfileSavesResult.isEmpty) {
+      await customStatement('''
+        CREATE TABLE pending_profile_saves (
+          user_pubkey TEXT NOT NULL PRIMARY KEY,
+          payload_json TEXT NOT NULL,
+          claim_confirmed INTEGER NOT NULL DEFAULT 0 CHECK ("claim_confirmed" IN (0, 1)),
+          status TEXT NOT NULL DEFAULT 'pending',
+          retry_count INTEGER NOT NULL DEFAULT 0,
+          last_attempt_at INTEGER,
+          queued_at INTEGER NOT NULL,
+          last_error TEXT
+        )
+      ''');
+    }
 
     // Check if dm_message_reactions table exists, create if missing.
     // Added for #4633 (DM emoji reactions). Schema version stays at 1 —

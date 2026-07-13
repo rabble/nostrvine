@@ -9952,7 +9952,9 @@ class DmReactionRow extends DataClass implements Insertable<DmReactionRow> {
   final String? rumorEventJson;
 
   /// Publish status for outgoing rows; null for incoming (received from
-  /// relay). Values: `pending`, `sent`, `failed`.
+  /// relay). Values: `pending`, `sent`, `failed`, `blocked` (send-policy
+  /// refused, terminal), `deletion_pending` (soft-deleted, kind-5 awaiting
+  /// durable delivery), `deletion_sent` (kind-5 confirmed, terminal).
   final String? publishStatus;
   const DmReactionRow({
     required this.id,
@@ -14552,6 +14554,568 @@ class ProcessedGiftWrapsCompanion extends UpdateCompanion<ProcessedGiftWrap> {
   }
 }
 
+class $PendingProfileSavesTable extends PendingProfileSaves
+    with TableInfo<$PendingProfileSavesTable, PendingProfileSaveRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PendingProfileSavesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _userPubkeyMeta = const VerificationMeta(
+    'userPubkey',
+  );
+  @override
+  late final GeneratedColumn<String> userPubkey = GeneratedColumn<String>(
+    'user_pubkey',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _payloadJsonMeta = const VerificationMeta(
+    'payloadJson',
+  );
+  @override
+  late final GeneratedColumn<String> payloadJson = GeneratedColumn<String>(
+    'payload_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _claimConfirmedMeta = const VerificationMeta(
+    'claimConfirmed',
+  );
+  @override
+  late final GeneratedColumn<bool> claimConfirmed = GeneratedColumn<bool>(
+    'claim_confirmed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("claim_confirmed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _retryCountMeta = const VerificationMeta(
+    'retryCount',
+  );
+  @override
+  late final GeneratedColumn<int> retryCount = GeneratedColumn<int>(
+    'retry_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _lastAttemptAtMeta = const VerificationMeta(
+    'lastAttemptAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastAttemptAt =
+      GeneratedColumn<DateTime>(
+        'last_attempt_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _queuedAtMeta = const VerificationMeta(
+    'queuedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> queuedAt = GeneratedColumn<DateTime>(
+    'queued_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lastErrorMeta = const VerificationMeta(
+    'lastError',
+  );
+  @override
+  late final GeneratedColumn<String> lastError = GeneratedColumn<String>(
+    'last_error',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    userPubkey,
+    payloadJson,
+    claimConfirmed,
+    status,
+    retryCount,
+    lastAttemptAt,
+    queuedAt,
+    lastError,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'pending_profile_saves';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PendingProfileSaveRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('user_pubkey')) {
+      context.handle(
+        _userPubkeyMeta,
+        userPubkey.isAcceptableOrUnknown(data['user_pubkey']!, _userPubkeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userPubkeyMeta);
+    }
+    if (data.containsKey('payload_json')) {
+      context.handle(
+        _payloadJsonMeta,
+        payloadJson.isAcceptableOrUnknown(
+          data['payload_json']!,
+          _payloadJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_payloadJsonMeta);
+    }
+    if (data.containsKey('claim_confirmed')) {
+      context.handle(
+        _claimConfirmedMeta,
+        claimConfirmed.isAcceptableOrUnknown(
+          data['claim_confirmed']!,
+          _claimConfirmedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('retry_count')) {
+      context.handle(
+        _retryCountMeta,
+        retryCount.isAcceptableOrUnknown(data['retry_count']!, _retryCountMeta),
+      );
+    }
+    if (data.containsKey('last_attempt_at')) {
+      context.handle(
+        _lastAttemptAtMeta,
+        lastAttemptAt.isAcceptableOrUnknown(
+          data['last_attempt_at']!,
+          _lastAttemptAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('queued_at')) {
+      context.handle(
+        _queuedAtMeta,
+        queuedAt.isAcceptableOrUnknown(data['queued_at']!, _queuedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_queuedAtMeta);
+    }
+    if (data.containsKey('last_error')) {
+      context.handle(
+        _lastErrorMeta,
+        lastError.isAcceptableOrUnknown(data['last_error']!, _lastErrorMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {userPubkey};
+  @override
+  PendingProfileSaveRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PendingProfileSaveRow(
+      userPubkey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_pubkey'],
+      )!,
+      payloadJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payload_json'],
+      )!,
+      claimConfirmed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}claim_confirmed'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      retryCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}retry_count'],
+      )!,
+      lastAttemptAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_attempt_at'],
+      ),
+      queuedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}queued_at'],
+      )!,
+      lastError: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_error'],
+      ),
+    );
+  }
+
+  @override
+  $PendingProfileSavesTable createAlias(String alias) {
+    return $PendingProfileSavesTable(attachedDatabase, alias);
+  }
+}
+
+class PendingProfileSaveRow extends DataClass
+    implements Insertable<PendingProfileSaveRow> {
+  /// Owner hex pubkey. Primary key → exactly one pending save per account.
+  final String userPubkey;
+
+  /// Serialized `PendingProfileSave` payload (every `saveProfileEvent` field
+  /// the user submitted). Authoritative source for the re-drive.
+  final String payloadJson;
+
+  /// Whether the divine.video username claim already returned 200 for this
+  /// payload, so re-drives skip the (idempotent) HTTP claim round-trip.
+  /// Always `true` for saves with no divine.video username to claim
+  /// (external NIP-05, or no NIP-05 change).
+  final bool claimConfirmed;
+
+  /// `pending` | `syncing` | `failed`. Stored as a string for readable
+  /// dumps; the DAO throws on an unrecognised value rather than coercing it
+  /// back to `pending`.
+  final String status;
+
+  /// Publish attempts survived. Backoff caps growth at the policy max; once
+  /// exhausted the row moves to `failed` and the UI surfaces a retry.
+  final int retryCount;
+
+  /// Wall-clock timestamp of the most recent publish attempt. Drives the
+  /// retry service's backoff scheduling. Null until the first attempt.
+  final DateTime? lastAttemptAt;
+
+  /// Wall-clock timestamp the row was queued.
+  final DateTime queuedAt;
+
+  /// Last publish error message, for diagnostics. Null when the most recent
+  /// transition was not a failure.
+  final String? lastError;
+  const PendingProfileSaveRow({
+    required this.userPubkey,
+    required this.payloadJson,
+    required this.claimConfirmed,
+    required this.status,
+    required this.retryCount,
+    this.lastAttemptAt,
+    required this.queuedAt,
+    this.lastError,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['user_pubkey'] = Variable<String>(userPubkey);
+    map['payload_json'] = Variable<String>(payloadJson);
+    map['claim_confirmed'] = Variable<bool>(claimConfirmed);
+    map['status'] = Variable<String>(status);
+    map['retry_count'] = Variable<int>(retryCount);
+    if (!nullToAbsent || lastAttemptAt != null) {
+      map['last_attempt_at'] = Variable<DateTime>(lastAttemptAt);
+    }
+    map['queued_at'] = Variable<DateTime>(queuedAt);
+    if (!nullToAbsent || lastError != null) {
+      map['last_error'] = Variable<String>(lastError);
+    }
+    return map;
+  }
+
+  PendingProfileSavesCompanion toCompanion(bool nullToAbsent) {
+    return PendingProfileSavesCompanion(
+      userPubkey: Value(userPubkey),
+      payloadJson: Value(payloadJson),
+      claimConfirmed: Value(claimConfirmed),
+      status: Value(status),
+      retryCount: Value(retryCount),
+      lastAttemptAt: lastAttemptAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastAttemptAt),
+      queuedAt: Value(queuedAt),
+      lastError: lastError == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastError),
+    );
+  }
+
+  factory PendingProfileSaveRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PendingProfileSaveRow(
+      userPubkey: serializer.fromJson<String>(json['userPubkey']),
+      payloadJson: serializer.fromJson<String>(json['payloadJson']),
+      claimConfirmed: serializer.fromJson<bool>(json['claimConfirmed']),
+      status: serializer.fromJson<String>(json['status']),
+      retryCount: serializer.fromJson<int>(json['retryCount']),
+      lastAttemptAt: serializer.fromJson<DateTime?>(json['lastAttemptAt']),
+      queuedAt: serializer.fromJson<DateTime>(json['queuedAt']),
+      lastError: serializer.fromJson<String?>(json['lastError']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'userPubkey': serializer.toJson<String>(userPubkey),
+      'payloadJson': serializer.toJson<String>(payloadJson),
+      'claimConfirmed': serializer.toJson<bool>(claimConfirmed),
+      'status': serializer.toJson<String>(status),
+      'retryCount': serializer.toJson<int>(retryCount),
+      'lastAttemptAt': serializer.toJson<DateTime?>(lastAttemptAt),
+      'queuedAt': serializer.toJson<DateTime>(queuedAt),
+      'lastError': serializer.toJson<String?>(lastError),
+    };
+  }
+
+  PendingProfileSaveRow copyWith({
+    String? userPubkey,
+    String? payloadJson,
+    bool? claimConfirmed,
+    String? status,
+    int? retryCount,
+    Value<DateTime?> lastAttemptAt = const Value.absent(),
+    DateTime? queuedAt,
+    Value<String?> lastError = const Value.absent(),
+  }) => PendingProfileSaveRow(
+    userPubkey: userPubkey ?? this.userPubkey,
+    payloadJson: payloadJson ?? this.payloadJson,
+    claimConfirmed: claimConfirmed ?? this.claimConfirmed,
+    status: status ?? this.status,
+    retryCount: retryCount ?? this.retryCount,
+    lastAttemptAt: lastAttemptAt.present
+        ? lastAttemptAt.value
+        : this.lastAttemptAt,
+    queuedAt: queuedAt ?? this.queuedAt,
+    lastError: lastError.present ? lastError.value : this.lastError,
+  );
+  PendingProfileSaveRow copyWithCompanion(PendingProfileSavesCompanion data) {
+    return PendingProfileSaveRow(
+      userPubkey: data.userPubkey.present
+          ? data.userPubkey.value
+          : this.userPubkey,
+      payloadJson: data.payloadJson.present
+          ? data.payloadJson.value
+          : this.payloadJson,
+      claimConfirmed: data.claimConfirmed.present
+          ? data.claimConfirmed.value
+          : this.claimConfirmed,
+      status: data.status.present ? data.status.value : this.status,
+      retryCount: data.retryCount.present
+          ? data.retryCount.value
+          : this.retryCount,
+      lastAttemptAt: data.lastAttemptAt.present
+          ? data.lastAttemptAt.value
+          : this.lastAttemptAt,
+      queuedAt: data.queuedAt.present ? data.queuedAt.value : this.queuedAt,
+      lastError: data.lastError.present ? data.lastError.value : this.lastError,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PendingProfileSaveRow(')
+          ..write('userPubkey: $userPubkey, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('claimConfirmed: $claimConfirmed, ')
+          ..write('status: $status, ')
+          ..write('retryCount: $retryCount, ')
+          ..write('lastAttemptAt: $lastAttemptAt, ')
+          ..write('queuedAt: $queuedAt, ')
+          ..write('lastError: $lastError')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    userPubkey,
+    payloadJson,
+    claimConfirmed,
+    status,
+    retryCount,
+    lastAttemptAt,
+    queuedAt,
+    lastError,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PendingProfileSaveRow &&
+          other.userPubkey == this.userPubkey &&
+          other.payloadJson == this.payloadJson &&
+          other.claimConfirmed == this.claimConfirmed &&
+          other.status == this.status &&
+          other.retryCount == this.retryCount &&
+          other.lastAttemptAt == this.lastAttemptAt &&
+          other.queuedAt == this.queuedAt &&
+          other.lastError == this.lastError);
+}
+
+class PendingProfileSavesCompanion
+    extends UpdateCompanion<PendingProfileSaveRow> {
+  final Value<String> userPubkey;
+  final Value<String> payloadJson;
+  final Value<bool> claimConfirmed;
+  final Value<String> status;
+  final Value<int> retryCount;
+  final Value<DateTime?> lastAttemptAt;
+  final Value<DateTime> queuedAt;
+  final Value<String?> lastError;
+  final Value<int> rowid;
+  const PendingProfileSavesCompanion({
+    this.userPubkey = const Value.absent(),
+    this.payloadJson = const Value.absent(),
+    this.claimConfirmed = const Value.absent(),
+    this.status = const Value.absent(),
+    this.retryCount = const Value.absent(),
+    this.lastAttemptAt = const Value.absent(),
+    this.queuedAt = const Value.absent(),
+    this.lastError = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PendingProfileSavesCompanion.insert({
+    required String userPubkey,
+    required String payloadJson,
+    this.claimConfirmed = const Value.absent(),
+    this.status = const Value.absent(),
+    this.retryCount = const Value.absent(),
+    this.lastAttemptAt = const Value.absent(),
+    required DateTime queuedAt,
+    this.lastError = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : userPubkey = Value(userPubkey),
+       payloadJson = Value(payloadJson),
+       queuedAt = Value(queuedAt);
+  static Insertable<PendingProfileSaveRow> custom({
+    Expression<String>? userPubkey,
+    Expression<String>? payloadJson,
+    Expression<bool>? claimConfirmed,
+    Expression<String>? status,
+    Expression<int>? retryCount,
+    Expression<DateTime>? lastAttemptAt,
+    Expression<DateTime>? queuedAt,
+    Expression<String>? lastError,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (userPubkey != null) 'user_pubkey': userPubkey,
+      if (payloadJson != null) 'payload_json': payloadJson,
+      if (claimConfirmed != null) 'claim_confirmed': claimConfirmed,
+      if (status != null) 'status': status,
+      if (retryCount != null) 'retry_count': retryCount,
+      if (lastAttemptAt != null) 'last_attempt_at': lastAttemptAt,
+      if (queuedAt != null) 'queued_at': queuedAt,
+      if (lastError != null) 'last_error': lastError,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PendingProfileSavesCompanion copyWith({
+    Value<String>? userPubkey,
+    Value<String>? payloadJson,
+    Value<bool>? claimConfirmed,
+    Value<String>? status,
+    Value<int>? retryCount,
+    Value<DateTime?>? lastAttemptAt,
+    Value<DateTime>? queuedAt,
+    Value<String?>? lastError,
+    Value<int>? rowid,
+  }) {
+    return PendingProfileSavesCompanion(
+      userPubkey: userPubkey ?? this.userPubkey,
+      payloadJson: payloadJson ?? this.payloadJson,
+      claimConfirmed: claimConfirmed ?? this.claimConfirmed,
+      status: status ?? this.status,
+      retryCount: retryCount ?? this.retryCount,
+      lastAttemptAt: lastAttemptAt ?? this.lastAttemptAt,
+      queuedAt: queuedAt ?? this.queuedAt,
+      lastError: lastError ?? this.lastError,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (userPubkey.present) {
+      map['user_pubkey'] = Variable<String>(userPubkey.value);
+    }
+    if (payloadJson.present) {
+      map['payload_json'] = Variable<String>(payloadJson.value);
+    }
+    if (claimConfirmed.present) {
+      map['claim_confirmed'] = Variable<bool>(claimConfirmed.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (retryCount.present) {
+      map['retry_count'] = Variable<int>(retryCount.value);
+    }
+    if (lastAttemptAt.present) {
+      map['last_attempt_at'] = Variable<DateTime>(lastAttemptAt.value);
+    }
+    if (queuedAt.present) {
+      map['queued_at'] = Variable<DateTime>(queuedAt.value);
+    }
+    if (lastError.present) {
+      map['last_error'] = Variable<String>(lastError.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PendingProfileSavesCompanion(')
+          ..write('userPubkey: $userPubkey, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('claimConfirmed: $claimConfirmed, ')
+          ..write('status: $status, ')
+          ..write('retryCount: $retryCount, ')
+          ..write('lastAttemptAt: $lastAttemptAt, ')
+          ..write('queuedAt: $queuedAt, ')
+          ..write('lastError: $lastError, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -14586,6 +15150,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $ProcessedGiftWrapsTable processedGiftWraps =
       $ProcessedGiftWrapsTable(this);
+  late final $PendingProfileSavesTable pendingProfileSaves =
+      $PendingProfileSavesTable(this);
   late final UserProfilesDao userProfilesDao = UserProfilesDao(
     this as AppDatabase,
   );
@@ -14642,6 +15208,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final ProcessedGiftWrapsDao processedGiftWrapsDao =
       ProcessedGiftWrapsDao(this as AppDatabase);
+  late final PendingProfileSavesDao pendingProfileSavesDao =
+      PendingProfileSavesDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -14668,6 +15236,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     pendingProductEvents,
     pendingGiftWraps,
     processedGiftWraps,
+    pendingProfileSaves,
   ];
 }
 
@@ -21489,6 +22058,289 @@ typedef $$ProcessedGiftWrapsTableProcessedTableManager =
       ProcessedGiftWrap,
       PrefetchHooks Function()
     >;
+typedef $$PendingProfileSavesTableCreateCompanionBuilder =
+    PendingProfileSavesCompanion Function({
+      required String userPubkey,
+      required String payloadJson,
+      Value<bool> claimConfirmed,
+      Value<String> status,
+      Value<int> retryCount,
+      Value<DateTime?> lastAttemptAt,
+      required DateTime queuedAt,
+      Value<String?> lastError,
+      Value<int> rowid,
+    });
+typedef $$PendingProfileSavesTableUpdateCompanionBuilder =
+    PendingProfileSavesCompanion Function({
+      Value<String> userPubkey,
+      Value<String> payloadJson,
+      Value<bool> claimConfirmed,
+      Value<String> status,
+      Value<int> retryCount,
+      Value<DateTime?> lastAttemptAt,
+      Value<DateTime> queuedAt,
+      Value<String?> lastError,
+      Value<int> rowid,
+    });
+
+class $$PendingProfileSavesTableFilterComposer
+    extends Composer<_$AppDatabase, $PendingProfileSavesTable> {
+  $$PendingProfileSavesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get userPubkey => $composableBuilder(
+    column: $table.userPubkey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get claimConfirmed => $composableBuilder(
+    column: $table.claimConfirmed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get retryCount => $composableBuilder(
+    column: $table.retryCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastAttemptAt => $composableBuilder(
+    column: $table.lastAttemptAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get queuedAt => $composableBuilder(
+    column: $table.queuedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastError => $composableBuilder(
+    column: $table.lastError,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$PendingProfileSavesTableOrderingComposer
+    extends Composer<_$AppDatabase, $PendingProfileSavesTable> {
+  $$PendingProfileSavesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get userPubkey => $composableBuilder(
+    column: $table.userPubkey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get claimConfirmed => $composableBuilder(
+    column: $table.claimConfirmed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get retryCount => $composableBuilder(
+    column: $table.retryCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastAttemptAt => $composableBuilder(
+    column: $table.lastAttemptAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get queuedAt => $composableBuilder(
+    column: $table.queuedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastError => $composableBuilder(
+    column: $table.lastError,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PendingProfileSavesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PendingProfileSavesTable> {
+  $$PendingProfileSavesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get userPubkey => $composableBuilder(
+    column: $table.userPubkey,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get claimConfirmed => $composableBuilder(
+    column: $table.claimConfirmed,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<int> get retryCount => $composableBuilder(
+    column: $table.retryCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get lastAttemptAt => $composableBuilder(
+    column: $table.lastAttemptAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get queuedAt =>
+      $composableBuilder(column: $table.queuedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get lastError =>
+      $composableBuilder(column: $table.lastError, builder: (column) => column);
+}
+
+class $$PendingProfileSavesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PendingProfileSavesTable,
+          PendingProfileSaveRow,
+          $$PendingProfileSavesTableFilterComposer,
+          $$PendingProfileSavesTableOrderingComposer,
+          $$PendingProfileSavesTableAnnotationComposer,
+          $$PendingProfileSavesTableCreateCompanionBuilder,
+          $$PendingProfileSavesTableUpdateCompanionBuilder,
+          (
+            PendingProfileSaveRow,
+            BaseReferences<
+              _$AppDatabase,
+              $PendingProfileSavesTable,
+              PendingProfileSaveRow
+            >,
+          ),
+          PendingProfileSaveRow,
+          PrefetchHooks Function()
+        > {
+  $$PendingProfileSavesTableTableManager(
+    _$AppDatabase db,
+    $PendingProfileSavesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PendingProfileSavesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PendingProfileSavesTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$PendingProfileSavesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> userPubkey = const Value.absent(),
+                Value<String> payloadJson = const Value.absent(),
+                Value<bool> claimConfirmed = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<int> retryCount = const Value.absent(),
+                Value<DateTime?> lastAttemptAt = const Value.absent(),
+                Value<DateTime> queuedAt = const Value.absent(),
+                Value<String?> lastError = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PendingProfileSavesCompanion(
+                userPubkey: userPubkey,
+                payloadJson: payloadJson,
+                claimConfirmed: claimConfirmed,
+                status: status,
+                retryCount: retryCount,
+                lastAttemptAt: lastAttemptAt,
+                queuedAt: queuedAt,
+                lastError: lastError,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String userPubkey,
+                required String payloadJson,
+                Value<bool> claimConfirmed = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<int> retryCount = const Value.absent(),
+                Value<DateTime?> lastAttemptAt = const Value.absent(),
+                required DateTime queuedAt,
+                Value<String?> lastError = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PendingProfileSavesCompanion.insert(
+                userPubkey: userPubkey,
+                payloadJson: payloadJson,
+                claimConfirmed: claimConfirmed,
+                status: status,
+                retryCount: retryCount,
+                lastAttemptAt: lastAttemptAt,
+                queuedAt: queuedAt,
+                lastError: lastError,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PendingProfileSavesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PendingProfileSavesTable,
+      PendingProfileSaveRow,
+      $$PendingProfileSavesTableFilterComposer,
+      $$PendingProfileSavesTableOrderingComposer,
+      $$PendingProfileSavesTableAnnotationComposer,
+      $$PendingProfileSavesTableCreateCompanionBuilder,
+      $$PendingProfileSavesTableUpdateCompanionBuilder,
+      (
+        PendingProfileSaveRow,
+        BaseReferences<
+          _$AppDatabase,
+          $PendingProfileSavesTable,
+          PendingProfileSaveRow
+        >,
+      ),
+      PendingProfileSaveRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -21535,4 +22387,6 @@ class $AppDatabaseManager {
       $$PendingGiftWrapsTableTableManager(_db, _db.pendingGiftWraps);
   $$ProcessedGiftWrapsTableTableManager get processedGiftWraps =>
       $$ProcessedGiftWrapsTableTableManager(_db, _db.processedGiftWraps);
+  $$PendingProfileSavesTableTableManager get pendingProfileSaves =>
+      $$PendingProfileSavesTableTableManager(_db, _db.pendingProfileSaves);
 }
