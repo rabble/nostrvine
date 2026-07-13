@@ -108,6 +108,16 @@ jobs:
           # overrideSharedChannel(...). #5738.
           git fetch --quiet --depth=1 origin main
           bash scripts/check_shared_channel_overrides.sh
+      - name: 📦 Verify no new package-test channel leaks (per-package merged-isolate ratchet)
+        run: |
+          # Packages analogue of the shared-channel ratchet above. Each package runs
+          # its own very_good --optimization merged isolate and — unlike mobile/test —
+          # has no flutter_test_config.dart heal-and-blame harness, so an un-torn-down
+          # channel mock leaks across that package's suite. Freezes package *_test.dart
+          # entries that install a channel handler without nulling any back down; new
+          # ones must add a tearDown (or a skip tag). #5838.
+          git fetch --quiet --depth=1 origin main
+          bash scripts/check_package_channel_isolation.sh
       - name: 🚧 Verify Riverpod boundary (@riverpod / StateProvider locations)
         run: bash scripts/check_riverpod_boundary.sh
       - name: 🚧 Verify ChangeNotifier boundary (sanctioned-allowlist ratchet)
