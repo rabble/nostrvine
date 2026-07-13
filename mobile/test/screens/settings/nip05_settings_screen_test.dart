@@ -205,9 +205,12 @@ void main() {
             any(),
             claimConfirmed: any(named: 'claimConfirmed'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => 'gen-test');
         when(
-          () => mockProfileRepository.drivePendingSave(any()),
+          () => mockProfileRepository.drivePendingSave(
+            any(),
+            expectedGeneration: any(named: 'expectedGeneration'),
+          ),
         ).thenAnswer((_) async => PendingSaveDriveOutcome.retryableFailure);
 
         // Nip05SettingsView calls `context.pop()` on optimistic success, which

@@ -223,6 +223,114 @@ void main() {
       });
     });
 
+    group('generation guard', () {
+      test('upsert mints and returns a fresh token; a replacement '
+          'upsert returns a different one', () async {
+        final genA = await dao.upsert(makeEntry());
+        expect(genA, isNotEmpty);
+        expect((await dao.get(userA))!.generation, genA);
+
+        final genB = await dao.upsert(
+          makeEntry(payloadJson: '{"display_name":"b"}'),
+        );
+        expect(genB, isNot(genA));
+        expect((await dao.get(userA))!.generation, genB);
+      });
+
+      test('upsert preserves a caller-supplied non-empty generation', () async {
+        final returned = await dao.upsert(
+          PendingProfileSaveEntry(
+            userPubkey: userA,
+            payloadJson: '{"display_name":"alice"}',
+            queuedAt: DateTime.utc(2026, 7, 13),
+            generation: 'gen-fixed',
+          ),
+        );
+        expect(returned, 'gen-fixed');
+        expect((await dao.get(userA))!.generation, 'gen-fixed');
+      });
+
+      test('markStatus with a stale generation is a no-op', () async {
+        final gen = await dao.upsert(makeEntry());
+        // A newer save replaces the row (fresh generation).
+        await dao.upsert(makeEntry(payloadJson: '{"display_name":"new"}'));
+
+        final ok = await dao.markStatus(
+          userPubkey: userA,
+          status: PendingProfileSaveStatus.syncing,
+          generation: gen,
+        );
+
+        expect(ok, isFalse);
+        expect(
+          (await dao.get(userA))!.status,
+          PendingProfileSaveStatus.pending,
+          reason: 'the newer row must keep its status',
+        );
+      });
+
+      test('markStatus with the matching generation applies', () async {
+        final gen = await dao.upsert(makeEntry());
+        final ok = await dao.markStatus(
+          userPubkey: userA,
+          status: PendingProfileSaveStatus.syncing,
+          generation: gen,
+        );
+        expect(ok, isTrue);
+        expect(
+          (await dao.get(userA))!.status,
+          PendingProfileSaveStatus.syncing,
+        );
+      });
+
+      test('clear with a stale generation keeps the (newer) row', () async {
+        final gen = await dao.upsert(makeEntry());
+        await dao.upsert(makeEntry(payloadJson: '{"display_name":"new"}'));
+
+        final deleted = await dao.clear(userA, generation: gen);
+
+        expect(deleted, 0);
+        final row = await dao.get(userA);
+        expect(row, isNotNull);
+        expect(row!.payloadJson, '{"display_name":"new"}');
+      });
+
+      test('markClaimConfirmed and incrementRetry no-op under a stale '
+          'generation', () async {
+        final gen = await dao.upsert(makeEntry(retryCount: 1));
+        await dao.upsert(makeEntry(payloadJson: '{"display_name":"new"}'));
+
+        expect(await dao.markClaimConfirmed(userA, generation: gen), isFalse);
+        expect(await dao.incrementRetry(userA, generation: gen), isFalse);
+
+        final row = await dao.get(userA);
+        expect(row!.claimConfirmed, isFalse);
+        expect(row.retryCount, 0, reason: 'the newer row keeps its budget');
+      });
+
+      test('markStatus/incrementRetry stamp the injected attemptAt', () async {
+        await dao.upsert(makeEntry());
+        final at = DateTime.utc(2026, 7, 13, 9, 30);
+
+        await dao.markStatus(
+          userPubkey: userA,
+          status: PendingProfileSaveStatus.syncing,
+          attemptAt: at,
+        );
+        expect(
+          (await dao.get(userA))!.lastAttemptAt!.isAtSameMomentAs(at),
+          isTrue,
+        );
+
+        final at2 = DateTime.utc(2026, 7, 13, 10);
+        await dao.incrementRetry(userA, attemptAt: at2);
+        expect(
+          (await dao.get(userA))!.lastAttemptAt!.isAtSameMomentAs(at2),
+          isTrue,
+        );
+      });
+    });
+
     group('watch', () {
       test('emits initial null, then the row, then null after clear', () async {
         // Drain Drift's async stream emissions with pumpEventQueue() between

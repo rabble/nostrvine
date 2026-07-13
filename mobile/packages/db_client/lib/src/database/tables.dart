@@ -1255,6 +1255,14 @@ class PendingProfileSaves extends Table {
   /// transition was not a failure.
   TextColumn get lastError => text().nullable().named('last_error')();
 
+  /// Immutable per-enqueue token stamped fresh on every `upsert` (a new save
+  /// or a manual retry). A background re-drive captures it at read time and
+  /// guards every mutation with it, so a newer save that replaces this row
+  /// while an older drive is awaiting relay work is never cleared or
+  /// reclassified by that stale drive — latest intent wins (#3161 review).
+  /// Empty string only on legacy rows written before this column existed.
+  TextColumn get generation => text().withDefault(const Constant(''))();
+
   @override
   Set<Column> get primaryKey => {userPubkey};
 }

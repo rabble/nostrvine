@@ -26,15 +26,24 @@ void main() {
 
   const config = ProfileSaveRetryConfig(maxRetries: 3);
 
-  ProfileSaveRetryService buildService() => ProfileSaveRetryService(
-    profileRepository: repository,
-    pendingProfileSavesDao: dao,
-    userPubkey: pubkey,
-    appForegroundStream: foreground.stream,
-    retryTriggerStream: retryTrigger.stream,
-    retryConfig: config,
-    now: () => clock,
-  );
+  // Track every built service so tearDown can dispose it — a sweep that hits a
+  // retryable failure arms a real retry Timer, which must be cancelled before
+  // the DB/streams close or a late fire would sweep a torn-down fixture.
+  final built = <ProfileSaveRetryService>[];
+
+  ProfileSaveRetryService buildService() {
+    final service = ProfileSaveRetryService(
+      profileRepository: repository,
+      pendingProfileSavesDao: dao,
+      userPubkey: pubkey,
+      appForegroundStream: foreground.stream,
+      retryTriggerStream: retryTrigger.stream,
+      retryConfig: config,
+      now: () => clock,
+    );
+    built.add(service);
+    return service;
+  }
 
   Future<void> seed({
     PendingProfileSaveStatus status = PendingProfileSaveStatus.pending,
@@ -70,6 +79,10 @@ void main() {
   });
 
   tearDown(() async {
+    for (final service in built) {
+      await service.dispose();
+    }
+    built.clear();
     await foreground.close();
     await retryTrigger.close();
     await db.close();
@@ -78,7 +91,12 @@ void main() {
   group('sweep outcomes', () {
     test('confirmed leaves the slot cleared (by the repository)', () async {
       await seed();
-      when(() => repository.drivePendingSave(pubkey)).thenAnswer((_) async {
+      when(
+        () => repository.drivePendingSave(
+          pubkey,
+          expectedGeneration: any(named: 'expectedGeneration'),
+        ),
+      ).thenAnswer((_) async {
         await dao.clear(pubkey); // simulate the repo clearing on confirm
         return PendingSaveDriveOutcome.confirmed;
       });
@@ -93,7 +111,10 @@ void main() {
       () async {
         await seed();
         when(
-          () => repository.drivePendingSave(pubkey),
+          () => repository.drivePendingSave(
+            pubkey,
+            expectedGeneration: any(named: 'expectedGeneration'),
+          ),
         ).thenAnswer((_) async => PendingSaveDriveOutcome.retryableFailure);
 
         await buildService().sweep();
@@ -108,7 +129,10 @@ void main() {
       // maxRetries=3, retryCount=2 → this attempt is the 3rd → exhausted.
       await seed(retryCount: 2);
       when(
-        () => repository.drivePendingSave(pubkey),
+        () => repository.drivePendingSave(
+          pubkey,
+          expectedGeneration: any(named: 'expectedGeneration'),
+        ),
       ).thenAnswer((_) async => PendingSaveDriveOutcome.retryableFailure);
 
       await buildService().sweep();
@@ -121,7 +145,10 @@ void main() {
     test('permanentFailure marks the slot failed', () async {
       await seed();
       when(
-        () => repository.drivePendingSave(pubkey),
+        () => repository.drivePendingSave(
+          pubkey,
+          expectedGeneration: any(named: 'expectedGeneration'),
+        ),
       ).thenAnswer((_) async => PendingSaveDriveOutcome.permanentFailure);
 
       await buildService().sweep();
@@ -133,13 +160,23 @@ void main() {
   group('sweep guards', () {
     test('does nothing when the slot is empty', () async {
       await buildService().sweep();
-      verifyNever(() => repository.drivePendingSave(any()));
+      verifyNever(
+        () => repository.drivePendingSave(
+          any(),
+          expectedGeneration: any(named: 'expectedGeneration'),
+        ),
+      );
     });
 
     test('skips a failed slot (awaits manual retry)', () async {
       await seed(status: PendingProfileSaveStatus.failed);
       await buildService().sweep();
-      verifyNever(() => repository.drivePendingSave(any()));
+      verifyNever(
+        () => repository.drivePendingSave(
+          any(),
+          expectedGeneration: any(named: 'expectedGeneration'),
+        ),
+      );
     });
 
     test('skips while inside the backoff window', () async {
@@ -149,7 +186,12 @@ void main() {
         lastAttemptAt: clock.subtract(const Duration(seconds: 1)),
       );
       await buildService().sweep();
-      verifyNever(() => repository.drivePendingSave(any()));
+      verifyNever(
+        () => repository.drivePendingSave(
+          any(),
+          expectedGeneration: any(named: 'expectedGeneration'),
+        ),
+      );
     });
 
     test('drives once the backoff window has elapsed', () async {
@@ -158,19 +200,32 @@ void main() {
         lastAttemptAt: clock.subtract(const Duration(seconds: 10)),
       );
       when(
-        () => repository.drivePendingSave(pubkey),
+        () => repository.drivePendingSave(
+          pubkey,
+          expectedGeneration: any(named: 'expectedGeneration'),
+        ),
       ).thenAnswer((_) async => PendingSaveDriveOutcome.confirmed);
 
       await buildService().sweep();
 
-      verify(() => repository.drivePendingSave(pubkey)).called(1);
+      verify(
+        () => repository.drivePendingSave(
+          pubkey,
+          expectedGeneration: any(named: 'expectedGeneration'),
+        ),
+      ).called(1);
     });
 
     test('re-entrant sweep is skipped while one is in flight', () async {
       await seed();
       final gate = Completer<void>();
       var driveCalls = 0;
-      when(() => repository.drivePendingSave(pubkey)).thenAnswer((_) async {
+      when(
+        () => repository.drivePendingSave(
+          pubkey,
+          expectedGeneration: any(named: 'expectedGeneration'),
+        ),
+      ).thenAnswer((_) async {
         driveCalls++;
         await gate.future;
         return PendingSaveDriveOutcome.retryableFailure;
@@ -190,7 +245,10 @@ void main() {
     test('a foreground=true transition triggers a sweep', () async {
       await seed();
       when(
-        () => repository.drivePendingSave(pubkey),
+        () => repository.drivePendingSave(
+          pubkey,
+          expectedGeneration: any(named: 'expectedGeneration'),
+        ),
       ).thenAnswer((_) async => PendingSaveDriveOutcome.confirmed);
 
       final service = buildService();
@@ -200,13 +258,21 @@ void main() {
       foreground.add(true);
       await Future<void>.delayed(Duration.zero);
 
-      verify(() => repository.drivePendingSave(pubkey)).called(1);
+      verify(
+        () => repository.drivePendingSave(
+          pubkey,
+          expectedGeneration: any(named: 'expectedGeneration'),
+        ),
+      ).called(1);
     });
 
     test('a retry-trigger event triggers a sweep', () async {
       await seed();
       when(
-        () => repository.drivePendingSave(pubkey),
+        () => repository.drivePendingSave(
+          pubkey,
+          expectedGeneration: any(named: 'expectedGeneration'),
+        ),
       ).thenAnswer((_) async => PendingSaveDriveOutcome.confirmed);
 
       final service = buildService();
@@ -216,13 +282,21 @@ void main() {
       retryTrigger.add(null);
       await Future<void>.delayed(Duration.zero);
 
-      verify(() => repository.drivePendingSave(pubkey)).called(1);
+      verify(
+        () => repository.drivePendingSave(
+          pubkey,
+          expectedGeneration: any(named: 'expectedGeneration'),
+        ),
+      ).called(1);
     });
 
     test('foreground=false does not trigger a sweep', () async {
       await seed();
       when(
-        () => repository.drivePendingSave(pubkey),
+        () => repository.drivePendingSave(
+          pubkey,
+          expectedGeneration: any(named: 'expectedGeneration'),
+        ),
       ).thenAnswer((_) async => PendingSaveDriveOutcome.retryableFailure);
 
       final service = buildService();
@@ -232,7 +306,12 @@ void main() {
       foreground.add(false);
       await Future<void>.delayed(Duration.zero);
 
-      verifyNever(() => repository.drivePendingSave(any()));
+      verifyNever(
+        () => repository.drivePendingSave(
+          any(),
+          expectedGeneration: any(named: 'expectedGeneration'),
+        ),
+      );
     });
   });
 
@@ -249,7 +328,10 @@ void main() {
     test('dispose cancels triggers so later events do not sweep', () async {
       await seed();
       when(
-        () => repository.drivePendingSave(pubkey),
+        () => repository.drivePendingSave(
+          pubkey,
+          expectedGeneration: any(named: 'expectedGeneration'),
+        ),
       ).thenAnswer((_) async => PendingSaveDriveOutcome.retryableFailure);
 
       final service = buildService();
@@ -261,7 +343,12 @@ void main() {
       retryTrigger.add(null);
       await Future<void>.delayed(Duration.zero);
 
-      verifyNever(() => repository.drivePendingSave(any()));
+      verifyNever(
+        () => repository.drivePendingSave(
+          any(),
+          expectedGeneration: any(named: 'expectedGeneration'),
+        ),
+      );
       expect(service.isInitialized, isFalse);
     });
   });
@@ -269,20 +356,109 @@ void main() {
   group('retryNow', () {
     test('resets a failed slot to a fresh retry and re-drives', () async {
       await seed(status: PendingProfileSaveStatus.failed, retryCount: 3);
-      when(() => repository.drivePendingSave(pubkey)).thenAnswer((_) async {
+      when(
+        () => repository.drivePendingSave(
+          pubkey,
+          expectedGeneration: any(named: 'expectedGeneration'),
+        ),
+      ).thenAnswer((_) async {
         await dao.clear(pubkey);
         return PendingSaveDriveOutcome.confirmed;
       });
 
       await buildService().retryNow();
 
-      verify(() => repository.drivePendingSave(pubkey)).called(1);
+      verify(
+        () => repository.drivePendingSave(
+          pubkey,
+          expectedGeneration: any(named: 'expectedGeneration'),
+        ),
+      ).called(1);
       expect(await dao.get(pubkey), isNull);
     });
 
     test('is a no-op when there is no slot', () async {
       await buildService().retryNow();
-      verifyNever(() => repository.drivePendingSave(any()));
+      verifyNever(
+        () => repository.drivePendingSave(
+          any(),
+          expectedGeneration: any(named: 'expectedGeneration'),
+        ),
+      );
     });
+  });
+
+  group('self-scheduled retry (relay-recovery)', () {
+    // Poll a real (short-backoff) service until [cond] holds, so the test
+    // proves the armed timer fires on its own without a second trigger.
+    Future<void> pumpUntil(
+      bool Function() cond, {
+      Duration timeout = const Duration(seconds: 2),
+    }) async {
+      final deadline = DateTime.now().add(timeout);
+      while (!cond() && DateTime.now().isBefore(deadline)) {
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+      }
+    }
+
+    test(
+      'one recovery signal eventually publishes via the armed retry timer '
+      '(no second signal needed)',
+      () async {
+        await seed();
+
+        // First attempt fails (relay pool not reconnected yet), the retry the
+        // armed timer schedules confirms — with no further external signal.
+        var calls = 0;
+        when(
+          () => repository.drivePendingSave(
+            pubkey,
+            expectedGeneration: any(named: 'expectedGeneration'),
+          ),
+        ).thenAnswer((_) async {
+          calls++;
+          if (calls == 1) return PendingSaveDriveOutcome.retryableFailure;
+          await dao.clear(pubkey);
+          return PendingSaveDriveOutcome.confirmed;
+        });
+
+        // Real clock + tiny backoff so the armed timer fires quickly. (The
+        // shared buildService injects a frozen clock, which would desync from
+        // the DAO's real-time attempt stamps and defeat the backoff gate.)
+        final service = ProfileSaveRetryService(
+          profileRepository: repository,
+          pendingProfileSavesDao: dao,
+          userPubkey: pubkey,
+          appForegroundStream: foreground.stream,
+          retryTriggerStream: retryTrigger.stream,
+          retryConfig: const ProfileSaveRetryConfig(
+            maxRetries: 3,
+            initialDelay: Duration(milliseconds: 5),
+            maxDelay: Duration(milliseconds: 40),
+          ),
+        );
+        addTearDown(service.dispose);
+        await service.initialize();
+        clearInteractions(repository);
+
+        // A single offline→online recovery signal.
+        retryTrigger.add(null);
+        await pumpUntil(() => calls >= 1);
+        expect(calls, 1, reason: 'the signal drives the first attempt');
+
+        // No second signal — the armed timer must drive the retry that lands.
+        await pumpUntil(() => calls >= 2);
+        expect(
+          calls,
+          greaterThanOrEqualTo(2),
+          reason: 'the armed timer drove a second attempt on its own',
+        );
+        expect(
+          await dao.get(pubkey),
+          isNull,
+          reason: 'the confirmed retry cleared the slot',
+        );
+      },
+    );
   });
 }

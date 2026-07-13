@@ -2,6 +2,8 @@
 // ABOUTME: (#3161): enqueue delegation + drivePendingSave orchestration
 // ABOUTME: outcomes, using a real in-memory PendingProfileSavesDao.
 
+import 'dart:async';
+
 import 'package:db_client/db_client.dart' hide Filter, ProfileStats;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -166,17 +168,17 @@ void main() {
       });
 
       test(
-        'confirmed even if the post-publish cache write fails (G3)',
+        'confirmed even when the profile cache write fails (G3) — the '
+        'first (only) upsert throws yet the slot still clears',
         () async {
-          // saveProfileEvent upserts once on success; cacheProfile upserts
-          // again — make only that second write throw. The confirmed publish
-          // must still clear the slot (a cache failure cannot strand it).
-          var upserts = 0;
+          // The single post-publish cache write inside saveProfileEvent throws.
+          // A relay already confirmed the kind-0, so the drive must still
+          // report confirmed and clear the slot — a cache hiccup can never
+          // strand a landed publish into an endless re-publish (#3161 review).
           when(() => userProfilesDao.upsertProfile(any())).thenAnswer((
             _,
           ) async {
-            upserts++;
-            if (upserts >= 2) throw Exception('cache boom');
+            throw Exception('cache boom');
           });
           await seedSlot(claimConfirmed: true);
 
@@ -184,6 +186,84 @@ void main() {
 
           expect(outcome, PendingSaveDriveOutcome.confirmed);
           expect(await slotDao.get(pubkey), isNull);
+        },
+      );
+
+      test(
+        'a newer save enqueued mid-publish is not cleared by the older drive '
+        'and is driven on its own (generation guard)',
+        () async {
+          // Gate A's publish so a newer save B can slip in while A awaits the
+          // relay round-trip.
+          final publishGate = Completer<PublishResult>();
+          when(
+            () => nostrClient.sendProfileAwaitOk(
+              profileContent: any(named: 'profileContent'),
+            ),
+          ).thenAnswer((_) => publishGate.future);
+
+          final genA = await repository.enqueuePendingSave(
+            payload(),
+            claimConfirmed: true,
+          );
+
+          // Start driving A; it parks on the gated publish.
+          final driveA = repository.drivePendingSave(
+            pubkey,
+            expectedGeneration: genA,
+          );
+          await pumpEventQueue();
+
+          // B replaces the row while A is mid-publish.
+          final genB = await repository.enqueuePendingSave(
+            payload(username: 'bob'),
+            claimConfirmed: true,
+          );
+          expect(genB, isNot(genA));
+
+          // A's publish confirms — its generation-guarded clear must miss B.
+          publishGate.complete(PublishSuccess(event: event));
+          expect(await driveA, PendingSaveDriveOutcome.confirmed);
+
+          final surviving = await slotDao.get(pubkey);
+          expect(surviving, isNotNull, reason: 'B must not be cleared by A');
+          expect(surviving!.generation, genB);
+          expect(
+            PendingProfileSave.decode(surviving.payloadJson).username,
+            'bob',
+          );
+
+          // B is still deliverable on its own.
+          final driveB = await repository.drivePendingSave(pubkey);
+          expect(driveB, PendingSaveDriveOutcome.confirmed);
+          expect(await slotDao.get(pubkey), isNull);
+        },
+      );
+
+      test(
+        'a superseded expectedGeneration bails without touching the newer row',
+        () async {
+          final genA = await repository.enqueuePendingSave(
+            payload(),
+            claimConfirmed: true,
+          );
+          await repository.enqueuePendingSave(
+            payload(username: 'bob'),
+            claimConfirmed: true,
+          );
+
+          final outcome = await repository.drivePendingSave(
+            pubkey,
+            expectedGeneration: genA,
+          );
+
+          expect(outcome, PendingSaveDriveOutcome.noPendingSave);
+          expect(await slotDao.get(pubkey), isNotNull);
+          verifyNever(
+            () => nostrClient.sendProfileAwaitOk(
+              profileContent: any(named: 'profileContent'),
+            ),
+          );
         },
       );
 

@@ -34,10 +34,10 @@ abstract class ProfileEditorReportableSites {
   /// [onUsernameChanged], dispatched from the reserved-recheck CTA.
   static const String onUsernameRechecked = '_onUsernameRechecked';
 
-  /// Narrowed publish-path catch in `_saveProfile`: any non-typed throw
-  /// (drift `TypeError` from a schema mismatch, `StateError` from a sync
-  /// transform between `saveProfileEvent` and `cacheProfile`) that escapes
-  /// the typed `on NoRelaysConnectedException` / `on ProfilePublishFailedException`
+  /// Narrowed publish-path catch in `_saveProfile`: any non-typed throw from
+  /// the optimistic `drivePendingSave` fast-path (drift `TypeError` from a
+  /// schema mismatch, `StateError` from the slot bookkeeping) that escapes the
+  /// typed `on NoRelaysConnectedException` / `on ProfilePublishFailedException`
   /// branches.
   static const String saveProfilePublish = '_saveProfile';
 

@@ -92,9 +92,12 @@ void main() {
           any(),
           claimConfirmed: any(named: 'claimConfirmed'),
         ),
-      ).thenAnswer((_) async {});
+      ).thenAnswer((_) async => 'gen-test');
       when(
-        () => mockProfileRepository.drivePendingSave(any()),
+        () => mockProfileRepository.drivePendingSave(
+          any(),
+          expectedGeneration: any(named: 'expectedGeneration'),
+        ),
       ).thenAnswer((_) async => PendingSaveDriveOutcome.confirmed);
     });
 
@@ -680,7 +683,10 @@ void main() {
               () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
             ).thenAnswer((_) async => null);
             when(
-              () => mockProfileRepository.drivePendingSave(testPubkey),
+              () => mockProfileRepository.drivePendingSave(
+                testPubkey,
+                expectedGeneration: any(named: 'expectedGeneration'),
+              ),
             ).thenAnswer((_) async => PendingSaveDriveOutcome.retryableFailure);
           },
           build: createBloc,
@@ -725,7 +731,10 @@ void main() {
               () => mockProfileRepository.claimUsername(username: testUsername),
             ).thenAnswer((_) async => const UsernameClaimSuccess());
             when(
-              () => mockProfileRepository.drivePendingSave(testPubkey),
+              () => mockProfileRepository.drivePendingSave(
+                testPubkey,
+                expectedGeneration: any(named: 'expectedGeneration'),
+              ),
             ).thenAnswer((_) async => PendingSaveDriveOutcome.retryableFailure);
           },
           build: createBloc,
@@ -773,7 +782,10 @@ void main() {
               () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
             ).thenAnswer((_) async => null);
             when(
-              () => mockProfileRepository.drivePendingSave(testPubkey),
+              () => mockProfileRepository.drivePendingSave(
+                testPubkey,
+                expectedGeneration: any(named: 'expectedGeneration'),
+              ),
             ).thenAnswer((_) async => PendingSaveDriveOutcome.retryableFailure);
           },
           build: createBloc,
@@ -818,7 +830,10 @@ void main() {
               () => mockProfileRepository.claimUsername(username: testUsername),
             ).thenAnswer((_) async => const UsernameClaimSuccess());
             when(
-              () => mockProfileRepository.drivePendingSave(testPubkey),
+              () => mockProfileRepository.drivePendingSave(
+                testPubkey,
+                expectedGeneration: any(named: 'expectedGeneration'),
+              ),
             ).thenAnswer((_) async => PendingSaveDriveOutcome.retryableFailure);
           },
           build: createBloc,
@@ -944,7 +959,12 @@ void main() {
                   claimConfirmed: any(named: 'claimConfirmed'),
                 ),
               );
-              verifyNever(() => mockProfileRepository.drivePendingSave(any()));
+              verifyNever(
+                () => mockProfileRepository.drivePendingSave(
+                  any(),
+                  expectedGeneration: any(named: 'expectedGeneration'),
+                ),
+              );
             },
           );
         }
@@ -1044,7 +1064,12 @@ void main() {
               claimConfirmed: any(named: 'claimConfirmed'),
             ),
           );
-          verifyNever(() => mockProfileRepository.drivePendingSave(any()));
+          verifyNever(
+            () => mockProfileRepository.drivePendingSave(
+              any(),
+              expectedGeneration: any(named: 'expectedGeneration'),
+            ),
+          );
         },
       );
 
@@ -1056,7 +1081,10 @@ void main() {
             () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
           ).thenAnswer((_) async => null);
           when(
-            () => mockProfileRepository.drivePendingSave(testPubkey),
+            () => mockProfileRepository.drivePendingSave(
+              testPubkey,
+              expectedGeneration: any(named: 'expectedGeneration'),
+            ),
           ).thenThrow(StateError('publish invariant'));
         },
         build: createBloc,
@@ -1097,7 +1125,10 @@ void main() {
             () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
           ).thenAnswer((_) async => null);
           when(
-            () => mockProfileRepository.drivePendingSave(testPubkey),
+            () => mockProfileRepository.drivePendingSave(
+              testPubkey,
+              expectedGeneration: any(named: 'expectedGeneration'),
+            ),
           ).thenThrow(StateError('nip05 save invariant'));
         },
         build: createBloc,
@@ -1144,7 +1175,10 @@ void main() {
             () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
           ).thenAnswer((_) async => null);
           when(
-            () => mockProfileRepository.drivePendingSave(testPubkey),
+            () => mockProfileRepository.drivePendingSave(
+              testPubkey,
+              expectedGeneration: any(named: 'expectedGeneration'),
+            ),
           ).thenThrow(StateError('confirmed save invariant'));
         },
         build: () => createBloc(hasExistingProfile: false),
@@ -2872,7 +2906,12 @@ void main() {
               claimConfirmed: any(named: 'claimConfirmed'),
             ),
           );
-          verifyNever(() => mockProfileRepository.drivePendingSave(any()));
+          verifyNever(
+            () => mockProfileRepository.drivePendingSave(
+              any(),
+              expectedGeneration: any(named: 'expectedGeneration'),
+            ),
+          );
           verifyNever(
             () => mockProfileRepository.claimUsername(
               username: any(named: 'username'),
@@ -2907,7 +2946,12 @@ void main() {
               claimConfirmed: any(named: 'claimConfirmed'),
             ),
           );
-          verifyNever(() => mockProfileRepository.drivePendingSave(any()));
+          verifyNever(
+            () => mockProfileRepository.drivePendingSave(
+              any(),
+              expectedGeneration: any(named: 'expectedGeneration'),
+            ),
+          );
           verifyNever(
             () => mockProfileRepository.claimUsername(
               username: any(named: 'username'),
@@ -2950,7 +2994,12 @@ void main() {
               claimConfirmed: any(named: 'claimConfirmed'),
             ),
           );
-          verifyNever(() => mockProfileRepository.drivePendingSave(any()));
+          verifyNever(
+            () => mockProfileRepository.drivePendingSave(
+              any(),
+              expectedGeneration: any(named: 'expectedGeneration'),
+            ),
+          );
           verifyNever(
             () => mockProfileRepository.claimUsername(
               username: any(named: 'username'),
@@ -2985,7 +3034,12 @@ void main() {
               claimConfirmed: any(named: 'claimConfirmed'),
             ),
           );
-          verifyNever(() => mockProfileRepository.drivePendingSave(any()));
+          verifyNever(
+            () => mockProfileRepository.drivePendingSave(
+              any(),
+              expectedGeneration: any(named: 'expectedGeneration'),
+            ),
+          );
           verifyNever(
             () => mockProfileRepository.claimUsername(
               username: any(named: 'username'),

@@ -1036,7 +1036,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     // because ProfileSaveRetryService re-drives the slot when connectivity
     // returns (#3161). A permanent failure surfaces via the slot's `failed`
     // status, not by blocking Save.
-    await _profileRepository.enqueuePendingSave(
+    final generation = await _profileRepository.enqueuePendingSave(
       PendingProfileSave(
         pubkey: event.pubkey,
         displayName: displayName,
@@ -1052,13 +1052,17 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     );
     emit(state.copyWith(status: ProfileEditorStatus.success));
 
-    // Fast-path publish. drivePendingSave maps the typed publish failures
-    // (no-relays / rejection) to outcomes and clears the slot only on a
-    // relay-confirmed OK, so a transient failure just leaves the slot queued
-    // for ProfileSaveRetryService — the optimistic success stands. Only an
-    // unexpected throw is reported here.
+    // Fast-path publish, scoped to the generation just enqueued so a save the
+    // user fires again while this drive is in flight is never clobbered by it.
+    // drivePendingSave maps the typed publish failures (no-relays / rejection)
+    // to outcomes and clears the slot only on a relay-confirmed OK, so a
+    // transient failure just leaves the slot queued for ProfileSaveRetryService
+    // — the optimistic success stands. Only an unexpected throw is reported.
     try {
-      await _profileRepository.drivePendingSave(event.pubkey);
+      await _profileRepository.drivePendingSave(
+        event.pubkey,
+        expectedGeneration: generation,
+      );
     } on Object catch (error, stackTrace) {
       // Classification: Invariant — matrix-YES. A drift TypeError from a
       // schema mismatch, a StateError from a sync transform, etc. Recovery is

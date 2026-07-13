@@ -60,6 +60,7 @@ class PendingProfileSaveEntry {
     this.retryCount = 0,
     this.lastAttemptAt,
     this.lastError,
+    this.generation = '',
   });
 
   final String userPubkey;
@@ -70,6 +71,11 @@ class PendingProfileSaveEntry {
   final DateTime? lastAttemptAt;
   final DateTime queuedAt;
   final String? lastError;
+
+  /// Opaque per-enqueue token. Empty on entries the caller builds for an
+  /// [PendingProfileSavesDao.upsert] (the DAO mints a fresh value and returns
+  /// it); populated with the persisted value on entries read back from the DB.
+  final String generation;
 }
 
 @DriftAccessor(tables: [PendingProfileSaves])
@@ -77,11 +83,38 @@ class PendingProfileSavesDao extends DatabaseAccessor<AppDatabase>
     with _$PendingProfileSavesDaoMixin {
   PendingProfileSavesDao(super.attachedDatabase);
 
+  /// Process-wide monotonic counter mixed into every minted generation token
+  /// so two upserts in the same microsecond still get distinct tokens.
+  static int _generationCounter = 0;
+
+  /// Mint a fresh opaque generation token. Combines a wall-clock stamp with a
+  /// monotonic counter for process-unique, human-orderable values.
+  String _newGeneration() =>
+      '${DateTime.now().microsecondsSinceEpoch}-${_generationCounter++}';
+
+  /// Row-match predicate for the single-account slot. When [generation] is
+  /// non-null the match additionally requires the stored generation to equal
+  /// it — the optimistic-concurrency guard that stops a stale re-drive from
+  /// mutating a row a newer save already replaced.
+  Expression<bool> _matchRow(
+    $PendingProfileSavesTable t,
+    String userPubkey,
+    String? generation,
+  ) {
+    final byUser = t.userPubkey.equals(userPubkey);
+    return generation == null
+        ? byUser
+        : byUser & t.generation.equals(generation);
+  }
+
   // ---------------------------------------------------------------------
   // Mapping
   // ---------------------------------------------------------------------
 
-  PendingProfileSavesCompanion _modelToCompanion(PendingProfileSaveEntry e) {
+  PendingProfileSavesCompanion _modelToCompanion(
+    PendingProfileSaveEntry e,
+    String generation,
+  ) {
     return PendingProfileSavesCompanion.insert(
       userPubkey: e.userPubkey,
       payloadJson: e.payloadJson,
@@ -91,6 +124,7 @@ class PendingProfileSavesDao extends DatabaseAccessor<AppDatabase>
       lastAttemptAt: Value(e.lastAttemptAt),
       queuedAt: e.queuedAt,
       lastError: Value(e.lastError),
+      generation: Value(generation),
     );
   }
 
@@ -104,6 +138,7 @@ class PendingProfileSavesDao extends DatabaseAccessor<AppDatabase>
       lastAttemptAt: row.lastAttemptAt,
       queuedAt: row.queuedAt,
       lastError: row.lastError,
+      generation: row.generation,
     );
   }
 
@@ -122,71 +157,104 @@ class PendingProfileSavesDao extends DatabaseAccessor<AppDatabase>
   // Writes
   // ---------------------------------------------------------------------
 
-  /// Upsert the pending save for one account — **latest intent wins**.
+  /// Upsert the pending save for one account — **latest intent wins** — and
+  /// return the `generation` token stamped on the row.
   ///
   /// Uses `INSERT OR REPLACE` on the `user_pubkey` primary key, so a fresh
   /// save replaces any in-flight row and resets its retry budget/status to
   /// the new [entry]'s values. Correct because kind 0 is replaceable: only
   /// the newest edit matters.
-  Future<void> upsert(PendingProfileSaveEntry entry) async {
+  ///
+  /// Every upsert mints a fresh `generation` (unless the caller supplied a
+  /// non-empty one on [entry]) so an in-flight re-drive that captured the
+  /// previous generation can detect it was superseded and leave the new row
+  /// alone. The returned token lets the caller scope its own drive to exactly
+  /// this intent.
+  Future<String> upsert(PendingProfileSaveEntry entry) async {
+    final generation = entry.generation.isNotEmpty
+        ? entry.generation
+        : _newGeneration();
     await into(pendingProfileSaves).insert(
-      _modelToCompanion(entry),
+      _modelToCompanion(entry, generation),
       mode: InsertMode.insertOrReplace,
     );
+    return generation;
   }
 
   /// Update the status for [userPubkey]. Pass [lastError] when moving to
-  /// [PendingProfileSaveStatus.failed]. Stamps `last_attempt_at`.
+  /// [PendingProfileSaveStatus.failed]. Stamps `last_attempt_at` with
+  /// [attemptAt] (defaults to now).
+  ///
+  /// When [generation] is non-null the write only lands if the row's stored
+  /// generation still matches — so a newer save that replaced the row is not
+  /// reclassified by an older, in-flight drive. Returns whether a row was
+  /// updated (false when the slot is gone or a newer generation superseded it).
   Future<bool> markStatus({
     required String userPubkey,
     required PendingProfileSaveStatus status,
     String? lastError,
+    String? generation,
+    DateTime? attemptAt,
   }) async {
     final rows =
-        await (update(
-          pendingProfileSaves,
-        )..where((t) => t.userPubkey.equals(userPubkey))).write(
-          PendingProfileSavesCompanion(
-            status: Value(status.name),
-            lastError: lastError != null
-                ? Value(lastError)
-                : const Value.absent(),
-            lastAttemptAt: Value(DateTime.now()),
-          ),
-        );
+        await (update(pendingProfileSaves)..where(
+              (t) => _matchRow(t, userPubkey, generation),
+            ))
+            .write(
+              PendingProfileSavesCompanion(
+                status: Value(status.name),
+                lastError: lastError != null
+                    ? Value(lastError)
+                    : const Value.absent(),
+                lastAttemptAt: Value(attemptAt ?? DateTime.now()),
+              ),
+            );
     return rows > 0;
   }
 
   /// Mark the claim confirmed for [userPubkey] so re-drives skip the
-  /// (idempotent) HTTP claim round-trip.
-  Future<bool> markClaimConfirmed(String userPubkey) async {
+  /// (idempotent) HTTP claim round-trip. See [markStatus] for the
+  /// [generation] guard semantics.
+  Future<bool> markClaimConfirmed(
+    String userPubkey, {
+    String? generation,
+  }) async {
     final rows =
-        await (update(
-          pendingProfileSaves,
-        )..where((t) => t.userPubkey.equals(userPubkey))).write(
-          const PendingProfileSavesCompanion(claimConfirmed: Value(true)),
-        );
+        await (update(pendingProfileSaves)..where(
+              (t) => _matchRow(t, userPubkey, generation),
+            ))
+            .write(
+              const PendingProfileSavesCompanion(claimConfirmed: Value(true)),
+            );
     return rows > 0;
   }
 
-  /// Increment the retry count for [userPubkey] and stamp `last_attempt_at`.
-  /// Read-then-write inside a transaction so the [DateTime] write goes
-  /// through the same codec as [markStatus] (seconds-since-epoch).
-  Future<bool> incrementRetry(String userPubkey) async {
+  /// Increment the retry count for [userPubkey] and stamp `last_attempt_at`
+  /// with [attemptAt] (defaults to now). Read-then-write inside a transaction
+  /// so the [DateTime] write goes through the same codec as [markStatus]
+  /// (seconds-since-epoch). See [markStatus] for the [generation] guard.
+  Future<bool> incrementRetry(
+    String userPubkey, {
+    String? generation,
+    DateTime? attemptAt,
+  }) async {
     return transaction(() async {
-      final row = await (select(
-        pendingProfileSaves,
-      )..where((t) => t.userPubkey.equals(userPubkey))).getSingleOrNull();
+      final row =
+          await (select(pendingProfileSaves)..where(
+                (t) => _matchRow(t, userPubkey, generation),
+              ))
+              .getSingleOrNull();
       if (row == null) return false;
       final affected =
-          await (update(
-            pendingProfileSaves,
-          )..where((t) => t.userPubkey.equals(userPubkey))).write(
-            PendingProfileSavesCompanion(
-              retryCount: Value(row.retryCount + 1),
-              lastAttemptAt: Value(DateTime.now()),
-            ),
-          );
+          await (update(pendingProfileSaves)..where(
+                (t) => _matchRow(t, userPubkey, generation),
+              ))
+              .write(
+                PendingProfileSavesCompanion(
+                  retryCount: Value(row.retryCount + 1),
+                  lastAttemptAt: Value(attemptAt ?? DateTime.now()),
+                ),
+              );
       return affected > 0;
     });
   }
@@ -209,10 +277,15 @@ class PendingProfileSavesDao extends DatabaseAccessor<AppDatabase>
 
   /// Delete the pending save for [userPubkey] — called once a relay
   /// confirms the publish (or on an explicit user discard).
-  Future<int> clear(String userPubkey) {
+  ///
+  /// When [generation] is non-null the delete only lands if the row's stored
+  /// generation still matches, so a drive that confirmed an older intent can
+  /// never delete the newer save that replaced it mid-flight. Returns the
+  /// number of rows deleted.
+  Future<int> clear(String userPubkey, {String? generation}) {
     return (delete(
       pendingProfileSaves,
-    )..where((t) => t.userPubkey.equals(userPubkey))).go();
+    )..where((t) => _matchRow(t, userPubkey, generation))).go();
   }
 
   // ---------------------------------------------------------------------

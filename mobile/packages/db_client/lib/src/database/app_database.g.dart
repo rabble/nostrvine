@@ -14653,6 +14653,18 @@ class $PendingProfileSavesTable extends PendingProfileSaves
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _generationMeta = const VerificationMeta(
+    'generation',
+  );
+  @override
+  late final GeneratedColumn<String> generation = GeneratedColumn<String>(
+    'generation',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     userPubkey,
@@ -14663,6 +14675,7 @@ class $PendingProfileSavesTable extends PendingProfileSaves
     lastAttemptAt,
     queuedAt,
     lastError,
+    generation,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -14739,6 +14752,12 @@ class $PendingProfileSavesTable extends PendingProfileSaves
         lastError.isAcceptableOrUnknown(data['last_error']!, _lastErrorMeta),
       );
     }
+    if (data.containsKey('generation')) {
+      context.handle(
+        _generationMeta,
+        generation.isAcceptableOrUnknown(data['generation']!, _generationMeta),
+      );
+    }
     return context;
   }
 
@@ -14780,6 +14799,10 @@ class $PendingProfileSavesTable extends PendingProfileSaves
         DriftSqlType.string,
         data['${effectivePrefix}last_error'],
       ),
+      generation: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}generation'],
+      )!,
     );
   }
 
@@ -14823,6 +14846,14 @@ class PendingProfileSaveRow extends DataClass
   /// Last publish error message, for diagnostics. Null when the most recent
   /// transition was not a failure.
   final String? lastError;
+
+  /// Immutable per-enqueue token stamped fresh on every `upsert` (a new save
+  /// or a manual retry). A background re-drive captures it at read time and
+  /// guards every mutation with it, so a newer save that replaces this row
+  /// while an older drive is awaiting relay work is never cleared or
+  /// reclassified by that stale drive — latest intent wins (#3161 review).
+  /// Empty string only on legacy rows written before this column existed.
+  final String generation;
   const PendingProfileSaveRow({
     required this.userPubkey,
     required this.payloadJson,
@@ -14832,6 +14863,7 @@ class PendingProfileSaveRow extends DataClass
     this.lastAttemptAt,
     required this.queuedAt,
     this.lastError,
+    required this.generation,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -14848,6 +14880,7 @@ class PendingProfileSaveRow extends DataClass
     if (!nullToAbsent || lastError != null) {
       map['last_error'] = Variable<String>(lastError);
     }
+    map['generation'] = Variable<String>(generation);
     return map;
   }
 
@@ -14865,6 +14898,7 @@ class PendingProfileSaveRow extends DataClass
       lastError: lastError == null && nullToAbsent
           ? const Value.absent()
           : Value(lastError),
+      generation: Value(generation),
     );
   }
 
@@ -14882,6 +14916,7 @@ class PendingProfileSaveRow extends DataClass
       lastAttemptAt: serializer.fromJson<DateTime?>(json['lastAttemptAt']),
       queuedAt: serializer.fromJson<DateTime>(json['queuedAt']),
       lastError: serializer.fromJson<String?>(json['lastError']),
+      generation: serializer.fromJson<String>(json['generation']),
     );
   }
   @override
@@ -14896,6 +14931,7 @@ class PendingProfileSaveRow extends DataClass
       'lastAttemptAt': serializer.toJson<DateTime?>(lastAttemptAt),
       'queuedAt': serializer.toJson<DateTime>(queuedAt),
       'lastError': serializer.toJson<String?>(lastError),
+      'generation': serializer.toJson<String>(generation),
     };
   }
 
@@ -14908,6 +14944,7 @@ class PendingProfileSaveRow extends DataClass
     Value<DateTime?> lastAttemptAt = const Value.absent(),
     DateTime? queuedAt,
     Value<String?> lastError = const Value.absent(),
+    String? generation,
   }) => PendingProfileSaveRow(
     userPubkey: userPubkey ?? this.userPubkey,
     payloadJson: payloadJson ?? this.payloadJson,
@@ -14919,6 +14956,7 @@ class PendingProfileSaveRow extends DataClass
         : this.lastAttemptAt,
     queuedAt: queuedAt ?? this.queuedAt,
     lastError: lastError.present ? lastError.value : this.lastError,
+    generation: generation ?? this.generation,
   );
   PendingProfileSaveRow copyWithCompanion(PendingProfileSavesCompanion data) {
     return PendingProfileSaveRow(
@@ -14940,6 +14978,9 @@ class PendingProfileSaveRow extends DataClass
           : this.lastAttemptAt,
       queuedAt: data.queuedAt.present ? data.queuedAt.value : this.queuedAt,
       lastError: data.lastError.present ? data.lastError.value : this.lastError,
+      generation: data.generation.present
+          ? data.generation.value
+          : this.generation,
     );
   }
 
@@ -14953,7 +14994,8 @@ class PendingProfileSaveRow extends DataClass
           ..write('retryCount: $retryCount, ')
           ..write('lastAttemptAt: $lastAttemptAt, ')
           ..write('queuedAt: $queuedAt, ')
-          ..write('lastError: $lastError')
+          ..write('lastError: $lastError, ')
+          ..write('generation: $generation')
           ..write(')'))
         .toString();
   }
@@ -14968,6 +15010,7 @@ class PendingProfileSaveRow extends DataClass
     lastAttemptAt,
     queuedAt,
     lastError,
+    generation,
   );
   @override
   bool operator ==(Object other) =>
@@ -14980,7 +15023,8 @@ class PendingProfileSaveRow extends DataClass
           other.retryCount == this.retryCount &&
           other.lastAttemptAt == this.lastAttemptAt &&
           other.queuedAt == this.queuedAt &&
-          other.lastError == this.lastError);
+          other.lastError == this.lastError &&
+          other.generation == this.generation);
 }
 
 class PendingProfileSavesCompanion
@@ -14993,6 +15037,7 @@ class PendingProfileSavesCompanion
   final Value<DateTime?> lastAttemptAt;
   final Value<DateTime> queuedAt;
   final Value<String?> lastError;
+  final Value<String> generation;
   final Value<int> rowid;
   const PendingProfileSavesCompanion({
     this.userPubkey = const Value.absent(),
@@ -15003,6 +15048,7 @@ class PendingProfileSavesCompanion
     this.lastAttemptAt = const Value.absent(),
     this.queuedAt = const Value.absent(),
     this.lastError = const Value.absent(),
+    this.generation = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   PendingProfileSavesCompanion.insert({
@@ -15014,6 +15060,7 @@ class PendingProfileSavesCompanion
     this.lastAttemptAt = const Value.absent(),
     required DateTime queuedAt,
     this.lastError = const Value.absent(),
+    this.generation = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : userPubkey = Value(userPubkey),
        payloadJson = Value(payloadJson),
@@ -15027,6 +15074,7 @@ class PendingProfileSavesCompanion
     Expression<DateTime>? lastAttemptAt,
     Expression<DateTime>? queuedAt,
     Expression<String>? lastError,
+    Expression<String>? generation,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -15038,6 +15086,7 @@ class PendingProfileSavesCompanion
       if (lastAttemptAt != null) 'last_attempt_at': lastAttemptAt,
       if (queuedAt != null) 'queued_at': queuedAt,
       if (lastError != null) 'last_error': lastError,
+      if (generation != null) 'generation': generation,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -15051,6 +15100,7 @@ class PendingProfileSavesCompanion
     Value<DateTime?>? lastAttemptAt,
     Value<DateTime>? queuedAt,
     Value<String?>? lastError,
+    Value<String>? generation,
     Value<int>? rowid,
   }) {
     return PendingProfileSavesCompanion(
@@ -15062,6 +15112,7 @@ class PendingProfileSavesCompanion
       lastAttemptAt: lastAttemptAt ?? this.lastAttemptAt,
       queuedAt: queuedAt ?? this.queuedAt,
       lastError: lastError ?? this.lastError,
+      generation: generation ?? this.generation,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -15093,6 +15144,9 @@ class PendingProfileSavesCompanion
     if (lastError.present) {
       map['last_error'] = Variable<String>(lastError.value);
     }
+    if (generation.present) {
+      map['generation'] = Variable<String>(generation.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -15110,6 +15164,7 @@ class PendingProfileSavesCompanion
           ..write('lastAttemptAt: $lastAttemptAt, ')
           ..write('queuedAt: $queuedAt, ')
           ..write('lastError: $lastError, ')
+          ..write('generation: $generation, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -22068,6 +22123,7 @@ typedef $$PendingProfileSavesTableCreateCompanionBuilder =
       Value<DateTime?> lastAttemptAt,
       required DateTime queuedAt,
       Value<String?> lastError,
+      Value<String> generation,
       Value<int> rowid,
     });
 typedef $$PendingProfileSavesTableUpdateCompanionBuilder =
@@ -22080,6 +22136,7 @@ typedef $$PendingProfileSavesTableUpdateCompanionBuilder =
       Value<DateTime?> lastAttemptAt,
       Value<DateTime> queuedAt,
       Value<String?> lastError,
+      Value<String> generation,
       Value<int> rowid,
     });
 
@@ -22129,6 +22186,11 @@ class $$PendingProfileSavesTableFilterComposer
 
   ColumnFilters<String> get lastError => $composableBuilder(
     column: $table.lastError,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get generation => $composableBuilder(
+    column: $table.generation,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -22181,6 +22243,11 @@ class $$PendingProfileSavesTableOrderingComposer
     column: $table.lastError,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get generation => $composableBuilder(
+    column: $table.generation,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$PendingProfileSavesTableAnnotationComposer
@@ -22225,6 +22292,11 @@ class $$PendingProfileSavesTableAnnotationComposer
 
   GeneratedColumn<String> get lastError =>
       $composableBuilder(column: $table.lastError, builder: (column) => column);
+
+  GeneratedColumn<String> get generation => $composableBuilder(
+    column: $table.generation,
+    builder: (column) => column,
+  );
 }
 
 class $$PendingProfileSavesTableTableManager
@@ -22278,6 +22350,7 @@ class $$PendingProfileSavesTableTableManager
                 Value<DateTime?> lastAttemptAt = const Value.absent(),
                 Value<DateTime> queuedAt = const Value.absent(),
                 Value<String?> lastError = const Value.absent(),
+                Value<String> generation = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PendingProfileSavesCompanion(
                 userPubkey: userPubkey,
@@ -22288,6 +22361,7 @@ class $$PendingProfileSavesTableTableManager
                 lastAttemptAt: lastAttemptAt,
                 queuedAt: queuedAt,
                 lastError: lastError,
+                generation: generation,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -22300,6 +22374,7 @@ class $$PendingProfileSavesTableTableManager
                 Value<DateTime?> lastAttemptAt = const Value.absent(),
                 required DateTime queuedAt,
                 Value<String?> lastError = const Value.absent(),
+                Value<String> generation = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PendingProfileSavesCompanion.insert(
                 userPubkey: userPubkey,
@@ -22310,6 +22385,7 @@ class $$PendingProfileSavesTableTableManager
                 lastAttemptAt: lastAttemptAt,
                 queuedAt: queuedAt,
                 lastError: lastError,
+                generation: generation,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

@@ -541,7 +541,8 @@ class AppDatabase extends _$AppDatabase {
           retry_count INTEGER NOT NULL DEFAULT 0,
           last_attempt_at INTEGER,
           queued_at INTEGER NOT NULL,
-          last_error TEXT
+          last_error TEXT,
+          generation TEXT NOT NULL DEFAULT ''
         )
       ''');
     }

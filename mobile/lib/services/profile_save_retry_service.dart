@@ -101,6 +101,15 @@ class ProfileSaveRetryService {
 
   StreamSubscription<bool>? _foregroundSubscription;
   StreamSubscription<void>? _retryTriggerSubscription;
+
+  /// Self-scheduled next attempt. A recovery signal (foreground/connectivity)
+  /// can arrive before the relay pool has reconnected, so relying on that one
+  /// signal would strand the save until the *next* signal. After every
+  /// non-terminal outcome the sweep arms this timer for the row's remaining
+  /// backoff, so one offline→online transition keeps retrying until a relay
+  /// confirms the publish (#3161 review).
+  Timer? _retryTimer;
+
   bool _isInitialized = false;
   bool _isSweeping = false;
 
@@ -136,12 +145,14 @@ class ProfileSaveRetryService {
     );
   }
 
-  /// Cancel the trigger subscriptions and mark the service un-init. Idempotent.
+  /// Cancel the trigger subscriptions and pending retry timer and mark the
+  /// service un-init. Idempotent.
   Future<void> dispose() async {
     await _foregroundSubscription?.cancel();
     _foregroundSubscription = null;
     await _retryTriggerSubscription?.cancel();
     _retryTriggerSubscription = null;
+    _cancelRetryTimer();
     _isInitialized = false;
   }
 
@@ -178,36 +189,62 @@ class ProfileSaveRetryService {
 
     try {
       final entry = await _dao.get(_userPubkey);
-      if (entry == null) return;
-
-      // A failed slot awaits a manual retry — don't auto-retry it.
-      if (entry.status == PendingProfileSaveStatus.failed) return;
-
-      // Per-row backoff.
-      final lastAttempt = entry.lastAttemptAt;
-      if (lastAttempt != null) {
-        final gap = _now().difference(lastAttempt);
-        if (gap < _retryConfig.backoffFor(entry.retryCount)) return;
+      if (entry == null) {
+        _cancelRetryTimer();
+        return;
       }
 
-      await _dao.markStatus(
+      // A failed slot awaits a manual retry — don't auto-retry it.
+      if (entry.status == PendingProfileSaveStatus.failed) {
+        _cancelRetryTimer();
+        return;
+      }
+
+      final generation = entry.generation;
+
+      // Per-row backoff. When a trigger arrives inside the backoff window, arm
+      // the timer for the remaining time rather than dropping the attempt.
+      final lastAttempt = entry.lastAttemptAt;
+      if (lastAttempt != null) {
+        final backoff = _retryConfig.backoffFor(entry.retryCount);
+        final gap = _now().difference(lastAttempt);
+        if (gap < backoff) {
+          _scheduleRetry(backoff - gap);
+          return;
+        }
+      }
+
+      // Claim the attempt for this generation. If a newer save replaced the
+      // row between the read above and here, this no-ops (false) and we bail —
+      // the newer row is pending and a fresh trigger/timer will drive it.
+      final claimed = await _dao.markStatus(
         userPubkey: _userPubkey,
         status: PendingProfileSaveStatus.syncing,
+        generation: generation,
+        attemptAt: _now(),
       );
+      if (!claimed) return;
 
-      final outcome = await _profileRepository.drivePendingSave(_userPubkey);
+      final outcome = await _profileRepository.drivePendingSave(
+        _userPubkey,
+        expectedGeneration: generation,
+      );
 
       switch (outcome) {
         case PendingSaveDriveOutcome.confirmed:
         case PendingSaveDriveOutcome.noPendingSave:
-          // Slot cleared by the repository (confirmed) or already gone.
-          break;
+          // Slot cleared by the repository (confirmed) or already gone /
+          // superseded — nothing more to schedule.
+          _cancelRetryTimer();
         case PendingSaveDriveOutcome.permanentFailure:
           await _dao.markStatus(
             userPubkey: _userPubkey,
             status: PendingProfileSaveStatus.failed,
             lastError: 'Username claim failed permanently (taken/reserved)',
+            generation: generation,
+            attemptAt: _now(),
           );
+          _cancelRetryTimer();
         case PendingSaveDriveOutcome.retryableFailure:
           if (entry.retryCount + 1 >= _retryConfig.maxRetries) {
             await _dao.markStatus(
@@ -215,13 +252,28 @@ class ProfileSaveRetryService {
               status: PendingProfileSaveStatus.failed,
               lastError:
                   'Could not publish after ${_retryConfig.maxRetries} attempts',
+              generation: generation,
+              attemptAt: _now(),
             );
+            _cancelRetryTimer();
           } else {
-            await _dao.incrementRetry(_userPubkey);
-            await _dao.markStatus(
+            await _dao.incrementRetry(
+              _userPubkey,
+              generation: generation,
+              attemptAt: _now(),
+            );
+            final reverted = await _dao.markStatus(
               userPubkey: _userPubkey,
               status: PendingProfileSaveStatus.pending,
+              generation: generation,
+              attemptAt: _now(),
             );
+            // Arm the next attempt so one recovery signal eventually publishes
+            // even if the relay pool wasn't ready this pass. Only when the row
+            // is still ours — a newer save that slipped in owns its scheduling.
+            if (reverted) {
+              _scheduleRetry(_retryConfig.backoffFor(entry.retryCount + 1));
+            }
           }
       }
     } on Object catch (e, stackTrace) {
@@ -242,5 +294,24 @@ class ProfileSaveRetryService {
     } finally {
       _isSweeping = false;
     }
+  }
+
+  /// Arm (replacing any pending) the self-scheduled next attempt for [delay].
+  /// A negative delay is clamped to zero. The timer fires a fresh [sweep];
+  /// because it is armed from inside a sweep (before the `finally` clears
+  /// [_isSweeping]) and never with a same-tick delay that could beat that
+  /// `finally`, the scheduled sweep always finds the re-entrancy guard clear.
+  void _scheduleRetry(Duration delay) {
+    _retryTimer?.cancel();
+    final clamped = delay.isNegative ? Duration.zero : delay;
+    _retryTimer = Timer(clamped, () {
+      _retryTimer = null;
+      unawaited(sweep());
+    });
+  }
+
+  void _cancelRetryTimer() {
+    _retryTimer?.cancel();
+    _retryTimer = null;
   }
 }
