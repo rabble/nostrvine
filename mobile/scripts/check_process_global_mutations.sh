@@ -16,11 +16,16 @@
 #   1. CAPTURE-RESTORE (GLOBALS) — `<Singleton>.instance` and static hooks whose
 #      documented resting value is the *prior runtime value*. Every untagged
 #      *_test.dart that installs one must, within the same file, SNAPSHOT the
-#      original (a `<id> = <Global>` read) and RESTORE it (a `<Global> = <id>`
-#      bare-identifier write, e.g. in tearDown / tearDownAll / addTearDown).
-#      Unlike check_http_overrides_isolation.sh — which rejects even a correct
-#      restore because a nulled HttpOverrides 400-mock is itself the hazard while
-#      the file runs — a within-file restore PASSES here.
+#      original (a `<id> = <Global>` read) and RESTORE it by assigning the global
+#      back that captured value (`<Global> = <origId>`, e.g. in tearDown /
+#      tearDownAll / addTearDown). The restore RHS must be an identifier that
+#      holds the captured original — the snapshot id itself, or a local copied
+#      from it — NOT an arbitrary bare identifier: the dominant install shape is
+#      itself a bare-id write (`Bloc.observer = observer;`) and `<Global> = null`
+#      strands null, so tying the restore to the captured value is what makes the
+#      check real. Unlike check_http_overrides_isolation.sh — which rejects even a
+#      correct restore because a nulled HttpOverrides 400-mock is itself the
+#      hazard while the file runs — a within-file restore PASSES here.
 #
 #   2. RESET-TO-DEFAULT (RESET_TO_DEFAULT_GLOBALS) — top-level debug overrides /
 #      test-injection setters whose documented resting value is a compile-time
@@ -114,17 +119,50 @@ run_scan() {
       if grep -qE "^[[:space:]]*@Tags\([^)]*skip_very_good_optimization" "$f"; then
         continue
       fi
-      # SNAPSHOT: the global appears on the RHS of an assignment (captured local).
+      # SNAPSHOT: identifiers that hold a value READ FROM the global. Seed with
+      # the LHS of every `<id> = <Global>` capture, then grow transitively across
+      # `<id2> = <id1>` copies (a tearDown that promotes the snapshot into a local
+      # before restoring — e.g. WebViewPlatform's non-null-setter guard). Word
+      # boundary `.` is excluded so a `<Global>.instance = <id>` restore line is
+      # never itself mistaken for a copy that adds `instance` to the set.
+      # `|| true` on every grep|sed: under `set -o pipefail` a no-match grep
+      # (exit 1) would otherwise abort the whole scan.
+      local orig_ids
+      orig_ids=$(grep -oE \
+        "[A-Za-z_][A-Za-z0-9_]*[[:space:]]*=[[:space:]]*([A-Za-z_][A-Za-z0-9_]*\.)?${core}([^A-Za-z0-9_]|$)" \
+        <<<"$body" | sed -E 's/[[:space:]]*=.*//' | sort -u || true)
       local has_capture=0
-      if grep -qE "=[[:space:]]*([A-Za-z_][A-Za-z0-9_]*\.)?${core}([^A-Za-z0-9_]|$)" <<<"$body"; then
-        has_capture=1
-      fi
-      # RESTORE: the global assigned a BARE identifier (block `= original;` or
-      # arrow `=> <Global> = original)`), distinguishing a restore from a
-      # `<Global> = SomeFake()` install.
+      if [[ -n "$orig_ids" ]]; then has_capture=1; fi
+
+      local id1 copies grown
+      for _ in 1 2 3 4 5; do
+        grown="$orig_ids"
+        for id1 in $orig_ids; do
+          copies=$(grep -oE \
+            "(^|[^A-Za-z0-9_.])[A-Za-z_][A-Za-z0-9_]*[[:space:]]*=[[:space:]]*${id1}([^A-Za-z0-9_]|$)" \
+            <<<"$body" | sed -E 's/^[^A-Za-z_]*//; s/[[:space:]]*=.*//' || true)
+          if [[ -n "$copies" ]]; then
+            grown=$(printf '%s\n%s\n' "$grown" "$copies" | sort -u)
+          fi
+        done
+        if [[ "$grown" == "$orig_ids" ]]; then break; fi
+        orig_ids="$grown"
+      done
+
+      # RESTORE: `<Global> = <origId>` (block `= origId;` or arrow `=> ... = origId)`)
+      # where <origId> is one of the captured-original identifiers above. Tying the
+      # RHS to a captured value — not any bare identifier — rejects the bare-id
+      # install `<Global> = observer;` and the null-strand `<Global> = null;`, and
+      # excludes null/true/false for free (they can never be a capture LHS).
       local has_restore=0
-      if grep -qE "([A-Za-z_][A-Za-z0-9_]*\.)?${core}[[:space:]]*=[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*[;)]" <<<"$body"; then
-        has_restore=1
+      if [[ "$has_capture" -eq 1 ]]; then
+        local id_alt
+        id_alt="${orig_ids//$'\n'/|}"
+        if grep -qE \
+          "([A-Za-z_][A-Za-z0-9_]*\.)?${core}[[:space:]]*=[[:space:]]*(${id_alt})[[:space:]]*[;)]" \
+          <<<"$body"; then
+          has_restore=1
+        fi
       fi
       if [[ "$has_capture" -eq 0 || "$has_restore" -eq 0 ]]; then
         rel="${f#"$MOBILE_DIR"/}"
@@ -226,6 +264,41 @@ void main() {
   final prior = Bloc.observer;
   Bloc.observer = MyObserver();
   addTearDown(() => Bloc.observer = prior);
+}
+'
+  _case "bare-id install masquerading as restore (snapshot + install, no real restore) → FAIL" 1 \
+'import "x";
+void main() {
+  final previousObserver = Bloc.observer;
+  Bloc.observer = observer;
+}
+'
+  _case "bare-id install PLUS real restore (models divine_bloc_observer_test) → PASS" 0 \
+'import "x";
+void main() {
+  final previousObserver = Bloc.observer;
+  Bloc.observer = observer;
+  addTearDown(() => Bloc.observer = previousObserver);
+}
+'
+  _case "null strand masquerading as restore (FlutterError.onError = null) → FAIL" 1 \
+'import "x";
+void main() {
+  final originalOnError = FlutterError.onError;
+  FlutterError.onError = (details) {};
+  tearDown(() { FlutterError.onError = null; });
+}
+'
+  _case "restore via copied local inside guard (models nostr WebView tearDown) → PASS" 0 \
+'import "x";
+void main() {
+  WebViewPlatform? originalWebViewPlatform;
+  setUp(() { originalWebViewPlatform = WebViewPlatform.instance; });
+  tearDown(() {
+    final original = originalWebViewPlatform;
+    if (original != null) { WebViewPlatform.instance = original; }
+  });
+  WebViewPlatform.instance = _FakeWebViewPlatform();
 }
 '
   _case "reset-to-default leaker (debugDefaultTargetPlatformOverride, no = null) → FAIL" 1 \
