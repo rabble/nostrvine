@@ -234,6 +234,9 @@ class BlurhashService {
       // also broken (skips the first AC row and column).
       final components = _decodeComponents(blurhash, punch: punch);
       if (components == null) return null;
+      // BlurHash.components re-encodes the components into a hash string we
+      // discard, but it's the only public components→image path and ~0.1%
+      // of the iDCT in toImage below — not worth reimplementing to avoid.
       final image = blurhash_dart.BlurHash.components(
         components,
       ).toImage(width, height);
