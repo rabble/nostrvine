@@ -86,7 +86,15 @@ class C2paSigningService {
   /// it can neither finish nor be restarted (#6058). Bounding it converts a
   /// hang into a normal best-effort failure: the video publishes without C2PA
   /// instead of getting stuck.
-  static const Duration defaultSigningTimeout = Duration(seconds: 30);
+  ///
+  /// 20s is a deliberate hang-guard, not a tight performance budget: signing
+  /// makes two sequential network round-trips (signer config fetch + RFC-3161
+  /// TSA timestamp) plus TLS, which on a slow-but-alive mobile connection can
+  /// legitimately take 10-15s. Setting the bound well above that avoids
+  /// stripping a valid "Human Made" credential from a user who merely has a
+  /// slow connection — it only fires for a genuine hang, and the user can
+  /// still cancel the wait via back navigation.
+  static const Duration defaultSigningTimeout = Duration(seconds: 20);
 
   /// Whether the remote signing pipeline is configured for this build.
   ///

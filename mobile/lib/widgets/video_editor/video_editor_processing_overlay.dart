@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -85,10 +86,30 @@ class VideoEditorProcessingOverlay extends StatelessWidget {
   }
 }
 
-class _RenderFailedOverlay extends StatelessWidget {
+class _RenderFailedOverlay extends StatefulWidget {
   const _RenderFailedOverlay({required this.onRetry, super.key});
 
   final VoidCallback? onRetry;
+
+  @override
+  State<_RenderFailedOverlay> createState() => _RenderFailedOverlayState();
+}
+
+class _RenderFailedOverlayState extends State<_RenderFailedOverlay> {
+  @override
+  void initState() {
+    super.initState();
+    // The failure surface swaps in via AnimatedSwitcher (no route push), so
+    // screen readers get no automatic signal — announce it explicitly (#6058).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      SemanticsService.sendAnnouncement(
+        View.of(context),
+        context.l10n.videoMetadataGenerationFailed,
+        Directionality.of(context),
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -101,21 +122,23 @@ class _RenderFailedOverlay extends StatelessWidget {
             mainAxisSize: .min,
             spacing: 12,
             children: [
-              const DivineIcon(
-                icon: .warning,
-                size: 36,
-                color: VineTheme.error,
+              const ExcludeSemantics(
+                child: DivineIcon(
+                  icon: .warning,
+                  size: 36,
+                  color: VineTheme.error,
+                ),
               ),
               Text(
                 context.l10n.videoMetadataGenerationFailed,
                 textAlign: TextAlign.center,
                 style: VineTheme.bodyMediumFont(),
               ),
-              if (onRetry != null)
+              if (widget.onRetry != null)
                 DivineIconButton(
                   icon: .arrowsClockwise,
                   type: .secondary,
-                  onPressed: onRetry,
+                  onPressed: widget.onRetry,
                   semanticLabel: context.l10n.videoErrorRetry,
                 ),
             ],

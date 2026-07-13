@@ -48,6 +48,9 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
 
   Future<void> _promptC2paMissing() async {
     final l10n = context.l10n;
+    // Non-dismissible: forfeiting the content credential is a provenance
+    // decision, so require an explicit button rather than letting an accidental
+    // barrier tap / swipe silently post without it (#6058).
     final choice = await VineBottomSheetPrompt.show<_C2paMissingChoice>(
       context: context,
       sticker: .alert,
@@ -60,18 +63,22 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
       secondaryButtonText: l10n.videoMetadataC2paMissingPostAnyway,
       onSecondaryPressed: () =>
           Navigator.of(context).pop(_C2paMissingChoice.postAnyway),
+      isDismissible: false,
+      enableDrag: false,
     );
     if (!mounted) return;
 
     final notifier = ref.read(videoEditorProvider.notifier);
     switch (choice) {
       case _C2paMissingChoice.regenerate:
-        // Only the C2PA credential failed — re-sign the existing render
-        // instead of re-encoding the whole video (#6058).
+      case null:
+        // Regenerate, or a system-back with no choice: re-sign the existing
+        // render (no re-encode) rather than silently forfeiting provenance.
+        // Only an explicit "Post anyway" publishes without the credential
+        // (#6058).
         unawaited(notifier.retryC2paSigning());
       case _C2paMissingChoice.postAnyway:
-      case null:
-        // Dismissed or accepted: proceed without provenance.
+        // Explicit consent to publish without a content credential.
         notifier.acknowledgeC2paSigningFailure();
     }
   }

@@ -1,6 +1,8 @@
 // ABOUTME: Tests for VideoMetadataScreen basic rendering and structure
 // ABOUTME: Verifies screen renders with expected UI elements
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -17,6 +19,7 @@ import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
+import 'package:openvine/services/native_proofmode_service.dart';
 import 'package:openvine/widgets/video_metadata/modes/capture/video_metadata_capture_stack.dart';
 import 'package:openvine/widgets/video_metadata/modes/classic/video_metadata_classic_stack.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -233,6 +236,87 @@ void main() {
             reason: 'posting anyway clears the pending prompt',
           );
           expect(find.text(l10n.videoMetadataC2paMissingTitle), findsNothing);
+        },
+      );
+
+      testWidgets(
+        '"Regenerate" re-signs (isProcessing) rather than posting without '
+        'provenance',
+        (tester) async {
+          // A re-sign that never resolves keeps isProcessing observably true,
+          // which distinguishes retryC2paSigning (sets it) from a mis-wire to
+          // acknowledgeC2paSigningFailure (which would not).
+          NativeProofModeService.proofFileOverride =
+              (
+                file, {
+                required enableAdvancedCawgEmbedding,
+                creatorBindingAssertion,
+                cawgIdentityAssertion,
+                verifiedIdentityBundle,
+                clips,
+                editorStateHistory,
+              }) => Completer<models.NativeProofData?>().future;
+          addTearDown(() => NativeProofModeService.proofFileOverride = null);
+
+          final container = ProviderContainer(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              clipManagerProvider.overrideWith(
+                () => _MockClipManagerNotifier([testClip]),
+              ),
+              videoEditorProvider.overrideWith(
+                () => _MockVideoEditorNotifier(
+                  VideoEditorProviderState(finalRenderedClip: testClip),
+                ),
+              ),
+            ],
+          );
+          addTearDown(container.dispose);
+
+          await tester.pumpWidget(
+            UncontrolledProviderScope(
+              container: container,
+              child: const MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: VideoMetadataScreen(),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          final notifier = container.read(videoEditorProvider.notifier);
+          notifier.state = notifier.state.copyWith(c2paSigningFailed: true);
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.text(l10n.videoMetadataC2paMissingRegenerate));
+          // The re-sign turns on the processing spinner, which animates
+          // forever — pumpAndSettle would time out. Pump fixed frames to run
+          // the sheet-dismiss animation and the retry microtask instead.
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 500));
+          await tester.pump();
+
+          final state = container.read(videoEditorProvider);
+          expect(
+            find.text(l10n.videoMetadataC2paMissingTitle),
+            findsNothing,
+            reason: 'the prompt is dismissed once a choice is made',
+          );
+          expect(
+            state.c2paSigningFailed,
+            isFalse,
+            reason: 'the retry clears the prompt while it re-signs',
+          );
+          expect(
+            state.isProcessing,
+            isTrue,
+            reason:
+                'Regenerate re-signs the existing render, so it enters the '
+                'processing state — it does not silently post without '
+                'provenance',
+          );
         },
       );
     });

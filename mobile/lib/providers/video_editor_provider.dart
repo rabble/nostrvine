@@ -1170,7 +1170,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         signingConfigured: signingConfigured,
         proofManifestJson: proofManifestJson,
       );
-      Log.info(
+      Log.debug(
         '🔐 C2PA prompt gate — configured: $signingConfigured, '
         'hasProof: ${proofManifestJson != null}, failed: $c2paSigningFailed',
         name: 'VideoEditorNotifier',

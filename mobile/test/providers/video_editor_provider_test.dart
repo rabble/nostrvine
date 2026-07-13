@@ -537,7 +537,8 @@ void main() {
         expect(state.isProcessing, isFalse);
       });
 
-      test('sets isProcessing to false when render returns null', () async {
+      test('flags renderFailed and clears isProcessing when render returns '
+          'null (#6058)', () async {
         final notifier = container.read(videoEditorProvider.notifier);
 
         container
@@ -560,8 +561,17 @@ void main() {
 
         await notifier.startRenderVideo();
 
-        expect(container.read(videoEditorProvider).isProcessing, isFalse);
-        expect(container.read(videoEditorProvider).finalRenderedClip, isNull);
+        final state = container.read(videoEditorProvider);
+        expect(state.isProcessing, isFalse);
+        expect(state.finalRenderedClip, isNull);
+        // The null-return path is the primary way a genuine render failure
+        // surfaces the retry overlay — a regression that drops this flag would
+        // leave the user stuck with no way to retry (#6058).
+        expect(
+          state.renderFailed,
+          isTrue,
+          reason: 'a null render result surfaces the retry affordance',
+        );
       });
 
       test('flags renderFailed and clears isProcessing when render throws, '
@@ -885,6 +895,36 @@ void main() {
       );
     });
 
+    group('copyWith clearFinalRenderedClip (#6058)', () {
+      test(
+        'drops renderFailed and c2paSigningFailed when the clip is cleared',
+        () {
+          final rendered = DivineVideoClip(
+            id: 'rendered',
+            video: EditorVideo.file('/docs/rendered.mp4'),
+            duration: const Duration(seconds: 3),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          );
+          final failed = VideoEditorProviderState(
+            renderFailed: true,
+            c2paSigningFailed: true,
+            finalRenderedClip: rendered,
+          );
+
+          // invalidateFinalRenderedClip clears the clip on every post-render
+          // edit; a stuck failure/prompt over a clip that no longer exists must
+          // not survive that clear (#6058).
+          final cleared = failed.copyWith(clearFinalRenderedClip: true);
+
+          expect(cleared.finalRenderedClip, isNull);
+          expect(cleared.renderFailed, isFalse);
+          expect(cleared.c2paSigningFailed, isFalse);
+        },
+      );
+    });
+
     group('acknowledgeC2paSigningFailure (#6058)', () {
       test('clears the pending C2PA prompt flag', () {
         final notifier = container.read(videoEditorProvider.notifier);
@@ -957,6 +997,131 @@ void main() {
         );
         expect(state.proofManifestJson, contains('urn:c2pa:new'));
         expect(state.isProcessing, isFalse);
+      });
+
+      test(
+        're-raises the prompt when the re-sign fails again (#6058)',
+        () async {
+          final notifier = container.read(videoEditorProvider.notifier);
+          final rendered = DivineVideoClip(
+            id: 'rendered',
+            video: EditorVideo.file('/docs/rendered.mp4'),
+            duration: const Duration(seconds: 3),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          );
+          notifier.state = notifier.state.copyWith(
+            finalRenderedClip: rendered,
+            c2paSigningFailed: false,
+          );
+
+          // Network still down on retry — the re-sign throws.
+          NativeProofModeService.proofFileOverride =
+              (
+                file, {
+                required enableAdvancedCawgEmbedding,
+                creatorBindingAssertion,
+                cawgIdentityAssertion,
+                verifiedIdentityBundle,
+                clips,
+                editorStateHistory,
+              }) async => throw Exception('still offline');
+
+          await notifier.retryC2paSigning();
+
+          final state = container.read(videoEditorProvider);
+          expect(
+            state.c2paSigningFailed,
+            isTrue,
+            reason:
+                'a failed re-sign must re-raise the prompt so the user '
+                'learns it did not work',
+          );
+          expect(state.isProcessing, isFalse);
+          expect(
+            state.finalRenderedClip,
+            equals(rendered),
+            reason:
+                'the rendered clip is kept — only the credential is missing',
+          );
+        },
+      );
+    });
+
+    group('regenerateVideo (#6058)', () {
+      tearDown(() {
+        VideoEditorRenderService.renderVideoToClipOverride = null;
+      });
+
+      test('preserves the edit parameters across the clip clear', () async {
+        final notifier = container.read(videoEditorProvider.notifier);
+        container
+            .read(clipManagerProvider.notifier)
+            .addClip(
+              limitClipDuration: false,
+              video: EditorVideo.file('/docs/clip.mp4'),
+              targetAspectRatio: .vertical,
+              originalAspectRatio: 9 / 16,
+              duration: const Duration(seconds: 2),
+            );
+
+        final params = CompleteParameters(
+          blur: 0,
+          originalImageSize: const Size(1080, 1920),
+          temporaryDecodedImageSize: const Size(1080, 1920),
+          bodySize: const Size(400, 800),
+          editorSize: const Size(400, 800),
+          matrixFilterList: const [],
+          matrixTuneAdjustmentsList: const [],
+          startTime: null,
+          endTime: null,
+          cropWidth: null,
+          cropHeight: null,
+          rotateTurns: 0,
+          cropX: null,
+          cropY: null,
+          flipX: false,
+          flipY: false,
+          image: Uint8List(0),
+          isTransformed: false,
+          layers: const [],
+        );
+        // No finalRenderedClip → no stale-file cleanup, so the database
+        // provider isn't needed for this test.
+        notifier.state = notifier.state.copyWith(
+          editorEditingParameters: params,
+        );
+
+        CompleteParameters? renderedWith;
+        VideoEditorRenderService.renderVideoToClipOverride =
+            ({
+              required clips,
+              required editorStateHistory,
+              parameters,
+              taskId,
+            }) async {
+              renderedWith = parameters;
+              return null;
+            };
+
+        await notifier.regenerateVideo();
+
+        // clearFinalRenderedClip drops editorEditingParameters by design;
+        // regenerateVideo must re-apply them so the identical edit re-renders
+        // rather than silently discarding the user's crop/trim/stickers.
+        expect(
+          container.read(videoEditorProvider).editorEditingParameters,
+          same(params),
+        );
+        // _buildRenderParameters copies, so assert on a distinctive field
+        // rather than identity: if the re-apply were dropped, the render would
+        // get empty defaults (or throw), never these dimensions.
+        expect(
+          renderedWith?.originalImageSize,
+          const Size(1080, 1920),
+          reason: 'the re-render receives the preserved edit parameters',
+        );
       });
     });
 
