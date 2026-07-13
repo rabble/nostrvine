@@ -457,7 +457,7 @@ class OutgoingDmRetryService {
           // maxRetries`; `getStillPendingForOwner` does not, so without this
           // an unconfirmable pending row would re-drive forever.
           if (row.retryCount >= _retryConfig.maxRetries) {
-            await _markInterruptedExhausted(row.id);
+            await _markInterruptedExhausted(row);
             exhaustedInterrupted++;
             continue;
           }
@@ -589,6 +589,14 @@ class OutgoingDmRetryService {
           reason: OutgoingDmRetryServiceReportableSites.sweepTopLevel,
         ),
       );
+      // A throwing pass never reached the try-path _scheduleFollowUp, so
+      // without re-arming here a transient DAO error (e.g. a busy database)
+      // would silence the 30s heartbeat until an external trigger — exactly
+      // the steady-foreground, stable-network session the heartbeat exists
+      // for. Queue state is unknown after a throw, so assume work remains;
+      // the next successful pass's own workRemains:false self-cancels the
+      // timer once the queue drains.
+      _scheduleFollowUp(workRemains: true);
     } finally {
       _isSweeping = false;
       // A nudge that arrived mid-pass may describe a row this pass never
@@ -649,15 +657,44 @@ class OutgoingDmRetryService {
     });
   }
 
-  /// Terminalize a pending row that has exhausted its retry budget: mark both
-  /// wraps `failed` so it leaves the pending set, renders as a red failed
-  /// bubble, and stays out of `getRetryableForOwner` (which caps at
-  /// `retry_count < maxRetries`). Swallows DAO errors — a failed mark just
-  /// means the row is re-evaluated next sweep and terminalized then.
-  Future<void> _markInterruptedExhausted(String rumorId) => _terminalizeRow(
-    rumorId,
-    error: 'Exhausted retries without recipient confirmation',
-  );
+  /// Terminalize a pending row that has exhausted its retry budget so it
+  /// leaves the pending set, stops re-driving, and stays out of
+  /// `getRetryableForOwner` (which caps at `retry_count < maxRetries`).
+  ///
+  /// When the recipient wrap already landed (`sent`), the message WAS
+  /// delivered — only the invisible self-wrap sync is outstanding. Flip
+  /// ONLY the self wrap to `failed` (the row then reads as sent/failed,
+  /// which renders delivered-looking via the existing State A surface).
+  /// Flipping the recipient wrap too would misrender a delivered message
+  /// as a red "Not delivered" bubble and let Resend republish it — the
+  /// same reason [_surfaceOfflinePendingRows] leaves already-`sent`
+  /// recipient wraps untouched. Rows whose recipient wrap is still
+  /// pending/failed terminalize both wraps.
+  ///
+  /// Swallows DAO errors — a failed mark just means the row is
+  /// re-evaluated next sweep and terminalized then.
+  Future<void> _markInterruptedExhausted(OutgoingDm row) async {
+    if (row.recipientWrapStatus == OutgoingWrapStatus.sent) {
+      try {
+        await _dao.markSelfWrapStatus(
+          id: row.id,
+          status: OutgoingWrapStatus.failed,
+          lastError: 'Exhausted retries without self-wrap confirmation',
+        );
+      } on Object catch (e) {
+        Log.warning(
+          'failed to terminalize self wrap for exhausted row ${row.id}: $e',
+          name: 'OutgoingDmRetryService',
+          category: LogCategory.system,
+        );
+      }
+      return;
+    }
+    await _terminalizeRow(
+      row.id,
+      error: 'Exhausted retries without recipient confirmation',
+    );
+  }
 
   /// Offline pass: no publish can succeed, so instead of leaving the queue
   /// untouched, surface the rows the user would otherwise misread as
