@@ -3047,6 +3047,8 @@
     "videoRecorderCaptureCloseLabel": "閉じる",
     "videoRecorderCaptureNextLabel": "次へ",
     "videoRecorderLipSyncAddAudioFirst": "録画する前にオーディオを追加してください",
+    "videoRecorderStopMotionAssembling": "動画を作成しています…",
+    "videoRecorderStopMotionAssembleFailed": "動画を作成できませんでした。もう一度お試しください。",
     "videoRecorderClipDeletedMessage": "クリップをゴミ箱に移動しました",
     "videoRecorderClipUndoLabel": "元に戻す",
     "libraryTrashTitle": "最近削除した項目",
@@ -4084,6 +4086,9 @@
     "videoEditorMergeLabel": "結合",
     "videoEditorMergeSelectedClipsSemanticLabel": "選択したクリップを結合",
     "videoEditorDeleteSelectedClipsSemanticLabel": "選択したクリップを削除",
+    "videoEditorDeleteSelectedFramesSemanticLabel": "選択したフレームを削除",
+    "videoEditorReverseSelectedFramesSemanticLabel": "選択したフレームを逆順にする",
+    "videoEditorStopMotionTooShortSnackbar": "動画は{seconds}秒以上必要です。もう少しフレームを撮影してください。",
     "videoEditorMergeProgressLabel": "少々お待ちください。クリップを結合しています",
     "videoEditorMergeFailed": "クリップを結合できませんでした。もう一度お試しください。",
     "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device.",
@@ -4562,5 +4567,13 @@
   "authSignInErrorNetwork": "サーバーに接続できません。接続を確認してもう一度お試しください。",
   "authSignInErrorGeneric": "問題が発生しました。もう一度お試しください。",
   "authSignInOptionsHintPrefix": "前回どうやってログインしたか分かりませんか? ",
-  "authSignInOptionsHintCta": "すべてのサインイン方法を見る"
+  "authSignInOptionsHintCta": "すべてのサインイン方法を見る",
+    "videoEditorStopMotionFramesPerImageLabel": "1枚あたりのフレーム数",
+    "videoEditorStopMotionFramesPerImageValueSemanticLabel": "1枚あたり{count}フレーム",
+    "videoEditorStopMotionIncreaseFramesPerImageSemanticLabel": "1枚あたりのフレーム数を増やす",
+    "videoEditorStopMotionDecreaseFramesPerImageSemanticLabel": "1枚あたりのフレーム数を減らす",
+    "videoEditorStopMotionFrameSemanticLabel": "ストップモーションのフレーム {total}枚中{position}枚目",
+    "videoEditorStopMotionFramesCount": "{count, plural, other{{count}フレーム}}",
+    "videoEditorStopMotionFramesPerImageButtonLabel": "フレーム",
+    "libraryStopMotionClipLabel": "ストップモーションクリップ"
 }

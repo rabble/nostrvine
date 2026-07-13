@@ -1,9 +1,76 @@
-import 'dart:ui';
+import 'dart:convert';
+import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:models/models.dart' as model show AspectRatio;
+import 'package:openvine/models/stop_motion_clip_frame.dart';
+import 'package:openvine/widgets/stop_motion/stop_motion_player.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_player.dart';
 
 void main() {
+  group('stop-motion preview', () {
+    // 1x1 transparent PNG.
+    final pngBytes = base64Decode(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk'
+      '+M8AAAMBAQDJ/IY1AAAAAElFTkSuQmCC',
+    );
+
+    late Directory tempDir;
+    late List<StopMotionClipFrame> frames;
+
+    setUp(() {
+      tempDir = Directory.systemTemp.createTempSync('video_editor_player_test');
+      frames = [
+        for (final name in ['a', 'b', 'c'])
+          StopMotionClipFrame(
+            path: (File(
+              '${tempDir.path}/$name.png',
+            )..writeAsBytesSync(pngBytes)).path,
+            duration: const Duration(milliseconds: 100),
+          ),
+      ];
+    });
+
+    tearDown(() => tempDir.deleteSync(recursive: true));
+
+    testWidgets('drives the StopMotionPlayer from stopMotionPosition', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Center(
+            child: SizedBox(
+              width: 200,
+              height: 400,
+              child: VideoEditorPlayer(
+                controller: null,
+                targetAspectRatio: model.AspectRatio.vertical,
+                originalAspectRatio: 9 / 16,
+                bodySize: const Size(200, 400),
+                renderSize: const Size(200, 400),
+                stopMotionFrames: frames,
+                // 150ms → the second frame's window [100,200).
+                stopMotionPosition: const Duration(milliseconds: 150),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(StopMotionPlayer), findsOneWidget);
+      final image = tester.widget<Image>(find.byType(Image));
+      // The editor bounds the decode size, so the provider is a ResizeImage
+      // wrapping the FileImage.
+      final provider = image.image;
+      final fileImage = provider is ResizeImage
+          ? provider.imageProvider as FileImage
+          : provider as FileImage;
+      expect(fileImage.file.path, frames[1].path);
+    });
+  });
+
   group(computeClipSize, () {
     group('square (1:1) target', () {
       test('clips tall widget to square using width as shortest side', () {

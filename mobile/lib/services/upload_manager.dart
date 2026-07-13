@@ -361,7 +361,7 @@ class UploadManager implements BackgroundAwareService {
 
     Future<String> prepareUploadFromSourceClips() async {
       if (draft.clips.length == 1) {
-        return draft.clips.first.video.safeFilePath();
+        return draft.clips.first.requireVideo.safeFilePath();
       }
 
       final tempDir = await getTemporaryDirectory();
@@ -379,7 +379,7 @@ class UploadManager implements BackgroundAwareService {
         mergedPath,
         VideoRenderData(
           videoSegments: draft.clips
-              .map((clip) => VideoSegment(video: clip.video))
+              .map((clip) => VideoSegment(video: clip.requireVideo))
               .toList(),
           endTime: VideoEditorConstants.maxDuration,
           shouldOptimizeForNetworkUse: true,
@@ -398,7 +398,7 @@ class UploadManager implements BackgroundAwareService {
     String videoFilePath;
     final renderedClip = draft.finalRenderedClip;
     if (renderedClip != null) {
-      final renderedPath = await renderedClip.video.safeFilePath();
+      final renderedPath = await renderedClip.requireVideo.safeFilePath();
       if (File(renderedPath).existsSync()) {
         videoFilePath = renderedPath;
         videoDuration ??= renderedClip.duration;

@@ -2771,6 +2771,8 @@
     "videoRecorderCaptureCloseLabel": "Fechar",
     "videoRecorderCaptureNextLabel": "Próximo",
     "videoRecorderLipSyncAddAudioFirst": "Adicione áudio antes de gravar",
+    "videoRecorderStopMotionAssembling": "Criando seu vídeo…",
+    "videoRecorderStopMotionAssembleFailed": "Não foi possível criar o vídeo. Tente novamente.",
     "videoRecorderToggleFlashLabel": "Alternar flash",
     "videoRecorderCycleTimerLabel": "Alternar temporizador",
     "videoRecorderToggleAspectRatioLabel": "Alternar proporção",
@@ -4084,6 +4086,9 @@
     "videoEditorMergeLabel": "Mesclar",
     "videoEditorMergeSelectedClipsSemanticLabel": "Mesclar clipes selecionados",
     "videoEditorDeleteSelectedClipsSemanticLabel": "Excluir clipes selecionados",
+    "videoEditorDeleteSelectedFramesSemanticLabel": "Excluir quadros selecionados",
+    "videoEditorReverseSelectedFramesSemanticLabel": "Inverter quadros selecionados",
+    "videoEditorStopMotionTooShortSnackbar": "Seu vídeo precisa de pelo menos {seconds}s — capture mais alguns quadros.",
     "videoEditorMergeProgressLabel": "Um momento, estamos mesclando seus clipes",
     "videoEditorMergeFailed": "Não foi possível mesclar os clipes. Tente novamente.",
     "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device.",
@@ -4562,5 +4567,13 @@
   "authSignInErrorNetwork": "Não foi possível conectar ao servidor. Verifique sua conexão e tente de novo.",
   "authSignInErrorGeneric": "Algo deu errado. Tente de novo.",
   "authSignInOptionsHintPrefix": "Não sabe como entrou da última vez? ",
-  "authSignInOptionsHintCta": "Ver todas as opções de login"
+  "authSignInOptionsHintCta": "Ver todas as opções de login",
+    "videoEditorStopMotionFramesPerImageLabel": "Quadros por imagem",
+    "videoEditorStopMotionFramesPerImageValueSemanticLabel": "{count} quadros por imagem",
+    "videoEditorStopMotionIncreaseFramesPerImageSemanticLabel": "Aumentar quadros por imagem",
+    "videoEditorStopMotionDecreaseFramesPerImageSemanticLabel": "Reduzir quadros por imagem",
+    "videoEditorStopMotionFrameSemanticLabel": "Quadro de stop motion {position} de {total}",
+    "videoEditorStopMotionFramesCount": "{count, plural, =1{1 quadro} other{{count} quadros}}",
+    "videoEditorStopMotionFramesPerImageButtonLabel": "Quadros",
+    "libraryStopMotionClipLabel": "Clipe de stop motion"
 }

@@ -23,8 +23,13 @@ class VideoEditorTimelineControls extends StatelessWidget {
     this.isSaveToLibraryDisabled = false,
     this.onMultiSelect,
     this.multiSelectSemanticLabel,
+    this.extraControls = const [],
     super.key,
   });
+
+  /// Extra controls inserted before the Done button — used by the stop-motion
+  /// action bar to add the per-frame "frames per image" stepper.
+  final List<Widget> extraControls;
 
   final VoidCallback? onDelete;
   final VoidCallback? onEdit;
@@ -191,6 +196,7 @@ class VideoEditorTimelineControls extends StatelessWidget {
                           context.l10n.videoEditorMultiSelectSemanticLabel,
                       onPressed: onMultiSelect,
                     ),
+                  ...extraControls,
                   _ControlButton(
                     icon: .check,
                     label: context.l10n.videoEditorDoneLabel,

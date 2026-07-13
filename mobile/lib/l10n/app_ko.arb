@@ -2378,6 +2378,8 @@
     "videoRecorderCaptureCloseLabel": "닫기",
     "videoRecorderCaptureNextLabel": "다음",
     "videoRecorderLipSyncAddAudioFirst": "녹화하기 전에 오디오를 추가하세요",
+    "videoRecorderStopMotionAssembling": "동영상을 만드는 중…",
+    "videoRecorderStopMotionAssembleFailed": "동영상을 만들지 못했습니다. 다시 시도해 주세요.",
     "videoRecorderClipDeletedMessage": "클립이 휴지통으로 이동되었습니다",
     "videoRecorderClipUndoLabel": "실행 취소",
     "libraryTrashTitle": "최근 삭제된 항목",
@@ -3408,6 +3410,9 @@
     "videoEditorMergeLabel": "병합",
     "videoEditorMergeSelectedClipsSemanticLabel": "선택한 클립 병합",
     "videoEditorDeleteSelectedClipsSemanticLabel": "선택한 클립 삭제",
+    "videoEditorDeleteSelectedFramesSemanticLabel": "선택한 프레임 삭제",
+    "videoEditorReverseSelectedFramesSemanticLabel": "선택한 프레임 순서 뒤집기",
+    "videoEditorStopMotionTooShortSnackbar": "영상은 최소 {seconds}초여야 해요. 프레임을 몇 장 더 찍어 주세요.",
     "videoEditorMergeProgressLabel": "잠시만요, 클립을 병합하고 있어요",
     "videoEditorMergeFailed": "클립을 병합할 수 없습니다. 다시 시도해 주세요.",
     "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device.",
@@ -3886,5 +3891,13 @@
   "authSignInErrorNetwork": "서버에 연결할 수 없습니다. 연결을 확인하고 다시 시도해 주세요.",
   "authSignInErrorGeneric": "문제가 발생했습니다. 다시 시도해 주세요.",
   "authSignInOptionsHintPrefix": "지난번에 어떻게 로그인했는지 기억나지 않나요? ",
-  "authSignInOptionsHintCta": "모든 로그인 옵션 보기"
+  "authSignInOptionsHintCta": "모든 로그인 옵션 보기",
+    "videoEditorStopMotionFramesPerImageLabel": "이미지당 프레임",
+    "videoEditorStopMotionFramesPerImageValueSemanticLabel": "이미지당 {count}프레임",
+    "videoEditorStopMotionIncreaseFramesPerImageSemanticLabel": "이미지당 프레임 늘리기",
+    "videoEditorStopMotionDecreaseFramesPerImageSemanticLabel": "이미지당 프레임 줄이기",
+    "videoEditorStopMotionFrameSemanticLabel": "스톱모션 프레임 {total}개 중 {position}개",
+    "videoEditorStopMotionFramesCount": "{count, plural, other{{count}프레임}}",
+    "videoEditorStopMotionFramesPerImageButtonLabel": "프레임",
+    "libraryStopMotionClipLabel": "스톱모션 클립"
 }

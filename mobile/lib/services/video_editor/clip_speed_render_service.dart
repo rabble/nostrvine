@@ -81,10 +81,14 @@ class ClipSpeedRenderService {
 
   bool _needsRender(DivineVideoClip clip) {
     final speed = clip.playbackSpeed ?? 1.0;
-    return speed > 0 && speed != 1.0 && clip.video.file != null;
+    return speed > 0 && speed != 1.0 && clip.video?.file != null;
   }
 
   Future<RenderedSpeedClip?> _render(DivineVideoClip clip, String key) async {
+    // Reachable only via [render], which gates on [_needsRender] (video
+    // non-null). Re-checked here so the type is provably non-null below.
+    final video = clip.video;
+    if (video == null) return null;
     final renderGeneration = _clearGeneration;
     String? tempOutput;
     String? tempPath;
@@ -124,7 +128,7 @@ class ClipSpeedRenderService {
           id: 'speed_$hash',
           videoSegments: [
             VideoSegment(
-              video: clip.video,
+              video: video,
               startTime: clip.trimStart == Duration.zero
                   ? null
                   : clip.trimStart,
@@ -299,7 +303,7 @@ class ClipSpeedRenderService {
   static const _cacheVersion = 1;
 
   String _key(DivineVideoClip clip) =>
-      'v$_cacheVersion|${clip.id}:${clip.video.file?.path}:'
+      'v$_cacheVersion|${clip.id}:${clip.video?.file?.path}:'
       '${clip.duration.inMicroseconds}:${clip.trimStart.inMicroseconds}:'
       '${clip.trimEnd.inMicroseconds}:${clip.playbackSpeed ?? 1.0}';
 

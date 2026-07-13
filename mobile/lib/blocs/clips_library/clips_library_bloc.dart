@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/gallery_save_service.dart';
+import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -24,6 +25,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
     required ClipLibraryService clipLibraryService,
     required GallerySaveService gallerySaveService,
     required SharedPreferences sharedPreferences,
+    this.clipTypeFilter = LibraryClipTypeFilter.all,
   }) : _clipLibraryService = clipLibraryService,
        _gallerySaveService = gallerySaveService,
        _sharedPreferences = sharedPreferences,
@@ -57,6 +59,17 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
   final ClipLibraryService _clipLibraryService;
   final GallerySaveService _gallerySaveService;
   final SharedPreferences _sharedPreferences;
+
+  /// Restricts which clip types this library instance loads. Set by the
+  /// recorder entry-point to the mode's type; [LibraryClipTypeFilter.all]
+  /// (both types) for the standalone library.
+  final LibraryClipTypeFilter clipTypeFilter;
+
+  /// Applies [clipTypeFilter] to a freshly loaded clip list.
+  List<DivineVideoClip> _applyTypeFilter(List<DivineVideoClip> clips) {
+    if (clipTypeFilter == LibraryClipTypeFilter.all) return clips;
+    return clips.where(clipTypeFilter.matches).toList();
+  }
 
   static ClipSort _readPersistedSort(SharedPreferences prefs) {
     final saved = prefs.getString(_sortPrefsKey);
@@ -105,7 +118,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
     emit(state.copyWith(status: ClipsLibraryStatus.loading));
 
     try {
-      final clips = await _clipLibraryService.getAllClips();
+      final clips = _applyTypeFilter(await _clipLibraryService.getAllClips());
 
       Log.debug(
         '📚 Loaded ${clips.length} clips from library',
@@ -176,6 +189,12 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
       selectedIds.remove(clip.id);
       selectedDuration -= clip.duration;
     } else {
+      // No mixing: a clip of a different type than the current selection
+      // (stop-motion vs normal video) cannot be added — the two can't share
+      // one editor timeline. The grid also disables such clips; this guards
+      // the event path.
+      final selectedType = state.selectedIsStopMotion;
+      if (selectedType != null && clip.isStopMotion != selectedType) return;
       selectedIds.add(clip.id);
       selectedDuration += clip.duration;
     }
@@ -228,7 +247,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
       }
 
       // Reload clips and clear selection
-      final clips = await _clipLibraryService.getAllClips();
+      final clips = _applyTypeFilter(await _clipLibraryService.getAllClips());
 
       emit(
         state.copyWith(
@@ -274,7 +293,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
       await _clipLibraryService.softDelete(event.clip.id);
 
       // Reload clips
-      final clips = await _clipLibraryService.getAllClips();
+      final clips = _applyTypeFilter(await _clipLibraryService.getAllClips());
 
       // Remove from selection if selected
       final selectedIds = Set<String>.from(state.selectedClipIds);
@@ -334,7 +353,15 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
 
     for (final clip in clipsToSave) {
       try {
-        final result = await _gallerySaveService.saveVideoToGallery(clip.video);
+        // Stop-motion clips render their mp4 on demand before saving.
+        final materialized = await StopMotionRenderService.materialize(clip);
+        if (materialized == null) {
+          failureCount++;
+          continue;
+        }
+        final result = await _gallerySaveService.saveVideoToGallery(
+          materialized.requireVideo,
+        );
 
         switch (result) {
           case GallerySaveSuccess():
@@ -585,7 +612,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
   /// Reloads both the active and trashed clip lists. Used after restore
   /// so both views reflect the change.
   Future<void> _reloadClipsAndTrash(Emitter<ClipsLibraryState> emit) async {
-    final clips = await _clipLibraryService.getAllClips();
+    final clips = _applyTypeFilter(await _clipLibraryService.getAllClips());
     final trashed = await _clipLibraryService.getTrashedClips();
     emit(
       state.copyWith(

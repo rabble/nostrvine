@@ -2771,6 +2771,8 @@
     "videoRecorderCaptureCloseLabel": "Chiudi",
     "videoRecorderCaptureNextLabel": "Avanti",
     "videoRecorderLipSyncAddAudioFirst": "Aggiungi audio prima di registrare",
+    "videoRecorderStopMotionAssembling": "Creazione del video…",
+    "videoRecorderStopMotionAssembleFailed": "Impossibile creare il video. Riprova.",
     "videoRecorderToggleFlashLabel": "Attiva/disattiva flash",
     "videoRecorderCycleTimerLabel": "Cambia timer",
     "videoRecorderToggleAspectRatioLabel": "Cambia rapporto d'aspetto",
@@ -4084,6 +4086,9 @@
     "videoEditorMergeLabel": "Unisci",
     "videoEditorMergeSelectedClipsSemanticLabel": "Unisci le clip selezionate",
     "videoEditorDeleteSelectedClipsSemanticLabel": "Elimina le clip selezionate",
+    "videoEditorDeleteSelectedFramesSemanticLabel": "Elimina i fotogrammi selezionati",
+    "videoEditorReverseSelectedFramesSemanticLabel": "Inverti i fotogrammi selezionati",
+    "videoEditorStopMotionTooShortSnackbar": "Il tuo video deve durare almeno {seconds}s: scatta ancora qualche fotogramma.",
     "videoEditorMergeProgressLabel": "Un momento, stiamo unendo le tue clip",
     "videoEditorMergeFailed": "Impossibile unire le clip. Riprova.",
     "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device.",
@@ -4562,5 +4567,13 @@
   "authSignInErrorNetwork": "Impossibile raggiungere il server. Controlla la connessione e riprova.",
   "authSignInErrorGeneric": "Qualcosa è andato storto. Riprova.",
   "authSignInOptionsHintPrefix": "Non sai come hai effettuato l'accesso l'ultima volta? ",
-  "authSignInOptionsHintCta": "Vedi tutte le opzioni di accesso"
+  "authSignInOptionsHintCta": "Vedi tutte le opzioni di accesso",
+    "videoEditorStopMotionFramesPerImageLabel": "Fotogrammi per immagine",
+    "videoEditorStopMotionFramesPerImageValueSemanticLabel": "{count} fotogrammi per immagine",
+    "videoEditorStopMotionIncreaseFramesPerImageSemanticLabel": "Aumenta fotogrammi per immagine",
+    "videoEditorStopMotionDecreaseFramesPerImageSemanticLabel": "Riduci fotogrammi per immagine",
+    "videoEditorStopMotionFrameSemanticLabel": "Fotogramma stop-motion {position} di {total}",
+    "videoEditorStopMotionFramesCount": "{count, plural, =1{1 fotogramma} other{{count} fotogrammi}}",
+    "videoEditorStopMotionFramesPerImageButtonLabel": "Fotogrammi",
+    "libraryStopMotionClipLabel": "Clip stop-motion"
 }

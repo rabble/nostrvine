@@ -24,7 +24,7 @@ class VideoEditorReverseService {
     required String renderId,
   }) async {
     final documentsPath = await getDocumentsPath();
-    final inputPath = await sourceClip.video.safeFilePath();
+    final inputPath = await sourceClip.requireVideo.safeFilePath();
     final outputPath = p.join(documentsPath, '${sourceClip.id}_reversed.mp4');
 
     // Defensive: refuse to render when the input path collides with the

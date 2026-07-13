@@ -106,8 +106,17 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
                     /// Thumbnail or placeholder
                     _Thumbnail(clip: widget.clip),
 
-                    /// Duration badge - bottom left
-                    if (widget.showDurationBadge)
+                    /// Stop-motion marker + still count - top left
+                    if (widget.clip.isStopMotion)
+                      _StopMotionBadge(
+                        frameCount: widget.clip.stopMotionFrames?.length ?? 0,
+                      ),
+
+                    /// Duration badge - bottom left. Hidden for stop-motion
+                    /// recordings: their playback length (frame count / 12fps)
+                    /// is a tiny, misleading value, so they read as a still
+                    /// image marked only by the stop-motion badge.
+                    if (widget.showDurationBadge && !widget.clip.isStopMotion)
                       _DurationBadge(clip: widget.clip),
 
                     if (widget.clip.libraryTitle case final title?)
@@ -173,7 +182,17 @@ class _ThumbnailState extends State<_Thumbnail> {
     if (_thumbnailExists && widget.clip.thumbnailPath != null) {
       return Hero(
         tag: 'Video-Clip-Preview-${widget.clip.id}',
-        child: Image.file(File(widget.clip.thumbnailPath!), fit: .cover),
+        // Stop-motion clips use a full-resolution still as their thumbnail;
+        // bound the decode to the grid cell so it doesn't cost tens of MB.
+        child: Image.file(
+          File(widget.clip.thumbnailPath!),
+          fit: .cover,
+          cacheHeight:
+              (MediaQuery.sizeOf(context).width *
+                      MediaQuery.devicePixelRatioOf(context) /
+                      2)
+                  .round(),
+        ),
       );
     }
 
@@ -209,6 +228,51 @@ class _TitleBadge extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: VineTheme.labelSmallFont(),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Marks a clip in the library as a stop-motion recording and shows how many
+/// stills it holds (top-left corner).
+class _StopMotionBadge extends StatelessWidget {
+  const _StopMotionBadge({required this.frameCount});
+
+  /// Number of captured stills in the set.
+  final int frameCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return PositionedDirectional(
+      start: 6,
+      top: 6,
+      child: Semantics(
+        label: context.l10n.libraryStopMotionClipLabel,
+        value: context.l10n.videoEditorStopMotionFramesCount(frameCount),
+        // The icon + count are decorative here; the count is already announced
+        // via the badge's semantics value, so exclude the visual content to
+        // keep a single, clean semantics node.
+        child: ExcludeSemantics(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            decoration: BoxDecoration(
+              color: VineTheme.scrim65,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              spacing: 3,
+              children: [
+                const DivineIcon(
+                  icon: .imagesSquare,
+                  color: VineTheme.lightText,
+                  size: 14,
+                ),
+                Text('$frameCount', style: VineTheme.labelSmallFont()),
+              ],
+            ),
           ),
         ),
       ),

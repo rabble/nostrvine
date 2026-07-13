@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:divine_camera/divine_camera.dart'
     show CameraLensMetadata, DivineCameraLens;
 import 'package:models/models.dart' as model show AspectRatio;
+import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/utils/path_resolver.dart';
 import 'package:path/path.dart' as p;
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -15,11 +16,12 @@ import 'package:unified_logger/unified_logger.dart';
 class DivineVideoClip {
   DivineVideoClip({
     required this.id,
-    required this.video,
     required this.duration,
     required this.recordedAt,
     required this.targetAspectRatio,
     required double? originalAspectRatio,
+    this.video,
+    this.stopMotionFrames,
     this.libraryTitle,
     this.thumbnailPath,
     Duration? thumbnailTimestamp,
@@ -38,11 +40,24 @@ class DivineVideoClip {
     this.proofManifestJson,
     this.deletedAt,
     this.transition,
-  }) : _thumbnailTimestamp = thumbnailTimestamp,
+  }) : assert(
+         video != null || stopMotionFrames != null,
+         'A clip must have either a video file or stop-motion frames',
+       ),
+       _thumbnailTimestamp = thumbnailTimestamp,
        _originalAspectRatio = originalAspectRatio;
 
   final String id;
-  final EditorVideo video;
+
+  /// Rendered video for a normal clip, or `null` for a stop-motion clip whose
+  /// source of truth is [stopMotionFrames] (an mp4 is rendered on demand at
+  /// publish / gallery save).
+  final EditorVideo? video;
+
+  /// Captured stop-motion stills (source of truth) for a frames-based clip, or
+  /// `null` for a normal video clip.
+  final List<StopMotionClipFrame>? stopMotionFrames;
+
   final String? libraryTitle;
   final Duration duration;
   final DateTime recordedAt;
@@ -124,6 +139,26 @@ class DivineVideoClip {
 
   double get durationInSeconds => duration.inMilliseconds / 1000.0;
 
+  /// Whether this is a frames-based stop-motion clip (no rendered mp4 yet).
+  bool get isStopMotion => stopMotionFrames != null;
+
+  /// The rendered [video], asserting it exists.
+  ///
+  /// Use at call sites that only ever handle normal video clips (e.g. the
+  /// video editor pipeline, which stop-motion clips never enter).
+  ///
+  /// Throws [StateError] if this is a stop-motion clip whose mp4 has not been
+  /// rendered yet — that signals a frames-clip leaked into a video-only path.
+  EditorVideo get requireVideo {
+    final video = this.video;
+    if (video == null) {
+      throw StateError(
+        'requireVideo on a stop-motion clip ($id) without a rendered video',
+      );
+    }
+    return video;
+  }
+
   /// Effective duration after trimming (clamped to zero).
   Duration get trimmedDuration {
     final result = duration - trimStart - trimEnd;
@@ -183,7 +218,8 @@ class DivineVideoClip {
   bool get isProcessing =>
       processingCompleter != null && !processingCompleter!.isCompleted;
 
-  /// Whether this clip's source video file currently exists on disk.
+  /// Whether this clip's source media currently exists on disk: the video
+  /// file, or — for a frames-only stop-motion clip — every captured still.
   ///
   /// A clip can outlive its media: when a clip is removed, [FileCleanupService]
   /// deletes its source file as soon as no clip/draft row references it — but
@@ -193,7 +229,16 @@ class DivineVideoClip {
   /// and freezes the editor, so restore/undo paths use this to drop orphaned
   /// clips. See `restoreDraft` and `VideoEditorCanvas._syncMainCapabilities`.
   bool get hasResolvableVideoFile {
-    final path = video.file?.path;
+    // Frames-only stop-motion clips have no video by design; their stills are
+    // the source of truth. Without this branch every history sync would treat
+    // the clip as orphaned and step the editor history backwards, silently
+    // undoing frame edits.
+    final frames = stopMotionFrames;
+    if (frames != null) {
+      return frames.isNotEmpty &&
+          frames.every((frame) => File(frame.path).existsSync());
+    }
+    final path = video?.file?.path;
     return path != null && File(path).existsSync();
   }
 
@@ -216,6 +261,7 @@ class DivineVideoClip {
   DivineVideoClip copyWith({
     String? id,
     EditorVideo? video,
+    List<StopMotionClipFrame>? stopMotionFrames,
     String? libraryTitle,
     bool clearLibraryTitle = false,
     Duration? duration,
@@ -250,6 +296,7 @@ class DivineVideoClip {
     return DivineVideoClip(
       id: id ?? this.id,
       video: video ?? this.video,
+      stopMotionFrames: stopMotionFrames ?? this.stopMotionFrames,
       libraryTitle: clearLibraryTitle
           ? null
           : (libraryTitle ?? this.libraryTitle),
@@ -292,10 +339,14 @@ class DivineVideoClip {
   Map<String, dynamic> toJson() {
     // Store only filenames (relative paths) for iOS compatibility
     // iOS changes the container path on app updates, so absolute paths break
-    final videoPath = video.file?.path;
+    final videoPath = video?.file?.path;
     return {
       'id': id,
       'filePath': videoPath != null ? p.basename(videoPath) : null,
+      if (stopMotionFrames != null)
+        'stopMotionFrames': [
+          for (final frame in stopMotionFrames!) frame.toJson(),
+        ],
       if (libraryTitle != null) 'libraryTitle': libraryTitle,
       'durationMs': duration.inMilliseconds,
       'recordedAt': recordedAt.toIso8601String(),
@@ -335,37 +386,51 @@ class DivineVideoClip {
     final aspectRatioName =
         (json['targetAspectRatio'] ?? json['aspectRatio']) as String?;
     final thumbnailTimestampMs = json['thumbnailTimestampMs'] as int?;
-
-    // A clip's only persisted video source is its file path; without it the
-    // clip can't be reconstructed (`EditorVideo` requires a non-null source).
-    // Validate the required fields up front and throw a typed error so the
-    // loader can skip this single corrupt row instead of a cryptic
-    // `Null is not a subtype of String` cast aborting the whole library/draft
-    // load.
-    final id = json['id'] as String?;
     final filePath = json['filePath'] as String?;
+    final stopMotionFramesJson = json['stopMotionFrames'] as List<dynamic>?;
+    final stopMotionFrames = stopMotionFramesJson
+        ?.map(
+          (e) => StopMotionClipFrame.fromJson(
+            e as Map<String, dynamic>,
+            documentsPath,
+            useOriginalPath: useOriginalPath,
+          ),
+        )
+        .toList();
+
+    // A clip's video source is either a persisted file path or, for
+    // stop-motion clips, the captured [stopMotionFrames] (an mp4 is rendered
+    // on demand). A clip with neither can't be reconstructed (`EditorVideo`
+    // requires a non-null source). Validate the required fields up front and
+    // throw a typed error so the loader can skip this single corrupt row
+    // instead of a cryptic `Null is not a subtype of String` cast aborting the
+    // whole library/draft load.
+    final id = json['id'] as String?;
     final rawRecordedAt = (json['recordedAt'] ?? json['createdAt']) as String?;
     final durationMs = json['durationMs'] as int?;
     if (id == null ||
-        filePath == null ||
+        (filePath == null && stopMotionFrames == null) ||
         rawRecordedAt == null ||
         durationMs == null) {
       throw const FormatException(
         'DivineVideoClip JSON is missing a required field '
-        '(id, filePath, recordedAt, or durationMs); cannot reconstruct '
-        'the clip.',
+        '(id, a video source [filePath or stopMotionFrames], recordedAt, or '
+        'durationMs); cannot reconstruct the clip.',
       );
     }
 
     return DivineVideoClip(
       id: id,
-      video: EditorVideo.file(
-        resolvePath(
-          filePath,
-          documentsPath,
-          useOriginalPath: useOriginalPath,
-        ),
-      ),
+      video: filePath != null
+          ? EditorVideo.file(
+              resolvePath(
+                filePath,
+                documentsPath,
+                useOriginalPath: useOriginalPath,
+              ),
+            )
+          : null,
+      stopMotionFrames: stopMotionFrames,
       libraryTitle: json['libraryTitle'] as String?,
       duration: Duration(milliseconds: durationMs),
       recordedAt: DateTime.parse(rawRecordedAt),

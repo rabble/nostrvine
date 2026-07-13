@@ -46,7 +46,7 @@ class _VideoClipTransformScreenState extends State<VideoClipTransformScreen> {
   }
 
   Future<void> _initialize() async {
-    final path = widget.clip.video.file?.path;
+    final path = widget.clip.requireVideo.file?.path;
     if (path == null) {
       Log.warning(
         '⚠️ Transform preview skipped: clip ${widget.clip.id} has no file',
@@ -59,7 +59,7 @@ class _VideoClipTransformScreenState extends State<VideoClipTransformScreen> {
 
     try {
       final metadata = await ProVideoEditor.instance.getMetadata(
-        widget.clip.video,
+        widget.clip.requireVideo,
       );
 
       final player = DivineVideoPlayerController(useTexture: true);

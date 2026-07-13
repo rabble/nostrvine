@@ -38,6 +38,14 @@ abstract class TimelineConstants {
   /// Maximum pixels per second when zoomed in.
   static const double maxPixelsPerSecond = 600;
 
+  /// Maximum pixels per second on a stop-motion composition. Stills are held
+  /// for a handful of output frames (tens of ms), so meaningful zoom levels
+  /// sit far above what second-long video clips ever need.
+  static const double stopMotionMaxPixelsPerSecond = 2400;
+
+  /// Tile width the initial stop-motion zoom aims to give the average still.
+  static const double stopMotionTargetTileWidth = 56;
+
   /// Width of the playhead indicator line.
   static const double playheadWidth = 2;
 

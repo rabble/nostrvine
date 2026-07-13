@@ -3021,6 +3021,8 @@
     "videoRecorderCaptureCloseLabel": "Затвори",
     "videoRecorderCaptureNextLabel": "Следваща",
     "videoRecorderLipSyncAddAudioFirst": "Добавете аудио преди запис",
+    "videoRecorderStopMotionAssembling": "Създаване на видеото…",
+    "videoRecorderStopMotionAssembleFailed": "Видеото не можа да се създаде. Опитайте отново.",
     "videoRecorderToggleFlashLabel": "Превключване на светкавицата",
     "videoRecorderCycleTimerLabel": "Цикъл таймер",
     "videoRecorderToggleAspectRatioLabel": "Превключване на пропорциите",
@@ -4215,6 +4217,9 @@
     "videoEditorMergeLabel": "Обедини",
     "videoEditorMergeSelectedClipsSemanticLabel": "Обединяване на избраните клипове",
     "videoEditorDeleteSelectedClipsSemanticLabel": "Изтриване на избраните клипове",
+    "videoEditorDeleteSelectedFramesSemanticLabel": "Изтриване на избраните кадри",
+    "videoEditorReverseSelectedFramesSemanticLabel": "Обръщане на избраните кадри",
+    "videoEditorStopMotionTooShortSnackbar": "Видеото трябва да е поне {seconds}с — заснеми още няколко кадъра.",
     "videoEditorMergeProgressLabel": "Един момент, обединяваме клиповете ти",
     "videoEditorMergeFailed": "Клиповете не могат да бъдат обединени. Опитай отново.",
     "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device.",
@@ -4693,5 +4698,13 @@
   "authSignInErrorNetwork": "Сървърът е недостъпен. Провери връзката си и опитай отново.",
   "authSignInErrorGeneric": "Нещо се обърка. Опитай отново.",
   "authSignInOptionsHintPrefix": "Не си сигурен как влезе последния път? ",
-  "authSignInOptionsHintCta": "Виж всички опции за вход"
+  "authSignInOptionsHintCta": "Виж всички опции за вход",
+    "videoEditorStopMotionFramesPerImageLabel": "Кадри на изображение",
+    "videoEditorStopMotionFramesPerImageValueSemanticLabel": "{count} кадъра на изображение",
+    "videoEditorStopMotionIncreaseFramesPerImageSemanticLabel": "Увеличаване на кадрите на изображение",
+    "videoEditorStopMotionDecreaseFramesPerImageSemanticLabel": "Намаляване на кадрите на изображение",
+    "videoEditorStopMotionFrameSemanticLabel": "Стоп-моушън кадър {position} от {total}",
+    "videoEditorStopMotionFramesCount": "{count, plural, =1{1 кадър} other{{count} кадъра}}",
+    "videoEditorStopMotionFramesPerImageButtonLabel": "Кадри",
+    "libraryStopMotionClipLabel": "Стоп-моушън клип"
 }

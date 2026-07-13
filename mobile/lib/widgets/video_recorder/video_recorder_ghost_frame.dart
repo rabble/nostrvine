@@ -17,14 +17,18 @@ class VideoRecorderGhostFrame extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final showOverlay = context.select(
-      (VideoRecorderBloc b) => b.state.showLastClipOverlay,
+    final (showOverlay, capturesStills, stopMotionLastFrame) = context.select(
+      (VideoRecorderBloc b) => (
+        b.state.showLastClipOverlay,
+        b.state.recorderMode.capturesStills,
+        b.state.stopMotionLastFrame,
+      ),
     );
 
     // Use the last clip that has a ghost frame, not just the last clip.
     // This prevents the overlay from disappearing while recording a new
     // clip that doesn't have a ghost frame yet.
-    final ghostData = ref.watch(
+    final clipGhost = ref.watch(
       clipManagerProvider.select((s) {
         for (var i = s.clips.length - 1; i >= 0; i--) {
           final clip = s.clips[i];
@@ -38,6 +42,14 @@ class VideoRecorderGhostFrame extends ConsumerWidget {
         return null;
       }),
     );
+
+    // Stop-motion assembles at the end, so there are no clips during capture —
+    // align the next pose against the last captured still instead.
+    final ghostData = capturesStills
+        ? (stopMotionLastFrame != null
+              ? (path: stopMotionLastFrame, isFrontCamera: false)
+              : null)
+        : clipGhost;
 
     final showGhost = showOverlay && ghostData != null;
 

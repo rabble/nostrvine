@@ -6,12 +6,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/blocs/video_editor/tune_editor/video_editor_tune_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_main_actions_sheet.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -91,6 +94,43 @@ void main() {
       expect(find.text(l10n.videoEditorDrawLabel), findsOneWidget);
       expect(find.text(l10n.videoEditorFilterLabel), findsOneWidget);
       expect(find.text(l10n.videoEditorStickers), findsOneWidget);
+      expect(find.text(l10n.videoEditorMarkerLabel), findsOneWidget);
+    });
+
+    testWidgets('hides the marker action for a stop-motion composition', (
+      tester,
+    ) async {
+      when(() => clipBloc.state).thenReturn(
+        ClipEditorState(
+          clips: [
+            DivineVideoClip(
+              id: 'sm1',
+              stopMotionFrames: const [
+                StopMotionClipFrame(
+                  path: '/frames/f0.jpg',
+                  duration: Duration(milliseconds: 83),
+                ),
+              ],
+              duration: const Duration(milliseconds: 83),
+              recordedAt: DateTime(2024),
+              targetAspectRatio: model.AspectRatio.vertical,
+              originalAspectRatio: 9 / 16,
+            ),
+          ],
+        ),
+      );
+
+      await tester.pumpWidget(
+        _buildWidget(
+          mainBloc: mainBloc,
+          clipBloc: clipBloc,
+          timelineOverlayBloc: timelineOverlayBloc,
+        ),
+      );
+
+      expect(find.text(l10n.videoEditorMarkerLabel), findsNothing);
+      // The rest of the actions stay available.
+      expect(find.text(l10n.videoEditorCameraLabel), findsOneWidget);
     });
 
     testWidgets('tap on Clips triggers onOpenClipsEditor', (tester) async {

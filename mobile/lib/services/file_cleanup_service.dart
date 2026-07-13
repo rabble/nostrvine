@@ -173,7 +173,11 @@ class FileCleanupService {
     Set<String> referencedGhostFrameFilenames = const {},
   }) async {
     await deleteFilesIfUnreferenced(
-      [clip.video.file?.path, clip.thumbnailPath],
+      [
+        clip.video?.file?.path,
+        ...?clip.stopMotionFrames?.map((frame) => frame.path),
+        clip.thumbnailPath,
+      ],
       draftsDao: draftsDao,
       clipsDao: clipsDao,
     );
@@ -197,7 +201,13 @@ class FileCleanupService {
     Set<String> referencedGhostFrameFilenames = const {},
   }) async {
     final indexedPaths = clips
-        .expand((clip) => [clip.video.file?.path, clip.thumbnailPath])
+        .expand(
+          (clip) => [
+            clip.video?.file?.path,
+            ...?clip.stopMotionFrames?.map((frame) => frame.path),
+            clip.thumbnailPath,
+          ],
+        )
         .toList();
 
     await deleteFilesIfUnreferenced(
@@ -221,7 +231,8 @@ class FileCleanupService {
   }) async {
     final paths = <String?>[
       for (final clip in clips) ...[
-        await clip.video.safeFilePath(),
+        if (clip.video != null) await clip.video!.safeFilePath(),
+        ...?clip.stopMotionFrames?.map((frame) => frame.path),
         clip.thumbnailPath,
         clip.ghostFramePath,
       ],

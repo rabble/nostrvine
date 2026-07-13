@@ -8126,6 +8126,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Audio vor der Aufnahme hinzufügen';
 
   @override
+  String get videoRecorderStopMotionAssembling => 'Video wird erstellt…';
+
+  @override
+  String get videoRecorderStopMotionAssembleFailed =>
+      'Video konnte nicht erstellt werden. Bitte erneut versuchen.';
+
+  @override
   String get videoRecorderToggleFlashLabel => 'Blitz ein-/ausschalten';
 
   @override
@@ -8445,6 +8452,44 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get videoEditorDeleteSelectedItemSemanticLabel =>
       'Ausgewähltes Element löschen';
+
+  @override
+  String get videoEditorStopMotionFramesPerImageLabel => 'Frames pro Bild';
+
+  @override
+  String videoEditorStopMotionFramesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Frames',
+      one: '1 Frame',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorStopMotionFramesPerImageButtonLabel => 'Frames';
+
+  @override
+  String get libraryStopMotionClipLabel => 'Stop-Motion-Clip';
+
+  @override
+  String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
+    return '$count Frames pro Bild';
+  }
+
+  @override
+  String get videoEditorStopMotionIncreaseFramesPerImageSemanticLabel =>
+      'Frames pro Bild erhöhen';
+
+  @override
+  String get videoEditorStopMotionDecreaseFramesPerImageSemanticLabel =>
+      'Frames pro Bild verringern';
+
+  @override
+  String videoEditorStopMotionFrameSemanticLabel(int position, int total) {
+    return 'Stop-Motion-Bild $position von $total';
+  }
 
   @override
   String get videoEditorEditLabel => 'Bearbeiten';
@@ -8850,6 +8895,19 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get videoEditorDeleteSelectedClipsSemanticLabel =>
       'Ausgewählte Clips löschen';
+
+  @override
+  String get videoEditorDeleteSelectedFramesSemanticLabel =>
+      'Ausgewählte Frames löschen';
+
+  @override
+  String get videoEditorReverseSelectedFramesSemanticLabel =>
+      'Ausgewählte Frames umkehren';
+
+  @override
+  String videoEditorStopMotionTooShortSnackbar(int seconds) {
+    return 'Dein Video braucht mindestens ${seconds}s – nimm noch ein paar Frames auf.';
+  }
 
   @override
   String get videoEditorMergeProgressLabel =>

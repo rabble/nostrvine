@@ -11,6 +11,7 @@ import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -264,6 +265,60 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     return clip;
   }
 
+  /// Adds a frames-based stop-motion clip to the manager.
+  ///
+  /// The captured stills ([frames]) are the clip's source of truth; no mp4
+  /// exists yet — the editor previews the frames via the stop-motion player and
+  /// an mp4 is rendered only at publish. Trimming and proof generation are
+  /// skipped (both operate on a rendered video).
+  DivineVideoClip addStopMotionClip({
+    required List<StopMotionClipFrame> frames,
+    required double originalAspectRatio,
+    required model.AspectRatio targetAspectRatio,
+    required Duration duration,
+    String? id,
+    String? thumbnailPath,
+    CameraLensMetadata? lensMetadata,
+  }) {
+    // A new clip supersedes any pending undo from a previous tap.
+    if (state.pendingDeletion != null) {
+      _cancelPendingDeletionTimer();
+      unawaited(_commitPendingDeletion());
+    }
+
+    final clip = DivineVideoClip(
+      // Reuse the session id when the frames were already persisted to the
+      // library during capture, so assembling updates that row instead of
+      // creating a second one.
+      id:
+          id ??
+          'clip_${DateTime.now().millisecondsSinceEpoch}_${_clipCounter++}',
+      stopMotionFrames: frames,
+      duration: duration,
+      recordedAt: .now(),
+      thumbnailPath: thumbnailPath,
+      targetAspectRatio: targetAspectRatio,
+      originalAspectRatio: originalAspectRatio,
+      lensMetadata: lensMetadata,
+    );
+
+    _clips.add(clip);
+    Log.info(
+      '📎 Added stop-motion clip: ${clip.id}, ${frames.length} frame(s)',
+      name: 'ClipManagerNotifier',
+      category: .video,
+    );
+
+    state = state.copyWith(
+      clips: List.unmodifiable(_clips),
+      activeRecordingDuration: .zero,
+    );
+
+    _triggerAutosave();
+
+    return clip;
+  }
+
   /// Generates a ProofMode / C2PA attestation for a single clip.
   ///
   /// Waits for any pending processing (e.g. trimming) to finish first,
@@ -274,7 +329,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
       // Wait for trimming to finish before proofing the final file
       await clip.processingCompleter?.future;
 
-      final videoFile = clip.video.file;
+      final videoFile = clip.video?.file;
       if (videoFile == null) return;
 
       Log.debug(
@@ -918,6 +973,53 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
         stackTrace: stackTrace,
       );
       return false;
+    }
+  }
+
+  /// Persists the in-progress stop-motion capture session as a single library
+  /// clip so the recording is preserved the instant it is shot — before the
+  /// user assembles it and opens the editor.
+  ///
+  /// [id] is stable for the lifetime of a capture session (derived from the
+  /// first frame), so repeated calls upsert the same library row as frames are
+  /// added. Assembling later reuses the same [id] (see [addStopMotionClip]),
+  /// updating this row rather than creating a duplicate.
+  ///
+  /// Returns true if the row was saved.
+  Future<bool> saveStopMotionSessionToLibrary({
+    required String id,
+    required List<StopMotionClipFrame> frames,
+    required double originalAspectRatio,
+    required model.AspectRatio targetAspectRatio,
+    required Duration duration,
+    String? thumbnailPath,
+    CameraLensMetadata? lensMetadata,
+  }) {
+    final clip = DivineVideoClip(
+      id: id,
+      stopMotionFrames: frames,
+      duration: duration,
+      recordedAt: DateTime.now(),
+      thumbnailPath: thumbnailPath,
+      targetAspectRatio: targetAspectRatio,
+      originalAspectRatio: originalAspectRatio,
+      lensMetadata: lensMetadata,
+    );
+    return saveClipToLibrary(clip);
+  }
+
+  /// Removes an abandoned stop-motion session's library row (its frames were
+  /// all undone). Deletes the row only; the frame files are owned and cleaned
+  /// up by the recorder.
+  Future<void> removeStopMotionSessionFromLibrary(String id) async {
+    try {
+      await ref.read(clipLibraryServiceProvider).deleteClipRow(id);
+    } catch (e) {
+      Log.warning(
+        '⚠️ Failed to remove stop-motion session $id from library: $e',
+        name: 'ClipManagerNotifier',
+        category: .video,
+      );
     }
   }
 }

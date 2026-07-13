@@ -40,6 +40,44 @@ enum ClipSort {
   }
 }
 
+/// Which clip types the library shows.
+///
+/// Opened from the recorder, the library is scoped to the type that matches
+/// the current recorder mode — stop-motion stills and normal video clips
+/// cannot share one editor timeline. Opened standalone it shows [all] types
+/// (mixing is instead blocked at selection time, see
+/// [ClipsLibraryState.selectedIsStopMotion]).
+enum LibraryClipTypeFilter {
+  all,
+  stopMotion,
+  video;
+
+  static const _queryValues = <LibraryClipTypeFilter, String>{
+    LibraryClipTypeFilter.stopMotion: 'stop_motion',
+    LibraryClipTypeFilter.video: 'video',
+  };
+
+  /// Query-parameter value for this filter, or `null` for [all] — the default,
+  /// which is left off the URL entirely.
+  String? get queryValue => _queryValues[this];
+
+  /// Parses [value] back to a filter, defaulting to [all] for null/unknown.
+  static LibraryClipTypeFilter fromQuery(String? value) {
+    if (value == null) return LibraryClipTypeFilter.all;
+    for (final entry in _queryValues.entries) {
+      if (entry.value == value) return entry.key;
+    }
+    return LibraryClipTypeFilter.all;
+  }
+
+  /// Whether [clip] belongs to this filter.
+  bool matches(DivineVideoClip clip) => switch (this) {
+    LibraryClipTypeFilter.all => true,
+    LibraryClipTypeFilter.stopMotion => clip.isStopMotion,
+    LibraryClipTypeFilter.video => !clip.isStopMotion,
+  };
+}
+
 /// Operation status for clips library actions.
 enum ClipsLibraryStatus {
   /// Initial state, no operation in progress.
@@ -191,6 +229,19 @@ final class ClipsLibraryState extends Equatable {
   List<DivineVideoClip> get selectedClips {
     final clipsById = {for (final c in clips) c.id: c};
     return [for (final id in selectedClipIds) ?clipsById[id]];
+  }
+
+  /// Type of the current selection: `true` when stop-motion clips are
+  /// selected, `false` for normal video clips, `null` when nothing is
+  /// selected. Drives the no-mixing rule — stop-motion stills and normal
+  /// clips cannot coexist in one editor timeline, so once one type is
+  /// selected the other becomes non-selectable.
+  bool? get selectedIsStopMotion {
+    if (selectedClipIds.isEmpty) return null;
+    for (final clip in clips) {
+      if (selectedClipIds.contains(clip.id)) return clip.isStopMotion;
+    }
+    return null;
   }
 
   /// Creates a copy of this state with the given fields replaced.

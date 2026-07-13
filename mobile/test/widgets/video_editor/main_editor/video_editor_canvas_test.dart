@@ -12,6 +12,7 @@ import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bl
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_canvas.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:pro_image_editor/pro_image_editor.dart' show ProVideoController;
@@ -436,6 +437,55 @@ void main() {
     });
   });
 
+  group('stopMotionLoopPosition', () {
+    const total = Duration(milliseconds: 300);
+
+    test('advances from the anchor by the elapsed wall-clock', () {
+      expect(
+        stopMotionLoopPosition(
+          anchor: const Duration(milliseconds: 100),
+          elapsed: const Duration(milliseconds: 50),
+          total: total,
+        ),
+        const Duration(milliseconds: 150),
+      );
+    });
+
+    test('wraps around the total so playback loops', () {
+      // 250 + 100 = 350, 350 % 300 = 50.
+      expect(
+        stopMotionLoopPosition(
+          anchor: const Duration(milliseconds: 250),
+          elapsed: const Duration(milliseconds: 100),
+          total: total,
+        ),
+        const Duration(milliseconds: 50),
+      );
+    });
+
+    test('returns zero exactly at a full loop boundary', () {
+      expect(
+        stopMotionLoopPosition(
+          anchor: Duration.zero,
+          elapsed: total,
+          total: total,
+        ),
+        Duration.zero,
+      );
+    });
+
+    test('returns zero when total is non-positive', () {
+      expect(
+        stopMotionLoopPosition(
+          anchor: const Duration(milliseconds: 100),
+          elapsed: const Duration(milliseconds: 50),
+          total: Duration.zero,
+        ),
+        Duration.zero,
+      );
+    });
+  });
+
   group('VideoEditorCanvas.resolveClipSnapshotSync', () {
     late Directory tempDir;
 
@@ -566,6 +616,74 @@ void main() {
 
       expect(decision.op, ClipSnapshotSyncOp.skip);
     });
+
+    test(
+      'treats a stop-motion clip whose stills exist as resolvable',
+      () async {
+        // Frames-only clips have no video by design; without the stop-motion
+        // branch in hasResolvableVideoFile every history sync would classify
+        // them as orphaned and step the history backwards, silently undoing
+        // frame edits.
+        final framePath = '${tempDir.path}/frame0.jpg';
+        File(framePath).writeAsBytesSync(const [0]);
+        final clip = DivineVideoClip(
+          id: 'sm',
+          stopMotionFrames: [
+            StopMotionClipFrame(
+              path: framePath,
+              duration: const Duration(milliseconds: 83),
+            ),
+          ],
+          duration: const Duration(milliseconds: 83),
+          recordedAt: DateTime(2024),
+          targetAspectRatio: model.AspectRatio.vertical,
+          originalAspectRatio: 9 / 16,
+        );
+
+        final decision = VideoEditorCanvas.resolveClipSnapshotSync(
+          snapshot: [clip],
+          direction: ClipHistoryDirection.none,
+          canUndo: true,
+          canRedo: false,
+          didReverse: false,
+        );
+
+        expect(decision.op, ClipSnapshotSyncOp.sync);
+        expect(decision.resolvableClips, [clip]);
+      },
+    );
+  });
+
+  group('VideoEditorCanvas.clipsChanged', () {
+    const hold2 = Duration(milliseconds: 83);
+    const hold4 = Duration(milliseconds: 167);
+
+    test('is false for equal-content lists (different instances)', () {
+      final a = _createStopMotionClip(id: 'sm', holds: [hold2, hold2]);
+      final b = _createStopMotionClip(id: 'sm', holds: [hold2, hold2]);
+
+      expect(VideoEditorCanvas.clipsChanged([a], [b]), isFalse);
+    });
+
+    test('detects a frame-hold change', () {
+      final a = _createStopMotionClip(id: 'sm', holds: [hold2, hold2]);
+      final b = _createStopMotionClip(id: 'sm', holds: [hold4, hold4]);
+
+      expect(VideoEditorCanvas.clipsChanged([a], [b]), isTrue);
+    });
+
+    test('detects a deleted frame', () {
+      final a = _createStopMotionClip(id: 'sm', holds: [hold2, hold2]);
+      final b = _createStopMotionClip(id: 'sm', holds: [hold2]);
+
+      expect(VideoEditorCanvas.clipsChanged([a], [b]), isTrue);
+    });
+
+    test('detects a clip-count change', () {
+      final a = _createStopMotionClip(id: 'sm', holds: [hold2]);
+
+      expect(VideoEditorCanvas.clipsChanged([a], []), isTrue);
+    });
   });
 }
 
@@ -574,6 +692,23 @@ DivineVideoClip _createClip({required String id, String? videoPath}) {
     id: id,
     video: EditorVideo.file(videoPath ?? '/test/$id.mp4'),
     duration: const Duration(seconds: 2),
+    recordedAt: DateTime(2024),
+    targetAspectRatio: model.AspectRatio.vertical,
+    originalAspectRatio: 9 / 16,
+  );
+}
+
+DivineVideoClip _createStopMotionClip({
+  required String id,
+  required List<Duration> holds,
+}) {
+  return DivineVideoClip(
+    id: id,
+    stopMotionFrames: [
+      for (var i = 0; i < holds.length; i++)
+        StopMotionClipFrame(path: '/frames/$id-$i.jpg', duration: holds[i]),
+    ],
+    duration: holds.fold(Duration.zero, (sum, hold) => sum + hold),
     recordedAt: DateTime(2024),
     targetAspectRatio: model.AspectRatio.vertical,
     originalAspectRatio: 9 / 16,

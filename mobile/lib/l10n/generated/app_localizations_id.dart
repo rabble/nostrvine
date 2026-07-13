@@ -8003,6 +8003,13 @@ class AppLocalizationsId extends AppLocalizations {
       'Tambahkan audio sebelum merekam';
 
   @override
+  String get videoRecorderStopMotionAssembling => 'Membuat video Anda…';
+
+  @override
+  String get videoRecorderStopMotionAssembleFailed =>
+      'Tidak dapat membuat video. Coba lagi.';
+
+  @override
   String get videoRecorderToggleFlashLabel => 'Ganti flash';
 
   @override
@@ -8318,6 +8325,43 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get videoEditorDeleteSelectedItemSemanticLabel =>
       'Hapus item yang dipilih';
+
+  @override
+  String get videoEditorStopMotionFramesPerImageLabel => 'Bingkai per gambar';
+
+  @override
+  String videoEditorStopMotionFramesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count bingkai',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorStopMotionFramesPerImageButtonLabel => 'Bingkai';
+
+  @override
+  String get libraryStopMotionClipLabel => 'Klip stop-motion';
+
+  @override
+  String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
+    return '$count bingkai per gambar';
+  }
+
+  @override
+  String get videoEditorStopMotionIncreaseFramesPerImageSemanticLabel =>
+      'Tambah bingkai per gambar';
+
+  @override
+  String get videoEditorStopMotionDecreaseFramesPerImageSemanticLabel =>
+      'Kurangi bingkai per gambar';
+
+  @override
+  String videoEditorStopMotionFrameSemanticLabel(int position, int total) {
+    return 'Bingkai stop-motion $position dari $total';
+  }
 
   @override
   String get videoEditorEditLabel => 'Edit';
@@ -8721,6 +8765,19 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get videoEditorDeleteSelectedClipsSemanticLabel =>
       'Hapus klip yang dipilih';
+
+  @override
+  String get videoEditorDeleteSelectedFramesSemanticLabel =>
+      'Hapus bingkai yang dipilih';
+
+  @override
+  String get videoEditorReverseSelectedFramesSemanticLabel =>
+      'Balikkan bingkai yang dipilih';
+
+  @override
+  String videoEditorStopMotionTooShortSnackbar(int seconds) {
+    return 'Videomu harus minimal $seconds detik — ambil beberapa bingkai lagi.';
+  }
 
   @override
   String get videoEditorMergeProgressLabel =>

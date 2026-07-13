@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
@@ -103,13 +104,23 @@ Future<void> openRecorderLibrary(BuildContext context, WidgetRef ref) async {
 
   final bloc = context.read<VideoRecorderBloc>();
 
+  // Scope the library to the current mode's clip type: stop-motion stills and
+  // normal video clips can't share one editor timeline, so each mode only sees
+  // (and can add) its own kind.
+  final clipTypeFilter = bloc.state.recorderMode.capturesStills
+      ? LibraryClipTypeFilter.stopMotion
+      : LibraryClipTypeFilter.video;
+
   // Lock recording before the push so a volume / Bluetooth trigger that races
   // the navigation can't start (or leave) a recording on the camera we are
   // about to release. The camera is still live here, so the lock can reset any
   // in-flight recording cleanly — without racing the deferred dispose below.
   bloc.add(const VideoRecorderRecordingLockedForNavigation());
 
-  final navigation = context.pushNamed(LibraryScreen.clipsOnlyRouteName);
+  final navigation = context.pushNamed(
+    LibraryScreen.clipsOnlyRouteName,
+    queryParameters: {'type': ?clipTypeFilter.queryValue},
+  );
 
   await awaitPushTransition(context);
   await _pauseCameraForNavigation(bloc);

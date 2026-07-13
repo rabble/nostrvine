@@ -4,8 +4,13 @@
 import 'dart:io';
 
 import 'package:db_client/db_client.dart';
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' as model show AspectRatio;
+import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
+import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:path/path.dart' as p;
 
@@ -130,6 +135,95 @@ void main() {
         verifyNever(() => clipsDao.isFileReferenced(any()));
         verifyNever(() => draftsDao.isDraftFileReferenced(any()));
       });
+    });
+
+    // Regression for the multi-set stop-motion frame loss: a stop-motion clip
+    // keeps its stills in the row's `data` JSON, not in an indexed file column
+    // (only the first still is mirrored into thumbnail_path). Deleting the
+    // autosave draft that also held the clip must NOT delete the stills the
+    // surviving library row still references — otherwise a saved set silently
+    // shrinks to its thumbnail and two sets merge to two frames.
+    group('stop-motion frames referenced only in data', () {
+      late AppDatabase database;
+      late ClipLibraryService libraryService;
+      late Directory tempDir;
+
+      setUp(() {
+        database = AppDatabase.test(NativeDatabase.memory());
+        libraryService = ClipLibraryService(
+          clipsDao: database.clipsDao,
+          draftsDao: database.draftsDao,
+        );
+        tempDir = Directory.systemTemp.createTempSync('divine_sm_cleanup');
+      });
+
+      tearDown(() async {
+        await database.close();
+        if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
+      });
+
+      DivineVideoClip writeStopMotionSet(String id, int frameCount) {
+        final frames = [
+          for (var i = 0; i < frameCount; i++)
+            StopMotionClipFrame(
+              path: (File(
+                p.join(tempDir.path, '${id}_frame_$i.jpg'),
+              )..writeAsBytesSync(const [1, 2, 3])).path,
+              duration: const Duration(microseconds: 41667),
+            ),
+        ];
+        return DivineVideoClip(
+          id: id,
+          stopMotionFrames: frames,
+          duration: const Duration(milliseconds: 125),
+          recordedAt: DateTime(2024),
+          targetAspectRatio: model.AspectRatio.vertical,
+          originalAspectRatio: 9 / 16,
+          // The recorder uses the first still as the library thumbnail.
+          thumbnailPath: frames.first.path,
+        );
+      }
+
+      test(
+        'keeps every still while the library row still references them',
+        () async {
+          final set = writeStopMotionSet('clip_sm_a', 3);
+          await libraryService.saveClip(set);
+
+          // Simulate the autosave-draft delete cleanup running on the same
+          // clip while its library row (draftId == null) survives.
+          await FileCleanupService.deleteRecordingClipFiles(
+            set,
+            draftsDao: database.draftsDao,
+            clipsDao: database.clipsDao,
+          );
+
+          for (final frame in set.stopMotionFrames!) {
+            expect(
+              File(frame.path).existsSync(),
+              isTrue,
+              reason: 'still ${frame.path} is referenced by the library row',
+            );
+          }
+        },
+      );
+
+      test(
+        'deletes stills once no row references them',
+        () async {
+          final set = writeStopMotionSet('clip_sm_b', 3);
+          // No row saved — nothing references the stills.
+          await FileCleanupService.deleteRecordingClipFiles(
+            set,
+            draftsDao: database.draftsDao,
+            clipsDao: database.clipsDao,
+          );
+
+          for (final frame in set.stopMotionFrames!) {
+            expect(File(frame.path).existsSync(), isFalse);
+          }
+        },
+      );
     });
   });
 }

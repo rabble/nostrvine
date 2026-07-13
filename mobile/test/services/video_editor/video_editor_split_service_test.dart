@@ -242,8 +242,8 @@ void main() {
 
           // Nothing is re-encoded; both halves keep the source file.
           expect(mockProVideoEditor.splitRequests, isEmpty);
-          expect(start!.video.file?.path, clip.video.file?.path);
-          expect(end!.video.file?.path, clip.video.file?.path);
+          expect(start!.video?.file?.path, clip.video?.file?.path);
+          expect(end!.video?.file?.path, clip.video?.file?.path);
         },
       );
 

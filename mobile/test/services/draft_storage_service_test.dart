@@ -11,6 +11,8 @@ import 'package:models/models.dart' show AspectRatio, AudioEvent;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
+import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
@@ -556,6 +558,105 @@ void main() {
 
         final drafts = await service.getAllDrafts();
         expect(drafts.length, 1);
+      });
+    });
+
+    group('stop-motion frame-only drafts', () {
+      late Directory docsDir;
+
+      setUp(() {
+        docsDir = Directory(documentsPath)..createSync(recursive: true);
+      });
+
+      tearDown(() {
+        if (docsDir.existsSync()) docsDir.deleteSync(recursive: true);
+      });
+
+      File writeFrame(String name) {
+        final file = File(p.join(documentsPath, name));
+        file.writeAsBytesSync(const [0, 1, 2, 3]);
+        return file;
+      }
+
+      DivineVideoClip framesOnlyClip({
+        required List<File> frames,
+        String id = 'stop_motion_clip',
+      }) {
+        return DivineVideoClip(
+          id: id,
+          stopMotionFrames: [
+            for (final frame in frames)
+              StopMotionClipFrame(
+                path: frame.path,
+                duration: const Duration(milliseconds: 167),
+              ),
+          ],
+          thumbnailPath: frames.first.path,
+          duration: Duration(milliseconds: frames.length * 167),
+          recordedAt: DateTime(2026),
+          targetAspectRatio: AspectRatio.vertical,
+          originalAspectRatio: 9 / 16,
+        );
+      }
+
+      test(
+        'deleting a draft keeps frame files referenced by a library clip',
+        () async {
+          final frame0 = writeFrame('draft_shared_frame0.jpg');
+          final frame1 = writeFrame('draft_shared_frame1.jpg');
+          final clip = framesOnlyClip(frames: [frame0, frame1]);
+          final libraryService = ClipLibraryService(
+            clipsDao: database.clipsDao,
+            draftsDao: database.draftsDao,
+          );
+
+          await libraryService.saveClip(clip);
+          await service.saveDraft(
+            DivineVideoDraft.create(
+              id: 'draft_stop_motion',
+              clips: [clip],
+              title: 'Stop motion',
+              description: '',
+              hashtags: const {},
+              selectedApproach: 'stop_motion',
+            ),
+          );
+
+          await service.deleteDraft('draft_stop_motion');
+
+          expect(frame0.existsSync(), isTrue);
+          expect(
+            frame1.existsSync(),
+            isTrue,
+            reason:
+                'all library stop-motion frame paths live in JSON, not only '
+                'indexed thumbnail/file columns',
+          );
+        },
+      );
+
+      test('validated autosave keeps frame-only stop-motion clips', () async {
+        final frame0 = writeFrame('autosave_frame0.jpg');
+        final frame1 = writeFrame('autosave_frame1.jpg');
+        final clip = framesOnlyClip(frames: [frame0, frame1]);
+
+        await service.saveDraft(
+          DivineVideoDraft.create(
+            id: VideoEditorConstants.autoSaveId,
+            clips: [clip],
+            title: 'Autosave',
+            description: '',
+            hashtags: const {},
+            selectedApproach: 'stop_motion',
+          ),
+        );
+
+        final autosave = await service.getAutosaveDraft();
+
+        expect(autosave, isNotNull);
+        expect(autosave!.clips, hasLength(1));
+        expect(autosave.clips.single.isStopMotion, isTrue);
+        expect(await service.hasValidAutosave(), isTrue);
       });
     });
 

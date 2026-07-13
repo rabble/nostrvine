@@ -26,7 +26,7 @@ List<DivineVideoClip> ensureClipProofsSimulated(
       continue;
     }
 
-    final videoFile = clip.video.file;
+    final videoFile = clip.requireVideo.file;
     if (videoFile == null) {
       result.add(clip);
       continue;

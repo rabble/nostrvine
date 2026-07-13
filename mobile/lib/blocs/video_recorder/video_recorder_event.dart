@@ -277,6 +277,33 @@ final class VideoRecorderGridLinesToggled extends VideoRecorderEvent {
   const VideoRecorderGridLinesToggled();
 }
 
+// === Stop-motion events ===
+
+/// Captures a single still in stop-motion mode and appends it to
+/// [VideoRecorderBlocState.stopMotionFrames]. No video is rendered here —
+/// frames are encoded into one video only on
+/// [VideoRecorderStopMotionAssembleRequested] (assemble-at-end), so capture
+/// stays instant.
+///
+/// Registered with `transformer: droppable()` so rapid taps can't fire
+/// overlapping captures.
+final class VideoRecorderStopMotionFrameCaptured extends VideoRecorderEvent {
+  const VideoRecorderStopMotionFrameCaptured();
+}
+
+/// Removes the most recently captured stop-motion frame and deletes its file.
+final class VideoRecorderStopMotionFrameUndone extends VideoRecorderEvent {
+  const VideoRecorderStopMotionFrameUndone();
+}
+
+/// Encodes all captured stop-motion frames into a single video, adds it to the
+/// clip manager, and signals the UI (via [StopMotionStatus.ready]) to open the
+/// editor.
+final class VideoRecorderStopMotionAssembleRequested
+    extends VideoRecorderEvent {
+  const VideoRecorderStopMotionAssembleRequested();
+}
+
 // === Internal events dispatched from service callbacks ===
 
 /// Internal event: camera service reported a state change

@@ -3047,6 +3047,8 @@
     "videoRecorderCaptureCloseLabel": "إغلاق",
     "videoRecorderCaptureNextLabel": "التالي",
     "videoRecorderLipSyncAddAudioFirst": "أضف صوتًا قبل التسجيل",
+    "videoRecorderStopMotionAssembling": "جارٍ إنشاء الفيديو…",
+    "videoRecorderStopMotionAssembleFailed": "تعذّر إنشاء الفيديو. حاول مرة أخرى.",
     "videoRecorderClipDeletedMessage": "تم نقل المقطع إلى المهملات",
     "videoRecorderClipUndoLabel": "تراجع",
     "libraryTrashTitle": "المحذوفة مؤخرًا",
@@ -4084,6 +4086,9 @@
     "videoEditorMergeLabel": "دمج",
     "videoEditorMergeSelectedClipsSemanticLabel": "دمج المقاطع المحددة",
     "videoEditorDeleteSelectedClipsSemanticLabel": "حذف المقاطع المحددة",
+    "videoEditorDeleteSelectedFramesSemanticLabel": "حذف الإطارات المحددة",
+    "videoEditorReverseSelectedFramesSemanticLabel": "عكس الإطارات المحددة",
+    "videoEditorStopMotionTooShortSnackbar": "يجب أن يكون الفيديو {seconds} ثانية على الأقل — التقط بضعة إطارات إضافية.",
     "videoEditorMergeProgressLabel": "لحظة من فضلك، نقوم بدمج مقاطعك",
     "videoEditorMergeFailed": "تعذّر دمج المقاطع. يُرجى المحاولة مرة أخرى.",
     "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device.",
@@ -4562,5 +4567,13 @@
   "authSignInErrorNetwork": "تعذّر الوصول إلى الخادم. تحقق من اتصالك وحاول مرة أخرى.",
   "authSignInErrorGeneric": "حدث خطأ ما. حاول مرة أخرى.",
   "authSignInOptionsHintPrefix": "لست متأكدًا كيف سجّلت الدخول آخر مرة؟ ",
-  "authSignInOptionsHintCta": "عرض جميع خيارات تسجيل الدخول"
+  "authSignInOptionsHintCta": "عرض جميع خيارات تسجيل الدخول",
+    "videoEditorStopMotionFramesPerImageLabel": "الإطارات لكل صورة",
+    "videoEditorStopMotionFramesPerImageValueSemanticLabel": "{count} إطارات لكل صورة",
+    "videoEditorStopMotionIncreaseFramesPerImageSemanticLabel": "زيادة الإطارات لكل صورة",
+    "videoEditorStopMotionDecreaseFramesPerImageSemanticLabel": "تقليل الإطارات لكل صورة",
+    "videoEditorStopMotionFrameSemanticLabel": "إطار الحركة الإيقافية {position} من {total}",
+    "videoEditorStopMotionFramesCount": "{count, plural, one{إطار واحد} two{إطاران} few{{count} إطارات} other{{count} إطار}}",
+    "videoEditorStopMotionFramesPerImageButtonLabel": "إطارات",
+    "libraryStopMotionClipLabel": "مقطع الحركة الإيقافية"
 }

@@ -7709,6 +7709,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoRecorderLipSyncAddAudioFirst => '録画する前にオーディオを追加してください';
 
   @override
+  String get videoRecorderStopMotionAssembling => '動画を作成しています…';
+
+  @override
+  String get videoRecorderStopMotionAssembleFailed =>
+      '動画を作成できませんでした。もう一度お試しください。';
+
+  @override
   String get videoRecorderToggleFlashLabel => 'フラッシュを切り替え';
 
   @override
@@ -8015,6 +8022,43 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get videoEditorDeleteSelectedItemSemanticLabel => '選択したアイテムを削除';
+
+  @override
+  String get videoEditorStopMotionFramesPerImageLabel => '1枚あたりのフレーム数';
+
+  @override
+  String videoEditorStopMotionFramesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countフレーム',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorStopMotionFramesPerImageButtonLabel => 'フレーム';
+
+  @override
+  String get libraryStopMotionClipLabel => 'ストップモーションクリップ';
+
+  @override
+  String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
+    return '1枚あたり$countフレーム';
+  }
+
+  @override
+  String get videoEditorStopMotionIncreaseFramesPerImageSemanticLabel =>
+      '1枚あたりのフレーム数を増やす';
+
+  @override
+  String get videoEditorStopMotionDecreaseFramesPerImageSemanticLabel =>
+      '1枚あたりのフレーム数を減らす';
+
+  @override
+  String videoEditorStopMotionFrameSemanticLabel(int position, int total) {
+    return 'ストップモーションのフレーム $total枚中$position枚目';
+  }
 
   @override
   String get videoEditorEditLabel => '編集';
@@ -8390,6 +8434,17 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get videoEditorDeleteSelectedClipsSemanticLabel => '選択したクリップを削除';
+
+  @override
+  String get videoEditorDeleteSelectedFramesSemanticLabel => '選択したフレームを削除';
+
+  @override
+  String get videoEditorReverseSelectedFramesSemanticLabel => '選択したフレームを逆順にする';
+
+  @override
+  String videoEditorStopMotionTooShortSnackbar(int seconds) {
+    return '動画は$seconds秒以上必要です。もう少しフレームを撮影してください。';
+  }
 
   @override
   String get videoEditorMergeProgressLabel => '少々お待ちください。クリップを結合しています';

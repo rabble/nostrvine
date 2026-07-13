@@ -110,7 +110,7 @@ class VideoEditorClipLibrarySaveService {
     DivineVideoClip flattened, {
     String? keepThumbnailPath,
   }) async {
-    await _deleteQuietly(flattened.video.file?.path);
+    await _deleteQuietly(flattened.video?.file?.path);
 
     final thumbnailPath = flattened.thumbnailPath;
     if (thumbnailPath != null && thumbnailPath != keepThumbnailPath) {

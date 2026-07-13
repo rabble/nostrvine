@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -23,6 +24,19 @@ void main() {
     late ProviderContainer container;
     late _MockDraftStorageService mockDraftStorageService;
     late _MockClipLibraryService mockClipLibraryService;
+
+    setUpAll(() {
+      registerFallbackValue(
+        DivineVideoClip(
+          id: 'fallback',
+          video: EditorVideo.file('/fallback.mp4'),
+          duration: Duration.zero,
+          recordedAt: DateTime(2024),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        ),
+      );
+    });
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
@@ -845,6 +859,90 @@ void main() {
         expect(clip.thumbnailPath, equals('/path/to/thumb.jpg'));
         expect(clip.duration, equals(const Duration(seconds: 2)));
         expect(clip.ghostFramePath, equals('/path/to/ghost.jpg'));
+      });
+    });
+
+    group('stop-motion session library persistence', () {
+      const frame = StopMotionClipFrame(
+        path: '/tmp/frame_0.jpg',
+        duration: Duration(milliseconds: 83),
+      );
+
+      test('addStopMotionClip reuses a caller-supplied id', () {
+        final notifier = container.read(clipManagerProvider.notifier);
+
+        final clip = notifier.addStopMotionClip(
+          id: 'clip_sm_frame_0',
+          frames: const [frame],
+          originalAspectRatio: 9 / 16,
+          targetAspectRatio: .vertical,
+          duration: const Duration(milliseconds: 83),
+          thumbnailPath: frame.path,
+        );
+
+        expect(clip.id, equals('clip_sm_frame_0'));
+        expect(
+          container.read(clipManagerProvider).clips.single.id,
+          equals('clip_sm_frame_0'),
+        );
+      });
+
+      test('addStopMotionClip generates an id when none is supplied', () {
+        final notifier = container.read(clipManagerProvider.notifier);
+
+        final clip = notifier.addStopMotionClip(
+          frames: const [frame],
+          originalAspectRatio: 9 / 16,
+          targetAspectRatio: .vertical,
+          duration: const Duration(milliseconds: 83),
+        );
+
+        expect(clip.id, startsWith('clip_'));
+        expect(clip.id, isNot(equals('clip_sm_frame_0')));
+      });
+
+      test(
+        'saveStopMotionSessionToLibrary upserts a frames-only clip by id',
+        () async {
+          when(
+            () => mockClipLibraryService.saveClip(any()),
+          ).thenAnswer((_) async {});
+          final notifier = container.read(clipManagerProvider.notifier);
+
+          final saved = await notifier.saveStopMotionSessionToLibrary(
+            id: 'clip_sm_frame_0',
+            frames: const [frame],
+            originalAspectRatio: 9 / 16,
+            targetAspectRatio: .vertical,
+            duration: const Duration(milliseconds: 83),
+            thumbnailPath: frame.path,
+          );
+
+          expect(saved, isTrue);
+          final captured =
+              verify(
+                    () => mockClipLibraryService.saveClip(captureAny()),
+                  ).captured.single
+                  as DivineVideoClip;
+          expect(captured.id, equals('clip_sm_frame_0'));
+          expect(captured.isStopMotion, isTrue);
+          expect(captured.stopMotionFrames, equals(const [frame]));
+          // A frames-only session clip is not added to the working set.
+          expect(container.read(clipManagerProvider).clips, isEmpty);
+        },
+      );
+
+      test('removeStopMotionSessionFromLibrary deletes the row only', () async {
+        when(
+          () => mockClipLibraryService.deleteClipRow(any()),
+        ).thenAnswer((_) async {});
+        final notifier = container.read(clipManagerProvider.notifier);
+
+        await notifier.removeStopMotionSessionFromLibrary('clip_sm_frame_0');
+
+        verify(
+          () => mockClipLibraryService.deleteClipRow('clip_sm_frame_0'),
+        ).called(1);
       });
     });
   });

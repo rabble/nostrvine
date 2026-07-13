@@ -86,7 +86,11 @@ class _VideoMetadataCoverScreenState
   }
 
   Future<void> _initializePlayer() async {
-    final localPath = await widget.clip.video.safeFilePath();
+    // Stop-motion clips have no scrubable video; their cover is the first
+    // captured frame (already set as the thumbnail).
+    final video = widget.clip.video;
+    if (video == null) return;
+    final localPath = await video.safeFilePath();
 
     if (!mounted) return;
 
@@ -241,14 +245,21 @@ class _VideoMetadataCoverScreenState
 
     var didSucceed = false;
     try {
-      final videoPath = await widget.clip.video.safeFilePath();
+      final video = widget.clip.video;
+      if (video == null) {
+        // Stop-motion: the cover is the first captured frame; nothing to
+        // re-extract. Close without changes.
+        if (mounted) Navigator.of(context).pop();
+        return;
+      }
+      final videoPath = await video.safeFilePath();
       if (videoPath.isNotEmpty) {
         final result = await VideoThumbnailService.extractThumbnail(
           videoPath: videoPath,
           targetTimestamp: _selectedPosition,
         );
         if (result != null && mounted) {
-          if (widget.clip.video.networkUrl != null) {
+          if (video.networkUrl != null) {
             // Published video — return the local path to the caller.
             // The Blossom upload and republish happen when the user presses Update.
             Navigator.of(context).pop(result.path);

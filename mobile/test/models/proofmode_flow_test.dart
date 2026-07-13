@@ -73,7 +73,7 @@ void main() {
 
       // Step 4: Convert draft to PendingUpload (as done in UploadManager:startUpload)
       final upload = PendingUpload.create(
-        localVideoPath: draft.clips.first.video.file!.path,
+        localVideoPath: draft.clips.first.requireVideo.file!.path,
         nostrPubkey: 'pubkey123',
         title: draft.title,
         description: draft.description,
@@ -146,7 +146,7 @@ void main() {
 
       // Upload should also not have ProofMode
       final upload = PendingUpload.create(
-        localVideoPath: draft.clips.first.video.file!.path,
+        localVideoPath: draft.clips.first.requireVideo.file!.path,
         nostrPubkey: 'pubkey123',
       );
 

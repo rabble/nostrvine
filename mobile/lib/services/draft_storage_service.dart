@@ -2,8 +2,6 @@
 // ABOUTME: Handles save, load, delete, clear, and migration from SharedPreferences
 
 import 'dart:convert';
-import 'dart:io';
-
 import 'package:db_client/db_client.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/draft_local_audio_extensions.dart';
@@ -81,8 +79,8 @@ class DraftStorageService {
               durationMs: clip.duration.inMilliseconds,
               recordedAt: clip.recordedAt,
               data: json.encode(clip.toJson()),
-              filePath: clip.video.file?.path != null
-                  ? p.basename(clip.video.file!.path)
+              filePath: clip.video?.file?.path != null
+                  ? p.basename(clip.video!.file!.path)
                   : null,
               thumbnailPath: clip.thumbnailPath != null
                   ? p.basename(clip.thumbnailPath!)
@@ -101,8 +99,8 @@ class DraftStorageService {
           publishAttempts: draft.publishAttempts,
           publishError: draft.publishError,
           data: json.encode(draftJson),
-          renderedFilePath: draft.finalRenderedClip?.video.file?.path != null
-              ? p.basename(draft.finalRenderedClip!.video.file!.path)
+          renderedFilePath: draft.finalRenderedClip?.video?.file?.path != null
+              ? p.basename(draft.finalRenderedClip!.video!.file!.path)
               : null,
           renderedThumbnailPath: draft.finalRenderedClip?.thumbnailPath != null
               ? p.basename(draft.finalRenderedClip!.thumbnailPath!)
@@ -178,25 +176,25 @@ class DraftStorageService {
     if (existingDraft != null) {
       final newFilePaths = <String?>{
         for (final clip in draft.clips) ...[
-          clip.video.file?.path,
+          clip.video?.file?.path,
           clip.thumbnailPath,
         ],
-        draft.finalRenderedClip?.video.file?.path,
+        draft.finalRenderedClip?.video?.file?.path,
         draft.finalRenderedClip?.thumbnailPath,
         draft.customThumbnailPath,
       };
 
       orphanedFiles = <String?>[
         for (final clip in existingDraft.clips) ...[
-          if (!newFilePaths.contains(clip.video.file?.path))
-            clip.video.file?.path,
+          if (!newFilePaths.contains(clip.video?.file?.path))
+            clip.video?.file?.path,
           if (!newFilePaths.contains(clip.thumbnailPath)) clip.thumbnailPath,
         ],
         if (existingDraft.finalRenderedClip != null) ...[
           if (!newFilePaths.contains(
-            existingDraft.finalRenderedClip?.video.file?.path,
+            existingDraft.finalRenderedClip?.video?.file?.path,
           ))
-            existingDraft.finalRenderedClip?.video.file?.path,
+            existingDraft.finalRenderedClip?.video?.file?.path,
           if (!newFilePaths.contains(
             existingDraft.finalRenderedClip?.thumbnailPath,
           ))
@@ -222,8 +220,8 @@ class DraftStorageService {
           durationMs: clip.duration.inMilliseconds,
           recordedAt: clip.recordedAt,
           data: json.encode(clip.toJson()),
-          filePath: clip.video.file?.path != null
-              ? p.basename(clip.video.file!.path)
+          filePath: clip.video?.file?.path != null
+              ? p.basename(clip.video!.file!.path)
               : null,
           thumbnailPath: clip.thumbnailPath != null
               ? p.basename(clip.thumbnailPath!)
@@ -242,8 +240,8 @@ class DraftStorageService {
       publishAttempts: draft.publishAttempts,
       publishError: draft.publishError,
       data: json.encode(draftJson),
-      renderedFilePath: draft.finalRenderedClip?.video.file?.path != null
-          ? p.basename(draft.finalRenderedClip!.video.file!.path)
+      renderedFilePath: draft.finalRenderedClip?.video?.file?.path != null
+          ? p.basename(draft.finalRenderedClip!.video!.file!.path)
           : null,
       renderedThumbnailPath: draft.finalRenderedClip?.thumbnailPath != null
           ? p.basename(draft.finalRenderedClip!.thumbnailPath!)
@@ -447,21 +445,16 @@ class DraftStorageService {
     return _clearMissingFinalRenderedClip(draft.copyWith(clips: validClips));
   }
 
-  /// Filter clips to only include those with existing video files.
+  /// Filter clips to only include those whose source media still exists.
   List<DivineVideoClip> _filterValidClips(List<DivineVideoClip> clips) {
-    return clips.where((clip) {
-      final videoPath = clip.video.file?.path;
-      if (videoPath == null) return false;
-      return File(videoPath).existsSync();
-    }).toList();
+    return clips.where((clip) => clip.hasResolvableVideoFile).toList();
   }
 
   DivineVideoDraft _clearMissingFinalRenderedClip(DivineVideoDraft draft) {
     final finalClip = draft.finalRenderedClip;
     if (finalClip == null) return draft;
 
-    final videoPath = finalClip.video.file?.path;
-    if (videoPath != null && File(videoPath).existsSync()) return draft;
+    if (finalClip.hasResolvableVideoFile) return draft;
 
     Log.info(
       '📝 Draft ${draft.id}: final rendered clip missing, clearing reference',

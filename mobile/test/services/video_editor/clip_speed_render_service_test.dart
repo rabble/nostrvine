@@ -230,7 +230,7 @@ void main() {
             playbackSpeed: 2,
             path: p.join(tempDir.path, 'source.mp4'),
           );
-          File(c.video.file!.path).writeAsStringSync('source');
+          File(c.video!.file!.path).writeAsStringSync('source');
           final fakeEditor = _FakeProVideoEditor();
           editor.ProVideoEditor.instance = fakeEditor;
           final service = ClipSpeedRenderService();
@@ -285,7 +285,7 @@ void main() {
             playbackSpeed: 2,
             path: p.join(tempDir.path, 'source.mp4'),
           );
-          File(c.video.file!.path).writeAsStringSync('source');
+          File(c.video!.file!.path).writeAsStringSync('source');
           final fakeEditor = _FakeProVideoEditor();
           editor.ProVideoEditor.instance = fakeEditor;
           final service = ClipSpeedRenderService();
@@ -314,7 +314,7 @@ void main() {
             playbackSpeed: 2,
             path: p.join(tempDir.path, 'source.mp4'),
           );
-          File(c.video.file!.path).writeAsStringSync('source');
+          File(c.video!.file!.path).writeAsStringSync('source');
           final fakeEditor = _FakeProVideoEditor();
           editor.ProVideoEditor.instance = fakeEditor;
           final service = ClipSpeedRenderService();

@@ -100,7 +100,7 @@ class ClipWaveformManager {
         () => ValueNotifier(null),
       );
 
-      final path = clip.video.file?.path;
+      final path = clip.video?.file?.path;
       if (path == null) {
         // A clip whose source file isn't resolved yet (e.g. still rendering).
         _paths.remove(clip.id);

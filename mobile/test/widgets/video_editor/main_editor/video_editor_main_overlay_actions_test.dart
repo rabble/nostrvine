@@ -8,9 +8,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' as model show AspectRatio;
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
+import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/models/video_publish/video_publish_provider_state.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -73,12 +78,17 @@ void main() {
 
   group(VideoEditorMainOverlayActions, () {
     late _MockVideoEditorMainBloc mockBloc;
+    late ClipEditorBloc clipEditorBloc;
     late MockGoRouter mockGoRouter;
     late _FakeVideoEditorNotifier fakeVideoEditorNotifier;
     late _FakeVideoPublishNotifier fakeVideoPublishNotifier;
 
     setUp(() {
       mockBloc = _MockVideoEditorMainBloc();
+      clipEditorBloc = ClipEditorBloc(
+        onFinalClipInvalidated: () {},
+        saveClipToLibrary: ({required clip}) async => false,
+      );
       mockGoRouter = MockGoRouter();
 
       when(() => mockBloc.state).thenReturn(const VideoEditorMainState());
@@ -87,6 +97,8 @@ void main() {
       ).thenAnswer((_) => const Stream<VideoEditorMainState>.empty());
       when(() => mockGoRouter.pop<Object?>(any())).thenAnswer((_) async {});
     });
+
+    tearDown(() => clipEditorBloc.close());
 
     Widget buildWidget({
       VideoEditorMainState? state,
@@ -134,8 +146,11 @@ void main() {
                 onOpenMusicLibrary: () {},
                 onOpenVoiceOver: () {},
                 onAddEditTextLayer: ([layer]) async => null,
-                child: BlocProvider<VideoEditorMainBloc>.value(
-                  value: mockBloc,
+                child: MultiBlocProvider(
+                  providers: [
+                    BlocProvider<VideoEditorMainBloc>.value(value: mockBloc),
+                    BlocProvider<ClipEditorBloc>.value(value: clipEditorBloc),
+                  ],
                   child: const VideoEditorMainOverlayActions(),
                 ),
               ),
@@ -361,6 +376,126 @@ void main() {
           expect(find.text('Failed to save'), findsNothing);
           // The prompt stays open so the in-flight save can land.
           expect(find.text('Save your draft?'), findsOneWidget);
+        },
+      );
+    });
+
+    group('stop-motion minimum length gate', () {
+      DivineVideoClip stopMotionClip(Duration total) => DivineVideoClip(
+        id: 'sm1',
+        stopMotionFrames: [
+          StopMotionClipFrame(path: '/frames/f0.jpg', duration: total),
+        ],
+        duration: total,
+        recordedAt: DateTime(2024),
+        targetAspectRatio: model.AspectRatio.vertical,
+        originalAspectRatio: 9 / 16,
+      );
+
+      Finder doneButton() => find.ancestor(
+        of: find.byWidgetPredicate(
+          (w) => w is DivineIcon && w.icon == DivineIconName.arrowRight,
+        ),
+        matching: find.byType(DivineIconButton),
+      );
+
+      testWidgets('a too-short composition shows the snackbar and stays', (
+        tester,
+      ) async {
+        clipEditorBloc.add(
+          ClipEditorInitialized([
+            stopMotionClip(const Duration(milliseconds: 500)),
+          ]),
+        );
+        await tester.pumpWidget(buildWidget());
+        await tester.pump();
+
+        await tester.tap(doneButton());
+        await tester.pump();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          find.text(l10n.videoEditorStopMotionTooShortSnackbar(1)),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('a long-enough composition passes without a snackbar', (
+        tester,
+      ) async {
+        clipEditorBloc.add(
+          ClipEditorInitialized([stopMotionClip(const Duration(seconds: 2))]),
+        );
+        await tester.pumpWidget(buildWidget());
+        await tester.pump();
+
+        await tester.tap(doneButton());
+        await tester.pump();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          find.text(l10n.videoEditorStopMotionTooShortSnackbar(1)),
+          findsNothing,
+        );
+      });
+    });
+
+    group('stop-motion frames chip', () {
+      DivineVideoClip clipWithHolds(List<int> holds) {
+        final frames = [
+          for (final (i, hold) in holds.indexed)
+            StopMotionClipFrame(
+              path: '/frames/f$i.jpg',
+              duration: StopMotionFrameOps.framesPerImageToDuration(hold),
+            ),
+        ];
+        return DivineVideoClip(
+          id: 'sm1',
+          stopMotionFrames: frames,
+          duration: StopMotionFrameOps.totalDuration(frames),
+          recordedAt: DateTime(2024),
+          targetAspectRatio: model.AspectRatio.vertical,
+          originalAspectRatio: 9 / 16,
+        );
+      }
+
+      testWidgets('shows the shared global hold', (tester) async {
+        clipEditorBloc.add(
+          ClipEditorInitialized([
+            clipWithHolds([3, 3, 3]),
+          ]),
+        );
+        await tester.pumpWidget(buildWidget());
+        await tester.pump();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          find.text(l10n.videoEditorStopMotionFramesCount(3)),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets(
+        'shows the most common hold instead of the bare label when '
+        'frames disagree',
+        (tester) async {
+          clipEditorBloc.add(
+            ClipEditorInitialized([
+              clipWithHolds([2, 2, 1, 2]),
+            ]),
+          );
+          await tester.pumpWidget(buildWidget());
+          await tester.pump();
+
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          expect(
+            find.text(l10n.videoEditorStopMotionFramesCount(2)),
+            findsOneWidget,
+          );
+          expect(
+            find.text(l10n.videoEditorStopMotionFramesPerImageLabel),
+            findsNothing,
+          );
         },
       );
     });

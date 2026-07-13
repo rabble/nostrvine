@@ -2,6 +2,8 @@ import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
+import 'package:openvine/widgets/stop_motion/stop_motion_player.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_thumbnail.dart';
 
 class VideoEditorPlayer extends StatelessWidget {
@@ -11,6 +13,8 @@ class VideoEditorPlayer extends StatelessWidget {
     required this.originalAspectRatio,
     required this.bodySize,
     required this.renderSize,
+    this.stopMotionFrames,
+    this.stopMotionPosition,
     super.key,
   });
 
@@ -20,9 +24,20 @@ class VideoEditorPlayer extends StatelessWidget {
   final Size bodySize;
   final Size renderSize;
 
+  /// Captured stills when editing a stop-motion clip. When non-null the preview
+  /// plays the frame sequence via [StopMotionPlayer] instead of a video — the
+  /// clip has no mp4 (it is rendered only at publish).
+  final List<StopMotionClipFrame>? stopMotionFrames;
+
+  /// Current editor-timeline position, forwarded to the controlled
+  /// [StopMotionPlayer] so the shown frame follows play/pause and scrubbing
+  /// instead of free-running. Only meaningful when [stopMotionFrames] is set.
+  final Duration? stopMotionPosition;
+
   @override
   Widget build(BuildContext context) {
     final aspectRatio = targetAspectRatio.value;
+    final frames = stopMotionFrames;
 
     return ClipPath(
       clipper: _RoundedRectClipper(
@@ -32,15 +47,23 @@ class VideoEditorPlayer extends StatelessWidget {
       ),
       child: AspectRatio(
         aspectRatio: aspectRatio,
-        child: DivineVideoPlayer(
-          controller: controller,
-          placeholder: VideoEditorThumbnail(contentSize: renderSize),
-          // The editor swaps an external thumbnail spinner straight to the
-          // player once the frame is decoded, so the first frame is already
-          // rendered when this mounts. Cross-fade the thumbnail out instead of
-          // hard-cutting (which read as a flicker on editor open).
-          crossFadePlaceholder: true,
-        ),
+        child: frames != null
+            ? StopMotionPlayer(
+                frames: frames,
+                position: stopMotionPosition,
+                cacheHeight:
+                    (renderSize.height * MediaQuery.devicePixelRatioOf(context))
+                        .round(),
+              )
+            : DivineVideoPlayer(
+                controller: controller,
+                placeholder: VideoEditorThumbnail(contentSize: renderSize),
+                // The editor swaps an external thumbnail spinner straight to
+                // the player once the frame is decoded, so the first frame is
+                // already rendered when this mounts. Cross-fade the thumbnail
+                // out instead of hard-cutting (which read as a flicker).
+                crossFadePlaceholder: true,
+              ),
       ),
     );
   }

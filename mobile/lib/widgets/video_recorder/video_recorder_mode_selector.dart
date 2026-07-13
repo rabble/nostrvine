@@ -30,18 +30,28 @@ class _VideoRecorderModeSelectorWheelState
   late final ScrollController _scrollController;
   late int _selectedIndex;
   bool _isSnapping = false;
+  bool _userScrolling = false;
   double _lastScrollDelta = 0.0;
 
-  static const double _itemExtent = 96.0;
+  /// Scroll offset that centers each item, indexed by mode. Recomputed on
+  /// every build from the measured label widths.
+  List<double> _snapOffsets = const [];
+
   static const double _pillHeight = 34.0;
   static const double _pillHPadding = 16.0;
+
+  /// Constant gap kept between adjacent labels. Half sits on each side of a
+  /// label, so consecutive labels stay [_labelGap] apart no matter how much
+  /// their text widths differ.
+  static const double _labelGap = 44.0;
 
   @override
   void initState() {
     super.initState();
     _selectedIndex = VideoRecorderMode.values.indexOf(widget.selectedMode);
+    _snapOffsets = _snapOffsetsFor(_itemWidths(TextScaler.noScaling));
     _scrollController = ScrollController(
-      initialScrollOffset: _selectedIndex * _itemExtent,
+      initialScrollOffset: _snapOffsets[_selectedIndex],
     );
   }
 
@@ -50,8 +60,13 @@ class _VideoRecorderModeSelectorWheelState
     super.didUpdateWidget(oldWidget);
     if (oldWidget.selectedMode != widget.selectedMode) {
       final index = VideoRecorderMode.values.indexOf(widget.selectedMode);
+      // Self-originated changes (tap/snap) already animated to this index.
+      if (index == _selectedIndex) return;
       setState(() => _selectedIndex = index);
-      _animateTo(index);
+      // External changes (persisted-mode restore right after open,
+      // editor-driven switches) reposition instantly — a visible scroll
+      // animation on a screen the user just opened feels broken.
+      _jumpTo(index);
     }
   }
 
@@ -61,12 +76,17 @@ class _VideoRecorderModeSelectorWheelState
     super.dispose();
   }
 
+  void _jumpTo(int index) {
+    if (!_scrollController.hasClients) return;
+    _scrollController.jumpTo(_snapOffsets[index]);
+  }
+
   Future<void> _animateTo(int index) async {
     if (!_scrollController.hasClients) return;
     _isSnapping = true;
 
     await _scrollController.animateTo(
-      index * _itemExtent,
+      _snapOffsets[index],
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeInOut,
     );
@@ -75,16 +95,25 @@ class _VideoRecorderModeSelectorWheelState
 
   void _snapToNearest() {
     if (_isSnapping || !_scrollController.hasClients) return;
-    final fractional = _scrollController.offset / _itemExtent;
+    final offset = _scrollController.offset;
+    var floorIndex = 0;
+    var ceilIndex = _snapOffsets.length - 1;
+    for (var i = 0; i < _snapOffsets.length; i++) {
+      if (_snapOffsets[i] <= offset) floorIndex = i;
+    }
+    for (var i = _snapOffsets.length - 1; i >= 0; i--) {
+      if (_snapOffsets[i] >= offset) ceilIndex = i;
+    }
     int targetIndex;
     if (_lastScrollDelta > 0.5) {
-      targetIndex = fractional.ceil();
+      targetIndex = ceilIndex;
     } else if (_lastScrollDelta < -0.5) {
-      targetIndex = fractional.floor();
+      targetIndex = floorIndex;
     } else {
-      targetIndex = fractional.round();
+      final floorDist = (offset - _snapOffsets[floorIndex]).abs();
+      final ceilDist = (offset - _snapOffsets[ceilIndex]).abs();
+      targetIndex = floorDist <= ceilDist ? floorIndex : ceilIndex;
     }
-    targetIndex = targetIndex.clamp(0, VideoRecorderMode.values.length - 1);
     _lastScrollDelta = 0;
     // Defer to the next frame — animateTo called directly inside a scroll
     // notification callback is silently ignored by Flutter's scroll system.
@@ -102,15 +131,40 @@ class _VideoRecorderModeSelectorWheelState
     widget.onModeChanged(VideoRecorderMode.values[index]);
   }
 
-  /// Measures the width the pill needs for the given label text.
-  double _pillWidth(String label, TextScaler textScaler) {
+  /// Rendered width of [label] at [textScaler].
+  double _textWidth(String label, TextScaler textScaler) {
     final painter = TextPainter(
       text: TextSpan(text: label, style: VineTheme.titleSmallFont()),
       textDirection: TextDirection.ltr,
       textScaler: textScaler,
     )..layout();
-    return painter.width + _pillHPadding * 2;
+    return painter.width;
   }
+
+  /// Width of each item — its label plus a constant [_labelGap] — so the
+  /// spacing between adjacent labels stays uniform regardless of text width.
+  List<double> _itemWidths(TextScaler textScaler) => [
+    for (final mode in VideoRecorderMode.values)
+      _textWidth(mode.label, textScaler) + _labelGap,
+  ];
+
+  /// Scroll offset that centers each item, derived from [itemWidths]. The
+  /// result is viewport-independent; the leading/trailing scroll padding in
+  /// [build] takes care of centering the first and last items.
+  List<double> _snapOffsetsFor(List<double> itemWidths) {
+    final firstHalf = itemWidths.first / 2;
+    final offsets = <double>[];
+    var acc = 0.0;
+    for (final width in itemWidths) {
+      offsets.add(acc + width / 2 - firstHalf);
+      acc += width;
+    }
+    return offsets;
+  }
+
+  /// Width the centered pill needs to wrap [label].
+  double _pillWidth(String label, TextScaler textScaler) =>
+      _textWidth(label, textScaler) + _pillHPadding * 2;
 
   @override
   Widget build(BuildContext context) {
@@ -118,9 +172,12 @@ class _VideoRecorderModeSelectorWheelState
     final textScaler = MediaQuery.textScalerOf(
       context,
     ).clamp(maxScaleFactor: 1.3);
+    final itemWidths = _itemWidths(textScaler);
+    _snapOffsets = _snapOffsetsFor(itemWidths);
     return LayoutBuilder(
       builder: (context, constraints) {
-        final sidePadding = (constraints.maxWidth - _itemExtent) / 2;
+        final leadingPadding = (constraints.maxWidth - itemWidths.first) / 2;
+        final trailingPadding = (constraints.maxWidth - itemWidths.last) / 2;
         return SizedBox(
           height: kMinInteractiveDimension,
           child: Stack(
@@ -153,9 +210,17 @@ class _VideoRecorderModeSelectorWheelState
                 blendMode: .dstIn,
                 child: NotificationListener<ScrollNotification>(
                   onNotification: (notification) {
-                    if (notification is ScrollUpdateNotification) {
+                    if (notification is ScrollStartNotification) {
+                      // Only user drags/flings should snap. A programmatic
+                      // animateTo scroll has null drag details; letting its
+                      // end re-trigger snapping made the wheel keep advancing
+                      // to the last item.
+                      _userScrolling = notification.dragDetails != null;
+                    } else if (notification is ScrollUpdateNotification) {
                       _lastScrollDelta = notification.scrollDelta ?? 0;
-                    } else if (notification is ScrollEndNotification) {
+                    } else if (notification is ScrollEndNotification &&
+                        _userScrolling) {
+                      _userScrolling = false;
                       _snapToNearest();
                     }
                     return false;
@@ -163,35 +228,40 @@ class _VideoRecorderModeSelectorWheelState
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     controller: _scrollController,
-                    padding: .symmetric(horizontal: sidePadding),
+                    padding: EdgeInsets.only(
+                      left: leadingPadding,
+                      right: trailingPadding,
+                    ),
                     itemCount: modes.length,
-                    itemExtent: _itemExtent,
                     itemBuilder: (context, i) {
                       final isSelected = i == _selectedIndex;
-                      return Semantics(
-                        label: modes[i].label,
-                        selected: isSelected,
-                        button: true,
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () {
-                            _selectIndex(i, animate: true);
-                            if (!_isSnapping) _animateTo(i);
-                          },
-                          child: Center(
-                            child: AnimatedDefaultTextStyle(
-                              duration: const Duration(milliseconds: 200),
-                              style: VineTheme.titleSmallFont(
-                                color: isSelected
-                                    ? VineTheme.primary
-                                    : VineTheme.whiteText,
-                              ),
-                              child: Text(
-                                modes[i].label,
-                                maxLines: 1,
-                                overflow: TextOverflow.visible,
-                                softWrap: false,
-                                textScaler: textScaler,
+                      return SizedBox(
+                        width: itemWidths[i],
+                        child: Semantics(
+                          label: modes[i].label,
+                          selected: isSelected,
+                          button: true,
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () {
+                              _selectIndex(i, animate: true);
+                              if (!_isSnapping) _animateTo(i);
+                            },
+                            child: Center(
+                              child: AnimatedDefaultTextStyle(
+                                duration: const Duration(milliseconds: 200),
+                                style: VineTheme.titleSmallFont(
+                                  color: isSelected
+                                      ? VineTheme.primary
+                                      : VineTheme.whiteText,
+                                ),
+                                child: Text(
+                                  modes[i].label,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.visible,
+                                  softWrap: false,
+                                  textScaler: textScaler,
+                                ),
                               ),
                             ),
                           ),

@@ -2,8 +2,11 @@
 // ABOUTME: Provides CRUD with draft-scoped queries, ordering, and
 // ABOUTME: per-account isolation via ownerPubkey.
 
+import 'dart:convert';
+
 import 'package:db_client/db_client.dart';
 import 'package:drift/drift.dart';
+import 'package:path/path.dart' as p;
 
 part 'clips_dao.g.dart';
 
@@ -46,6 +49,18 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
   ) {
     if (ownerPubkey == null) return const Constant(true);
     return column.equals(ownerPubkey) | column.isNull();
+  }
+
+  /// Whether a clip is a *library* clip: it has no draft association, or (when
+  /// [includeAutosaveDraftId] is given) it belongs to the throwaway autosave /
+  /// recording-scratch draft. Clips saved into a named project are excluded.
+  Expression<bool> _isLibraryClip(
+    GeneratedColumn<String> draftIdColumn,
+    String? includeAutosaveDraftId,
+  ) {
+    if (includeAutosaveDraftId == null) return draftIdColumn.isNull();
+    return draftIdColumn.isNull() |
+        draftIdColumn.equals(includeAutosaveDraftId);
   }
 
   /// Get all clips for a draft. Excludes trashed clips.
@@ -134,15 +149,22 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
 
   // -- Library clip methods (draftId IS NULL) --
 
-  /// Get all library clips (no draft association), newest first.
-  /// Excludes trashed clips. When [ownerPubkey] is provided, returns
-  /// only clips owned by that account **plus** legacy clips with no
-  /// owner.
-  Future<List<ClipRow>> getLibraryClips({int? limit, String? ownerPubkey}) {
+  /// Get all library clips, newest first. Excludes trashed clips. When
+  /// [ownerPubkey] is provided, returns only clips owned by that account
+  /// **plus** legacy clips with no owner.
+  ///
+  /// Clips in a named draft are excluded; when [includeAutosaveDraftId] is
+  /// given, clips in that throwaway autosave draft are included so a
+  /// just-recorded clip stays visible while the editor holds it in autosave.
+  Future<List<ClipRow>> getLibraryClips({
+    int? limit,
+    String? ownerPubkey,
+    String? includeAutosaveDraftId,
+  }) {
     final query = select(clips)
       ..where(
         (t) =>
-            t.draftId.isNull() &
+            _isLibraryClip(t.draftId, includeAutosaveDraftId) &
             _ownedOrLegacy(t.ownerPubkey, ownerPubkey) &
             t.deletedAt.isNull(),
       )
@@ -158,11 +180,14 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
   /// Watch all library clips (reactive stream). Excludes trashed clips.
   /// When [ownerPubkey] is provided, returns only clips owned by that
   /// account **plus** legacy clips with no owner.
-  Stream<List<ClipRow>> watchLibraryClips({String? ownerPubkey}) {
+  Stream<List<ClipRow>> watchLibraryClips({
+    String? ownerPubkey,
+    String? includeAutosaveDraftId,
+  }) {
     final query = select(clips)
       ..where(
         (t) =>
-            t.draftId.isNull() &
+            _isLibraryClip(t.draftId, includeAutosaveDraftId) &
             _ownedOrLegacy(t.ownerPubkey, ownerPubkey) &
             t.deletedAt.isNull(),
       )
@@ -296,15 +321,84 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
         .write(ClipsCompanion(ownerPubkey: Value(newOwnerPubkey)));
   }
 
-  /// Check if a filename is referenced by any clip's file_path
-  /// or thumbnail_path.
+  /// Check if a filename is referenced by any clip-owned file reference.
+  ///
+  /// The indexed `file_path` / `thumbnail_path` columns cover normal clips and
+  /// thumbnail assets. Frames-only stop-motion clips have no `file_path`; their
+  /// source stills live inside the JSON `data` blob as
+  /// `stopMotionFrames[].path`, so candidate JSON rows are decoded and checked
+  /// before cleanup deletes a shared frame file.
   Future<bool> isFileReferenced(String filename) async {
-    final query = selectOnly(clips)
+    final indexedQuery = selectOnly(clips)
       ..addColumns([clips.id.count()])
       ..where(
-        clips.filePath.equals(filename) | clips.thumbnailPath.equals(filename),
+        clips.filePath.equals(filename) |
+            clips.thumbnailPath.equals(filename) |
+            clips.data.like('%"$filename"%'),
       );
-    final result = await query.getSingle();
-    return (result.read(clips.id.count()) ?? 0) > 0;
+    final indexedResult = await indexedQuery.getSingle();
+    if ((indexedResult.read(clips.id.count()) ?? 0) > 0) return true;
+
+    final candidateRows = await customSelect(
+      r"SELECT data FROM clips WHERE data LIKE ? ESCAPE '\'",
+      variables: [Variable.withString('%${_escapeSqlLike(filename)}%')],
+      readsFrom: {clips},
+    ).get();
+
+    return candidateRows.any((row) {
+      try {
+        final data = json.decode(row.read<String>('data'));
+        return _jsonReferencesFilename(data, filename);
+      } on FormatException {
+        return false;
+      }
+    });
+  }
+
+  static const _jsonFilePathKeys = {
+    'filePath',
+    'thumbnailPath',
+    'ghostFramePath',
+    'forwardVideoPath',
+    'reversedVideoPath',
+    'path',
+  };
+
+  static bool _jsonReferencesFilename(
+    Object? value,
+    String filename, {
+    String? key,
+  }) {
+    if (value is String) {
+      return key != null &&
+          _jsonFilePathKeys.contains(key) &&
+          p.basename(value) == filename;
+    }
+
+    if (value is Map) {
+      for (final entry in value.entries) {
+        if (_jsonReferencesFilename(
+          entry.value,
+          filename,
+          key: entry.key.toString(),
+        )) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    if (value is Iterable) {
+      return value.any((item) => _jsonReferencesFilename(item, filename));
+    }
+
+    return false;
+  }
+
+  static String _escapeSqlLike(String value) {
+    return value
+        .replaceAll(r'\', r'\\')
+        .replaceAll('%', r'\%')
+        .replaceAll('_', r'\_');
   }
 }

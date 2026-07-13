@@ -111,6 +111,7 @@ class ClipsTab extends StatelessWidget {
           selectedClipIds: state.selectedClipIds,
           showSelectionIndicator: selectionEnabled,
           disabledClipIds: state.disabledClipIds,
+          selectedIsStopMotion: state.selectedIsStopMotion,
           scrollController: scrollController,
           targetAspectRatio: targetAspectRatio,
           onTapClip: (clip) {
@@ -246,6 +247,7 @@ class _MasonryLayout extends StatelessWidget {
     this.disabledClipIds = const {},
     this.scrollController,
     this.targetAspectRatio,
+    this.selectedIsStopMotion,
   });
 
   final List<DivineVideoClip> clips;
@@ -256,6 +258,11 @@ class _MasonryLayout extends StatelessWidget {
   final ValueChanged<DivineVideoClip> onTapClip;
   final ValueChanged<DivineVideoClip> onLongPressClip;
   final double? targetAspectRatio;
+
+  /// Type of the current selection (`true` = stop-motion). When set, clips of
+  /// the other type are disabled so a selection can't mix stop-motion stills
+  /// with normal video clips.
+  final bool? selectedIsStopMotion;
 
   static const _columnCount = 3;
 
@@ -284,7 +291,9 @@ class _MasonryLayout extends StatelessWidget {
           disabled:
               disabledClipIds.contains(clip.id) ||
               (targetAspectRatio != null &&
-                  targetAspectRatio != clip.targetAspectRatio.value),
+                  targetAspectRatio != clip.targetAspectRatio.value) ||
+              (selectedIsStopMotion != null &&
+                  clip.isStopMotion != selectedIsStopMotion),
           onTap: () => onTapClip(clip),
           onLongPress: () => onLongPressClip(clip),
         );

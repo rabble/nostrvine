@@ -725,5 +725,30 @@ void main() {
         expect(buildRoute(parseRoute(path)), path);
       });
     });
+
+    group('query parameters do not break route parsing', () {
+      // Regression: parseRoute segments the raw location string, so a query
+      // parameter used to glue itself onto the last segment
+      // ("clips-only?type=video" matched nothing → RouteType.home fallback),
+      // and the route normalizer then yanked the user to /home/0 whenever the
+      // recorder opened the scoped library.
+      test('parseRoute(/clips-only?type=video) parses to clipsOnly', () {
+        final context = parseRoute('/clips-only?type=video');
+        expect(context.type, RouteType.clipsOnly);
+      });
+
+      test('the canonical path of a query-carrying location is stable', () {
+        // buildRoute(parseRoute(path)) is the normalizer's canonical form;
+        // it must match the path portion so no normalization redirect fires.
+        final context = parseRoute('/clips-only?type=stop_motion');
+        expect(buildRoute(context), '/clips-only');
+      });
+
+      test('parseRoute keeps path indices with a query present', () {
+        final context = parseRoute('/home/2?foo=bar');
+        expect(context.type, RouteType.home);
+        expect(context.videoIndex, 2);
+      });
+    });
   });
 }

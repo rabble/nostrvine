@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/models/video_editor/editor_overlay_snapshot.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/audio_extraction_service.dart';
@@ -140,11 +141,15 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
 
     // Clip selection
     on<ClipEditorClipSelected>(_onClipSelected);
+    on<ClipEditorFrameSelected>(_onFrameSelected);
 
     // Multi-select
     on<ClipEditorMultiSelectStarted>(_onMultiSelectStarted);
     on<ClipEditorMultiSelectClipToggled>(_onMultiSelectClipToggled);
     on<ClipEditorMultiSelectCancelled>(_onMultiSelectCancelled);
+    on<ClipEditorFrameMultiSelectStarted>(_onFrameMultiSelectStarted);
+    on<ClipEditorFrameMultiSelectToggled>(_onFrameMultiSelectToggled);
+    on<ClipEditorFrameMultiSelectionSet>(_onFrameMultiSelectionSet);
     on<ClipEditorSelectedClipsRemoved>(_onSelectedClipsRemoved);
     on<ClipEditorSelectedClipsMergeRequested>(
       _onSelectedClipsMergeRequested,
@@ -290,7 +295,27 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     final newClips = List<DivineVideoClip>.of(state.clips)
       ..[index] = event.clip;
 
-    emit(state.copyWith(clips: List.unmodifiable(newClips)));
+    // A frame delete/reorder replaces the stop-motion clip with a shorter or
+    // reordered frame list; clamp the selection so it never points past the end.
+    final selected = state.selectedFrameIndex;
+    final frames = event.clip.stopMotionFrames;
+    final clampedSelection = selected != null && frames != null
+        ? selected.clamp(0, frames.length - 1)
+        : selected;
+    final prunedMultiSelection = frames != null
+        ? {
+            for (final index in state.selectedFrameIndexes)
+              if (index < frames.length) index,
+          }
+        : state.selectedFrameIndexes;
+
+    emit(
+      state.copyWith(
+        clips: List.unmodifiable(newClips),
+        selectedFrameIndex: clampedSelection,
+        selectedFrameIndexes: prunedMultiSelection,
+      ),
+    );
   }
 
   void _onClipThumbnailUpdated(
@@ -326,6 +351,29 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       state.copyWith(
         currentClipIndex: event.index,
         splitPosition: Duration.zero,
+        clearSelectedFrameIndex: true,
+      ),
+    );
+  }
+
+  void _onFrameSelected(
+    ClipEditorFrameSelected event,
+    Emitter<ClipEditorState> emit,
+  ) {
+    final clips = state.clips;
+    if (!isStopMotionComposition(clips)) return;
+    final frames = clips.first.stopMotionFrames;
+    if (frames == null ||
+        event.frameIndex < 0 ||
+        event.frameIndex >= frames.length) {
+      return;
+    }
+
+    emit(
+      state.copyWith(
+        currentClipIndex: 0,
+        isEditing: true,
+        selectedFrameIndex: event.frameIndex,
       ),
     );
   }
@@ -369,8 +417,63 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     Emitter<ClipEditorState> emit,
   ) {
     emit(
-      state.copyWith(isMultiSelectMode: false, selectedClipIds: const {}),
+      state.copyWith(
+        isMultiSelectMode: false,
+        selectedClipIds: const {},
+        selectedFrameIndexes: const {},
+      ),
     );
+  }
+
+  void _onFrameMultiSelectStarted(
+    ClipEditorFrameMultiSelectStarted event,
+    Emitter<ClipEditorState> emit,
+  ) {
+    if (!isStopMotionComposition(state.clips)) return;
+    final frames = state.clips.first.stopMotionFrames ?? const [];
+    final initial = event.initialFrameIndex;
+    emit(
+      state.copyWith(
+        isMultiSelectMode: true,
+        isEditing: false,
+        clearSelectedFrameIndex: true,
+        selectedFrameIndexes: {
+          if (initial != null && initial >= 0 && initial < frames.length)
+            initial,
+        },
+      ),
+    );
+  }
+
+  void _onFrameMultiSelectToggled(
+    ClipEditorFrameMultiSelectToggled event,
+    Emitter<ClipEditorState> emit,
+  ) {
+    if (!state.isMultiSelectMode) return;
+    if (!isStopMotionComposition(state.clips)) return;
+    final frames = state.clips.first.stopMotionFrames ?? const [];
+    if (event.frameIndex < 0 || event.frameIndex >= frames.length) return;
+
+    final selected = Set<int>.of(state.selectedFrameIndexes);
+    if (!selected.remove(event.frameIndex)) {
+      selected.add(event.frameIndex);
+    }
+    emit(state.copyWith(selectedFrameIndexes: selected));
+  }
+
+  void _onFrameMultiSelectionSet(
+    ClipEditorFrameMultiSelectionSet event,
+    Emitter<ClipEditorState> emit,
+  ) {
+    if (!state.isMultiSelectMode) return;
+    if (!isStopMotionComposition(state.clips)) return;
+    final frames = state.clips.first.stopMotionFrames ?? const [];
+    if (event.frameIndexes.any(
+      (index) => index < 0 || index >= frames.length,
+    )) {
+      return;
+    }
+    emit(state.copyWith(selectedFrameIndexes: event.frameIndexes));
   }
 
   void _onSelectedClipsRemoved(
@@ -549,7 +652,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       name: 'ClipEditorBloc',
       category: LogCategory.video,
     );
-    emit(state.copyWith(isEditing: false));
+    emit(state.copyWith(isEditing: false, clearSelectedFrameIndex: true));
   }
 
   void _onEditingToggled(
@@ -1061,7 +1164,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     if (index == -1) return;
 
     final clip = state.clips[index];
-    final videoPath = clip.video.file?.path;
+    final videoPath = clip.requireVideo.file?.path;
 
     if (videoPath == null) {
       Log.warning(
@@ -1227,7 +1330,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     if (index == -1) return;
 
     final clip = state.clips[index];
-    final videoPath = clip.video.file?.path;
+    final videoPath = clip.requireVideo.file?.path;
 
     if (videoPath == null) {
       Log.warning(
@@ -1345,7 +1448,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       return;
     }
 
-    final videoPath = clip.video.file?.path;
+    final videoPath = clip.requireVideo.file?.path;
     final extractionSpeed = _effectiveAudioExtractionSpeed(clip);
 
     if (videoPath == null) {
@@ -1397,7 +1500,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       }
 
       final currentClip = currentClips[currentIndex];
-      final currentVideoPath = currentClip.video.file?.path;
+      final currentVideoPath = currentClip.requireVideo.file?.path;
       final currentExtractionSpeed = _effectiveAudioExtractionSpeed(
         currentClip,
       );

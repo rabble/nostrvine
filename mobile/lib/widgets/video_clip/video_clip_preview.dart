@@ -14,6 +14,8 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/gallery_save_service.dart';
+import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
+import 'package:openvine/widgets/stop_motion/stop_motion_player.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 class VideoClipPreview extends ConsumerStatefulWidget {
@@ -53,7 +55,16 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreview> {
   /// [DivineVideoPlayerController], initializes it, enables looping,
   /// and starts playback automatically.
   Future<void> _initializePlayer() async {
-    final file = File(await widget.clip.video.safeFilePath());
+    // Stop-motion clips are rendered frame-by-frame by [StopMotionPlayer];
+    // there is no video file to load into the native player.
+    if (widget.clip.isStopMotion) return;
+
+    final video = widget.clip.video;
+    if (video == null) {
+      if (mounted) context.pop();
+      return;
+    }
+    final file = File(await video.safeFilePath());
     if (!file.existsSync()) {
       if (mounted) context.pop();
       return;
@@ -95,8 +106,29 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreview> {
 
     try {
       final gallerySaveService = ref.read(gallerySaveServiceProvider);
-      final video = widget.clip.video;
-      final result = await gallerySaveService.saveVideoToGallery(video);
+      // Stop-motion clips render their mp4 on demand; a normal clip passes
+      // through unchanged.
+      final materialized = await StopMotionRenderService.materialize(
+        widget.clip,
+      );
+      if (!mounted) return;
+      if (materialized == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: VineTheme.transparent,
+            elevation: 0,
+            behavior: SnackBarBehavior.floating,
+            content: DivineSnackbarContainer(
+              label: context.l10n.videoClipSaveFailed,
+              error: true,
+            ),
+          ),
+        );
+        return;
+      }
+      final result = await gallerySaveService.saveVideoToGallery(
+        materialized.requireVideo,
+      );
 
       if (!mounted) return;
 
@@ -161,6 +193,19 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreview> {
                         borderRadius: .circular(16),
                         child: Builder(
                           builder: (context) {
+                            if (widget.clip.stopMotionFrames
+                                case final frames?) {
+                              return StopMotionPlayer(
+                                frames: frames,
+                                cacheHeight:
+                                    (MediaQuery.sizeOf(context).height *
+                                            MediaQuery.devicePixelRatioOf(
+                                              context,
+                                            ))
+                                        .round(),
+                              );
+                            }
+
                             final vw = _controller?.state.videoWidth ?? 0;
                             final vh = _controller?.state.videoHeight ?? 0;
 

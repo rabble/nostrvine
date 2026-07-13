@@ -1,7 +1,10 @@
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
+import 'package:openvine/widgets/video_editor/stop_motion/stop_motion_frame_commands.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_action_bar.dart';
 
 /// Action bar shown while the timeline is in multi-select mode.
@@ -68,6 +71,192 @@ class TimelineMultiSelectControls extends StatelessWidget {
     // listener rebases markers and commits the new list to editor history.
     context.read<ClipEditorBloc>().add(
       const ClipEditorSelectedClipsRemoved(),
+    );
+  }
+}
+
+/// Action bar shown while a stop-motion composition is in frame multi-select
+/// mode: selection count plus hold / Delete / Done actions on the selected
+/// stills. Delete is gated so at least one still always remains.
+class TimelineFrameMultiSelectControls extends StatelessWidget {
+  const TimelineFrameMultiSelectControls({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final ({String clipId, int frameCount, Set<int> selected})? data = context
+        .select((ClipEditorBloc b) {
+          final state = b.state;
+          if (!isStopMotionComposition(state.clips)) return null;
+          final clip = state.clips.first;
+          return (
+            clipId: clip.id,
+            frameCount: clip.stopMotionFrames?.length ?? 0,
+            selected: state.selectedFrameIndexes,
+          );
+        });
+
+    if (data == null) return const SizedBox.shrink();
+
+    final selectedCount = data.selected.length;
+    final canDelete = selectedCount >= 1 && selectedCount < data.frameCount;
+    final canSetHold = selectedCount >= 1;
+    final canReverse = selectedCount >= 2;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: VineTheme.backgroundCamera,
+        boxShadow: [
+          BoxShadow(
+            color: VineTheme.backgroundColor.withValues(alpha: 0.4),
+            blurRadius: 8,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(0, 16, 0, 8),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 8,
+            children: [
+              Text(
+                context.l10n.videoEditorMultiSelectCountLabel(selectedCount),
+                style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
+              ),
+              Center(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    spacing: 16,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _ControlButton(
+                        icon: .imagesSquare,
+                        label: context
+                            .l10n
+                            .videoEditorStopMotionFramesPerImageButtonLabel,
+                        semanticLabel: context
+                            .l10n
+                            .videoEditorStopMotionFramesPerImageLabel,
+                        onPressed: canSetHold
+                            ? () => editStopMotionFramesHold(
+                                context,
+                                clipId: data.clipId,
+                                frameIndexes: data.selected,
+                              )
+                            : null,
+                        type: .primary,
+                      ),
+                      _ControlButton(
+                        icon: .arrowCounterClockwise,
+                        label: context.l10n.videoEditorReverseLabel,
+                        semanticLabel: context
+                            .l10n
+                            .videoEditorReverseSelectedFramesSemanticLabel,
+                        onPressed: canReverse ? () => _reverse(context) : null,
+                      ),
+                      _ControlButton(
+                        icon: .trash,
+                        label: context.l10n.videoEditorDeleteLabel,
+                        semanticLabel: context
+                            .l10n
+                            .videoEditorDeleteSelectedFramesSemanticLabel,
+                        onPressed: canDelete ? () => _delete(context) : null,
+                        type: .error,
+                      ),
+                      _ControlButton(
+                        icon: .check,
+                        label: context.l10n.videoEditorDoneLabel,
+                        semanticLabel: context
+                            .l10n
+                            .videoEditorMultiSelectDoneSemanticLabel,
+                        onPressed: () => context.read<ClipEditorBloc>().add(
+                          const ClipEditorMultiSelectCancelled(),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Reverses the selected stills among their own slots. The selection keeps
+  /// pointing at the same positions (now holding the reversed stills), so the
+  /// mode stays active for follow-up actions like a block move.
+  void _reverse(BuildContext context) {
+    final bloc = context.read<ClipEditorBloc>();
+    final state = bloc.state;
+    if (!isStopMotionComposition(state.clips)) return;
+    final clip = state.clips.first;
+    final frames = clip.stopMotionFrames ?? const [];
+
+    commitStopMotionFrames(
+      context,
+      clipId: clip.id,
+      frames: StopMotionFrameOps.reverseFrames(
+        frames,
+        state.selectedFrameIndexes,
+      ),
+    );
+  }
+
+  void _delete(BuildContext context) {
+    final bloc = context.read<ClipEditorBloc>();
+    final state = bloc.state;
+    if (!isStopMotionComposition(state.clips)) return;
+    final clip = state.clips.first;
+    final frames = clip.stopMotionFrames ?? const [];
+
+    commitStopMotionFrames(
+      context,
+      clipId: clip.id,
+      frames: StopMotionFrameOps.removeFrames(
+        frames,
+        state.selectedFrameIndexes,
+      ),
+    );
+    bloc.add(const ClipEditorMultiSelectCancelled());
+  }
+}
+
+class _ControlButton extends StatelessWidget {
+  const _ControlButton({
+    required this.icon,
+    required this.label,
+    required this.semanticLabel,
+    required this.onPressed,
+    this.type = .secondary,
+  });
+
+  final DivineIconName icon;
+  final String label;
+  final String semanticLabel;
+  final VoidCallback? onPressed;
+  final DivineIconButtonType type;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      spacing: 8,
+      children: [
+        DivineIconButton(
+          icon: icon,
+          semanticLabel: semanticLabel,
+          onPressed: onPressed,
+          type: type,
+          size: .small,
+        ),
+        Text(label, style: VineTheme.bodySmallFont()),
+      ],
     );
   }
 }

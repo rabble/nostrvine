@@ -135,8 +135,12 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
       child: GestureDetector(
         onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
         child: switch (recorderMode) {
-          // Lip-sync shares capture's editor + metadata flow.
-          .capture || .lipSync => const VideoMetadataCaptureStack(),
+          // Lip-sync shares capture's editor + metadata flow. Stop-motion
+          // produces a normal video clip, so it shares the same capture-mode
+          // metadata UI.
+          .capture ||
+          .stopMotion ||
+          .lipSync => const VideoMetadataCaptureStack(),
           .classic => const VideoMetadataClassicStack(),
           // Deliberately unreachable: upload mode has no record button, so no
           // clips can be created and the user cannot navigate to the metadata

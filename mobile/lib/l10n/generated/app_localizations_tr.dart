@@ -8006,6 +8006,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoRecorderLipSyncAddAudioFirst => 'Kayıttan önce ses ekleyin';
 
   @override
+  String get videoRecorderStopMotionAssembling => 'Videon oluşturuluyor…';
+
+  @override
+  String get videoRecorderStopMotionAssembleFailed =>
+      'Video oluşturulamadı. Tekrar deneyin.';
+
+  @override
   String get videoRecorderToggleFlashLabel => 'Flaşı değiştir';
 
   @override
@@ -8317,6 +8324,43 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoEditorDeleteSelectedItemSemanticLabel => 'Seçili öğeyi sil';
+
+  @override
+  String get videoEditorStopMotionFramesPerImageLabel => 'Görüntü başına kare';
+
+  @override
+  String videoEditorStopMotionFramesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count kare',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorStopMotionFramesPerImageButtonLabel => 'Kare';
+
+  @override
+  String get libraryStopMotionClipLabel => 'Stop motion klibi';
+
+  @override
+  String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
+    return 'Görüntü başına $count kare';
+  }
+
+  @override
+  String get videoEditorStopMotionIncreaseFramesPerImageSemanticLabel =>
+      'Görüntü başına kareyi artır';
+
+  @override
+  String get videoEditorStopMotionDecreaseFramesPerImageSemanticLabel =>
+      'Görüntü başına kareyi azalt';
+
+  @override
+  String videoEditorStopMotionFrameSemanticLabel(int position, int total) {
+    return 'Stop motion karesi $position/$total';
+  }
 
   @override
   String get videoEditorEditLabel => 'Düzenle';
@@ -8716,6 +8760,19 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get videoEditorDeleteSelectedClipsSemanticLabel =>
       'Seçili klipleri sil';
+
+  @override
+  String get videoEditorDeleteSelectedFramesSemanticLabel =>
+      'Seçili kareleri sil';
+
+  @override
+  String get videoEditorReverseSelectedFramesSemanticLabel =>
+      'Seçili kareleri ters çevir';
+
+  @override
+  String videoEditorStopMotionTooShortSnackbar(int seconds) {
+    return 'Videon en az ${seconds}sn olmalı — birkaç kare daha çek.';
+  }
 
   @override
   String get videoEditorMergeProgressLabel =>

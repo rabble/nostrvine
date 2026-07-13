@@ -135,7 +135,7 @@ class VideoEditorSplitService {
         category: .video,
       );
       final thumbnailResult = await VideoThumbnailService.extractThumbnail(
-        videoPath: await sourceClip.video.safeFilePath(),
+        videoPath: await sourceClip.requireVideo.safeFilePath(),
         targetTimestamp: timestamp,
       );
       if (thumbnailResult != null) {

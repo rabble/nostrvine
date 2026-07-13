@@ -641,6 +641,28 @@ void main() {
       });
     });
 
+    group('setVolume', () {
+      setUp(() {
+        when(() => mockAudioPlayer.setVolume(any())).thenAnswer((_) async {});
+      });
+
+      test('delegates to audio player', () async {
+        await player.setVolume(0.5);
+
+        verify(() => mockAudioPlayer.setVolume(0.5)).called(1);
+      });
+
+      test('clamps out-of-range volumes to 0..1', () async {
+        await player.setVolume(1.7);
+        await player.setVolume(-0.3);
+
+        verifyInOrder([
+          () => mockAudioPlayer.setVolume(1),
+          () => mockAudioPlayer.setVolume(0),
+        ]);
+      });
+    });
+
     group('dispose', () {
       test('disposes the audio player', () async {
         await player.dispose();

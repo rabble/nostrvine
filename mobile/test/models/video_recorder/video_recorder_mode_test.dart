@@ -105,5 +105,46 @@ void main() {
         );
       });
     });
+
+    group('stopMotion', () {
+      test('has label "Stop Motion"', () {
+        expect(VideoRecorderMode.stopMotion.label, equals('Stop Motion'));
+      });
+
+      test('has no recording limit', () {
+        expect(VideoRecorderMode.stopMotion.hasRecordingLimit, isFalse);
+      });
+
+      test(
+        'has a video editor (previews frames via the stop-motion player)',
+        () {
+          expect(VideoRecorderMode.stopMotion.hasVideoEditor, isTrue);
+        },
+      );
+
+      test('supports grid lines (shot-to-shot alignment)', () {
+        expect(VideoRecorderMode.stopMotion.supportGridLines, isTrue);
+      });
+
+      test('does not support a countdown timer', () {
+        expect(VideoRecorderMode.stopMotion.supportsCountdownTimer, isFalse);
+      });
+
+      test('defaults to vertical aspect ratio', () {
+        expect(
+          VideoRecorderMode.stopMotion.defaultAspectRatio,
+          equals(model.AspectRatio.vertical),
+        );
+      });
+    });
+
+    group('capturesStills', () {
+      test('is true only for stop-motion', () {
+        expect(VideoRecorderMode.stopMotion.capturesStills, isTrue);
+        expect(VideoRecorderMode.capture.capturesStills, isFalse);
+        expect(VideoRecorderMode.classic.capturesStills, isFalse);
+        expect(VideoRecorderMode.upload.capturesStills, isFalse);
+      });
+    });
   });
 }

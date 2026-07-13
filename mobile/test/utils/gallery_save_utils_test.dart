@@ -103,7 +103,7 @@ void main() {
     ) async {
       final clip = _createClip();
       when(
-        () => mockGallerySaveService.saveVideoToGallery(clip.video),
+        () => mockGallerySaveService.saveVideoToGallery(clip.requireVideo),
       ).thenAnswer((_) async => const GallerySaveSuccess());
 
       await tester.pumpWidget(buildSubject(clip: clip));
@@ -111,7 +111,7 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(
-        () => mockGallerySaveService.saveVideoToGallery(clip.video),
+        () => mockGallerySaveService.saveVideoToGallery(clip.requireVideo),
       ).called(1);
     });
 
@@ -120,7 +120,7 @@ void main() {
     ) async {
       final clip = _createClip();
       when(
-        () => mockGallerySaveService.saveVideoToGallery(clip.video),
+        () => mockGallerySaveService.saveVideoToGallery(clip.requireVideo),
       ).thenAnswer((_) async => const GallerySaveSuccess());
 
       await tester.pumpWidget(buildSubject(clip: clip));
@@ -129,7 +129,7 @@ void main() {
 
       // Only one call — no retry.
       verify(
-        () => mockGallerySaveService.saveVideoToGallery(clip.video),
+        () => mockGallerySaveService.saveVideoToGallery(clip.requireVideo),
       ).called(1);
     });
 
@@ -138,7 +138,7 @@ void main() {
     ) async {
       final clip = _createClip();
       when(
-        () => mockGallerySaveService.saveVideoToGallery(clip.video),
+        () => mockGallerySaveService.saveVideoToGallery(clip.requireVideo),
       ).thenAnswer((_) async => const GallerySaveFailure('disk full'));
 
       await tester.pumpWidget(buildSubject(clip: clip));
@@ -147,7 +147,7 @@ void main() {
 
       // Only one call — no retry for generic failures.
       verify(
-        () => mockGallerySaveService.saveVideoToGallery(clip.video),
+        () => mockGallerySaveService.saveVideoToGallery(clip.requireVideo),
       ).called(1);
     });
   });

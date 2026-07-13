@@ -8124,6 +8124,13 @@ class AppLocalizationsFil extends AppLocalizations {
       'Magdagdag ng audio bago mag-record';
 
   @override
+  String get videoRecorderStopMotionAssembling => 'Ginagawa ang iyong video…';
+
+  @override
+  String get videoRecorderStopMotionAssembleFailed =>
+      'Hindi magawa ang video. Subukan ulit.';
+
+  @override
   String get videoRecorderToggleFlashLabel => 'I-toggle ang flash';
 
   @override
@@ -8444,6 +8451,44 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get videoEditorDeleteSelectedItemSemanticLabel =>
       'Burahin ang napiling item';
+
+  @override
+  String get videoEditorStopMotionFramesPerImageLabel =>
+      'Mga frame kada larawan';
+
+  @override
+  String videoEditorStopMotionFramesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count frame',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorStopMotionFramesPerImageButtonLabel => 'Mga frame';
+
+  @override
+  String get libraryStopMotionClipLabel => 'Stop-motion na clip';
+
+  @override
+  String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
+    return '$count na frame kada larawan';
+  }
+
+  @override
+  String get videoEditorStopMotionIncreaseFramesPerImageSemanticLabel =>
+      'Dagdagan ang mga frame kada larawan';
+
+  @override
+  String get videoEditorStopMotionDecreaseFramesPerImageSemanticLabel =>
+      'Bawasan ang mga frame kada larawan';
+
+  @override
+  String videoEditorStopMotionFrameSemanticLabel(int position, int total) {
+    return 'Stop-motion frame $position ng $total';
+  }
 
   @override
   String get videoEditorEditLabel => 'I-edit';
@@ -8848,6 +8893,19 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get videoEditorDeleteSelectedClipsSemanticLabel =>
       'Tanggalin ang mga napiling clip';
+
+  @override
+  String get videoEditorDeleteSelectedFramesSemanticLabel =>
+      'Tanggalin ang mga napiling frame';
+
+  @override
+  String get videoEditorReverseSelectedFramesSemanticLabel =>
+      'Baligtarin ang mga napiling frame';
+
+  @override
+  String videoEditorStopMotionTooShortSnackbar(int seconds) {
+    return 'Kailangang hindi bababa sa $seconds segundo ang video mo — kumuha pa ng ilang frame.';
+  }
 
   @override
   String get videoEditorMergeProgressLabel =>

@@ -8084,6 +8084,13 @@ class AppLocalizationsPt extends AppLocalizations {
       'Adicione áudio antes de gravar';
 
   @override
+  String get videoRecorderStopMotionAssembling => 'Criando seu vídeo…';
+
+  @override
+  String get videoRecorderStopMotionAssembleFailed =>
+      'Não foi possível criar o vídeo. Tente novamente.';
+
+  @override
   String get videoRecorderToggleFlashLabel => 'Alternar flash';
 
   @override
@@ -8400,6 +8407,44 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get videoEditorDeleteSelectedItemSemanticLabel =>
       'Excluir item selecionado';
+
+  @override
+  String get videoEditorStopMotionFramesPerImageLabel => 'Quadros por imagem';
+
+  @override
+  String videoEditorStopMotionFramesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count quadros',
+      one: '1 quadro',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorStopMotionFramesPerImageButtonLabel => 'Quadros';
+
+  @override
+  String get libraryStopMotionClipLabel => 'Clipe de stop motion';
+
+  @override
+  String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
+    return '$count quadros por imagem';
+  }
+
+  @override
+  String get videoEditorStopMotionIncreaseFramesPerImageSemanticLabel =>
+      'Aumentar quadros por imagem';
+
+  @override
+  String get videoEditorStopMotionDecreaseFramesPerImageSemanticLabel =>
+      'Reduzir quadros por imagem';
+
+  @override
+  String videoEditorStopMotionFrameSemanticLabel(int position, int total) {
+    return 'Quadro de stop motion $position de $total';
+  }
 
   @override
   String get videoEditorEditLabel => 'Editar';
@@ -8802,6 +8847,19 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get videoEditorDeleteSelectedClipsSemanticLabel =>
       'Excluir clipes selecionados';
+
+  @override
+  String get videoEditorDeleteSelectedFramesSemanticLabel =>
+      'Excluir quadros selecionados';
+
+  @override
+  String get videoEditorReverseSelectedFramesSemanticLabel =>
+      'Inverter quadros selecionados';
+
+  @override
+  String videoEditorStopMotionTooShortSnackbar(int seconds) {
+    return 'Seu vídeo precisa de pelo menos ${seconds}s — capture mais alguns quadros.';
+  }
 
   @override
   String get videoEditorMergeProgressLabel =>
