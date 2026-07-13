@@ -281,11 +281,21 @@ UploadManager uploadManager(Ref ref) {
   return manager;
 }
 
-/// API service depends on auth service
+/// API service depends on auth service and the current environment
+/// (relay-manager URL is env-aware; watching keeps env switches applied)
 @riverpod
 ApiService apiService(Ref ref) {
   final authService = ref.watch(nip98AuthServiceProvider);
-  return ApiService(authService: authService);
+  final environment = ref.watch(currentEnvironmentProvider);
+  final service = ApiService(
+    authService: authService,
+    relayManagerBaseUrl: environment.relayManagerApiUrl,
+  );
+  // Close the owned http.Client on rebuild (env switch) — in-flight requests
+  // on the old instance fail over, which switchEnvironment's cache/sub reset
+  // already assumes
+  ref.onDispose(service.dispose);
+  return service;
 }
 
 /// Crosspost API client for Bluesky toggle settings

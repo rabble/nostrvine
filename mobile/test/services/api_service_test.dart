@@ -25,7 +25,10 @@ void main() {
 
     setUp(() {
       mockClient = MockHttpClient();
-      apiService = ApiService(client: mockClient);
+      apiService = ApiService(
+        client: mockClient,
+        relayManagerBaseUrl: 'https://api-relay-prod.divine.video',
+      );
     });
 
     group('requestSignedUpload', () {
@@ -181,7 +184,8 @@ void main() {
       );
 
       test(
-        'getMinorAccountReviewStatus uses the Divine backend host',
+        'getMinorAccountReviewStatus uses the relay-manager host, '
+        'not the main backend (relay-manager#108: backend 404s -> gate inert)',
         () async {
           final mockResponse = MockResponse();
           when(() => mockResponse.statusCode).thenReturn(200);
@@ -206,8 +210,68 @@ void main() {
                   ).captured.single
                   as Uri;
 
-          expect(captured.host, 'api.divine.video');
+          expect(captured.host, 'api-relay-prod.divine.video');
           expect(captured.path, '/v1/account/moderation-status');
+        },
+      );
+
+      test(
+        'minor-review calls follow the injected relay-manager base URL '
+        '(env-aware: staging builds must not hit prod)',
+        () async {
+          final stagingService = ApiService(
+            client: mockClient,
+            relayManagerBaseUrl: 'https://api-relay-staging.divine.video',
+          );
+          final mockResponse = MockResponse();
+          when(() => mockResponse.statusCode).thenReturn(200);
+          when(() => mockResponse.body).thenReturn(
+            jsonEncode({
+              'restriction': {'status': 'active'},
+            }),
+          );
+          when(
+            () => mockClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer((_) async => mockResponse);
+
+          await stagingService.getMinorAccountReviewStatus();
+
+          final captured =
+              verify(
+                    () => mockClient.get(
+                      captureAny(),
+                      headers: any(named: 'headers'),
+                    ),
+                  ).captured.single
+                  as Uri;
+          expect(captured.host, 'api-relay-staging.divine.video');
+
+          // Both endpoints read the same injected base — pin the POST too
+          when(() => mockResponse.statusCode).thenReturn(204);
+          when(() => mockResponse.body).thenReturn('');
+          when(
+            () => mockClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer((_) async => mockResponse);
+
+          await stagingService.submitMinorAccountReviewParentContact(
+            caseId: 'case-9',
+            email: 'parent@example.com',
+          );
+
+          final posted =
+              verify(
+                    () => mockClient.post(
+                      captureAny(),
+                      headers: any(named: 'headers'),
+                      body: any(named: 'body'),
+                    ),
+                  ).captured.single
+                  as Uri;
+          expect(posted.host, 'api-relay-staging.divine.video');
         },
       );
 
@@ -255,13 +319,22 @@ void main() {
             email: 'parent@example.com',
           );
 
-          verify(
-            () => mockClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: jsonEncode({'email': 'parent@example.com'}),
-            ),
-          ).called(1);
+          final captured =
+              verify(
+                    () => mockClient.post(
+                      captureAny(),
+                      headers: any(named: 'headers'),
+                      body: jsonEncode({'email': 'parent@example.com'}),
+                    ),
+                  ).captured.single
+                  as Uri;
+
+          // Same host contract as moderation-status (relay-manager#108)
+          expect(captured.host, 'api-relay-prod.divine.video');
+          expect(
+            captured.path,
+            '/v1/minor-review-cases/case-123/parent-contact',
+          );
         },
       );
     });

@@ -213,17 +213,20 @@ final class UploadManagerProvider
 
 String _$uploadManagerHash() => r'4f30b7e592133c381c01fcf4d55e046d31c3e8c1';
 
-/// API service depends on auth service
+/// API service depends on auth service and the current environment
+/// (relay-manager URL is env-aware; watching keeps env switches applied)
 
 @ProviderFor(apiService)
 final apiServiceProvider = ApiServiceProvider._();
 
-/// API service depends on auth service
+/// API service depends on auth service and the current environment
+/// (relay-manager URL is env-aware; watching keeps env switches applied)
 
 final class ApiServiceProvider
     extends $FunctionalProvider<ApiService, ApiService, ApiService>
     with $Provider<ApiService> {
-  /// API service depends on auth service
+  /// API service depends on auth service and the current environment
+  /// (relay-manager URL is env-aware; watching keeps env switches applied)
   ApiServiceProvider._()
     : super(
         from: null,
@@ -257,7 +260,7 @@ final class ApiServiceProvider
   }
 }
 
-String _$apiServiceHash() => r'a114c5e161b816881b395a10c90d043ef94c8de7';
+String _$apiServiceHash() => r'f03345aebc453113d4b58bfa22a1e0455a85603d';
 
 /// Crosspost API client for Bluesky toggle settings
 
