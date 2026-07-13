@@ -16,6 +16,8 @@ import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -131,12 +133,20 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
   /// playback — a warned video must stay paused until revealed.
   final Set<String> _revealedContentWarningVideoIds = <String>{};
 
+  /// Warn labels for [video] merging creator/trusted labels with any
+  /// crossed-threshold community labels (#4771), so the autoplay gate and
+  /// the blur overlay always agree on whether the video is warned.
+  List<String> _effectiveWarnLabels(VideoEvent video) => <String>{
+    ...video.warnLabels,
+    ...ref.read(communityContentLabelServiceProvider).warnLabelsFor(video),
+  }.toList();
+
   /// Whether [video] may start playing: either it has no content-warning
   /// gate, or the user already chose "View Anyway" for it.
   bool _canAutoPlayVideo(VideoEvent video) =>
       !shouldShowContentWarningOverlay(
         contentWarningLabels: video.contentWarningLabels,
-        warnLabels: video.warnLabels,
+        warnLabels: _effectiveWarnLabels(video),
       ) ||
       _revealedContentWarningVideoIds.contains(video.id);
 
@@ -252,6 +262,11 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
     final appForeground = ref.watch(appForegroundProvider);
     final isFeedActive =
         widget.isActive && _routeAllowsPlayback && appForeground;
+    // Rebuild when a community-label prefetch resolves so InfiniteVideoFeed
+    // re-syncs the autoplay gate (didUpdateWidget) and pauses a video whose
+    // community warning just crossed the threshold. The service only
+    // notifies for non-empty results, so this fires rarely.
+    ref.watch(communityContentLabelServiceProvider);
     // While a codec-heavy surface (camera, video editor, exporter) is open, a
     // backgrounded feed must release even its warm current player so the editor
     // can claim the device's scarce hardware decoders/encoder. Selected so the
@@ -517,7 +532,13 @@ class __OverlayState extends ConsumerState<_Overlay> {
 
   // Bounded to feed items that actually mount, so this only queries community
   // labels for videos the viewer is near. Idempotent inside the service.
+  // Gated on the kill-switch: with the flag off nothing is fetched, so the
+  // cache stays empty and neither the overlay nor the autoplay gate react.
   void _prefetchCommunityLabels() {
+    final flagEnabled = ref
+        .read(featureFlagServiceProvider)
+        .isEnabled(FeatureFlag.communityContentWarnings);
+    if (!flagEnabled) return;
     unawaited(
       ref.read(communityContentLabelServiceProvider).prefetch(widget.video),
     );
@@ -544,7 +565,12 @@ class __OverlayState extends ConsumerState<_Overlay> {
     final contentWarningBlocking =
         shouldShowContentWarningOverlay(
           contentWarningLabels: widget.video.contentWarningLabels,
-          warnLabels: widget.video.warnLabels,
+          warnLabels: <String>{
+            ...widget.video.warnLabels,
+            ...ref
+                .read(communityContentLabelServiceProvider)
+                .warnLabelsFor(widget.video),
+          }.toList(),
         ) &&
         !widget.contentWarningRevealed;
 

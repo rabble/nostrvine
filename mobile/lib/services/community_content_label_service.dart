@@ -10,10 +10,11 @@ import 'package:openvine/services/content_filter_service.dart';
 /// Caches community-suggested content-warning labels per video and exposes
 /// which of them should surface a warning for the current viewer.
 ///
-/// Mirrors the passive-cache shape of the trusted-labeler
-/// `ModerationLabelService`: [prefetch] populates the cache in the background
-/// (bounded to videos the UI actually asks about) and notifies listeners;
-/// [warnLabelsFor] is a synchronous read used during rendering.
+/// Same shape as the sanctioned `OgVinerCacheService` per-key cache:
+/// [prefetch] populates the cache in the background (bounded to videos the
+/// UI actually asks about) and [warnLabelsFor] is a synchronous read used
+/// during rendering. It is a [ChangeNotifier] because the feed must rebuild
+/// (overlay + autoplay gate) when a background prefetch resolves with labels.
 ///
 /// Community labels are advisory and unverified, so they only ever **warn**
 /// (blur + "View Anyway"); they never hard-hide content. A label is dropped
@@ -36,6 +37,10 @@ class CommunityContentLabelService extends ChangeNotifier {
   final Map<String, Set<String>> _cache = {};
   final Set<String> _inFlight = {};
 
+  /// Maximum cached videos; oldest-inserted evicted first so a long session
+  /// can't grow the map without bound.
+  static const _cacheMax = 500;
+
   /// Fetches and caches the community-surfaced labels for [video], once.
   ///
   /// Idempotent: a video already cached or in flight is skipped, so this is
@@ -47,8 +52,17 @@ class CommunityContentLabelService extends ChangeNotifier {
     if (_cache.containsKey(id) || _inFlight.contains(id)) return;
     _inFlight.add(id);
     try {
-      _cache[id] = await repository.communityLabelsForVideo(video);
-      notifyListeners();
+      final labels = await repository.communityLabelsForVideo(video);
+      if (_cache.length >= _cacheMax) {
+        _cache.remove(_cache.keys.first);
+      }
+      _cache[id] = labels;
+      // Only notify when something visible changed. Empty is the common
+      // case while scrolling; notifying then would rebuild every mounted
+      // feed item for nothing.
+      if (labels.isNotEmpty) {
+        notifyListeners();
+      }
     } finally {
       _inFlight.remove(id);
     }

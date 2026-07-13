@@ -18,6 +18,9 @@ import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/features/feature_flags/services/feature_flag_service.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/viewer_auth_result.dart';
@@ -80,6 +83,18 @@ class _MockLikesRepository extends Mock implements LikesRepository {}
 class _MockCommentsRepository extends Mock implements CommentsRepository {}
 
 class _MockRepostsRepository extends Mock implements RepostsRepository {}
+
+class _MockFeatureFlagService extends Mock implements FeatureFlagService {}
+
+/// Flag service with community content warnings ON, everything else OFF.
+FeatureFlagService _communityFlagsOn() {
+  final service = _MockFeatureFlagService();
+  when(() => service.isEnabled(any())).thenReturn(false);
+  when(
+    () => service.isEnabled(FeatureFlag.communityContentWarnings),
+  ).thenReturn(true);
+  return service;
+}
 
 class _MockCommunityContentLabelRepository extends Mock
     implements CommunityContentLabelRepository {}
@@ -344,6 +359,7 @@ Future<void> _pumpFeedVideos(
 void main() {
   setUpAll(() {
     registerFallbackValue(const VideoInteractionsSubscriptionRequested());
+    registerFallbackValue(FeatureFlag.communityContentWarnings);
   });
 
   setUp(() {
@@ -617,6 +633,7 @@ void main() {
           videoPlaybackStatusCubit: cubit,
           additionalOverrides: [
             communityContentLabelServiceProvider.overrideWith((ref) => service),
+            featureFlagServiceProvider.overrideWithValue(_communityFlagsOn()),
           ],
         );
         // Let the background prefetch resolve and the notifier rebuild.
@@ -624,6 +641,53 @@ void main() {
         await tester.pump();
 
         expect(find.byType(ContentWarningBlurOverlay), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'gates autoplay for a community-warned video (no creator label)',
+      (tester) async {
+        final video = _makeVideo(); // no creator/trusted warn labels
+        final repository = _MockCommunityContentLabelRepository();
+        when(
+          () => repository.communityLabelsForVideo(video),
+        ).thenAnswer((_) async => {'gambling'});
+        final filter = _MockContentFilterService();
+        when(
+          () => filter.getPreference(ContentLabel.gambling),
+        ).thenReturn(ContentFilterPreference.warn);
+        final service = CommunityContentLabelService(
+          repository: repository,
+          contentFilterService: filter,
+        );
+        final cubit = _MockVideoPlaybackStatusCubit()
+          ..stub(PlaybackStatus.ready, video.id);
+
+        await _pumpFeedVideos(
+          tester,
+          videos: [video],
+          videoPlaybackStatusCubit: cubit,
+          additionalOverrides: [
+            communityContentLabelServiceProvider.overrideWith((ref) => service),
+            featureFlagServiceProvider.overrideWithValue(_communityFlagsOn()),
+          ],
+        );
+        // Let the background prefetch resolve and the notifier rebuild.
+        await tester.pump();
+        await tester.pump();
+
+        // The blur overlay is showing (asserted by the sibling test); the
+        // autoplay gate must agree, or the video plays behind the blur.
+        final feed = tester.widget<InfiniteVideoFeed>(
+          find.byType(InfiniteVideoFeed),
+        );
+        expect(
+          feed.canAutoPlay!(video),
+          isFalse,
+          reason:
+              'a community-warned video must not autoplay behind '
+              'the overlay',
+        );
       },
     );
 

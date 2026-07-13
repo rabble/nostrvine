@@ -95,6 +95,23 @@ void main() {
       expect(notified, greaterThan(0));
     });
 
+    test(
+      'prefetch does not notify when no labels crossed the threshold',
+      () async {
+        when(
+          () => repository.communityLabelsForVideo(any()),
+        ).thenAnswer((_) async => <String>{});
+        var notified = 0;
+        service.addListener(() => notified++);
+
+        await service.prefetch(video);
+
+        // The common case while scrolling: nothing visible changes, so a
+        // notify would only trigger feed-wide rebuilds for nothing.
+        expect(notified, isZero);
+      },
+    );
+
     test('prefetch is a no-op when the repository is not ready', () async {
       final gatedService = CommunityContentLabelService(
         repository: null,
