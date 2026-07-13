@@ -25,15 +25,23 @@ class ApiException implements Exception {
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
 class ApiService {
   ApiService({
+    required String relayManagerBaseUrl,
     http.Client? client,
     Nip98AuthService? authService,
     RateLimiter? rateLimiter,
-  }) : _client = client ?? http.Client(),
+  }) : _relayManagerBaseUrl = relayManagerBaseUrl,
+       _client = client ?? http.Client(),
        _authService = authService,
        _rateLimiter = rateLimiter;
   static String get _baseUrl => AppConfig.backendBaseUrl;
   static String get _mediaBaseUrl => AppConfig.mediaApiBaseUrl;
-  static String get _moderationBaseUrl => AppConfig.moderationApiBaseUrl;
+
+  /// Relay-manager worker base URL (minor-account-review endpoints live
+  /// there, not on the main backend — divine-relay-manager#108). Injected
+  /// from EnvironmentConfig.relayManagerApiUrl so staging/local builds and
+  /// the developer environment switcher never send signed minor-review
+  /// traffic to the production worker.
+  final String _relayManagerBaseUrl;
   static const Duration _defaultTimeout = Duration(seconds: 30);
 
   final http.Client _client;
@@ -153,7 +161,9 @@ class ApiService {
     );
 
     try {
-      final uri = Uri.parse('$_moderationBaseUrl/v1/account/moderation-status');
+      final uri = Uri.parse(
+        '$_relayManagerBaseUrl/v1/account/moderation-status',
+      );
       final response = await _client
           .get(uri, headers: await _getHeaders(url: uri.toString()))
           .timeout(_defaultTimeout);
@@ -188,7 +198,7 @@ class ApiService {
 
     try {
       final uri = Uri.parse(
-        '$_moderationBaseUrl/v1/minor-review-cases/$caseId/parent-contact',
+        '$_relayManagerBaseUrl/v1/minor-review-cases/$caseId/parent-contact',
       );
       final response = await _client
           .post(

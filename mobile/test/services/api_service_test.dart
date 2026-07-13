@@ -25,7 +25,10 @@ void main() {
 
     setUp(() {
       mockClient = MockHttpClient();
-      apiService = ApiService(client: mockClient);
+      apiService = ApiService(
+        client: mockClient,
+        relayManagerBaseUrl: 'https://api-relay-prod.divine.video',
+      );
     });
 
     group('requestSignedUpload', () {
@@ -209,6 +212,39 @@ void main() {
 
           expect(captured.host, 'api-relay-prod.divine.video');
           expect(captured.path, '/v1/account/moderation-status');
+        },
+      );
+
+      test(
+        'minor-review calls follow the injected relay-manager base URL '
+        '(env-aware: staging builds must not hit prod)',
+        () async {
+          final stagingService = ApiService(
+            client: mockClient,
+            relayManagerBaseUrl: 'https://api-relay-staging.divine.video',
+          );
+          final mockResponse = MockResponse();
+          when(() => mockResponse.statusCode).thenReturn(200);
+          when(() => mockResponse.body).thenReturn(
+            jsonEncode({
+              'restriction': {'status': 'active'},
+            }),
+          );
+          when(
+            () => mockClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer((_) async => mockResponse);
+
+          await stagingService.getMinorAccountReviewStatus();
+
+          final captured =
+              verify(
+                    () => mockClient.get(
+                      captureAny(),
+                      headers: any(named: 'headers'),
+                    ),
+                  ).captured.single
+                  as Uri;
+          expect(captured.host, 'api-relay-staging.divine.video');
         },
       );
 
