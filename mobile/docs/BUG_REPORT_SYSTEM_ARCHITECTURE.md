@@ -395,10 +395,6 @@ class NIP17MessageService {
 
 /// Configuration for bug report system
 class BugReportConfig {
-  /// Divine support pubkey for receiving bug reports
-  static const String supportPubkey =
-      'YOUR_SUPPORT_PUBKEY_HERE'; // TODO: Set actual support pubkey
-
   /// Maximum log entries to include in bug report
   static const int maxLogEntries = 1000;
 

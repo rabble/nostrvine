@@ -89,7 +89,6 @@ This policy is displayed to users in the report dialog.
 **Bug Reports:**
 - In-app bug report system (`lib/services/bug_report_service.dart`)
 - API endpoint: `https://bug-reports.protestnet.workers.dev/api/bug-reports`
-- Nostr support pubkey: `78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738`
 
 **Location:**
 - Settings > Support > Report a Bug
