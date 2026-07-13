@@ -241,7 +241,13 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final usageCountAsync = ref.watch(soundUsageCountProvider(widget.sound.id));
+    // A reused original sound carries the source video's id behind a `video_`
+    // prefix; query usage/grid by the recovered event id that real reuses tag
+    // in their `["e", <id>, relay, "audio"]` reference, not the synthetic id.
+    final soundEventId = widget.sound.attributionEventId ?? widget.sound.id;
+    final showsSourceVideo =
+        widget.sound.isOriginalSound && widget.sourceVideo != null;
+    final usageCountAsync = ref.watch(soundUsageCountProvider(soundEventId));
 
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
@@ -286,7 +292,7 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        widget.sound.isOriginalSound
+                        showsSourceVideo
                             ? context.l10n.soundSourceVideo
                             : context.l10n.soundVideosUsingThisSound,
                         style: const TextStyle(
@@ -299,17 +305,17 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
                   ),
                 ),
 
-                // Videos grid — for original sounds, show the source video
-                // directly instead of querying by audio event ID
+                // Videos grid — when a source video is on hand (own original
+                // sound), show it directly; otherwise query by the recovered
+                // audio event id.
                 Expanded(
-                  child:
-                      widget.sound.isOriginalSound && widget.sourceVideo != null
+                  child: showsSourceVideo
                       ? _SourceVideoGrid(
                           video: widget.sourceVideo!,
                           onVideoTap: _navigateToVideo,
                         )
                       : _VideosGrid(
-                          audioEventId: widget.sound.id,
+                          audioEventId: soundEventId,
                           onVideoTap: _navigateToVideo,
                         ),
                 ),

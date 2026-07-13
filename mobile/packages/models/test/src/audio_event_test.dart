@@ -420,6 +420,24 @@ void main() {
         );
       });
 
+      test('strips a duplicate/split _copy_ suffix', () {
+        expect(
+          soundWithId(
+            'video_${testHexId}_copy_1700000000000',
+          ).attributionEventId,
+          equals(testHexId),
+        );
+      });
+
+      test('strips a chained timeline + _copy_ suffix', () {
+        expect(
+          soundWithId(
+            'video_$testHexId-1700000000000_copy_1700000000001',
+          ).attributionEventId,
+          equals(testHexId),
+        );
+      });
+
       test('returns null for a bundled sound', () {
         expect(soundWithId('bundled_classic_snare').attributionEventId, isNull);
       });
@@ -503,10 +521,7 @@ void main() {
 
         expect(
           event.resolvedSource,
-          equals((
-            kind: AudioSourceKind.asset,
-            path: 'assets/sounds/bruh.mp3',
-          )),
+          equals((kind: AudioSourceKind.asset, path: 'assets/sounds/bruh.mp3')),
         );
       });
 
@@ -1303,10 +1318,7 @@ void main() {
 
       test('isAnchored reflects anchorClipId presence', () {
         expect(anchored.isAnchored, isTrue);
-        expect(
-          anchored.copyWith(clearAnchorClipId: true).isAnchored,
-          isFalse,
-        );
+        expect(anchored.copyWith(clearAnchorClipId: true).isAnchored, isFalse);
       });
 
       test('copyWith clears the anchor with clearAnchorClipId', () {
@@ -1351,23 +1363,20 @@ void main() {
         expect(event.isClipAnchoredOriginalSound, isTrue);
       });
 
-      test(
-        'is false for an original sound added from another video '
-        '(not anchored)',
-        () {
-          // A network "Original Sound" the user added from the sound browser:
-          // its id is video_-prefixed but it is free-standing, so it keeps its
-          // own volume arc.
-          const event = AudioEvent(
-            id: 'video_source-abc_copy_1',
-            pubkey: testPubkey,
-            createdAt: 1700000000,
-          );
-          expect(event.isOriginalSound, isTrue);
-          expect(event.isAnchored, isFalse);
-          expect(event.isClipAnchoredOriginalSound, isFalse);
-        },
-      );
+      test('is false for an original sound added from another video '
+          '(not anchored)', () {
+        // A network "Original Sound" the user added from the sound browser:
+        // its id is video_-prefixed but it is free-standing, so it keeps its
+        // own volume arc.
+        const event = AudioEvent(
+          id: 'video_source-abc_copy_1',
+          pubkey: testPubkey,
+          createdAt: 1700000000,
+        );
+        expect(event.isOriginalSound, isTrue);
+        expect(event.isAnchored, isFalse);
+        expect(event.isClipAnchoredOriginalSound, isFalse);
+      });
 
       test('is false for a non-original (custom/imported) track', () {
         const event = AudioEvent(

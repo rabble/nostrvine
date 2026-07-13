@@ -265,16 +265,22 @@ class AudioEvent {
   ///   Kind 34236 video's own event id (see
   ///   [AudioEvent.fromVideoOriginalSound]); and
   /// * an editor timeline track, whose id carries a trailing `-<timestamp>`
-  ///   uniqueness suffix so the same sound can be added to the timeline more
-  ///   than once.
+  ///   uniqueness suffix (and, after a duplicate/split, one or more
+  ///   `_copy_<micros>` suffixes) so the same sound can appear on the
+  ///   timeline more than once.
   ///
   /// Without this the `video_` prefix / timeline suffix make the id fail a
   /// 32-byte-hex check, the attribution tag is dropped at publish, and the
   /// reused audio is mislabelled as the reusing user's original sound.
   String? get attributionEventId {
     var candidate = isOriginalSound ? id.substring('video_'.length) : id;
-    final suffixed = RegExp(r'^([0-9a-fA-F]{64})-\d+$').firstMatch(candidate);
-    if (suffixed != null) candidate = suffixed.group(1)!;
+    // Recover the leading 64-hex event id, dropping any editor-added
+    // uniqueness/duplicate suffixes (`-<timestamp>`, `_copy_<micros>`, or a
+    // chain of them).
+    final base = RegExp(
+      r'^([0-9a-fA-F]{64})(?:[-_].*)?$',
+    ).firstMatch(candidate);
+    if (base != null) candidate = base.group(1)!;
     return NostrHexUtils.isValidEventId(candidate) ? candidate : null;
   }
 

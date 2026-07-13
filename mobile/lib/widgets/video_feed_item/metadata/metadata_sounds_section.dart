@@ -282,7 +282,14 @@ class _SoundListItem extends ConsumerWidget {
     Navigator.of(context).pop();
     Future<void>.delayed(Duration.zero).then((_) {
       if (!hostContext.mounted) return;
-      hostContext.pushWithVideoPause(SoundDetailScreen.pathForId(audio.id));
+      // Pass the resolved sound via `extra` (like [_OriginalSoundSection]):
+      // a reused original sound's synthetic `video_<id>` id can't be
+      // re-fetched by the detail loader, so without this it dead-ends at
+      // "Sound not found".
+      hostContext.pushWithVideoPause(
+        SoundDetailScreen.pathForId(audio.id),
+        extra: <String, dynamic>{'sound': audio},
+      );
     });
   }
 }
