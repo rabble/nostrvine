@@ -33,6 +33,7 @@ class ApiService {
        _rateLimiter = rateLimiter;
   static String get _baseUrl => AppConfig.backendBaseUrl;
   static String get _mediaBaseUrl => AppConfig.mediaApiBaseUrl;
+  static String get _moderationBaseUrl => AppConfig.moderationApiBaseUrl;
   static const Duration _defaultTimeout = Duration(seconds: 30);
 
   final http.Client _client;
@@ -152,7 +153,7 @@ class ApiService {
     );
 
     try {
-      final uri = Uri.parse('$_baseUrl/v1/account/moderation-status');
+      final uri = Uri.parse('$_moderationBaseUrl/v1/account/moderation-status');
       final response = await _client
           .get(uri, headers: await _getHeaders(url: uri.toString()))
           .timeout(_defaultTimeout);
@@ -187,7 +188,7 @@ class ApiService {
 
     try {
       final uri = Uri.parse(
-        '$_baseUrl/v1/minor-review-cases/$caseId/parent-contact',
+        '$_moderationBaseUrl/v1/minor-review-cases/$caseId/parent-contact',
       );
       final response = await _client
           .post(

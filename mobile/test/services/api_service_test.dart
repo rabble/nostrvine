@@ -181,7 +181,8 @@ void main() {
       );
 
       test(
-        'getMinorAccountReviewStatus uses the Divine backend host',
+        'getMinorAccountReviewStatus uses the moderation API host, '
+        'not the main backend (relay-manager#108: backend 404s -> gate inert)',
         () async {
           final mockResponse = MockResponse();
           when(() => mockResponse.statusCode).thenReturn(200);
@@ -206,7 +207,7 @@ void main() {
                   ).captured.single
                   as Uri;
 
-          expect(captured.host, 'api.divine.video');
+          expect(captured.host, 'api-relay-prod.divine.video');
           expect(captured.path, '/v1/account/moderation-status');
         },
       );
@@ -255,13 +256,22 @@ void main() {
             email: 'parent@example.com',
           );
 
-          verify(
-            () => mockClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: jsonEncode({'email': 'parent@example.com'}),
-            ),
-          ).called(1);
+          final captured =
+              verify(
+                    () => mockClient.post(
+                      captureAny(),
+                      headers: any(named: 'headers'),
+                      body: jsonEncode({'email': 'parent@example.com'}),
+                    ),
+                  ).captured.single
+                  as Uri;
+
+          // Same host contract as moderation-status (relay-manager#108)
+          expect(captured.host, 'api-relay-prod.divine.video');
+          expect(
+            captured.path,
+            '/v1/minor-review-cases/case-123/parent-contact',
+          );
         },
       );
     });

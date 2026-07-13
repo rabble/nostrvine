@@ -13,6 +13,16 @@ class AppConfig {
     defaultValue: 'https://api.openvine.co',
   );
 
+  /// Moderation API (relay-manager worker). The minor-account-review
+  /// endpoints (/v1/account/moderation-status, /v1/minor-review-cases/*)
+  /// live here, NOT on the main backend host — calling them on
+  /// [backendBaseUrl] 404s and the review gate silently fails open
+  /// (divine-relay-manager#108).
+  static const String moderationApiBaseUrl = String.fromEnvironment(
+    'MODERATION_API_URL',
+    defaultValue: 'https://api-relay-prod.divine.video',
+  );
+
   static const String inviteServerBaseUrl = String.fromEnvironment(
     'INVITE_SERVER_URL',
     defaultValue: 'https://invite.divine.video',
@@ -98,6 +108,7 @@ class AppConfig {
     'environment': environment,
     'backendUrl': backendBaseUrl,
     'mediaApiUrl': mediaApiBaseUrl,
+    'moderationApiUrl': moderationApiBaseUrl,
     'inviteServerUrl': inviteServerBaseUrl,
     'appsDirectoryUrl': appsDirectoryBaseUrl,
     'isDevelopment': isDevelopment,
