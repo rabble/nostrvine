@@ -16,6 +16,7 @@ class VideoRecorderMobilePreview extends StatelessWidget {
     return CameraPreviewWidget(
       onScaleStart: (details) => bloc.add(VideoRecorderScaleStarted(details)),
       onScaleUpdate: (details) => bloc.add(VideoRecorderScaleUpdated(details)),
+      onScaleEnd: (details) => bloc.add(const VideoRecorderScaleEnded()),
       onTap: enableTapToFocus
           ? (localPosition, normalizedPosition) {
               // setFocusPoint already combines AF + AE metering.

@@ -593,13 +593,6 @@ class CameraController: NSObject {
         }
     }
 
-    /// Sets the zoom level.
-    func setZoomLevel(level: CGFloat) -> Bool {
-        // videoZoomFactor is unavailable on macOS
-        // macOS cameras do not support programmatic zoom
-        return false
-    }
-
     // MARK: - Preview
 
     /// Pauses the camera preview.

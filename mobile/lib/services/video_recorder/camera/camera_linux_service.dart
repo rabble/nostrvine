@@ -111,7 +111,7 @@ class CameraLinuxService extends CameraService {
   Future<bool> setExposurePoint(Offset offset) async => false;
 
   @override
-  Future<bool> setZoomLevel(double value) async => false;
+  Future<double?> setZoomLevel(double value) async => null;
 
   @override
   Future<bool> switchCamera() async => false;

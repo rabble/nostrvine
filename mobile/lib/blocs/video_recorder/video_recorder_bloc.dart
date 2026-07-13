@@ -215,6 +215,7 @@ class VideoRecorderBloc
     on<VideoRecorderZoomedByLongPress>(_onZoomedByLongPress);
     on<VideoRecorderScaleStarted>(_onScaleStarted);
     on<VideoRecorderScaleUpdated>(_onScaleUpdated);
+    on<VideoRecorderScaleEnded>(_onScaleEnded);
     on<VideoRecorderRecordingLockedForNavigation>(
       _onRecordingLockedForNavigation,
     );
@@ -549,8 +550,8 @@ class VideoRecorderBloc
       return;
     }
 
-    final success = await _cameraService.setZoomLevel(event.value);
-    if (!success) {
+    final appliedZoom = await _cameraService.setZoomLevel(event.value);
+    if (appliedZoom == null) {
       Log.warning(
         '⚠️ Failed to set zoom level to ${event.value}',
         name: 'VideoRecorderBloc',
@@ -558,7 +559,19 @@ class VideoRecorderBloc
       );
       return;
     }
-    emit(state.copyWith(zoomLevel: event.value, showZoomIndicator: true));
+    // Emit what the camera actually applied, never the request: iOS can
+    // silently clamp an in-range request when the available zoom range is
+    // restricted at runtime. Mirroring the refreshed bounds keeps the
+    // ruler's scale honest (it shrinks under a restriction and heals once
+    // the restriction lifts).
+    emit(
+      state.copyWith(
+        zoomLevel: appliedZoom,
+        minZoomLevel: _cameraService.minZoomLevel,
+        maxZoomLevel: _cameraService.maxZoomLevel,
+        showZoomIndicator: true,
+      ),
+    );
     _armZoomIndicatorHideTimer();
   }
 
@@ -1194,25 +1207,49 @@ class VideoRecorderBloc
     VideoRecorderScaleStarted event,
     Emitter<VideoRecorderBlocState> emit,
   ) {
+    // Only a real pinch (two pointers) summons the ruler. A one-pointer
+    // scale start is just a pan and must not flip the ruler interactive —
+    // an invisible, fading-in ruler otherwise swallows the second finger
+    // of the pinch that follows (its opaque hit-test band sits right where
+    // the lower finger lands). isPinchActive additionally blocks the ruler
+    // for the whole gesture, so a second finger landing on the (visible)
+    // ruler still falls through to the preview and completes the pinch.
+    //
     // snapTime is intentionally not reset here: copyWith's null-coalescing
     // semantics make explicit-null a no-op anyway, and the snap-update
     // handler guards every snapTime read with snappedTo1x — which we
     // just cleared. The next snap engagement overwrites snapTime fresh.
+    final isPinch = event.details.pointerCount >= 2;
     emit(
       state.copyWith(
         baseZoomLevel: state.zoomLevel,
         snappedTo1x: false,
         lastRawZoom: state.zoomLevel,
-        showZoomIndicator: true,
+        showZoomIndicator: isPinch ? true : null,
+        isPinchActive: true,
       ),
     );
-    _armZoomIndicatorHideTimer();
+    if (isPinch) _armZoomIndicatorHideTimer();
+  }
+
+  void _onScaleEnded(
+    VideoRecorderScaleEnded event,
+    Emitter<VideoRecorderBlocState> emit,
+  ) {
+    emit(state.copyWith(isPinchActive: false));
   }
 
   Future<void> _onScaleUpdated(
     VideoRecorderScaleUpdated event,
     Emitter<VideoRecorderBlocState> emit,
   ) async {
+    // One-pointer updates with an unchanged scale are pans, not pinches
+    // (a single pointer keeps scale at exactly 1.0; trackpad pinches
+    // report a scale != 1.0). Skipping them keeps plain preview pans from
+    // summoning and re-arming the zoom ruler.
+    if (event.details.pointerCount < 2 && event.details.scale == 1.0) {
+      return;
+    }
     // Multiplicative mapping: the cumulative pinch scale multiplies the zoom
     // captured at gesture start, so the perceived sensitivity is uniform
     // across the whole range (1×→2× feels like 2×→4×). The previous
@@ -1297,7 +1334,11 @@ class VideoRecorderBloc
     Emitter<VideoRecorderBlocState> emit,
   ) {
     _zoomIndicatorTimer = null;
-    emit(state.copyWith(showZoomIndicator: false));
+    // isPinchActive is cleared as a safety net: the timer only fires after
+    // a full second without gesture activity, so a still-set flag means the
+    // scale-end callback was lost (e.g. gesture cancelled by navigation) and
+    // would otherwise leave the ruler permanently non-interactive.
+    emit(state.copyWith(showZoomIndicator: false, isPinchActive: false));
   }
 
   void _onRecordingLockedForNavigation(

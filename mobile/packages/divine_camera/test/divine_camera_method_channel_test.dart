@@ -48,7 +48,11 @@ void main() {
             case 'cancelFocusAndMetering':
               return true;
             case 'setZoomLevel':
-              return true;
+              return {
+                'zoomLevel': args?['level'],
+                'minZoomLevel': 0.5,
+                'maxZoomLevel': 61.875,
+              };
             case 'setVideoStabilizationMode':
               return true;
             case 'switchCamera':
@@ -190,10 +194,13 @@ void main() {
       expect(result, isTrue);
     });
 
-    test('setZoomLevel returns true', () async {
+    test('setZoomLevel returns the applied zoom state', () async {
       final result = await platform.setZoomLevel(2.5);
 
-      expect(result, isTrue);
+      expect(result, isNotNull);
+      expect(result!.zoomLevel, 2.5);
+      expect(result.minZoomLevel, 0.5);
+      expect(result.maxZoomLevel, 61.875);
     });
 
     test('switchCamera returns updated CameraState', () async {
@@ -554,7 +561,7 @@ void main() {
       expect(result, isFalse);
     });
 
-    test('setZoomLevel returns false when result is null', () async {
+    test('setZoomLevel returns null when result is null', () async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, (methodCall) async {
             if (methodCall.method == 'setZoomLevel') {
@@ -564,7 +571,7 @@ void main() {
           });
 
       final result = await platform.setZoomLevel(2);
-      expect(result, isFalse);
+      expect(result, isNull);
     });
   });
 

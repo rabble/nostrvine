@@ -32,6 +32,7 @@ void main() {
       double minZoomLevel = 0.5,
       double maxZoomLevel = 5.0,
       bool showZoomIndicator = true,
+      bool isPinchActive = false,
     }) {
       when(() => bloc.state).thenReturn(
         VideoRecorderBlocState(
@@ -39,6 +40,7 @@ void main() {
           minZoomLevel: minZoomLevel,
           maxZoomLevel: maxZoomLevel,
           showZoomIndicator: showZoomIndicator,
+          isPinchActive: isPinchActive,
           isCameraInitialized: true,
         ),
       );
@@ -394,6 +396,28 @@ void main() {
           () => bloc.add(any(that: isA<VideoRecorderZoomLevelSet>())),
         );
       });
+
+      testWidgets(
+        'does not capture pointers while a preview pinch is in progress',
+        (tester) async {
+          // Regression: the visible ruler used to swallow the second finger
+          // of a pinch with its opaque full-width band, degrading the pinch
+          // into a one-finger no-op plus an unintended ruler scrub.
+          await tester.pumpWidget(buildWidget(isPinchActive: true));
+          await tester.pumpAndSettle();
+
+          await tester.drag(
+            find.byType(VideoRecorderZoomIndicator),
+            const Offset(-110, 0),
+            warnIfMissed: false,
+          );
+          await tester.pumpAndSettle();
+
+          verifyNever(
+            () => bloc.add(any(that: isA<VideoRecorderZoomLevelSet>())),
+          );
+        },
+      );
     });
   });
 }

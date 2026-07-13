@@ -1737,22 +1737,51 @@ class CameraController: NSObject {
     
     /// Sets the zoom level (user-facing value, e.g. 0.5x, 1.0x, 2.0x).
     /// Internally converts to native videoZoomFactor using nativeToUserZoomScale.
-    func setZoomLevel(level: CGFloat) -> Bool {
-        guard let device = videoDevice else { return false }
-        
-        let clampedLevel = max(minZoom, min(level, maxZoom))
+    ///
+    /// Clamps against the device's *current* min/maxAvailableVideoZoomFactor
+    /// instead of the configure-time snapshot: on virtual devices iOS
+    /// restricts these at runtime (e.g. while recording or with video
+    /// stabilization active) and silently clamps out-of-range assignments
+    /// rather than throwing. The factor is read back after the assignment so
+    /// the returned zoom is what the camera actually applied, never the
+    /// requested value.
+    ///
+    /// Returns the applied zoom plus the live available range as a map for
+    /// the platform channel, or nil when the device rejected the change.
+    func setZoomLevel(level: CGFloat) -> [String: Double]? {
+        guard let device = videoDevice else { return nil }
+
+        // Without auto lens switch the lower bound stays at 1.0 so the
+        // native HAL never switches a virtual device to the ultra-wide,
+        // mirroring updateCameraProperties.
+        var liveMin = device.minAvailableVideoZoomFactor * nativeToUserZoomScale
+        if !autoLensSwitchRequested {
+            liveMin = max(liveMin, 1.0)
+        }
+        let liveMax = device.maxAvailableVideoZoomFactor * nativeToUserZoomScale
+
+        let clampedLevel = max(liveMin, min(level, liveMax))
         // Convert user-facing zoom to native videoZoomFactor
         let nativeZoom = clampedLevel / nativeToUserZoomScale
-        
+
         do {
             try device.lockForConfiguration()
             device.videoZoomFactor = nativeZoom
             device.unlockForConfiguration()
-            currentZoom = clampedLevel
-            return true
         } catch {
-            return false
+            return nil
         }
+
+        currentZoom = device.videoZoomFactor * nativeToUserZoomScale
+        // Keep the stored bounds in sync so getCameraState reports the same
+        // range; refreshed on every set, so it heals when a restriction lifts.
+        minZoom = liveMin
+        maxZoom = liveMax
+        return [
+            "zoomLevel": Double(currentZoom),
+            "minZoomLevel": Double(liveMin),
+            "maxZoomLevel": Double(liveMax),
+        ]
     }
 
     // MARK: - Video Stabilization

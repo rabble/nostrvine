@@ -20,8 +20,10 @@ import 'package:openvine/l10n/l10n.dart';
 /// major marks (whole factors and the 0.5× stop) with a soft detent and a
 /// haptic tick, matching the pinch's 1× snap. It only accepts pointer events
 /// while [VideoRecorderBlocState.showZoomIndicator] is set (during a pinch and
-/// for a short hold afterwards); the rest of the time it ignores them so the
-/// preview keeps its own gestures.
+/// for a short hold afterwards) and no preview scale gesture is in progress
+/// ([VideoRecorderBlocState.isPinchActive]); the rest of the time it ignores
+/// them so the preview keeps its own gestures and a pinch finger landing on
+/// the ruler still reaches the preview.
 ///
 /// Renders nothing when the active camera exposes no usable zoom range
 /// (single lens / before initialization).
@@ -35,12 +37,14 @@ class VideoRecorderZoomIndicator extends StatelessWidget {
       :minZoomLevel,
       :maxZoomLevel,
       :showZoomIndicator,
+      :isPinchActive,
     ) = context.select(
       (VideoRecorderBloc b) => (
         zoomLevel: b.state.zoomLevel,
         minZoomLevel: b.state.minZoomLevel,
         maxZoomLevel: b.state.maxZoomLevel,
         showZoomIndicator: b.state.showZoomIndicator,
+        isPinchActive: b.state.isPinchActive,
       ),
     );
 
@@ -51,8 +55,11 @@ class VideoRecorderZoomIndicator extends StatelessWidget {
 
     // Only grab pointer events while the ruler is visible, so the preview
     // keeps its pinch / tap / long-press gestures the rest of the time.
+    // While a preview scale gesture is in progress the ruler also lets
+    // pointers through — its opaque full-width band would otherwise swallow
+    // the second finger of a pinch and break the gesture.
     return IgnorePointer(
-      ignoring: !showZoomIndicator,
+      ignoring: !showZoomIndicator || isPinchActive,
       child: ExcludeSemantics(
         excluding: !showZoomIndicator,
         child: AnimatedOpacity(

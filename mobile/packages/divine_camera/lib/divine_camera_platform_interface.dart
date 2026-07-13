@@ -5,6 +5,7 @@ import 'package:divine_camera/divine_camera_method_channel.dart';
 import 'package:divine_camera/src/models/audio_device.dart';
 import 'package:divine_camera/src/models/camera_lens.dart';
 import 'package:divine_camera/src/models/camera_state.dart';
+import 'package:divine_camera/src/models/camera_zoom_state.dart';
 import 'package:divine_camera/src/models/flash_mode.dart';
 import 'package:divine_camera/src/models/photo_capture_result.dart';
 import 'package:divine_camera/src/models/remote_record_trigger.dart';
@@ -83,8 +84,13 @@ abstract class DivineCameraPlatform extends PlatformInterface {
   }
 
   /// Sets the zoom level.
-  /// Returns true if successful.
-  Future<bool> setZoomLevel(double level) {
+  ///
+  /// Returns the zoom state the camera actually applied (read back from
+  /// the device, together with the live available zoom range), or `null`
+  /// when the platform failed to apply the zoom. The applied zoom can be
+  /// lower than [level] when the OS restricts the available range at
+  /// runtime — see [CameraZoomState].
+  Future<CameraZoomState?> setZoomLevel(double level) {
     throw UnimplementedError('setZoomLevel() has not been implemented.');
   }
 

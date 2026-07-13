@@ -126,9 +126,23 @@ class MockDivineCameraPlatform
     return true;
   }
 
+  /// When set, [setZoomLevel] reports this value as the currently
+  /// available maximum and clamps the applied zoom to it, simulating an
+  /// OS runtime restriction (iOS silently clamps in that case).
+  double? availableMaxZoomOverride;
+
+  /// When true, [setZoomLevel] fails (returns null).
+  bool failZoom = false;
+
   @override
-  Future<bool> setZoomLevel(double level) async {
-    return level >= 1.0 && level <= 10.0;
+  Future<CameraZoomState?> setZoomLevel(double level) async {
+    if (failZoom) return null;
+    final availableMax = availableMaxZoomOverride ?? _state.maxZoomLevel;
+    return CameraZoomState(
+      zoomLevel: level.clamp(_state.minZoomLevel, availableMax),
+      minZoomLevel: _state.minZoomLevel,
+      maxZoomLevel: availableMax,
+    );
   }
 
   /// When set, [switchCamera] awaits this before completing, so a test can
@@ -528,12 +542,13 @@ void main() {
     });
 
     group('zoom', () {
-      test('sets zoom level successfully', () async {
+      test('sets zoom level and returns the applied value', () async {
         await DivineCamera.instance.initialize();
 
-        final success = await DivineCamera.instance.setZoomLevel(2);
+        final applied = await DivineCamera.instance.setZoomLevel(2);
 
-        expect(success, isTrue);
+        expect(applied, 2.0);
+        expect(DivineCamera.instance.zoomLevel, 2.0);
       });
 
       test('returns minZoomLevel and maxZoomLevel', () async {
@@ -541,6 +556,47 @@ void main() {
 
         expect(DivineCamera.instance.minZoomLevel, 1.0);
         expect(DivineCamera.instance.maxZoomLevel, 10.0);
+      });
+
+      test('returns null and keeps state when the platform fails', () async {
+        await DivineCamera.instance.initialize();
+        mockPlatform.failZoom = true;
+
+        final applied = await DivineCamera.instance.setZoomLevel(2);
+
+        expect(applied, isNull);
+        expect(DivineCamera.instance.zoomLevel, 1.0);
+      });
+
+      test(
+        'adopts the applied zoom and shrunk bounds when the OS restricts '
+        'the available range at runtime',
+        () async {
+          await DivineCamera.instance.initialize();
+          mockPlatform.availableMaxZoomOverride = 5.2;
+
+          final applied = await DivineCamera.instance.setZoomLevel(8);
+
+          expect(applied, 5.2);
+          expect(DivineCamera.instance.zoomLevel, 5.2);
+          expect(DivineCamera.instance.maxZoomLevel, 5.2);
+        },
+      );
+
+      test('heals the bounds once a runtime restriction lifts', () async {
+        await DivineCamera.instance.initialize();
+        mockPlatform.availableMaxZoomOverride = 5.2;
+        await DivineCamera.instance.setZoomLevel(8);
+        mockPlatform.availableMaxZoomOverride = null;
+
+        // The first set after the lift is still pre-clamped to the shrunk
+        // bounds, but the platform reports the widened range back.
+        await DivineCamera.instance.setZoomLevel(4);
+        expect(DivineCamera.instance.maxZoomLevel, 10.0);
+
+        final applied = await DivineCamera.instance.setZoomLevel(8);
+        expect(applied, 8.0);
+        expect(DivineCamera.instance.zoomLevel, 8.0);
       });
     });
 
