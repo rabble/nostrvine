@@ -5374,7 +5374,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get dmMessageActionRetrySend => '다시 보내기';
 
   @override
-  String get dmMessageActionCancelSend => '메시지 삭제';
+  String get dmMessageActionCancelSend => '전송 중단';
 
   @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';

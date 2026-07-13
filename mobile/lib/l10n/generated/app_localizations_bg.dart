@@ -5638,7 +5638,7 @@ class AppLocalizationsBg extends AppLocalizations {
   String get dmMessageActionRetrySend => 'Изпрати отново';
 
   @override
-  String get dmMessageActionCancelSend => 'Изтрий съобщението';
+  String get dmMessageActionCancelSend => 'Спри опитите';
 
   @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';

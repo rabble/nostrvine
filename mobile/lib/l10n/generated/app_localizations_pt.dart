@@ -5621,7 +5621,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dmMessageActionRetrySend => 'Reenviar';
 
   @override
-  String get dmMessageActionCancelSend => 'Excluir mensagem';
+  String get dmMessageActionCancelSend => 'Parar de tentar';
 
   @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';

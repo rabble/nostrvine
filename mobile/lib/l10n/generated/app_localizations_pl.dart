@@ -5730,7 +5730,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get dmMessageActionRetrySend => 'Wyślij ponownie';
 
   @override
-  String get dmMessageActionCancelSend => 'Usuń wiadomość';
+  String get dmMessageActionCancelSend => 'Przestań próbować';
 
   @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';

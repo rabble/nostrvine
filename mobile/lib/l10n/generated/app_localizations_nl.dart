@@ -5611,7 +5611,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dmMessageActionRetrySend => 'Opnieuw sturen';
 
   @override
-  String get dmMessageActionCancelSend => 'Bericht verwijderen';
+  String get dmMessageActionCancelSend => 'Stoppen met proberen';
 
   @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
