@@ -1091,6 +1091,110 @@ void main() {
         },
       );
     });
+
+    group('DM send_batch_id column', () {
+      test(
+        'upgrade path — re-adds send_batch_id on outgoing_dms and '
+        'direct_messages on reopen, and the re-added column is usable',
+        () async {
+          // Seed one row per table under the pre-drop schema, each carrying a
+          // batch id, so the DROP exercises a populated column.
+          await database.directMessagesDao.insertMessage(
+            id: 'msg_pre',
+            conversationId: 'conv_pre',
+            senderPubkey: testPubkey,
+            content: 'legacy group send',
+            createdAt: 1700000000,
+            giftWrapId: 'gw_pre',
+            ownerPubkey: testPubkey,
+            sendBatchId: 'batch-pre',
+          );
+          await database.outgoingDmsDao.enqueue(
+            OutgoingDm(
+              id: 'out_pre',
+              conversationId: 'conv_pre',
+              recipientPubkey: testPubkey,
+              content: 'legacy outgoing',
+              createdAt: 1700000000,
+              rumorEventJson: '{"id":"out_pre","kind":14}',
+              recipientWrapStatus: OutgoingWrapStatus.pending,
+              selfWrapStatus: OutgoingWrapStatus.pending,
+              queuedAt: DateTime.utc(2026, 5),
+              ownerPubkey: testPubkey,
+              sendBatchId: 'batch-pre',
+            ),
+          );
+
+          // Simulate a legacy install that pre-dates the column.
+          await database.customStatement(
+            'ALTER TABLE outgoing_dms DROP COLUMN send_batch_id',
+          );
+          await database.customStatement(
+            'ALTER TABLE direct_messages DROP COLUMN send_batch_id',
+          );
+          expect(
+            await _columnNames(database, 'outgoing_dms'),
+            isNot(contains('send_batch_id')),
+          );
+          expect(
+            await _columnNames(database, 'direct_messages'),
+            isNot(contains('send_batch_id')),
+          );
+          await database.close();
+
+          // Reopen the same on-disk file. `beforeOpen` re-adds the column on
+          // both DM tables. There is no backfill (unlike d_tag): the pre-drop
+          // `batch-pre` values are gone, the column comes back empty.
+          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+
+          expect(
+            await _columnNames(database, 'outgoing_dms'),
+            contains('send_batch_id'),
+          );
+          expect(
+            await _columnNames(database, 'direct_messages'),
+            contains('send_batch_id'),
+          );
+
+          // The re-added column is writable and readable end-to-end.
+          await database.directMessagesDao.insertMessage(
+            id: 'msg_post',
+            conversationId: 'conv_post',
+            senderPubkey: testPubkey,
+            content: 'post-reopen group send',
+            createdAt: 1700000100,
+            giftWrapId: 'gw_post',
+            ownerPubkey: testPubkey,
+            sendBatchId: 'batch-post',
+          );
+          expect(
+            await database.directMessagesDao.hasMessageWithSendBatchId(
+              batchId: 'batch-post',
+              ownerPubkey: testPubkey,
+            ),
+            isTrue,
+          );
+
+          await database.outgoingDmsDao.enqueue(
+            OutgoingDm(
+              id: 'out_post',
+              conversationId: 'conv_post',
+              recipientPubkey: testPubkey,
+              content: 'post-reopen outgoing',
+              createdAt: 1700000100,
+              rumorEventJson: '{"id":"out_post","kind":14}',
+              recipientWrapStatus: OutgoingWrapStatus.pending,
+              selfWrapStatus: OutgoingWrapStatus.pending,
+              queuedAt: DateTime.utc(2026, 5, 2),
+              ownerPubkey: testPubkey,
+              sendBatchId: 'batch-post',
+            ),
+          );
+          final outgoing = await database.outgoingDmsDao.getById('out_post');
+          expect(outgoing!.sendBatchId, equals('batch-post'));
+        },
+      );
+    });
   });
 }
 
@@ -1135,5 +1239,11 @@ Future<Set<String>> _collectIndexNames(
         "AND tbl_name='$table' AND name NOT LIKE 'sqlite_autoindex_%'",
       )
       .get();
+  return rows.map((row) => row.read<String>('name')).toSet();
+}
+
+/// The set of column names on [table] per `pragma table_info`.
+Future<Set<String>> _columnNames(AppDatabase db, String table) async {
+  final rows = await db.customSelect('PRAGMA table_info($table)').get();
   return rows.map((row) => row.read<String>('name')).toSet();
 }

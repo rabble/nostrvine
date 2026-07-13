@@ -127,28 +127,38 @@ class ConversationState extends Equatable {
       q.conversationId !=
       DmRepository.computeConversationId([q.ownerPubkey, q.recipientPubkey]);
 
+  /// Durable batch key for a queue row: the stamped `sendBatchId` when
+  /// present, else the legacy `(owner, createdAt, content)` tuple for rows
+  /// enqueued before the column existed. New keys are 64-hex event ids and
+  /// legacy keys are pipe-delimited tuples — disjoint string spaces, so a new
+  /// batch never aggregates a legacy one and vice versa.
+  static String _batchKeyOf(OutgoingDm q) =>
+      q.sendBatchId ?? '${q.ownerPubkey}|${q.createdAt}|${q.content}';
+
+  /// Batch key for a persisted message, mirroring [_batchKeyOf]. A received
+  /// message or 1:1 send has a null `sendBatchId` and falls back to a tuple
+  /// keyed on its OWN sender — which no owner-scoped group queue row shares —
+  /// so it can never aggregate someone else's in-flight batch.
+  static String _batchKeyOfMessage(DmMessage m) =>
+      m.sendBatchId ?? '${m.senderPubkey}|${m.createdAt}|${m.content}';
+
   /// The fan-out batch containing [id] — a queue-row rumor id or a
   /// persisted message id.
   ///
   /// A group send enqueues one queue row PER RECIPIENT for one logical
-  /// message; siblings share (content, createdAt) — `sendGroupMessage`
-  /// stamps every sibling rumor with one shared batch timestamp. Batch
-  /// membership additionally requires the same owner and a group-shaped
-  /// conversation id, so an incoming persisted message coincidentally
-  /// sharing (content, createdAt) can never aggregate someone else's
-  /// bubble, and two identical 1:1 sends in the same second stay
-  /// independent rows.
+  /// message; every sibling carries the same durable `sendBatchId`
+  /// ([_batchKeyOf]). Batch membership additionally requires a group-shaped
+  /// conversation id (`_isGroupRow`), so an incoming persisted message can
+  /// never aggregate someone else's bubble, and two distinct group sends of
+  /// identical text — even in the same second — stay independent because
+  /// their batch ids differ.
   List<OutgoingDm> _siblingRowsFor(String id) {
     if (pendingOutgoing.isEmpty) return const [];
     final row = _outgoingByRumorId[id];
     if (row != null && !_isGroupRow(row)) return [row];
-    final int createdAt;
-    final String content;
-    final String owner;
+    final String key;
     if (row != null) {
-      createdAt = row.createdAt;
-      content = row.content;
-      owner = row.ownerPubkey;
+      key = _batchKeyOf(row);
     } else {
       DmMessage? match;
       for (final m in messages) {
@@ -158,20 +168,11 @@ class ConversationState extends Equatable {
         }
       }
       if (match == null) return const [];
-      createdAt = match.createdAt;
-      content = match.content;
-      // Own messages only: for an incoming message this is the peer's
-      // pubkey, which no owner-scoped queue row carries — resolving to
-      // an empty batch (delivered), never to our own in-flight rows.
-      owner = match.senderPubkey;
+      key = _batchKeyOfMessage(match);
     }
     return [
       for (final q in pendingOutgoing)
-        if (q.ownerPubkey == owner &&
-            q.createdAt == createdAt &&
-            q.content == content &&
-            _isGroupRow(q))
-          q,
+        if (_isGroupRow(q) && _batchKeyOf(q) == key) q,
     ];
   }
 
@@ -244,34 +245,29 @@ class ConversationState extends Equatable {
   /// per recipient, same content + batch timestamp) projects ONE bubble,
   /// not N — and none at all once the batch's message is persisted.
   /// Because the persisted winner is keyed to a sibling whose queue row
-  /// was deleted on confirm, suppression matches the batch identity
-  /// (own sender + content + createdAt) against persisted messages, not
-  /// surviving queue-row ids; [statusFor] then surfaces remaining
-  /// sibling failures on the persisted bubble.
+  /// was deleted on confirm, suppression matches the durable batch id
+  /// ([_batchKeyOf]) against persisted messages, not surviving queue-row
+  /// ids; [statusFor] then surfaces remaining sibling failures on the
+  /// persisted bubble.
   List<DmMessage> get displayedMessages {
     if (pendingOutgoing.isEmpty) return messages;
     final persistedIds = messages.map((m) => m.id).toSet();
-    final persistedBatchKeys = <(String, int, String)>{
-      for (final m in messages) (m.senderPubkey, m.createdAt, m.content),
+    final persistedBatchKeys = <String>{
+      for (final m in messages) _batchKeyOfMessage(m),
     };
 
-    final grouped = <(int, String), List<OutgoingDm>>{};
+    final grouped = <String, List<OutgoingDm>>{};
     final pendingBubbles = <DmMessage>[];
     for (final q in pendingOutgoing) {
       if (persistedIds.contains(q.id)) continue;
       if (_isGroupRow(q)) {
-        grouped.putIfAbsent((q.createdAt, q.content), () => []).add(q);
+        grouped.putIfAbsent(_batchKeyOf(q), () => []).add(q);
       } else {
         pendingBubbles.add(_outgoingToBubble(q));
       }
     }
     for (final batch in grouped.values) {
-      final first = batch.first;
-      if (persistedBatchKeys.contains((
-        first.ownerPubkey,
-        first.createdAt,
-        first.content,
-      ))) {
+      if (persistedBatchKeys.contains(_batchKeyOf(batch.first))) {
         continue;
       }
       batch.sort((a, b) => a.id.compareTo(b.id));
@@ -332,5 +328,7 @@ DmMessage _outgoingToBubble(OutgoingDm row) {
     // parent's shared video and render the quoted preview immediately, before
     // the persisted `watchMessages` tick replaces this row.
     replyToId: row.replyToId,
+    // Keep the projected group bubble's own batch key well-formed.
+    sendBatchId: row.sendBatchId,
   );
 }

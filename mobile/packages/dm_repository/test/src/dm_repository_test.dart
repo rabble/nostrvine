@@ -518,7 +518,8 @@ void main() {
       // Global stub for the recovery path's group-sibling dedup probe: by
       // default no batch sibling is persisted yet, so recoverFullSend
       // inserts normally. Group-recovery tests that exercise the dedup
-      // restub this to true.
+      // restub this to true. Still used by the cross-protocol receive dedup
+      // and by the legacy null-batch fallback in group recovery.
       when(
         () => mockDirectMessagesDao.hasMatchingMessage(
           conversationId: any(named: 'conversationId'),
@@ -526,6 +527,18 @@ void main() {
           content: any(named: 'content'),
           createdAt: any(named: 'createdAt'),
           windowSeconds: any(named: 'windowSeconds'),
+          ownerPubkey: any(named: 'ownerPubkey'),
+        ),
+      ).thenAnswer((_) async => false);
+
+      // Global stub for the durable batch-id dedup probe: the send + recovery
+      // paths now match a group send's persisted local message by its stamped
+      // sendBatchId (not the collision-prone content/timestamp window). Default
+      // to "not yet persisted" so happy-path group send + recovery insert
+      // normally; dedup tests restub this to true.
+      when(
+        () => mockDirectMessagesDao.hasMessageWithSendBatchId(
+          batchId: any(named: 'batchId'),
           ownerPubkey: any(named: 'ownerPubkey'),
         ),
       ).thenAnswer((_) async => false);
@@ -986,6 +999,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -1046,6 +1060,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         ).called(1);
 
@@ -1115,6 +1130,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         );
         // Nothing persisted → nothing marked read.
@@ -1157,6 +1173,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -1240,6 +1257,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).thenAnswer((_) async {});
           when(
@@ -1513,6 +1531,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -1588,6 +1607,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         ).called(1);
 
@@ -1687,6 +1707,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: _validPubkeyA,
             tagsJson: jsonEncode(inviteTags),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         ).called(1);
 
@@ -1783,6 +1804,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).thenAnswer((_) async {
             activePersists++;
@@ -1870,6 +1892,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).called(wrapCount);
         },
@@ -1954,6 +1977,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).called(times);
         }
@@ -2198,6 +2222,7 @@ void main() {
                 thumbnailUrl: any(named: 'thumbnailUrl'),
                 ownerPubkey: any(named: 'ownerPubkey'),
                 tagsJson: any(named: 'tagsJson'),
+                sendBatchId: any(named: 'sendBatchId'),
               ),
             ).captured;
 
@@ -2406,6 +2431,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         );
 
@@ -2461,6 +2487,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         );
 
@@ -2592,6 +2619,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).called(1);
           // …and the pending row was cleared so it stops being retried.
@@ -2654,6 +2682,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         );
 
@@ -2711,6 +2740,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         );
 
@@ -2773,6 +2803,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         ).called(1);
 
@@ -2909,6 +2940,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         ).called(2);
 
@@ -2948,6 +2980,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         ).thenThrow(Exception('DB write failed'));
 
@@ -4263,6 +4296,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).thenAnswer((_) async {});
           when(
@@ -4830,6 +4864,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         ).thenAnswer((inv) async {
           persistedGiftWrapIds.add(inv.namedArguments[#giftWrapId] as String);
@@ -4945,6 +4980,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: recipientPub,
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).called(1);
 
@@ -5302,6 +5338,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           );
         },
@@ -5361,6 +5398,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: recipientPub,
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).called(1);
         },
@@ -5491,6 +5529,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: recipientPub,
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).called(1);
           verify(
@@ -5516,6 +5555,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: recipientPub,
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).called(1);
 
@@ -5641,6 +5681,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: recipientPub,
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).called(1);
           // The garbage wrap was queued for retry exactly once.
@@ -5722,6 +5763,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).thenAnswer((inv) async {
             persistedGiftWrapIds.add(
@@ -6236,6 +6278,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           );
         },
@@ -6673,6 +6716,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -6839,6 +6883,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -6946,6 +6991,7 @@ void main() {
             dimensions: '1920x1080',
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         ).called(1);
 
@@ -7031,6 +7077,7 @@ void main() {
             messageKind: EventKind.fileMessage,
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         ).called(1);
 
@@ -7194,6 +7241,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -7258,6 +7306,7 @@ void main() {
             fileSize: 2048,
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         ).called(1);
 
@@ -7333,6 +7382,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         );
       });
@@ -7380,6 +7430,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -7470,6 +7521,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).called(1);
         },
@@ -7548,6 +7600,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).called(1);
 
@@ -7747,6 +7800,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -7829,6 +7883,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         );
 
@@ -7871,6 +7926,7 @@ void main() {
             messageKind: EventKind.directMessage,
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         ).called(1);
 
@@ -7991,6 +8047,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         );
 
@@ -8044,6 +8101,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         );
 
@@ -8097,6 +8155,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         );
 
@@ -8185,6 +8244,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         ).called(1);
 
@@ -8200,6 +8260,7 @@ void main() {
             messageKind: EventKind.directMessage,
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         ).called(1);
 
@@ -8283,6 +8344,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -8399,6 +8461,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -8820,6 +8883,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).thenAnswer((_) async {});
           when(
@@ -8907,6 +8971,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).called(1);
 
@@ -8979,6 +9044,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).thenAnswer((_) async {});
           when(
@@ -9044,6 +9110,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).called(1);
 
@@ -9116,6 +9183,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).thenAnswer((_) async {});
           when(
@@ -9207,6 +9275,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).called(1);
 
@@ -9280,6 +9349,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).thenAnswer((_) async {});
           when(
@@ -9347,6 +9417,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).called(1);
 
@@ -9391,6 +9462,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           );
 
@@ -9439,6 +9511,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -9504,6 +9577,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         ).called(1);
 
@@ -10430,6 +10504,7 @@ void main() {
               dimensions: any(named: 'dimensions'),
               blurhash: any(named: 'blurhash'),
               thumbnailUrl: any(named: 'thumbnailUrl'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           );
 
@@ -11021,6 +11096,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         ).thenAnswer((_) async {});
 
@@ -11114,6 +11190,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -11230,6 +11307,7 @@ void main() {
               replyToId: any(named: 'replyToId'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).called(1);
 
@@ -11283,6 +11361,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           );
         },
@@ -11351,6 +11430,7 @@ void main() {
                       replyToId: any(named: 'replyToId'),
                       ownerPubkey: any(named: 'ownerPubkey'),
                       tagsJson: captureAny(named: 'tagsJson'),
+                      sendBatchId: any(named: 'sendBatchId'),
                     ),
                   ).captured.single
                   as String;
@@ -11402,6 +11482,7 @@ void main() {
                       replyToId: any(named: 'replyToId'),
                       ownerPubkey: any(named: 'ownerPubkey'),
                       tagsJson: captureAny(named: 'tagsJson'),
+                      sendBatchId: any(named: 'sendBatchId'),
                     ),
                   ).captured.single
                   as String;
@@ -11439,6 +11520,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -11583,6 +11665,7 @@ void main() {
                       replyToId: any(named: 'replyToId'),
                       ownerPubkey: any(named: 'ownerPubkey'),
                       tagsJson: captureAny(named: 'tagsJson'),
+                      sendBatchId: any(named: 'sendBatchId'),
                     ),
                   ).captured.single
                   as String;
@@ -12064,6 +12147,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).thenAnswer((_) async {});
 
@@ -12162,6 +12246,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).thenAnswer((_) async {});
 
@@ -12260,6 +12345,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).thenAnswer((_) async {});
 
@@ -12363,6 +12449,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).thenAnswer((_) async {});
 
@@ -12455,6 +12542,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).thenAnswer((_) async {});
 
@@ -12603,6 +12691,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -12766,6 +12855,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           );
         },
@@ -12875,6 +12965,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           );
         },
@@ -12948,6 +13039,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: _validPubkeyA,
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).called(1);
         },
@@ -13033,6 +13125,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           );
           verifyNever(
@@ -13271,6 +13364,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).thenThrow(Exception('drift busy'));
 
@@ -13369,6 +13463,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -13439,6 +13534,22 @@ void main() {
             reason:
                 'each recipient gets its own rumor id; group queue rows '
                 'must not collide',
+          );
+          // The linchpin of the durable batch identity: every sibling row is
+          // stamped with the SAME non-null sendBatchId (the first sibling
+          // rumor's id), which is what recovery dedup, cancellation, and the
+          // UI's grouping all read. If a regression stamped null or a
+          // per-recipient-distinct value here, recovery/cancel would silently
+          // fall back to the collision-prone tuple even though the persisted
+          // winner was stamped correctly.
+          expect(enqueuedB.sendBatchId, isNotNull);
+          expect(enqueuedB.sendBatchId, equals(enqueuedC.sendBatchId));
+          expect(
+            enqueuedB.sendBatchId,
+            equals(enqueuedB.id),
+            reason:
+                'batch id is the first sibling rumor id; recipientPubkeys '
+                '[B, C] builds B first, so rumors.first.id == enqueuedB.id',
           );
           expect(enqueuedB.recipientWrapStatus, OutgoingWrapStatus.pending);
           expect(enqueuedB.selfWrapStatus, OutgoingWrapStatus.pending);
@@ -13789,6 +13900,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           );
         },
@@ -13844,12 +13956,8 @@ void main() {
             );
           });
           when(
-            () => mockDirectMessagesDao.hasMatchingMessage(
-              conversationId: any(named: 'conversationId'),
-              senderPubkey: any(named: 'senderPubkey'),
-              content: any(named: 'content'),
-              createdAt: any(named: 'createdAt'),
-              windowSeconds: any(named: 'windowSeconds'),
+            () => mockDirectMessagesDao.hasMessageWithSendBatchId(
+              batchId: any(named: 'batchId'),
               ownerPubkey: any(named: 'ownerPubkey'),
             ),
           ).thenAnswer((_) async => true);
@@ -13887,6 +13995,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           );
           // Both fully-delivered sibling rows still leave the queue, and
@@ -13908,6 +14017,115 @@ void main() {
               dmProtocol: any(named: 'dmProtocol'),
             ),
           ).called(1);
+        },
+      );
+
+      test(
+        'two distinct group sends of identical text seconds apart BOTH '
+        'persist, each under its own durable batch id (regression: #6046 '
+        'collision-proof batch identity)',
+        () async {
+          // The bug this pins: the old dedup matched a group send against any
+          // same-sender/same-content message within a ±5s window, so a second
+          // send of identical text 1-5s later collided with the first —
+          // dropping the later message from local history even though its wire
+          // copies were delivered. Batch identity is now the first sibling
+          // rumor's event id, which embeds the (second-resolution) timestamp,
+          // so two sends in DIFFERENT seconds get DIFFERENT batch ids.
+          //
+          // Drive a simulated clock through buildRumor so the two sends land
+          // in distinct seconds (a genuine 2s-apart resend), still inside the
+          // old ±5s window that would have collided them.
+          var batchSecond = 1700000000;
+          when(
+            () => mockMessageService.buildRumor(
+              recipientPubkey: any(named: 'recipientPubkey'),
+              content: any(named: 'content'),
+              eventKind: any(named: 'eventKind'),
+              additionalTags: any(named: 'additionalTags'),
+              createdAt: any(named: 'createdAt'),
+            ),
+          ).thenAnswer((inv) {
+            final recipient = inv.namedArguments[#recipientPubkey] as String;
+            final content = inv.namedArguments[#content] as String;
+            final eventKind =
+                (inv.namedArguments[#eventKind] as int?) ??
+                EventKind.privateDirectMessage;
+            final additionalTags =
+                (inv.namedArguments[#additionalTags] as List<List<String>>?) ??
+                const <List<String>>[];
+            return Event(
+              _validPubkeyA,
+              eventKind,
+              [
+                ['p', recipient],
+                ...additionalTags,
+              ],
+              content,
+              createdAt: batchSecond,
+            );
+          });
+          stubSendRumor((_, recipient) async {
+            return NIP17SendResult.success(
+              rumorEventId: 'rumor-$recipient-$batchSecond',
+              messageEventId: 'wrap-$recipient-$batchSecond',
+              recipientPubkey: recipient,
+            );
+          });
+
+          // Capture the batch id stamped on every persisted local message.
+          final persistedBatchIds = <String?>[];
+          when(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).thenAnswer((inv) async {
+            persistedBatchIds.add(
+              inv.namedArguments[#sendBatchId] as String?,
+            );
+          });
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          await repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'ok',
+          );
+          batchSecond += 2; // 2s later — inside the old ±5s collision window.
+          await repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'ok',
+          );
+
+          // Both sends persisted a local message (the old window would have
+          // suppressed the second), and each carries its own batch id.
+          expect(persistedBatchIds, hasLength(2));
+          expect(persistedBatchIds[0], isNotNull);
+          expect(persistedBatchIds[1], isNotNull);
+          expect(persistedBatchIds[0], isNot(equals(persistedBatchIds[1])));
         },
       );
 
@@ -13961,6 +14179,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           );
           verifyNever(
@@ -14047,6 +14266,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).called(1);
           verify(
@@ -14793,6 +15013,7 @@ void main() {
         String ownerPubkey = _validPubkeyA,
         String? recipientWrapEventId,
         String? selfWrapEventId,
+        String? sendBatchId,
       }) {
         return OutgoingDm(
           id: _rumorEventId,
@@ -14807,6 +15028,7 @@ void main() {
           ownerPubkey: ownerPubkey,
           recipientWrapEventId: recipientWrapEventId,
           selfWrapEventId: selfWrapEventId,
+          sendBatchId: sendBatchId,
         );
       }
 
@@ -14861,6 +15083,7 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -14942,6 +15165,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           );
           verifyNever(
@@ -15205,9 +15429,83 @@ void main() {
         () async {
           when(
             () => mockOutgoingDmsDao.getById(_rumorEventId),
-          ).thenAnswer((_) async => queuedRow());
+          ).thenAnswer((_) async => queuedRow(sendBatchId: 'batch-recover'));
           // queuedRow's conversationId ('conv') differs from the computed
-          // 1:1 pair id, so the row classifies as a group sibling.
+          // 1:1 pair id, so the row classifies as a group sibling. The
+          // recovered row carries a durable batch id, so the dedup probes
+          // by that id (not the collision-prone content/timestamp window).
+          when(
+            () => mockDirectMessagesDao.hasMessageWithSendBatchId(
+              batchId: any(named: 'batchId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => true);
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId2,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final result = await repository.recoverFullSend(
+            rumorId: _rumorEventId,
+          );
+
+          expect(result.success, isTrue);
+          verify(
+            () => mockDirectMessagesDao.hasMessageWithSendBatchId(
+              batchId: 'batch-recover',
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          );
+          // The queue row still finalizes — full delivery deletes it.
+          verify(
+            () => mockOutgoingDmsDao.deleteById(_rumorEventId),
+          ).called(1);
+        },
+      );
+
+      test(
+        'group-row recovery of a legacy null-batch row falls back to the '
+        'content/timestamp dedup window',
+        () async {
+          // A row enqueued before send_batch_id existed carries null; its
+          // persisted winner is likewise null-batch, so the two must still
+          // reconcile on the legacy hasMatchingMessage window.
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow());
           when(
             () => mockDirectMessagesDao.hasMatchingMessage(
               conversationId: any(named: 'conversationId'),
@@ -15235,6 +15533,13 @@ void main() {
           );
 
           expect(result.success, isTrue);
+          // Null-batch row never probes the batch-id surface.
+          verifyNever(
+            () => mockDirectMessagesDao.hasMessageWithSendBatchId(
+              batchId: any(named: 'batchId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
           verifyNever(
             () => mockDirectMessagesDao.insertMessage(
               id: any(named: 'id'),
@@ -15258,9 +15563,9 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           );
-          // The queue row still finalizes — full delivery deletes it.
           verify(
             () => mockOutgoingDmsDao.deleteById(_rumorEventId),
           ).called(1);
@@ -15319,6 +15624,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: _validPubkeyA,
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).called(1);
 
@@ -15407,6 +15713,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: _validPubkeyA,
               tagsJson: jsonEncode(videoTags),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).called(1);
         },
@@ -15478,6 +15785,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).called(1);
         },
@@ -15543,6 +15851,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           );
         },
@@ -15711,6 +16020,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           );
         },
@@ -15784,6 +16094,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           );
         },
@@ -16051,6 +16362,7 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
           ).thenThrow(Exception('drift busy'));
 
@@ -16171,6 +16483,7 @@ void main() {
         String content = batchContent,
         int createdAt = batchCreatedAt,
         String ownerPubkey = _validPubkeyA,
+        String? sendBatchId,
       }) => OutgoingDm(
         id: id,
         conversationId: conversationId,
@@ -16182,10 +16495,12 @@ void main() {
         selfWrapStatus: OutgoingWrapStatus.pending,
         queuedAt: DateTime.fromMillisecondsSinceEpoch(0),
         ownerPubkey: ownerPubkey,
+        sendBatchId: sendBatchId,
       );
 
       DirectMessageRow persistedWinner({
         String senderPubkey = _validPubkeyA,
+        String? sendBatchId,
       }) => DirectMessageRow(
         id: winnerRumorId,
         conversationId: groupConversationId,
@@ -16195,6 +16510,7 @@ void main() {
         giftWrapId: _giftWrapEventId,
         messageKind: 14,
         isDeleted: false,
+        sendBatchId: sendBatchId,
       );
 
       setUp(() {
@@ -16298,6 +16614,73 @@ void main() {
           verify(
             () => mockOutgoingDmsDao.deleteById(failedSiblingId),
           ).called(1);
+        },
+      );
+
+      test(
+        'two batches sharing (conversationId, content, createdAt) are '
+        'cancelled independently by durable batch id — the collision the old '
+        'tuple could not separate (regression: #6046)',
+        () async {
+          const batchAId = 'batch-A';
+          const batchBId = 'batch-B';
+          const aRow1 = 'a111';
+          const aRow2 = 'a222';
+          const bRow1 = 'b111';
+          const bRow2 = 'b222';
+          // Two group batches whose siblings collide on the OLD tuple (same
+          // conversationId + content + createdAt) but carry distinct durable
+          // batch ids. Cancelling batch B must leave batch A untouched.
+          when(
+            () => mockOutgoingDmsDao.getForConversation(
+              conversationId: any(named: 'conversationId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              sibling(
+                id: aRow1,
+                recipientWrapStatus: OutgoingWrapStatus.pending,
+                sendBatchId: batchAId,
+              ),
+              sibling(
+                id: aRow2,
+                recipientWrapStatus: OutgoingWrapStatus.failed,
+                sendBatchId: batchAId,
+              ),
+              sibling(
+                id: bRow1,
+                recipientWrapStatus: OutgoingWrapStatus.pending,
+                sendBatchId: batchBId,
+              ),
+              sibling(
+                id: bRow2,
+                recipientWrapStatus: OutgoingWrapStatus.failed,
+                sendBatchId: batchBId,
+              ),
+            ],
+          );
+          when(() => mockOutgoingDmsDao.getById(bRow1)).thenAnswer(
+            (_) async => sibling(
+              id: bRow1,
+              recipientWrapStatus: OutgoingWrapStatus.pending,
+              sendBatchId: batchBId,
+            ),
+          );
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final cancelled = await repository.cancelOutgoingBatch(
+            rumorId: bRow1,
+          );
+
+          expect(cancelled, equals(2));
+          verify(() => mockOutgoingDmsDao.deleteById(bRow1)).called(1);
+          verify(() => mockOutgoingDmsDao.deleteById(bRow2)).called(1);
+          verifyNever(() => mockOutgoingDmsDao.deleteById(aRow1));
+          verifyNever(() => mockOutgoingDmsDao.deleteById(aRow2));
         },
       );
 

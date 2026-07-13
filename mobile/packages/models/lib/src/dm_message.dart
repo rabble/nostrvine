@@ -26,6 +26,7 @@ class DmMessage extends Equatable {
     this.tags = const [],
     this.fileMetadata,
     this.sharedVideoRef,
+    this.sendBatchId,
   });
 
   /// The rumor event ID (kind 14 or 15).
@@ -69,6 +70,14 @@ class DmMessage extends Equatable {
   /// messages and for legacy URL-only shares.
   final DmSharedVideoRef? sharedVideoRef;
 
+  /// Durable, collision-proof id of the group-send fan-out this message
+  /// belongs to. Non-null only for the sender's own persisted group-send
+  /// message (mirrors `DirectMessages.sendBatchId`); null for 1:1 sends and
+  /// every received message. The conversation state uses it to collapse a
+  /// group send's per-recipient bubbles into one and to aggregate their
+  /// delivery status, without colliding two distinct same-text sends.
+  final String? sendBatchId;
+
   /// Whether this is a file message (kind 15).
   bool get isFileMessage => messageKind == 15;
 
@@ -92,6 +101,7 @@ class DmMessage extends Equatable {
     tags,
     fileMetadata,
     sharedVideoRef,
+    sendBatchId,
   ];
 }
 

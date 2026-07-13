@@ -38,6 +38,7 @@ void main() {
     int retryCount = 0,
     DateTime? queuedAt,
     int createdAt = 1700000000,
+    String? sendBatchId,
   }) {
     return OutgoingDm(
       id: id,
@@ -51,6 +52,7 @@ void main() {
       retryCount: retryCount,
       queuedAt: queuedAt ?? DateTime.utc(2026, 5),
       ownerPubkey: owner,
+      sendBatchId: sendBatchId,
     );
   }
 
@@ -98,6 +100,22 @@ void main() {
 
       expect(row, equals(copy));
       expect(row.hashCode, equals(copy.hashCode));
+    });
+
+    test('rows differing only in sendBatchId are NOT equal', () {
+      final batchOne = makeDm(id: 'eq-batch', sendBatchId: 'batch-1');
+      final batchTwo = makeDm(id: 'eq-batch', sendBatchId: 'batch-2');
+
+      expect(batchOne, isNot(equals(batchTwo)));
+      expect(batchOne.hashCode, isNot(equals(batchTwo.hashCode)));
+    });
+
+    test('copyWith(sendBatchId:) round-trips the field', () {
+      final base = makeDm(id: 'eq-batch-rt');
+      expect(base.sendBatchId, isNull);
+
+      final withBatch = base.copyWith(sendBatchId: 'batch-x');
+      expect(withBatch.sendBatchId, equals('batch-x'));
     });
   });
 
@@ -156,6 +174,21 @@ void main() {
           expect(fetched.retryCount, equals(1));
         },
       );
+
+      test('persists sendBatchId through enqueue and getById', () async {
+        await dao.enqueue(makeDm(id: 'batched', sendBatchId: 'batch-e'));
+
+        final fetched = await dao.getById('batched');
+        expect(fetched, isNotNull);
+        expect(fetched!.sendBatchId, equals('batch-e'));
+      });
+
+      test('leaves sendBatchId null for a 1:1 send', () async {
+        await dao.enqueue(makeDm(id: 'solo'));
+
+        final fetched = await dao.getById('solo');
+        expect(fetched!.sendBatchId, isNull);
+      });
     });
 
     group('markRecipientWrapStatus / markSelfWrapStatus', () {

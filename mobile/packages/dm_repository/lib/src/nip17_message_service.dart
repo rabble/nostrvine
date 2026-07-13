@@ -276,8 +276,9 @@ class NIP17MessageService {
     ];
 
     // [createdAt] lets a group fan-out stamp every per-recipient rumor with
-    // one shared batch timestamp, so the sender-side sibling rows of a single
-    // logical group message are identifiable by (content, createdAt).
+    // one shared batch timestamp, so all sibling rows sort together on the
+    // sender-side timeline. (The batch identity used for dedup/grouping is a
+    // separate durable id — see `OutgoingDms.sendBatchId`.)
     return Event(
       _senderPublicKey,
       eventKind,

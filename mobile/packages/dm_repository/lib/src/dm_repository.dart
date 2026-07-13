@@ -3397,18 +3397,27 @@ class DmRepository {
           // Sibling dedup: a group send persists ONE local message for the
           // whole batch (keyed to the first confirmed sibling). When a later
           // sibling row of the same batch is recovered, the message is
-          // already there — only finalize the queue row. Batch identity is
-          // (conversationId, content, createdAt): sendGroupMessage stamps
-          // every sibling rumor with one shared batch timestamp.
+          // already there — only finalize the queue row. Match on the queue
+          // row's durable batch id (stamped at enqueue). Rows enqueued by a
+          // build before send_batch_id existed carry null; those fall back to
+          // the legacy `(content, createdAt ±5s)` window so an in-flight
+          // legacy batch still dedups (its persisted winner is likewise
+          // null-batch, so the two reconcile on the same tuple).
+          final batchId = row.sendBatchId;
           final alreadyPersisted =
               isGroupRow &&
-              await _directMessagesDao.hasMatchingMessage(
-                conversationId: row.conversationId,
-                senderPubkey: _userPubkey,
-                content: row.content,
-                createdAt: row.createdAt,
-                ownerPubkey: _userPubkey,
-              );
+              (batchId != null
+                  ? await _directMessagesDao.hasMessageWithSendBatchId(
+                      batchId: batchId,
+                      ownerPubkey: _userPubkey,
+                    )
+                  : await _directMessagesDao.hasMatchingMessage(
+                      conversationId: row.conversationId,
+                      senderPubkey: _userPubkey,
+                      content: row.content,
+                      createdAt: row.createdAt,
+                      ownerPubkey: _userPubkey,
+                    ));
 
           if (!alreadyPersisted) {
             await _directMessagesDao.insertMessage(
@@ -3417,12 +3426,15 @@ class DmRepository {
               senderPubkey: _userPubkey,
               content: row.content,
               // The rumor's canonical timestamp (row.createdAt mirrors it),
-              // NOT recovery-time `now` — keeps the bubble from jumping and
-              // keys the sibling dedup above.
+              // NOT recovery-time `now` — keeps the bubble from jumping.
               createdAt: row.createdAt,
               giftWrapId: result.messageEventId!,
               messageKind: row.messageKind,
               replyToId: row.replyToId,
+              // Carry the row's batch label onto the persisted message so a
+              // later sibling's recovery dedups against it (null for 1:1 and
+              // legacy rows).
+              sendBatchId: batchId,
               // Reconstruct tagsJson from the rebuilt rumor so a recovered
               // row hydrates the same read-time-derived fields (e.g.
               // sharedVideoRef from a NIP-18 q tag) as the happy-path send.
@@ -3734,15 +3746,15 @@ class DmRepository {
   /// Cancel every queued row of the send batch containing [rumorId] — the
   /// group-send counterpart of [cancelOutgoingSend], for deleting a message.
   ///
-  /// A group send enqueues one row per recipient (siblings share
-  /// `(conversationId, content, createdAt)` — the identity
-  /// [sendGroupMessage] stamps and the recovery path dedups on). Deleting a
-  /// partially delivered group bubble must drop ALL of them: the persisted
-  /// bubble carries the first confirmed sibling's rumor id, whose own row is
-  /// already gone, so cancelling just that id leaves pending and failed
-  /// siblings for the retry sweep to re-publish — and a surviving
-  /// delivered-awaiting-self-wrap row would re-persist the deleted message
-  /// on the sender's own devices via the self-wrap recovery.
+  /// A group send enqueues one row per recipient, all stamped with the same
+  /// durable `sendBatchId` (the identity [sendGroupMessage] assigns and the
+  /// recovery path dedups on). Deleting a partially delivered group bubble
+  /// must drop ALL of them: the persisted bubble carries the first confirmed
+  /// sibling's rumor id, whose own row is already gone, so cancelling just
+  /// that id leaves pending and failed siblings for the retry sweep to
+  /// re-publish — and a surviving delivered-awaiting-self-wrap row would
+  /// re-persist the deleted message on the sender's own devices via the
+  /// self-wrap recovery.
   ///
   /// [rumorId] may be a live queue row's id or the persisted batch winner's
   /// message id; the batch identity is resolved from whichever exists.
@@ -3767,6 +3779,9 @@ class DmRepository {
     final String conversationId;
     final int createdAt;
     final String content;
+    // The durable batch id when available; null for a legacy (pre-column)
+    // in-flight batch, which falls back to the `(createdAt, content)` tuple.
+    final String? batchId;
     final row = await dao.getById(rumorId);
     if (row != null) {
       if (row.ownerPubkey != _userPubkey) {
@@ -3785,6 +3800,7 @@ class DmRepository {
       conversationId = row.conversationId;
       createdAt = row.createdAt;
       content = row.content;
+      batchId = row.sendBatchId;
     } else {
       // No queue row — the bubble may be the persisted group winner whose
       // own row was deleted on confirm. Resolve the batch identity from the
@@ -3797,6 +3813,7 @@ class DmRepository {
       conversationId = message.conversationId;
       createdAt = message.createdAt;
       content = message.content;
+      batchId = message.sendBatchId;
     }
 
     final rows = await dao.getForConversation(
@@ -3805,9 +3822,10 @@ class DmRepository {
     );
     var cancelled = 0;
     for (final sibling in rows) {
-      if (sibling.createdAt != createdAt || sibling.content != content) {
-        continue;
-      }
+      final isSibling = batchId != null
+          ? sibling.sendBatchId == batchId
+          : sibling.createdAt == createdAt && sibling.content == content;
+      if (!isSibling) continue;
       await dao.deleteById(sibling.id);
       cancelled++;
     }
@@ -4098,18 +4116,10 @@ class DmRepository {
     final rumors = <Event>[];
     final results = <NIP17SendResult>[];
 
-    // Build and enqueue EVERY per-recipient rumor up front, stamped with one
-    // shared batch timestamp, before any publish. Two reasons:
-    //  1. The queue rows of one logical group message become identifiable as
-    //     siblings by (conversationId, content, createdAt) — the UI collapses
-    //     them into a single bubble and the recovery path dedups the local
-    //     persist. Publishing between builds (the previous shape) spread the
-    //     timestamps across the sequential publish loop, breaking that key.
-    //  2. All N optimistic bubbles' rows exist before the first (potentially
-    //     slow) publish, instead of materializing one by one between
-    //     publishes.
-    // Each recipient still gets a distinct rumor id (their p-tag set
-    // differs), so queue rows never collide across a single group send.
+    // Build EVERY per-recipient rumor up front, stamped with one shared batch
+    // timestamp, before any publish. Each recipient gets a distinct rumor id
+    // (their p-tag set differs), so queue rows never collide across a single
+    // group send.
     final batchCreatedAt = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     for (final pubkey in recipientPubkeys) {
       final rumorTags = <List<String>>[
@@ -4120,24 +4130,41 @@ class DmRepository {
         if (replyToId != null) ['e', replyToId],
       ];
 
-      final rumor = _messageService!.buildRumor(
-        recipientPubkey: pubkey,
-        content: content,
-        additionalTags: rumorTags,
-        createdAt: batchCreatedAt,
+      rumors.add(
+        _messageService!.buildRumor(
+          recipientPubkey: pubkey,
+          content: content,
+          additionalTags: rumorTags,
+          createdAt: batchCreatedAt,
+        ),
       );
-      rumors.add(rumor);
+    }
 
-      // Enqueue before publish so an app crash mid-send leaves a
-      // recoverable trace per recipient. Same contract as sendMessage:
-      // no-op when the queue dao isn't wired in (older test fixtures,
-      // NIP-04-only callers).
-      if (outgoingDao != null) {
+    // Durable, collision-proof batch identity for this fan-out: the first
+    // sibling rumor's event id. Globally unique and already computed, it is
+    // stamped identically on every sibling queue row AND on the batch's single
+    // persisted local message, so persistence dedup, optimistic grouping,
+    // sibling lookup, and cancellation all match a batch by one exact stored
+    // value. This replaces the old `(content, createdAt ±5s)` heuristic, which
+    // collapsed two distinct group sends of identical text seconds apart into
+    // one — dropping the later message while its wire copies were delivered.
+    // Same-second byte-identical resends share this id, which is correct: they
+    // are the same Nostr event and the receiver dedups them to one.
+    final sendBatchId = rumors.first.id;
+
+    // Enqueue every sibling before publish so an app crash mid-send leaves a
+    // recoverable trace per recipient, and all N optimistic bubbles' rows
+    // exist before the first (potentially slow) publish. Same contract as
+    // sendMessage: no-op when the queue dao isn't wired in (older test
+    // fixtures, NIP-04-only callers).
+    if (outgoingDao != null) {
+      for (var i = 0; i < recipientPubkeys.length; i++) {
+        final rumor = rumors[i];
         await outgoingDao.enqueue(
           OutgoingDm(
             id: rumor.id,
             conversationId: conversationId,
-            recipientPubkey: pubkey,
+            recipientPubkey: recipientPubkeys[i],
             content: content,
             createdAt: rumor.createdAt,
             rumorEventJson: jsonEncode(rumor.toJson()),
@@ -4147,6 +4174,7 @@ class DmRepository {
             selfWrapStatus: OutgoingWrapStatus.pending,
             queuedAt: DateTime.now(),
             ownerPubkey: _userPubkey,
+            sendBatchId: sendBatchId,
           ),
         );
       }
@@ -4234,15 +4262,13 @@ class DmRepository {
         // Sibling dedup (same guard as _recoverFullSendLocked): a group
         // send's sequential publishes can outlive the retry sweep's
         // interrupted-send min-age, so the sweep may recover a sibling and
-        // persist the batch's ONE local message first. Batch identity is
-        // (conversationId, content, createdAt).
+        // persist the batch's ONE local message first. Match on the durable
+        // batch id, not a content/timestamp window — two distinct sends of
+        // the same text seconds apart carry different batch ids.
         final alreadyPersisted =
             outgoingDao != null &&
-            await _directMessagesDao.hasMatchingMessage(
-              conversationId: conversationId,
-              senderPubkey: _userPubkey,
-              content: content,
-              createdAt: batchCreatedAt,
+            await _directMessagesDao.hasMessageWithSendBatchId(
+              batchId: sendBatchId,
               ownerPubkey: _userPubkey,
             );
 
@@ -4258,13 +4284,15 @@ class DmRepository {
             // The rumor's canonical batch timestamp, NOT confirm-time `now`:
             // the optimistic bubble sorts by rumor.createdAt, so stamping the
             // persisted row with a later time made the bubble jump on
-            // confirm. It is also the sibling-dedup key the recovery path
-            // matches on.
+            // confirm.
             createdAt: batchCreatedAt,
             giftWrapId: firstLiveSuccess.messageEventId!,
             replyToId: replyToId,
             tagsJson: localTags.isEmpty ? null : jsonEncode(localTags),
             ownerPubkey: _userPubkey,
+            // Stamp the persisted row with the batch id so the recovery path
+            // (and a racing sibling) dedup against it by exact match.
+            sendBatchId: sendBatchId,
           );
         }
 
@@ -5545,6 +5573,7 @@ class DmRepository {
       tags: tags,
       fileMetadata: fileMetadata,
       sharedVideoRef: DmSharedVideoCitation.parse(tags),
+      sendBatchId: row.sendBatchId,
     );
   }
 

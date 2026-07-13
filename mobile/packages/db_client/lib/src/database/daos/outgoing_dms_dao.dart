@@ -80,6 +80,7 @@ class OutgoingDm {
     this.recipientWrapLastError,
     this.selfWrapLastError,
     this.lastAttemptAt,
+    this.sendBatchId,
   });
 
   /// Rumor event id (kind 14/15). Stable across retries.
@@ -109,6 +110,13 @@ class OutgoingDm {
   final DateTime? lastAttemptAt;
   final DateTime queuedAt;
   final String ownerPubkey;
+
+  /// Durable, collision-proof id of the group-send fan-out this row belongs
+  /// to (the first sibling rumor's event id, stamped identically on every
+  /// per-recipient sibling). NULL for 1:1 sends, which have no siblings.
+  /// The repository and the conversation state key batch membership off this
+  /// instead of the collision-prone `(content, createdAt)` tuple.
+  final String? sendBatchId;
 
   /// Whether **both** wraps have landed. The repository deletes the
   /// queue row only when this is true (in the same transaction that
@@ -142,6 +150,7 @@ class OutgoingDm {
     DateTime? lastAttemptAt,
     DateTime? queuedAt,
     String? ownerPubkey,
+    String? sendBatchId,
   }) => OutgoingDm(
     id: id ?? this.id,
     conversationId: conversationId ?? this.conversationId,
@@ -162,6 +171,7 @@ class OutgoingDm {
     lastAttemptAt: lastAttemptAt ?? this.lastAttemptAt,
     queuedAt: queuedAt ?? this.queuedAt,
     ownerPubkey: ownerPubkey ?? this.ownerPubkey,
+    sendBatchId: sendBatchId ?? this.sendBatchId,
   );
 
   // Full value equality. `id` alone is NOT sufficient: bloc states carry
@@ -191,7 +201,8 @@ class OutgoingDm {
           selfWrapLastError == other.selfWrapLastError &&
           lastAttemptAt == other.lastAttemptAt &&
           queuedAt == other.queuedAt &&
-          ownerPubkey == other.ownerPubkey;
+          ownerPubkey == other.ownerPubkey &&
+          sendBatchId == other.sendBatchId;
 
   @override
   int get hashCode => Object.hash(
@@ -213,6 +224,7 @@ class OutgoingDm {
     lastAttemptAt,
     queuedAt,
     ownerPubkey,
+    sendBatchId,
   );
 
   @override
@@ -251,6 +263,7 @@ class OutgoingDmsDao extends DatabaseAccessor<AppDatabase>
       lastAttemptAt: Value(dm.lastAttemptAt),
       queuedAt: dm.queuedAt,
       ownerPubkey: dm.ownerPubkey,
+      sendBatchId: Value(dm.sendBatchId),
     );
   }
 
@@ -274,6 +287,7 @@ class OutgoingDmsDao extends DatabaseAccessor<AppDatabase>
       lastAttemptAt: row.lastAttemptAt,
       queuedAt: row.queuedAt,
       ownerPubkey: row.ownerPubkey,
+      sendBatchId: row.sendBatchId,
     );
   }
 

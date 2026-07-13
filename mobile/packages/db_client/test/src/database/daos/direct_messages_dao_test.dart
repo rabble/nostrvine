@@ -199,6 +199,37 @@ void main() {
           expect(results.first.id, equals('msg_1'));
         },
       );
+
+      test('persists sendBatchId and reads it back', () async {
+        await dao.insertMessage(
+          id: 'msg_batch',
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_alice',
+          content: 'Group send copy',
+          createdAt: 1700000000,
+          giftWrapId: 'gw_batch',
+          sendBatchId: 'batch-rt',
+        );
+
+        final results = await dao.getMessagesForConversation(conversationId1);
+        expect(results, hasLength(1));
+        expect(results.first.sendBatchId, equals('batch-rt'));
+      });
+
+      test('defaults sendBatchId to null when the param is omitted', () async {
+        await dao.insertMessage(
+          id: 'msg_no_batch',
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_alice',
+          content: 'One-to-one send',
+          createdAt: 1700000000,
+          giftWrapId: 'gw_no_batch',
+        );
+
+        final results = await dao.getMessagesForConversation(conversationId1);
+        expect(results, hasLength(1));
+        expect(results.first.sendBatchId, isNull);
+      });
     });
 
     group('getMessagesForConversation', () {
@@ -477,6 +508,93 @@ void main() {
         );
 
         expect(await dao.giftWrapIdsPresent(const <String>{}), isEmpty);
+      });
+    });
+
+    group('hasMessageWithSendBatchId', () {
+      const owner = 'pubkey_owner_a';
+
+      test(
+        'distinguishes two same-text sends by batch id — the exact '
+        'collision the ±5s hasMatchingMessage window could not tell apart',
+        () async {
+          // Same content, same second, same owner: hasMatchingMessage would
+          // treat the second send as a duplicate of the first and drop it.
+          // The durable batch id is what keeps them distinct.
+          await dao.insertMessage(
+            id: 'msg_b1',
+            conversationId: conversationId1,
+            senderPubkey: owner,
+            content: 'ok',
+            createdAt: 1700000000,
+            giftWrapId: 'gw_b1',
+            ownerPubkey: owner,
+            sendBatchId: 'batch-1',
+          );
+          await dao.insertMessage(
+            id: 'msg_b2',
+            conversationId: conversationId1,
+            senderPubkey: owner,
+            content: 'ok',
+            createdAt: 1700000002,
+            giftWrapId: 'gw_b2',
+            ownerPubkey: owner,
+            sendBatchId: 'batch-2',
+          );
+
+          expect(
+            await dao.hasMessageWithSendBatchId(
+              batchId: 'batch-1',
+              ownerPubkey: owner,
+            ),
+            isTrue,
+          );
+          expect(
+            await dao.hasMessageWithSendBatchId(
+              batchId: 'batch-2',
+              ownerPubkey: owner,
+            ),
+            isTrue,
+          );
+          expect(
+            await dao.hasMessageWithSendBatchId(
+              batchId: 'missing',
+              ownerPubkey: owner,
+            ),
+            isFalse,
+          );
+        },
+      );
+
+      test('is scoped by strict owner equality', () async {
+        const ownerA = 'pubkey_owner_a';
+        const ownerB = 'pubkey_owner_b';
+
+        await dao.insertMessage(
+          id: 'msg_x',
+          conversationId: conversationId1,
+          senderPubkey: ownerA,
+          content: 'owned by A',
+          createdAt: 1700000000,
+          giftWrapId: 'gw_x',
+          ownerPubkey: ownerA,
+          sendBatchId: 'batch-x',
+        );
+
+        expect(
+          await dao.hasMessageWithSendBatchId(
+            batchId: 'batch-x',
+            ownerPubkey: ownerA,
+          ),
+          isTrue,
+        );
+        expect(
+          await dao.hasMessageWithSendBatchId(
+            batchId: 'batch-x',
+            ownerPubkey: ownerB,
+          ),
+          isFalse,
+        );
       });
     });
 

@@ -58,6 +58,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     String? blurhash,
     String? thumbnailUrl,
     String? ownerPubkey,
+    String? sendBatchId,
   }) {
     return into(directMessages).insert(
       DirectMessagesCompanion.insert(
@@ -82,6 +83,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
         blurhash: Value(blurhash),
         thumbnailUrl: Value(thumbnailUrl),
         ownerPubkey: Value(ownerPubkey),
+        sendBatchId: Value(sendBatchId),
       ),
       mode: InsertMode.insertOrIgnore,
     );
@@ -230,6 +232,33 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
               createdAt + windowSeconds,
             ) &
             _ownedOrLegacy(directMessages.ownerPubkey, ownerPubkey),
+      )
+      ..addColumns([directMessages.id])
+      ..limit(1);
+    final result = await query.getSingleOrNull();
+    return result != null;
+  }
+
+  /// Whether a message tagged with group-send [batchId] is already persisted
+  /// for [ownerPubkey]. The collision-proof replacement for
+  /// [hasMatchingMessage] on the group-send / recovery dedup path: a group
+  /// send persists ONE local message for the whole fan-out, stamped with the
+  /// batch's durable id (`DirectMessages.sendBatchId`). Recovery of a later
+  /// sibling — or the happy-path persist racing a concurrent recovery — asks
+  /// this to avoid inserting a second copy.
+  ///
+  /// Scoped by strict `owner_pubkey` equality (not `_ownedOrLegacy`):
+  /// `send_batch_id` is only ever stamped on self-sent group messages with a
+  /// non-null owner, so the NULL-owner legacy branch would only widen the
+  /// match with nothing to gain.
+  Future<bool> hasMessageWithSendBatchId({
+    required String batchId,
+    required String ownerPubkey,
+  }) async {
+    final query = selectOnly(directMessages)
+      ..where(
+        directMessages.sendBatchId.equals(batchId) &
+            directMessages.ownerPubkey.equals(ownerPubkey),
       )
       ..addColumns([directMessages.id])
       ..limit(1);

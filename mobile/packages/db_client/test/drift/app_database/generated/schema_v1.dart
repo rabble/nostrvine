@@ -1766,6 +1766,14 @@ class DirectMessages extends Table with TableInfo {
     requiredDuringInsert: false,
     $customConstraints: 'NULL',
   );
+  late final GeneratedColumn<String> sendBatchId = GeneratedColumn<String>(
+    'send_batch_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: 'NULL',
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1790,6 +1798,7 @@ class DirectMessages extends Table with TableInfo {
     thumbnailUrl,
     isDeleted,
     ownerPubkey,
+    sendBatchId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2265,6 +2274,14 @@ class OutgoingDms extends Table with TableInfo {
     requiredDuringInsert: true,
     $customConstraints: 'NOT NULL',
   );
+  late final GeneratedColumn<String> sendBatchId = GeneratedColumn<String>(
+    'send_batch_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: 'NULL',
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2285,6 +2302,7 @@ class OutgoingDms extends Table with TableInfo {
     lastAttemptAt,
     queuedAt,
     ownerPubkey,
+    sendBatchId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;

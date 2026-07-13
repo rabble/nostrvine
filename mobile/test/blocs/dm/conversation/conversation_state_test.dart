@@ -38,6 +38,7 @@ OutgoingDm _outgoingDm({
   String conversationId = _groupConversationId,
   OutgoingWrapStatus recipientWrap = OutgoingWrapStatus.pending,
   OutgoingWrapStatus selfWrap = OutgoingWrapStatus.pending,
+  String? sendBatchId,
 }) {
   return OutgoingDm(
     id: id,
@@ -51,6 +52,7 @@ OutgoingDm _outgoingDm({
     selfWrapStatus: selfWrap,
     queuedAt: DateTime.fromMillisecondsSinceEpoch(createdAtSec * 1000),
     ownerPubkey: ownerPubkey,
+    sendBatchId: sendBatchId,
   );
 }
 
@@ -62,6 +64,7 @@ DmMessage _message({
   String content = 'test',
   int createdAtSec = 1700000000,
   String conversationId = _groupConversationId,
+  String? sendBatchId,
 }) {
   return DmMessage(
     id: id,
@@ -70,6 +73,7 @@ DmMessage _message({
     content: content,
     createdAt: createdAtSec,
     giftWrapId: 'wrap-$id',
+    sendBatchId: sendBatchId,
   );
 }
 
@@ -398,6 +402,136 @@ void main() {
           equals(['rumor-1']),
         );
       });
+    });
+
+    group('distinct sendBatchId keeps identical group sends independent', () {
+      // The exact regression the durable batch key fixes: the same group,
+      // same text, same second, sent twice. Both fan-outs share
+      // (owner, createdAt, content) — every row relies on the builder's
+      // default createdAt, so the legacy tuple key was identical across the
+      // two sends and collapsed them into one bubble with cross-contaminated
+      // status. Batch A stays all-pending, batch B is all-failed, so any leak
+      // between them is observable in both the bubble count and the status.
+      const sharedContent = 'same group text';
+
+      ConversationState twoBatches() => ConversationState(
+        pendingOutgoing: [
+          _outgoingDm(
+            id: 'rumor-a1',
+            content: sharedContent,
+            sendBatchId: 'batch-A',
+          ),
+          _outgoingDm(
+            id: 'rumor-a2',
+            content: sharedContent,
+            recipientPubkey: _recipientC,
+            sendBatchId: 'batch-A',
+          ),
+          _outgoingDm(
+            id: 'rumor-b1',
+            content: sharedContent,
+            recipientWrap: OutgoingWrapStatus.failed,
+            selfWrap: OutgoingWrapStatus.failed,
+            sendBatchId: 'batch-B',
+          ),
+          _outgoingDm(
+            id: 'rumor-b2',
+            content: sharedContent,
+            recipientPubkey: _recipientC,
+            recipientWrap: OutgoingWrapStatus.failed,
+            selfWrap: OutgoingWrapStatus.failed,
+            sendBatchId: 'batch-B',
+          ),
+        ],
+      );
+
+      test(
+        'projects two independent bubbles, not one collapsed batch',
+        () {
+          final displayed = twoBatches().displayedMessages;
+
+          expect(
+            displayed,
+            hasLength(2),
+            reason:
+                'the legacy (owner, createdAt, content) tuple key folded '
+                'both sends into a single bubble; the durable sendBatchId '
+                'keeps them independent',
+          );
+          // Each batch projects one bubble keyed to its own lowest rumor id.
+          expect(
+            displayed.map((m) => m.id),
+            unorderedEquals(['rumor-a1', 'rumor-b1']),
+          );
+        },
+      );
+
+      test(
+        'statusFor aggregates only the addressed batch — the pending batch '
+        'stays pending despite the sibling batch being entirely failed',
+        () {
+          final state = twoBatches();
+
+          expect(
+            state.statusFor('rumor-a1'),
+            equals(DmDeliveryStatus.pending),
+            reason:
+                "batch A is all pending; the legacy key folded batch B's "
+                'failures in and reported failed',
+          );
+          expect(
+            state.statusFor('rumor-b1'),
+            equals(DmDeliveryStatus.failed),
+          );
+        },
+      );
+
+      test(
+        'sibling id helpers never reach across the batch boundary',
+        () {
+          final state = twoBatches();
+
+          // The cancel-send set for batch A is exactly batch A's rows.
+          expect(
+            state.undeliveredSiblingRumorIdsFor('rumor-a1'),
+            unorderedEquals(['rumor-a1', 'rumor-a2']),
+          );
+          // Batch A has no failures — a leak would surface batch B's ids.
+          expect(state.failedSiblingRumorIdsFor('rumor-a1'), isEmpty);
+          // And batch B's undelivered set is exactly batch B's rows.
+          expect(
+            state.undeliveredSiblingRumorIdsFor('rumor-b1'),
+            unorderedEquals(['rumor-b1', 'rumor-b2']),
+          );
+        },
+      );
+
+      test(
+        "a persisted message carrying batch A's sendBatchId suppresses only "
+        "batch A's bubble, leaving batch B visible",
+        () {
+          final state = twoBatches().copyWith(
+            messages: [
+              _message(
+                id: 'persisted-a',
+                content: sharedContent,
+                sendBatchId: 'batch-A',
+              ),
+            ],
+          );
+
+          final displayed = state.displayedMessages;
+
+          expect(displayed, hasLength(2));
+          expect(
+            displayed.map((m) => m.id),
+            unorderedEquals(['persisted-a', 'rumor-b1']),
+            reason:
+                'the persisted winner suppresses its own batch A pending '
+                "bubble but must not swallow batch B's independent send",
+          );
+        },
+      );
     });
   });
 }

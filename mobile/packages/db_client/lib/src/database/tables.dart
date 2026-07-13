@@ -764,6 +764,16 @@ class DirectMessages extends Table {
   /// NULL for legacy messages created before multi-account support.
   TextColumn get ownerPubkey => text().nullable().named('owner_pubkey')();
 
+  /// Durable, collision-proof identity of the group-send fan-out this message
+  /// belongs to (the first sibling rumor's event id). Set ONLY when persisting
+  /// a group send's single local message; NULL for 1:1 sends and every received
+  /// message. Lets the send / recovery dedup and the UI's optimistic grouping
+  /// match a batch by an exact stored value instead of the collision-prone
+  /// `(sender, content, created_at ±5s)` heuristic that `hasMatchingMessage`
+  /// uses — two distinct group sends of identical text seconds apart no longer
+  /// collapse into one.
+  TextColumn get sendBatchId => text().nullable().named('send_batch_id')();
+
   @override
   Set<Column> get primaryKey => {id};
 
@@ -1176,6 +1186,14 @@ class OutgoingDms extends Table {
   /// Hex pubkey of the account that queued this send. Mirrors
   /// `direct_messages.owner_pubkey` for multi-account isolation.
   TextColumn get ownerPubkey => text().named('owner_pubkey')();
+
+  /// Durable, collision-proof identity of the group-send fan-out this row
+  /// belongs to (the first sibling rumor's event id, stamped identically on
+  /// every per-recipient sibling by `sendGroupMessage`). NULL for 1:1 sends,
+  /// which have no siblings. Persistence dedup, optimistic grouping, sibling
+  /// lookup, and cancellation all key off this instead of the collision-prone
+  /// `(content, created_at)` tuple. See `DirectMessages.sendBatchId`.
+  TextColumn get sendBatchId => text().nullable().named('send_batch_id')();
 
   @override
   Set<Column> get primaryKey => {id};
