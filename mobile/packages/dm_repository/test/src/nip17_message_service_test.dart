@@ -23,6 +23,21 @@ class _MockNostrSigner extends Mock implements NostrSigner {}
 
 class _FakeEvent extends Fake implements Event {}
 
+/// Reproduces the `toString()` shape of `keycast_flutter`'s `RpcException`
+/// (`'RpcException: <message>'`) so the policy-denial classification test
+/// exercises the real Keycast 403 surface, not a generic `Exception`.
+/// `dm_repository` cannot depend on `keycast_flutter`, so this pins the
+/// cross-package error-body contract locally: if Keycast's wording drifts,
+/// the marker in `nip17_message_service.dart` must be updated in lockstep.
+class _RpcExceptionDouble implements Exception {
+  _RpcExceptionDouble(this.message);
+
+  final String message;
+
+  @override
+  String toString() => 'RpcException: $message';
+}
+
 /// Denies every recipient — stands in for a protected minor's policy where the
 /// counterparty is not in the approved official set.
 Future<DmSendPolicyDecision> _denyAllPolicy(String recipientPubkey) async =>
@@ -198,6 +213,69 @@ void main() {
 
         expect(result.success, isTrue);
       });
+    });
+
+    group('Keycast policy-denial classification (#6067)', () {
+      test(
+        'a 403 "operation denied by policy" refusal terminalizes as blocked',
+        () async {
+          // Keycast's server-side verified_minor gate refuses to sign/encrypt
+          // and surfaces as an RpcException whose 403 body carries this
+          // marker. A remote signer is not isolate-capable, so sendRumor's
+          // _buildWrap goes straight to the injected main-isolate builder;
+          // LocalNostrSigner stands in for that not-isolate-capable signer,
+          // and the builder raises the refusal. The real RpcException string
+          // shape is reproduced so the substring match is tested against the
+          // Keycast surface, not a generic Exception.
+          final refusing = NIP17MessageService(
+            signer: LocalNostrSigner(_testPrivateKey),
+            senderPublicKey: _testPublicKey,
+            nostrService: mockNostrClient,
+            giftWrapBuilder: (_, _, _) async => throw _RpcExceptionDouble(
+              'HTTP 403: {"error":"Operation denied by policy"}',
+            ),
+          );
+          final rumor = refusing.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'should terminalize, not retry',
+          );
+
+          final result = await refusing.sendRumor(
+            rumorEvent: rumor,
+            recipientPubkey: _recipientPubkey,
+          );
+
+          expect(result.blocked, isTrue);
+          expect(result.success, isFalse);
+          expect(result.retryablePending, isFalse);
+          verifyNever(() => mockNostrClient.publishEvent(any()));
+        },
+      );
+
+      test(
+        'a non-policy send error stays a plain failure, not blocked',
+        () async {
+          final failing = NIP17MessageService(
+            signer: LocalNostrSigner(_testPrivateKey),
+            senderPublicKey: _testPublicKey,
+            nostrService: mockNostrClient,
+            giftWrapBuilder: (_, _, _) async =>
+                throw _RpcExceptionDouble('HTTP 503: relay unavailable'),
+          );
+          final rumor = failing.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'transient failure',
+          );
+
+          final result = await failing.sendRumor(
+            rumorEvent: rumor,
+            recipientPubkey: _recipientPubkey,
+          );
+
+          expect(result.success, isFalse);
+          expect(result.blocked, isFalse);
+        },
+      );
     });
 
     group('sendRumor relay targeting', () {

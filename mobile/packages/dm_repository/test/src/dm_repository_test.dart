@@ -12974,6 +12974,79 @@ void main() {
       );
 
       test(
+        'a server-side policy block after enqueue drops the row, '
+        'not marks it failed (#6067)',
+        () async {
+          // The client canSendTo gate passed — the block is server-side and
+          // the client did not predict it — so the row is enqueued and sent,
+          // then Keycast refuses with a 403 that sendRumor classifies as
+          // blocked. A policy block is terminal, so the row must be dropped
+          // (no doomed Resend bubble), the same as the group and drain arms.
+          stubSendRumor(
+            (_, _) async => const NIP17SendResult.blocked(
+              'blocked: recipient not permitted by send policy',
+            ),
+          );
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final result = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'blocked after enqueue',
+          );
+
+          expect(result.blocked, isTrue);
+
+          final captured = verify(
+            () => mockOutgoingDmsDao.enqueue(captureAny()),
+          ).captured;
+          final enqueued = captured.single as OutgoingDm;
+
+          // Terminal: the row is deleted, never marked failed/retryable
+          // (which would leave a doomed red Resend bubble).
+          verify(
+            () => mockOutgoingDmsDao.deleteById(enqueued.id),
+          ).called(1);
+          verifyNever(
+            () => mockOutgoingDmsDao.markRecipientWrapStatus(
+              id: any(named: 'id'),
+              status: OutgoingWrapStatus.failed,
+              lastError: any(named: 'lastError'),
+            ),
+          );
+          // The recipient received nothing, so no direct_messages row.
+          verifyNever(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          );
+        },
+      );
+
+      test(
         'on partial delivery: persists locally, keeps the queue row, '
         'marks recipient sent, and marks self failed',
         () async {
