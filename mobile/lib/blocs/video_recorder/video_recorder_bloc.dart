@@ -1520,7 +1520,7 @@ class VideoRecorderBloc
       ),
     );
     if (previousFrames.isNotEmpty) {
-      unawaited(_deleteFrameFiles(previousFrames));
+      unawaited(_discardStopMotionSession(previousFrames));
     }
     final prefs = _readSharedPreferences();
     prefs.setString(VideoRecorderMode.persistenceKey, mode.name);
@@ -1571,7 +1571,7 @@ class VideoRecorderBloc
     final frames = state.stopMotionFrames;
     emit(const VideoRecorderBlocState());
     if (frames.isNotEmpty) {
-      unawaited(_deleteFrameFiles(frames));
+      unawaited(_discardStopMotionSession(frames));
     }
   }
 
@@ -1796,6 +1796,18 @@ class VideoRecorderBloc
         category: LogCategory.video,
       );
     }
+  }
+
+  /// Discards an abandoned capture session: deletes its frame files and drops
+  /// the library row eagerly saved during capture. A mode switch or reset
+  /// otherwise leaves an orphaned library clip whose source frames are gone.
+  /// Mirrors the empty-session branch of [_onStopMotionFrameUndone].
+  Future<void> _discardStopMotionSession(List<String> framePaths) async {
+    if (framePaths.isEmpty) return;
+    await _deleteFrameFiles(framePaths);
+    await _readClipManager().removeStopMotionSessionFromLibrary(
+      _stopMotionSessionId(framePaths.first),
+    );
   }
 
   /// Deletes all captured stop-motion frame files, ignoring errors.

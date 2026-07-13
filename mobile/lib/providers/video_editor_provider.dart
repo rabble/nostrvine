@@ -941,6 +941,22 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         continue;
       }
 
+      // Stop-motion clips have no video to extract from; their first still is
+      // already a usable thumbnail image. Repair from it instead of reaching
+      // for requireVideo, which throws on a frames-only clip.
+      if (clip.isStopMotion) {
+        final frames = clip.stopMotionFrames;
+        final firstFramePath = frames != null && frames.isNotEmpty
+            ? frames.first.path
+            : null;
+        clipsWithThumbnails.add(
+          firstFramePath != null
+              ? clip.copyWith(thumbnailPath: firstFramePath)
+              : clip,
+        );
+        continue;
+      }
+
       Log.info(
         '🖼️ Regenerating thumbnail for clip ${clip.id}',
         name: 'VideoEditorNotifier',

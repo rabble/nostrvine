@@ -2661,6 +2661,43 @@ void main() {
       );
 
       blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'switching modes discards the session and drops its library row',
+        build: buildBloc,
+        seed: () => VideoRecorderBlocState(
+          recorderMode: VideoRecorderMode.stopMotion,
+          stopMotionFrames: [frameAPath, frameBPath],
+        ),
+        act: (bloc) => bloc.add(
+          const VideoRecorderRecorderModeSet(VideoRecorderMode.classic),
+        ),
+        wait: const Duration(milliseconds: 20),
+        verify: (bloc) {
+          expect(bloc.state.stopMotionFrames, isEmpty);
+          // Files deleted AND the eager-saved row removed — no orphan.
+          verify(
+            () => clipManager.removeStopMotionSessionFromLibrary('clip_sm_a'),
+          ).called(1);
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'reset discards the session and drops its library row',
+        build: buildBloc,
+        seed: () => VideoRecorderBlocState(
+          recorderMode: VideoRecorderMode.stopMotion,
+          stopMotionFrames: [frameAPath, frameBPath],
+        ),
+        act: (bloc) => bloc.add(const VideoRecorderResetRequested()),
+        wait: const Duration(milliseconds: 20),
+        verify: (bloc) {
+          expect(bloc.state.stopMotionFrames, isEmpty);
+          verify(
+            () => clipManager.removeStopMotionSessionFromLibrary('clip_sm_a'),
+          ).called(1);
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
         'ingest saves the captured frames as a clip and signals ready',
         setUp: stubClipIngest,
         build: buildBloc,

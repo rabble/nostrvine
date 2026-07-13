@@ -18,6 +18,7 @@ import 'package:models/models.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
@@ -1973,6 +1974,51 @@ void main() {
                 'the clip with a missing source file must be dropped, '
                 'leaving only the clip whose media still exists',
           );
+        },
+      );
+
+      test(
+        'repairs a frames-only stop-motion clip thumbnail from its first still',
+        () async {
+          // A frames-only stop-motion draft with no rendered video and a
+          // missing thumbnail must repair from its first still, not reach for
+          // requireVideo (which throws on a video-less clip) and abort restore.
+          final framePath = '${tempDir.path}/frame_a.jpg';
+          await File(framePath).writeAsBytes(const [0]);
+          final draft = DivineVideoDraft.create(
+            id: 'sm-draft',
+            clips: [
+              DivineVideoClip(
+                id: 'sm',
+                stopMotionFrames: [
+                  StopMotionClipFrame(
+                    path: framePath,
+                    duration: const Duration(milliseconds: 83),
+                  ),
+                ],
+                duration: const Duration(milliseconds: 83),
+                recordedAt: DateTime.now(),
+                targetAspectRatio: .vertical,
+                originalAspectRatio: 9 / 16,
+              ),
+            ],
+            title: 'Title',
+            description: '',
+            hashtags: const {},
+            selectedApproach: 'video',
+          );
+          when(
+            () => mockDraftStorage.getDraftById('sm-draft'),
+          ).thenAnswer((_) async => draft);
+
+          final result = await container
+              .read(videoEditorProvider.notifier)
+              .restoreDraft('sm-draft');
+
+          expect(result, isTrue);
+          final clips = container.read(clipManagerProvider).clips;
+          expect(clips, hasLength(1));
+          expect(clips.single.thumbnailPath, framePath);
         },
       );
 
