@@ -5889,7 +5889,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get videoMetadataC2paMissingBody =>
-      'Non è stato possibile aggiungere le credenziali di contenuto, quindi questo video non sarà confermato come fatto da un umano. Rigenera per riprovare oppure pubblicalo così com’è.';
+      'Le credenziali di contenuto richiedono una connessione a internet; senza, questo video non sarà confermato come fatto da un umano. Riconnettiti e rigenera, oppure pubblicalo così com’è.';
 
   @override
   String get videoMetadataC2paMissingRegenerate => 'Rigenera';

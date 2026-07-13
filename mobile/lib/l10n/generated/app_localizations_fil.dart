@@ -5906,7 +5906,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get videoMetadataC2paMissingBody =>
-      'Hindi kami nakapaglagay ng content credentials, kaya hindi makukumpirma na gawa ng tao ang video na ito. I-regenerate para subukan ulit, o i-post na lang ito.';
+      'Kailangan ng internet connection ang content credentials; kung wala, hindi makukumpirma na gawa ng tao ang video na ito. Kumonekta ulit at i-regenerate, o i-post na lang ito.';
 
   @override
   String get videoMetadataC2paMissingRegenerate => 'I-regenerate';

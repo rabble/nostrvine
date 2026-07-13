@@ -5911,7 +5911,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get videoMetadataC2paMissingBody =>
-      'Nous n’avons pas pu ajouter les informations d’authenticité, cette vidéo ne sera donc pas confirmée comme faite par un humain. Régénérez pour réessayer, ou publiez-la telle quelle.';
+      'Les informations d’authenticité nécessitent une connexion internet ; sans elle, cette vidéo ne sera pas confirmée comme faite par un humain. Reconnecte-toi et régénère, ou publie-la telle quelle.';
 
   @override
   String get videoMetadataC2paMissingRegenerate => 'Régénérer';

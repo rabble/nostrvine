@@ -3738,7 +3738,7 @@
     "videoMetadataEditCoverFailedSnackbar": "Tidak dapat memperbarui sampul. Coba lagi.",
     "videoMetadataEditCoverSuccessAnnouncement": "Sampul diperbarui",
     "videoMetadataC2paMissingTitle": "Posting tanpa verifikasi keaslian?",
-    "videoMetadataC2paMissingBody": "Kami tidak dapat menambahkan kredensial konten, jadi video ini tidak akan dikonfirmasi sebagai buatan manusia. Buat ulang untuk mencoba lagi, atau posting apa adanya.",
+    "videoMetadataC2paMissingBody": "Kredensial konten memerlukan koneksi internet; tanpanya, video ini tidak akan dikonfirmasi sebagai buatan manusia. Sambungkan kembali dan buat ulang, atau posting apa adanya.",
     "videoMetadataC2paMissingRegenerate": "Buat ulang",
     "videoMetadataC2paMissingPostAnyway": "Tetap posting",
     "videoMetadataGenerationFailed": "Pembuatan gagal",

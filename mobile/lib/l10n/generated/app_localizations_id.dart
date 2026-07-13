@@ -5812,7 +5812,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get videoMetadataC2paMissingBody =>
-      'Kami tidak dapat menambahkan kredensial konten, jadi video ini tidak akan dikonfirmasi sebagai buatan manusia. Buat ulang untuk mencoba lagi, atau posting apa adanya.';
+      'Kredensial konten memerlukan koneksi internet; tanpanya, video ini tidak akan dikonfirmasi sebagai buatan manusia. Sambungkan kembali dan buat ulang, atau posting apa adanya.';
 
   @override
   String get videoMetadataC2paMissingRegenerate => 'Buat ulang';

@@ -3738,7 +3738,7 @@
     "videoMetadataEditCoverFailedSnackbar": "Coperta nu a putut fi actualizată. Încearcă din nou.",
     "videoMetadataEditCoverSuccessAnnouncement": "Coperta a fost actualizată",
     "videoMetadataC2paMissingTitle": "Publici fără verificarea autenticității?",
-    "videoMetadataC2paMissingBody": "Nu am putut adăuga acreditările de conținut, așa că acest videoclip nu va fi confirmat ca fiind făcut de om. Regenerează pentru a încerca din nou sau publică-l așa cum este.",
+    "videoMetadataC2paMissingBody": "Acreditările de conținut necesită o conexiune la internet; fără ea, acest videoclip nu va fi confirmat ca fiind făcut de om. Reconectează-te și regenerează sau publică-l așa cum este.",
     "videoMetadataC2paMissingRegenerate": "Regenerează",
     "videoMetadataC2paMissingPostAnyway": "Publică oricum",
     "videoMetadataGenerationFailed": "Generarea a eșuat",

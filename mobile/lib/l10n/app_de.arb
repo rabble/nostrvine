@@ -3738,7 +3738,7 @@
     "videoMetadataEditCoverFailedSnackbar": "Cover konnte nicht aktualisiert werden. Versuche es erneut.",
     "videoMetadataEditCoverSuccessAnnouncement": "Cover aktualisiert",
     "videoMetadataC2paMissingTitle": "Ohne Echtheitsnachweis posten?",
-    "videoMetadataC2paMissingBody": "Wir konnten keine Content Credentials hinzufügen – dieses Video wird daher nicht als von Menschen gemacht bestätigt. Neu generieren, um es erneut zu versuchen, oder so posten.",
+    "videoMetadataC2paMissingBody": "Content Credentials brauchen eine Internetverbindung – ohne sie wird dieses Video nicht als von Menschen gemacht bestätigt. Verbinde dich neu und generiere erneut, oder poste es so.",
     "videoMetadataC2paMissingRegenerate": "Neu generieren",
     "videoMetadataC2paMissingPostAnyway": "Trotzdem posten",
     "videoMetadataGenerationFailed": "Generierung fehlgeschlagen",

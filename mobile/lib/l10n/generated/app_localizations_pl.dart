@@ -5983,7 +5983,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get videoMetadataC2paMissingBody =>
-      'Nie udało się dodać poświadczeń treści, więc ten film nie zostanie potwierdzony jako stworzony przez człowieka. Wygeneruj ponownie, aby spróbować jeszcze raz, lub opublikuj bez zmian.';
+      'Poświadczenia treści wymagają połączenia z internetem; bez niego ten film nie zostanie potwierdzony jako stworzony przez człowieka. Połącz się ponownie i wygeneruj jeszcze raz albo opublikuj bez zmian.';
 
   @override
   String get videoMetadataC2paMissingRegenerate => 'Wygeneruj ponownie';

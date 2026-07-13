@@ -3738,7 +3738,7 @@
     "videoMetadataEditCoverFailedSnackbar": "Kan de cover niet bijwerken. Probeer het opnieuw.",
     "videoMetadataEditCoverSuccessAnnouncement": "Omslag bijgewerkt",
     "videoMetadataC2paMissingTitle": "Plaatsen zonder echtheidscontrole?",
-    "videoMetadataC2paMissingBody": "We konden geen content credentials toevoegen, dus deze video wordt niet bevestigd als door mensen gemaakt. Genereer opnieuw om het nog eens te proberen, of plaats hem zo.",
+    "videoMetadataC2paMissingBody": "Content credentials hebben een internetverbinding nodig; zonder verbinding wordt deze video niet bevestigd als door mensen gemaakt. Maak opnieuw verbinding en genereer opnieuw, of plaats hem zo.",
     "videoMetadataC2paMissingRegenerate": "Opnieuw genereren",
     "videoMetadataC2paMissingPostAnyway": "Toch plaatsen",
     "videoMetadataGenerationFailed": "Genereren mislukt",
