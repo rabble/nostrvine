@@ -7,6 +7,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:crypto/crypto.dart';
 import 'package:db_client/db_client.dart';
@@ -240,6 +241,7 @@ class DmRepository {
     bool publishDmRelayListEnabled = false,
     String? dmInboxRelayUrl,
     Duration readMarkerDebounceDelay = _defaultReadMarkerDebounceDelay,
+    String Function()? sendBatchIdGenerator,
   }) : _nostrClient = nostrClient,
        _readMarkerDebounceDelay = readMarkerDebounceDelay,
        _directMessagesDao = directMessagesDao,
@@ -258,7 +260,8 @@ class DmRepository {
        _errorReporter = errorReporter,
        _reactionsRepository = reactionsRepository,
        _publishDmRelayListEnabled = publishDmRelayListEnabled,
-       _dmInboxRelayUrl = dmInboxRelayUrl;
+       _dmInboxRelayUrl = dmInboxRelayUrl,
+       _newSendBatchId = sendBatchIdGenerator ?? _defaultSendBatchId;
 
   final NostrClient _nostrClient;
   final DirectMessagesDao _directMessagesDao;
@@ -324,6 +327,11 @@ class DmRepository {
   /// [ensureDmRelayListPublished] is a no-op (nothing to advertise).
   final String? _dmInboxRelayUrl;
 
+  /// Mints the durable, collision-proof identity for one group fan-out
+  /// ([sendGroupMessage]). Injected so tests can pin a deterministic value;
+  /// production defaults to [_defaultSendBatchId] (256 bits of secure random).
+  final String Function() _newSendBatchId;
+
   StreamSubscription<Event>? _giftWrapSubscription;
   Timer? _reconnectTimer;
   late bool _disposed = false;
@@ -360,6 +368,24 @@ class DmRepository {
   Timer? _readMarkerDebounce;
   final Duration _readMarkerDebounceDelay;
   static const _defaultReadMarkerDebounceDelay = Duration(seconds: 3);
+
+  /// Rumor tag key carrying the per-send batch token (see [sendGroupMessage]).
+  /// Client-internal: injected only so two identical group sends in the same
+  /// Unix second produce distinct rumor ids. Divine's own receive path and
+  /// other clients ignore unrecognised rumor tags, so it is inert on the wire.
+  static const _sendBatchTagKey = 'batch';
+
+  /// Default [_newSendBatchId]: a 256-bit secure-random, event-id-shaped hex
+  /// token. Independent of rumor content, so two byte-identical same-second
+  /// group sends never share a batch id.
+  static String _defaultSendBatchId() {
+    const hexDigits = '0123456789abcdef';
+    final random = Random.secure();
+    return String.fromCharCodes(
+      List<int>.generate(64, (_) => hexDigits.codeUnitAt(random.nextInt(16))),
+    );
+  }
+
   static const _readMarkerDTag = 'divine/dm-read/v1';
   static const _readMarkerPayloadVersion = 1;
 
@@ -4116,10 +4142,35 @@ class DmRepository {
     final rumors = <Event>[];
     final results = <NIP17SendResult>[];
 
+    // Durable, collision-proof identity for this whole fan-out, minted BEFORE
+    // any rumor is built. A rumor's event id is
+    // sha256([0, pubkey, created_at(seconds), kind, tags, content]) with no
+    // nonce, so two group sends of identical text in the SAME Unix second
+    // would otherwise build byte-identical rumors: identical event ids ⇒
+    // identical queue-row PKs (`OutgoingDm.id`, enqueued with insertOrIgnore
+    // so the second is silently dropped) ⇒ identical `full:<rumorId>` recovery
+    // locks (the second publish joins the first) ⇒ identical batch id (the
+    // persist dedup drops the second local message). The user's second send
+    // would vanish from the queue, local history, AND recipients. Deriving the
+    // batch id from `rumors.first.id` inherits that same-second collision.
+    //
+    // Instead this token is independent secure random, and it is injected into
+    // every sibling rumor (a client-internal `batch` tag, below) so each
+    // invocation's wire events — and therefore their ids, queue-row PKs, and
+    // recovery locks — are unique even at same-second identical text. The same
+    // value is stamped verbatim on every sibling queue row AND the batch's one
+    // persisted local message, so persistence dedup, optimistic grouping,
+    // sibling lookup, and cancellation all match a batch by one exact stored
+    // value. The token rides inside the encrypted gift-wrapped rumor (only the
+    // recipient and the sender's own self-wrap ever decrypt it) and is random,
+    // so it discloses nothing.
+    final sendBatchId = _newSendBatchId();
+
     // Build EVERY per-recipient rumor up front, stamped with one shared batch
-    // timestamp, before any publish. Each recipient gets a distinct rumor id
-    // (their p-tag set differs), so queue rows never collide across a single
-    // group send.
+    // timestamp and the shared batch token, before any publish. Each recipient
+    // already gets a distinct rumor id within a batch (their p-tag set
+    // differs); the batch token additionally separates two whole invocations
+    // that would otherwise be byte-identical.
     final batchCreatedAt = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     for (final pubkey in recipientPubkeys) {
       final rumorTags = <List<String>>[
@@ -4128,6 +4179,7 @@ class DmRepository {
         for (final pk in recipientPubkeys)
           if (pk != pubkey) ['p', pk],
         if (replyToId != null) ['e', replyToId],
+        [_sendBatchTagKey, sendBatchId],
       ];
 
       rumors.add(
@@ -4139,18 +4191,6 @@ class DmRepository {
         ),
       );
     }
-
-    // Durable, collision-proof batch identity for this fan-out: the first
-    // sibling rumor's event id. Globally unique and already computed, it is
-    // stamped identically on every sibling queue row AND on the batch's single
-    // persisted local message, so persistence dedup, optimistic grouping,
-    // sibling lookup, and cancellation all match a batch by one exact stored
-    // value. This replaces the old `(content, createdAt ±5s)` heuristic, which
-    // collapsed two distinct group sends of identical text seconds apart into
-    // one — dropping the later message while its wire copies were delivered.
-    // Same-second byte-identical resends share this id, which is correct: they
-    // are the same Nostr event and the receiver dedups them to one.
-    final sendBatchId = rumors.first.id;
 
     // Enqueue every sibling before publish so an app crash mid-send leaves a
     // recoverable trace per recipient, and all N optimistic bubbles' rows
@@ -4264,7 +4304,7 @@ class DmRepository {
         // interrupted-send min-age, so the sweep may recover a sibling and
         // persist the batch's ONE local message first. Match on the durable
         // batch id, not a content/timestamp window — two distinct sends of
-        // the same text seconds apart carry different batch ids.
+        // the same text carry different batch ids even in the same second.
         final alreadyPersisted =
             outgoingDao != null &&
             await _directMessagesDao.hasMessageWithSendBatchId(

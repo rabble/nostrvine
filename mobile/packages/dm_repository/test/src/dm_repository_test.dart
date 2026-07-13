@@ -637,6 +637,7 @@ void main() {
       bool publishDmRelayListEnabled = true,
       String? dmInboxRelayUrl = 'wss://relay.divine.video',
       Duration readMarkerDebounceDelay = const Duration(seconds: 3),
+      String Function()? sendBatchIdGenerator,
     }) {
       return DmRepository(
         nostrClient: mockNostrClient,
@@ -662,6 +663,7 @@ void main() {
         publishDmRelayListEnabled: publishDmRelayListEnabled,
         dmInboxRelayUrl: dmInboxRelayUrl,
         readMarkerDebounceDelay: readMarkerDebounceDelay,
+        sendBatchIdGenerator: sendBatchIdGenerator,
         errorReporter: (error, stackTrace, {required site}) {
           reporterCalls.add(_ReporterCall(error, stackTrace, site));
         },
@@ -13506,6 +13508,7 @@ void main() {
 
           final repository = createRepository(
             outgoingDmsDao: mockOutgoingDmsDao,
+            sendBatchIdGenerator: () => 'group-batch-id',
           );
 
           final results = await repository.sendGroupMessage(
@@ -13536,20 +13539,21 @@ void main() {
                 'must not collide',
           );
           // The linchpin of the durable batch identity: every sibling row is
-          // stamped with the SAME non-null sendBatchId (the first sibling
-          // rumor's id), which is what recovery dedup, cancellation, and the
-          // UI's grouping all read. If a regression stamped null or a
-          // per-recipient-distinct value here, recovery/cancel would silently
-          // fall back to the collision-prone tuple even though the persisted
-          // winner was stamped correctly.
-          expect(enqueuedB.sendBatchId, isNotNull);
+          // stamped with the SAME non-null sendBatchId — an independent
+          // per-invocation token (NOT a rumor id) — which recovery dedup,
+          // cancellation, and the UI's grouping all read. It must NOT be
+          // derived from a rumor id: `rumors.first.id` collides for two
+          // identical group sends in the same Unix second (#6046), so the
+          // token is minted before the rumors and injected into them.
+          expect(enqueuedB.sendBatchId, equals('group-batch-id'));
           expect(enqueuedB.sendBatchId, equals(enqueuedC.sendBatchId));
           expect(
             enqueuedB.sendBatchId,
-            equals(enqueuedB.id),
+            isNot(equals(enqueuedB.id)),
             reason:
-                'batch id is the first sibling rumor id; recipientPubkeys '
-                '[B, C] builds B first, so rumors.first.id == enqueuedB.id',
+                'batch id is independent entropy, not the first sibling rumor '
+                'id — deriving it from a rumor id reintroduces the same-second '
+                'collision (#6046)',
           );
           expect(enqueuedB.recipientWrapStatus, OutgoingWrapStatus.pending);
           expect(enqueuedB.selfWrapStatus, OutgoingWrapStatus.pending);
@@ -14126,6 +14130,204 @@ void main() {
           expect(persistedBatchIds[0], isNotNull);
           expect(persistedBatchIds[1], isNotNull);
           expect(persistedBatchIds[0], isNot(equals(persistedBatchIds[1])));
+        },
+      );
+
+      test(
+        'two IDENTICAL group sends in the SAME Unix second BOTH persist under '
+        'distinct rumor ids and distinct batch ids, keep independent queue '
+        'batches, and cancel independently (regression: #6046 same-second '
+        'batch-identity collision)',
+        () async {
+          // The case the seconds-apart regression could NOT reach: two group
+          // sends of identical text in one Unix second. A rumor id is
+          // sha256([0, pubkey, created_at(seconds), kind, tags, content]) with
+          // no nonce, so without a per-invocation batch token both sends build
+          // byte-identical rumors — same event id ⇒ same queue-row PK
+          // (insertOrIgnore drops the second) ⇒ same batch id (persist dedup
+          // drops the second local message) ⇒ same recovery lock. The user's
+          // second send silently vanishes from the queue, local history, AND
+          // recipients. Drive REAL rumor-id hashing (the faithful buildRumor
+          // stub builds a real Event from the passed tags) under a frozen
+          // second so this is a production-path proof, not a stub that
+          // pre-distinguishes ids.
+          const frozenSecond = 1700000000;
+          when(
+            () => mockMessageService.buildRumor(
+              recipientPubkey: any(named: 'recipientPubkey'),
+              content: any(named: 'content'),
+              eventKind: any(named: 'eventKind'),
+              additionalTags: any(named: 'additionalTags'),
+              createdAt: any(named: 'createdAt'),
+            ),
+          ).thenAnswer((inv) {
+            final recipient = inv.namedArguments[#recipientPubkey] as String;
+            final content = inv.namedArguments[#content] as String;
+            final eventKind =
+                (inv.namedArguments[#eventKind] as int?) ??
+                EventKind.privateDirectMessage;
+            final additionalTags =
+                (inv.namedArguments[#additionalTags] as List<List<String>>?) ??
+                const <List<String>>[];
+            // Ignore the wall-clock created_at the repository computes so both
+            // invocations genuinely share one second — the collision case.
+            return Event(
+              _validPubkeyA,
+              eventKind,
+              [
+                ['p', recipient],
+                ...additionalTags,
+              ],
+              content,
+              createdAt: frozenSecond,
+            );
+          });
+
+          // Deterministic per-invocation batch tokens (production mints secure
+          // random; a counter makes the assertions crisp).
+          final tokens = <String>['batch-token-1', 'batch-token-2'];
+          var tokenIndex = 0;
+
+          // Model the durable queue faithfully: insertOrIgnore enqueue plus
+          // reads/deletes over the captured rows, so a rumor-id collision
+          // would surface as a dropped row rather than being hidden by a
+          // permissive stub.
+          final store = <OutgoingDm>[];
+          when(() => mockOutgoingDmsDao.enqueue(any())).thenAnswer((inv) async {
+            final dm = inv.positionalArguments.first as OutgoingDm;
+            if (store.any((r) => r.id == dm.id)) return; // insertOrIgnore
+            store.add(dm);
+          });
+          when(() => mockOutgoingDmsDao.getById(any())).thenAnswer((inv) async {
+            final id = inv.positionalArguments.first as String;
+            for (final r in store) {
+              if (r.id == id) return r;
+            }
+            return null;
+          });
+          when(
+            () => mockOutgoingDmsDao.getForConversation(
+              conversationId: any(named: 'conversationId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((inv) async {
+            final cid = inv.namedArguments[#conversationId] as String;
+            return store.where((r) => r.conversationId == cid).toList();
+          });
+          when(
+            () => mockOutgoingDmsDao.deleteById(any()),
+          ).thenAnswer((inv) async {
+            final id = inv.positionalArguments.first as String;
+            final before = store.length;
+            store.removeWhere((r) => r.id == id);
+            return before - store.length;
+          });
+
+          // Model persisted messages + the durable-batch-id dedup probe so a
+          // batch-id collision would suppress the second local message.
+          final persisted = <({String id, String? batchId})>[];
+          when(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).thenAnswer((inv) async {
+            persisted.add((
+              id: inv.namedArguments[#id] as String,
+              batchId: inv.namedArguments[#sendBatchId] as String?,
+            ));
+          });
+          when(
+            () => mockDirectMessagesDao.hasMessageWithSendBatchId(
+              batchId: any(named: 'batchId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((inv) async {
+            final batchId = inv.namedArguments[#batchId] as String?;
+            return persisted.any((m) => m.batchId == batchId);
+          });
+
+          // Recipient delivered but self-wrap unpublished, so the finalize
+          // step keeps the queue rows alive for the cancellation assertion
+          // (a fully-delivered row is deleted on finalize).
+          stubSendRumor(
+            (rumor, recipient) async => NIP17SendResult.success(
+              rumorEventId: rumor.id,
+              messageEventId: 'wrap-${rumor.id}',
+              recipientPubkey: recipient,
+              selfWrapPublished: false,
+            ),
+          );
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+            sendBatchIdGenerator: () => tokens[tokenIndex++],
+          );
+
+          await repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'ok',
+          );
+          await repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'ok',
+          );
+
+          // Independent queue batches: 2 recipients × 2 sends = 4 rows, every
+          // one a distinct rumor-id PK. Under the old collision this would be
+          // 2 (the second send's rows insertOrIgnore'd away).
+          expect(store, hasLength(4));
+          expect(store.map((r) => r.id).toSet(), hasLength(4));
+          final byBatch = <String?, List<OutgoingDm>>{};
+          for (final r in store) {
+            byBatch.putIfAbsent(r.sendBatchId, () => []).add(r);
+          }
+          expect(
+            byBatch.keys.toSet(),
+            equals({'batch-token-1', 'batch-token-2'}),
+          );
+          expect(byBatch['batch-token-1'], hasLength(2));
+          expect(byBatch['batch-token-2'], hasLength(2));
+
+          // Two local messages, distinct ids, distinct batch ids — the old
+          // ±5s window suppressed the second.
+          expect(persisted, hasLength(2));
+          expect(persisted.map((m) => m.id).toSet(), hasLength(2));
+          expect(
+            persisted.map((m) => m.batchId).toSet(),
+            equals({'batch-token-1', 'batch-token-2'}),
+          );
+
+          // Independent cancellation: dropping batch 1 leaves batch 2 whole.
+          final cancelled = await repository.cancelOutgoingBatch(
+            rumorId: byBatch['batch-token-1']!.first.id,
+          );
+          expect(cancelled, equals(2));
+          expect(store, hasLength(2));
+          expect(
+            store.map((r) => r.sendBatchId).toSet(),
+            equals({'batch-token-2'}),
+          );
         },
       );
 
