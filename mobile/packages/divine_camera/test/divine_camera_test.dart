@@ -274,6 +274,9 @@ void main() {
     tearDown(() async {
       // Reset DivineCamera singleton state between tests
       await DivineCamera.instance.dispose();
+      // Restore the process-global platform singleton so the mock does not
+      // leak into later files in the package's merged isolate.
+      DivineCameraPlatform.instance = initialPlatform;
     });
 
     test('getPlatformVersion returns expected value', () async {
@@ -1364,6 +1367,9 @@ void main() {
     tearDown(() async {
       // Reset DivineCamera singleton state between tests
       await DivineCamera.instance.dispose();
+      // Restore the process-global platform singleton so the mock does not
+      // leak into later files in the package's merged isolate.
+      DivineCameraPlatform.instance = initialPlatform;
     });
 
     test('onRecordingAutoStopped callback is invoked', () async {

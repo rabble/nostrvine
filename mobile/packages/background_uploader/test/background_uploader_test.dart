@@ -1,3 +1,10 @@
+// Tagged for its own isolate: this suite installs a fake
+// BackgroundUploaderPlatform.instance, and its only non-fake restore constructs
+// the real MethodChannelBackgroundUploader, which claims the plugin channel and
+// conflicts with background_uploader_method_channel_test in the merged run.
+@Tags(['skip_very_good_optimization'])
+library;
+
 import 'dart:async';
 
 import 'package:background_uploader/background_uploader.dart';
