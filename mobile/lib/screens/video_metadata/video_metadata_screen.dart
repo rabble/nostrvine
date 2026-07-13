@@ -53,6 +53,7 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
       sticker: .alert,
       title: l10n.videoMetadataC2paMissingTitle,
       subtitle: l10n.videoMetadataC2paMissingBody,
+      additionalText: l10n.videoMetadataC2paMissingNote,
       primaryButtonText: l10n.videoMetadataC2paMissingRegenerate,
       onPrimaryPressed: () =>
           Navigator.of(context).pop(_C2paMissingChoice.regenerate),

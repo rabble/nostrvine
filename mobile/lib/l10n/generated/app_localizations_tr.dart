@@ -5818,7 +5818,11 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoMetadataC2paMissingBody =>
-      'İçerik kimlik bilgileri internet bağlantısı gerektirir; bağlantı olmadan bu video insan yapımı olarak doğrulanmaz. Yeniden bağlanıp yeniden oluştur ya da olduğu gibi paylaş.';
+      'İçerik kimlik bilgilerini ekleyemedik, bu nedenle bu video insan yapımı olarak doğrulanmayacak. Yeniden denemek için yeniden oluştur ya da olduğu gibi paylaş.';
+
+  @override
+  String get videoMetadataC2paMissingNote =>
+      'İçerik kimlik bilgileri internet bağlantısı gerektirir.';
 
   @override
   String get videoMetadataC2paMissingRegenerate => 'Yeniden oluştur';

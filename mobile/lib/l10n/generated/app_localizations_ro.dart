@@ -5990,7 +5990,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get videoMetadataC2paMissingBody =>
-      'Acreditările de conținut necesită o conexiune la internet; fără ea, acest videoclip nu va fi confirmat ca fiind făcut de om. Reconectează-te și regenerează sau publică-l așa cum este.';
+      'Nu am putut adăuga acreditările de conținut, așa că acest videoclip nu va fi confirmat ca fiind făcut de om. Regenerează pentru a încerca din nou sau publică-l așa cum este.';
+
+  @override
+  String get videoMetadataC2paMissingNote =>
+      'Acreditările de conținut necesită o conexiune la internet.';
 
   @override
   String get videoMetadataC2paMissingRegenerate => 'Regenerează';

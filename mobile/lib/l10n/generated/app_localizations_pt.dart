@@ -5873,7 +5873,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get videoMetadataC2paMissingBody =>
-      'As credenciais de conteúdo precisam de conexão com a internet; sem ela, este vídeo não será confirmado como feito por humano. Reconecte-se e gere novamente, ou publique como está.';
+      'Não foi possível adicionar as credenciais de conteúdo, por isso este vídeo não será confirmado como feito por humano. Gere novamente para tentar outra vez ou publique como está.';
+
+  @override
+  String get videoMetadataC2paMissingNote =>
+      'As credenciais de conteúdo precisam de conexão com a internet.';
 
   @override
   String get videoMetadataC2paMissingRegenerate => 'Gerar novamente';

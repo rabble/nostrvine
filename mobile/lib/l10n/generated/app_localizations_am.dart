@@ -5721,7 +5721,11 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoMetadataC2paMissingBody =>
-      'የይዘት መታወቂያዎች የበይነመረብ ግንኙነት ያስፈልጋቸዋል፤ ያለ እሱ ይህ ቪዲዮ በሰው እንደተሰራ አይረጋገጥም። እንደገና ተገናኝተው እንደገና ይፍጠሩ ወይም እንዳለ ይለጥፉ።';
+      'የይዘት መታወቂያዎችን መጨመር አልቻልንም፣ ስለዚህ ይህ ቪዲዮ በሰው እንደተሰራ አይረጋገጥም። እንደገና ለመሞከር እንደገና ይፍጠሩ ወይም እንዳለ ይለጥፉ።';
+
+  @override
+  String get videoMetadataC2paMissingNote =>
+      'የይዘት መታወቂያዎች የበይነመረብ ግንኙነት ያስፈልጋቸዋል።';
 
   @override
   String get videoMetadataC2paMissingRegenerate => 'እንደገና ፍጠር';

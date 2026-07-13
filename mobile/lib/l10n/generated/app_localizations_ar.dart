@@ -5803,7 +5803,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get videoMetadataC2paMissingBody =>
-      'تتطلب بيانات اعتماد المحتوى اتصالاً بالإنترنت؛ وبدونه لن يتم تأكيد هذا الفيديو على أنه من صنع إنسان. أعد الاتصال ثم أعد الإنشاء، أو انشره كما هو.';
+      'تعذّر علينا إضافة بيانات اعتماد المحتوى، لذا لن يتم تأكيد هذا الفيديو على أنه من صنع إنسان. أعد الإنشاء للمحاولة مرة أخرى، أو انشره كما هو.';
+
+  @override
+  String get videoMetadataC2paMissingNote =>
+      'تتطلب بيانات اعتماد المحتوى اتصالاً بالإنترنت.';
 
   @override
   String get videoMetadataC2paMissingRegenerate => 'إعادة الإنشاء';

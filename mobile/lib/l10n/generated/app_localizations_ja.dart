@@ -5603,7 +5603,10 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get videoMetadataC2paMissingBody =>
-      'コンテンツ認証情報にはインターネット接続が必要です。接続がないと、この動画は人間が作成したものとして確認されません。再接続して再生成するか、このまま投稿してください。';
+      'コンテンツ認証情報を追加できなかったため、この動画は人間が作成したものとして確認されません。もう一度試すには再生成するか、このまま投稿してください。';
+
+  @override
+  String get videoMetadataC2paMissingNote => 'コンテンツ認証情報にはインターネット接続が必要です。';
 
   @override
   String get videoMetadataC2paMissingRegenerate => '再生成';

@@ -5863,7 +5863,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get videoMetadataC2paMissingBody =>
-      'Content credentials hebben een internetverbinding nodig; zonder verbinding wordt deze video niet bevestigd als door mensen gemaakt. Maak opnieuw verbinding en genereer opnieuw, of plaats hem zo.';
+      'We konden geen content credentials toevoegen, dus deze video wordt niet bevestigd als door mensen gemaakt. Genereer opnieuw om het nog eens te proberen, of plaats hem zo.';
+
+  @override
+  String get videoMetadataC2paMissingNote =>
+      'Content credentials hebben een internetverbinding nodig.';
 
   @override
   String get videoMetadataC2paMissingRegenerate => 'Opnieuw genereren';

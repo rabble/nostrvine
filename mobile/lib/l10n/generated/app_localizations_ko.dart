@@ -5624,7 +5624,10 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoMetadataC2paMissingBody =>
-      '콘텐츠 자격 증명에는 인터넷 연결이 필요합니다. 연결이 없으면 이 동영상은 사람이 제작한 것으로 확인되지 않습니다. 다시 연결하고 재생성하거나 그대로 게시하세요.';
+      '콘텐츠 자격 증명을 추가할 수 없어 이 동영상은 사람이 제작한 것으로 확인되지 않습니다. 다시 시도하려면 재생성하거나 그대로 게시하세요.';
+
+  @override
+  String get videoMetadataC2paMissingNote => '콘텐츠 자격 증명에는 인터넷 연결이 필요합니다.';
 
   @override
   String get videoMetadataC2paMissingRegenerate => '재생성';

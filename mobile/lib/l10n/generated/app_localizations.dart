@@ -10239,8 +10239,14 @@ abstract class AppLocalizations {
   /// Body text of the bottom sheet warning that a video will be published without a C2PA content credential, meaning it will not be verifiably confirmed as human-made.
   ///
   /// In en, this message translates to:
-  /// **'Content credentials need an internet connection — without one this video won\'t be confirmed as Human-Made. Reconnect and regenerate, or post it as-is.'**
+  /// **'We couldn\'t add content credentials, so this video won\'t be confirmed as Human-Made. Regenerate to try again, or post it as-is.'**
   String get videoMetadataC2paMissingBody;
+
+  /// Small trailing note under the missing-content-credential bottom sheet, hinting that the (remote) content-credential signing step requires connectivity. Not phrased as the definitive cause, since signing can also fail for other reasons.
+  ///
+  /// In en, this message translates to:
+  /// **'Content credentials need an internet connection.'**
+  String get videoMetadataC2paMissingNote;
 
   /// Primary button on the missing-content-credential bottom sheet. Re-renders the video to attempt the C2PA signature again.
   ///

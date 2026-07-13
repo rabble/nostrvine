@@ -5834,7 +5834,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoMetadataC2paMissingBody =>
-      'Innehållsuppgifter kräver en internetanslutning – utan den bekräftas videon inte som gjord av människa. Återanslut och generera om, eller publicera som den är.';
+      'Vi kunde inte lägga till innehållsuppgifter, så den här videon bekräftas inte som gjord av människa. Generera om för att försöka igen, eller publicera som den är.';
+
+  @override
+  String get videoMetadataC2paMissingNote =>
+      'Innehållsuppgifter kräver en internetanslutning.';
 
   @override
   String get videoMetadataC2paMissingRegenerate => 'Generera om';
