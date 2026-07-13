@@ -170,6 +170,7 @@ class _RotatedPreviewMock extends MockDivineCameraPlatform {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  final initialPlatform = DivineCameraPlatform.instance;
   late MockDivineCameraPlatform mockPlatform;
 
   setUp(() async {
@@ -177,6 +178,12 @@ void main() {
     DivineCameraPlatform.instance = mockPlatform;
     // Reset singleton state
     await DivineCamera.instance.dispose();
+  });
+
+  tearDown(() {
+    // Restore the process-global platform singleton so the mock does not
+    // leak into later files in the package's merged isolate.
+    DivineCameraPlatform.instance = initialPlatform;
   });
 
   final camera = DivineCamera.instance;

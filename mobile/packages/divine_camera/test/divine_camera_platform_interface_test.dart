@@ -89,6 +89,8 @@ void main() {
     });
 
     test('instance setter accepts valid implementation', () {
+      final initialPlatform = DivineCameraPlatform.instance;
+      addTearDown(() => DivineCameraPlatform.instance = initialPlatform);
       final testPlatform = TestDivineCameraPlatform();
       DivineCameraPlatform.instance = testPlatform;
       expect(DivineCameraPlatform.instance, testPlatform);

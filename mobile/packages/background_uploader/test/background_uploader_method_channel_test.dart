@@ -6,11 +6,16 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  final platform = MethodChannelBackgroundUploader();
+  // Constructed per test: the constructor installs this instance as the
+  // channel's incoming-call handler (last one wins process-wide), so a
+  // file-level instance loses the handler to any sibling suite that reads
+  // BackgroundUploaderPlatform.instance in the merged-isolate bundle.
+  late MethodChannelBackgroundUploader platform;
   const channel = MethodChannel('background_uploader');
   final calls = <MethodCall>[];
 
   setUp(() {
+    platform = MethodChannelBackgroundUploader();
     calls.clear();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (methodCall) async {

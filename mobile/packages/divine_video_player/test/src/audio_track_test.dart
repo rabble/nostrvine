@@ -130,13 +130,19 @@ void main() {
 
     group('asset', () {
       late Directory tempDir;
+      late PathProviderPlatform originalPathProvider;
 
       setUp(() async {
+        originalPathProvider = PathProviderPlatform.instance;
         tempDir = await Directory.systemTemp.createTemp('audio_track_test_');
         PathProviderPlatform.instance = _FakePathProvider(tempDir.path);
       });
 
       tearDown(() async {
+        // Restore the process-global platform singleton so the fake (whose
+        // temp dir is about to be deleted) does not leak into later files in
+        // the package's merged isolate.
+        PathProviderPlatform.instance = originalPathProvider;
         if (tempDir.existsSync()) {
           await tempDir.delete(recursive: true);
         }
@@ -172,13 +178,19 @@ void main() {
 
     group('memory', () {
       late Directory tempDir;
+      late PathProviderPlatform originalPathProvider;
 
       setUp(() async {
+        originalPathProvider = PathProviderPlatform.instance;
         tempDir = await Directory.systemTemp.createTemp('audio_track_test_');
         PathProviderPlatform.instance = _FakePathProvider(tempDir.path);
       });
 
       tearDown(() async {
+        // Restore the process-global platform singleton so the fake (whose
+        // temp dir is about to be deleted) does not leak into later files in
+        // the package's merged isolate.
+        PathProviderPlatform.instance = originalPathProvider;
         if (tempDir.existsSync()) {
           await tempDir.delete(recursive: true);
         }

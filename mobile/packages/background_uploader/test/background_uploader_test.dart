@@ -49,6 +49,20 @@ class _FakeBackgroundUploaderPlatform extends BackgroundUploaderPlatform
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  // Swapping in the fake below reassigns the process-global
+  // BackgroundUploaderPlatform.instance. Capture the real default up front and
+  // restore it after every test so the fake cannot strand a sibling suite in
+  // the merged-isolate (very_good --optimization) run. Reading the getter may
+  // force lazy construction of the real default, whose constructor claims the
+  // background_uploader channel handler.
+  final initialPlatform = BackgroundUploaderPlatform.instance;
+
+  tearDown(() {
+    BackgroundUploaderPlatform.instance = initialPlatform;
+  });
+
   group('BackgroundUploader.enqueue validation', () {
     late _FakeBackgroundUploaderPlatform fake;
 
