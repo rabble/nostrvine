@@ -78,8 +78,9 @@ GLOBALS=(
 )
 
 # Class 2 — reset-to-default globals, `core:defaultLiteral` (colon-delimited so
-# bash 3.2 — the macOS pre-commit hook — needs no associative arrays). The
-# default literal must be a regex-safe token; all defaults are `null` today.
+# bash 3.2 — macOS's default /bin/bash for local runs — needs no associative
+# arrays; CI runs this via mobile_ci.yaml, not a git hook). The default literal
+# must be a regex-safe token; all defaults are `null` today.
 #
 # Note: debugDefaultTargetPlatformOverride is also a Flutter *foundation debug
 # var* — in a `testWidgets` test, `debugAssertAllFoundationVarsUnset` (foundation
@@ -95,6 +96,7 @@ RESET_TO_DEFAULT_GLOBALS=(
   'VideoEditorRenderService\.renderVideoOverride:null'
   'VideoEditorRenderService\.renderVideoToClipOverride:null'
   'NativeProofModeService\.proofFileOverride:null'
+  'NativeProofModeService\.c2paSigningServiceFactoryOverride:null'
   'InfiniteVideoFeed\.debugIsSupportedOverride:null'
 )
 
@@ -149,8 +151,9 @@ run_scan() {
         orig_ids="$grown"
       done
 
-      # RESTORE: `<Global> = <origId>` (block `= origId;` or arrow `=> ... = origId)`)
-      # where <origId> is one of the captured-original identifiers above. Tying the
+      # RESTORE: `<Global> = <origId>` (block `= origId;`, arrow `=> ... = origId)`,
+      # or dart-format-wrapped trailing-comma `= origId,`) where <origId> is one of
+      # the captured-original identifiers above — hence the `[;,)]` terminator. Tying the
       # RHS to a captured value — not any bare identifier — rejects the bare-id
       # install `<Global> = observer;` and the null-strand `<Global> = null;`, and
       # excludes null/true/false for free (they can never be a capture LHS).
@@ -159,7 +162,7 @@ run_scan() {
         local id_alt
         id_alt="${orig_ids//$'\n'/|}"
         if grep -qE \
-          "([A-Za-z_][A-Za-z0-9_]*\.)?${core}[[:space:]]*=[[:space:]]*(${id_alt})[[:space:]]*[;)]" \
+          "([A-Za-z_][A-Za-z0-9_]*\.)?${core}[[:space:]]*=[[:space:]]*(${id_alt})[[:space:]]*[;,)]" \
           <<<"$body"; then
           has_restore=1
         fi
@@ -187,16 +190,17 @@ run_scan() {
       if grep -qE "^[[:space:]]*@Tags\([^)]*skip_very_good_optimization" "$f"; then
         continue
       fi
-      # RESET-TO-DEFAULT present: `<Global> = <default>` (block or arrow form).
+      # RESET-TO-DEFAULT present: `<Global> = <default>` (block, arrow, or
+      # dart-format-wrapped trailing-comma `= <default>,` form — hence `[;,)]`).
       local has_default_reset=0
-      if grep -qE "([A-Za-z_][A-Za-z0-9_]*\.)?${core}[[:space:]]*=[[:space:]]*${def}[[:space:]]*[;)]" <<<"$body"; then
+      if grep -qE "([A-Za-z_][A-Za-z0-9_]*\.)?${core}[[:space:]]*=[[:space:]]*${def}[[:space:]]*[;,)]" <<<"$body"; then
         has_default_reset=1
       fi
       # NON-default install present: an assignment line that is NOT a reset to the
       # default literal (so a file whose only assignment is the default passes).
       local has_nondefault_install=0
       if grep -E "(^|[^A-Za-z0-9_.])([A-Za-z_][A-Za-z0-9_]*\.)?${core}[[:space:]]*=([^=>]|$)" <<<"$body" \
-         | grep -qvE "([A-Za-z_][A-Za-z0-9_]*\.)?${core}[[:space:]]*=[[:space:]]*${def}[[:space:]]*[;)]"; then
+         | grep -qvE "([A-Za-z_][A-Za-z0-9_]*\.)?${core}[[:space:]]*=[[:space:]]*${def}[[:space:]]*[;,)]"; then
         has_nondefault_install=1
       fi
       if [[ "$has_nondefault_install" -eq 1 && "$has_default_reset" -eq 0 ]]; then
@@ -224,8 +228,10 @@ run_scan() {
     echo "        tearDown(() { <Global> = original; });"
     echo "  (b) [reset-to-default] Assign the global back to its default in a"
     echo "      guaranteed-reachable tearDown/addTearDown (NOT an inline end-of-body"
-    echo "      line, which a mid-test throw would skip):"
-    echo "        addTearDown(() => debugDefaultTargetPlatformOverride = null);"
+    echo "      line, which a mid-test throw would skip). NB: a foundation debug var"
+    echo "      like debugDefaultTargetPlatformOverride needs an INLINE reset instead"
+    echo "      under testWidgets (see the header note), so use a plain override here:"
+    echo "        addTearDown(() => InfiniteVideoFeed.debugIsSupportedOverride = null);"
     echo "  (c) Real-plugin / integration test that cannot restore: tag it so it"
     echo "      stays out of the merge (annotation BEFORE the first import):"
     echo "        @Tags(['skip_very_good_optimization', 'integration'])"
@@ -317,6 +323,31 @@ void main() {
 void main() {
   debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
   addTearDown(() => debugDefaultTargetPlatformOverride = null);
+}
+'
+  _case "reset-to-default dart-format-wrapped trailing comma (= null,) → PASS" 0 \
+'import "x";
+void main() {
+  VideoEditorRenderService.renderVideoToClipOverride = _fake;
+  addTearDown(
+    () => VideoEditorRenderService.renderVideoToClipOverride = null,
+  );
+}
+'
+  _case "capture-restore dart-format-wrapped trailing comma (= prior,) → PASS" 0 \
+'import "x";
+void main() {
+  final prior = Bloc.observer;
+  Bloc.observer = _Fake();
+  addTearDown(
+    () => Bloc.observer = prior,
+  );
+}
+'
+  _case "newly-gated sibling c2paSigningServiceFactoryOverride leaker → FAIL" 1 \
+'import "x";
+void main() {
+  NativeProofModeService.c2paSigningServiceFactoryOverride = () => _fake;
 }
 '
   _case "tagged leaker (skip_very_good_optimization, tag below class defs) → PASS" 0 \
