@@ -69,6 +69,7 @@ class ProfileRepository {
     FunnelcakeApiClient? funnelcakeApiClient,
     ProfileSearchFilter? profileSearchFilter,
     BlockedProfileFilter? blockFilter,
+    PendingProfileSavesDao? pendingProfileSavesDao,
     List<String> indexerRelays = defaultProfileIndexerRelays,
   }) : _nostrClient = nostrClient,
        _userProfilesDao = userProfilesDao,
@@ -77,6 +78,7 @@ class ProfileRepository {
        _funnelcakeApiClient = funnelcakeApiClient,
        _profileSearchFilter = profileSearchFilter,
        _blockFilter = blockFilter,
+       _pendingProfileSavesDao = pendingProfileSavesDao,
        _indexerRelays = indexerRelays;
 
   final NostrClient _nostrClient;
@@ -86,6 +88,12 @@ class ProfileRepository {
   final FunnelcakeApiClient? _funnelcakeApiClient;
   final ProfileSearchFilter? _profileSearchFilter;
   final BlockedProfileFilter? _blockFilter;
+
+  /// Durable single-row-per-user slot for a save whose kind-0 publish is not
+  /// yet relay-confirmed (#3161). Null when the caller does not wire the
+  /// offline-tolerant save path (e.g. legacy tests) — the queue methods
+  /// no-op in that case.
+  final PendingProfileSavesDao? _pendingProfileSavesDao;
   final List<String> _indexerRelays;
 
   /// In-flight relay fetches keyed by pubkey. Concurrent callers for the
@@ -681,7 +689,21 @@ class ProfileRepository {
     switch (result) {
       case PublishSuccess(:final event):
         final profile = UserProfile.fromNostrEvent(event);
-        await _userProfilesDao.upsertProfile(profile);
+        // A relay confirmed the kind-0 (OK true). The local cache write is
+        // non-fatal from here on: a Drift hiccup must never turn a landed
+        // publish into a thrown failure, or a durable re-drive would re-publish
+        // an already-confirmed save forever (#3161 G3 / review). Callers that
+        // need the cache warm re-read through the normal fetch path.
+        try {
+          await _userProfilesDao.upsertProfile(profile);
+        } on Object catch (e) {
+          Log.warning(
+            'profile cache upsert after a confirmed publish failed '
+            '(non-fatal): $e',
+            name: 'ProfileRepository.saveProfileEvent',
+            category: LogCategory.storage,
+          );
+        }
         return profile;
 
       case PublishNoRelays():
@@ -703,6 +725,145 @@ class ProfileRepository {
         throw const ProfilePublishFailedException(
           'Failed to publish profile. Please try again.',
         );
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Pending-save slot (#3161): durable, background-re-driven profile save.
+  // -------------------------------------------------------------------------
+
+  /// Persist [payload] to the durable pending-save slot so a failed kind-0
+  /// publish is re-driven in the background when connectivity returns.
+  ///
+  /// Latest intent wins — a fresh save replaces any in-flight row (kind 0 is
+  /// replaceable). Pass [claimConfirmed] true when the divine.video username
+  /// claim already succeeded for this payload (or when no claim is needed), so
+  /// the re-drive skips the idempotent HTTP claim round-trip.
+  ///
+  /// Returns the `generation` token stamped on the queued row so the caller
+  /// can scope its own [drivePendingSave] to exactly this intent. Returns null
+  /// when no [PendingProfileSavesDao] was injected (a no-op).
+  Future<String?> enqueuePendingSave(
+    PendingProfileSave payload, {
+    required bool claimConfirmed,
+  }) async {
+    final dao = _pendingProfileSavesDao;
+    if (dao == null) return null;
+    return dao.upsert(
+      PendingProfileSaveEntry(
+        userPubkey: payload.pubkey,
+        payloadJson: payload.encode(),
+        claimConfirmed: claimConfirmed,
+        queuedAt: DateTime.now(),
+      ),
+    );
+  }
+
+  /// Reactive view of the pending save for [pubkey], or null when none is
+  /// queued (e.g. after a confirmed publish clears it). Emits nothing when no
+  /// [PendingProfileSavesDao] was injected.
+  Stream<PendingProfileSaveEntry?> watchPendingSave(String pubkey) {
+    final dao = _pendingProfileSavesDao;
+    if (dao == null) return const Stream.empty();
+    return dao.watch(pubkey);
+  }
+
+  /// The current pending save for [pubkey], or null.
+  Future<PendingProfileSaveEntry?> getPendingSave(String pubkey) async {
+    return _pendingProfileSavesDao?.get(pubkey);
+  }
+
+  /// Delete the pending save for [pubkey] (e.g. on an explicit user discard).
+  Future<void> clearPendingSave(String pubkey) async {
+    await _pendingProfileSavesDao?.clear(pubkey);
+  }
+
+  /// Reset a `syncing` slot back to `pending` for [pubkey] — call once on cold
+  /// start so a save interrupted mid-publish is retried.
+  Future<void> resetInterruptedPendingSave(String pubkey) async {
+    await _pendingProfileSavesDao?.resetSyncingToPending(pubkey);
+  }
+
+  /// Attempt to publish the queued save for [pubkey] once.
+  ///
+  /// Claim-first (only when not yet confirmed and a divine.video username is
+  /// requested), then publish the kind-0 re-seeded from the freshest cached
+  /// profile. On a relay-confirmed publish the slot is cleared (and the profile
+  /// cached by [saveProfileEvent], non-fatally), returning
+  /// [PendingSaveDriveOutcome.confirmed]. Slot bookkeeping on failure (retry
+  /// count, mark-failed) is the caller's (retry service's) job — this method
+  /// only reports the typed outcome and never increments retries.
+  ///
+  /// Every slot mutation here (claim-confirmed, clear) is guarded by the
+  /// generation captured at read time, so a newer save that replaces the row
+  /// while this drive awaits relay work is never cleared or reclassified — the
+  /// newer intent is left queued to be driven on its own (#3161 review). Pass
+  /// [expectedGeneration] (from [enqueuePendingSave] / the retry service) to
+  /// additionally bail out with [PendingSaveDriveOutcome.noPendingSave] when
+  /// the row was already superseded before this drive started; omit it to drive
+  /// whatever intent is currently queued.
+  ///
+  /// Throws only unexpected (non-[ProfileRepositoryException]) errors, which
+  /// the retry service treats as a retryable failure.
+  Future<PendingSaveDriveOutcome> drivePendingSave(
+    String pubkey, {
+    String? expectedGeneration,
+  }) async {
+    final dao = _pendingProfileSavesDao;
+    if (dao == null) return PendingSaveDriveOutcome.noPendingSave;
+
+    final entry = await dao.get(pubkey);
+    if (entry == null) return PendingSaveDriveOutcome.noPendingSave;
+
+    // A newer save replaced the row after the caller captured the generation
+    // it wanted driven — that newer intent owns delivery now; don't touch it.
+    if (expectedGeneration != null && entry.generation != expectedGeneration) {
+      return PendingSaveDriveOutcome.noPendingSave;
+    }
+    final generation = entry.generation;
+
+    final payload = PendingProfileSave.decode(entry.payloadJson);
+
+    if (!entry.claimConfirmed && payload.requiresClaim) {
+      final result = await claimUsername(username: payload.username!);
+      switch (result) {
+        case UsernameClaimSuccess():
+          await dao.markClaimConfirmed(pubkey, generation: generation);
+        case UsernameClaimTaken():
+        case UsernameClaimReserved():
+          return PendingSaveDriveOutcome.permanentFailure;
+        case UsernameClaimNetworkError():
+        case UsernameClaimError():
+          return PendingSaveDriveOutcome.retryableFailure;
+      }
+    }
+
+    final currentProfile = await getCachedProfile(pubkey: pubkey);
+    try {
+      // saveProfileEvent only returns on a relay-confirmed OK true, and its
+      // post-publish cache write is non-fatal, so reaching here means the
+      // kind-0 landed. Clearing the slot is generation-guarded: if a newer
+      // save replaced this row while we awaited the publish, the delete
+      // affects zero rows and the newer intent survives to be driven on its
+      // own — latest intent wins (#3161 review).
+      await saveProfileEvent(
+        displayName: payload.displayName,
+        about: payload.about,
+        website: payload.website,
+        username: payload.username,
+        nip05: payload.nip05,
+        clearNip05: payload.clearNip05,
+        picture: payload.picture,
+        banner: payload.banner,
+        monetizationLinks: payload.monetizationLinks,
+        currentProfile: currentProfile,
+      );
+      await dao.clear(pubkey, generation: generation);
+      return PendingSaveDriveOutcome.confirmed;
+    } on NoRelaysConnectedException {
+      return PendingSaveDriveOutcome.retryableFailure;
+    } on ProfilePublishFailedException {
+      return PendingSaveDriveOutcome.retryableFailure;
     }
   }
 

@@ -11,6 +11,7 @@ export 'outgoing_dms_dao.dart';
 export 'pending_actions_dao.dart';
 export 'pending_gift_wraps_dao.dart';
 export 'pending_product_events_dao.dart';
+export 'pending_profile_saves_dao.dart';
 export 'pending_uploads_dao.dart';
 export 'pending_view_events_dao.dart';
 export 'personal_reactions_dao.dart';

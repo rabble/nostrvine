@@ -3,6 +3,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
@@ -50,6 +51,9 @@ void main() {
           eventId:
               'fallback123456789012345678901234567890123456789012345678901234',
         ),
+      );
+      registerFallbackValue(
+        const PendingProfileSave(pubkey: testPubkey, displayName: 'fallback'),
       );
     });
 
@@ -186,46 +190,102 @@ void main() {
       );
     });
 
-    testWidgets('shows a failure snackbar when saving the new NIP-05 fails', (
-      tester,
-    ) async {
-      final profile = createProfile(nip05: 'alice@example.com');
-      when(
-        () => mockProfileRepository.saveProfileEvent(
-          displayName: any(named: 'displayName'),
-          about: any(named: 'about'),
-          username: any(named: 'username'),
-          nip05: any(named: 'nip05'),
-          clearNip05: any(named: 'clearNip05'),
-          picture: any(named: 'picture'),
-          banner: any(named: 'banner'),
-          currentProfile: any(named: 'currentProfile'),
-        ),
-      ).thenThrow(Exception('publish failed'));
+    testWidgets(
+      'queues the NIP-05 save optimistically even when the publish fails',
+      (tester) async {
+        final profile = createProfile(nip05: 'alice@example.com');
+        when(
+          () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+        ).thenAnswer((_) async => profile);
+        when(
+          () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
+        ).thenAnswer((_) async => profile);
+        when(
+          () => mockProfileRepository.enqueuePendingSave(
+            any(),
+            claimConfirmed: any(named: 'claimConfirmed'),
+          ),
+        ).thenAnswer((_) async => 'gen-test');
+        when(
+          () => mockProfileRepository.drivePendingSave(
+            any(),
+            expectedGeneration: any(named: 'expectedGeneration'),
+          ),
+        ).thenAnswer((_) async => PendingSaveDriveOutcome.retryableFailure);
 
-      await tester.pumpWidget(buildSubject(profile: profile));
-      await tester.pumpAndSettle();
+        // Nip05SettingsView calls `context.pop()` on optimistic success, which
+        // requires a GoRouter ancestor. Push it onto a minimal router (rather
+        // than using buildSubject's bare MaterialApp) so that pop succeeds
+        // instead of throwing "No GoRouter found in context".
+        final router = GoRouter(
+          initialLocation: '/',
+          routes: [
+            GoRoute(
+              path: '/',
+              builder: (context, state) => const SizedBox.shrink(),
+            ),
+            GoRoute(
+              path: '/nip05',
+              builder: (context, state) => MultiBlocProvider(
+                providers: [
+                  BlocProvider(
+                    create: (_) => ProfileEditorBloc(
+                      profileRepository: mockProfileRepository,
+                      blossomUploadService: mockBlossomUploadService,
+                      hasExistingProfile: true,
+                      currentUserPubkey: testPubkey,
+                    ),
+                  ),
+                  BlocProvider(
+                    create: (_) => MyProfileBloc(
+                      profileRepository: mockProfileRepository,
+                      pubkey: testPubkey,
+                    )..add(const MyProfileLoadRequested()),
+                  ),
+                ],
+                child: const Nip05SettingsView(),
+              ),
+            ),
+          ],
+        );
 
-      await tester.enterText(
-        find.byType(TextFormField).last,
-        'bob@example.com',
-      );
-      await tester.pump();
+        await tester.pumpWidget(
+          MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: VineTheme.theme,
+            routerConfig: router,
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.text(l10n.nostrSettingsNip05SaveAction));
-      await tester.pumpAndSettle();
+        router.push('/nip05');
+        await tester.pumpAndSettle();
 
-      expect(find.text(l10n.nostrSettingsNip05SaveFailed), findsOneWidget);
-      verify(
-        () => mockProfileRepository.saveProfileEvent(
-          displayName: 'Test User',
-          about: 'Still making weird loops',
-          nip05: 'bob@example.com',
-          picture: 'https://example.com/avatar.png',
-          currentProfile: profile,
-        ),
-      ).called(1);
-    });
+        await tester.enterText(
+          find.byType(TextFormField).last,
+          'bob@example.com',
+        );
+        await tester.pump();
+
+        await tester.tap(find.text(l10n.nostrSettingsNip05SaveAction));
+        await tester.pumpAndSettle();
+
+        // A transient publish failure is retried in the background by
+        // ProfileEditorBloc's optimistic save flow, so it must NOT surface
+        // as a save-failure snackbar.
+        expect(find.text(l10n.nostrSettingsNip05SaveFailed), findsNothing);
+
+        final captured = verify(
+          () => mockProfileRepository.enqueuePendingSave(
+            captureAny(),
+            claimConfirmed: captureAny(named: 'claimConfirmed'),
+          ),
+        ).captured;
+        final payload = captured[0] as PendingProfileSave;
+        expect(payload.nip05, 'bob@example.com');
+      },
+    );
 
     testWidgets(
       'shows retry UI instead of spinning forever when profile load fails',

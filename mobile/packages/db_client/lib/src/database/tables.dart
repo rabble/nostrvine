@@ -1204,6 +1204,69 @@ class OutgoingDms extends Table {
   ];
 }
 
+/// Durable, single-row-per-user slot for a profile/username save whose
+/// kind-0 publish has not yet been confirmed by a relay.
+///
+/// Kind 0 is replaceable and one-per-user, so at most one row exists per
+/// account — a re-save replaces the row (latest intent wins). The
+/// `ProfileSaveRetryService` re-drives this slot on app-foreground and on
+/// connectivity/relay-reconnect until a relay confirms the publish, then
+/// deletes the row. Fixes #3161: a save attempted while the relay pool is
+/// disconnected is delivered when connectivity returns, instead of failing
+/// permanently and stranding a claimed-but-unadvertised divine.video username.
+@DataClassName('PendingProfileSaveRow')
+class PendingProfileSaves extends Table {
+  @override
+  String get tableName => 'pending_profile_saves';
+
+  /// Owner hex pubkey. Primary key → exactly one pending save per account.
+  TextColumn get userPubkey => text().named('user_pubkey')();
+
+  /// Serialized `PendingProfileSave` payload (every `saveProfileEvent` field
+  /// the user submitted). Authoritative source for the re-drive.
+  TextColumn get payloadJson => text().named('payload_json')();
+
+  /// Whether the divine.video username claim already returned 200 for this
+  /// payload, so re-drives skip the (idempotent) HTTP claim round-trip.
+  /// Always `true` for saves with no divine.video username to claim
+  /// (external NIP-05, or no NIP-05 change).
+  BoolColumn get claimConfirmed =>
+      boolean().withDefault(const Constant(false)).named('claim_confirmed')();
+
+  /// `pending` | `syncing` | `failed`. Stored as a string for readable
+  /// dumps; the DAO throws on an unrecognised value rather than coercing it
+  /// back to `pending`.
+  TextColumn get status => text().withDefault(const Constant('pending'))();
+
+  /// Publish attempts survived. Backoff caps growth at the policy max; once
+  /// exhausted the row moves to `failed` and the UI surfaces a retry.
+  IntColumn get retryCount =>
+      integer().withDefault(const Constant(0)).named('retry_count')();
+
+  /// Wall-clock timestamp of the most recent publish attempt. Drives the
+  /// retry service's backoff scheduling. Null until the first attempt.
+  DateTimeColumn get lastAttemptAt =>
+      dateTime().nullable().named('last_attempt_at')();
+
+  /// Wall-clock timestamp the row was queued.
+  DateTimeColumn get queuedAt => dateTime().named('queued_at')();
+
+  /// Last publish error message, for diagnostics. Null when the most recent
+  /// transition was not a failure.
+  TextColumn get lastError => text().nullable().named('last_error')();
+
+  /// Immutable per-enqueue token stamped fresh on every `upsert` (a new save
+  /// or a manual retry). A background re-drive captures it at read time and
+  /// guards every mutation with it, so a newer save that replaces this row
+  /// while an older drive is awaiting relay work is never cleared or
+  /// reclassified by that stale drive — latest intent wins (#3161 review).
+  /// Empty string only on legacy rows written before this column existed.
+  TextColumn get generation => text().withDefault(const Constant(''))();
+
+  @override
+  Set<Column> get primaryKey => {userPubkey};
+}
+
 /// Durable queue of finalized video view events awaiting relay publish.
 @DataClassName('PendingViewEventRow')
 class PendingViewEvents extends Table {

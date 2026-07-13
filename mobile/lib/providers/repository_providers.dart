@@ -352,6 +352,8 @@ ProfileRepository _buildProfileRepository(Ref ref, {required bool warmCache}) {
     nostrClient: nostrClient,
     userProfilesDao: userProfilesDao,
     profileStatsDao: ref.watch(databaseProvider).profileStatsDao,
+    // Durable pending-save slot for the offline-tolerant username save (#3161).
+    pendingProfileSavesDao: ref.watch(databaseProvider).pendingProfileSavesDao,
     httpClient: Client(),
     funnelcakeApiClient: funnelcakeClient,
     indexerRelays: env.indexerRelays,

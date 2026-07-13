@@ -72,6 +72,9 @@ void main() {
       );
       registerFallbackValue(_FakeFile());
       registerFallbackValue(Uint8List(0));
+      registerFallbackValue(
+        const PendingProfileSave(pubkey: testPubkey, displayName: 'fallback'),
+      );
     });
 
     setUp(() {
@@ -81,6 +84,21 @@ void main() {
       when(
         () => mockProfileRepository.cacheProfile(any()),
       ).thenAnswer((_) async {});
+      // Optimistic-save path (#3161): every save enqueues the durable slot and
+      // re-drives it. Default the slot to a confirmed publish so success-path
+      // tests read [loading, success] unchanged; failure-path tests override.
+      when(
+        () => mockProfileRepository.enqueuePendingSave(
+          any(),
+          claimConfirmed: any(named: 'claimConfirmed'),
+        ),
+      ).thenAnswer((_) async => 'gen-test');
+      when(
+        () => mockProfileRepository.drivePendingSave(
+          any(),
+          expectedGeneration: any(named: 'expectedGeneration'),
+        ),
+      ).thenAnswer((_) async => PendingSaveDriveOutcome.confirmed);
     });
 
     ProfileEditorBloc createBloc({
@@ -108,14 +126,6 @@ void main() {
             when(
               () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
             ).thenAnswer((_) async => null);
-            when(
-              () => mockProfileRepository.saveProfileEvent(
-                displayName: testDisplayName,
-                about: testAbout,
-                picture: testPicture,
-                clearNip05: any(named: 'clearNip05'),
-              ),
-            ).thenAnswer((_) async => createTestProfile());
           },
           build: createBloc,
           act: (bloc) => bloc.add(
@@ -139,14 +149,17 @@ void main() {
             ),
           ],
           verify: (_) {
-            verify(
-              () => mockProfileRepository.saveProfileEvent(
-                displayName: testDisplayName,
-                about: testAbout,
-                picture: testPicture,
-                clearNip05: any(named: 'clearNip05'),
+            final captured = verify(
+              () => mockProfileRepository.enqueuePendingSave(
+                captureAny(),
+                claimConfirmed: captureAny(named: 'claimConfirmed'),
               ),
-            ).called(1);
+            ).captured;
+            final payload = captured[0] as PendingProfileSave;
+            expect(payload.displayName, testDisplayName);
+            expect(payload.about, testAbout);
+            expect(payload.picture, testPicture);
+            expect(payload.username, isNull);
             verifyNever(
               () => mockProfileRepository.claimUsername(
                 username: any(named: 'username'),
@@ -164,15 +177,6 @@ void main() {
             when(
               () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
             ).thenAnswer((_) async => existingProfile);
-            when(
-              () => mockProfileRepository.saveProfileEvent(
-                displayName: testDisplayName,
-                about: testAbout,
-                picture: testPicture,
-                clearNip05: any(named: 'clearNip05'),
-                currentProfile: existingProfile,
-              ),
-            ).thenAnswer((_) async => createTestProfile());
           },
           build: createBloc,
           act: (bloc) => bloc.add(
@@ -203,14 +207,6 @@ void main() {
             when(
               () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
             ).thenAnswer((_) async => null);
-            when(
-              () => mockProfileRepository.saveProfileEvent(
-                displayName: testDisplayName,
-                about: testAbout,
-                picture: testPicture,
-                clearNip05: any(named: 'clearNip05'),
-              ),
-            ).thenAnswer((_) async => createTestProfile());
           },
           build: createBloc,
           act: (bloc) => bloc.add(
@@ -235,14 +231,17 @@ void main() {
             ),
           ],
           verify: (_) {
-            verify(
-              () => mockProfileRepository.saveProfileEvent(
-                displayName: testDisplayName,
-                about: testAbout,
-                picture: testPicture,
-                clearNip05: any(named: 'clearNip05'),
+            final captured = verify(
+              () => mockProfileRepository.enqueuePendingSave(
+                captureAny(),
+                claimConfirmed: captureAny(named: 'claimConfirmed'),
               ),
-            ).called(1);
+            ).captured;
+            final payload = captured[0] as PendingProfileSave;
+            expect(payload.displayName, testDisplayName);
+            expect(payload.about, testAbout);
+            expect(payload.picture, testPicture);
+            expect(payload.username, isNull);
           },
         );
 
@@ -253,14 +252,6 @@ void main() {
             when(
               () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
             ).thenAnswer((_) async => null);
-            when(
-              () => mockProfileRepository.saveProfileEvent(
-                displayName: testDisplayName,
-                about: testAbout,
-                picture: testPicture,
-                clearNip05: any(named: 'clearNip05'),
-              ),
-            ).thenAnswer((_) async => createTestProfile());
           },
           build: createBloc,
           act: (bloc) => bloc.add(
@@ -272,14 +263,17 @@ void main() {
             ),
           ),
           verify: (_) {
-            verify(
-              () => mockProfileRepository.saveProfileEvent(
-                displayName: testDisplayName,
-                about: testAbout,
-                picture: testPicture,
-                clearNip05: any(named: 'clearNip05', that: isFalse),
+            final captured = verify(
+              () => mockProfileRepository.enqueuePendingSave(
+                captureAny(),
+                claimConfirmed: captureAny(named: 'claimConfirmed'),
               ),
-            ).called(1);
+            ).captured;
+            final payload = captured[0] as PendingProfileSave;
+            expect(payload.displayName, testDisplayName);
+            expect(payload.about, testAbout);
+            expect(payload.picture, testPicture);
+            expect(payload.clearNip05, isFalse);
           },
         );
 
@@ -289,14 +283,6 @@ void main() {
             when(
               () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
             ).thenAnswer((_) async => null);
-            when(
-              () => mockProfileRepository.saveProfileEvent(
-                displayName: testDisplayName,
-                about: testAbout,
-                picture: testPicture,
-                clearNip05: true,
-              ),
-            ).thenAnswer((_) async => createTestProfile());
           },
           build: createBloc,
           // Dispatch InitialUsernameSet first so the bloc knows the user had
@@ -314,21 +300,23 @@ void main() {
             );
           },
           verify: (_) {
-            verify(
-              () => mockProfileRepository.saveProfileEvent(
-                displayName: testDisplayName,
-                about: testAbout,
-                picture: testPicture,
-                clearNip05: true,
+            final captured = verify(
+              () => mockProfileRepository.enqueuePendingSave(
+                captureAny(),
+                claimConfirmed: captureAny(named: 'claimConfirmed'),
               ),
-            ).called(1);
+            ).captured;
+            final payload = captured[0] as PendingProfileSave;
+            expect(payload.displayName, testDisplayName);
+            expect(payload.about, testAbout);
+            expect(payload.picture, testPicture);
+            expect(payload.clearNip05, isTrue);
           },
         );
 
         blocTest<ProfileEditorBloc, ProfileEditorState>(
           'canonicalizes exact bio mentions before publishing profile metadata',
           setUp: () {
-            final aliceNpub = NostrKeyUtils.encodePubKey(alicePubkey);
             when(
               () => mockProfileRepository.searchUsersLocally(
                 query: 'alice',
@@ -348,14 +336,6 @@ void main() {
             when(
               () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
             ).thenAnswer((_) async => null);
-            when(
-              () => mockProfileRepository.saveProfileEvent(
-                displayName: testDisplayName,
-                about: 'hi nostr:$aliceNpub',
-                picture: testPicture,
-                clearNip05: any(named: 'clearNip05'),
-              ),
-            ).thenAnswer((_) async => createTestProfile());
           },
           build: () => createBloc(
             mentionResolutionService: MentionResolutionService(
@@ -384,14 +364,16 @@ void main() {
           ],
           verify: (_) {
             final aliceNpub = NostrKeyUtils.encodePubKey(alicePubkey);
-            verify(
-              () => mockProfileRepository.saveProfileEvent(
-                displayName: testDisplayName,
-                about: 'hi nostr:$aliceNpub',
-                picture: testPicture,
-                clearNip05: any(named: 'clearNip05'),
+            final captured = verify(
+              () => mockProfileRepository.enqueuePendingSave(
+                captureAny(),
+                claimConfirmed: captureAny(named: 'claimConfirmed'),
               ),
-            ).called(1);
+            ).captured;
+            final payload = captured[0] as PendingProfileSave;
+            expect(payload.displayName, testDisplayName);
+            expect(payload.about, 'hi nostr:$aliceNpub');
+            expect(payload.picture, testPicture);
           },
         );
 
@@ -407,14 +389,6 @@ void main() {
             when(
               () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
             ).thenAnswer((_) async => null);
-            when(
-              () => mockProfileRepository.saveProfileEvent(
-                displayName: testDisplayName,
-                about: 'hi @alice',
-                picture: testPicture,
-                clearNip05: any(named: 'clearNip05'),
-              ),
-            ).thenAnswer((_) async => createTestProfile());
           },
           build: () => createBloc(
             mentionResolutionService: MentionResolutionService(
@@ -442,14 +416,16 @@ void main() {
             ),
           ],
           verify: (_) {
-            verify(
-              () => mockProfileRepository.saveProfileEvent(
-                displayName: testDisplayName,
-                about: 'hi @alice',
-                picture: testPicture,
-                clearNip05: any(named: 'clearNip05'),
+            final captured = verify(
+              () => mockProfileRepository.enqueuePendingSave(
+                captureAny(),
+                claimConfirmed: captureAny(named: 'claimConfirmed'),
               ),
-            ).called(1);
+            ).captured;
+            final payload = captured[0] as PendingProfileSave;
+            expect(payload.displayName, testDisplayName);
+            expect(payload.about, 'hi @alice');
+            expect(payload.picture, testPicture);
           },
         );
       });
@@ -461,14 +437,6 @@ void main() {
             when(
               () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
             ).thenAnswer((_) async => null);
-            when(
-              () => mockProfileRepository.saveProfileEvent(
-                displayName: testDisplayName,
-                about: testAbout,
-                username: testUsername,
-                picture: testPicture,
-              ),
-            ).thenAnswer((_) async => createTestProfile());
             when(
               () => mockProfileRepository.claimUsername(username: testUsername),
             ).thenAnswer((_) async => const UsernameClaimSuccess());
@@ -498,15 +466,18 @@ void main() {
           verify: (_) {
             // Claim must run before publish so kind 0 is only broadcast
             // after the registry confirms the name belongs to this pubkey.
-            verifyInOrder([
+            final results = verifyInOrder([
               () => mockProfileRepository.claimUsername(username: testUsername),
-              () => mockProfileRepository.saveProfileEvent(
-                displayName: testDisplayName,
-                about: testAbout,
-                username: testUsername,
-                picture: testPicture,
+              () => mockProfileRepository.enqueuePendingSave(
+                captureAny(),
+                claimConfirmed: captureAny(named: 'claimConfirmed'),
               ),
             ]);
+            final payload = results[1].captured[0] as PendingProfileSave;
+            expect(payload.displayName, testDisplayName);
+            expect(payload.about, testAbout);
+            expect(payload.username, testUsername);
+            expect(payload.picture, testPicture);
           },
         );
 
@@ -516,14 +487,6 @@ void main() {
             when(
               () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
             ).thenAnswer((_) async => null);
-            when(
-              () => mockProfileRepository.saveProfileEvent(
-                displayName: testDisplayName,
-                about: testAbout,
-                username: testUsername,
-                picture: testPicture,
-              ),
-            ).thenAnswer((_) async => createTestProfile());
           },
           seed: () => const ProfileEditorState(
             initialUsername: testUsername,
@@ -556,14 +519,17 @@ void main() {
                 username: any(named: 'username'),
               ),
             );
-            verify(
-              () => mockProfileRepository.saveProfileEvent(
-                displayName: testDisplayName,
-                about: testAbout,
-                username: testUsername,
-                picture: testPicture,
+            final captured = verify(
+              () => mockProfileRepository.enqueuePendingSave(
+                captureAny(),
+                claimConfirmed: captureAny(named: 'claimConfirmed'),
               ),
-            ).called(1);
+            ).captured;
+            final payload = captured[0] as PendingProfileSave;
+            expect(payload.displayName, testDisplayName);
+            expect(payload.about, testAbout);
+            expect(payload.username, testUsername);
+            expect(payload.picture, testPicture);
           },
         );
 
@@ -581,15 +547,6 @@ void main() {
             when(
               () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
             ).thenAnswer((_) async => owned);
-            when(
-              () => mockProfileRepository.saveProfileEvent(
-                displayName: testDisplayName,
-                about: testAbout,
-                username: testUsername,
-                picture: testPicture,
-                currentProfile: owned,
-              ),
-            ).thenAnswer((_) async => createTestProfile());
           },
           build: createBloc,
           act: (bloc) => bloc.add(
@@ -619,15 +576,17 @@ void main() {
                 username: any(named: 'username'),
               ),
             );
-            verify(
-              () => mockProfileRepository.saveProfileEvent(
-                displayName: testDisplayName,
-                about: testAbout,
-                username: testUsername,
-                picture: testPicture,
-                currentProfile: any(named: 'currentProfile'),
+            final captured = verify(
+              () => mockProfileRepository.enqueuePendingSave(
+                captureAny(),
+                claimConfirmed: captureAny(named: 'claimConfirmed'),
               ),
-            ).called(1);
+            ).captured;
+            final payload = captured[0] as PendingProfileSave;
+            expect(payload.displayName, testDisplayName);
+            expect(payload.about, testAbout);
+            expect(payload.username, testUsername);
+            expect(payload.picture, testPicture);
           },
         );
 
@@ -644,14 +603,6 @@ void main() {
             when(
               () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
             ).thenAnswer((_) async => null);
-            when(
-              () => mockProfileRepository.saveProfileEvent(
-                displayName: testDisplayName,
-                about: testAbout,
-                username: testUsername,
-                picture: testPicture,
-              ),
-            ).thenAnswer((_) async => createTestProfile());
             when(
               () => mockProfileRepository.claimUsername(username: testUsername),
             ).thenAnswer((_) async => const UsernameClaimSuccess());
@@ -705,14 +656,17 @@ void main() {
                 currentUserPubkey: testPubkey,
               ),
             ).called(1);
-            verify(
-              () => mockProfileRepository.saveProfileEvent(
-                displayName: testDisplayName,
-                about: testAbout,
-                username: testUsername,
-                picture: testPicture,
+            final captured = verify(
+              () => mockProfileRepository.enqueuePendingSave(
+                captureAny(),
+                claimConfirmed: captureAny(named: 'claimConfirmed'),
               ),
-            ).called(1);
+            ).captured;
+            final payload = captured[0] as PendingProfileSave;
+            expect(payload.displayName, testDisplayName);
+            expect(payload.about, testAbout);
+            expect(payload.username, testUsername);
+            expect(payload.picture, testPicture);
             verify(
               () => mockProfileRepository.claimUsername(username: testUsername),
             ).called(1);
@@ -722,19 +676,18 @@ void main() {
 
       group('profile publish failure', () {
         blocTest<ProfileEditorBloc, ProfileEditorState>(
-          'emits [loading, failure] with publishFailed error',
+          'retryable publish failure no longer blocks the save — emits '
+          'optimistic success and leaves the slot queued for retry',
           setUp: () {
             when(
               () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
             ).thenAnswer((_) async => null);
             when(
-              () => mockProfileRepository.saveProfileEvent(
-                displayName: testDisplayName,
-                about: testAbout,
-                picture: testPicture,
-                clearNip05: any(named: 'clearNip05'),
+              () => mockProfileRepository.drivePendingSave(
+                testPubkey,
+                expectedGeneration: any(named: 'expectedGeneration'),
               ),
-            ).thenThrow(const ProfilePublishFailedException('Network error'));
+            ).thenAnswer((_) async => PendingSaveDriveOutcome.retryableFailure);
           },
           build: createBloc,
           act: (bloc) => bloc.add(
@@ -751,18 +704,25 @@ void main() {
               'status',
               ProfileEditorStatus.loading,
             ),
-            isA<ProfileEditorState>()
-                .having((s) => s.status, 'status', ProfileEditorStatus.failure)
-                .having(
-                  (s) => s.error,
-                  'error',
-                  ProfileEditorError.publishFailed,
-                ),
+            isA<ProfileEditorState>().having(
+              (s) => s.status,
+              'status',
+              ProfileEditorStatus.success,
+            ),
           ],
+          verify: (_) {
+            verify(
+              () => mockProfileRepository.enqueuePendingSave(
+                any(),
+                claimConfirmed: any(named: 'claimConfirmed'),
+              ),
+            ).called(1);
+          },
         );
 
         blocTest<ProfileEditorBloc, ProfileEditorState>(
-          'still emits publishFailed when claim succeeds but publish fails',
+          'still emits optimistic success when claim succeeds but publish '
+          'fails — slot stays queued for retry',
           setUp: () {
             when(
               () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
@@ -771,13 +731,11 @@ void main() {
               () => mockProfileRepository.claimUsername(username: testUsername),
             ).thenAnswer((_) async => const UsernameClaimSuccess());
             when(
-              () => mockProfileRepository.saveProfileEvent(
-                displayName: testDisplayName,
-                about: testAbout,
-                username: testUsername,
-                picture: testPicture,
+              () => mockProfileRepository.drivePendingSave(
+                testPubkey,
+                expectedGeneration: any(named: 'expectedGeneration'),
               ),
-            ).thenThrow(const ProfilePublishFailedException('Network error'));
+            ).thenAnswer((_) async => PendingSaveDriveOutcome.retryableFailure);
           },
           build: createBloc,
           act: (bloc) => bloc.add(
@@ -795,24 +753,20 @@ void main() {
               'status',
               ProfileEditorStatus.loading,
             ),
-            isA<ProfileEditorState>()
-                .having((s) => s.status, 'status', ProfileEditorStatus.failure)
-                .having(
-                  (s) => s.error,
-                  'error',
-                  ProfileEditorError.publishFailed,
-                ),
+            isA<ProfileEditorState>().having(
+              (s) => s.status,
+              'status',
+              ProfileEditorStatus.success,
+            ),
           ],
           verify: (_) {
-            // Claim happens first; saveProfileEvent is then attempted and
-            // throws. There is no rollback publish.
+            // Claim happens first; the slot is then enqueued and driven —
+            // a retryable publish failure no longer blocks Save.
             verifyInOrder([
               () => mockProfileRepository.claimUsername(username: testUsername),
-              () => mockProfileRepository.saveProfileEvent(
-                displayName: testDisplayName,
-                about: testAbout,
-                username: testUsername,
-                picture: testPicture,
+              () => mockProfileRepository.enqueuePendingSave(
+                any(),
+                claimConfirmed: any(named: 'claimConfirmed'),
               ),
             ]);
           },
@@ -821,19 +775,18 @@ void main() {
 
       group('no relays connected', () {
         blocTest<ProfileEditorBloc, ProfileEditorState>(
-          'emits [loading, failure] with noRelaysConnected error',
+          'no relays connected → optimistic success, slot stays queued '
+          'for retry',
           setUp: () {
             when(
               () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
             ).thenAnswer((_) async => null);
             when(
-              () => mockProfileRepository.saveProfileEvent(
-                displayName: testDisplayName,
-                about: testAbout,
-                picture: testPicture,
-                clearNip05: any(named: 'clearNip05'),
+              () => mockProfileRepository.drivePendingSave(
+                testPubkey,
+                expectedGeneration: any(named: 'expectedGeneration'),
               ),
-            ).thenThrow(const NoRelaysConnectedException('No relays'));
+            ).thenAnswer((_) async => PendingSaveDriveOutcome.retryableFailure);
           },
           build: createBloc,
           act: (bloc) => bloc.add(
@@ -850,20 +803,25 @@ void main() {
               'status',
               ProfileEditorStatus.loading,
             ),
-            isA<ProfileEditorState>()
-                .having((s) => s.status, 'status', ProfileEditorStatus.failure)
-                .having(
-                  (s) => s.error,
-                  'error',
-                  ProfileEditorError.noRelaysConnected,
-                ),
+            isA<ProfileEditorState>().having(
+              (s) => s.status,
+              'status',
+              ProfileEditorStatus.success,
+            ),
           ],
-          errors: () => [isA<NoRelaysConnectedException>()],
+          verify: (_) {
+            verify(
+              () => mockProfileRepository.enqueuePendingSave(
+                any(),
+                claimConfirmed: any(named: 'claimConfirmed'),
+              ),
+            ).called(1);
+          },
         );
 
         blocTest<ProfileEditorBloc, ProfileEditorState>(
-          'still emits noRelaysConnected when claim succeeded but publish '
-          'cannot reach any relay',
+          'still optimistic success when claim succeeded but publish '
+          'cannot reach any relay — slot stays queued for retry',
           setUp: () {
             when(
               () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
@@ -872,13 +830,11 @@ void main() {
               () => mockProfileRepository.claimUsername(username: testUsername),
             ).thenAnswer((_) async => const UsernameClaimSuccess());
             when(
-              () => mockProfileRepository.saveProfileEvent(
-                displayName: testDisplayName,
-                about: testAbout,
-                username: testUsername,
-                picture: testPicture,
+              () => mockProfileRepository.drivePendingSave(
+                testPubkey,
+                expectedGeneration: any(named: 'expectedGeneration'),
               ),
-            ).thenThrow(const NoRelaysConnectedException('No relays'));
+            ).thenAnswer((_) async => PendingSaveDriveOutcome.retryableFailure);
           },
           build: createBloc,
           act: (bloc) => bloc.add(
@@ -896,15 +852,21 @@ void main() {
               'status',
               ProfileEditorStatus.loading,
             ),
-            isA<ProfileEditorState>()
-                .having((s) => s.status, 'status', ProfileEditorStatus.failure)
-                .having(
-                  (s) => s.error,
-                  'error',
-                  ProfileEditorError.noRelaysConnected,
-                ),
+            isA<ProfileEditorState>().having(
+              (s) => s.status,
+              'status',
+              ProfileEditorStatus.success,
+            ),
           ],
-          errors: () => [isA<NoRelaysConnectedException>()],
+          verify: (_) {
+            verifyInOrder([
+              () => mockProfileRepository.claimUsername(username: testUsername),
+              () => mockProfileRepository.enqueuePendingSave(
+                any(),
+                claimConfirmed: any(named: 'claimConfirmed'),
+              ),
+            ]);
+          },
         );
       });
 
@@ -912,7 +874,8 @@ void main() {
       // immutable once broadcast. If we publish before confirming the username
       // claim, a single name-server hiccup leaves the user advertising a
       // _@<name>.divine.video identifier with no registry record. These tests
-      // assert that saveProfileEvent is never called when the claim fails.
+      // assert that the durable save slot is never enqueued/driven when the
+      // claim fails.
       group('claim failure does not broadcast kind 0', () {
         for (final scenario in [
           (
@@ -941,7 +904,7 @@ void main() {
           ),
         ]) {
           blocTest<ProfileEditorBloc, ProfileEditorState>(
-            'emits failure and never calls saveProfileEvent on '
+            'emits failure and never enqueues/drives the pending save on '
             '${scenario.label}',
             setUp: () {
               final existingProfile = createTestProfile(
@@ -991,18 +954,17 @@ void main() {
                     mockProfileRepository.claimUsername(username: testUsername),
               ).called(1);
               verifyNever(
-                () => mockProfileRepository.saveProfileEvent(
-                  displayName: any(named: 'displayName'),
-                  about: any(named: 'about'),
-                  username: any(named: 'username'),
-                  nip05: any(named: 'nip05'),
-                  clearNip05: any(named: 'clearNip05'),
-                  picture: any(named: 'picture'),
-                  banner: any(named: 'banner'),
-                  currentProfile: any(named: 'currentProfile'),
+                () => mockProfileRepository.enqueuePendingSave(
+                  any(),
+                  claimConfirmed: any(named: 'claimConfirmed'),
                 ),
               );
-              verifyNever(() => mockProfileRepository.cacheProfile(any()));
+              verifyNever(
+                () => mockProfileRepository.drivePendingSave(
+                  any(),
+                  expectedGeneration: any(named: 'expectedGeneration'),
+                ),
+              );
             },
           );
         }
@@ -1097,32 +1059,31 @@ void main() {
         verify: (_) {
           // Claim threw — never reach the publish step.
           verifyNever(
-            () => mockProfileRepository.saveProfileEvent(
-              displayName: any(named: 'displayName'),
-              about: any(named: 'about'),
-              username: any(named: 'username'),
-              clearNip05: any(named: 'clearNip05'),
-              picture: any(named: 'picture'),
-              banner: any(named: 'banner'),
-              currentProfile: any(named: 'currentProfile'),
+            () => mockProfileRepository.enqueuePendingSave(
+              any(),
+              claimConfirmed: any(named: 'claimConfirmed'),
+            ),
+          );
+          verifyNever(
+            () => mockProfileRepository.drivePendingSave(
+              any(),
+              expectedGeneration: any(named: 'expectedGeneration'),
             ),
           );
         },
       );
 
       blocTest<ProfileEditorBloc, ProfileEditorState>(
-        'wraps unexpected saveProfileEvent Error in narrowed publish catch '
-        'as Reportable and emits failure(publishFailed)',
+        'wraps unexpected drivePendingSave Error in narrowed publish catch '
+        'as Reportable but keeps the optimistic success emitted earlier',
         setUp: () {
           when(
             () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
           ).thenAnswer((_) async => null);
           when(
-            () => mockProfileRepository.saveProfileEvent(
-              displayName: testDisplayName,
-              about: testAbout,
-              picture: testPicture,
-              clearNip05: any(named: 'clearNip05'),
+            () => mockProfileRepository.drivePendingSave(
+              testPubkey,
+              expectedGeneration: any(named: 'expectedGeneration'),
             ),
           ).thenThrow(StateError('publish invariant'));
         },
@@ -1141,13 +1102,11 @@ void main() {
             'status',
             ProfileEditorStatus.loading,
           ),
-          isA<ProfileEditorState>()
-              .having((s) => s.status, 'status', ProfileEditorStatus.failure)
-              .having(
-                (s) => s.error,
-                'error',
-                ProfileEditorError.publishFailed,
-              ),
+          isA<ProfileEditorState>().having(
+            (s) => s.status,
+            'status',
+            ProfileEditorStatus.success,
+          ),
         ],
         errors: () => [
           isA<Reportable<Object>>().having(
@@ -1159,19 +1118,16 @@ void main() {
       );
 
       blocTest<ProfileEditorBloc, ProfileEditorState>(
-        'wraps unexpected Error in _onProfileNip05Saved as Reportable and '
-        'emits failure(publishFailed)',
+        'wraps unexpected drivePendingSave Error in _onProfileNip05Saved as '
+        'Reportable but keeps the optimistic success emitted earlier',
         setUp: () {
           when(
             () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
           ).thenAnswer((_) async => null);
           when(
-            () => mockProfileRepository.saveProfileEvent(
-              displayName: testDisplayName,
-              about: testAbout,
-              picture: testPicture,
-              banner: any(named: 'banner'),
-              clearNip05: any(named: 'clearNip05'),
+            () => mockProfileRepository.drivePendingSave(
+              testPubkey,
+              expectedGeneration: any(named: 'expectedGeneration'),
             ),
           ).thenThrow(StateError('nip05 save invariant'));
         },
@@ -1196,13 +1152,11 @@ void main() {
             'status',
             ProfileEditorStatus.loading,
           ),
-          isA<ProfileEditorState>()
-              .having((s) => s.status, 'status', ProfileEditorStatus.failure)
-              .having(
-                (s) => s.error,
-                'error',
-                ProfileEditorError.publishFailed,
-              ),
+          isA<ProfileEditorState>().having(
+            (s) => s.status,
+            'status',
+            ProfileEditorStatus.success,
+          ),
         ],
         errors: () => [
           isA<Reportable<Object>>().having(
@@ -1214,16 +1168,16 @@ void main() {
       );
 
       blocTest<ProfileEditorBloc, ProfileEditorState>(
-        'wraps unexpected Error in _onProfileSaveConfirmed as Reportable '
-        'and emits failure(publishFailed)',
+        'wraps unexpected drivePendingSave Error in _onProfileSaveConfirmed '
+        'as Reportable but keeps the optimistic success emitted earlier',
         setUp: () {
           when(
             () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
           ).thenAnswer((_) async => null);
           when(
-            () => mockProfileRepository.saveProfileEvent(
-              displayName: testDisplayName,
-              clearNip05: any(named: 'clearNip05'),
+            () => mockProfileRepository.drivePendingSave(
+              testPubkey,
+              expectedGeneration: any(named: 'expectedGeneration'),
             ),
           ).thenThrow(StateError('confirmed save invariant'));
         },
@@ -1242,13 +1196,11 @@ void main() {
             'status',
             ProfileEditorStatus.loading,
           ),
-          isA<ProfileEditorState>()
-              .having((s) => s.status, 'status', ProfileEditorStatus.failure)
-              .having(
-                (s) => s.error,
-                'error',
-                ProfileEditorError.publishFailed,
-              ),
+          isA<ProfileEditorState>().having(
+            (s) => s.status,
+            'status',
+            ProfileEditorStatus.success,
+          ),
         ],
         errors: () => [
           isA<Reportable<Object>>().having(
@@ -1363,14 +1315,6 @@ void main() {
             () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
           ).thenAnswer((_) async => null);
           when(
-            () => mockProfileRepository.saveProfileEvent(
-              displayName: testDisplayName,
-              about: 'hi @alice',
-              picture: testPicture,
-              clearNip05: any(named: 'clearNip05'),
-            ),
-          ).thenAnswer((_) async => createTestProfile());
-          when(
             () => mockMentionResolutionService.resolveTextMentions(
               rawText: any(named: 'rawText'),
               currentUserPubkey: any(named: 'currentUserPubkey'),
@@ -1409,14 +1353,14 @@ void main() {
         ],
         verify: (_) {
           // Save still happens with the raw (unresolved) bio.
-          verify(
-            () => mockProfileRepository.saveProfileEvent(
-              displayName: testDisplayName,
-              about: 'hi @alice',
-              picture: testPicture,
-              clearNip05: any(named: 'clearNip05'),
+          final captured = verify(
+            () => mockProfileRepository.enqueuePendingSave(
+              captureAny(),
+              claimConfirmed: captureAny(named: 'claimConfirmed'),
             ),
-          ).called(1);
+          ).captured;
+          final payload = captured[0] as PendingProfileSave;
+          expect(payload.about, 'hi @alice');
         },
       );
     });
@@ -1882,25 +1826,8 @@ void main() {
             () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
           ).thenAnswer((_) async => existingProfile);
           when(
-            () => mockProfileRepository.saveProfileEvent(
-              displayName: testDisplayName,
-              about: testAbout,
-              username: testUsername,
-              picture: testPicture,
-              currentProfile: existingProfile,
-            ),
-          ).thenAnswer((_) async => createTestProfile());
-          when(
             () => mockProfileRepository.claimUsername(username: testUsername),
           ).thenAnswer((_) async => const UsernameClaimReserved());
-          when(
-            () => mockProfileRepository.saveProfileEvent(
-              displayName: testDisplayName,
-              about: testAbout,
-              picture: testPicture,
-              currentProfile: existingProfile,
-            ),
-          ).thenAnswer((_) async => createTestProfile());
         },
         build: createBloc,
         act: (bloc) async {
@@ -2224,14 +2151,6 @@ void main() {
           when(
             () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
           ).thenAnswer((_) async => null);
-          when(
-            () => mockProfileRepository.saveProfileEvent(
-              displayName: testDisplayName,
-              about: testAbout,
-              nip05: 'alice@example.com',
-              picture: testPicture,
-            ),
-          ).thenAnswer((_) async => createTestProfile());
         },
         build: createBloc,
         seed: () => const ProfileEditorState(nip05Mode: Nip05Mode.external_),
@@ -2257,14 +2176,18 @@ void main() {
           ),
         ],
         verify: (_) {
-          verify(
-            () => mockProfileRepository.saveProfileEvent(
-              displayName: testDisplayName,
-              about: testAbout,
-              nip05: 'alice@example.com',
-              picture: testPicture,
+          final captured = verify(
+            () => mockProfileRepository.enqueuePendingSave(
+              captureAny(),
+              claimConfirmed: captureAny(named: 'claimConfirmed'),
             ),
-          ).called(1);
+          ).captured;
+          final payload = captured[0] as PendingProfileSave;
+          expect(payload.displayName, testDisplayName);
+          expect(payload.about, testAbout);
+          expect(payload.nip05, 'alice@example.com');
+          expect(payload.picture, testPicture);
+          expect(payload.username, isNull);
           verifyNever(
             () => mockProfileRepository.claimUsername(
               username: any(named: 'username'),
@@ -2280,14 +2203,6 @@ void main() {
           when(
             () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
           ).thenAnswer((_) async => null);
-          when(
-            () => mockProfileRepository.saveProfileEvent(
-              displayName: testDisplayName,
-              about: testAbout,
-              nip05: 'alice@example.com',
-              picture: testPicture,
-            ),
-          ).thenAnswer((_) async => createTestProfile());
         },
         build: createBloc,
         seed: () => const ProfileEditorState(nip05Mode: Nip05Mode.external_),
@@ -2314,15 +2229,19 @@ void main() {
           ),
         ],
         verify: (_) {
-          // Username should be dropped — saveProfileEvent called without it
-          verify(
-            () => mockProfileRepository.saveProfileEvent(
-              displayName: testDisplayName,
-              about: testAbout,
-              nip05: 'alice@example.com',
-              picture: testPicture,
+          // Username should be dropped — enqueued payload carries no username.
+          final captured = verify(
+            () => mockProfileRepository.enqueuePendingSave(
+              captureAny(),
+              claimConfirmed: captureAny(named: 'claimConfirmed'),
             ),
-          ).called(1);
+          ).captured;
+          final payload = captured[0] as PendingProfileSave;
+          expect(payload.displayName, testDisplayName);
+          expect(payload.about, testAbout);
+          expect(payload.nip05, 'alice@example.com');
+          expect(payload.picture, testPicture);
+          expect(payload.username, isNull);
           // No username claim should be attempted
           verifyNever(
             () => mockProfileRepository.claimUsername(
@@ -2891,18 +2810,6 @@ void main() {
               pubkey: any(named: 'pubkey'),
             ),
           ).thenAnswer((_) async => null);
-          when(
-            () => mockProfileRepository.saveProfileEvent(
-              displayName: any(named: 'displayName'),
-              about: any(named: 'about'),
-              username: any(named: 'username'),
-              nip05: any(named: 'nip05'),
-              clearNip05: any(named: 'clearNip05'),
-              picture: any(named: 'picture'),
-              banner: any(named: 'banner'),
-              currentProfile: any(named: 'currentProfile'),
-            ),
-          ).thenAnswer((_) async => createTestProfile());
         },
         build: createBloc,
         seed: () => const ProfileEditorState(
@@ -2918,13 +2825,16 @@ void main() {
           ),
         ),
         verify: (_) {
-          verify(
-            () => mockProfileRepository.saveProfileEvent(
-              displayName: testDisplayName,
-              about: testAbout,
-              picture: testStagedUrl,
+          final captured = verify(
+            () => mockProfileRepository.enqueuePendingSave(
+              captureAny(),
+              claimConfirmed: captureAny(named: 'claimConfirmed'),
             ),
-          ).called(1);
+          ).captured;
+          final payload = captured[0] as PendingProfileSave;
+          expect(payload.displayName, testDisplayName);
+          expect(payload.about, testAbout);
+          expect(payload.picture, testStagedUrl);
         },
       );
 
@@ -2936,18 +2846,6 @@ void main() {
               pubkey: any(named: 'pubkey'),
             ),
           ).thenAnswer((_) async => null);
-          when(
-            () => mockProfileRepository.saveProfileEvent(
-              displayName: any(named: 'displayName'),
-              about: any(named: 'about'),
-              username: any(named: 'username'),
-              nip05: any(named: 'nip05'),
-              clearNip05: any(named: 'clearNip05'),
-              picture: any(named: 'picture'),
-              banner: any(named: 'banner'),
-              currentProfile: any(named: 'currentProfile'),
-            ),
-          ).thenAnswer((_) async => createTestProfile());
         },
         build: createBloc,
         seed: () =>
@@ -2962,18 +2860,14 @@ void main() {
         verify: (_) {
           // Picture argument falls back to persisted URL — Save with no edits
           // must not silently blank an existing avatar.
-          verify(
-            () => mockProfileRepository.saveProfileEvent(
-              displayName: any(named: 'displayName'),
-              about: any(named: 'about'),
-              username: any(named: 'username'),
-              nip05: any(named: 'nip05'),
-              clearNip05: any(named: 'clearNip05'),
-              picture: testPersistedUrl,
-              banner: any(named: 'banner'),
-              currentProfile: any(named: 'currentProfile'),
+          final captured = verify(
+            () => mockProfileRepository.enqueuePendingSave(
+              captureAny(),
+              claimConfirmed: captureAny(named: 'claimConfirmed'),
             ),
-          ).called(1);
+          ).captured;
+          final payload = captured[0] as PendingProfileSave;
+          expect(payload.picture, testPersistedUrl);
         },
       );
 
@@ -3007,15 +2901,15 @@ void main() {
           // The load-bearing invariant from reviewer bullet 6: upload alone
           // must not call into the profile-publish path.
           verifyNever(
-            () => mockProfileRepository.saveProfileEvent(
-              displayName: any(named: 'displayName'),
-              about: any(named: 'about'),
-              username: any(named: 'username'),
-              nip05: any(named: 'nip05'),
-              clearNip05: any(named: 'clearNip05'),
-              picture: any(named: 'picture'),
-              banner: any(named: 'banner'),
-              currentProfile: any(named: 'currentProfile'),
+            () => mockProfileRepository.enqueuePendingSave(
+              any(),
+              claimConfirmed: any(named: 'claimConfirmed'),
+            ),
+          );
+          verifyNever(
+            () => mockProfileRepository.drivePendingSave(
+              any(),
+              expectedGeneration: any(named: 'expectedGeneration'),
             ),
           );
           verifyNever(
@@ -3029,8 +2923,8 @@ void main() {
       blocTest<ProfileEditorBloc, ProfileEditorState>(
         'ProfileSaved while uploading is dropped — no publish, no claim',
         // Pins the bloc-side guard from reviewer #3916 follow-up: even if the
-        // UI gate (`isSaveReady`) is bypassed, the bloc must not call into
-        // saveProfileEvent / claimUsername with a stale `persistedPictureUrl`
+        // UI gate (`isSaveReady`) is bypassed, the bloc must not enqueue the
+        // pending save / claimUsername with a stale `persistedPictureUrl`
         // while the staged URL is still in flight.
         build: createBloc,
         seed: () => const ProfileEditorState(
@@ -3047,15 +2941,15 @@ void main() {
         expect: () => const <ProfileEditorState>[],
         verify: (_) {
           verifyNever(
-            () => mockProfileRepository.saveProfileEvent(
-              displayName: any(named: 'displayName'),
-              about: any(named: 'about'),
-              username: any(named: 'username'),
-              nip05: any(named: 'nip05'),
-              clearNip05: any(named: 'clearNip05'),
-              picture: any(named: 'picture'),
-              banner: any(named: 'banner'),
-              currentProfile: any(named: 'currentProfile'),
+            () => mockProfileRepository.enqueuePendingSave(
+              any(),
+              claimConfirmed: any(named: 'claimConfirmed'),
+            ),
+          );
+          verifyNever(
+            () => mockProfileRepository.drivePendingSave(
+              any(),
+              expectedGeneration: any(named: 'expectedGeneration'),
             ),
           );
           verifyNever(
@@ -3095,15 +2989,15 @@ void main() {
         expect: () => const <ProfileEditorState>[],
         verify: (_) {
           verifyNever(
-            () => mockProfileRepository.saveProfileEvent(
-              displayName: any(named: 'displayName'),
-              about: any(named: 'about'),
-              username: any(named: 'username'),
-              nip05: any(named: 'nip05'),
-              clearNip05: any(named: 'clearNip05'),
-              picture: any(named: 'picture'),
-              banner: any(named: 'banner'),
-              currentProfile: any(named: 'currentProfile'),
+            () => mockProfileRepository.enqueuePendingSave(
+              any(),
+              claimConfirmed: any(named: 'claimConfirmed'),
+            ),
+          );
+          verifyNever(
+            () => mockProfileRepository.drivePendingSave(
+              any(),
+              expectedGeneration: any(named: 'expectedGeneration'),
             ),
           );
           verifyNever(
@@ -3135,15 +3029,15 @@ void main() {
         expect: () => const <ProfileEditorState>[],
         verify: (_) {
           verifyNever(
-            () => mockProfileRepository.saveProfileEvent(
-              displayName: any(named: 'displayName'),
-              about: any(named: 'about'),
-              username: any(named: 'username'),
-              nip05: any(named: 'nip05'),
-              clearNip05: any(named: 'clearNip05'),
-              picture: any(named: 'picture'),
-              banner: any(named: 'banner'),
-              currentProfile: any(named: 'currentProfile'),
+            () => mockProfileRepository.enqueuePendingSave(
+              any(),
+              claimConfirmed: any(named: 'claimConfirmed'),
+            ),
+          );
+          verifyNever(
+            () => mockProfileRepository.drivePendingSave(
+              any(),
+              expectedGeneration: any(named: 'expectedGeneration'),
             ),
           );
           verifyNever(

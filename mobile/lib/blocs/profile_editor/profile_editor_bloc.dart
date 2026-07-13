@@ -1028,10 +1028,17 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       }
     }
 
-    // 2. Publish kind 0 metadata. By this point either no divine.video
-    // username was requested, or the claim has been confirmed.
-    try {
-      final savedProfile = await _profileRepository.saveProfileEvent(
+    // 2. Persist the save to the durable slot and publish optimistically.
+    // The username claim above either succeeded or was unnecessary, so the
+    // slot is enqueued as claim-confirmed. Report success immediately — the
+    // editor closes and shows the new profile — then re-drive the kind-0 in
+    // the background: a transient relay outage no longer strands the save,
+    // because ProfileSaveRetryService re-drives the slot when connectivity
+    // returns (#3161). A permanent failure surfaces via the slot's `failed`
+    // status, not by blocking Save.
+    final generation = await _profileRepository.enqueuePendingSave(
+      PendingProfileSave(
+        pubkey: event.pubkey,
         displayName: displayName,
         about: about,
         website: website,
@@ -1040,49 +1047,28 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         clearNip05: clearNip05,
         picture: picture,
         banner: banner,
-        currentProfile: currentProfile,
-      );
-      Log.info(
-        '📝 Profile published: nip05=${savedProfile.nip05}',
-        name: 'ProfileEditorBloc',
-      );
-      await _profileRepository.cacheProfile(savedProfile);
-      emit(state.copyWith(status: ProfileEditorStatus.success));
-    } on NoRelaysConnectedException catch (error, stackTrace) {
-      // Classification: Network/IO — matrix-NO. The device has no active
-      // relay connections; user-actionable retry path.
-      Log.error(
-        'Failed to publish profile (no relays): $error',
-        name: 'ProfileEditorBloc',
-      );
-      addError(error, stackTrace);
-      emit(
-        state.copyWith(
-          status: ProfileEditorStatus.failure,
-          error: ProfileEditorError.noRelaysConnected,
-        ),
-      );
-    } on ProfilePublishFailedException catch (error, stackTrace) {
-      // Classification: API/domain — matrix-NO. Typed publish failure
-      // (relay rejected event or send error).
-      Log.error(
-        'Failed to publish profile: $error',
-        name: 'ProfileEditorBloc',
-      );
-      addError(error, stackTrace);
-      emit(
-        state.copyWith(
-          status: ProfileEditorStatus.failure,
-          error: ProfileEditorError.publishFailed,
-        ),
+      ),
+      claimConfirmed: true,
+    );
+    emit(state.copyWith(status: ProfileEditorStatus.success));
+
+    // Fast-path publish, scoped to the generation just enqueued so a save the
+    // user fires again while this drive is in flight is never clobbered by it.
+    // drivePendingSave maps the typed publish failures (no-relays / rejection)
+    // to outcomes and clears the slot only on a relay-confirmed OK, so a
+    // transient failure just leaves the slot queued for ProfileSaveRetryService
+    // — the optimistic success stands. Only an unexpected throw is reported.
+    try {
+      await _profileRepository.drivePendingSave(
+        event.pubkey,
+        expectedGeneration: generation,
       );
     } on Object catch (error, stackTrace) {
-      // Classification: Invariant — matrix-YES. Anything that escapes the
-      // typed `ProfileRepositoryException` branches above is unexpected:
-      // a drift `TypeError` from a schema mismatch, a `StateError` from a
-      // sync transform between `saveProfileEvent` and `cacheProfile`, etc.
+      // Classification: Invariant — matrix-YES. A drift TypeError from a
+      // schema mismatch, a StateError from a sync transform, etc. Recovery is
+      // still owned by the durable slot + retry service.
       Log.error(
-        'Failed to publish profile (unexpected): $error',
+        'Pending profile-save drive threw: $error',
         name: 'ProfileEditorBloc',
       );
       addError(
@@ -1091,12 +1077,6 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
           context: ProfileEditorReportableSites.saveProfilePublish,
         ),
         stackTrace,
-      );
-      emit(
-        state.copyWith(
-          status: ProfileEditorStatus.failure,
-          error: ProfileEditorError.publishFailed,
-        ),
       );
     }
   }

@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -10,7 +8,6 @@ import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/profile_setup/widgets/profile_setup_upload_errors.dart';
 import 'package:openvine/screens/profile_setup/widgets/verifier_flow.dart';
@@ -46,7 +43,6 @@ class ProfileSetupListeners extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final pubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
     return MultiBlocListener(
       listeners: [
         BlocListener<MyProfileBloc, MyProfileState>(
@@ -215,25 +211,6 @@ class ProfileSetupListeners extends ConsumerWidget {
                       backgroundColor: VineTheme.error,
                     ),
                   );
-                case ProfileEditorError.noRelaysConnected:
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(context.l10n.profileSetupNoRelaysConnected),
-                      backgroundColor: VineTheme.error,
-                      duration: const Duration(seconds: 6),
-                      action: pubkey == null
-                          ? null
-                          : SnackBarAction(
-                              label: context.l10n.profileSetupRetryLabel,
-                              textColor: VineTheme.whiteText,
-                              onPressed: () => _retryAfterRelayReconnect(
-                                context,
-                                ref,
-                                pubkey,
-                              ),
-                            ),
-                    ),
-                  );
                 case null:
                   break;
               }
@@ -333,26 +310,6 @@ class ProfileSetupListeners extends ConsumerWidget {
         ),
       ],
       child: child,
-    );
-  }
-
-  Future<void> _retryAfterRelayReconnect(
-    BuildContext context,
-    WidgetRef ref,
-    String pubkey,
-  ) async {
-    await ref.read(nostrServiceProvider).retryDisconnectedRelays();
-    if (!context.mounted) return;
-    context.read<ProfileEditorBloc>().add(
-      ProfileSaved(
-        pubkey: pubkey,
-        displayName: nameController.text,
-        about: bioController.text,
-        website: websiteController.text,
-        username: nip05Controller.text,
-        // Picture and banner sourced from bloc state (see ProfileSaved
-        // dispatch above) via `effectiveBanner` / `effectivePictureUrl`.
-      ),
     );
   }
 }

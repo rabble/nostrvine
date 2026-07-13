@@ -377,6 +377,115 @@ void main() {
         },
       );
 
+      test(
+        'upgrade path recreates pending_profile_saves when missing',
+        () async {
+          await database.customStatement('DROP TABLE pending_profile_saves');
+
+          final droppedCheck = await database
+              .customSelect(
+                "SELECT name FROM sqlite_master WHERE type='table' "
+                "AND name='pending_profile_saves'",
+              )
+              .get();
+          expect(
+            droppedCheck,
+            isEmpty,
+            reason: 'precondition: pending_profile_saves must be missing',
+          );
+
+          await database.close();
+          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+
+          final tableCheck = await database
+              .customSelect(
+                "SELECT name FROM sqlite_master WHERE type='table' "
+                "AND name='pending_profile_saves'",
+              )
+              .get();
+          expect(
+            tableCheck,
+            hasLength(1),
+            reason: 'pending_profile_saves must be re-created on reopen',
+          );
+
+          final dao = database.pendingProfileSavesDao;
+          await dao.upsert(
+            PendingProfileSaveEntry(
+              userPubkey: testPubkey,
+              payloadJson: '{"display_name":"upgrade"}',
+              claimConfirmed: true,
+              queuedAt: DateTime.utc(2026, 7, 13),
+            ),
+          );
+
+          final fetched = await dao.get(testPubkey);
+          expect(fetched, isNotNull);
+          expect(fetched!.payloadJson, '{"display_name":"upgrade"}');
+          expect(fetched.claimConfirmed, isTrue);
+          expect(fetched.status, PendingProfileSaveStatus.pending);
+        },
+      );
+
+      test(
+        'schema parity — pending_profile_saves fresh-install matches runtime '
+        'CREATE-IF-NOT-EXISTS path',
+        () async {
+          final freshColumns = await _collectTableInfo(
+            database,
+            'pending_profile_saves',
+          );
+          final freshIndexes = await _collectIndexNames(
+            database,
+            'pending_profile_saves',
+          );
+          expect(
+            freshColumns,
+            isNotEmpty,
+            reason:
+                'precondition: fresh install should have pending_profile_saves',
+          );
+
+          await database.customStatement('DROP TABLE pending_profile_saves');
+          for (final indexName in freshIndexes) {
+            await database.customStatement('DROP INDEX IF EXISTS $indexName');
+          }
+          await database.close();
+
+          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+          await database
+              .customSelect(
+                "SELECT name FROM sqlite_master WHERE type='table' "
+                "AND name='pending_profile_saves'",
+              )
+              .get();
+
+          final recreatedColumns = await _collectTableInfo(
+            database,
+            'pending_profile_saves',
+          );
+          final recreatedIndexes = await _collectIndexNames(
+            database,
+            'pending_profile_saves',
+          );
+
+          expect(
+            recreatedColumns,
+            equals(freshColumns),
+            reason:
+                'runtime CREATE-IF-NOT-EXISTS path must produce the same '
+                'columns as Drift `m.createAll()` for pending_profile_saves',
+          );
+          expect(
+            recreatedIndexes,
+            equals(freshIndexes),
+            reason:
+                'runtime CREATE-IF-NOT-EXISTS path must declare the same '
+                'index set as Drift fresh-install for pending_profile_saves',
+          );
+        },
+      );
+
       test('upgrade path recreates pending_view_events when missing', () async {
         await database.customStatement('DROP TABLE pending_view_events');
 
