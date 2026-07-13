@@ -166,6 +166,28 @@ void main() {
       });
 
       test(
+        'confirmed even if the post-publish cache write fails (G3)',
+        () async {
+          // saveProfileEvent upserts once on success; cacheProfile upserts
+          // again — make only that second write throw. The confirmed publish
+          // must still clear the slot (a cache failure cannot strand it).
+          var upserts = 0;
+          when(() => userProfilesDao.upsertProfile(any())).thenAnswer((
+            _,
+          ) async {
+            upserts++;
+            if (upserts >= 2) throw Exception('cache boom');
+          });
+          await seedSlot(claimConfirmed: true);
+
+          final outcome = await repository.drivePendingSave(pubkey);
+
+          expect(outcome, PendingSaveDriveOutcome.confirmed);
+          expect(await slotDao.get(pubkey), isNull);
+        },
+      );
+
+      test(
         'confirmed publish clears the slot (claim already confirmed)',
         () async {
           await seedSlot(claimConfirmed: true);

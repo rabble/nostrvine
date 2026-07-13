@@ -816,8 +816,21 @@ class ProfileRepository {
         monetizationLinks: payload.monetizationLinks,
         currentProfile: currentProfile,
       );
-      await cacheProfile(saved);
+      // A relay confirmed the kind-0 (saveProfileEvent only returns on an
+      // OK true). Clear the slot BEFORE the local cache write so a
+      // cache-write failure can't strand a save that already persisted on a
+      // relay — the #3161 G3 false-negative, relocated here from the bloc.
       await dao.clear(pubkey);
+      try {
+        await cacheProfile(saved);
+      } on Object catch (e) {
+        Log.warning(
+          'cacheProfile after a confirmed pending-save publish failed '
+          '(non-fatal): $e',
+          name: 'ProfileRepository.drivePendingSave',
+          category: LogCategory.storage,
+        );
+      }
       return PendingSaveDriveOutcome.confirmed;
     } on NoRelaysConnectedException {
       return PendingSaveDriveOutcome.retryableFailure;
