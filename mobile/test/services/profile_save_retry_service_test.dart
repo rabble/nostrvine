@@ -45,7 +45,9 @@ void main() {
     return service;
   }
 
-  Future<void> seed({
+  // Returns the minted generation so interleaving tests can assert which
+  // enqueue was driven.
+  Future<String> seed({
     PendingProfileSaveStatus status = PendingProfileSaveStatus.pending,
     int retryCount = 0,
     DateTime? lastAttemptAt,
@@ -63,6 +65,18 @@ void main() {
         queuedAt: DateTime.utc(2026, 7, 13),
       ),
     );
+  }
+
+  // Poll a real (short-backoff) service until [cond] holds, so timer- and
+  // watch-driven tests prove work happens on its own without a second trigger.
+  Future<void> pumpUntil(
+    Future<bool> Function() cond, {
+    Duration timeout = const Duration(seconds: 2),
+  }) async {
+    final deadline = DateTime.now().add(timeout);
+    while (!await cond() && DateTime.now().isBefore(deadline)) {
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+    }
   }
 
   setUp(() {
@@ -216,7 +230,7 @@ void main() {
       ).called(1);
     });
 
-    test('re-entrant sweep is skipped while one is in flight', () async {
+    test('a re-entrant trigger is coalesced, not run concurrently', () async {
       await seed();
       final gate = Completer<void>();
       var driveCalls = 0;
@@ -233,10 +247,13 @@ void main() {
 
       final service = buildService();
       final first = service.sweep();
-      final second = service.sweep(); // should short-circuit
+      final second = service.sweep(); // coalesced into a follow-up pass
       gate.complete();
       await Future.wait([first, second]);
 
+      // The coalesced follow-up pass runs after the first, but the row is now
+      // inside its post-attempt backoff window, so it schedules rather than
+      // driving again — no concurrent or redundant second drive.
       expect(driveCalls, 1);
     });
   });
@@ -351,6 +368,62 @@ void main() {
       );
       expect(service.isInitialized, isFalse);
     });
+
+    test(
+      'disposing during a retryable drive does not retry, mutate the row, '
+      'or arm a timer',
+      () async {
+        await seed();
+        final driveStarted = Completer<void>();
+        final releaseDrive = Completer<void>();
+        var driveCalls = 0;
+        when(
+          () => repository.drivePendingSave(
+            pubkey,
+            expectedGeneration: any(named: 'expectedGeneration'),
+          ),
+        ).thenAnswer((_) async {
+          driveCalls++;
+          if (!driveStarted.isCompleted) driveStarted.complete();
+          await releaseDrive.future;
+          return PendingSaveDriveOutcome.retryableFailure;
+        });
+
+        // Real clock + tiny backoff: were the disposal guard missing, a retry
+        // timer would arm and fire within the test rather than 2s later, so the
+        // final assertion can actually catch the regression.
+        final service = ProfileSaveRetryService(
+          profileRepository: repository,
+          pendingProfileSavesDao: dao,
+          userPubkey: pubkey,
+          appForegroundStream: foreground.stream,
+          retryTriggerStream: retryTrigger.stream,
+          retryConfig: const ProfileSaveRetryConfig(
+            maxRetries: 3,
+            initialDelay: Duration(milliseconds: 5),
+            maxDelay: Duration(milliseconds: 40),
+          ),
+        );
+
+        final sweepFuture = service.sweep();
+        await driveStarted.future; // the publish is in flight
+        await service.dispose(); // teardown mid-drive
+        releaseDrive.complete(); // the drive returns a retryable failure
+        await sweepFuture; // the sweep must bail without rescheduling
+
+        expect(driveCalls, 1, reason: 'no second drive after dispose');
+        final entry = await dao.get(pubkey);
+        expect(
+          entry!.retryCount,
+          0,
+          reason: 'incrementRetry never ran past disposal',
+        );
+
+        // Give any (wrongly) armed retry timer time to fire — it must not.
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        expect(driveCalls, 1, reason: 'no timer-driven retry after dispose');
+      },
+    );
   });
 
   group('retryNow', () {
@@ -389,18 +462,6 @@ void main() {
   });
 
   group('self-scheduled retry (relay-recovery)', () {
-    // Poll a real (short-backoff) service until [cond] holds, so the test
-    // proves the armed timer fires on its own without a second trigger.
-    Future<void> pumpUntil(
-      bool Function() cond, {
-      Duration timeout = const Duration(seconds: 2),
-    }) async {
-      final deadline = DateTime.now().add(timeout);
-      while (!cond() && DateTime.now().isBefore(deadline)) {
-        await Future<void>.delayed(const Duration(milliseconds: 5));
-      }
-    }
-
     test(
       'one recovery signal eventually publishes via the armed retry timer '
       '(no second signal needed)',
@@ -443,11 +504,11 @@ void main() {
 
         // A single offline→online recovery signal.
         retryTrigger.add(null);
-        await pumpUntil(() => calls >= 1);
+        await pumpUntil(() async => calls >= 1);
         expect(calls, 1, reason: 'the signal drives the first attempt');
 
         // No second signal — the armed timer must drive the retry that lands.
-        await pumpUntil(() => calls >= 2);
+        await pumpUntil(() async => calls >= 2);
         expect(
           calls,
           greaterThanOrEqualTo(2),
@@ -457,6 +518,115 @@ void main() {
           await dao.get(pubkey),
           isNull,
           reason: 'the confirmed retry cleared the slot',
+        );
+      },
+    );
+  });
+
+  group('level-triggered chaining (interleaved saves)', () {
+    test(
+      'a newer save that replaces an in-flight older one is driven to '
+      'completion without a second trigger',
+      () async {
+        final gA = await seed();
+        final aDriveStarted = Completer<void>();
+        final releaseA = Completer<void>();
+        String? gB;
+
+        when(
+          () => repository.drivePendingSave(
+            pubkey,
+            expectedGeneration: any(named: 'expectedGeneration'),
+          ),
+        ).thenAnswer((invocation) async {
+          final gen = invocation.namedArguments[#expectedGeneration] as String?;
+          if (gen == gA) {
+            if (!aDriveStarted.isCompleted) aDriveStarted.complete();
+            await releaseA.future;
+            // The real repo returns noPendingSave once a newer generation has
+            // replaced the row this drive was scoped to.
+            return PendingSaveDriveOutcome.noPendingSave;
+          }
+          // Driving B: confirm and clear, as the repo does on a relay OK.
+          await dao.clear(pubkey, generation: gB);
+          return PendingSaveDriveOutcome.confirmed;
+        });
+
+        final service = buildService();
+        // The only trigger — drives A. B is never manually driven and no
+        // foreground/connectivity signal is emitted.
+        final sweepFuture = service.sweep();
+        await aDriveStarted.future;
+
+        // B replaces A while A's publish is parked mid-flight.
+        gB = await seed();
+
+        releaseA.complete();
+        await sweepFuture; // the coalesced loop chains to B and drives it
+
+        verify(
+          () => repository.drivePendingSave(pubkey, expectedGeneration: gA),
+        ).called(1);
+        verify(
+          () => repository.drivePendingSave(pubkey, expectedGeneration: gB),
+        ).called(1);
+        expect(
+          await dao.get(pubkey),
+          isNull,
+          reason: 'B was driven and its confirmed publish cleared the slot',
+        );
+      },
+    );
+  });
+
+  group('enqueue wake (idle service)', () {
+    test(
+      'a fresh enqueue re-drives an idle service with no foreground or '
+      'connectivity signal',
+      () async {
+        when(
+          () => repository.drivePendingSave(
+            pubkey,
+            expectedGeneration: any(named: 'expectedGeneration'),
+          ),
+        ).thenAnswer((_) async {
+          await dao.clear(pubkey);
+          return PendingSaveDriveOutcome.confirmed;
+        });
+
+        // Real clock + tiny backstop delay so the enqueue-armed sweep fires
+        // quickly.
+        final service = ProfileSaveRetryService(
+          profileRepository: repository,
+          pendingProfileSavesDao: dao,
+          userPubkey: pubkey,
+          appForegroundStream: foreground.stream,
+          retryTriggerStream: retryTrigger.stream,
+          retryConfig: const ProfileSaveRetryConfig(
+            maxRetries: 3,
+            initialDelay: Duration(milliseconds: 5),
+            maxDelay: Duration(milliseconds: 40),
+          ),
+        );
+        addTearDown(service.dispose);
+        await service.initialize();
+        clearInteractions(repository);
+
+        // No foreground / connectivity event — just enqueue a save.
+        await seed();
+
+        await pumpUntil(() async => (await dao.get(pubkey)) == null);
+
+        verify(
+          () => repository.drivePendingSave(
+            pubkey,
+            expectedGeneration: any(named: 'expectedGeneration'),
+          ),
+        ).called(1);
+        expect(
+          await dao.get(pubkey),
+          isNull,
+          reason: 'the enqueue-armed sweep drove and cleared the slot',
         );
       },
     );
