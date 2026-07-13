@@ -1334,10 +1334,13 @@ class VideoRecorderBloc
     Emitter<VideoRecorderBlocState> emit,
   ) {
     _zoomIndicatorTimer = null;
-    // isPinchActive is cleared as a safety net: the timer only fires after
-    // a full second without gesture activity, so a still-set flag means the
-    // scale-end callback was lost (e.g. gesture cancelled by navigation) and
-    // would otherwise leave the ruler permanently non-interactive.
+    // isPinchActive is cleared as a safety net for the timer-armed paths
+    // (a real two-pointer pinch, or a programmatic zoom set): the timer only
+    // fires after a full second without gesture activity, so a still-set flag
+    // there means the scale-end callback was lost (e.g. gesture cancelled by
+    // navigation) and would otherwise leave the ruler non-interactive. A pure
+    // one-finger pan arms no timer, so if its scale-end is lost the flag
+    // instead self-heals on the next pinch or zoom set.
     emit(state.copyWith(showZoomIndicator: false, isPinchActive: false));
   }
 

@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_camera/divine_camera.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -245,6 +246,28 @@ void main() {
         expect(bloc.state.showZoomIndicator, isFalse);
       });
 
+      test(
+        'summons the zoom ruler when a second finger lands mid-pan',
+        () async {
+          final bloc = buildBloc();
+          addTearDown(bloc.close);
+
+          // Pan→pinch escalation: the just-landed second finger reports an
+          // unchanged scale (1.0) but a pointerCount of 2, so the update must
+          // proceed past the one-pointer pan guard and summon the ruler.
+          bloc.add(
+            VideoRecorderScaleStarted(ScaleStartDetails(pointerCount: 1)),
+          );
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(
+            VideoRecorderScaleUpdated(ScaleUpdateDetails(pointerCount: 2)),
+          );
+          await Future<void>.delayed(Duration.zero);
+
+          expect(bloc.state.showZoomIndicator, isTrue);
+        },
+      );
+
       test('shows the zoom ruler when the zoom level is set', () async {
         when(
           () => cameraService.setZoomLevel(any()),
@@ -258,15 +281,28 @@ void main() {
         expect(bloc.state.showZoomIndicator, isTrue);
       });
 
-      test('auto-hides the zoom ruler after the pinch settles', () async {
-        final bloc = buildBloc();
-        addTearDown(bloc.close);
+      test('auto-hides the zoom ruler after the pinch settles', () {
+        // Drive the 1000ms auto-hide timer with fakeAsync instead of racing
+        // wall-clock, which flakes under the merged-isolate CI run.
+        fakeAsync((async) {
+          final bloc = buildBloc();
 
-        bloc.add(VideoRecorderScaleStarted(ScaleStartDetails(pointerCount: 2)));
-        // The auto-hide timer is 1000ms — give it room to fire.
-        await Future<void>.delayed(const Duration(milliseconds: 1100));
+          bloc.add(
+            VideoRecorderScaleStarted(ScaleStartDetails(pointerCount: 2)),
+          );
+          async.flushMicrotasks();
+          expect(bloc.state.showZoomIndicator, isTrue);
 
-        expect(bloc.state.showZoomIndicator, isFalse);
+          async.elapse(const Duration(milliseconds: 1000));
+          async.flushMicrotasks();
+
+          expect(bloc.state.showZoomIndicator, isFalse);
+
+          // Close inside the fake zone: a real-zone teardown would await
+          // microtasks this (now dead) zone can no longer drain and hang.
+          unawaited(bloc.close());
+          async.flushMicrotasks();
+        });
       });
     });
 
@@ -285,16 +321,26 @@ void main() {
       });
 
       test('is cleared by the indicator auto-hide timer as a safety net '
-          'when the scale-end callback is lost', () async {
-        final bloc = buildBloc();
-        addTearDown(bloc.close);
+          'when the scale-end callback is lost', () {
+        fakeAsync((async) {
+          final bloc = buildBloc();
 
-        bloc.add(VideoRecorderScaleStarted(ScaleStartDetails(pointerCount: 2)));
-        // No VideoRecorderScaleEnded — the 1000ms auto-hide timer must
-        // release the guard so the ruler doesn't stay non-interactive.
-        await Future<void>.delayed(const Duration(milliseconds: 1100));
+          bloc.add(
+            VideoRecorderScaleStarted(ScaleStartDetails(pointerCount: 2)),
+          );
+          async.flushMicrotasks();
+          // No VideoRecorderScaleEnded — the 1000ms auto-hide timer must
+          // release the guard so the ruler doesn't stay non-interactive.
+          async.elapse(const Duration(milliseconds: 1000));
+          async.flushMicrotasks();
 
-        expect(bloc.state.isPinchActive, isFalse);
+          expect(bloc.state.isPinchActive, isFalse);
+
+          // Close inside the fake zone: a real-zone teardown would await
+          // microtasks this (now dead) zone can no longer drain and hang.
+          unawaited(bloc.close());
+          async.flushMicrotasks();
+        });
       });
     });
 

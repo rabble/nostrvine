@@ -1220,7 +1220,10 @@ class CameraController: NSObject {
             // lens switching on virtual multi-camera devices.
             nativeToUserZoomScale = 1.0
             minZoom = 1.0
-            maxZoom = device.activeFormat.videoMaxZoomFactor
+            // Use the live available max (mirrors the auto-lens branch and
+            // setZoomLevel) rather than the static format max, so a runtime
+            // restriction that lowers the ceiling isn't briefly over-advertised.
+            maxZoom = device.maxAvailableVideoZoomFactor
         }
         currentZoom = device.videoZoomFactor * nativeToUserZoomScale
         // Front camera has "flash" via screen brightness when feature is enabled
