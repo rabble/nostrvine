@@ -3,6 +3,7 @@
 
 import 'package:flutter/widgets.dart';
 import 'package:models/models.dart' show AudioEvent, InspiredByInfo;
+import 'package:openvine/extensions/complete_parameters_extensions.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_metadata/video_metadata_expiration.dart';
@@ -140,6 +141,21 @@ class VideoEditorProviderState {
   /// - Final rendered clip is available
   bool get isValidToPost =>
       !metadataLimitReached && !isProcessing && finalRenderedClip != null;
+
+  /// Whether the video's audio comes from a reused or added sound rather than
+  /// the user's own recording.
+  ///
+  /// True when a sound is selected (recorder flow) or the editor timeline
+  /// holds an added audio track that is not the video's own clip-anchored
+  /// original sound. In that case "Publish this sound" ([allowAudioReuse])
+  /// does not apply — the audio isn't the user's to offer for reuse, and the
+  /// publisher already skips the reuse tag — so the metadata toggle is
+  /// disabled to match.
+  bool get reusesExternalAudio {
+    if (selectedSound != null) return true;
+    final tracks = editorEditingParameters?.audioTracksFromMeta ?? const [];
+    return tracks.any((track) => !track.isClipAnchoredOriginalSound);
+  }
 
   /// Creates a copy of this state with updated fields.
   ///

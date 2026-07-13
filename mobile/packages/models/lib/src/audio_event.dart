@@ -3,6 +3,7 @@
 // ABOUTME: parsing audio shared for use in other videos
 
 import 'package:meta/meta.dart';
+import 'package:models/src/nostr_hex_utils.dart';
 import 'package:models/src/video_event.dart';
 import 'package:models/src/vine_sound.dart';
 import 'package:nostr_sdk/event.dart';
@@ -167,9 +168,16 @@ class AudioEvent {
   /// Uses the video URL as the audio source. The audio player can extract
   /// the audio track from video files. The ID is prefixed with `video_`
   /// to distinguish from real Kind 1063 events.
+  ///
+  /// When [creatorName] is provided the [title] reads
+  /// `Original sound - $creatorName`; when omitted the [title] is left null so
+  /// the display can
+  /// resolve the creator from [pubkey] and localize the "Original sound"
+  /// label itself (used when synthesizing attribution for a reused original
+  /// sound, where the reader owns the localization).
   factory AudioEvent.fromVideoOriginalSound(
     VideoEvent video, {
-    required String creatorName,
+    String? creatorName,
   }) {
     return AudioEvent(
       id: 'video_${video.id}',
@@ -177,7 +185,7 @@ class AudioEvent {
       createdAt: video.createdAt,
       url: video.videoUrl,
       duration: video.duration?.toDouble(),
-      title: 'Original sound - $creatorName',
+      title: creatorName == null ? null : 'Original sound - $creatorName',
       source: 'Original Sound',
       sourceVideoReference: '34236:${video.pubkey}:${video.vineId ?? video.id}',
     );
@@ -246,6 +254,29 @@ class AudioEvent {
 
   /// Whether this audio is derived from a video's original sound.
   bool get isOriginalSound => id.startsWith('video_');
+
+  /// The Nostr event id a reusing video should reference in its
+  /// `["e", <id>, <relay>, "audio"]` attribution tag, or `null` when this
+  /// audio has no referenceable Nostr event (bundled sounds, or imported
+  /// audio that hasn't been published yet).
+  ///
+  /// Resolves two id shapes on top of a plain Kind 1063 event id:
+  /// * a reused *original sound*, whose [id] is `video_<eventId>` — the source
+  ///   Kind 34236 video's own event id (see
+  ///   [AudioEvent.fromVideoOriginalSound]); and
+  /// * an editor timeline track, whose id carries a trailing `-<timestamp>`
+  ///   uniqueness suffix so the same sound can be added to the timeline more
+  ///   than once.
+  ///
+  /// Without this the `video_` prefix / timeline suffix make the id fail a
+  /// 32-byte-hex check, the attribution tag is dropped at publish, and the
+  /// reused audio is mislabelled as the reusing user's original sound.
+  String? get attributionEventId {
+    var candidate = isOriginalSound ? id.substring('video_'.length) : id;
+    final suffixed = RegExp(r'^([0-9a-fA-F]{64})-\d+$').firstMatch(candidate);
+    if (suffixed != null) candidate = suffixed.group(1)!;
+    return NostrHexUtils.isValidEventId(candidate) ? candidate : null;
+  }
 
   /// Whether this track is a video's original sound that is still anchored to
   /// one of the editor's clips.

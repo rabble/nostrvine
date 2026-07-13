@@ -6,7 +6,7 @@
 import 'dart:async';
 
 import 'package:models/models.dart'
-    show AudioEvent, NIP71VideoKinds, audioEventKind;
+    show AudioEvent, NIP71VideoKinds, VideoEvent, audioEventKind;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:rxdart/rxdart.dart';
@@ -244,21 +244,44 @@ class SoundsRepository {
         return null;
       }
 
-      // Verify it's a Kind 1063 event
-      if (event.kind != audioEventKind) {
-        Log.warning(
-          'Event $eventId is not a Kind $audioEventKind audio event '
-          '(got Kind ${event.kind})',
-          name: 'SoundsRepository',
-          category: LogCategory.api,
-        );
-        return null;
+      if (event.kind == audioEventKind) {
+        final audioEvent = AudioEvent.fromNostrEvent(event);
+        _cacheSound(audioEvent);
+        return audioEvent;
       }
 
-      final audioEvent = AudioEvent.fromNostrEvent(event);
-      _cacheSound(audioEvent);
+      // A video's "original sound" is not a standalone Kind 1063 event — it is
+      // the audio track of the source Kind 34236 video. When a reusing video
+      // references that source video as its audio, synthesize the
+      // original-sound attribution so the original creator is credited
+      // instead of the reusing user. Title is left null so the reader
+      // localizes "Original sound" and resolves the creator name from the
+      // synthesized pubkey. Cached under [eventId] directly (not via
+      // [_cacheSound]) so it is not surfaced in the sounds-browser stream.
+      if (NIP71VideoKinds.isVideoKind(event.kind)) {
+        try {
+          final audioEvent = AudioEvent.fromVideoOriginalSound(
+            VideoEvent.fromNostrEvent(event),
+          );
+          _cache[eventId] = audioEvent;
+          return audioEvent;
+        } on Object catch (e) {
+          Log.warning(
+            'Failed to synthesize original sound from video $eventId: $e',
+            name: 'SoundsRepository',
+            category: LogCategory.api,
+          );
+          return null;
+        }
+      }
 
-      return audioEvent;
+      Log.warning(
+        'Event $eventId is not a Kind $audioEventKind audio event '
+        '(got Kind ${event.kind})',
+        name: 'SoundsRepository',
+        category: LogCategory.api,
+      );
+      return null;
     } catch (e) {
       Log.error(
         'Error fetching sound by ID: $e',

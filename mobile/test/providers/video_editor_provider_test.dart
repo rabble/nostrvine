@@ -1751,6 +1751,136 @@ void main() {
     });
   });
 
+  group('VideoEditorProviderState reusesExternalAudio', () {
+    final sourceVideoId = 'b' * 64;
+
+    CompleteParameters paramsWithTrack(AudioEvent track) =>
+        CompleteParameters.fromMap(<String, dynamic>{}).copyWith(
+          meta: {
+            VideoEditorConstants.audioStateHistoryKey: [track.toJson()],
+          },
+        );
+
+    AudioEvent sound({String? anchorClipId}) => AudioEvent(
+      id: 'video_$sourceVideoId',
+      pubkey: 'c' * 64,
+      createdAt: 1700000000,
+      anchorClipId: anchorClipId,
+    );
+
+    test('is false with no selected sound and no editor tracks', () {
+      expect(VideoEditorProviderState().reusesExternalAudio, isFalse);
+    });
+
+    test('is true when a sound is selected', () {
+      final state = VideoEditorProviderState(selectedSound: sound());
+      expect(state.reusesExternalAudio, isTrue);
+    });
+
+    test('is true when the editor timeline has an added reused track', () {
+      final state = VideoEditorProviderState(
+        editorEditingParameters: paramsWithTrack(sound()),
+      );
+      expect(state.reusesExternalAudio, isTrue);
+    });
+
+    test(
+      "is false when the only track is the video's own clip-anchored sound",
+      () {
+        final state = VideoEditorProviderState(
+          editorEditingParameters: paramsWithTrack(sound(anchorClipId: 'c1')),
+        );
+        expect(state.reusesExternalAudio, isFalse);
+      },
+    );
+  });
+
+  group('getActiveDraft audio attribution', () {
+    late ProviderContainer container;
+
+    // A reused original sound added through the editor's "add music" flow —
+    // credited to the source creator, not the reusing user (#6057).
+    final sourceVideoId = 'b' * 64;
+    final sourceCreator = 'c' * 64;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      container
+          .read(clipManagerProvider.notifier)
+          .addClip(
+            limitClipDuration: false,
+            video: EditorVideo.file('/docs/original.mp4'),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+            duration: const Duration(seconds: 2),
+          );
+    });
+
+    tearDown(() {
+      container.dispose();
+    });
+
+    AudioEvent reusedOriginalSound({String? anchorClipId}) => AudioEvent(
+      id: 'video_$sourceVideoId',
+      pubkey: sourceCreator,
+      createdAt: 1700000000,
+      url: 'https://media.divine.video/abc',
+      duration: 6,
+      sourceVideoReference: '34236:$sourceCreator:vine-xyz',
+      anchorClipId: anchorClipId,
+    );
+
+    void seedEditorAudioTrack(AudioEvent track) {
+      final params = CompleteParameters.fromMap(<String, dynamic>{}).copyWith(
+        meta: {
+          VideoEditorConstants.audioStateHistoryKey: [track.toJson()],
+        },
+      );
+      container
+          .read(videoEditorProvider.notifier)
+          .updateEditorEditingParameters(params);
+    }
+
+    test('credits a reused editor timeline sound in the publish draft', () {
+      seedEditorAudioTrack(reusedOriginalSound());
+
+      final draft = container
+          .read(videoEditorProvider.notifier)
+          .getActiveDraft();
+
+      expect(draft.selectedSound?.id, equals('video_$sourceVideoId'));
+      expect(draft.selectedSound?.pubkey, equals(sourceCreator));
+      expect(
+        draft.inspiredByVideo?.addressableId,
+        equals('34236:$sourceCreator:vine-xyz'),
+      );
+    });
+
+    test('does not derive editor-track attribution for autosave', () {
+      seedEditorAudioTrack(reusedOriginalSound());
+
+      final draft = container
+          .read(videoEditorProvider.notifier)
+          .getActiveDraft(isAutosave: true);
+
+      expect(draft.selectedSound, isNull);
+    });
+
+    test("skips the video's own clip-anchored original sound", () {
+      seedEditorAudioTrack(reusedOriginalSound(anchorClipId: 'clip-1'));
+
+      final draft = container
+          .read(videoEditorProvider.notifier)
+          .getActiveDraft();
+
+      expect(draft.selectedSound, isNull);
+    });
+  });
+
   group('cover thumbnail persistence', () {
     late ProviderContainer container;
 

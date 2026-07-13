@@ -2,6 +2,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/models/video_reply_context.dart';
@@ -225,6 +226,52 @@ void main() {
 
       expect(mockNotifier.lastShareReplyToFeed, isTrue);
       expect(tester.widget<SwitchListTile>(tile).value, isTrue);
+    });
+
+    testWidgets("audio reuse toggle is shown for the user's own audio", (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildWidget());
+      await tester.pumpAndSettle();
+
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(VideoMetadataFormFields)),
+      );
+      expect(
+        find.widgetWithText(
+          SwitchListTile,
+          l10n.videoMetadataAudioReuseTitle,
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('audio reuse toggle is hidden when reusing external audio', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildWidget(
+          state: VideoEditorProviderState(
+            selectedSound: AudioEvent(
+              id: 'video_${'b' * 64}',
+              pubkey: 'c' * 64,
+              createdAt: 1700000000,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(VideoMetadataFormFields)),
+      );
+      expect(
+        find.widgetWithText(
+          SwitchListTile,
+          l10n.videoMetadataAudioReuseTitle,
+        ),
+        findsNothing,
+      );
     });
   });
 }

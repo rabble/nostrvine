@@ -186,5 +186,61 @@ void main() {
         expect(find.text('Original sound'), findsOneWidget);
       });
     });
+
+    group('Reused sound fallback', () {
+      const reusedCreatorPubkey =
+          'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
+
+      VideoEvent reusedVideo() {
+        final now = DateTime.now();
+        return VideoEvent(
+          id: testVideoId,
+          pubkey: testPubkey,
+          content: 'Reused audio',
+          videoUrl: 'https://example.com/video.mp4',
+          createdAt: now.millisecondsSinceEpoch ~/ 1000,
+          timestamp: now,
+          title: 'Test Video',
+          authorName: 'Jake Lara',
+          audioEventId: testAudioEventId,
+          inspiredByVideo: const InspiredByInfo(
+            addressableId: '34236:$reusedCreatorPubkey:vine-xyz',
+          ),
+        );
+      }
+
+      testWidgets(
+        'credits the source creator when the shared audio is unresolved',
+        (tester) async {
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                soundByIdProvider(
+                  testAudioEventId,
+                ).overrideWith((ref) async => null),
+              ],
+              child: MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                theme: VineTheme.theme,
+                home: Scaffold(
+                  backgroundColor: Colors.black,
+                  body: MetadataSoundsSection(video: reusedVideo()),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text('Original sound'), findsOneWidget);
+          expect(
+            find.text(UserProfile.defaultDisplayNameFor(reusedCreatorPubkey)),
+            findsOneWidget,
+          );
+          // The reusing user's own author name must not be credited.
+          expect(find.text('Jake Lara'), findsNothing);
+        },
+      );
+    });
   });
 }

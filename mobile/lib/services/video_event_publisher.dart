@@ -1326,10 +1326,15 @@ class VideoEventPublisher {
       final hasSelectedAudioEventId =
           selectedAudioReferenceId != null &&
           selectedAudioReferenceId.isNotEmpty;
+      // A reused *original sound* carries the source video's event id behind a
+      // `video_` prefix (and, from the editor timeline, a `-<timestamp>`
+      // uniqueness suffix). Fall back to [AudioEvent.attributionEventId] to
+      // recover the real event id so the reference survives instead of being
+      // dropped and the audio mislabelled as the reusing user's own sound.
       final reusableSelectedAudioEventId =
           NostrHexUtils.isValidEventId(selectedAudioReferenceId)
           ? selectedAudioReferenceId
-          : null;
+          : selectedAudio?.attributionEventId;
       if (hasSelectedAudioEventId && reusableSelectedAudioEventId == null) {
         Log.warning(
           'Skipping selected audio reference because it is not a Nostr event id: '
