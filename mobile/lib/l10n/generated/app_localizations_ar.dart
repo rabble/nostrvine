@@ -1371,9 +1371,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'سنخفي المنشورات المشابهة من الآن فصاعدًا.';
 
   @override
-  String get contentWarningCommunitySource => 'Suggested by the community';
-
-  @override
   String get communitySuggestTitle => 'Help classify this';
 
   @override

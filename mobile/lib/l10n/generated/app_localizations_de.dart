@@ -1399,9 +1399,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Wir blenden Beiträge wie diesen ab jetzt aus.';
 
   @override
-  String get contentWarningCommunitySource => 'Suggested by the community';
-
-  @override
   String get communitySuggestTitle => 'Help classify this';
 
   @override

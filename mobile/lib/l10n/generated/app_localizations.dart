@@ -2464,12 +2464,6 @@ abstract class AppLocalizations {
   /// **'We\'ll hide posts like this from now on.'**
   String get contentWarningHiddenConfirmation;
 
-  /// Provenance line shown on a content warning that was surfaced by community suggestions rather than the creator or a trusted labeler.
-  ///
-  /// In en, this message translates to:
-  /// **'Suggested by the community'**
-  String get contentWarningCommunitySource;
-
   /// Title of the sheet where a viewer suggests content-warning labels for someone else's video.
   ///
   /// In en, this message translates to:

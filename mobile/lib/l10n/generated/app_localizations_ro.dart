@@ -1420,9 +1420,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'De acum înainte ascundem postările de genul ăsta.';
 
   @override
-  String get contentWarningCommunitySource => 'Suggested by the community';
-
-  @override
   String get communitySuggestTitle => 'Help classify this';
 
   @override

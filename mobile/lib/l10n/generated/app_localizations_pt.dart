@@ -1399,9 +1399,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Vamos ocultar posts assim a partir de agora.';
 
   @override
-  String get contentWarningCommunitySource => 'Suggested by the community';
-
-  @override
   String get communitySuggestTitle => 'Help classify this';
 
   @override

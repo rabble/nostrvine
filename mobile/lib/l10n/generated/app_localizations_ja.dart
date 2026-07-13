@@ -1294,9 +1294,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get contentWarningHiddenConfirmation => 'これからはこういう投稿を隠すね。';
 
   @override
-  String get contentWarningCommunitySource => 'Suggested by the community';
-
-  @override
   String get communitySuggestTitle => 'Help classify this';
 
   @override

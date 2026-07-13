@@ -1391,9 +1391,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Vanaf nu verbergen we posts zoals deze.';
 
   @override
-  String get contentWarningCommunitySource => 'Suggested by the community';
-
-  @override
   String get communitySuggestTitle => 'Help classify this';
 
   @override

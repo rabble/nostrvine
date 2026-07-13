@@ -1402,9 +1402,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Vamos a ocultar publicaciones como esta de ahora en más.';
 
   @override
-  String get contentWarningCommunitySource => 'Suggested by the community';
-
-  @override
   String get communitySuggestTitle => 'Help classify this';
 
   @override

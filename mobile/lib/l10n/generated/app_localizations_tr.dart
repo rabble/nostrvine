@@ -1363,9 +1363,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bundan sonra böyle gönderileri gizleyeceğiz.';
 
   @override
-  String get contentWarningCommunitySource => 'Suggested by the community';
-
-  @override
   String get communitySuggestTitle => 'Help classify this';
 
   @override

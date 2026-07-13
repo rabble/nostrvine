@@ -1377,9 +1377,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Vi döljer inlägg som det här från och med nu.';
 
   @override
-  String get contentWarningCommunitySource => 'Suggested by the community';
-
-  @override
   String get communitySuggestTitle => 'Help classify this';
 
   @override

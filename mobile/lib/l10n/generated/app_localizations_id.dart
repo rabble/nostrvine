@@ -1358,9 +1358,6 @@ class AppLocalizationsId extends AppLocalizations {
       'Kami akan menyembunyikan postingan seperti ini mulai sekarang.';
 
   @override
-  String get contentWarningCommunitySource => 'Suggested by the community';
-
-  @override
   String get communitySuggestTitle => 'Help classify this';
 
   @override

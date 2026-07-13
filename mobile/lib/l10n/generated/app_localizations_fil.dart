@@ -1407,9 +1407,6 @@ class AppLocalizationsFil extends AppLocalizations {
       'Itatago na namin ang ganitong post mula ngayon.';
 
   @override
-  String get contentWarningCommunitySource => 'Suggested by the community';
-
-  @override
   String get communitySuggestTitle => 'Help classify this';
 
   @override
