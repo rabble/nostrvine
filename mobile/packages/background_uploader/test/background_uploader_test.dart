@@ -1,10 +1,3 @@
-// Tagged for its own isolate: this suite installs a fake
-// BackgroundUploaderPlatform.instance, and its only non-fake restore constructs
-// the real MethodChannelBackgroundUploader, which claims the plugin channel and
-// conflicts with background_uploader_method_channel_test in the merged run.
-@Tags(['skip_very_good_optimization'])
-library;
-
 import 'dart:async';
 
 import 'package:background_uploader/background_uploader.dart';
@@ -56,6 +49,19 @@ class _FakeBackgroundUploaderPlatform extends BackgroundUploaderPlatform
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  // Swapping in the fake below reassigns the process-global
+  // BackgroundUploaderPlatform.instance. Capture the real default up front and
+  // restore it after every test so the fake cannot strand a sibling suite in
+  // the merged-isolate (very_good --optimization) run. Reading the getter here
+  // reuses the already-lazily-constructed default; it does not build a new one.
+  final initialPlatform = BackgroundUploaderPlatform.instance;
+
+  tearDown(() {
+    BackgroundUploaderPlatform.instance = initialPlatform;
+  });
+
   group('BackgroundUploader.enqueue validation', () {
     late _FakeBackgroundUploaderPlatform fake;
 
