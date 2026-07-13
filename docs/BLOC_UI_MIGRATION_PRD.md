@@ -56,6 +56,7 @@ a UI BLoC would be the wrong layer.
 |------|------|
 | `lib/features/feature_flags/services/feature_flag_service.dart` | Feature-flag service. |
 | `lib/router/app_router.dart` | `_StreamListenable extends ChangeNotifier` — GoRouter `refreshListenable` adapter. |
+| `lib/services/community_content_label_service.dart` | Per-video community content-warning label cache (#4771). |
 | `lib/services/connection_status_service.dart` | Connectivity monitor. |
 | `lib/services/content_filter_service.dart` | Adult-content / category filters. |
 | `lib/services/curated_list_service.dart` | NIP-51 curated lists. |

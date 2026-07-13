@@ -5,6 +5,8 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/community_content_label_provider.dart';
@@ -31,6 +33,11 @@ class HelpClassifyActionButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final flagEnabled = ref
+        .watch(featureFlagServiceProvider)
+        .isEnabled(FeatureFlag.communityContentWarnings);
+    if (!flagEnabled) return const SizedBox.shrink();
+
     final repository = ref.watch(communityContentLabelRepositoryProvider);
     final myPubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
     if (repository == null || myPubkey == null || myPubkey.isEmpty) {

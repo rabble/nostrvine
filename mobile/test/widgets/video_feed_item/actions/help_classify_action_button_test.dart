@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/features/feature_flags/services/feature_flag_service.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/community_content_label_provider.dart';
@@ -14,6 +17,8 @@ import 'package:openvine/widgets/video_feed_item/actions/video_action_button.dar
 class _MockRepository extends Mock implements CommunityContentLabelRepository {}
 
 class _MockAuthService extends Mock implements AuthService {}
+
+class _MockFeatureFlagService extends Mock implements FeatureFlagService {}
 
 class _MockVideoEvent extends Mock implements VideoEvent {}
 
@@ -28,6 +33,7 @@ void main() {
 
     setUpAll(() {
       registerFallbackValue(_MockVideoEvent());
+      registerFallbackValue(FeatureFlag.communityContentWarnings);
       l10n = lookupAppLocalizations(const Locale('en'));
     });
 
@@ -41,17 +47,28 @@ void main() {
       ).thenAnswer((_) async => <String>{});
     });
 
-    Widget wrap({CommunityContentLabelRepository? repo}) => ProviderScope(
-      overrides: [
-        communityContentLabelRepositoryProvider.overrideWithValue(repo),
-        authServiceProvider.overrideWithValue(auth),
-      ],
-      child: MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(body: HelpClassifyActionButton(video: video)),
-      ),
-    );
+    Widget wrap({
+      CommunityContentLabelRepository? repo,
+      bool flagEnabled = true,
+    }) {
+      final flags = _MockFeatureFlagService();
+      when(() => flags.isEnabled(any())).thenReturn(false);
+      when(
+        () => flags.isEnabled(FeatureFlag.communityContentWarnings),
+      ).thenReturn(flagEnabled);
+      return ProviderScope(
+        overrides: [
+          communityContentLabelRepositoryProvider.overrideWithValue(repo),
+          authServiceProvider.overrideWithValue(auth),
+          featureFlagServiceProvider.overrideWithValue(flags),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: HelpClassifyActionButton(video: video)),
+        ),
+      );
+    }
 
     testWidgets('renders the action when the repository is ready', (
       tester,
@@ -60,6 +77,15 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(VideoActionButton), findsOneWidget);
+    });
+
+    testWidgets('renders nothing when the feature flag is off', (
+      tester,
+    ) async {
+      await tester.pumpWidget(wrap(repo: repository, flagEnabled: false));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(VideoActionButton), findsNothing);
     });
 
     testWidgets('renders nothing until the repository is ready', (

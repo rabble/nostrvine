@@ -45,6 +45,10 @@ class BuildConfiguration {
         return const bool.fromEnvironment('FF_LIGHT_MODE');
       case FeatureFlag.adaptiveMediaChrome:
         return const bool.fromEnvironment('FF_ADAPTIVE_MEDIA_CHROME');
+      case FeatureFlag.communityContentWarnings:
+        // Default OFF pending T&S sign-off on surfacing warnings from
+        // unverified community votes (#4771).
+        return const bool.fromEnvironment('FF_COMMUNITY_CONTENT_WARNINGS');
     }
   }
 
@@ -85,6 +89,8 @@ class BuildConfiguration {
         return 'FF_LIGHT_MODE';
       case FeatureFlag.adaptiveMediaChrome:
         return 'FF_ADAPTIVE_MEDIA_CHROME';
+      case FeatureFlag.communityContentWarnings:
+        return 'FF_COMMUNITY_CONTENT_WARNINGS';
     }
   }
 }
