@@ -33,6 +33,27 @@ void main() {
       expect(video.allowAudioReuse, isFalse);
     });
 
+    test('prefers the live marker over a divergent rawTags value', () {
+      final video = VideoEvent(
+        id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+        pubkey:
+            'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+        createdAt: 1778120201,
+        content: '',
+        timestamp: DateTime.utc(2026, 5, 7),
+        title: 'Audio reuse video',
+        videoUrl: 'https://media.divine.video/reuse.mp4',
+        nostrEventTags: const [
+          ['allow_audio_reuse', 'false'],
+        ],
+        rawTags: const {'allow_audio_reuse': 'true'},
+      );
+
+      // Live tags win over rawTags. A future reorder of the lookup that
+      // consulted rawTags first would flip this to true and fail here.
+      expect(video.allowAudioReuse, isFalse);
+    });
+
     test('survives a JSON-cache round-trip that drops nostrEventTags', () {
       final original = VideoEvent.fromNostrEvent(buildEvent(withMarker: true));
 

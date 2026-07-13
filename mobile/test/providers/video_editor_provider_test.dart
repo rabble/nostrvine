@@ -1123,6 +1123,9 @@ void main() {
     }
 
     test('seeds allowAudioReuse from live nostrEventTags', () {
+      // rawTags is intentionally left empty so this isolates the live-tag
+      // source: if the live-path scan regressed, there is no fallback to
+      // mask it and the toggle would seed false.
       container
           .read(videoEditorProvider.notifier)
           .initFromPublishedVideo(
@@ -1130,7 +1133,6 @@ void main() {
               nostrEventTags: const [
                 ['allow_audio_reuse', 'true'],
               ],
-              rawTags: const {'allow_audio_reuse': 'true'},
             ),
           );
 
