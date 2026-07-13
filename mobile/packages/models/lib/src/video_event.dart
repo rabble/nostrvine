@@ -878,6 +878,16 @@ class VideoEvent {
     return pubkeys;
   }
 
+  /// Whether the creator marked this video's audio as reusable.
+  ///
+  /// Reads the editor-owned `allow_audio_reuse` marker. Prefers
+  /// [nostrEventTags] but falls back to [rawTags], so the flag survives a
+  /// JSON-cache round-trip — [nostrEventTags] is intentionally not persisted
+  /// through `toJson`/`fromJson`, but [rawTags] is, which keeps the edit form
+  /// from seeding the toggle `false` on a cache-rehydrated video.
+  bool get allowAudioReuse =>
+      _firstNostrTagValue('allow_audio_reuse') == 'true';
+
   /// Whether this video has any content warnings.
   bool get hasContentWarning => contentWarningLabels.isNotEmpty;
 

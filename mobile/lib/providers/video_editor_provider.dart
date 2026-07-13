@@ -652,16 +652,9 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     final npubPattern = RegExp(r'\n\nInspired by nostr:npub1[a-z0-9]+$');
     content = content.replaceFirst(npubPattern, '');
 
-    final allowAudioReuse = video.nostrEventTags.any(
-      (tag) =>
-          tag.isNotEmpty &&
-          tag[0] == 'allow_audio_reuse' &&
-          tag.length > 1 &&
-          tag[1] == 'true',
-    );
-
     state = VideoEditorProviderState(
-      allowAudioReuse: allowAudioReuse,
+      // Getter falls back to rawTags so the toggle survives a cache round-trip.
+      allowAudioReuse: video.allowAudioReuse,
       title: video.title ?? '',
       description: content,
       tags: video.hashtags.toSet(),

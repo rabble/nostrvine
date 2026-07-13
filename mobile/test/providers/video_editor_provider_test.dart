@@ -1089,6 +1089,78 @@ void main() {
     });
   });
 
+  group('initFromPublishedVideo', () {
+    late ProviderContainer container;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+    });
+
+    tearDown(() {
+      container.dispose();
+    });
+
+    VideoEvent buildVideo({
+      List<List<String>> nostrEventTags = const [],
+      Map<String, String> rawTags = const {},
+    }) {
+      return VideoEvent(
+        id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+        pubkey:
+            'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+        createdAt: 1778120201,
+        content: 'A published clip',
+        timestamp: DateTime.utc(2026, 5, 7),
+        title: 'Published clip',
+        videoUrl: 'https://media.divine.video/published.mp4',
+        nostrEventTags: nostrEventTags,
+        rawTags: rawTags,
+      );
+    }
+
+    test('seeds allowAudioReuse from live nostrEventTags', () {
+      // rawTags is intentionally left empty so this isolates the live-tag
+      // source: if the live-path scan regressed, there is no fallback to
+      // mask it and the toggle would seed false.
+      container
+          .read(videoEditorProvider.notifier)
+          .initFromPublishedVideo(
+            buildVideo(
+              nostrEventTags: const [
+                ['allow_audio_reuse', 'true'],
+              ],
+            ),
+          );
+
+      expect(container.read(videoEditorProvider).allowAudioReuse, isTrue);
+    });
+
+    test('seeds allowAudioReuse from rawTags when the event was '
+        'rehydrated from cache (nostrEventTags dropped)', () {
+      container
+          .read(videoEditorProvider.notifier)
+          .initFromPublishedVideo(
+            buildVideo(rawTags: const {'allow_audio_reuse': 'true'}),
+          );
+
+      // Regression (#6045): before the fix this seeded false because the
+      // cache path drops nostrEventTags, so a save would strip the marker.
+      expect(container.read(videoEditorProvider).allowAudioReuse, isTrue);
+    });
+
+    test('leaves allowAudioReuse off when the marker is absent', () {
+      container
+          .read(videoEditorProvider.notifier)
+          .initFromPublishedVideo(buildVideo());
+
+      expect(container.read(videoEditorProvider).allowAudioReuse, isFalse);
+    });
+  });
+
   group('VideoEditorProviderState', () {
     group('isValidToPost', () {
       test('returns false when finalRenderedClip is null', () {
