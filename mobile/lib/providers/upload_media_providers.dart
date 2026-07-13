@@ -287,10 +287,15 @@ UploadManager uploadManager(Ref ref) {
 ApiService apiService(Ref ref) {
   final authService = ref.watch(nip98AuthServiceProvider);
   final environment = ref.watch(currentEnvironmentProvider);
-  return ApiService(
+  final service = ApiService(
     authService: authService,
     relayManagerBaseUrl: environment.relayManagerApiUrl,
   );
+  // Close the owned http.Client on rebuild (env switch) — in-flight requests
+  // on the old instance fail over, which switchEnvironment's cache/sub reset
+  // already assumes
+  ref.onDispose(service.dispose);
+  return service;
 }
 
 /// Crosspost API client for Bluesky toggle settings

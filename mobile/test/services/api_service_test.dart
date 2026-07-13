@@ -184,7 +184,7 @@ void main() {
       );
 
       test(
-        'getMinorAccountReviewStatus uses the moderation API host, '
+        'getMinorAccountReviewStatus uses the relay-manager host, '
         'not the main backend (relay-manager#108: backend 404s -> gate inert)',
         () async {
           final mockResponse = MockResponse();
@@ -245,6 +245,33 @@ void main() {
                   ).captured.single
                   as Uri;
           expect(captured.host, 'api-relay-staging.divine.video');
+
+          // Both endpoints read the same injected base — pin the POST too
+          when(() => mockResponse.statusCode).thenReturn(204);
+          when(() => mockResponse.body).thenReturn('');
+          when(
+            () => mockClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer((_) async => mockResponse);
+
+          await stagingService.submitMinorAccountReviewParentContact(
+            caseId: 'case-9',
+            email: 'parent@example.com',
+          );
+
+          final posted =
+              verify(
+                    () => mockClient.post(
+                      captureAny(),
+                      headers: any(named: 'headers'),
+                      body: any(named: 'body'),
+                    ),
+                  ).captured.single
+                  as Uri;
+          expect(posted.host, 'api-relay-staging.divine.video');
         },
       );
 
