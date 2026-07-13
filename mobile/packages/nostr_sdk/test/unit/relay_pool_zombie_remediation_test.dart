@@ -253,5 +253,110 @@ void main() {
       );
       expect(factory.createdChannels, hasLength(1));
     });
+
+    Future<PublishOutcome> publishWithId(String id) {
+      return nostr.relayPool.sendEventAwaitOk(
+        [
+          'EVENT',
+          {'id': id, 'kind': 14},
+        ],
+        eventId: id,
+        eventKind: 14,
+        targetRelays: [relayUrl],
+        timeout: const Duration(milliseconds: 100),
+      );
+    }
+
+    test('two consecutive silent OK timeouts within the cooldown trigger '
+        'exactly one repair', () async {
+      // A brownout relay — alive but answering slower than the OK window —
+      // times out in silence on every publish and reads as silent each time.
+      // The default per-relay cooldown must collapse the second timeout into
+      // a no-op instead of force-cycling the connection again.
+      final first = await publishWithId('brownout-1');
+      expect(first.confirmed, isFalse);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(
+        factory.createdChannels,
+        hasLength(2),
+        reason: 'the first silent timeout must repair the zombie socket',
+      );
+
+      final second = await publishWithId('brownout-2');
+      expect(second.confirmed, isFalse);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(
+        factory.createdChannels,
+        hasLength(2),
+        reason:
+            'a second silent timeout inside the cooldown must not re-cycle '
+            'the same relay',
+      );
+    });
+
+    test(
+      'a silent OK timeout after the cooldown elapses repairs again',
+      () async {
+        // Injecting a tiny cooldown lets the second timeout land after the
+        // window has elapsed, so a genuinely still-zombie socket is repaired
+        // again rather than being suppressed forever.
+        nostr.relayPool.silentRepairCooldown = const Duration(milliseconds: 1);
+
+        final first = await publishWithId('brownout-1');
+        expect(first.confirmed, isFalse);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        expect(factory.createdChannels, hasLength(2));
+
+        final second = await publishWithId('brownout-2');
+        expect(second.confirmed, isFalse);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        expect(
+          factory.createdChannels,
+          hasLength(3),
+          reason:
+              'once the cooldown elapses a subsequent silent timeout must '
+              'repair the relay again',
+        );
+      },
+    );
+
+    test('a pending one-shot query on a silent zombie relay is replayed on '
+        'the fresh socket after force-reconnect', () async {
+      // A one-shot query still awaiting EOSE when the socket goes zombie must
+      // be re-issued on the fresh socket. Force-reconnect previously replayed
+      // only long-running subscriptions, stranding the query until the
+      // caller's own timeout instead of letting a fresh EOSE complete it.
+      await nostr.relayPool.query(
+        [
+          Filter(kinds: const [0], authors: const ['abc'], limit: 1).toJson(),
+        ],
+        (_) {},
+        id: 'pending-query-id',
+      );
+      final zombieChannel = factory.createdChannels.single;
+      final queryReqs = zombieChannel.sentMessages
+          .map((m) => jsonDecode(m as String) as List<dynamic>)
+          .where((m) => m.first == 'REQ' && m[1] == 'pending-query-id')
+          .toList();
+      expect(queryReqs, hasLength(1));
+
+      final outcome = await publishWithId('zombie-event-id');
+      expect(outcome.confirmed, isFalse);
+
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(factory.createdChannels, hasLength(2));
+      final freshChannel = factory.createdChannels.last;
+      final replayedReqs = freshChannel.sentMessages
+          .map((m) => jsonDecode(m as String) as List<dynamic>)
+          .where((m) => m.first == 'REQ' && m[1] == 'pending-query-id')
+          .toList();
+      expect(
+        replayedReqs,
+        hasLength(1),
+        reason:
+            'a pending one-shot query must be replayed on the fresh socket '
+            'so it can still EOSE',
+      );
+    });
   });
 }
