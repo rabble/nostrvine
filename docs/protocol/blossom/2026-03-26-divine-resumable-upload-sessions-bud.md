@@ -1,6 +1,6 @@
 Status: Draft Divine Extension
 
-Mobile client status: Implemented behind capability discovery and legacy fallback in `mobile/lib/services/blossom_upload_service.dart` and `mobile/lib/services/upload_manager.dart`.
+Mobile client status: Implemented behind capability discovery and legacy fallback in `mobile/packages/blossom_upload_service/lib/src/blossom_upload_service.dart` and `mobile/lib/services/upload_manager.dart`. A fresh publish attempts the OS-backed whole-file `PUT` first (`uploadVideoInBackground`); on failure, or when a persisted resumable session already exists, `uploadVideoWithResume` falls through to the chunked resumable protocol so retries resume from the server's last committed `Upload-Offset` instead of byte 0.
 
 # Divine Resumable Upload Sessions for Blossom
 

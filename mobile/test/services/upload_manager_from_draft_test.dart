@@ -50,13 +50,16 @@ void main() {
         () => mockBlossomService.isBlossomEnabled(),
       ).thenAnswer((_) async => false);
       when(
-        () => mockBlossomService.uploadVideo(
+        () => mockBlossomService.uploadVideoWithResume(
           videoFile: any(named: 'videoFile'),
           nostrPubkey: any(named: 'nostrPubkey'),
+          taskId: any(named: 'taskId'),
           title: any(named: 'title'),
           description: any(named: 'description'),
           hashtags: any(named: 'hashtags'),
           proofManifestJson: any(named: 'proofManifestJson'),
+          useBackgroundFirst: any(named: 'useBackgroundFirst'),
+          resumableTimeout: any(named: 'resumableTimeout'),
           resumableSession: any(named: 'resumableSession'),
           onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
           onProgress: any(named: 'onProgress'),
@@ -173,13 +176,16 @@ void main() {
         ..writeAsBytesSync([0, 1, 2, 3]);
 
       when(
-        () => mockBlossomService.uploadVideo(
+        () => mockBlossomService.uploadVideoWithResume(
           videoFile: any(named: 'videoFile'),
           nostrPubkey: any(named: 'nostrPubkey'),
+          taskId: any(named: 'taskId'),
           title: any(named: 'title'),
           description: any(named: 'description'),
           hashtags: any(named: 'hashtags'),
           proofManifestJson: any(named: 'proofManifestJson'),
+          useBackgroundFirst: any(named: 'useBackgroundFirst'),
+          resumableTimeout: any(named: 'resumableTimeout'),
           resumableSession: any(named: 'resumableSession'),
           onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
           onProgress: any(named: 'onProgress'),
@@ -278,13 +284,16 @@ void main() {
           () => mockBlossomService.isBlossomEnabled(),
         ).thenAnswer((_) async => false);
         when(
-          () => mockBlossomService.uploadVideo(
+          () => mockBlossomService.uploadVideoWithResume(
             videoFile: any(named: 'videoFile'),
             nostrPubkey: any(named: 'nostrPubkey'),
+            taskId: any(named: 'taskId'),
             title: any(named: 'title'),
             description: any(named: 'description'),
             hashtags: any(named: 'hashtags'),
             proofManifestJson: any(named: 'proofManifestJson'),
+            useBackgroundFirst: any(named: 'useBackgroundFirst'),
+            resumableTimeout: any(named: 'resumableTimeout'),
             resumableSession: any(named: 'resumableSession'),
             onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
             onProgress: any(named: 'onProgress'),
