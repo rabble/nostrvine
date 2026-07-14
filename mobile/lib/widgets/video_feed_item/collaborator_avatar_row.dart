@@ -142,7 +142,11 @@ class CollaboratorAvatarRowBody extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.people, size: 14, color: VineTheme.vineGreen),
+              const DivineIcon(
+                icon: DivineIconName.users,
+                size: 14,
+                color: VineTheme.vineGreen,
+              ),
               const SizedBox(width: 4),
               _CollaboratorAvatarStack(
                 entries: [

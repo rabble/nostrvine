@@ -221,7 +221,14 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byIcon(Icons.person_add_alt_1), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(
+          lookupAppLocalizations(
+            const Locale('en'),
+          ).peopleListsAddPeopleSemanticLabel,
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('hides the add-people action when current list is read-only', (
@@ -261,7 +268,14 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byIcon(Icons.person_add_alt_1), findsNothing);
+      expect(
+        find.bySemanticsLabel(
+          lookupAppLocalizations(
+            const Locale('en'),
+          ).peopleListsAddPeopleSemanticLabel,
+        ),
+        findsNothing,
+      );
     });
 
     testWidgets('shows delete action when current list is editable', (

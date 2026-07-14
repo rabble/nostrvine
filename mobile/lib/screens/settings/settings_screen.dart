@@ -216,7 +216,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   if (!authService.isAnonymous &&
                       authService.hasExpiredOAuthSession)
                     _SettingsTile(
-                      icon: Icons.refresh,
+                      divineIcon: DivineIconName.arrowClockwise,
                       title: context.l10n.settingsSessionExpired,
                       subtitle: context.l10n.settingsSessionExpiredSubtitle,
                       onTap: _handleSessionExpired,

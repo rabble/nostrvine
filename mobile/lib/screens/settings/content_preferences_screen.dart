@@ -356,7 +356,10 @@ class _AudioDeviceSelectorTile extends StatelessWidget {
         );
 
         return ListTile(
-          leading: const Icon(Icons.mic, color: VineTheme.vineGreen),
+          leading: const DivineIcon(
+            icon: DivineIconName.microphone,
+            color: VineTheme.vineGreen,
+          ),
           title: Text(
             context.l10n.contentPreferencesAudioInputDevice,
             style: const TextStyle(

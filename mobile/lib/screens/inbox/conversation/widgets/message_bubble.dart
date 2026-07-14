@@ -1160,7 +1160,11 @@ class _NotDeliveredIndicator extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         spacing: 4,
         children: [
-          const Icon(Icons.error_outline, size: 14, color: VineTheme.error),
+          const DivineIcon(
+            icon: DivineIconName.warningCircle,
+            size: 14,
+            color: VineTheme.error,
+          ),
           Text(
             label,
             style: VineTheme.labelSmallFont(color: VineTheme.error),

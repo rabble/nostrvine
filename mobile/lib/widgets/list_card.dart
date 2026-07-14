@@ -29,7 +29,10 @@ class UserListCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.group, color: VineTheme.vineGreen, size: 24),
+                  const DivineIcon(
+                    icon: DivineIconName.users,
+                    color: VineTheme.vineGreen,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
