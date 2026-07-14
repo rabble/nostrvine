@@ -30,7 +30,7 @@ void main() {
         ),
       );
 
-      expect(find.byType(DiVineAppBarIconButton), findsOneWidget);
+      expect(find.byType(DivineAppBarIconButton), findsOneWidget);
     });
 
     testWidgets('calls onBack when back button tapped', (tester) async {
@@ -44,7 +44,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byType(DiVineAppBarIconButton));
+      await tester.tap(find.byType(DivineAppBarIconButton));
       await tester.pump();
 
       expect(backCalled, isTrue);

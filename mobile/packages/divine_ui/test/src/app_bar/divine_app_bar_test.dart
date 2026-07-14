@@ -168,7 +168,7 @@ void main() {
           ),
         );
 
-        expect(find.byType(DiVineAppBarIconButton), findsOneWidget);
+        expect(find.byType(DivineAppBarIconButton), findsOneWidget);
       });
 
       testWidgets('back button calls onBackPressed', (tester) async {
@@ -181,7 +181,7 @@ void main() {
           ),
         );
 
-        await tester.tap(find.byType(DiVineAppBarIconButton));
+        await tester.tap(find.byType(DivineAppBarIconButton));
         expect(pressed, isTrue);
       });
 
@@ -212,7 +212,7 @@ void main() {
           ),
         );
 
-        expect(find.byType(DiVineAppBarIconButton), findsOneWidget);
+        expect(find.byType(DivineAppBarIconButton), findsOneWidget);
       });
 
       testWidgets('menu button calls onMenuPressed', (tester) async {
@@ -225,7 +225,7 @@ void main() {
           ),
         );
 
-        await tester.tap(find.byType(DiVineAppBarIconButton));
+        await tester.tap(find.byType(DivineAppBarIconButton));
         expect(pressed, isTrue);
       });
 
@@ -251,7 +251,7 @@ void main() {
           ),
         );
 
-        await tester.tap(find.byType(DiVineAppBarIconButton));
+        await tester.tap(find.byType(DivineAppBarIconButton));
         expect(pressed, isTrue);
       });
 
@@ -262,7 +262,7 @@ void main() {
           ),
         );
 
-        expect(find.byType(DiVineAppBarIconButton), findsNothing);
+        expect(find.byType(DivineAppBarIconButton), findsNothing);
       });
 
       testWidgets(
@@ -286,7 +286,7 @@ void main() {
           // Tap inside the slot but outside the visible 48 × 48 icon
           // button (which lives at x ∈ [12, 60]).
           final iconButtonRect = tester.getRect(
-            find.byType(DiVineAppBarIconButton),
+            find.byType(DivineAppBarIconButton),
           );
           final tapPoint = Offset(
             iconButtonRect.right + 4,
@@ -315,7 +315,7 @@ void main() {
           );
 
           final iconButtonRect = tester.getRect(
-            find.byType(DiVineAppBarIconButton),
+            find.byType(DivineAppBarIconButton),
           );
           await tester.tapAt(
             Offset(iconButtonRect.right + 4, iconButtonRect.center.dy),
@@ -617,8 +617,8 @@ void main() {
         expect(appBar.toolbarHeight, 72);
         expect(appBar.leadingWidth, 80);
 
-        final iconButton = tester.widget<DiVineAppBarIconButton>(
-          find.byType(DiVineAppBarIconButton),
+        final iconButton = tester.widget<DivineAppBarIconButton>(
+          find.byType(DivineAppBarIconButton),
         );
         expect(iconButton.size, 40);
         expect(iconButton.iconSize, 24);
@@ -659,8 +659,8 @@ void main() {
           ),
         );
 
-        final iconButton = tester.widget<DiVineAppBarIconButton>(
-          find.byType(DiVineAppBarIconButton),
+        final iconButton = tester.widget<DivineAppBarIconButton>(
+          find.byType(DivineAppBarIconButton),
         );
         expect(iconButton.size, 56);
         expect(iconButton.iconSize, 40);
@@ -695,8 +695,8 @@ void main() {
           ),
         );
 
-        final iconButton = tester.widget<DiVineAppBarIconButton>(
-          find.byType(DiVineAppBarIconButton),
+        final iconButton = tester.widget<DivineAppBarIconButton>(
+          find.byType(DivineAppBarIconButton),
         );
         expect(iconButton.iconColor, VineTheme.primary);
         expect(iconButton.backgroundColor, VineTheme.surfaceContainer);
@@ -717,8 +717,8 @@ void main() {
           ),
         );
 
-        final iconButton = tester.widget<DiVineAppBarIconButton>(
-          find.byType(DiVineAppBarIconButton),
+        final iconButton = tester.widget<DivineAppBarIconButton>(
+          find.byType(DivineAppBarIconButton),
         );
         expect(iconButton.iconColor, VineTheme.whiteText);
         expect(iconButton.backgroundColor, const Color(0x26000000));
@@ -737,8 +737,8 @@ void main() {
           ),
         );
 
-        final iconButton = tester.widget<DiVineAppBarIconButton>(
-          find.byType(DiVineAppBarIconButton),
+        final iconButton = tester.widget<DivineAppBarIconButton>(
+          find.byType(DivineAppBarIconButton),
         );
         expect(iconButton.iconColor, VineTheme.whiteText);
         expect(iconButton.backgroundColor, const Color(0x26000000));
@@ -756,8 +756,8 @@ void main() {
           ),
         );
 
-        final iconButton = tester.widget<DiVineAppBarIconButton>(
-          find.byType(DiVineAppBarIconButton),
+        final iconButton = tester.widget<DivineAppBarIconButton>(
+          find.byType(DivineAppBarIconButton),
         );
         expect(iconButton.iconColor, Colors.red);
       });

@@ -82,7 +82,7 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DiVineAppBarIconButton(
+    return DivineAppBarIconButton(
       icon: action.icon,
       onPressed: action.onPressed,
       tooltip: action.tooltip,

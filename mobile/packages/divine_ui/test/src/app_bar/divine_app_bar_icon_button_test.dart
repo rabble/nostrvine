@@ -4,7 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('DiVineAppBarIconButton', () {
+  group('DivineAppBarIconButton', () {
     Widget buildTestWidget({
       required IconSource icon,
       VoidCallback? onPressed,
@@ -20,7 +20,7 @@ void main() {
         theme: VineTheme.theme,
         home: Scaffold(
           body: Center(
-            child: DiVineAppBarIconButton(
+            child: DivineAppBarIconButton(
               icon: icon,
               onPressed: onPressed,
               tooltip: tooltip,

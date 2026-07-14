@@ -207,7 +207,7 @@ void main() {
 
         await tester.pump();
 
-        expect(find.byType(DiVineAppBarIconButton), findsOneWidget);
+        expect(find.byType(DivineAppBarIconButton), findsOneWidget);
       });
 
       testWidgets('has dark background', (tester) async {
@@ -1073,7 +1073,7 @@ void main() {
           expect(find.byType(SoundDetailScreen), findsOneWidget);
 
           // Tap back button (which now uses context.pop() from go_router)
-          await tester.tap(find.byType(DiVineAppBarIconButton));
+          await tester.tap(find.byType(DivineAppBarIconButton));
           await tester.pumpAndSettle();
 
           // Verify GoRouter.pop() was called
@@ -1153,7 +1153,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Tap back button to trigger dispose
-        await tester.tap(find.byType(DiVineAppBarIconButton));
+        await tester.tap(find.byType(DivineAppBarIconButton));
         await tester.pumpAndSettle();
 
         // Verify GoRouter.pop() was called (preview stops in dispose)

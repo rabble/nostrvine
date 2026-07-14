@@ -9,15 +9,15 @@ import 'package:flutter_svg/flutter_svg.dart';
 ///
 /// Example usage:
 /// ```dart
-/// DiVineAppBarIconButton(
+/// DivineAppBarIconButton(
 ///   icon: const SvgIconSource('assets/icon/CaretLeft.svg'),
 ///   onPressed: () => context.pop(),
 ///   semanticLabel: 'Go back',
 /// )
 /// ```
-class DiVineAppBarIconButton extends StatelessWidget {
+class DivineAppBarIconButton extends StatelessWidget {
   /// Creates a DiVineAppBar icon button.
-  const DiVineAppBarIconButton({
+  const DivineAppBarIconButton({
     required this.icon,
     this.onPressed,
     this.tooltip,

@@ -204,7 +204,7 @@ void main() {
       router.go(MinorAccountReviewParentContactScreen.path);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byType(DiVineAppBarIconButton));
+      await tester.tap(find.byType(DivineAppBarIconButton));
       await tester.pumpAndSettle();
 
       expect(
@@ -292,7 +292,7 @@ void main() {
       router.go(MinorAccountReviewUnder13SupportScreen.path);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byType(DiVineAppBarIconButton));
+      await tester.tap(find.byType(DivineAppBarIconButton));
       await tester.pumpAndSettle();
 
       expect(
