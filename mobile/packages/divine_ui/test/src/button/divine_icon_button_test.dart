@@ -14,6 +14,7 @@ void main() {
       DivineIconButtonSize size = DivineIconButtonSize.base,
       Color? backgroundColor,
       Color? foregroundColor,
+      String? tooltip,
       String? semanticLabel,
       String? semanticLongPressHint,
     }) {
@@ -28,6 +29,7 @@ void main() {
               size: size,
               backgroundColor: backgroundColor,
               foregroundColor: foregroundColor,
+              tooltip: tooltip,
               semanticLabel: semanticLabel,
               semanticLongPressHint: semanticLongPressHint,
             ),
@@ -475,6 +477,138 @@ void main() {
           expect(animatedOpacity.opacity, lessThan(1.0));
         });
       }
+    });
+
+    group('tooltip', () {
+      testWidgets('renders tooltip when provided', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(onPressed: () {}, tooltip: 'Close'),
+        );
+
+        expect(find.byType(Tooltip), findsOneWidget);
+      });
+
+      testWidgets('does not render tooltip when not provided', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildTestWidget(onPressed: () {}));
+
+        expect(find.byType(Tooltip), findsNothing);
+      });
+
+      testWidgets('tooltip has correct message', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(onPressed: () {}, tooltip: 'Custom tooltip'),
+        );
+
+        final tooltip = tester.widget<Tooltip>(find.byType(Tooltip));
+        expect(tooltip.message, 'Custom tooltip');
+      });
+    });
+
+    group('fromSource', () {
+      Widget buildFromSourceWidget({
+        required IconSource icon,
+        VoidCallback? onPressed,
+        Color? foregroundColor,
+        String? tooltip,
+      }) {
+        return MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: DivineIconButton.fromSource(
+                icon: icon,
+                onPressed: onPressed,
+                foregroundColor: foregroundColor,
+                tooltip: tooltip,
+              ),
+            ),
+          ),
+        );
+      }
+
+      testWidgets('renders an SvgIconSource icon', (tester) async {
+        await tester.pumpWidget(
+          buildFromSourceWidget(
+            icon: const SvgIconSource('assets/icon/CaretLeft.svg'),
+            onPressed: () {},
+          ),
+        );
+
+        expect(find.byType(SvgPicture), findsOneWidget);
+        expect(find.byType(DivineIcon), findsNothing);
+      });
+
+      testWidgets('renders a MaterialIconSource icon', (tester) async {
+        await tester.pumpWidget(
+          buildFromSourceWidget(
+            icon: const MaterialIconSource(Icons.arrow_back),
+            onPressed: () {},
+          ),
+        );
+
+        expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+      });
+
+      testWidgets('applies foregroundColor to a MaterialIconSource icon', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildFromSourceWidget(
+            icon: const MaterialIconSource(Icons.arrow_back),
+            onPressed: () {},
+            foregroundColor: Colors.purple,
+          ),
+        );
+
+        final icon = tester.widget<Icon>(find.byType(Icon));
+        expect(icon.color, Colors.purple);
+      });
+
+      testWidgets('applies color filter to an SvgIconSource icon', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildFromSourceWidget(
+            icon: const SvgIconSource('assets/icon/CaretLeft.svg'),
+            onPressed: () {},
+            foregroundColor: Colors.red,
+          ),
+        );
+
+        final svgPicture = tester.widget<SvgPicture>(find.byType(SvgPicture));
+        expect(
+          svgPicture.colorFilter,
+          const ColorFilter.mode(Colors.red, BlendMode.srcIn),
+        );
+      });
+
+      testWidgets('renders tooltip when provided', (tester) async {
+        await tester.pumpWidget(
+          buildFromSourceWidget(
+            icon: const MaterialIconSource(Icons.arrow_back),
+            onPressed: () {},
+            tooltip: 'Go back',
+          ),
+        );
+
+        expect(find.byType(Tooltip), findsOneWidget);
+      });
+
+      testWidgets('calls onPressed when tapped', (tester) async {
+        var pressed = false;
+        await tester.pumpWidget(
+          buildFromSourceWidget(
+            icon: const MaterialIconSource(Icons.arrow_back),
+            onPressed: () => pressed = true,
+          ),
+        );
+
+        await tester.tap(find.byType(DivineIconButton));
+        await tester.pumpAndSettle();
+
+        expect(pressed, isTrue);
+      });
     });
   });
 }
