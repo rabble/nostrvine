@@ -205,7 +205,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Find and tap the reset button
-      final resetButton = find.byIcon(Icons.restore);
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final resetButton = find.bySemanticsLabel(
+        l10n.featureFlagResetAllTooltip,
+      );
       expect(resetButton, findsOneWidget);
 
       await tester.tap(resetButton);

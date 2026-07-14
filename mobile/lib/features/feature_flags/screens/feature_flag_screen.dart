@@ -25,7 +25,7 @@ class FeatureFlagScreen extends ConsumerWidget {
         onBackPressed: context.pop,
         actions: [
           DiVineAppBarAction(
-            icon: const MaterialIconSource(Icons.restore),
+            icon: SvgIconSource(DivineIconName.arrowCounterClockwise.assetPath),
             onPressed: () async {
               await service.resetAllFlags();
             },
