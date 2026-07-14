@@ -1154,6 +1154,30 @@ void main() {
           ),
         ).called(1);
       });
+
+      test(
+        'returns empty list without throwing when client is disposed',
+        () async {
+          final filters = [
+            Filter(kinds: [EventKind.textNote], limit: 10),
+          ];
+          when(() => mockNostr.unsubscribe(any())).thenReturn(null);
+          await client.dispose();
+
+          final result = await client.queryEvents(filters);
+
+          expect(result, isEmpty);
+          verifyNever(
+            () => mockNostr.queryEvents(
+              any(),
+              id: any(named: 'id'),
+              tempRelays: any(named: 'tempRelays'),
+              relayTypes: any(named: 'relayTypes'),
+              sendAfterAuth: any(named: 'sendAfterAuth'),
+            ),
+          );
+        },
+      );
     });
 
     group('fetchEventById', () {

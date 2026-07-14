@@ -598,6 +598,13 @@ class NostrClient {
     bool useQueryPool = true,
     Duration timeout = const Duration(seconds: 5),
   }) async {
+    // A disposed client's query pool is closed; querying it is a no-op
+    // rather than an error. This is the common case (checked upfront to
+    // skip pointless cache/reconnect work below) — the narrower re-check
+    // right before `withResource` (see below) closes the residual race
+    // where dispose() runs during the awaits in between. See #5952.
+    if (_isDisposed) return [];
+
     final effectiveTempRelays = _allowedRelays(tempRelays);
     final cacheResults = <Event>[];
 
@@ -629,9 +636,21 @@ class NostrClient {
     // videos → per-item like-count/badge/profile/repost fetches) can't trip a
     // relay's "too many concurrent REQs" limit. `withResource` releases the
     // slot when the (time-bounded) query completes, so it can't leak.
-    final websocketEvents = useQueryPool
-        ? await _queryPool.withResource(runWebSocketQuery)
-        : await runWebSocketQuery();
+    //
+    // Re-check the pool's own closed state immediately before use (rather
+    // than relying solely on the upfront isDisposed check above): dispose()
+    // can run during the awaits above, and `_queryPool.isClosed` flips
+    // before `_isDisposed` does (dispose() closes the pool first). This
+    // check-then-call has no await between them, so it closes the race
+    // rather than narrowing it. See #5952.
+    final List<Event> websocketEvents;
+    if (useQueryPool && _queryPool.isClosed) {
+      websocketEvents = [];
+    } else {
+      websocketEvents = useQueryPool
+          ? await _queryPool.withResource(runWebSocketQuery)
+          : await runWebSocketQuery();
+    }
 
     // Cache websocket results (fire-and-forget)
     if (websocketEvents.isNotEmpty) {
