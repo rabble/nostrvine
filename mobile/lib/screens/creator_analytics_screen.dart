@@ -165,6 +165,9 @@ class _CreatorAnalyticsScreenState
         showBackButton: true,
         actions: [
           DiVineAppBarAction(
+            // No DivineIconName equivalent exists yet for this filled/
+            // outline bug-report toggle — tracked in #6081.
+            // ignore: deprecated_member_use
             icon: MaterialIconSource(
               _showDiagnostics ? Icons.bug_report : Icons.bug_report_outlined,
             ),

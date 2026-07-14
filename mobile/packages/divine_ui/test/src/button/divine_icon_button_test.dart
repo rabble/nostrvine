@@ -1,3 +1,8 @@
+// MaterialIconSource is deprecated but still fully supported; the
+// fromSource group intentionally exercises it to guard that support, not
+// migrate off it.
+// ignore_for_file: deprecated_member_use_from_same_package
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -14,6 +19,8 @@ void main() {
       DivineIconButtonSize size = DivineIconButtonSize.base,
       Color? backgroundColor,
       Color? foregroundColor,
+      bool showShadow = true,
+      String? tooltip,
       String? semanticLabel,
       String? semanticLongPressHint,
     }) {
@@ -28,6 +35,8 @@ void main() {
               size: size,
               backgroundColor: backgroundColor,
               foregroundColor: foregroundColor,
+              showShadow: showShadow,
+              tooltip: tooltip,
               semanticLabel: semanticLabel,
               semanticLongPressHint: semanticLongPressHint,
             ),
@@ -173,6 +182,58 @@ void main() {
       });
     });
 
+    group('tap target', () {
+      testWidgets(
+        'small size: InkWell tap target is 48x48 despite the 40px pill',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              size: DivineIconButtonSize.small,
+              onPressed: () {},
+            ),
+          );
+
+          final inkWell = tester.widget<InkWell>(find.byType(InkWell));
+          final sizedBox = inkWell.child! as SizedBox;
+          expect(sizedBox.width, 48);
+          expect(sizedBox.height, 48);
+        },
+      );
+
+      testWidgets(
+        'small size: tap outside the 40px pill but inside the 48px '
+        'target still fires onPressed',
+        (tester) async {
+          var pressed = false;
+          await tester.pumpWidget(
+            buildTestWidget(
+              size: DivineIconButtonSize.small,
+              onPressed: () => pressed = true,
+            ),
+          );
+
+          // 22px from center: outside the 40px visible pill (half-width
+          // 20) but inside the 48px InkWell tap target (half-width 24).
+          final center = tester.getCenter(find.byType(DivineIconButton));
+          await tester.tapAt(center + const Offset(22, 0));
+          await tester.pumpAndSettle();
+
+          expect(pressed, isTrue);
+        },
+      );
+
+      testWidgets(
+        'base size: InkWell tap target matches the 48px pill exactly',
+        (tester) async {
+          await tester.pumpWidget(buildTestWidget(onPressed: () {}));
+
+          final inkWell = tester.widget<InkWell>(find.byType(InkWell));
+          expect(inkWell.child, isA<Ink>());
+          expect(tester.getSize(find.byType(InkWell)), const Size(48, 48));
+        },
+      );
+    });
+
     group('icon colors', () {
       testWidgets('foregroundColor override takes precedence', (tester) async {
         await tester.pumpWidget(
@@ -284,6 +345,27 @@ void main() {
         final ink = tester.widget<Ink>(find.byType(Ink));
         final decoration = ink.decoration! as BoxDecoration;
         expect(decoration.color, Colors.orange);
+      });
+    });
+
+    group('showShadow', () {
+      testWidgets('shows a shadow by default when enabled', (tester) async {
+        await tester.pumpWidget(buildTestWidget(onPressed: () {}));
+
+        final ink = tester.widget<Ink>(find.byType(Ink));
+        final decoration = ink.decoration! as BoxDecoration;
+        expect(decoration.boxShadow, isNotNull);
+        expect(decoration.boxShadow, isNotEmpty);
+      });
+
+      testWidgets('shows no shadow when showShadow is false', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(onPressed: () {}, showShadow: false),
+        );
+
+        final ink = tester.widget<Ink>(find.byType(Ink));
+        final decoration = ink.decoration! as BoxDecoration;
+        expect(decoration.boxShadow, isNull);
       });
     });
 
@@ -475,6 +557,138 @@ void main() {
           expect(animatedOpacity.opacity, lessThan(1.0));
         });
       }
+    });
+
+    group('tooltip', () {
+      testWidgets('renders tooltip when provided', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(onPressed: () {}, tooltip: 'Close'),
+        );
+
+        expect(find.byType(Tooltip), findsOneWidget);
+      });
+
+      testWidgets('does not render tooltip when not provided', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildTestWidget(onPressed: () {}));
+
+        expect(find.byType(Tooltip), findsNothing);
+      });
+
+      testWidgets('tooltip has correct message', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(onPressed: () {}, tooltip: 'Custom tooltip'),
+        );
+
+        final tooltip = tester.widget<Tooltip>(find.byType(Tooltip));
+        expect(tooltip.message, 'Custom tooltip');
+      });
+    });
+
+    group('fromSource', () {
+      Widget buildFromSourceWidget({
+        required IconSource icon,
+        VoidCallback? onPressed,
+        Color? foregroundColor,
+        String? tooltip,
+      }) {
+        return MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: DivineIconButton.fromSource(
+                icon: icon,
+                onPressed: onPressed,
+                foregroundColor: foregroundColor,
+                tooltip: tooltip,
+              ),
+            ),
+          ),
+        );
+      }
+
+      testWidgets('renders an SvgIconSource icon', (tester) async {
+        await tester.pumpWidget(
+          buildFromSourceWidget(
+            icon: const SvgIconSource('assets/icon/CaretLeft.svg'),
+            onPressed: () {},
+          ),
+        );
+
+        expect(find.byType(SvgPicture), findsOneWidget);
+        expect(find.byType(DivineIcon), findsNothing);
+      });
+
+      testWidgets('renders a MaterialIconSource icon', (tester) async {
+        await tester.pumpWidget(
+          buildFromSourceWidget(
+            icon: const MaterialIconSource(Icons.arrow_back),
+            onPressed: () {},
+          ),
+        );
+
+        expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+      });
+
+      testWidgets('applies foregroundColor to a MaterialIconSource icon', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildFromSourceWidget(
+            icon: const MaterialIconSource(Icons.arrow_back),
+            onPressed: () {},
+            foregroundColor: Colors.purple,
+          ),
+        );
+
+        final icon = tester.widget<Icon>(find.byType(Icon));
+        expect(icon.color, Colors.purple);
+      });
+
+      testWidgets('applies color filter to an SvgIconSource icon', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildFromSourceWidget(
+            icon: const SvgIconSource('assets/icon/CaretLeft.svg'),
+            onPressed: () {},
+            foregroundColor: Colors.red,
+          ),
+        );
+
+        final svgPicture = tester.widget<SvgPicture>(find.byType(SvgPicture));
+        expect(
+          svgPicture.colorFilter,
+          const ColorFilter.mode(Colors.red, BlendMode.srcIn),
+        );
+      });
+
+      testWidgets('renders tooltip when provided', (tester) async {
+        await tester.pumpWidget(
+          buildFromSourceWidget(
+            icon: const MaterialIconSource(Icons.arrow_back),
+            onPressed: () {},
+            tooltip: 'Go back',
+          ),
+        );
+
+        expect(find.byType(Tooltip), findsOneWidget);
+      });
+
+      testWidgets('calls onPressed when tapped', (tester) async {
+        var pressed = false;
+        await tester.pumpWidget(
+          buildFromSourceWidget(
+            icon: const MaterialIconSource(Icons.arrow_back),
+            onPressed: () => pressed = true,
+          ),
+        );
+
+        await tester.tap(find.byType(DivineIconButton));
+        await tester.pumpAndSettle();
+
+        expect(pressed, isTrue);
+      });
     });
   });
 }

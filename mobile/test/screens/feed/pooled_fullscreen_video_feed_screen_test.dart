@@ -576,8 +576,8 @@ void main() {
           expect(sentinelBuilt, isFalse);
 
           tester
-              .widget<DiVineAppBarIconButton>(
-                find.byType(DiVineAppBarIconButton).first,
+              .widget<DivineAppBarIconButton>(
+                find.byType(DivineAppBarIconButton).first,
               )
               .onPressed
               ?.call();
@@ -638,8 +638,8 @@ void main() {
           expect(find.byType(FeedVideos), findsOneWidget);
 
           tester
-              .widget<DiVineAppBarIconButton>(
-                find.byType(DiVineAppBarIconButton).first,
+              .widget<DivineAppBarIconButton>(
+                find.byType(DivineAppBarIconButton).first,
               )
               .onPressed
               ?.call();

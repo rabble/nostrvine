@@ -1,6 +1,8 @@
+import 'package:divine_ui/src/app_bar/icon_source.dart';
 import 'package:divine_ui/src/icon/divine_icon.dart';
 import 'package:divine_ui/src/theme/vine_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 /// The visual style type of a [DivineIconButton].
 enum DivineIconButtonType {
@@ -49,6 +51,9 @@ enum DivineIconButtonSize {
 /// the same 48px tap target. The small variant appears 40px with a 4px
 /// transparent outer padding that captures taps.
 ///
+/// Use the default constructor for [DivineIconName]-based icons, or
+/// [DivineIconButton.fromSource] for an arbitrary [IconSource].
+///
 /// Example usage:
 /// ```dart
 /// DivineIconButton(
@@ -70,23 +75,60 @@ enum DivineIconButtonSize {
 /// )
 /// ```
 class DivineIconButton extends StatelessWidget {
-  /// Creates a Divine design system icon button.
+  /// Creates a Divine design system icon button from a [DivineIconName].
   const DivineIconButton({
-    required this.icon,
+    required DivineIconName this.icon,
     required this.onPressed,
     this.onLongPress,
     this.type = DivineIconButtonType.primary,
     this.size = DivineIconButtonSize.base,
     this.backgroundColor,
     this.foregroundColor,
+    this.showShadow = true,
+    this.tooltip,
     this.semanticLabel,
     this.semanticValue,
     this.semanticLongPressHint,
     super.key,
-  });
+  }) : iconSource = null;
+
+  /// Creates a Divine design system icon button from an arbitrary
+  /// [IconSource] (an SVG asset path or a raw Material [IconData]).
+  ///
+  /// Prefer the default constructor with a [DivineIconName] where
+  /// possible; use this constructor when the icon isn't part of the
+  /// Divine icon set enum, e.g. call sites still migrating off a raw
+  /// Material icon source.
+  const DivineIconButton.fromSource({
+    required IconSource icon,
+    required this.onPressed,
+    this.onLongPress,
+    this.type = DivineIconButtonType.primary,
+    this.size = DivineIconButtonSize.base,
+    this.backgroundColor,
+    this.foregroundColor,
+    this.showShadow = true,
+    this.tooltip,
+    this.semanticLabel,
+    this.semanticValue,
+    this.semanticLongPressHint,
+    super.key,
+  }) : icon = null,
+       iconSource = icon;
 
   /// The icon to display from the Divine design system icon set.
-  final DivineIconName icon;
+  ///
+  /// Set via the default constructor. Null when constructed via
+  /// [DivineIconButton.fromSource] — exactly one of [icon] / [iconSource]
+  /// is non-null.
+  final DivineIconName? icon;
+
+  /// The icon to display from an arbitrary [IconSource].
+  ///
+  /// Set via [DivineIconButton.fromSource]. Null when constructed via the
+  /// default constructor — exactly one of [icon] / [iconSource] is
+  /// non-null.
+  final IconSource? iconSource;
 
   /// Called when the button is tapped.
   ///
@@ -109,6 +151,15 @@ class DivineIconButton extends StatelessWidget {
   /// Overrides the icon (foreground) color derived from [type].
   final Color? foregroundColor;
 
+  /// Whether to show the [type]-derived drop shadow. Defaults to `true`.
+  ///
+  /// Set to `false` for callers that never had a shadow before adopting
+  /// this widget and want to preserve their existing flat appearance.
+  final bool showShadow;
+
+  /// Tooltip text shown on long press / hover.
+  final String? tooltip;
+
   /// Semantic label for accessibility.
   final String? semanticLabel;
 
@@ -124,12 +175,15 @@ class DivineIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return _DivineIconButtonContent(
       icon: icon,
+      iconSource: iconSource,
       onPressed: onPressed,
       onLongPress: onLongPress,
       type: type,
       size: size,
       backgroundColor: backgroundColor,
       foregroundColor: foregroundColor,
+      showShadow: showShadow,
+      tooltip: tooltip,
       semanticLabel: semanticLabel,
       semanticValue: semanticValue,
       semanticLongPressHint: semanticLongPressHint,
@@ -140,24 +194,30 @@ class DivineIconButton extends StatelessWidget {
 class _DivineIconButtonContent extends StatelessWidget {
   const _DivineIconButtonContent({
     required this.icon,
+    required this.iconSource,
     required this.onPressed,
     required this.onLongPress,
     required this.type,
     required this.size,
     this.backgroundColor,
     this.foregroundColor,
+    this.showShadow = true,
+    this.tooltip,
     this.semanticLabel,
     this.semanticValue,
     this.semanticLongPressHint,
   });
 
-  final DivineIconName icon;
+  final DivineIconName? icon;
+  final IconSource? iconSource;
   final VoidCallback? onPressed;
   final VoidCallback? onLongPress;
   final DivineIconButtonType type;
   final DivineIconButtonSize size;
   final Color? backgroundColor;
   final Color? foregroundColor;
+  final bool showShadow;
+  final String? tooltip;
   final String? semanticLabel;
   final String? semanticValue;
   final String? semanticLongPressHint;
@@ -212,6 +272,10 @@ class _DivineIconButtonContent extends StatelessWidget {
   };
 
   List<BoxShadow>? get _boxShadow {
+    if (!showShadow) {
+      return null;
+    }
+
     // Disabled buttons have no shadow (except for some types).
     if ((!_isEnabled && type == .primary) ||
         type == .ghost ||
@@ -233,12 +297,36 @@ class _DivineIconButtonContent extends StatelessWidget {
     ];
   }
 
+  Widget get _iconWidget {
+    final source = iconSource;
+    if (source != null) {
+      return switch (source) {
+        SvgIconSource(:final assetPath) => SvgPicture.asset(
+          assetPath,
+          width: 24,
+          height: 24,
+          colorFilter: ColorFilter.mode(_iconColor, BlendMode.srcIn),
+        ),
+        // Still rendered for existing deprecated MaterialIconSource call
+        // sites (e.g. DivineAppBarIconButton) — this is the type's
+        // implementation, not a call site that should migrate off it.
+        // ignore: deprecated_member_use_from_same_package
+        MaterialIconSource(:final iconData) => Icon(
+          iconData,
+          color: _iconColor,
+          size: 24,
+        ),
+      };
+    }
+    return DivineIcon(icon: icon!, color: _iconColor);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final iconWidget = DivineIcon(
-      icon: icon,
-      color: _iconColor,
-    );
+    var iconWidget = _iconWidget;
+    if (tooltip != null) {
+      iconWidget = Tooltip(message: tooltip, child: iconWidget);
+    }
 
     final decoration = BoxDecoration(
       color: _backgroundColor,
@@ -248,7 +336,24 @@ class _DivineIconButtonContent extends StatelessWidget {
           : null,
       boxShadow: _isEnabled ? _boxShadow : null,
     );
-    Widget button = Semantics(
+    final inkBox = Ink(
+      decoration: decoration,
+      child: Padding(
+        padding: EdgeInsets.all(_padding),
+        child: iconWidget,
+      ),
+    );
+
+    // Small variant's visible pill is 40px (< 48px accessibility minimum).
+    // Center it in an explicit 48px box *inside* the InkWell so the tap
+    // target itself is 48px, not just the surrounding non-tappable layout
+    // space — a `Padding` outside the InkWell only reserves space, it
+    // doesn't capture taps.
+    final tapTarget = size == DivineIconButtonSize.small
+        ? SizedBox(width: 48, height: 48, child: Center(child: inkBox))
+        : inkBox;
+
+    return Semantics(
       label: semanticLabel,
       value: semanticValue,
       onLongPress: onLongPress,
@@ -268,25 +373,11 @@ class _DivineIconButtonContent extends StatelessWidget {
               borderRadius: BorderRadius.circular(_borderRadius),
               splashColor: _iconColor.withValues(alpha: 0.1),
               highlightColor: _iconColor.withValues(alpha: 0.05),
-              child: Ink(
-                decoration: decoration,
-                child: Padding(
-                  padding: EdgeInsets.all(_padding),
-                  child: iconWidget,
-                ),
-              ),
+              child: tapTarget,
             ),
           ),
         ),
       ),
     );
-
-    // Small variant: wrap in 4px padding so the visible button is 40px
-    // but the tap target remains 48px.
-    if (size == DivineIconButtonSize.small) {
-      button = Padding(padding: const EdgeInsets.all(4), child: button);
-    }
-
-    return button;
   }
 }

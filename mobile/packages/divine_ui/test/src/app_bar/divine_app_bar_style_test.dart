@@ -12,9 +12,6 @@ void main() {
 
         expect(style.height, 72);
         expect(style.leadingWidth, 80);
-        expect(style.iconButtonSize, 40);
-        expect(style.iconSize, 24);
-        expect(style.iconButtonBorderRadius, 16);
         expect(style.iconButtonBackgroundColor, isNull);
         expect(style.iconColor, isNull);
         expect(style.titleStyle, isNull);
@@ -31,9 +28,6 @@ void main() {
         const style = DiVineAppBarStyle(
           height: 64,
           leadingWidth: 72,
-          iconButtonSize: 56,
-          iconSize: 40,
-          iconButtonBorderRadius: 28,
           iconButtonBackgroundColor: Colors.red,
           iconColor: Colors.blue,
           titleStyle: titleStyle,
@@ -45,9 +39,6 @@ void main() {
 
         expect(style.height, 64);
         expect(style.leadingWidth, 72);
-        expect(style.iconButtonSize, 56);
-        expect(style.iconSize, 40);
-        expect(style.iconButtonBorderRadius, 28);
         expect(style.iconButtonBackgroundColor, Colors.red);
         expect(style.iconColor, Colors.blue);
         expect(style.titleStyle, titleStyle);
@@ -64,9 +55,6 @@ void main() {
 
         expect(style.height, 72);
         expect(style.leadingWidth, 80);
-        expect(style.iconButtonSize, 40);
-        expect(style.iconSize, 24);
-        expect(style.iconButtonBorderRadius, 16);
         expect(style.iconButtonBackgroundColor, isNull);
         expect(style.iconColor, isNull);
         expect(style.titleStyle, isNull);
@@ -130,29 +118,23 @@ void main() {
         );
 
         final copied = original.copyWith(
-          iconButtonSize: 56,
+          horizontalPadding: 24,
           iconButtonBackgroundColor: Colors.red,
         );
 
-        expect(copied.iconButtonSize, 56);
+        expect(copied.horizontalPadding, 24);
         expect(copied.iconButtonBackgroundColor, Colors.red);
         expect(copied.iconColor, Colors.white);
       });
 
       test('returns identical values when no changes specified', () {
         const original = DiVineAppBarStyle(
-          iconButtonSize: 56,
-          iconSize: 40,
-          iconButtonBorderRadius: 28,
           iconButtonBackgroundColor: Colors.red,
           iconColor: Colors.blue,
         );
 
         final copied = original.copyWith();
 
-        expect(copied.iconButtonSize, original.iconButtonSize);
-        expect(copied.iconSize, original.iconSize);
-        expect(copied.iconButtonBorderRadius, original.iconButtonBorderRadius);
         expect(
           copied.iconButtonBackgroundColor,
           original.iconButtonBackgroundColor,
@@ -221,7 +203,7 @@ void main() {
 
     group('merge', () {
       test('returns this when other is null', () {
-        const style = DiVineAppBarStyle(iconButtonSize: 56);
+        const style = DiVineAppBarStyle(iconButtonBackgroundColor: Colors.red);
         final merged = style.merge(null);
 
         expect(merged, style);
@@ -247,9 +229,6 @@ void main() {
         const other = DiVineAppBarStyle(
           height: 64,
           leadingWidth: 72,
-          iconButtonSize: 56,
-          iconSize: 40,
-          iconButtonBorderRadius: 28,
           actionButtonSpacing: 12,
           horizontalPadding: 24,
           dropdownCaretSize: 20,
@@ -259,9 +238,6 @@ void main() {
 
         expect(merged.height, 64);
         expect(merged.leadingWidth, 72);
-        expect(merged.iconButtonSize, 56);
-        expect(merged.iconSize, 40);
-        expect(merged.iconButtonBorderRadius, 28);
         expect(merged.actionButtonSpacing, 12);
         expect(merged.horizontalPadding, 24);
         expect(merged.dropdownCaretSize, 20);
@@ -303,7 +279,7 @@ void main() {
 
       test('different instances are not equal', () {
         const style1 = DiVineAppBarStyle.defaultStyle;
-        const style2 = DiVineAppBarStyle(iconButtonSize: 56);
+        const style2 = DiVineAppBarStyle(iconButtonBackgroundColor: Colors.red);
 
         expect(style1, isNot(equals(style2)));
       });
@@ -321,7 +297,7 @@ void main() {
 
       test('hashCode differs for different objects', () {
         const style1 = DiVineAppBarStyle.defaultStyle;
-        const style2 = DiVineAppBarStyle(iconButtonSize: 56);
+        const style2 = DiVineAppBarStyle(iconButtonBackgroundColor: Colors.red);
 
         expect(style1.hashCode, isNot(equals(style2.hashCode)));
       });

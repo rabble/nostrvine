@@ -1,10 +1,14 @@
+// MaterialIconSource is deprecated but still fully supported; these tests
+// intentionally exercise it to guard that support, not migrate off it.
+// ignore_for_file: deprecated_member_use_from_same_package
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('DiVineAppBarIconButton', () {
+  group('DivineAppBarIconButton', () {
     Widget buildTestWidget({
       required IconSource icon,
       VoidCallback? onPressed,
@@ -12,28 +16,29 @@ void main() {
       String? semanticLabel,
       Color? backgroundColor,
       Color? iconColor,
-      double size = 40,
-      double iconSize = 24,
-      double borderRadius = 16,
+      BorderSide? borderSide,
     }) {
       return MaterialApp(
         theme: VineTheme.theme,
         home: Scaffold(
           body: Center(
-            child: DiVineAppBarIconButton(
+            child: DivineAppBarIconButton(
               icon: icon,
               onPressed: onPressed,
               tooltip: tooltip,
               semanticLabel: semanticLabel,
               backgroundColor: backgroundColor,
               iconColor: iconColor,
-              size: size,
-              iconSize: iconSize,
-              borderRadius: borderRadius,
+              borderSide: borderSide,
             ),
           ),
         ),
       );
+    }
+
+    BoxDecoration findDecoration(WidgetTester tester) {
+      final ink = tester.widget<Ink>(find.byType(Ink));
+      return ink.decoration! as BoxDecoration;
     }
 
     group('rendering', () {
@@ -57,68 +62,27 @@ void main() {
         expect(find.byType(SvgPicture), findsOneWidget);
       });
 
-      testWidgets('renders container with correct size', (tester) async {
+      testWidgets('delegates to DivineIconButton at small size', (
+        tester,
+      ) async {
         await tester.pumpWidget(
-          buildTestWidget(
-            icon: const MaterialIconSource(Icons.arrow_back),
-            size: 56,
-          ),
+          buildTestWidget(icon: const MaterialIconSource(Icons.arrow_back)),
         );
 
-        final container = tester.widget<Container>(find.byType(Container));
-        final constraints = container.constraints;
-
-        expect(constraints?.maxWidth, 56);
-        expect(constraints?.maxHeight, 56);
-      });
-
-      testWidgets('renders icon with correct size', (tester) async {
-        await tester.pumpWidget(
-          buildTestWidget(
-            icon: const MaterialIconSource(Icons.arrow_back),
-            iconSize: 40,
-          ),
+        final divineIconButton = tester.widget<DivineIconButton>(
+          find.byType(DivineIconButton),
         );
-
-        final icon = tester.widget<Icon>(find.byType(Icon));
-        expect(icon.size, 40);
+        expect(divineIconButton.size, DivineIconButtonSize.small);
       });
-
-      testWidgets(
-        'outer tap target is 48x48 even when size is smaller',
-        (tester) async {
-          // Default size = 40 (< 48) is intentional: the outer 48x48 tap
-          // target must be enforced regardless of the visual button size.
-          await tester.pumpWidget(
-            buildTestWidget(
-              icon: const MaterialIconSource(Icons.arrow_back),
-            ),
-          );
-
-          final sizedBox = tester.widget<SizedBox>(
-            find.ancestor(
-              of: find.byType(IconButton),
-              matching: find.byType(SizedBox),
-            ),
-          );
-          expect(sizedBox.width, 48);
-          expect(sizedBox.height, 48);
-        },
-      );
     });
 
     group('styling', () {
       testWidgets('uses default background color', (tester) async {
         await tester.pumpWidget(
-          buildTestWidget(
-            icon: const MaterialIconSource(Icons.arrow_back),
-          ),
+          buildTestWidget(icon: const MaterialIconSource(Icons.arrow_back)),
         );
 
-        final container = tester.widget<Container>(find.byType(Container));
-        final decoration = container.decoration as BoxDecoration?;
-
-        expect(decoration?.color, VineTheme.iconButtonBackground);
+        expect(findDecoration(tester).color, VineTheme.iconButtonBackground);
       });
 
       testWidgets('uses custom background color', (tester) async {
@@ -129,17 +93,12 @@ void main() {
           ),
         );
 
-        final container = tester.widget<Container>(find.byType(Container));
-        final decoration = container.decoration as BoxDecoration?;
-
-        expect(decoration?.color, Colors.red);
+        expect(findDecoration(tester).color, Colors.red);
       });
 
       testWidgets('uses default icon color', (tester) async {
         await tester.pumpWidget(
-          buildTestWidget(
-            icon: const MaterialIconSource(Icons.arrow_back),
-          ),
+          buildTestWidget(icon: const MaterialIconSource(Icons.arrow_back)),
         );
 
         final icon = tester.widget<Icon>(find.byType(Icon));
@@ -158,20 +117,58 @@ void main() {
         expect(icon.color, Colors.blue);
       });
 
-      testWidgets('applies border radius', (tester) async {
+      testWidgets('applies border radius matching DivineIconButtonSize.small', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(icon: const MaterialIconSource(Icons.arrow_back)),
+        );
+
+        expect(
+          findDecoration(tester).borderRadius,
+          BorderRadius.circular(16),
+        );
+      });
+
+      testWidgets('no border when borderSide is null', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(icon: const MaterialIconSource(Icons.arrow_back)),
+        );
+
+        expect(findDecoration(tester).border, isNull);
+      });
+
+      testWidgets('renders a 2px outlineMuted border when borderSide is set', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           buildTestWidget(
             icon: const MaterialIconSource(Icons.arrow_back),
+            borderSide: const BorderSide(
+              color: VineTheme.outlineMuted,
+              width: 2,
+            ),
           ),
         );
 
-        final container = tester.widget<Container>(find.byType(Container));
-        final decoration = container.decoration as BoxDecoration?;
+        final border = findDecoration(tester).border! as Border;
+        expect(border.top.color, VineTheme.outlineMuted);
+        expect(border.top.width, 2);
+      });
+    });
 
-        expect(
-          decoration?.borderRadius,
-          BorderRadius.circular(16),
+    group('shadow', () {
+      testWidgets('renders no shadow, unlike a default DivineIconButton', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            icon: const MaterialIconSource(Icons.arrow_back),
+            onPressed: () {},
+          ),
         );
+
+        expect(findDecoration(tester).boxShadow, isNull);
       });
     });
 
@@ -185,7 +182,9 @@ void main() {
           ),
         );
 
-        await tester.tap(find.byType(GestureDetector));
+        await tester.tap(find.byType(DivineAppBarIconButton));
+        await tester.pumpAndSettle();
+
         expect(pressed, isTrue);
       });
 
@@ -193,12 +192,10 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(
-          buildTestWidget(
-            icon: const MaterialIconSource(Icons.arrow_back),
-          ),
+          buildTestWidget(icon: const MaterialIconSource(Icons.arrow_back)),
         );
 
-        await tester.tap(find.byType(GestureDetector));
+        await tester.tap(find.byType(DivineAppBarIconButton));
 
         expect(tester.takeException(), isNull);
       });
@@ -218,9 +215,7 @@ void main() {
 
       testWidgets('does not render tooltip when not provided', (tester) async {
         await tester.pumpWidget(
-          buildTestWidget(
-            icon: const MaterialIconSource(Icons.arrow_back),
-          ),
+          buildTestWidget(icon: const MaterialIconSource(Icons.arrow_back)),
         );
 
         expect(find.byType(Tooltip), findsNothing);
@@ -274,9 +269,7 @@ void main() {
 
       testWidgets('Semantics disabled when onPressed is null', (tester) async {
         await tester.pumpWidget(
-          buildTestWidget(
-            icon: const MaterialIconSource(Icons.arrow_back),
-          ),
+          buildTestWidget(icon: const MaterialIconSource(Icons.arrow_back)),
         );
 
         final semantics = tester.firstWidget<Semantics>(findButtonSemantics());
@@ -310,27 +303,6 @@ void main() {
           svgPicture.colorFilter,
           const ColorFilter.mode(Colors.red, BlendMode.srcIn),
         );
-      });
-
-      testWidgets('SVG icon is wrapped in SizedBox with correct size', (
-        tester,
-      ) async {
-        await tester.pumpWidget(
-          buildTestWidget(
-            icon: const SvgIconSource('assets/icon/CaretLeft.svg'),
-          ),
-        );
-
-        final sizedBoxes = tester
-            .widgetList<SizedBox>(find.byType(SizedBox))
-            .toList();
-        final iconSizedBox = sizedBoxes.firstWhere(
-          (box) => box.width == 24 && box.height == 24,
-          orElse: () => throw StateError('No SizedBox with size 24 found'),
-        );
-
-        expect(iconSizedBox.width, 24);
-        expect(iconSizedBox.height, 24);
       });
     });
   });

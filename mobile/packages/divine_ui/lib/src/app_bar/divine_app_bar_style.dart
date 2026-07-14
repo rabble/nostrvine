@@ -22,9 +22,6 @@ class DiVineAppBarStyle extends Equatable {
   const DiVineAppBarStyle({
     this.height = 72,
     this.leadingWidth = 80,
-    this.iconButtonSize = 40,
-    this.iconSize = 24,
-    this.iconButtonBorderRadius = 16,
     this.iconButtonBackgroundColor,
     this.iconButtonBorderSide,
     this.iconColor,
@@ -44,21 +41,6 @@ class DiVineAppBarStyle extends Equatable {
   ///
   /// Defaults to 80.
   final double leadingWidth;
-
-  /// Size of icon button containers.
-  ///
-  /// Defaults to 48.
-  final double iconButtonSize;
-
-  /// Size of icons within buttons.
-  ///
-  /// Defaults to 32.
-  final double iconSize;
-
-  /// Border radius of icon button containers.
-  ///
-  /// Defaults to 20 for pill-shaped appearance.
-  final double iconButtonBorderRadius;
 
   /// Background color for icon buttons.
   ///
@@ -124,9 +106,6 @@ class DiVineAppBarStyle extends Equatable {
   DiVineAppBarStyle copyWith({
     double? height,
     double? leadingWidth,
-    double? iconButtonSize,
-    double? iconSize,
-    double? iconButtonBorderRadius,
     Color? iconButtonBackgroundColor,
     BorderSide? iconButtonBorderSide,
     Color? iconColor,
@@ -139,10 +118,6 @@ class DiVineAppBarStyle extends Equatable {
     return DiVineAppBarStyle(
       height: height ?? this.height,
       leadingWidth: leadingWidth ?? this.leadingWidth,
-      iconButtonSize: iconButtonSize ?? this.iconButtonSize,
-      iconSize: iconSize ?? this.iconSize,
-      iconButtonBorderRadius:
-          iconButtonBorderRadius ?? this.iconButtonBorderRadius,
       iconButtonBackgroundColor:
           iconButtonBackgroundColor ?? this.iconButtonBackgroundColor,
       iconButtonBorderSide: iconButtonBorderSide ?? this.iconButtonBorderSide,
@@ -161,9 +136,6 @@ class DiVineAppBarStyle extends Equatable {
     return DiVineAppBarStyle(
       height: other.height,
       leadingWidth: other.leadingWidth,
-      iconButtonSize: other.iconButtonSize,
-      iconSize: other.iconSize,
-      iconButtonBorderRadius: other.iconButtonBorderRadius,
       iconButtonBackgroundColor:
           other.iconButtonBackgroundColor ?? iconButtonBackgroundColor,
       iconButtonBorderSide: other.iconButtonBorderSide ?? iconButtonBorderSide,
@@ -180,9 +152,6 @@ class DiVineAppBarStyle extends Equatable {
   List<Object?> get props => [
     height,
     leadingWidth,
-    iconButtonSize,
-    iconSize,
-    iconButtonBorderRadius,
     iconButtonBackgroundColor,
     iconButtonBorderSide,
     iconColor,

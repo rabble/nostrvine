@@ -221,12 +221,9 @@ void main() {
 
       await tester.pump();
 
+      final l10n = lookupAppLocalizations(const Locale('en'));
       expect(
-        find.bySemanticsLabel(
-          lookupAppLocalizations(
-            const Locale('en'),
-          ).peopleListsAddPeopleSemanticLabel,
-        ),
+        find.bySemanticsLabel(l10n.peopleListsAddPeopleSemanticLabel),
         findsOneWidget,
       );
     });
@@ -268,12 +265,9 @@ void main() {
 
       await tester.pump();
 
+      final l10n = lookupAppLocalizations(const Locale('en'));
       expect(
-        find.bySemanticsLabel(
-          lookupAppLocalizations(
-            const Locale('en'),
-          ).peopleListsAddPeopleSemanticLabel,
-        ),
+        find.bySemanticsLabel(l10n.peopleListsAddPeopleSemanticLabel),
         findsNothing,
       );
     });

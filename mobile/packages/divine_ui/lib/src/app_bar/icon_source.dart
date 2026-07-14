@@ -35,8 +35,18 @@ final class SvgIconSource extends IconSource {
 /// Material icon source.
 ///
 /// Use this for standard Material Design icons.
+@Deprecated(
+  'Prefer SvgIconSource with a DivineIconName from the Divine design '
+  'system icon set. MaterialIconSource remains supported for existing '
+  'call sites that still need a raw Material icon.',
+)
 final class MaterialIconSource extends IconSource {
   /// Creates a Material icon source with the given icon data.
+  @Deprecated(
+    'Prefer SvgIconSource with a DivineIconName from the Divine design '
+    'system icon set. MaterialIconSource remains supported for existing '
+    'call sites that still need a raw Material icon.',
+  )
   const MaterialIconSource(this.iconData);
 
   /// The Material icon data (e.g., Icons.arrow_back).

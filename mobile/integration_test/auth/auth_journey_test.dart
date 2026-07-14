@@ -549,7 +549,7 @@ void main() {
         logPhase('── Phase 3i: Back to Explore ──');
 
         // Pop the fullscreen feed route to return to the explore grid.
-        // The pooled feed uses a DiVineAppBarIconButton with semanticLabel
+        // The pooled feed uses a DivineAppBarIconButton with semanticLabel
         // 'Go back'. Fall back to Navigator.pop if not found.
         final backButton = find.bySemanticsLabel('Go back');
         if (backButton.evaluate().isNotEmpty) {

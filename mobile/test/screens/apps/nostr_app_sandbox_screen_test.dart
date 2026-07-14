@@ -73,7 +73,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byType(DiVineAppBarIconButton));
+      await tester.tap(find.byType(DivineAppBarIconButton));
       await tester.pump();
 
       expect(platform.controller.goBackCallCount, 1);

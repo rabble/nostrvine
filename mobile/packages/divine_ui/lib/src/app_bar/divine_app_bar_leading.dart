@@ -157,7 +157,7 @@ class _LeadingIconButton extends StatelessWidget {
       alignment: AlignmentDirectional.centerStart,
       child: Padding(
         padding: EdgeInsetsDirectional.only(start: style.horizontalPadding),
-        child: DiVineAppBarIconButton(
+        child: DivineAppBarIconButton(
           icon: icon,
           onPressed: onPressed,
           semanticLabel: semanticLabel,
@@ -165,9 +165,6 @@ class _LeadingIconButton extends StatelessWidget {
           backgroundColor: style.iconButtonBackgroundColor,
           borderSide: style.iconButtonBorderSide,
           iconColor: style.iconColor,
-          size: style.iconButtonSize,
-          iconSize: style.iconSize,
-          borderRadius: style.iconButtonBorderRadius,
         ),
       ),
     );
@@ -175,7 +172,7 @@ class _LeadingIconButton extends StatelessWidget {
     if (!expandHitArea) return visibleButton;
 
     // Stretch the tap target to the whole leading slot. The inner
-    // [DiVineAppBarIconButton] keeps its semantics for screen readers
+    // [DivineAppBarIconButton] keeps its semantics for screen readers
     // but [AbsorbPointer] stops it from receiving pointer events, so
     // taps don't double-fire and the outer [GestureDetector] is the
     // single source of truth for hit testing.

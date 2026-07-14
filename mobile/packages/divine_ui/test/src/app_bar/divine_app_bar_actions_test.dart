@@ -1,3 +1,7 @@
+// MaterialIconSource is deprecated but still fully supported; these tests
+// intentionally exercise it to guard that support, not migrate off it.
+// ignore_for_file: deprecated_member_use_from_same_package
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -53,7 +57,7 @@ void main() {
     testWidgets('renders nothing when actions list is empty', (tester) async {
       await tester.pumpWidget(buildTestWidget(actions: []));
 
-      expect(find.byType(DiVineAppBarIconButton), findsNothing);
+      expect(find.byType(DivineAppBarIconButton), findsNothing);
     });
 
     testWidgets('renders action buttons', (tester) async {
@@ -72,7 +76,7 @@ void main() {
         ),
       );
 
-      expect(find.byType(DiVineAppBarIconButton), findsNWidgets(2));
+      expect(find.byType(DivineAppBarIconButton), findsNWidgets(2));
     });
 
     testWidgets('calls onPressed when action is tapped', (tester) async {
@@ -89,7 +93,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byType(DiVineAppBarIconButton));
+      await tester.tap(find.byType(DivineAppBarIconButton));
       expect(tapped, isTrue);
     });
 

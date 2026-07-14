@@ -110,7 +110,7 @@ void main() {
       verify(() => mockPrefs.setBool('ff_newCameraUI', true)).called(1);
 
       // Navigate back to home
-      await tester.tap(find.byType(DiVineAppBarIconButton).first);
+      await tester.tap(find.byType(DivineAppBarIconButton).first);
       await tester.pumpAndSettle();
 
       // Verify feature is now enabled
@@ -292,7 +292,10 @@ void main() {
       expect(find.text('Enhanced Camera'), findsOneWidget);
 
       // Reset all flags
-      final resetButton = find.byIcon(Icons.restore);
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final resetButton = find.bySemanticsLabel(
+        l10n.featureFlagResetAllTooltip,
+      );
       await tester.tap(resetButton);
       await tester.pumpAndSettle();
 
@@ -426,7 +429,7 @@ void main() {
       expect(find.text('Feature Flags'), findsOneWidget);
 
       // Navigate back to see if in-memory state was updated despite storage error
-      await tester.tap(find.byType(DiVineAppBarIconButton).first);
+      await tester.tap(find.byType(DivineAppBarIconButton).first);
       await tester.pumpAndSettle();
 
       // Should show enhanced camera (in-memory state updated despite storage error)
