@@ -2162,21 +2162,31 @@ class _DivineAppState extends ConsumerState<DivineApp>
                       // GoRouter's universal-link redirect may have already
                       // navigated here; skip the duplicate navigation to avoid
                       // a second navigation frame on the same target.
-                      break;
+                      Log.info(
+                        '⏭️ Already on $targetPath — skipping duplicate '
+                        'list navigation',
+                        name: 'DeepLinkHandler',
+                        category: LogCategory.ui,
+                      );
                     case ListDeepLinkNavAction.go:
                       // Another list is already showing — replace it
                       // in-place instead of stacking it.
                       router.go(targetPath);
+                      Log.info(
+                        '✅ Navigation completed to: $targetPath',
+                        name: 'DeepLinkHandler',
+                        category: LogCategory.ui,
+                      );
                     case ListDeepLinkNavAction.push:
                       // Keep the current route underneath so back returns to
                       // wherever the user was instead of wiping the stack.
                       router.push(targetPath);
+                      Log.info(
+                        '✅ Navigation completed to: $targetPath',
+                        name: 'DeepLinkHandler',
+                        category: LogCategory.ui,
+                      );
                   }
-                  Log.info(
-                    '✅ Navigation completed to: $targetPath',
-                    name: 'DeepLinkHandler',
-                    category: LogCategory.ui,
-                  );
                 } catch (e) {
                   Log.error(
                     '❌ Navigation failed: $e',

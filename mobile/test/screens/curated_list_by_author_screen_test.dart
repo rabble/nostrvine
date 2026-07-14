@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/route_error_screen.dart';
@@ -15,6 +16,7 @@ import 'package:openvine/screens/curated_list_by_author_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/services/curated_list_service.dart';
 
+import '../helpers/go_router.dart';
 import '../helpers/test_provider_overrides.dart';
 
 class _MockCuratedListService extends Mock implements CuratedListService {}
@@ -45,7 +47,11 @@ void main() {
       when(() => mockService.isSubscribedToList(any())).thenReturn(false);
     });
 
-    Widget buildSubject() {
+    Widget buildSubject({MockGoRouter? goRouter}) {
+      const screen = CuratedListByAuthorScreen(
+        authorPubkey: _authorPubkey,
+        listId: 'my-vines',
+      );
       return ProviderScope(
         overrides: [
           ...getStandardTestOverrides(),
@@ -53,13 +59,12 @@ void main() {
             () => _TestCuratedListsState(mockService),
           ),
         ],
-        child: const MaterialApp(
+        child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: CuratedListByAuthorScreen(
-            authorPubkey: _authorPubkey,
-            listId: 'my-vines',
-          ),
+          home: goRouter == null
+              ? screen
+              : MockGoRouterProvider(goRouter: goRouter, child: screen),
         ),
       );
     }
@@ -123,6 +128,31 @@ void main() {
       expect(find.byType(RouteErrorScreen), findsOneWidget);
       expect(find.text(l10n.curatedListFailedToLoad), findsOneWidget);
     });
+
+    testWidgets(
+      'unavailable-state back button falls back to the home feed when there '
+      'is nothing to pop (cold-start deep link)',
+      (tester) async {
+        when(
+          () => mockService.fetchPublicList(
+            authorPubkey: _authorPubkey,
+            listId: 'my-vines',
+          ),
+        ).thenAnswer((_) async => null);
+
+        final goRouter = MockGoRouter();
+        when(goRouter.canPop).thenReturn(false);
+        when(() => goRouter.go(any())).thenReturn(null);
+
+        await tester.pumpWidget(buildSubject(goRouter: goRouter));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byTooltip('Back'));
+
+        verify(() => goRouter.go(defaultSafePopFallback)).called(1);
+        verifyNever(() => goRouter.pop<Object?>());
+      },
+    );
 
     testWidgets('shows a loading spinner while the list resolves', (
       tester,

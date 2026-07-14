@@ -4,7 +4,7 @@
 import 'dart:async';
 
 import 'package:app_links/app_links.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/sensitive_uri_for_logs.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -271,10 +271,13 @@ class DeepLinkService {
       }
 
       // Handle /list/{pubkey}/{listId} — NIP-51 kind 30005 curated video
-      // lists, addressed by author + d-tag. The author segment accepts hex
-      // or npub and is normalized to lowercase hex for relay filters.
+      // lists, addressed by author + d-tag. The author segment accepts hex,
+      // npub, or nprofile and is normalized to lowercase hex for relay
+      // filters.
       if (pathSegments.length == 3 && pathSegments[0] == 'list') {
-        final listPubkey = _normalizePubkeyToHex(pathSegments[1]);
+        final listPubkey = normalizePublicIdentifier(
+          pathSegments[1],
+        )?.hexPubkey.toLowerCase();
         final listId = pathSegments[2];
         if (listPubkey == null || listId.isEmpty) {
           Log.warning(
@@ -377,27 +380,6 @@ class DeepLinkService {
       }
     }
 
-    return null;
-  }
-
-  static final _hexPubkeyRegex = RegExp(r'^[a-fA-F0-9]{64}$');
-
-  /// Normalizes an author path segment (64-char hex or `npub1…`) to
-  /// lowercase hex. Returns `null` when the segment is neither.
-  static String? _normalizePubkeyToHex(String segment) {
-    if (_hexPubkeyRegex.hasMatch(segment)) {
-      return segment.toLowerCase();
-    }
-    if (segment.startsWith('npub1')) {
-      try {
-        final decoded = NostrKeyUtils.decode(segment);
-        if (_hexPubkeyRegex.hasMatch(decoded)) {
-          return decoded.toLowerCase();
-        }
-      } catch (_) {
-        // Invalid bech32 — fall through to null.
-      }
-    }
     return null;
   }
 

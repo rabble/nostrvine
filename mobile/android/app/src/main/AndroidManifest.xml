@@ -152,7 +152,10 @@
                 <data android:pathPrefix="/hashtag"/>
                 <data android:pathPrefix="/search"/>
                 <data android:pathPrefix="/invite"/>
-                <data android:pathPrefix="/list"/>
+                <!-- pathPattern, not pathPrefix: a "/list" prefix would also
+                     claim the web's /lists browse page (prefix matching is a
+                     raw string prefix, not segment-aware). -->
+                <data android:pathPattern="/list/.*"/>
                 <data android:pathPrefix="/reset-password"/>
                 <data android:pathPrefix="/verify-email"/>
             </intent-filter>

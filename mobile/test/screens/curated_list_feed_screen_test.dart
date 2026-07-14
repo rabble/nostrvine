@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
@@ -92,6 +93,37 @@ void main() {
 
       return app;
     }
+
+    testWidgets('back button pops when the router can pop', (tester) async {
+      final goRouter = MockGoRouter();
+      when(goRouter.canPop).thenReturn(true);
+      when(() => goRouter.pop<Object?>()).thenReturn(null);
+
+      await tester.pumpWidget(buildSubject(goRouter: goRouter));
+      await tester.pump();
+
+      await tester.tap(find.byTooltip('Back'));
+
+      verify(() => goRouter.pop<Object?>()).called(1);
+    });
+
+    testWidgets(
+      'back button falls back to the home feed when there is nothing to pop '
+      '(cold-start deep link)',
+      (tester) async {
+        final goRouter = MockGoRouter();
+        when(goRouter.canPop).thenReturn(false);
+        when(() => goRouter.go(any())).thenReturn(null);
+
+        await tester.pumpWidget(buildSubject(goRouter: goRouter));
+        await tester.pump();
+
+        await tester.tap(find.byTooltip('Back'));
+
+        verify(() => goRouter.go(defaultSafePopFallback)).called(1);
+        verifyNever(() => goRouter.pop<Object?>());
+      },
+    );
 
     testWidgets('shows unfollow list action for subscribed external list', (
       tester,

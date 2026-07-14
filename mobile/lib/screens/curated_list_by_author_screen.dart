@@ -4,12 +4,11 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/router/route_error_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
-import 'package:openvine/screens/feed/video_feed_page.dart';
 
 /// Resolves a `/list/:pubkey/:listId` link into [CuratedListFeedScreen].
 ///
@@ -28,8 +27,9 @@ class CuratedListByAuthorScreen extends ConsumerWidget {
   /// Route name for this screen.
   static const routeName = 'listByAuthor';
 
-  /// Path for this route.
-  static const path = '/list/:pubkey/:listId';
+  /// Path for this route. Derived from [CuratedListFeedScreen.basePath] so
+  /// the GoRoute pattern and [pathFor] can never diverge.
+  static const path = '${CuratedListFeedScreen.basePath}/:pubkey/:listId';
 
   /// Build path for a list addressed by author + d-tag.
   static String pathFor({required String pubkey, required String listId}) {
@@ -67,16 +67,6 @@ class CuratedListByAuthorScreen extends ConsumerWidget {
   }
 }
 
-/// Leaves the screen; on a cold-start deep link there is no route
-/// underneath, so fall back to the home feed instead of popping.
-void _navigateBack(BuildContext context) {
-  if (context.canPop()) {
-    context.pop();
-  } else {
-    context.go(VideoFeedPage.pathForIndex(0));
-  }
-}
-
 class _ListLoadingView extends StatelessWidget {
   const _ListLoadingView();
 
@@ -87,7 +77,9 @@ class _ListLoadingView extends StatelessWidget {
       appBar: DiVineAppBar(
         title: context.l10n.routeDefaultListName,
         showBackButton: true,
-        onBackPressed: () => _navigateBack(context),
+        // safePop: on a cold-start deep link this is the only route, and a
+        // raw pop would throw GoError.
+        onBackPressed: context.safePop,
       ),
       body: const Center(
         child: CircularProgressIndicator(color: VineTheme.vineGreen),
@@ -105,7 +97,7 @@ class _ListUnavailableView extends StatelessWidget {
       message: context.l10n.curatedListFailedToLoad,
       title: context.l10n.routeDefaultListName,
       showBackButton: true,
-      onBackPressed: () => _navigateBack(context),
+      onBackPressed: context.safePop,
     );
   }
 }

@@ -1304,40 +1304,6 @@ class CuratedListService extends ChangeNotifier {
   /// Use [until] to paginate backwards (set to oldest createdAt from previous batch)
   /// Use [limit] to control how many events to request (default: 500)
   /// Use [excludeIds] to skip lists already known (for pagination)
-  /// Fetches a single public curated list (kind 30005) by author + d-tag.
-  ///
-  /// Queries local cache + relays via [NostrClient.queryEvents]. Returns
-  /// `null` when no matching list event is found. Replaceable-event
-  /// semantics: when multiple versions come back (e.g. from different
-  /// relays), the newest one wins.
-  Future<CuratedList?> fetchPublicList({
-    required String authorPubkey,
-    required String listId,
-  }) async {
-    final events = await _nostrService.queryEvents([
-      Filter(
-        kinds: [30005], // NIP-51 curated lists
-        authors: [authorPubkey],
-        d: [listId],
-        limit: 1,
-      ),
-    ]);
-
-    CuratedList? newest;
-    for (final event in events) {
-      final list = _eventToCuratedList(event);
-      // Re-check author + d-tag: queryEvents merges cache results, whose
-      // filter support can be looser than a relay's.
-      if (list == null || list.id != listId || list.pubkey != authorPubkey) {
-        continue;
-      }
-      if (newest == null || list.updatedAt.isAfter(newest.updatedAt)) {
-        newest = list;
-      }
-    }
-    return newest;
-  }
-
   Stream<List<CuratedList>> streamPublicListsFromRelays({
     DateTime? until,
     int limit = 500,
@@ -1425,6 +1391,39 @@ class CuratedListService extends ChangeNotifier {
       name: 'CuratedListService',
       category: LogCategory.system,
     );
+  }
+
+  /// Fetches a single public curated list (kind 30005) by author + d-tag.
+  ///
+  /// Queries local cache + relays via [NostrClient.queryEvents]. Returns
+  /// `null` when no matching list event is found. No result limit is set,
+  /// so a stale cached version and a newer relay version can both arrive —
+  /// the newest one wins. Author + d-tag are re-checked on each result
+  /// because queryEvents merges cache hits, whose filter support can be
+  /// looser than a relay's.
+  Future<CuratedList?> fetchPublicList({
+    required String authorPubkey,
+    required String listId,
+  }) async {
+    final events = await _nostrService.queryEvents([
+      Filter(
+        kinds: [30005], // NIP-51 curated lists
+        authors: [authorPubkey],
+        d: [listId],
+      ),
+    ]);
+
+    CuratedList? newest;
+    for (final event in events) {
+      final list = _eventToCuratedList(event);
+      if (list == null || list.id != listId || list.pubkey != authorPubkey) {
+        continue;
+      }
+      if (newest == null || list.updatedAt.isAfter(newest.updatedAt)) {
+        newest = list;
+      }
+    }
+    return newest;
   }
 
   /// Fetch public curated lists from Nostr relays for discovery (legacy)

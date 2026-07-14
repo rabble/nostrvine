@@ -579,7 +579,7 @@ final class PublicCuratedListProvider
   }
 }
 
-String _$publicCuratedListHash() => r'cc4d45f0c106db233512993ccd4e9e0ddee9864b';
+String _$publicCuratedListHash() => r'2b8f4915387aa7b0954908543571a9c780921860';
 
 /// Provider that fetches a public curated list (kind 30005) by author +
 /// d-tag for the `/list/:pubkey/:listId` universal-link route.

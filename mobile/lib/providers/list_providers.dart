@@ -232,8 +232,16 @@ Future<CuratedList?> publicCuratedList(
   required String authorPubkey,
   required String listId,
 }) async {
-  await ref.watch(curatedListsStateProvider.future);
-  final service = ref.read(curatedListsStateProvider.notifier).service;
+  // Depend on the notifier (stable across state emissions), not the state:
+  // CuratedListsState re-emits on every CuratedListService.notifyListeners
+  // (background relay sync, list add/remove), and watching the state future
+  // would re-run this fetch — resetting the deep-link screen to loading —
+  // on every one of those emissions.
+  final notifier = ref.watch(curatedListsStateProvider.notifier);
+  // One-shot await so the service exists on cold-start deep links;
+  // deliberately read, not watch (see above).
+  await ref.read(curatedListsStateProvider.future);
+  final service = notifier.service;
   return service?.fetchPublicList(authorPubkey: authorPubkey, listId: listId);
 }
 

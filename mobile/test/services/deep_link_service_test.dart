@@ -2,6 +2,7 @@
 // ABOUTME: Tests video URLs, profile URLs, and unknown URL patterns
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:openvine/services/deep_link_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/sensitive_uri_for_logs.dart';
@@ -253,6 +254,22 @@ void main() {
       test('normalizes npub author to hex', () {
         final npub = NostrKeyUtils.encodePubKey(authorPubkey);
         final url = 'https://divine.video/list/$npub/my-vines';
+
+        final result = DeepLinkService.parseDeepLink(url);
+
+        expect(result.type, equals(DeepLinkType.list));
+        expect(result.listPubkey, equals(authorPubkey));
+        expect(result.listId, equals('my-vines'));
+      });
+
+      test('normalizes nprofile author to hex', () {
+        final nprofile = NIP19Tlv.encodeNprofile(
+          Nprofile(
+            pubkey: authorPubkey,
+            relays: ['wss://relay.divine.video'],
+          ),
+        );
+        final url = 'https://divine.video/list/$nprofile/my-vines';
 
         final result = DeepLinkService.parseDeepLink(url);
 
