@@ -1438,6 +1438,76 @@ void main() {
           ).called(1);
         },
       );
+
+      test(
+        'consecutive sweep-level throws report only once per fault streak',
+        () async {
+          // A persistently-throwing DAO re-enters the top-level catch every
+          // pass. Only the first fault of the streak should escalate to
+          // Crashlytics; the re-arm keeps sweeping regardless.
+          when(
+            () => dao.getRetryableForOwner(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenThrow(Exception('drift connection lost'));
+
+          final service = buildService(crashReporting: crashReporting);
+          await service.sweep();
+          await service.sweep();
+          await service.sweep();
+
+          verify(
+            () => crashReporting.recordError(
+              any<dynamic>(),
+              any<StackTrace?>(),
+              reason: OutgoingDmRetryServiceReportableSites.sweepTopLevel,
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'a non-throwing pass resets the streak so a later throw reports again',
+        () async {
+          final service = buildService(crashReporting: crashReporting);
+
+          // Fault streak begins — reports once.
+          when(
+            () => dao.getRetryableForOwner(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenThrow(Exception('drift connection lost'));
+          await service.sweep();
+
+          // DAO heals: a clean pass ends the streak.
+          when(
+            () => dao.getRetryableForOwner(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenAnswer((_) async => const <OutgoingDm>[]);
+          await service.sweep();
+
+          // New fault after recovery — reports afresh.
+          when(
+            () => dao.getRetryableForOwner(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenThrow(Exception('drift connection lost again'));
+          await service.sweep();
+
+          verify(
+            () => crashReporting.recordError(
+              any<dynamic>(),
+              any<StackTrace?>(),
+              reason: OutgoingDmRetryServiceReportableSites.sweepTopLevel,
+            ),
+          ).called(2);
+        },
+      );
     });
 
     group('interrupted-send recovery (pending:pending)', () {
