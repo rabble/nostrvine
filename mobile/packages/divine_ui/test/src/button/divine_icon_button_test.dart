@@ -182,6 +182,58 @@ void main() {
       });
     });
 
+    group('tap target', () {
+      testWidgets(
+        'small size: InkWell tap target is 48x48 despite the 40px pill',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              size: DivineIconButtonSize.small,
+              onPressed: () {},
+            ),
+          );
+
+          final inkWell = tester.widget<InkWell>(find.byType(InkWell));
+          final sizedBox = inkWell.child! as SizedBox;
+          expect(sizedBox.width, 48);
+          expect(sizedBox.height, 48);
+        },
+      );
+
+      testWidgets(
+        'small size: tap outside the 40px pill but inside the 48px '
+        'target still fires onPressed',
+        (tester) async {
+          var pressed = false;
+          await tester.pumpWidget(
+            buildTestWidget(
+              size: DivineIconButtonSize.small,
+              onPressed: () => pressed = true,
+            ),
+          );
+
+          // 22px from center: outside the 40px visible pill (half-width
+          // 20) but inside the 48px InkWell tap target (half-width 24).
+          final center = tester.getCenter(find.byType(DivineIconButton));
+          await tester.tapAt(center + const Offset(22, 0));
+          await tester.pumpAndSettle();
+
+          expect(pressed, isTrue);
+        },
+      );
+
+      testWidgets(
+        'base size: InkWell tap target matches the 48px pill exactly',
+        (tester) async {
+          await tester.pumpWidget(buildTestWidget(onPressed: () {}));
+
+          final inkWell = tester.widget<InkWell>(find.byType(InkWell));
+          expect(inkWell.child, isA<Ink>());
+          expect(tester.getSize(find.byType(InkWell)), const Size(48, 48));
+        },
+      );
+    });
+
     group('icon colors', () {
       testWidgets('foregroundColor override takes precedence', (tester) async {
         await tester.pumpWidget(

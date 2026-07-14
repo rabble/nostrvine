@@ -336,7 +336,24 @@ class _DivineIconButtonContent extends StatelessWidget {
           : null,
       boxShadow: _isEnabled ? _boxShadow : null,
     );
-    Widget button = Semantics(
+    final inkBox = Ink(
+      decoration: decoration,
+      child: Padding(
+        padding: EdgeInsets.all(_padding),
+        child: iconWidget,
+      ),
+    );
+
+    // Small variant's visible pill is 40px (< 48px accessibility minimum).
+    // Center it in an explicit 48px box *inside* the InkWell so the tap
+    // target itself is 48px, not just the surrounding non-tappable layout
+    // space — a `Padding` outside the InkWell only reserves space, it
+    // doesn't capture taps.
+    final tapTarget = size == DivineIconButtonSize.small
+        ? SizedBox(width: 48, height: 48, child: Center(child: inkBox))
+        : inkBox;
+
+    return Semantics(
       label: semanticLabel,
       value: semanticValue,
       onLongPress: onLongPress,
@@ -356,25 +373,11 @@ class _DivineIconButtonContent extends StatelessWidget {
               borderRadius: BorderRadius.circular(_borderRadius),
               splashColor: _iconColor.withValues(alpha: 0.1),
               highlightColor: _iconColor.withValues(alpha: 0.05),
-              child: Ink(
-                decoration: decoration,
-                child: Padding(
-                  padding: EdgeInsets.all(_padding),
-                  child: iconWidget,
-                ),
-              ),
+              child: tapTarget,
             ),
           ),
         ),
       ),
     );
-
-    // Small variant: wrap in 4px padding so the visible button is 40px
-    // but the tap target remains 48px.
-    if (size == DivineIconButtonSize.small) {
-      button = Padding(padding: const EdgeInsets.all(4), child: button);
-    }
-
-    return button;
   }
 }
