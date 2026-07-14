@@ -57,8 +57,10 @@ class BlurhashService {
   /// Max width used when downscaling before encoding.
   static const int _encodeMaxWidth = 128;
 
-  /// Default punch (contrast) value. Below 1 to soften DCT overshoot from
-  /// already-published high-component hashes (see [decodeBlurhash]).
+  /// Default punch (contrast) applied to every decoded hash. Kept below 1
+  /// on purpose: the softer look reads better in the feed and it also damps
+  /// the DCT overshoot high-component legacy hashes produce. This is an
+  /// intentional product choice for all placeholders, not only legacy ones.
   static const double defaultPunch = 0.8;
 
   /// Process-wide memo for [decodeBlurhash]. Decoding is a pure function
@@ -96,10 +98,20 @@ class BlurhashService {
       'abcdefghijklmnopqrstuvwxyz'
       r'#$%*+,-.:;=?@[]^_{|}~';
 
+  /// Reverse index of [_base83Chars] for O(1) character lookup (matching
+  /// blurhash_dart's own decode83). [decodeBlurhash] runs synchronously on
+  /// the UI isolate on every cache miss, so a linear `indexOf` scan per
+  /// character would add up.
+  static final Map<String, int> _base83Index = {
+    for (var i = 0; i < _base83Chars.length; i++) _base83Chars[i]: i,
+  };
+
   static int _decode83(String value, int from, int to) {
     var result = 0;
     for (var i = from; i < to; i++) {
-      result = result * 83 + _base83Chars.indexOf(value[i]);
+      // Every char is validated against the base83 alphabet before decode,
+      // so the lookup never misses; `?? 0` only satisfies null-safety.
+      result = result * 83 + (_base83Index[value[i]] ?? 0);
     }
     return result;
   }

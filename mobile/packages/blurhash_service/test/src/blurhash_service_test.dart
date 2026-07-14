@@ -146,6 +146,84 @@ void main() {
       }
     });
 
+    test('decodes a solid fill back to its source color', () async {
+      // Reference vector: a solid fill carries no AC energy, so every
+      // decoded pixel must round-trip the DC (average) color on all three
+      // channels. The expected values are the source color itself — an
+      // independent reference, not this decoder's own output — so a channel
+      // swap or the old red/green inflation would fail it.
+      const sourceR = 100;
+      const sourceG = 149;
+      const sourceB = 237;
+      final image = img.Image(width: 128, height: 128);
+      img.fill(image, color: img.ColorRgb8(sourceR, sourceG, sourceB));
+      final hash = await BlurhashService.generateBlurhash(
+        Uint8List.fromList(img.encodePng(image)),
+      );
+      expect(hash, isNotNull);
+
+      final data = BlurhashService.decodeBlurhash(hash!, punch: 1);
+      expect(data, isNotNull);
+      final pixels = data!.pixels!;
+      for (var i = 0; i + 3 < pixels.length; i += 4) {
+        expect(
+          (pixels[i] - sourceR).abs(),
+          lessThanOrEqualTo(5),
+          reason: 'red @ ${i ~/ 4}: ${pixels[i]}',
+        );
+        expect(
+          (pixels[i + 1] - sourceG).abs(),
+          lessThanOrEqualTo(5),
+          reason: 'green @ ${i ~/ 4}: ${pixels[i + 1]}',
+        );
+        expect(
+          (pixels[i + 2] - sourceB).abs(),
+          lessThanOrEqualTo(5),
+          reason: 'blue @ ${i ~/ 4}: ${pixels[i + 2]}',
+        );
+      }
+    });
+
+    test(
+      'punch scales AC contrast, including the first component row',
+      () async {
+        // A horizontal gradient concentrates its AC energy in the first
+        // component row (j = 0, i > 0) — exactly the row blurhash_dart's punch
+        // skipped. Our decode bakes punch into every AC term, so a higher
+        // punch must widen the left↔right contrast.
+        final gradient = img.Image(width: 128, height: 128);
+        for (var x = 0; x < gradient.width; x++) {
+          final v = (x / (gradient.width - 1) * 255).round();
+          for (var y = 0; y < gradient.height; y++) {
+            gradient.setPixelRgb(x, y, v, v, v);
+          }
+        }
+        final hash = await BlurhashService.generateBlurhash(
+          Uint8List.fromList(img.encodePng(gradient)),
+        );
+        expect(hash, isNotNull);
+
+        int horizontalContrast(double punch) {
+          final data = BlurhashService.decodeBlurhash(
+            hash!,
+            width: 16,
+            height: 1,
+            punch: punch,
+          )!;
+          final pixels = data.pixels!;
+          final left = pixels[0];
+          final right = pixels[(16 - 1) * 4];
+          return (right - left).abs();
+        }
+
+        expect(
+          horizontalContrast(2),
+          greaterThan(horizontalContrast(1)),
+          reason: 'higher punch must increase AC-driven contrast',
+        );
+      },
+    );
+
     group('generateBlurhash aspect-ratio component selection', () {
       // Blurhash length = 6 + 2 * (compX * compY - 1)
       // Portrait 3×4 → 6 + 2*11 = 28 chars
