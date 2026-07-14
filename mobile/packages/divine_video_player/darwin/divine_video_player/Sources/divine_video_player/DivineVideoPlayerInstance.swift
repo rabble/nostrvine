@@ -411,11 +411,16 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                     let mutableVideoComposition = AVMutableVideoComposition()
                     mutableVideoComposition.renderSize = displaySize
                     mutableVideoComposition.sourceTrackIDForFrameTiming = videoTrack.trackID
-                    // minFrameDuration can be valid-but-zero on assets without
-                    // frame-timing metadata; a zero frameDuration makes
-                    // setVideoComposition throw. Require a positive duration and
-                    // fall back to 30fps otherwise.
-                    let minFrameDuration = sourceVideoTrack.minFrameDuration
+                    // iOS 16+ deprecates the synchronous minFrameDuration
+                    // accessor — it returns an undefined value for an un-loaded
+                    // track property — so load it asynchronously like the
+                    // sibling track properties above. Even once loaded it can be
+                    // valid-but-zero on assets without frame-timing metadata, and
+                    // setVideoComposition rejects a zero/non-numeric frameDuration,
+                    // so guard and fall back to 30fps.
+                    let minFrameDuration = try await sourceVideoTrack.load(
+                        .minFrameDuration
+                    )
                     if minFrameDuration.isNumeric, minFrameDuration.seconds > 0 {
                         mutableVideoComposition.frameDuration = minFrameDuration
                     } else {
