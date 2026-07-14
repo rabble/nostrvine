@@ -91,9 +91,6 @@ class _ActionButton extends StatelessWidget {
           action.backgroundColor ?? style.iconButtonBackgroundColor,
       borderSide: style.iconButtonBorderSide,
       iconColor: action.iconColor ?? style.iconColor,
-      size: style.iconButtonSize,
-      iconSize: style.iconSize,
-      borderRadius: style.iconButtonBorderRadius,
     );
   }
 }

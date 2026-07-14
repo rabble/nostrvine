@@ -14,6 +14,7 @@ void main() {
       DivineIconButtonSize size = DivineIconButtonSize.base,
       Color? backgroundColor,
       Color? foregroundColor,
+      bool showShadow = true,
       String? tooltip,
       String? semanticLabel,
       String? semanticLongPressHint,
@@ -29,6 +30,7 @@ void main() {
               size: size,
               backgroundColor: backgroundColor,
               foregroundColor: foregroundColor,
+              showShadow: showShadow,
               tooltip: tooltip,
               semanticLabel: semanticLabel,
               semanticLongPressHint: semanticLongPressHint,
@@ -286,6 +288,27 @@ void main() {
         final ink = tester.widget<Ink>(find.byType(Ink));
         final decoration = ink.decoration! as BoxDecoration;
         expect(decoration.color, Colors.orange);
+      });
+    });
+
+    group('showShadow', () {
+      testWidgets('shows a shadow by default when enabled', (tester) async {
+        await tester.pumpWidget(buildTestWidget(onPressed: () {}));
+
+        final ink = tester.widget<Ink>(find.byType(Ink));
+        final decoration = ink.decoration! as BoxDecoration;
+        expect(decoration.boxShadow, isNotNull);
+        expect(decoration.boxShadow, isNotEmpty);
+      });
+
+      testWidgets('shows no shadow when showShadow is false', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(onPressed: () {}, showShadow: false),
+        );
+
+        final ink = tester.widget<Ink>(find.byType(Ink));
+        final decoration = ink.decoration! as BoxDecoration;
+        expect(decoration.boxShadow, isNull);
       });
     });
 

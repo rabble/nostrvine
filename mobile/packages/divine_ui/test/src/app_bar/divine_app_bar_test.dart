@@ -616,13 +616,6 @@ void main() {
         final appBar = tester.widget<AppBar>(find.byType(AppBar));
         expect(appBar.toolbarHeight, 72);
         expect(appBar.leadingWidth, 80);
-
-        final iconButton = tester.widget<DivineAppBarIconButton>(
-          find.byType(DivineAppBarIconButton),
-        );
-        expect(iconButton.size, 40);
-        expect(iconButton.iconSize, 24);
-        expect(iconButton.borderRadius, 16);
       });
 
       testWidgets('uses provided style for height and leadingWidth', (
@@ -642,29 +635,6 @@ void main() {
         final appBar = tester.widget<AppBar>(find.byType(AppBar));
         expect(appBar.toolbarHeight, 64);
         expect(appBar.leadingWidth, 72);
-      });
-
-      testWidgets('uses provided style for icon button properties', (
-        tester,
-      ) async {
-        await tester.pumpWidget(
-          buildTestWidget(
-            title: 'Test',
-            showBackButton: true,
-            style: const DiVineAppBarStyle(
-              iconButtonSize: 56,
-              iconSize: 40,
-              iconButtonBorderRadius: 28,
-            ),
-          ),
-        );
-
-        final iconButton = tester.widget<DivineAppBarIconButton>(
-          find.byType(DivineAppBarIconButton),
-        );
-        expect(iconButton.size, 56);
-        expect(iconButton.iconSize, 40);
-        expect(iconButton.borderRadius, 28);
       });
 
       testWidgets('preferredSize uses style height', (tester) async {

@@ -84,6 +84,7 @@ class DivineIconButton extends StatelessWidget {
     this.size = DivineIconButtonSize.base,
     this.backgroundColor,
     this.foregroundColor,
+    this.showShadow = true,
     this.tooltip,
     this.semanticLabel,
     this.semanticValue,
@@ -106,6 +107,7 @@ class DivineIconButton extends StatelessWidget {
     this.size = DivineIconButtonSize.base,
     this.backgroundColor,
     this.foregroundColor,
+    this.showShadow = true,
     this.tooltip,
     this.semanticLabel,
     this.semanticValue,
@@ -149,6 +151,12 @@ class DivineIconButton extends StatelessWidget {
   /// Overrides the icon (foreground) color derived from [type].
   final Color? foregroundColor;
 
+  /// Whether to show the [type]-derived drop shadow. Defaults to `true`.
+  ///
+  /// Set to `false` for callers that never had a shadow before adopting
+  /// this widget and want to preserve their existing flat appearance.
+  final bool showShadow;
+
   /// Tooltip text shown on long press / hover.
   final String? tooltip;
 
@@ -174,6 +182,7 @@ class DivineIconButton extends StatelessWidget {
       size: size,
       backgroundColor: backgroundColor,
       foregroundColor: foregroundColor,
+      showShadow: showShadow,
       tooltip: tooltip,
       semanticLabel: semanticLabel,
       semanticValue: semanticValue,
@@ -192,6 +201,7 @@ class _DivineIconButtonContent extends StatelessWidget {
     required this.size,
     this.backgroundColor,
     this.foregroundColor,
+    this.showShadow = true,
     this.tooltip,
     this.semanticLabel,
     this.semanticValue,
@@ -206,6 +216,7 @@ class _DivineIconButtonContent extends StatelessWidget {
   final DivineIconButtonSize size;
   final Color? backgroundColor;
   final Color? foregroundColor;
+  final bool showShadow;
   final String? tooltip;
   final String? semanticLabel;
   final String? semanticValue;
@@ -261,6 +272,10 @@ class _DivineIconButtonContent extends StatelessWidget {
   };
 
   List<BoxShadow>? get _boxShadow {
+    if (!showShadow) {
+      return null;
+    }
+
     // Disabled buttons have no shadow (except for some types).
     if ((!_isEnabled && type == .primary) ||
         type == .ghost ||

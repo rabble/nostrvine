@@ -1,11 +1,12 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 /// A styled icon button for use in [DiVineAppBar].
 ///
-/// Renders icons in a rounded container with consistent styling
-/// matching the AppShell design system.
+/// Delegates its rendering to [DivineIconButton] at
+/// [DivineIconButtonSize.small] (40px visible / 24px icon / 16px border
+/// radius / 48px tap target) — every [DiVineAppBarStyle] preset in the app
+/// uses exactly these dimensions, so no configurable size is exposed here.
 ///
 /// Example usage:
 /// ```dart
@@ -25,9 +26,6 @@ class DivineAppBarIconButton extends StatelessWidget {
     this.backgroundColor,
     this.borderSide,
     this.iconColor,
-    this.size = 48,
-    this.iconSize = 32,
-    this.borderRadius = 20,
     super.key,
   });
 
@@ -50,7 +48,10 @@ class DivineAppBarIconButton extends StatelessWidget {
 
   /// Optional border for the button container.
   ///
-  /// When null, no border is shown
+  /// When non-null, the button renders as [DivineIconButtonType.secondary],
+  /// whose built-in 2px [VineTheme.outlineMuted] border matches every
+  /// current usage of this param exactly. The supplied [BorderSide]'s own
+  /// color/width are not independently honored.
   final BorderSide? borderSide;
 
   /// Color of the icon.
@@ -58,78 +59,20 @@ class DivineAppBarIconButton extends StatelessWidget {
   /// Defaults to [VineTheme.whiteText].
   final Color? iconColor;
 
-  /// Size of the button container.
-  ///
-  /// Defaults to 48.
-  final double size;
-
-  /// Size of the icon within the container.
-  ///
-  /// Defaults to 32.
-  final double iconSize;
-
-  /// Border radius of the button container.
-  ///
-  /// Defaults to 20 for a pill-shaped appearance.
-  final double borderRadius;
-
   @override
   Widget build(BuildContext context) {
-    final effectiveBackgroundColor =
-        backgroundColor ?? VineTheme.iconButtonBackground;
-    final effectiveIconColor = iconColor ?? VineTheme.whiteText;
-
-    Widget buttonContent = Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: effectiveBackgroundColor,
-        borderRadius: BorderRadius.circular(borderRadius),
-        border: borderSide != null ? Border.fromBorderSide(borderSide!) : null,
-      ),
-      child: Center(
-        child: switch (icon) {
-          SvgIconSource(:final assetPath) => SizedBox(
-            width: iconSize,
-            height: iconSize,
-            child: SvgPicture.asset(
-              assetPath,
-              colorFilter: ColorFilter.mode(
-                effectiveIconColor,
-                BlendMode.srcIn,
-              ),
-            ),
-          ),
-          MaterialIconSource(:final iconData) => Icon(
-            iconData,
-            color: effectiveIconColor,
-            size: iconSize,
-          ),
-        },
-      ),
-    );
-
-    if (tooltip != null) {
-      buttonContent = Tooltip(
-        message: tooltip,
-        child: buttonContent,
-      );
-    }
-
-    return Semantics(
-      button: true,
-      enabled: onPressed != null,
-      label: semanticLabel,
-      child: SizedBox(
-        width: 48,
-        height: 48,
-        child: IconButton(
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-          onPressed: onPressed,
-          icon: buttonContent,
-        ),
-      ),
+    return DivineIconButton.fromSource(
+      icon: icon,
+      onPressed: onPressed,
+      type: borderSide != null
+          ? DivineIconButtonType.secondary
+          : DivineIconButtonType.primary,
+      size: DivineIconButtonSize.small,
+      backgroundColor: backgroundColor ?? VineTheme.iconButtonBackground,
+      foregroundColor: iconColor ?? VineTheme.whiteText,
+      showShadow: false,
+      tooltip: tooltip,
+      semanticLabel: semanticLabel,
     );
   }
 }

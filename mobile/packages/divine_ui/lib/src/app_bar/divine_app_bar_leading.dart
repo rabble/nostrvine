@@ -165,9 +165,6 @@ class _LeadingIconButton extends StatelessWidget {
           backgroundColor: style.iconButtonBackgroundColor,
           borderSide: style.iconButtonBorderSide,
           iconColor: style.iconColor,
-          size: style.iconButtonSize,
-          iconSize: style.iconSize,
-          borderRadius: style.iconButtonBorderRadius,
         ),
       ),
     );
