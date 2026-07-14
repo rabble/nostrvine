@@ -22,14 +22,15 @@ import 'package:openvine/ui/overlay_policy.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../helpers/test_pubkeys.dart';
+
 void main() {
   group('Profile /me/ Redirect Integration', () {
     testWidgets(
       'should redirect /profile/me/0 to actual user npub and render profile',
       (tester) async {
         // ARRANGE: Create authenticated user with known public key
-        const testUserHex =
-            '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738';
+        const testUserHex = syntheticTestPubkey;
         final testUserNpub = NostrKeyUtils.encodePubKey(testUserHex);
 
         final testVideo = VideoEvent(
@@ -110,8 +111,7 @@ void main() {
       tester,
     ) async {
       // ARRANGE
-      const testUserHex =
-          '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738';
+      const testUserHex = syntheticTestPubkey;
       final testUserNpub = NostrKeyUtils.encodePubKey(testUserHex);
 
       final mockAuthService = _MockAuthService(testUserHex);

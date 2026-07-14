@@ -13,11 +13,12 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/widgets/profile/profile_banner_layer.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 
+import '../../helpers/test_pubkeys.dart';
+
 class _MockMyProfileBloc extends MockBloc<MyProfileEvent, MyProfileState>
     implements MyProfileBloc {}
 
-const _testUserHex =
-    '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738';
+const String _testUserHex = syntheticTestPubkey;
 
 UserProfile _profileWithBanner(String? banner) {
   return UserProfile(

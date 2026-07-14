@@ -12,14 +12,15 @@ import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 
+import '../helpers/test_pubkeys.dart';
+
 void main() {
   group('Profile /me/ Redirect', () {
     testWidgets('should redirect /profile/me/0 to current user npub', (
       tester,
     ) async {
       // ARRANGE: Create a test user with known public key
-      const testUserHex =
-          '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738';
+      const testUserHex = syntheticTestPubkey;
       final testUserNpub = NostrKeyUtils.encodePubKey(testUserHex);
 
       // Create a mock auth service that returns our test user
@@ -63,8 +64,7 @@ void main() {
       tester,
     ) async {
       // ARRANGE
-      const testUserHex =
-          '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738';
+      const testUserHex = syntheticTestPubkey;
       final testUserNpub = NostrKeyUtils.encodePubKey(testUserHex);
 
       final mockAuthService = _MockAuthService(testUserHex);
@@ -101,10 +101,8 @@ void main() {
 
     testWidgets('should NOT redirect when npub is not "me"', (tester) async {
       // ARRANGE
-      const currentUserHex =
-          '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738';
-      const otherUserHex =
-          'aaaaaa1b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738';
+      const currentUserHex = syntheticTestPubkey;
+      const otherUserHex = syntheticOtherTestPubkey;
       final otherUserNpub = NostrKeyUtils.encodePubKey(otherUserHex);
 
       final mockAuthService = _MockAuthService(currentUserHex);
