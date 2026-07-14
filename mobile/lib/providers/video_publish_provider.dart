@@ -530,11 +530,14 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         error: error,
         stackTrace: stackTrace,
       );
-      // Clear the `.preparing` guard and surface the failure so the user can
-      // restart the publish instead of being stuck on the preparing overlay
-      // (#6058). Without this, the re-entry guard rejects every retry.
+      // Clear the `.preparing` guard so the re-entry guard doesn't reject every
+      // retry, and surface the failure with a snackbar. This catch fires on a
+      // pre-handoff throw — before the background publish bloc receives the
+      // process — so nothing else would tell the user it failed (#6058).
       final l10n = currentAppL10n(ref.read(sharedPreferencesProvider));
-      setError(l10n.publishErrorMessage(PublishErrorKind.generic));
+      final message = l10n.publishErrorMessage(PublishErrorKind.generic);
+      setError(message);
+      _showPublishError(message);
     } finally {
       _inFlightSourceDraftIds.remove(sourceDraftId);
       Log.info(
@@ -543,6 +546,25 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         category: .video,
       );
     }
+  }
+
+  /// Surfaces a publish failure the user would otherwise not see — the catch
+  /// path clears the `.preparing` overlay but has no on-screen consumer of the
+  /// error state, so without this the spinner just vanishes silently (#6058).
+  void _showPublishError(String message) {
+    final targetContext = NavigatorKeys.root.currentContext;
+    if (targetContext == null || !targetContext.mounted) return;
+
+    final messenger = ScaffoldMessenger.maybeOf(targetContext);
+    if (messenger == null) return;
+
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 6),
+      ),
+    );
   }
 
   void _showCollaboratorInviteWarning({

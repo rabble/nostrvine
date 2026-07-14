@@ -319,6 +319,130 @@ void main() {
           );
         },
       );
+
+      testWidgets(
+        'a system-back (null pop) re-signs rather than posting without '
+        'provenance (#6058)',
+        (tester) async {
+          // A re-sign that never resolves keeps isProcessing observably true,
+          // distinguishing retryC2paSigning from a silent postAnyway.
+          NativeProofModeService.proofFileOverride =
+              (
+                file, {
+                required enableAdvancedCawgEmbedding,
+                creatorBindingAssertion,
+                cawgIdentityAssertion,
+                verifiedIdentityBundle,
+                clips,
+                editorStateHistory,
+              }) => Completer<models.NativeProofData?>().future;
+          addTearDown(() => NativeProofModeService.proofFileOverride = null);
+
+          final container = ProviderContainer(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              clipManagerProvider.overrideWith(
+                () => _MockClipManagerNotifier([testClip]),
+              ),
+              videoEditorProvider.overrideWith(
+                () => _MockVideoEditorNotifier(
+                  VideoEditorProviderState(finalRenderedClip: testClip),
+                ),
+              ),
+            ],
+          );
+          addTearDown(container.dispose);
+
+          await tester.pumpWidget(
+            UncontrolledProviderScope(
+              container: container,
+              child: const MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: VideoMetadataScreen(),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          final notifier = container.read(videoEditorProvider.notifier);
+          notifier.state = notifier.state.copyWith(c2paSigningFailed: true);
+          await tester.pumpAndSettle();
+          expect(find.text(l10n.videoMetadataC2paMissingTitle), findsOneWidget);
+
+          // Dismiss the non-dismissible sheet with a system back (no button
+          // choice) — the pop resolves the prompt future with null.
+          await tester.binding.handlePopRoute();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 500));
+          await tester.pump();
+
+          final state = container.read(videoEditorProvider);
+          expect(
+            find.text(l10n.videoMetadataC2paMissingTitle),
+            findsNothing,
+            reason: 'the prompt is dismissed by the system back',
+          );
+          expect(
+            state.c2paSigningFailed,
+            isFalse,
+            reason: 'the null pop re-signs, which clears the prompt flag',
+          );
+          expect(
+            state.isProcessing,
+            isTrue,
+            reason:
+                'a system back re-signs the existing render (retryC2paSigning) '
+                'instead of silently posting without provenance',
+          );
+        },
+      );
+
+      testWidgets(
+        'prompts on mount when signing already failed before the screen '
+        'mounted (#6058)',
+        (tester) async {
+          final container = ProviderContainer(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              clipManagerProvider.overrideWith(
+                () => _MockClipManagerNotifier([testClip]),
+              ),
+              videoEditorProvider.overrideWith(
+                () => _MockVideoEditorNotifier(
+                  VideoEditorProviderState(
+                    finalRenderedClip: testClip,
+                    c2paSigningFailed: true,
+                  ),
+                ),
+              ),
+            ],
+          );
+          addTearDown(container.dispose);
+
+          await tester.pumpWidget(
+            UncontrolledProviderScope(
+              container: container,
+              child: const MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: VideoMetadataScreen(),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          expect(
+            find.text(l10n.videoMetadataC2paMissingTitle),
+            findsOneWidget,
+            reason:
+                'ref.listen misses a value already true at mount, so the '
+                'post-frame check must surface the prompt',
+          );
+        },
+      );
     });
 
     group('recorder mode switch', () {

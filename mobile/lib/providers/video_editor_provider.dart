@@ -1202,8 +1202,18 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     }
   }
 
-  /// Whether a rendered clip is missing its C2PA content credential in a build
-  /// where signing is configured — i.e. signing was attempted and failed.
+  /// Whether a rendered clip lacks a usable content credential in a build where
+  /// signing is configured.
+  ///
+  /// The only signal available here is [proofManifestJson], which
+  /// [NativeProofModeService.proofFile] returns null (or without a
+  /// `c2paManifestId`) for *both* a genuine C2PA signing failure *and* the case
+  /// where signing succeeded but the ProofMode manifest could not be generated
+  /// or read. This helper deliberately treats that whole set as "provenance
+  /// could not be confirmed" rather than trying to distinguish the two — the
+  /// recovery is identical (re-sign or post as-is), and a re-sign re-runs the
+  /// proof step regardless. So a true result means "no confirmable
+  /// content-credential manifest", not strictly "signing threw".
   ///
   /// [signingConfigured] is [C2paSigningService.isSigningConfigured]; passed in
   /// so the decision is pure and testable. Returns false whenever signing isn't
@@ -1232,39 +1242,14 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     state = state.copyWith(c2paSigningFailed: false);
   }
 
-  /// Re-renders the current edit to re-attempt C2PA signing, keeping the edit
-  /// parameters (this is a provenance retry, not a content change).
-  Future<void> regenerateVideo() {
-    final staleClip = state.finalRenderedClip;
-    // Preserve the edit parameters across the clip clear so the identical edit
-    // is re-rendered — clearFinalRenderedClip drops them by design (used for
-    // content changes), which we don't want here.
-    final parameters = state.editorEditingParameters;
-    state = state.copyWith(clearFinalRenderedClip: true);
-    if (parameters != null) {
-      state = state.copyWith(editorEditingParameters: parameters);
-    }
-
-    if (staleClip != null) {
-      final db = ref.read(databaseProvider);
-      unawaited(
-        FileCleanupService.deleteRecordingClipFiles(
-          staleClip,
-          draftsDao: db.draftsDao,
-          clipsDao: db.clipsDao,
-        ),
-      );
-    }
-
-    return startRenderVideo();
-  }
-
   /// Re-attempts C2PA signing on the already-rendered clip without re-encoding
   /// the video — the render succeeded, only the content credential failed
   /// (#6058). Falls back to a full render if there is no rendered clip.
   Future<void> retryC2paSigning() {
     final clip = state.finalRenderedClip;
-    if (clip == null) return regenerateVideo();
+    // No rendered clip to re-sign (defensive: the prompt that calls this only
+    // appears once a clip exists) — fall back to a full render.
+    if (clip == null) return startRenderVideo();
 
     state = state.copyWith(isProcessing: true, c2paSigningFailed: false);
 

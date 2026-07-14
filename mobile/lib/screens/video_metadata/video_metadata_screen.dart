@@ -35,6 +35,10 @@ class VideoMetadataScreen extends ConsumerStatefulWidget {
 }
 
 class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
+  /// Guards against stacking a second prompt: the mount-time check and the
+  /// `ref.listen` in `build` can both fire for the same failure.
+  bool _isC2paPromptOpen = false;
+
   @override
   void initState() {
     super.initState();
@@ -43,10 +47,27 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
       // Clear any stale error/completed state from a previous publish attempt
       // so the overlay doesn't block the new publish flow.
       ref.read(videoPublishProvider.notifier).clearError();
+      // `ref.listen` only fires on a *change*, so a render that already failed
+      // signing before this screen mounted (resumed draft, or capture/lip-sync
+      // where the render is kicked off before navigation) would never surface
+      // the prompt. Catch that already-true case here (#6058).
+      if (ref.read(videoEditorProvider).c2paSigningFailed) {
+        unawaited(_promptC2paMissing());
+      }
     });
   }
 
   Future<void> _promptC2paMissing() async {
+    if (_isC2paPromptOpen) return;
+    _isC2paPromptOpen = true;
+    try {
+      await _showC2paMissingPrompt();
+    } finally {
+      _isC2paPromptOpen = false;
+    }
+  }
+
+  Future<void> _showC2paMissingPrompt() async {
     final l10n = context.l10n;
     // Non-dismissible: forfeiting the content credential is a provenance
     // decision, so require an explicit button rather than letting an accidental

@@ -58,11 +58,18 @@ class VideoEditorProviderState {
   /// invalidated.
   final bool renderFailed;
 
-  /// Whether the render produced a clip but the C2PA content credential could
-  /// not be attached (signing configured but failed).
+  /// Whether the render produced a clip but no usable content credential /
+  /// provenance manifest was attached.
+  ///
+  /// This is the broad "provenance could not be confirmed" condition, not a
+  /// pure signing-error signal: it is true both when C2PA signing itself failed
+  /// and when signing succeeded but the ProofMode manifest could not be
+  /// generated or read (see [VideoEditorNotifier.c2paSigningFailedFor]). Either
+  /// way the output cannot be confirmed as Human-Made, so the same recovery
+  /// prompt applies.
   ///
   /// Only ever true in builds with signing configured (never in CI). Drives the
-  /// "regenerate or post without provenance" prompt on the metadata screen
+  /// "try again or post without provenance" prompt on the metadata screen
   /// (#6058). Cleared once the user acts on it, when a new render starts, and
   /// whenever [finalRenderedClip] is invalidated.
   final bool c2paSigningFailed;
@@ -232,6 +239,15 @@ class VideoEditorProviderState {
     String? customThumbnailPath,
     bool clearCustomThumbnailPath = false,
   }) {
+    // clearFinalRenderedClip forces renderFailed and c2paSigningFailed back to
+    // false below, so passing either as `true` in the same call would be
+    // silently dropped. Fail loudly instead of hiding the contradiction.
+    assert(
+      !clearFinalRenderedClip ||
+          (renderFailed != true && c2paSigningFailed != true),
+      'clearFinalRenderedClip resets renderFailed and c2paSigningFailed to '
+      'false; do not also pass either as true in the same copyWith call.',
+    );
     return VideoEditorProviderState(
       isProcessing: isProcessing ?? this.isProcessing,
       // A produced or invalidated clip always ends the failed state.

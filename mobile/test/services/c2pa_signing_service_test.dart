@@ -133,6 +133,41 @@ void main() {
           expect(result.failureReason, C2paSigningFailureReason.network);
         },
       );
+
+      test(
+        'deletes the orphaned signed file when the native call finishes after '
+        'the timeout (#6058)',
+        () async {
+          final video = writeFile('video.mp4', const [0, 1, 2, 3]);
+          final slowService = C2paSigningService(
+            c2pa: _SlowWritingC2pa(const Duration(milliseconds: 60)),
+            signingTimeout: const Duration(milliseconds: 10),
+          );
+
+          final result = await slowService.signVideo(videoPath: video.path);
+          expect(result.success, isFalse);
+          expect(result.failureReason, C2paSigningFailureReason.network);
+
+          // The abandoned native call is still running: wait for it to finish
+          // writing the signed file and for the cleanup to remove the orphan.
+          await Future<void>.delayed(const Duration(milliseconds: 150));
+
+          final orphans = tempDir
+              .listSync()
+              .whereType<File>()
+              .where(
+                (f) => f.uri.pathSegments.last.startsWith('c2pa_signed_'),
+              )
+              .toList();
+          expect(
+            orphans,
+            isEmpty,
+            reason:
+                'a signing call that finishes past the timeout must not leave '
+                'a stray c2pa_signed_*.mp4 behind',
+          );
+        },
+      );
     });
 
     group('resignDerived', () {
@@ -268,4 +303,24 @@ class _HangingC2pa extends C2pa {
     required String manifestJson,
     required C2paSigner signer,
   }) => Completer<void>().future;
+}
+
+/// Simulates a remote-signing call that outlives the timeout: it eventually
+/// writes [destPath] after [delay], leaving an orphan the service must clean
+/// up because it already bailed with a [TimeoutException] (#6058).
+class _SlowWritingC2pa extends C2pa {
+  _SlowWritingC2pa(this.delay);
+
+  final Duration delay;
+
+  @override
+  Future<void> signFile({
+    required String sourcePath,
+    required String destPath,
+    required String manifestJson,
+    required C2paSigner signer,
+  }) async {
+    await Future<void>.delayed(delay);
+    File(destPath).writeAsBytesSync(const [7, 7, 7]);
+  }
 }

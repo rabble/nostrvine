@@ -168,18 +168,26 @@ class C2paSigningService {
       Log.info('prepared C2PA manifest json: ${manifestResult.manifestJson}');
 
       // Create signer for RemoteSigning against proofsign
-      final signer = _createSigner();
+      final signer = await _createSigner();
 
       // Sign the file. Bounded so a network hang surfaces as a best-effort
       // failure instead of wedging the generation (#6058).
-      await _c2pa
-          .signFile(
-            sourcePath: videoPath,
-            destPath: signedPath,
-            manifestJson: manifestResult.manifestJson,
-            signer: await signer,
-          )
-          .timeout(_signingTimeout);
+      final signFuture = _c2pa.signFile(
+        sourcePath: videoPath,
+        destPath: signedPath,
+        manifestJson: manifestResult.manifestJson,
+        signer: signer,
+      );
+      try {
+        await signFuture.timeout(_signingTimeout);
+      } on TimeoutException {
+        // timeout() does not cancel the native call — it can still finish and
+        // write signedPath after we've bailed. Delete that orphan once the
+        // call settles so repeated timeouts on a bad connection don't
+        // accumulate stray c2pa_signed_*.mp4 files (#6058).
+        unawaited(_deleteAbandonedSignedFile(signFuture, signedPath));
+        rethrow;
+      }
 
       // Verify signed file was created
       final signedFile = File(signedPath);
@@ -338,6 +346,29 @@ class C2paSigningService {
         success: false,
         error: e.toString(),
       );
+    }
+  }
+
+  /// Removes the signed-file the native call may still write after a timeout.
+  ///
+  /// [signFuture] is the un-awaited native signing call abandoned by the
+  /// timeout; once it settles (success or failure) any file it left at
+  /// [signedPath] is orphaned — the caller already returned failure using the
+  /// original path — so delete it best-effort.
+  static Future<void> _deleteAbandonedSignedFile(
+    Future<void> signFuture,
+    String signedPath,
+  ) async {
+    try {
+      await signFuture;
+    } catch (_) {
+      // The abandoned call failed on its own — still clean up any partial file.
+    }
+    try {
+      final orphan = File(signedPath);
+      if (orphan.existsSync()) orphan.deleteSync();
+    } catch (_) {
+      // Best-effort cleanup; a failure here is not worth surfacing.
     }
   }
 
