@@ -503,16 +503,19 @@ class _MessageList extends StatelessWidget {
   }
 
   /// Tapping a failed own bubble surfaces a native divine snackbar offering a
-  /// queue-aware resend or a delete. Resend replays the batch's FAILED
+  /// queue-aware resend or a "Stop trying". Resend replays the batch's FAILED
   /// row(s) via [ConversationFullSendRecoveryRequested] (a manual retry
   /// bypasses the sweep's retry-count cap) — never the siblings that
-  /// already delivered. Delete ("cancel send") drops every UNDELIVERED
-  /// sibling row (pending + failed) via [ConversationOutgoingSendCancelled]:
-  /// cancelling only the failed ones left pending siblings for the retry
-  /// sweep to publish after the user said give up. Delivered-awaiting-
-  /// self-wrap rows are excluded — those recipients already have the
-  /// message. Both actions are one-shot, dismiss the snackbar, and no-op
-  /// once the bloc is closed (the snackbar can outlive the route).
+  /// already delivered. "Stop trying" cancels every UNDELIVERED sibling row
+  /// (pending + failed) via [ConversationOutgoingSendCancelled] so the retry
+  /// sweep stops re-driving them; it does NOT delete the persisted bubble
+  /// (long-press delete is the real delete-for-everyone path). Cancelling
+  /// only the failed ones would leave pending siblings for the sweep to
+  /// publish after the user said give up, so all undelivered rows go.
+  /// Delivered-awaiting-self-wrap rows are excluded — those recipients
+  /// already have the message. Both actions are one-shot, dismiss the
+  /// snackbar, and no-op once the bloc is closed (the snackbar can outlive
+  /// the route).
   void _onFailedMessageTap(BuildContext context, DmMessage message) {
     final l10n = context.l10n;
     final bloc = context.read<ConversationBloc>();
