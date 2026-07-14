@@ -438,9 +438,19 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             let scaledDuration: CMTime
             if clipSpeed != 1.0, clipSpeed > 0 {
                 let scaledSeconds = CMTimeGetSeconds(clipDuration) / clipSpeed
-                scaledDuration = CMTime(seconds: scaledSeconds, preferredTimescale: 600)
-                let insertedRange = CMTimeRange(start: insertTime, duration: clipDuration)
-                composition.scaleTimeRange(insertedRange, toDuration: scaledDuration)
+                let candidate = CMTime(seconds: scaledSeconds, preferredTimescale: 600)
+                // A pathological playbackSpeed can round the scaled duration to
+                // zero or overflow it to a non-numeric CMTime. Like
+                // setVideoComposition:, scaleTimeRange throws an uncatchable
+                // Objective-C NSInvalidArgumentException on such a duration, so
+                // fall back to the unscaled clip rather than abort the process.
+                if candidate.isNumeric, candidate.seconds > 0 {
+                    scaledDuration = candidate
+                    let insertedRange = CMTimeRange(start: insertTime, duration: clipDuration)
+                    composition.scaleTimeRange(insertedRange, toDuration: candidate)
+                } else {
+                    scaledDuration = clipDuration
+                }
             } else {
                 scaledDuration = clipDuration
             }
