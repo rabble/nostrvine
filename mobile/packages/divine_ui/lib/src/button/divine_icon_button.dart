@@ -97,8 +97,8 @@ class DivineIconButton extends StatelessWidget {
   ///
   /// Prefer the default constructor with a [DivineIconName] where
   /// possible; use this constructor when the icon isn't part of the
-  /// Divine icon set enum, e.g. call sites still migrating off
-  /// [MaterialIconSource].
+  /// Divine icon set enum, e.g. call sites still migrating off a raw
+  /// Material icon source.
   const DivineIconButton.fromSource({
     required IconSource icon,
     required this.onPressed,
@@ -307,6 +307,10 @@ class _DivineIconButtonContent extends StatelessWidget {
           height: 24,
           colorFilter: ColorFilter.mode(_iconColor, BlendMode.srcIn),
         ),
+        // Still rendered for existing deprecated MaterialIconSource call
+        // sites (e.g. DivineAppBarIconButton) — this is the type's
+        // implementation, not a call site that should migrate off it.
+        // ignore: deprecated_member_use_from_same_package
         MaterialIconSource(:final iconData) => Icon(
           iconData,
           color: _iconColor,

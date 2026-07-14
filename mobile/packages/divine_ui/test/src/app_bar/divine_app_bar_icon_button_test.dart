@@ -1,3 +1,7 @@
+// MaterialIconSource is deprecated but still fully supported; these tests
+// intentionally exercise it to guard that support, not migrate off it.
+// ignore_for_file: deprecated_member_use_from_same_package
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
