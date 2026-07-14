@@ -199,13 +199,23 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                 // cycles from video decode/render on weaker devices, showing up
                 // as dropped or stuttering frames during sped-up preview.
                 playerItem.audioTimePitchAlgorithm = .timeDomain
-                if let videoComposition {
-                    playerItem.videoComposition = videoComposition
-                }
-                if let audioMix { playerItem.audioMix = audioMix }
+                // Validate BEFORE assigning. -[AVPlayerItem setVideoComposition:]
+                // throws an Objective-C NSInvalidArgumentException on an invalid
+                // composition (zero render size or zero/invalid frame duration).
+                // That exception is not a Swift Error, so the enclosing do/catch
+                // can't catch it and the process aborts (SIGABRT). Rejecting the
+                // bad values here surfaces the failure as a FlutterError instead.
                 guard (videoComposition?.renderSize ?? composition.naturalSize).isPositive else {
                     throw CompositionError.invalidRenderSize
                 }
+                if let videoComposition {
+                    let frameDuration = videoComposition.frameDuration
+                    guard frameDuration.isNumeric, frameDuration.seconds > 0 else {
+                        throw CompositionError.invalidFrameDuration
+                    }
+                    playerItem.videoComposition = videoComposition
+                }
+                if let audioMix { playerItem.audioMix = audioMix }
                 self.templateItem = playerItem
 
                 let requestedStartPositionMs = (args["startPositionMs"] as? NSNumber)?.int64Value
@@ -401,8 +411,13 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                     let mutableVideoComposition = AVMutableVideoComposition()
                     mutableVideoComposition.renderSize = displaySize
                     mutableVideoComposition.sourceTrackIDForFrameTiming = videoTrack.trackID
-                    if sourceVideoTrack.minFrameDuration.isValid {
-                        mutableVideoComposition.frameDuration = sourceVideoTrack.minFrameDuration
+                    // minFrameDuration can be valid-but-zero on assets without
+                    // frame-timing metadata; a zero frameDuration makes
+                    // setVideoComposition throw. Require a positive duration and
+                    // fall back to 30fps otherwise.
+                    let minFrameDuration = sourceVideoTrack.minFrameDuration
+                    if minFrameDuration.isNumeric, minFrameDuration.seconds > 0 {
+                        mutableVideoComposition.frameDuration = minFrameDuration
                     } else {
                         mutableVideoComposition.frameDuration = CMTime(value: 1, timescale: 30)
                     }
@@ -1196,6 +1211,7 @@ private enum CompositionError: Error, LocalizedError {
     case cannotCreateTrack
     case noPlayableVideoTracks
     case invalidRenderSize
+    case invalidFrameDuration
 
     var errorDescription: String? {
         switch self {
@@ -1205,6 +1221,8 @@ private enum CompositionError: Error, LocalizedError {
             return "No playable video tracks found."
         case .invalidRenderSize:
             return "Video composition has an invalid render size."
+        case .invalidFrameDuration:
+            return "Video composition has an invalid frame duration."
         }
     }
 }
