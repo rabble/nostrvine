@@ -637,14 +637,18 @@ class NostrClient {
     // relay's "too many concurrent REQs" limit. `withResource` releases the
     // slot when the (time-bounded) query completes, so it can't leak.
     //
-    // Re-check the pool's own closed state immediately before use (rather
-    // than relying solely on the upfront isDisposed check above): dispose()
-    // can run during the awaits above, and `_queryPool.isClosed` flips
-    // before `_isDisposed` does (dispose() closes the pool first). This
-    // check-then-call has no await between them, so it closes the race
-    // rather than narrowing it. See #5952.
+    // Re-check the pool's own closed state immediately before the query,
+    // independent of `useQueryPool`: dispose() can run during the awaits
+    // above, and `_queryPool.close()` flips `isClosed` before `_isDisposed`
+    // is set (dispose() closes the pool first), so it's a reliable
+    // dispose-in-progress sentinel for both paths. The non-pooled path
+    // (`queryUsers`, `useQueryPool: false`) matters here too: a query that
+    // fell through after `_nostr.close()` would re-open fresh WebSockets to
+    // the NIP-50 search relays and leak temp relays nothing would clean up.
+    // This check-then-call has no await before the query, so it closes the
+    // race rather than narrowing it. See #5952.
     final List<Event> websocketEvents;
-    if (useQueryPool && _queryPool.isClosed) {
+    if (_queryPool.isClosed) {
       websocketEvents = [];
     } else {
       websocketEvents = useQueryPool
