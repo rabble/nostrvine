@@ -3192,9 +3192,9 @@
   "@dmMessageActionRetrySend": {
     "description": "Action in the snackbar shown when a failed own DM bubble is tapped; re-attempts delivery of that queued message."
   },
-  "dmMessageActionCancelSend": "Delete message",
+  "dmMessageActionCancelSend": "Stop trying",
   "@dmMessageActionCancelSend": {
-    "description": "Action in the snackbar shown when a failed own DM bubble is tapped; gives up on the queued message and removes it."
+    "description": "Action in the snackbar shown when a failed own DM bubble is tapped; stops retrying the undelivered recipients and keeps the message (and any already-delivered copies). It does not delete the message — long-press delete does that."
   },
   "dmReactionAddCustomA11yLabel": "Add custom emoji reaction",
   "@dmReactionAddCustomA11yLabel": {

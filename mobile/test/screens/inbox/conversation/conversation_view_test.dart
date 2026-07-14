@@ -857,7 +857,7 @@ void main() {
 
       testWidgets(
         'shows NO toast on a hard failure — the failure is surfaced on the '
-        'bubble (tap → resend/delete), not a snackbar',
+        'bubble (tap → resend/stop-trying), not a snackbar',
         (tester) async {
           // Emit loaded → failed. listenWhen no longer fires for `failed`.
           whenListen(
@@ -950,7 +950,8 @@ void main() {
 
       testWidgets(
         'tapping a failed bubble opens the divine snackbar; Resend replays '
-        'the row and Delete drops it (never a fresh ConversationMessageSent)',
+        'the row and Stop trying drops it (never a fresh '
+        'ConversationMessageSent)',
         (tester) async {
           final failedRow = OutgoingDm(
             id: 'rumor-failed-id',
@@ -1007,12 +1008,16 @@ void main() {
           );
           await tester.pumpAndSettle();
 
-          // Tap the failed bubble to open the resend/delete snackbar.
+          // Tap the failed bubble to open the resend/stop-trying snackbar.
           await tester.tap(find.text(failedSendContent));
           await tester.pumpAndSettle();
 
           expect(find.text(l10n.dmMessageActionRetrySend), findsOneWidget);
           expect(find.text(l10n.dmMessageActionCancelSend), findsOneWidget);
+          // Rename guard: this action must never read "Delete message"
+          // again — for a partially delivered group it stops retrying but
+          // keeps the delivered copies, so a delete-y label would lie.
+          expect(find.text('Delete message'), findsNothing);
 
           // Resend replays the existing row via recoverFullSend — never a
           // fresh ConversationMessageSent (no duplicate delivery).
@@ -1033,7 +1038,7 @@ void main() {
             reason: 'resend must replay the row, never redispatch a send',
           );
 
-          // Re-open and tap Delete → drops the queued row.
+          // Re-open and tap Stop trying → drops the queued row.
           await tester.tap(find.text(failedSendContent));
           await tester.pumpAndSettle();
           await tester.tap(find.text(l10n.dmMessageActionCancelSend));
@@ -1052,7 +1057,7 @@ void main() {
 
       testWidgets(
         'on a partially delivered group bubble: Resend targets only the '
-        'FAILED sibling; Delete cancels pending AND failed siblings but '
+        'FAILED sibling; Stop trying cancels pending AND failed siblings but '
         'never one whose recipient already got the message',
         (tester) async {
           const groupConversationId =
@@ -1172,7 +1177,7 @@ void main() {
                 'already confirmed or are still pending',
           );
 
-          // Re-open and Delete → cancels the undelivered siblings only.
+          // Re-open and Stop trying → cancels the undelivered siblings only.
           await tester.tap(find.text(failedSendContent));
           await tester.pumpAndSettle();
           await tester.tap(find.text(l10n.dmMessageActionCancelSend));

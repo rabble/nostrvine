@@ -157,6 +157,16 @@ abstract class Relay {
     _queries[subscription.id] = subscription;
   }
 
+  /// The one-shot queries still awaiting EOSE on this relay.
+  ///
+  /// Unlike [getSubscriptions], these are closed when their EOSE arrives.
+  /// The pool replays them after a forced reconnect so the REQ is re-issued
+  /// on the fresh socket and the query can still EOSE instead of only
+  /// resolving via the caller's timeout.
+  List<Subscription> getQueries() {
+    return _queries.values.toList();
+  }
+
   Future<bool> checkAndCompleteQuery(String id) async {
     // all subscription should be close
     var sub = _queries.remove(id);

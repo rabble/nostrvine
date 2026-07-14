@@ -153,6 +153,16 @@ class OutgoingDmRetryService {
   bool _isInitialized = false;
   bool _isSweeping = false;
 
+  /// Number of consecutive sweep passes whose top-level `try` threw. Only the
+  /// first fault of a streak is reported to Crashlytics: a persistently-
+  /// throwing DAO (non-self-healing SQLite corruption/lock) would otherwise
+  /// re-report [OutgoingDmRetryServiceReportableSites.sweepTopLevel] every
+  /// [_followUpSweepGap] for the whole foreground session. The first non-
+  /// throwing pass resets it to 0 (in `sweep`'s `finally`), so a fresh streak
+  /// reports again. Local `Log.error` still fires every pass — this gates only
+  /// the crash-report escalation.
+  int _consecutiveTopLevelFaults = 0;
+
   /// A repository nudge arrived while a sweep was running. Consumed in the
   /// sweep's `finally` (after `_isSweeping` clears) so a row that landed
   /// mid-pass — invisible to that pass's own counters — still arms the
@@ -216,6 +226,7 @@ class OutgoingDmRetryService {
     _followUpTimer?.cancel();
     _followUpTimer = null;
     _nudgedDuringSweep = false;
+    _consecutiveTopLevelFaults = 0;
     await _foregroundSubscription?.cancel();
     _foregroundSubscription = null;
     await _retryTriggerSubscription?.cancel();
@@ -237,6 +248,7 @@ class OutgoingDmRetryService {
       return;
     }
     _isSweeping = true;
+    var sweepThrew = false;
 
     try {
       // Offline gate: dispatching while offline deterministically fails
@@ -457,7 +469,7 @@ class OutgoingDmRetryService {
           // maxRetries`; `getStillPendingForOwner` does not, so without this
           // an unconfirmable pending row would re-drive forever.
           if (row.retryCount >= _retryConfig.maxRetries) {
-            await _markInterruptedExhausted(row.id);
+            await _markInterruptedExhausted(row);
             exhaustedInterrupted++;
             continue;
           }
@@ -575,6 +587,8 @@ class OutgoingDmRetryService {
             skippedInterruptedTooYoung > 0,
       );
     } on Object catch (e, stackTrace) {
+      sweepThrew = true;
+      _consecutiveTopLevelFaults++;
       Log.error(
         'sweep failed: $e',
         name: 'OutgoingDmRetryService',
@@ -582,14 +596,35 @@ class OutgoingDmRetryService {
         error: e,
         stackTrace: stackTrace,
       );
-      unawaited(
-        _crashReporting.recordError(
-          e,
-          stackTrace,
-          reason: OutgoingDmRetryServiceReportableSites.sweepTopLevel,
-        ),
-      );
+      // Escalate to Crashlytics only on the first fault of a consecutive-
+      // throw streak. A persistently-throwing DAO re-enters this catch every
+      // _followUpSweepGap (the re-arm below keeps the heartbeat alive), and
+      // its reads run before any per-row work advances a retry counter, so
+      // nothing drains the queue to break the loop. Reporting each pass would
+      // re-fire the same stack every 30s all session; the first non-throwing
+      // pass resets the streak so a genuinely new fault reports again.
+      if (_consecutiveTopLevelFaults == 1) {
+        unawaited(
+          _crashReporting.recordError(
+            e,
+            stackTrace,
+            reason: OutgoingDmRetryServiceReportableSites.sweepTopLevel,
+          ),
+        );
+      }
+      // A throwing pass never reached the try-path _scheduleFollowUp, so
+      // without re-arming here a transient DAO error (e.g. a busy database)
+      // would silence the 30s heartbeat until an external trigger — exactly
+      // the steady-foreground, stable-network session the heartbeat exists
+      // for. Queue state is unknown after a throw, so assume work remains;
+      // the next successful pass's own workRemains:false self-cancels the
+      // timer once the queue drains.
+      _scheduleFollowUp(workRemains: true);
     } finally {
+      // Any pass that did not throw (including an early offline-gate return)
+      // ends the fault streak, so the next throw reports afresh. `finally`
+      // runs after early returns too, which is why the reset lives here.
+      if (!sweepThrew) _consecutiveTopLevelFaults = 0;
       _isSweeping = false;
       // A nudge that arrived mid-pass may describe a row this pass never
       // saw. Consume it AFTER _isSweeping clears — checking earlier would
@@ -649,15 +684,44 @@ class OutgoingDmRetryService {
     });
   }
 
-  /// Terminalize a pending row that has exhausted its retry budget: mark both
-  /// wraps `failed` so it leaves the pending set, renders as a red failed
-  /// bubble, and stays out of `getRetryableForOwner` (which caps at
-  /// `retry_count < maxRetries`). Swallows DAO errors — a failed mark just
-  /// means the row is re-evaluated next sweep and terminalized then.
-  Future<void> _markInterruptedExhausted(String rumorId) => _terminalizeRow(
-    rumorId,
-    error: 'Exhausted retries without recipient confirmation',
-  );
+  /// Terminalize a pending row that has exhausted its retry budget so it
+  /// leaves the pending set, stops re-driving, and stays out of
+  /// `getRetryableForOwner` (which caps at `retry_count < maxRetries`).
+  ///
+  /// When the recipient wrap already landed (`sent`), the message WAS
+  /// delivered — only the invisible self-wrap sync is outstanding. Flip
+  /// ONLY the self wrap to `failed` (the row then reads as sent/failed,
+  /// which renders delivered-looking via the existing State A surface).
+  /// Flipping the recipient wrap too would misrender a delivered message
+  /// as a red "Not delivered" bubble and let Resend republish it — the
+  /// same reason [_surfaceOfflinePendingRows] leaves already-`sent`
+  /// recipient wraps untouched. Rows whose recipient wrap is still
+  /// pending/failed terminalize both wraps.
+  ///
+  /// Swallows DAO errors — a failed mark just means the row is
+  /// re-evaluated next sweep and terminalized then.
+  Future<void> _markInterruptedExhausted(OutgoingDm row) async {
+    if (row.recipientWrapStatus == OutgoingWrapStatus.sent) {
+      try {
+        await _dao.markSelfWrapStatus(
+          id: row.id,
+          status: OutgoingWrapStatus.failed,
+          lastError: 'Exhausted retries without self-wrap confirmation',
+        );
+      } on Object catch (e) {
+        Log.warning(
+          'failed to terminalize self wrap for exhausted row ${row.id}: $e',
+          name: 'OutgoingDmRetryService',
+          category: LogCategory.system,
+        );
+      }
+      return;
+    }
+    await _terminalizeRow(
+      row.id,
+      error: 'Exhausted retries without recipient confirmation',
+    );
+  }
 
   /// Offline pass: no publish can succeed, so instead of leaving the queue
   /// untouched, surface the rows the user would otherwise misread as

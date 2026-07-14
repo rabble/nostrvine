@@ -5737,7 +5737,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dmMessageActionRetrySend => 'Retrimite';
 
   @override
-  String get dmMessageActionCancelSend => 'Șterge mesajul';
+  String get dmMessageActionCancelSend => 'Nu mai încerca';
 
   @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';

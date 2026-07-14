@@ -98,7 +98,21 @@ class RelayPool {
     this.tempRelayGener, {
     this.onNotice,
     this.signatureVerificationPolicy = SignatureVerificationPolicy.all,
+    this.silentRepairCooldown = const Duration(seconds: 60),
   });
+
+  /// Minimum gap between two silent-socket repairs of the *same* relay.
+  ///
+  /// A brownout relay — alive but answering slower than the OK window — lands
+  /// in [PublishOutcome.noResponseFrom] on every timed-out publish and reads
+  /// as silent each time (a fresh forced socket has no inbound since the next
+  /// publish). Without this floor it would be force-cycled on every send,
+  /// tearing down subscriptions and re-AUTHing on a connection that is merely
+  /// slow. The default is well above the largest OK window so two consecutive
+  /// timed-out publishes on one relay cannot double-cycle it. Injectable for
+  /// tests that need to exercise the post-cooldown re-repair without a
+  /// wall-clock wait.
+  Duration silentRepairCooldown;
 
   /// Controls whether [_dispatchTypedFrame] performs expensive Schnorr
   /// verification. The event id is always recomputed first; policy skips only
@@ -222,6 +236,7 @@ class RelayPool {
     for (var url in keys) {
       _relays[url]?.disconnect();
       _relays[url]?.dispose();
+      _lastSilentRepairAt.remove(url);
     }
     _relays.clear();
   }
@@ -237,6 +252,7 @@ class RelayPool {
       _cacheRelays[url]?.dispose();
       _cacheRelays.remove(url);
     }
+    _lastSilentRepairAt.remove(url);
   }
 
   Relay? getRelay(String url) {
@@ -1051,6 +1067,11 @@ class RelayPool {
         relay.checkAndCompleteSubscription(id);
       }
     } else {
+      // No matching subscription — treat [id] as a one-shot query. Drop its
+      // completion callback so a query cancelled before EOSE doesn't leak a
+      // never-fired callback in [_queryCompleteCallbacks].
+      _queryCompleteCallbacks.remove(id);
+
       // check query and send close
       var it = _relaysSnapshot();
       for (var relay in it) {
@@ -1558,6 +1579,10 @@ class RelayPool {
   /// publish timeouts don't stack reconnects on the same connection.
   final Set<String> _silentRelayRepairsInFlight = {};
 
+  /// When each relay was last silent-repaired, enforcing [silentRepairCooldown]
+  /// so a brownout relay isn't force-cycled on every timed-out publish.
+  final Map<String, DateTime> _lastSilentRepairAt = {};
+
   /// Repair pass for OK-awaiting publishes that timed out in silence.
   ///
   /// A relay lands in [PublishOutcome.noResponseFrom] when its WebSocket sink
@@ -1572,11 +1597,18 @@ class RelayPool {
   /// subscriptions (mirroring [add]'s autoSubscribe and the post-AUTH replay)
   /// so the next attempt runs on a live socket.
   void _repairSilentRelays(List<String> silentRelayUrls, DateTime sentAt) {
+    final now = DateTime.now();
     for (final url in silentRelayUrls) {
       final relay = _relays[url] ?? _cacheRelays[url] ?? _tempRelays[url];
       if (relay is! RelayBase) continue;
       if (!relay.isSilentSince(sentAt)) continue;
+      final lastRepair = _lastSilentRepairAt[url];
+      if (lastRepair != null &&
+          now.difference(lastRepair) < silentRepairCooldown) {
+        continue;
+      }
       if (!_silentRelayRepairsInFlight.add(url)) continue;
+      _lastSilentRepairAt[url] = now;
       log(
         '📡 $url accepted a publish frame but sent nothing back for the '
         'whole OK window; reconnecting the stale connection',
@@ -1594,6 +1626,13 @@ class RelayPool {
       if (!await relay.forceReconnect()) return;
       for (final subscription in relay.getSubscriptions()) {
         await relay.send(subscription.toJson());
+      }
+      // Replay pending one-shot queries too: forceReconnect closed the old
+      // socket, so an in-flight REQ that had not yet EOSE'd is gone. Without
+      // re-issuing it the relay never EOSEs on the fresh socket and the
+      // pool-level completion can only resolve via the caller's timeout.
+      for (final query in relay.getQueries()) {
+        await relay.send(query.toJson());
       }
     } catch (e) {
       log('OK-timeout reconnect failed for ${relay.url}: $e');
@@ -1669,6 +1708,7 @@ class RelayPool {
     if (relay != null) {
       relay.disconnect();
     }
+    _lastSilentRepairAt.remove(addr);
   }
 
   Relay? getTempRelay(String url) {

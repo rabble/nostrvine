@@ -49,21 +49,23 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
   }
 
   /// Default timeout applied to a single signing/encryption RPC
-  /// (`sign_event`, `nip44_encrypt`, `nip44_decrypt`, …).
+  /// (`sign_event`, `nip44_encrypt`, `nip44_decrypt`, `nip04_*`,
+  /// `get_public_key`, `sign_canonical`).
   ///
   /// Without a bound, a dead socket (e.g. Android Doze killing the
   /// connection while backgrounded) hangs the request forever and wedges
   /// every caller awaiting it.
   ///
-  /// Sized so the DM send pipeline's full remote-signer RPC chain (up to
-  /// four single ops per send: encrypt+sign for the recipient wrap, then for
-  /// the self wrap) fits comfortably under `dm_repository`'s 90s
-  /// `_messagePublishTimeout` backstop, while a stalled call still fails
-  /// fast enough for the durable outgoing-DM queue to re-drive it. See the
-  /// Keycast RPC latency investigation (#6046). A single crypto op is
-  /// sub-second in the healthy path, so 12s is generous while still a
-  /// tighter dead-socket bound than the old 30s.
-  static const Duration defaultRequestTimeout = Duration(seconds: 12);
+  /// This default applies to *every* single-op RPC caller — video publish
+  /// signing, likes, reposts, follows — not just the DM path, so the bound
+  /// must cover production Keycast single-op latency under load. Keycast
+  /// DB-pool contention has been observed to push a single op to ~20-30s;
+  /// a tighter bound would turn slow-but-succeeding social actions and
+  /// video publishes into hard failures. The DM send path does not depend
+  /// on a shorter bound for fail-fast or durability: the durable outgoing
+  /// queue re-drives stalled sends and `dm_repository`'s 90s
+  /// `_messagePublishTimeout` is the send-level backstop (#6046).
+  static const Duration defaultRequestTimeout = Duration(seconds: 30);
 
   /// Default timeout for the multi-wrap `nip17_unwrap_batch` verb, which does
   /// materially more server-side work than a single op and legitimately runs

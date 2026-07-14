@@ -5582,7 +5582,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dmMessageActionRetrySend => 'Resend';
 
   @override
-  String get dmMessageActionCancelSend => 'Delete message';
+  String get dmMessageActionCancelSend => 'Stop trying';
 
   @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';

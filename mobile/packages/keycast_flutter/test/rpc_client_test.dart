@@ -395,6 +395,24 @@ void main() {
     });
 
     group('request timeout', () {
+      test('single-op and batch default timeouts are both 30s', () {
+        // Pinned because #6046 accidentally regressed the GLOBAL single-op
+        // default to 12s while sizing it for the DM pipeline. None of the
+        // production construction sites override requestTimeout, so that
+        // bound applied to every RPC caller (video publish signing, likes,
+        // reposts, follows). Production Keycast single-op latency runs
+        // ~20-30s under DB-pool contention, so the default must stay at 30s
+        // or those callers regress from slow-but-succeeding to failing.
+        expect(
+          KeycastRpc.defaultRequestTimeout,
+          const Duration(seconds: 30),
+        );
+        expect(
+          KeycastRpc.defaultBatchRequestTimeout,
+          const Duration(seconds: 30),
+        );
+      });
+
       test('throws TimeoutException when the request hangs', () async {
         // Simulates a dead socket (e.g. Android Doze killing the
         // connection) — the request future never completes.

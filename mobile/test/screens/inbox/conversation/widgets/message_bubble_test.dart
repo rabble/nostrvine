@@ -1196,6 +1196,106 @@ void main() {
           expect(find.text('"Watch "Inception" trailer"'), findsNothing);
         },
       );
+
+      group('failed send routes card taps to resend', () {
+        // A hard-failed own video share must route taps on the dominant
+        // 248x350 card surface to the outer resend/delete affordance — tap is
+        // the sole resend path (long-press deliberately offers none). Without
+        // the guard the card's own tap-to-open recognizer wins the arena and
+        // swallows the resend affordance.
+        GoRouter buildShareRouter({
+          required DmDeliveryStatus deliveryStatus,
+          VoidCallback? onTap,
+        }) {
+          return GoRouter(
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (context, state) => Scaffold(
+                  body: MessageBubble(
+                    message: 'https://divine.video/video/abc123',
+                    timestamp: '2:30 PM',
+                    isSent: true,
+                    deliveryStatus: deliveryStatus,
+                    onTap: onTap,
+                  ),
+                ),
+              ),
+              GoRoute(
+                path: '/video/:id',
+                builder: (context, state) => Scaffold(
+                  body: Text('video:${state.pathParameters['id']}'),
+                ),
+              ),
+            ],
+          );
+        }
+
+        Future<void> pumpResolvedCard(
+          WidgetTester tester,
+          GoRouter router,
+        ) async {
+          when(
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+              'abc123',
+              fallbackRouteIds: any(named: 'fallbackRouteIds'),
+            ),
+          ).thenAnswer((_) async => testVideo);
+          await tester.pumpWidget(
+            _routerTestApp(
+              router,
+              mockNostrService: mockNostrClient,
+              additionalOverrides: [
+                videosRepositoryProvider.overrideWithValue(
+                  mockVideosRepository,
+                ),
+              ],
+            ),
+          );
+          await tester.pumpAndSettle();
+        }
+
+        testWidgets(
+          'failed share routes a card tap to the resend affordance, not '
+          'the reel',
+          (tester) async {
+            var tapped = 0;
+            final router = buildShareRouter(
+              deliveryStatus: DmDeliveryStatus.failed,
+              onTap: () => tapped++,
+            );
+            addTearDown(router.dispose);
+
+            await pumpResolvedCard(tester, router);
+
+            expect(find.byType(VideoThumbnailWidget), findsOneWidget);
+            await tester.tap(find.byType(VideoThumbnailWidget));
+            await tester.pumpAndSettle();
+
+            // The bubble's resend tap fired once and the reel never opened.
+            expect(tapped, 1);
+            expect(find.text('video:${testVideo.id}'), findsNothing);
+          },
+        );
+
+        testWidgets('delivered share opens the reel on a card tap', (
+          tester,
+        ) async {
+          final router = buildShareRouter(
+            deliveryStatus: DmDeliveryStatus.delivered,
+          );
+          addTearDown(router.dispose);
+
+          await pumpResolvedCard(tester, router);
+
+          expect(find.byType(VideoThumbnailWidget), findsOneWidget);
+          await tester.tap(find.byType(VideoThumbnailWidget));
+          await tester.pumpAndSettle();
+
+          // A non-failed bubble keeps the inner tap-to-open recognizer.
+          expect(find.text('video:${testVideo.id}'), findsOneWidget);
+        });
+      });
     });
 
     group('quoted video reply preview', () {
@@ -1479,6 +1579,110 @@ void main() {
           expect(find.textContaining('nostr:'), findsNothing);
         },
       );
+
+      group('failed send routes quoted-frame taps to resend', () {
+        // Same gesture-arena guard as the full share card, applied to the
+        // compact quoted-reply frame that opens the cited reel on tap.
+        GoRouter buildQuotedRouter({
+          required DmDeliveryStatus deliveryStatus,
+          VoidCallback? onTap,
+        }) {
+          return GoRouter(
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (context, state) => Scaffold(
+                  body: MessageBubble(
+                    message: 'love this one',
+                    timestamp: '2:30 PM',
+                    isSent: true,
+                    quotedVideoRef: quotedRef,
+                    deliveryStatus: deliveryStatus,
+                    onTap: onTap,
+                  ),
+                ),
+              ),
+              GoRoute(
+                path: '/video/:id',
+                builder: (context, state) => Scaffold(
+                  body: Text('video:${state.pathParameters['id']}'),
+                ),
+              ),
+            ],
+          );
+        }
+
+        Future<void> pumpResolvedQuote(
+          WidgetTester tester,
+          GoRouter router,
+        ) async {
+          when(
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+              'abc123',
+              fallbackRouteIds: any(named: 'fallbackRouteIds'),
+            ),
+          ).thenAnswer((_) async => testVideo);
+          await tester.pumpWidget(
+            _routerTestApp(
+              router,
+              mockNostrService: mockNostrClient,
+              additionalOverrides: [
+                videosRepositoryProvider.overrideWithValue(
+                  mockVideosRepository,
+                ),
+              ],
+            ),
+          );
+          await tester.pumpAndSettle();
+        }
+
+        testWidgets(
+          'failed reply routes a quoted-frame tap to the resend affordance, '
+          'not the reel',
+          (tester) async {
+            var tapped = 0;
+            final router = buildQuotedRouter(
+              deliveryStatus: DmDeliveryStatus.failed,
+              onTap: () => tapped++,
+            );
+            addTearDown(router.dispose);
+
+            await pumpResolvedQuote(tester, router);
+
+            // The compact thumb's centered play badge overlaps its exact
+            // center, so tapAt the card surface rather than tap(finder).
+            expect(find.byType(VideoThumbnailWidget), findsOneWidget);
+            await tester.tapAt(
+              tester.getCenter(find.byType(VideoThumbnailWidget)),
+            );
+            await tester.pumpAndSettle();
+
+            expect(tapped, 1);
+            expect(find.text('video:${testVideo.id}'), findsNothing);
+          },
+        );
+
+        testWidgets('delivered reply opens the reel on a quoted-frame tap', (
+          tester,
+        ) async {
+          final router = buildQuotedRouter(
+            deliveryStatus: DmDeliveryStatus.delivered,
+          );
+          addTearDown(router.dispose);
+
+          await pumpResolvedQuote(tester, router);
+
+          // The compact thumb's centered play badge overlaps its exact
+          // center, so tapAt the card surface rather than tap(finder).
+          expect(find.byType(VideoThumbnailWidget), findsOneWidget);
+          await tester.tapAt(
+            tester.getCenter(find.byType(VideoThumbnailWidget)),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text('video:${testVideo.id}'), findsOneWidget);
+        });
+      });
     });
 
     group('long-press', () {

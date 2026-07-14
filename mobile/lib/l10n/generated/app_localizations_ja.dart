@@ -5354,7 +5354,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get dmMessageActionRetrySend => '再送信';
 
   @override
-  String get dmMessageActionCancelSend => 'メッセージを削除';
+  String get dmMessageActionCancelSend => '送信を中止';
 
   @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';

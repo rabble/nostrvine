@@ -9792,10 +9792,10 @@ abstract class AppLocalizations {
   /// **'Resend'**
   String get dmMessageActionRetrySend;
 
-  /// Action in the snackbar shown when a failed own DM bubble is tapped; gives up on the queued message and removes it.
+  /// Action in the snackbar shown when a failed own DM bubble is tapped; stops retrying the undelivered recipients and keeps the message (and any already-delivered copies). It does not delete the message — long-press delete does that.
   ///
   /// In en, this message translates to:
-  /// **'Delete message'**
+  /// **'Stop trying'**
   String get dmMessageActionCancelSend;
 
   /// Screen-reader label for the '+' button at the end of the quick-row that opens the full emoji picker.

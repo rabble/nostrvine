@@ -231,6 +231,14 @@ class MessageBubble extends StatelessWidget {
               .trim()
         : safeMessage;
 
+    // A hard-failed own send routes every tap to the outer resend/delete
+    // affordance (long-press deliberately offers no resend — see
+    // conversation_view.dart). The shared-video card and quoted-video frame
+    // each own an unconditional tap-to-open recognizer that would otherwise
+    // win the gesture arena over the card's dominant surface and swallow that
+    // sole resend affordance, so their taps are disabled on a failed own send.
+    final isFailedOwnSend = isSent && deliveryStatus == DmDeliveryStatus.failed;
+
     return Padding(
       padding: EdgeInsets.only(
         left: 16,
@@ -319,6 +327,7 @@ class MessageBubble extends StatelessWidget {
                       authorPubkey: videoAuthorPubkey,
                       videoKind: videoKind,
                       isSent: isSent,
+                      enableTap: !isFailedOwnSend,
                       dmReplyContext: dmReplyContext,
                     ),
                     // Optional personal note (text before the URL minus
@@ -351,6 +360,7 @@ class MessageBubble extends StatelessWidget {
                         child: _QuotedVideoPreview(
                           quotedVideoRef: quotedVideoRef!,
                           isSent: isSent,
+                          enableTap: !isFailedOwnSend,
                           dmReplyContext: dmReplyContext,
                         ),
                       ),
@@ -365,7 +375,7 @@ class MessageBubble extends StatelessWidget {
                   // states show nothing — the message just looks sent. Only a
                   // hard failure surfaces, as an in-bubble "Not delivered" row
                   // (the whole bubble is tappable to resend or delete).
-                  if (isSent && deliveryStatus == DmDeliveryStatus.failed)
+                  if (isFailedOwnSend)
                     const Padding(
                       padding: EdgeInsets.only(top: 4),
                       child: _NotDeliveredIndicator(),
@@ -586,6 +596,7 @@ class _VideoLinkPreview extends ConsumerWidget {
   const _VideoLinkPreview({
     required this.videoStableId,
     required this.isSent,
+    required this.enableTap,
     this.authorPubkey,
     this.videoKind,
     this.dmReplyContext,
@@ -593,6 +604,10 @@ class _VideoLinkPreview extends ConsumerWidget {
 
   final String videoStableId;
   final bool isSent;
+
+  /// Whether the resolved [_VideoCard] opens the reel on tap. False on a
+  /// failed own send so the outer bubble's resend affordance owns the tap.
+  final bool enableTap;
   final String? authorPubkey;
   final int? videoKind;
   final DmReplyContext? dmReplyContext;
@@ -617,6 +632,7 @@ class _VideoLinkPreview extends ConsumerWidget {
           VideoLinkPreviewNotFound() => const _VideoUnavailableCard(),
           VideoLinkPreviewResolved(:final video) => _VideoCard(
             video: video,
+            enableTap: enableTap,
             dmReplyContext: dmReplyContext,
           ),
         },
@@ -680,11 +696,16 @@ class _QuotedVideoPreview extends ConsumerWidget {
   const _QuotedVideoPreview({
     required this.quotedVideoRef,
     required this.isSent,
+    required this.enableTap,
     this.dmReplyContext,
   });
 
   final DmSharedVideoRef quotedVideoRef;
   final bool isSent;
+
+  /// Whether the resolved [_QuotedVideoCard] opens the cited reel on tap.
+  /// False on a failed own send so the outer bubble's resend tap wins.
+  final bool enableTap;
   final DmReplyContext? dmReplyContext;
 
   @override
@@ -707,6 +728,7 @@ class _QuotedVideoPreview extends ConsumerWidget {
           VideoLinkPreviewResolved(:final video) => _QuotedVideoCard(
             video: video,
             isSent: isSent,
+            enableTap: enableTap,
             dmReplyContext: dmReplyContext,
           ),
         },
@@ -837,11 +859,17 @@ class _QuotedVideoCard extends ConsumerWidget {
   const _QuotedVideoCard({
     required this.video,
     required this.isSent,
+    required this.enableTap,
     this.dmReplyContext,
   });
 
   final VideoEvent video;
   final bool isSent;
+
+  /// When false (a failed own send) the frame is rendered with no tap
+  /// recognizer and no button semantics, so the outer bubble's resend tap
+  /// wins and assistive tech stops announcing a dead "open video" action.
+  final bool enableTap;
   final DmReplyContext? dmReplyContext;
 
   @override
@@ -865,14 +893,18 @@ class _QuotedVideoCard extends ConsumerWidget {
 
     return _QuotedVideoFrame(
       isSent: isSent,
-      semanticLabel: context.l10n.dmMessageBubbleVideoReplyHint,
-      onTap: () => context.push(
-        VideoDetailScreen.pathForId(video.id),
-        extra: VideoDetailRouteExtra(
-          initialVideo: video,
-          dmReplyContext: dmReplyContext,
-        ),
-      ),
+      semanticLabel: enableTap
+          ? context.l10n.dmMessageBubbleVideoReplyHint
+          : null,
+      onTap: enableTap
+          ? () => context.push(
+              VideoDetailScreen.pathForId(video.id),
+              extra: VideoDetailRouteExtra(
+                initialVideo: video,
+                dmReplyContext: dmReplyContext,
+              ),
+            )
+          : null,
       child: Row(
         spacing: 8,
         children: [
@@ -1024,9 +1056,18 @@ class _VideoUnavailableCard extends StatelessWidget {
 /// count rendered inside a gradient overlay footer. Mirrors the
 /// `part/video thumbnail` Figma component used elsewhere in the app.
 class _VideoCard extends ConsumerWidget {
-  const _VideoCard({required this.video, this.dmReplyContext});
+  const _VideoCard({
+    required this.video,
+    required this.enableTap,
+    this.dmReplyContext,
+  });
 
   final VideoEvent video;
+
+  /// When false (a failed own send) the card registers no tap recognizer, so
+  /// the outer bubble's resend/delete tap wins the gesture arena and assistive
+  /// tech stops announcing a dead "open video" action.
+  final bool enableTap;
   final DmReplyContext? dmReplyContext;
 
   @override
@@ -1044,13 +1085,15 @@ class _VideoCard extends ConsumerWidget {
     };
     final hasAuthor = authorName != null && authorName.isNotEmpty;
     return GestureDetector(
-      onTap: () => context.push(
-        VideoDetailScreen.pathForId(video.id),
-        extra: VideoDetailRouteExtra(
-          initialVideo: video,
-          dmReplyContext: dmReplyContext,
-        ),
-      ),
+      onTap: enableTap
+          ? () => context.push(
+              VideoDetailScreen.pathForId(video.id),
+              extra: VideoDetailRouteExtra(
+                initialVideo: video,
+                dmReplyContext: dmReplyContext,
+              ),
+            )
+          : null,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(_videoCardRadius),
         child: SizedBox(

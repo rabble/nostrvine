@@ -917,6 +917,61 @@ void main() {
       );
 
       test(
+        'a throwing pass re-arms the 30s heartbeat so a transient DAO error '
+        'does not silence it until an external trigger',
+        () {
+          fakeAsync((async) {
+            final crashReporting = _MockCrashReportingService();
+            when(
+              () => crashReporting.recordError(
+                any<dynamic>(),
+                any<StackTrace?>(),
+                reason: any(named: 'reason'),
+              ),
+            ).thenAnswer((_) async {});
+
+            var calls = 0;
+            when(
+              () => dao.getRetryableForOwner(
+                ownerPubkey: any(named: 'ownerPubkey'),
+                maxRetries: any(named: 'maxRetries'),
+              ),
+            ).thenAnswer((_) async {
+              calls++;
+              if (calls == 1) throw StateError('database busy');
+              return const <OutgoingDm>[];
+            });
+
+            final service = buildService(crashReporting: crashReporting);
+            unawaited(service.initialize());
+            async.flushMicrotasks();
+
+            unawaited(service.sweep());
+            async.flushMicrotasks();
+            // The first pass threw before reaching the try-path scheduler;
+            // the heartbeat must still be armed by the top-level catch.
+            expect(calls, 1);
+
+            async
+              ..elapse(const Duration(seconds: 30))
+              ..flushMicrotasks();
+            // The re-armed follow-up ran a second pass 30s later.
+            expect(calls, 2);
+
+            async
+              ..elapse(const Duration(minutes: 5))
+              ..flushMicrotasks();
+            // The successful second pass found an empty queue and
+            // self-cancelled — no further passes.
+            expect(calls, 2);
+
+            unawaited(service.dispose());
+            async.flushMicrotasks();
+          });
+        },
+      );
+
+      test(
         'StateError aborts the pass; remaining rows are not dispatched',
         () async {
           // Two rows; the first throws StateError. The loop must not advance to
@@ -1383,6 +1438,76 @@ void main() {
           ).called(1);
         },
       );
+
+      test(
+        'consecutive sweep-level throws report only once per fault streak',
+        () async {
+          // A persistently-throwing DAO re-enters the top-level catch every
+          // pass. Only the first fault of the streak should escalate to
+          // Crashlytics; the re-arm keeps sweeping regardless.
+          when(
+            () => dao.getRetryableForOwner(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenThrow(Exception('drift connection lost'));
+
+          final service = buildService(crashReporting: crashReporting);
+          await service.sweep();
+          await service.sweep();
+          await service.sweep();
+
+          verify(
+            () => crashReporting.recordError(
+              any<dynamic>(),
+              any<StackTrace?>(),
+              reason: OutgoingDmRetryServiceReportableSites.sweepTopLevel,
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'a non-throwing pass resets the streak so a later throw reports again',
+        () async {
+          final service = buildService(crashReporting: crashReporting);
+
+          // Fault streak begins — reports once.
+          when(
+            () => dao.getRetryableForOwner(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenThrow(Exception('drift connection lost'));
+          await service.sweep();
+
+          // DAO heals: a clean pass ends the streak.
+          when(
+            () => dao.getRetryableForOwner(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenAnswer((_) async => const <OutgoingDm>[]);
+          await service.sweep();
+
+          // New fault after recovery — reports afresh.
+          when(
+            () => dao.getRetryableForOwner(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenThrow(Exception('drift connection lost again'));
+          await service.sweep();
+
+          verify(
+            () => crashReporting.recordError(
+              any<dynamic>(),
+              any<StackTrace?>(),
+              reason: OutgoingDmRetryServiceReportableSites.sweepTopLevel,
+            ),
+          ).called(2);
+        },
+      );
     });
 
     group('interrupted-send recovery (pending:pending)', () {
@@ -1502,6 +1627,57 @@ void main() {
           ).called(1);
           verifyNever(
             () => dmRepository.recoverFullSend(rumorId: 'exhausted-1'),
+          );
+          verifyNever(() => dao.incrementRetry(any()));
+        },
+      );
+
+      test(
+        'exhausts a sent/pending row by failing ONLY the self wrap — never '
+        'flips the delivered recipient wrap to failed',
+        () async {
+          final now = DateTime.utc(2026, 5, 10, 12);
+          // The recipient wrap already landed (delivered); only the invisible
+          // self-wrap sync never confirmed. Terminalizing both wraps would
+          // misrender a delivered message as a red "Not delivered" bubble and
+          // let Resend republish it — mirror the offline path's already-sent
+          // guard and fail only the self wrap.
+          final exhausted = _row(
+            id: 'exhausted-sent',
+            recipient: OutgoingWrapStatus.sent,
+            self: OutgoingWrapStatus.pending,
+            retryCount: 5, // == default maxRetries
+            queuedAt: now.subtract(const Duration(minutes: 5)),
+          );
+          when(
+            () => dao.getStillPendingForOwner(any()),
+          ).thenAnswer((_) async => [exhausted]);
+          when(
+            () => dao.markSelfWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              lastError: any(named: 'lastError'),
+            ),
+          ).thenAnswer((_) async => true);
+
+          await buildService(now: () => now).sweep();
+
+          verify(
+            () => dao.markSelfWrapStatus(
+              id: 'exhausted-sent',
+              status: OutgoingWrapStatus.failed,
+              lastError: any(named: 'lastError'),
+            ),
+          ).called(1);
+          verifyNever(
+            () => dao.markRecipientWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              lastError: any(named: 'lastError'),
+            ),
+          );
+          verifyNever(
+            () => dmRepository.recoverFullSend(rumorId: 'exhausted-sent'),
           );
           verifyNever(() => dao.incrementRetry(any()));
         },
