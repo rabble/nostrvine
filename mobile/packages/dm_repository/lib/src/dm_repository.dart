@@ -2876,6 +2876,15 @@ class DmRepository {
         // Don't rethrow — the message was published successfully.
         // Local persistence failure is a degraded state, not a send failure.
       }
+    } else if (result.blocked && outgoingDao != null) {
+      // A policy block is terminal, not a transient failure: drop the queue
+      // row so the sweep stops re-driving a send the gate refuses every time
+      // (no doomed Resend bubble). Mirrors sendGroupMessage's per-recipient
+      // classification and the drain's blocked arm.
+      await _finalizeAfterRecipientBlocked(
+        outgoingDao: outgoingDao,
+        rumorId: rumor.id,
+      );
     } else if (result.retryablePending && outgoingDao != null) {
       // Soft-unconfirmed: the recipient frame was written but no NIP-20 OK
       // arrived (and no explicit rejection). Keep the row pending — it
@@ -2900,17 +2909,15 @@ class DmRepository {
         rumorId: rumor.id,
         errorMessage: result.error ?? 'Unknown publish failure',
       );
-      // A blocked send never enqueues a bubble, but a failed/pending one
-      // did — make sure a brand-new thread is visible so the user can find
-      // the red bubble to retry or delete it.
-      if (!result.blocked) {
-        await _ensureConversationVisibleAfterSendFailure(
-          conversationId: conversationId,
-          participants: participants,
-          isGroup: false,
-          content: content,
-        );
-      }
+      // Make a brand-new thread visible so the user can find the red bubble
+      // to retry or delete it. A blocked result is handled terminally above
+      // and never reaches here.
+      await _ensureConversationVisibleAfterSendFailure(
+        conversationId: conversationId,
+        participants: participants,
+        isGroup: false,
+        content: content,
+      );
     }
 
     return result;

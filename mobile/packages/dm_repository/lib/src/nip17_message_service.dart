@@ -60,6 +60,13 @@ typedef IsolateGiftWrapBatchBuilder =
 /// connectivity in keep their prior classification behavior.
 typedef OfflineProbe = Future<bool> Function();
 
+/// Body marker Keycast returns (with HTTP 403) only for the verified_minor DM
+/// containment gate. Suspended accounts return "Account restricted" and token
+/// failures are 401 with their own refresh path, so matching this exact marker
+/// terminalizes a policy refusal while leaving transient errors retryable.
+/// Mirrors `MINOR_DM_DENIED_MSG` in divinevideo/keycast.
+const _minorDmPolicyDenialMarker = 'Operation denied by policy';
+
 /// Service for sending encrypted private messages using NIP-17 gift wrapping.
 ///
 /// Accepts any [NostrSigner] implementation, supporting both local key
@@ -580,6 +587,17 @@ class NIP17MessageService {
         error: e,
         stackTrace: stackTrace,
       );
+      if (e.toString().contains(_minorDmPolicyDenialMarker)) {
+        // Keycast's server-side verified_minor gate refused to sign or encrypt
+        // this DM. That is a permanent policy decision, not a transient error,
+        // so terminalize it (blocked) rather than returning a retryable failure
+        // the drain would re-attempt until maxRetries and Resend would
+        // deterministically re-fail. The blocked → terminal drain path already
+        // exists (#6028); this routes the server refusal into it.
+        return const NIP17SendResult.blocked(
+          'blocked: recipient not permitted by send policy',
+        );
+      }
       return NIP17SendResult.failure('Failed to send message: $e');
     }
   }
