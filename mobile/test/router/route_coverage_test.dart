@@ -11,6 +11,8 @@ import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/badges/badges_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/category_gallery_screen.dart';
+import 'package:openvine/screens/curated_list_by_author_screen.dart';
+import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/explore/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
@@ -591,6 +593,62 @@ void main() {
         expect(context.type, RouteType.hashtag);
         expect(context.hashtag, 'hello world');
       });
+    });
+
+    group('Curated list routes', () {
+      // Both list route shapes must round-trip through
+      // buildRoute(parseRoute()) or routeNormalizationProvider rewrites the
+      // location the instant the screen opens — bouncing the user off it.
+      const authorPubkey =
+          'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2';
+
+      test('/list/:listId parses to RouteType.curatedList', () {
+        final context = parseRoute(CuratedListFeedScreen.pathForId('my-list'));
+        expect(context.type, RouteType.curatedList);
+        expect(context.listId, 'my-list');
+        expect(context.npub, isNull);
+      });
+
+      test('/list/:listId round-trips through buildRoute(parseRoute())', () {
+        final path = CuratedListFeedScreen.pathForId('my-list');
+        expect(buildRoute(parseRoute(path)), path);
+      });
+
+      test(
+        '/list/:pubkey/:listId parses author pubkey and list id separately',
+        () {
+          final path = CuratedListByAuthorScreen.pathFor(
+            pubkey: authorPubkey,
+            listId: 'my-vines',
+          );
+          final context = parseRoute(path);
+          expect(context.type, RouteType.curatedList);
+          expect(context.npub, authorPubkey);
+          expect(context.listId, 'my-vines');
+        },
+      );
+
+      test(
+        '/list/:pubkey/:listId round-trips through buildRoute(parseRoute())',
+        () {
+          final path = CuratedListByAuthorScreen.pathFor(
+            pubkey: authorPubkey,
+            listId: 'my-vines',
+          );
+          expect(buildRoute(parseRoute(path)), path);
+        },
+      );
+
+      test(
+        '/list/:pubkey/:listId with an encoded list id round-trips',
+        () {
+          final path = CuratedListByAuthorScreen.pathFor(
+            pubkey: authorPubkey,
+            listId: 'my favorite vines',
+          );
+          expect(buildRoute(parseRoute(path)), path);
+        },
+      );
     });
   });
 }
