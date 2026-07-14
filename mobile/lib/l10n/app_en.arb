@@ -3140,7 +3140,7 @@
   "@dmSendFailedMessage": {
     "description": "Accessibility announcement text, and the recovery bottom sheet's title, shown in a DM conversation when a send fails (relay error, signer error, network error). The bottom sheet pairs it with `dmSendFailedSubtitle` and the `dmMessageActionRetrySend` / `dmMessageActionCancelSend` actions."
   },
-  "dmSendFailedSubtitle": "Resend it now, or delete it from the conversation.",
+  "dmSendFailedSubtitle": "Resend it now, or stop trying.",
   "@dmSendFailedSubtitle": {
     "description": "Subtitle in the recovery bottom sheet shown when a failed own DM bubble is tapped, below the `dmSendFailedMessage` title."
   },

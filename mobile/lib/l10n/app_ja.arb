@@ -2468,7 +2468,7 @@
     "profileSetupUploadStaged": "アップロードしたよ — 適用するには「保存」をタップしてね",
     "dmSendBlockedMessage": "You can only message official Divine accounts",
     "dmSendFailedMessage": "メッセージを送信できなかった",
-    "dmSendFailedSubtitle": "今すぐ再送するか、会話から削除してね。",
+    "dmSendFailedSubtitle": "今すぐ再送するか、送信を中止してね。",
     "dmSendFailedRetry": "もう一回",
     "dmSendPartialMessage": "送信したけど、ほかのデバイスには同期できなかった",
     "dmStatusFailed": "送信できなかった",

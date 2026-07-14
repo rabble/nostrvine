@@ -5512,7 +5512,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dmSendFailedMessage => 'تعذّر إرسال الرسالة';
 
   @override
-  String get dmSendFailedSubtitle => 'أعد إرسالها الآن، أو احذفها من المحادثة.';
+  String get dmSendFailedSubtitle => 'أعد إرسالها الآن، أو أوقف المحاولة.';
 
   @override
   String get dmSendFailedRetry => 'إعادة المحاولة';

@@ -2475,7 +2475,7 @@
     "profileSetupUploadStaged": "Yüklendi — uygulamak için Kaydet'e dokunun",
     "dmSendBlockedMessage": "You can only message official Divine accounts",
     "dmSendFailedMessage": "Mesaj gönderilemedi",
-    "dmSendFailedSubtitle": "Şimdi tekrar gönder ya da sohbetten sil.",
+    "dmSendFailedSubtitle": "Şimdi tekrar gönder ya da denemeyi durdur.",
     "dmSendFailedRetry": "Tekrar Dene",
     "dmSendPartialMessage": "Gönderildi, ama diğer cihazlarınla eşitlenmedi",
     "dmStatusFailed": "Gönderilemedi",

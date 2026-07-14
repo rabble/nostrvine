@@ -5597,8 +5597,7 @@ class AppLocalizationsBg extends AppLocalizations {
   String get dmSendFailedMessage => 'Съобщението не мина';
 
   @override
-  String get dmSendFailedSubtitle =>
-      'Изпрати го отново сега или го изтрий от разговора.';
+  String get dmSendFailedSubtitle => 'Изпрати го отново сега или спри опитите.';
 
   @override
   String get dmSendFailedRetry => 'Опитай пак';

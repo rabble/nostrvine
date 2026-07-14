@@ -5612,7 +5612,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dmSendFailedSubtitle =>
-      'Sende sie jetzt erneut oder lösche sie aus der Unterhaltung.';
+      'Sende sie jetzt erneut oder versuche es nicht mehr.';
 
   @override
   String get dmSendFailedRetry => 'Erneut versuchen';

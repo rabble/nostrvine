@@ -540,11 +540,16 @@ class _MessageList extends StatelessWidget {
       Directionality.of(context),
     );
 
+    // The prompt must stay open until the user picks resend or stop-trying
+    // (#6092): block both barrier-tap and drag-to-dismiss so a stray gesture
+    // can't return null and silently leave the failed send untouched.
     final action = await VineBottomSheetPrompt.show<_FailedMessageAction>(
       context: context,
       sticker: DivineStickerName.alert,
       title: l10n.dmSendFailedMessage,
       subtitle: l10n.dmSendFailedSubtitle,
+      isDismissible: false,
+      enableDrag: false,
       primaryButtonText: l10n.dmMessageActionRetrySend,
       onPrimaryPressed: () =>
           Navigator.of(context).pop(_FailedMessageAction.resend),
@@ -678,8 +683,8 @@ class _MessageList extends StatelessWidget {
             isLastInGroup: isLastInGroup,
             onLongPress: () =>
                 _onMessageLongPress(context, message, isSent, status),
-            // A single tap on a failed own bubble opens the resend/delete
-            // divine snackbar; every other bubble keeps its default tap.
+            // A single tap on a failed own bubble opens the resend/stop-trying
+            // recovery bottom sheet; every other bubble keeps its default tap.
             onTap: isSent && status == DmDeliveryStatus.failed
                 ? () => _onFailedMessageTap(context, message)
                 : null,

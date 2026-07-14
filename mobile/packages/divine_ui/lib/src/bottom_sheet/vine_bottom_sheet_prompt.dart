@@ -108,6 +108,11 @@ class VineBottomSheetPrompt extends StatelessWidget {
   final VoidCallback? onSecondaryPressed;
 
   /// Shows the prompt sheet as a fixed modal bottom sheet.
+  ///
+  /// Set both [isDismissible] and [enableDrag] to false for a prompt that
+  /// must stay open until the user picks an action — [isDismissible] blocks
+  /// barrier taps and [enableDrag] blocks drag-to-dismiss. Setting only one
+  /// leaves the other dismissal path active.
   static Future<T?> show<T>({
     required BuildContext context,
     required DivineStickerName sticker,
@@ -122,12 +127,14 @@ class VineBottomSheetPrompt extends StatelessWidget {
     String? tertiaryButtonText,
     VoidCallback? onTertiaryPressed,
     bool isDismissible = true,
+    bool enableDrag = true,
   }) {
     return VineBottomSheet.show<T>(
       context: context,
       scrollable: false,
       showHeaderDivider: false,
       isDismissible: isDismissible,
+      enableDrag: enableDrag,
       body: VineBottomSheetPrompt(
         sticker: sticker,
         title: title,

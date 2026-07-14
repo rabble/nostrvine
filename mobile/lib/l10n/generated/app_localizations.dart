@@ -9717,7 +9717,7 @@ abstract class AppLocalizations {
   /// Subtitle in the recovery bottom sheet shown when a failed own DM bubble is tapped, below the `dmSendFailedMessage` title.
   ///
   /// In en, this message translates to:
-  /// **'Resend it now, or delete it from the conversation.'**
+  /// **'Resend it now, or stop trying.'**
   String get dmSendFailedSubtitle;
 
   /// SnackBarAction button label that retries the failed DM send. Keep short — fits next to the SnackBar message.

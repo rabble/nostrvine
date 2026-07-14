@@ -5617,7 +5617,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dmSendFailedSubtitle =>
-      'Renvoie-le maintenant, ou supprime-le de la conversation.';
+      'Renvoie-le maintenant, ou arrête d\'essayer.';
 
   @override
   String get dmSendFailedRetry => 'Réessayer';

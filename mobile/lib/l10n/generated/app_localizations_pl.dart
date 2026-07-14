@@ -5690,7 +5690,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get dmSendFailedSubtitle =>
-      'Wyślij ją ponownie teraz albo usuń ją z rozmowy.';
+      'Wyślij ją ponownie teraz albo przestań próbować.';
 
   @override
   String get dmSendFailedRetry => 'Spróbuj ponownie';

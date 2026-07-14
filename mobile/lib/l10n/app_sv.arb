@@ -2476,7 +2476,7 @@
     "profileSetupUploadStaged": "Uppladdad — tryck på Spara för att tillämpa",
     "dmSendBlockedMessage": "You can only message official Divine accounts",
     "dmSendFailedMessage": "Meddelandet kunde inte skickas",
-    "dmSendFailedSubtitle": "Skicka det igen nu, eller ta bort det från konversationen.",
+    "dmSendFailedSubtitle": "Skicka det igen nu, eller sluta försöka.",
     "dmSendFailedRetry": "Försök igen",
     "dmSendPartialMessage": "Skickat, men inte synkat till dina andra enheter",
     "dmStatusFailed": "Kunde inte skicka",

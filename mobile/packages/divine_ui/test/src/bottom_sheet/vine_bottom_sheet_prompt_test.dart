@@ -440,6 +440,57 @@ void main() {
 
         expect(find.text('Dismissable'), findsNothing);
       });
+
+      testWidgets(
+        'stays open when isDismissible and enableDrag are false',
+        (tester) async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: DefaultAssetBundle(
+                bundle: bundle,
+                child: Scaffold(
+                  body: Builder(
+                    builder: (context) => ElevatedButton(
+                      onPressed: () async {
+                        await VineBottomSheetPrompt.show<void>(
+                          context: context,
+                          sticker: DivineStickerName.alert,
+                          title: 'Locked',
+                          subtitle: 'Pick an action',
+                          primaryButtonText: 'OK',
+                          onPrimaryPressed: () {},
+                          secondaryButtonText: 'Cancel',
+                          onSecondaryPressed: () {},
+                          isDismissible: false,
+                          enableDrag: false,
+                        );
+                      },
+                      child: const Text('Show Sheet'),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.tap(find.text('Show Sheet'));
+          await tester.pumpAndSettle();
+
+          expect(find.text('Locked'), findsOneWidget);
+
+          // A barrier tap above the sheet must not dismiss it.
+          await tester.tapAt(const Offset(10, 10));
+          await tester.pumpAndSettle();
+          expect(find.text('Locked'), findsOneWidget);
+
+          // enableDrag is threaded through to the modal so a downward drag
+          // can't dismiss it either. The framework gates drag-dismissal on
+          // BottomSheet.enableDrag; assert the forwarded flag directly, since
+          // a simulated fling inside the scroll body is gesture-arena-flaky.
+          final sheet = tester.widget<BottomSheet>(find.byType(BottomSheet));
+          expect(sheet.enableDrag, isFalse);
+        },
+      );
     });
   });
 }

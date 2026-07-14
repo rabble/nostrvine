@@ -5612,7 +5612,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get dmSendFailedSubtitle =>
-      'I-resend ito ngayon, o burahin ito sa usapan.';
+      'I-resend ito ngayon, o itigil ang pagsubok.';
 
   @override
   String get dmSendFailedRetry => 'Subukan ulit';

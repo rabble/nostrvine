@@ -2476,7 +2476,7 @@
     "profileSetupUploadStaged": "Geüpload — tik op Opslaan om toe te passen",
     "dmSendBlockedMessage": "You can only message official Divine accounts",
     "dmSendFailedMessage": "Bericht kon niet worden verzonden",
-    "dmSendFailedSubtitle": "Verstuur het nu opnieuw, of verwijder het uit het gesprek.",
+    "dmSendFailedSubtitle": "Verstuur het nu opnieuw, of stop met proberen.",
     "dmSendFailedRetry": "Opnieuw",
     "dmSendPartialMessage": "Verzonden, maar niet gesynchroniseerd met je andere apparaten",
     "dmStatusFailed": "Versturen mislukt",

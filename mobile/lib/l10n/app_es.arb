@@ -2484,7 +2484,7 @@
     "profileSetupUploadStaged": "Subida — toca Guardar para aplicar",
     "dmSendBlockedMessage": "You can only message official Divine accounts",
     "dmSendFailedMessage": "No se pudo enviar el mensaje",
-    "dmSendFailedSubtitle": "Reenvíalo ahora o elimínalo de la conversación.",
+    "dmSendFailedSubtitle": "Reenvíalo ahora o deja de intentarlo.",
     "dmSendFailedRetry": "Reintentar",
     "dmSendPartialMessage": "Enviado, pero no se sincronizó con tus otros dispositivos",
     "dmStatusFailed": "No se pudo enviar",

@@ -5571,7 +5571,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get dmSendFailedSubtitle =>
-      'Verstuur het nu opnieuw, of verwijder het uit het gesprek.';
+      'Verstuur het nu opnieuw, of stop met proberen.';
 
   @override
   String get dmSendFailedRetry => 'Opnieuw';
