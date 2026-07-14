@@ -1,6 +1,8 @@
 // ABOUTME: Upload & media Riverpod providers split from app_providers.dart
 // ABOUTME: Blossom upload, media-auth chain, upload manager, API clients, audio playback
 
+import 'dart:async';
+
 import 'package:background_uploader/background_uploader.dart';
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -270,12 +272,25 @@ UploadManager uploadManager(Ref ref) {
   ref.watch(currentAuthStateProvider);
   final currentPubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
   final env = ref.read(currentEnvironmentProvider);
+
+  // Bridge the app-foreground notifier into a plain Stream<bool> so the
+  // manager can re-drive stuck uploads on resume without taking a Riverpod
+  // dependency (same pattern as the DM retry services in social_providers).
+  final foregroundController = StreamController<bool>();
+  ref.onDispose(foregroundController.close);
+  ref.listen<bool>(appForegroundProvider, (_, next) {
+    if (!foregroundController.isClosed) {
+      foregroundController.add(next);
+    }
+  });
+
   final manager = UploadManager(
     blossomService: blossomService,
     defaultBlossomUrl: env.blossomUrl,
     currentNostrPubkey: currentPubkey,
     scopeUploadsToCurrentUser: true,
     useBackgroundUpload: _backgroundUploadEnabled,
+    appForegroundStream: foregroundController.stream,
   );
   ref.onDispose(manager.dispose);
   return manager;
