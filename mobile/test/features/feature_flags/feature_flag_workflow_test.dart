@@ -292,7 +292,10 @@ void main() {
       expect(find.text('Enhanced Camera'), findsOneWidget);
 
       // Reset all flags
-      final resetButton = find.byIcon(Icons.restore);
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final resetButton = find.bySemanticsLabel(
+        l10n.featureFlagResetAllTooltip,
+      );
       await tester.tap(resetButton);
       await tester.pumpAndSettle();
 
