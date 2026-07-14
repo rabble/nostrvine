@@ -2655,6 +2655,7 @@
     "collaboratorInviteDmBodyUntitled": "በቪዲዮ ላይ እንድትተባበር ተጋብዘሃል፦ {url}\n\nOpen diVine to review and accept.",
     "dmSendBlockedMessage": "You can only message official Divine accounts",
     "dmSendFailedMessage": "መልዕክቱ መላክ አልተሳካም",
+    "dmSendFailedSubtitle": "አሁን እንደገና ላክ ወይም ከውይይቱ ሰርዝ።",
     "dmSendFailedRetry": "እንደገና ይሞክሩ",
     "dmSendPartialMessage": "ተልኳል፣ ግን ወደ ሌሎች መሣሪያዎች አልተመሳሰለም",
     "dmStatusFailed": "መላክ አልተሳካም",

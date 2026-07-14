@@ -5432,6 +5432,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get dmSendFailedMessage => 'መልዕክቱ መላክ አልተሳካም';
 
   @override
+  String get dmSendFailedSubtitle => 'አሁን እንደገና ላክ ወይም ከውይይቱ ሰርዝ።';
+
+  @override
   String get dmSendFailedRetry => 'እንደገና ይሞክሩ';
 
   @override

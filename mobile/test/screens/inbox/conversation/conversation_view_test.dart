@@ -847,8 +847,8 @@ void main() {
 
     // Send-failure UX (companion to ConversationBloc's clear-optimistic-on-
     // failure behavior). On `SendStatus.failed`, the bloc strips the
-    // optimistic message; the UI's job is to surface a retry SnackBar so
-    // the user knows the send actually failed and has a one-tap recovery.
+    // optimistic message; the UI's job is to surface a retry bottom sheet
+    // so the user knows the send actually failed and has a one-tap recovery.
     // Without this listener, the only visible change would be a brief
     // spinner flicker, and the user would discover the loss only after
     // navigating away and back — the "looks sent, then disappeared" bug.
@@ -857,7 +857,7 @@ void main() {
 
       testWidgets(
         'shows NO toast on a hard failure — the failure is surfaced on the '
-        'bubble (tap → resend/stop-trying), not a snackbar',
+        'bubble (tap → resend/delete bottom sheet), not a snackbar',
         (tester) async {
           // Emit loaded → failed. listenWhen no longer fires for `failed`.
           whenListen(
@@ -949,8 +949,8 @@ void main() {
       );
 
       testWidgets(
-        'tapping a failed bubble opens the divine snackbar; Resend replays '
-        'the row and Stop trying drops it (never a fresh '
+        'tapping a failed bubble opens the recovery bottom sheet; Resend '
+        'replays the row and Delete drops it (never a fresh '
         'ConversationMessageSent)',
         (tester) async {
           final failedRow = OutgoingDm(
@@ -1008,7 +1008,7 @@ void main() {
           );
           await tester.pumpAndSettle();
 
-          // Tap the failed bubble to open the resend/stop-trying snackbar.
+          // Tap the failed bubble to open the resend/delete bottom sheet.
           await tester.tap(find.text(failedSendContent));
           await tester.pumpAndSettle();
 
@@ -1022,7 +1022,7 @@ void main() {
           // Resend replays the existing row via recoverFullSend — never a
           // fresh ConversationMessageSent (no duplicate delivery).
           await tester.tap(find.text(l10n.dmMessageActionRetrySend));
-          await tester.pump();
+          await tester.pumpAndSettle();
           final afterResend = verify(() => mockBloc.add(captureAny())).captured;
           expect(
             afterResend.last,
@@ -1042,7 +1042,7 @@ void main() {
           await tester.tap(find.text(failedSendContent));
           await tester.pumpAndSettle();
           await tester.tap(find.text(l10n.dmMessageActionCancelSend));
-          await tester.pump();
+          await tester.pumpAndSettle();
           final afterDelete = verify(() => mockBloc.add(captureAny())).captured;
           expect(
             afterDelete.last,
@@ -1160,7 +1160,7 @@ void main() {
           await tester.pumpAndSettle();
 
           await tester.tap(find.text(l10n.dmMessageActionRetrySend));
-          await tester.pump();
+          await tester.pumpAndSettle();
           final afterResend = verify(() => mockBloc.add(captureAny())).captured;
           expect(
             afterResend.whereType<ConversationFullSendRecoveryRequested>(),
@@ -1181,7 +1181,7 @@ void main() {
           await tester.tap(find.text(failedSendContent));
           await tester.pumpAndSettle();
           await tester.tap(find.text(l10n.dmMessageActionCancelSend));
-          await tester.pump();
+          await tester.pumpAndSettle();
           final cancelled = verify(() => mockBloc.add(captureAny())).captured
               .whereType<ConversationOutgoingSendCancelled>()
               .map((e) => e.rumorId)

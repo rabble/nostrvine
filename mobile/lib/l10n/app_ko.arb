@@ -1799,6 +1799,7 @@
     "profileSetupUploadStaged": "업로드됐어요 — 적용하려면 저장을 탭하세요",
     "dmSendBlockedMessage": "You can only message official Divine accounts",
     "dmSendFailedMessage": "메시지를 보내지 못했어요",
+    "dmSendFailedSubtitle": "지금 다시 보내거나 대화에서 삭제하세요.",
     "dmSendFailedRetry": "다시 시도",
     "dmSendPartialMessage": "보냈지만 다른 기기에 동기화되지 않았어요",
     "dmStatusFailed": "보내지 못했어요",

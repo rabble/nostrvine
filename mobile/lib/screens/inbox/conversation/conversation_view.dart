@@ -46,6 +46,10 @@ class ConversationView extends ConsumerStatefulWidget {
   ConsumerState<ConversationView> createState() => _ConversationViewState();
 }
 
+/// The choice made on the recovery bottom sheet opened by
+/// [_ConversationViewState._onFailedMessageTap].
+enum _FailedMessageAction { resend, delete }
+
 class _ConversationViewState extends ConsumerState<ConversationView> {
   Future<void> _onOptions(String otherPubkey, String displayName) async {
     if (otherPubkey.isEmpty) return;
@@ -502,58 +506,31 @@ class _MessageList extends StatelessWidget {
     }
   }
 
-  /// Tapping a failed own bubble surfaces a native divine snackbar offering a
-  /// queue-aware resend or a "Stop trying". Resend replays the batch's FAILED
+  /// Tapping a failed own bubble opens a recovery bottom sheet offering a
+  /// queue-aware resend or a delete. Resend replays the batch's FAILED
   /// row(s) via [ConversationFullSendRecoveryRequested] (a manual retry
   /// bypasses the sweep's retry-count cap) — never the siblings that
-  /// already delivered. "Stop trying" cancels every UNDELIVERED sibling row
-  /// (pending + failed) via [ConversationOutgoingSendCancelled] so the retry
-  /// sweep stops re-driving them; it does NOT delete the persisted bubble
-  /// (long-press delete is the real delete-for-everyone path). Cancelling
-  /// only the failed ones would leave pending siblings for the sweep to
-  /// publish after the user said give up, so all undelivered rows go.
-  /// Delivered-awaiting-self-wrap rows are excluded — those recipients
-  /// already have the message. Both actions are one-shot, dismiss the
-  /// snackbar, and no-op once the bloc is closed (the snackbar can outlive
-  /// the route).
-  void _onFailedMessageTap(BuildContext context, DmMessage message) {
+  /// already delivered. Delete ("cancel send") drops every UNDELIVERED
+  /// sibling row (pending + failed) via [ConversationOutgoingSendCancelled]:
+  /// cancelling only the failed ones left pending siblings for the retry
+  /// sweep to publish after the user said give up. Delivered-awaiting-
+  /// self-wrap rows are excluded — those recipients already have the
+  /// message. The sheet is modal, so both actions are inherently one-shot;
+  /// the bloc is still checked for closure before dispatching, since the
+  /// route (and its bloc) can be torn down while the sheet is open.
+  Future<void> _onFailedMessageTap(
+    BuildContext context,
+    DmMessage message,
+  ) async {
     final l10n = context.l10n;
     final bloc = context.read<ConversationBloc>();
-    final messenger = ScaffoldMessenger.of(context);
     final failedIds = bloc.state.failedSiblingRumorIdsFor(message.id);
     final resendIds = failedIds.isEmpty ? [message.id] : failedIds;
     final undeliveredIds = bloc.state.undeliveredSiblingRumorIdsFor(
       message.id,
     );
     final cancelIds = undeliveredIds.isEmpty ? [message.id] : undeliveredIds;
-    var handled = false;
-    void runOnce(void Function() action) {
-      if (handled || bloc.isClosed) return;
-      handled = true;
-      messenger.hideCurrentSnackBar();
-      action();
-    }
 
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        DivineSnackbarContainer.snackBar(
-          l10n.dmSendFailedMessage,
-          error: true,
-          actionLabel: l10n.dmMessageActionRetrySend,
-          onActionPressed: () => runOnce(
-            () => bloc.add(
-              ConversationFullSendRecoveryRequested(rumorIds: resendIds),
-            ),
-          ),
-          secondaryActionLabel: l10n.dmMessageActionCancelSend,
-          onSecondaryActionPressed: () => runOnce(() {
-            for (final id in cancelIds) {
-              bloc.add(ConversationOutgoingSendCancelled(rumorId: id));
-            }
-          }),
-        ),
-      );
     // Per `accessibility.md`, async visible state changes must announce
     // explicitly — same rule as the blocked/partial snackbars in
     // [_onSendOutcome].
@@ -562,6 +539,31 @@ class _MessageList extends StatelessWidget {
       l10n.dmSendFailedMessage,
       Directionality.of(context),
     );
+
+    final action = await VineBottomSheetPrompt.show<_FailedMessageAction>(
+      context: context,
+      sticker: DivineStickerName.alert,
+      title: l10n.dmSendFailedMessage,
+      subtitle: l10n.dmSendFailedSubtitle,
+      primaryButtonText: l10n.dmMessageActionRetrySend,
+      onPrimaryPressed: () =>
+          Navigator.of(context).pop(_FailedMessageAction.resend),
+      secondaryButtonText: l10n.dmMessageActionCancelSend,
+      onSecondaryPressed: () =>
+          Navigator.of(context).pop(_FailedMessageAction.delete),
+    );
+
+    if (bloc.isClosed) return;
+    switch (action) {
+      case _FailedMessageAction.resend:
+        bloc.add(ConversationFullSendRecoveryRequested(rumorIds: resendIds));
+      case _FailedMessageAction.delete:
+        for (final id in cancelIds) {
+          bloc.add(ConversationOutgoingSendCancelled(rumorId: id));
+        }
+      case null:
+        return;
+    }
   }
 
   void _toggleReaction(BuildContext context, DmMessage message, String emoji) {

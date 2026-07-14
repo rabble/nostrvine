@@ -9708,11 +9708,17 @@ abstract class AppLocalizations {
   /// **'You can only message official Divine accounts'**
   String get dmSendBlockedMessage;
 
-  /// SnackBar text shown in a DM conversation when a send fails (relay error, signer error, network error). Paired with the retry action `dmSendFailedRetry`.
+  /// Accessibility announcement text, and the recovery bottom sheet's title, shown in a DM conversation when a send fails (relay error, signer error, network error). The bottom sheet pairs it with `dmSendFailedSubtitle` and the `dmMessageActionRetrySend` / `dmMessageActionCancelSend` actions.
   ///
   /// In en, this message translates to:
   /// **'Message couldn\'t be sent'**
   String get dmSendFailedMessage;
+
+  /// Subtitle in the recovery bottom sheet shown when a failed own DM bubble is tapped, below the `dmSendFailedMessage` title.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend it now, or delete it from the conversation.'**
+  String get dmSendFailedSubtitle;
 
   /// SnackBarAction button label that retries the failed DM send. Keep short — fits next to the SnackBar message.
   ///
@@ -9786,13 +9792,13 @@ abstract class AppLocalizations {
   /// **'Report'**
   String get dmMessageActionReport;
 
-  /// Action in the snackbar shown when a failed own DM bubble is tapped; re-attempts delivery of that queued message.
+  /// Primary action in the recovery bottom sheet shown when a failed own DM bubble is tapped; re-attempts delivery of that queued message.
   ///
   /// In en, this message translates to:
   /// **'Resend'**
   String get dmMessageActionRetrySend;
 
-  /// Action in the snackbar shown when a failed own DM bubble is tapped; stops retrying the undelivered recipients and keeps the message (and any already-delivered copies). It does not delete the message — long-press delete does that.
+  /// Secondary action in the recovery bottom sheet shown when a failed own DM bubble is tapped; gives up on the queued message and removes it.
   ///
   /// In en, this message translates to:
   /// **'Stop trying'**
