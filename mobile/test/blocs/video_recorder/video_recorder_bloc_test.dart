@@ -921,6 +921,45 @@ void main() {
         ],
       );
 
+      test(
+        'heals a stale shrunk ceiling on pinch-out even when the clamp '
+        'pins the zoom to the current level',
+        () async {
+          // The live max was restricted to 2.5 and the user is pinned there.
+          // The restriction has since lifted (live max back to 5.0) but the
+          // service still advertises the stale 2.5 until the next set's
+          // read-back refreshes it. A pinch-out clamps back to 2.5 (== the
+          // current zoom), so the applied zoom doesn't move — the dispatch
+          // must still fire so the ceiling heals on this gesture rather than
+          // staying capped until the user first pinches back in.
+          var healed = false;
+          when(() => cameraService.setZoomLevel(any())).thenAnswer((inv) async {
+            healed = true;
+            return inv.positionalArguments.first as double;
+          });
+          when(
+            () => cameraService.maxZoomLevel,
+          ).thenAnswer((_) => healed ? 5.0 : 2.5);
+
+          final bloc = buildBloc()
+            ..emit(
+              const VideoRecorderBlocState(zoomLevel: 2.5, maxZoomLevel: 2.5),
+            );
+          addTearDown(bloc.close);
+
+          bloc.add(
+            VideoRecorderScaleStarted(ScaleStartDetails(pointerCount: 2)),
+          );
+          await pumpEventQueue();
+          // 2.5 × 1.6 = 4.0 > stale max 2.5, so clampedZoom pins back to 2.5.
+          bloc.add(VideoRecorderScaleUpdated(ScaleUpdateDetails(scale: 1.6)));
+          await pumpEventQueue();
+
+          verify(() => cameraService.setZoomLevel(2.5)).called(1);
+          expect(bloc.state.maxZoomLevel, 5.0);
+        },
+      );
+
       blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
         'no-op when zoom value out of bounds',
         build: buildBloc,

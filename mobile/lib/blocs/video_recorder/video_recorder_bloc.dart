@@ -1319,7 +1319,16 @@ class VideoRecorderBloc
     );
     _armZoomIndicatorHideTimer();
 
-    if ((state.zoomLevel - clampedZoom).abs() > 0.01) {
+    // Dispatch when the applied zoom actually moved, or when the raw pinch
+    // target pushed past a cached bound even though the clamp pinned it to the
+    // current zoom. The latter re-runs the platform set so its read-back can
+    // widen a stale ceiling a lifted runtime restriction left behind —
+    // otherwise a user pinned at a shrunk max stays capped until they first
+    // pinch back in.
+    final pushedPastBound =
+        newZoom > _cameraService.maxZoomLevel ||
+        newZoom < _cameraService.minZoomLevel;
+    if ((state.zoomLevel - clampedZoom).abs() > 0.01 || pushedPastBound) {
       add(VideoRecorderZoomLevelSet(clampedZoom));
     }
   }
