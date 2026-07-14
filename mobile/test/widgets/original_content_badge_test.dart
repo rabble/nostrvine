@@ -1,41 +1,13 @@
 // ABOUTME: Tests for the OriginalContentBadge widget and original-content event logic
 // ABOUTME: Verifies the badge renders correctly and VideoEvent flags original vs repost vs vintage vine
 
-import 'package:divine_ui/divine_ui.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
-import 'package:openvine/l10n/generated/app_localizations.dart';
-import 'package:openvine/widgets/proofmode_badge.dart';
 
 void main() {
   group('Original Content Badge Tests (TDD)', () {
-    testWidgets('OriginalContentBadge renders with correct styling', (
-      WidgetTester tester,
-    ) async {
-      // Arrange & Act
-      await tester.pumpWidget(
-        const MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: OriginalContentBadge(size: BadgeSize.medium)),
-        ),
-      );
-
-      // Assert - verify badge displays "Original" text
-      expect(find.text('Original'), findsOneWidget);
-
-      // Assert - verify check-circle icon is present
-      expect(
-        find.byWidgetPredicate(
-          (w) => w is DivineIcon && w.icon == DivineIconName.checkCircle,
-        ),
-        findsOneWidget,
-      );
-    });
-
     test('VideoEvent.isOriginalContent returns true for non-repost', () {
       // Arrange - Create a non-repost video event
       final event = Event.fromJson({

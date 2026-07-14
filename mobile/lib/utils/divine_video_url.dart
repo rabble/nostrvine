@@ -1,8 +1,8 @@
 // ABOUTME: Regex + helpers for extracting divine.video URLs from text.
 // ABOUTME: Shared by the conversation bubble and the long-press handler.
 
-/// Detects the canonical share-link shape produced by
-/// `ShareService.generateWebLink` (`https://divine.video/video/<id>`).
+/// Detects the canonical share-link shape
+/// (`https://divine.video/video/<id>`).
 ///
 /// The capture group accepts hex event IDs (64 chars) and d-tags
 /// (UUIDs, alphanumeric strings). Only word characters and hyphens are
