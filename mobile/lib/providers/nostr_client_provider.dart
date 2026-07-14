@@ -280,7 +280,11 @@ class NostrService extends _$NostrService {
     required String source,
   }) async {
     try {
-      await _runClientInitialization(client, userRelayUrls);
+      await _runClientInitialization(
+        client,
+        userRelayUrls,
+        source: source,
+      );
       // The provider can be disposed during the await (e.g. a rapid identity
       // switch rebuilds it, or a test container is torn down mid-init). Reading
       // `ref` after disposal throws, so bail before the ref-backed checks below.
@@ -319,14 +323,59 @@ class NostrService extends _$NostrService {
 
   Future<void> _runClientInitialization(
     NostrClient client,
-    List<String> userRelayUrls,
-  ) {
+    List<String> userRelayUrls, {
+    required String source,
+  }) {
+    final timeout = ref.read(nostrInitializationTimeoutProvider);
+    final stopwatch = Stopwatch()..start();
+    var stage = 'addingUserRelays';
+    Log.info(
+      '[NostrService] Initialization started: source=$source, '
+      'userRelayCount=${userRelayUrls.length}, timeout=$timeout',
+      name: 'NostrService',
+      category: LogCategory.system,
+    );
+
     return (() async {
       if (userRelayUrls.isNotEmpty) {
-        await client.addRelays(userRelayUrls);
+        final addedRelayCount = await client.addRelays(userRelayUrls);
+        Log.info(
+          '[NostrService] Initialization stage completed: source=$source, '
+          'stage=$stage, addedRelayCount=$addedRelayCount, '
+          'elapsedMs=${stopwatch.elapsedMilliseconds}',
+          name: 'NostrService',
+          category: LogCategory.system,
+        );
       }
-      await client.initialize();
-    })().timeout(ref.read(nostrInitializationTimeoutProvider));
+      stage = 'client.initialize';
+      await client.initializeWithStageObserver(
+        (clientStage) {
+          stage = 'client.${clientStage.name}';
+          Log.debug(
+            '[NostrService] Initialization stage started: source=$source, '
+            'stage=$stage, elapsedMs=${stopwatch.elapsedMilliseconds}',
+            name: 'NostrService',
+            category: LogCategory.system,
+          );
+        },
+      );
+      Log.info(
+        '[NostrService] Initialization completed: source=$source, '
+        'elapsedMs=${stopwatch.elapsedMilliseconds}',
+        name: 'NostrService',
+        category: LogCategory.system,
+      );
+    })().timeout(
+      timeout,
+      onTimeout: () {
+        throw TimeoutException(
+          'Nostr client initialization timed out: source=$source, '
+          'stage=$stage, userRelayCount=${userRelayUrls.length}, '
+          'elapsedMs=${stopwatch.elapsedMilliseconds}',
+          timeout,
+        );
+      },
+    );
   }
 
   void _scheduleInitializationRetry(String? pubkey) {
@@ -364,7 +413,11 @@ class NostrService extends _$NostrService {
     final client = _createClient(identity);
     final clientGeneration = _nextClientGeneration();
     try {
-      await _runClientInitialization(client, userRelayUrls);
+      await _runClientInitialization(
+        client,
+        userRelayUrls,
+        source: 'retry',
+      );
       if (!_isActiveIdentity(pubkey, clientGeneration)) {
         _disposeClient(client);
         return;

@@ -21,6 +21,7 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/nostr_signature_verification_preference_service.dart';
 import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
 
@@ -82,8 +83,7 @@ class _RecordingFactory {
     when(
       () => client.publicKey,
     ).thenReturn(pubkey ?? '');
-    // ignore: unnecessary_lambdas
-    when(() => client.initialize()).thenAnswer((_) {
+    when(client.initialize).thenAnswer((_) {
       initializePubkeys.add(pubkey);
       return initializeCompleter?.future ?? Future<void>.value();
     });
@@ -799,6 +799,7 @@ void main() {
     test(
       'timed out startup relay setup retries automatically for same identity',
       () async {
+        final logCountBeforeTest = LogCaptureService().getRecentLogs().length;
         final stalledAddRelays = Completer<void>();
         factory.addRelaysCompleters[pubkeyA] = stalledAddRelays;
         when(() => mockAuth.currentIdentity).thenReturn(identityA);
@@ -819,6 +820,20 @@ void main() {
         expect(factory.callCount, equals(2));
         expect(factory.addRelaysPubkeys, equals([pubkeyA, pubkeyA]));
         expect(factory.initializePubkeys, equals([pubkeyA]));
+        final testLogs = LogCaptureService().getRecentLogs().skip(
+          logCountBeforeTest,
+        );
+        expect(
+          testLogs.any(
+            (entry) =>
+                entry.message.contains('Failed to initialize client') &&
+                entry.message.contains('stage=addingUserRelays'),
+          ),
+          isTrue,
+          reason:
+              'A remote log export must identify addRelays as the stalled '
+              'startup stage.',
+        );
         verify(timedOutClient.dispose).called(1);
         expect(
           container.read(nostrServiceProvider),

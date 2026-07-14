@@ -3311,6 +3311,24 @@ void main() {
         expect(resolved, isTrue);
       });
 
+      test('initialize reports the stage reached before each await', () async {
+        when(() => mockNostr.refreshPublicKey()).thenAnswer((_) async {});
+        when(() => mockRelayManager.initialize()).thenAnswer((_) async {});
+        final observedStages = <NostrClientInitializationStage>[];
+
+        await client.initializeWithStageObserver(observedStages.add);
+
+        expect(
+          observedStages,
+          equals([
+            NostrClientInitializationStage.refreshingPublicKey,
+            NostrClientInitializationStage.loadingVerifiedEvents,
+            NostrClientInitializationStage.startingVerificationWorker,
+            NostrClientInitializationStage.connectingRelays,
+          ]),
+        );
+      });
+
       test('ready stays resolved on a second initialize() call', () async {
         when(() => mockNostr.refreshPublicKey()).thenAnswer((_) async {});
         when(() => mockRelayManager.initialize()).thenAnswer((_) async {});

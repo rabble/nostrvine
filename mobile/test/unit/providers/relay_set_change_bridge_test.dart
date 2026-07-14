@@ -32,6 +32,7 @@ void main() {
       when(
         () => mockVideoEventService.resetAndResubscribeAll(),
       ).thenAnswer((_) async {});
+      when(() => mockNostrClient.isInitialized).thenReturn(true);
       when(() => mockNostrClient.forceReconnectAll()).thenAnswer((_) async {});
     });
 
@@ -224,6 +225,27 @@ void main() {
         async.flushMicrotasks();
 
         verify(() => mockVideoEventService.resetAndResubscribeAll()).called(1);
+        container.dispose();
+      });
+    });
+
+    test('does not reconnect while the Nostr client is initializing', () {
+      fakeAsync((async) {
+        when(() => mockNostrClient.isInitialized).thenReturn(false);
+        final container = createContainer(initialStatuses: {});
+
+        statusController.add({
+          'wss://relay1.example.com': RelayConnectionStatus.connecting(
+            'wss://relay1.example.com',
+          ),
+        });
+
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 2));
+        async.flushMicrotasks();
+
+        verifyNever(() => mockNostrClient.forceReconnectAll());
+        verifyNever(() => mockVideoEventService.resetAndResubscribeAll());
         container.dispose();
       });
     });

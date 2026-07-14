@@ -187,6 +187,16 @@ void relaySetChangeBridge(Ref ref) {
       // Debounce: collapse rapid changes into a single reset
       debounceTimer?.cancel();
       debounceTimer = Timer(const Duration(seconds: 2), () async {
+        if (!nostrService.isInitialized) {
+          Log.info(
+            'Relay set change settled during Nostr initialization; '
+            'skipping forced reconnect (relayCount=${currentRelaySet.length})',
+            name: 'RelaySetChangeBridge',
+            category: LogCategory.relay,
+          );
+          return;
+        }
+
         Log.info(
           'Debounce elapsed - forcing WebSocket reconnection and feed reset',
           name: 'RelaySetChangeBridge',

@@ -31,6 +31,48 @@ abstract class NostrClientStatisticsObserver {
   void onEventSent();
 }
 
+/// A blocking stage within [NostrClient.initialize].
+///
+/// Callers can record these transitions so a startup timeout identifies the
+/// operation that was still pending instead of reporting one opaque failure.
+enum NostrClientInitializationStage {
+  /// Refreshing the cached public key from the active signer.
+  refreshingPublicKey,
+
+  /// Loading persisted, previously verified event identifiers.
+  loadingVerifiedEvents,
+
+  /// Starting the background signature-verification worker.
+  startingVerificationWorker,
+
+  /// Loading relay configuration and establishing relay connections.
+  connectingRelays,
+}
+
+/// Receives initialization stage transitions before their asynchronous work
+/// begins.
+typedef NostrClientInitializationObserver =
+    void Function(NostrClientInitializationStage stage);
+
+final Object _initializationObserverZoneKey = Object();
+
+/// Diagnostic initialization entry point that reports blocking stage changes.
+///
+/// This is an extension instead of an additional parameter on
+/// [NostrClient.initialize] so test doubles and other implementations of
+/// [NostrClient] retain the existing initialization contract.
+extension NostrClientInitializationDiagnostics on NostrClient {
+  /// Runs [NostrClient.initialize] while reporting each stage before it starts.
+  Future<void> initializeWithStageObserver(
+    NostrClientInitializationObserver observer,
+  ) {
+    return runZoned(
+      initialize,
+      zoneValues: {_initializationObserverZoneKey: observer},
+    );
+  }
+}
+
 /// {@template nostr_client}
 /// Abstraction layer for Nostr communication
 ///
@@ -379,15 +421,28 @@ class NostrClient {
   /// On failure, [ready] resolves with the same error so consumers awaiting
   /// readiness fail fast instead of hanging until a wall-clock timeout.
   Future<void> initialize() async {
+    final onStageChanged =
+        Zone.current[_initializationObserverZoneKey]
+            as NostrClientInitializationObserver?;
     try {
       // Signer is the single source of truth for the public key.
+      onStageChanged?.call(
+        NostrClientInitializationStage.refreshingPublicKey,
+      );
       await _nostr.refreshPublicKey();
       // Seed the already-verified set before relays connect, so re-sent
       // events skip re-verification during the cold-start flood.
+      onStageChanged?.call(
+        NostrClientInitializationStage.loadingVerifiedEvents,
+      );
       await _seedVerifiedEventIds();
       // Wire the off-main verify isolate before relays connect, so the fresh
       // verifies during the cold-start flood run off the main isolate (#5863).
+      onStageChanged?.call(
+        NostrClientInitializationStage.startingVerificationWorker,
+      );
       await _maybeStartEventVerifyWorker();
+      onStageChanged?.call(NostrClientInitializationStage.connectingRelays);
       await _relayManager.initialize();
       if (!_readyCompleter.isCompleted) {
         _readyCompleter.complete();
