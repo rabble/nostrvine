@@ -102,7 +102,7 @@ class NostrSettingsScreen extends ConsumerWidget {
               if (isAuthenticated) ...[
                 _SectionHeader(title: context.l10n.nostrSettingsSectionAccount),
                 _SettingsTile(
-                  icon: Icons.key,
+                  divineIcon: DivineIconName.key,
                   title: context.l10n.nostrSettingsKeyManagement,
                   subtitle: context.l10n.nostrSettingsKeyManagementSubtitle,
                   onTap: () => context.push(KeyManagementScreen.path),

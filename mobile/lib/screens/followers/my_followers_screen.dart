@@ -184,8 +184,8 @@ class _FollowersEmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.people_outline,
+          const DivineIcon(
+            icon: DivineIconName.users,
             size: 64,
             color: VineTheme.lightText,
           ),

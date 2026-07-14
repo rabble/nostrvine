@@ -281,8 +281,8 @@ class _PeopleIFollowProviderTile extends StatelessWidget {
         style: const TextStyle(color: VineTheme.secondaryText),
       ),
       activeThumbColor: VineTheme.vineGreen,
-      secondary: Icon(
-        Icons.people,
+      secondary: DivineIcon(
+        icon: DivineIconName.users,
         color: isEnabled ? VineTheme.vineGreen : VineTheme.onSurfaceDisabled,
       ),
     );

@@ -417,7 +417,11 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error, size: 64, color: VineTheme.likeRed),
+            const DivineIcon(
+              icon: DivineIconName.warningCircle,
+              size: 64,
+              color: VineTheme.likeRed,
+            ),
             const SizedBox(height: 16),
             Text(
               context.l10n.discoverListsFailedToLoad,

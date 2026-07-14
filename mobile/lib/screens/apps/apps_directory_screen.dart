@@ -222,7 +222,10 @@ class _AppsDirectoryIcon extends StatelessWidget {
         color: VineTheme.backgroundColor,
         borderRadius: BorderRadius.circular(16),
       ),
-      child: const Icon(Icons.apps, color: VineTheme.vineGreen),
+      child: const DivineIcon(
+        icon: DivineIconName.gridNine,
+        color: VineTheme.vineGreen,
+      ),
     );
 
     if (iconUrl.isEmpty) {

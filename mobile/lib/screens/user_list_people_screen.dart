@@ -279,7 +279,7 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
               actions: [
                 if (userList.isEditable)
                   DiVineAppBarAction(
-                    icon: const MaterialIconSource(Icons.person_add_alt_1),
+                    icon: SvgIconSource(DivineIconName.userPlus.assetPath),
                     tooltip: context.l10n.peopleListsAddPeopleTooltip,
                     semanticLabel:
                         context.l10n.peopleListsAddPeopleSemanticLabel,
@@ -304,8 +304,8 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
-                    Icons.group,
+                  const DivineIcon(
+                    icon: DivineIconName.users,
                     size: 64,
                     color: VineTheme.secondaryText,
                   ),
@@ -439,7 +439,11 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error, size: 64, color: VineTheme.likeRed),
+            const DivineIcon(
+              icon: DivineIconName.warningCircle,
+              size: 64,
+              color: VineTheme.likeRed,
+            ),
             const SizedBox(height: 16),
             Text(
               l10n.peopleListsFailedToLoadVideos,

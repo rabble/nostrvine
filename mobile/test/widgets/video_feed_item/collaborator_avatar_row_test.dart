@@ -2,6 +2,7 @@
 // ABOUTME: Tests CollaboratorAvatarRowBody directly via CollaboratorVisibility.
 
 import 'package:collaborator_repository/collaborator_repository.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,6 +11,10 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/widgets/video_feed_item/collaborator_avatar_row.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+Finder _divineIcon(DivineIconName icon) => find.byWidgetPredicate(
+  (widget) => widget is DivineIcon && widget.icon == icon,
+);
 
 const _creatorPubkey =
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
@@ -60,7 +65,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(_wrap(CollaboratorAvatarRow(video: _video())));
-      expect(find.byIcon(Icons.people), findsNothing);
+      expect(_divineIcon(DivineIconName.users), findsNothing);
     });
   });
 
@@ -78,7 +83,7 @@ void main() {
           ),
         );
 
-        expect(find.byIcon(Icons.people), findsOneWidget);
+        expect(_divineIcon(DivineIconName.users), findsOneWidget);
         expect(find.byType(Opacity), findsNothing);
       },
     );
@@ -180,7 +185,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Row still renders for _collab2.
-      expect(find.byIcon(Icons.people), findsOneWidget);
+      expect(_divineIcon(DivineIconName.users), findsOneWidget);
       // Label is the single-collaborator variant naming Bob — not Alice.
       expect(find.text(_l10n.videoCollaboratorWithOne('Bob')), findsOneWidget);
       expect(find.text(_l10n.videoCollaboratorWithOne('Alice')), findsNothing);
@@ -204,7 +209,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.people), findsNothing);
+      expect(_divineIcon(DivineIconName.users), findsNothing);
     });
 
     testWidgets(
@@ -223,7 +228,7 @@ void main() {
           ),
         );
 
-        expect(find.byIcon(Icons.people), findsOneWidget);
+        expect(_divineIcon(DivineIconName.users), findsOneWidget);
         expect(find.byType(Opacity), findsNothing);
         expect(
           find.byWidgetPredicate(
@@ -256,7 +261,7 @@ void main() {
           ),
         );
 
-        expect(find.byIcon(Icons.people), findsOneWidget);
+        expect(_divineIcon(DivineIconName.users), findsOneWidget);
         // Third-party viewers never see the pending decoration.
         expect(find.byType(Opacity), findsNothing);
         expect(

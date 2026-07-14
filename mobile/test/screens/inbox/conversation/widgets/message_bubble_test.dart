@@ -27,6 +27,10 @@ import '../../../../helpers/test_provider_overrides.dart';
 
 class _MockVideosRepository extends Mock implements VideosRepository {}
 
+Finder _divineIcon(DivineIconName icon) => find.byWidgetPredicate(
+  (widget) => widget is DivineIcon && widget.icon == icon,
+);
+
 const _testHexPubkey =
     '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 const _testEventId =
@@ -261,7 +265,7 @@ void main() {
 
         expect(find.byIcon(Icons.access_time), findsNothing);
         expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
-        expect(find.byIcon(Icons.error_outline), findsNothing);
+        expect(_divineIcon(DivineIconName.warningCircle), findsNothing);
       });
 
       testWidgets('shows no indicator while pending (optimistic send)', (
@@ -284,7 +288,7 @@ void main() {
 
         // Optimistic: a pending send just looks sent — no clock, no caption.
         expect(find.byIcon(Icons.access_time), findsNothing);
-        expect(find.byIcon(Icons.error_outline), findsNothing);
+        expect(_divineIcon(DivineIconName.warningCircle), findsNothing);
         expect(find.text(strings.dmStatusFailed), findsNothing);
       });
 
@@ -307,7 +311,7 @@ void main() {
           );
 
           expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
-          expect(find.byIcon(Icons.error_outline), findsNothing);
+          expect(_divineIcon(DivineIconName.warningCircle), findsNothing);
           expect(find.text(strings.dmStatusFailed), findsNothing);
         },
       );
@@ -331,7 +335,7 @@ void main() {
         );
 
         // The only surfaced state: an in-bubble error icon + caption.
-        expect(find.byIcon(Icons.error_outline), findsOneWidget);
+        expect(_divineIcon(DivineIconName.warningCircle), findsOneWidget);
         expect(find.text(strings.dmStatusFailed), findsOneWidget);
       });
 
@@ -358,7 +362,7 @@ void main() {
             ),
           );
 
-          expect(find.byIcon(Icons.error_outline), findsNothing);
+          expect(_divineIcon(DivineIconName.warningCircle), findsNothing);
           expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
           expect(find.byIcon(Icons.access_time), findsNothing);
         },
