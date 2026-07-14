@@ -38,7 +38,6 @@ lib/screens/settings/nostr_settings_screen.dart
 lib/screens/settings/settings_screen.dart
 lib/screens/settings/support_center_screen.dart
 lib/screens/sound_detail_screen.dart
-lib/screens/sounds_screen.dart
 lib/screens/video_detail_screen.dart
 lib/screens/video_metadata/video_metadata_cover_screen.dart
 lib/screens/web_auth_screen.dart

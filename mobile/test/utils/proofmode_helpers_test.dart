@@ -6,7 +6,6 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/utils/proofmode_helpers.dart';
-import 'package:openvine/widgets/proofmode_badge.dart';
 
 void main() {
   group('ProofMode VideoEvent Extensions', () {

@@ -311,9 +311,9 @@ CrosspostApiClient crosspostApiClient(Ref ref) {
 
 /// Audio playback service for sound playback during recording and preview
 ///
-/// Used by SoundsScreen to preview sounds and by camera screen
-/// for lip-sync recording. Handles audio loading, play/pause, and cleanup.
-/// Uses keepAlive to persist across the session (not auto-disposed).
+/// Used by the camera screen for lip-sync recording. Handles audio
+/// loading, play/pause, and cleanup. Uses keepAlive to persist across
+/// the session (not auto-disposed).
 @Riverpod(keepAlive: true)
 AudioPlaybackService audioPlaybackService(Ref ref) {
   final service = AudioPlaybackService();

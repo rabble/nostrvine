@@ -34,7 +34,6 @@ openvine_media_cache
 outgoing_dm_retry_service_reportable_sites # noise: reportable-sites constants
 pending_verification_service
 push_notification_session_coordinator
-share_service
 social_event_service_base
 social_service # decision: OD-2 keep-vs-delete (#4337)
 subscription_manager

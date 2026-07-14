@@ -62,18 +62,11 @@ void main() {
       final soundsTabSource = File(
         'lib/widgets/library/sounds_tab.dart',
       ).readAsStringSync();
-      final soundsScreenSource = File(
-        'lib/screens/sounds_screen.dart',
-      ).readAsStringSync();
       final soundDetailSource = File(
         'lib/screens/sound_detail_screen.dart',
       ).readAsStringSync();
 
-      for (final source in [
-        soundsTabSource,
-        soundsScreenSource,
-        soundDetailSource,
-      ]) {
+      for (final source in [soundsTabSource, soundDetailSource]) {
         expect(source, isNot(contains("'Saved to Sounds'")));
         expect(source, isNot(contains("'Already in Sounds'")));
       }
@@ -93,7 +86,6 @@ void main() {
       }
 
       expect(soundsTabSource, contains('context.l10n.soundsSavedLibraryTitle'));
-      expect(soundsScreenSource, contains('context.l10n.soundsSavedToLibrary'));
       expect(soundDetailSource, contains('context.l10n.soundsSavedToLibrary'));
     });
 

@@ -50,9 +50,9 @@ class CollaboratorInviteService {
   /// Base URL the plaintext fallback uses to link back to the invited
   /// video. The full URL is `<videoLinkBase>/<stableId>`, where
   /// `stableId` is the video's d-tag (parameterized addressable per
-  /// NIP-71). Matches the format `ShareService.generateWebLink`
-  /// produces — the divine.video web frontend serves d-tag lookups
-  /// today, so non-Divine clients always see a tappable preview.
+  /// NIP-71). Matches the canonical divine.video share-link shape —
+  /// the divine.video web frontend serves d-tag lookups today, so
+  /// non-Divine clients always see a tappable preview.
   /// In-app deep-link routing from this d-tag URL on cold start
   /// depends on the route-ref resolver landing in #3932; until that
   /// merges, the path inside diVine for recipients is the structured

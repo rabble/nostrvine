@@ -317,18 +317,18 @@ String _$crosspostApiClientHash() =>
 
 /// Audio playback service for sound playback during recording and preview
 ///
-/// Used by SoundsScreen to preview sounds and by camera screen
-/// for lip-sync recording. Handles audio loading, play/pause, and cleanup.
-/// Uses keepAlive to persist across the session (not auto-disposed).
+/// Used by the camera screen for lip-sync recording. Handles audio
+/// loading, play/pause, and cleanup. Uses keepAlive to persist across
+/// the session (not auto-disposed).
 
 @ProviderFor(audioPlaybackService)
 final audioPlaybackServiceProvider = AudioPlaybackServiceProvider._();
 
 /// Audio playback service for sound playback during recording and preview
 ///
-/// Used by SoundsScreen to preview sounds and by camera screen
-/// for lip-sync recording. Handles audio loading, play/pause, and cleanup.
-/// Uses keepAlive to persist across the session (not auto-disposed).
+/// Used by the camera screen for lip-sync recording. Handles audio
+/// loading, play/pause, and cleanup. Uses keepAlive to persist across
+/// the session (not auto-disposed).
 
 final class AudioPlaybackServiceProvider
     extends
@@ -340,9 +340,9 @@ final class AudioPlaybackServiceProvider
     with $Provider<AudioPlaybackService> {
   /// Audio playback service for sound playback during recording and preview
   ///
-  /// Used by SoundsScreen to preview sounds and by camera screen
-  /// for lip-sync recording. Handles audio loading, play/pause, and cleanup.
-  /// Uses keepAlive to persist across the session (not auto-disposed).
+  /// Used by the camera screen for lip-sync recording. Handles audio
+  /// loading, play/pause, and cleanup. Uses keepAlive to persist across
+  /// the session (not auto-disposed).
   AudioPlaybackServiceProvider._()
     : super(
         from: null,
