@@ -71,6 +71,8 @@ import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
+import 'package:openvine/screens/curated_list_by_author_screen.dart';
+import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/explore/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
@@ -431,6 +433,54 @@ SearchDeepLinkNavAction resolveSearchDeepLinkNavAction({
   // Coming from a non-search route — push so back returns to where the user
   // was instead of obliterating the navigation stack.
   return SearchDeepLinkNavAction.push;
+}
+
+/// Describes the router action to take when navigating to a list deep link.
+///
+/// Mirrors [VideoDeepLinkNavAction] and [ProfileDeepLinkNavAction] so list
+/// links get the same nav-stack parity: `push` keeps the previous route (e.g.
+/// home) underneath so back returns there, `go` replaces an existing list
+/// route in-place, and `skip` dedupes a navigation to the route already shown.
+@visibleForTesting
+enum ListDeepLinkNavAction {
+  /// Navigate to the route, keeping the current route in the back stack.
+  push,
+
+  /// Replace the current route in-place (already on a list route).
+  go,
+
+  /// The router is already on the target route with nothing new to do.
+  skip,
+}
+
+/// Determines which router action to take for a list deep-link navigation
+/// given the current router location and the incoming target path.
+///
+/// Mirrors [resolveProfileDeepLinkNavAction]: extracted for testability — the
+/// caller executes the action; this function only decides what it should be.
+///
+/// The "already on a list route" check matches both list route shapes: the
+/// internal `/list/:listId` route reached from Explore/Search and the
+/// web-canonical `/list/:pubkey/:listId` deep-link route.
+@visibleForTesting
+ListDeepLinkNavAction resolveListDeepLinkNavAction({
+  required String currentLocation,
+  required String targetPath,
+}) {
+  if (currentLocation == targetPath) {
+    // Already on the exact target route. Duplicate navigation with nothing new
+    // to do (e.g. GoRouter's universal-link redirect already navigated here, or
+    // getInitialLink + uriLinkStream both fire for the same URL). Safe to skip.
+    return ListDeepLinkNavAction.skip;
+  }
+  if (currentLocation.startsWith('${CuratedListFeedScreen.basePath}/')) {
+    // A different list is already showing — replace it in-place, matching
+    // the video-replaces-video behaviour.
+    return ListDeepLinkNavAction.go;
+  }
+  // Coming from a non-list route — push so back returns to where the user
+  // was instead of obliterating the navigation stack.
+  return ListDeepLinkNavAction.push;
 }
 
 /// Resolves a push/local payload to a [NotificationTapTarget], the event id to
@@ -2085,6 +2135,58 @@ class _DivineAppState extends ConsumerState<DivineApp>
               } else {
                 Log.warning(
                   '⚠️ Search deep link missing search term',
+                  name: 'DeepLinkHandler',
+                  category: LogCategory.ui,
+                );
+              }
+            case DeepLinkType.list:
+              final listPubkey = deepLink.listPubkey;
+              final listId = deepLink.listId;
+              if (listPubkey != null && listId != null) {
+                final targetPath = CuratedListByAuthorScreen.pathFor(
+                  pubkey: listPubkey,
+                  listId: listId,
+                );
+                Log.info(
+                  '📱 Navigating to list: $targetPath',
+                  name: 'DeepLinkHandler',
+                  category: LogCategory.ui,
+                );
+                try {
+                  final action = resolveListDeepLinkNavAction(
+                    currentLocation: currentLocation,
+                    targetPath: targetPath,
+                  );
+                  switch (action) {
+                    case ListDeepLinkNavAction.skip:
+                      // GoRouter's universal-link redirect may have already
+                      // navigated here; skip the duplicate navigation to avoid
+                      // a second navigation frame on the same target.
+                      break;
+                    case ListDeepLinkNavAction.go:
+                      // Another list is already showing — replace it
+                      // in-place instead of stacking it.
+                      router.go(targetPath);
+                    case ListDeepLinkNavAction.push:
+                      // Keep the current route underneath so back returns to
+                      // wherever the user was instead of wiping the stack.
+                      router.push(targetPath);
+                  }
+                  Log.info(
+                    '✅ Navigation completed to: $targetPath',
+                    name: 'DeepLinkHandler',
+                    category: LogCategory.ui,
+                  );
+                } catch (e) {
+                  Log.error(
+                    '❌ Navigation failed: $e',
+                    name: 'DeepLinkHandler',
+                    category: LogCategory.ui,
+                  );
+                }
+              } else {
+                Log.warning(
+                  '⚠️ List deep link missing pubkey or list id',
                   name: 'DeepLinkHandler',
                   category: LogCategory.ui,
                 );

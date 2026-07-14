@@ -3,6 +3,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/deep_link_service.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/sensitive_uri_for_logs.dart';
 
 void main() {
@@ -218,6 +219,88 @@ void main() {
         final result = DeepLinkService.parseDeepLink(
           'https://divine.video/invite',
         );
+
+        expect(result.type, equals(DeepLinkType.unknown));
+      });
+    });
+
+    group('List URL Parsing', () {
+      const authorPubkey =
+          'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2';
+
+      test('parses /list/{pubkey}/{listId} with hex pubkey', () {
+        const url = 'https://divine.video/list/$authorPubkey/my-vines';
+
+        final result = DeepLinkService.parseDeepLink(url);
+
+        expect(result.type, equals(DeepLinkType.list));
+        expect(result.listPubkey, equals(authorPubkey));
+        expect(result.listId, equals('my-vines'));
+        expect(result.videoRef, isNull);
+        expect(result.npub, isNull);
+      });
+
+      test('normalizes uppercase hex pubkey to lowercase', () {
+        final url =
+            'https://divine.video/list/${authorPubkey.toUpperCase()}/my-vines';
+
+        final result = DeepLinkService.parseDeepLink(url);
+
+        expect(result.type, equals(DeepLinkType.list));
+        expect(result.listPubkey, equals(authorPubkey));
+      });
+
+      test('normalizes npub author to hex', () {
+        final npub = NostrKeyUtils.encodePubKey(authorPubkey);
+        final url = 'https://divine.video/list/$npub/my-vines';
+
+        final result = DeepLinkService.parseDeepLink(url);
+
+        expect(result.type, equals(DeepLinkType.list));
+        expect(result.listPubkey, equals(authorPubkey));
+        expect(result.listId, equals('my-vines'));
+      });
+
+      test('decodes URL-encoded list identifiers', () {
+        const url =
+            'https://divine.video/list/$authorPubkey/my%20favorite%20vines';
+
+        final result = DeepLinkService.parseDeepLink(url);
+
+        expect(result.type, equals(DeepLinkType.list));
+        expect(result.listId, equals('my favorite vines'));
+      });
+
+      test('rejects list URL without a list id', () {
+        const url = 'https://divine.video/list/$authorPubkey';
+
+        final result = DeepLinkService.parseDeepLink(url);
+
+        expect(result.type, equals(DeepLinkType.unknown));
+        expect(result.listPubkey, isNull);
+        expect(result.listId, isNull);
+      });
+
+      test('rejects bare /list path', () {
+        const url = 'https://divine.video/list';
+
+        final result = DeepLinkService.parseDeepLink(url);
+
+        expect(result.type, equals(DeepLinkType.unknown));
+      });
+
+      test('rejects list URL with an invalid author pubkey', () {
+        const url = 'https://divine.video/list/not-a-pubkey/my-vines';
+
+        final result = DeepLinkService.parseDeepLink(url);
+
+        expect(result.type, equals(DeepLinkType.unknown));
+      });
+
+      test('rejects list URL with extra path segments', () {
+        const url = 'https://divine.video/list/$authorPubkey/my-vines/extra';
+
+        final result = DeepLinkService.parseDeepLink(url);
 
         expect(result.type, equals(DeepLinkType.unknown));
       });
@@ -454,6 +537,20 @@ void main() {
       test('formats video deep link', () {
         const link = DeepLink(type: DeepLinkType.video, videoRef: 'abc');
         expect(link.toString(), equals('DeepLink(type: video, videoRef: abc)'));
+      });
+
+      test('formats list deep link with full untruncated pubkey', () {
+        const pubkey =
+            'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2';
+        const link = DeepLink(
+          type: DeepLinkType.list,
+          listPubkey: pubkey,
+          listId: 'my-vines',
+        );
+        expect(
+          link.toString(),
+          equals('DeepLink(type: list, listPubkey: $pubkey, listId: my-vines)'),
+        );
       });
 
       test('formats profile deep link with index', () {

@@ -497,6 +497,133 @@ final class PublicListsContainingVideoFamily extends $Family
   String toString() => r'publicListsContainingVideoProvider';
 }
 
+/// Provider that fetches a public curated list (kind 30005) by author +
+/// d-tag for the `/list/:pubkey/:listId` universal-link route.
+///
+/// Unlike [curatedListVideos], this does not require the list to be in
+/// local storage — it resolves from cache + relays, so deep links to lists
+/// the user has never seen still work. Returns `null` when no matching
+/// list event exists.
+
+@ProviderFor(publicCuratedList)
+final publicCuratedListProvider = PublicCuratedListFamily._();
+
+/// Provider that fetches a public curated list (kind 30005) by author +
+/// d-tag for the `/list/:pubkey/:listId` universal-link route.
+///
+/// Unlike [curatedListVideos], this does not require the list to be in
+/// local storage — it resolves from cache + relays, so deep links to lists
+/// the user has never seen still work. Returns `null` when no matching
+/// list event exists.
+
+final class PublicCuratedListProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<CuratedList?>,
+          CuratedList?,
+          FutureOr<CuratedList?>
+        >
+    with $FutureModifier<CuratedList?>, $FutureProvider<CuratedList?> {
+  /// Provider that fetches a public curated list (kind 30005) by author +
+  /// d-tag for the `/list/:pubkey/:listId` universal-link route.
+  ///
+  /// Unlike [curatedListVideos], this does not require the list to be in
+  /// local storage — it resolves from cache + relays, so deep links to lists
+  /// the user has never seen still work. Returns `null` when no matching
+  /// list event exists.
+  PublicCuratedListProvider._({
+    required PublicCuratedListFamily super.from,
+    required ({String authorPubkey, String listId}) super.argument,
+  }) : super(
+         retry: null,
+         name: r'publicCuratedListProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$publicCuratedListHash();
+
+  @override
+  String toString() {
+    return r'publicCuratedListProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<CuratedList?> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<CuratedList?> create(Ref ref) {
+    final argument = this.argument as ({String authorPubkey, String listId});
+    return publicCuratedList(
+      ref,
+      authorPubkey: argument.authorPubkey,
+      listId: argument.listId,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is PublicCuratedListProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$publicCuratedListHash() => r'cc4d45f0c106db233512993ccd4e9e0ddee9864b';
+
+/// Provider that fetches a public curated list (kind 30005) by author +
+/// d-tag for the `/list/:pubkey/:listId` universal-link route.
+///
+/// Unlike [curatedListVideos], this does not require the list to be in
+/// local storage — it resolves from cache + relays, so deep links to lists
+/// the user has never seen still work. Returns `null` when no matching
+/// list event exists.
+
+final class PublicCuratedListFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<CuratedList?>,
+          ({String authorPubkey, String listId})
+        > {
+  PublicCuratedListFamily._()
+    : super(
+        retry: null,
+        name: r'publicCuratedListProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Provider that fetches a public curated list (kind 30005) by author +
+  /// d-tag for the `/list/:pubkey/:listId` universal-link route.
+  ///
+  /// Unlike [curatedListVideos], this does not require the list to be in
+  /// local storage — it resolves from cache + relays, so deep links to lists
+  /// the user has never seen still work. Returns `null` when no matching
+  /// list event exists.
+
+  PublicCuratedListProvider call({
+    required String authorPubkey,
+    required String listId,
+  }) => PublicCuratedListProvider._(
+    argument: (authorPubkey: authorPubkey, listId: listId),
+    from: this,
+  );
+
+  @override
+  String toString() => r'publicCuratedListProvider';
+}
+
 /// Provider that fetches actual VideoEvent objects for a curated list
 /// Streams videos as they are fetched from cache or relays
 
