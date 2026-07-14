@@ -9,6 +9,8 @@ import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:profile_repository/profile_repository.dart';
 
+import '../helpers/test_pubkeys.dart';
+
 class _MockNostrClient extends Mock implements NostrClient {}
 
 class _MockAuthService extends Mock implements AuthService {}
@@ -50,8 +52,7 @@ void main() {
       mockAuthService = _MockAuthService();
       mockProfileRepository = _MockProfileRepository();
 
-      testPubkey =
-          '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738';
+      testPubkey = syntheticTestPubkey;
       testTimestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
       // Default mock setup

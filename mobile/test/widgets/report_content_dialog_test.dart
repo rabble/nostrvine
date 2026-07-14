@@ -21,6 +21,7 @@ import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/widgets/report_content_dialog.dart';
 
 import '../helpers/test_provider_overrides.dart';
+import '../helpers/test_pubkeys.dart';
 
 class _MockContentReportingService extends Mock
     implements ContentReportingService {}
@@ -46,7 +47,7 @@ void main() {
 
   setUp(() {
     final testNostrEvent = nostr.Event(
-      '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738',
+      syntheticTestPubkey,
       34236,
       [
         ['d', 'test_video_id'],
@@ -843,9 +844,9 @@ void main() {
       'shows the "Message the moderation team" affordance when signed in',
       (tester) async {
         final mockAuth = createMockAuthService();
-        when(() => mockAuth.currentPublicKeyHex).thenReturn(
-          '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738',
-        );
+        when(
+          () => mockAuth.currentPublicKeyHex,
+        ).thenReturn(syntheticTestPubkey);
 
         await setLargeSurface(tester);
         await openSubmitWithAuth(tester, mockAuth);
@@ -946,8 +947,7 @@ void main() {
 
     const testMessageId =
         'aaaa1111bbbb2222cccc3333dddd4444eeee5555ffff6666aaaa1111bbbb2222';
-    const testSenderPubkey =
-        '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738';
+    const testSenderPubkey = syntheticTestPubkey;
 
     setUp(() {
       mockNostrClient = createMockNostrService();
@@ -1080,8 +1080,7 @@ void main() {
     late _MockDmRepository mockDmRepository;
     late _MockModerationLabelService mockModerationLabelService;
 
-    const testUserPubkey =
-        '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738';
+    const testUserPubkey = syntheticTestPubkey;
 
     setUp(() {
       mockNostrClient = createMockNostrService();

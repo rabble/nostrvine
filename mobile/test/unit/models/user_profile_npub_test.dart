@@ -6,12 +6,13 @@ import 'package:models/models.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
 
+import '../../helpers/test_pubkeys.dart';
+
 void main() {
   group('UserProfile npub Encoding', () {
     test('should encode pubkey to npub format', () {
       // Valid 64-character hex pubkey
-      const hexPubkey =
-          '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738';
+      const hexPubkey = syntheticTestPubkey;
 
       final profile = UserProfile(
         pubkey: hexPubkey,

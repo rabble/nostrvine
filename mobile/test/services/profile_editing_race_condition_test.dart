@@ -7,6 +7,8 @@ import 'package:models/models.dart';
 import 'package:openvine/utils/async_utils.dart';
 import 'package:profile_repository/profile_repository.dart';
 
+import '../helpers/test_pubkeys.dart';
+
 class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 void main() {
@@ -20,8 +22,7 @@ void main() {
 
     setUp(() {
       mockProfileRepository = _MockProfileRepository();
-      testPubkey =
-          '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738';
+      testPubkey = syntheticTestPubkey;
       testEventId = 'test-event-id-123';
       testTimestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 

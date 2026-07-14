@@ -13,6 +13,7 @@ import 'package:openvine/router/router.dart';
 import 'package:openvine/services/auth_service.dart';
 
 import '../helpers/test_provider_overrides.dart';
+import '../helpers/test_pubkeys.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -22,9 +23,7 @@ void main() {
   MockAuthService authenticatedAuth() {
     final mockAuth = createMockAuthService();
     when(() => mockAuth.isAuthenticated).thenReturn(true);
-    when(() => mockAuth.currentPublicKeyHex).thenReturn(
-      '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738',
-    );
+    when(() => mockAuth.currentPublicKeyHex).thenReturn(syntheticTestPubkey);
     when(() => mockAuth.authState).thenReturn(AuthState.authenticated);
     when(
       () => mockAuth.authStateStream,

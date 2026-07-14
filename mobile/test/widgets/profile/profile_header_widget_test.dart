@@ -42,6 +42,7 @@ import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../helpers/go_router.dart';
 import '../../helpers/test_provider_overrides.dart';
+import '../../helpers/test_pubkeys.dart';
 
 class _MockMyProfileBloc extends MockBloc<MyProfileEvent, MyProfileState>
     implements MyProfileBloc {}
@@ -181,8 +182,7 @@ class MockAuthService extends Mock implements AuthService {
   Future<bool> tryRefreshExpiredSession() async => tryRefreshResult;
 }
 
-const testUserHex =
-    '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738';
+const String testUserHex = syntheticTestPubkey;
 const issuerUserHex =
     '4f071cf08328c9d9dbb21f5d9d1e51fe2ecf4e7de5a4e59ecdf356f6a6f49f22';
 const recipientUserHex =
@@ -669,9 +669,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final headerAvatar = tester.widget<UserAvatar>(
-          find.byType(UserAvatar),
-        );
+        final headerAvatar = tester.widget<UserAvatar>(find.byType(UserAvatar));
         expect(headerAvatar.cornerRadius, isNull);
 
         final avatarClip = tester.widget<ClipRRect>(
@@ -922,40 +920,39 @@ void main() {
       expect(find.byKey(const Key('profile-support-button')), findsNothing);
     });
 
-    testWidgets(
-      'hides subscription-only support links on iOS storefronts',
-      (tester) async {
-        debugUsesAppleAppStoreTipPolicyOverride = true;
+    testWidgets('hides subscription-only support links on iOS storefronts', (
+      tester,
+    ) async {
+      debugUsesAppleAppStoreTipPolicyOverride = true;
 
-        final creatorProfile = createTestProfile(
-          displayName: 'Creator',
-          about: 'Creator bio',
-          rawData: {
-            divineMonetizationLinksKey: [
-              const MonetizationLink(
-                provider: MonetizationLinkProvider.patreon,
-                category: MonetizationLinkCategory.subscription,
-                url: 'https://www.patreon.com/creator',
-                enabled: true,
-              ).toJson(),
-            ],
-          },
-        );
+      final creatorProfile = createTestProfile(
+        displayName: 'Creator',
+        about: 'Creator bio',
+        rawData: {
+          divineMonetizationLinksKey: [
+            const MonetizationLink(
+              provider: MonetizationLinkProvider.patreon,
+              category: MonetizationLinkCategory.subscription,
+              url: 'https://www.patreon.com/creator',
+              enabled: true,
+            ).toJson(),
+          ],
+        },
+      );
 
-        await tester.pumpWidget(
-          buildTestWidget(
-            userIdHex: testUserHex,
-            isOwnProfile: false,
-            suppliedProfile: creatorProfile,
-            monetizationLinksEnabled: true,
-          ),
-        );
-        await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: false,
+          suppliedProfile: creatorProfile,
+          monetizationLinksEnabled: true,
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        expect(find.byKey(const Key('profile-support-button')), findsNothing);
-        expect(find.text('Support'), findsNothing);
-      },
-    );
+      expect(find.byKey(const Key('profile-support-button')), findsNothing);
+      expect(find.text('Support'), findsNothing);
+    });
 
     testWidgets('uses tip affordance copy on iOS storefronts', (tester) async {
       debugUsesAppleAppStoreTipPolicyOverride = true;
