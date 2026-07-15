@@ -1738,6 +1738,7 @@
     "videoRecorderStabilizationModeAuto": "Auto",
     "videoRecorderLibraryEmptyLabel": "Clip library, walang clip",
     "videoRecorderLibraryOpenLabel": "{clipCount, plural, one{Buksan ang clip library, 1 clip} other{Buksan ang clip library, {clipCount} clip}}",
+    "videoRecorderLibraryOpenStopMotionLabel": "{frameCount, plural, =0{Buksan ang stop-motion library} other{Buksan ang stop-motion library, {frameCount} frame}}",
     "videoEditorCameraLabel": "Camera",
     "videoEditorOpenCameraSemanticLabel": "Buksan ang camera",
     "videoEditorLibraryLabel": "Library",

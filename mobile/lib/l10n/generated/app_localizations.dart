@@ -13986,6 +13986,12 @@ abstract class AppLocalizations {
   /// **'{clipCount, plural, one{Open clip library, 1 clip} other{Open clip library, {clipCount} clips}}'**
   String videoRecorderLibraryOpenLabel(int clipCount);
 
+  /// Screen-reader label for the recorder's library button during a stop-motion session. The count is captured stills (frames), not clips. The zero case covers opening a previous session's library before the first still of this one is shot.
+  ///
+  /// In en, this message translates to:
+  /// **'{frameCount, plural, =0{Open stop-motion library} one{Open stop-motion library, 1 frame} other{Open stop-motion library, {frameCount} frames}}'**
+  String videoRecorderLibraryOpenStopMotionLabel(int frameCount);
+
   /// No description provided for @videoEditorCameraLabel.
   ///
   /// In en, this message translates to:

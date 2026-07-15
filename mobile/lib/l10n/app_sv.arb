@@ -2793,6 +2793,14 @@
             }
         }
     },
+    "videoRecorderLibraryOpenStopMotionLabel": "{frameCount, plural, =0{Öppna stop motion-bibliotek} one{Öppna stop motion-bibliotek, 1 bildruta} other{Öppna stop motion-bibliotek, {frameCount} bildrutor}}",
+    "@videoRecorderLibraryOpenStopMotionLabel": {
+        "placeholders": {
+            "frameCount": {
+                "type": "int"
+            }
+        }
+    },
     "videoEditorCameraLabel": "Kamera",
     "videoEditorLibraryLabel": "Bibliotek",
     "videoEditorTextLabel": "Text",

@@ -3077,6 +3077,14 @@
             }
         }
     },
+    "videoRecorderLibraryOpenStopMotionLabel": "{frameCount, plural, =0{ストップモーションライブラリを開く} other{ストップモーションライブラリを開く、{frameCount}フレーム}}",
+    "@videoRecorderLibraryOpenStopMotionLabel": {
+        "placeholders": {
+            "frameCount": {
+                "type": "int"
+            }
+        }
+    },
     "videoRecorderRecordingTapToStopLabel": "録画中。どこかタップして停止",
     "videoRecorderStartRecordingTooltip": "録画を開始",
     "videoRecorderStopRecordingTooltip": "録画を停止",

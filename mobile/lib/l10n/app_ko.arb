@@ -2408,6 +2408,14 @@
             }
         }
     },
+    "videoRecorderLibraryOpenStopMotionLabel": "{frameCount, plural, =0{스톱모션 보관함 열기} other{스톱모션 보관함 열기, {frameCount}개 프레임}}",
+    "@videoRecorderLibraryOpenStopMotionLabel": {
+        "placeholders": {
+            "frameCount": {
+                "type": "int"
+            }
+        }
+    },
     "videoRecorderRecordingTapToStopLabel": "녹화 중. 아무 곳이나 탭하여 중지",
     "videoRecorderStartRecordingTooltip": "녹화 시작",
     "videoRecorderStopRecordingTooltip": "녹화 중지",

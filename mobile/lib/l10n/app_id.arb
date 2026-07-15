@@ -3084,6 +3084,14 @@
             }
         }
     },
+    "videoRecorderLibraryOpenStopMotionLabel": "{frameCount, plural, =0{Buka perpustakaan stop-motion} other{Buka perpustakaan stop-motion, {frameCount} bingkai}}",
+    "@videoRecorderLibraryOpenStopMotionLabel": {
+        "placeholders": {
+            "frameCount": {
+                "type": "int"
+            }
+        }
+    },
     "videoRecorderRecordingTapToStopLabel": "Merekam. Ketuk di mana saja untuk berhenti",
     "videoRecorderStartRecordingTooltip": "Mulai merekam",
     "videoRecorderStopRecordingTooltip": "Hentikan perekaman",

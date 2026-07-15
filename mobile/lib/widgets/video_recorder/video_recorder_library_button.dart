@@ -115,8 +115,14 @@ class _VideoRecorderLibraryButtonState
       padding: const .only(left: 16),
       child: Semantics(
         button: widget.interactive,
+        // A stop-motion session counts captured stills, not clips — the clip
+        // label would announce 12 stills as "12 clips". Its own label also
+        // covers the zero case, which is reachable here: the button opens a
+        // previous session's library before this one's first still is shot.
         label: hasClips
-            ? context.l10n.videoRecorderLibraryOpenLabel(count)
+            ? (capturesStills
+                  ? context.l10n.videoRecorderLibraryOpenStopMotionLabel(count)
+                  : context.l10n.videoRecorderLibraryOpenLabel(count))
             : context.l10n.videoRecorderLibraryEmptyLabel,
         enabled: hasClips && widget.interactive,
         child: GestureDetector(

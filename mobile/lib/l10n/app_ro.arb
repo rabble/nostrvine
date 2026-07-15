@@ -2793,6 +2793,14 @@
             }
         }
     },
+    "videoRecorderLibraryOpenStopMotionLabel": "{frameCount, plural, =0{Deschide biblioteca stop-motion} one{Deschide biblioteca stop-motion, 1 cadru} few{Deschide biblioteca stop-motion, {frameCount} cadre} other{Deschide biblioteca stop-motion, {frameCount} de cadre}}",
+    "@videoRecorderLibraryOpenStopMotionLabel": {
+        "placeholders": {
+            "frameCount": {
+                "type": "int"
+            }
+        }
+    },
     "videoEditorCameraLabel": "Cameră",
     "videoEditorLibraryLabel": "Bibliotecă",
     "videoEditorTextLabel": "Text",

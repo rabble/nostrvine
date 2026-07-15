@@ -7922,6 +7922,18 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String videoRecorderLibraryOpenStopMotionLabel(int frameCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      frameCount,
+      locale: localeName,
+      other: 'የስቶፕ-ሞሽን ቤተ-መዝገብ ክፈት፣ $frameCount ፍሬሞች',
+      one: 'የስቶፕ-ሞሽን ቤተ-መዝገብ ክፈት፣ 1 ፍሬም',
+      zero: 'የስቶፕ-ሞሽን ቤተ-መዝገብ ክፈት',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get videoEditorCameraLabel => 'ካሜራ';
 
   @override

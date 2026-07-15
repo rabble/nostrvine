@@ -3365,6 +3365,14 @@
             }
         }
     },
+    "videoRecorderLibraryOpenStopMotionLabel": "{frameCount, plural, =0{የስቶፕ-ሞሽን ቤተ-መዝገብ ክፈት} =1{የስቶፕ-ሞሽን ቤተ-መዝገብ ክፈት፣ 1 ፍሬም} other{የስቶፕ-ሞሽን ቤተ-መዝገብ ክፈት፣ {frameCount} ፍሬሞች}}",
+    "@videoRecorderLibraryOpenStopMotionLabel": {
+        "placeholders": {
+            "frameCount": {
+                "type": "int"
+            }
+        }
+    },
     "videoEditorCameraLabel": "ካሜራ",
     "videoEditorOpenCameraSemanticLabel": "ካሜራ ክፈት",
     "videoEditorLibraryLabel": "ቤተ መፃህፍት",

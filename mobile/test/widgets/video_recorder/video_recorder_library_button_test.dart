@@ -391,7 +391,7 @@ void main() {
         expect(find.byKey(const ValueKey('/frames/c.jpg')), findsOneWidget);
       });
 
-      testWidgets('semantic label reflects the captured-frame count', (
+      testWidgets('semantic label counts captured frames, not clips', (
         tester,
       ) async {
         await tester.pumpWidget(buildWidget(recorderState: stopMotionState));
@@ -405,9 +405,15 @@ void main() {
               )
               .first,
         );
+        final l10n = lookupAppLocalizations(const Locale('en'));
         expect(
           semantics.properties.label,
-          equals('Open clip library, 3 clips'),
+          equals(l10n.videoRecorderLibraryOpenStopMotionLabel(3)),
+        );
+        // The stills must not be announced as clips.
+        expect(
+          semantics.properties.label,
+          isNot(equals(l10n.videoRecorderLibraryOpenLabel(3))),
         );
       });
 

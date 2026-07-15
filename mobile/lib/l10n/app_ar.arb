@@ -3077,6 +3077,14 @@
             }
         }
     },
+    "videoRecorderLibraryOpenStopMotionLabel": "{frameCount, plural, =0{فتح مكتبة الحركة الإيقافية} one{فتح مكتبة الحركة الإيقافية، إطار واحد} two{فتح مكتبة الحركة الإيقافية، إطاران} few{فتح مكتبة الحركة الإيقافية، {frameCount} إطارات} many{فتح مكتبة الحركة الإيقافية، {frameCount} إطارًا} other{فتح مكتبة الحركة الإيقافية، {frameCount} إطار}}",
+    "@videoRecorderLibraryOpenStopMotionLabel": {
+        "placeholders": {
+            "frameCount": {
+                "type": "int"
+            }
+        }
+    },
     "videoRecorderRecordingTapToStopLabel": "جاري التسجيل. اضغط في أي مكان للإيقاف",
     "videoRecorderStartRecordingTooltip": "بدء التسجيل",
     "videoRecorderStopRecordingTooltip": "إيقاف التسجيل",

@@ -2801,6 +2801,14 @@
             }
         }
     },
+    "videoRecorderLibraryOpenStopMotionLabel": "{frameCount, plural, =0{Abrir biblioteca de stop motion} one{Abrir biblioteca de stop motion, 1 fotograma} other{Abrir biblioteca de stop motion, {frameCount} fotogramas}}",
+    "@videoRecorderLibraryOpenStopMotionLabel": {
+        "placeholders": {
+            "frameCount": {
+                "type": "int"
+            }
+        }
+    },
     "videoEditorCameraLabel": "Cámara",
     "videoEditorLibraryLabel": "Biblioteca",
     "videoEditorTextLabel": "Texto",

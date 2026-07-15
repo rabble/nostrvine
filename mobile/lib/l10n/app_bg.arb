@@ -3043,6 +3043,14 @@
             }
         }
     },
+    "videoRecorderLibraryOpenStopMotionLabel": "{frameCount, plural, =0{Отвори стоп-моушън библиотеката} one{Отвори стоп-моушън библиотеката, 1 кадър} other{Отвори стоп-моушън библиотеката, {frameCount} кадъра}}",
+    "@videoRecorderLibraryOpenStopMotionLabel": {
+        "placeholders": {
+            "frameCount": {
+                "type": "int"
+            }
+        }
+    },
     "videoEditorCameraLabel": "Камера",
     "videoEditorOpenCameraSemanticLabel": "Отвори камерата",
     "videoEditorLibraryLabel": "Библиотека",

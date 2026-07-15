@@ -2793,6 +2793,14 @@
             }
         }
     },
+    "videoRecorderLibraryOpenStopMotionLabel": "{frameCount, plural, =0{Apri libreria stop-motion} one{Apri libreria stop-motion, 1 fotogramma} other{Apri libreria stop-motion, {frameCount} fotogrammi}}",
+    "@videoRecorderLibraryOpenStopMotionLabel": {
+        "placeholders": {
+            "frameCount": {
+                "type": "int"
+            }
+        }
+    },
     "videoEditorCameraLabel": "Fotocamera",
     "videoEditorLibraryLabel": "Libreria",
     "videoEditorTextLabel": "Testo",

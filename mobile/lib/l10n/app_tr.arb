@@ -3084,6 +3084,14 @@
             }
         }
     },
+    "videoRecorderLibraryOpenStopMotionLabel": "{frameCount, plural, =0{Stop motion kütüphanesini aç} one{Stop motion kütüphanesini aç, 1 kare} other{Stop motion kütüphanesini aç, {frameCount} kare}}",
+    "@videoRecorderLibraryOpenStopMotionLabel": {
+        "placeholders": {
+            "frameCount": {
+                "type": "int"
+            }
+        }
+    },
     "videoRecorderRecordingTapToStopLabel": "Kaydediliyor. Durdurmak için herhangi bir yere dokunun",
     "videoRecorderStartRecordingTooltip": "Kaydı başlat",
     "videoRecorderStopRecordingTooltip": "Kaydı durdur",

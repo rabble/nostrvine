@@ -2793,6 +2793,14 @@
             }
         }
     },
+    "videoRecorderLibraryOpenStopMotionLabel": "{frameCount, plural, =0{Stop-Motion-Mediathek öffnen} one{Stop-Motion-Mediathek öffnen, 1 Frame} other{Stop-Motion-Mediathek öffnen, {frameCount} Frames}}",
+    "@videoRecorderLibraryOpenStopMotionLabel": {
+        "placeholders": {
+            "frameCount": {
+                "type": "int"
+            }
+        }
+    },
     "videoEditorCameraLabel": "Kamera",
     "videoEditorLibraryLabel": "Mediathek",
     "videoEditorTextLabel": "Text",

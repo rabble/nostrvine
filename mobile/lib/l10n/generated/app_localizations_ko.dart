@@ -7785,6 +7785,17 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String videoRecorderLibraryOpenStopMotionLabel(int frameCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      frameCount,
+      locale: localeName,
+      other: '스톱모션 보관함 열기, $frameCount개 프레임',
+      zero: '스톱모션 보관함 열기',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get videoEditorCameraLabel => '카메라';
 
   @override

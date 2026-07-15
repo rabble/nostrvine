@@ -8141,6 +8141,18 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String videoRecorderLibraryOpenStopMotionLabel(int frameCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      frameCount,
+      locale: localeName,
+      other: 'Abrir biblioteca de stop motion, $frameCount quadros',
+      one: 'Abrir biblioteca de stop motion, 1 quadro',
+      zero: 'Abrir biblioteca de stop motion',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get videoEditorCameraLabel => 'Câmera';
 
   @override
