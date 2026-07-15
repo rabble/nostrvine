@@ -15,7 +15,10 @@ import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+
+import '../mocks/mock_path_provider_platform.dart';
 
 void main() {
   group('ClipLibraryService', () {
@@ -675,12 +678,21 @@ void main() {
     });
 
     group('stop-motion autosave-row cleanup', () {
-      // The global test config mocks the documents directory to this path, and
-      // stop-motion frame paths are persisted as basenames resolved against it.
-      const documentsPath = '/tmp/documents';
+      // Stop-motion frame paths are persisted as basenames resolved against the
+      // documents directory. Use a UNIQUE temp dir per test and mock the path
+      // provider to point at it, so this group never touches the shared
+      // `/tmp/documents` — otherwise its recursive cleanup races the
+      // draft_storage suite's use of the same path when `flutter test` runs the
+      // files concurrently.
+      late Directory documentsDir;
+      late PathProviderPlatform originalPathProvider;
       late DraftStorageService draftService;
 
       setUp(() {
+        documentsDir = Directory.systemTemp.createTempSync('clip_library_sm');
+        originalPathProvider = PathProviderPlatform.instance;
+        PathProviderPlatform.instance = MockPathProviderPlatform()
+          ..setApplicationDocumentsPath(documentsDir.path);
         draftService = DraftStorageService(
           draftsDao: database.draftsDao,
           clipsDao: database.clipsDao,
@@ -688,12 +700,14 @@ void main() {
       });
 
       tearDown(() {
-        final dir = Directory(documentsPath);
-        if (dir.existsSync()) dir.deleteSync(recursive: true);
+        PathProviderPlatform.instance = originalPathProvider;
+        if (documentsDir.existsSync()) {
+          documentsDir.deleteSync(recursive: true);
+        }
       });
 
       File writeFrame(String name) {
-        final file = File(p.join(documentsPath, name));
+        final file = File(p.join(documentsDir.path, name));
         file.parent.createSync(recursive: true);
         file.writeAsBytesSync(const [0, 1, 2, 3]);
         return file;
