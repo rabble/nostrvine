@@ -143,6 +143,47 @@ void main() {
     );
 
     test(
+      '_applyLikeCountToVideo max-merges and never lowers a cached count (#6022)',
+      () async {
+        final event = makeEvent('merge-vine');
+        service.handleEventForTesting(event, SubscriptionType.discovery);
+        final video = VideoEvent.fromNostrEvent(event);
+
+        int? cachedLikeCount() => service.discoveryVideos
+            .firstWhere((v) => v.id == video.id)
+            .nostrLikeCount;
+
+        // First resolve applies null -> 10.
+        expect(
+          service.applyLikeCountForTesting(
+            video.id,
+            10,
+            SubscriptionType.discovery,
+          ),
+          isTrue,
+        );
+        expect(cachedLikeCount(), 10);
+
+        // A later, lower resolve must NOT lower the cached count (max-merge,
+        // not the old direct-replace which would drop it to 4).
+        service.applyLikeCountForTesting(
+          video.id,
+          4,
+          SubscriptionType.discovery,
+        );
+        expect(cachedLikeCount(), 10);
+
+        // A higher resolve still raises it.
+        service.applyLikeCountForTesting(
+          video.id,
+          15,
+          SubscriptionType.discovery,
+        );
+        expect(cachedLikeCount(), 15);
+      },
+    );
+
+    test(
       'non-addressable videos are omitted from the addressableIds batch map',
       () async {
         final addressableEvent = makeEvent('addressable-vine');

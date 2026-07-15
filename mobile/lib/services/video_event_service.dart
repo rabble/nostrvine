@@ -50,6 +50,8 @@ import 'package:openvine/utils/log_tag_sanitizer.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:video_event_cache/video_event_cache.dart';
+import 'package:videos_repository/videos_repository.dart'
+    show mergeNullableEngagementMax;
 
 /// Pagination state for tracking cursor position and loading status per subscription
 class PaginationState {
@@ -4876,8 +4878,17 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
 
     final videoEvent = eventList[index];
 
-    // Update the video with the like count
-    final updatedVideo = videoEvent.copyWith(nostrLikeCount: likeCount);
+    // #6022: max-merge instead of direct-replace so a later, lower re-fetch
+    // can't lower an already-applied bucket count. Bounded — these buckets are
+    // relay-parsed and start with a null nostrLikeCount, so this normally
+    // applies null->N on first fetch. Aligns with the #3384
+    // mergeNullableEngagementMax policy used by the profile enrichment paths.
+    final updatedVideo = videoEvent.copyWith(
+      nostrLikeCount: mergeNullableEngagementMax(
+        videoEvent.nostrLikeCount,
+        likeCount,
+      ),
+    );
     eventList[index] = updatedVideo;
 
     // Also update in keyed buckets if applicable
@@ -5855,6 +5866,15 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   Future<void> flushPendingLikeCountBatchForTesting() {
     return _executeLikeCountBatchFetch();
   }
+
+  /// Apply a resolved like count to a cached video, bypassing the batch and
+  /// debounce, to exercise the max-merge semantics of [_applyLikeCountToVideo].
+  @visibleForTesting
+  bool applyLikeCountForTesting(
+    String videoId,
+    int likeCount,
+    SubscriptionType subscriptionType,
+  ) => _applyLikeCountToVideo(videoId, likeCount, subscriptionType);
 
   /// Run automatic diagnostics when feed fails to load events
   /// This logs relay status, connection info, and tests direct queries to help debug

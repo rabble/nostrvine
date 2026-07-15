@@ -2,6 +2,7 @@
 // ABOUTME: Handles like/repost status and counts per video item
 
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:comments_repository/comments_repository.dart';
 import 'package:equatable/equatable.dart';
@@ -37,6 +38,7 @@ class VideoInteractionsBloc
     required RepostsRepository repostsRepository,
     String? addressableId,
     int? initialLikeCount,
+    int? archivedLikeCount,
     int? initialCommentCount,
     int? initialRepostCount,
     bool includeVideoReplies = false,
@@ -46,6 +48,7 @@ class VideoInteractionsBloc
        _commentsRepository = commentsRepository,
        _repostsRepository = repostsRepository,
        _addressableId = addressableId,
+       _archivedLikeCount = archivedLikeCount,
        _includeVideoReplies = includeVideoReplies,
        super(
          VideoInteractionsState(
@@ -82,6 +85,12 @@ class VideoInteractionsBloc
   /// Addressable ID for repost operations (format: `kind:pubkey:d-tag`).
   /// Null if the video doesn't have a d-tag (non-addressable event).
   final String? _addressableId;
+
+  /// Archival (classic Vine) like count baseline, kept separate from the
+  /// live Nostr count so the addressable like floor (#6022) can raise only
+  /// the Nostr portion without letting the archival number mask newly
+  /// resolved Nostr likes. Null when there is no archival baseline.
+  final int? _archivedLikeCount;
 
   /// Subscribe to liked/reposted IDs changes and update status reactively.
   Future<void> _onSubscriptionRequested(
@@ -188,11 +197,18 @@ class VideoInteractionsBloc
       final fetchedCommentCount = results[1];
       final fetchedRepostCount = results[2];
 
-      // Feed/Funnelcake counts remain the display baseline pending the
-      // canonical stats decision tracked in #5751. The fallback count is useful
-      // when there is no seed, but should not replace a count already rendered
-      // from the video payload.
-      final likeCount = preFetchLikeCount ?? fetchedLikeCount;
+      // #6022: floor the Nostr like count against the addressable relay
+      // resolve so a stale/zero funnelcake seed can be raised by the cleaner
+      // distinct-liker count, but never lowered. Addressable-only — the
+      // non-addressable getLikeCount is a raw, unfiltered tally that must not
+      // raise the count. originalLikes (archival) is kept out of the floor so
+      // it can't mask newly resolved Nostr likes.
+      final likeCount = _addressableId != null
+          ? math.max(
+              preFetchLikeCount ?? 0,
+              (_archivedLikeCount ?? 0) + fetchedLikeCount,
+            )
+          : preFetchLikeCount ?? fetchedLikeCount;
       final commentCount = preFetchCommentCount ?? fetchedCommentCount;
       final repostCount = preFetchRepostCount ?? fetchedRepostCount;
 
