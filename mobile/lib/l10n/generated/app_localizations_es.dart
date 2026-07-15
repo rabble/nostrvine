@@ -1449,7 +1449,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get databaseCorruptionBody =>
-      'Cierra Divine y ábrelo de nuevo: lo arreglamos automáticamente. Tus borradores y clips se quedan, lo demás se recarga.';
+      'Cierra Divine y ábrelo de nuevo: lo arreglamos automáticamente. Guardamos los borradores y clips que podamos, lo demás se recarga.';
 
   @override
   String get databaseCorruptionCloseButton => 'Cerrar Divine';

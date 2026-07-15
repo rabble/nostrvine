@@ -4091,7 +4091,7 @@
     "@videoErrorAdultContentHidden": {"description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."},
     "videoDetailLoadError": "Nie udało się wczytać filmu",
     "databaseCorruptionTitle": "Twoje lokalne dane się uszkodziły",
-    "databaseCorruptionBody": "Zamknij Divine i otwórz ponownie — naprawimy to automatycznie. Twoje szkice i klipy zostają, reszta wczyta się na nowo.",
+    "databaseCorruptionBody": "Zamknij Divine i otwórz ponownie — naprawimy to automatycznie. Zachowamy tyle Twoich szkiców i klipów, ile się da, reszta wczyta się na nowo.",
     "databaseCorruptionCloseButton": "Zamknij Divine",
     "videoDetailContextTitle": "Udostępniony film",
     "videoDetailCloseSemanticLabel": "Zamknij odtwarzacz wideo",

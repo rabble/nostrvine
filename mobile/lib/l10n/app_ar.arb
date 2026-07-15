@@ -4091,7 +4091,7 @@
     "@videoErrorAdultContentHidden": {"description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."},
     "videoDetailLoadError": "فشل تحميل الفيديو",
     "databaseCorruptionTitle": "بياناتك المحلية تعرضت للتلف",
-    "databaseCorruptionBody": "أغلق Divine وافتحه من جديد — سنصلح ذلك تلقائيًا. مسوداتك ومقاطعك ستبقى، وسيُعاد تحميل الباقي.",
+    "databaseCorruptionBody": "أغلق Divine وافتحه من جديد — سنصلح ذلك تلقائيًا. سنحفظ ما نستطيع من مسوداتك ومقاطعك، وسيُعاد تحميل الباقي.",
     "databaseCorruptionCloseButton": "إغلاق Divine",
     "videoDetailContextTitle": "فيديو تمت مشاركته",
     "videoDetailCloseSemanticLabel": "إغلاق مشغل الفيديو",

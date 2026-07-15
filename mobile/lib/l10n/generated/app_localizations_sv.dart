@@ -1425,7 +1425,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get databaseCorruptionBody =>
-      'Stäng Divine och öppna appen igen – vi fixar det automatiskt. Dina utkast och klipp finns kvar, resten laddas om.';
+      'Stäng Divine och öppna appen igen – vi fixar det automatiskt. Vi räddar så mycket vi kan av dina utkast och klipp, resten laddas om.';
 
   @override
   String get databaseCorruptionCloseButton => 'Stäng Divine';

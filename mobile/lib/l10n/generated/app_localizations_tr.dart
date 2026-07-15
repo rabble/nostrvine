@@ -1411,7 +1411,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get databaseCorruptionBody =>
-      'Divine\'ı kapatıp yeniden aç — bunu otomatik olarak onarıyoruz. Taslakların ve kliplerin duruyor, gerisi yeniden yükleniyor.';
+      'Divine\'ı kapatıp yeniden aç — bunu otomatik olarak onarıyoruz. Taslaklarından ve kliplerinden kurtarabildiğimizi saklıyoruz, gerisi yeniden yükleniyor.';
 
   @override
   String get databaseCorruptionCloseButton => 'Divine\'ı kapat';

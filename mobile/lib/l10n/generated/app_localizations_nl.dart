@@ -1439,7 +1439,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get databaseCorruptionBody =>
-      'Sluit Divine en open het opnieuw — we repareren het automatisch. Je concepten en clips blijven, de rest laadt opnieuw.';
+      'Sluit Divine en open het opnieuw — we repareren het automatisch. We redden wat we kunnen van je concepten en clips, de rest laadt opnieuw.';
 
   @override
   String get databaseCorruptionCloseButton => 'Divine sluiten';

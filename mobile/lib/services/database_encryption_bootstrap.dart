@@ -121,16 +121,24 @@ class DatabaseEncryptionBootstrap {
   ///
   /// Must run before the first `AppDatabase` open.
   Future<String?> resolveCipherKey() async {
-    final key = await _resolveCipherKey();
-    // Reaching here means this launch settled the pending-recovery flag: it
-    // either salvaged/recreated, or established there was no encrypted database
-    // to recover. A throw skips this so the flag survives for the retry.
-    await _clearPendingCorruptionRecovery();
+    final (key, settledRecovery) = await _resolveCipherKey();
+    // Only clear once this launch has actually settled the flag: it either
+    // salvaged/recreated, or established there was nothing to recover. A throw
+    // skips this so the flag survives for the retry, and so does a deferred
+    // migration, which leaves the database untouched for the next launch.
+    if (settledRecovery) {
+      await _clearPendingCorruptionRecovery();
+    }
     return key;
   }
 
-  Future<String?> _resolveCipherKey() async {
-    if (kIsWeb) return null;
+  /// Resolves the key, and reports whether this launch settled the
+  /// pending-corruption flag — i.e. whether the database it hands back is one
+  /// recovery has finished with.
+  Future<(String? key, bool settledRecovery)> _resolveCipherKey() async {
+    // Web never opens an encrypted database, so there is nothing to recover
+    // and nothing that could have set the flag.
+    if (kIsWeb) return (null, true);
 
     await _ensureRuntime();
     if (!_isCipherAvailable()) {
@@ -144,10 +152,13 @@ class DatabaseEncryptionBootstrap {
       case CipherMigrationOutcome.noDatabase:
       case CipherMigrationOutcome.removedEmptyPlaintext:
       case CipherMigrationOutcome.migrated:
-        return key;
+        return (key, true);
       case CipherMigrationOutcome.alreadyEncrypted:
         if (wasGenerated) {
-          return _recoverUnusableEncryptedDatabase(key, reason: 'missing');
+          return (
+            await _recoverUnusableEncryptedDatabase(key, reason: 'missing'),
+            true,
+          );
         }
         // A runtime corruption report from a previous session bypasses the
         // probe: it is reactive by design and already failed to see this
@@ -155,7 +166,7 @@ class DatabaseEncryptionBootstrap {
         // strand the user on it for another session.
         if (!await _hasPendingCorruptionRecovery() &&
             await _canOpenEncryptedDatabase(key)) {
-          return key;
+          return (key, true);
         }
         // The key either no longer opens the DB (stale) or opens it but
         // on-disk corruption surfaced when the Drift startup cleanup ran. Before
@@ -173,7 +184,7 @@ class DatabaseEncryptionBootstrap {
           );
           await _reportRecovery('salvaged local-only data into a fresh DB');
           await _runPostDatabaseReset(_onDatabaseReset);
-          return key;
+          return (key, true);
         }
         // Salvage failed. Only rotate the cipher key when it genuinely cannot
         // decrypt the file: rotating a still-valid key would overwrite the only
@@ -183,9 +194,12 @@ class DatabaseEncryptionBootstrap {
         // rebuilt copy that failed its own integrity check) is recreated under
         // the SAME key so the backup stays recoverable.
         if (await _encryptedKeyMatches(key)) {
-          return _recoverUnusableEncryptedDatabase(
-            key,
-            reason: 'corrupt and unsalvageable (key still valid)',
+          return (
+            await _recoverUnusableEncryptedDatabase(
+              key,
+              reason: 'corrupt and unsalvageable (key still valid)',
+            ),
+            true,
           );
         }
         final replacementKey = generateCipherKeyHex();
@@ -193,9 +207,12 @@ class DatabaseEncryptionBootstrap {
           key: dbCipherKeyStorageKey,
           value: replacementKey,
         );
-        return _recoverUnusableEncryptedDatabase(
-          replacementKey,
-          reason: 'key loss',
+        return (
+          await _recoverUnusableEncryptedDatabase(
+            replacementKey,
+            reason: 'key loss',
+          ),
+          true,
         );
       case CipherMigrationOutcome.failed:
         Log.warning(
@@ -203,7 +220,12 @@ class DatabaseEncryptionBootstrap {
           'launch and retrying next launch.',
           name: _logName,
         );
-        return null;
+        // The database is left exactly as it was for the next launch to retry,
+        // so nothing was settled. Preserving the flag matters: a corruption
+        // report that arrived while the migration was deferred is the only
+        // signal that forces the salvage once the retry finally classifies the
+        // file as encrypted.
+        return (null, false);
     }
   }
 

@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -77,10 +80,16 @@ void main() {
   });
 
   group(DatabaseCorruptionScreen, () {
-    Widget buildScreen(VoidCallback onCloseApp) => MaterialApp(
+    Widget buildScreen(
+      VoidCallback onCloseApp, {
+      Future<void> Function()? awaitRecoveryPersisted,
+    }) => MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      home: DatabaseCorruptionScreen(onCloseApp: onCloseApp),
+      home: DatabaseCorruptionScreen(
+        awaitRecoveryPersisted: awaitRecoveryPersisted,
+        onCloseApp: onCloseApp,
+      ),
     );
 
     testWidgets('explains the restart repairs the database', (tester) async {
@@ -93,8 +102,38 @@ void main() {
     testWidgets('closes the app when the button is tapped', (tester) async {
       var closed = false;
       await tester.pumpWidget(buildScreen(() => closed = true));
+      await tester.pump();
 
       await tester.tap(find.text(l10n.databaseCorruptionCloseButton));
+      await tester.pump();
+
+      expect(closed, isTrue);
+    });
+
+    testWidgets('will not close until the recovery flag is durable', (
+      tester,
+    ) async {
+      var closed = false;
+      final persisted = Completer<void>();
+      await tester.pumpWidget(
+        buildScreen(
+          () => closed = true,
+          awaitRecoveryPersisted: () => persisted.future,
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byType(DivineButton));
+      await tester.pump();
+
+      // Closing before the flag lands strands the user on the same corrupt
+      // database: the restart only repairs anything if the next launch can
+      // read the flag this write is still committing.
+      expect(closed, isFalse);
+
+      persisted.complete();
+      await tester.pump();
+      await tester.tap(find.byType(DivineButton));
       await tester.pump();
 
       expect(closed, isTrue);

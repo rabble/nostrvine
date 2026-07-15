@@ -1456,7 +1456,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get databaseCorruptionBody =>
-      'Ferme Divine et rouvre-la : on répare ça automatiquement. Tes brouillons et clips restent, le reste se recharge.';
+      'Ferme Divine et rouvre-la : on répare ça automatiquement. On sauve ce qu\'on peut de tes brouillons et clips, le reste se recharge.';
 
   @override
   String get databaseCorruptionCloseButton => 'Fermer Divine';

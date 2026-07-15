@@ -1,6 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/services/database_corruption_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+class _MockSharedPreferences extends Mock implements SharedPreferences {}
 
 void main() {
   group(DatabaseCorruptionService, () {
@@ -32,21 +35,11 @@ void main() {
         expect(service.isCorrupted.value, isTrue);
       });
 
-      test('notifies isCorrupted listeners', () {
-        final service = build();
-        var notifications = 0;
-        service.isCorrupted.addListener(() => notifications++);
-
-        service.report(Exception('malformed'), StackTrace.current);
-
-        expect(notifications, equals(1));
-      });
-
       test('persists the flag so the next launch salvages', () async {
         final service = build();
 
         service.report(Exception('malformed'), StackTrace.current);
-        await pumpEventQueue();
+        await service.recoveryPersisted;
 
         expect(
           prefs.getBool(DatabaseCorruptionService.pendingRecoveryKey),
@@ -54,6 +47,25 @@ void main() {
         );
         expect(build().hasPendingRecovery, isTrue);
       });
+
+      test('recoveryPersisted resolves only once the flag is written', () async {
+        final service = build();
+        service.report(Exception('malformed'), StackTrace.current);
+
+        // The restart prompt gates its close button on this future, so it must
+        // not resolve while the write that makes recovery possible is still in
+        // flight — closing early would strand the user on the same database.
+        await service.recoveryPersisted;
+
+        expect(build().hasPendingRecovery, isTrue);
+      });
+
+      test(
+        'recoveryPersisted resolves immediately before any report',
+        () async {
+          await build().recoveryPersisted.timeout(const Duration(seconds: 1));
+        },
+      );
 
       test('reports the error once, not per failing statement', () async {
         final reported = <Object>[];
@@ -70,6 +82,45 @@ void main() {
         expect(reported, hasLength(1));
         expect(reported.single.toString(), contains('first'));
       });
+
+      test('retries a refused flag write before giving up', () async {
+        final failing = _MockSharedPreferences();
+        var attempts = 0;
+        when(() => failing.setBool(any(), any())).thenAnswer((_) async {
+          attempts += 1;
+          // setBool reports a refused write by returning false rather than
+          // throwing, and report() drops every later corruption report, so an
+          // unnoticed false would leave the next launch with no reason to
+          // salvage.
+          return attempts > 1;
+        });
+        final service = DatabaseCorruptionService(preferences: failing);
+        addTearDown(service.dispose);
+
+        service.report(Exception('malformed'), StackTrace.current);
+        await service.recoveryPersisted;
+
+        expect(attempts, equals(2));
+      });
+
+      test(
+        'releases the restart prompt when the flag write keeps failing',
+        () async {
+          final failing = _MockSharedPreferences();
+          when(
+            () => failing.setBool(any(), any()),
+          ).thenThrow(Exception('disk full'));
+          final service = DatabaseCorruptionService(preferences: failing);
+          addTearDown(service.dispose);
+
+          service.report(Exception('malformed'), StackTrace.current);
+
+          // The button waits on this future. If a doomed write left it pending
+          // the user would be locked in a session that cannot recover at all.
+          await service.recoveryPersisted.timeout(const Duration(seconds: 1));
+          expect(service.isCorrupted.value, isTrue);
+        },
+      );
 
       test('does not throw when reporting the non-fatal fails', () async {
         final service = build(

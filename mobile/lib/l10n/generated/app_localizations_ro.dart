@@ -1468,7 +1468,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get databaseCorruptionBody =>
-      'Închide Divine și deschide-l din nou — reparăm automat. Ciornele și clipurile tale rămân, restul se reîncarcă.';
+      'Închide Divine și deschide-l din nou — reparăm automat. Salvăm ce putem din ciornele și clipurile tale, restul se reîncarcă.';
 
   @override
   String get databaseCorruptionCloseButton => 'Închide Divine';

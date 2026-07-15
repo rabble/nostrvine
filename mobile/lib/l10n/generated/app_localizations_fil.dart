@@ -1456,7 +1456,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get databaseCorruptionBody =>
-      'Isara ang Divine at buksan ulit — awtomatiko naming aayusin. Mananatili ang mga draft at clip mo, mag-reload na lang ang iba.';
+      'Isara ang Divine at buksan ulit — awtomatiko naming aayusin. Ise-save namin ang makakaya sa mga draft at clip mo, mag-reload na lang ang iba.';
 
   @override
   String get databaseCorruptionCloseButton => 'Isara ang Divine';

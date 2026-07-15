@@ -4091,7 +4091,7 @@
     "@videoErrorAdultContentHidden": {"description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."},
     "videoDetailLoadError": "N-am putut încărca videoclipul",
     "databaseCorruptionTitle": "Datele tale locale s-au deteriorat",
-    "databaseCorruptionBody": "Închide Divine și deschide-l din nou — reparăm automat. Ciornele și clipurile tale rămân, restul se reîncarcă.",
+    "databaseCorruptionBody": "Închide Divine și deschide-l din nou — reparăm automat. Salvăm ce putem din ciornele și clipurile tale, restul se reîncarcă.",
     "databaseCorruptionCloseButton": "Închide Divine",
     "videoDetailContextTitle": "Videoclip partajat",
     "videoDetailCloseSemanticLabel": "Închide playerul video",

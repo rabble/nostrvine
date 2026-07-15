@@ -92,6 +92,61 @@ void main() {
         isFalse,
       );
     });
+
+    test('ignores the corruption signature quoted in bound parameters', () {
+      // Anyone can publish a Nostr event whose content quotes SQLite's
+      // corruption message. `SqliteException.toString()` prints the bound
+      // parameters, so classifying the whole string would let that content
+      // schedule a salvage of a perfectly healthy database.
+      expect(
+        indicatesDatabaseCorruption(
+          Exception(
+            'SqliteException(19): UNIQUE constraint failed: event.id\n'
+            '  Causing statement: INSERT INTO event (id, content) VALUES '
+            '(?, ?), parameters: abc123, database disk image is malformed',
+          ),
+        ),
+        isFalse,
+      );
+    });
+
+    test('ignores a statement that merely selects on the signature', () {
+      expect(
+        indicatesDatabaseCorruption(
+          Exception(
+            'SqliteException(5): database is locked\n'
+            '  Causing statement: SELECT * FROM event WHERE content = ?, '
+            'parameters: file is not a database',
+          ),
+        ),
+        isFalse,
+      );
+    });
+
+    test('ignores a result code quoted inside bound parameters', () {
+      // Pasting a SQLite error into a note is exactly the kind of thing people
+      // post. Classifying anything below the header would let that text drive
+      // a salvage from an unrelated failure that merely bound it.
+      expect(
+        indicatesDatabaseCorruption(
+          Exception(
+            'DriftWrappedException: could not insert event\n'
+            '  Causing statement: INSERT INTO event (content) VALUES (?), '
+            'parameters: SqliteException(11): database disk image is malformed',
+          ),
+        ),
+        isFalse,
+      );
+    });
+
+    test('does not fire on an error carrying no SQLite result code', () {
+      expect(
+        indicatesDatabaseCorruption(
+          Exception('database disk image is malformed'),
+        ),
+        isFalse,
+      );
+    });
   });
 
   group(DatabaseCorruptionInterceptor, () {
@@ -168,6 +223,15 @@ void main() {
         'ensureOpen',
         (e) => e.ensureOpen(_NoopUser()),
       );
+      // Bulk ingestion goes through batch(), so a corrupt page first reached by
+      // a batched write must report too. Without the override drift's default
+      // forwards it silently and the next launch never salvages.
+      await expectReports(
+        'batched',
+        (e) => e.runBatched(
+          BatchedStatements(const ['INSERT INTO event VALUES (?)'], const []),
+        ),
+      );
 
       expect(
         calls,
@@ -177,6 +241,7 @@ void main() {
           'delete': 1,
           'custom': 1,
           'ensureOpen': 1,
+          'batched': 1,
         }),
       );
     });

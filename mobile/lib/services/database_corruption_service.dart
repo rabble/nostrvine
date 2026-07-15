@@ -46,15 +46,28 @@ class DatabaseCorruptionService {
 
   static const _logName = 'DatabaseCorruptionService';
 
+  /// How many times [_writePendingRecovery] tries before giving up.
+  static const _persistAttempts = 2;
+
   final SharedPreferences _preferences;
   final Future<void> Function(Object error, StackTrace stackTrace)?
   _recordError;
 
   final ValueNotifier<bool> _isCorrupted = ValueNotifier(false);
 
+  Future<void>? _persisted;
+
   /// Whether corruption surfaced during **this** session. Drives the restart
   /// prompt; never resets, because nothing repairs the open database in place.
   ValueListenable<bool> get isCorrupted => _isCorrupted;
+
+  /// Completes once [report]'s flag write has settled, successfully or not.
+  ///
+  /// The restart prompt awaits this before closing the app: the flag is the
+  /// only thing that makes the next launch salvage, and [report] is called from
+  /// a synchronous `catch` that cannot await the write itself. Completes
+  /// immediately when nothing has been reported.
+  Future<void> get recoveryPersisted => _persisted ?? Future<void>.value();
 
   /// Whether a previous session hit corruption and the database still needs to
   /// be salvaged. Read by the startup bootstrap before the first open.
@@ -86,30 +99,55 @@ class DatabaseCorruptionService {
       error: error,
       stackTrace: stackTrace,
     );
-    unawaited(_persistPendingRecovery(error, stackTrace));
+    // Kept independent: the restart prompt waits on the flag write, and must
+    // not also wait on a telemetry round-trip it does not depend on.
+    _persisted = _writePendingRecovery();
+    unawaited(_persisted);
+    unawaited(_recordNonFatal(error, stackTrace));
   }
 
-  /// Persists the flag and reports the non-fatal. Best-effort on both counts:
-  /// the database is already broken and the session is already surfacing the
-  /// restart prompt, so an IO or telemetry failure here must not throw into
-  /// whichever query happened to trip the corruption.
-  Future<void> _persistPendingRecovery(
-    Object error,
-    StackTrace stackTrace,
-  ) async {
-    try {
-      await _preferences.setBool(pendingRecoveryKey, true);
-    } on Object catch (e) {
-      Log.warning(
-        'Could not persist the database recovery flag: $e',
-        name: _logName,
-      );
-    }
+  /// Reports the corruption as a non-fatal. Best-effort: the database is
+  /// already broken and the session is already surfacing the restart prompt, so
+  /// a telemetry failure must not throw into whichever query happened to trip
+  /// the corruption.
+  Future<void> _recordNonFatal(Object error, StackTrace stackTrace) async {
     try {
       await _recordError?.call(error, stackTrace);
     } on Object catch (e) {
       Log.warning('Corruption reporting failed: $e', name: _logName);
     }
+  }
+
+  /// Writes the flag, retrying once before giving up.
+  ///
+  /// `setBool` reports a refused write by returning `false` rather than
+  /// throwing, and [report] drops every later corruption report, so an
+  /// unnoticed `false` here would leave the next launch with no reason to
+  /// salvage. One retry covers a transient platform-channel failure; a second
+  /// failure is logged and the restart prompt still appears, because a user who
+  /// restarts anyway is better off than one held in a broken session.
+  Future<void> _writePendingRecovery() async {
+    for (var attempt = 1; attempt <= _persistAttempts; attempt += 1) {
+      try {
+        if (await _preferences.setBool(pendingRecoveryKey, true)) return;
+        Log.warning(
+          'Writing the database recovery flag was refused '
+          '(attempt $attempt of $_persistAttempts).',
+          name: _logName,
+        );
+      } on Object catch (e) {
+        Log.warning(
+          'Could not persist the database recovery flag '
+          '(attempt $attempt of $_persistAttempts): $e',
+          name: _logName,
+        );
+      }
+    }
+    Log.error(
+      'The database recovery flag could not be persisted. The next launch will '
+      'not salvage automatically.',
+      name: _logName,
+    );
   }
 
   /// Releases the notifier. The service is an app-lifetime singleton, so this

@@ -4,23 +4,38 @@
 
 import 'package:drift/drift.dart';
 
-/// SQLite's stable message for every SQLITE_CORRUPT_* variant (e.g. 779
-/// SQLITE_CORRUPT_INDEX) — the structural-corruption signature.
-const _corruptMessage = 'database disk image is malformed';
+/// SQLITE_CORRUPT — structural damage on disk.
+const _sqliteCorrupt = 11;
 
-/// SQLite's stable message for SQLITE_NOTADB — the key cannot decrypt the file.
-const _notADatabaseMessage = 'file is not a database';
+/// SQLITE_NOTADB — the key cannot decrypt the file.
+const _sqliteNotADb = 26;
+
+/// The `SqliteException(<extendedResultCode>)` header that sqlite3 writes ahead
+/// of the message, the causing statement and its bound parameters.
+final _sqliteExceptionHeader = RegExp(r'SqliteException\((\d+)\)');
 
 /// Whether [error] is on-disk corruption or an undecryptable database file.
 ///
 /// The database runs on a background isolate, so a failing statement arrives
-/// wrapped in drift's `DriftRemoteException`, whose `toString()` forwards the
-/// original `SqliteException` message verbatim. Matching the stable SQLite
-/// signatures avoids importing drift's experimental `remote.dart` (or its
+/// wrapped in drift's `DriftRemoteException`, which serialises the cause with
+/// `toString()` and forwards it verbatim. Reading the result code back out of
+/// that text avoids importing drift's experimental `remote.dart` (or its
 /// web-unsafe `isolate.dart`) purely for the wrapper type.
+///
+/// Only the header line is classified, and only by result code. `toString()`
+/// appends the causing statement and its bound parameters on the lines below,
+/// and those carry user content: a Nostr event whose text quotes SQLite's
+/// corruption message must never convince us to salvage a healthy database.
 bool indicatesDatabaseCorruption(Object error) {
-  final text = error.toString().toLowerCase();
-  return text.contains(_corruptMessage) || text.contains(_notADatabaseMessage);
+  final header = error.toString().split('\n').first;
+  final extendedCode = int.tryParse(
+    _sqliteExceptionHeader.firstMatch(header)?.group(1) ?? '',
+  );
+  if (extendedCode == null) return false;
+  // Every extended code carries its primary code in the low byte, so 779
+  // (SQLITE_CORRUPT_INDEX) and 11 (SQLITE_CORRUPT) both reduce to 11.
+  final primaryCode = extendedCode & 0xFF;
+  return primaryCode == _sqliteCorrupt || primaryCode == _sqliteNotADb;
 }
 
 /// Signature for the app-layer sink notified when a statement fails with

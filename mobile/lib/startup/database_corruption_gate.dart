@@ -29,13 +29,16 @@ class DatabaseCorruptionGate extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final service = ref.watch(databaseCorruptionServiceProvider);
-    // Null in widget tests and on web, where no interceptor reports corruption.
+    // Null in widget tests, which never wire the interceptor that reports.
     if (service == null) return child;
 
     return ValueListenableBuilder<bool>(
       valueListenable: service.isCorrupted,
-      builder: (context, isCorrupted, healthyChild) =>
-          isCorrupted ? const DatabaseCorruptionScreen() : healthyChild!,
+      builder: (context, isCorrupted, healthyChild) => isCorrupted
+          ? DatabaseCorruptionScreen(
+              awaitRecoveryPersisted: () => service.recoveryPersisted,
+            )
+          : healthyChild!,
       child: child,
     );
   }
@@ -50,9 +53,16 @@ class DatabaseCorruptionGate extends ConsumerWidget {
 class DatabaseCorruptionScreen extends StatelessWidget {
   /// Creates the screen. [onCloseApp] is injected for tests.
   const DatabaseCorruptionScreen({
+    this.awaitRecoveryPersisted,
     this.onCloseApp = SystemNavigator.pop,
     super.key,
   });
+
+  /// Resolves once the next launch's salvage is scheduled durably.
+  ///
+  /// `null` leaves the button enabled immediately, for callers with no flag to
+  /// wait on (tests covering the layout).
+  final Future<void> Function()? awaitRecoveryPersisted;
 
   /// Invoked by the close button.
   final VoidCallback onCloseApp;
@@ -91,10 +101,9 @@ class DatabaseCorruptionScreen extends StatelessWidget {
                       color: VineTheme.onSurfaceVariant,
                     ),
                   ),
-                  DivineButton(
-                    label: l10n.databaseCorruptionCloseButton,
-                    onPressed: onCloseApp,
-                    type: DivineButtonType.secondary,
+                  _CloseAppButton(
+                    awaitRecoveryPersisted: awaitRecoveryPersisted,
+                    onCloseApp: onCloseApp,
                   ),
                 ],
               ),
@@ -102,6 +111,50 @@ class DatabaseCorruptionScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// The close affordance, held until the recovery flag is durable.
+///
+/// Closing before the write lands would strand the user on the same corrupt
+/// database: the restart only repairs anything if the next launch can read the
+/// flag. The wait is invisible in practice — the write settles long before
+/// anyone finishes reading the screen.
+class _CloseAppButton extends StatefulWidget {
+  const _CloseAppButton({
+    required this.awaitRecoveryPersisted,
+    required this.onCloseApp,
+  });
+
+  final Future<void> Function()? awaitRecoveryPersisted;
+  final VoidCallback onCloseApp;
+
+  @override
+  State<_CloseAppButton> createState() => _CloseAppButtonState();
+}
+
+class _CloseAppButtonState extends State<_CloseAppButton> {
+  // Resolved once, not per build, so a rebuild cannot restart the wait.
+  late final Future<void> _persisted =
+      widget.awaitRecoveryPersisted?.call() ?? Future<void>.value();
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<void>(
+      future: _persisted,
+      builder: (context, snapshot) {
+        // Any terminal state releases the button, including a failed write:
+        // the service has already logged it, and a user who restarts anyway is
+        // better off than one held in a session that cannot recover.
+        final settled = snapshot.connectionState == ConnectionState.done;
+        return DivineButton(
+          label: context.l10n.databaseCorruptionCloseButton,
+          onPressed: settled ? widget.onCloseApp : null,
+          isLoading: !settled,
+          type: DivineButtonType.secondary,
+        );
+      },
     );
   }
 }

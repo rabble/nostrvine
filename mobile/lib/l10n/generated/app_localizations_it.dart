@@ -1451,7 +1451,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get databaseCorruptionBody =>
-      'Chiudi Divine e riaprila: sistemiamo tutto in automatico. Le tue bozze e clip restano, il resto si ricarica.';
+      'Chiudi Divine e riaprila: sistemiamo tutto in automatico. Salviamo quello che possiamo delle tue bozze e clip, il resto si ricarica.';
 
   @override
   String get databaseCorruptionCloseButton => 'Chiudi Divine';

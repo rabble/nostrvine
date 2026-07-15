@@ -1429,7 +1429,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get databaseCorruptionBody =>
-      'Close Divine and open it again — we\'ll patch it up automatically. Your drafts and clips stay put, everything else reloads.';
+      'Close Divine and open it again — we\'ll patch it up automatically. We\'ll save what drafts and clips we can, everything else reloads.';
 
   @override
   String get databaseCorruptionCloseButton => 'Close Divine';

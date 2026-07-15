@@ -1447,7 +1447,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get databaseCorruptionBody =>
-      'Schließ Divine und öffne es neu — wir reparieren das automatisch. Deine Entwürfe und Clips bleiben, alles andere lädt neu.';
+      'Schließ Divine und öffne es neu — wir reparieren das automatisch. Wir retten so viel wie möglich von deinen Entwürfen und Clips, alles andere lädt neu.';
 
   @override
   String get databaseCorruptionCloseButton => 'Divine schließen';

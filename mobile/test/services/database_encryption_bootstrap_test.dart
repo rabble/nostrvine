@@ -250,6 +250,31 @@ void main() {
         );
         expect(cleared, isFalse);
       });
+
+      test(
+        'keeps the flag when the migration defers to the next launch',
+        () async {
+          store[dbCipherKeyStorageKey] = existing;
+          var cleared = false;
+          final bootstrap = buildBootstrap(
+            // The migration could not complete, so it left the database exactly
+            // as it was and this launch settled nothing.
+            outcome: CipherMigrationOutcome.failed,
+            onDelete: () {},
+            hasPendingCorruptionRecovery: true,
+            onClearPendingCorruptionRecovery: () => cleared = true,
+          );
+
+          expect(await bootstrap.resolveCipherKey(), isNull);
+          expect(
+            cleared,
+            isFalse,
+            reason:
+                'clearing here would drop the only signal forcing the '
+                'salvage once the retry classifies the file as encrypted',
+          );
+        },
+      );
     });
 
     test('backs up the unrecoverable DB on key loss (generated key + '

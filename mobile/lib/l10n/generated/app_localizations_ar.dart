@@ -1418,7 +1418,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get databaseCorruptionBody =>
-      'أغلق Divine وافتحه من جديد — سنصلح ذلك تلقائيًا. مسوداتك ومقاطعك ستبقى، وسيُعاد تحميل الباقي.';
+      'أغلق Divine وافتحه من جديد — سنصلح ذلك تلقائيًا. سنحفظ ما نستطيع من مسوداتك ومقاطعك، وسيُعاد تحميل الباقي.';
 
   @override
   String get databaseCorruptionCloseButton => 'إغلاق Divine';

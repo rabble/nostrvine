@@ -1406,7 +1406,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get databaseCorruptionBody =>
-      'Tutup Divine lalu buka lagi — kami perbaiki otomatis. Draf dan klipmu tetap aman, sisanya dimuat ulang.';
+      'Tutup Divine lalu buka lagi — kami perbaiki otomatis. Kami simpan draf dan klipmu semampu kami, sisanya dimuat ulang.';
 
   @override
   String get databaseCorruptionCloseButton => 'Tutup Divine';

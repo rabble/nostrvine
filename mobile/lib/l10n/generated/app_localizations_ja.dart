@@ -1338,7 +1338,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get databaseCorruptionBody =>
-      'Divine を閉じてもう一度開いてね。自動で直すよ。下書きとクリップはそのまま、ほかは読み込み直すよ。';
+      'Divine を閉じてもう一度開いてね。自動で直すよ。下書きとクリップはできるだけ残すよ。ほかは読み込み直すよ。';
 
   @override
   String get databaseCorruptionCloseButton => 'Divine を閉じる';

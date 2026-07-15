@@ -1347,7 +1347,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get databaseCorruptionBody =>
-      'Divine을 껐다가 다시 열어주세요. 자동으로 고쳐드릴게요. 초안과 클립은 그대로 있고, 나머지는 다시 불러와요.';
+      'Divine을 껐다가 다시 열어주세요. 자동으로 고쳐드릴게요. 초안과 클립은 최대한 살려볼게요. 나머지는 다시 불러와요.';
 
   @override
   String get databaseCorruptionCloseButton => 'Divine 닫기';

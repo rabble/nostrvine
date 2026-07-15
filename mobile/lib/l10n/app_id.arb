@@ -4091,7 +4091,7 @@
     "@videoErrorAdultContentHidden": {"description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."},
     "videoDetailLoadError": "Gagal memuat video",
     "databaseCorruptionTitle": "Data lokalmu rusak",
-    "databaseCorruptionBody": "Tutup Divine lalu buka lagi — kami perbaiki otomatis. Draf dan klipmu tetap aman, sisanya dimuat ulang.",
+    "databaseCorruptionBody": "Tutup Divine lalu buka lagi — kami perbaiki otomatis. Kami simpan draf dan klipmu semampu kami, sisanya dimuat ulang.",
     "databaseCorruptionCloseButton": "Tutup Divine",
     "videoDetailContextTitle": "Video yang dibagikan",
     "videoDetailCloseSemanticLabel": "Tutup pemutar video",

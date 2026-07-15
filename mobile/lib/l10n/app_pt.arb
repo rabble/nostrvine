@@ -4091,7 +4091,7 @@
     "@videoErrorAdultContentHidden": {"description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."},
     "videoDetailLoadError": "Falha ao carregar o vídeo",
     "databaseCorruptionTitle": "Seus dados locais foram corrompidos",
-    "databaseCorruptionBody": "Feche o Divine e abra de novo — a gente conserta automaticamente. Seus rascunhos e clipes ficam salvos, o resto recarrega.",
+    "databaseCorruptionBody": "Feche o Divine e abra de novo — a gente conserta automaticamente. A gente salva o que der dos seus rascunhos e clipes, o resto recarrega.",
     "databaseCorruptionCloseButton": "Fechar o Divine",
     "videoDetailContextTitle": "Vídeo compartilhado",
     "videoDetailCloseSemanticLabel": "Fechar reprodutor de vídeo",

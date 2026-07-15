@@ -1391,7 +1391,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get databaseCorruptionBody =>
-      'Divine ን ዘግተው እንደገና ይክፈቱት — በራስ-ሰር እናስተካክለዋለን። ረቂቆችዎ እና ክሊፖችዎ ይቀራሉ፣ የቀረው እንደገና ይጫናል።';
+      'Divine ን ዘግተው እንደገና ይክፈቱት — በራስ-ሰር እናስተካክለዋለን። የቻልነውን ያህል ረቂቆችዎን እና ክሊፖችዎን እናስቀራለን፣ የቀረው እንደገና ይጫናል።';
 
   @override
   String get databaseCorruptionCloseButton => 'Divine ን ዝጋ';
