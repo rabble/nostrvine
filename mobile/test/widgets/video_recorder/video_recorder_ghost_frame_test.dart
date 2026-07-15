@@ -14,6 +14,7 @@ import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_ghost_frame.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -233,6 +234,65 @@ void main() {
         );
         expect(transformFinder, findsOneWidget);
       });
+    });
+
+    group('stop-motion ghost', () {
+      Widget buildStopMotionWidget({required bool isFrontCamera}) {
+        when(() => recorderBloc.state).thenReturn(
+          VideoRecorderBlocState(
+            recorderMode: VideoRecorderMode.stopMotion,
+            showLastClipOverlay: true,
+            stopMotionFrames: [tempFile.path],
+            isFrontCamera: isFrontCamera,
+          ),
+        );
+        return ProviderScope(
+          overrides: [
+            clipManagerProvider.overrideWith(
+              () => _TestClipManagerNotifier(const []),
+            ),
+          ],
+          child: BlocProvider<VideoRecorderBloc>.value(
+            value: recorderBloc,
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(body: VideoRecorderGhostFrame()),
+            ),
+          ),
+        );
+      }
+
+      testWidgets('flips the last still while the front lens is active', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildStopMotionWidget(isFrontCamera: true));
+
+        // The live preview is mirrored for the front camera, so the ghost of
+        // the last still must be flipped (matrix[0][0] == -1) to line up.
+        expect(
+          find.byWidgetPredicate(
+            (w) => w is Transform && w.transform.getColumn(0)[0] == -1.0,
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets(
+        'does not flip the last still while the back lens is active',
+        (
+          tester,
+        ) async {
+          await tester.pumpWidget(buildStopMotionWidget(isFrontCamera: false));
+
+          expect(
+            find.byWidgetPredicate(
+              (w) => w is Transform && w.transform.getColumn(0)[0] == 1.0,
+            ),
+            findsOneWidget,
+          );
+        },
+      );
     });
 
     group('decode bounds', () {

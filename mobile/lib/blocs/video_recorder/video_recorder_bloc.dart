@@ -1864,6 +1864,7 @@ class VideoRecorderBloc
         isCameraInitialized: _cameraService.isInitialized,
         hasFlash: _cameraService.hasFlash,
         canSwitchCamera: _cameraService.canSwitchCamera,
+        isFrontCamera: _cameraService.currentLens.isFrontFacing,
         previewTextureId: _cameraService.textureId,
         videoStabilizationMode: _cameraService.videoStabilizationMode,
         availableVideoStabilizationModes:

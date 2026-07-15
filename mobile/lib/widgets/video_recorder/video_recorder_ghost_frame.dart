@@ -17,11 +17,17 @@ class VideoRecorderGhostFrame extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final (showOverlay, capturesStills, stopMotionLastFrame) = context.select(
+    final (
+      showOverlay,
+      capturesStills,
+      stopMotionLastFrame,
+      isFrontCamera,
+    ) = context.select(
       (VideoRecorderBloc b) => (
         b.state.showLastClipOverlay,
         b.state.recorderMode.capturesStills,
         b.state.stopMotionLastFrame,
+        b.state.isFrontCamera,
       ),
     );
 
@@ -44,13 +50,12 @@ class VideoRecorderGhostFrame extends ConsumerWidget {
     );
 
     // Stop-motion assembles at the end, so there are no clips during capture —
-    // align the next pose against the last captured still instead. The capture
-    // lens of each still is not tracked in recorder state (stopMotionFrames
-    // holds only file paths), so the ghost is shown un-mirrored; the clip
-    // branch above mirrors via clip.isFrontCameraLens.
+    // align the next pose against the last captured still instead. The overlay
+    // sits on top of the live preview, which is mirrored for the front camera,
+    // so mirror the ghost to match whenever the active lens is front-facing.
     final ghostData = capturesStills
         ? (stopMotionLastFrame != null
-              ? (path: stopMotionLastFrame, isFrontCamera: false)
+              ? (path: stopMotionLastFrame, isFrontCamera: isFrontCamera)
               : null)
         : clipGhost;
 

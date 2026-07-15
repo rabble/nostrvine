@@ -33,6 +33,7 @@ class VideoRecorderBlocState extends Equatable {
     this.canRecord = false,
     this.isCameraInitialized = false,
     this.canSwitchCamera = true,
+    this.isFrontCamera = false,
     this.isSwitchingCamera = false,
     this.previewTextureId,
     this.hasFlash = true,
@@ -81,6 +82,13 @@ class VideoRecorderBlocState extends Equatable {
 
   /// Whether camera switching is available.
   final bool canSwitchCamera;
+
+  /// Whether the active lens is front-facing.
+  ///
+  /// Drives the stop-motion onion-skin overlay: the live preview is mirrored
+  /// for the front camera, so the ghost of the last still is flipped to match
+  /// it (see [VideoRecorderGhostFrame]).
+  final bool isFrontCamera;
 
   /// Whether a front/back lens switch is currently in progress.
   ///
@@ -263,6 +271,7 @@ class VideoRecorderBlocState extends Equatable {
     bool? canRecord,
     bool? isCameraInitialized,
     bool? canSwitchCamera,
+    bool? isFrontCamera,
     bool? isSwitchingCamera,
     int? previewTextureId,
     bool? hasFlash,
@@ -303,6 +312,7 @@ class VideoRecorderBlocState extends Equatable {
       canRecord: canRecord ?? this.canRecord,
       isCameraInitialized: isCameraInitialized ?? this.isCameraInitialized,
       canSwitchCamera: canSwitchCamera ?? this.canSwitchCamera,
+      isFrontCamera: isFrontCamera ?? this.isFrontCamera,
       isSwitchingCamera: isSwitchingCamera ?? this.isSwitchingCamera,
       previewTextureId: previewTextureId ?? this.previewTextureId,
       hasFlash: hasFlash ?? this.hasFlash,
@@ -353,6 +363,7 @@ class VideoRecorderBlocState extends Equatable {
     canRecord,
     isCameraInitialized,
     canSwitchCamera,
+    isFrontCamera,
     isSwitchingCamera,
     previewTextureId,
     hasFlash,
