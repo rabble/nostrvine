@@ -9,6 +9,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/router/route_error_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Resolves a `/list/:pubkey/:listId` link into [CuratedListFeedScreen].
 ///
@@ -52,6 +53,13 @@ class CuratedListByAuthorScreen extends ConsumerWidget {
     return listAsync.when(
       data: (list) {
         if (list == null) {
+          // Full IDs (never truncated) so a "link won't open" report is
+          // traceable to the exact list.
+          Log.warning(
+            'List deep link resolved to no event: /list/$authorPubkey/$listId',
+            name: 'CuratedListByAuthorScreen',
+            category: LogCategory.ui,
+          );
           return const _ListUnavailableView();
         }
         return CuratedListFeedScreen(
@@ -62,7 +70,17 @@ class CuratedListByAuthorScreen extends ConsumerWidget {
         );
       },
       loading: () => const _ListLoadingView(),
-      error: (error, stackTrace) => const _ListUnavailableView(),
+      error: (error, stackTrace) {
+        // Expected failure (relay unavailable / not found) — not reportable
+        // per the error decision matrix, but logged with full IDs for triage.
+        Log.warning(
+          'Failed to resolve list deep link /list/$authorPubkey/$listId: '
+          '$error',
+          name: 'CuratedListByAuthorScreen',
+          category: LogCategory.ui,
+        );
+        return const _ListUnavailableView();
+      },
     );
   }
 }
