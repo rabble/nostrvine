@@ -5570,6 +5570,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dmSendFailedMessage => 'Bericht kon niet worden verzonden';
 
   @override
+  String get dmSendFailedSubtitle =>
+      'Verstuur het nu opnieuw, of stop met proberen.';
+
+  @override
   String get dmSendFailedRetry => 'Opnieuw';
 
   @override

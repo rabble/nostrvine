@@ -5542,6 +5542,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dmSendFailedMessage => 'Meddelandet kunde inte skickas';
 
   @override
+  String get dmSendFailedSubtitle => 'Skicka det igen nu, eller sluta försöka.';
+
+  @override
   String get dmSendFailedRetry => 'Försök igen';
 
   @override

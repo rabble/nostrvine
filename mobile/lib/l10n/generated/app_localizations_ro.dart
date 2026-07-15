@@ -5697,6 +5697,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dmSendFailedMessage => 'Mesajul nu a putut fi trimis';
 
   @override
+  String get dmSendFailedSubtitle => 'Retrimite-l acum sau nu mai încerca.';
+
+  @override
   String get dmSendFailedRetry => 'Reîncearcă';
 
   @override

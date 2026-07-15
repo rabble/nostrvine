@@ -5335,6 +5335,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get dmSendFailedMessage => '메시지를 보내지 못했어요';
 
   @override
+  String get dmSendFailedSubtitle => '지금 다시 보내거나 전송을 중단하세요.';
+
+  @override
   String get dmSendFailedRetry => '다시 시도';
 
   @override

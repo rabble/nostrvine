@@ -5315,6 +5315,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get dmSendFailedMessage => 'メッセージを送信できなかった';
 
   @override
+  String get dmSendFailedSubtitle => '今すぐ再送するか、送信を中止してね。';
+
+  @override
   String get dmSendFailedRetry => 'もう一回';
 
   @override

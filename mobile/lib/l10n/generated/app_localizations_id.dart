@@ -5518,6 +5518,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get dmSendFailedMessage => 'Pesan gagal dikirim';
 
   @override
+  String get dmSendFailedSubtitle =>
+      'Kirim ulang sekarang, atau berhenti mencoba.';
+
+  @override
   String get dmSendFailedRetry => 'Coba Lagi';
 
   @override

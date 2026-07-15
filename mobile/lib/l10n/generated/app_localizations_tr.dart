@@ -5525,6 +5525,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get dmSendFailedMessage => 'Mesaj gönderilemedi';
 
   @override
+  String get dmSendFailedSubtitle =>
+      'Şimdi tekrar gönder ya da denemeyi durdur.';
+
+  @override
   String get dmSendFailedRetry => 'Tekrar Dene';
 
   @override

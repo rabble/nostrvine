@@ -2476,6 +2476,7 @@
     "profileSetupUploadStaged": "Hochgeladen – tippe auf Speichern, um zu übernehmen",
     "dmSendBlockedMessage": "You can only message official Divine accounts",
     "dmSendFailedMessage": "Nachricht konnte nicht gesendet werden",
+    "dmSendFailedSubtitle": "Sende sie jetzt erneut oder versuche es nicht mehr.",
     "dmSendFailedRetry": "Erneut versuchen",
     "dmSendPartialMessage": "Gesendet, aber nicht mit deinen anderen Geräten synchronisiert",
     "dmStatusFailed": "Senden fehlgeschlagen",
