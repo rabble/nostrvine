@@ -1340,9 +1340,17 @@ class AppLocalizationsKo extends AppLocalizations {
       '성인 콘텐츠가 꺼져 있어요. 설정 → 콘텐츠 필터에서 켤 수 있어요.';
 
   @override
-  String videoDetailLoadError(String error) {
-    return '영상을 불러오지 못했어요: $error';
-  }
+  String get videoDetailLoadError => '영상을 불러오지 못했어요';
+
+  @override
+  String get databaseCorruptionTitle => '로컬 데이터가 손상됐어요';
+
+  @override
+  String get databaseCorruptionBody =>
+      'Divine을 껐다가 다시 열어주세요. 자동으로 고쳐드릴게요. 초안과 클립은 그대로 있고, 나머지는 다시 불러와요.';
+
+  @override
+  String get databaseCorruptionCloseButton => 'Divine 닫기';
 
   @override
   String get videoDetailContextTitle => '공유된 영상';

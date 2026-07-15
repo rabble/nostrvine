@@ -2539,8 +2539,26 @@ abstract class AppLocalizations {
   /// No description provided for @videoDetailLoadError.
   ///
   /// In en, this message translates to:
-  /// **'Failed to load video: {error}'**
-  String videoDetailLoadError(String error);
+  /// **'Failed to load video'**
+  String get videoDetailLoadError;
+
+  /// No description provided for @databaseCorruptionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your local data got scrambled'**
+  String get databaseCorruptionTitle;
+
+  /// No description provided for @databaseCorruptionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Close Divine and open it again — we\'ll patch it up automatically. Your drafts and clips stay put, everything else reloads.'**
+  String get databaseCorruptionBody;
+
+  /// No description provided for @databaseCorruptionCloseButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Close Divine'**
+  String get databaseCorruptionCloseButton;
 
   /// App bar title over the fullscreen player when a video is opened from a share/deep link; also forwarded verbatim as the feedMode analytics dimension.
   ///

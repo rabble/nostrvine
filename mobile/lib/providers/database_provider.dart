@@ -1,6 +1,7 @@
 // ABOUTME: Provides singleton AppDatabase instance with proper lifecycle management
 // ABOUTME: Database auto-closes when provider container is disposed
 import 'package:db_client/db_client.dart';
+import 'package:openvine/providers/database_corruption_provider.dart';
 import 'package:openvine/providers/db_cipher_key_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -13,9 +14,20 @@ AppDatabase database(Ref ref) {
   // connection; otherwise (web, tests, or a deferred migration) open the
   // default connection. (#570, finding C2)
   final cipherKey = ref.watch(dbCipherKeyProvider);
-  final db = cipherKey == null
-      ? AppDatabase()
-      : AppDatabase(openEncryptedConnection(rawKeyHex: cipherKey));
+  final executor = cipherKey == null
+      ? openConnection()
+      : openEncryptedConnection(rawKeyHex: cipherKey);
+
+  // The startup corruption gate is reactive and cannot see corruption confined
+  // to pages its cleanup never reads, so watch the runtime path too: the first
+  // statement that trips SQLITE_CORRUPT schedules a salvage for the next launch
+  // instead of throwing at the user forever. (#570)
+  final corruptionService = ref.watch(databaseCorruptionServiceProvider);
+  final db = AppDatabase(
+    corruptionService == null
+        ? executor
+        : reportCorruptionFrom(executor, corruptionService.report),
+  );
   ref.onDispose(db.close);
   return db;
 }

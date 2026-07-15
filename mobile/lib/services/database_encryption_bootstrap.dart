@@ -34,8 +34,14 @@ class DatabaseEncryptionBootstrap {
     Future<bool> Function(String rawKeyHex)? salvageDatabase,
     Future<bool> Function(String rawKeyHex)? encryptedKeyMatches,
     Future<void> Function(Object error, StackTrace stack)? recordRecovery,
+    Future<bool> Function()? hasPendingCorruptionRecovery,
+    Future<void> Function()? clearPendingCorruptionRecovery,
   }) : _secureStorage = secureStorage,
        _recordRecovery = recordRecovery,
+       _hasPendingCorruptionRecovery =
+           hasPendingCorruptionRecovery ?? (() async => false),
+       _clearPendingCorruptionRecovery =
+           clearPendingCorruptionRecovery ?? (() async {}),
        _ensureRuntime = ensureRuntime ?? ensureSqlCipherRuntime,
        _isCipherAvailable = isCipherAvailable ?? isSqlCipherAvailable,
        _migrate =
@@ -72,6 +78,20 @@ class DatabaseEncryptionBootstrap {
   /// readable) instead of rotating it. Returns `false` on genuine key loss.
   final Future<bool> Function(String rawKeyHex) _encryptedKeyMatches;
 
+  /// Whether a previous session's runtime corruption report scheduled a
+  /// recovery. When it did, [resolveCipherKey] skips [_canOpenEncryptedDatabase]
+  /// and salvages unconditionally: that probe is reactive (it forces Drift's
+  /// `beforeOpen` cleanup rather than a whole-DB `PRAGMA quick_check`), so it
+  /// cannot see corruption confined to pages the cleanup never reads — the exact
+  /// case the runtime report exists to catch. Trusting the probe here would
+  /// clear the database and leave the user stuck on it indefinitely.
+  final Future<bool> Function() _hasPendingCorruptionRecovery;
+
+  /// Clears the pending-recovery flag once this launch has settled it — either
+  /// by recovering, or by proving there is nothing to recover. Called on every
+  /// non-throwing path so a stuck flag cannot force a salvage every launch.
+  final Future<void> Function() _clearPendingCorruptionRecovery;
+
   /// Records a startup DB recovery (salvage or wipe) as a non-fatal so the
   /// corruption rate — and a device recovering on every launch — is observable
   /// in Crashlytics. Recovery succeeds silently otherwise: it does not throw,
@@ -101,6 +121,15 @@ class DatabaseEncryptionBootstrap {
   ///
   /// Must run before the first `AppDatabase` open.
   Future<String?> resolveCipherKey() async {
+    final key = await _resolveCipherKey();
+    // Reaching here means this launch settled the pending-recovery flag: it
+    // either salvaged/recreated, or established there was no encrypted database
+    // to recover. A throw skips this so the flag survives for the retry.
+    await _clearPendingCorruptionRecovery();
+    return key;
+  }
+
+  Future<String?> _resolveCipherKey() async {
     if (kIsWeb) return null;
 
     await _ensureRuntime();
@@ -120,7 +149,12 @@ class DatabaseEncryptionBootstrap {
         if (wasGenerated) {
           return _recoverUnusableEncryptedDatabase(key, reason: 'missing');
         }
-        if (await _canOpenEncryptedDatabase(key)) {
+        // A runtime corruption report from a previous session bypasses the
+        // probe: it is reactive by design and already failed to see this
+        // corruption once, so asking it again would just clear the database and
+        // strand the user on it for another session.
+        if (!await _hasPendingCorruptionRecovery() &&
+            await _canOpenEncryptedDatabase(key)) {
           return key;
         }
         // The key either no longer opens the DB (stale) or opens it but

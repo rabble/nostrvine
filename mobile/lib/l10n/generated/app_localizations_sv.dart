@@ -1418,9 +1418,17 @@ class AppLocalizationsSv extends AppLocalizations {
       'Innehåll för vuxna är avstängt. Du kan slå på det i Inställningar → Innehållsfilter.';
 
   @override
-  String videoDetailLoadError(String error) {
-    return 'Kunde inte läsa in videon: $error';
-  }
+  String get videoDetailLoadError => 'Kunde inte läsa in videon';
+
+  @override
+  String get databaseCorruptionTitle => 'Dina lokala data har skadats';
+
+  @override
+  String get databaseCorruptionBody =>
+      'Stäng Divine och öppna appen igen – vi fixar det automatiskt. Dina utkast och klipp finns kvar, resten laddas om.';
+
+  @override
+  String get databaseCorruptionCloseButton => 'Stäng Divine';
 
   @override
   String get videoDetailContextTitle => 'Delad video';

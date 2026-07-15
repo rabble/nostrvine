@@ -690,8 +690,10 @@
   "@videoErrorAdultContentHidden": {
     "description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."
   },
-  "videoDetailLoadError": "Failed to load video: {error}",
-  "@videoDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
+  "videoDetailLoadError": "Failed to load video",
+  "databaseCorruptionTitle": "Your local data got scrambled",
+  "databaseCorruptionBody": "Close Divine and open it again — we'll patch it up automatically. Your drafts and clips stay put, everything else reloads.",
+  "databaseCorruptionCloseButton": "Close Divine",
   "videoDetailContextTitle": "Shared Video",
   "@videoDetailContextTitle": {
     "description": "App bar title over the fullscreen player when a video is opened from a share/deep link; also forwarded verbatim as the feedMode analytics dimension."

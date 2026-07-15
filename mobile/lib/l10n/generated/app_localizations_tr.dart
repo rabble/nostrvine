@@ -1404,9 +1404,17 @@ class AppLocalizationsTr extends AppLocalizations {
       'Yetişkin içeriği kapalı. Ayarlar → İçerik Filtreleri\'nden açabilirsin.';
 
   @override
-  String videoDetailLoadError(String error) {
-    return 'Video yüklenemedi: $error';
-  }
+  String get videoDetailLoadError => 'Video yüklenemedi';
+
+  @override
+  String get databaseCorruptionTitle => 'Yerel verilerin bozuldu';
+
+  @override
+  String get databaseCorruptionBody =>
+      'Divine\'ı kapatıp yeniden aç — bunu otomatik olarak onarıyoruz. Taslakların ve kliplerin duruyor, gerisi yeniden yükleniyor.';
+
+  @override
+  String get databaseCorruptionCloseButton => 'Divine\'ı kapat';
 
   @override
   String get videoDetailContextTitle => 'Paylaşılan video';

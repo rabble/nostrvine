@@ -1399,9 +1399,17 @@ class AppLocalizationsId extends AppLocalizations {
       'Konten dewasa sedang dimatikan. Kamu bisa mengaktifkannya di Pengaturan → Filter Konten.';
 
   @override
-  String videoDetailLoadError(String error) {
-    return 'Gagal memuat video: $error';
-  }
+  String get videoDetailLoadError => 'Gagal memuat video';
+
+  @override
+  String get databaseCorruptionTitle => 'Data lokalmu rusak';
+
+  @override
+  String get databaseCorruptionBody =>
+      'Tutup Divine lalu buka lagi — kami perbaiki otomatis. Draf dan klipmu tetap aman, sisanya dimuat ulang.';
+
+  @override
+  String get databaseCorruptionCloseButton => 'Tutup Divine';
 
   @override
   String get videoDetailContextTitle => 'Video yang dibagikan';

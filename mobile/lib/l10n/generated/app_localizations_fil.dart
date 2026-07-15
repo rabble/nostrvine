@@ -1449,9 +1449,17 @@ class AppLocalizationsFil extends AppLocalizations {
       'Naka-off ang adult content. Puwede mong i-on sa Settings → Content Filters.';
 
   @override
-  String videoDetailLoadError(String error) {
-    return 'Hindi ma-load ang video: $error';
-  }
+  String get videoDetailLoadError => 'Hindi ma-load ang video';
+
+  @override
+  String get databaseCorruptionTitle => 'Nasira ang local data mo';
+
+  @override
+  String get databaseCorruptionBody =>
+      'Isara ang Divine at buksan ulit — awtomatiko naming aayusin. Mananatili ang mga draft at clip mo, mag-reload na lang ang iba.';
+
+  @override
+  String get databaseCorruptionCloseButton => 'Isara ang Divine';
 
   @override
   String get videoDetailContextTitle => 'Na-share na video';

@@ -1432,9 +1432,17 @@ class AppLocalizationsNl extends AppLocalizations {
       'Inhoud voor volwassenen staat uit. Je kunt dit aanzetten via Instellingen → Inhoudsfilters.';
 
   @override
-  String videoDetailLoadError(String error) {
-    return 'Video laden mislukt: $error';
-  }
+  String get videoDetailLoadError => 'Video laden mislukt';
+
+  @override
+  String get databaseCorruptionTitle => 'Je lokale gegevens zijn beschadigd';
+
+  @override
+  String get databaseCorruptionBody =>
+      'Sluit Divine en open het opnieuw — we repareren het automatisch. Je concepten en clips blijven, de rest laadt opnieuw.';
+
+  @override
+  String get databaseCorruptionCloseButton => 'Divine sluiten';
 
   @override
   String get videoDetailContextTitle => 'Gedeelde video';

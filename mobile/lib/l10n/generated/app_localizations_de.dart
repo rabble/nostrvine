@@ -1440,9 +1440,17 @@ class AppLocalizationsDe extends AppLocalizations {
       'Inhalte für Erwachsene sind ausgeschaltet. Du kannst sie unter Einstellungen → Inhaltsfilter aktivieren.';
 
   @override
-  String videoDetailLoadError(String error) {
-    return 'Video konnte nicht geladen werden: $error';
-  }
+  String get videoDetailLoadError => 'Video konnte nicht geladen werden';
+
+  @override
+  String get databaseCorruptionTitle => 'Deine lokalen Daten sind beschädigt';
+
+  @override
+  String get databaseCorruptionBody =>
+      'Schließ Divine und öffne es neu — wir reparieren das automatisch. Deine Entwürfe und Clips bleiben, alles andere lädt neu.';
+
+  @override
+  String get databaseCorruptionCloseButton => 'Divine schließen';
 
   @override
   String get videoDetailContextTitle => 'Geteiltes Video';

@@ -1411,9 +1411,17 @@ class AppLocalizationsAr extends AppLocalizations {
       'المحتوى للبالغين مُعطَّل. يمكنك تفعيله من الإعدادات ← مرشّحات المحتوى.';
 
   @override
-  String videoDetailLoadError(String error) {
-    return 'فشل تحميل الفيديو: $error';
-  }
+  String get videoDetailLoadError => 'فشل تحميل الفيديو';
+
+  @override
+  String get databaseCorruptionTitle => 'بياناتك المحلية تعرضت للتلف';
+
+  @override
+  String get databaseCorruptionBody =>
+      'أغلق Divine وافتحه من جديد — سنصلح ذلك تلقائيًا. مسوداتك ومقاطعك ستبقى، وسيُعاد تحميل الباقي.';
+
+  @override
+  String get databaseCorruptionCloseButton => 'إغلاق Divine';
 
   @override
   String get videoDetailContextTitle => 'فيديو تمت مشاركته';

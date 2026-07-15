@@ -1,0 +1,103 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/database_corruption_provider.dart';
+import 'package:openvine/services/database_corruption_service.dart';
+import 'package:openvine/startup/database_corruption_gate.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+void main() {
+  late AppLocalizations l10n;
+  late SharedPreferences prefs;
+
+  setUp(() async {
+    l10n = lookupAppLocalizations(const Locale('en'));
+    SharedPreferences.setMockInitialValues({});
+    prefs = await SharedPreferences.getInstance();
+  });
+
+  /// Mirrors how `main.dart` installs the gate — as `MaterialApp.builder`,
+  /// above the routes but below Localizations. The screen therefore renders a
+  /// Scaffold with no Navigator ancestor, which this pins.
+  Widget buildSubject(DatabaseCorruptionService? service) {
+    return ProviderScope(
+      overrides: [
+        databaseCorruptionServiceProvider.overrideWithValue(service),
+      ],
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const Text('app content'),
+        builder: (context, child) =>
+            DatabaseCorruptionGate(child: child ?? const SizedBox.shrink()),
+      ),
+    );
+  }
+
+  DatabaseCorruptionService buildService() {
+    final service = DatabaseCorruptionService(preferences: prefs);
+    addTearDown(service.dispose);
+    return service;
+  }
+
+  group(DatabaseCorruptionGate, () {
+    testWidgets('renders the app while the database is healthy', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject(buildService()));
+
+      expect(find.text('app content'), findsOneWidget);
+      expect(find.text(l10n.databaseCorruptionTitle), findsNothing);
+    });
+
+    testWidgets('renders the app when no service is wired', (tester) async {
+      await tester.pumpWidget(buildSubject(null));
+
+      expect(find.text('app content'), findsOneWidget);
+    });
+
+    testWidgets('takes over the moment corruption surfaces', (tester) async {
+      final service = buildService();
+      await tester.pumpWidget(buildSubject(service));
+
+      service.report(
+        Exception('database disk image is malformed'),
+        StackTrace.current,
+      );
+      await tester.pump();
+
+      expect(find.text(l10n.databaseCorruptionTitle), findsOneWidget);
+      expect(
+        find.text('app content'),
+        findsNothing,
+        reason: 'every screen is broken once the database is; say so instead',
+      );
+    });
+  });
+
+  group(DatabaseCorruptionScreen, () {
+    Widget buildScreen(VoidCallback onCloseApp) => MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: DatabaseCorruptionScreen(onCloseApp: onCloseApp),
+    );
+
+    testWidgets('explains the restart repairs the database', (tester) async {
+      await tester.pumpWidget(buildScreen(() {}));
+
+      expect(find.text(l10n.databaseCorruptionTitle), findsOneWidget);
+      expect(find.text(l10n.databaseCorruptionBody), findsOneWidget);
+    });
+
+    testWidgets('closes the app when the button is tapped', (tester) async {
+      var closed = false;
+      await tester.pumpWidget(buildScreen(() => closed = true));
+
+      await tester.tap(find.text(l10n.databaseCorruptionCloseButton));
+      await tester.pump();
+
+      expect(closed, isTrue);
+    });
+  });
+}

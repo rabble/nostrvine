@@ -1422,9 +1422,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Adult content is switched off. You can turn it on in Settings → Content Filters.';
 
   @override
-  String videoDetailLoadError(String error) {
-    return 'Failed to load video: $error';
-  }
+  String get videoDetailLoadError => 'Failed to load video';
+
+  @override
+  String get databaseCorruptionTitle => 'Your local data got scrambled';
+
+  @override
+  String get databaseCorruptionBody =>
+      'Close Divine and open it again — we\'ll patch it up automatically. Your drafts and clips stay put, everything else reloads.';
+
+  @override
+  String get databaseCorruptionCloseButton => 'Close Divine';
 
   @override
   String get videoDetailContextTitle => 'Shared Video';

@@ -1440,9 +1440,17 @@ class AppLocalizationsPt extends AppLocalizations {
       'O conteúdo adulto está desativado. Você pode ativá-lo em Configurações → Filtros de conteúdo.';
 
   @override
-  String videoDetailLoadError(String error) {
-    return 'Falha ao carregar o vídeo: $error';
-  }
+  String get videoDetailLoadError => 'Falha ao carregar o vídeo';
+
+  @override
+  String get databaseCorruptionTitle => 'Seus dados locais foram corrompidos';
+
+  @override
+  String get databaseCorruptionBody =>
+      'Feche o Divine e abra de novo — a gente conserta automaticamente. Seus rascunhos e clipes ficam salvos, o resto recarrega.';
+
+  @override
+  String get databaseCorruptionCloseButton => 'Fechar o Divine';
 
   @override
   String get videoDetailContextTitle => 'Vídeo compartilhado';

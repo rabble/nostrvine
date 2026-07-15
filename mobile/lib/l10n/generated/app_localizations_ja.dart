@@ -1331,9 +1331,17 @@ class AppLocalizationsJa extends AppLocalizations {
       'アダルトコンテンツはオフになってるよ。[設定]→[コンテンツフィルター]でオンにできるよ。';
 
   @override
-  String videoDetailLoadError(String error) {
-    return '動画の読み込みに失敗したよ: $error';
-  }
+  String get videoDetailLoadError => '動画の読み込みに失敗したよ';
+
+  @override
+  String get databaseCorruptionTitle => 'ローカルデータが壊れちゃった';
+
+  @override
+  String get databaseCorruptionBody =>
+      'Divine を閉じてもう一度開いてね。自動で直すよ。下書きとクリップはそのまま、ほかは読み込み直すよ。';
+
+  @override
+  String get databaseCorruptionCloseButton => 'Divine を閉じる';
 
   @override
   String get videoDetailContextTitle => '共有された動画';

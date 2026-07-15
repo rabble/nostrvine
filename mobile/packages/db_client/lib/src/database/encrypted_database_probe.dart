@@ -4,13 +4,6 @@
 
 import 'package:db_client/db_client.dart';
 
-/// SQLite's stable message for every SQLITE_CORRUPT_* variant (e.g. 779
-/// SQLITE_CORRUPT_INDEX) — the structural-corruption signature.
-const _corruptMessage = 'database disk image is malformed';
-
-/// SQLite's stable message for SQLITE_NOTADB — the key cannot decrypt the file.
-const _notADatabaseMessage = 'file is not a database';
-
 /// Whether the shared encrypted database opens **and its Drift `beforeOpen`
 /// startup cleanup runs** under [rawKeyHex].
 ///
@@ -50,23 +43,11 @@ Future<bool> encryptedDatabaseOpensCleanly({
     await db.customSelect('SELECT 1;').get();
     return true;
   } on Object catch (error) {
-    if (_indicatesCorruptionOrKeyFailure(error)) return false;
+    if (indicatesDatabaseCorruption(error)) return false;
     rethrow;
   } finally {
     await _closeQuietly(db);
   }
-}
-
-/// Classifies [error] as on-disk corruption or an undecryptable file.
-///
-/// The encrypted database runs on a background isolate, so a failing query
-/// arrives wrapped in drift's `DriftRemoteException`, whose `toString()`
-/// forwards the original `SqliteException` message. Matching the stable SQLite
-/// signatures avoids importing drift's experimental `remote.dart` (or its
-/// web-unsafe `isolate.dart`) purely for the wrapper type.
-bool _indicatesCorruptionOrKeyFailure(Object error) {
-  final text = error.toString().toLowerCase();
-  return text.contains(_corruptMessage) || text.contains(_notADatabaseMessage);
 }
 
 /// Closes [db] without letting a close-time failure escape the probe.
