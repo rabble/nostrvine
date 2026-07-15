@@ -178,6 +178,10 @@ void main() {
       originalProVideoEditor = ProVideoEditor.instance;
       proVideoEditor = _ProgressProVideoEditor();
       ProVideoEditor.instance = proVideoEditor;
+      // materialize probes the assembled mp4's real duration; the assembled
+      // path here is a stub, so force the frame-hold estimate fallback for a
+      // deterministic materialized duration.
+      StopMotionRenderService.probeDurationOverride = (_) async => null;
       VideoEditorRenderService.resetActiveNativeTaskIdsForTesting();
     });
 
@@ -185,6 +189,7 @@ void main() {
       VideoEditorRenderService.renderVideoOverride = null;
       NativeProofModeService.proofFileOverride = null;
       StopMotionRenderService.assembleOverride = null;
+      StopMotionRenderService.probeDurationOverride = null;
       VideoEditorRenderService.resetActiveNativeTaskIdsForTesting();
       await proVideoEditor.dispose();
       ProVideoEditor.instance = originalProVideoEditor;

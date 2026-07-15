@@ -446,7 +446,16 @@ class DivineVideoClip {
           : null,
       stopMotionFrames: stopMotionFrames,
       libraryTitle: json['libraryTitle'] as String?,
-      duration: Duration(milliseconds: durationMs),
+      // Frame holds are persisted in microseconds; recompute the clip duration
+      // from them (rather than the ms-truncated `durationMs`) so a reloaded
+      // stop-motion clip's duration matches its frames exactly on the frame
+      // grid. Falls back to `durationMs` for normal video clips.
+      duration: stopMotionFrames != null && stopMotionFrames.isNotEmpty
+          ? stopMotionFrames.fold<Duration>(
+              Duration.zero,
+              (sum, frame) => sum + frame.duration,
+            )
+          : Duration(milliseconds: durationMs),
       recordedAt: DateTime.parse(rawRecordedAt),
       thumbnailPath: resolvePath(
         json['thumbnailPath'] as String?,

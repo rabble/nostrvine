@@ -1,5 +1,5 @@
 // ABOUTME: Bottom sheet with a wheel picker for stop-motion frames-per-image
-// ABOUTME: Returns the chosen frames-per-image (1-10) as an int via context.pop
+// ABOUTME: Returns the chosen frames-per-image as an int via context.pop
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/cupertino.dart' show CupertinoPicker;
@@ -10,8 +10,9 @@ import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 
 /// Wheel picker for how many output frames each stop-motion still is held for.
 ///
-/// Shown in a [VineBottomSheet]; pops the chosen value (1-10) on confirm, or
-/// `null` on cancel.
+/// Shown in a [VineBottomSheet]; pops the chosen value — in
+/// [StopMotionFrameOps.minFramesPerImage]..[StopMotionFrameOps.maxFramesPerImage]
+/// — on confirm, or `null` on cancel.
 class StopMotionFramesPerImageSheet extends StatefulWidget {
   const StopMotionFramesPerImageSheet({required this.initialValue, super.key});
 
@@ -82,20 +83,20 @@ class _StopMotionFramesPerImageSheetState
         ),
         SizedBox(
           height: 200,
-          child: CupertinoPicker(
+          // Lazy builder: the range can be hundreds of items, so build only
+          // the visible rows instead of eagerly constructing every one.
+          child: CupertinoPicker.builder(
             scrollController: _controller,
             itemExtent: 44,
             backgroundColor: VineTheme.surfaceBackground,
             onSelectedItemChanged: (index) => _value = _min + index,
-            children: [
-              for (var n = _min; n <= _max; n++)
-                Center(
-                  child: Text(
-                    context.l10n.videoEditorStopMotionFramesCount(n),
-                    style: VineTheme.titleMediumFont(),
-                  ),
-                ),
-            ],
+            childCount: _max - _min + 1,
+            itemBuilder: (context, index) => Center(
+              child: Text(
+                context.l10n.videoEditorStopMotionFramesCount(_min + index),
+                style: VineTheme.titleMediumFont(),
+              ),
+            ),
           ),
         ),
         SizedBox(height: MediaQuery.paddingOf(context).bottom + 8),

@@ -1033,6 +1033,45 @@ void main() {
           expect(await dao.isFileReferenced('sm_frame_9.jpg'), isFalse);
         },
       );
+
+      test(
+        'returns true for a still stored as a legacy absolute path in data',
+        () async {
+          // A legacy row can store the full path rather than a basename. The
+          // quoted-basename phase-1 LIKE misses it, so the JSON matcher
+          // (decode + basename compare) is the branch that catches it.
+          await dao.upsertClip(
+            id: 'sm_legacy',
+            orderIndex: 0,
+            durationMs: 1000,
+            recordedAt: DateTime(2023, 11, 14, 10),
+            filePath: null,
+            thumbnailPath: null,
+            data:
+                '{"id":"sm_legacy","stopMotionFrames":['
+                '{"path":"/docs/clips/keyframe99.jpg","durationUs":41667}]}',
+          );
+
+          expect(await dao.isFileReferenced('keyframe99.jpg'), isTrue);
+          expect(await dao.isFileReferenced('keyframe98.jpg'), isFalse);
+        },
+      );
+
+      test('tolerates a malformed data blob without throwing', () async {
+        // A corrupt row whose data mentions the name but is not valid JSON must
+        // be skipped by the FormatException guard, not crash the cleanup query.
+        await dao.upsertClip(
+          id: 'corrupt',
+          orderIndex: 0,
+          durationMs: 1000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: null,
+          thumbnailPath: null,
+          data: 'not-json-but-mentions badfile.jpg here',
+        );
+
+        expect(await dao.isFileReferenced('badfile.jpg'), isFalse);
+      });
     });
 
     group('ownerPubkey isolation', () {

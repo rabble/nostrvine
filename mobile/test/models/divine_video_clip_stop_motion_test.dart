@@ -99,6 +99,36 @@ void main() {
       );
     });
 
+    test('fromJson derives clip duration from the microsecond frame holds', () {
+      final clip = DivineVideoClip(
+        id: 'sm-us',
+        stopMotionFrames: const [
+          StopMotionClipFrame(
+            path: '/d/a.jpg',
+            duration: Duration(microseconds: 83333),
+          ),
+          StopMotionClipFrame(
+            path: '/d/b.jpg',
+            duration: Duration(microseconds: 83333),
+          ),
+        ],
+        duration: const Duration(microseconds: 166666),
+        recordedAt: DateTime(2024),
+        targetAspectRatio: model.AspectRatio.vertical,
+        originalAspectRatio: 9 / 16,
+      );
+
+      final json = clip.toJson();
+      // The aggregate is persisted ms-truncated; the frames keep microseconds.
+      expect(json['durationMs'], 166);
+
+      final restored = DivineVideoClip.fromJson(json, '/docs');
+      // Duration is recomputed from the frames' µs holds, not the truncated ms
+      // value, so it stays on the frame grid after a reload.
+      expect(restored.duration, const Duration(microseconds: 166666));
+      expect(restored.duration, isNot(const Duration(milliseconds: 166)));
+    });
+
     test('a video clip is not stop-motion and exposes requireVideo', () {
       final clip = DivineVideoClip(
         id: 'v1',

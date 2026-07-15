@@ -148,11 +148,15 @@ abstract class StopMotionFrameOps {
     int framesPerImage,
   ) {
     if (index < 0 || index >= frames.length) return frames;
-    final next = [...frames];
-    next[index] = next[index].copyWith(
+    final updated = frames[index].copyWith(
       duration: framesPerImageToDuration(framesPerImage),
       holdOverridden: true,
     );
+    // Re-selecting the current hold changes nothing; return the source instance
+    // so the commit's `identical` no-op guard skips a redundant history entry.
+    if (updated == frames[index]) return frames;
+    final next = [...frames];
+    next[index] = updated;
     return next;
   }
 
@@ -222,12 +226,23 @@ abstract class StopMotionFrameOps {
   ) {
     if (indexes.isEmpty) return frames;
     final duration = framesPerImageToDuration(framesPerImage);
-    return [
-      for (var i = 0; i < frames.length; i++)
-        indexes.contains(i)
-            ? frames[i].copyWith(duration: duration, holdOverridden: true)
-            : frames[i],
-    ];
+    final next = <StopMotionClipFrame>[];
+    var changed = false;
+    for (var i = 0; i < frames.length; i++) {
+      if (indexes.contains(i)) {
+        final updated = frames[i].copyWith(
+          duration: duration,
+          holdOverridden: true,
+        );
+        if (updated != frames[i]) changed = true;
+        next.add(updated);
+      } else {
+        next.add(frames[i]);
+      }
+    }
+    // No selected still actually changed hold: return the source instance so
+    // the commit's `identical` no-op guard skips a redundant history entry.
+    return changed ? next : frames;
   }
 
   /// Applies [framesPerImage] as the global default: every still that has *not*
@@ -238,10 +253,20 @@ abstract class StopMotionFrameOps {
     int framesPerImage,
   ) {
     final duration = framesPerImageToDuration(framesPerImage);
-    return [
-      for (final frame in frames)
-        frame.holdOverridden ? frame : frame.copyWith(duration: duration),
-    ];
+    final next = <StopMotionClipFrame>[];
+    var changed = false;
+    for (final frame in frames) {
+      if (frame.holdOverridden) {
+        next.add(frame);
+      } else {
+        final updated = frame.copyWith(duration: duration);
+        if (updated != frame) changed = true;
+        next.add(updated);
+      }
+    }
+    // No non-overridden still actually changed hold: return the source instance
+    // so the commit's `identical` no-op guard skips a redundant history entry.
+    return changed ? next : frames;
   }
 
   /// The global-default frames-per-image: the value shared by every

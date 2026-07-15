@@ -58,9 +58,37 @@ class StopMotionAudioPreview {
   Duration _lastPosition = Duration.zero;
   bool _disposed = false;
 
+  /// Serializes every player-touching operation. [setTracks], [pauseAll],
+  /// [dispose] and each admitted [syncTo] chain onto this tail so they never
+  /// interleave at an `await`: without it, a [setTracks]/[dispose] that clears
+  /// `_tracks` while a suspended [syncTo] is mid-iteration would throw a
+  /// `ConcurrentModificationError` (or call `play()` on a just-disposed
+  /// player). The stop-motion ticker fires [syncTo] every frame while overlay
+  /// edits fire [setTracks], so that interleaving is a normal-usage race.
+  Future<void> _queue = Future<void>.value();
+
+  /// Drops per-frame [syncTo] calls that arrive while one is already queued or
+  /// running, so a slow seek can't let ticker calls pile up unbounded (and so
+  /// two overlapping calls can't race on the shared `active` / `_lastPosition`
+  /// state and leave a track playing past its window).
+  bool _syncInFlight = false;
+
+  Future<T> _enqueue<T>(Future<T> Function() op) {
+    final next = _queue.then((_) => op());
+    // Keep the chain alive even if an op throws; callers still observe the
+    // error through the returned future.
+    _queue = next.then((_) {}, onError: (Object _) {});
+    return next;
+  }
+
   /// Replaces the scheduled sounds. Existing players are disposed; the next
   /// [syncTo] starts whichever new sounds the playhead sits inside.
-  Future<void> setTracks(List<StopMotionAudioPreviewTrack> tracks) async {
+  Future<void> setTracks(List<StopMotionAudioPreviewTrack> tracks) {
+    if (_disposed) return Future<void>.value();
+    return _enqueue(() => _setTracks(tracks));
+  }
+
+  Future<void> _setTracks(List<StopMotionAudioPreviewTrack> tracks) async {
     await _disposeAllPlayers();
     if (_disposed) return;
 
@@ -86,15 +114,29 @@ class StopMotionAudioPreview {
   /// While [isPlaying], a sound whose window contains [position] plays from
   /// the matching offset; sounds outside their window are paused. When not
   /// playing, everything pauses. Cheap when nothing changed — steady playback
-  /// inside a window is a no-op.
-  Future<void> syncTo(Duration position, {required bool isPlaying}) async {
+  /// inside a window is a no-op. Fire-and-forget: dispatched `unawaited` from
+  /// the ticker, so a call that arrives while another is in flight is dropped
+  /// (the next frame re-syncs).
+  Future<void> syncTo(Duration position, {required bool isPlaying}) {
+    if (_disposed || _syncInFlight) return Future<void>.value();
+    _syncInFlight = true;
+    return _enqueue(() => _syncTo(position, isPlaying: isPlaying))
+        // Fire-and-forget from the ticker: never surface as an unhandled
+        // async error.
+        .catchError((Object _) {})
+        .whenComplete(() => _syncInFlight = false);
+  }
+
+  Future<void> _syncTo(Duration position, {required bool isPlaying}) async {
     if (_disposed) return;
     final jumped =
         position < _lastPosition ||
         position - _lastPosition > seekJumpThreshold;
     _lastPosition = position;
 
-    for (final scheduled in _tracks.values) {
+    // Snapshot: the queue already prevents concurrent mutation, but iterating a
+    // copy keeps this loop safe against any future non-queued edit too.
+    for (final scheduled in _tracks.values.toList()) {
       final track = scheduled.track;
       final inWindow =
           position >= track.windowStart && position < track.windowEnd;
@@ -116,8 +158,13 @@ class StopMotionAudioPreview {
 
   /// Pauses every sound (preview paused). Positions re-sync on the next
   /// [syncTo].
-  Future<void> pauseAll() async {
-    for (final scheduled in _tracks.values) {
+  Future<void> pauseAll() {
+    if (_disposed) return Future<void>.value();
+    return _enqueue(_pauseAll);
+  }
+
+  Future<void> _pauseAll() async {
+    for (final scheduled in _tracks.values.toList()) {
       if (!scheduled.active) continue;
       scheduled.active = false;
       await scheduled.player.pause();
@@ -126,9 +173,9 @@ class StopMotionAudioPreview {
   }
 
   /// Releases every player. The instance cannot be reused afterwards.
-  Future<void> dispose() async {
+  Future<void> dispose() {
     _disposed = true;
-    await _disposeAllPlayers();
+    return _enqueue(_disposeAllPlayers);
   }
 
   Future<void> _disposeAllPlayers() async {

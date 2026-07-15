@@ -1,6 +1,8 @@
 // ABOUTME: Tests for StopMotionAudioPreview - stop-motion preview audio engine
 // ABOUTME: Verifies window scheduling, scrub re-seek, pause, and disposal
 
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/services/video_editor/stop_motion_audio_preview.dart';
@@ -186,6 +188,82 @@ void main() {
 
       await preview.syncTo(const Duration(milliseconds: 500), isPlaying: true);
       verifyNever(players.single.play);
+    });
+
+    // Regression: syncTo used to iterate the live _tracks map across its
+    // seek/pause awaits, so a setTracks() that cleared the map mid-iteration
+    // (a sound edit during playback) threw ConcurrentModificationError. The
+    // operations are now serialized, so setTracks waits for the in-flight sync.
+    test(
+      'setTracks during an in-flight syncTo does not throw '
+      'ConcurrentModificationError',
+      () async {
+        final seekGate = Completer<void>();
+        final gated = _MockAudioClipPlayer();
+        when(() => gated.setClip(any())).thenAnswer((_) async {});
+        when(() => gated.setVolume(any())).thenAnswer((_) async {});
+        when(() => gated.seek(any())).thenAnswer((_) => seekGate.future);
+        when(gated.play).thenAnswer((_) async {});
+        when(gated.pause).thenAnswer((_) async {});
+        when(gated.dispose).thenAnswer((_) async {});
+
+        var served = false;
+        preview = StopMotionAudioPreview(
+          playerFactory: () {
+            if (!served) {
+              served = true;
+              return gated;
+            }
+            return newPlayer();
+          },
+        );
+        await preview.setTracks([track()]);
+
+        // Suspends inside the gated seek.
+        final syncing = preview.syncTo(
+          const Duration(milliseconds: 100),
+          isPlaying: true,
+        );
+        // Replaces the tracks while the sync is suspended — must not throw.
+        final replacing = preview.setTracks([track(id: 'b')]);
+
+        seekGate.complete();
+        await syncing;
+        await replacing;
+
+        // The replacement generation disposed the gated player; no CME.
+        verify(gated.dispose).called(1);
+      },
+    );
+
+    // Regression: overlapping unawaited syncTo calls used to race on the shared
+    // active/_lastPosition state. A call issued while another is in flight is
+    // now dropped (the next frame re-syncs).
+    test('drops a syncTo issued while another is in flight', () async {
+      final seekGate = Completer<void>();
+      final gated = _MockAudioClipPlayer();
+      when(() => gated.setClip(any())).thenAnswer((_) async {});
+      when(() => gated.setVolume(any())).thenAnswer((_) async {});
+      when(() => gated.seek(any())).thenAnswer((_) => seekGate.future);
+      when(gated.play).thenAnswer((_) async {});
+      when(gated.pause).thenAnswer((_) async {});
+      when(gated.dispose).thenAnswer((_) async {});
+
+      preview = StopMotionAudioPreview(playerFactory: () => gated);
+      await preview.setTracks([track()]);
+
+      final first = preview.syncTo(
+        const Duration(milliseconds: 100),
+        isPlaying: true,
+      );
+      // Dropped: the first sync is still suspended in seek.
+      await preview.syncTo(const Duration(milliseconds: 117), isPlaying: true);
+
+      seekGate.complete();
+      await first;
+
+      verify(() => gated.seek(const Duration(milliseconds: 100))).called(1);
+      verifyNever(() => gated.seek(const Duration(milliseconds: 117)));
     });
   });
 }

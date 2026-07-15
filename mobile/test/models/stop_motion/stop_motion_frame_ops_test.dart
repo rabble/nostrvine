@@ -224,6 +224,21 @@ void main() {
         same(frames),
       );
     });
+
+    test('returns the source list when no selected hold actually changes', () {
+      final frames = [
+        const StopMotionClipFrame(
+          path: 'f0.jpg',
+          duration: Duration(microseconds: 166667), // 4 frames @ 24fps
+          holdOverridden: true,
+        ),
+        StopMotionClipFrame(path: 'f1.jpg', duration: hold(1)),
+      ];
+      // Re-selecting the same hold on the already-overridden still is a no-op,
+      // so the source instance is returned and the commit's identical guard
+      // skips a redundant history entry.
+      expect(StopMotionFrameOps.setFramesHold(frames, {0}, 4), same(frames));
+    });
   });
 
   group('insertIndexAtPosition', () {
@@ -357,6 +372,18 @@ void main() {
       );
       // The override flag survives a global change.
       expect(result[1].holdOverridden, isTrue);
+    });
+
+    test('setFrameHold returns the source list when nothing changes', () {
+      // Already overridden to 4; re-applying 4 is a no-op.
+      final frames = StopMotionFrameOps.setFrameHold(framesOf([1, 1, 1]), 1, 4);
+      expect(StopMotionFrameOps.setFrameHold(frames, 1, 4), same(frames));
+    });
+
+    test('setGlobalHold returns the source list when nothing changes', () {
+      // Every still already holds 2 and none is overridden.
+      final frames = framesOf([2, 2, 2]);
+      expect(StopMotionFrameOps.setGlobalHold(frames, 2), same(frames));
     });
   });
 

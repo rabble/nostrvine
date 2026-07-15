@@ -16,7 +16,10 @@ void main() {
   ];
 
   group(StopMotionRenderService, () {
-    tearDown(() => StopMotionRenderService.assembleOverride = null);
+    tearDown(() {
+      StopMotionRenderService.assembleOverride = null;
+      StopMotionRenderService.probeDurationOverride = null;
+    });
 
     test('returns null for an empty frame list', () async {
       final result = await StopMotionRenderService.assemble(
@@ -143,6 +146,13 @@ void main() {
     });
 
     group('materialize', () {
+      setUp(() {
+        // Default: the assembled path is a stub with no probe-able mp4, so fall
+        // back to the frame-hold estimate for a deterministic duration. Tests
+        // that assert the probe path override this.
+        StopMotionRenderService.probeDurationOverride = (_) async => null;
+      });
+
       DivineVideoClip stopMotionClip() => DivineVideoClip(
         id: 'sm1',
         stopMotionFrames: const [
@@ -242,6 +252,49 @@ void main() {
           expect(result?.stopMotionFrames, isNull);
         },
       );
+
+      test(
+        'uses the probed encoded mp4 duration over the frame-hold estimate',
+        () async {
+          StopMotionRenderService.assembleOverride =
+              ({
+                required frames,
+                required aspectRatio,
+                frameRate = StopMotionRenderService.defaultFrameRate,
+                String? taskId,
+              }) async => '/rendered.mp4';
+          // The real encoder lands a hair short of the 1332ms hold estimate;
+          // the muxed-audio clamp keys off the clip duration, so the probed
+          // length must win or audio outlives the video (the iOS freeze).
+          StopMotionRenderService.probeDurationOverride = (_) async =>
+              const Duration(milliseconds: 1300);
+
+          final result = await StopMotionRenderService.materialize(
+            stopMotionClip(),
+          );
+
+          expect(result?.duration, const Duration(milliseconds: 1300));
+          expect(result?.stopMotionFrames, isNull);
+        },
+      );
+
+      test('falls back to the estimate when the probe returns null', () async {
+        StopMotionRenderService.assembleOverride =
+            ({
+              required frames,
+              required aspectRatio,
+              frameRate = StopMotionRenderService.defaultFrameRate,
+              String? taskId,
+            }) async => '/rendered.mp4';
+        StopMotionRenderService.probeDurationOverride = (_) async => null;
+
+        final result = await StopMotionRenderService.materialize(
+          stopMotionClip(),
+        );
+
+        // 333ms single pass loops x4 to clear the 1s minimum (ceil(1000/333)).
+        expect(result?.duration, const Duration(milliseconds: 1332));
+      });
 
       test('returns null when the render fails', () async {
         StopMotionRenderService.assembleOverride =

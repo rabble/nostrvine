@@ -53,6 +53,17 @@ class _VideoRecorderModeSelectorWheelState
     _scrollController = ScrollController(
       initialScrollOffset: _snapOffsets[_selectedIndex],
     );
+    // The initial offset is measured at noScaling; the first build recomputes
+    // _snapOffsets from the actual (clamped) text scaler. Under a larger system
+    // font those widths differ, leaving the pre-selected mode off-centre until
+    // the user scrolls — recenter once the scaled offsets are known.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      final target = _snapOffsets[_selectedIndex];
+      if ((_scrollController.offset - target).abs() > 0.5) {
+        _scrollController.jumpTo(target);
+      }
+    });
   }
 
   @override
