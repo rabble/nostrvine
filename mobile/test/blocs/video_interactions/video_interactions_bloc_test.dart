@@ -389,8 +389,10 @@ void main() {
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
-        // #6022: the floor never lowers. A non-zero addressable relay resolve
-        // below the seed leaves the seed intact.
+        // #6022: guards the seed-dominant branch — when the seed already
+        // exceeds the archival + relay-resolved Nostr count, a non-zero relay
+        // resolve below it leaves the seed intact (the raise direction is
+        // covered by the tests above).
         'never lowers an addressable seed below the relay resolve (#6022)',
         setUp: () {
           when(

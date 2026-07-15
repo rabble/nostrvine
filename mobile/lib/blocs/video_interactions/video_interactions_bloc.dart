@@ -21,7 +21,9 @@ part 'video_interactions_state.dart';
 ///
 /// This bloc is created per-VideoFeedItem and manages:
 /// - Like status (from LikesRepository)
-/// - Like count (from seeded feed payload, or relay fallback when unseeded)
+/// - Like count (seeded feed payload; for addressable videos floored up to the
+///   archival + relay-resolved Nostr count so a stale/zero seed can be raised
+///   but never lowered, #6022)
 /// - Repost status (from RepostsRepository)
 /// - Repost count (from seeded feed payload, or relay fallback when unseeded)
 /// - Comment count (from seeded feed payload, or relay fallback when unseeded)
