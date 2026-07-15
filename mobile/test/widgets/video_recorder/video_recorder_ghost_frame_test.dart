@@ -234,6 +234,31 @@ void main() {
         expect(transformFinder, findsOneWidget);
       });
     });
+
+    group('decode bounds', () {
+      testWidgets('bounds the ghost frame decode with cacheHeight', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            showLastClipOverlay: true,
+            clips: [createClip(ghostFramePath: tempFile.path)],
+          ),
+        );
+
+        // A cacheHeight wraps the FileImage in a ResizeImage; without it the
+        // full-resolution still is decoded onto the full-screen live overlay.
+        final image = tester.widget<Image>(find.byType(Image));
+        expect(image.image, isA<ResizeImage>());
+
+        final context = tester.element(find.byType(VideoRecorderGhostFrame));
+        final expected =
+            (MediaQuery.sizeOf(context).height *
+                    MediaQuery.devicePixelRatioOf(context))
+                .round();
+        expect((image.image as ResizeImage).height, expected);
+      });
+    });
   });
 }
 

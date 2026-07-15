@@ -60,17 +60,30 @@ class StopMotionClipFrame {
     String documentsPath, {
     bool useOriginalPath = false,
   }) {
+    // Validate up front and throw a typed [FormatException] — the same contract
+    // as [DivineVideoClip.fromJson] — so the loader can skip a single corrupt
+    // frame row instead of a raw `TypeError` aborting the whole library/draft
+    // load with a cryptic `Null is not a subtype of String`.
+    final rawPath = json['path'] as String?;
     final durationUs = json['durationUs'] as int?;
+    final durationMs = json['durationMs'] as int?;
+    if (rawPath == null || (durationUs == null && durationMs == null)) {
+      throw const FormatException(
+        'StopMotionClipFrame JSON is missing a required field '
+        '(path and a duration [durationUs or durationMs]); cannot '
+        'reconstruct the frame.',
+      );
+    }
     return StopMotionClipFrame(
       path: resolvePath(
-        json['path'] as String,
+        rawPath,
         documentsPath,
         useOriginalPath: useOriginalPath,
       )!,
       duration: durationUs != null
           // Fallback: clips persisted before the microsecond key existed.
           ? Duration(microseconds: durationUs)
-          : Duration(milliseconds: json['durationMs'] as int),
+          : Duration(milliseconds: durationMs!),
       // Absent for clips saved before per-frame holds existed → follows global.
       holdOverridden: json['holdOverridden'] as bool? ?? false,
     );

@@ -7,6 +7,7 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/draft_local_audio_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
+import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/utils/path_resolver.dart';
@@ -177,6 +178,10 @@ class DraftStorageService {
       final newFilePaths = <String?>{
         for (final clip in draft.clips) ...[
           clip.video?.file?.path,
+          // Stop-motion stills are clip-owned source files just like the video;
+          // include them so a still that survives the edit isn't queued for
+          // deletion below.
+          ...?clip.stopMotionFrames?.map((frame) => frame.path),
           clip.thumbnailPath,
         ],
         draft.finalRenderedClip?.video?.file?.path,
@@ -188,6 +193,11 @@ class DraftStorageService {
         for (final clip in existingDraft.clips) ...[
           if (!newFilePaths.contains(clip.video?.file?.path))
             clip.video?.file?.path,
+          // A still captured into this session and then removed no longer
+          // appears in the new frame list, so queue it for deferred cleanup.
+          ...?clip.stopMotionFrames
+              ?.map((frame) => frame.path)
+              .where((path) => !newFilePaths.contains(path)),
           if (!newFilePaths.contains(clip.thumbnailPath)) clip.thumbnailPath,
         ],
         if (existingDraft.finalRenderedClip != null) ...[
@@ -445,9 +455,22 @@ class DraftStorageService {
     return _clearMissingFinalRenderedClip(draft.copyWith(clips: validClips));
   }
 
-  /// Filter clips to only include those whose source media still exists.
+  /// Filter clips to only those whose source media still exists.
+  ///
+  /// Normal video clips are kept only when their file resolves. Frames-only
+  /// stop-motion clips are *sanitized* rather than dropped wholesale: unreadable
+  /// stills are removed and the clip survives while at least one readable still
+  /// remains (it drops out only when none do). This mirrors the per-frame
+  /// salvage in `VideoEditorNotifier.restoreDraft`, so list/autosave validation
+  /// can't hide a stop-motion draft before restore gets a chance to recover it.
   List<DivineVideoClip> _filterValidClips(List<DivineVideoClip> clips) {
-    return clips.where((clip) => clip.hasResolvableVideoFile).toList();
+    return [
+      for (final clip in clips)
+        if (clip.isStopMotion)
+          ?StopMotionFrameOps.sanitizedClip(clip)
+        else if (clip.hasResolvableVideoFile)
+          clip,
+    ];
   }
 
   DivineVideoDraft _clearMissingFinalRenderedClip(DivineVideoDraft draft) {

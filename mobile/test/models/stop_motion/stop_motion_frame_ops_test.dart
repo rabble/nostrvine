@@ -9,7 +9,7 @@ import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart' show EditorVideo;
 
 void main() {
-  // At the default 12fps base, one output frame is 1/12s.
+  // At the default 24fps base, one output frame is 1/24s.
   Duration hold(int framesPerImage) => Duration(
     microseconds:
         (framesPerImage *
@@ -492,6 +492,23 @@ void main() {
         id: 'v',
         video: EditorVideo.file('/v.mp4'),
         duration: const Duration(seconds: 2),
+        recordedAt: DateTime(2024),
+        targetAspectRatio: model.AspectRatio.vertical,
+        originalAspectRatio: 9 / 16,
+      );
+
+      expect(StopMotionFrameOps.sanitizedClip(clip), same(clip));
+    });
+
+    test('sanitizedClip passes a materialized clip through even with a '
+        'missing still', () {
+      // A materialized clip has a rendered mp4; its stills are transient and
+      // may already be cleaned. It must not be dropped for a missing still.
+      final clip = DivineVideoClip(
+        id: 'sm-materialized',
+        video: EditorVideo.file('/rendered.mp4'),
+        stopMotionFrames: [frameAt('gone.jpg')],
+        duration: const Duration(seconds: 1),
         recordedAt: DateTime(2024),
         targetAspectRatio: model.AspectRatio.vertical,
         originalAspectRatio: 9 / 16,

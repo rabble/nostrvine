@@ -140,7 +140,12 @@ class DivineVideoClip {
   double get durationInSeconds => duration.inMilliseconds / 1000.0;
 
   /// Whether this is a frames-based stop-motion clip (no rendered mp4 yet).
-  bool get isStopMotion => stopMotionFrames != null;
+  ///
+  /// Video-first: once [materialize] has rendered the stills into an mp4 the
+  /// clip is a normal video clip, even if it still carries [stopMotionFrames]
+  /// (e.g. a draft persisted before frames were cleared). A clip with a
+  /// [video] is never "still-based".
+  bool get isStopMotion => video == null && stopMotionFrames != null;
 
   /// The rendered [video], asserting it exists.
   ///
@@ -229,6 +234,13 @@ class DivineVideoClip {
   /// and freezes the editor, so restore/undo paths use this to drop orphaned
   /// clips. See `restoreDraft` and `VideoEditorCanvas._syncMainCapabilities`.
   bool get hasResolvableVideoFile {
+    // Video-first: a materialized stop-motion clip carries a rendered mp4 (and
+    // may still carry its now-transient stills). Resolve against the mp4 so a
+    // clip whose throwaway stills were cleaned up isn't wrongly dropped as
+    // orphaned once it has a playable video.
+    final path = video?.file?.path;
+    if (path != null) return File(path).existsSync();
+
     // Frames-only stop-motion clips have no video by design; their stills are
     // the source of truth. Without this branch every history sync would treat
     // the clip as orphaned and step the editor history backwards, silently
@@ -238,8 +250,7 @@ class DivineVideoClip {
       return frames.isNotEmpty &&
           frames.every((frame) => File(frame.path).existsSync());
     }
-    final path = video?.file?.path;
-    return path != null && File(path).existsSync();
+    return false;
   }
 
   /// Whether this clip was recorded with a front-facing camera.
@@ -262,6 +273,7 @@ class DivineVideoClip {
     String? id,
     EditorVideo? video,
     List<StopMotionClipFrame>? stopMotionFrames,
+    bool clearStopMotionFrames = false,
     String? libraryTitle,
     bool clearLibraryTitle = false,
     Duration? duration,
@@ -296,7 +308,9 @@ class DivineVideoClip {
     return DivineVideoClip(
       id: id ?? this.id,
       video: video ?? this.video,
-      stopMotionFrames: stopMotionFrames ?? this.stopMotionFrames,
+      stopMotionFrames: clearStopMotionFrames
+          ? null
+          : (stopMotionFrames ?? this.stopMotionFrames),
       libraryTitle: clearLibraryTitle
           ? null
           : (libraryTitle ?? this.libraryTitle),

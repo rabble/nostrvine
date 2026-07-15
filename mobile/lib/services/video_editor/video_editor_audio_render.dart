@@ -103,6 +103,31 @@ AudioTrack? audioTrackFromMetaForRender(AudioEvent track) {
   );
 }
 
+/// Clamps an audio composition window so it cannot extend past [videoDuration].
+///
+/// A stop-motion export is only as long as its (looped) stills — often under a
+/// second — while a selected song's window spans the whole track. Muxing a
+/// full-length song onto a short video produces an mp4 whose audio track
+/// outlives its video track; on iOS the last frame freezes while the audio
+/// keeps playing. Clamping the window to the video length keeps the two tracks
+/// the same length. A `null` [videoDuration] (or a `null` `endTime`, which
+/// already means "play to the end of the video") is left untouched.
+({Duration? startTime, Duration? endTime}) clampAudioWindowToVideo({
+  required Duration? startTime,
+  required Duration? endTime,
+  required Duration? videoDuration,
+}) {
+  if (videoDuration == null) return (startTime: startTime, endTime: endTime);
+  return (
+    startTime: startTime != null && startTime > videoDuration
+        ? videoDuration
+        : startTime,
+    endTime: endTime != null && endTime > videoDuration
+        ? videoDuration
+        : endTime,
+  );
+}
+
 /// Resolves each render [AudioTrack] to a [VideoAudioTrack] with a local file
 /// path, downloading network sources on demand.
 ///
@@ -110,19 +135,28 @@ AudioTrack? audioTrackFromMetaForRender(AudioEvent track) {
 /// and logged rather than aborting the whole render. A warning is logged when
 /// audio was requested but none could be resolved, so a silent (audio-less)
 /// export is diagnosable from logs.
+///
+/// When [videoDuration] is set, each track's composition window is clamped to
+/// it (see [clampAudioWindowToVideo]) so audio cannot outlast the video track.
 Future<List<VideoAudioTrack>> resolveRenderAudioTracks(
   List<AudioTrack> customTracks, {
   required String logName,
+  Duration? videoDuration,
 }) async {
   final audioTracks = <VideoAudioTrack>[];
   for (final track in customTracks) {
     try {
       final audioPath = await track.audio.safeFilePath();
+      final (:startTime, :endTime) = clampAudioWindowToVideo(
+        startTime: track.startTime,
+        endTime: track.endTime,
+        videoDuration: videoDuration,
+      );
       audioTracks.add(
         VideoAudioTrack(
           path: audioPath,
-          startTime: track.startTime,
-          endTime: track.endTime,
+          startTime: startTime,
+          endTime: endTime,
           audioStartTime: track.audioStartTime,
           audioEndTime: track.audioEndTime,
           loop: track.loop,

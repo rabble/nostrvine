@@ -475,6 +475,32 @@ void main() {
         );
       });
 
+      testWidgets('exposes at least a 48dp square tap target', (tester) async {
+        clipEditorBloc.add(
+          ClipEditorInitialized([
+            clipWithHolds([3, 3, 3]),
+          ]),
+        );
+        await tester.pumpWidget(buildWidget());
+        await tester.pump();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final chipLabel = find.text(l10n.videoEditorStopMotionFramesCount(3));
+        expect(chipLabel, findsOneWidget);
+
+        // The visible pill is ~28dp tall; the tap target must still reach the
+        // 48dp minimum touch size.
+        final tapTarget = find
+            .ancestor(of: chipLabel, matching: find.byType(GestureDetector))
+            .first;
+        final size = tester.getSize(tapTarget);
+        expect(size.width, greaterThanOrEqualTo(48));
+        expect(size.height, greaterThanOrEqualTo(48));
+        // ...but it must NOT stretch to fill the toolbar's loose height (a
+        // plain Center did, dragging the whole back/done row down the editor).
+        expect(size.height, lessThan(80));
+      });
+
       testWidgets(
         'shows the most common hold instead of the bare label when '
         'frames disagree',

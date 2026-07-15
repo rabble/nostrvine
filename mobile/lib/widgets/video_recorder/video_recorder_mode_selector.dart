@@ -138,7 +138,9 @@ class _VideoRecorderModeSelectorWheelState
       textDirection: TextDirection.ltr,
       textScaler: textScaler,
     )..layout();
-    return painter.width;
+    final width = painter.width;
+    painter.dispose();
+    return width;
   }
 
   /// Width of each item — its label plus a constant [_labelGap] — so the

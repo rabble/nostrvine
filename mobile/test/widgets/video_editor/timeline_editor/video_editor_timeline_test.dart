@@ -2,6 +2,8 @@
 // ABOUTME: Validates timeline rendering, scroll content, playhead, and empty state.
 
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:bloc_test/bloc_test.dart';
@@ -14,13 +16,17 @@ import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
+import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_clip_strip.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_body.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_geometry.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_header.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_interactive_body.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_playhead.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_rules_indicator.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -574,7 +580,111 @@ void main() {
         ).called(1);
       });
     });
+
+    group('stop-motion auto-zoom', () {
+      late Directory tempDir;
+
+      setUp(() {
+        tempDir = Directory.systemTemp.createTempSync('tl_auto_zoom');
+      });
+      tearDown(() => tempDir.deleteSync(recursive: true));
+
+      // Drives the empty→populated transition through the mock: the state stub
+      // is flipped to [populated] before the stream emit, so `context.select`
+      // (which reads `bloc.state`) reads the fresh value when the always-mounted
+      // BlocListener catches the transition. Mirrors production, where the
+      // composition is dispatched after the (empty) first build.
+      Future<void> transitionTo(
+        WidgetTester tester,
+        StreamController<ClipEditorState> clipStates,
+        ClipEditorState populated,
+      ) async {
+        when(() => mockClipBloc.state).thenReturn(populated);
+        clipStates.add(populated);
+        // Two pumps: the broadcast emit is delivered on a microtask after the
+        // first frame, then the second frame builds the rebuilt tree.
+        await tester.pump();
+        await tester.pump();
+      }
+
+      testWidgets('zooms in when the first stop-motion composition loads', (
+        tester,
+      ) async {
+        final clipStates = StreamController<ClipEditorState>.broadcast();
+        addTearDown(clipStates.close);
+        when(() => mockClipBloc.stream).thenAnswer((_) => clipStates.stream);
+        when(() => mockClipBloc.state).thenReturn(const ClipEditorState());
+
+        await tester.pumpWidget(buildWidget());
+        await tester.pump();
+        // The empty first build renders nothing but keeps the listener mounted.
+        expect(find.byType(VideoEditorTimelineInteractiveBody), findsNothing);
+
+        final clip = _stopMotionClip(tempDir);
+        await transitionTo(tester, clipStates, ClipEditorState(clips: [clip]));
+
+        final body = tester.widget<VideoEditorTimelineInteractiveBody>(
+          find.byType(VideoEditorTimelineInteractiveBody),
+        );
+        // Zoomed to the computed stop-motion default, above the video default
+        // that would render the tens-of-ms stills a couple of pixels wide.
+        expect(
+          body.pixelsPerSecond,
+          stopMotionInitialPixelsPerSecond(clip.stopMotionFrames!),
+        );
+        expect(
+          body.pixelsPerSecond,
+          greaterThan(TimelineConstants.pixelsPerSecond),
+        );
+      });
+
+      testWidgets('leaves the zoom at the video default for a regular '
+          'composition', (tester) async {
+        final clipStates = StreamController<ClipEditorState>.broadcast();
+        addTearDown(clipStates.close);
+        when(() => mockClipBloc.stream).thenAnswer((_) => clipStates.stream);
+        when(() => mockClipBloc.state).thenReturn(const ClipEditorState());
+
+        await tester.pumpWidget(buildWidget());
+        await tester.pump();
+
+        await transitionTo(
+          tester,
+          clipStates,
+          ClipEditorState(clips: [_createTestClip(id: 'a')]),
+        );
+
+        final body = tester.widget<VideoEditorTimelineInteractiveBody>(
+          find.byType(VideoEditorTimelineInteractiveBody),
+        );
+        expect(body.pixelsPerSecond, TimelineConstants.pixelsPerSecond);
+      });
+    });
   });
+}
+
+/// A frames-only stop-motion clip backed by real 1×1 PNG files under [dir] so
+/// the timeline frame strip's `Image.file` decode does not raise a load error.
+DivineVideoClip _stopMotionClip(Directory dir) {
+  final pngBytes = base64Decode(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk'
+    '+M8AAAMBAQDJ/IY1AAAAAElFTkSuQmCC',
+  );
+  final frames = [
+    for (var i = 0; i < 4; i++)
+      StopMotionClipFrame(
+        path: (File('${dir.path}/f$i.png')..writeAsBytesSync(pngBytes)).path,
+        duration: const Duration(milliseconds: 83),
+      ),
+  ];
+  return DivineVideoClip(
+    id: 'stop_motion',
+    stopMotionFrames: frames,
+    duration: const Duration(milliseconds: 332),
+    recordedAt: DateTime(2025),
+    originalAspectRatio: 9 / 16,
+    targetAspectRatio: .vertical,
+  );
 }
 
 DivineVideoClip _createTestClip({required String id, int seconds = 2}) {

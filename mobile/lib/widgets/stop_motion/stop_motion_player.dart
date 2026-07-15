@@ -87,6 +87,12 @@ class _StopMotionPlayerState extends State<StopMotionPlayer>
     if (oldWidget.frames != widget.frames) {
       _computeTimeline();
       _frameIndex.value = 0;
+    }
+    // Re-run precache when the frames change or when only the decode height
+    // changes — a cacheHeight-only change would otherwise leave the precache
+    // at the previous decode size.
+    if (oldWidget.frames != widget.frames ||
+        oldWidget.cacheHeight != widget.cacheHeight) {
       _precached = false;
       _precacheFrames();
     }

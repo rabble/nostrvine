@@ -658,6 +658,80 @@ void main() {
         expect(autosave.clips.single.isStopMotion, isTrue);
         expect(await service.hasValidAutosave(), isTrue);
       });
+
+      test(
+        'keeps a stop-motion draft, dropping only the unreadable still',
+        () async {
+          final frame0 = writeFrame('salvage_frame0.jpg');
+          final frame1 = writeFrame('salvage_frame1.jpg');
+          final clip = framesOnlyClip(
+            frames: [frame0, frame1],
+            id: 'sm_salvage',
+          );
+
+          await service.saveDraft(
+            DivineVideoDraft.create(
+              id: 'draft_salvage',
+              clips: [clip],
+              title: 'Stop motion',
+              description: '',
+              hashtags: const {},
+              selectedApproach: 'stop_motion',
+            ),
+          );
+
+          // One still goes missing after the draft was persisted (file cleanup
+          // reaped it). getAllDrafts validation must salvage the clip per-frame
+          // instead of hiding the whole draft before restore can recover it.
+          frame1.deleteSync();
+
+          final drafts = await service.getAllDrafts();
+          expect(drafts.map((draft) => draft.id), ['draft_salvage']);
+          final restored = drafts.single.clips.single;
+          expect(restored.isStopMotion, isTrue);
+          expect(restored.stopMotionFrames, hasLength(1));
+          expect(
+            restored.stopMotionFrames!.single.path,
+            endsWith('salvage_frame0.jpg'),
+          );
+        },
+      );
+
+      test(
+        'reaps a still removed from an existing session on the next save',
+        () async {
+          final frame0 = writeFrame('resave_frame0.jpg');
+          final frame1 = writeFrame('resave_frame1.jpg');
+          final frame2 = writeFrame('resave_frame2.jpg');
+
+          DivineVideoDraft draftWithFrames(List<File> frames) =>
+              DivineVideoDraft.create(
+                id: 'draft_resave',
+                clips: [framesOnlyClip(frames: frames, id: 'sm_resave')],
+                title: 'Stop motion',
+                description: '',
+                hashtags: const {},
+                selectedApproach: 'stop_motion',
+              );
+
+          await service.saveDraft(draftWithFrames([frame0, frame1, frame2]));
+
+          // The user deletes the middle still in the editor; the session
+          // autosaves. The removed still is no longer referenced by the draft
+          // and must be queued for cleanup (and reaped when no sink defers it).
+          await service.saveDraft(draftWithFrames([frame0, frame2]));
+
+          expect(
+            frame1.existsSync(),
+            isFalse,
+            reason:
+                'a still removed from the clip is orphaned and must be cleaned '
+                'up on the next save',
+          );
+          expect(frame0.existsSync(), isTrue);
+          expect(frame2.existsSync(), isTrue);
+        },
+      );
     });
 
     group('clearAllDrafts', () {

@@ -314,6 +314,9 @@ abstract class StopMotionFrameOps {
   /// when no readable still remains. Normal video clips pass through
   /// unchanged.
   static DivineVideoClip? sanitizedClip(DivineVideoClip clip) {
+    // A materialized clip has a rendered mp4; its stills are no longer the
+    // source of truth, so don't drop it for missing (already-cleaned) stills.
+    if (clip.video != null) return clip;
     final frames = clip.stopMotionFrames;
     if (frames == null) return clip;
     final readable = existingFrames(frames);

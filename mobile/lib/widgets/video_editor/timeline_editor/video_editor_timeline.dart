@@ -133,12 +133,16 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
         selectedClipIds: b.state.selectedClipIds,
       ),
     );
-    if (clips.isEmpty) return const SizedBox.shrink();
-
-    if (!_didAutoZoomStopMotion && isStopMotionComposition(clips)) {
-      _didAutoZoomStopMotion = true;
-      _pixelsPerSecond = stopMotionInitialPixelsPerSecond(
-        clips.first.stopMotionFrames ?? const [],
+    // Kept mounted even while [clips] is empty so it catches the transition
+    // into the first (async-loaded) stop-motion composition — see
+    // [_autoZoomForFirstStopMotion]. The root of both the empty and non-empty
+    // branches is this same [BlocListener] type, so its subscription survives
+    // the empty→populated rebuild.
+    if (clips.isEmpty) {
+      return BlocListener<ClipEditorBloc, ClipEditorState>(
+        listenWhen: _shouldAutoZoomForStopMotion,
+        listener: _autoZoomForFirstStopMotion,
+        child: const SizedBox.shrink(),
       );
     }
 
@@ -173,7 +177,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
     );
     // Sync layers from main editor to timeline overlay bloc, and
     // sync scroll to playback position while not user-scrolling.
-    return MultiBlocListener(
+    final Widget body = MultiBlocListener(
       listeners: [
         BlocListener<ClipEditorBloc, ClipEditorState>(
           listenWhen: (prev, curr) => prev.totalDuration != curr.totalDuration,
@@ -385,6 +389,37 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
         ),
       ),
     );
+
+    return BlocListener<ClipEditorBloc, ClipEditorState>(
+      listenWhen: _shouldAutoZoomForStopMotion,
+      listener: _autoZoomForFirstStopMotion,
+      child: body,
+    );
+  }
+
+  /// One-shot: the first time a stop-motion composition lands, the zoom is
+  /// bumped so its tens-of-ms stills are actually visible (the video default
+  /// renders them a couple of pixels wide). Guarded by
+  /// [_didAutoZoomStopMotion] so it never re-fires — a user pinch is not
+  /// overridden.
+  bool _shouldAutoZoomForStopMotion(
+    ClipEditorState prev,
+    ClipEditorState curr,
+  ) =>
+      !_didAutoZoomStopMotion &&
+      !isStopMotionComposition(prev.clips) &&
+      isStopMotionComposition(curr.clips);
+
+  void _autoZoomForFirstStopMotion(
+    BuildContext context,
+    ClipEditorState state,
+  ) {
+    setState(() {
+      _didAutoZoomStopMotion = true;
+      _pixelsPerSecond = stopMotionInitialPixelsPerSecond(
+        state.clips.first.stopMotionFrames ?? const [],
+      );
+    });
   }
 
   bool _handleScrollNotification(ScrollNotification notification) {

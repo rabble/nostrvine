@@ -48,5 +48,27 @@ void main() {
         expect(restored.holdOverridden, isFalse);
       },
     );
+
+    test('throws a FormatException (not a TypeError) for a missing path', () {
+      expect(
+        () => StopMotionClipFrame.fromJson(
+          const {'durationUs': 83000},
+          '/docs',
+          useOriginalPath: true,
+        ),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('throws a FormatException when both duration keys are absent', () {
+      expect(
+        () => StopMotionClipFrame.fromJson(
+          const {'path': 'f0.jpg'},
+          '/docs',
+          useOriginalPath: true,
+        ),
+        throwsA(isA<FormatException>()),
+      );
+    });
   });
 }

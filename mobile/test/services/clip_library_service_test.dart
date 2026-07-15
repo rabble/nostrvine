@@ -2,6 +2,7 @@
 // ABOUTME: Covers save, load, delete, and thumbnail generation for clips
 
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:db_client/db_client.dart';
 import 'package:drift/native.dart';
@@ -13,6 +14,7 @@ import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
+import 'package:path/path.dart' as p;
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 void main() {
@@ -670,6 +672,137 @@ void main() {
         expect((await service.getAllClips()).length, 0);
         expect((await service.getTrashedClips()).length, 0);
       });
+    });
+
+    group('stop-motion autosave-row cleanup', () {
+      // The global test config mocks the documents directory to this path, and
+      // stop-motion frame paths are persisted as basenames resolved against it.
+      const documentsPath = '/tmp/documents';
+      late DraftStorageService draftService;
+
+      setUp(() {
+        draftService = DraftStorageService(
+          draftsDao: database.draftsDao,
+          clipsDao: database.clipsDao,
+        );
+      });
+
+      tearDown(() {
+        final dir = Directory(documentsPath);
+        if (dir.existsSync()) dir.deleteSync(recursive: true);
+      });
+
+      File writeFrame(String name) {
+        final file = File(p.join(documentsPath, name));
+        file.parent.createSync(recursive: true);
+        file.writeAsBytesSync(const [0, 1, 2, 3]);
+        return file;
+      }
+
+      DivineVideoClip stopMotionSet(
+        List<File> frames, {
+        String id = 'sm_set',
+      }) => DivineVideoClip(
+        id: id,
+        stopMotionFrames: [
+          for (final frame in frames)
+            StopMotionClipFrame(
+              path: frame.path,
+              duration: const Duration(milliseconds: 167),
+            ),
+        ],
+        thumbnailPath: frames.first.path,
+        duration: Duration(milliseconds: frames.length * 167),
+        recordedAt: DateTime(2026),
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
+      );
+
+      // Recreate the two rows a set ends up with after going through the
+      // editor: a library row (recorder) and a `<autoSaveId>:<clipId>` row
+      // (editor autosave draft).
+      Future<void> saveThroughEditor(DivineVideoClip clip) async {
+        await service.saveClip(clip);
+        await draftService.saveDraft(
+          DivineVideoDraft.create(
+            id: VideoEditorConstants.autoSaveId,
+            clips: [clip],
+            title: '',
+            description: '',
+            hashtags: const {},
+            selectedApproach: 'stop_motion',
+          ),
+        );
+      }
+
+      test(
+        'hardDelete removes the autosave-draft row and its frame files',
+        () async {
+          final frame0 = writeFrame('hard_f0.jpg');
+          final frame1 = writeFrame('hard_f1.jpg');
+          final clip = stopMotionSet([frame0, frame1], id: 'sm_hard');
+          final autosaveRowId = '${VideoEditorConstants.autoSaveId}:${clip.id}';
+
+          await saveThroughEditor(clip);
+          expect((await service.getAllClips()).length, 1);
+          expect(
+            await database.clipsDao.getClipById(autosaveRowId),
+            isNotNull,
+          );
+
+          await service.hardDelete(clip.id);
+
+          expect(await service.getAllClips(), isEmpty);
+          expect(await database.clipsDao.getClipById(clip.id), isNull);
+          expect(
+            await database.clipsDao.getClipById(autosaveRowId),
+            isNull,
+            reason:
+                'the mirrored autosave-draft row must not survive '
+                'hardDelete',
+          );
+          expect(
+            frame0.existsSync(),
+            isFalse,
+            reason:
+                'with no row left referencing them, the frame files must '
+                'be reaped',
+          );
+          expect(frame1.existsSync(), isFalse);
+        },
+      );
+
+      test(
+        'clearAllClips removes autosave-draft rows and their frame files',
+        () async {
+          final frame0 = writeFrame('clear_f0.jpg');
+          final frame1 = writeFrame('clear_f1.jpg');
+          final clip = stopMotionSet([frame0, frame1], id: 'sm_clear');
+          final autosaveRowId = '${VideoEditorConstants.autoSaveId}:${clip.id}';
+
+          await saveThroughEditor(clip);
+          expect((await service.getAllClips()).length, 1);
+          expect(
+            await database.clipsDao.getClipById(autosaveRowId),
+            isNotNull,
+          );
+
+          await service.clearAllClips();
+
+          expect(await service.getAllClips(), isEmpty);
+          expect(
+            await database.clipsDao.getClipById(autosaveRowId),
+            isNull,
+            reason: 'clearing the library must also drop autosave-backed rows',
+          );
+          expect(
+            frame0.existsSync(),
+            isFalse,
+            reason: 'clearing the library must not leak the frame files',
+          );
+          expect(frame1.existsSync(), isFalse);
+        },
+      );
     });
   });
 

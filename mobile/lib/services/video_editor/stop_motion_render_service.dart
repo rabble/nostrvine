@@ -7,6 +7,7 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/aspect_ratio_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -75,9 +76,18 @@ class StopMotionRenderService {
     );
   }
 
-  /// Renders [clip]'s stop-motion frames into an mp4 and returns a video-backed
-  /// copy of the clip. Returns [clip] unchanged when it is already a normal
-  /// video clip. [taskId] is forwarded to [assemble] for progress reporting.
+  /// Renders [clip]'s stop-motion frames into an mp4 and returns a plain
+  /// video-backed copy of the clip. Returns [clip] unchanged when it is already
+  /// a normal video clip. [taskId] is forwarded to [assemble] for progress
+  /// reporting.
+  ///
+  /// The returned clip is a genuine video clip: its stills are cleared (they
+  /// are now transient and may be cleaned up) and its [DivineVideoClip.duration]
+  /// is set to the assembled mp4's length — which loops short captures up to the
+  /// minimum output duration (see [framesForMinOutputDuration]). Keeping the
+  /// old single-pass duration would let the composite render trim the segment
+  /// back below the file length, dropping the loop and leaving the video track
+  /// shorter than any muxed audio.
   ///
   /// Returns `null` only when the render fails, so callers (publish, gallery
   /// save) can surface a failure instead of proceeding with a clip that has no
@@ -100,7 +110,17 @@ class StopMotionRenderService {
       taskId: taskId,
     );
     if (outputPath == null) return null;
-    return clip.copyWith(video: EditorVideo.file(outputPath));
+
+    final renderedFrames = framesForMinOutputDuration(frames);
+    final materializedDuration = renderedFrames.fold(
+      Duration.zero,
+      (sum, frame) => sum + frame.duration,
+    );
+    return clip.copyWith(
+      video: EditorVideo.file(outputPath),
+      duration: materializedDuration,
+      clearStopMotionFrames: true,
+    );
   }
 
   /// Repeats [frames] an integer number of times until the sequence's total
@@ -181,12 +201,23 @@ class StopMotionRenderService {
         category: LogCategory.video,
       );
       return null;
-    } catch (e) {
+    } catch (e, stack) {
       Log.error(
         '❌ Stop-motion assembly failed: $e',
         name: _logName,
         category: LogCategory.video,
       );
+      // Native/IO render failures are expected (return null so callers can
+      // surface a friendly failure); only programming-invariant violations
+      // (StateError/TypeError/RangeError — all `Error` subtypes) are worth
+      // surfacing to Crashlytics.
+      if (e is Error) {
+        CrashReportingService.instance.recordError(
+          e,
+          stack,
+          reason: 'StopMotionRenderService.assemble failed',
+        );
+      }
       return null;
     }
   }

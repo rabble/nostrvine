@@ -202,9 +202,46 @@ void main() {
         // The progress task id is forwarded to the assembly.
         expect(capturedTaskId, 'render-task');
         expect(result?.video?.file?.path, '/rendered.mp4');
-        // Frames are kept as the source of truth.
-        expect(result?.stopMotionFrames, clip.stopMotionFrames);
+        // The materialized clip is now a plain video clip: its transient stills
+        // are cleared and it no longer classifies as stop-motion.
+        expect(result?.stopMotionFrames, isNull);
+        expect(result?.isStopMotion, isFalse);
+        // Duration matches the looped mp4: 333ms single pass loops x4 to clear
+        // the 1s minimum output duration (ceil(1000/333) = 4 → 1332ms).
+        expect(result?.duration, const Duration(milliseconds: 1332));
       });
+
+      test(
+        'keeps the single-pass duration when already >= min output',
+        () async {
+          StopMotionRenderService.assembleOverride =
+              ({
+                required frames,
+                required aspectRatio,
+                frameRate = StopMotionRenderService.defaultFrameRate,
+                String? taskId,
+              }) async => '/rendered.mp4';
+
+          final clip = DivineVideoClip(
+            id: 'sm-long',
+            stopMotionFrames: const [
+              StopMotionClipFrame(
+                path: '/a.jpg',
+                duration: Duration(milliseconds: 1200),
+              ),
+            ],
+            duration: const Duration(milliseconds: 1200),
+            recordedAt: DateTime(2024),
+            targetAspectRatio: model.AspectRatio.vertical,
+            originalAspectRatio: 9 / 16,
+          );
+
+          final result = await StopMotionRenderService.materialize(clip);
+
+          expect(result?.duration, const Duration(milliseconds: 1200));
+          expect(result?.stopMotionFrames, isNull);
+        },
+      );
 
       test('returns null when the render fails', () async {
         StopMotionRenderService.assembleOverride =

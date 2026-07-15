@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -193,6 +196,53 @@ void main() {
 
         expect(recordButtonRect.center.dx, closeTo(stackRect.center.dx, 2.0));
       });
+    });
+
+    group('stop-motion assemble', () {
+      testWidgets(
+        'shows a DivineSnackbarContainer error when assembly fails',
+        (tester) async {
+          final states = StreamController<VideoRecorderBlocState>.broadcast();
+          addTearDown(states.close);
+
+          final widget = buildWidget();
+          // whenListen overrides the state stub from buildWidget so the
+          // BlocConsumer reacts to the emitted status transition.
+          whenListen(
+            recorderBloc,
+            states.stream,
+            initialState: const VideoRecorderBlocState(
+              isCameraInitialized: true,
+              canRecord: true,
+            ),
+          );
+          await tester.pumpWidget(widget);
+          await tester.pump();
+
+          states.add(
+            const VideoRecorderBlocState(
+              isCameraInitialized: true,
+              canRecord: true,
+              stopMotionStatus: StopMotionStatus.failure,
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          expect(
+            find.widgetWithText(
+              DivineSnackbarContainer,
+              l10n.videoRecorderStopMotionAssembleFailed,
+            ),
+            findsOneWidget,
+          );
+          final container = tester.widget<DivineSnackbarContainer>(
+            find.byType(DivineSnackbarContainer),
+          );
+          expect(container.error, isTrue);
+        },
+      );
     });
   });
 }

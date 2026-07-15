@@ -206,10 +206,9 @@ class _StopMotionAssembleOverlay extends ConsumerWidget {
             }
           case StopMotionStatus.failure:
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  context.l10n.videoRecorderStopMotionAssembleFailed,
-                ),
+              DivineSnackbarContainer.snackBar(
+                context.l10n.videoRecorderStopMotionAssembleFailed,
+                error: true,
               ),
             );
           case StopMotionStatus.idle:

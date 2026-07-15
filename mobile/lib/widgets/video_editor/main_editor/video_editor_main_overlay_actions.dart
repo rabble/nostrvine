@@ -266,25 +266,42 @@ class _StopMotionFramesChip extends StatelessWidget {
         value,
       ),
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: () => editStopMotionGlobalHold(context, clipId: clipId),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: VineTheme.surfaceBackground.withValues(alpha: 0.85),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              spacing: 6,
-              children: [
-                const DivineIcon(
-                  icon: .imagesSquare,
-                  color: VineTheme.lightText,
-                  size: 16,
+        // Expand the hit area to the 48dp minimum touch target while the
+        // visible pill keeps its natural size, centred inside it. The
+        // width/height factors are essential: the toolbar row is laid out with
+        // loose (near-full-height) constraints, so a plain Center would grow to
+        // fill them and stretch the whole toolbar down the editor. Sizing to
+        // the child means the ConstrainedBox only enforces the 48dp minimum.
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          child: Center(
+            widthFactor: 1,
+            heightFactor: 1,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: VineTheme.surfaceBackground.withValues(alpha: 0.85),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
                 ),
-                Text(label, style: VineTheme.labelLargeFont()),
-              ],
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  spacing: 6,
+                  children: [
+                    const DivineIcon(
+                      icon: .imagesSquare,
+                      color: VineTheme.lightText,
+                      size: 16,
+                    ),
+                    Text(label, style: VineTheme.labelLargeFont()),
+                  ],
+                ),
+              ),
             ),
           ),
         ),

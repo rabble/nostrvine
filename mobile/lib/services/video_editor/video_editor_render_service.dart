@@ -396,6 +396,12 @@ class VideoEditorRenderService {
       hasAssemblyPhase: assemblyStepCount > 0,
     )..start();
 
+    // Base mp4s assembled from stop-motion stills for this render only. They
+    // are muxed into the composite output below, then deleted in `finally` so
+    // they don't accumulate in the documents directory (each is a full extra
+    // video per export).
+    final intermediateStopMotionPaths = <String>[];
+
     try {
       final renderClips = <DivineVideoClip>[];
       var assemblyStep = 0;
@@ -413,6 +419,10 @@ class VideoEditorRenderService {
             taskId: assemblyTaskId,
           );
           if (materialized == null) return null;
+          final intermediatePath = materialized.video?.file?.path;
+          if (intermediatePath != null) {
+            intermediateStopMotionPaths.add(intermediatePath);
+          }
           renderClips.add(materialized);
         } else {
           renderClips.add(clip);
@@ -500,6 +510,7 @@ class VideoEditorRenderService {
       return (clip, proofManifestJson);
     } finally {
       await progressTracker.dispose();
+      await _cleanupTempFiles(intermediateStopMotionPaths);
     }
   }
 
@@ -676,9 +687,19 @@ class VideoEditorRenderService {
       );
       unawaited(_cleanupTempFiles(tempFilePaths));
       return null;
-    } catch (e) {
+    } catch (e, stack) {
       Log.error('❌ Video render failed: $e', name: _logName, category: .video);
       unawaited(_cleanupTempFiles(tempFilePaths));
+      // Native/IO render failures are expected; only programming-invariant
+      // violations (StateError/TypeError/RangeError — all `Error` subtypes)
+      // are worth surfacing to Crashlytics.
+      if (e is Error) {
+        CrashReportingService.instance.recordError(
+          e,
+          stack,
+          reason: 'renderVideo failed',
+        );
+      }
       return null;
     }
   }
@@ -1016,10 +1037,23 @@ class VideoEditorRenderService {
       'divine_${DateTime.now().microsecondsSinceEpoch}.mp4',
     );
 
+    // Overlap transitions shorten the rendered output, so the true video
+    // length is the transition-mapped output duration, capped by
+    // [maxOutputDuration]. Audio windows are clamped to it below so a short
+    // stop-motion export muxed with a full-length song can't produce an mp4
+    // whose audio outlives its video (which freezes the last frame on iOS).
+    final timelineMap = TransitionTimelineMap.fromClips(clips);
+    final videoContentDuration =
+        maxOutputDuration != null &&
+            maxOutputDuration < timelineMap.outputDuration
+        ? maxOutputDuration
+        : timelineMap.outputDuration;
+
     final customTracks = parameters?.audioTracks ?? const <AudioTrack>[];
     final audioTracks = await resolveRenderAudioTracks(
       customTracks,
       logName: _logName,
+      videoDuration: videoContentDuration,
     );
 
     final volumeSegments = segments
@@ -1037,11 +1071,11 @@ class VideoEditorRenderService {
 
     // Overlay/effect time windows are authored on the editor timeline (clips at
     // full length). Overlap transitions (dissolve/slide/push/wipe) shorten the
-    // rendered output, so every time anchor is mapped onto the output axis;
-    // otherwise anything near the end — a layer's leave animation especially —
-    // lands past the real video end and is clipped ("animation missing at the
-    // end"). Identity when no overlap transition is present.
-    final timelineMap = TransitionTimelineMap.fromClips(clips);
+    // rendered output, so every time anchor is mapped onto the output axis via
+    // [timelineMap] (computed above); otherwise anything near the end — a
+    // layer's leave animation especially — lands past the real video end and is
+    // clipped ("animation missing at the end"). Identity when no overlap
+    // transition is present.
     final videoSize =
         renderResolution ??
         VideoEditorConstants.quality.resolutionForAspectRatio(aspectRatio);

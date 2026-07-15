@@ -44,7 +44,10 @@ class VideoRecorderGhostFrame extends ConsumerWidget {
     );
 
     // Stop-motion assembles at the end, so there are no clips during capture —
-    // align the next pose against the last captured still instead.
+    // align the next pose against the last captured still instead. The capture
+    // lens of each still is not tracked in recorder state (stopMotionFrames
+    // holds only file paths), so the ghost is shown un-mirrored; the clip
+    // branch above mirrors via clip.isFrontCameraLens.
     final ghostData = capturesStills
         ? (stopMotionLastFrame != null
               ? (path: stopMotionLastFrame, isFrontCamera: false)
@@ -67,6 +70,13 @@ class VideoRecorderGhostFrame extends ConsumerWidget {
                     fit: .cover,
                     width: .infinity,
                     height: .infinity,
+                    // Captured stills are full camera resolution (~12MP);
+                    // bound the decode to the screen height so a full-screen
+                    // live overlay doesn't decode at full resolution.
+                    cacheHeight:
+                        (MediaQuery.sizeOf(context).height *
+                                MediaQuery.devicePixelRatioOf(context))
+                            .round(),
                   ),
                 ),
               ),

@@ -283,8 +283,15 @@ class ClipLibraryService {
       category: LogCategory.video,
     );
 
+    // A set that went through the editor also has an autosave-draft copy
+    // (row id `<autoSaveId>:<clipId>`) which the library surfaces via
+    // getLibraryClips(includeAutosaveDraftId:). Remove it alongside the plain
+    // library row, or the DB row (and, since it still references the media, its
+    // source files) survives "empty trash" and reappears on the next reload.
+    final autosaveRowId = _autosaveDraftRowId(id);
     final clip = await getClipById(id);
-    if (clip == null) {
+    final autosaveClip = await getClipById(autosaveRowId);
+    if (clip == null && autosaveClip == null) {
       Log.info(
         '🗑️ Clip already deleted, skipping: $id',
         name: 'ClipLibraryService',
@@ -294,9 +301,12 @@ class ClipLibraryService {
     }
 
     await _clipsDao.deleteClip(id);
+    await _clipsDao.deleteClip(autosaveRowId);
 
-    await FileCleanupService.deleteRecordingClipFiles(
-      clip,
+    // Reap files only after both rows are gone, so a leftover row can't keep
+    // the media referenced.
+    await FileCleanupService.deleteRecordingClipsFiles(
+      [?clip, ?autosaveClip],
       draftsDao: _draftsDao,
       clipsDao: _clipsDao,
     );
@@ -387,7 +397,12 @@ class ClipLibraryService {
     final clips = [...activeClips, ...trashedClips];
 
     // Clear active + trashed library rows first, then delete files.
+    // clearLibraryClips only removes `draft_id IS NULL` rows, so the
+    // autosave-draft copies a set picks up in the editor (row id
+    // `<autoSaveId>:<clipId>`) — which getAllClips surfaces as library clips —
+    // would otherwise survive with their media. Drop those rows too.
     await _clipsDao.clearLibraryClips();
+    await _clipsDao.deleteClipsByDraftId(VideoEditorConstants.autoSaveId);
 
     // Delete files only if not referenced by drafts
     await FileCleanupService.deleteSavedClipsFiles(
