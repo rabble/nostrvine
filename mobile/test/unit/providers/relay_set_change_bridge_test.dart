@@ -255,5 +255,33 @@ void main() {
         container.dispose();
       });
     });
+
+    test(
+      'does not reconnect when client settles before service initialization',
+      () {
+        fakeAsync((async) {
+          final container = createContainer(initialStatuses: {});
+          container
+              .read(nostrInitializationInProgressProvider.notifier)
+              .begin();
+
+          statusController.add({
+            'wss://relay1.example.com': RelayConnectionStatus.connecting(
+              'wss://relay1.example.com',
+            ),
+          });
+
+          async.flushMicrotasks();
+          async.elapse(const Duration(seconds: 1));
+          container.read(nostrInitializationInProgressProvider.notifier).end();
+          async.elapse(const Duration(seconds: 1));
+          async.flushMicrotasks();
+
+          verifyNever(() => mockNostrClient.forceReconnectAll());
+          verifyNever(() => mockVideoEventService.resetAndResubscribeAll());
+          container.dispose();
+        });
+      },
+    );
   });
 }

@@ -184,12 +184,16 @@ void relaySetChangeBridge(Ref ref) {
 
       previousRelaySet = currentRelaySet;
 
-      final changeObservedDuringInitialization = !nostrService.isInitialized;
+      final changeObservedDuringInitialization =
+          ref.read(nostrInitializationInProgressProvider) ||
+          !nostrService.isInitialized;
 
       // Debounce: collapse rapid changes into a single reset
       debounceTimer?.cancel();
       debounceTimer = Timer(const Duration(seconds: 2), () async {
-        if (changeObservedDuringInitialization || !nostrService.isInitialized) {
+        if (changeObservedDuringInitialization ||
+            ref.read(nostrInitializationInProgressProvider) ||
+            !nostrService.isInitialized) {
           Log.info(
             'Relay set change originated during Nostr initialization; '
             'skipping forced reconnect (relayCount=${currentRelaySet.length})',

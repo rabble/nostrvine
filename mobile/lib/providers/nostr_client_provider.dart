@@ -148,6 +148,37 @@ final nostrInitializationTimeoutProvider = Provider<Duration>(
   (ref) => _nostrInitializationTimeout,
 );
 
+/// Whether one or more app-level Nostr client initialization attempts are
+/// still running.
+///
+/// This deliberately tracks the outer [NostrService] future rather than
+/// [NostrClient.isInitialized], which becomes true as soon as RelayManager
+/// settles and can precede the rest of the service's startup bookkeeping.
+final nostrInitializationInProgressProvider =
+    NotifierProvider<NostrInitializationInProgress, bool>(
+      NostrInitializationInProgress.new,
+    );
+
+class NostrInitializationInProgress extends Notifier<bool> {
+  int _activeAttempts = 0;
+
+  @override
+  bool build() => false;
+
+  void begin() {
+    _activeAttempts++;
+    state = true;
+  }
+
+  void end() {
+    if (!ref.mounted) return;
+    assert(_activeAttempts > 0, 'No Nostr initialization attempt is active');
+    if (_activeAttempts == 0) return;
+    _activeAttempts--;
+    state = _activeAttempts > 0;
+  }
+}
+
 /// Core Nostr service via NostrClient for relay communication
 /// Uses a Notifier to react to auth state changes and recreate the client
 /// when the keyContainer changes (e.g., user signs out and signs in with different keys)
@@ -279,6 +310,9 @@ class NostrService extends _$NostrService {
     required List<String> userRelayUrls,
     required String source,
   }) async {
+    final initialization = ref.read(
+      nostrInitializationInProgressProvider.notifier,
+    )..begin();
     try {
       await _runClientInitialization(
         client,
@@ -318,6 +352,8 @@ class NostrService extends _$NostrService {
       }
       _setSessionIdentityState(pubkey);
       _scheduleInitializationRetry(pubkey);
+    } finally {
+      initialization.end();
     }
   }
 
@@ -412,6 +448,9 @@ class NostrService extends _$NostrService {
         .toList();
     final client = _createClient(identity);
     final clientGeneration = _nextClientGeneration();
+    final initialization = ref.read(
+      nostrInitializationInProgressProvider.notifier,
+    )..begin();
     try {
       await _runClientInitialization(
         client,
@@ -457,6 +496,8 @@ class NostrService extends _$NostrService {
       }
       _setSessionIdentityState(pubkey);
       _scheduleInitializationRetry(pubkey);
+    } finally {
+      initialization.end();
     }
   }
 

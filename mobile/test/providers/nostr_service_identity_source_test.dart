@@ -200,6 +200,27 @@ void main() {
   }
 
   group('NostrService uses NostrIdentity as source of truth', () {
+    test('tracks the full outer initialization attempt', () async {
+      final initialize = Completer<void>();
+      factory.initializeCompleters[pubkeyA] = initialize;
+      when(() => mockAuth.currentIdentity).thenReturn(identityA);
+      when(() => mockAuth.currentPublicKeyHex).thenReturn(pubkeyA);
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      container.read(nostrServiceProvider);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(container.read(nostrInitializationInProgressProvider), isTrue);
+
+      initialize.complete();
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(container.read(nostrInitializationInProgressProvider), isFalse);
+    });
+
     test('initialization retry backoff is bounded exponential policy', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
