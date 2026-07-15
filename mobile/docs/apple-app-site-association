@@ -22,6 +22,10 @@
             "comment": "Search deep links"
           },
           {
+            "/": "/list/*",
+            "comment": "Curated list (playlist) deep links"
+          },
+          {
             "/": "/app/callback",
             "comment": "OAuth callback for Divine app"
           }

@@ -150,6 +150,41 @@ void main() {
       expect(list!.name, equals('New Title'));
     });
 
+    test(
+      'keeps the lowest event id when timestamps tie (NIP-01 replaceable '
+      'ordering)',
+      () async {
+        final idHigh = 'f' * 64;
+        final idLow = '0' * 64;
+        // Returned high-first so a naive strict "isAfter" keeps the wrong one.
+        when(() => mockNostr.queryEvents(any())).thenAnswer(
+          (_) async => [
+            _listEvent(
+              id: idHigh,
+              dTag: 'my-vines',
+              createdAt: 1000,
+              title: 'High',
+            ),
+            _listEvent(
+              id: idLow,
+              dTag: 'my-vines',
+              createdAt: 1000,
+              title: 'Low',
+            ),
+          ],
+        );
+
+        final list = await service.fetchPublicList(
+          authorPubkey: _authorPubkey,
+          listId: 'my-vines',
+        );
+
+        expect(list, isNotNull);
+        expect(list!.name, equals('Low'));
+        expect(list.nostrEventId, equals(idLow));
+      },
+    );
+
     test('ignores events whose d-tag does not match', () async {
       when(() => mockNostr.queryEvents(any())).thenAnswer(
         (_) async => [
