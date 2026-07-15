@@ -146,8 +146,13 @@ class StopMotionAudioPreview {
         scheduled.active = true;
         await scheduled.player.seek(position - track.windowStart);
         if (_disposed) return;
-        // play() resolves when playback finishes; don't block the sync on it.
-        unawaited(scheduled.player.play());
+        // play() resolves when playback finishes, so awaiting it here would
+        // stall the queue for the length of the sound. Left outside the queue
+        // deliberately — which also puts it outside the queue's teardown
+        // ordering, so a setTracks/dispose landing while it resolves can make
+        // it throw. Swallow that the same way syncTo does; there is nothing to
+        // recover once the player it targeted is gone.
+        unawaited(scheduled.player.play().catchError((Object _) {}));
       } else if (!shouldPlay && scheduled.active) {
         scheduled.active = false;
         await scheduled.player.pause();

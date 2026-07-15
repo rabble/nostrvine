@@ -1867,7 +1867,12 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
       name: 'VideoEditorCanvas',
       category: LogCategory.video,
     );
-    final wasPlaying = _videoPlayer?.state.isPlaying ?? false;
+    // A stop-motion composition has no native player — its playback is the
+    // widget-driven ticker, whose playing state lives in the bloc. Read before
+    // _pauseStopMotion() below clears it.
+    final wasPlaying = _isStopMotionComposition
+        ? context.read<VideoEditorMainBloc>().state.isPlaying
+        : (_videoPlayer?.state.isPlaying ?? false);
     final resumePosition = context
         .read<VideoEditorMainBloc>()
         .state
@@ -1905,7 +1910,15 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     } finally {
       _isMetadataRouteActive = false;
     }
-    if (!mounted || _clipPaths.isEmpty) return;
+    if (!mounted) return;
+    // Stop-motion has no player to rebuild (_clipPaths is empty, which the
+    // guard below would take as "nothing to resume"); restarting its ticker is
+    // the whole resume.
+    if (_isStopMotionComposition) {
+      if (wasPlaying) _playStopMotion(from: resumePosition);
+      return;
+    }
+    if (_clipPaths.isEmpty) return;
     await ref.read(videoEditorProvider.notifier).waitForRenderIdle();
     if (!mounted || _clipPaths.isEmpty) return;
     await _initializePlayer(_clipPaths, startPosition: resumePosition);

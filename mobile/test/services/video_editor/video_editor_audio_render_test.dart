@@ -161,8 +161,8 @@ void main() {
         videoDuration: null,
       );
 
-      expect(result.startTime, equals(const Duration(seconds: 1)));
-      expect(result.endTime, equals(const Duration(seconds: 9)));
+      expect(result?.startTime, equals(const Duration(seconds: 1)));
+      expect(result?.endTime, equals(const Duration(seconds: 9)));
     });
 
     test('leaves a null endTime null (means "play to end of video")', () {
@@ -172,18 +172,41 @@ void main() {
         videoDuration: const Duration(seconds: 1),
       );
 
-      expect(result.endTime, isNull);
+      expect(result, isNotNull);
+      expect(result?.endTime, isNull);
     });
 
-    test('clamps both start and end past the video to the video end', () {
+    test('drops a track whose whole window starts past the video', () {
+      // Clamping both ends would collapse this to a zero-length
+      // [1s, 1s] window, which VideoAudioTrack asserts against.
       final result = clampAudioWindowToVideo(
         startTime: const Duration(seconds: 5),
         endTime: const Duration(seconds: 9),
         videoDuration: const Duration(seconds: 1),
       );
 
-      expect(result.startTime, equals(const Duration(seconds: 1)));
-      expect(result.endTime, equals(const Duration(seconds: 1)));
+      expect(result, isNull);
+    });
+
+    test('drops a track starting exactly at the video end', () {
+      final result = clampAudioWindowToVideo(
+        startTime: const Duration(seconds: 1),
+        endTime: const Duration(seconds: 9),
+        videoDuration: const Duration(seconds: 1),
+      );
+
+      expect(result, isNull);
+    });
+
+    test('keeps a window that still has video left to play over', () {
+      final result = clampAudioWindowToVideo(
+        startTime: const Duration(milliseconds: 500),
+        endTime: const Duration(seconds: 9),
+        videoDuration: const Duration(seconds: 1),
+      );
+
+      expect(result?.startTime, equals(const Duration(milliseconds: 500)));
+      expect(result?.endTime, equals(const Duration(seconds: 1)));
     });
   });
 }

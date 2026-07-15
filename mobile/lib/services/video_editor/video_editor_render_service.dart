@@ -15,6 +15,7 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/transition_geometry.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
+import 'package:openvine/services/video_editor/native_render_task_registry.dart';
 import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
 import 'package:openvine/services/video_editor/video_editor_audio_render.dart';
 import 'package:path/path.dart' as path;
@@ -281,8 +282,6 @@ class VideoEditorRenderService {
 
   static final _compositeProgressController =
       StreamController<ProgressModel>.broadcast();
-  static final Map<String, Object> _activeNativeRenderTokens =
-      <String, Object>{};
 
   @visibleForTesting
   static double proofModeProgressBudgetForClipCount(int clipCount) {
@@ -307,11 +306,11 @@ class VideoEditorRenderService {
 
   @visibleForTesting
   static Set<String> get activeNativeTaskIdsForTesting =>
-      Set.unmodifiable(_activeNativeRenderTokens.keys);
+      NativeRenderTaskRegistry.activeTaskIds;
 
   @visibleForTesting
   static void resetActiveNativeTaskIdsForTesting() {
-    _activeNativeRenderTokens.clear();
+    NativeRenderTaskRegistry.reset();
   }
 
   @visibleForTesting
@@ -1267,19 +1266,13 @@ class VideoEditorRenderService {
     NativeLogLevel? nativeLogLevel = NativeLogLevel.warning,
   }) async {
     await cancelTask(task.id);
-    final token = Object();
-    _activeNativeRenderTokens[task.id] = token;
-    try {
-      return await ProVideoEditor.instance.renderVideoToFile(
+    return NativeRenderTaskRegistry.track(task.id, () {
+      return ProVideoEditor.instance.renderVideoToFile(
         outputPath,
         task,
         nativeLogLevel: nativeLogLevel,
       );
-    } finally {
-      if (identical(_activeNativeRenderTokens[task.id], token)) {
-        _activeNativeRenderTokens.remove(task.id);
-      }
-    }
+    });
   }
 
   /// Cancels native `pro_video_editor` render tasks started by this app.
@@ -1288,7 +1281,7 @@ class VideoEditorRenderService {
   /// Transient background states must not call this: exports may legitimately
   /// continue while the user briefly switches apps or locks the device.
   static Future<void> cancelActiveNativeTasks() async {
-    final taskIds = List<String>.of(_activeNativeRenderTokens.keys);
+    final taskIds = List<String>.of(NativeRenderTaskRegistry.activeTaskIds);
     if (taskIds.isEmpty) return;
 
     Log.info(

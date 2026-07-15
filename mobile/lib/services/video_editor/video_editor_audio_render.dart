@@ -103,7 +103,9 @@ AudioTrack? audioTrackFromMetaForRender(AudioEvent track) {
   );
 }
 
-/// Clamps an audio composition window so it cannot extend past [videoDuration].
+/// Clamps an audio composition window so it cannot extend past [videoDuration],
+/// or returns `null` when the window lies entirely past the video and the track
+/// should be dropped.
 ///
 /// A stop-motion export is only as long as its (looped) stills — often under a
 /// second — while a selected song's window spans the whole track. Muxing a
@@ -112,16 +114,20 @@ AudioTrack? audioTrackFromMetaForRender(AudioEvent track) {
 /// keeps playing. Clamping the window to the video length keeps the two tracks
 /// the same length. A `null` [videoDuration] (or a `null` `endTime`, which
 /// already means "play to the end of the video") is left untouched.
-({Duration? startTime, Duration? endTime}) clampAudioWindowToVideo({
+///
+/// A window that starts at or after [videoDuration] has nothing left to play —
+/// clamping both ends would collapse it to a zero-length `[videoDuration,
+/// videoDuration]`, which violates [VideoAudioTrack]'s `startTime < endTime`
+/// assert. Such a track is reported as `null` so the caller drops it.
+({Duration? startTime, Duration? endTime})? clampAudioWindowToVideo({
   required Duration? startTime,
   required Duration? endTime,
   required Duration? videoDuration,
 }) {
   if (videoDuration == null) return (startTime: startTime, endTime: endTime);
+  if (startTime != null && startTime >= videoDuration) return null;
   return (
-    startTime: startTime != null && startTime > videoDuration
-        ? videoDuration
-        : startTime,
+    startTime: startTime,
     endTime: endTime != null && endTime > videoDuration
         ? videoDuration
         : endTime,
@@ -147,11 +153,21 @@ Future<List<VideoAudioTrack>> resolveRenderAudioTracks(
   for (final track in customTracks) {
     try {
       final audioPath = await track.audio.safeFilePath();
-      final (:startTime, :endTime) = clampAudioWindowToVideo(
+      final window = clampAudioWindowToVideo(
         startTime: track.startTime,
         endTime: track.endTime,
         videoDuration: videoDuration,
       );
+      if (window == null) {
+        Log.warning(
+          'Audio track ${track.id} starts at or after the end of the video '
+          '— skipping it',
+          name: logName,
+          category: LogCategory.video,
+        );
+        continue;
+      }
+      final (:startTime, :endTime) = window;
       audioTracks.add(
         VideoAudioTrack(
           path: audioPath,

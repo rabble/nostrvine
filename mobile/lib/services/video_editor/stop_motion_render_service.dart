@@ -10,6 +10,7 @@ import 'package:openvine/extensions/aspect_ratio_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
+import 'package:openvine/services/video_editor/native_render_task_registry.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -219,11 +220,17 @@ class StopMotionRenderService {
         name: _logName,
         category: LogCategory.video,
       );
-      final result = await ProVideoEditor.instance.renderStopMotionToFile(
-        outputPath,
-        data,
-        nativeLogLevel: NativeLogLevel.warning,
-      );
+      // Tracked so a lifecycle-detach cancelActiveNativeTasks() also cancels an
+      // in-flight assembly. Keyed on data.id rather than taskId: most callers
+      // pass no taskId, and StopMotionRenderData then generates its own — which
+      // is the id the native side knows this task by.
+      final result = await NativeRenderTaskRegistry.track(data.id, () {
+        return ProVideoEditor.instance.renderStopMotionToFile(
+          outputPath,
+          data,
+          nativeLogLevel: NativeLogLevel.warning,
+        );
+      });
       Log.info(
         '✅ Stop-motion video assembled to: $result',
         name: _logName,
