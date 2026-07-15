@@ -1243,10 +1243,13 @@ class FollowRepository {
         await _loadFromRestApi();
       }
 
-      // 4. If still empty, query relays for kind 3 contact list directly.
-      // The REST API may not have indexed the user's contact list yet,
-      // but the relay has the authoritative kind 3 event.
-      if (_followingPubkeys.isEmpty && _nostrClient.hasKeys) {
+      // 4. Always query relays for the authoritative kind 3 event, even when
+      // a derived source already answered. LocalStorage, PersonalEventCache
+      // and the REST index are all derived from this event and can lag or
+      // truncate; because the next follow rebuilds and republishes the whole
+      // list, accepting an incomplete one destroys every follow it is
+      // missing (#6109).
+      if (_nostrClient.hasKeys) {
         await _loadFromRelay();
       }
 
@@ -1652,11 +1655,19 @@ class FollowRepository {
     }
   }
 
+  /// Upper bound on REST bootstrap paging, mirroring the ceiling the old
+  /// single `limit: 5000` request implied.
+  static const _restFollowingMaxPubkeys = 5000;
+
   /// Load following list from REST API (funnelcake) for fast bootstrap.
   ///
   /// Called only when local cache and PersonalEventCache are both empty
   /// (e.g., first login or after identity change cleanup). This provides
   /// the following list before the WebSocket subscription can deliver it.
+  ///
+  /// The result is a fast first paint, never the last word: it comes from a
+  /// derived index that lags, so [initialize] always follows it with the
+  /// authoritative Kind 3 from the relay.
   Future<void> _loadFromRestApi() async {
     try {
       final currentUserPubkey = _nostrClient.publicKey;
@@ -1672,11 +1683,24 @@ class FollowRepository {
         category: LogCategory.system,
       );
 
-      final result = await _funnelcakeApiClient.getFollowing(
-        pubkey: currentUserPubkey,
-        limit: 5000,
-      );
-      final pubkeys = _sanitizePubkeys(result.pubkeys, source: 'REST API');
+      // The server clamps `limit` to 100 however much we ask for, so page on
+      // `offset` instead of requesting one large batch. Asking for 5000 and
+      // silently receiving 100 is what let a truncated list become the base
+      // for the next publish (#6109).
+      final collected = <String>[];
+      while (collected.length < _restFollowingMaxPubkeys) {
+        final page = await _funnelcakeApiClient.getFollowing(
+          pubkey: currentUserPubkey,
+          offset: collected.length,
+        );
+
+        if (page.pubkeys.isEmpty) break;
+        collected.addAll(page.pubkeys);
+
+        if (!page.hasMore && collected.length >= page.total) break;
+      }
+
+      final pubkeys = _sanitizePubkeys(collected, source: 'REST API');
 
       if (pubkeys.isNotEmpty) {
         _followingPubkeys = pubkeys;
@@ -1747,8 +1771,7 @@ class FollowRepository {
       if (currentUserPubkey.isEmpty) return;
 
       Log.info(
-        'Querying relay for kind 3 contact list '
-        '(REST API had no data)',
+        'Querying relay for authoritative kind 3 contact list',
         name: 'FollowRepository',
         category: LogCategory.system,
       );

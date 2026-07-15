@@ -197,7 +197,7 @@ void main() {
         when(
           () => mockFunnelcakeClient.getFollowing(
             pubkey: any(named: 'pubkey'),
-            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
           ),
         ).thenAnswer(
           // funnelcake stores contact-list pubkeys unvalidated and serves them
@@ -228,6 +228,58 @@ void main() {
         final cached = prefs.getString('following_list_$testCurrentUserPubkey');
         expect(cached, isNotNull);
       });
+
+      // #6109: the derived sources (LocalStorage, PersonalEventCache, REST)
+      // lag and truncate, and the next follow rebuilds and republishes the
+      // whole list from whatever they returned. Accepting one as final
+      // destroys every follow it was missing, so the authoritative Kind 3 is
+      // always consulted -- not only when the derived sources came up empty.
+      test(
+        'queries the relay even when local storage already answered',
+        () async {
+          SharedPreferences.setMockInitialValues({
+            'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
+          });
+
+          final authoritative = Event(
+            testCurrentUserPubkey,
+            3,
+            [
+              ['p', testTargetPubkey],
+              ['p', testTargetPubkey2],
+            ],
+            '',
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          );
+
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+              relayTypes: any(named: 'relayTypes'),
+              sendAfterAuth: any(named: 'sendAfterAuth'),
+              onEose: any(named: 'onEose'),
+            ),
+          ).thenAnswer((_) => Stream<Event>.value(authoritative));
+
+          repository = FollowRepository(
+            nostrClient: mockNostrClient,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
+            indexerRelayUrls: const [],
+          );
+
+          await repository.initialize();
+
+          // Without the relay query the list would stay at the stale [target]
+          // and the next follow would republish it, destroying target2.
+          expect(repository.followingPubkeys, contains(testTargetPubkey2));
+          expect(repository.followingCount, 2);
+        },
+      );
 
       // PersonalEventCache caches Kind 3 events, which is exactly where the
       // reported `["p","nos"]` entry lives, so a poisoned event replays through
@@ -262,6 +314,58 @@ void main() {
         expect(repository.followingPubkeys, [testTargetPubkey]);
       });
 
+      // #6109: the server clamps `limit` to 100 whatever we ask for, so an
+      // account with more than 100 follows used to bootstrap from a silently
+      // truncated list.
+      test(
+        'pages past the server limit cap when loading from REST API',
+        () async {
+          // Exactly 64 hex chars each, or _sanitizePubkeys drops them.
+          final page1 = List.generate(
+            100,
+            (i) => 'a' * 60 + i.toRadixString(16).padLeft(4, '0'),
+          );
+          final page2 = [testTargetPubkey, testTargetPubkey2];
+
+          final mockFunnelcakeClient = _MockFunnelcakeApiClient();
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getFollowing(
+              pubkey: any(named: 'pubkey'),
+              offset: any(named: 'offset', that: isZero),
+            ),
+          ).thenAnswer(
+            (_) async => PaginatedPubkeys(
+              pubkeys: page1,
+              total: 102,
+              hasMore: true,
+            ),
+          );
+          when(
+            () => mockFunnelcakeClient.getFollowing(
+              pubkey: any(named: 'pubkey'),
+              offset: 100,
+            ),
+          ).thenAnswer(
+            (_) async => PaginatedPubkeys(pubkeys: page2, total: 102),
+          );
+
+          repository = FollowRepository(
+            nostrClient: mockNostrClient,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            indexerRelayUrls: const [],
+          );
+
+          await repository.initialize();
+
+          expect(repository.followingCount, 102);
+          expect(repository.isFollowing(testTargetPubkey2), isTrue);
+        },
+      );
+
       test('skips REST API when local cache already has data', () async {
         SharedPreferences.setMockInitialValues({
           'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
@@ -285,7 +389,7 @@ void main() {
         verifyNever(
           () => mockFunnelcakeClient.getFollowing(
             pubkey: any(named: 'pubkey'),
-            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
           ),
         );
         expect(repository.followingCount, 1);
@@ -297,7 +401,7 @@ void main() {
         when(
           () => mockFunnelcakeClient.getFollowing(
             pubkey: any(named: 'pubkey'),
-            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
           ),
         ).thenThrow(Exception('Network error'));
 
@@ -2825,7 +2929,7 @@ void main() {
         when(
           () => mockFunnelcakeClient.getFollowing(
             pubkey: any(named: 'pubkey'),
-            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
           ),
         ).thenAnswer(
           (_) async => PaginatedPubkeys.empty,
@@ -2864,7 +2968,7 @@ void main() {
         verifyNever(
           () => mockFunnelcakeClient.getFollowing(
             pubkey: any(named: 'pubkey'),
-            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
           ),
         );
       });
@@ -2890,7 +2994,7 @@ void main() {
         verifyNever(
           () => mockFunnelcakeClient.getFollowing(
             pubkey: any(named: 'pubkey'),
-            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
           ),
         );
       });
