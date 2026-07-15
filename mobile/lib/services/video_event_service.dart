@@ -50,8 +50,6 @@ import 'package:openvine/utils/log_tag_sanitizer.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:video_event_cache/video_event_cache.dart';
-import 'package:videos_repository/videos_repository.dart'
-    show mergeNullableEngagementMax;
 
 /// Pagination state for tracking cursor position and loading status per subscription
 class PaginationState {
@@ -4878,17 +4876,20 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
 
     final videoEvent = eventList[index];
 
-    // #6022: max-merge instead of direct-replace so a later, lower re-fetch
-    // can't lower an already-applied bucket count. Bounded — these buckets are
-    // relay-parsed and start with a null nostrLikeCount, so this normally
-    // applies null->N on first fetch. Aligns with the #3384
-    // mergeNullableEngagementMax policy used by the profile enrichment paths.
-    final updatedVideo = videoEvent.copyWith(
-      nostrLikeCount: mergeNullableEngagementMax(
-        videoEvent.nostrLikeCount,
-        likeCount,
-      ),
-    );
+    // Direct-replace, not max-merge: unlike the archival originalLikes /
+    // originalLoops / originalComments / originalReposts fields (fixed
+    // values baked into event tags, safe to merge with #3384's
+    // mergeNullableEngagementMax), nostrLikeCount is a live relay-derived
+    // count that legitimately decreases — e.g. after the user's own unlike
+    // decrements LikesRepository's count cache, or a reaction is deleted.
+    // A max-merge here would ratchet this cache's value up across every
+    // future re-application (this video re-entering another subscription
+    // bucket, a later batch, etc.) and permanently block that self-
+    // correction. #6022's addressable floor doesn't need protection at this
+    // layer: it's already a correctly-scoped, one-time comparison in
+    // VideoInteractionsBloc._onFetchRequested between the feed seed and a
+    // fresh relay resolve, independent of this cache (#6102 review).
+    final updatedVideo = videoEvent.copyWith(nostrLikeCount: likeCount);
     eventList[index] = updatedVideo;
 
     // Also update in keyed buckets if applicable
@@ -5868,7 +5869,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   }
 
   /// Apply a resolved like count to a cached video, bypassing the batch and
-  /// debounce, to exercise the max-merge semantics of [_applyLikeCountToVideo].
+  /// debounce, to exercise [_applyLikeCountToVideo] directly.
   @visibleForTesting
   bool applyLikeCountForTesting(
     String videoId,
