@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:blurhash_dart/blurhash_dart.dart' as blurhash_dart;
 import 'package:blurhash_service/blurhash_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
@@ -147,11 +148,13 @@ void main() {
     });
 
     test('decodes a solid fill back to its source color', () async {
-      // Reference vector: a solid fill carries no AC energy, so every
+      // DC reference vector: a solid fill carries no AC energy, so every
       // decoded pixel must round-trip the DC (average) color on all three
       // channels. The expected values are the source color itself — an
       // independent reference, not this decoder's own output — so a channel
-      // swap or the old red/green inflation would fail it.
+      // swap or a broken DC/sRGB round-trip fails it. (The AC division
+      // regression is guarded separately by the grayscale-tint test above;
+      // it can't be pinned here because a solid fill has ~zero AC energy.)
       const sourceR = 100;
       const sourceG = 149;
       const sourceB = 237;
@@ -187,10 +190,16 @@ void main() {
     test(
       'punch scales AC contrast, including the first component row',
       () async {
-        // A horizontal gradient concentrates its AC energy in the first
-        // component row (j = 0, i > 0) — exactly the row blurhash_dart's punch
-        // skipped. Our decode bakes punch into every AC term, so a higher
-        // punch must widen the left↔right contrast.
+        // A pure horizontal gradient puts nearly all of its AC energy in the
+        // first component row (j = 0, i > 0) — exactly the row blurhash_dart's
+        // punch skipped. Our decode bakes punch into maxAc for every AC term,
+        // so the left↔right contrast must scale ~linearly with punch. A plain
+        // `contrast(high) > contrast(low)` check is NOT enough: the upstream
+        // first-row-skip bug still satisfies it via the tiny residual energy
+        // in the punched j > 0 rows (measured 175 vs 173 at punch 1 vs 0.5).
+        // The ratio assertion below fails under that bug (it needs the
+        // dominant first-row AC to actually be scaled): correct decode gives
+        // ~175 vs ~81, the skip bug gives ~175 vs ~173.
         final gradient = img.Image(width: 128, height: 128);
         for (var x = 0; x < gradient.width; x++) {
           final v = (x / (gradient.width - 1) * 255).round();
@@ -207,7 +216,6 @@ void main() {
           final data = BlurhashService.decodeBlurhash(
             hash!,
             width: 16,
-            height: 1,
             punch: punch,
           )!;
           final pixels = data.pixels!;
@@ -216,10 +224,62 @@ void main() {
           return (right - left).abs();
         }
 
+        final softContrast = horizontalContrast(0.5);
+        final fullContrast = horizontalContrast(1);
         expect(
-          horizontalContrast(2),
-          greaterThan(horizontalContrast(1)),
-          reason: 'higher punch must increase AC-driven contrast',
+          fullContrast,
+          greaterThan((softContrast * 1.4).round()),
+          reason:
+              'punch must scale the dominant first-row AC contrast, '
+              'not skip it',
+        );
+      },
+    );
+
+    test(
+      'defaultPunch softens a legacy high-component (4x7) hash',
+      () async {
+        // The PR softens DCT ringing on already-published legacy hashes,
+        // which used 4x7 / 4x4 components. Those hashes are still live and
+        // decode with defaultPunch (0.8), never a punch override, so exercise
+        // that exact path: a 4x7 hash decoded at 0.8 must show a smaller
+        // value spread (less overshoot/ringing) than the same hash at 1.0.
+        final source = img.Image(width: 128, height: 227);
+        for (var y = 0; y < source.height; y++) {
+          for (var x = 0; x < source.width; x++) {
+            final v = ((x ~/ 16) + (y ~/ 16)).isEven ? 245 : 10;
+            source.setPixelRgb(x, y, v, v, v);
+          }
+        }
+        // Encode the legacy shape directly — the service only emits 3x4/3x3
+        // now, so this reproduces a pre-PR production hash. numCompX is
+        // blurhash_dart's default (4); numCompY: 7 makes it the 4x7 shape.
+        final legacyHash = blurhash_dart.BlurHash.encode(
+          source,
+          numCompY: 7,
+        ).hash;
+
+        int valueSpread(double punch) {
+          final data = BlurhashService.decodeBlurhash(
+            legacyHash,
+            punch: punch,
+          )!;
+          final pixels = data.pixels!;
+          var lo = 255;
+          var hi = 0;
+          for (var i = 0; i + 3 < pixels.length; i += 4) {
+            for (var c = 0; c < 3; c++) {
+              lo = lo < pixels[i + c] ? lo : pixels[i + c];
+              hi = hi > pixels[i + c] ? hi : pixels[i + c];
+            }
+          }
+          return hi - lo;
+        }
+
+        expect(
+          valueSpread(BlurhashService.defaultPunch),
+          lessThan(valueSpread(1)),
+          reason: 'defaultPunch must damp legacy-hash contrast/ringing',
         );
       },
     );
