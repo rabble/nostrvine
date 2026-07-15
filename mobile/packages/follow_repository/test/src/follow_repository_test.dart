@@ -471,6 +471,40 @@ void main() {
         );
         expect(repository.followingCount, 0);
       });
+
+      // executeFollowAction replays queued actions without validating, so the
+      // publish-site sanitize is the only thing that drops an invalid entry
+      // there. Observers must not be left holding one the getter has dropped.
+      test('emits the sanitized list when the broadcast drops an invalid '
+          'pubkey', () async {
+        final mockEvent = _MockEvent();
+        when(() => mockEvent.id).thenReturn(testCurrentUserPubkey);
+        when(() => mockEvent.content).thenReturn('');
+
+        when(
+          () => mockNostrClient.sendContactList(
+            any(),
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => mockEvent);
+
+        await repository.initialize();
+
+        final emittedValues = <List<String>>[];
+        final subscription = repository.followingStream.listen(
+          emittedValues.add,
+        );
+
+        await repository.executeFollowAction(invalidPubkey);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(repository.followingPubkeys, isEmpty);
+        expect(emittedValues.last, isEmpty);
+
+        await subscription.cancel();
+      });
     });
 
     group('unfollow', () {

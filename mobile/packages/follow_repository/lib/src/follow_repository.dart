@@ -1965,14 +1965,15 @@ class FollowRepository {
 
   /// Broadcast updated contact list to network (Kind 3 event)
   Future<void> _broadcastContactList() async {
-    // Last line of defence: an invalid pubkey that reached the in-memory list
-    // would make Contact's constructor throw and abort the publish, blocking
-    // every follow and unfollow until the entry is gone. Dropping it here also
-    // self-heals the stored Kind 3 event, because this rebuilds the full list.
+    // Last line of defence: [executeFollowAction] appends without validating,
+    // and an invalid pubkey here makes Contact's constructor throw and abort
+    // the publish, blocking every follow and unfollow until the entry is gone.
+    // Emit so observers do not keep a dropped entry the getter no longer has.
     _followingPubkeys = _sanitizePubkeys(
       _followingPubkeys,
       source: 'in-memory following list',
     );
+    _emitFollowingList();
 
     // Create ContactList with all followed pubkeys
     final contactList = ContactList();
