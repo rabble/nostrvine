@@ -163,6 +163,22 @@ void main() {
       );
     });
 
+    test('canonicalizes a persisted key that differs only by case', () async {
+      await mockPrefs.setString(resolvedPubkeyPrefsKey, pin.toUpperCase());
+
+      final service = buildService();
+      await service.ensureLoaded();
+
+      expect(
+        service.divineModerationPubkeyHex,
+        pin,
+        reason:
+            'the adopted identity feeds the subscription filter, and event '
+            'authors are lowercase on the wire — storing the uppercase form '
+            'would silently match no events',
+      );
+    });
+
     test('warns when NIP-05 resolves to a key that is not the pin', () async {
       Nip05Validor.dio.httpClientAdapter = _FakeNip05Adapter(
         '{"names":{"moderation":"$divergentKey"}}',
