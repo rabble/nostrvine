@@ -196,8 +196,14 @@ class VideoPublishService {
       final publishing = draft.copyWith(publishStatus: .publishing);
       await draftService.saveDraft(publishing);
 
-      final videoPath = await draft.clips.first.requireVideo.safeFilePath();
-      Log.info('📝 Publishing video: $videoPath', category: .video);
+      // Log-only: prefer the rendered clip (a stop-motion draft's clips.first
+      // is a frames-only clip whose mp4 lives in finalRenderedClip). The real
+      // upload-path resolution happens in _getOrCreateUpload.
+      final videoPath = await _resolveVideoPath(draft);
+      Log.info(
+        '📝 Publishing video: ${videoPath ?? '<pending>'}',
+        category: .video,
+      );
 
       // Verify user is fully authenticated
       if (!authService.isAuthenticated) {

@@ -8,6 +8,7 @@ import 'package:models/models.dart' show AspectRatio;
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/pending_upload.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
@@ -129,6 +130,37 @@ void main() {
         expect(result, isA<PublishSuccess>());
         verify(() => mockDraftService.deleteDraft(draft.id)).called(1);
       });
+
+      test(
+        'publishes a stop-motion draft whose clips.first has no rendered mp4',
+        () async {
+          // Regression: the publish flow used to read clips.first.requireVideo
+          // for a log line, which threw StateError for a frames-only
+          // stop-motion clip and aborted the whole publish. The rendered mp4
+          // lives in finalRenderedClip, and the upload path already prefers it.
+          _setupSuccessfulPublish(
+            mockAuthService: mockAuthService,
+            mockUploadManager: mockUploadManager,
+            mockDraftService: mockDraftService,
+            mockVideoEventPublisher: mockVideoEventPublisher,
+          );
+
+          final draft = DivineVideoDraft.create(
+            clips: [_createStopMotionClip()],
+            title: 'Stop Motion',
+            description: 'Test',
+            hashtags: {'test'},
+            selectedApproach: 'test',
+            id: 'stop_motion_draft_id',
+            finalRenderedClip: _createTestClip(),
+          );
+
+          final result = await service.publishVideo(draft: draft);
+
+          expect(result, isA<PublishSuccess>());
+          verify(() => mockDraftService.deleteDraft(draft.id)).called(1);
+        },
+      );
 
       test(
         'returns error and does not publish when upload has no CDN thumbnail',
@@ -1607,6 +1639,24 @@ DivineVideoClip _createTestClip() {
     id: 'test_clip',
     video: EditorVideo.file('/test/video.mp4'),
     duration: const Duration(seconds: 10),
+    recordedAt: DateTime.now(),
+    targetAspectRatio: AspectRatio.square,
+    originalAspectRatio: 9 / 16,
+  );
+}
+
+/// A frames-only stop-motion clip whose mp4 is not rendered yet — its rendered
+/// video lives in the draft's [DivineVideoDraft.finalRenderedClip].
+DivineVideoClip _createStopMotionClip() {
+  return DivineVideoClip(
+    id: 'clip_sm_test',
+    stopMotionFrames: const [
+      StopMotionClipFrame(
+        path: '/test/frame_0.jpg',
+        duration: Duration(microseconds: 83333),
+      ),
+    ],
+    duration: const Duration(seconds: 1),
     recordedAt: DateTime.now(),
     targetAspectRatio: AspectRatio.square,
     originalAspectRatio: 9 / 16,
