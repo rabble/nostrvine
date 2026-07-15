@@ -200,8 +200,10 @@ void main() {
             limit: any(named: 'limit'),
           ),
         ).thenAnswer(
+          // funnelcake stores contact-list pubkeys unvalidated and serves them
+          // back verbatim, so an invalid entry reaches this path end-to-end.
           (_) async => const PaginatedPubkeys(
-            pubkeys: [testTargetPubkey, testTargetPubkey2],
+            pubkeys: [testTargetPubkey, 'nos', testTargetPubkey2],
           ),
         );
 
@@ -217,6 +219,7 @@ void main() {
         await repository.initialize();
 
         expect(repository.followingCount, 2);
+        expect(repository.followingPubkeys, isNot(contains('nos')));
         expect(repository.isFollowing(testTargetPubkey), isTrue);
         expect(repository.isFollowing(testTargetPubkey2), isTrue);
 
@@ -224,6 +227,39 @@ void main() {
         final prefs = await SharedPreferences.getInstance();
         final cached = prefs.getString('following_list_$testCurrentUserPubkey');
         expect(cached, isNotNull);
+      });
+
+      // PersonalEventCache caches Kind 3 events, which is exactly where the
+      // reported `["p","nos"]` entry lives, so a poisoned event replays through
+      // this path on every launch until the cache is evicted.
+      test('drops invalid p tags from a cached Kind 3 event', () async {
+        cacheIsInitialized = true;
+        getCachedEventsByKind = (kind) => kind == 3
+            ? [
+                Event(
+                  testCurrentUserPubkey,
+                  3,
+                  [
+                    ['p', 'nos'],
+                    ['p', testTargetPubkey],
+                  ],
+                  '',
+                  createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                ),
+              ]
+            : <Event>[];
+
+        repository = FollowRepository(
+          nostrClient: mockNostrClient,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
+          indexerRelayUrls: const [],
+        );
+
+        await repository.initialize();
+
+        expect(repository.followingPubkeys, [testTargetPubkey]);
       });
 
       test('skips REST API when local cache already has data', () async {
@@ -1312,6 +1348,31 @@ void main() {
 
         expect(snapshot.pubkeys, isEmpty);
         expect(snapshot.count, equals(0));
+      });
+
+      // Also backs watchMyFollowingCached() -> MyFollowingBloc for the current
+      // user, so an unfiltered entry would render as a ghost row on the own
+      // Following screen and be persisted to Drift by CacheSync.
+      test('drops invalid p tags and keeps count in step', () async {
+        final event = Event(
+          testTargetPubkey,
+          3,
+          [
+            ['p', 'nos'],
+            ['p', testTargetPubkey2],
+          ],
+          '',
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        );
+
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event]);
+
+        final snapshot = await repository.getOthersFollowing(testTargetPubkey);
+
+        expect(snapshot.pubkeys, [testTargetPubkey2]);
+        expect(snapshot.count, 1);
       });
 
       test('returns following list from Kind 3 event p-tags', () async {

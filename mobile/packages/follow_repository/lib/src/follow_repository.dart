@@ -133,9 +133,11 @@ class FollowRepository {
   /// written by any Nostr client, and both the REST API and our caches are
   /// derived from those events. A single non-hex entry makes
   /// [_broadcastContactList] throw in `Contact`'s constructor, which aborts
-  /// the publish and permanently blocks every follow and unfollow — see the
-  /// `["p","nos"]` entry produced by a parser that read `tag[1]` of a
-  /// `["client","nos",...]` tag without filtering on `p`.
+  /// the publish and permanently blocks every follow and unfollow — a real
+  /// contact list on `wss://relay.divine.video` carries a `["p","nos"]` entry.
+  /// Its origin was never identified: `"nos"` matches `tag[1]` of the
+  /// `["client","nos",...]` tag the Nos app writes, but no parser reading that
+  /// value without filtering on `p` exists in this repo or its history.
   List<String> _sanitizePubkeys(
     List<String> pubkeys, {
     required String source,
@@ -287,7 +289,16 @@ class FollowRepository {
       }
     }
 
-    return FollowingSnapshot(pubkeys: following, count: following.length);
+    // Backs watchMyFollowingCached() for the current user too, so an invalid
+    // entry would surface as a ghost row on the own-Following screen and be
+    // persisted to Drift by CacheSync. Count follows the sanitized list so the
+    // header cannot disagree with the rows.
+    final sanitized = _sanitizePubkeys(
+      following,
+      source: 'Kind 3 event from $pubkey',
+    );
+
+    return FollowingSnapshot(pubkeys: sanitized, count: sanitized.length);
   }
 
   // ---- CacheSync-backed stale-while-revalidate watchers --------------------
@@ -1263,9 +1274,14 @@ class FollowRepository {
     }
   }
 
-  /// Follow a user
+  /// Follow a user.
   ///
-  /// Throws an [ArgumentError] if [pubkey] is not a 32-byte hex pubkey.
+  /// Throws:
+  ///
+  /// * [ArgumentError] if [pubkey] is not a 32-byte hex pubkey.
+  /// * [Exception] if the user is not authenticated.
+  /// * Anything the Kind 3 publish or the local-storage write threw, after
+  ///   rolling the optimistic update back.
   Future<void> follow(String pubkey) async {
     if (!_nostrClient.hasKeys) {
       Log.error(
