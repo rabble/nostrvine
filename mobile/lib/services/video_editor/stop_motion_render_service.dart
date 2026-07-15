@@ -272,6 +272,14 @@ class StopMotionRenderService {
     try {
       final file = File(outputPath);
       if (file.existsSync()) await file.delete();
-    } catch (_) {}
+    } catch (e) {
+      // Best-effort: a failed delete only leaves a temp file behind, never
+      // aborts the caller.
+      Log.debug(
+        '⚠️ Failed to delete partial stop-motion render $outputPath: $e',
+        name: _logName,
+        category: LogCategory.video,
+      );
+    }
   }
 }
