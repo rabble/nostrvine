@@ -115,7 +115,7 @@ class ModerationLabelService {
   /// Cache TTL for NIP-05 resolved pubkey (24 hours).
   static const Duration _resolvedPubkeyTtl = Duration(hours: 24);
 
-  /// Resolved Divine moderation pubkey (NIP-05 → cache → fallback).
+  /// Resolved Divine moderation pubkey (cache → NIP-05 → fallback).
   String _divineModerationPubkey = fallbackModerationPubkeyHex;
 
   /// The current Divine moderation pubkey (resolved via NIP-05 or fallback).
@@ -190,7 +190,7 @@ class ModerationLabelService {
     try {
       // Use cache or fallback only. Remote NIP-05 refresh happens from
       // initialize(), which is called only from relay-ready paths.
-      _divineModerationPubkey = _cachedModerationPubkey(_prefs);
+      _adoptModerationPubkey(_cachedModerationPubkey(_prefs));
 
       final saved = _prefs.getStringList(_subscribedLabelersKey);
       if (saved != null) {
@@ -582,16 +582,27 @@ class ModerationLabelService {
     });
   }
 
+  /// Canonical form of a labeler identity: lowercase hex, no surrounding
+  /// whitespace.
+  ///
+  /// NIP-05 mandates lowercase hex and event authors arrive lowercase on the
+  /// wire, so canonicalizing at the two points that produce an identity keeps
+  /// [_divineModerationPubkey], [_subscribedLabelers] and the pin comparison on
+  /// one form. Without it a non-lowercase answer would read as identical to the
+  /// pin yet fail to match the labeler's own events in the subscription filter.
+  static String _normalizedPubkey(String pubkey) => pubkey.trim().toLowerCase();
+
   /// Resolve the Divine moderation pubkey via cached value or NIP-05 lookup.
   ///
   /// Strategy: SharedPreferences cache (24h TTL) → NIP-05 → fallback constant.
+  /// Every path returns a [_normalizedPubkey].
   Future<String> _resolveModerationPubkey(SharedPreferences prefs) async {
     // Check cached resolution
-    final cachedPubkey = prefs.getString(_resolvedPubkeyKey);
+    final cachedPubkey = _normalizedPubkey(
+      prefs.getString(_resolvedPubkeyKey) ?? '',
+    );
     final cachedAtStr = prefs.getString(_resolvedAtKey);
-    if (cachedPubkey != null &&
-        cachedPubkey.isNotEmpty &&
-        cachedAtStr != null) {
+    if (cachedPubkey.isNotEmpty && cachedAtStr != null) {
       final cachedAt = DateTime.tryParse(cachedAtStr);
       if (cachedAt != null &&
           DateTime.now().difference(cachedAt) < _resolvedPubkeyTtl) {
@@ -602,15 +613,16 @@ class ModerationLabelService {
     // Resolve via NIP-05
     try {
       final resolved = await Nip05Validor.getPubkey(divineModerationNip05);
-      if (resolved != null && resolved.isNotEmpty) {
-        await prefs.setString(_resolvedPubkeyKey, resolved);
+      final normalized = _normalizedPubkey(resolved ?? '');
+      if (normalized.isNotEmpty) {
+        await prefs.setString(_resolvedPubkeyKey, normalized);
         await prefs.setString(_resolvedAtKey, DateTime.now().toIso8601String());
         Log.info(
-          'Resolved moderation pubkey via NIP-05: $resolved',
+          'Resolved moderation pubkey via NIP-05: $normalized',
           name: 'ModerationLabelService',
           category: LogCategory.system,
         );
-        return resolved;
+        return normalized;
       }
     } catch (e) {
       Log.warning(
@@ -621,18 +633,54 @@ class ModerationLabelService {
     }
 
     // Use stale cache if available, otherwise fallback
-    if (cachedPubkey != null && cachedPubkey.isNotEmpty) {
+    if (cachedPubkey.isNotEmpty) {
       return cachedPubkey;
     }
     return fallbackModerationPubkeyHex;
   }
 
   String _cachedModerationPubkey(SharedPreferences prefs) {
-    final cachedPubkey = prefs.getString(_resolvedPubkeyKey);
-    if (cachedPubkey != null && cachedPubkey.isNotEmpty) {
+    final cachedPubkey = _normalizedPubkey(
+      prefs.getString(_resolvedPubkeyKey) ?? '',
+    );
+    if (cachedPubkey.isNotEmpty) {
       return cachedPubkey;
     }
     return fallbackModerationPubkeyHex;
+  }
+
+  /// Adopt [pubkey] as the moderation labeler identity.
+  ///
+  /// Every path that settles on an identity funnels through here so the pin
+  /// check cannot be bypassed by adding a new resolution source. [pubkey] is
+  /// expected canonical — both producers return a [_normalizedPubkey].
+  void _adoptModerationPubkey(String pubkey) {
+    _divineModerationPubkey = pubkey;
+    _warnIfPinMismatch(pubkey);
+  }
+
+  /// Advisory only: NIP-05 stays authoritative for the labeler identity
+  /// (#4948 tier 1), so a divergence from the shipped pin is logged, never
+  /// overridden. Without this, a hostile repoint of [divineModerationNip05] is
+  /// indistinguishable from an intended rotation in the logs. Fires once per
+  /// adoption, so a steady divergence costs one line per session rather than
+  /// one per read.
+  ///
+  /// Both sides are canonical here — [adoptedPubkey] via [_normalizedPubkey]
+  /// and the pin as a lowercase constant — so a case-only variant of the pin
+  /// stays silent rather than crying wolf.
+  void _warnIfPinMismatch(String adoptedPubkey) {
+    if (adoptedPubkey == fallbackModerationPubkeyHex) {
+      return;
+    }
+    Log.warning(
+      'Moderation pubkey diverges from the key pinned in this build: '
+      'adopted $adoptedPubkey, pinned $fallbackModerationPubkeyHex. '
+      'Expected after an intended rotation; otherwise investigate '
+      '$divineModerationNip05 for an unauthorized repoint.',
+      name: 'ModerationLabelService',
+      category: LogCategory.system,
+    );
   }
 
   Future<void> _refreshModerationPubkey() async {
@@ -640,7 +688,7 @@ class ModerationLabelService {
     final resolvedPubkey = await _resolveModerationPubkey(_prefs);
     if (resolvedPubkey == previousPubkey) return;
 
-    _divineModerationPubkey = resolvedPubkey;
+    _adoptModerationPubkey(resolvedPubkey);
     _subscribedLabelers.remove(previousPubkey);
     _subscribedLabelers.add(resolvedPubkey);
     await _saveSubscribedLabelers();

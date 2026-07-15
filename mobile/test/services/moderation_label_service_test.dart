@@ -2,21 +2,50 @@
 // ABOUTME: Validates Kind 1985 label parsing including AI confidence metadata
 
 import 'dart:async';
+import 'dart:typed_data';
 
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:nostr_sdk/nip05/nip05_validor.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
+
+import '../helpers/test_pubkeys.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
 class _MockAuthService extends Mock implements AuthService {}
 
 class _FakeFilter extends Fake implements Filter {}
+
+/// Serves a canned `nostr.json` so the NIP-05 leg resolves without a network.
+class _FakeNip05Adapter implements HttpClientAdapter {
+  _FakeNip05Adapter(this._body);
+
+  final String _body;
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async => ResponseBody.fromString(
+    _body,
+    200,
+    headers: {
+      Headers.contentTypeHeader: [Headers.jsonContentType],
+    },
+  );
+
+  @override
+  void close({bool force = false}) {}
+}
 
 /// Fake event for testing label processing.
 class _FakeLabelEvent extends Fake implements Event {
@@ -49,6 +78,122 @@ void main() {
       authService: mockAuthService,
       sharedPreferences: mockPrefs,
     );
+  });
+
+  group('pinned-key mismatch logging (#4948 tier 1)', () {
+    const pin = ModerationLabelService.fallbackModerationPubkeyHex;
+    const divergentKey = syntheticTestPubkey;
+    const resolvedPubkeyPrefsKey = 'divine_moderation_resolved_pubkey';
+
+    late LogCaptureService logCapture;
+    late HttpClientAdapter originalAdapter;
+
+    setUp(() async {
+      logCapture = LogCaptureService();
+      await logCapture.clearAllLogs();
+      originalAdapter = Nip05Validor.dio.httpClientAdapter;
+    });
+
+    tearDown(() async {
+      // Restore the shared static adapter: an unrestored swap would strand
+      // every later suite in the merged isolate on this fake.
+      Nip05Validor.dio.httpClientAdapter = originalAdapter;
+      await logCapture.clearAllLogs();
+    });
+
+    ModerationLabelService buildService({bool canQueryRelays = false}) =>
+        ModerationLabelService(
+          nostrClient: mockNostrClient,
+          authService: mockAuthService,
+          sharedPreferences: mockPrefs,
+          canQueryRelays: () => canQueryRelays,
+        );
+
+    List<String> pinWarnings() => logCapture
+        .getRecentLogs(minLevel: LogLevel.warning)
+        .map((entry) => entry.message)
+        .where((message) => message.contains('diverges from the key pinned'))
+        .toList();
+
+    test('stays silent when the adopted key is the pinned key', () async {
+      final service = buildService();
+
+      await service.ensureLoaded();
+
+      expect(service.divineModerationPubkeyHex, pin);
+      expect(pinWarnings(), isEmpty);
+    });
+
+    test('warns when a persisted key diverges from the pin', () async {
+      await mockPrefs.setString(resolvedPubkeyPrefsKey, divergentKey);
+      final service = buildService();
+
+      await service.ensureLoaded();
+
+      expect(
+        service.divineModerationPubkeyHex,
+        divergentKey,
+        reason:
+            'tier 1 keeps NIP-05 authoritative; the warning is advisory '
+            'and must not change which key is trusted',
+      );
+      expect(pinWarnings(), hasLength(1));
+    });
+
+    test('names both keys in full so the warning is actionable', () async {
+      await mockPrefs.setString(resolvedPubkeyPrefsKey, divergentKey);
+
+      await buildService().ensureLoaded();
+
+      expect(pinWarnings().single, contains(divergentKey));
+      expect(pinWarnings().single, contains(pin));
+    });
+
+    test('does not warn when a persisted key differs only by case', () async {
+      await mockPrefs.setString(resolvedPubkeyPrefsKey, pin.toUpperCase());
+
+      await buildService().ensureLoaded();
+
+      expect(
+        pinWarnings(),
+        isEmpty,
+        reason:
+            'NIP-05 mandates lowercase hex, but an uppercase answer is '
+            'the same identity — warning on it would cry wolf',
+      );
+    });
+
+    test('canonicalizes a persisted key that differs only by case', () async {
+      await mockPrefs.setString(resolvedPubkeyPrefsKey, pin.toUpperCase());
+
+      final service = buildService();
+      await service.ensureLoaded();
+
+      expect(
+        service.divineModerationPubkeyHex,
+        pin,
+        reason:
+            'the adopted identity feeds the subscription filter, and event '
+            'authors are lowercase on the wire — storing the uppercase form '
+            'would silently match no events',
+      );
+    });
+
+    test('warns when NIP-05 resolves to a key that is not the pin', () async {
+      Nip05Validor.dio.httpClientAdapter = _FakeNip05Adapter(
+        '{"names":{"moderation":"$divergentKey"}}',
+      );
+      when(
+        () => mockNostrClient.queryEvents(any()),
+      ).thenAnswer((_) async => <Event>[]);
+      final service = buildService(canQueryRelays: true);
+
+      await service.initialize();
+
+      expect(service.divineModerationPubkeyHex, divergentKey);
+      expect(pinWarnings(), hasLength(1));
+      expect(pinWarnings().single, contains(divergentKey));
+    });
   });
 
   group(ModerationLabelService, () {
