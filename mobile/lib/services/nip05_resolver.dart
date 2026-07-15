@@ -72,12 +72,15 @@ class Nip05Resolver {
               // redirect and fetchers MUST ignore redirects. Following a 30x is
               // a spurious-APPROVE vector — a MITM or misconfigured origin could
               // bounce the lookup to an attacker host that returns the expected
-              // key for a burner. Do not follow. With Dio's default
-              // validateStatus (2xx only), the unfollowed 3xx fails validation
-              // and throws DioException.badResponse, which _fetchRaw's catch
-              // maps to networkError (no signal). The explicit 3xx guard in
-              // _fetchRaw is defense-in-depth for a future validateStatus that
-              // might accept 3xx as a Response.
+              // key for a burner. Do not follow.
+              //
+              // These flags only bind on dart:io, where the unfollowed 3xx
+              // fails the default validateStatus (2xx only) and throws
+              // DioException.badResponse into _fetchRaw's catch. On Flutter web
+              // dio delegates to XMLHttpRequest, which follows a 30x in the
+              // browser and never reads them — the lookup lands on the redirect
+              // target's 200. _fetchRaw's isRedirect guard is what enforces the
+              // constraint there.
               followRedirects: false,
               maxRedirects: 0,
             ),
@@ -123,12 +126,18 @@ class Nip05Resolver {
       final res = await _dio.get(
         'https://$domain/.well-known/nostr.json?name=$name',
       );
-      // Defense-in-depth for redirects (NIP-05 requires ignoring them). In
-      // production this branch is NOT the one that rejects a 3xx: Dio's default
-      // validateStatus (2xx only) makes an unfollowed 302 throw badResponse,
-      // handled in the DioException catch below. This guard only matters if a
-      // future validateStatus is widened to surface a 3xx as a Response — then a
-      // redirect body still can't resolve to matched.
+      // The only redirect signal that survives every transport. On web a
+      // browser-followed 30x arrives as a 200 flagged isRedirect, so
+      // followRedirects: false never sees it and the default validateStatus
+      // accepts it; without this the redirect target's body would resolve to
+      // matched. On dart:io the 3xx has already thrown into the catch below,
+      // making this a no-op there.
+      if (res.isRedirect) {
+        return const _RawResolution(_RawKind.networkError);
+      }
+      // Defense-in-depth on dart:io: unreachable with the default 2xx
+      // validateStatus, but if it is ever widened to surface a 3xx as a
+      // Response, a redirect body still can't resolve to matched.
       final status = res.statusCode ?? 0;
       if (status >= 300 && status < 400) {
         return const _RawResolution(_RawKind.networkError);
@@ -145,8 +154,9 @@ class Nip05Resolver {
     } on DioException catch (e) {
       // A 404 is an affirmative "this name is not here"; anything else
       // (an unfollowed 3xx redirect, timeout, offline, 5xx, connection reset)
-      // carries no signal. The 3xx lands here because the default validateStatus
-      // (2xx only) rejects it — this is the real redirect-rejection path.
+      // carries no signal. On dart:io an unfollowed 3xx lands here because the
+      // default validateStatus (2xx only) rejects it; on web the browser
+      // follows it instead and the isRedirect guard above catches it.
       if (e.response?.statusCode == 404) {
         return const _RawResolution(_RawKind.absent);
       }

@@ -24,9 +24,14 @@ void main() {
     resolver = Nip05Resolver(dio: dio);
   });
 
-  Response<dynamic> jsonResponse(Object? body, {int status = 200}) => Response(
+  Response<dynamic> jsonResponse(
+    Object? body, {
+    int status = 200,
+    bool isRedirect = false,
+  }) => Response(
     statusCode: status,
     data: body,
+    isRedirect: isRedirect,
     requestOptions: RequestOptions(),
   );
 
@@ -108,6 +113,28 @@ void main() {
         (_) async => jsonResponse({
           'names': {'_': hqHex},
         }, status: 302),
+      );
+
+      final result = await resolver.resolve('_@divinehq.divine.video', hqHex);
+
+      expect(result.kind, Nip05ResolutionKind.networkError);
+    },
+  );
+
+  // The web shape, and the one the two cases above cannot catch. Flutter web
+  // ships to app.divine.video, where dio delegates to XMLHttpRequest: the
+  // browser follows the 30x itself and never reads followRedirects, so the
+  // redirect target's 200 passes the default validateStatus. The body carries
+  // the *expected* key, so without the isRedirect guard a bounced lookup
+  // approves a burner for the protected-minor DM gate.
+  test(
+    'redirect the browser followed (200 flagged isRedirect) -> networkError, '
+    'never approves',
+    () async {
+      when(() => dio.get(any())).thenAnswer(
+        (_) async => jsonResponse({
+          'names': {'_': hqHex},
+        }, isRedirect: true),
       );
 
       final result = await resolver.resolve('_@divinehq.divine.video', hqHex);
