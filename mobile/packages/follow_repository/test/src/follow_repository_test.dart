@@ -197,11 +197,13 @@ void main() {
         when(
           () => mockFunnelcakeClient.getFollowing(
             pubkey: any(named: 'pubkey'),
-            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
           ),
         ).thenAnswer(
+          // funnelcake stores contact-list pubkeys unvalidated and serves them
+          // back verbatim, so an invalid entry reaches this path end-to-end.
           (_) async => const PaginatedPubkeys(
-            pubkeys: [testTargetPubkey, testTargetPubkey2],
+            pubkeys: [testTargetPubkey, 'nos', testTargetPubkey2],
           ),
         );
 
@@ -217,6 +219,7 @@ void main() {
         await repository.initialize();
 
         expect(repository.followingCount, 2);
+        expect(repository.followingPubkeys, isNot(contains('nos')));
         expect(repository.isFollowing(testTargetPubkey), isTrue);
         expect(repository.isFollowing(testTargetPubkey2), isTrue);
 
@@ -225,6 +228,143 @@ void main() {
         final cached = prefs.getString('following_list_$testCurrentUserPubkey');
         expect(cached, isNotNull);
       });
+
+      // #6109: the derived sources (LocalStorage, PersonalEventCache, REST)
+      // lag and truncate, and the next follow rebuilds and republishes the
+      // whole list from whatever they returned. Accepting one as final
+      // destroys every follow it was missing, so the authoritative Kind 3 is
+      // always consulted -- not only when the derived sources came up empty.
+      test(
+        'queries the relay even when local storage already answered',
+        () async {
+          SharedPreferences.setMockInitialValues({
+            'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
+          });
+
+          final authoritative = Event(
+            testCurrentUserPubkey,
+            3,
+            [
+              ['p', testTargetPubkey],
+              ['p', testTargetPubkey2],
+            ],
+            '',
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          );
+
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+              relayTypes: any(named: 'relayTypes'),
+              sendAfterAuth: any(named: 'sendAfterAuth'),
+              onEose: any(named: 'onEose'),
+            ),
+          ).thenAnswer((_) => Stream<Event>.value(authoritative));
+
+          repository = FollowRepository(
+            nostrClient: mockNostrClient,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
+            indexerRelayUrls: const [],
+          );
+
+          await repository.initialize();
+
+          // Without the relay query the list would stay at the stale [target]
+          // and the next follow would republish it, destroying target2.
+          expect(repository.followingPubkeys, contains(testTargetPubkey2));
+          expect(repository.followingCount, 2);
+        },
+      );
+
+      // PersonalEventCache caches Kind 3 events, which is exactly where the
+      // reported `["p","nos"]` entry lives, so a poisoned event replays through
+      // this path on every launch until the cache is evicted.
+      test('drops invalid p tags from a cached Kind 3 event', () async {
+        cacheIsInitialized = true;
+        getCachedEventsByKind = (kind) => kind == 3
+            ? [
+                Event(
+                  testCurrentUserPubkey,
+                  3,
+                  [
+                    ['p', 'nos'],
+                    ['p', testTargetPubkey],
+                  ],
+                  '',
+                  createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                ),
+              ]
+            : <Event>[];
+
+        repository = FollowRepository(
+          nostrClient: mockNostrClient,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
+          indexerRelayUrls: const [],
+        );
+
+        await repository.initialize();
+
+        expect(repository.followingPubkeys, [testTargetPubkey]);
+      });
+
+      // #6109: the server clamps `limit` to 100 whatever we ask for, so an
+      // account with more than 100 follows used to bootstrap from a silently
+      // truncated list.
+      test(
+        'pages past the server limit cap when loading from REST API',
+        () async {
+          // Exactly 64 hex chars each, or _sanitizePubkeys drops them.
+          final page1 = List.generate(
+            100,
+            (i) => 'a' * 60 + i.toRadixString(16).padLeft(4, '0'),
+          );
+          final page2 = [testTargetPubkey, testTargetPubkey2];
+
+          final mockFunnelcakeClient = _MockFunnelcakeApiClient();
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getFollowing(
+              pubkey: any(named: 'pubkey'),
+              offset: any(named: 'offset', that: isZero),
+            ),
+          ).thenAnswer(
+            (_) async => PaginatedPubkeys(
+              pubkeys: page1,
+              total: 102,
+              hasMore: true,
+            ),
+          );
+          when(
+            () => mockFunnelcakeClient.getFollowing(
+              pubkey: any(named: 'pubkey'),
+              offset: 100,
+            ),
+          ).thenAnswer(
+            (_) async => PaginatedPubkeys(pubkeys: page2, total: 102),
+          );
+
+          repository = FollowRepository(
+            nostrClient: mockNostrClient,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            indexerRelayUrls: const [],
+          );
+
+          await repository.initialize();
+
+          expect(repository.followingCount, 102);
+          expect(repository.isFollowing(testTargetPubkey2), isTrue);
+        },
+      );
 
       test('skips REST API when local cache already has data', () async {
         SharedPreferences.setMockInitialValues({
@@ -249,7 +389,7 @@ void main() {
         verifyNever(
           () => mockFunnelcakeClient.getFollowing(
             pubkey: any(named: 'pubkey'),
-            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
           ),
         );
         expect(repository.followingCount, 1);
@@ -261,7 +401,7 @@ void main() {
         when(
           () => mockFunnelcakeClient.getFollowing(
             pubkey: any(named: 'pubkey'),
-            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
           ),
         ).thenThrow(Exception('Network error'));
 
@@ -403,6 +543,107 @@ void main() {
 
         expect(repository.isFollowing(testTargetPubkey), isFalse);
         expect(repository.followingCount, 0);
+      });
+    });
+
+    // Regression: a real user's Kind 3 event carried a `["p","nos"]` entry,
+    // produced by a parser that read `tag[1]` of a `["client","nos",...]` tag
+    // without filtering on `p`. Every follow and unfollow then failed with
+    // `Invalid key: "nos"` from Contact's constructor, because the broadcast
+    // rebuilds the whole list and aborts before publishing.
+    group('invalid pubkey handling', () {
+      const invalidPubkey = 'nos';
+
+      test('drops invalid entries when loading from local storage', () async {
+        SharedPreferences.setMockInitialValues({
+          'following_list_$testCurrentUserPubkey':
+              '["$invalidPubkey", "$testTargetPubkey"]',
+        });
+
+        await repository.initialize();
+
+        expect(repository.followingPubkeys, [testTargetPubkey]);
+        expect(repository.isFollowing(invalidPubkey), isFalse);
+      });
+
+      test('follow succeeds and publishes a clean list when the cached '
+          'list holds an invalid pubkey', () async {
+        SharedPreferences.setMockInitialValues({
+          'following_list_$testCurrentUserPubkey':
+              '["$invalidPubkey", "$testTargetPubkey"]',
+        });
+
+        final mockEvent = _MockEvent();
+        when(() => mockEvent.id).thenReturn(testCurrentUserPubkey);
+        when(() => mockEvent.content).thenReturn('');
+
+        final publishedLists = <ContactList>[];
+        when(
+          () => mockNostrClient.sendContactList(
+            captureAny(),
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((invocation) async {
+          publishedLists.add(invocation.positionalArguments[0] as ContactList);
+          return mockEvent;
+        });
+
+        await repository.initialize();
+
+        await repository.follow(testTargetPubkey2);
+
+        expect(repository.isFollowing(testTargetPubkey2), isTrue);
+        expect(publishedLists, hasLength(1));
+        expect(
+          publishedLists.single.list().map((contact) => contact.publicKey),
+          [testTargetPubkey, testTargetPubkey2],
+        );
+      });
+
+      test('throws when following an invalid pubkey', () async {
+        await repository.initialize();
+
+        await expectLater(
+          repository.follow(invalidPubkey),
+          throwsA(isA<ArgumentError>()),
+        );
+        expect(repository.followingCount, 0);
+      });
+
+      // executeFollowAction replays queued actions without validating, so the
+      // publish-site sanitize is the only thing that drops an invalid entry
+      // there. Observers must not be left holding one the getter has dropped.
+      test('emits the sanitized list when the broadcast drops an invalid '
+          'pubkey', () async {
+        final mockEvent = _MockEvent();
+        when(() => mockEvent.id).thenReturn(testCurrentUserPubkey);
+        when(() => mockEvent.content).thenReturn('');
+
+        when(
+          () => mockNostrClient.sendContactList(
+            any(),
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => mockEvent);
+
+        await repository.initialize();
+
+        final emittedValues = <List<String>>[];
+        final subscription = repository.followingStream.listen(
+          emittedValues.add,
+        );
+
+        await repository.executeFollowAction(invalidPubkey);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(repository.followingPubkeys, isEmpty);
+        expect(emittedValues.last, isEmpty);
+
+        await subscription.cancel();
       });
     });
 
@@ -1213,6 +1454,31 @@ void main() {
         expect(snapshot.count, equals(0));
       });
 
+      // Also backs watchMyFollowingCached() -> MyFollowingBloc for the current
+      // user, so an unfiltered entry would render as a ghost row on the own
+      // Following screen and be persisted to Drift by CacheSync.
+      test('drops invalid p tags and keeps count in step', () async {
+        final event = Event(
+          testTargetPubkey,
+          3,
+          [
+            ['p', 'nos'],
+            ['p', testTargetPubkey2],
+          ],
+          '',
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        );
+
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event]);
+
+        final snapshot = await repository.getOthersFollowing(testTargetPubkey);
+
+        expect(snapshot.pubkeys, [testTargetPubkey2]);
+        expect(snapshot.count, 1);
+      });
+
       test('returns following list from Kind 3 event p-tags', () async {
         final event = Event(
           testTargetPubkey,
@@ -1331,6 +1597,26 @@ void main() {
 
         expect(repository.followingPubkeys, contains(testTargetPubkey));
         expect(repository.followingCount, 1);
+      });
+
+      test('drops invalid p tags from a remote Kind 3 event', () async {
+        await repository.initialize();
+
+        final remoteEvent = Event(
+          testCurrentUserPubkey,
+          3,
+          [
+            ['p', 'nos'],
+            ['p', testTargetPubkey],
+          ],
+          '',
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 100,
+        );
+
+        realTimeStreamController.add(remoteEvent);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(repository.followingPubkeys, [testTargetPubkey]);
       });
 
       test('updates with multiple followed users from remote event', () async {
@@ -2643,7 +2929,7 @@ void main() {
         when(
           () => mockFunnelcakeClient.getFollowing(
             pubkey: any(named: 'pubkey'),
-            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
           ),
         ).thenAnswer(
           (_) async => PaginatedPubkeys.empty,
@@ -2682,7 +2968,7 @@ void main() {
         verifyNever(
           () => mockFunnelcakeClient.getFollowing(
             pubkey: any(named: 'pubkey'),
-            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
           ),
         );
       });
@@ -2708,7 +2994,7 @@ void main() {
         verifyNever(
           () => mockFunnelcakeClient.getFollowing(
             pubkey: any(named: 'pubkey'),
-            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
           ),
         );
       });

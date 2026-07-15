@@ -127,6 +127,37 @@ class FollowRepository {
   bool get isInitialized => _isInitialized;
   int get followingCount => _followingPubkeys.length;
 
+  /// Drops entries that are not 32-byte hex pubkeys.
+  ///
+  /// Every source of the following list is untrusted: Kind 3 events are
+  /// written by any Nostr client, and both the REST API and our caches are
+  /// derived from those events. A single non-hex entry makes
+  /// [_broadcastContactList] throw in `Contact`'s constructor, which aborts
+  /// the publish and permanently blocks every follow and unfollow — a real
+  /// contact list on `wss://relay.divine.video` carries a `["p","nos"]` entry.
+  /// Its origin was never identified: `"nos"` matches `tag[1]` of the
+  /// `["client","nos",...]` tag the Nos app writes, but no parser reading that
+  /// value without filtering on `p` exists in this repo or its history.
+  List<String> _sanitizePubkeys(
+    List<String> pubkeys, {
+    required String source,
+  }) {
+    final valid = pubkeys.where(keyIsValid).toList();
+
+    final droppedCount = pubkeys.length - valid.length;
+    if (droppedCount > 0) {
+      final dropped = pubkeys.where((pubkey) => !keyIsValid(pubkey));
+      Log.warning(
+        'Dropped $droppedCount invalid pubkey(s) from $source: '
+        '${dropped.join(', ')}',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+    }
+
+    return valid;
+  }
+
   /// Emit current state to stream (only if the list actually changed)
   void _emitFollowingList() {
     if (!_followingSubject.isClosed) {
@@ -258,7 +289,16 @@ class FollowRepository {
       }
     }
 
-    return FollowingSnapshot(pubkeys: following, count: following.length);
+    // Backs watchMyFollowingCached() for the current user too, so an invalid
+    // entry would surface as a ghost row on the own-Following screen and be
+    // persisted to Drift by CacheSync. Count follows the sanitized list so the
+    // header cannot disagree with the rows.
+    final sanitized = _sanitizePubkeys(
+      following,
+      source: 'Kind 3 event from $pubkey',
+    );
+
+    return FollowingSnapshot(pubkeys: sanitized, count: sanitized.length);
   }
 
   // ---- CacheSync-backed stale-while-revalidate watchers --------------------
@@ -1203,10 +1243,13 @@ class FollowRepository {
         await _loadFromRestApi();
       }
 
-      // 4. If still empty, query relays for kind 3 contact list directly.
-      // The REST API may not have indexed the user's contact list yet,
-      // but the relay has the authoritative kind 3 event.
-      if (_followingPubkeys.isEmpty && _nostrClient.hasKeys) {
+      // 4. Always query relays for the authoritative kind 3 event, even when
+      // a derived source already answered. LocalStorage, PersonalEventCache
+      // and the REST index are all derived from this event and can lag or
+      // truncate; because the next follow rebuilds and republishes the whole
+      // list, accepting an incomplete one destroys every follow it is
+      // missing (#6109).
+      if (_nostrClient.hasKeys) {
         await _loadFromRelay();
       }
 
@@ -1234,7 +1277,14 @@ class FollowRepository {
     }
   }
 
-  /// Follow a user
+  /// Follow a user.
+  ///
+  /// Throws:
+  ///
+  /// * [ArgumentError] if [pubkey] is not a 32-byte hex pubkey.
+  /// * [Exception] if the user is not authenticated.
+  /// * Anything the Kind 3 publish or the local-storage write threw, after
+  ///   rolling the optimistic update back.
   Future<void> follow(String pubkey) async {
     if (!_nostrClient.hasKeys) {
       Log.error(
@@ -1243,6 +1293,17 @@ class FollowRepository {
         category: LogCategory.system,
       );
       throw Exception('User not authenticated');
+    }
+
+    // Guard: keep invalid keys out of the list rather than letting them fail
+    // the Kind 3 publish later, which would block every subsequent follow.
+    if (!keyIsValid(pubkey)) {
+      Log.error(
+        'Cannot follow - invalid pubkey: $pubkey',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+      throw ArgumentError.value(pubkey, 'pubkey', 'Invalid key');
     }
 
     // Guard: Prevent following self
@@ -1470,8 +1531,10 @@ class FollowRepository {
   /// any follows that were added on other devices while offline.
   Future<void> mergeFollows(List<String> additionalPubkeys) async {
     // Remove self if accidentally included
-    final merged = <String>{..._followingPubkeys, ...additionalPubkeys}
-      ..remove(_nostrClient.publicKey);
+    final merged = <String>{
+      ..._followingPubkeys,
+      ..._sanitizePubkeys(additionalPubkeys, source: 'merged follows'),
+    }..remove(_nostrClient.publicKey);
 
     if (merged.length != _followingPubkeys.length ||
         !merged.every(_followingPubkeys.contains)) {
@@ -1504,7 +1567,10 @@ class FollowRepository {
 
         if (cached != null) {
           final decoded = jsonDecode(cached) as List<dynamic>;
-          _followingPubkeys = decoded.cast<String>();
+          _followingPubkeys = _sanitizePubkeys(
+            decoded.cast<String>(),
+            source: 'LocalStorage',
+          );
           _emitFollowingList();
 
           Log.info(
@@ -1541,11 +1607,14 @@ class FollowRepository {
           (tag) => tag.isNotEmpty && tag[0] == 'p',
         );
 
-        final pubkeys = pTags
-            .map((tag) => tag.length > 1 ? tag[1] : '')
-            .where((pubkey) => pubkey.isNotEmpty)
-            .cast<String>()
-            .toList();
+        final pubkeys = _sanitizePubkeys(
+          pTags
+              .map((tag) => tag.length > 1 ? tag[1] : '')
+              .where((pubkey) => pubkey.isNotEmpty)
+              .cast<String>()
+              .toList(),
+          source: 'PersonalEventCache',
+        );
 
         if (pubkeys.isNotEmpty) {
           // Guard: only accept the cached event when it is at least as
@@ -1586,11 +1655,19 @@ class FollowRepository {
     }
   }
 
+  /// Upper bound on REST bootstrap paging, mirroring the ceiling the old
+  /// single `limit: 5000` request implied.
+  static const _restFollowingMaxPubkeys = 5000;
+
   /// Load following list from REST API (funnelcake) for fast bootstrap.
   ///
   /// Called only when local cache and PersonalEventCache are both empty
   /// (e.g., first login or after identity change cleanup). This provides
   /// the following list before the WebSocket subscription can deliver it.
+  ///
+  /// The result is a fast first paint, never the last word: it comes from a
+  /// derived index that lags, so [initialize] always follows it with the
+  /// authoritative Kind 3 from the relay.
   Future<void> _loadFromRestApi() async {
     try {
       final currentUserPubkey = _nostrClient.publicKey;
@@ -1606,11 +1683,24 @@ class FollowRepository {
         category: LogCategory.system,
       );
 
-      final result = await _funnelcakeApiClient.getFollowing(
-        pubkey: currentUserPubkey,
-        limit: 5000,
-      );
-      final pubkeys = result.pubkeys;
+      // The server clamps `limit` to 100 however much we ask for, so page on
+      // `offset` instead of requesting one large batch. Asking for 5000 and
+      // silently receiving 100 is what let a truncated list become the base
+      // for the next publish (#6109).
+      final collected = <String>[];
+      while (collected.length < _restFollowingMaxPubkeys) {
+        final page = await _funnelcakeApiClient.getFollowing(
+          pubkey: currentUserPubkey,
+          offset: collected.length,
+        );
+
+        if (page.pubkeys.isEmpty) break;
+        collected.addAll(page.pubkeys);
+
+        if (!page.hasMore && collected.length >= page.total) break;
+      }
+
+      final pubkeys = _sanitizePubkeys(collected, source: 'REST API');
 
       if (pubkeys.isNotEmpty) {
         _followingPubkeys = pubkeys;
@@ -1681,8 +1771,7 @@ class FollowRepository {
       if (currentUserPubkey.isEmpty) return;
 
       Log.info(
-        'Querying relay for kind 3 contact list '
-        '(REST API had no data)',
+        'Querying relay for authoritative kind 3 contact list',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -1915,6 +2004,16 @@ class FollowRepository {
 
   /// Broadcast updated contact list to network (Kind 3 event)
   Future<void> _broadcastContactList() async {
+    // Last line of defence: [executeFollowAction] appends without validating,
+    // and an invalid pubkey here makes Contact's constructor throw and abort
+    // the publish, blocking every follow and unfollow until the entry is gone.
+    // Emit so observers do not keep a dropped entry the getter no longer has.
+    _followingPubkeys = _sanitizePubkeys(
+      _followingPubkeys,
+      source: 'in-memory following list',
+    );
+    _emitFollowingList();
+
     // Create ContactList with all followed pubkeys
     final contactList = ContactList();
     for (final pubkey in _followingPubkeys) {
@@ -1994,12 +2093,16 @@ class FollowRepository {
       _currentUserContactListEvent = event;
 
       // Extract followed pubkeys from 'p' tags
-      final followedPubkeys = <String>[];
+      final taggedPubkeys = <String>[];
       for (final tag in event.tags) {
         if (tag.isNotEmpty && tag[0] == 'p' && tag.length > 1) {
-          followedPubkeys.add(tag[1]);
+          taggedPubkeys.add(tag[1]);
         }
       }
+      final followedPubkeys = _sanitizePubkeys(
+        taggedPubkeys,
+        source: 'network Kind 3 event ${event.id}',
+      );
 
       // Guard: detect catastrophic list reduction from buggy external clients.
       // A common Nostr footgun is publishing a Kind 3 event without first
