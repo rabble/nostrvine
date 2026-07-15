@@ -11,6 +11,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:models/models.dart' show NativeProofData;
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/background_activity_manager.dart';
@@ -22,6 +23,7 @@ import 'package:openvine/services/upload/upload_progress_reporter.dart';
 import 'package:openvine/services/upload/upload_retry_policy.dart';
 import 'package:openvine/services/upload/upload_session_errors.dart';
 import 'package:openvine/services/upload_initialization_helper.dart';
+import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:path/path.dart' as path;
@@ -359,9 +361,26 @@ class UploadManager implements BackgroundAwareService {
       );
     }
 
+    // A stop-motion clip's source of truth is its stills, not an mp4, so
+    // requireVideo throws on one. Publish normally materializes it up front and
+    // hands the upload the rendered clip; this fallback path only runs when
+    // that render has gone missing, so it has to re-render rather than
+    // dereference a video that was never there.
+    Future<DivineVideoClip> materializedSource(DivineVideoClip clip) async {
+      if (!clip.isStopMotion) return clip;
+      final materialized = await StopMotionRenderService.materialize(clip);
+      if (materialized == null) {
+        throw StateError(
+          'Stop-motion assembly failed for clip ${clip.id} — nothing to upload',
+        );
+      }
+      return materialized;
+    }
+
     Future<String> prepareUploadFromSourceClips() async {
       if (draft.clips.length == 1) {
-        return draft.clips.first.requireVideo.safeFilePath();
+        final source = await materializedSource(draft.clips.first);
+        return source.requireVideo.safeFilePath();
       }
 
       final tempDir = await getTemporaryDirectory();
@@ -375,12 +394,14 @@ class UploadManager implements BackgroundAwareService {
         name: 'UploadManager',
         category: .video,
       );
+      final videoSegments = <VideoSegment>[
+        for (final clip in draft.clips)
+          VideoSegment(video: (await materializedSource(clip)).requireVideo),
+      ];
       await VideoEditorRenderService.renderNativeVideoToFile(
         mergedPath,
         VideoRenderData(
-          videoSegments: draft.clips
-              .map((clip) => VideoSegment(video: clip.requireVideo))
-              .toList(),
+          videoSegments: videoSegments,
           endTime: VideoEditorConstants.maxDuration,
           shouldOptimizeForNetworkUse: true,
         ),

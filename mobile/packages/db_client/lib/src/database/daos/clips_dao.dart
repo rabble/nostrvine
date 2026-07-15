@@ -323,36 +323,81 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
 
   /// Check if a filename is referenced by any clip-owned file reference.
   ///
+  /// Prefer [referencedFilenames] when checking more than one file — the JSON
+  /// scan below is unindexed, so a per-file loop pays for a full scan each.
+  Future<bool> isFileReferenced(String filename) async {
+    final referenced = await referencedFilenames({filename});
+    return referenced.isNotEmpty;
+  }
+
+  /// The subset of [filenames] referenced by any clip-owned file reference.
+  ///
   /// The indexed `file_path` / `thumbnail_path` columns cover normal clips and
   /// thumbnail assets. Frames-only stop-motion clips have no `file_path`; their
   /// source stills live inside the JSON `data` blob as
   /// `stopMotionFrames[].path`, so candidate JSON rows are decoded and checked
   /// before cleanup deletes a shared frame file.
-  Future<bool> isFileReferenced(String filename) async {
-    final indexedQuery = selectOnly(clips)
-      ..addColumns([clips.id.count()])
-      ..where(
-        clips.filePath.equals(filename) |
-            clips.thumbnailPath.equals(filename) |
-            clips.data.like('%"$filename"%'),
-      );
-    final indexedResult = await indexedQuery.getSingle();
-    if ((indexedResult.read(clips.id.count()) ?? 0) > 0) return true;
+  ///
+  /// Resolves the whole set in a single scan rather than one per filename:
+  /// `data` is unindexed, and deleting one stop-motion session asks about every
+  /// still in it at once.
+  Future<Set<String>> referencedFilenames(Set<String> filenames) async {
+    if (filenames.isEmpty) return const <String>{};
 
+    final referenced = <String>{};
+    final indexedRows =
+        await (selectOnly(clips)
+              ..addColumns([clips.filePath, clips.thumbnailPath])
+              ..where(
+                clips.filePath.isIn(filenames) |
+                    clips.thumbnailPath.isIn(filenames),
+              ))
+            .get();
+    for (final row in indexedRows) {
+      final filePath = row.read(clips.filePath);
+      final thumbnailPath = row.read(clips.thumbnailPath);
+      if (filePath != null && filenames.contains(filePath)) {
+        referenced.add(filePath);
+      }
+      if (thumbnailPath != null && filenames.contains(thumbnailPath)) {
+        referenced.add(thumbnailPath);
+      }
+    }
+
+    final unresolved = filenames.difference(referenced).toList();
+    if (unresolved.isEmpty) return referenced;
+
+    // One scan for every remaining filename. The LIKE only narrows which rows
+    // are worth decoding — a match is not a reference on its own (the filename
+    // could sit in any string field), so every hit is confirmed against the
+    // decoded JSON below.
+    final likeClauses = List.filled(
+      unresolved.length,
+      r"data LIKE ? ESCAPE '\'",
+    ).join(' OR ');
     final candidateRows = await customSelect(
-      r"SELECT data FROM clips WHERE data LIKE ? ESCAPE '\'",
-      variables: [Variable.withString('%${_escapeSqlLike(filename)}%')],
+      'SELECT data FROM clips WHERE $likeClauses',
+      variables: [
+        for (final filename in unresolved)
+          Variable.withString('%${_escapeSqlLike(filename)}%'),
+      ],
       readsFrom: {clips},
     ).get();
 
-    return candidateRows.any((row) {
+    for (final row in candidateRows) {
+      final Object? data;
       try {
-        final data = json.decode(row.read<String>('data'));
-        return _jsonReferencesFilename(data, filename);
+        data = json.decode(row.read<String>('data'));
       } on FormatException {
-        return false;
+        continue;
       }
-    });
+      for (final filename in unresolved) {
+        if (referenced.contains(filename)) continue;
+        if (_jsonReferencesFilename(data, filename)) referenced.add(filename);
+      }
+    }
+
+    return referenced;
   }
 
   static const _jsonFilePathKeys = {

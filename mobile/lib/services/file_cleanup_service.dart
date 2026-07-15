@@ -72,13 +72,30 @@ class FileCleanupService {
         .where((path) => path != null && path.isNotEmpty)
         .cast<String>()
         .toList();
+    if (validPaths.isEmpty) return;
+
+    // Resolved as one set: a stop-motion clip hands every one of its stills to
+    // this call, and the clip references that hold them are in an unindexed
+    // JSON blob — asking per file would scan the table once per still.
+    final referencedByClips = await clipsDao.referencedFilenames(
+      validPaths.map(p.basename).toSet(),
+    );
 
     for (final path in validPaths) {
-      await deleteFileIfUnreferenced(
-        path,
-        draftsDao: draftsDao,
-        clipsDao: clipsDao,
-      );
+      if (!File(path).existsSync()) continue;
+
+      final filename = p.basename(path);
+      if (referencedByClips.contains(filename) ||
+          await draftsDao.isDraftFileReferenced(filename)) {
+        Log.info(
+          '🔗 File still referenced, skipping delete: $path',
+          name: 'FileCleanupService',
+          category: LogCategory.video,
+        );
+        continue;
+      }
+
+      await _deleteFile(path);
     }
   }
 
