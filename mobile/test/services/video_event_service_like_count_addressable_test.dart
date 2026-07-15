@@ -143,6 +143,53 @@ void main() {
     );
 
     test(
+      '_applyLikeCountToVideo direct-replaces the cached count, including '
+      'lowering it (#6102 review)',
+      () async {
+        final event = makeEvent('merge-vine');
+        service.handleEventForTesting(event, SubscriptionType.discovery);
+        final video = VideoEvent.fromNostrEvent(event);
+
+        int? cachedLikeCount() => service.discoveryVideos
+            .firstWhere((v) => v.id == video.id)
+            .nostrLikeCount;
+
+        // First resolve applies null -> 10.
+        expect(
+          service.applyLikeCountForTesting(
+            video.id,
+            10,
+            SubscriptionType.discovery,
+          ),
+          isTrue,
+        );
+        expect(cachedLikeCount(), 10);
+
+        // A later, lower resolve DOES lower the cached count — nostrLikeCount
+        // is a live relay-derived count that legitimately decreases (e.g.
+        // after the user's own unlike decrements LikesRepository's count
+        // cache, or a reaction is deleted), so a max-merge floor here would
+        // wrongly freeze it at the session high. #6022's addressable floor
+        // is applied once, in VideoInteractionsBloc._onFetchRequested,
+        // independent of this cache.
+        service.applyLikeCountForTesting(
+          video.id,
+          4,
+          SubscriptionType.discovery,
+        );
+        expect(cachedLikeCount(), 4);
+
+        // A higher resolve still raises it.
+        service.applyLikeCountForTesting(
+          video.id,
+          15,
+          SubscriptionType.discovery,
+        );
+        expect(cachedLikeCount(), 15);
+      },
+    );
+
+    test(
       'non-addressable videos are omitted from the addressableIds batch map',
       () async {
         final addressableEvent = makeEvent('addressable-vine');

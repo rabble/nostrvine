@@ -4876,7 +4876,19 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
 
     final videoEvent = eventList[index];
 
-    // Update the video with the like count
+    // Direct-replace, not max-merge: unlike the archival originalLikes /
+    // originalLoops / originalComments / originalReposts fields (fixed
+    // values baked into event tags, safe to merge with #3384's
+    // mergeNullableEngagementMax), nostrLikeCount is a live relay-derived
+    // count that legitimately decreases — e.g. after the user's own unlike
+    // decrements LikesRepository's count cache, or a reaction is deleted.
+    // A max-merge here would ratchet this cache's value up across every
+    // future re-application (this video re-entering another subscription
+    // bucket, a later batch, etc.) and permanently block that self-
+    // correction. #6022's addressable floor doesn't need protection at this
+    // layer: it's already a correctly-scoped, one-time comparison in
+    // VideoInteractionsBloc._onFetchRequested between the feed seed and a
+    // fresh relay resolve, independent of this cache (#6102 review).
     final updatedVideo = videoEvent.copyWith(nostrLikeCount: likeCount);
     eventList[index] = updatedVideo;
 
@@ -5855,6 +5867,15 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   Future<void> flushPendingLikeCountBatchForTesting() {
     return _executeLikeCountBatchFetch();
   }
+
+  /// Apply a resolved like count to a cached video, bypassing the batch and
+  /// debounce, to exercise [_applyLikeCountToVideo] directly.
+  @visibleForTesting
+  bool applyLikeCountForTesting(
+    String videoId,
+    int likeCount,
+    SubscriptionType subscriptionType,
+  ) => _applyLikeCountToVideo(videoId, likeCount, subscriptionType);
 
   /// Run automatic diagnostics when feed fails to load events
   /// This logs relay status, connection info, and tests direct queries to help debug

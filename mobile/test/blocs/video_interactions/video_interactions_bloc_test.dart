@@ -72,6 +72,7 @@ void main() {
     VideoInteractionsBloc createBloc({
       String? addressableId,
       int? initialLikeCount,
+      int? archivedLikeCount,
       int? initialCommentCount,
       int? initialRepostCount,
     }) => VideoInteractionsBloc(
@@ -82,6 +83,7 @@ void main() {
       repostsRepository: mockRepostsRepository,
       addressableId: addressableId,
       initialLikeCount: initialLikeCount,
+      archivedLikeCount: archivedLikeCount,
       initialCommentCount: initialCommentCount,
       initialRepostCount: initialRepostCount,
     );
@@ -141,7 +143,12 @@ void main() {
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
-        'does not overwrite seeded engagement counts with relay counts',
+        // #6022: the like floor is addressable + likes-ONLY. The clean
+        // addressable relay resolve raises the like count above the seed, but
+        // comment and repost counts are NOT floored — their higher relay
+        // values must not overwrite the seeded display counts.
+        'floors only the like count up to the addressable relay resolve; '
+        'comments and reposts keep their seed',
         setUp: () {
           when(
             () => mockLikesRepository.isLiked(testEventId),
@@ -181,55 +188,7 @@ void main() {
           ),
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
-            likeCount: 1,
-            commentCount: 0,
-            repostCount: 0,
-          ),
-        ],
-      );
-
-      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
-        'preserves pasted payload counts when relay returns bogus 100/20',
-        setUp: () {
-          when(
-            () => mockLikesRepository.isLiked(testEventId),
-          ).thenAnswer((_) async => false);
-          when(
-            () => mockRepostsRepository.isReposted(testAddressableId),
-          ).thenAnswer((_) async => false);
-          when(
-            () => mockLikesRepository.getLikeCount(
-              testEventId,
-              addressableId: testAddressableId,
-            ),
-          ).thenAnswer((_) async => 100);
-          when(
-            () => mockCommentsRepository.getCommentsCount(
-              testEventId,
-              rootAddressableId: testAddressableId,
-            ),
-          ).thenAnswer((_) async => 0);
-          when(
-            () => mockRepostsRepository.getRepostCount(testAddressableId),
-          ).thenAnswer((_) async => 20);
-        },
-        build: () => createBloc(
-          addressableId: testAddressableId,
-          initialLikeCount: 2,
-          initialCommentCount: 0,
-          initialRepostCount: 0,
-        ),
-        act: (bloc) => bloc.add(const VideoInteractionsFetchRequested()),
-        expect: () => [
-          const VideoInteractionsState(
-            status: VideoInteractionsStatus.loading,
-            likeCount: 2,
-            commentCount: 0,
-            repostCount: 0,
-          ),
-          const VideoInteractionsState(
-            status: VideoInteractionsStatus.success,
-            likeCount: 2,
+            likeCount: 100,
             commentCount: 0,
             repostCount: 0,
           ),
@@ -279,12 +238,13 @@ void main() {
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
-        // Companion to the non-addressable case above: production feed items
-        // for Kind 34236 videos pass both eventId and addressableId to
-        // getLikeCount(), so the relay query still fires but the pre-seeded
-        // count remains the display source of truth.
-        'fetches relay like count with addressableId but preserves seeded '
-        'initialLikeCount',
+        // #6022: for addressable (Kind 34236) videos, getLikeCount resolves the
+        // clean distinct-liker set. When that resolve exceeds the funnelcake
+        // seed (e.g. the seed undercounts due to ingestion lag), the floor
+        // raises the displayed count to the relay value. It only ever raises,
+        // never lowers (see the relay-0 regression tests below).
+        'raises the addressable like count to the relay resolve when it '
+        'exceeds the seed (#6022)',
         setUp: () {
           when(
             () => mockLikesRepository.isLiked(testEventId),
@@ -318,7 +278,7 @@ void main() {
           ),
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
-            likeCount: 50,
+            likeCount: 75,
             repostCount: 2,
             commentCount: 3,
           ),
@@ -331,6 +291,147 @@ void main() {
             ),
           ).called(1);
         },
+      );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        // #6022 case A: funnelcake returned reactions:0 so the seed is 0 (not
+        // null). The old `seed ?? fetched` kept 0 and hid real relay likes; the
+        // floor raises a zero addressable seed to the relay resolve.
+        'raises a zero addressable seed to the relay resolve (#6022)',
+        setUp: () {
+          when(
+            () => mockLikesRepository.isLiked(testEventId),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockRepostsRepository.isReposted(testAddressableId),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockLikesRepository.getLikeCount(
+              testEventId,
+              addressableId: testAddressableId,
+            ),
+          ).thenAnswer((_) async => 8);
+          when(
+            () => mockCommentsRepository.getCommentsCount(
+              testEventId,
+              rootAddressableId: testAddressableId,
+            ),
+          ).thenAnswer((_) async => 0);
+          when(
+            () => mockRepostsRepository.getRepostCount(testAddressableId),
+          ).thenAnswer((_) async => 0);
+        },
+        build: () =>
+            createBloc(addressableId: testAddressableId, initialLikeCount: 0),
+        act: (bloc) => bloc.add(const VideoInteractionsFetchRequested()),
+        expect: () => [
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.loading,
+            likeCount: 0,
+          ),
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            likeCount: 8,
+            repostCount: 0,
+            commentCount: 0,
+          ),
+        ],
+      );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        // #6022 D3: the floor keeps the archival (classic Vine) baseline out of
+        // the Nostr floor. Seed 102 = 100 archival + 2 Nostr; the relay resolves
+        // 5 Nostr likes. A whole-seed max would keep 102 and MISS the extra
+        // Nostr likes; the Nostr-portion floor yields 100 + max(2, 5) = 105.
+        'keeps archival likes out of the Nostr floor and surfaces newly '
+        'resolved Nostr likes (#6022)',
+        setUp: () {
+          when(
+            () => mockLikesRepository.isLiked(testEventId),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockRepostsRepository.isReposted(testAddressableId),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockLikesRepository.getLikeCount(
+              testEventId,
+              addressableId: testAddressableId,
+            ),
+          ).thenAnswer((_) async => 5);
+          when(
+            () => mockCommentsRepository.getCommentsCount(
+              testEventId,
+              rootAddressableId: testAddressableId,
+            ),
+          ).thenAnswer((_) async => 0);
+          when(
+            () => mockRepostsRepository.getRepostCount(testAddressableId),
+          ).thenAnswer((_) async => 0);
+        },
+        build: () => createBloc(
+          addressableId: testAddressableId,
+          initialLikeCount: 102,
+          archivedLikeCount: 100,
+        ),
+        act: (bloc) => bloc.add(const VideoInteractionsFetchRequested()),
+        expect: () => [
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.loading,
+            likeCount: 102,
+          ),
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            likeCount: 105,
+            repostCount: 0,
+            commentCount: 0,
+          ),
+        ],
+      );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        // #6022: guards the seed-dominant branch — when the seed already
+        // exceeds the archival + relay-resolved Nostr count, a non-zero relay
+        // resolve below it leaves the seed intact (the raise direction is
+        // covered by the tests above).
+        'never lowers an addressable seed below the relay resolve (#6022)',
+        setUp: () {
+          when(
+            () => mockLikesRepository.isLiked(testEventId),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockRepostsRepository.isReposted(testAddressableId),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockLikesRepository.getLikeCount(
+              testEventId,
+              addressableId: testAddressableId,
+            ),
+          ).thenAnswer((_) async => 40);
+          when(
+            () => mockCommentsRepository.getCommentsCount(
+              testEventId,
+              rootAddressableId: testAddressableId,
+            ),
+          ).thenAnswer((_) async => 0);
+          when(
+            () => mockRepostsRepository.getRepostCount(testAddressableId),
+          ).thenAnswer((_) async => 0);
+        },
+        build: () =>
+            createBloc(addressableId: testAddressableId, initialLikeCount: 100),
+        act: (bloc) => bloc.add(const VideoInteractionsFetchRequested()),
+        expect: () => [
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.loading,
+            likeCount: 100,
+          ),
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            likeCount: 100,
+            repostCount: 0,
+            commentCount: 0,
+          ),
+        ],
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
