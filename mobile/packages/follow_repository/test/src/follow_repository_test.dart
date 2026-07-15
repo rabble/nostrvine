@@ -406,6 +406,73 @@ void main() {
       });
     });
 
+    // Regression: a real user's Kind 3 event carried a `["p","nos"]` entry,
+    // produced by a parser that read `tag[1]` of a `["client","nos",...]` tag
+    // without filtering on `p`. Every follow and unfollow then failed with
+    // `Invalid key: "nos"` from Contact's constructor, because the broadcast
+    // rebuilds the whole list and aborts before publishing.
+    group('invalid pubkey handling', () {
+      const invalidPubkey = 'nos';
+
+      test('drops invalid entries when loading from local storage', () async {
+        SharedPreferences.setMockInitialValues({
+          'following_list_$testCurrentUserPubkey':
+              '["$invalidPubkey", "$testTargetPubkey"]',
+        });
+
+        await repository.initialize();
+
+        expect(repository.followingPubkeys, [testTargetPubkey]);
+        expect(repository.isFollowing(invalidPubkey), isFalse);
+      });
+
+      test('follow succeeds and publishes a clean list when the cached '
+          'list holds an invalid pubkey', () async {
+        SharedPreferences.setMockInitialValues({
+          'following_list_$testCurrentUserPubkey':
+              '["$invalidPubkey", "$testTargetPubkey"]',
+        });
+
+        final mockEvent = _MockEvent();
+        when(() => mockEvent.id).thenReturn(testCurrentUserPubkey);
+        when(() => mockEvent.content).thenReturn('');
+
+        final publishedLists = <ContactList>[];
+        when(
+          () => mockNostrClient.sendContactList(
+            captureAny(),
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((invocation) async {
+          publishedLists.add(invocation.positionalArguments[0] as ContactList);
+          return mockEvent;
+        });
+
+        await repository.initialize();
+
+        await repository.follow(testTargetPubkey2);
+
+        expect(repository.isFollowing(testTargetPubkey2), isTrue);
+        expect(publishedLists, hasLength(1));
+        expect(
+          publishedLists.single.list().map((contact) => contact.publicKey),
+          [testTargetPubkey, testTargetPubkey2],
+        );
+      });
+
+      test('throws when following an invalid pubkey', () async {
+        await repository.initialize();
+
+        await expectLater(
+          repository.follow(invalidPubkey),
+          throwsA(isA<ArgumentError>()),
+        );
+        expect(repository.followingCount, 0);
+      });
+    });
+
     group('unfollow', () {
       test('throws when not authenticated', () async {
         when(() => mockNostrClient.hasKeys).thenReturn(false);
@@ -1331,6 +1398,26 @@ void main() {
 
         expect(repository.followingPubkeys, contains(testTargetPubkey));
         expect(repository.followingCount, 1);
+      });
+
+      test('drops invalid p tags from a remote Kind 3 event', () async {
+        await repository.initialize();
+
+        final remoteEvent = Event(
+          testCurrentUserPubkey,
+          3,
+          [
+            ['p', 'nos'],
+            ['p', testTargetPubkey],
+          ],
+          '',
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 100,
+        );
+
+        realTimeStreamController.add(remoteEvent);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(repository.followingPubkeys, [testTargetPubkey]);
       });
 
       test('updates with multiple followed users from remote event', () async {
