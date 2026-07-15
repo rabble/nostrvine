@@ -322,11 +322,15 @@ abstract class StopMotionFrameOps {
   ) {
     return [
       for (final frame in frames)
-        if (_isReadableImage(frame.path)) frame,
+        if (isReadableImage(frame.path)) frame,
     ];
   }
 
-  static bool _isReadableImage(String path) {
+  /// Whether the still at [path] exists on disk and is non-empty.
+  ///
+  /// Two synchronous syscalls; check a single still as it is captured rather
+  /// than re-sweeping an accumulated session (see [existingFrames]).
+  static bool isReadableImage(String path) {
     try {
       final file = File(path);
       return file.existsSync() && file.lengthSync() > 0;
@@ -345,8 +349,11 @@ abstract class StopMotionFrameOps {
     final frames = clip.stopMotionFrames;
     if (frames == null) return clip;
     final readable = existingFrames(frames);
-    if (readable.length == frames.length) return clip;
+    // Ordered before the length check: an already-empty frame list satisfies
+    // `readable.length == frames.length` (0 == 0) and would otherwise pass
+    // through as a valid stop-motion clip with nothing to render.
     if (readable.isEmpty) return null;
+    if (readable.length == frames.length) return clip;
     return clipWithFrames(clip, readable);
   }
 

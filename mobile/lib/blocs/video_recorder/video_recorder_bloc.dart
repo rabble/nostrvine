@@ -1504,6 +1504,14 @@ class VideoRecorderBloc
     VideoRecorderMode mode, {
     required bool keepAutosavedDraft,
   }) {
+    // An assemble owns the captured stills until it resolves: it saves them to
+    // the library across an await, while this method deletes them and clears
+    // the clip manager. Switching mode mid-assemble would delete the stills out
+    // from under the save and leave the library row pointing at missing files,
+    // so the switch is dropped instead. The mode wheel is already gated while
+    // assembling; this keeps the invariant if anything else ever dispatches.
+    if (state.stopMotionStatus == StopMotionStatus.assembling) return;
+
     final previousMode = state.recorderMode;
     final previousFrames = state.stopMotionFrames;
     emit(
@@ -1648,6 +1656,19 @@ class VideoRecorderBloc
       return;
     }
 
+    // Only the still that just landed is checked — the ones already in state
+    // were checked as they landed. Re-validating the whole list on every tap
+    // costs two sync syscalls per existing frame (O(n²) over a session) on the
+    // main isolate and can't learn anything new about them.
+    if (!StopMotionFrameOps.isReadableImage(photo.filePath)) {
+      Log.warning(
+        '📷 Stop-motion frame capture wrote an unreadable file',
+        name: 'VideoRecorderBloc',
+        category: LogCategory.video,
+      );
+      return;
+    }
+
     final framePaths = [...state.stopMotionFrames, photo.filePath];
     emit(
       state.copyWith(
@@ -1692,15 +1713,18 @@ class VideoRecorderBloc
   /// Upserts the current capture session (the stills at [framePaths]) as a
   /// single library clip. Shared by capture and undo; keyed by
   /// [_stopMotionSessionId] so every call targets the same row.
+  ///
+  /// [framePaths] are taken as readable — each still is checked as it is
+  /// captured, so re-sweeping the accumulated session on every shutter tap
+  /// would stat the same files repeatedly without learning anything new. The
+  /// assemble re-checks the whole set (see [_ingestStopMotionClip]), which is
+  /// where a still that goes missing mid-session gets dropped.
   Future<void> _persistStopMotionSession(List<String> framePaths) async {
     if (framePaths.isEmpty) return;
-    // Skip unreadable captures (interrupted writes leave empty files) so a
-    // corrupt still never persists into the session's library clip.
-    final frames = StopMotionFrameOps.existingFrames([
+    final frames = [
       for (final path in framePaths)
         StopMotionClipFrame(path: path, duration: _stopMotionPerFrame),
-    ]);
-    if (frames.isEmpty) return;
+    ];
     final saved = await _readClipManager().saveStopMotionSessionToLibrary(
       id: _stopMotionSessionId(framePaths.first),
       frames: frames,
