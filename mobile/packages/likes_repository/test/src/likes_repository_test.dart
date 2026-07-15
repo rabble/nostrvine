@@ -3149,6 +3149,86 @@ void main() {
         verify(() => mockLocalStorage.saveLikeRecord(any())).called(2);
       });
 
+      test(
+        // #6020: PendingActionService's own queue-time dedup only cancels
+        // opposite actions on the *same* event id — it has no visibility
+        // into a like that synced in from another device (under a
+        // different event id) for the same coordinate while this action
+        // sat in the offline queue. Without this guard, replay would
+        // publish a second, duplicate live reaction.
+        'reconciles to an already-synced coordinate reaction instead of '
+        'publishing a duplicate, when another device liked the same '
+        'coordinate while this action was queued',
+        () async {
+          const coordinate = '34236:$testAuthorPubkey:test-d-tag';
+          const otherDeviceReactionId = 'other_device_reaction_id';
+          const otherDeviceEventId = 'other_device_event_id';
+
+          when(
+            () => mockLocalStorage.saveLikeRecord(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockLocalStorage.saveLikeRecordsBatch(any()),
+          ).thenAnswer((_) async {});
+
+          // 1. Offline: queue a like for testEventId at this coordinate.
+          repository = LikesRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+            isOnline: () => false,
+            queueOfflineAction:
+                ({
+                  required isLike,
+                  required eventId,
+                  required authorPubkey,
+                  addressableId,
+                  targetKind,
+                }) async {},
+          );
+          final placeholderId = await repository.likeEvent(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+            addressableId: coordinate,
+          );
+          expect(placeholderId, startsWith('pending_like_'));
+
+          // 2. While still queued, another device's like for the SAME
+          // coordinate (different event id, real reaction id) syncs in.
+          final otherDeviceReaction = createMockReaction(
+            id: otherDeviceReactionId,
+            targetEventId: otherDeviceEventId,
+            authorPubkey: testUserPubkey,
+            tags: [
+              ['e', otherDeviceEventId],
+              ['a', coordinate],
+            ],
+          );
+          mockQueryEventsSequence([
+            [otherDeviceReaction],
+            <Event>[],
+          ]);
+          await repository.syncUserReactions();
+
+          // 3. Sync replay executes the originally-queued action.
+          final resolvedId = await repository.executeLikeAction(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+            addressableId: coordinate,
+          );
+
+          expect(resolvedId, equals(otherDeviceReactionId));
+          verifyNever(
+            () => mockNostrClient.sendLike(
+              any(),
+              content: any(named: 'content'),
+              addressableId: any(named: 'addressableId'),
+              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          );
+        },
+      );
+
       test('throws LikeFailedException when publish fails', () async {
         when(
           () => mockNostrClient.sendLike(

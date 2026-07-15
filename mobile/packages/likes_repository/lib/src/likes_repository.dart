@@ -522,12 +522,30 @@ class LikesRepository {
   ///
   /// This method bypasses offline queuing and directly publishes to relays.
   /// Used by PendingActionService to execute queued actions.
+  ///
+  /// If [addressableId] is already liked by a *different* reaction than the
+  /// one queued for [eventId] — e.g. cross-device sync delivered a like for
+  /// this coordinate (under a different event id) while this action sat in
+  /// the offline queue — reconciles to that reaction instead of publishing
+  /// a duplicate. The app-layer queue's own dedup only cancels opposite
+  /// actions on the same event id; it has no visibility into reactions
+  /// arriving from other devices, so this is the only guard against a
+  /// duplicate live reaction on replay (#6020).
   Future<String> executeLikeAction({
     required String eventId,
     required String authorPubkey,
     String? addressableId,
     int? targetKind,
   }) async {
+    if (addressableId != null && addressableId.isNotEmpty) {
+      final byCoordinate = _likeRecordsByAddressableId[addressableId];
+      final ownReactionEventId = _likeRecords[eventId]?.reactionEventId;
+      if (byCoordinate != null &&
+          byCoordinate.reactionEventId != ownReactionEventId) {
+        return byCoordinate.reactionEventId;
+      }
+    }
+
     // Publish Kind 7 reaction event via NostrClient
     final reactionEvent = await _nostrClient.sendLike(
       eventId,
