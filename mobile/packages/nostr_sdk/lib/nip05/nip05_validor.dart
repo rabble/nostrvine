@@ -14,8 +14,14 @@ class Nip05Validor {
   /// NOT return HTTP redirects, and fetchers MUST ignore any it returns.
   /// Following a 30x is a spurious-verify vector — a MITM or a misconfigured
   /// origin can bounce the lookup to a host that answers with an attacker's
-  /// key. Dio's default `validateStatus` accepts 2xx only, so an unfollowed 3xx
-  /// throws and [getPubkey] yields null rather than a redirected key.
+  /// key.
+  ///
+  /// These flags only bind on `dart:io` (dio's IOHttpClientAdapter forwards
+  /// them to [HttpClientRequest]). On Flutter web dio delegates to
+  /// XMLHttpRequest, which follows a 30x in the browser and never reads them —
+  /// the lookup lands on the redirect target's 200, which the default
+  /// `validateStatus` accepts. [getPubkey]'s `isRedirect` check is what
+  /// actually enforces the constraint there.
   static var dio = Dio(
     BaseOptions(
       connectTimeout: _timeout,
@@ -59,6 +65,13 @@ class Nip05Validor {
     var url = "https://$address/.well-known/nostr.json?name=$name";
     try {
       var response = await dio.get(url);
+      // The only redirect signal that survives every transport. On web a
+      // browser-followed 30x arrives as a 200 flagged `isRedirect`, so
+      // `followRedirects: false` never sees it; on `dart:io` the 3xx has
+      // already thrown, making this a no-op there.
+      if (response.isRedirect) {
+        return null;
+      }
       if (response.data != null) {
         var map = response.data;
         if (map is String) {

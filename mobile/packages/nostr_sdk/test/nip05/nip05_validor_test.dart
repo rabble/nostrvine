@@ -29,13 +29,15 @@ class _RecordingAdapter implements HttpClientAdapter {
   void close({bool force = false}) {}
 }
 
-ResponseBody _json(String body, int status) => ResponseBody.fromString(
-  body,
-  status,
-  headers: {
-    Headers.contentTypeHeader: [Headers.jsonContentType],
-  },
-);
+ResponseBody _json(String body, int status, {bool isRedirect = false}) =>
+    ResponseBody.fromString(
+      body,
+      status,
+      isRedirect: isRedirect,
+      headers: {
+        Headers.contentTypeHeader: [Headers.jsonContentType],
+      },
+    );
 
 void main() {
   group(Nip05Validor, () {
@@ -88,9 +90,10 @@ void main() {
         );
       });
 
-      // The assertion that actually enforces the spec constraint. A real
-      // adapter follows a 30x when these flags say to; a fake never does, so
-      // asserting on the outcome alone would pass even with redirects enabled.
+      // Pins the `dart:io` half of the constraint: only IOHttpClientAdapter
+      // reads these flags, and a fake never follows a 30x, so asserting on the
+      // outcome alone would pass even with redirects enabled. The web half is
+      // pinned by 'yields null when a browser-followed redirect answers 200'.
       test('disables redirects, per NIP-05 Security Constraints', () async {
         final adapter = install(
           () => _json('{"names":{"bob":"$pubkey"}}', 200),
@@ -125,6 +128,23 @@ void main() {
         expect(await Nip05Validor.getPubkey('bob@example.com'), isNull);
       });
 
+      // Flutter web ships to app.divine.video. There dio delegates to
+      // XMLHttpRequest, which follows a 30x transparently and never reads
+      // `followRedirects`; dio_web_adapter reports the redirect target's 200
+      // with `isRedirect: true`, which the default validateStatus accepts.
+      // Only the explicit check keeps the redirect target's key out.
+      test(
+        'yields null when a browser-followed redirect answers 200',
+        () async {
+          install(
+            () =>
+                _json('{"names":{"bob":"${'e' * 64}"}}', 200, isRedirect: true),
+          );
+
+          expect(await Nip05Validor.getPubkey('bob@example.com'), isNull);
+        },
+      );
+
       test('yields null when the name is absent from the directory', () async {
         install(() => _json('{"names":{}}', 200));
 
@@ -147,6 +167,16 @@ void main() {
 
       test('is false when the directory maps a different key', () async {
         install(() => _json('{"names":{"bob":"${'a' * 64}"}}', 200));
+
+        expect(await Nip05Validor.valid('bob@example.com', pubkey), isFalse);
+      });
+
+      // The redirect target answers with the *claimed* key, so without the
+      // isRedirect check a bounced lookup verifies an impostor's badge.
+      test('is false when a browser-followed redirect answers 200', () async {
+        install(
+          () => _json('{"names":{"bob":"$pubkey"}}', 200, isRedirect: true),
+        );
 
         expect(await Nip05Validor.valid('bob@example.com', pubkey), isFalse);
       });
