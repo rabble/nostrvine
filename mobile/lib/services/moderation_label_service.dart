@@ -115,7 +115,7 @@ class ModerationLabelService {
   /// Cache TTL for NIP-05 resolved pubkey (24 hours).
   static const Duration _resolvedPubkeyTtl = Duration(hours: 24);
 
-  /// Resolved Divine moderation pubkey (NIP-05 → cache → fallback).
+  /// Resolved Divine moderation pubkey (cache → NIP-05 → fallback).
   String _divineModerationPubkey = fallbackModerationPubkeyHex;
 
   /// The current Divine moderation pubkey (resolved via NIP-05 or fallback).
@@ -190,7 +190,7 @@ class ModerationLabelService {
     try {
       // Use cache or fallback only. Remote NIP-05 refresh happens from
       // initialize(), which is called only from relay-ready paths.
-      _divineModerationPubkey = _cachedModerationPubkey(_prefs);
+      _adoptModerationPubkey(_cachedModerationPubkey(_prefs));
 
       final saved = _prefs.getStringList(_subscribedLabelersKey);
       if (saved != null) {
@@ -635,12 +635,41 @@ class ModerationLabelService {
     return fallbackModerationPubkeyHex;
   }
 
+  /// Adopt [pubkey] as the moderation labeler identity.
+  ///
+  /// Every path that settles on an identity funnels through here so the pin
+  /// check cannot be bypassed by adding a new resolution source.
+  void _adoptModerationPubkey(String pubkey) {
+    _divineModerationPubkey = pubkey;
+    _warnIfPinMismatch(pubkey);
+  }
+
+  /// Advisory only: NIP-05 stays authoritative for the labeler identity
+  /// (#4948 tier 1), so a divergence from the shipped pin is logged, never
+  /// overridden. Without this, a hostile repoint of [divineModerationNip05] is
+  /// indistinguishable from an intended rotation in the logs. Fires once per
+  /// adoption, so a steady divergence costs one line per session rather than
+  /// one per read.
+  void _warnIfPinMismatch(String adoptedPubkey) {
+    if (adoptedPubkey.trim().toLowerCase() == fallbackModerationPubkeyHex) {
+      return;
+    }
+    Log.warning(
+      'Moderation pubkey diverges from the key pinned in this build: '
+      'adopted $adoptedPubkey, pinned $fallbackModerationPubkeyHex. '
+      'Expected after an intended rotation; otherwise investigate '
+      '$divineModerationNip05 for an unauthorized repoint.',
+      name: 'ModerationLabelService',
+      category: LogCategory.system,
+    );
+  }
+
   Future<void> _refreshModerationPubkey() async {
     final previousPubkey = _divineModerationPubkey;
     final resolvedPubkey = await _resolveModerationPubkey(_prefs);
     if (resolvedPubkey == previousPubkey) return;
 
-    _divineModerationPubkey = resolvedPubkey;
+    _adoptModerationPubkey(resolvedPubkey);
     _subscribedLabelers.remove(previousPubkey);
     _subscribedLabelers.add(resolvedPubkey);
     await _saveSubscribedLabelers();
