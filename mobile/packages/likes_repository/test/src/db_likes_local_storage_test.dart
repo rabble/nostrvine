@@ -89,6 +89,38 @@ void main() {
           ),
         ).called(1);
       });
+
+      test('passes addressableId through to dao.upsertReaction', () async {
+        when(
+          () => mockDao.upsertReaction(
+            targetEventId: any(named: 'targetEventId'),
+            reactionEventId: any(named: 'reactionEventId'),
+            userPubkey: any(named: 'userPubkey'),
+            createdAt: any(named: 'createdAt'),
+            addressableId: any(named: 'addressableId'),
+          ),
+        ).thenAnswer((_) async {});
+
+        const testAddressableId = '34236:$testUserPubkey:test-d-tag';
+        final record = LikeRecord(
+          targetEventId: testTargetEventId,
+          reactionEventId: testReactionEventId,
+          createdAt: DateTime.now(),
+          addressableId: testAddressableId,
+        );
+
+        await storage.saveLikeRecord(record);
+
+        verify(
+          () => mockDao.upsertReaction(
+            targetEventId: testTargetEventId,
+            reactionEventId: testReactionEventId,
+            userPubkey: testUserPubkey,
+            createdAt: any(named: 'createdAt'),
+            addressableId: testAddressableId,
+          ),
+        ).called(1);
+      });
     });
 
     group('saveLikeRecordsBatch', () {
@@ -206,6 +238,78 @@ void main() {
         ).thenAnswer((_) async => null);
 
         final result = await storage.getLikeRecord(testTargetEventId);
+
+        expect(result, isNull);
+      });
+
+      test('maps a row addressableId onto the returned LikeRecord', () async {
+        const testAddressableId = '34236:$testUserPubkey:test-d-tag';
+        final row = PersonalReactionRow(
+          targetEventId: testTargetEventId,
+          reactionEventId: testReactionEventId,
+          userPubkey: testUserPubkey,
+          createdAt: 1000,
+          addressableId: testAddressableId,
+        );
+
+        when(
+          () => mockDao.getReaction(
+            targetEventId: any(named: 'targetEventId'),
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).thenAnswer((_) async => row);
+
+        final result = await storage.getLikeRecord(testTargetEventId);
+
+        expect(result!.addressableId, equals(testAddressableId));
+      });
+    });
+
+    group('getLikeRecordByAddressableId', () {
+      const testAddressableId = '34236:$testUserPubkey:test-d-tag';
+
+      test('returns LikeRecord when the coordinate is liked', () async {
+        final row = PersonalReactionRow(
+          targetEventId: testTargetEventId,
+          reactionEventId: testReactionEventId,
+          userPubkey: testUserPubkey,
+          createdAt: 1000,
+          addressableId: testAddressableId,
+        );
+
+        when(
+          () => mockDao.getReactionByAddressableId(
+            addressableId: any(named: 'addressableId'),
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).thenAnswer((_) async => row);
+
+        final result = await storage.getLikeRecordByAddressableId(
+          testAddressableId,
+        );
+
+        expect(result, isNotNull);
+        expect(result!.targetEventId, equals(testTargetEventId));
+        expect(result.addressableId, equals(testAddressableId));
+        verify(
+          () => mockDao.getReactionByAddressableId(
+            addressableId: testAddressableId,
+            userPubkey: testUserPubkey,
+          ),
+        ).called(1);
+      });
+
+      test('returns null when the coordinate has never been liked', () async {
+        when(
+          () => mockDao.getReactionByAddressableId(
+            addressableId: any(named: 'addressableId'),
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        final result = await storage.getLikeRecordByAddressableId(
+          testAddressableId,
+        );
 
         expect(result, isNull);
       });

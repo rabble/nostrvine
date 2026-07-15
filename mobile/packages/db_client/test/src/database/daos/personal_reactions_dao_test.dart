@@ -720,5 +720,176 @@ void main() {
         expect(result, isNull);
       });
     });
+
+    group('addressableId (#6020)', () {
+      const testAddressableId = '34236:$testUserPubkey:test-d-tag';
+
+      test('upsertReaction persists a null addressableId by default', () async {
+        await dao.upsertReaction(
+          targetEventId: testTargetEventId,
+          reactionEventId: testReactionEventId,
+          userPubkey: testUserPubkey,
+          createdAt: 1000,
+        );
+
+        final result = await dao.getReaction(
+          targetEventId: testTargetEventId,
+          userPubkey: testUserPubkey,
+        );
+
+        expect(result!.addressableId, isNull);
+      });
+
+      test('upsertReaction persists a non-null addressableId', () async {
+        await dao.upsertReaction(
+          targetEventId: testTargetEventId,
+          reactionEventId: testReactionEventId,
+          userPubkey: testUserPubkey,
+          createdAt: 1000,
+          addressableId: testAddressableId,
+        );
+
+        final result = await dao.getReaction(
+          targetEventId: testTargetEventId,
+          userPubkey: testUserPubkey,
+        );
+
+        expect(result!.addressableId, equals(testAddressableId));
+      });
+
+      test('upsertReactionsBatch persists addressableId per row', () async {
+        await dao.upsertReactionsBatch([
+          PersonalReactionRow(
+            targetEventId: testTargetEventId,
+            reactionEventId: testReactionEventId,
+            userPubkey: testUserPubkey,
+            createdAt: 1000,
+            addressableId: testAddressableId,
+          ),
+          PersonalReactionRow(
+            targetEventId: testTargetEventId2,
+            reactionEventId: testReactionEventId2,
+            userPubkey: testUserPubkey,
+            createdAt: 2000,
+          ),
+        ]);
+
+        final withCoordinate = await dao.getReaction(
+          targetEventId: testTargetEventId,
+          userPubkey: testUserPubkey,
+        );
+        final withoutCoordinate = await dao.getReaction(
+          targetEventId: testTargetEventId2,
+          userPubkey: testUserPubkey,
+        );
+
+        expect(withCoordinate!.addressableId, equals(testAddressableId));
+        expect(withoutCoordinate!.addressableId, isNull);
+      });
+    });
+
+    group('getReactionByAddressableId', () {
+      const testAddressableId = '34236:$testUserPubkey:test-d-tag';
+
+      test('returns the record when the coordinate is liked', () async {
+        await dao.upsertReaction(
+          targetEventId: testTargetEventId,
+          reactionEventId: testReactionEventId,
+          userPubkey: testUserPubkey,
+          createdAt: 1000,
+          addressableId: testAddressableId,
+        );
+
+        final result = await dao.getReactionByAddressableId(
+          addressableId: testAddressableId,
+          userPubkey: testUserPubkey,
+        );
+
+        expect(result, isNotNull);
+        expect(result!.targetEventId, equals(testTargetEventId));
+      });
+
+      test('returns null when the coordinate has never been liked', () async {
+        final result = await dao.getReactionByAddressableId(
+          addressableId: testAddressableId,
+          userPubkey: testUserPubkey,
+        );
+
+        expect(result, isNull);
+      });
+
+      test(
+        'resolves the coordinate across a target edit — a like recorded '
+        'under a pre-edit target event id still resolves by coordinate',
+        () async {
+          // Simulates: user liked the pre-edit video (testTargetEventId),
+          // then the video was edited, minting testTargetEventId2 for the
+          // same coordinate. The like record is still keyed by the OLD
+          // event id, but resolves via the coordinate (#6020).
+          await dao.upsertReaction(
+            targetEventId: testTargetEventId,
+            reactionEventId: testReactionEventId,
+            userPubkey: testUserPubkey,
+            createdAt: 1000,
+            addressableId: testAddressableId,
+          );
+
+          final result = await dao.getReactionByAddressableId(
+            addressableId: testAddressableId,
+            userPubkey: testUserPubkey,
+          );
+
+          expect(result, isNotNull);
+          expect(result!.targetEventId, equals(testTargetEventId));
+          expect(result.reactionEventId, equals(testReactionEventId));
+        },
+      );
+
+      test('only returns the coordinate for the specified user', () async {
+        await dao.upsertReaction(
+          targetEventId: testTargetEventId,
+          reactionEventId: testReactionEventId,
+          userPubkey: testUserPubkey,
+          createdAt: 1000,
+          addressableId: testAddressableId,
+        );
+
+        final result = await dao.getReactionByAddressableId(
+          addressableId: testAddressableId,
+          userPubkey: testUserPubkey2,
+        );
+
+        expect(result, isNull);
+      });
+
+      test(
+        'returns the most recently created row when multiple event ids '
+        'share the same coordinate (the duplicate-reaction scenario)',
+        () async {
+          await dao.upsertReaction(
+            targetEventId: testTargetEventId,
+            reactionEventId: testReactionEventId,
+            userPubkey: testUserPubkey,
+            createdAt: 1000,
+            addressableId: testAddressableId,
+          );
+          await dao.upsertReaction(
+            targetEventId: testTargetEventId2,
+            reactionEventId: testReactionEventId2,
+            userPubkey: testUserPubkey,
+            createdAt: 2000,
+            addressableId: testAddressableId,
+          );
+
+          final result = await dao.getReactionByAddressableId(
+            addressableId: testAddressableId,
+            userPubkey: testUserPubkey,
+          );
+
+          expect(result, isNotNull);
+          expect(result!.targetEventId, equals(testTargetEventId2));
+        },
+      );
+    });
   });
 }

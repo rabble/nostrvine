@@ -108,6 +108,18 @@ class LikesRepository {
   /// In-memory cache of like records keyed by target event ID.
   final Map<String, LikeRecord> _likeRecords = {};
 
+  /// Companion index of [_likeRecords], keyed by addressable coordinate
+  /// (`kind:pubkey:d-tag`) instead of target event ID.
+  ///
+  /// Lets own-like state survive a target edit that mints a new event id
+  /// for the same coordinate (#6020) — a like recorded against the pre-edit
+  /// id stays resolvable via [isLikedByCoordinate]/[getLikeRecordByCoordinate]
+  /// after the edit. Populated everywhere [_likeRecords] is written (see
+  /// [_indexLikeRecord]) whenever an addressable id is known, including on
+  /// load from persisted storage, so cold app starts resolve correctly too
+  /// (unlike the in-memory-only precedent in #4478's comment count cache).
+  final Map<String, LikeRecord> _likeRecordsByAddressableId = {};
+
   /// In-memory cache of downvote records keyed by target event ID.
   ///
   /// Mirror of [_likeRecords] for kind-7 reactions whose content is `-`.
@@ -122,8 +134,31 @@ class LikesRepository {
   /// stays consistent with optimistic UI updates.
   final Map<String, int> _likeCountCache = {};
 
+  /// Companion of [_likeCountCache], keyed by addressable coordinate.
+  ///
+  /// Mirrors the dual-key pattern `comments_repository` shipped in #4478:
+  /// a cached count survives a target edit that changes the event id, as
+  /// long as the coordinate stayed the same. Read falls back to this map
+  /// only on an event-id miss; writes are always dual when a coordinate is
+  /// known (see [_readCachedLikeCount]/[_writeCachedLikeCount]).
+  final Map<String, int> _likeCountCacheByAddressableId = {};
+
   /// Reactive stream controller for liked event IDs (ordered by recency).
   final _likedIdsController = BehaviorSubject<List<String>>.seeded([]);
+
+  /// Reactive stream controller for liked addressable coordinates.
+  ///
+  /// Companion of [_likedIdsController], ticked alongside it (see
+  /// [_emitLikedIds]) so a live subscriber (e.g. a video interactions BLoC)
+  /// can resolve "is this coordinate liked" reactively, not just via a
+  /// one-shot fetch — without this, a consumer subscribed only to
+  /// [watchLikedEventIds] would have its own-like state silently flip back
+  /// to unliked the next time *any* like/unlike ticks the stream anywhere
+  /// in the app, since that stream is blind to coordinate membership
+  /// (#6020).
+  final _likedAddressableIdsController = BehaviorSubject<Set<String>>.seeded(
+    <String>{},
+  );
 
   /// Reactive stream controller for downvoted event IDs (ordered by recency).
   final _downvotedIdsController = BehaviorSubject<List<String>>.seeded(
@@ -142,7 +177,37 @@ class LikesRepository {
   StreamSubscription<Event>? _reactionSubscription;
   String? _reactionSubscriptionId;
 
-  /// Emits the current liked event IDs ordered by recency (most recent first).
+  /// Writes [record] into [_likeRecords] and, when its
+  /// [LikeRecord.addressableId] is non-empty, also into
+  /// [_likeRecordsByAddressableId].
+  ///
+  /// Centralizes the dual-write so every write site (like, sync, live
+  /// subscription, load-from-storage) stays consistent — mirrors the
+  /// `_writeCachedCommentCount` helper from #4478.
+  void _indexLikeRecord(LikeRecord record) {
+    _likeRecords[record.targetEventId] = record;
+    final addressableId = record.addressableId;
+    if (addressableId != null && addressableId.isNotEmpty) {
+      _likeRecordsByAddressableId[addressableId] = record;
+    }
+  }
+
+  /// Removes any record for [targetEventId] from both [_likeRecords] and
+  /// [_likeRecordsByAddressableId].
+  ///
+  /// Looks up the record before removing so the addressable-id companion
+  /// entry can be found and removed too — [_likeRecordsByAddressableId] is
+  /// keyed by coordinate, not by [targetEventId].
+  void _deindexLikeRecord(String targetEventId) {
+    final record = _likeRecords.remove(targetEventId);
+    final addressableId = record?.addressableId;
+    if (addressableId != null && addressableId.isNotEmpty) {
+      _likeRecordsByAddressableId.remove(addressableId);
+    }
+  }
+
+  /// Emits the current liked event IDs ordered by recency (most recent
+  /// first), and the current liked addressable coordinates alongside them.
   ///
   /// Guards against emitting after [dispose] has been called or the controller
   /// has been closed, which can happen if [clearCache] runs during or after
@@ -152,6 +217,11 @@ class LikesRepository {
     final sortedRecords = _likeRecords.values.toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     _likedIdsController.add(sortedRecords.map((r) => r.targetEventId).toList());
+    if (!_likedAddressableIdsController.isClosed) {
+      _likedAddressableIdsController.add(
+        _likeRecordsByAddressableId.keys.toSet(),
+      );
+    }
   }
 
   /// Emits the current downvoted event IDs ordered by recency.
@@ -177,6 +247,19 @@ class LikesRepository {
     // watches, so it stays consistent with isLiked/getOrderedLikedEventIds.
     await _ensureInitialized();
     yield* _likedIdsController.stream;
+  }
+
+  /// Stream of liked addressable coordinates (reactive).
+  ///
+  /// Companion of [watchLikedEventIds] keyed by `kind:pubkey:d-tag`
+  /// coordinate instead of event id. A live consumer that cares about an
+  /// addressable target's own-like state should combine both streams —
+  /// membership in either means the target is liked — so a coordinate-only
+  /// hit (the target's underlying reaction is for a pre-edit event id)
+  /// isn't missed (#6020).
+  Stream<Set<String>> watchLikedAddressableIds() async* {
+    await _ensureInitialized();
+    yield* _likedAddressableIdsController.stream;
   }
 
   /// Get the current set of liked event IDs.
@@ -207,6 +290,47 @@ class LikesRepository {
   Future<bool> isLiked(String eventId) async {
     await _ensureInitialized();
     return _likeRecords.containsKey(eventId);
+  }
+
+  /// Get the like record for an addressable coordinate
+  /// (`kind:pubkey:d-tag`), or `null` if the coordinate is not liked.
+  ///
+  /// Resolves own-like state for an addressable target across an edit that
+  /// minted a new event id for the same coordinate (#6020) — a like made
+  /// against a pre-edit version of the target is still found here after
+  /// the edit, even though [isLiked] with the new event id would miss.
+  Future<LikeRecord?> getLikeRecordByCoordinate(String addressableId) async {
+    await _ensureInitialized();
+    return _likeRecordsByAddressableId[addressableId];
+  }
+
+  /// Check if a specific addressable coordinate is liked.
+  ///
+  /// Thin bool wrapper over [getLikeRecordByCoordinate], mirroring the
+  /// [isLiked]/[getLikeRecord] pair shape.
+  Future<bool> isLikedByCoordinate(String addressableId) async {
+    return (await getLikeRecordByCoordinate(addressableId)) != null;
+  }
+
+  /// Check if [eventId] is liked, falling back to [addressableId] (when
+  /// provided) on a miss.
+  ///
+  /// This is the composed check callers with both an event id and an
+  /// optional coordinate should use — e.g. a video interactions BLoC
+  /// resolving "is my own video liked" without needing to know whether the
+  /// underlying reaction was recorded against this exact event id or a
+  /// pre-edit version of the same coordinate (#6020). Mirrors
+  /// [getLikeCount]'s existing eventId+addressableId parameter shape;
+  /// keeps the fallback/composition policy in the repository layer per
+  /// this codebase's architecture convention, rather than pushing two
+  /// sequential calls onto the caller.
+  Future<bool> isLikedResolvingCoordinate({
+    required String eventId,
+    String? addressableId,
+  }) async {
+    if (await isLiked(eventId)) return true;
+    if (addressableId == null || addressableId.isEmpty) return false;
+    return isLikedByCoordinate(addressableId);
   }
 
   /// Stream of downvoted event IDs ordered by recency (reactive).
@@ -274,13 +398,25 @@ class LikesRepository {
   }) async {
     await _ensureInitialized();
 
-    // Check if already liked
-    if (_likeRecords.containsKey(eventId)) {
+    // Check if already liked — by event id, or (when addressableId is
+    // known) by coordinate. The coordinate check catches the case where a
+    // pre-edit version of this target was already liked under a different
+    // event id: without it, a stale heart-unfilled UI (#6020) could lead
+    // the user to create a second, duplicate live reaction whose original
+    // becomes un-deletable via the normal unlike flow.
+    final alreadyLikedByCoordinate =
+        addressableId != null &&
+        addressableId.isNotEmpty &&
+        _likeRecordsByAddressableId.containsKey(addressableId);
+    if (_likeRecords.containsKey(eventId) || alreadyLikedByCoordinate) {
       throw AlreadyLikedException(eventId);
     }
 
     // Snapshot for rollback if the network publish fails
-    final previousCount = _likeCountCache[eventId];
+    final previousCount = _readCachedLikeCount(
+      eventId,
+      addressableId: addressableId,
+    );
 
     // 1. Optimistic-first: write to memory + local storage and tick the
     // watchLikedEventIds stream BEFORE any network I/O. The UI flips here.
@@ -294,10 +430,17 @@ class LikesRepository {
       targetEventId: eventId,
       reactionEventId: placeholderId,
       createdAt: DateTime.now(),
+      addressableId: addressableId,
     );
-    _likeRecords[eventId] = placeholder;
+    _indexLikeRecord(placeholder);
     await _localStorage?.saveLikeRecord(placeholder);
-    if (previousCount != null) _likeCountCache[eventId] = previousCount + 1;
+    if (previousCount != null) {
+      _writeCachedLikeCount(
+        eventId,
+        previousCount + 1,
+        addressableId: addressableId,
+      );
+    }
     _emitLikedIds();
 
     // 2. Offline → leave the optimistic state in place; queue replays later
@@ -337,8 +480,9 @@ class LikesRepository {
         targetEventId: eventId,
         reactionEventId: reactionEvent.id,
         createdAt: placeholder.createdAt,
+        addressableId: addressableId,
       );
-      _likeRecords[eventId] = confirmed;
+      _indexLikeRecord(confirmed);
       await _localStorage?.saveLikeRecord(confirmed);
 
       return reactionEvent.id;
@@ -360,9 +504,15 @@ class LikesRepository {
         );
         return placeholderId;
       }
-      _likeRecords.remove(eventId);
+      _deindexLikeRecord(eventId);
       await _localStorage?.deleteLikeRecord(eventId);
-      if (previousCount != null) _likeCountCache[eventId] = previousCount;
+      if (previousCount != null) {
+        _writeCachedLikeCount(
+          eventId,
+          previousCount,
+          addressableId: addressableId,
+        );
+      }
       _emitLikedIds();
       rethrow;
     }
@@ -399,8 +549,9 @@ class LikesRepository {
         targetEventId: eventId,
         reactionEventId: reactionEvent.id,
         createdAt: existingRecord.createdAt,
+        addressableId: addressableId ?? existingRecord.addressableId,
       );
-      _likeRecords[eventId] = record;
+      _indexLikeRecord(record);
       await _localStorage?.saveLikeRecord(record);
     }
 
@@ -415,38 +566,63 @@ class LikesRepository {
   /// If the device is offline and offline queuing is enabled, the action
   /// is queued for later sync and the UI should be updated optimistically.
   ///
+  /// [addressableId], when provided, resolves the underlying reaction by
+  /// coordinate when no record exists under [eventId] — the case where the
+  /// like was recorded against a pre-edit version of this target (#6020).
+  /// Without this fallback, unliking the current version after an edit
+  /// would silently no-op on the original reaction, leaving it live and
+  /// permanently un-deletable via this method.
+  ///
   /// Throws `UnlikeFailedException` if the operation fails.
   /// Throws `NotLikedException` if the event is not currently liked.
-  Future<void> unlikeEvent(String eventId) async {
+  Future<void> unlikeEvent(String eventId, {String? addressableId}) async {
     await _ensureInitialized();
 
-    // Try in-memory cache first, then fall back to database
-    // This handles the case where the cache hasn't been populated yet
+    // Try in-memory cache first (by event id, then by coordinate), then
+    // fall back to database. This handles both the cache-not-populated-yet
+    // case and the post-edit case where the record's real key is a
+    // different (pre-edit) event id than the one the caller passed in.
     var record = _likeRecords[eventId];
+    if (record == null && addressableId != null && addressableId.isNotEmpty) {
+      record = _likeRecordsByAddressableId[addressableId];
+    }
     if (record == null && _localStorage != null) {
       record = await _localStorage.getLikeRecord(eventId);
+      if (record == null && addressableId != null && addressableId.isNotEmpty) {
+        record = await _localStorage.getLikeRecordByAddressableId(
+          addressableId,
+        );
+      }
     }
 
     if (record == null) {
       throw NotLikedException(eventId);
     }
 
+    // The record's own targetEventId is the correct key to deindex/delete
+    // — it may be a pre-edit id the caller doesn't know about, when this
+    // record was found via the addressableId fallback above.
+    final resolvedEventId = record.targetEventId;
+
     // Snapshot for rollback if the network publish fails
     final snapshotRecord = record;
-    final previousCount = _likeCountCache[eventId];
+    final previousCount = _readCachedLikeCount(
+      eventId,
+      addressableId: addressableId,
+    );
 
     // 1. Optimistic-first: remove from memory + local storage and tick the
     // watchLikedEventIds stream BEFORE any network I/O (mirror of likeEvent).
-    _likeRecords.remove(eventId);
-    await _localStorage?.deleteLikeRecord(eventId);
-    _decrementLikeCountCache(eventId);
+    _deindexLikeRecord(resolvedEventId);
+    await _localStorage?.deleteLikeRecord(resolvedEventId);
+    _decrementLikeCountCache(eventId, addressableId: addressableId);
     _emitLikedIds();
 
     // 2. Offline → leave the optimistic state in place; queue replays later
     if (_isOnline != null && !_isOnline() && _queueOfflineAction != null) {
       await _queueOfflineAction(
         isLike: false,
-        eventId: eventId,
+        eventId: resolvedEventId,
         authorPubkey: '', // Not needed for unlike
       );
       return;
@@ -480,14 +656,20 @@ class LikesRepository {
         );
         await _queueOfflineAction(
           isLike: false,
-          eventId: eventId,
+          eventId: resolvedEventId,
           authorPubkey: '', // Not needed for unlike
         );
         return;
       }
-      _likeRecords[eventId] = snapshotRecord;
+      _indexLikeRecord(snapshotRecord);
       await _localStorage?.saveLikeRecord(snapshotRecord);
-      if (previousCount != null) _likeCountCache[eventId] = previousCount;
+      if (previousCount != null) {
+        _writeCachedLikeCount(
+          eventId,
+          previousCount,
+          addressableId: addressableId,
+        );
+      }
       _emitLikedIds();
       rethrow;
     }
@@ -497,11 +679,25 @@ class LikesRepository {
   ///
   /// This method bypasses offline queuing and directly publishes to relays.
   /// Used by PendingActionService to execute queued actions.
-  Future<void> executeUnlikeAction(String eventId) async {
+  ///
+  /// [addressableId] resolves the record by coordinate when [eventId] finds
+  /// nothing — mirrors [unlikeEvent]'s fallback for the same reason (#6020).
+  Future<void> executeUnlikeAction(
+    String eventId, {
+    String? addressableId,
+  }) async {
     // Try to get the record - it may not exist if the like was also offline
     var record = _likeRecords[eventId];
+    if (record == null && addressableId != null && addressableId.isNotEmpty) {
+      record = _likeRecordsByAddressableId[addressableId];
+    }
     if (record == null && _localStorage != null) {
       record = await _localStorage.getLikeRecord(eventId);
+      if (record == null && addressableId != null && addressableId.isNotEmpty) {
+        record = await _localStorage.getLikeRecordByAddressableId(
+          addressableId,
+        );
+      }
     }
 
     // If no record exists, the like was never synced either, so we're done
@@ -509,13 +705,15 @@ class LikesRepository {
       return;
     }
 
+    final resolvedEventId = record.targetEventId;
+
     // Skip publishing if this was a pending like
     if (record.reactionEventId.startsWith('pending_')) {
       // Just clean up local storage
-      _likeRecords.remove(eventId);
-      await _localStorage?.deleteLikeRecord(eventId);
+      _deindexLikeRecord(resolvedEventId);
+      await _localStorage?.deleteLikeRecord(resolvedEventId);
       _emitLikedIds();
-      _decrementLikeCountCache(eventId);
+      _decrementLikeCountCache(eventId, addressableId: addressableId);
       return;
     }
 
@@ -529,10 +727,10 @@ class LikesRepository {
     }
 
     // Remove from cache and storage
-    _likeRecords.remove(eventId);
-    await _localStorage?.deleteLikeRecord(eventId);
+    _deindexLikeRecord(resolvedEventId);
+    await _localStorage?.deleteLikeRecord(resolvedEventId);
     _emitLikedIds();
-    _decrementLikeCountCache(eventId);
+    _decrementLikeCountCache(eventId, addressableId: addressableId);
   }
 
   /// Toggle like status for an event.
@@ -559,13 +757,22 @@ class LikesRepository {
     await _ensureInitialized();
 
     // Query the database directly as source of truth to avoid cache/db
-    // inconsistency after app restart
-    final isCurrentlyLiked =
+    // inconsistency after app restart. Also check by coordinate: after an
+    // edit, a like recorded pre-edit resolves under a different event id
+    // than the one being toggled here (#6020) — without this check,
+    // toggling the (correctly, post-fix) filled heart on the current
+    // version would try to *like* again instead of unliking the original.
+    final likedByEventId =
         await _localStorage?.isLiked(eventId) ??
         _likeRecords.containsKey(eventId);
+    final likedByCoordinate =
+        addressableId != null &&
+        addressableId.isNotEmpty &&
+        _likeRecordsByAddressableId.containsKey(addressableId);
+    final isCurrentlyLiked = likedByEventId || likedByCoordinate;
 
     if (isCurrentlyLiked) {
-      await unlikeEvent(eventId);
+      await unlikeEvent(eventId, addressableId: addressableId);
       return false;
     } else {
       await likeEvent(
@@ -591,7 +798,7 @@ class LikesRepository {
   ///
   /// Note: This counts all likes, not just the current user's.
   Future<int> getLikeCount(String eventId, {String? addressableId}) async {
-    final cached = _likeCountCache[eventId];
+    final cached = _readCachedLikeCount(eventId, addressableId: addressableId);
     if (cached != null) return cached;
 
     int count;
@@ -614,7 +821,7 @@ class LikesRepository {
       count = result.count;
     }
 
-    _likeCountCache[eventId] = count;
+    _writeCachedLikeCount(eventId, count, addressableId: addressableId);
     return count;
   }
 
@@ -651,7 +858,10 @@ class LikesRepository {
     final counts = <String, int>{};
     final uncachedIds = <String>[];
     for (final id in eventIds) {
-      final cached = _likeCountCache[id];
+      final cached = _readCachedLikeCount(
+        id,
+        addressableId: addressableIds?[id],
+      );
       if (cached != null) {
         counts[id] = cached;
       } else {
@@ -679,7 +889,11 @@ class LikesRepository {
       for (final id in uncachedIds) {
         final count = likersByEvent[id]?.length ?? 0;
         counts[id] = count;
-        _likeCountCache[id] = count;
+        _writeCachedLikeCount(
+          id,
+          count,
+          addressableId: uncachedAddressableIds[id],
+        );
       }
       return counts;
     }
@@ -710,7 +924,7 @@ class LikesRepository {
 
     // Populate cache with fetched counts
     for (final id in uncachedIds) {
-      _likeCountCache[id] = counts[id]!;
+      _writeCachedLikeCount(id, counts[id]!);
     }
 
     return counts;
@@ -976,9 +1190,7 @@ class LikesRepository {
     // First, load from local storage (fast)
     if (_localStorage != null) {
       final records = await _localStorage.getAllLikeRecords();
-      for (final record in records) {
-        _likeRecords[record.targetEventId] = record;
-      }
+      records.forEach(_indexLikeRecord);
       _emitLikedIds();
     }
 
@@ -1042,13 +1254,14 @@ class LikesRepository {
             createdAt: DateTime.fromMillisecondsSinceEpoch(
               event.createdAt * 1000,
             ),
+            addressableId: _extractAddressableId(event),
           );
 
           // Only update if we don't have this record or the new one is newer
           final existing = _likeRecords[targetId];
           if (existing == null ||
               record.createdAt.isAfter(existing.createdAt)) {
-            _likeRecords[targetId] = record;
+            _indexLikeRecord(record);
             newRecords.add(record);
           }
         } else if (event.content == _downvoteContent) {
@@ -1073,7 +1286,7 @@ class LikesRepository {
 
       // Remove deleted likes from cache and storage
       for (final targetId in deletedTargetIds) {
-        _likeRecords.remove(targetId);
+        _deindexLikeRecord(targetId);
         await _localStorage?.deleteLikeRecord(targetId);
       }
 
@@ -1361,9 +1574,7 @@ class LikesRepository {
     // Load from local storage first for immediate UI display
     if (_localStorage != null) {
       final records = await _localStorage.getAllLikeRecords();
-      for (final record in records) {
-        _likeRecords[record.targetEventId] = record;
-      }
+      records.forEach(_indexLikeRecord);
       _emitLikedIds();
     }
 
@@ -1430,9 +1641,10 @@ class LikesRepository {
         targetEventId: targetId,
         reactionEventId: event.id,
         createdAt: createdAt,
+        addressableId: _extractAddressableId(event),
       );
 
-      _likeRecords[targetId] = record;
+      _indexLikeRecord(record);
       unawaited(_localStorage?.saveLikeRecord(record));
       _emitLikedIds();
     } else if (event.content == _downvoteContent) {
@@ -1449,9 +1661,52 @@ class LikesRepository {
     }
   }
 
-  void _decrementLikeCountCache(String eventId) {
-    final cached = _likeCountCache[eventId];
-    if (cached != null) _likeCountCache[eventId] = max(0, cached - 1);
+  void _decrementLikeCountCache(String eventId, {String? addressableId}) {
+    _adjustCachedLikeCount(eventId, -1, addressableId: addressableId);
+  }
+
+  /// Reads the cached like count, checking event-id first then the
+  /// addressable-id companion cache. Returns `null` on a full miss.
+  ///
+  /// Mirrors `comments_repository`'s `_readCachedCommentCount` (#4478),
+  /// applied to like counts (#6020's in-scope follow-up on #4478's own
+  /// suggested-but-unimplemented extension).
+  int? _readCachedLikeCount(String eventId, {String? addressableId}) {
+    final byEventId = _likeCountCache[eventId];
+    if (byEventId != null) return byEventId;
+    if (addressableId == null || addressableId.isEmpty) return null;
+    return _likeCountCacheByAddressableId[addressableId];
+  }
+
+  /// Writes [count] into both caches when [addressableId] is provided.
+  /// Otherwise writes only the event-id cache.
+  void _writeCachedLikeCount(
+    String eventId,
+    int count, {
+    String? addressableId,
+  }) {
+    _likeCountCache[eventId] = count;
+    if (addressableId != null && addressableId.isNotEmpty) {
+      _likeCountCacheByAddressableId[addressableId] = count;
+    }
+  }
+
+  /// Adjusts the cached like count by [delta] (clamped at zero), dual-
+  /// writing both caches. No-op if neither cache has a baseline value yet
+  /// — an isolated delta without a known total would lie.
+  void _adjustCachedLikeCount(
+    String eventId,
+    int delta, {
+    String? addressableId,
+  }) {
+    final current = _readCachedLikeCount(eventId, addressableId: addressableId);
+    if (current == null) return;
+    final updated = current + delta;
+    _writeCachedLikeCount(
+      eventId,
+      updated < 0 ? 0 : updated,
+      addressableId: addressableId,
+    );
   }
 
   /// Clear all local like data.
@@ -1463,8 +1718,10 @@ class LikesRepository {
   /// stream emission is attempted.
   Future<void> clearCache() async {
     _likeRecords.clear();
+    _likeRecordsByAddressableId.clear();
     _downvoteRecords.clear();
     _likeCountCache.clear();
+    _likeCountCacheByAddressableId.clear();
     await _localStorage?.clearAll();
     _emitLikedIds();
     _emitDownvotedIds();
@@ -1473,7 +1730,7 @@ class LikesRepository {
 
   /// Dispose of resources.
   ///
-  /// Cancels the reaction subscription and closes both stream controllers.
+  /// Cancels the reaction subscription and closes all stream controllers.
   /// Should be called when the repository is no longer needed.
   void dispose() {
     _isDisposed = true;
@@ -1483,6 +1740,7 @@ class LikesRepository {
       _reactionSubscriptionId = null;
     }
     unawaited(_likedIdsController.close());
+    unawaited(_likedAddressableIdsController.close());
     unawaited(_downvotedIdsController.close());
   }
 
@@ -1492,9 +1750,7 @@ class LikesRepository {
 
     if (_localStorage != null) {
       final records = await _localStorage.getAllLikeRecords();
-      for (final record in records) {
-        _likeRecords[record.targetEventId] = record;
-      }
+      records.forEach(_indexLikeRecord);
       _emitLikedIds();
     }
     _isInitialized = true;
@@ -1506,6 +1762,23 @@ class LikesRepository {
   String? _extractTargetEventId(Event event) {
     for (final tag in event.tags) {
       if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
+        return tag[1];
+      }
+    }
+    return null;
+  }
+
+  /// Extracts the addressable coordinate from a reaction event's 'a' tag.
+  ///
+  /// Per NIP-25, an 'a' tag SHOULD be included together with the 'e' tag
+  /// when reacting to an addressable event, set to the `kind:pubkey:d-tag`
+  /// coordinate. Returns `null` when absent (e.g. reactions to non-
+  /// addressable targets like comments, or reactions published before this
+  /// tag was added). Used to keep own-like state resolvable by coordinate
+  /// across a target edit that mints a new event id (#6020).
+  String? _extractAddressableId(Event event) {
+    for (final tag in event.tags) {
+      if (tag.isNotEmpty && tag[0] == 'a' && tag.length > 1) {
         return tag[1];
       }
     }

@@ -340,6 +340,14 @@ class PersonalReactions extends Table {
   /// Unix timestamp when the reaction was created
   IntColumn get createdAt => integer().named('created_at')();
 
+  /// Addressable coordinate (`kind:pubkey:d-tag`) of the target event, when
+  /// the target is a Kind 30000+ addressable event (e.g. a video).
+  ///
+  /// Null for likes on non-addressable targets (e.g. comments), which have
+  /// no `d` tag / coordinate. Lets own-like state survive a target edit
+  /// that mints a new [targetEventId] for the same coordinate (#6020).
+  TextColumn get addressableId => text().nullable().named('addressable_id')();
+
   @override
   Set<Column> get primaryKey => {targetEventId, userPubkey};
 
@@ -355,6 +363,12 @@ class PersonalReactions extends Table {
       'idx_personal_reactions_reaction_id',
       'CREATE INDEX IF NOT EXISTS idx_personal_reactions_reaction_id '
           'ON personal_reactions (reaction_event_id)',
+    ),
+    // Index on addressable_id for coordinate-based own-like resolution
+    Index(
+      'idx_personal_reactions_addressable_id',
+      'CREATE INDEX IF NOT EXISTS idx_personal_reactions_addressable_id '
+          'ON personal_reactions (addressable_id)',
     ),
   ];
 }

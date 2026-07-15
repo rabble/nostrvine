@@ -1304,6 +1304,81 @@ void main() {
         },
       );
     });
+
+    group('personal_reactions addressable_id column (#6020)', () {
+      test(
+        'upgrade path — re-adds addressable_id on personal_reactions on '
+        'reopen, and the re-added column is usable',
+        () async {
+          // Seed a row under the pre-drop schema, so the DROP exercises a
+          // populated table (mirrors the send_batch_id upgrade test).
+          await database.personalReactionsDao.upsertReaction(
+            targetEventId: 'target_pre',
+            reactionEventId: 'reaction_pre',
+            userPubkey: testPubkey,
+            createdAt: 1700000000,
+            addressableId: '34236:$testPubkey:pre-d-tag',
+          );
+
+          // Simulate a legacy install that pre-dates the column: drop the
+          // index that references it, then the column itself.
+          await database.customStatement(
+            'DROP INDEX idx_personal_reactions_addressable_id',
+          );
+          await database.customStatement(
+            'ALTER TABLE personal_reactions DROP COLUMN addressable_id',
+          );
+          expect(
+            await _columnNames(database, 'personal_reactions'),
+            isNot(contains('addressable_id')),
+          );
+          await database.close();
+
+          // Reopen the same on-disk file. `beforeOpen` re-adds the column
+          // and its index. There is no backfill: the pre-drop coordinate is
+          // gone, the column comes back null for that row (same contract
+          // as the DM send_batch_id upgrade — acceptable since #6020's own
+          // consumer, LikesRepository.syncUserReactions, re-derives the
+          // coordinate from relay data on next sync).
+          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+
+          expect(
+            await _columnNames(database, 'personal_reactions'),
+            contains('addressable_id'),
+          );
+          expect(
+            await _collectIndexNames(database, 'personal_reactions'),
+            contains('idx_personal_reactions_addressable_id'),
+          );
+
+          // The re-added column is writable and readable end-to-end.
+          await database.personalReactionsDao.upsertReaction(
+            targetEventId: 'target_post',
+            reactionEventId: 'reaction_post',
+            userPubkey: testPubkey,
+            createdAt: 1700000100,
+            addressableId: '34236:$testPubkey:post-d-tag',
+          );
+          final byCoordinate = await database.personalReactionsDao
+              .getReactionByAddressableId(
+                addressableId: '34236:$testPubkey:post-d-tag',
+                userPubkey: testPubkey,
+              );
+          expect(byCoordinate, isNotNull);
+          expect(byCoordinate!.targetEventId, equals('target_post'));
+
+          // The pre-drop row survived the ALTER TABLE DROP/ADD round trip
+          // (SQLite's DROP COLUMN only removes that column; other columns
+          // and rows are untouched), now with a null coordinate.
+          final preDropRow = await database.personalReactionsDao.getReaction(
+            targetEventId: 'target_pre',
+            userPubkey: testPubkey,
+          );
+          expect(preDropRow, isNotNull);
+          expect(preDropRow!.addressableId, isNull);
+        },
+      );
+    });
   });
 }
 

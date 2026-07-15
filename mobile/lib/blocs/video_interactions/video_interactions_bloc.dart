@@ -99,11 +99,27 @@ class VideoInteractionsBloc
     VideoInteractionsSubscriptionRequested event,
     Emitter<VideoInteractionsState> emit,
   ) {
+    // Track the latest snapshot from both like streams so either one
+    // ticking recomputes membership from BOTH — a like recorded against a
+    // pre-edit event id for this coordinate only shows up in the
+    // addressable-id stream, and watchLikedEventIds ticks on every
+    // like/unlike anywhere in the app (not just this video), so treating
+    // the two streams independently would let a same-coordinate-only hit
+    // get silently overwritten back to unliked the next time anything
+    // else is liked/unliked (#6020).
+    var likedEventIds = const <String>[];
+    var likedAddressableIds = const <String>{};
+    bool resolveIsLiked() =>
+        likedEventIds.contains(_eventId) ||
+        (_addressableId != null &&
+            likedAddressableIds.contains(_addressableId));
+
     final subscriptions = [
       emit.forEach<List<String>>(
         _likesRepository.watchLikedEventIds(),
-        onData: (likedIds) {
-          final isLiked = likedIds.contains(_eventId);
+        onData: (ids) {
+          likedEventIds = ids;
+          final isLiked = resolveIsLiked();
           // Load-bearing: when [_onLikeToggled] has already emitted its
           // optimistic state, state.isLiked matches and we no-op here.
           // This guarantees a single bloc emit per tap and avoids the
@@ -118,6 +134,16 @@ class VideoInteractionsBloc
           return state.copyWith(isLiked: isLiked);
         },
       ),
+      if (_addressableId != null)
+        emit.forEach<Set<String>>(
+          _likesRepository.watchLikedAddressableIds(),
+          onData: (ids) {
+            likedAddressableIds = ids;
+            final isLiked = resolveIsLiked();
+            if (isLiked == state.isLiked) return state;
+            return state.copyWith(isLiked: isLiked);
+          },
+        ),
       if (_addressableId != null)
         emit.forEach<Set<String>>(
           _repostsRepository.watchRepostedAddressableIds(),
@@ -160,8 +186,14 @@ class VideoInteractionsBloc
     emit(state.copyWith(status: VideoInteractionsStatus.loading));
 
     try {
-      // Check if liked (fast - from local cache)
-      final isLiked = await _likesRepository.isLiked(_eventId);
+      // Check if liked (fast - from local cache). Falls back to the
+      // addressable coordinate when the event id misses, so a like
+      // recorded against a pre-edit version of this video still resolves
+      // (#6020).
+      final isLiked = await _likesRepository.isLikedResolvingCoordinate(
+        eventId: _eventId,
+        addressableId: _addressableId,
+      );
 
       // Check if reposted (fast - from local cache) if addressable
       final isReposted =

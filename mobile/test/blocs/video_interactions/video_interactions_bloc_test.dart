@@ -35,6 +35,7 @@ void main() {
     late _MockCommentsRepository mockCommentsRepository;
     late _MockRepostsRepository mockRepostsRepository;
     late StreamController<List<String>> likedIdsController;
+    late StreamController<Set<String>> likedAddressableIdsController;
     late StreamController<Set<String>> repostedIdsController;
 
     const testEventId = 'test-event-id';
@@ -46,12 +47,18 @@ void main() {
       mockCommentsRepository = _MockCommentsRepository();
       mockRepostsRepository = _MockRepostsRepository();
       likedIdsController = StreamController<List<String>>.broadcast();
+      likedAddressableIdsController = StreamController<Set<String>>.broadcast();
       repostedIdsController = StreamController<Set<String>>.broadcast();
 
       // Default stub for watchLikedEventIds
       when(
         () => mockLikesRepository.watchLikedEventIds(),
       ).thenAnswer((_) => likedIdsController.stream);
+
+      // Default stub for watchLikedAddressableIds
+      when(
+        () => mockLikesRepository.watchLikedAddressableIds(),
+      ).thenAnswer((_) => likedAddressableIdsController.stream);
 
       // Default stub for watchRepostedAddressableIds
       when(
@@ -66,6 +73,7 @@ void main() {
 
     tearDown(() {
       likedIdsController.close();
+      likedAddressableIdsController.close();
       repostedIdsController.close();
     });
 
@@ -116,7 +124,9 @@ void main() {
         'emits [loading, success] with fetched data when all calls succeed',
         setUp: () {
           when(
-            () => mockLikesRepository.isLiked(testEventId),
+            () => mockLikesRepository.isLikedResolvingCoordinate(
+              eventId: testEventId,
+            ),
           ).thenAnswer((_) async => true);
           when(
             () => mockLikesRepository.getLikeCount(testEventId),
@@ -151,7 +161,10 @@ void main() {
         'comments and reposts keep their seed',
         setUp: () {
           when(
-            () => mockLikesRepository.isLiked(testEventId),
+            () => mockLikesRepository.isLikedResolvingCoordinate(
+              eventId: testEventId,
+              addressableId: testAddressableId,
+            ),
           ).thenAnswer((_) async => false);
           when(
             () => mockRepostsRepository.isReposted(testAddressableId),
@@ -203,7 +216,9 @@ void main() {
         'fetches relay like count but preserves seeded initialLikeCount',
         setUp: () {
           when(
-            () => mockLikesRepository.isLiked(testEventId),
+            () => mockLikesRepository.isLikedResolvingCoordinate(
+              eventId: testEventId,
+            ),
           ).thenAnswer((_) async => true);
           // Relay returns a higher count than the seeded REST value, simulating
           // the common case where new likes arrived after the REST snapshot.
@@ -247,7 +262,10 @@ void main() {
         'exceeds the seed (#6022)',
         setUp: () {
           when(
-            () => mockLikesRepository.isLiked(testEventId),
+            () => mockLikesRepository.isLikedResolvingCoordinate(
+              eventId: testEventId,
+              addressableId: testAddressableId,
+            ),
           ).thenAnswer((_) async => false);
           when(
             () => mockRepostsRepository.isReposted(testAddressableId),
@@ -300,7 +318,10 @@ void main() {
         'raises a zero addressable seed to the relay resolve (#6022)',
         setUp: () {
           when(
-            () => mockLikesRepository.isLiked(testEventId),
+            () => mockLikesRepository.isLikedResolvingCoordinate(
+              eventId: testEventId,
+              addressableId: testAddressableId,
+            ),
           ).thenAnswer((_) async => false);
           when(
             () => mockRepostsRepository.isReposted(testAddressableId),
@@ -347,7 +368,10 @@ void main() {
         'resolved Nostr likes (#6022)',
         setUp: () {
           when(
-            () => mockLikesRepository.isLiked(testEventId),
+            () => mockLikesRepository.isLikedResolvingCoordinate(
+              eventId: testEventId,
+              addressableId: testAddressableId,
+            ),
           ).thenAnswer((_) async => false);
           when(
             () => mockRepostsRepository.isReposted(testAddressableId),
@@ -396,7 +420,10 @@ void main() {
         'never lowers an addressable seed below the relay resolve (#6022)',
         setUp: () {
           when(
-            () => mockLikesRepository.isLiked(testEventId),
+            () => mockLikesRepository.isLikedResolvingCoordinate(
+              eventId: testEventId,
+              addressableId: testAddressableId,
+            ),
           ).thenAnswer((_) async => false);
           when(
             () => mockRepostsRepository.isReposted(testAddressableId),
@@ -446,7 +473,10 @@ void main() {
         'addressable videos (regression for #4432)',
         setUp: () {
           when(
-            () => mockLikesRepository.isLiked(testEventId),
+            () => mockLikesRepository.isLikedResolvingCoordinate(
+              eventId: testEventId,
+              addressableId: testAddressableId,
+            ),
           ).thenAnswer((_) async => false);
           when(
             () => mockRepostsRepository.isReposted(testAddressableId),
@@ -492,7 +522,9 @@ void main() {
         'videos',
         setUp: () {
           when(
-            () => mockLikesRepository.isLiked(testEventId),
+            () => mockLikesRepository.isLikedResolvingCoordinate(
+              eventId: testEventId,
+            ),
           ).thenAnswer((_) async => false);
           when(
             () => mockLikesRepository.getLikeCount(testEventId),
@@ -524,7 +556,9 @@ void main() {
         'emits [loading, success] when video is not liked',
         setUp: () {
           when(
-            () => mockLikesRepository.isLiked(testEventId),
+            () => mockLikesRepository.isLikedResolvingCoordinate(
+              eventId: testEventId,
+            ),
           ).thenAnswer((_) async => false);
           when(
             () => mockLikesRepository.getLikeCount(testEventId),
@@ -554,7 +588,10 @@ void main() {
         'videos',
         setUp: () {
           when(
-            () => mockLikesRepository.isLiked(testEventId),
+            () => mockLikesRepository.isLikedResolvingCoordinate(
+              eventId: testEventId,
+              addressableId: testAddressableId,
+            ),
           ).thenAnswer((_) async => false);
           when(
             () => mockRepostsRepository.isReposted(testAddressableId),
@@ -607,10 +644,69 @@ void main() {
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        // #6020: after a video edit, the bloc is reconstructed with the new
+        // (post-edit) event id but the same addressable coordinate. A like
+        // recorded against the pre-edit event id must still fill the heart
+        // — the bloc composes eventId + addressableId into a single
+        // isLikedResolvingCoordinate call and trusts the repository to
+        // resolve it, rather than checking isLiked(eventId) alone.
+        'heart stays filled when the event id changed after an edit but '
+        'the coordinate was already liked (#6020)',
+        setUp: () {
+          when(
+            () => mockLikesRepository.isLikedResolvingCoordinate(
+              eventId: testEventId,
+              addressableId: testAddressableId,
+            ),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockRepostsRepository.isReposted(testAddressableId),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockLikesRepository.getLikeCount(
+              testEventId,
+              addressableId: testAddressableId,
+            ),
+          ).thenAnswer((_) async => 10);
+          when(
+            () => mockCommentsRepository.getCommentsCount(
+              testEventId,
+              rootAddressableId: testAddressableId,
+            ),
+          ).thenAnswer((_) async => 5);
+          when(
+            () => mockRepostsRepository.getRepostCount(testAddressableId),
+          ).thenAnswer((_) async => 3);
+        },
+        build: () => createBloc(addressableId: testAddressableId),
+        act: (bloc) => bloc.add(const VideoInteractionsFetchRequested()),
+        expect: () => [
+          const VideoInteractionsState(status: VideoInteractionsStatus.loading),
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            isLiked: true,
+            likeCount: 10,
+            repostCount: 3,
+            commentCount: 5,
+          ),
+        ],
+        verify: (_) {
+          verify(
+            () => mockLikesRepository.isLikedResolvingCoordinate(
+              eventId: testEventId,
+              addressableId: testAddressableId,
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
         'fetches repost count by event ID for non-addressable videos',
         setUp: () {
           when(
-            () => mockLikesRepository.isLiked(testEventId),
+            () => mockLikesRepository.isLikedResolvingCoordinate(
+              eventId: testEventId,
+            ),
           ).thenAnswer((_) async => false);
           when(
             () => mockLikesRepository.getLikeCount(testEventId),
@@ -646,7 +742,9 @@ void main() {
         'emits [loading, success] and reports addError when fetch fails',
         setUp: () {
           when(
-            () => mockLikesRepository.isLiked(testEventId),
+            () => mockLikesRepository.isLikedResolvingCoordinate(
+              eventId: testEventId,
+            ),
           ).thenThrow(Exception('Network error'));
         },
         build: createBloc,
@@ -662,7 +760,9 @@ void main() {
         'does not re-fetch when already loading',
         setUp: () {
           when(
-            () => mockLikesRepository.isLiked(testEventId),
+            () => mockLikesRepository.isLikedResolvingCoordinate(
+              eventId: testEventId,
+            ),
           ).thenAnswer((_) async => true);
           when(
             () => mockLikesRepository.getLikeCount(testEventId),
@@ -678,7 +778,12 @@ void main() {
         act: (bloc) => bloc.add(const VideoInteractionsFetchRequested()),
         expect: () => <VideoInteractionsState>[],
         verify: (_) {
-          verifyNever(() => mockLikesRepository.isLiked(any()));
+          verifyNever(
+            () => mockLikesRepository.isLikedResolvingCoordinate(
+              eventId: any(named: 'eventId'),
+              addressableId: any(named: 'addressableId'),
+            ),
+          );
         },
       );
 
@@ -686,7 +791,9 @@ void main() {
         'does not re-fetch when already loaded successfully',
         setUp: () {
           when(
-            () => mockLikesRepository.isLiked(testEventId),
+            () => mockLikesRepository.isLikedResolvingCoordinate(
+              eventId: testEventId,
+            ),
           ).thenAnswer((_) async => true);
           when(
             () => mockLikesRepository.getLikeCount(testEventId),
@@ -702,7 +809,12 @@ void main() {
         act: (bloc) => bloc.add(const VideoInteractionsFetchRequested()),
         expect: () => <VideoInteractionsState>[],
         verify: (_) {
-          verifyNever(() => mockLikesRepository.isLiked(any()));
+          verifyNever(
+            () => mockLikesRepository.isLikedResolvingCoordinate(
+              eventId: any(named: 'eventId'),
+              addressableId: any(named: 'addressableId'),
+            ),
+          );
         },
       );
 
@@ -716,7 +828,9 @@ void main() {
           commentsCountCompleter = Completer<int>();
           // Pre-fetch repository state: not liked, count from initial seed.
           when(
-            () => mockLikesRepository.isLiked(testEventId),
+            () => mockLikesRepository.isLikedResolvingCoordinate(
+              eventId: testEventId,
+            ),
           ).thenAnswer((_) async => false);
           // getLikeCount is now always queried (relay-fresh path). Return the
           // same value as the seed so the mid-fetch optimistic-toggle
@@ -1682,6 +1796,39 @@ void main() {
           likedIdsController.add([testEventId]);
         },
         wait: const Duration(milliseconds: 100),
+        expect: () => <VideoInteractionsState>[],
+      );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        // #6020 regression: watchLikedEventIds ticks on EVERY like/unlike
+        // anywhere in the app, not just this video. Before the fix, that
+        // stream alone drove isLiked, so a coordinate-only hit (the
+        // underlying reaction is recorded against a pre-edit event id) got
+        // silently flipped back to unliked the next time anything else was
+        // liked/unliked — because likedIds.contains(_eventId) was false and
+        // didn't know about the coordinate. This pins that liked-via-
+        // coordinate state survives an unrelated watchLikedEventIds tick.
+        'liked-via-coordinate state survives an unrelated '
+        'watchLikedEventIds tick elsewhere in the app (#6020)',
+        build: () => createBloc(addressableId: testAddressableId),
+        seed: () => const VideoInteractionsState(
+          status: VideoInteractionsStatus.success,
+          isLiked: true,
+          likeCount: 10,
+        ),
+        act: (bloc) async {
+          bloc.add(const VideoInteractionsSubscriptionRequested());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          // This video's own coordinate is liked (its reaction is recorded
+          // under a different, pre-edit event id — never testEventId).
+          likedAddressableIdsController.add({testAddressableId});
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          // A completely unrelated video is liked elsewhere in the app,
+          // ticking the shared watchLikedEventIds stream. testEventId is
+          // (correctly) not in this list.
+          likedIdsController.add(['some-other-unrelated-event-id']);
+        },
+        wait: const Duration(milliseconds: 150),
         expect: () => <VideoInteractionsState>[],
       );
     });
