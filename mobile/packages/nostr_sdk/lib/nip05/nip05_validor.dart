@@ -6,7 +6,24 @@ import 'package:dio/dio.dart';
 class Nip05Validor {
   static final Map<String, int> _checking = {};
 
-  static var dio = Dio();
+  /// Bounds a slow or hostile origin. Without it a stalled read hangs the
+  /// caller for Dio's default (no timeout at all).
+  static const Duration _timeout = Duration(seconds: 5);
+
+  /// NIP-05 "Security Constraints": the `.well-known/nostr.json` endpoint MUST
+  /// NOT return HTTP redirects, and fetchers MUST ignore any it returns.
+  /// Following a 30x is a spurious-verify vector — a MITM or a misconfigured
+  /// origin can bounce the lookup to a host that answers with an attacker's
+  /// key. Dio's default `validateStatus` accepts 2xx only, so an unfollowed 3xx
+  /// throws and [getPubkey] yields null rather than a redirected key.
+  static var dio = Dio(
+    BaseOptions(
+      connectTimeout: _timeout,
+      receiveTimeout: _timeout,
+      followRedirects: false,
+      maxRedirects: 0,
+    ),
+  );
 
   static Future<bool?> valid(String nip05Address, String pubkey) async {
     if (_checking[nip05Address] != null) {
