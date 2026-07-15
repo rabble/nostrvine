@@ -166,6 +166,67 @@ void relaySetChangeBridge(Ref ref) {
   Timer? debounceTimer;
   var disposed = false;
 
+  void scheduleRelayReset(
+    Set<String> relaySet, {
+    required bool changeObservedDuringInitialization,
+  }) {
+    debounceTimer?.cancel();
+    debounceTimer = Timer(const Duration(seconds: 2), () async {
+      if (disposed) return;
+
+      if (changeObservedDuringInitialization) {
+        Log.info(
+          'Relay set change originated during Nostr initialization; '
+          'skipping forced reconnect (relayCount=${relaySet.length})',
+          name: 'RelaySetChangeBridge',
+          category: LogCategory.relay,
+        );
+        return;
+      }
+
+      if (ref.read(nostrInitializationInProgressProvider)) {
+        Log.info(
+          'Nostr initialization overlaps relay reset debounce; '
+          'deferring forced reconnect (relayCount=${relaySet.length})',
+          name: 'RelaySetChangeBridge',
+          category: LogCategory.relay,
+        );
+        scheduleRelayReset(
+          relaySet,
+          changeObservedDuringInitialization: false,
+        );
+        return;
+      }
+
+      Log.info(
+        'Debounce elapsed - forcing WebSocket reconnection and feed reset',
+        name: 'RelaySetChangeBridge',
+        category: LogCategory.relay,
+      );
+
+      // Force reconnect all WebSocket connections. When relays are added or
+      // removed, existing connections can be stale while still reporting as
+      // connected. Reconnecting establishes fresh connections for the new set.
+      try {
+        await nostrService.forceReconnectAll();
+        Log.info(
+          'Successfully reconnected all relay WebSockets',
+          name: 'RelaySetChangeBridge',
+          category: LogCategory.relay,
+        );
+      } catch (e) {
+        Log.error(
+          'Failed to reconnect relays: $e',
+          name: 'RelaySetChangeBridge',
+          category: LogCategory.relay,
+        );
+      }
+
+      // Reset and resubscribe all feeds against the fresh relay connections.
+      videoEventService.resetAndResubscribeAll();
+    });
+  }
+
   void processStatuses(Map<String, RelayConnectionStatus> statuses) {
     ref
         .read(configuredRelayUrlsProvider.notifier)
@@ -189,49 +250,10 @@ void relaySetChangeBridge(Ref ref) {
           !nostrService.isInitialized;
 
       // Debounce: collapse rapid changes into a single reset
-      debounceTimer?.cancel();
-      debounceTimer = Timer(const Duration(seconds: 2), () async {
-        if (changeObservedDuringInitialization ||
-            ref.read(nostrInitializationInProgressProvider) ||
-            !nostrService.isInitialized) {
-          Log.info(
-            'Relay set change originated during Nostr initialization; '
-            'skipping forced reconnect (relayCount=${currentRelaySet.length})',
-            name: 'RelaySetChangeBridge',
-            category: LogCategory.relay,
-          );
-          return;
-        }
-
-        Log.info(
-          'Debounce elapsed - forcing WebSocket reconnection and feed reset',
-          name: 'RelaySetChangeBridge',
-          category: LogCategory.relay,
-        );
-
-        // CRITICAL FIX: Force reconnect all WebSocket connections
-        // When relays are added/removed, the existing WebSocket connections
-        // can become stale/zombie - showing as "connected" but not responding
-        // to subscription requests. Force disconnect and reconnect all relays
-        // to establish fresh connections.
-        try {
-          await nostrService.forceReconnectAll();
-          Log.info(
-            'Successfully reconnected all relay WebSockets',
-            name: 'RelaySetChangeBridge',
-            category: LogCategory.relay,
-          );
-        } catch (e) {
-          Log.error(
-            'Failed to reconnect relays: $e',
-            name: 'RelaySetChangeBridge',
-            category: LogCategory.relay,
-          );
-        }
-
-        // Now reset and resubscribe all feeds with fresh connections
-        videoEventService.resetAndResubscribeAll();
-      });
+      scheduleRelayReset(
+        currentRelaySet,
+        changeObservedDuringInitialization: changeObservedDuringInitialization,
+      );
     }
   }
 

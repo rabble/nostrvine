@@ -3315,8 +3315,9 @@ void main() {
         when(() => mockNostr.refreshPublicKey()).thenAnswer((_) async {});
         when(() => mockRelayManager.initialize()).thenAnswer((_) async {});
         final observedStages = <NostrClientInitializationStage>[];
+        client.initializationObserver = observedStages.add;
 
-        await client.initializeWithStageObserver(observedStages.add);
+        await client.initialize();
 
         expect(
           observedStages,
@@ -3327,6 +3328,17 @@ void main() {
             NostrClientInitializationStage.connectingRelays,
           ]),
         );
+      });
+
+      test('a throwing stage observer does not fail initialization', () async {
+        when(() => mockNostr.refreshPublicKey()).thenAnswer((_) async {});
+        when(() => mockRelayManager.initialize()).thenAnswer((_) async {});
+        client.initializationObserver = (_) {
+          throw StateError('diagnostics failed');
+        };
+
+        await expectLater(client.initialize(), completes);
+        await expectLater(client.ready, completes);
       });
 
       test('ready stays resolved on a second initialize() call', () async {

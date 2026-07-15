@@ -283,5 +283,34 @@ void main() {
         });
       },
     );
+
+    test('defers a healthy relay change while initialization overlaps', () {
+      fakeAsync((async) {
+        final container = createContainer(initialStatuses: {});
+
+        statusController.add({
+          'wss://relay1.example.com': RelayConnectionStatus.connected(
+            'wss://relay1.example.com',
+          ),
+        });
+
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 1));
+        container.read(nostrInitializationInProgressProvider.notifier).begin();
+        async.elapse(const Duration(seconds: 1));
+        async.flushMicrotasks();
+
+        verifyNever(() => mockNostrClient.forceReconnectAll());
+        verifyNever(() => mockVideoEventService.resetAndResubscribeAll());
+
+        container.read(nostrInitializationInProgressProvider.notifier).end();
+        async.elapse(const Duration(seconds: 2));
+        async.flushMicrotasks();
+
+        verify(() => mockNostrClient.forceReconnectAll()).called(1);
+        verify(() => mockVideoEventService.resetAndResubscribeAll()).called(1);
+        container.dispose();
+      });
+    });
   });
 }

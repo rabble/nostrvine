@@ -130,7 +130,8 @@ void main() {
     return LocalNostrIdentity(keyContainer: keyContainer);
   }
 
-  setUp(() {
+  setUp(() async {
+    await LogCaptureService().clearAllLogs();
     mockAuth = _MockAuthService();
     mockDbClient = _MockAppDbClient();
     mockStats = _MockRelayStatisticsService();
@@ -820,7 +821,6 @@ void main() {
     test(
       'timed out startup relay setup retries automatically for same identity',
       () async {
-        final logCountBeforeTest = LogCaptureService().getRecentLogs().length;
         final stalledAddRelays = Completer<void>();
         factory.addRelaysCompleters[pubkeyA] = stalledAddRelays;
         when(() => mockAuth.currentIdentity).thenReturn(identityA);
@@ -841,9 +841,7 @@ void main() {
         expect(factory.callCount, equals(2));
         expect(factory.addRelaysPubkeys, equals([pubkeyA, pubkeyA]));
         expect(factory.initializePubkeys, equals([pubkeyA]));
-        final testLogs = LogCaptureService().getRecentLogs().skip(
-          logCountBeforeTest,
-        );
+        final testLogs = LogCaptureService().getRecentLogs();
         expect(
           testLogs.any(
             (entry) =>
@@ -1212,6 +1210,33 @@ void main() {
   });
 
   group('disposed-ref guard (#5602 / #5600 regression)', () {
+    test(
+      'does not touch ref when disposed before init microtask runs',
+      () async {
+        when(() => mockAuth.currentIdentity).thenReturn(identityA);
+
+        final errors = <Object>[];
+        await runZonedGuarded(
+          () async {
+            final container = createContainer();
+            container.read(nostrServiceProvider);
+            container.dispose();
+
+            await Future<void>.delayed(Duration.zero);
+            await Future<void>.delayed(Duration.zero);
+          },
+          (error, _) => errors.add(error),
+        );
+
+        expect(
+          errors,
+          isEmpty,
+          reason:
+              'a disposed-ref read leaked before the init try block: $errors',
+        );
+      },
+    );
+
     test('does not touch ref after the container is disposed mid-init '
         '(success path)', () async {
       when(() => mockAuth.currentIdentity).thenReturn(identityA);

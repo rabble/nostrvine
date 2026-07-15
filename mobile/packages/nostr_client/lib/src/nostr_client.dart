@@ -50,28 +50,10 @@ enum NostrClientInitializationStage {
 }
 
 /// Receives initialization stage transitions before their asynchronous work
-/// begins.
+/// begins. Implementations are diagnostic only; exceptions are logged and do
+/// not fail client initialization.
 typedef NostrClientInitializationObserver =
     void Function(NostrClientInitializationStage stage);
-
-final Object _initializationObserverZoneKey = Object();
-
-/// Diagnostic initialization entry point that reports blocking stage changes.
-///
-/// This is an extension instead of an additional parameter on
-/// [NostrClient.initialize] so test doubles and other implementations of
-/// [NostrClient] retain the existing initialization contract.
-extension NostrClientInitializationDiagnostics on NostrClient {
-  /// Runs [NostrClient.initialize] while reporting each stage before it starts.
-  Future<void> initializeWithStageObserver(
-    NostrClientInitializationObserver observer,
-  ) {
-    return runZoned(
-      initialize,
-      zoneValues: {_initializationObserverZoneKey: observer},
-    );
-  }
-}
 
 /// {@template nostr_client}
 /// Abstraction layer for Nostr communication
@@ -421,28 +403,27 @@ class NostrClient {
   /// On failure, [ready] resolves with the same error so consumers awaiting
   /// readiness fail fast instead of hanging until a wall-clock timeout.
   Future<void> initialize() async {
-    final onStageChanged =
-        Zone.current[_initializationObserverZoneKey]
-            as NostrClientInitializationObserver?;
     try {
       // Signer is the single source of truth for the public key.
-      onStageChanged?.call(
+      _reportInitializationStage(
         NostrClientInitializationStage.refreshingPublicKey,
       );
       await _nostr.refreshPublicKey();
       // Seed the already-verified set before relays connect, so re-sent
       // events skip re-verification during the cold-start flood.
-      onStageChanged?.call(
+      _reportInitializationStage(
         NostrClientInitializationStage.loadingVerifiedEvents,
       );
       await _seedVerifiedEventIds();
       // Wire the off-main verify isolate before relays connect, so the fresh
       // verifies during the cold-start flood run off the main isolate (#5863).
-      onStageChanged?.call(
+      _reportInitializationStage(
         NostrClientInitializationStage.startingVerificationWorker,
       );
       await _maybeStartEventVerifyWorker();
-      onStageChanged?.call(NostrClientInitializationStage.connectingRelays);
+      _reportInitializationStage(
+        NostrClientInitializationStage.connectingRelays,
+      );
       await _relayManager.initialize();
       if (!_readyCompleter.isCompleted) {
         _readyCompleter.complete();
@@ -452,6 +433,26 @@ class NostrClient {
         _readyCompleter.completeError(e, st);
       }
       rethrow;
+    }
+  }
+
+  /// Optional diagnostic observer for blocking initialization stages.
+  ///
+  /// The owner may clear this while initialization is still pending (for
+  /// example, after applying its own timeout), so asynchronous work does not
+  /// retain a per-attempt callback for the lifetime of the client.
+  NostrClientInitializationObserver? initializationObserver;
+
+  void _reportInitializationStage(NostrClientInitializationStage stage) {
+    try {
+      initializationObserver?.call(stage);
+    } catch (e, st) {
+      log(
+        'Initialization stage observer failed',
+        name: 'NostrClient',
+        error: e,
+        stackTrace: st,
+      );
     }
   }
 

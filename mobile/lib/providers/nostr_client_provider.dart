@@ -310,10 +310,13 @@ class NostrService extends _$NostrService {
     required List<String> userRelayUrls,
     required String source,
   }) async {
-    final initialization = ref.read(
-      nostrInitializationInProgressProvider.notifier,
-    )..begin();
+    NostrInitializationInProgress? initialization;
     try {
+      final initializationTracker = ref.read(
+        nostrInitializationInProgressProvider.notifier,
+      );
+      initializationTracker.begin();
+      initialization = initializationTracker;
       await _runClientInitialization(
         client,
         userRelayUrls,
@@ -353,7 +356,7 @@ class NostrService extends _$NostrService {
       _setSessionIdentityState(pubkey);
       _scheduleInitializationRetry(pubkey);
     } finally {
-      initialization.end();
+      initialization?.end();
     }
   }
 
@@ -361,7 +364,7 @@ class NostrService extends _$NostrService {
     NostrClient client,
     List<String> userRelayUrls, {
     required String source,
-  }) {
+  }) async {
     final timeout = ref.read(nostrInitializationTimeoutProvider);
     final stopwatch = Stopwatch()..start();
     var stage = 'addingUserRelays';
@@ -372,20 +375,20 @@ class NostrService extends _$NostrService {
       category: LogCategory.system,
     );
 
-    return (() async {
-      if (userRelayUrls.isNotEmpty) {
-        final addedRelayCount = await client.addRelays(userRelayUrls);
-        Log.info(
-          '[NostrService] Initialization stage completed: source=$source, '
-          'stage=$stage, addedRelayCount=$addedRelayCount, '
-          'elapsedMs=${stopwatch.elapsedMilliseconds}',
-          name: 'NostrService',
-          category: LogCategory.system,
-        );
-      }
-      stage = 'client.initialize';
-      await client.initializeWithStageObserver(
-        (clientStage) {
+    try {
+      await (() async {
+        if (userRelayUrls.isNotEmpty) {
+          final addedRelayCount = await client.addRelays(userRelayUrls);
+          Log.info(
+            '[NostrService] Initialization stage completed: source=$source, '
+            'stage=$stage, addedRelayCount=$addedRelayCount, '
+            'elapsedMs=${stopwatch.elapsedMilliseconds}',
+            name: 'NostrService',
+            category: LogCategory.system,
+          );
+        }
+        stage = 'client.initialize';
+        client.initializationObserver = (clientStage) {
           stage = 'client.${clientStage.name}';
           Log.debug(
             '[NostrService] Initialization stage started: source=$source, '
@@ -393,25 +396,28 @@ class NostrService extends _$NostrService {
             name: 'NostrService',
             category: LogCategory.system,
           );
+        };
+        await client.initialize();
+        Log.info(
+          '[NostrService] Initialization completed: source=$source, '
+          'elapsedMs=${stopwatch.elapsedMilliseconds}',
+          name: 'NostrService',
+          category: LogCategory.system,
+        );
+      })().timeout(
+        timeout,
+        onTimeout: () {
+          throw TimeoutException(
+            'Nostr client initialization timed out: source=$source, '
+            'stage=$stage, userRelayCount=${userRelayUrls.length}, '
+            'elapsedMs=${stopwatch.elapsedMilliseconds}',
+            timeout,
+          );
         },
       );
-      Log.info(
-        '[NostrService] Initialization completed: source=$source, '
-        'elapsedMs=${stopwatch.elapsedMilliseconds}',
-        name: 'NostrService',
-        category: LogCategory.system,
-      );
-    })().timeout(
-      timeout,
-      onTimeout: () {
-        throw TimeoutException(
-          'Nostr client initialization timed out: source=$source, '
-          'stage=$stage, userRelayCount=${userRelayUrls.length}, '
-          'elapsedMs=${stopwatch.elapsedMilliseconds}',
-          timeout,
-        );
-      },
-    );
+    } finally {
+      client.initializationObserver = null;
+    }
   }
 
   void _scheduleInitializationRetry(String? pubkey) {
@@ -448,10 +454,13 @@ class NostrService extends _$NostrService {
         .toList();
     final client = _createClient(identity);
     final clientGeneration = _nextClientGeneration();
-    final initialization = ref.read(
-      nostrInitializationInProgressProvider.notifier,
-    )..begin();
+    NostrInitializationInProgress? initialization;
     try {
+      final initializationTracker = ref.read(
+        nostrInitializationInProgressProvider.notifier,
+      );
+      initializationTracker.begin();
+      initialization = initializationTracker;
       await _runClientInitialization(
         client,
         userRelayUrls,
@@ -488,6 +497,7 @@ class NostrService extends _$NostrService {
         category: LogCategory.system,
       );
       _disposeClient(client);
+      if (!ref.mounted) return;
       if (!_isActiveIdentity(pubkey, clientGeneration)) {
         return;
       }
@@ -497,7 +507,7 @@ class NostrService extends _$NostrService {
       _setSessionIdentityState(pubkey);
       _scheduleInitializationRetry(pubkey);
     } finally {
-      initialization.end();
+      initialization?.end();
     }
   }
 
