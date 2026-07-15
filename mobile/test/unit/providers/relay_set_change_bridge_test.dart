@@ -103,6 +103,7 @@ void main() {
         async.elapse(const Duration(seconds: 2));
         async.flushMicrotasks();
 
+        verify(() => mockNostrClient.forceReconnectAll()).called(1);
         verify(() => mockVideoEventService.resetAndResubscribeAll()).called(1);
         container.dispose();
       });
@@ -229,9 +230,12 @@ void main() {
       });
     });
 
-    test('does not reconnect while the Nostr client is initializing', () {
+    test('does not reconnect for a change observed during initialization', () {
       fakeAsync((async) {
-        when(() => mockNostrClient.isInitialized).thenReturn(false);
+        var isInitialized = false;
+        when(
+          () => mockNostrClient.isInitialized,
+        ).thenAnswer((_) => isInitialized);
         final container = createContainer(initialStatuses: {});
 
         statusController.add({
@@ -241,7 +245,9 @@ void main() {
         });
 
         async.flushMicrotasks();
-        async.elapse(const Duration(seconds: 2));
+        async.elapse(const Duration(seconds: 1));
+        isInitialized = true;
+        async.elapse(const Duration(seconds: 1));
         async.flushMicrotasks();
 
         verifyNever(() => mockNostrClient.forceReconnectAll());
