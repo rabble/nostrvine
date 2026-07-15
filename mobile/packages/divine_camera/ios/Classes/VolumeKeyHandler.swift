@@ -17,7 +17,6 @@ import UIKit
 /// while the handler is enabled. Camera capture is suspended in the background
 /// anyway, so no remote trigger is lost.
 class VolumeKeyHandler: NSObject {
-    private var isEnabled = false
     private var volumeKeysEnabled = true  // Can be toggled independently
     private var onTrigger: ((String) -> Void)?
 
@@ -44,10 +43,11 @@ class VolumeKeyHandler: NSObject {
     // Temporary suppression during camera switch / audio route changes
     private var isSuppressed = false
 
-    // Whether the Now Playing / MPRemoteCommandCenter session is currently
-    // registered. Scoped to the foreground so no media control lingers on the
-    // Lock Screen (#6090).
-    private var isMediaSessionActive = false
+    // Foreground-scoping state machine for the Now Playing session (#6090). Owns
+    // both the enabled flag and whether the MPRemoteCommandCenter session is
+    // registered, extracted as pure logic so the transition table is
+    // unit-testable. See MediaSessionScopePolicy.
+    private var scope = MediaSessionScopePolicy()
 
     // Re-asserts the owning (UI) engine's diagnostics sink before emitting any
     // native-only diagnostic. iOS has no Activity-attachment lifecycle to bind
@@ -66,7 +66,7 @@ class VolumeKeyHandler: NSObject {
     /// Sets up MPRemoteCommandCenter for Bluetooth remotes and volume observation.
     /// Returns true if successfully enabled.
     func enable() -> Bool {
-        if isEnabled {
+        if scope.isEnabled {
             return true
         }
 
@@ -78,7 +78,6 @@ class VolumeKeyHandler: NSObject {
 
         setupVolumeObserver()
 
-        isEnabled = true
         volumeKeysEnabled = true
 
         registerAppLifecycleObservers()
@@ -87,8 +86,9 @@ class VolumeKeyHandler: NSObject {
         // Claiming it in the background would leave a persistent "Recording"
         // media control on the Lock Screen (#6090); it is (re)claimed on
         // foreground via appDidBecomeActive.
-        if UIApplication.shared.applicationState == .active {
-            activateMediaSession()
+        let appActive = UIApplication.shared.applicationState == .active
+        if scope.onEnable(appActive: appActive) {
+            performActivateMediaSession()
         }
 
         DivineCameraLog.shared.debug("DivineCameraVolumeKeyHandler: Enabled")
@@ -97,15 +97,16 @@ class VolumeKeyHandler: NSObject {
 
     /// Disables volume button listening.
     func disable() {
-        if !isEnabled {
+        if !scope.isEnabled {
             return
         }
 
         unregisterAppLifecycleObservers()
-        deactivateMediaSession()
+        if scope.onDisable() {
+            performDeactivateMediaSession()
+        }
         teardownVolumeObserver()
 
-        isEnabled = false
         volumeKeysEnabled = true
         DivineCameraLog.shared.debug("DivineCameraVolumeKeyHandler: Disabled")
     }
@@ -120,7 +121,7 @@ class VolumeKeyHandler: NSObject {
 
     /// Whether volume key handling is currently enabled.
     func isHandlerEnabled() -> Bool {
-        return isEnabled
+        return scope.isEnabled
     }
 
     /// Temporarily suppress all triggers for the given duration.
@@ -150,12 +151,11 @@ class VolumeKeyHandler: NSObject {
 
     /// Claims the iOS "Now Playing" session (MPRemoteCommandCenter +
     /// MPNowPlayingInfoCenter) so Bluetooth/AirPods media buttons route to us.
-    /// Idempotent. Scoped to the foreground camera session so the media control
-    /// never lingers on the Lock Screen (#6090).
-    private func activateMediaSession() {
-        guard !isMediaSessionActive else { return }
+    /// Scoped to the foreground camera session so the media control never
+    /// lingers on the Lock Screen (#6090). Callers gate this on `scope`; the
+    /// performer itself is unconditional.
+    private func performActivateMediaSession() {
         setupRemoteCommandCenter()
-        isMediaSessionActive = true
         enabledTimestamp = ProcessInfo.processInfo.systemUptime
 
         // Suppress triggers briefly to absorb spurious Bluetooth events that
@@ -173,11 +173,10 @@ class VolumeKeyHandler: NSObject {
         DivineCameraLog.shared.debug("DivineCameraVolumeKeyHandler: Media session activated (suppressed for \(activationCooldownSeconds)s)")
     }
 
-    /// Releases the Now Playing session. Idempotent.
-    private func deactivateMediaSession() {
-        guard isMediaSessionActive else { return }
+    /// Releases the Now Playing session. Callers gate this on `scope`; the
+    /// performer itself is unconditional.
+    private func performDeactivateMediaSession() {
         teardownRemoteCommandCenter()
-        isMediaSessionActive = false
         DivineCameraLog.shared.debug("DivineCameraVolumeKeyHandler: Media session deactivated")
     }
 
@@ -213,7 +212,9 @@ class VolumeKeyHandler: NSObject {
     /// control lingers on the Lock Screen (#6090). Camera capture is suspended
     /// in the background anyway, so no remote trigger is lost.
     @objc private func appDidEnterBackground() {
-        deactivateMediaSession()
+        if scope.onEnterBackground() {
+            performDeactivateMediaSession()
+        }
     }
 
     /// Re-claims the Now Playing session on return to the foreground so
@@ -222,8 +223,9 @@ class VolumeKeyHandler: NSObject {
         // Native-only event (notification, no method call): reclaim the UI
         // engine's diagnostics sink first.
         reclaimLogSink?()
-        guard isEnabled else { return }
-        activateMediaSession()
+        if scope.onBecomeActive() {
+            performActivateMediaSession()
+        }
     }
 
     // MARK: - Remote Command Center (Bluetooth remotes/earbuds)
@@ -329,7 +331,7 @@ class VolumeKeyHandler: NSObject {
         // Only meaningful while the media session is active (foreground). If a
         // stray trigger arrives while backgrounded, don't re-create the Now
         // Playing entry — that would resurrect the Lock Screen control (#6090).
-        guard isMediaSessionActive else { return }
+        guard scope.isMediaSessionActive else { return }
         var nowPlayingInfo = MPNowPlayingInfoCenter.default().nowPlayingInfo ?? [String: Any]()
         nowPlayingInfo[MPMediaItemPropertyTitle] = "Recording"
         nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = 1.0
@@ -404,7 +406,7 @@ class VolumeKeyHandler: NSObject {
         // and this is an external change.
         // The isSuppressed check prevents audio route changes during camera
         // switch from being misinterpreted as volume button presses.
-        if !isInternalVolumeChange && isEnabled && volumeKeysEnabled && !isSuppressed {
+        if !isInternalVolumeChange && scope.isEnabled && volumeKeysEnabled && !isSuppressed {
             if newValue > oldValue {
                 DivineCameraLog.shared.debug("DivineCameraVolumeKeyHandler: Volume up button pressed")
                 onTrigger?("volumeUp")

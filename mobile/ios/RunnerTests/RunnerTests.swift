@@ -1,5 +1,6 @@
 import XCTest
 import WebKit
+import divine_camera
 @testable import Runner
 
 /// Native coverage for the Nostr bridge frame-attestation plugin. The plugin's
@@ -154,5 +155,120 @@ final class WebKitContentControllerIntegrationTests: XCTestCase {
     let installed = contentController.userScripts.first
     XCTAssertEqual(installed?.injectionTime, .atDocumentStart)
     XCTAssertTrue(installed?.isForMainFrameOnly ?? false)
+  }
+}
+
+/// Native coverage for the divine_camera foreground-scoping state machine that
+/// fixes #6090 (a "Recording" media control lingering on the Lock Screen after
+/// the app was backgrounded with the camera open).
+///
+/// `VolumeKeyHandler`'s claim/release of the iOS "Now Playing" session is
+/// entangled with `UIApplication` and `MediaPlayer` singletons and cannot be
+/// exercised from a unit test. The decision logic is extracted into
+/// `MediaSessionScopePolicy` (pure, no UIKit/MediaPlayer) so the transitions can
+/// be verified here — each case pins one edge of the table and fails loudly if
+/// the foreground scoping regresses.
+final class MediaSessionScopePolicyTests: XCTestCase {
+  func testStartsDisabledAndInactive() {
+    let policy = MediaSessionScopePolicy()
+    XCTAssertFalse(policy.isEnabled)
+    XCTAssertFalse(policy.isMediaSessionActive)
+  }
+
+  func testEnableWhileForegroundClaimsSession() {
+    var policy = MediaSessionScopePolicy()
+    XCTAssertTrue(policy.onEnable(appActive: true))
+    XCTAssertTrue(policy.isEnabled)
+    XCTAssertTrue(policy.isMediaSessionActive)
+  }
+
+  func testEnableWhileBackgroundedDefersClaim() {
+    var policy = MediaSessionScopePolicy()
+    XCTAssertFalse(
+      policy.onEnable(appActive: false),
+      "must not claim the session while backgrounded (#6090)"
+    )
+    XCTAssertTrue(policy.isEnabled)
+    XCTAssertFalse(policy.isMediaSessionActive)
+  }
+
+  func testDeferredClaimHappensOnBecomeActive() {
+    var policy = MediaSessionScopePolicy()
+    _ = policy.onEnable(appActive: false)
+    XCTAssertTrue(policy.onBecomeActive())
+    XCTAssertTrue(policy.isMediaSessionActive)
+  }
+
+  func testEnableIsIdempotent() {
+    var policy = MediaSessionScopePolicy()
+    _ = policy.onEnable(appActive: true)
+    XCTAssertFalse(
+      policy.onEnable(appActive: true),
+      "second enable while already enabled is a no-op"
+    )
+    XCTAssertTrue(policy.isMediaSessionActive)
+  }
+
+  func testBackgroundReleasesSessionButStaysEnabled() {
+    var policy = MediaSessionScopePolicy()
+    _ = policy.onEnable(appActive: true)
+    XCTAssertTrue(policy.onEnterBackground())
+    XCTAssertFalse(
+      policy.isMediaSessionActive,
+      "released on background so no control lingers on the Lock Screen (#6090)"
+    )
+    XCTAssertTrue(policy.isEnabled, "still enabled — will re-claim on foreground")
+  }
+
+  func testBackgroundForegroundCycleReclaims() {
+    var policy = MediaSessionScopePolicy()
+    _ = policy.onEnable(appActive: true)
+    _ = policy.onEnterBackground()
+    XCTAssertTrue(policy.onBecomeActive(), "re-claim on unlock")
+    XCTAssertTrue(policy.isMediaSessionActive)
+  }
+
+  func testBecomeActiveIsIdempotentWhenAlreadyActive() {
+    var policy = MediaSessionScopePolicy()
+    _ = policy.onEnable(appActive: true)
+    XCTAssertFalse(
+      policy.onBecomeActive(),
+      "already active — no duplicate claim / re-suppression"
+    )
+    XCTAssertTrue(policy.isMediaSessionActive)
+  }
+
+  func testBecomeActiveDoesNotClaimWhenDisabled() {
+    var policy = MediaSessionScopePolicy()
+    XCTAssertFalse(policy.onBecomeActive())
+    XCTAssertFalse(policy.isMediaSessionActive)
+  }
+
+  func testEnterBackgroundWhenInactiveIsNoOp() {
+    var policy = MediaSessionScopePolicy()
+    _ = policy.onEnable(appActive: false)
+    XCTAssertFalse(policy.onEnterBackground())
+    XCTAssertFalse(policy.isMediaSessionActive)
+  }
+
+  func testDisableReleasesActiveSession() {
+    var policy = MediaSessionScopePolicy()
+    _ = policy.onEnable(appActive: true)
+    XCTAssertTrue(policy.onDisable(), "should release the claimed session")
+    XCTAssertFalse(policy.isEnabled)
+    XCTAssertFalse(policy.isMediaSessionActive)
+  }
+
+  func testDisableWhenInactiveDoesNotRequestRelease() {
+    var policy = MediaSessionScopePolicy()
+    _ = policy.onEnable(appActive: false)
+    XCTAssertFalse(policy.onDisable(), "nothing to release")
+    XCTAssertFalse(policy.isEnabled)
+  }
+
+  func testDisableWhenAlreadyDisabledIsNoOp() {
+    var policy = MediaSessionScopePolicy()
+    XCTAssertFalse(policy.onDisable())
+    XCTAssertFalse(policy.isEnabled)
   }
 }
