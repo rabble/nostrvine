@@ -47,13 +47,12 @@ final _relaySetChangeCoordinatorProvider = Provider<_RelaySetChangeCoordinator>(
 
 class _RelaySetChangeCoordinator {
   Timer? _debounceTimer;
-  NostrClient? _activeClient;
-  VideoEventService? _videoEventService;
-  NostrInitializationInProgress? _initializationTracker;
-  NostrClient? _intentSourceClient;
-  NostrClient? _reconcilingClient;
-  Set<String>? _targetRelaySet;
-  var _resetRequired = false;
+  _RelayClientAttachment? _attachment;
+  _RelayResetTransaction? _pendingTransaction;
+  var _nextAttachmentGeneration = 0;
+  var _nextTransactionVersion = 0;
+  var _operationInProgress = false;
+  var _rescheduleAfterOperation = false;
   var _disposed = false;
 
   void attach({
@@ -61,18 +60,53 @@ class _RelaySetChangeCoordinator {
     required VideoEventService videoEventService,
     required NostrInitializationInProgress initializationTracker,
   }) {
-    _activeClient = client;
-    _videoEventService = videoEventService;
-    _initializationTracker = initializationTracker;
-  }
+    final scope = _RelayIntentScope.fromClient(client);
+    final currentAttachment = _attachment;
+    if (currentAttachment != null &&
+        identical(currentAttachment.client, client)) {
+      _attachment = currentAttachment.copyWith(
+        videoEventService: videoEventService,
+        initializationTracker: initializationTracker,
+      );
+      return;
+    }
 
-  bool isReconciling(NostrClient client) {
-    return identical(_reconcilingClient, client);
+    _attachment = _RelayClientAttachment(
+      client: client,
+      videoEventService: videoEventService,
+      initializationTracker: initializationTracker,
+      scope: scope,
+      generation: ++_nextAttachmentGeneration,
+    );
+
+    final transaction = _pendingTransaction;
+    if (transaction == null) return;
+
+    if (transaction.scope != scope) {
+      Log.info(
+        'Discarding pending relay reset at environment or identity boundary',
+        name: 'RelaySetChangeBridge',
+        category: LogCategory.relay,
+      );
+      _pendingTransaction = null;
+      _debounceTimer?.cancel();
+      _debounceTimer = null;
+      _rescheduleAfterOperation = false;
+      return;
+    }
+
+    if (_operationInProgress) {
+      _rescheduleAfterOperation = true;
+    } else if (!(_debounceTimer?.isActive ?? false)) {
+      _scheduleReset();
+    }
   }
 
   bool isClientInitializing(NostrClient client) {
+    final attachment = _attachment;
     return !client.isInitialized ||
-        (_initializationTracker?.isClientInitializing(client) ?? false);
+        (attachment?.initializationTracker.isClientInitializing(client) ??
+            false);
   }
 
   void recordMembershipChange({
@@ -81,9 +115,17 @@ class _RelaySetChangeCoordinator {
     required Set<String> currentRelaySet,
     required bool changeRequiresReset,
   }) {
-    if (_disposed || isReconciling(client)) return;
+    if (_disposed) return;
+    final attachment = _attachment;
+    if (attachment == null || !identical(attachment.client, client)) return;
 
-    if (!_resetRequired) {
+    var transaction = _pendingTransaction;
+    if (transaction != null && transaction.scope != attachment.scope) {
+      _pendingTransaction = null;
+      transaction = null;
+    }
+
+    if (transaction == null) {
       if (!changeRequiresReset) {
         Log.info(
           'Relay set change originated during active client initialization; '
@@ -94,53 +136,76 @@ class _RelaySetChangeCoordinator {
         );
         return;
       }
-      _resetRequired = true;
-      _intentSourceClient = client;
-      _targetRelaySet = Set.of(currentRelaySet);
-    } else if (identical(_intentSourceClient, client)) {
+      transaction = _RelayResetTransaction(
+        scope: attachment.scope,
+        sourceClient: client,
+        targetRelaySet: Set.of(currentRelaySet),
+        version: ++_nextTransactionVersion,
+      );
+      _pendingTransaction = transaction;
+    } else if (identical(transaction.sourceClient, client)) {
       // Keep the latest complete target from the client where the reset intent
       // originated. Startup-stage changes from that same generation belong to
       // the batch but cannot clear its sticky reset requirement.
-      _targetRelaySet = Set.of(currentRelaySet);
+      _updateTransactionTarget(transaction, currentRelaySet);
     } else if (changeRequiresReset) {
       // A real edit can race with replacement. Merge its delta into the target
       // retained from the previous generation instead of replacing that target
       // with the replacement's potentially stale startup snapshot.
-      final target = _targetRelaySet ?? <String>{};
+      final target = Set.of(transaction.targetRelaySet);
       target
         ..removeAll(previousRelaySet.difference(currentRelaySet))
         ..addAll(currentRelaySet.difference(previousRelaySet));
-      _targetRelaySet = target;
+      _updateTransactionTarget(transaction, target);
     } else {
       // Ignore startup-only membership snapshots from a replacement client.
       // The retained target is reconciled onto it when the debounce fires.
       return;
     }
 
-    _scheduleReset();
+    if (_operationInProgress) {
+      _rescheduleAfterOperation = true;
+    } else {
+      _scheduleReset();
+    }
+  }
+
+  void _updateTransactionTarget(
+    _RelayResetTransaction transaction,
+    Set<String> targetRelaySet,
+  ) {
+    if (_setsEqual(transaction.targetRelaySet, targetRelaySet)) return;
+    transaction
+      ..targetRelaySet = Set.of(targetRelaySet)
+      ..version = ++_nextTransactionVersion
+      ..reconciliationRetryUsed = false;
   }
 
   void _scheduleReset() {
+    if (_disposed || _pendingTransaction == null) return;
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(seconds: 2), () {
+      _debounceTimer = null;
       unawaited(_performReset());
     });
   }
 
   Future<void> _performReset() async {
-    if (_disposed || !_resetRequired) return;
-
-    final client = _activeClient;
-    final videoEventService = _videoEventService;
-    final targetRelaySet = _targetRelaySet;
-    if (client == null || videoEventService == null || targetRelaySet == null) {
+    if (_disposed || _pendingTransaction == null) return;
+    if (_operationInProgress) {
+      _rescheduleAfterOperation = true;
       return;
     }
 
-    if (isClientInitializing(client)) {
+    final attachment = _attachment;
+    final transaction = _pendingTransaction;
+    if (attachment == null || transaction == null) return;
+
+    if (isClientInitializing(attachment.client)) {
       Log.info(
         'Active client initialization overlaps relay reset debounce; '
-        'deferring forced reconnect (relayCount=${targetRelaySet.length})',
+        'deferring forced reconnect '
+        '(relayCount=${transaction.targetRelaySet.length})',
         name: 'RelaySetChangeBridge',
         category: LogCategory.relay,
       );
@@ -148,15 +213,39 @@ class _RelaySetChangeCoordinator {
       return;
     }
 
-    final sourceClient = _intentSourceClient;
-    _resetRequired = false;
-    _intentSourceClient = null;
-    _targetRelaySet = null;
-    _reconcilingClient = client;
+    final transactionVersion = transaction.version;
+    _operationInProgress = true;
 
     try {
-      if (!identical(sourceClient, client)) {
-        await _reconcileRelaySet(client, targetRelaySet);
+      if (!identical(transaction.sourceClient, attachment.client)) {
+        final reconciliation = await _reconcileRelaySet(
+          attachment: attachment,
+          transaction: transaction,
+          transactionVersion: transactionVersion,
+        );
+        if (reconciliation.status == _RelayReconciliationStatus.superseded) {
+          _rescheduleAfterOperation = _pendingTransaction != null;
+          return;
+        }
+        if (reconciliation.status == _RelayReconciliationStatus.incomplete) {
+          Log.error(
+            'Failed to reconcile replacement relay set: '
+            '${reconciliation.error}',
+            name: 'RelaySetChangeBridge',
+            category: LogCategory.relay,
+          );
+          _handleReconciliationFailure(transaction, transactionVersion);
+          return;
+        }
+      }
+
+      if (!_operationIsCurrent(
+        attachment,
+        transaction,
+        transactionVersion,
+      )) {
+        _rescheduleAfterOperation = _pendingTransaction != null;
+        return;
       }
 
       Log.info(
@@ -166,7 +255,7 @@ class _RelaySetChangeCoordinator {
       );
 
       try {
-        await client.forceReconnectAll();
+        await attachment.client.forceReconnectAll();
         Log.info(
           'Successfully reconnected all relay WebSockets',
           name: 'RelaySetChangeBridge',
@@ -180,42 +269,238 @@ class _RelaySetChangeCoordinator {
         );
       }
 
-      await videoEventService.resetAndResubscribeAll();
+      if (!_operationIsCurrent(
+        attachment,
+        transaction,
+        transactionVersion,
+      )) {
+        _rescheduleAfterOperation = _pendingTransaction != null;
+        return;
+      }
+
+      try {
+        await attachment.videoEventService.resetAndResubscribeAll();
+      } catch (e) {
+        Log.error(
+          'Failed to reset relay-backed feeds: $e',
+          name: 'RelaySetChangeBridge',
+          category: LogCategory.relay,
+        );
+      }
+
+      if (!_operationIsCurrent(
+        attachment,
+        transaction,
+        transactionVersion,
+      )) {
+        _rescheduleAfterOperation = _pendingTransaction != null;
+        return;
+      }
+
+      _pendingTransaction = null;
     } finally {
-      if (identical(_reconcilingClient, client)) {
-        _reconcilingClient = null;
+      _operationInProgress = false;
+      if (_rescheduleAfterOperation && _pendingTransaction != null) {
+        _rescheduleAfterOperation = false;
+        _scheduleReset();
+      } else {
+        _rescheduleAfterOperation = false;
       }
     }
   }
 
-  Future<void> _reconcileRelaySet(
-    NostrClient client,
-    Set<String> targetRelaySet,
-  ) async {
+  Future<_RelayReconciliationResult> _reconcileRelaySet({
+    required _RelayClientAttachment attachment,
+    required _RelayResetTransaction transaction,
+    required int transactionVersion,
+  }) async {
+    final client = attachment.client;
+    final targetRelaySet = Set.of(transaction.targetRelaySet)
+      ..add(client.defaultRelayUrl);
     try {
       final currentRelaySet = client.configuredRelays.toSet();
       final additions = targetRelaySet.difference(currentRelaySet).toList();
       final removals = currentRelaySet.difference(targetRelaySet).toList();
 
       if (additions.isNotEmpty) {
-        await client.addRelays(additions);
+        final addedCount = await client.addRelays(additions);
+        if (!_operationIsCurrent(
+          attachment,
+          transaction,
+          transactionVersion,
+        )) {
+          return const _RelayReconciliationResult.superseded();
+        }
+        if (addedCount != additions.length) {
+          return _RelayReconciliationResult.incomplete(
+            'added $addedCount of ${additions.length} relays',
+          );
+        }
       }
       for (final relay in removals) {
-        await client.removeRelay(relay);
+        final removed = await client.removeRelay(relay);
+        if (!_operationIsCurrent(
+          attachment,
+          transaction,
+          transactionVersion,
+        )) {
+          return const _RelayReconciliationResult.superseded();
+        }
+        if (!removed) {
+          return _RelayReconciliationResult.incomplete(
+            'could not remove relay $relay',
+          );
+        }
       }
+
+      final reconciledRelaySet = client.configuredRelays.toSet();
+      if (!_setsEqual(reconciledRelaySet, targetRelaySet)) {
+        return const _RelayReconciliationResult.incomplete(
+          'configured relay set does not match the target',
+        );
+      }
+      return const _RelayReconciliationResult.complete();
     } catch (e) {
-      Log.error(
-        'Failed to reconcile replacement relay set: $e',
-        name: 'RelaySetChangeBridge',
-        category: LogCategory.relay,
-      );
+      if (!_operationIsCurrent(
+        attachment,
+        transaction,
+        transactionVersion,
+      )) {
+        return const _RelayReconciliationResult.superseded();
+      }
+      return _RelayReconciliationResult.incomplete(e.toString());
     }
+  }
+
+  bool _operationIsCurrent(
+    _RelayClientAttachment attachment,
+    _RelayResetTransaction transaction,
+    int transactionVersion,
+  ) {
+    final currentAttachment = _attachment;
+    return currentAttachment != null &&
+        identical(currentAttachment.client, attachment.client) &&
+        currentAttachment.generation == attachment.generation &&
+        currentAttachment.scope == attachment.scope &&
+        identical(_pendingTransaction, transaction) &&
+        transaction.version == transactionVersion;
+  }
+
+  void _handleReconciliationFailure(
+    _RelayResetTransaction transaction,
+    int transactionVersion,
+  ) {
+    if (!identical(_pendingTransaction, transaction) ||
+        transaction.version != transactionVersion) {
+      _rescheduleAfterOperation = _pendingTransaction != null;
+      return;
+    }
+    if (!transaction.reconciliationRetryUsed) {
+      transaction.reconciliationRetryUsed = true;
+      _rescheduleAfterOperation = true;
+      return;
+    }
+
+    Log.error(
+      'Relay target remains pending after bounded reconciliation retry',
+      name: 'RelaySetChangeBridge',
+      category: LogCategory.relay,
+    );
   }
 
   void dispose() {
     _disposed = true;
     _debounceTimer?.cancel();
   }
+}
+
+class _RelayIntentScope {
+  const _RelayIntentScope({
+    required this.defaultRelayUrl,
+    required this.identityPubkey,
+  });
+
+  factory _RelayIntentScope.fromClient(NostrClient client) {
+    return _RelayIntentScope(
+      defaultRelayUrl: client.defaultRelayUrl,
+      identityPubkey: client.publicKey,
+    );
+  }
+
+  final String defaultRelayUrl;
+  final String identityPubkey;
+
+  @override
+  bool operator ==(Object other) {
+    return other is _RelayIntentScope &&
+        other.defaultRelayUrl == defaultRelayUrl &&
+        other.identityPubkey == identityPubkey;
+  }
+
+  @override
+  int get hashCode => Object.hash(defaultRelayUrl, identityPubkey);
+}
+
+class _RelayClientAttachment {
+  const _RelayClientAttachment({
+    required this.client,
+    required this.videoEventService,
+    required this.initializationTracker,
+    required this.scope,
+    required this.generation,
+  });
+
+  final NostrClient client;
+  final VideoEventService videoEventService;
+  final NostrInitializationInProgress initializationTracker;
+  final _RelayIntentScope scope;
+  final int generation;
+
+  _RelayClientAttachment copyWith({
+    required VideoEventService videoEventService,
+    required NostrInitializationInProgress initializationTracker,
+  }) {
+    return _RelayClientAttachment(
+      client: client,
+      videoEventService: videoEventService,
+      initializationTracker: initializationTracker,
+      scope: scope,
+      generation: generation,
+    );
+  }
+}
+
+class _RelayResetTransaction {
+  _RelayResetTransaction({
+    required this.scope,
+    required this.sourceClient,
+    required this.targetRelaySet,
+    required this.version,
+  });
+
+  final _RelayIntentScope scope;
+  final NostrClient sourceClient;
+  Set<String> targetRelaySet;
+  int version;
+  bool reconciliationRetryUsed = false;
+}
+
+enum _RelayReconciliationStatus { complete, incomplete, superseded }
+
+class _RelayReconciliationResult {
+  const _RelayReconciliationResult.complete()
+    : status = _RelayReconciliationStatus.complete,
+      error = null;
+
+  const _RelayReconciliationResult.incomplete(this.error)
+    : status = _RelayReconciliationStatus.incomplete;
+
+  const _RelayReconciliationResult.superseded()
+    : status = _RelayReconciliationStatus.superseded,
+      error = null;
+
+  final _RelayReconciliationStatus status;
+  final String? error;
 }
 
 /// Connection status service for monitoring network connectivity
@@ -374,10 +659,6 @@ void relaySetChangeBridge(Ref ref) {
 
       final priorRelaySet = previousRelaySet;
       previousRelaySet = currentRelaySet;
-
-      if (coordinator.isReconciling(nostrService)) {
-        return;
-      }
 
       final changeRequiresReset = !coordinator.isClientInitializing(
         nostrService,
