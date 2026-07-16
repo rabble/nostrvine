@@ -13,6 +13,7 @@ import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_clip_controls.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_controls.dart';
@@ -82,12 +83,31 @@ void main() {
       originalAspectRatio: 9 / 16,
     );
 
+    DivineVideoClip stopMotionClip(String id) => DivineVideoClip(
+      id: id,
+      duration: const Duration(milliseconds: 200),
+      recordedAt: DateTime(2025),
+      targetAspectRatio: model.AspectRatio.vertical,
+      originalAspectRatio: 9 / 16,
+      stopMotionFrames: const [
+        StopMotionClipFrame(
+          path: '/tmp/frame-0.jpg',
+          duration: Duration(milliseconds: 100),
+        ),
+        StopMotionClipFrame(
+          path: '/tmp/frame-1.jpg',
+          duration: Duration(milliseconds: 100),
+        ),
+      ],
+    );
+
     Future<VideoEditorTimelineControls> pumpWithMissingEditorScope(
-      WidgetTester tester,
-    ) async {
-      when(
-        () => bloc.state,
-      ).thenReturn(ClipEditorState(clips: [clip('clip-1'), clip('clip-2')]));
+      WidgetTester tester, {
+      ClipEditorState? state,
+    }) async {
+      when(() => bloc.state).thenReturn(
+        state ?? ClipEditorState(clips: [clip('clip-1'), clip('clip-2')]),
+      );
       final overlayBloc = _MockTimelineOverlayBloc();
       when(() => overlayBloc.state).thenReturn(const TimelineOverlayState());
       when(
@@ -349,6 +369,50 @@ void main() {
         '${action.actionLabel} is a no-op when the editor scope is gone',
         (tester) async {
           final controls = await pumpWithMissingEditorScope(tester);
+
+          final callback = action.callback(controls);
+          expect(callback, isNotNull);
+          callback!.call();
+          await tester.pump();
+
+          expect(tester.takeException(), isNull);
+          verifyNever(() => bloc.add(any()));
+        },
+      );
+    }
+
+    // The frames path reaches the same commit through _StopMotionClipControls,
+    // and its clip id always resolves — so the index guard never short-circuits
+    // it before the editor is dereferenced.
+    final staleEditorFrameActions =
+        <
+          ({
+            String actionLabel,
+            VoidCallback? Function(VideoEditorTimelineControls controls)
+            callback,
+          })
+        >[
+          (
+            actionLabel: 'frame delete',
+            callback: (controls) => controls.onDelete,
+          ),
+          (
+            actionLabel: 'frame duplicate',
+            callback: (controls) => controls.onDuplicated,
+          ),
+        ];
+
+    for (final action in staleEditorFrameActions) {
+      testWidgets(
+        '${action.actionLabel} is a no-op when the editor scope is gone',
+        (tester) async {
+          final controls = await pumpWithMissingEditorScope(
+            tester,
+            state: ClipEditorState(
+              clips: [stopMotionClip('clip-1')],
+              selectedFrameIndex: 0,
+            ),
+          );
 
           final callback = action.callback(controls);
           expect(callback, isNotNull);

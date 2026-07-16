@@ -21,6 +21,11 @@ import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timel
 /// `TimelineClipControls` (`_deleteClip` / `_setPlaybackSpeed`). A no-op edit
 /// (the frame-ops helpers return the source list unchanged) is skipped so it
 /// never records an empty history entry.
+///
+/// Bails when the [ProImageEditorState] is gone — a tap can resolve after the
+/// editor route is popped, and force-unwrapping it there is a release-mode
+/// crash (#5799). Bailing before the bloc dispatch keeps the frame list and
+/// the editor history from diverging.
 void commitStopMotionFrames(
   BuildContext context, {
   required String clipId,
@@ -28,6 +33,9 @@ void commitStopMotionFrames(
 }) {
   final bloc = context.read<ClipEditorBloc>();
   final overlayBloc = context.read<TimelineOverlayBloc>();
+  final editor = VideoEditorScope.of(context).editor;
+  if (editor == null) return;
+
   final state = bloc.state;
   final index = state.clips.indexWhere((clip) => clip.id == clipId);
   if (index == -1) return;
@@ -47,9 +55,7 @@ void commitStopMotionFrames(
 
   bloc.add(ClipEditorClipUpdated(clipId: clipId, clip: updated));
   overlayBloc.add(TimelineMarkersRebased(rebasedMarkers));
-  VideoEditorScope.of(
-    context,
-  ).requireEditor.setClipState(newClips, timelineMarkers: rebasedMarkers);
+  editor.setClipState(newClips, timelineMarkers: rebasedMarkers);
 }
 
 List<StopMotionClipFrame>? _stopMotionFrames(
