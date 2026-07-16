@@ -326,6 +326,15 @@ class VideoRecorderBloc
       );
     }
 
+    // A completed assemble leaves status at `ready` until it navigates to the
+    // editor; backing out re-inits without a mode change, so nothing above
+    // clears it and `_emitCameraSync` preserves it — the capture guard would
+    // then swallow every shutter tap. Reset to idle (the frames are already
+    // saved and cleared) so the shutter starts a fresh session.
+    if (state.stopMotionStatus == StopMotionStatus.ready) {
+      emit(state.copyWith(stopMotionStatus: StopMotionStatus.idle));
+    }
+
     final savedLensString = prefs.getString(_kLastUsedCameraLensKey);
     final initialLens = savedLensString != null
         ? DivineCameraLens.fromNativeString(savedLensString)

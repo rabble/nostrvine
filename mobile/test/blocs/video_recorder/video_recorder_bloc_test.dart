@@ -2552,6 +2552,48 @@ void main() {
       );
 
       blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'clears a leftover ready on re-init so the shutter works after '
+        'backing out of the editor',
+        setUp: () {
+          when(
+            () => cameraService.initialize(
+              videoQuality: any(named: 'videoQuality'),
+              initialLens: any(named: 'initialLens'),
+              enableAutoLensSwitch: any(named: 'enableAutoLensSwitch'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => cameraService.setRemoteRecordControlEnabled(
+              enabled: any(named: 'enabled'),
+            ),
+          ).thenAnswer((_) async => true);
+          // Same mode persisted, so init's mode branch is skipped and nothing
+          // else would move a leftover `ready` back to `idle`.
+          when(
+            () => prefs.getString(VideoRecorderMode.persistenceKey),
+          ).thenReturn(VideoRecorderMode.stopMotion.name);
+        },
+        build: buildBloc,
+        seed: () => const VideoRecorderBlocState(
+          recorderMode: VideoRecorderMode.stopMotion,
+          stopMotionStatus: StopMotionStatus.ready,
+        ),
+        act: (bloc) async {
+          bloc.add(const VideoRecorderInitializeRequested());
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          bloc.add(const VideoRecorderStopMotionFrameCaptured());
+        },
+        wait: const Duration(milliseconds: 40),
+        verify: (bloc) {
+          // Without the reset the top guard would swallow this tap (leftover
+          // `ready`): no capture, empty frames. With it, a fresh session
+          // starts.
+          verify(() => cameraService.capturePhoto()).called(1);
+          expect(bloc.state.stopMotionFrames, [framePath]);
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
         'a frame that lands after an assemble started is dropped, not '
         're-persisted as a new session',
         setUp: () {
