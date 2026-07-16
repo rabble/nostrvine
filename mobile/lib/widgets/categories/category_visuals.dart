@@ -16,8 +16,9 @@ class CategoryVisuals {
   final String? assetPath;
 
   /// Resolves visuals for any category. Featured categories get custom colors;
-  /// all others cycle through fallback colors and get an SVG asset path derived
-  /// from their name — but only when that asset is actually bundled.
+  /// all others cycle through fallback colors. Every asset path — featured or
+  /// derived from the name — resolves through [bundledAssetBasenames], so it
+  /// only points at an asset that is actually bundled.
   ///
   /// Backend category names are an open-ended, uncurated stream (#2547), so a
   /// name can arrive with no matching `assets/categories/<name>.svg`. In that
@@ -30,24 +31,40 @@ class CategoryVisuals {
     final name = category.name.toLowerCase();
     final featured = _featuredCategoryVisuals[name];
     if (featured != null) {
-      return featured;
+      return CategoryVisuals(
+        backgroundColor: featured.backgroundColor,
+        foregroundColor: featured.foregroundColor,
+        assetPath: _bundledAssetPathOrNull(featured.assetBasename),
+      );
     }
     final fallback =
         _fallbackCategoryVisuals[index % _fallbackCategoryVisuals.length];
-    final assetName = _assetNameAliases[name] ?? name;
     return CategoryVisuals(
       backgroundColor: fallback.backgroundColor,
       foregroundColor: fallback.foregroundColor,
-      assetPath: bundledAssetBasenames.contains(assetName)
-          ? 'assets/categories/$assetName.svg'
-          : null,
+      assetPath: _bundledAssetPathOrNull(_assetNameAliases[name] ?? name),
     );
   }
+
+  static String? _bundledAssetPathOrNull(String basename) =>
+      bundledAssetBasenames.contains(basename)
+      ? 'assets/categories/$basename.svg'
+      : null;
+
+  /// Names of the featured categories, exposed so tests can pin every curated
+  /// asset basename to [bundledAssetBasenames].
+  @visibleForTesting
+  static List<String> get featuredCategoryNames =>
+      _featuredCategoryVisuals.keys.toList();
 
   /// Basenames (without extension) of every SVG bundled under
   /// `assets/categories/`. Used to decide whether a derived asset path points
   /// at a real file before handing it to [CategoryGlyph]. Kept in sync with the
   /// directory by `category_visuals_test.dart`, which fails if the two diverge.
+  ///
+  /// Public only for that drift-guard test; production code goes through
+  /// [forCategory].
+  @visibleForTesting
   static const bundledAssetBasenames = <String>{
     'action',
     'adventure',
@@ -162,46 +179,56 @@ const _assetNameAliases = <String, String>{
   'beverages': 'beverage',
 };
 
-const _featuredCategoryVisuals = <String, CategoryVisuals>{
-  'animals': CategoryVisuals(
+/// Curated colors plus the bundled-SVG basename for a featured category. The
+/// basename resolves through the same [CategoryVisuals.bundledAssetBasenames]
+/// gate as derived names, so a featured entry can never point at a missing
+/// file (#6116).
+typedef _FeaturedVisuals = ({
+  Color backgroundColor,
+  Color foregroundColor,
+  String assetBasename,
+});
+
+const _featuredCategoryVisuals = <String, _FeaturedVisuals>{
+  'animals': (
     backgroundColor: Color(0xFF3E0C1F),
     foregroundColor: Color(0xFFFF7FAF),
-    assetPath: 'assets/categories/animals.svg',
+    assetBasename: 'animals',
   ),
-  'food': CategoryVisuals(
+  'food': (
     backgroundColor: Color(0xFF272F0E),
     foregroundColor: Color(0xFFD2FF40),
-    assetPath: 'assets/categories/food.svg',
+    assetBasename: 'food',
   ),
-  'nature': CategoryVisuals(
+  'nature': (
     backgroundColor: Color(0xFF231557),
     foregroundColor: Color(0xFF8568FF),
-    assetPath: 'assets/categories/nature.svg',
+    assetBasename: 'nature',
   ),
-  'sports': CategoryVisuals(
+  'sports': (
     backgroundColor: Color(0xFF471F10),
     foregroundColor: Color(0xFFFF7640),
-    assetPath: 'assets/categories/sports.svg',
+    assetBasename: 'sports',
   ),
-  'fashion': CategoryVisuals(
+  'fashion': (
     backgroundColor: Color(0xFF0A223C),
     foregroundColor: Color(0xFF34BBF1),
-    assetPath: 'assets/categories/style.svg',
+    assetBasename: 'style',
   ),
-  'music': CategoryVisuals(
+  'music': (
     backgroundColor: Color(0xFF363313),
     foregroundColor: Color(0xFFFFF140),
-    assetPath: 'assets/categories/music.svg',
+    assetBasename: 'music',
   ),
-  'fitness': CategoryVisuals(
+  'fitness': (
     backgroundColor: Color(0xFF2D214D),
     foregroundColor: Color(0xFFA3A9FF),
-    assetPath: 'assets/categories/fitness.svg',
+    assetBasename: 'fitness',
   ),
-  'art': CategoryVisuals(
+  'art': (
     backgroundColor: Color(0xFF471F10),
     foregroundColor: Color(0xFFFF7640),
-    assetPath: 'assets/categories/art.svg',
+    assetBasename: 'art',
   ),
 };
 

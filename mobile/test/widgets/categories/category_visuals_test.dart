@@ -96,14 +96,20 @@ void main() {
         expect(CategoryVisuals.bundledAssetBasenames, equals(onDisk));
       });
 
-      test('covers every curated featured asset', () {
-        // Featured categories bypass the bundled-set check, so verify their
-        // hand-picked assets are on disk too.
-        for (final name in const ['animals', 'food', 'nature', 'style']) {
+      test('every featured category resolves a bundled asset', () {
+        // Featured basenames resolve through the same bundled-set gate as
+        // derived names, so a curated asset drifting off disk would silently
+        // demote a flagship category to its emoji — pin all of them here.
+        expect(CategoryVisuals.featuredCategoryNames, isNotEmpty);
+        for (final name in CategoryVisuals.featuredCategoryNames) {
+          final visuals = CategoryVisuals.forCategory(
+            VideoCategory(name: name, videoCount: 1),
+            0,
+          );
           expect(
-            CategoryVisuals.bundledAssetBasenames,
-            contains(name),
-            reason: '$name.svg backs a featured category',
+            visuals.assetPath,
+            isNotNull,
+            reason: '$name is featured but its asset is not bundled',
           );
         }
       });
