@@ -198,19 +198,18 @@ class _CategoryTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (visuals.assetPath != null)
-                  PositionedDirectional(
-                    end: 18,
-                    top: 0,
-                    bottom: 0,
-                    child: IgnorePointer(
-                      child: CategoryGlyph(
-                        assetPath: visuals.assetPath!,
-                        emoji: category.emoji,
-                        height: 88,
-                      ),
+                PositionedDirectional(
+                  end: 18,
+                  top: 0,
+                  bottom: 0,
+                  child: IgnorePointer(
+                    child: CategoryGlyph(
+                      assetPath: visuals.assetPath,
+                      emoji: category.emoji,
+                      height: 88,
                     ),
                   ),
+                ),
               ],
             ),
           ),
