@@ -165,18 +165,28 @@ void relaySetChangeBridge(Ref ref) {
   Set<String> previousRelaySet = nostrService.relayStatuses.keys.toSet();
   Timer? debounceTimer;
   var disposed = false;
+  var resetRequired = false;
+  final initializationTracker = ref.read(
+    nostrInitializationInProgressProvider.notifier,
+  );
+
+  bool activeClientIsInitializing() {
+    return !nostrService.isInitialized ||
+        initializationTracker.isClientInitializing(nostrService);
+  }
 
   void scheduleRelayReset(
     Set<String> relaySet, {
-    required bool changeObservedDuringInitialization,
+    required bool changeRequiresReset,
   }) {
+    resetRequired = resetRequired || changeRequiresReset;
     debounceTimer?.cancel();
     debounceTimer = Timer(const Duration(seconds: 2), () async {
       if (disposed) return;
 
-      if (changeObservedDuringInitialization) {
+      if (!resetRequired) {
         Log.info(
-          'Relay set change originated during Nostr initialization; '
+          'Relay set change originated during active client initialization; '
           'skipping forced reconnect (relayCount=${relaySet.length})',
           name: 'RelaySetChangeBridge',
           category: LogCategory.relay,
@@ -184,19 +194,24 @@ void relaySetChangeBridge(Ref ref) {
         return;
       }
 
-      if (ref.read(nostrInitializationInProgressProvider)) {
+      if (activeClientIsInitializing()) {
         Log.info(
-          'Nostr initialization overlaps relay reset debounce; '
+          'Active client initialization overlaps relay reset debounce; '
           'deferring forced reconnect (relayCount=${relaySet.length})',
           name: 'RelaySetChangeBridge',
           category: LogCategory.relay,
         );
         scheduleRelayReset(
           relaySet,
-          changeObservedDuringInitialization: false,
+          changeRequiresReset: false,
         );
         return;
       }
+
+      // Consume this batch's intent before awaiting. A new relay change that
+      // arrives during reconnect starts a distinct debounce batch and must not
+      // be cleared by completion of this one.
+      resetRequired = false;
 
       Log.info(
         'Debounce elapsed - forcing WebSocket reconnection and feed reset',
@@ -245,14 +260,12 @@ void relaySetChangeBridge(Ref ref) {
 
       previousRelaySet = currentRelaySet;
 
-      final changeObservedDuringInitialization =
-          ref.read(nostrInitializationInProgressProvider) ||
-          !nostrService.isInitialized;
+      final changeRequiresReset = !activeClientIsInitializing();
 
       // Debounce: collapse rapid changes into a single reset
       scheduleRelayReset(
         currentRelaySet,
-        changeObservedDuringInitialization: changeObservedDuringInitialization,
+        changeRequiresReset: changeRequiresReset,
       );
     }
   }

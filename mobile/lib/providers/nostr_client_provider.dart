@@ -160,22 +160,35 @@ final nostrInitializationInProgressProvider =
     );
 
 class NostrInitializationInProgress extends Notifier<bool> {
-  int _activeAttempts = 0;
+  final Map<NostrClient, int> _attemptsByClient = Map.identity();
 
   @override
   bool build() => false;
 
-  void begin() {
-    _activeAttempts++;
+  bool isClientInitializing(NostrClient client) {
+    return _attemptsByClient.containsKey(client);
+  }
+
+  void begin(NostrClient client) {
+    _attemptsByClient.update(
+      client,
+      (attempts) => attempts + 1,
+      ifAbsent: () => 1,
+    );
     state = true;
   }
 
-  void end() {
+  void end(NostrClient client) {
     if (!ref.mounted) return;
-    assert(_activeAttempts > 0, 'No Nostr initialization attempt is active');
-    if (_activeAttempts == 0) return;
-    _activeAttempts--;
-    state = _activeAttempts > 0;
+    final attempts = _attemptsByClient[client];
+    assert(attempts != null, 'No initialization attempt for this client');
+    if (attempts == null) return;
+    if (attempts == 1) {
+      _attemptsByClient.remove(client);
+    } else {
+      _attemptsByClient[client] = attempts - 1;
+    }
+    state = _attemptsByClient.isNotEmpty;
   }
 }
 
@@ -315,7 +328,7 @@ class NostrService extends _$NostrService {
       final initializationTracker = ref.read(
         nostrInitializationInProgressProvider.notifier,
       );
-      initializationTracker.begin();
+      initializationTracker.begin(client);
       initialization = initializationTracker;
       await _runClientInitialization(
         client,
@@ -356,7 +369,7 @@ class NostrService extends _$NostrService {
       _setSessionIdentityState(pubkey);
       _scheduleInitializationRetry(pubkey);
     } finally {
-      initialization?.end();
+      initialization?.end(client);
     }
   }
 
@@ -459,7 +472,7 @@ class NostrService extends _$NostrService {
       final initializationTracker = ref.read(
         nostrInitializationInProgressProvider.notifier,
       );
-      initializationTracker.begin();
+      initializationTracker.begin(client);
       initialization = initializationTracker;
       await _runClientInitialization(
         client,
@@ -507,7 +520,7 @@ class NostrService extends _$NostrService {
       _setSessionIdentityState(pubkey);
       _scheduleInitializationRetry(pubkey);
     } finally {
-      initialization?.end();
+      initialization?.end(client);
     }
   }
 

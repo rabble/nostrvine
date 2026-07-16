@@ -263,7 +263,7 @@ void main() {
           final container = createContainer(initialStatuses: {});
           container
               .read(nostrInitializationInProgressProvider.notifier)
-              .begin();
+              .begin(mockNostrClient);
 
           statusController.add({
             'wss://relay1.example.com': RelayConnectionStatus.connecting(
@@ -273,7 +273,9 @@ void main() {
 
           async.flushMicrotasks();
           async.elapse(const Duration(seconds: 1));
-          container.read(nostrInitializationInProgressProvider.notifier).end();
+          container
+              .read(nostrInitializationInProgressProvider.notifier)
+              .end(mockNostrClient);
           async.elapse(const Duration(seconds: 1));
           async.flushMicrotasks();
 
@@ -296,14 +298,87 @@ void main() {
 
         async.flushMicrotasks();
         async.elapse(const Duration(seconds: 1));
-        container.read(nostrInitializationInProgressProvider.notifier).begin();
+        container
+            .read(nostrInitializationInProgressProvider.notifier)
+            .begin(mockNostrClient);
         async.elapse(const Duration(seconds: 1));
         async.flushMicrotasks();
 
         verifyNever(() => mockNostrClient.forceReconnectAll());
         verifyNever(() => mockVideoEventService.resetAndResubscribeAll());
 
-        container.read(nostrInitializationInProgressProvider.notifier).end();
+        container
+            .read(nostrInitializationInProgressProvider.notifier)
+            .end(mockNostrClient);
+        async.elapse(const Duration(seconds: 2));
+        async.flushMicrotasks();
+
+        verify(() => mockNostrClient.forceReconnectAll()).called(1);
+        verify(() => mockVideoEventService.resetAndResubscribeAll()).called(1);
+        container.dispose();
+      });
+    });
+
+    test(
+      'resets for an active-client edit while a replacement initializes',
+      () {
+        fakeAsync((async) {
+          final replacementClient = MockNostrClient();
+          final container = createContainer(initialStatuses: {});
+          container
+              .read(nostrInitializationInProgressProvider.notifier)
+              .begin(replacementClient);
+
+          statusController.add({
+            'wss://relay1.example.com': RelayConnectionStatus.connected(
+              'wss://relay1.example.com',
+            ),
+          });
+
+          async.flushMicrotasks();
+          async.elapse(const Duration(seconds: 2));
+          async.flushMicrotasks();
+
+          verify(() => mockNostrClient.forceReconnectAll()).called(1);
+          verify(
+            () => mockVideoEventService.resetAndResubscribeAll(),
+          ).called(1);
+          container
+              .read(nostrInitializationInProgressProvider.notifier)
+              .end(replacementClient);
+          container.dispose();
+        });
+      },
+    );
+
+    test('keeps reset intent when a startup change joins the debounce', () {
+      fakeAsync((async) {
+        final container = createContainer(initialStatuses: {});
+
+        statusController.add({
+          'wss://relay1.example.com': RelayConnectionStatus.connected(
+            'wss://relay1.example.com',
+          ),
+        });
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 500));
+
+        container
+            .read(nostrInitializationInProgressProvider.notifier)
+            .begin(mockNostrClient);
+        statusController.add({
+          'wss://relay1.example.com': RelayConnectionStatus.connected(
+            'wss://relay1.example.com',
+          ),
+          'wss://relay2.example.com': RelayConnectionStatus.connecting(
+            'wss://relay2.example.com',
+          ),
+        });
+        async.flushMicrotasks();
+        container
+            .read(nostrInitializationInProgressProvider.notifier)
+            .end(mockNostrClient);
+
         async.elapse(const Duration(seconds: 2));
         async.flushMicrotasks();
 
