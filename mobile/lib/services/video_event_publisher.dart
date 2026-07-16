@@ -33,6 +33,7 @@ import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/collaborator_tags.dart';
+import 'package:openvine/utils/inspired_by_tags.dart';
 import 'package:openvine/utils/log_tag_sanitizer.dart';
 import 'package:openvine/utils/proofmode_publishing_helpers.dart';
 import 'package:profile_repository/profile_repository.dart';
@@ -1286,6 +1287,25 @@ class VideoEventPublisher {
           inspiredByRelayUrl ?? 'wss://relay.divine.video',
           'mention',
         ]);
+      }
+
+      // p-tag the inspired-by creator(s) so they are notifiable. Added after
+      // the collaborator/mention p-tags so those win dedup and caption
+      // @token resolution keeps matching caption mentions first. Reply
+      // videos never carry inspired-by p-tags: the model hides inspired-by
+      // attribution on replies (VideoEvent.hasInspiredBy) and the edit flow
+      // cannot own the tag there, so emitting one would notify a creator the
+      // video never visibly credits and could never un-credit.
+      if (replyContext == null) {
+        tags.addAll(
+          buildInspiredByPTags(
+            existingTags: tags,
+            addressableId: inspiredByAddressableId,
+            npub: inspiredByNpub,
+            relayHint: inspiredByRelayUrl,
+            selfPubkey: _authService?.currentPublicKeyHex,
+          ),
+        );
       }
 
       var selectedAudioReferenceId = selectedAudioEventId;

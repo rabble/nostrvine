@@ -663,10 +663,12 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   void initFromPublishedVideo(VideoEvent video) {
     _suppressAutosave = true;
 
-    // Strip any appended NIP-27 inspired-by line before displaying
-    // the description in the edit form.
+    // Strip any appended NIP-27 inspired-by line before displaying the
+    // description in the edit form. Empty-caption publishes trim the leading
+    // newlines, so the attribution line can also be the entire content —
+    // mirror the parse regex in VideoEvent.fromNostrEvent.
     var content = video.content;
-    final npubPattern = RegExp(r'\n\nInspired by nostr:npub1[a-z0-9]+$');
+    final npubPattern = RegExp(r'(^|\n\n)Inspired by nostr:npub1[a-z0-9]+\s*$');
     content = content.replaceFirst(npubPattern, '');
 
     state = VideoEditorProviderState(

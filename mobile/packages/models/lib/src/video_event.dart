@@ -621,9 +621,12 @@ class VideoEvent {
       rawTags[tagName] = tagValue;
     }
 
-    // Scan content for NIP-27 nostr:npub1... references (Inspired By person)
+    // Resolve the Inspired By person from the trailing NIP-27 attribution
+    // line the publisher appends ("Inspired by nostr:npub1..."). Anchored to
+    // the end of content so an unrelated inline nostr:npub mention earlier in
+    // the caption is never mistaken for attribution.
     String? inspiredByNpub;
-    final npubPattern = RegExp('nostr:(npub1[a-z0-9]+)');
+    final npubPattern = RegExp(r'Inspired by nostr:(npub1[a-z0-9]+)\s*$');
     final npubMatch = npubPattern.firstMatch(event.content);
     if (npubMatch != null) {
       inspiredByNpub = npubMatch.group(1);

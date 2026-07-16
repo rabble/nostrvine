@@ -13,6 +13,7 @@ import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/collaborator_tags.dart';
+import 'package:openvine/utils/inspired_by_tags.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Result returned by [VideoMetadataUpdateService.updateVideo].
@@ -81,6 +82,17 @@ bool _isEditRebuiltTag(List<String> tag, {required bool isVideoReply}) {
   if (name == 'p' &&
       tag.length >= 4 &&
       tag[3].toLowerCase() == 'collaborator') {
+    return true;
+  }
+  // Inspired-by p-tags mirror the inspired-by a-tag's lifecycle: owned by
+  // the edit flow on non-reply videos (stripped here, re-emitted from the
+  // editor state) so clearing or changing attribution updates the tag. On a
+  // reply, emission is suppressed too, so preserve verbatim — otherwise the
+  // tag would be dropped with no replacement.
+  if (!isVideoReply &&
+      name == 'p' &&
+      tag.length >= 4 &&
+      tag[3].toLowerCase() == inspiredByPTagMarker) {
     return true;
   }
   // Inspired-by a-tags (publish writes a 'mention' marker, edit writes
@@ -331,6 +343,25 @@ class VideoMetadataUpdateService {
       }
 
       tags.addAll(preservedTags);
+
+      // p-tag the inspired-by creator(s) so they are notifiable. Emitted
+      // after [preservedTags] so preserved caption-mention p-tags win dedup
+      // and @token resolution. Reply-gated like the a-tag above; on a reply
+      // any legacy inspired-by p-tag is preserved verbatim instead. Unlike
+      // the sibling a-tag (which keeps its shipped `relayUrl ?? ''` shape),
+      // the p-tag deliberately falls back to the default relay so a usable
+      // hint always accompanies the notify tag.
+      if (!isVideoReply) {
+        tags.addAll(
+          buildInspiredByPTags(
+            existingTags: tags,
+            addressableId: editorState.inspiredByVideo?.addressableId,
+            npub: editorState.inspiredByNpub,
+            relayHint: editorState.inspiredByVideo?.relayUrl,
+            selfPubkey: _authService.currentPublicKeyHex,
+          ),
+        );
+      }
 
       var content = editorState.description.trim();
       final inspiredByNpub = editorState.inspiredByNpub;
