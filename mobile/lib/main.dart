@@ -2604,6 +2604,12 @@ class _DivineAppState extends ConsumerState<DivineApp>
           dispose: (client) => client.dispose(),
         ),
         BlocProvider(
+          // Eager: _InboxBadgeRepositorySync's listeners context.read this
+          // cubit from inside Riverpod notifications. A lazy create started
+          // there re-enters itself when its own ref.read flushes another
+          // still-dirty provider of the same invalidation wave, and the
+          // re-entrant read throws a Null-cast TypeError (#6115).
+          lazy: false,
           create: (_) => DmUnreadCountCubit(
             dmRepository: ref.read(dmRepositoryProvider),
             followRepository: ref.read(followRepositoryProvider),
@@ -2620,6 +2626,10 @@ class _DivineAppState extends ConsumerState<DivineApp>
         // and AppShell; the sync widget below swaps only the cubit's stream
         // subscription when the repository identity changes.
         BlocProvider(
+          // Eager for the same #6115 reason as DmUnreadCountCubit above: the
+          // sync widget's listener context.reads this cubit from inside a
+          // Riverpod notification.
+          lazy: false,
           create: (_) => NotificationBadgeCubit(
             repository: ref.read(notificationRepositoryProvider),
           ),
