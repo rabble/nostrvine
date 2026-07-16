@@ -100,8 +100,18 @@ void main() {
       when(
         mockLikesB.watchLikedEventIds,
       ).thenAnswer((_) => const Stream<List<String>>.empty());
-      when(() => mockLikesA.isLiked(any())).thenAnswer((_) async => false);
-      when(() => mockLikesB.isLiked(any())).thenAnswer((_) async => false);
+      when(
+        () => mockLikesA.isLikedResolvingCoordinate(
+          eventId: any(named: 'eventId'),
+          addressableId: any(named: 'addressableId'),
+        ),
+      ).thenAnswer((_) async => false);
+      when(
+        () => mockLikesB.isLikedResolvingCoordinate(
+          eventId: any(named: 'eventId'),
+          addressableId: any(named: 'addressableId'),
+        ),
+      ).thenAnswer((_) async => false);
       when(
         () => mockLikesA.getLikeCount(
           any(),

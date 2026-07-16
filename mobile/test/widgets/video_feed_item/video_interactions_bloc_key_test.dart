@@ -50,7 +50,12 @@ void main() {
     testWidgets('does not keep fetched counts after feed cell reuse', (
       tester,
     ) async {
-      when(() => likesRepository.isLiked(any())).thenAnswer((_) async => false);
+      when(
+        () => likesRepository.isLikedResolvingCoordinate(
+          eventId: any(named: 'eventId'),
+          addressableId: any(named: 'addressableId'),
+        ),
+      ).thenAnswer((_) async => false);
       when(
         () => likesRepository.getLikeCount(
           any(),

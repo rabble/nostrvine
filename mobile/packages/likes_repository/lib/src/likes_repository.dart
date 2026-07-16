@@ -537,11 +537,28 @@ class LikesRepository {
     String? addressableId,
     int? targetKind,
   }) async {
+    // Replay can race initialize(): both are fired unawaited at provider
+    // build, and the coordinate guard below is memory-only, so an empty
+    // cache would make it blind to a persisted cross-device reaction.
+    await _ensureInitialized();
+
     if (addressableId != null && addressableId.isNotEmpty) {
       final byCoordinate = _likeRecordsByAddressableId[addressableId];
       final ownReactionEventId = _likeRecords[eventId]?.reactionEventId;
       if (byCoordinate != null &&
           byCoordinate.reactionEventId != ownReactionEventId) {
+        if (ownReactionEventId != null &&
+            ownReactionEventId.startsWith('pending_')) {
+          // Drop the queued placeholder now that the coordinate reaction
+          // is authoritative; leaving it would make a later unlike resolve
+          // the placeholder by event id, skip the Kind 5 publish, and
+          // strand the real reaction live. NOT _deindexLikeRecord: the
+          // placeholder shares the coordinate, so deindexing by event id
+          // would evict the cross-device record from the coordinate index.
+          _likeRecords.remove(eventId);
+          await _localStorage?.deleteLikeRecord(eventId);
+          _emitLikedIds();
+        }
         return byCoordinate.reactionEventId;
       }
     }
@@ -1275,10 +1292,26 @@ class LikesRepository {
             addressableId: _extractAddressableId(event),
           );
 
-          // Only update if we don't have this record or the new one is newer
+          // Only update if we don't have this record or the new one is
+          // newer — except to backfill a missing coordinate. Rows persisted
+          // before the addressable_id column existed carry no coordinate,
+          // and the relay copy of the same reaction is never *newer*, so
+          // without the exemption they would stay coordinate-less forever
+          // (#6123). Restricted to the same reaction id: accepting a
+          // different (older) coordinate-bearing reaction would repoint the
+          // record at the wrong wire event, so unlike would delete the
+          // wrong reaction.
           final existing = _likeRecords[targetId];
+          final canBackfillCoordinate =
+              existing != null &&
+              existing.reactionEventId == record.reactionEventId &&
+              (existing.addressableId == null ||
+                  existing.addressableId!.isEmpty) &&
+              record.addressableId != null &&
+              record.addressableId!.isNotEmpty;
           if (existing == null ||
-              record.createdAt.isAfter(existing.createdAt)) {
+              record.createdAt.isAfter(existing.createdAt) ||
+              canBackfillCoordinate) {
             _indexLikeRecord(record);
             newRecords.add(record);
           }
@@ -1584,15 +1617,23 @@ class LikesRepository {
   /// Follows the same pattern as `FollowRepository.initialize()`:
   /// 1. Load persisted records from local storage for immediate UI display.
   /// 2. Set up a persistent Kind 7 subscription for live updates.
+  /// 3. When any loaded record predates the addressable_id column (null
+  ///    coordinate), run [syncUserReactions] to backfill coordinates from
+  ///    the relay reactions' `a` tags — otherwise likes made before the
+  ///    column shipped never resolve by coordinate after an edit (#6123).
   ///
   /// Safe to call multiple times (idempotent).
   Future<void> initialize() async {
     if (_isInitialized) return;
 
     // Load from local storage first for immediate UI display
+    var hasCoordinatelessRecords = false;
     if (_localStorage != null) {
       final records = await _localStorage.getAllLikeRecords();
       records.forEach(_indexLikeRecord);
+      hasCoordinatelessRecords = records.any(
+        (r) => r.addressableId == null || r.addressableId!.isEmpty,
+      );
       _emitLikedIds();
     }
 
@@ -1601,7 +1642,19 @@ class LikesRepository {
       _subscribeToReactions();
     }
 
+    // Flip the flag before the backfill sync so _ensureInitialized callers
+    // aren't blocked on a relay round-trip.
     _isInitialized = true;
+
+    if (hasCoordinatelessRecords && _nostrClient.hasKeys) {
+      try {
+        await syncUserReactions();
+      } on Exception catch (_) {
+        // Best-effort coordinate backfill; initialize() must not fail on
+        // relay errors. Records missing a coordinate on the wire (e.g.
+        // comment likes, which have no a tag) keep a null coordinate.
+      }
+    }
   }
 
   /// Subscribe to reactions for real-time sync and cross-device updates.

@@ -1335,11 +1335,15 @@ void main() {
           await database.close();
 
           // Reopen the same on-disk file. `beforeOpen` re-adds the column
-          // and its index. There is no backfill: the pre-drop coordinate is
-          // gone, the column comes back null for that row (same contract
-          // as the DM send_batch_id upgrade — acceptable since #6020's own
-          // consumer, LikesRepository.syncUserReactions, re-derives the
-          // coordinate from relay data on next sync).
+          // and its index. There is no backfill at the DB layer: the
+          // pre-drop coordinate is gone, the column comes back null for
+          // that row (same contract as the DM send_batch_id upgrade).
+          // Backfill is owned by LikesRepository: initialize() detects
+          // null-coordinate rows and runs syncUserReactions(), whose
+          // same-reaction-id exemption re-persists the coordinate from the
+          // relay reaction's `a` tag even when the relay copy is not newer
+          // (#6123). End-to-end pin: likes_repository/test/src/
+          // likes_repository_pre_column_db_test.dart.
           database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
 
           expect(
