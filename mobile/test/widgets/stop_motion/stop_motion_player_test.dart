@@ -114,20 +114,22 @@ void main() {
       expect(currentPath(tester), frames[2].path);
     });
 
-    testWidgets('loops the frame index past the sequence length', (
+    testWidgets('holds the last frame at the end of the sequence', (
       tester,
     ) async {
-      // 350ms % 300ms total = 50ms → back to the first frame.
+      // The editor clamps the playhead to the composition total *inclusive*, so
+      // scrubbing to the end hands over exactly the 300ms total. Wrapping that
+      // to 0 would show the first still while the timed layers sit at the end.
       await tester.pumpWidget(
         wrap(
           StopMotionPlayer(
             frames: frames,
-            position: const Duration(milliseconds: 350),
+            position: const Duration(milliseconds: 300),
           ),
         ),
       );
       await tester.pump();
-      expect(currentPath(tester), frames[0].path);
+      expect(currentPath(tester), frames[2].path);
     });
 
     testWidgets('does not self-advance — the frame is frozen for a fixed '

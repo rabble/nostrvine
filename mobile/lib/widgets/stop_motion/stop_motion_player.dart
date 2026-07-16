@@ -40,8 +40,12 @@ class StopMotionPlayer extends StatefulWidget {
   final BoxFit fit;
 
   /// When non-null, the player is *controlled*: it renders the frame at this
-  /// composition position (looping past the sequence length) and does not run
-  /// its own ticker. When `null` the player self-drives a continuous loop.
+  /// composition position and does not run its own ticker. When `null` the
+  /// player self-drives a continuous loop.
+  ///
+  /// The end of the sequence holds the last still rather than wrapping — the
+  /// editor's playhead clamps to the composition total inclusive, so the total
+  /// means "the end", not "the start of the next loop".
   final Duration? position;
 
   /// Optional decode height (physical pixels) for the stills. Captured frames
@@ -162,6 +166,18 @@ class _StopMotionPlayerState extends State<StopMotionPlayer>
     return index;
   }
 
+  /// Maps an externally driven [micros] to the frame showing at that time,
+  /// holding the last still at the end rather than wrapping to the first.
+  ///
+  /// The controlled clock clamps to the composition total *inclusive*, and at
+  /// exactly the total the loop modulo would land back on frame 0 — showing the
+  /// first still while the timed layers sit at the end.
+  int _controlledFrameIndexForMicros(int micros) {
+    if (_totalUs <= 0) return 0;
+    if (micros >= _totalUs) return widget.frames.length - 1;
+    return _frameIndexForMicros(micros);
+  }
+
   @override
   void dispose() {
     _ticker?.dispose();
@@ -176,7 +192,10 @@ class _StopMotionPlayerState extends State<StopMotionPlayer>
     final position = widget.position;
     if (position != null) {
       return _StopMotionFrame(
-        frame: widget.frames[_frameIndexForMicros(position.inMicroseconds)],
+        frame:
+            widget.frames[_controlledFrameIndexForMicros(
+              position.inMicroseconds,
+            )],
         fit: widget.fit,
         cacheHeight: widget.cacheHeight,
       );
