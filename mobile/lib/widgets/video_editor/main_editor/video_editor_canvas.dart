@@ -1422,6 +1422,15 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
         return;
       }
 
+      // A split (and any split still queued behind it) drives the clip list
+      // optimistically in ClipEditorBloc, one step ahead of the editor
+      // history. This snapshot reflects the *previous* split's committed
+      // state; mirroring it back now would overwrite the just-applied split —
+      // a queued split then silently vanishes and never appears. Skip while a
+      // split is in flight; the reconcile that runs once isSplitting clears
+      // mirrors the settled clip list to both the clip manager and the bloc.
+      if (context.read<ClipEditorBloc>().state.isSplitting) return;
+
       // Only update if clips actually changed to avoid unnecessary rebuilds
       // and autosave triggers. DivineVideoClip uses reference equality, so
       // we compare the editable properties explicitly.

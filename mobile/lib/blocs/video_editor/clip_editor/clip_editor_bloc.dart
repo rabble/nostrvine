@@ -169,6 +169,23 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     ClipEditorInitialized event,
     Emitter<ClipEditorState> emit,
   ) {
+    // While a split is in flight (including splits still queued behind it),
+    // this bloc owns the clip list optimistically — the split has already
+    // inserted its result, but the editor-history round-trip that drives the
+    // canvas re-sync still reflects the pre-split state. Applying that stale
+    // snapshot here wipes the just-applied (queued) split, which then never
+    // appears. Defer: the post-split reconcile re-syncs once isSplitting
+    // clears. The canvas guards its dispatch on the same condition; this is
+    // the matching guard for any other re-init source.
+    if (state.isSplitting) {
+      Log.debug(
+        '📋 Ignoring clip re-init during in-flight split '
+        '(${event.clips.length} clip(s))',
+        name: 'ClipEditorBloc',
+        category: LogCategory.video,
+      );
+      return;
+    }
     Log.debug(
       '📋 Initialized with ${event.clips.length} clip(s)',
       name: 'ClipEditorBloc',
@@ -658,6 +675,12 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         },
       );
 
+      // onFinalClipInvalidated reaches into the editor screen that owns this
+      // bloc. A long split (a full clip re-encode, ~15-20s) can land after the
+      // user backs out — bloc.close() lets this in-flight handler run to
+      // completion, so `emit.isDone` is still false here. The screen callback
+      // itself must guard on `mounted`; the bloc can't detect the torn-down
+      // screen from this side.
       onFinalClipInvalidated.call();
 
       Log.info(
@@ -728,8 +751,11 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
 
     final clip = state.clips[index];
     final maxTrim = clip.duration - TimelineConstants.minTrimDuration;
-    final clampedStart = event.trimStart < Duration.zero
-        ? Duration.zero
+    // A trim-based split's end half carries a source floor so its start handle
+    // can't be dragged back before the split into the start half's frames.
+    final minStart = clip.minTrimStart;
+    final clampedStart = event.trimStart < minStart
+        ? minStart
         : event.trimStart > maxTrim - clip.trimEnd
         ? maxTrim - clip.trimEnd
         : event.trimStart;

@@ -29,6 +29,7 @@ class DivineVideoClip {
     this.trimStart = Duration.zero,
     this.trimEnd = Duration.zero,
     this.sourceStartOffset = Duration.zero,
+    this.minTrimStart = Duration.zero,
     this.volume = 1,
     this.playbackSpeed,
     this.reversed = false,
@@ -77,6 +78,16 @@ class DivineVideoClip {
   /// timeline thumbnail raster — can stay anchored to the original
   /// recording's timeline instead of re-anchoring at the new file's zero.
   final Duration sourceStartOffset;
+
+  /// The lowest [trimStart] this clip may be trimmed back to — its floor within
+  /// the source file.
+  ///
+  /// `Duration.zero` for normal clips. A trim-based split (which cuts a clip
+  /// into two clips that share the *same* source file rather than re-encoding
+  /// two separate files) sets it on the end half to the split point, so the
+  /// end half's left trim handle can't be dragged back before the split into
+  /// the start half's frames.
+  final Duration minTrimStart;
 
   /// Playback volume for this clip, between 0 (muted) and 1 (full volume).
   final double volume;
@@ -206,6 +217,7 @@ class DivineVideoClip {
     Duration? trimStart,
     Duration? trimEnd,
     Duration? sourceStartOffset,
+    Duration? minTrimStart,
     double? volume,
     double? playbackSpeed,
     bool clearPlaybackSpeed = false,
@@ -240,6 +252,7 @@ class DivineVideoClip {
       trimStart: trimStart ?? this.trimStart,
       trimEnd: trimEnd ?? this.trimEnd,
       sourceStartOffset: sourceStartOffset ?? this.sourceStartOffset,
+      minTrimStart: minTrimStart ?? this.minTrimStart,
       volume: volume ?? this.volume,
       playbackSpeed: clearPlaybackSpeed
           ? null
@@ -287,6 +300,8 @@ class DivineVideoClip {
       'trimEndMs': trimEnd.inMilliseconds,
       if (sourceStartOffset > Duration.zero)
         'sourceStartOffsetMs': sourceStartOffset.inMilliseconds,
+      if (minTrimStart > Duration.zero)
+        'minTrimStartMs': minTrimStart.inMilliseconds,
       'volume': volume,
       if (playbackSpeed != null) 'playbackSpeed': playbackSpeed,
       if (reversed) 'reversed': true,
@@ -368,6 +383,9 @@ class DivineVideoClip {
       trimEnd: Duration(milliseconds: (json['trimEndMs'] as int?) ?? 0),
       sourceStartOffset: Duration(
         milliseconds: (json['sourceStartOffsetMs'] as int?) ?? 0,
+      ),
+      minTrimStart: Duration(
+        milliseconds: (json['minTrimStartMs'] as int?) ?? 0,
       ),
       volume: (json['volume'] as num?)?.toDouble() ?? 1,
       playbackSpeed: (json['playbackSpeed'] as num?)?.toDouble(),

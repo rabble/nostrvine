@@ -904,6 +904,81 @@ void main() {
         },
       );
 
+      // Regression: a queued split silently vanished because the editor→bloc
+      // re-sync (ClipEditorInitialized, dispatched by the canvas after the
+      // previous split committed) carried a stale pre-split snapshot and
+      // overwrote the just-applied split. While a split is in flight the bloc
+      // owns the clip list, so a re-init must be ignored.
+      test(
+        'ignores ClipEditorInitialized while a split is in flight',
+        () async {
+          final gate = Completer<void>();
+
+          Future<void> gatedSplit({
+            required DivineVideoClip sourceClip,
+            required Duration splitPosition,
+            required void Function(
+              DivineVideoClip startClip,
+              DivineVideoClip endClip,
+            )?
+            onClipsCreated,
+            required void Function(DivineVideoClip clip, String thumbnailPath)?
+            onThumbnailExtracted,
+            required void Function(DivineVideoClip clip, EditorVideo video)?
+            onClipRendered,
+          }) async {
+            final absoluteSplitPos = sourceClip.trimStart + splitPosition;
+            final ts = DateTime.now().microsecondsSinceEpoch;
+            onClipsCreated?.call(
+              sourceClip.copyWith(
+                id: '${ts}_start',
+                duration: absoluteSplitPos,
+                trimEnd: Duration.zero,
+              ),
+              sourceClip.copyWith(
+                id: '${ts}_end',
+                duration: sourceClip.duration,
+                trimStart: absoluteSplitPos,
+              ),
+            );
+            await gate.future;
+          }
+
+          final bloc = buildBloc(splitClip: gatedSplit);
+          bloc.emit(
+            ClipEditorState(
+              clips: [
+                _createClip(id: 'source', duration: const Duration(seconds: 4)),
+              ],
+              isEditing: true,
+              splitPosition: const Duration(seconds: 2),
+            ),
+          );
+
+          bloc.add(const ClipEditorSplitRequested());
+          await bloc.stream.firstWhere(
+            (s) => s.clips.length == 2 && s.isSplitting,
+          );
+
+          // A stale editor re-sync lands mid-split — it would revert to 1 clip.
+          bloc.add(
+            ClipEditorInitialized([
+              _createClip(id: 'stale', duration: const Duration(seconds: 4)),
+            ]),
+          );
+          await pumpEventQueue();
+
+          // The in-flight split's clips are preserved; the stale snapshot is
+          // ignored.
+          expect(bloc.state.clips, hasLength(2));
+          expect(bloc.state.isSplitting, isTrue);
+
+          gate.complete();
+          await pumpEventQueue();
+          await bloc.close();
+        },
+      );
+
       test('validates using VideoEditorSplitService.isValidSplitPosition', () {
         final clip = _createClip(duration: const Duration(seconds: 2));
 
@@ -1160,6 +1235,39 @@ void main() {
           ),
         ),
         expect: () => <ClipEditorState>[],
+      );
+
+      // A trim-based split's end half floors trimStart at the split point so
+      // its left handle can't be dragged back into the start half's frames.
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'clamps trimStart to the clip minTrimStart floor',
+        build: buildBloc,
+        seed: () => ClipEditorState(
+          clips: [
+            _createClip(
+              id: 'end-half',
+              duration: const Duration(seconds: 5),
+            ).copyWith(
+              trimStart: const Duration(seconds: 2),
+              minTrimStart: const Duration(seconds: 2),
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const ClipEditorTrimUpdated(
+            clipId: 'end-half',
+            isStart: true,
+            trimStart: Duration(milliseconds: 500),
+            trimEnd: Duration.zero,
+          ),
+        ),
+        expect: () => [
+          isA<ClipEditorState>().having(
+            (s) => s.clips.first.trimStart,
+            'clamped trimStart',
+            const Duration(seconds: 2),
+          ),
+        ],
       );
 
       blocTest<ClipEditorBloc, ClipEditorState>(

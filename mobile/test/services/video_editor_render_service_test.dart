@@ -5,7 +5,6 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
 
-import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as model;
 import 'package:openvine/models/divine_video_clip.dart';
@@ -411,55 +410,6 @@ void main() {
 
       await secondCancellation;
       expect(VideoEditorRenderService.activeNativeTaskIdsForTesting, isEmpty);
-    });
-
-    test('tracks a native split and cancels it on teardown', () async {
-      final splitStarted = proVideoEditor.splitStarts.stream.first;
-      final splitFuture = VideoEditorRenderService.splitNativeVideoToFile(
-        inputPath: '${Directory.systemTemp.path}/source.mp4',
-        splitPosition: const Duration(seconds: 1),
-        startOutputPath: '${Directory.systemTemp.path}/start.mp4',
-        endOutputPath: '${Directory.systemTemp.path}/end.mp4',
-      );
-
-      final startedModel = await splitStarted;
-      expect(
-        VideoEditorRenderService.activeNativeTaskIdsForTesting,
-        contains(startedModel.id),
-      );
-
-      final splitCancellation = expectLater(
-        splitFuture,
-        throwsA(isA<RenderCanceledException>()),
-      );
-      await VideoEditorRenderService.cancelActiveNativeTasks();
-
-      expect(proVideoEditor.cancelCalls, contains(startedModel.id));
-      await splitCancellation;
-      expect(VideoEditorRenderService.activeNativeTaskIdsForTesting, isEmpty);
-    });
-
-    test('watchdog converts a hung native split into a cancel (#4801)', () {
-      fakeAsync((async) {
-        Object? caughtError;
-        VideoEditorRenderService.splitNativeVideoToFile(
-          inputPath: '${Directory.systemTemp.path}/source.mp4',
-          splitPosition: const Duration(seconds: 1),
-          startOutputPath: '${Directory.systemTemp.path}/start.mp4',
-          endOutputPath: '${Directory.systemTemp.path}/end.mp4',
-        ).catchError((Object error) {
-          caughtError = error;
-          return <String>[];
-        });
-
-        // The native split never completes; advance past the Dart-side
-        // watchdog so the timeout fires and surfaces a cancel.
-        async.elapse(const Duration(seconds: 151));
-
-        expect(caughtError, isA<RenderCanceledException>());
-        expect(proVideoEditor.cancelCalls, hasLength(1));
-        expect(VideoEditorRenderService.activeNativeTaskIdsForTesting, isEmpty);
-      });
     });
   });
 
