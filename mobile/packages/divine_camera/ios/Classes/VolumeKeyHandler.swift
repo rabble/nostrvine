@@ -180,6 +180,11 @@ class VolumeKeyHandler: NSObject {
         DivineCameraLog.shared.debug("DivineCameraVolumeKeyHandler: Media session deactivated")
     }
 
+    /// Assumes a single enabled handler per process: AppDelegate registers the
+    /// plugin on both the UI engine and the background notification-action
+    /// engine, so two instances exist and a second `enable()` would add a
+    /// duplicate set of observers here. Dormant while only the UI engine drives
+    /// the camera; revisit if the background isolate ever enables remote record.
     private func registerAppLifecycleObservers() {
         NotificationCenter.default.addObserver(
             self,
