@@ -53,9 +53,15 @@ void main() {
       bool Function(String rawKeyHex)? salvageDatabase,
       bool Function(String rawKeyHex)? encryptedKeyMatches,
       void Function(Object error)? onRecordRecovery,
+      bool hasPendingCorruptionRecovery = false,
+      void Function()? onClearPendingCorruptionRecovery,
     }) {
       return DatabaseEncryptionBootstrap(
         secureStorage: storage,
+        hasPendingCorruptionRecovery: () async => hasPendingCorruptionRecovery,
+        clearPendingCorruptionRecovery: onClearPendingCorruptionRecovery == null
+            ? null
+            : () async => onClearPendingCorruptionRecovery(),
         ensureRuntime: () async {},
         isCipherAvailable: () => cipherAvailable,
         migrate: (_) async => outcome,
@@ -131,6 +137,144 @@ void main() {
 
       expect(key, equals(existing));
       expect(deleted, isFalse, reason: 'key intact => not key-loss');
+    });
+
+    group('pending runtime-corruption recovery', () {
+      const existing =
+          '2dd29ca851e7b56e4697b0e1f08507293d761a05ce4d1b628663f411a8086d99';
+
+      test(
+        'salvages without consulting the probe when a previous session '
+        'reported corruption',
+        () async {
+          store[dbCipherKeyStorageKey] = existing;
+          var probed = false;
+          var salvaged = false;
+          final bootstrap = buildBootstrap(
+            outcome: CipherMigrationOutcome.alreadyEncrypted,
+            onDelete: () {},
+            hasPendingCorruptionRecovery: true,
+            // The probe is reactive and already missed this corruption once;
+            // trusting it again would strand the user on the broken database.
+            canOpenEncryptedDatabase: (_) {
+              probed = true;
+              return true;
+            },
+            salvageDatabase: (_) {
+              salvaged = true;
+              return true;
+            },
+          );
+
+          final key = await bootstrap.resolveCipherKey();
+
+          expect(probed, isFalse, reason: 'the flag must bypass the probe');
+          expect(salvaged, isTrue);
+          expect(key, equals(existing), reason: 'salvage keeps the same key');
+        },
+      );
+
+      test('still trusts the probe when no corruption was reported', () async {
+        store[dbCipherKeyStorageKey] = existing;
+        var salvaged = false;
+        final bootstrap = buildBootstrap(
+          outcome: CipherMigrationOutcome.alreadyEncrypted,
+          onDelete: () {},
+          canOpenEncryptedDatabase: (_) => true,
+          salvageDatabase: (_) {
+            salvaged = true;
+            return true;
+          },
+        );
+
+        expect(await bootstrap.resolveCipherKey(), equals(existing));
+        expect(salvaged, isFalse, reason: 'a healthy DB must not be salvaged');
+      });
+
+      test('clears the flag once the launch has settled it', () async {
+        store[dbCipherKeyStorageKey] = existing;
+        var cleared = false;
+        final bootstrap = buildBootstrap(
+          outcome: CipherMigrationOutcome.alreadyEncrypted,
+          onDelete: () {},
+          hasPendingCorruptionRecovery: true,
+          canOpenEncryptedDatabase: (_) => true,
+          salvageDatabase: (_) => true,
+          onClearPendingCorruptionRecovery: () => cleared = true,
+        );
+
+        await bootstrap.resolveCipherKey();
+
+        expect(cleared, isTrue);
+      });
+
+      test('clears the flag after a failed salvage falls through to the '
+          'backup-and-recreate', () async {
+        store[dbCipherKeyStorageKey] = existing;
+        var cleared = false;
+        final bootstrap = buildBootstrap(
+          outcome: CipherMigrationOutcome.alreadyEncrypted,
+          onDelete: () {},
+          hasPendingCorruptionRecovery: true,
+          canOpenEncryptedDatabase: (_) => true,
+          // Salvage fails, key still decrypts => recreate under the same key.
+          salvageDatabase: (_) => false,
+          encryptedKeyMatches: (_) => true,
+          onClearPendingCorruptionRecovery: () => cleared = true,
+        );
+
+        await bootstrap.resolveCipherKey();
+
+        expect(
+          cleared,
+          isTrue,
+          reason: 'a stuck flag would salvage on every launch forever',
+        );
+      });
+
+      test('keeps the flag when resolution throws, so the retry still '
+          'recovers', () async {
+        store[dbCipherKeyStorageKey] = existing;
+        var cleared = false;
+        final bootstrap = buildBootstrap(
+          cipherAvailable: false,
+          outcome: CipherMigrationOutcome.alreadyEncrypted,
+          onDelete: () {},
+          hasPendingCorruptionRecovery: true,
+          onClearPendingCorruptionRecovery: () => cleared = true,
+        );
+
+        await expectLater(
+          bootstrap.resolveCipherKey(),
+          throwsA(isA<DatabaseCipherUnavailableError>()),
+        );
+        expect(cleared, isFalse);
+      });
+
+      test(
+        'keeps the flag when the migration defers to the next launch',
+        () async {
+          store[dbCipherKeyStorageKey] = existing;
+          var cleared = false;
+          final bootstrap = buildBootstrap(
+            // The migration could not complete, so it left the database exactly
+            // as it was and this launch settled nothing.
+            outcome: CipherMigrationOutcome.failed,
+            onDelete: () {},
+            hasPendingCorruptionRecovery: true,
+            onClearPendingCorruptionRecovery: () => cleared = true,
+          );
+
+          expect(await bootstrap.resolveCipherKey(), isNull);
+          expect(
+            cleared,
+            isFalse,
+            reason:
+                'clearing here would drop the only signal forcing the '
+                'salvage once the retry classifies the file as encrypted',
+          );
+        },
+      );
     });
 
     test('backs up the unrecoverable DB on key loss (generated key + '

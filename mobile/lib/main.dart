@@ -58,6 +58,7 @@ import 'package:openvine/notifications/routing/notification_tap_target.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/observability/divine_bloc_observer.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/database_corruption_provider.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/db_cipher_key_provider.dart';
 import 'package:openvine/providers/deep_link_provider.dart';
@@ -85,6 +86,7 @@ import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/corrupted_video_repair_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
+import 'package:openvine/services/database_corruption_service.dart';
 import 'package:openvine/services/database_encryption_bootstrap.dart';
 import 'package:openvine/services/deep_link_service.dart';
 import 'package:openvine/services/firebase_initialization.dart';
@@ -109,6 +111,7 @@ import 'package:openvine/services/video_format_preference.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/startup/database_bootstrap_failure_app.dart';
+import 'package:openvine/startup/database_corruption_gate.dart';
 import 'package:openvine/startup/startup_splash_release_controller.dart';
 import 'package:openvine/utils/app_uptime.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
@@ -1309,6 +1312,19 @@ Future<void> _startOpenVineApp() async {
     );
   }
 
+  // Sink for the runtime corruption the startup probe cannot see: it persists
+  // the flag this bootstrap reads below, and drives the in-session restart
+  // prompt (DatabaseCorruptionGate). Created before the bootstrap so both
+  // halves — detection and recovery — share one instance. (#570)
+  final databaseCorruptionService = DatabaseCorruptionService(
+    preferences: sharedPreferences,
+    recordError: (error, stack) => CrashReportingService.instance.recordError(
+      error,
+      stack,
+      reason: 'Runtime database corruption',
+    ),
+  );
+
   final dbCipherKeyResult = await resolveDatabaseBootstrapForAppStart(
     resolveCipherKey: () => resolveStartupDatabaseCipherKey(
       // resetOnError MUST stay false here: the cipher key is the one secret
@@ -1327,6 +1343,13 @@ Future<void> _startOpenVineApp() async {
         // recover-every-launch loop in Crashlytics.
         recordRecovery: (error, stack) => CrashReportingService.instance
             .recordError(error, stack, reason: 'DB startup recovery'),
+        // A previous session's runtime corruption report forces the salvage.
+        // The probe below is reactive and already missed this corruption once,
+        // so re-running it would just clear the DB for another broken session.
+        hasPendingCorruptionRecovery: () async =>
+            databaseCorruptionService.hasPendingRecovery,
+        clearPendingCorruptionRecovery:
+            databaseCorruptionService.clearPendingRecovery,
       ).resolveCipherKey(),
       // SQLite3MultipleCiphers build misconfiguration or secure-storage
       // failures must fail closed after reporting. Continuing with a null key
@@ -1350,6 +1373,11 @@ Future<void> _startOpenVineApp() async {
     overrides: [
       sharedPreferencesProvider.overrideWithValue(sharedPreferences),
       dbCipherKeyProvider.overrideWithValue(dbCipherKey),
+      // Same instance the bootstrap above consulted, so the interceptor the
+      // database provider installs writes the flag the next launch reads.
+      databaseCorruptionServiceProvider.overrideWithValue(
+        databaseCorruptionService,
+      ),
     ],
   );
 
@@ -2325,6 +2353,11 @@ class _DivineAppState extends ConsumerState<DivineApp>
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             localeListResolutionCallback: resolveAppUiLocale,
+            // One gate above every route: once the local database reports
+            // corruption there is no screen left that can work, so ask for the
+            // restart that repairs it instead of failing route by route.
+            builder: (context, child) =>
+                DatabaseCorruptionGate(child: child ?? const SizedBox.shrink()),
           ),
         );
       }
@@ -2345,6 +2378,11 @@ class _DivineAppState extends ConsumerState<DivineApp>
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             localeListResolutionCallback: resolveAppUiLocale,
+            // One gate above every route: once the local database reports
+            // corruption there is no screen left that can work, so ask for the
+            // restart that repairs it instead of failing route by route.
+            builder: (context, child) =>
+                DatabaseCorruptionGate(child: child ?? const SizedBox.shrink()),
           ),
         ),
       );

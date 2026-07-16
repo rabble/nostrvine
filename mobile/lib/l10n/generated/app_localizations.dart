@@ -2539,8 +2539,26 @@ abstract class AppLocalizations {
   /// No description provided for @videoDetailLoadError.
   ///
   /// In en, this message translates to:
-  /// **'Failed to load video: {error}'**
-  String videoDetailLoadError(String error);
+  /// **'Failed to load video'**
+  String get videoDetailLoadError;
+
+  /// Title of the full-screen takeover shown when the local database reports on-disk corruption at runtime. 'Scrambled' is deliberately non-technical: the user did nothing wrong and cannot act on the real cause.
+  ///
+  /// In en, this message translates to:
+  /// **'Your local data got scrambled'**
+  String get databaseCorruptionTitle;
+
+  /// Body of the database-corruption takeover, explaining that a restart triggers the repair. The hedge on drafts and clips is deliberate and must be preserved when translating: the next launch salvages on a best-effort basis and can drop rows sitting on damaged pages, so promising they all survive would be a lie.
+  ///
+  /// In en, this message translates to:
+  /// **'Close Divine and open it again — we\'ll patch it up automatically. We\'ll save what drafts and clips we can, everything else reloads.'**
+  String get databaseCorruptionBody;
+
+  /// Button on the database-corruption takeover that closes the app so the user can reopen it. Flutter cannot relaunch its own process, so closing is the most we can offer.
+  ///
+  /// In en, this message translates to:
+  /// **'Close Divine'**
+  String get databaseCorruptionCloseButton;
 
   /// App bar title over the fullscreen player when a video is opened from a share/deep link; also forwarded verbatim as the feedMode analytics dimension.
   ///

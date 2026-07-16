@@ -1461,9 +1461,17 @@ class AppLocalizationsRo extends AppLocalizations {
       'Conținutul pentru adulți este dezactivat. Îl poți activa în Setări → Filtre de conținut.';
 
   @override
-  String videoDetailLoadError(String error) {
-    return 'N-am putut încărca videoclipul: $error';
-  }
+  String get videoDetailLoadError => 'N-am putut încărca videoclipul';
+
+  @override
+  String get databaseCorruptionTitle => 'Datele tale locale s-au deteriorat';
+
+  @override
+  String get databaseCorruptionBody =>
+      'Închide Divine și deschide-l din nou — reparăm automat. Salvăm ce putem din ciornele și clipurile tale, restul se reîncarcă.';
+
+  @override
+  String get databaseCorruptionCloseButton => 'Închide Divine';
 
   @override
   String get videoDetailContextTitle => 'Videoclip partajat';

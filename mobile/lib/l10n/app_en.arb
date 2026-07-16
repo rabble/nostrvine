@@ -690,8 +690,19 @@
   "@videoErrorAdultContentHidden": {
     "description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."
   },
-  "videoDetailLoadError": "Failed to load video: {error}",
-  "@videoDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
+  "videoDetailLoadError": "Failed to load video",
+  "databaseCorruptionTitle": "Your local data got scrambled",
+  "@databaseCorruptionTitle": {
+    "description": "Title of the full-screen takeover shown when the local database reports on-disk corruption at runtime. 'Scrambled' is deliberately non-technical: the user did nothing wrong and cannot act on the real cause."
+  },
+  "databaseCorruptionBody": "Close Divine and open it again — we'll patch it up automatically. We'll save what drafts and clips we can, everything else reloads.",
+  "@databaseCorruptionBody": {
+    "description": "Body of the database-corruption takeover, explaining that a restart triggers the repair. The hedge on drafts and clips is deliberate and must be preserved when translating: the next launch salvages on a best-effort basis and can drop rows sitting on damaged pages, so promising they all survive would be a lie."
+  },
+  "databaseCorruptionCloseButton": "Close Divine",
+  "@databaseCorruptionCloseButton": {
+    "description": "Button on the database-corruption takeover that closes the app so the user can reopen it. Flutter cannot relaunch its own process, so closing is the most we can offer."
+  },
   "videoDetailContextTitle": "Shared Video",
   "@videoDetailContextTitle": {
     "description": "App bar title over the fullscreen player when a video is opened from a share/deep link; also forwarded verbatim as the feedMode analytics dimension."

@@ -502,10 +502,7 @@ void main() {
           await tester.pumpWidget(buildSubject());
           await tester.pump();
 
-          expect(
-            find.text(l10n.videoDetailLoadError('Exception: Network error')),
-            findsOneWidget,
-          );
+          expect(find.text(l10n.videoDetailLoadError), findsOneWidget);
           expect(_divineIcon(DivineIconName.warningCircle), findsOneWidget);
           expect(
             find.bySemanticsLabel(l10n.videoDetailCloseSemanticLabel),
@@ -513,6 +510,30 @@ void main() {
           );
         },
       );
+
+      testWidgets('does not render the raw exception', (tester) async {
+        // Regression: the screen interpolated the caught error into its
+        // message, so a corrupt local database showed the user the raw
+        // SqliteException — SQL, parameters and all.
+        when(
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
+        ).thenAnswer(
+          (_) => Future.error(
+            Exception(
+              'SqliteException(11): while selecting from statement, database '
+              'disk image is malformed (code 11) Causing statement: '
+              'SELECT * FROM event e WHERE kind = ?',
+            ),
+          ),
+        );
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        expect(find.text(l10n.videoDetailLoadError), findsOneWidget);
+        expect(find.textContaining('SqliteException'), findsNothing);
+        expect(find.textContaining('SELECT'), findsNothing);
+      });
     });
 
     group('explicit route block filtering', () {

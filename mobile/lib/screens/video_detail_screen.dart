@@ -82,7 +82,6 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
   VideoEvent? _video;
   bool _isLoading = true;
   _VideoDetailError? _error;
-  Object? _errorDetail;
   StreamSubscription? _relayReadySubscription;
   bool _retryScheduled = false;
   bool _hasRetriedAfterRelayReady = false;
@@ -119,7 +118,6 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
       _video = widget.initialVideo;
       _isLoading = widget.initialVideo == null;
       _error = null;
-      _errorDetail = null;
     });
 
     if (widget.initialVideo != null) {
@@ -169,7 +167,6 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
             _video = video;
             _isLoading = false;
             _error = null;
-            _errorDetail = null;
           });
           ScreenAnalyticsService().markDataLoaded('video_detail');
         }
@@ -195,7 +192,6 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
         if (mounted) {
           setState(() {
             _error = _VideoDetailError.notFound;
-            _errorDetail = null;
             _isLoading = false;
           });
         }
@@ -222,7 +218,6 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
       if (mounted) {
         setState(() {
           _error = _VideoDetailError.loadFailed;
-          _errorDetail = e;
           _isLoading = false;
         });
       }
@@ -246,7 +241,6 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
       setState(() {
         _isLoading = true;
         _error = null;
-        _errorDetail = null;
       });
       unawaited(_loadVideo(allowRelayReadyRetry: false));
     }
@@ -284,9 +278,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
     if (_error != null) {
       final message = switch (_error!) {
         _VideoDetailError.notFound => context.l10n.videoErrorNotFound,
-        _VideoDetailError.loadFailed => context.l10n.videoDetailLoadError(
-          '$_errorDetail',
-        ),
+        _VideoDetailError.loadFailed => context.l10n.videoDetailLoadError,
       };
       return Scaffold(
         backgroundColor: VineTheme.backgroundColor,

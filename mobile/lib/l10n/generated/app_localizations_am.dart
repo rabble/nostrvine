@@ -1384,9 +1384,17 @@ class AppLocalizationsAm extends AppLocalizations {
       'የአዋቂዎች ይዘት ጠፍቷል። በቅንብሮች → የይዘት ማጣሪያዎች ውስጥ ማብራት ይችላሉ።';
 
   @override
-  String videoDetailLoadError(String error) {
-    return 'ቪዲዮ መጫን አልተሳካም፦ $error';
-  }
+  String get videoDetailLoadError => 'ቪዲዮ መጫን አልተሳካም';
+
+  @override
+  String get databaseCorruptionTitle => 'የአካባቢዎ ውሂብ ተበላሽቷል';
+
+  @override
+  String get databaseCorruptionBody =>
+      'Divine ን ዘግተው እንደገና ይክፈቱት — በራስ-ሰር እናስተካክለዋለን። የቻልነውን ያህል ረቂቆችዎን እና ክሊፖችዎን እናስቀራለን፣ የቀረው እንደገና ይጫናል።';
+
+  @override
+  String get databaseCorruptionCloseButton => 'Divine ን ዝጋ';
 
   @override
   String get videoDetailContextTitle => 'የተጋራ ቪዲዮ';

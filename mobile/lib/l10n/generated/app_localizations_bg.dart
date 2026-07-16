@@ -1444,9 +1444,17 @@ class AppLocalizationsBg extends AppLocalizations {
       'Съдържанието за възрастни е изключено. Можеш да го включиш от Настройки → Филтри за съдържание.';
 
   @override
-  String videoDetailLoadError(String error) {
-    return 'Неуспешно зареждане на видеото: $error';
-  }
+  String get videoDetailLoadError => 'Неуспешно зареждане на видеото';
+
+  @override
+  String get databaseCorruptionTitle => 'Локалните ти данни се повредиха';
+
+  @override
+  String get databaseCorruptionBody =>
+      'Затвори Divine и го отвори пак — ще го поправим автоматично. Ще запазим каквото можем от черновите и клиповете ти, останалото се презарежда.';
+
+  @override
+  String get databaseCorruptionCloseButton => 'Затвори Divine';
 
   @override
   String get videoDetailContextTitle => 'Споделено видео';

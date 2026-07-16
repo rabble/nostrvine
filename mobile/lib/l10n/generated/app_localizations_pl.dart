@@ -1447,9 +1447,17 @@ class AppLocalizationsPl extends AppLocalizations {
       'Treści dla dorosłych są wyłączone. Możesz je włączyć w Ustawienia → Filtry treści.';
 
   @override
-  String videoDetailLoadError(String error) {
-    return 'Nie udało się wczytać filmu: $error';
-  }
+  String get videoDetailLoadError => 'Nie udało się wczytać filmu';
+
+  @override
+  String get databaseCorruptionTitle => 'Twoje lokalne dane się uszkodziły';
+
+  @override
+  String get databaseCorruptionBody =>
+      'Zamknij Divine i otwórz ponownie — naprawimy to automatycznie. Zachowamy tyle Twoich szkiców i klipów, ile się da, reszta wczyta się na nowo.';
+
+  @override
+  String get databaseCorruptionCloseButton => 'Zamknij Divine';
 
   @override
   String get videoDetailContextTitle => 'Udostępniony film';
