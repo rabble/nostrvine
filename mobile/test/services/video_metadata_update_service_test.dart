@@ -19,6 +19,7 @@ import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_metadata_update_service.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 
 import '../helpers/test_provider_overrides.dart';
 
@@ -1100,6 +1101,389 @@ void main() {
           );
         },
       );
+    });
+
+    group('inspired-by p-tag lifecycle', () {
+      const inspiredCreator =
+          'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+      const otherCreator =
+          '2222222222222222222222222222222222222222222222222222222222222222';
+      const inspiredAddressableId = '34236:$inspiredCreator:source-vid';
+      const inspiredPTag = [
+        'p',
+        inspiredCreator,
+        'wss://relay.divine.video',
+        'inspired-by',
+      ];
+
+      List<List<String>> inspiredByPTags() => capturedTags
+          .where(
+            (tag) =>
+                tag.length >= 4 && tag.first == 'p' && tag[3] == 'inspired-by',
+          )
+          .toList();
+
+      test('keeps the p-tag exactly once when re-editing', () async {
+        final video = _testVideo(
+          extraTags: const [
+            [
+              'a',
+              inspiredAddressableId,
+              'wss://relay.divine.video',
+              'inspired-by',
+            ],
+            inspiredPTag,
+          ],
+        );
+
+        final result = await service.updateVideo(
+          originalVideo: video,
+          editorState: VideoEditorProviderState(
+            inspiredByVideo: const InspiredByInfo(
+              addressableId: inspiredAddressableId,
+              relayUrl: 'wss://relay.divine.video',
+            ),
+          ),
+          initialCollaboratorPubkeys: const {},
+        );
+
+        expect(result, isA<VideoUpdateSuccess>());
+        expect(inspiredByPTags(), [equals(inspiredPTag)]);
+      });
+
+      test('mints the p-tag when editing a pre-fix video', () async {
+        final video = _testVideo(
+          extraTags: const [
+            [
+              'a',
+              inspiredAddressableId,
+              'wss://relay.divine.video',
+              'mention',
+            ],
+          ],
+        );
+
+        final result = await service.updateVideo(
+          originalVideo: video,
+          editorState: VideoEditorProviderState(
+            inspiredByVideo: const InspiredByInfo(
+              addressableId: inspiredAddressableId,
+              relayUrl: 'wss://relay.divine.video',
+            ),
+          ),
+          initialCollaboratorPubkeys: const {},
+        );
+
+        expect(result, isA<VideoUpdateSuccess>());
+        expect(inspiredByPTags(), [equals(inspiredPTag)]);
+      });
+
+      test('strips the p-tag when attribution is cleared', () async {
+        final video = _testVideo(
+          extraTags: const [
+            [
+              'a',
+              inspiredAddressableId,
+              'wss://relay.divine.video',
+              'inspired-by',
+            ],
+            inspiredPTag,
+          ],
+        );
+
+        final result = await service.updateVideo(
+          originalVideo: video,
+          editorState: VideoEditorProviderState(),
+          initialCollaboratorPubkeys: const {},
+        );
+
+        expect(result, isA<VideoUpdateSuccess>());
+        expect(inspiredByPTags(), isEmpty);
+      });
+
+      test('re-targets the p-tag when the inspiring creator changes', () async {
+        final video = _testVideo(
+          extraTags: const [
+            [
+              'a',
+              inspiredAddressableId,
+              'wss://relay.divine.video',
+              'inspired-by',
+            ],
+            inspiredPTag,
+          ],
+        );
+
+        final result = await service.updateVideo(
+          originalVideo: video,
+          editorState: VideoEditorProviderState(
+            inspiredByVideo: const InspiredByInfo(
+              addressableId: '34236:$otherCreator:other-vid',
+              relayUrl: 'wss://relay.divine.video',
+            ),
+          ),
+          initialCollaboratorPubkeys: const {},
+        );
+
+        expect(result, isA<VideoUpdateSuccess>());
+        expect(
+          inspiredByPTags(),
+          [
+            equals([
+              'p',
+              otherCreator,
+              'wss://relay.divine.video',
+              'inspired-by',
+            ]),
+          ],
+        );
+      });
+
+      test('emits a p-tag for a person (npub) attribution', () async {
+        final npub = NostrKeyUtils.encodePubKey(inspiredCreator);
+
+        final result = await service.updateVideo(
+          originalVideo: _testVideo(),
+          editorState: VideoEditorProviderState(inspiredByNpub: npub),
+          initialCollaboratorPubkeys: const {},
+        );
+
+        expect(result, isA<VideoUpdateSuccess>());
+        expect(inspiredByPTags(), [equals(inspiredPTag)]);
+      });
+
+      test(
+        'keeps a single collaborator p-tag when the creator is promoted '
+        'to collaborator',
+        () async {
+          final video = _testVideo(
+            extraTags: const [
+              [
+                'a',
+                inspiredAddressableId,
+                'wss://relay.divine.video',
+                'inspired-by',
+              ],
+              inspiredPTag,
+            ],
+          );
+
+          final result = await service.updateVideo(
+            originalVideo: video,
+            editorState: VideoEditorProviderState(
+              collaboratorPubkeys: {inspiredCreator},
+              inspiredByVideo: const InspiredByInfo(
+                addressableId: inspiredAddressableId,
+                relayUrl: 'wss://relay.divine.video',
+              ),
+            ),
+            initialCollaboratorPubkeys: const {inspiredCreator},
+          );
+
+          expect(result, isA<VideoUpdateSuccess>());
+          final pTagsForCreator = capturedTags
+              .where(
+                (tag) =>
+                    tag.length >= 2 &&
+                    tag.first == 'p' &&
+                    tag[1] == inspiredCreator,
+              )
+              .toList();
+          expect(pTagsForCreator, hasLength(1));
+          expect(
+            pTagsForCreator.single,
+            equals([
+              'p',
+              inspiredCreator,
+              'wss://relay.divine.video',
+              'collaborator',
+            ]),
+          );
+        },
+      );
+
+      test(
+        're-mints the inspired-by p-tag when the creator is demoted from '
+        'collaborator',
+        () async {
+          // The original event was produced by a promotion edit: it carries
+          // the collaborator p-tag and no inspired-by p-tag.
+          final promotedVideo = _testVideo(
+            extraTags: const [
+              [
+                'a',
+                inspiredAddressableId,
+                'wss://relay.divine.video',
+                'inspired-by',
+              ],
+              [
+                'p',
+                inspiredCreator,
+                'wss://relay.divine.video',
+                'collaborator',
+              ],
+            ],
+          );
+
+          final result = await service.updateVideo(
+            originalVideo: promotedVideo,
+            editorState: VideoEditorProviderState(
+              inspiredByVideo: const InspiredByInfo(
+                addressableId: inspiredAddressableId,
+                relayUrl: 'wss://relay.divine.video',
+              ),
+            ),
+            initialCollaboratorPubkeys: const {inspiredCreator},
+          );
+
+          expect(result, isA<VideoUpdateSuccess>());
+          expect(inspiredByPTags(), [equals(inspiredPTag)]);
+          expect(
+            capturedTags,
+            isNot(
+              contains(
+                equals([
+                  'p',
+                  inspiredCreator,
+                  'wss://relay.divine.video',
+                  'collaborator',
+                ]),
+              ),
+            ),
+          );
+        },
+      );
+
+      test('never strips caption-mention p-tags', () async {
+        const mentioned =
+            '3333333333333333333333333333333333333333333333333333333333333333';
+        final video = _testVideo(
+          extraTags: const [
+            ['p', mentioned, 'wss://relay.divine.video', 'mention'],
+          ],
+        );
+
+        final result = await service.updateVideo(
+          originalVideo: video,
+          editorState: VideoEditorProviderState(
+            inspiredByVideo: const InspiredByInfo(
+              addressableId: inspiredAddressableId,
+              relayUrl: 'wss://relay.divine.video',
+            ),
+          ),
+          initialCollaboratorPubkeys: const {},
+        );
+
+        expect(result, isA<VideoUpdateSuccess>());
+        expect(
+          capturedTags,
+          contains(
+            equals(['p', mentioned, 'wss://relay.divine.video', 'mention']),
+          ),
+        );
+        expect(inspiredByPTags(), [equals(inspiredPTag)]);
+      });
+
+      test(
+        'does not double-tag a creator who is already a caption mention',
+        () async {
+          final video = _testVideo(
+            extraTags: const [
+              ['p', inspiredCreator, 'wss://relay.divine.video', 'mention'],
+            ],
+          );
+
+          final result = await service.updateVideo(
+            originalVideo: video,
+            editorState: VideoEditorProviderState(
+              inspiredByVideo: const InspiredByInfo(
+                addressableId: inspiredAddressableId,
+                relayUrl: 'wss://relay.divine.video',
+              ),
+            ),
+            initialCollaboratorPubkeys: const {},
+          );
+
+          expect(result, isA<VideoUpdateSuccess>());
+          final pTagsForCreator = capturedTags
+              .where(
+                (tag) =>
+                    tag.length >= 2 &&
+                    tag.first == 'p' &&
+                    tag[1] == inspiredCreator,
+              )
+              .toList();
+          expect(pTagsForCreator, hasLength(1));
+          expect(
+            pTagsForCreator.single,
+            equals([
+              'p',
+              inspiredCreator,
+              'wss://relay.divine.video',
+              'mention',
+            ]),
+          );
+        },
+      );
+
+      test('preserves an inspired-by p-tag verbatim on a video reply', () async {
+        const rootEventId =
+            'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+        const rootAuthorPubkey =
+            'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+        const rootAddressableId = '34236:$rootAuthorPubkey:root-vid';
+        final video = VideoEvent.fromNostrEvent(
+          Event(
+            _ownerPubkey,
+            NIP71VideoKinds.addressableShortVideo,
+            const [
+              ['d', 'video-d-tag'],
+              [
+                'imeta',
+                'url https://cdn.example.com/video.mp4',
+                'm video/mp4',
+              ],
+              ['A', rootAddressableId, ''],
+              ['P', rootAuthorPubkey],
+              ['E', rootEventId, '', rootAuthorPubkey],
+              ['K', '34236'],
+              ['e', rootEventId, '', rootAuthorPubkey],
+              ['p', rootAuthorPubkey],
+              inspiredPTag,
+            ],
+            'Reply video',
+            createdAt: 1757385263,
+          ),
+        );
+        expect(video.isVideoReply, isTrue);
+
+        final result = await service.updateVideo(
+          originalVideo: video,
+          editorState: VideoEditorProviderState(
+            inspiredByVideo: video.inspiredByVideo,
+          ),
+          initialCollaboratorPubkeys: const {},
+        );
+
+        expect(result, isA<VideoUpdateSuccess>());
+        expect(inspiredByPTags(), [equals(inspiredPTag)]);
+      });
+
+      test('does not self-p-tag when inspired by an own video', () async {
+        final result = await service.updateVideo(
+          originalVideo: _testVideo(),
+          editorState: VideoEditorProviderState(
+            inspiredByVideo: const InspiredByInfo(
+              addressableId: '34236:$_ownerPubkey:own-vid',
+              relayUrl: 'wss://relay.divine.video',
+            ),
+          ),
+          initialCollaboratorPubkeys: const {},
+        );
+
+        expect(result, isA<VideoUpdateSuccess>());
+        expect(inspiredByPTags(), isEmpty);
+      });
     });
   });
 }

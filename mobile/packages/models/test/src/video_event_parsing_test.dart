@@ -681,7 +681,7 @@ void main() {
         [
           ['url', 'https://example.com/video.mp4'],
         ],
-        'Great idea! Inspired by nostr:npub1abc123def456ghi789',
+        'Great idea!\n\nInspired by nostr:npub1abc123def456ghi789',
         createdAt: 1757385263,
       );
 
@@ -706,6 +706,111 @@ void main() {
 
       expect(videoEvent.inspiredByNpub, isNull);
     });
+
+    test('should not treat an inline nostr:npub mention as inspiredByNpub', () {
+      final nostrEvent = Event(
+        authorPubkey,
+        34236,
+        [
+          ['url', 'https://example.com/video.mp4'],
+        ],
+        'Shoutout to nostr:npub1notattribution for the tip!',
+        createdAt: 1757385263,
+      );
+
+      final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+      expect(videoEvent.inspiredByNpub, isNull);
+    });
+
+    test(
+      'should not treat a trailing mid-sentence mention as inspiredByNpub',
+      () {
+        // The strip regex in the edit form requires a blank line (or start of
+        // content) before the attribution phrase. Parsing must be equally
+        // strict, or prose like this would set inspiredByNpub without ever
+        // being strippable — duplicating the line and p-tagging the mentioned
+        // person on the next edit-save.
+        final nostrEvent = Event(
+          authorPubkey,
+          34236,
+          [
+            ['url', 'https://example.com/video.mp4'],
+          ],
+          'my remix. Inspired by nostr:npub1prosecreator',
+          createdAt: 1757385263,
+        );
+
+        final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+        expect(videoEvent.inspiredByNpub, isNull);
+      },
+    );
+
+    test(
+      'should not treat a single-newline-prefixed attribution as '
+      'inspiredByNpub',
+      () {
+        final nostrEvent = Event(
+          authorPubkey,
+          34236,
+          [
+            ['url', 'https://example.com/video.mp4'],
+          ],
+          'my caption\nInspired by nostr:npub1singlenewline',
+          createdAt: 1757385263,
+        );
+
+        final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+        expect(videoEvent.inspiredByNpub, isNull);
+      },
+    );
+
+    test('should resolve the trailing attribution npub when an inline mention '
+        'appears earlier in content', () {
+      final nostrEvent = Event(
+        authorPubkey,
+        34236,
+        [
+          ['url', 'https://example.com/video.mp4'],
+        ],
+        'Shoutout to nostr:npub1notattribution for the tip!'
+        '\n\nInspired by nostr:npub1realattribution',
+        createdAt: 1757385263,
+      );
+
+      final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+      expect(
+        videoEvent.inspiredByNpub,
+        equals('npub1realattribution'),
+      );
+    });
+
+    test(
+      'should parse inspiredByNpub when attribution is the whole content',
+      () {
+        // Empty-description publishes trim the leading newlines, so the
+        // attribution line is the entire content.
+        final nostrEvent = Event(
+          authorPubkey,
+          34236,
+          [
+            ['url', 'https://example.com/video.mp4'],
+          ],
+          'Inspired by nostr:npub1onlyattribution',
+          createdAt: 1757385263,
+        );
+
+        final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+        expect(
+          videoEvent.inspiredByNpub,
+          equals('npub1onlyattribution'),
+        );
+      },
+    );
 
     test('should parse both a-tag and npub content together', () {
       final nostrEvent = Event(

@@ -1107,13 +1107,14 @@ void main() {
     VideoEvent buildVideo({
       List<List<String>> nostrEventTags = const [],
       Map<String, String> rawTags = const {},
+      String content = 'A published clip',
     }) {
       return VideoEvent(
         id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
         pubkey:
             'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
         createdAt: 1778120201,
-        content: 'A published clip',
+        content: content,
         timestamp: DateTime.utc(2026, 5, 7),
         title: 'Published clip',
         videoUrl: 'https://media.divine.video/published.mp4',
@@ -1158,6 +1159,35 @@ void main() {
           .initFromPublishedVideo(buildVideo());
 
       expect(container.read(videoEditorProvider).allowAudioReuse, isFalse);
+    });
+
+    test('strips a trailing inspired-by line from the description', () {
+      container
+          .read(videoEditorProvider.notifier)
+          .initFromPublishedVideo(
+            buildVideo(
+              content: 'A caption\n\nInspired by nostr:npub1someattribution',
+            ),
+          );
+
+      expect(
+        container.read(videoEditorProvider).description,
+        equals('A caption'),
+      );
+    });
+
+    test('strips a whole-content inspired-by line (empty caption publish)', () {
+      // Empty-caption publishes trim the leading newlines, so the
+      // attribution line is the entire content. Before the fix the strip
+      // required a '\n\n' prefix, seeding the edit form with the raw line
+      // and duplicating it on every republish.
+      container
+          .read(videoEditorProvider.notifier)
+          .initFromPublishedVideo(
+            buildVideo(content: 'Inspired by nostr:npub1someattribution'),
+          );
+
+      expect(container.read(videoEditorProvider).description, isEmpty);
     });
   });
 

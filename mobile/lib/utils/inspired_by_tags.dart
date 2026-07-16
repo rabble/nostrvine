@@ -1,0 +1,96 @@
+// ABOUTME: Shared Divine inspired-by p-tag builder and creator resolution
+// ABOUTME: used by both the direct-upload and edit-video publish paths.
+
+import 'package:models/models.dart';
+import 'package:openvine/constants/app_constants.dart';
+import 'package:openvine/utils/npub_hex.dart';
+
+/// Marker on Divine inspired-by `p` tags.
+///
+/// Distinct from `'mention'` so the edit flow can own this tag's lifecycle
+/// without touching caption-mention p-tags, and from `'collaborator'` so no
+/// consumer renders the inspired-by creator as a collaborator.
+const inspiredByPTagMarker = 'inspired-by';
+
+/// Default relay hint embedded in Divine inspired-by p-tags.
+const String inspiredByPTagRelayHint = AppConstants.defaultRelayUrl;
+
+/// Builds the Divine inspired-by-marked `p` tag for [pubkeyHex].
+///
+/// The marker must stay non-empty: funnelcake's collaborator read model
+/// treats a missing p-tag marker as `'collaborator'`.
+List<String> buildInspiredByPTag(String pubkeyHex, {String? relayHint}) {
+  final relay = (relayHint == null || relayHint.isEmpty)
+      ? inspiredByPTagRelayHint
+      : relayHint;
+  return ['p', pubkeyHex, relay, inspiredByPTagMarker];
+}
+
+/// Resolves the inspired-by creator hex pubkeys carried by a publish.
+///
+/// [addressableId] is the `34236:<pubkey>:<dTag>` coordinate of the
+/// inspiring video; [npub] is the NIP-27 person reference. Both can be
+/// present at publish time because the audio-reuse flow auto-populates the
+/// video reference independently of the person picker, so the result can
+/// contain up to two creators.
+///
+/// Malformed coordinates and undecodable npubs are skipped rather than
+/// surfaced — attribution display does not depend on this resolution, and a
+/// p-tag with an invalid value must never be published. Results are
+/// normalized to lowercase hex and deduplicated.
+Set<String> resolveInspiredByCreatorHexes({
+  String? addressableId,
+  String? npub,
+}) {
+  final hexes = <String>{};
+
+  if (addressableId != null) {
+    final candidate = InspiredByInfo(
+      addressableId: addressableId,
+    ).creatorPubkey.trim().toLowerCase();
+    if (NostrHexUtils.isValidPubkey(candidate)) {
+      hexes.add(candidate);
+    }
+  }
+
+  final decoded = npubToHexOrNull(npub)?.trim().toLowerCase();
+  if (decoded != null && NostrHexUtils.isValidPubkey(decoded)) {
+    hexes.add(decoded);
+  }
+
+  return hexes;
+}
+
+/// Builds inspired-by-marked p-tags for the creator(s) referenced by a
+/// publish, so they are notifiable (per NIP-27, a content mention without a
+/// matching p tag does not notify).
+///
+/// Skips the publisher's own pubkey ([selfPubkey] — reusing your own sound
+/// auto-populates the video reference with yourself) and any pubkey already
+/// carried by a `p` tag in [existingTags], so collaborator, caption-mention,
+/// and reply-threading tags keep the single-p-tag-per-pubkey invariant.
+List<List<String>> buildInspiredByPTags({
+  required List<List<String>> existingTags,
+  String? addressableId,
+  String? npub,
+  String? relayHint,
+  String? selfPubkey,
+}) {
+  final hexes = resolveInspiredByCreatorHexes(
+    addressableId: addressableId,
+    npub: npub,
+  );
+  if (hexes.isEmpty) return const [];
+
+  final self = selfPubkey?.trim().toLowerCase();
+  final existing = {
+    for (final tag in existingTags)
+      if (tag.length >= 2 && tag[0] == 'p') tag[1].trim().toLowerCase(),
+  };
+
+  return [
+    for (final hex in hexes)
+      if (hex != self && !existing.contains(hex))
+        buildInspiredByPTag(hex, relayHint: relayHint),
+  ];
+}
