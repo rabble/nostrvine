@@ -9,10 +9,16 @@ import 'package:unified_logger/unified_logger.dart';
 
 /// Service for rendering a reversed clip to a new local file.
 class VideoEditorReverseService {
-  /// Renders the full clip in reverse.
+  /// Renders the clip's **visible window** `[trimStart, duration - trimEnd]`
+  /// in reverse to a standalone file.
   ///
-  /// Callers keep trim bounds in state and derive the visible segment from the
-  /// reversed source file instead of baking the trim into the output file.
+  /// The window is baked into the output — the reversed file is exactly the
+  /// visible segment reversed, so the caller treats the result as a standalone
+  /// clip (trims reset, floor cleared). This is required for a trim-based split
+  /// half, whose source file is shared with its sibling: reversing the whole
+  /// file and keeping metadata trims would expose the sibling's frames because
+  /// the split half's `duration` no longer equals the real file length. For an
+  /// untrimmed clip the window is the whole file, so the output is unchanged.
   static Future<EditorVideo> reverseClip({
     required DivineVideoClip sourceClip,
     required String renderId,
@@ -48,6 +54,11 @@ class VideoEditorReverseService {
         );
       }
 
+      // Bake the visible window into the reversed output: select
+      // [trimStart, duration - trimEnd] on the source, then reverse it. For an
+      // untrimmed clip this is the whole file, so the output is unchanged.
+      final windowStart = sourceClip.trimStart;
+      final windowEnd = sourceClip.duration - sourceClip.trimEnd;
       await VideoEditorRenderService.renderNativeVideoToFile(
         outputPath,
         VideoRenderData(
@@ -55,6 +66,8 @@ class VideoEditorReverseService {
           videoSegments: [
             VideoSegment(
               video: EditorVideo.file(inputPath),
+              startTime: windowStart == Duration.zero ? null : windowStart,
+              endTime: windowEnd,
               reverseVideo: true,
             ),
           ],

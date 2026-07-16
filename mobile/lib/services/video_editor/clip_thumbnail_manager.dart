@@ -41,18 +41,12 @@ class ClipThumbnailManager {
   // thumbnail generation against the new file.
   final Map<String, String> _videoPaths = {};
   // IDs whose notifier has been pre-populated from another clip's
-  // thumbnails (e.g. split). For these we suppress auto-loading until
-  // the rendered file path arrives — otherwise the seeded frames would
-  // be immediately overwritten by a fresh subscription against the
-  // (still un-trimmed) source video.
+  // thumbnails (a trim-based split borrows the source clip's frames so the
+  // new halves show correct content immediately). Cleared on the next
+  // [sync], which starts the real subscription against the (shared) source
+  // file; until then the flag protects the borrowed frames from being
+  // retired as if they were the clip's own.
   final Set<String> _seeded = {};
-  // Timestamp shift to apply to a seeded clip's thumbnails when its
-  // rendered file path arrives. Seeded frames are kept in the *current*
-  // clip's timebase so they display immediately; when the rendered file
-  // rebases the clip's timeline (split end half: source-time →
-  // zero-based), the same shift is applied here so the frames stay
-  // aligned until fresh thumbnails replace them.
-  final Map<String, Duration> _pendingRebase = {};
   // IDs whose subscription has delivered its final batch — the strip is at
   // full density and only a source-file change warrants re-extraction.
   final Set<String> _complete = {};
@@ -96,7 +90,6 @@ class ClipThumbnailManager {
       _subscriptions.remove(id)?.cancel();
       final videoPath = _videoPaths.remove(id);
       final wasSeeded = _seeded.remove(id);
-      _pendingRebase.remove(id);
       final wasComplete = _complete.remove(id);
       final notifier = _notifiers.remove(id);
       if (notifier == null) continue;
@@ -158,15 +151,14 @@ class ClipThumbnailManager {
 
       if (!hasSubscription) {
         if (isSeeded) {
-          // Skip auto-loading for seeded clips — their notifier already
-          // shows the right frames borrowed from the source clip.
-          if (newPath == null || newPath == currentPath) continue;
-          // The rendered (trimmed) file path arrived — start the real
-          // subscription. The seeded frames stay visible (rebased into
-          // the rendered file's timebase where needed) until fresh
-          // frames cover their spots; their files are deleted then.
+          // A trim-based split half already points at its final (shared
+          // source) file — no rendered-file swap is coming. Start the real
+          // subscription now against that file so the strip can fill new
+          // slots on zoom/scroll; the seeded frames stay visible as
+          // gap-fillers until fresh frames cover them (see
+          // [_mergeCarriedFrames]). Waiting for a path change would freeze
+          // the strip at its seeded density forever.
           _seeded.remove(clip.id);
-          _rebaseThumbnails(clip.id);
         } else if (_complete.contains(clip.id)) {
           // Restored from the retired cache at full density — only a
           // source-file change warrants re-extraction.
@@ -187,10 +179,8 @@ class ClipThumbnailManager {
         // their spots (see [_mergeCarriedFrames]); their files are
         // deleted as they drop out.
         //
-        // Seeded split halves never reach this branch: they carry no
-        // subscription until their rendered path arrives via the
-        // !hasSubscription branch above, which is where _seeded and any
-        // pending rebase are consumed.
+        // A reversed / transformed clip lands here: its file swaps to the
+        // rendered output, so the subscription restarts against the new file.
         _subscriptions.remove(clip.id)?.cancel();
         _loadThumbnails(
           clip,
@@ -213,30 +203,21 @@ class ClipThumbnailManager {
   /// decode that flashes black. Cleanup protects borrowed files: they
   /// are only deleted once no notifier references them anymore.
   ///
-  /// The clip is marked as "seeded" so [sync] will not auto-load a
-  /// fresh subscription against the still-un-trimmed source video
-  /// — that would overwrite these correct frames with the wrong
-  /// range. The real subscription starts once the rendered file
-  /// path arrives via the path-change branch in [sync]; the seeded
-  /// frames stay visible as gap-fillers until fresh frames cover
-  /// their spots (see [_mergeCarriedFrames]).
+  /// The clip is marked as "seeded" so the very next [sync] starts the real
+  /// subscription against [currentSourcePath] (the shared source file a
+  /// trim-based split keeps) while these borrowed frames stay visible as
+  /// gap-fillers until fresh frames cover their spots (see
+  /// [_mergeCarriedFrames]).
   ///
-  /// [rebaseOnPathChange] is subtracted from every seeded timestamp
-  /// when the rendered file path arrives. Use it when the rendered
-  /// file rebases the clip's timeline (split end half: the preview
-  /// clip is source-timed, the rendered file starts at zero).
-  ///
-  /// [currentSourcePath] is the video path the target clip currently
-  /// points at (typically the source video). Recording it lets
-  /// [sync] detect when the rendered file path arrives and swap the
-  /// subscription.
+  /// [currentSourcePath] is the video path the target clip currently points
+  /// at — for a trim-based split this is the shared source file, which is
+  /// also the file the real subscription extracts from.
   void seedFromSource({
     required String sourceClipId,
     required String targetClipId,
     required DurationRange sourceRange,
     required String currentSourcePath,
     Duration? timestampOffset,
-    Duration rebaseOnPathChange = Duration.zero,
   }) {
     final source = _notifiers[sourceClipId];
     if (source == null) return;
@@ -257,27 +238,6 @@ class ClipThumbnailManager {
     notifier.value = seeded;
     _videoPaths[targetClipId] = currentSourcePath;
     _seeded.add(targetClipId);
-    if (rebaseOnPathChange == Duration.zero) {
-      _pendingRebase.remove(targetClipId);
-    } else {
-      _pendingRebase[targetClipId] = rebaseOnPathChange;
-    }
-  }
-
-  /// Applies the pending timestamp rebase recorded by [seedFromSource]
-  /// when the clip's rendered file path arrives.
-  void _rebaseThumbnails(String clipId) {
-    final shift = _pendingRebase.remove(clipId);
-    if (shift == null || shift == Duration.zero) return;
-    final notifier = _notifiers[clipId];
-    if (notifier == null) return;
-    notifier.value = List.unmodifiable([
-      for (final thumbnail in notifier.value)
-        StripThumbnail(
-          path: thumbnail.path,
-          timestamp: thumbnail.timestamp - shift,
-        ),
-    ]);
   }
 
   void _loadThumbnails(
@@ -512,7 +472,6 @@ class ClipThumbnailManager {
     _notifiers.clear();
     _videoPaths.clear();
     _seeded.clear();
-    _pendingRebase.clear();
     _complete.clear();
     _retired.clear();
   }

@@ -192,6 +192,39 @@ void main() {
         isTrue,
       );
     });
+
+    test('skips a thumbnail-only change (poster refresh after a split)', () {
+      final clip = _createClip(id: 'end');
+
+      expect(
+        VideoEditorCanvas.shouldSyncPlayerForClipStateChange(
+          previous: ClipEditorState(clips: [clip]),
+          current: ClipEditorState(
+            clips: [clip.copyWith(thumbnailPath: '/thumbs/end.jpg')],
+          ),
+        ),
+        isFalse,
+      );
+    });
+
+    test('still syncs when a trim changes alongside the thumbnail', () {
+      final clip = _createClip(id: 'end');
+
+      expect(
+        VideoEditorCanvas.shouldSyncPlayerForClipStateChange(
+          previous: ClipEditorState(clips: [clip]),
+          current: ClipEditorState(
+            clips: [
+              clip.copyWith(
+                thumbnailPath: '/thumbs/end.jpg',
+                trimStart: const Duration(seconds: 1),
+              ),
+            ],
+          ),
+        ),
+        isTrue,
+      );
+    });
   });
 
   group('VideoEditorCanvas.shouldAcceptPlayerReport', () {

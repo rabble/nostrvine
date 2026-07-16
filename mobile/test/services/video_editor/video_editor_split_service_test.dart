@@ -27,8 +27,8 @@ class MockPathProviderPlatform extends Fake
 }
 
 class MockProVideoEditor extends ProVideoEditor {
-  bool shouldThrowError = false;
-  bool createOutputFiles = true;
+  /// Records any native split request. A trim-based split must never issue
+  /// one, so this stays empty — a non-empty list means a re-encode regressed.
   final List<SplitVideoModel> splitRequests = [];
 
   @override
@@ -41,19 +41,7 @@ class MockProVideoEditor extends ProVideoEditor {
     SplitVideoModel value, {
     NativeLogLevel? nativeLogLevel,
   }) async {
-    if (shouldThrowError) {
-      throw Exception('Split failed');
-    }
     splitRequests.add(value);
-    // Simulate a frame-accurate split producing two files.
-    if (createOutputFiles) {
-      for (final outputPath in [value.startOutputPath, value.endOutputPath]) {
-        final file = File(outputPath);
-        file.parent.createSync(recursive: true);
-        file.writeAsBytesSync([0]);
-      }
-    }
-    await Future<void>.delayed(const Duration(milliseconds: 10));
     return [value.startOutputPath, value.endOutputPath];
   }
 }
@@ -231,7 +219,6 @@ void main() {
             splitPosition: const Duration(milliseconds: 10),
             onClipsCreated: null,
             onThumbnailExtracted: null,
-            onClipRendered: null,
           ),
           throwsArgumentError,
         );
@@ -251,7 +238,6 @@ void main() {
               end = e;
             },
             onThumbnailExtracted: null,
-            onClipRendered: null,
           );
 
           // Nothing is re-encoded; both halves keep the source file.
@@ -273,7 +259,6 @@ void main() {
             end = e;
           },
           onThumbnailExtracted: null,
-          onClipRendered: null,
         );
 
         // Start half: [0, 2s], its duration caps the visible end at the split.
@@ -294,29 +279,12 @@ void main() {
           splitPosition: const Duration(seconds: 2),
           onClipsCreated: (_, e) => end = e,
           onThumbnailExtracted: null,
-          onClipRendered: null,
         );
 
         // So its left trim handle can't be dragged back before the split into
         // the start half's frames.
         expect(end!.minTrimStart, const Duration(seconds: 2));
       });
-
-      test(
-        'does not render anything (onClipRendered is never called)',
-        () async {
-          final clip = _clip(duration: const Duration(seconds: 5));
-          var rendered = 0;
-          await VideoEditorSplitService.splitClip(
-            sourceClip: clip,
-            splitPosition: const Duration(seconds: 2),
-            onClipsCreated: null,
-            onThumbnailExtracted: null,
-            onClipRendered: (_, _) => rendered++,
-          );
-          expect(rendered, isZero);
-        },
-      );
 
       test('splits a trimmed clip at the correct absolute position', () async {
         // 10s clip trimmed to 3s–8s (trimmedDuration = 5s), split 2s in.
@@ -335,7 +303,6 @@ void main() {
             end = e;
           },
           onThumbnailExtracted: null,
-          onClipRendered: null,
         );
 
         // Absolute split = trimStart(3) + 2 = 5s.
@@ -371,7 +338,6 @@ void main() {
             end = e;
           },
           onThumbnailExtracted: null,
-          onClipRendered: null,
         );
 
         // The split point (A1 → A2) is a hard cut; A2 → B keeps the boundary.
@@ -388,7 +354,6 @@ void main() {
           splitPosition: const Duration(seconds: 2),
           onClipsCreated: (_, e) => firstEnd = e,
           onThumbnailExtracted: null,
-          onClipRendered: null,
         );
 
         // Split the end half 1s in → absolute 3s.
@@ -402,7 +367,6 @@ void main() {
             secondEnd = e;
           },
           onThumbnailExtracted: null,
-          onClipRendered: null,
         );
 
         // New start half inherits the first end's floor (2s), capped at 3s.
@@ -425,7 +389,6 @@ void main() {
           splitPosition: const Duration(seconds: 2),
           onClipsCreated: (_, e) => end1 = e,
           onThumbnailExtracted: null,
-          onClipRendered: null,
         );
         await Future<void>.delayed(const Duration(milliseconds: 2));
         await VideoEditorSplitService.splitClip(
@@ -433,7 +396,6 @@ void main() {
           splitPosition: const Duration(seconds: 2),
           onClipsCreated: (_, e) => end2 = e,
           onThumbnailExtracted: null,
-          onClipRendered: null,
         );
         expect(end1!.id, isNot(equals(end2!.id)));
       });

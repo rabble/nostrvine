@@ -99,8 +99,6 @@ Future<void> _fakeSplitClip({
   onClipsCreated,
   required void Function(DivineVideoClip clip, String thumbnailPath)?
   onThumbnailExtracted,
-  required void Function(DivineVideoClip clip, EditorVideo video)?
-  onClipRendered,
 }) async {
   final absoluteSplitPos = sourceClip.trimStart + splitPosition;
   final timestampMs = DateTime.now().microsecondsSinceEpoch;
@@ -109,44 +107,12 @@ Future<void> _fakeSplitClip({
     duration: absoluteSplitPos,
     trimEnd: Duration.zero,
   );
-  final previewEndClip = sourceClip.copyWith(
+  final endClip = sourceClip.copyWith(
     id: '${timestampMs}_end',
-    duration: sourceClip.duration,
     trimStart: absoluteSplitPos,
+    minTrimStart: absoluteSplitPos,
   );
-  onClipsCreated?.call(startClip, previewEndClip);
-}
-
-Future<void> _fakeSplitClipThenRenderEnd({
-  required DivineVideoClip sourceClip,
-  required Duration splitPosition,
-  required void Function(DivineVideoClip startClip, DivineVideoClip endClip)?
-  onClipsCreated,
-  required void Function(DivineVideoClip clip, String thumbnailPath)?
-  onThumbnailExtracted,
-  required void Function(DivineVideoClip clip, EditorVideo video)?
-  onClipRendered,
-}) async {
-  final absoluteSplitPos = sourceClip.trimStart + splitPosition;
-  final timestampMs = DateTime.now().microsecondsSinceEpoch;
-  final startClip = sourceClip.copyWith(
-    id: '${timestampMs}_start',
-    duration: absoluteSplitPos,
-    trimEnd: Duration.zero,
-  );
-  final previewEndClip = sourceClip.copyWith(
-    id: '${timestampMs}_end',
-    duration: sourceClip.duration,
-    trimStart: absoluteSplitPos,
-  );
-  final renderedEndClip = previewEndClip.copyWith(
-    duration: sourceClip.duration - absoluteSplitPos,
-    trimStart: Duration.zero,
-    sourceStartOffset: sourceClip.sourceStartOffset + absoluteSplitPos,
-  );
-  onClipsCreated?.call(startClip, previewEndClip);
-  onClipRendered?.call(startClip, startClip.video);
-  onClipRendered?.call(renderedEndClip, renderedEndClip.video);
+  onClipsCreated?.call(startClip, endClip);
 }
 
 Future<void> _fakeSplitClipThenFail({
@@ -156,17 +122,47 @@ Future<void> _fakeSplitClipThenFail({
   onClipsCreated,
   required void Function(DivineVideoClip clip, String thumbnailPath)?
   onThumbnailExtracted,
-  required void Function(DivineVideoClip clip, EditorVideo video)?
-  onClipRendered,
 }) async {
   await _fakeSplitClip(
     sourceClip: sourceClip,
     splitPosition: splitPosition,
     onClipsCreated: onClipsCreated,
     onThumbnailExtracted: onThumbnailExtracted,
-    onClipRendered: onClipRendered,
   );
   throw StateError('render failed');
+}
+
+/// Fake split that mirrors the real service: it returns immediately and fires
+/// the thumbnail fire-and-forget, so [onThumbnailExtracted] lands *after* the
+/// split handler completes (its emitter is done).
+Future<void> _fakeSplitClipThenLateThumbnail({
+  required DivineVideoClip sourceClip,
+  required Duration splitPosition,
+  required void Function(DivineVideoClip startClip, DivineVideoClip endClip)?
+  onClipsCreated,
+  required void Function(DivineVideoClip clip, String thumbnailPath)?
+  onThumbnailExtracted,
+}) async {
+  final absoluteSplitPos = sourceClip.trimStart + splitPosition;
+  final ts = DateTime.now().microsecondsSinceEpoch;
+  final endClip = sourceClip.copyWith(
+    id: '${ts}_end',
+    trimStart: absoluteSplitPos,
+    minTrimStart: absoluteSplitPos,
+  );
+  onClipsCreated?.call(
+    sourceClip.copyWith(
+      id: '${ts}_start',
+      duration: absoluteSplitPos,
+      trimEnd: Duration.zero,
+    ),
+    endClip,
+  );
+  unawaited(
+    Future<void>.microtask(
+      () => onThumbnailExtracted?.call(endClip, '/thumbs/end.jpg'),
+    ),
+  );
 }
 
 Future<EditorVideo> _fakeReverseClip({
@@ -780,43 +776,6 @@ void main() {
         ],
       );
 
-      test(
-        'applies rendered clip timing after split render completes',
-        () async {
-          final clip = _createClip(
-            id: 'x',
-            duration: const Duration(seconds: 2),
-          );
-
-          final bloc = buildBloc(splitClip: _fakeSplitClipThenRenderEnd);
-
-          bloc.emit(
-            ClipEditorState(
-              clips: [clip],
-              isEditing: true,
-              splitPosition: const Duration(milliseconds: 500),
-            ),
-          );
-
-          bloc.add(const ClipEditorSplitRequested());
-          await bloc.stream.firstWhere((state) => !state.isSplitting);
-
-          final endClip = bloc.state.clips.last;
-          expect(endClip.duration, const Duration(milliseconds: 1500));
-          expect(endClip.trimStart, Duration.zero);
-          expect(endClip.trimmedDuration, const Duration(milliseconds: 1500));
-          // The rendered end file starts at the split point — the offset
-          // must reach the state clip, or the thumbnail raster re-anchors
-          // and the strip's frames visibly shift when the render lands.
-          expect(
-            endClip.sourceStartOffset,
-            const Duration(milliseconds: 500),
-          );
-
-          await bloc.close();
-        },
-      );
-
       blocTest<ClipEditorBloc, ClipEditorState>(
         'rolls back created split clips when render fails',
         build: () => buildBloc(splitClip: _fakeSplitClipThenFail),
@@ -904,6 +863,40 @@ void main() {
         },
       );
 
+      // The split's thumbnail decode is fire-and-forget, so it lands after the
+      // split handler completes. It must still update the poster via a fresh
+      // event rather than a done emitter (otherwise the refresh is dropped).
+      test(
+        'applies the background thumbnail after the split completes',
+        () async {
+          final bloc = buildBloc(splitClip: _fakeSplitClipThenLateThumbnail);
+          bloc.emit(
+            ClipEditorState(
+              clips: [
+                _createClip(id: 'source', duration: const Duration(seconds: 4)),
+              ],
+              isEditing: true,
+              splitPosition: const Duration(seconds: 2),
+            ),
+          );
+
+          bloc.add(const ClipEditorSplitRequested());
+          // The fire-and-forget thumbnail lands after the split settles and
+          // must still reach the poster (the old done-emitter path dropped it,
+          // which would leave this firstWhere waiting forever).
+          await bloc.stream.firstWhere(
+            (s) =>
+                !s.isSplitting &&
+                s.clips.length == 2 &&
+                s.clips.last.thumbnailPath == '/thumbs/end.jpg',
+          );
+          expect(bloc.state.clips.last.thumbnailPath, '/thumbs/end.jpg');
+          expect(bloc.state.isSplitting, isFalse);
+
+          await bloc.close();
+        },
+      );
+
       // Regression: a queued split silently vanished because the editor→bloc
       // re-sync (ClipEditorInitialized, dispatched by the canvas after the
       // previous split committed) carried a stale pre-split snapshot and
@@ -924,8 +917,6 @@ void main() {
             onClipsCreated,
             required void Function(DivineVideoClip clip, String thumbnailPath)?
             onThumbnailExtracted,
-            required void Function(DivineVideoClip clip, EditorVideo video)?
-            onClipRendered,
           }) async {
             final absoluteSplitPos = sourceClip.trimStart + splitPosition;
             final ts = DateTime.now().microsecondsSinceEpoch;
@@ -937,8 +928,8 @@ void main() {
               ),
               sourceClip.copyWith(
                 id: '${ts}_end',
-                duration: sourceClip.duration,
                 trimStart: absoluteSplitPos,
+                minTrimStart: absoluteSplitPos,
               ),
             );
             await gate.future;
@@ -1270,6 +1261,43 @@ void main() {
         ],
       );
 
+      // Regression: the split guard allows a 40ms half, but the upper trim
+      // bound (duration - minTrimDuration - trimEnd) then dips below the
+      // minTrimStart floor. The floor must stay authoritative so the clamp
+      // never emits a trimStart below it (which would show the sibling's
+      // frames).
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'never emits a trimStart below the floor for a sub-60ms end half',
+        build: buildBloc,
+        seed: () => ClipEditorState(
+          clips: [
+            _createClip(
+              id: 'tiny-end',
+              duration: const Duration(seconds: 2),
+            ).copyWith(
+              trimStart: const Duration(milliseconds: 1970),
+              minTrimStart: const Duration(milliseconds: 1970),
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const ClipEditorTrimUpdated(
+            clipId: 'tiny-end',
+            isStart: true,
+            trimStart: Duration(milliseconds: 1980),
+            trimEnd: Duration.zero,
+          ),
+        ),
+        expect: () => [
+          isA<ClipEditorState>().having(
+            (s) =>
+                s.clips.first.trimStart >= const Duration(milliseconds: 1970),
+            'trimStart stays at/above the floor',
+            isTrue,
+          ),
+        ],
+      );
+
       blocTest<ClipEditorBloc, ClipEditorState>(
         'updates totalDuration to reflect trimmed clips',
         build: buildBloc,
@@ -1528,8 +1556,12 @@ void main() {
         ],
       );
 
+      // A trimmed clip (5s, trimmed 1s/0.5s → 3.5s visible) bakes into a
+      // standalone reversed clip: trims reset, duration becomes the window
+      // length, the split floor clears, and — because the forward clip was
+      // trimmed — the swap-based cache is dropped so the toggle re-renders.
       blocTest<ClipEditorBloc, ClipEditorState>(
-        'renders reversed clip, swaps trim bounds, and toggles reversed flag',
+        'bakes the visible window into a standalone reversed clip',
         build: () => buildBloc(reverseClip: _fakeReverseClip),
         seed: () => ClipEditorState(clips: [_createClipWithFile()]),
         act: (bloc) => bloc.add(
@@ -1550,27 +1582,32 @@ void main() {
               .having(
                 (s) => s.clips.first.trimStart,
                 'trimStart',
-                const Duration(milliseconds: 500),
+                Duration.zero,
               )
               .having(
                 (s) => s.clips.first.trimEnd,
                 'trimEnd',
-                const Duration(seconds: 1),
+                Duration.zero,
+              )
+              .having(
+                (s) => s.clips.first.minTrimStart,
+                'minTrimStart',
+                Duration.zero,
               )
               .having(
                 (s) => s.clips.first.duration,
                 'duration',
-                const Duration(seconds: 5),
+                const Duration(milliseconds: 3500),
               )
               .having(
                 (s) => s.clips.first.forwardVideoPath,
                 'forwardVideoPath',
-                '/path/clip-local.mp4',
+                isNull,
               )
               .having(
                 (s) => s.clips.first.reversedVideoPath,
                 'reversedVideoPath',
-                '/reversed/clip-local_clip-local.mp4',
+                isNull,
               )
               .having(
                 (s) => s.lastReverseResult,
@@ -1584,6 +1621,56 @@ void main() {
             equals('/reversed/clip-local_clip-local.mp4'),
           );
         },
+      );
+
+      // Regression for the critical reverse×split bug: a split end half
+      // (shares the source file, floored at the split) must reverse into a
+      // standalone clip — floor cleared, trims reset — so it can never expose
+      // the sibling start half's frames in preview or export.
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'reversing a split end half clears the floor and produces a '
+        'standalone clip',
+        build: () => buildBloc(reverseClip: _fakeReverseClip),
+        seed: () => ClipEditorState(
+          clips: [
+            _createClipWithFile(
+              trimStart: const Duration(seconds: 2),
+              trimEnd: Duration.zero,
+            ).copyWith(minTrimStart: const Duration(seconds: 2)),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const ClipEditorClipReverseRequested(clipId: 'clip-local'),
+        ),
+        expect: () => [
+          isA<ClipEditorState>().having(
+            (s) => s.isReversing,
+            'isReversing',
+            isTrue,
+          ),
+          isA<ClipEditorState>()
+              .having((s) => s.clips.first.reversed, 'reversed', isTrue)
+              .having(
+                (s) => s.clips.first.trimStart,
+                'trimStart',
+                Duration.zero,
+              )
+              .having(
+                (s) => s.clips.first.minTrimStart,
+                'minTrimStart (floor cleared)',
+                Duration.zero,
+              )
+              .having(
+                (s) => s.clips.first.duration,
+                'duration is the visible window',
+                const Duration(seconds: 3),
+              )
+              .having(
+                (s) => s.clips.first.forwardVideoPath,
+                'forwardVideoPath (cache cleared)',
+                isNull,
+              ),
+        ],
       );
 
       blocTest<ClipEditorBloc, ClipEditorState>(
@@ -1681,11 +1768,14 @@ void main() {
       // would invert both and make later cached toggles play the wrong way.
       blocTest<ClipEditorBloc, ClipEditorState>(
         'caches forward/reversed paths in the correct direction when fresh '
-        'rendering a reversed clip with no cache (duplicate of reversed)',
+        'rendering an untrimmed reversed clip with no cache',
         build: () => buildBloc(reverseClip: _fakeReverseClip),
         seed: () => ClipEditorState(
           clips: [
-            _createClipWithFile().copyWith(
+            _createClipWithFile(
+              trimStart: Duration.zero,
+              trimEnd: Duration.zero,
+            ).copyWith(
               video: EditorVideo.file('/path/clip-local-reversed.mp4'),
               reversed: true,
             ),
@@ -1764,12 +1854,12 @@ void main() {
         ],
       );
 
-      // The offset pairs with the forward file cached as forwardVideoPath:
-      // the cached un-reverse branch restores that file with the clip's
-      // current offset, so a forward → reversed render must keep it.
+      // The baked reversed file starts at zero, so a forward → reversed render
+      // drops any prior sourceStartOffset too — the standalone reversed clip
+      // anchors its thumbnail raster at the new file's start.
       blocTest<ClipEditorBloc, ClipEditorState>(
-        'keeps sourceStartOffset when reversing a forward clip so the '
-        'cached un-reverse restores the forward file anchored correctly',
+        'zeroes sourceStartOffset when reversing a forward clip into a '
+        'baked standalone file',
         build: () => buildBloc(reverseClip: _fakeReverseClip),
         seed: () => ClipEditorState(
           clips: [
@@ -1792,7 +1882,7 @@ void main() {
               .having(
                 (s) => s.clips.first.sourceStartOffset,
                 'sourceStartOffset',
-                const Duration(milliseconds: 1300),
+                Duration.zero,
               ),
         ],
       );

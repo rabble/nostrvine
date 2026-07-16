@@ -55,6 +55,23 @@ class ClipEditorClipUpdated extends ClipEditorEvent {
   List<Object?> get props => [clipId, clip];
 }
 
+/// Refreshes a clip's representative thumbnail once a background extraction
+/// lands. Dispatched (not emitted from a captured handler) because the split's
+/// thumbnail decode completes after the split handler has already finished, so
+/// its emitter is done.
+class ClipEditorClipThumbnailUpdated extends ClipEditorEvent {
+  const ClipEditorClipThumbnailUpdated({
+    required this.clipId,
+    required this.thumbnailPath,
+  });
+
+  final String clipId;
+  final String thumbnailPath;
+
+  @override
+  List<Object?> get props => [clipId, thumbnailPath];
+}
+
 // === CLIP SELECTION ===
 
 /// Select a clip by its index in the clip list.

@@ -278,6 +278,31 @@ void main() {
             ..writeAsStringSync('unborrowed-thumbnail');
           final sourceVideoPath = '${tempDir.path}/source.mp4';
 
+          // The seeded target starts a real subscription on the next sync, so
+          // use a fake stream factory to keep that off the native extractor.
+          final controllers = <StreamController<List<StripThumbnail>>>[];
+          final manager = ClipThumbnailManager(
+            stripThumbnailStreamFactory:
+                ({
+                  required String videoPath,
+                  required String clipId,
+                  required Duration duration,
+                  required Size outputSize,
+                  required int thumbsPerSecond,
+                  List<Duration>? priorityTimestamps,
+                }) {
+                  final controller = StreamController<List<StripThumbnail>>();
+                  controllers.add(controller);
+                  return controller.stream;
+                },
+          );
+          addTearDown(() {
+            manager.dispose();
+            for (final controller in controllers) {
+              unawaited(controller.close());
+            }
+          });
+
           final sourceClip = _createTestClip(id: 'src', seconds: 4);
           final targetClip = _createFileClip(
             id: 'tgt',
@@ -366,7 +391,7 @@ void main() {
       });
     });
 
-    group('rendered path arrival', () {
+    group('seeded split half subscription', () {
       late List<StreamController<List<StripThumbnail>>> controllers;
       late ClipThumbnailManager fakeStreamManager;
       late Directory tempDir;
@@ -404,14 +429,12 @@ void main() {
       });
 
       test(
-        'keeps seeded frames rebased into the rendered timebase until the '
-        'first fresh batch replaces them; the borrowed file survives in the '
-        'retired source strip and restores instantly on undo',
+        'starts the real subscription on the next sync against the shared '
+        'source file, holding source-timed seeds until the first fresh batch',
         () async {
           final borrowed = File('${tempDir.path}/borrowed.jpg')
             ..writeAsStringSync('borrowed');
           final sourceVideoPath = '${tempDir.path}/source.mp4';
-          final renderedVideoPath = '${tempDir.path}/rendered_end.mp4';
 
           final sourceClip = _createFileClip(
             id: 'src',
@@ -426,8 +449,8 @@ void main() {
             ),
           ];
 
-          // Split at 3 s: the end half previews the source video, so its
-          // seeds stay source-timed; the rendered file starts at zero.
+          // Split at 3 s: a trim-based split, so the end half keeps the shared
+          // source file; its seeds stay source-timed (no rebase).
           fakeStreamManager.seedFromSource(
             sourceClipId: 'src',
             targetClipId: 'end',
@@ -436,7 +459,6 @@ void main() {
               end: Duration(seconds: 10),
             ),
             timestampOffset: Duration.zero,
-            rebaseOnPathChange: const Duration(seconds: 3),
             currentSourcePath: sourceVideoPath,
           );
           expect(
@@ -444,50 +466,31 @@ void main() {
             equals(const Duration(seconds: 4)),
           );
 
-          // Source replaced by the preview end half — no new subscription
-          // while the clip still points at the source video.
-          final previewEndClip = _createFileClip(
+          // The very next sync starts the real subscription against the shared
+          // source file — no rendered-file swap is coming, so waiting for one
+          // would freeze the strip at its seeded density forever. The seeded
+          // frame stays visible, source-timed.
+          final endClip = _createFileClip(
             id: 'end',
             videoPath: sourceVideoPath,
             seconds: 10,
           );
-          fakeStreamManager.sync(
-            clips: [previewEndClip],
-            devicePixelRatio: 1,
-          );
-          expect(controllers, hasLength(1));
-          expect(
-            fakeStreamManager['end'].value.single.timestamp,
-            equals(const Duration(seconds: 4)),
-          );
-
-          // Rendered file arrives: the real subscription starts, the
-          // seeded frame stays visible and is rebased to the rendered
-          // file's zero-based timeline.
-          final renderedEndClip = _createFileClip(
-            id: 'end',
-            videoPath: renderedVideoPath,
-            seconds: 7,
-          );
-          fakeStreamManager.sync(
-            clips: [renderedEndClip],
-            devicePixelRatio: 1,
-          );
+          fakeStreamManager.sync(clips: [endClip], devicePixelRatio: 1);
           expect(controllers, hasLength(2));
           final held = fakeStreamManager['end'].value.single;
           expect(held.path, equals(borrowed.path));
-          expect(held.timestamp, equals(const Duration(seconds: 1)));
+          expect(held.timestamp, equals(const Duration(seconds: 4)));
           expect(borrowed.existsSync(), isTrue);
 
           // First fresh batch replaces the seed (same timestamp, so the
-          // carried frame is pruned) — but the borrowed file survives: the
-          // retired source strip still references it for an undo restore.
+          // carried frame is pruned) — the borrowed file survives in the
+          // retired source strip for an undo restore.
           final fresh = File('${tempDir.path}/fresh.jpg')
             ..writeAsStringSync('fresh');
           controllers[1].add([
             StripThumbnail(
               path: fresh.path,
-              timestamp: const Duration(seconds: 1),
+              timestamp: const Duration(seconds: 4),
             ),
           ]);
           await pumpEventQueue();
@@ -498,16 +501,6 @@ void main() {
           );
           expect(borrowed.existsSync(), isTrue);
           expect(fresh.existsSync(), isTrue);
-
-          // Undo: the source clip id returns with its original file — the
-          // strip is restored instantly from the retired cache, no poster
-          // flash. Its original subscription never completed, so a fresh
-          // one starts to fill the gaps.
-          fakeStreamManager.sync(clips: [sourceClip], devicePixelRatio: 1);
-          final restored = fakeStreamManager['src'].value.single;
-          expect(restored.path, equals(borrowed.path));
-          expect(restored.timestamp, equals(const Duration(seconds: 4)));
-          expect(controllers, hasLength(3));
         },
       );
 
@@ -522,7 +515,6 @@ void main() {
         'batches stream in, pruning each once a fresh frame lands nearby',
         () async {
           final sourceVideoPath = '${tempDir.path}/source.mp4';
-          final renderedVideoPath = '${tempDir.path}/rendered_end.mp4';
 
           // Dense source strip: one frame per second at 3.5s..9.5s.
           final borrowedFiles = <File>[];
@@ -547,9 +539,9 @@ void main() {
           fakeStreamManager.sync(clips: [sourceClip], devicePixelRatio: 1);
           fakeStreamManager['src'].value = sourceFrames;
 
-          // Split at 3s: seed the end half, then let the rendered file
-          // arrive so the real subscription starts (seeds rebased by -3s
-          // to 0.5s..6.5s).
+          // Split at 3s: seed the end half, then the next sync starts the real
+          // subscription against the shared source file. Seeds stay
+          // source-timed at 3.5s..9.5s (no rebase).
           fakeStreamManager.seedFromSource(
             sourceClipId: 'src',
             targetClipId: 'end',
@@ -558,30 +550,26 @@ void main() {
               end: Duration(seconds: 10),
             ),
             timestampOffset: Duration.zero,
-            rebaseOnPathChange: const Duration(seconds: 3),
             currentSourcePath: sourceVideoPath,
           );
-          final renderedEndClip = _createFileClip(
+          final endClip = _createFileClip(
             id: 'end',
-            videoPath: renderedVideoPath,
-            seconds: 7,
+            videoPath: sourceVideoPath,
+            seconds: 10,
           );
-          fakeStreamManager.sync(
-            clips: [renderedEndClip],
-            devicePixelRatio: 1,
-          );
+          fakeStreamManager.sync(clips: [endClip], devicePixelRatio: 1);
           expect(controllers, hasLength(2));
           expect(fakeStreamManager['end'].value, hasLength(7));
 
-          // Sparse first batch: a single fresh frame at 1.5s. Only the
-          // seeded frame at that spot (originally 4.5s) may be replaced —
-          // the other six must stay so the strip keeps its coverage.
+          // Sparse first batch: a single fresh frame at 4.5s (source-timed).
+          // Only the seeded frame at that spot may be replaced — the other
+          // six must stay so the strip keeps its coverage.
           final fresh1 = File('${tempDir.path}/fresh_1.jpg')
             ..writeAsStringSync('fresh_1');
           controllers[1].add([
             StripThumbnail(
               path: fresh1.path,
-              timestamp: const Duration(milliseconds: 1500),
+              timestamp: const Duration(milliseconds: 4500),
             ),
           ]);
           await pumpEventQueue();
@@ -613,11 +601,11 @@ void main() {
           controllers[1].add([
             StripThumbnail(
               path: fresh1.path,
-              timestamp: const Duration(milliseconds: 1500),
+              timestamp: const Duration(milliseconds: 4500),
             ),
             StripThumbnail(
               path: fresh2.path,
-              timestamp: const Duration(milliseconds: 4500),
+              timestamp: const Duration(milliseconds: 7500),
             ),
           ]);
           await pumpEventQueue();
@@ -713,13 +701,12 @@ void main() {
       );
 
       test(
-        'keeps START-half seeds as-is on rendered path arrival (no rebase), '
-        'then the first fresh batch supersedes them (files kept for undo)',
+        'START half: seeds held source-timed, subscription starts on the '
+        'next sync, first fresh batch supersedes the seed (files kept for undo)',
         () async {
           final borrowed = File('${tempDir.path}/start_borrowed.jpg')
             ..writeAsStringSync('borrowed');
           final sourceVideoPath = '${tempDir.path}/source.mp4';
-          final renderedVideoPath = '${tempDir.path}/rendered_start.mp4';
 
           final sourceClip = _createFileClip(
             id: 'src',
@@ -734,9 +721,8 @@ void main() {
             ),
           ];
 
-          // Split at 3 s: the start half already begins at zero, so the
-          // rendered file needs no rebase (rebaseOnPathChange stays zero)
-          // and the seed keeps its source-timed timestamp verbatim.
+          // Split at 3 s: the start half keeps the shared source file and
+          // begins at zero, so the seed keeps its source-timed timestamp.
           fakeStreamManager.seedFromSource(
             sourceClipId: 'src',
             targetClipId: 'start',
@@ -752,16 +738,13 @@ void main() {
             equals(const Duration(seconds: 1)),
           );
 
-          // Rendered file arrives: a real subscription starts and the seed
-          // is held unchanged (no rebase branch runs for the start half).
-          final renderedStartClip = _createFileClip(
+          // The next sync starts the real subscription against the shared
+          // source file; the seed is held unchanged (source-timed).
+          final startClip = _createFileClip(
             id: 'start',
-            videoPath: renderedVideoPath,
+            videoPath: sourceVideoPath,
           );
-          fakeStreamManager.sync(
-            clips: [renderedStartClip],
-            devicePixelRatio: 1,
-          );
+          fakeStreamManager.sync(clips: [startClip], devicePixelRatio: 1);
           expect(controllers, hasLength(2));
           final held = fakeStreamManager['start'].value.single;
           expect(held.path, equals(borrowed.path));
@@ -789,11 +772,10 @@ void main() {
       );
 
       test(
-        'marks the target seeded and suppresses the source-video load when '
-        'the source has no thumbnails yet, then loads on rendered path arrival',
+        'seeds the target empty when the source has no thumbnails yet, then '
+        'still starts the subscription on the next sync',
         () async {
           final sourceVideoPath = '${tempDir.path}/empty_source.mp4';
-          final renderedVideoPath = '${tempDir.path}/empty_rendered.mp4';
 
           final sourceClip = _createFileClip(
             id: 'src',
@@ -804,9 +786,7 @@ void main() {
           expect(controllers, hasLength(1));
 
           // Source frames haven't been extracted yet — seeding is
-          // best-effort: the target is created empty but still marked
-          // seeded so [sync] does not spin up a subscription against the
-          // un-trimmed source video.
+          // best-effort: the target is created empty but still marked seeded.
           fakeStreamManager.seedFromSource(
             sourceClipId: 'src',
             targetClipId: 'end',
@@ -815,27 +795,18 @@ void main() {
               end: Duration(seconds: 10),
             ),
             timestampOffset: Duration.zero,
-            rebaseOnPathChange: const Duration(seconds: 3),
             currentSourcePath: sourceVideoPath,
           );
           expect(fakeStreamManager['end'].value, isEmpty);
 
-          final previewEndClip = _createFileClip(
+          // The next sync starts the real subscription against the shared
+          // source file even though the seed was empty.
+          final endClip = _createFileClip(
             id: 'end',
             videoPath: sourceVideoPath,
             seconds: 10,
           );
-          fakeStreamManager.sync(clips: [previewEndClip], devicePixelRatio: 1);
-          // No new subscription while the clip still points at the source.
-          expect(controllers, hasLength(1));
-
-          // Rendered file arrives — now the real subscription starts.
-          final renderedEndClip = _createFileClip(
-            id: 'end',
-            videoPath: renderedVideoPath,
-            seconds: 7,
-          );
-          fakeStreamManager.sync(clips: [renderedEndClip], devicePixelRatio: 1);
+          fakeStreamManager.sync(clips: [endClip], devicePixelRatio: 1);
           expect(controllers, hasLength(2));
         },
       );

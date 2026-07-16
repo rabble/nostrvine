@@ -31,8 +31,6 @@ typedef SplitClipFn =
       onClipsCreated,
       required void Function(DivineVideoClip clip, String thumbnailPath)?
       onThumbnailExtracted,
-      required void Function(DivineVideoClip clip, EditorVideo video)?
-      onClipRendered,
     });
 
 /// Function signature matching [VideoEditorReverseService.reverseClip], used as
@@ -94,6 +92,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     on<ClipEditorClipRemoved>(_onClipRemoved);
     on<ClipEditorClipInserted>(_onClipInserted);
     on<ClipEditorClipUpdated>(_onClipUpdated);
+    on<ClipEditorClipThumbnailUpdated>(_onClipThumbnailUpdated);
 
     // Clip selection
     on<ClipEditorClipSelected>(_onClipSelected);
@@ -237,6 +236,21 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
 
     final newClips = List<DivineVideoClip>.of(state.clips)
       ..[index] = event.clip;
+
+    emit(state.copyWith(clips: List.unmodifiable(newClips)));
+  }
+
+  void _onClipThumbnailUpdated(
+    ClipEditorClipThumbnailUpdated event,
+    Emitter<ClipEditorState> emit,
+  ) {
+    final index = state.clips.indexWhere((c) => c.id == event.clipId);
+    if (index == -1) return;
+
+    final newClips = List<DivineVideoClip>.of(state.clips)
+      ..[index] = state.clips[index].copyWith(
+        thumbnailPath: event.thumbnailPath,
+      );
 
     emit(state.copyWith(clips: List.unmodifiable(newClips)));
   }
@@ -578,10 +592,9 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     try {
       // Emit directly from callbacks instead of dispatching events.
       // Cross-event-type handlers run concurrently in BLoC, which
-      // caused a race where ClipEditorClipUpdated (rendered video
-      // file) was processed before ClipEditorOriginalClipReplaced
-      // had inserted the new clip ids — the index lookup failed and
-      // the clips kept pointing at the original source video.
+      // caused a race where a follow-up clip update was processed before
+      // the new clip ids were inserted — the index lookup failed and the
+      // clips kept pointing at the original source video.
       await _splitClip(
         sourceClip: selectedClip,
         splitPosition: splitPosition,
@@ -589,10 +602,9 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
           splitStartClipId = startClip.id;
           splitEndClipId = endClip.id;
 
-          // splitClip awaits a single native split (plus the parallel
-          // thumbnail). If the bloc is closed mid-split (user navigates
-          // away from the editor), the late callbacks fire on a done
-          // emitter — guard each one.
+          // The background thumbnail callback can fire after the bloc is
+          // closed (user navigates away from the editor) — guard each one
+          // against a done emitter.
           if (emit.isDone) return;
           final clips = state.clips;
           final index = clips.indexWhere((c) => c.id == selectedClip.id);
@@ -641,46 +653,24 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
           );
         },
         onThumbnailExtracted: (clip, thumbnailPath) {
-          if (emit.isDone) return;
-          final clips = state.clips;
-          final index = clips.indexWhere((c) => c.id == clip.id);
-          if (index == -1) return;
-          final newClips = List<DivineVideoClip>.of(clips);
-          newClips[index] = newClips[index].copyWith(
-            thumbnailPath: thumbnailPath,
-          );
-          emit(state.copyWith(clips: List.unmodifiable(newClips)));
-        },
-        onClipRendered: (clip, video) {
-          if (emit.isDone) return;
-          final clips = state.clips;
-          final index = clips.indexWhere((c) => c.id == clip.id);
-          if (index == -1) return;
-          final newClips = List<DivineVideoClip>.of(clips);
-          newClips[index] = newClips[index].copyWith(
-            video: video,
-            duration: clip.duration,
-            trimStart: clip.trimStart,
-            trimEnd: clip.trimEnd,
-            // The rendered end half's file starts at the split point \u2014 carry
-            // the shift so the thumbnail raster stays recording-anchored.
-            sourceStartOffset: clip.sourceStartOffset,
-          );
-          emit(state.copyWith(clips: List.unmodifiable(newClips)));
-          Log.debug(
-            '\u2705 Clip rendered: ${clip.id}',
-            name: 'ClipEditorBloc',
-            category: LogCategory.video,
+          // The thumbnail decode is fire-and-forget, so it lands after this
+          // split handler completes and its emitter is done. Dispatch a fresh
+          // event so the poster still updates (unless the bloc was closed).
+          if (isClosed) return;
+          add(
+            ClipEditorClipThumbnailUpdated(
+              clipId: clip.id,
+              thumbnailPath: thumbnailPath,
+            ),
           );
         },
       );
 
       // onFinalClipInvalidated reaches into the editor screen that owns this
-      // bloc. A long split (a full clip re-encode, ~15-20s) can land after the
-      // user backs out — bloc.close() lets this in-flight handler run to
-      // completion, so `emit.isDone` is still false here. The screen callback
-      // itself must guard on `mounted`; the bloc can't detect the torn-down
-      // screen from this side.
+      // bloc. The trim-based split is instant, but the same callback also
+      // guards long clip renders elsewhere (reverse / transform, ~15-20s) that
+      // can land after the user backs out — the screen callback must guard on
+      // `mounted`; the bloc can't detect the torn-down screen from this side.
       onFinalClipInvalidated.call();
 
       Log.info(
@@ -689,8 +679,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         category: LogCategory.video,
       );
     } catch (e, stackTrace) {
-      // Matrix-NO: rethrown FFmpeg render exceptions, RenderCanceledException
-      // (user nav-away mid-render), and file IO. ArgumentError from
+      // Matrix-NO: rethrown render exceptions and file IO. ArgumentError from
       // VideoEditorSplitService is pre-validated by isValidSplitPosition at
       // line 259 above and cannot reach this catch.
       addError(e, stackTrace);
@@ -753,11 +742,17 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     final maxTrim = clip.duration - TimelineConstants.minTrimDuration;
     // A trim-based split's end half carries a source floor so its start handle
     // can't be dragged back before the split into the start half's frames.
+    // The upper bound can dip below that floor when the visible span is shorter
+    // than minTrimDuration (the split guard allows a 30ms half); keep the floor
+    // authoritative so the clamp can never emit a trimStart below it.
     final minStart = clip.minTrimStart;
+    final maxStart = (maxTrim - clip.trimEnd) < minStart
+        ? minStart
+        : maxTrim - clip.trimEnd;
     final clampedStart = event.trimStart < minStart
         ? minStart
-        : event.trimStart > maxTrim - clip.trimEnd
-        ? maxTrim - clip.trimEnd
+        : event.trimStart > maxStart
+        ? maxStart
         : event.trimStart;
     final clampedEnd = event.trimEnd < Duration.zero
         ? Duration.zero
@@ -934,18 +929,28 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
 
       final currentClip = currentClips[currentIndex];
 
-      // The render input (`videoPath`) holds content in the clip's current
-      // direction (`clip.reversed`); the render output (`reversedVideo`) holds
-      // the opposite. Assign each to its matching cache slot so the branch is
-      // also correct when the input is already reversed — e.g. a duplicate or
-      // split of a reversed clip, which preserves `reversed` but clears both
-      // cache paths. Mapping by output direction instead would store forward
-      // content as the reversed path (and vice versa), making every later
-      // cached toggle play the wrong direction.
+      // The reverse bakes the clip's visible window, so the result is a
+      // standalone clip: its file is exactly the window reversed. Reset trims,
+      // set [duration] to the window length, and clear the split floor — the
+      // reversed file holds only this clip's frames, so there is no sibling to
+      // guard and no capped-duration mismatch (the old trimStart/trimEnd swap
+      // was only valid when duration == real file length).
       final renderedPath = reversedVideo.file?.path;
+      final reversedDuration = clip.trimmedDuration;
+
+      // The swap-based cached toggle only round-trips when the forward clip
+      // spanned its whole file (trims zero); a windowed clip re-renders on
+      // toggle instead. The render input (`videoPath`) holds content in the
+      // clip's current direction, the output (`reversedVideo`) the opposite, so
+      // map each to its matching cache slot.
+      final keepCache =
+          clip.trimStart == Duration.zero && clip.trimEnd == Duration.zero;
       final String? forwardVideoPath;
       final String? reversedVideoPath;
-      if (clip.reversed) {
+      if (!keepCache) {
+        forwardVideoPath = null;
+        reversedVideoPath = null;
+      } else if (clip.reversed) {
         forwardVideoPath = renderedPath ?? currentClip.forwardVideoPath;
         reversedVideoPath = currentClip.reversedVideoPath ?? videoPath;
       } else {
@@ -953,22 +958,18 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         reversedVideoPath = renderedPath ?? currentClip.reversedVideoPath;
       }
 
-      // Un-reversing via render produces a fresh mirror file with no
-      // recording continuity, and any stored sourceStartOffset was
-      // accumulated in reversed-file coordinates (splitting a reversed clip
-      // adds the split position to it) — keeping it would phase-shift the
-      // forward clip's thumbnail raster by a meaningless amount. Zero it so
-      // the raster anchors at the new file's start. Reversing forward →
-      // reversed keeps the offset: it pairs with the forward file cached in
-      // [forwardVideoPath], which the cached un-reverse branch restores.
       final updatedClip = currentClip.copyWith(
         video: reversedVideo,
-        trimStart: currentClip.trimEnd,
-        trimEnd: currentClip.trimStart,
+        trimStart: Duration.zero,
+        trimEnd: Duration.zero,
+        duration: reversedDuration,
+        minTrimStart: Duration.zero,
+        sourceStartOffset: Duration.zero,
         reversed: !clip.reversed,
         forwardVideoPath: forwardVideoPath,
         reversedVideoPath: reversedVideoPath,
-        sourceStartOffset: clip.reversed ? Duration.zero : null,
+        clearForwardVideoPath: forwardVideoPath == null,
+        clearReversedVideoPath: reversedVideoPath == null,
       );
       final newClips = List<DivineVideoClip>.of(currentClips)
         ..[currentIndex] = updatedClip;

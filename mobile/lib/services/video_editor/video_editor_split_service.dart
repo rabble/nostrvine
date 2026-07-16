@@ -5,17 +5,15 @@ import 'dart:async';
 
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
-import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Service for splitting video clips into two separate segments
 class VideoEditorSplitService {
   static const minClipDuration = Duration(milliseconds: 30);
 
-  /// Defensive cap on awaiting the preview thumbnail after the split settles.
-  /// The native thumbnail decode has no watchdog of its own; without this a
-  /// stalled decode would hold [splitClip] open and re-wedge the editor's
-  /// loading state exactly like the render stall did (#4801).
+  /// Defensive cap on the background preview-thumbnail decode. The decode runs
+  /// fire-and-forget (it never blocks the split), so this only bounds the
+  /// orphaned work if a native decode stalls (#4801).
   static const _thumbnailWatchdogTimeout = Duration(seconds: 30);
 
   /// Validates if the split position is valid for the given clip.
@@ -41,8 +39,9 @@ class VideoEditorSplitService {
   /// * `FileCleanupService` only deletes a file no clip/draft still references,
   ///   so a shared source file is never deleted out from under a sibling half.
   ///
-  /// [onClipRendered] is unused here (kept for the injectable [ClipEditorBloc]
-  /// seam signature) — there is nothing to render.
+  /// The end half's representative thumbnail is refreshed in the background
+  /// (fire-and-forget) so the cut stays instant; [onThumbnailExtracted] fires
+  /// once it lands.
   ///
   /// Throws [ArgumentError] if the split position is invalid.
   static Future<void> splitClip({
@@ -52,8 +51,6 @@ class VideoEditorSplitService {
     onClipsCreated,
     required void Function(DivineVideoClip clip, String thumbnailPath)?
     onThumbnailExtracted,
-    required void Function(DivineVideoClip clip, EditorVideo video)?
-    onClipRendered,
   }) async {
     if (!isValidSplitPosition(sourceClip, splitPosition)) {
       Log.error(
@@ -102,21 +99,24 @@ class VideoEditorSplitService {
 
     onClipsCreated?.call(startClip, endClip);
 
-    // Refresh the end half's representative thumbnail to its new first frame
-    // (the split point). Owns its error handling; on failure the end half keeps
-    // the inherited thumbnail. Bounded so a stalled native decode can't hold
-    // the split open (#4801).
-    await _extractThumbnailForClip(
-      sourceClip,
-      absoluteSplitPos,
-      endClip,
-      onThumbnailExtracted,
-    ).timeout(_thumbnailWatchdogTimeout, onTimeout: () {});
-
     Log.info(
       '✅ Split complete (trim-based) — 2 clips from ${sourceClip.id}',
       name: 'VideoEditorSplitService',
       category: .video,
+    );
+
+    // Refresh the end half's representative thumbnail to its new first frame
+    // (the split point) in the background, so the split itself is instant and
+    // the editor's loading state clears immediately. Owns its error handling;
+    // on failure the end half keeps the inherited thumbnail. Bounded so a
+    // stalled native decode can't leak (#4801).
+    unawaited(
+      _extractThumbnailForClip(
+        sourceClip,
+        absoluteSplitPos,
+        endClip,
+        onThumbnailExtracted,
+      ).timeout(_thumbnailWatchdogTimeout, onTimeout: () {}),
     );
   }
 

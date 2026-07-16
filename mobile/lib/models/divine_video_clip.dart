@@ -130,6 +130,19 @@ class DivineVideoClip {
     return result.isNegative ? Duration.zero : result;
   }
 
+  /// The span of source recording time this clip contributes to the total
+  /// recording budget.
+  ///
+  /// Equal to [duration] for a normal clip. A trim-based split's end half keeps
+  /// the full source [duration] but shares its file with the start half, so the
+  /// region before the split ([minTrimStart]) is already counted by the start
+  /// half — subtract it here so summing clips doesn't double-count the split
+  /// region against the recording cap.
+  Duration get budgetDuration {
+    final result = duration - minTrimStart;
+    return result.isNegative ? Duration.zero : result;
+  }
+
   /// Effective duration in seconds after trimming.
   double get trimmedDurationInSeconds =>
       trimmedDuration.inMilliseconds / 1000.0;

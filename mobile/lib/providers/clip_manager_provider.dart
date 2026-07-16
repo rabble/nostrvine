@@ -60,7 +60,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
   Duration get totalDuration {
     return _clips.fold<Duration>(
       Duration.zero,
-      (sum, clip) => sum + clip.duration,
+      (sum, clip) => sum + clip.budgetDuration,
     );
   }
 
