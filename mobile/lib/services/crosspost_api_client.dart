@@ -10,6 +10,7 @@ import 'package:keycast_flutter/keycast_flutter.dart';
 class CrosspostStatus {
   const CrosspostStatus({
     required this.crosspostEnabled,
+    this.username,
     this.handle,
     this.provisioningState,
     this.did,
@@ -24,6 +25,7 @@ class CrosspostStatus {
     final username = json['username'] as String?;
     return CrosspostStatus(
       crosspostEnabled: json['enabled'] as bool? ?? false,
+      username: username,
       handle: username == null ? null : '$username.$_handleDomain',
       provisioningState: json['state'] as String?,
       did: json['did'] as String?,
@@ -33,6 +35,11 @@ class CrosspostStatus {
   static const _handleDomain = 'divine.video';
 
   final bool crosspostEnabled;
+
+  /// The bare local part of the user's `.divine.video` handle, or `null` when
+  /// the user has not yet claimed a username. Enabling crossposting requires a
+  /// claimed username, so `null` here means the toggle cannot succeed yet.
+  final String? username;
   final String? handle;
   final String? provisioningState;
   final String? did;
@@ -111,6 +118,7 @@ class CrosspostApiClient {
       throw CrosspostApiException(
         'Failed to update crosspost setting',
         statusCode: response.statusCode,
+        kind: CrosspostApiErrorKind.fromStatusCode(response.statusCode),
       );
     }
 
@@ -119,11 +127,44 @@ class CrosspostApiClient {
   }
 }
 
+/// The actionable category of a crosspost API failure, so callers can react
+/// without pattern-matching on raw status codes or message strings.
+enum CrosspostApiErrorKind {
+  /// The user has not claimed a `.divine.video` username yet, so crossposting
+  /// cannot be enabled. keycast surfaces this as `404 UserNotFound` (no
+  /// username row) or, defensively, `400` ("Username must be claimed").
+  usernameNotClaimed,
+
+  /// Provisioning is temporarily unavailable (`503`); the caller should offer
+  /// a retry rather than a permanent failure.
+  unavailable,
+
+  /// Any other failure.
+  generic;
+
+  factory CrosspostApiErrorKind.fromStatusCode(int statusCode) {
+    switch (statusCode) {
+      case 400:
+      case 404:
+        return CrosspostApiErrorKind.usernameNotClaimed;
+      case 503:
+        return CrosspostApiErrorKind.unavailable;
+      default:
+        return CrosspostApiErrorKind.generic;
+    }
+  }
+}
+
 class CrosspostApiException implements Exception {
-  const CrosspostApiException(this.message, {this.statusCode});
+  const CrosspostApiException(
+    this.message, {
+    this.statusCode,
+    this.kind = CrosspostApiErrorKind.generic,
+  });
 
   final String message;
   final int? statusCode;
+  final CrosspostApiErrorKind kind;
 
   @override
   String toString() =>

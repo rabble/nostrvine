@@ -7484,6 +7484,21 @@ class AppLocalizationsRo extends AppLocalizations {
   String get blueskyStatusNotLinked => 'Niciun cont Bluesky conectat';
 
   @override
+  String get blueskyUsernameRequired =>
+      'Set up a divine.video handle before publishing to Bluesky';
+
+  @override
+  String get blueskyUsernameRequiredSubtitle =>
+      'Bluesky publishing needs a claimed username.divine.video handle.';
+
+  @override
+  String get blueskySetUpHandle => 'Set up';
+
+  @override
+  String get blueskyTemporarilyUnavailable =>
+      'Bluesky publishing is temporarily unavailable. Please try again.';
+
+  @override
   String get invitesTitle => 'Invită prieteni';
 
   @override

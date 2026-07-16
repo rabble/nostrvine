@@ -4064,6 +4064,10 @@
   "blueskyStatusFailed": "Account provisioning failed",
   "blueskyStatusDisabled": "Account disabled",
   "blueskyStatusNotLinked": "No Bluesky account linked",
+  "blueskyUsernameRequired": "Set up a divine.video handle before publishing to Bluesky",
+  "blueskyUsernameRequiredSubtitle": "Bluesky publishing needs a claimed username.divine.video handle.",
+  "blueskySetUpHandle": "Set up",
+  "blueskyTemporarilyUnavailable": "Bluesky publishing is temporarily unavailable. Please try again.",
   "invitesTitle": "Invite Friends",
   "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
   "@invitesGenerateCardTitle": {

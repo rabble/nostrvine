@@ -234,8 +234,81 @@ void main() {
 
         expect(
           () => client.setCrosspost(pubkey: pubkey, enabled: true),
-          throwsA(isA<CrosspostApiException>()),
+          throwsA(
+            isA<CrosspostApiException>().having(
+              (e) => e.kind,
+              'kind',
+              CrosspostApiErrorKind.generic,
+            ),
+          ),
         );
+      });
+
+      for (final status in const [400, 404]) {
+        test('maps $status to usernameNotClaimed', () async {
+          when(
+            () => httpClient.put(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer((_) async => http.Response('nope', status));
+
+          await expectLater(
+            () => client.setCrosspost(pubkey: pubkey, enabled: true),
+            throwsA(
+              isA<CrosspostApiException>().having(
+                (e) => e.kind,
+                'kind',
+                CrosspostApiErrorKind.usernameNotClaimed,
+              ),
+            ),
+          );
+        });
+      }
+
+      test('maps 503 to unavailable', () async {
+        when(
+          () => httpClient.put(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => http.Response('down', 503));
+
+        await expectLater(
+          () => client.setCrosspost(pubkey: pubkey, enabled: true),
+          throwsA(
+            isA<CrosspostApiException>().having(
+              (e) => e.kind,
+              'kind',
+              CrosspostApiErrorKind.unavailable,
+            ),
+          ),
+        );
+      });
+    });
+
+    group('CrosspostStatus.fromJson', () {
+      test('exposes the bare username alongside the derived handle', () {
+        final status = CrosspostStatus.fromJson(const {
+          'enabled': true,
+          'state': 'ready',
+          'username': 'testuser',
+        });
+
+        expect(status.username, 'testuser');
+        expect(status.handle, 'testuser.divine.video');
+      });
+
+      test('leaves username and handle null when unclaimed', () {
+        final status = CrosspostStatus.fromJson(const {
+          'enabled': false,
+          'state': null,
+        });
+
+        expect(status.username, isNull);
+        expect(status.handle, isNull);
       });
     });
   });
