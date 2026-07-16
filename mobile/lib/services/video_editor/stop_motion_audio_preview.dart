@@ -73,6 +73,15 @@ class StopMotionAudioPreview {
   /// state and leave a track playing past its window).
   bool _syncInFlight = false;
 
+  /// A scrub ([syncTo] with `isSeek`) that arrived while a sync was in flight
+  /// and got dropped. The dropped call changed nothing, but its re-seek intent
+  /// must survive: an in-flight transition sync (loop wrap / window seek)
+  /// already advanced `_lastPosition`, so the scrub's small forward hop would
+  /// then read as a normal tick and never re-seek, leaving a sound playing from
+  /// the pre-scrub offset. The next admitted sync ORs this in to force a
+  /// re-seek. User scrubs can't pile up at ticker rate, so this can't starve.
+  bool _pendingSeek = false;
+
   Future<T> _enqueue<T>(Future<T> Function() op) {
     final next = _queue.then((_) => op());
     // Keep the chain alive even if an op throws; callers still observe the
@@ -126,7 +135,13 @@ class StopMotionAudioPreview {
     required bool isPlaying,
     bool isSeek = false,
   }) {
-    if (_disposed || _syncInFlight) return Future<void>.value();
+    if (_disposed) return Future<void>.value();
+    if (_syncInFlight) {
+      // Drop the piled-up ticker call, but keep a scrub's re-seek intent so it
+      // isn't lost against the in-flight sync's advanced `_lastPosition`.
+      if (isSeek) _pendingSeek = true;
+      return Future<void>.value();
+    }
     _syncInFlight = true;
     return _enqueue(
           () => _syncTo(position, isPlaying: isPlaying, isSeek: isSeek),
@@ -148,8 +163,10 @@ class StopMotionAudioPreview {
     // can't be distinguished from: a small forward hop.
     final jumped =
         isSeek ||
+        _pendingSeek ||
         position < _lastPosition ||
         position - _lastPosition > seekJumpThreshold;
+    _pendingSeek = false;
     _lastPosition = position;
 
     // Snapshot: the queue already prevents concurrent mutation, but iterating a

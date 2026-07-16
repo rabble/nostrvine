@@ -1641,8 +1641,13 @@ class VideoRecorderBloc
     // An assemble owns the captured stills once it starts: it reads the frame
     // list, saves it, then clears it. A still added to that list mid-assemble
     // is either missed by the save or re-persisted afterwards as a phantom
-    // one-frame session, so the capture is dropped instead.
-    if (state.stopMotionStatus == StopMotionStatus.assembling) return;
+    // one-frame session, so the capture is dropped instead. `ready` (assemble
+    // done, navigation pending) is dropped here too so a tap in that ~1-frame
+    // window skips the native capture the after-await guard would only delete.
+    if (state.stopMotionStatus == StopMotionStatus.assembling ||
+        state.stopMotionStatus == StopMotionStatus.ready) {
+      return;
+    }
 
     unawaited(HapticService.recordingFeedback());
     // Shutter feedback must fire NOW — the native capture below takes
@@ -1675,13 +1680,17 @@ class VideoRecorderBloc
       return;
     }
 
-    // "Next" stays tappable while the native capture runs, so an assemble can
-    // claim the session across the await above. Adding this still now would
-    // either race the in-flight save or — once the assemble cleared the list —
-    // re-persist it as a phantom one-frame session, so it is dropped with its
-    // file. Only idle (still shooting) and failure (assemble bailed, stills
-    // retained) still own the session here.
-    if (state.stopMotionStatus == StopMotionStatus.assembling ||
+    // The recorder can move off this session across the await above. "Next"
+    // stays tappable, so an assemble can claim it (status → assembling, then
+    // ready); the mode wheel stays live during an idle capture, so a swipe can
+    // discard it (_applyRecorderMode clears the frames and leaves stop-motion,
+    // status idle). In every case the session this still belonged to is gone,
+    // so appending it now would race the in-flight save or re-persist a phantom
+    // one-frame session — on the new mode, for a swipe — so it is dropped with
+    // its file. Only idle (still shooting) and failure (assemble bailed, stills
+    // retained) while still in stop-motion own the session here.
+    if (!state.recorderMode.capturesStills ||
+        state.stopMotionStatus == StopMotionStatus.assembling ||
         state.stopMotionStatus == StopMotionStatus.ready) {
       unawaited(_deleteFrameFile(photo.filePath));
       return;

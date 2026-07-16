@@ -283,5 +283,51 @@ void main() {
       verify(() => gated.seek(const Duration(milliseconds: 100))).called(1);
       verifyNever(() => gated.seek(const Duration(milliseconds: 117)));
     });
+
+    // Regression: a scrub dropped because a sync was already in flight used to
+    // lose its re-seek intent. The in-flight sync had already advanced
+    // _lastPosition, so the next normal tick read as a sub-threshold forward
+    // hop (steady playback) and never re-seeked — the sound played on from the
+    // pre-scrub offset until the next window/loop boundary. The dropped scrub
+    // is now remembered and forces the next admitted sync to re-seek.
+    test('a scrub dropped mid-sync forces the next tick to re-seek', () async {
+      final seekGate = Completer<void>();
+      final gated = _MockAudioClipPlayer();
+      when(() => gated.setClip(any())).thenAnswer((_) async {});
+      when(() => gated.setVolume(any())).thenAnswer((_) async {});
+      when(() => gated.seek(any())).thenAnswer((_) => seekGate.future);
+      when(gated.play).thenAnswer((_) async {});
+      when(gated.pause).thenAnswer((_) async {});
+      when(gated.dispose).thenAnswer((_) async {});
+
+      preview = StopMotionAudioPreview(playerFactory: () => gated);
+      await preview.setTracks([track(windowEnd: const Duration(seconds: 5))]);
+
+      // A sync suspends inside the gated seek, holding _syncInFlight and having
+      // already advanced _lastPosition to 100ms.
+      final first = preview.syncTo(
+        const Duration(milliseconds: 100),
+        isPlaying: true,
+      );
+      // Let that sync run up to (and suspend in) the seek await, so it is past
+      // the point where it reads the pending-seek flag.
+      await Future<void>.delayed(Duration.zero);
+
+      // A scrub lands while the sync is in flight: dropped, but remembered.
+      await preview.syncTo(
+        const Duration(milliseconds: 400),
+        isPlaying: true,
+        isSeek: true,
+      );
+
+      seekGate.complete();
+      await first;
+
+      // A 317ms forward hop from _lastPosition is under the 500ms threshold, so
+      // without the remembered scrub this tick would not re-seek.
+      await preview.syncTo(const Duration(milliseconds: 417), isPlaying: true);
+
+      verify(() => gated.seek(const Duration(milliseconds: 417))).called(1);
+    });
   });
 }

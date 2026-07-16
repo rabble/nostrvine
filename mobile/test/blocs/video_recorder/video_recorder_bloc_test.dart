@@ -2534,6 +2534,24 @@ void main() {
       );
 
       blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'a frame captured while ready (assemble done, navigation pending) '
+        'skips the wasted native capture',
+        build: buildBloc,
+        seed: () => const VideoRecorderBlocState(
+          recorderMode: VideoRecorderMode.stopMotion,
+          stopMotionStatus: StopMotionStatus.ready,
+        ),
+        act: (bloc) => bloc.add(const VideoRecorderStopMotionFrameCaptured()),
+        wait: const Duration(milliseconds: 20),
+        verify: (bloc) {
+          // The after-await guard deletes such a still anyway; the top guard
+          // short-circuits the native capture in the ~1-frame ready window.
+          verifyNever(() => cameraService.capturePhoto());
+          expect(bloc.state.stopMotionStatus, StopMotionStatus.ready);
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
         'a frame that lands after an assemble started is dropped, not '
         're-persisted as a new session',
         setUp: () {
@@ -2563,6 +2581,54 @@ void main() {
           // mode wheel mid-save and re-writes a phantom one-frame library row.
           expect(bloc.state.stopMotionFrames, isEmpty);
           expect(bloc.state.stopMotionStatus, StopMotionStatus.ready);
+          verifyNever(
+            () => clipManager.saveStopMotionSessionToLibrary(
+              id: any(named: 'id'),
+              frames: any(named: 'frames'),
+              originalAspectRatio: any(named: 'originalAspectRatio'),
+              targetAspectRatio: any(named: 'targetAspectRatio'),
+              duration: any(named: 'duration'),
+              thumbnailPath: any(named: 'thumbnailPath'),
+              lensMetadata: any(named: 'lensMetadata'),
+            ),
+          );
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'a frame that lands after a mode switch is dropped, not re-persisted '
+        'on the new mode',
+        setUp: () {
+          stubClipIngest();
+          // The mode wheel stays live during an idle capture, so a swipe can
+          // land the switch while this still is in flight.
+          when(() => cameraService.capturePhoto()).thenAnswer((_) async {
+            await Future<void>.delayed(const Duration(milliseconds: 10));
+            return PhotoCaptureResult(filePath: framePath);
+          });
+        },
+        build: buildBloc,
+        seed: () => VideoRecorderBlocState(
+          recorderMode: VideoRecorderMode.stopMotion,
+          stopMotionFrames: [frameAPath],
+        ),
+        act: (bloc) async {
+          bloc.add(const VideoRecorderStopMotionFrameCaptured());
+          // Swipe the wheel off stop-motion while the capture is in flight.
+          await Future<void>.delayed(const Duration(milliseconds: 1));
+          bloc.add(
+            const VideoRecorderRecorderModeSet(VideoRecorderMode.upload),
+          );
+        },
+        wait: const Duration(milliseconds: 60),
+        verify: (bloc) {
+          // The switch discarded the session and moved the recorder off
+          // stop-motion; appending the resumed still would write a phantom
+          // one-frame library row on the new mode, so it is dropped with its
+          // file.
+          expect(bloc.state.recorderMode, VideoRecorderMode.upload);
+          expect(bloc.state.stopMotionFrames, isEmpty);
+          expect(File(framePath).existsSync(), isFalse);
           verifyNever(
             () => clipManager.saveStopMotionSessionToLibrary(
               id: any(named: 'id'),
