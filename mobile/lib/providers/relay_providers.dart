@@ -7,12 +7,13 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nostr_client/nostr_client.dart'
-    show RelayConnectionStatus, RelayState;
+    show NostrClient, RelayConnectionStatus, RelayState;
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
+import 'package:openvine/services/video_event_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -33,6 +34,187 @@ class ConfiguredRelayUrls extends Notifier<List<String>> {
 
   void setUrls(List<String> urls) {
     state = List.unmodifiable(urls);
+  }
+}
+
+final _relaySetChangeCoordinatorProvider = Provider<_RelaySetChangeCoordinator>(
+  (ref) {
+    final coordinator = _RelaySetChangeCoordinator();
+    ref.onDispose(coordinator.dispose);
+    return coordinator;
+  },
+);
+
+class _RelaySetChangeCoordinator {
+  Timer? _debounceTimer;
+  NostrClient? _activeClient;
+  VideoEventService? _videoEventService;
+  NostrInitializationInProgress? _initializationTracker;
+  NostrClient? _intentSourceClient;
+  NostrClient? _reconcilingClient;
+  Set<String>? _targetRelaySet;
+  var _resetRequired = false;
+  var _disposed = false;
+
+  void attach({
+    required NostrClient client,
+    required VideoEventService videoEventService,
+    required NostrInitializationInProgress initializationTracker,
+  }) {
+    _activeClient = client;
+    _videoEventService = videoEventService;
+    _initializationTracker = initializationTracker;
+  }
+
+  bool isReconciling(NostrClient client) {
+    return identical(_reconcilingClient, client);
+  }
+
+  bool isClientInitializing(NostrClient client) {
+    return !client.isInitialized ||
+        (_initializationTracker?.isClientInitializing(client) ?? false);
+  }
+
+  void recordMembershipChange({
+    required NostrClient client,
+    required Set<String> previousRelaySet,
+    required Set<String> currentRelaySet,
+    required bool changeRequiresReset,
+  }) {
+    if (_disposed || isReconciling(client)) return;
+
+    if (!_resetRequired) {
+      if (!changeRequiresReset) {
+        Log.info(
+          'Relay set change originated during active client initialization; '
+          'skipping forced reconnect '
+          '(relayCount=${currentRelaySet.length})',
+          name: 'RelaySetChangeBridge',
+          category: LogCategory.relay,
+        );
+        return;
+      }
+      _resetRequired = true;
+      _intentSourceClient = client;
+      _targetRelaySet = Set.of(currentRelaySet);
+    } else if (identical(_intentSourceClient, client)) {
+      // Keep the latest complete target from the client where the reset intent
+      // originated. Startup-stage changes from that same generation belong to
+      // the batch but cannot clear its sticky reset requirement.
+      _targetRelaySet = Set.of(currentRelaySet);
+    } else if (changeRequiresReset) {
+      // A real edit can race with replacement. Merge its delta into the target
+      // retained from the previous generation instead of replacing that target
+      // with the replacement's potentially stale startup snapshot.
+      final target = _targetRelaySet ?? <String>{};
+      target
+        ..removeAll(previousRelaySet.difference(currentRelaySet))
+        ..addAll(currentRelaySet.difference(previousRelaySet));
+      _targetRelaySet = target;
+    } else {
+      // Ignore startup-only membership snapshots from a replacement client.
+      // The retained target is reconciled onto it when the debounce fires.
+      return;
+    }
+
+    _scheduleReset();
+  }
+
+  void _scheduleReset() {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(seconds: 2), () {
+      unawaited(_performReset());
+    });
+  }
+
+  Future<void> _performReset() async {
+    if (_disposed || !_resetRequired) return;
+
+    final client = _activeClient;
+    final videoEventService = _videoEventService;
+    final targetRelaySet = _targetRelaySet;
+    if (client == null || videoEventService == null || targetRelaySet == null) {
+      return;
+    }
+
+    if (isClientInitializing(client)) {
+      Log.info(
+        'Active client initialization overlaps relay reset debounce; '
+        'deferring forced reconnect (relayCount=${targetRelaySet.length})',
+        name: 'RelaySetChangeBridge',
+        category: LogCategory.relay,
+      );
+      _scheduleReset();
+      return;
+    }
+
+    final sourceClient = _intentSourceClient;
+    _resetRequired = false;
+    _intentSourceClient = null;
+    _targetRelaySet = null;
+    _reconcilingClient = client;
+
+    try {
+      if (!identical(sourceClient, client)) {
+        await _reconcileRelaySet(client, targetRelaySet);
+      }
+
+      Log.info(
+        'Debounce elapsed - forcing WebSocket reconnection and feed reset',
+        name: 'RelaySetChangeBridge',
+        category: LogCategory.relay,
+      );
+
+      try {
+        await client.forceReconnectAll();
+        Log.info(
+          'Successfully reconnected all relay WebSockets',
+          name: 'RelaySetChangeBridge',
+          category: LogCategory.relay,
+        );
+      } catch (e) {
+        Log.error(
+          'Failed to reconnect relays: $e',
+          name: 'RelaySetChangeBridge',
+          category: LogCategory.relay,
+        );
+      }
+
+      await videoEventService.resetAndResubscribeAll();
+    } finally {
+      if (identical(_reconcilingClient, client)) {
+        _reconcilingClient = null;
+      }
+    }
+  }
+
+  Future<void> _reconcileRelaySet(
+    NostrClient client,
+    Set<String> targetRelaySet,
+  ) async {
+    try {
+      final currentRelaySet = client.configuredRelays.toSet();
+      final additions = targetRelaySet.difference(currentRelaySet).toList();
+      final removals = currentRelaySet.difference(targetRelaySet).toList();
+
+      if (additions.isNotEmpty) {
+        await client.addRelays(additions);
+      }
+      for (final relay in removals) {
+        await client.removeRelay(relay);
+      }
+    } catch (e) {
+      Log.error(
+        'Failed to reconcile replacement relay set: $e',
+        name: 'RelaySetChangeBridge',
+        category: LogCategory.relay,
+      );
+    }
+  }
+
+  void dispose() {
+    _disposed = true;
+    _debounceTimer?.cancel();
   }
 }
 
@@ -161,86 +343,18 @@ void relayStatisticsBridge(Ref ref) {
 void relaySetChangeBridge(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
   final videoEventService = ref.watch(videoEventServiceProvider);
+  final coordinator = ref.watch(_relaySetChangeCoordinatorProvider);
 
   Set<String> previousRelaySet = nostrService.relayStatuses.keys.toSet();
-  Timer? debounceTimer;
   var disposed = false;
-  var resetRequired = false;
   final initializationTracker = ref.read(
     nostrInitializationInProgressProvider.notifier,
   );
-
-  bool activeClientIsInitializing() {
-    return !nostrService.isInitialized ||
-        initializationTracker.isClientInitializing(nostrService);
-  }
-
-  void scheduleRelayReset(
-    Set<String> relaySet, {
-    required bool changeRequiresReset,
-  }) {
-    resetRequired = resetRequired || changeRequiresReset;
-    debounceTimer?.cancel();
-    debounceTimer = Timer(const Duration(seconds: 2), () async {
-      if (disposed) return;
-
-      if (!resetRequired) {
-        Log.info(
-          'Relay set change originated during active client initialization; '
-          'skipping forced reconnect (relayCount=${relaySet.length})',
-          name: 'RelaySetChangeBridge',
-          category: LogCategory.relay,
-        );
-        return;
-      }
-
-      if (activeClientIsInitializing()) {
-        Log.info(
-          'Active client initialization overlaps relay reset debounce; '
-          'deferring forced reconnect (relayCount=${relaySet.length})',
-          name: 'RelaySetChangeBridge',
-          category: LogCategory.relay,
-        );
-        scheduleRelayReset(
-          relaySet,
-          changeRequiresReset: false,
-        );
-        return;
-      }
-
-      // Consume this batch's intent before awaiting. A new relay change that
-      // arrives during reconnect starts a distinct debounce batch and must not
-      // be cleared by completion of this one.
-      resetRequired = false;
-
-      Log.info(
-        'Debounce elapsed - forcing WebSocket reconnection and feed reset',
-        name: 'RelaySetChangeBridge',
-        category: LogCategory.relay,
-      );
-
-      // Force reconnect all WebSocket connections. When relays are added or
-      // removed, existing connections can be stale while still reporting as
-      // connected. Reconnecting establishes fresh connections for the new set.
-      try {
-        await nostrService.forceReconnectAll();
-        Log.info(
-          'Successfully reconnected all relay WebSockets',
-          name: 'RelaySetChangeBridge',
-          category: LogCategory.relay,
-        );
-      } catch (e) {
-        Log.error(
-          'Failed to reconnect relays: $e',
-          name: 'RelaySetChangeBridge',
-          category: LogCategory.relay,
-        );
-      }
-
-      // Reset and resubscribe all feeds against the fresh relay connections.
-      videoEventService.resetAndResubscribeAll();
-    });
-  }
+  coordinator.attach(
+    client: nostrService,
+    videoEventService: videoEventService,
+    initializationTracker: initializationTracker,
+  );
 
   void processStatuses(Map<String, RelayConnectionStatus> statuses) {
     ref
@@ -258,13 +372,22 @@ void relaySetChangeBridge(Ref ref) {
         category: LogCategory.relay,
       );
 
+      final priorRelaySet = previousRelaySet;
       previousRelaySet = currentRelaySet;
 
-      final changeRequiresReset = !activeClientIsInitializing();
+      if (coordinator.isReconciling(nostrService)) {
+        return;
+      }
+
+      final changeRequiresReset = !coordinator.isClientInitializing(
+        nostrService,
+      );
 
       // Debounce: collapse rapid changes into a single reset
-      scheduleRelayReset(
-        currentRelaySet,
+      coordinator.recordMembershipChange(
+        client: nostrService,
+        previousRelaySet: priorRelaySet,
+        currentRelaySet: currentRelaySet,
         changeRequiresReset: changeRequiresReset,
       );
     }
@@ -284,7 +407,6 @@ void relaySetChangeBridge(Ref ref) {
 
   ref.onDispose(() {
     disposed = true;
-    debounceTimer?.cancel();
     subscription.cancel();
   });
 }

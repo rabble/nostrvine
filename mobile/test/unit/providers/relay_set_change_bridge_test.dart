@@ -17,7 +17,24 @@ class MockNostrClient extends Mock implements NostrClient {}
 
 class MockVideoEventService extends Mock implements VideoEventService {}
 
+class SwappableNostrService extends NostrService {
+  SwappableNostrService(this.initialClient);
+
+  final NostrClient initialClient;
+
+  @override
+  NostrClient build() => initialClient;
+
+  void replaceWith(NostrClient client) {
+    state = client;
+  }
+}
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(<String>[]);
+  });
+
   group('relaySetChangeBridge', () {
     late MockNostrClient mockNostrClient;
     late MockVideoEventService mockVideoEventService;
@@ -385,6 +402,87 @@ void main() {
         verify(() => mockNostrClient.forceReconnectAll()).called(1);
         verify(() => mockVideoEventService.resetAndResubscribeAll()).called(1);
         container.dispose();
+      });
+    });
+
+    test('carries a pending relay edit onto a replacement client', () {
+      fakeAsync((async) {
+        final replacementClient = MockNostrClient();
+        final replacementStatuses =
+            StreamController<Map<String, RelayConnectionStatus>>.broadcast();
+        const removedRelay = 'wss://relay-old.example.com';
+        const addedRelay = 'wss://relay1.example.com';
+        final replacementRelays = <String>{removedRelay};
+
+        when(() => mockNostrClient.relayStatuses).thenReturn({
+          removedRelay: RelayConnectionStatus.connected(removedRelay),
+        });
+        when(
+          () => mockNostrClient.relayStatusStream,
+        ).thenAnswer((_) => statusController.stream);
+        when(() => replacementClient.isInitialized).thenReturn(true);
+        when(
+          () => replacementClient.relayStatuses,
+        ).thenAnswer(
+          (_) => {
+            for (final relay in replacementRelays)
+              relay: RelayConnectionStatus.connected(relay),
+          },
+        );
+        when(
+          () => replacementClient.relayStatusStream,
+        ).thenAnswer((_) => replacementStatuses.stream);
+        when(
+          () => replacementClient.configuredRelays,
+        ).thenAnswer((_) => replacementRelays.toList());
+        when(() => replacementClient.addRelays(any())).thenAnswer((call) async {
+          final relays = call.positionalArguments.single as List<String>;
+          replacementRelays.addAll(relays);
+          return relays.length;
+        });
+        when(
+          () => replacementClient.removeRelay(any()),
+        ).thenAnswer((call) async {
+          final relay = call.positionalArguments.single as String;
+          return replacementRelays.remove(relay);
+        });
+        when(replacementClient.forceReconnectAll).thenAnswer((_) async {});
+
+        final swappableService = SwappableNostrService(mockNostrClient);
+        final container = ProviderContainer(
+          overrides: [
+            nostrServiceProvider.overrideWith(() => swappableService),
+            videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+          ],
+        );
+        final bridgeSubscription = container.listen<void>(
+          relaySetChangeBridgeProvider,
+          (_, _) {},
+          fireImmediately: true,
+        );
+
+        statusController.add({
+          addedRelay: RelayConnectionStatus.connected(addedRelay),
+        });
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 1));
+
+        swappableService.replaceWith(replacementClient);
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 1));
+        async.flushMicrotasks();
+
+        expect(replacementRelays, contains(addedRelay));
+        expect(replacementRelays, isNot(contains(removedRelay)));
+        verify(() => replacementClient.addRelays([addedRelay])).called(1);
+        verify(() => replacementClient.removeRelay(removedRelay)).called(1);
+        verify(replacementClient.forceReconnectAll).called(1);
+        verify(() => mockVideoEventService.resetAndResubscribeAll()).called(1);
+        verifyNever(() => mockNostrClient.forceReconnectAll());
+
+        bridgeSubscription.close();
+        container.dispose();
+        replacementStatuses.close();
       });
     });
   });
