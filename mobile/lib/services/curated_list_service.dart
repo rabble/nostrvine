@@ -1393,6 +1393,51 @@ class CuratedListService extends ChangeNotifier {
     );
   }
 
+  /// Fetches a single public curated list (kind 30005) by author + d-tag.
+  ///
+  /// Queries local cache + relays via [NostrClient.queryEvents]. Returns
+  /// `null` when no matching list event is found. No result limit is set,
+  /// so a stale cached version and a newer relay version can both arrive —
+  /// the winner follows NIP-01 replaceable/addressable ordering (newer
+  /// `created_at`, lowest event id on a tie; see [_replacesList]). Author +
+  /// d-tag are re-checked on each result because queryEvents merges cache
+  /// hits, whose filter support can be looser than a relay's.
+  Future<CuratedList?> fetchPublicList({
+    required String authorPubkey,
+    required String listId,
+  }) async {
+    final events = await _nostrService.queryEvents([
+      Filter(
+        kinds: [30005], // NIP-51 curated lists
+        authors: [authorPubkey],
+        d: [listId],
+      ),
+    ]);
+
+    CuratedList? winner;
+    for (final event in events) {
+      final list = _eventToCuratedList(event);
+      if (list == null || list.id != listId || list.pubkey != authorPubkey) {
+        continue;
+      }
+      if (winner == null || _replacesList(list, winner)) {
+        winner = list;
+      }
+    }
+    return winner;
+  }
+
+  /// NIP-01 replaceable/addressable ordering: a newer `created_at` wins; on an
+  /// equal timestamp the lowest event id (first in lexical order) is retained.
+  bool _replacesList(CuratedList candidate, CuratedList current) {
+    if (candidate.updatedAt.isAfter(current.updatedAt)) return true;
+    if (candidate.updatedAt.isBefore(current.updatedAt)) return false;
+    return (candidate.nostrEventId ?? '').compareTo(
+          current.nostrEventId ?? '',
+        ) <
+        0;
+  }
+
   /// Fetch public curated lists from Nostr relays for discovery (legacy)
   /// Prefer streamPublicListsFromRelays for immediate results
   /// WARNING: This waits forever since Nostr streams don't close - use stream version

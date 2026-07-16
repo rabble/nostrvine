@@ -9,6 +9,7 @@ import 'package:flutter/semantics.dart' show SemanticsService;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
@@ -86,7 +87,9 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
                 ],
               ),
               showBackButton: true,
-              onBackPressed: context.pop,
+              // safePop: on a cold-start deep link this screen can be the
+              // only route, and a raw pop would throw GoError.
+              onBackPressed: context.safePop,
               // Subscribing to your own list is meaningless — owners only
               // get the overflow menu (delete).
               actions: [if (!_isOwnedList()) _buildSubscribeAction()],

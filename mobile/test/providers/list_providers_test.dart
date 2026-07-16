@@ -12,6 +12,7 @@ import 'package:openvine/features/feature_flags/providers/feature_flag_providers
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:people_lists_repository/people_lists_repository.dart';
 
@@ -494,4 +495,75 @@ void main() {
       expect(second, isEmpty);
     });
   });
+
+  group(publicCuratedListProvider, () {
+    test(
+      'fetches once and does not re-run when the lists state re-emits',
+      () async {
+        final mockService = _MockCuratedListService();
+        when(
+          () => mockService.fetchPublicList(
+            authorPubkey: any(named: 'authorPubkey'),
+            listId: any(named: 'listId'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        late _StubCuratedListsState notifier;
+        final container = ProviderContainer(
+          overrides: [
+            curatedListsStateProvider.overrideWith(
+              () => notifier = _StubCuratedListsState(mockService),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final provider = publicCuratedListProvider(
+          authorPubkey: _ownerA,
+          listId: 'my-vines',
+        );
+        final subscription = container.listen(provider, (_, _) {});
+        addTearDown(subscription.close);
+
+        await container.read(provider.future);
+        verify(
+          () => mockService.fetchPublicList(
+            authorPubkey: _ownerA,
+            listId: 'my-vines',
+          ),
+        ).called(1);
+
+        // Background relay sync and list add/remove fire
+        // CuratedListService.notifyListeners, which re-emits the lists
+        // state. The deep-link fetch must not re-run (and reset its screen
+        // to loading) on those emissions.
+        notifier.reEmit();
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        verifyNever(
+          () => mockService.fetchPublicList(
+            authorPubkey: _ownerA,
+            listId: 'my-vines',
+          ),
+        );
+      },
+    );
+  });
+}
+
+class _MockCuratedListService extends Mock implements CuratedListService {}
+
+class _StubCuratedListsState extends CuratedListsState {
+  _StubCuratedListsState(this._mockService);
+
+  final CuratedListService? _mockService;
+
+  @override
+  CuratedListService? get service => _mockService;
+
+  @override
+  Future<List<CuratedList>> build() async => [];
+
+  void reEmit() => state = const AsyncValue.data(<CuratedList>[]);
 }

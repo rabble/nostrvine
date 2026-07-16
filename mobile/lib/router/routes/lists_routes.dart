@@ -10,6 +10,7 @@ import 'package:openvine/features/people_lists/view/create_people_list_page.dart
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/router/route_error_screen.dart';
 import 'package:openvine/router/routes/route_extras.dart';
+import 'package:openvine/screens/curated_list_by_author_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
@@ -35,6 +36,28 @@ List<RouteBase> listsRoutes(Ref ref) {
           listName: extra?.listName ?? ctx.l10n.routeDefaultListName,
           videoIds: extra?.videoIds,
           authorPubkey: extra?.authorPubkey,
+        );
+      },
+    ),
+
+    // CURATED LIST BY AUTHOR route — web-canonical /list/:pubkey/:listId
+    // universal-link shape. Resolves the list from relays by author + d-tag,
+    // so deep links work for lists that are not in local storage.
+    GoRoute(
+      path: CuratedListByAuthorScreen.path,
+      name: CuratedListByAuthorScreen.routeName,
+      builder: (ctx, st) {
+        final pubkey = st.pathParameters['pubkey'];
+        final listId = st.pathParameters['listId'];
+        if (pubkey == null ||
+            pubkey.isEmpty ||
+            listId == null ||
+            listId.isEmpty) {
+          return RouteErrorScreen(message: ctx.l10n.routeInvalidListId);
+        }
+        return CuratedListByAuthorScreen(
+          authorPubkey: pubkey,
+          listId: listId,
         );
       },
     ),

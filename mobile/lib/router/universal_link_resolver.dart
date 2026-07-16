@@ -1,6 +1,7 @@
 // ABOUTME: Pure resolver from universal-link URIs to internal GoRouter paths
 // ABOUTME: Shared source of truth used by the router redirect and tests
 
+import 'package:openvine/screens/curated_list_by_author_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
@@ -42,6 +43,19 @@ String? divineUrlToPushRoute(Uri uri) {
         term,
         requestFocusOnMount: false,
       );
+    case DeepLinkType.list:
+      final listPubkey = deepLink.listPubkey;
+      final listId = deepLink.listId;
+      if (listPubkey == null ||
+          listPubkey.isEmpty ||
+          listId == null ||
+          listId.isEmpty) {
+        return null;
+      }
+      return CuratedListByAuthorScreen.pathFor(
+        pubkey: listPubkey,
+        listId: listId,
+      );
     case DeepLinkType.invite:
     case DeepLinkType.signerCallback:
     case DeepLinkType.unknown:
@@ -78,6 +92,7 @@ String? universalLinkToRouterPath(Uri uri) {
     case DeepLinkType.profile:
     case DeepLinkType.hashtag:
     case DeepLinkType.search:
+    case DeepLinkType.list:
       return route;
   }
 }

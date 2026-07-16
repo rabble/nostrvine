@@ -14,6 +14,7 @@ import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/category_gallery_screen.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
+import 'package:openvine/screens/curated_list_by_author_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/screens/discover_lists_screen.dart';
@@ -414,6 +415,16 @@ RouteContext parseRoute(String path) {
       if (segments.length < 2) {
         return const RouteContext(type: RouteType.explore);
       }
+      // Web-canonical deep-link shape /list/:pubkey/:listId — the author
+      // key rides in [RouteContext.npub] so buildRoute can reconstruct the
+      // by-author path instead of collapsing it to /list/:listId.
+      if (segments.length >= 3) {
+        return RouteContext(
+          type: RouteType.curatedList,
+          npub: _safeDecode(segments[1]),
+          listId: _safeDecode(segments[2]),
+        );
+      }
       final listId = _safeDecode(segments[1]);
       return RouteContext(type: RouteType.curatedList, listId: listId);
 
@@ -677,6 +688,13 @@ String buildRoute(RouteContext context) {
       return OtherProfileScreen.pathForNpub(npub);
 
     case RouteType.curatedList:
+      final listAuthor = context.npub;
+      if (listAuthor != null && listAuthor.isNotEmpty) {
+        return CuratedListByAuthorScreen.pathFor(
+          pubkey: listAuthor,
+          listId: context.listId ?? '',
+        );
+      }
       return CuratedListFeedScreen.pathForId(context.listId ?? '');
 
     case RouteType.discoverLists:

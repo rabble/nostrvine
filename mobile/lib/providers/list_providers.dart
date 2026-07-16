@@ -219,6 +219,32 @@ Stream<List<CuratedList>> publicListsContainingVideo(
   yield accumulated;
 }
 
+/// Provider that fetches a public curated list (kind 30005) by author +
+/// d-tag for the `/list/:pubkey/:listId` universal-link route.
+///
+/// Unlike [curatedListVideos], this does not require the list to be in
+/// local storage — it resolves from cache + relays, so deep links to lists
+/// the user has never seen still work. Returns `null` when no matching
+/// list event exists.
+@riverpod
+Future<CuratedList?> publicCuratedList(
+  Ref ref, {
+  required String authorPubkey,
+  required String listId,
+}) async {
+  // Depend on the notifier (stable across state emissions), not the state:
+  // CuratedListsState re-emits on every CuratedListService.notifyListeners
+  // (background relay sync, list add/remove), and watching the state future
+  // would re-run this fetch — resetting the deep-link screen to loading —
+  // on every one of those emissions.
+  final notifier = ref.watch(curatedListsStateProvider.notifier);
+  // One-shot await so the service exists on cold-start deep links;
+  // deliberately read, not watch (see above).
+  await ref.read(curatedListsStateProvider.future);
+  final service = notifier.service;
+  return service?.fetchPublicList(authorPubkey: authorPubkey, listId: listId);
+}
+
 /// Provider that fetches actual VideoEvent objects for a curated list
 /// Streams videos as they are fetched from cache or relays
 @riverpod

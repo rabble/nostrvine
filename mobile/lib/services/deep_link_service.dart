@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:app_links/app_links.dart';
+import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/sensitive_uri_for_logs.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -14,6 +15,7 @@ enum DeepLinkType {
   hashtag,
   search,
   invite,
+  list,
   signerCallback,
   unknown,
 }
@@ -27,6 +29,8 @@ class DeepLink {
     this.hashtag,
     this.searchTerm,
     this.inviteCode,
+    this.listPubkey,
+    this.listId,
     this.signerCallbackRelay,
     this.index,
     this.autoOpenComments = false,
@@ -43,6 +47,13 @@ class DeepLink {
   final String? hashtag;
   final String? searchTerm;
   final String? inviteCode;
+
+  /// Author pubkey of a `/list/:pubkey/:listId` link, normalized to
+  /// lowercase hex (NIP-51 kind 30005 lists are addressed by author + d-tag).
+  final String? listPubkey;
+
+  /// The d-tag identifier of a `/list/:pubkey/:listId` link.
+  final String? listId;
   final String? signerCallbackRelay;
   final int? index; // Optional video index for feed view
 
@@ -65,6 +76,9 @@ class DeepLink {
         return 'DeepLink(type: search, searchTerm: $searchTerm$indexStr)';
       case DeepLinkType.invite:
         return 'DeepLink(type: invite, inviteCode: $redactedSensitiveLogPlaceholder)';
+      case DeepLinkType.list:
+        return 'DeepLink(type: list, listPubkey: $listPubkey, '
+            'listId: $listId)';
       case DeepLinkType.signerCallback:
         return 'DeepLink(type: signerCallback)';
       case DeepLinkType.unknown:
@@ -253,6 +267,36 @@ class DeepLinkService {
           type: DeepLinkType.search,
           searchTerm: searchTerm,
           index: index,
+        );
+      }
+
+      // Handle /list/{pubkey}/{listId} — NIP-51 kind 30005 curated video
+      // lists, addressed by author + d-tag. The author segment accepts hex,
+      // npub, or nprofile and is normalized to lowercase hex for relay
+      // filters.
+      if (pathSegments.length == 3 && pathSegments[0] == 'list') {
+        final listPubkey = normalizePublicIdentifier(
+          pathSegments[1],
+        )?.hexPubkey.toLowerCase();
+        final listId = pathSegments[2];
+        if (listPubkey == null || listId.isEmpty) {
+          Log.warning(
+            'Ignoring list deep link with invalid author or id: '
+            '${_describeUriForLogs(uri)}',
+            name: 'DeepLinkService',
+            category: LogCategory.ui,
+          );
+          return const DeepLink(type: DeepLinkType.unknown);
+        }
+        Log.info(
+          '📱 Parsed list deep link: $listPubkey/$listId',
+          name: 'DeepLinkService',
+          category: LogCategory.ui,
+        );
+        return DeepLink(
+          type: DeepLinkType.list,
+          listPubkey: listPubkey,
+          listId: listId,
         );
       }
 
