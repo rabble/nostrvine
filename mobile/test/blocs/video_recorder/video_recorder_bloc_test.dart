@@ -2516,6 +2516,68 @@ void main() {
       );
 
       blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'a frame captured while assembling is dropped',
+        build: buildBloc,
+        seed: () => const VideoRecorderBlocState(
+          recorderMode: VideoRecorderMode.stopMotion,
+          stopMotionStatus: StopMotionStatus.assembling,
+        ),
+        act: (bloc) => bloc.add(const VideoRecorderStopMotionFrameCaptured()),
+        wait: const Duration(milliseconds: 20),
+        verify: (bloc) {
+          // The assemble owns the session: it reads the frame list, saves it,
+          // then clears it. A still appended here races that save.
+          verifyNever(() => cameraService.capturePhoto());
+          expect(bloc.state.stopMotionFrames, isEmpty);
+          expect(bloc.state.stopMotionStatus, StopMotionStatus.assembling);
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'a frame that lands after an assemble started is dropped, not '
+        're-persisted as a new session',
+        setUp: () {
+          stubClipIngest();
+          // "Next" stays tappable across the slow native capture, so the
+          // assemble claims the session while this still is in flight.
+          when(() => cameraService.capturePhoto()).thenAnswer((_) async {
+            await Future<void>.delayed(const Duration(milliseconds: 10));
+            return PhotoCaptureResult(filePath: framePath);
+          });
+        },
+        build: buildBloc,
+        seed: () => VideoRecorderBlocState(
+          recorderMode: VideoRecorderMode.stopMotion,
+          stopMotionFrames: [frameAPath],
+        ),
+        act: (bloc) async {
+          bloc.add(const VideoRecorderStopMotionFrameCaptured());
+          // Tap "Next" while the capture is still in flight.
+          await Future<void>.delayed(const Duration(milliseconds: 1));
+          bloc.add(const VideoRecorderStopMotionAssembleRequested());
+        },
+        wait: const Duration(milliseconds: 60),
+        verify: (bloc) {
+          // A late still must not reopen the session the assemble just closed,
+          // nor clobber the terminal status back to `idle` — that reopens the
+          // mode wheel mid-save and re-writes a phantom one-frame library row.
+          expect(bloc.state.stopMotionFrames, isEmpty);
+          expect(bloc.state.stopMotionStatus, StopMotionStatus.ready);
+          verifyNever(
+            () => clipManager.saveStopMotionSessionToLibrary(
+              id: any(named: 'id'),
+              frames: any(named: 'frames'),
+              originalAspectRatio: any(named: 'originalAspectRatio'),
+              targetAspectRatio: any(named: 'targetAspectRatio'),
+              duration: any(named: 'duration'),
+              thumbnailPath: any(named: 'thumbnailPath'),
+              lensMetadata: any(named: 'lensMetadata'),
+            ),
+          );
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
         'the shutter tick fires before the captured frame lands',
         setUp: () {
           // Simulate the slow native capture: the blink must not wait for it.

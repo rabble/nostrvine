@@ -1638,6 +1638,12 @@ class VideoRecorderBloc
       return;
     }
 
+    // An assemble owns the captured stills once it starts: it reads the frame
+    // list, saves it, then clears it. A still added to that list mid-assemble
+    // is either missed by the save or re-persisted afterwards as a phantom
+    // one-frame session, so the capture is dropped instead.
+    if (state.stopMotionStatus == StopMotionStatus.assembling) return;
+
     unawaited(HapticService.recordingFeedback());
     // Shutter feedback must fire NOW — the native capture below takes
     // hundreds of ms, and blinking only once the frame lands feels laggy
@@ -1669,7 +1675,21 @@ class VideoRecorderBloc
       return;
     }
 
+    // "Next" stays tappable while the native capture runs, so an assemble can
+    // claim the session across the await above. Adding this still now would
+    // either race the in-flight save or — once the assemble cleared the list —
+    // re-persist it as a phantom one-frame session, so it is dropped with its
+    // file. Only idle (still shooting) and failure (assemble bailed, stills
+    // retained) still own the session here.
+    if (state.stopMotionStatus == StopMotionStatus.assembling ||
+        state.stopMotionStatus == StopMotionStatus.ready) {
+      unawaited(_deleteFrameFile(photo.filePath));
+      return;
+    }
+
     final framePaths = [...state.stopMotionFrames, photo.filePath];
+    // Back to idle so a retry after a failed assemble re-emits the failure the
+    // status listener only fires on transitions.
     emit(
       state.copyWith(
         stopMotionFrames: framePaths,
