@@ -588,6 +588,10 @@ class NostrClient {
   /// Then queries via WebSocket and merges results.
   ///
   /// Results from websocket are cached for future queries.
+  ///
+  /// Calling this on a disposed client is a no-op that returns an empty
+  /// list. If the client is disposed while a call is in flight, the
+  /// network query is skipped and only cached results are returned.
   Future<List<Event>> queryEvents(
     List<Filter> filters, {
     String? subscriptionId,
