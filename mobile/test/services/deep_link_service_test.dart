@@ -298,6 +298,19 @@ void main() {
         expect(result.listId, isNull);
       });
 
+      test('rejects a 3-segment list URL with an empty list id '
+          '(trailing slash)', () {
+        // A trailing slash yields a 3rd, empty path segment, so this reaches
+        // the parse branch with a valid pubkey and an empty list id — the
+        // isEmpty half of the guard, distinct from the missing-segment case.
+        const url = 'https://divine.video/list/$authorPubkey/';
+
+        final result = DeepLinkService.parseDeepLink(url);
+
+        expect(result.type, equals(DeepLinkType.unknown));
+        expect(result.listId, isNull);
+      });
+
       test('rejects bare /list path', () {
         const url = 'https://divine.video/list';
 

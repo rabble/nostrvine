@@ -199,5 +199,34 @@ void main() {
 
       expect(list, isNull);
     });
+
+    test(
+      'ignores an event whose d-tag matches but pubkey does not '
+      '(loose cache hit)',
+      () async {
+        const otherAuthor =
+            'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+        // queryEvents merges cache hits, whose author filtering can be looser
+        // than a relay's — a matching-d-tag, wrong-author event can slip in,
+        // which is exactly why fetchPublicList re-checks the pubkey.
+        when(() => mockNostr.queryEvents(any())).thenAnswer(
+          (_) async => [
+            _listEvent(
+              id: 'event_wrong_author',
+              dTag: 'my-vines',
+              createdAt: 1000,
+              pubkey: otherAuthor,
+            ),
+          ],
+        );
+
+        final list = await service.fetchPublicList(
+          authorPubkey: _authorPubkey,
+          listId: 'my-vines',
+        );
+
+        expect(list, isNull);
+      },
+    );
   });
 }
