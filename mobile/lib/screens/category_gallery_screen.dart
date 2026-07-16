@@ -434,25 +434,23 @@ class _CategoryHeaderMascotSlot extends StatelessWidget {
       key: const Key('category-header-mascot-slot'),
       width: 149,
       height: 90,
-      child: visuals.assetPath == null
-          ? const SizedBox.shrink()
-          : OverflowBox(
-              maxWidth: 149,
-              maxHeight: 132,
-              alignment: Alignment.topCenter,
-              child: Transform.translate(
-                offset: const Offset(0, -12),
-                child: Transform.rotate(
-                  angle: 8 * math.pi / 180,
-                  child: CategoryGlyph(
-                    assetPath: visuals.assetPath!,
-                    emoji: emoji,
-                    height: 104,
-                    width: 132,
-                  ),
-                ),
-              ),
+      child: OverflowBox(
+        maxWidth: 149,
+        maxHeight: 132,
+        alignment: Alignment.topCenter,
+        child: Transform.translate(
+          offset: const Offset(0, -12),
+          child: Transform.rotate(
+            angle: 8 * math.pi / 180,
+            child: CategoryGlyph(
+              assetPath: visuals.assetPath,
+              emoji: emoji,
+              height: 104,
+              width: 132,
             ),
+          ),
+        ),
+      ),
     );
   }
 }

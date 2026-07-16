@@ -16,8 +16,16 @@ class CategoryVisuals {
   final String? assetPath;
 
   /// Resolves visuals for any category. Featured categories get custom colors;
-  /// all others cycle through fallback colors. Every category gets an SVG
-  /// asset path derived from its name.
+  /// all others cycle through fallback colors and get an SVG asset path derived
+  /// from their name — but only when that asset is actually bundled.
+  ///
+  /// Backend category names are an open-ended, uncurated stream (#2547), so a
+  /// name can arrive with no matching `assets/categories/<name>.svg`. In that
+  /// case [assetPath] is `null` and callers degrade to the category emoji.
+  /// Resolving to `null` here — rather than pointing at a missing file and
+  /// relying on [CategoryGlyph]'s `errorBuilder` — is what keeps the load from
+  /// ever being attempted: a missing-asset load surfaces the failure to the
+  /// zone as a non-fatal even when `errorBuilder` handles the visual (#6116).
   static CategoryVisuals forCategory(VideoCategory category, int index) {
     final name = category.name.toLowerCase();
     final featured = _featuredCategoryVisuals[name];
@@ -30,9 +38,119 @@ class CategoryVisuals {
     return CategoryVisuals(
       backgroundColor: fallback.backgroundColor,
       foregroundColor: fallback.foregroundColor,
-      assetPath: 'assets/categories/$assetName.svg',
+      assetPath: bundledAssetBasenames.contains(assetName)
+          ? 'assets/categories/$assetName.svg'
+          : null,
     );
   }
+
+  /// Basenames (without extension) of every SVG bundled under
+  /// `assets/categories/`. Used to decide whether a derived asset path points
+  /// at a real file before handing it to [CategoryGlyph]. Kept in sync with the
+  /// directory by `category_visuals_test.dart`, which fails if the two diverge.
+  static const bundledAssetBasenames = <String>{
+    'action',
+    'adventure',
+    'animals',
+    'animation',
+    'architecture',
+    'art',
+    'automotive',
+    'award-show',
+    'awards',
+    'baseball',
+    'basketball',
+    'beauty',
+    'beverage',
+    'cars',
+    'celebration',
+    'celebrities',
+    'celebrity',
+    'cityscape',
+    'comedy',
+    'concert',
+    'cooking',
+    'costume',
+    'crafts',
+    'crime',
+    'culture',
+    'dance',
+    'diy',
+    'drama',
+    'education',
+    'emotional',
+    'emotions',
+    'entertainment',
+    'event',
+    'family',
+    'fans',
+    'fantasy',
+    'fashion',
+    'festival',
+    'film',
+    'fitness',
+    'food',
+    'football',
+    'furniture',
+    'gaming',
+    'golf',
+    'grooming',
+    'guitar',
+    'halloween',
+    'health',
+    'hockey',
+    'holiday',
+    'home',
+    'home-improvement',
+    'horror',
+    'hospital',
+    'humor',
+    'interior-design',
+    'interview',
+    'kids',
+    'lifestyle',
+    'magic',
+    'makeup',
+    'medical',
+    'music',
+    'mystery',
+    'nature',
+    'news',
+    'outdoor',
+    'party',
+    'people',
+    'performance',
+    'pets',
+    'politics',
+    'prank',
+    'pranks',
+    'reality-show',
+    'relationship',
+    'relationships',
+    'romance',
+    'school',
+    'science-fiction',
+    'selfie',
+    'shopping',
+    'skateboarding',
+    'skincare',
+    'soccer',
+    'social-gathering',
+    'social-media',
+    'sports',
+    'style',
+    'talk-show',
+    'technology',
+    'television',
+    'toys',
+    'transportation',
+    'travel',
+    'urban',
+    'violence',
+    'vlog',
+    'vlogging',
+    'wrestling',
+  };
 }
 
 /// Maps backend category slugs onto the bundled SVG asset basename when the two

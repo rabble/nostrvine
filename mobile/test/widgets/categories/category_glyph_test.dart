@@ -1,14 +1,16 @@
 // ABOUTME: Widget tests for CategoryGlyph's SVG-with-emoji-fallback behavior.
-// ABOUTME: Covers the #4398 crash fix: a missing asset degrades to the emoji.
+// ABOUTME: Covers the #4398/#6116 crash fix: a missing asset degrades to emoji.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:models/models.dart' show VideoCategory;
 import 'package:openvine/widgets/categories/category_glyph.dart';
+import 'package:openvine/widgets/categories/category_visuals.dart';
 
 void main() {
   group(CategoryGlyph, () {
-    Widget buildSubject({required String assetPath, required String emoji}) {
+    Widget buildSubject({required String? assetPath, required String emoji}) {
       return MaterialApp(
         home: Scaffold(
           body: Center(
@@ -93,6 +95,36 @@ void main() {
 
       expect(find.byType(SvgPicture), findsOneWidget);
       expect(find.text('🎸'), findsNothing);
+    });
+
+    testWidgets('renders the emoji directly when assetPath is null (#6116)', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject(assetPath: null, emoji: '🥊'));
+      await tester.pumpAndSettle();
+
+      // No SvgPicture is built at all, so flutter_svg never attempts (and never
+      // reports) a missing-asset load.
+      expect(find.byType(SvgPicture), findsNothing);
+      expect(find.text('🥊'), findsOneWidget);
+    });
+
+    testWidgets('an unknown category renders its emoji, not an SVG (#6116)', (
+      tester,
+    ) async {
+      // End-to-end: the exact Crashlytics scenario — a backend category with no
+      // bundled SVG resolves to a null path and degrades to the emoji.
+      const category = VideoCategory(name: 'fighting', videoCount: 42);
+      final visuals = CategoryVisuals.forCategory(category, 0);
+      expect(visuals.assetPath, isNull);
+
+      await tester.pumpWidget(
+        buildSubject(assetPath: visuals.assetPath, emoji: category.emoji),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SvgPicture), findsNothing);
+      expect(find.text(category.emoji), findsOneWidget);
     });
   });
 }
