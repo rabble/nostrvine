@@ -153,10 +153,7 @@ Future<void> showDeleteAllContentWarningDialog({
                   context.l10n.deleteAccountBurnUsernameToggle(
                     '@$ownedUsername.divine.video',
                   ),
-                  style: const TextStyle(
-                    color: VineTheme.whiteText,
-                    fontSize: 14,
-                  ),
+                  style: VineTheme.bodyMediumFont(),
                 ),
               ),
             ],
