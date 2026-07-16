@@ -1154,6 +1154,159 @@ void main() {
           ),
         ).called(1);
       });
+
+      test(
+        'returns empty without touching cache or relays when already '
+        'disposed',
+        () async {
+          // The upfront isDisposed early-return: a disposed client must not
+          // read the cache or attempt a reconnect. connectedRelays is empty
+          // so the reconnect branch WOULD fire if the early-return were gone.
+          final mockDbClient = _MockAppDbClient();
+          final mockDatabase = _MockAppDatabase();
+          final dao = _MockNostrEventsDao();
+          when(() => mockDbClient.database).thenReturn(mockDatabase);
+          when(() => mockDatabase.nostrEventsDao).thenReturn(dao);
+          when(
+            () => dao.getEventsByFilter(any()),
+          ).thenAnswer((_) async => <Event>[]);
+          when(() => mockRelayManager.connectedRelays).thenReturn([]);
+          when(
+            mockRelayManager.retryDisconnectedRelays,
+          ).thenAnswer((_) async {});
+          when(() => mockNostr.unsubscribe(any())).thenReturn(null);
+
+          final clientWithCache = NostrClient.forTesting(
+            nostr: mockNostr,
+            relayManager: mockRelayManager,
+            dbClient: mockDbClient,
+          );
+          await clientWithCache.dispose();
+
+          final result = await clientWithCache.queryEvents([
+            Filter(kinds: [EventKind.textNote], limit: 10),
+          ]);
+
+          expect(result, isEmpty);
+          verifyNever(() => dao.getEventsByFilter(any()));
+          verifyNever(mockRelayManager.retryDisconnectedRelays);
+          verifyNever(
+            () => mockNostr.queryEvents(
+              any(),
+              id: any(named: 'id'),
+              tempRelays: any(named: 'tempRelays'),
+              relayTypes: any(named: 'relayTypes'),
+              sendAfterAuth: any(named: 'sendAfterAuth'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'skips the WebSocket query without throwing when dispose races the '
+        'cache read (pooled path)',
+        () async {
+          // Park the query at the cache await, then dispose() mid-flight so
+          // it resumes past the upfront isDisposed check and reaches the
+          // pre-query guard with a closed pool. Deleting that guard makes
+          // this throw "withResource() may not be called on a closed Pool".
+          final mockDbClient = _MockAppDbClient();
+          final mockDatabase = _MockAppDatabase();
+          final dao = _MockNostrEventsDao();
+          when(() => mockDbClient.database).thenReturn(mockDatabase);
+          when(() => mockDatabase.nostrEventsDao).thenReturn(dao);
+
+          final cacheGate = Completer<List<Event>>();
+          when(
+            () => dao.getEventsByFilter(any()),
+          ).thenAnswer((_) => cacheGate.future);
+          when(() => mockNostr.unsubscribe(any())).thenReturn(null);
+
+          final clientWithCache = NostrClient.forTesting(
+            nostr: mockNostr,
+            relayManager: mockRelayManager,
+            dbClient: mockDbClient,
+          );
+
+          final pending = clientWithCache.queryEvents([
+            Filter(kinds: [EventKind.textNote], limit: 10),
+          ]);
+          await pumpEventQueue();
+          // Confirm we actually parked in the race window.
+          verify(() => dao.getEventsByFilter(any())).called(1);
+
+          await clientWithCache.dispose();
+          cacheGate.complete([_createTestEvent(id: 'cached')]);
+
+          final result = await pending;
+
+          // The already-read cache result survives; the network is skipped.
+          expect(result.map((e) => e.id), ['cached']);
+          verifyNever(
+            () => mockNostr.queryEvents(
+              any(),
+              id: any(named: 'id'),
+              tempRelays: any(named: 'tempRelays'),
+              relayTypes: any(named: 'relayTypes'),
+              sendAfterAuth: any(named: 'sendAfterAuth'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'skips the WebSocket query when dispose races the cache read '
+        '(non-pooled useQueryPool: false path)',
+        () async {
+          // Same race for the queryUsers path. With the old
+          // `useQueryPool && _queryPool.isClosed` guard this fell through to
+          // `_nostr.queryEvents` on a closed client, re-opening WebSockets to
+          // the search relays. verifyNever below is what catches that.
+          final mockDbClient = _MockAppDbClient();
+          final mockDatabase = _MockAppDatabase();
+          final dao = _MockNostrEventsDao();
+          when(() => mockDbClient.database).thenReturn(mockDatabase);
+          when(() => mockDatabase.nostrEventsDao).thenReturn(dao);
+
+          final cacheGate = Completer<List<Event>>();
+          when(
+            () => dao.getEventsByFilter(any()),
+          ).thenAnswer((_) => cacheGate.future);
+          when(() => mockNostr.unsubscribe(any())).thenReturn(null);
+
+          final clientWithCache = NostrClient.forTesting(
+            nostr: mockNostr,
+            relayManager: mockRelayManager,
+            dbClient: mockDbClient,
+          );
+
+          final pending = clientWithCache.queryEvents(
+            [
+              Filter(kinds: [EventKind.metadata], search: 'alice', limit: 100),
+            ],
+            tempRelays: const ['wss://search.example.com'],
+            useQueryPool: false,
+          );
+          await pumpEventQueue();
+          verify(() => dao.getEventsByFilter(any())).called(1);
+
+          await clientWithCache.dispose();
+          cacheGate.complete(const []);
+
+          final result = await pending;
+
+          expect(result, isEmpty);
+          verifyNever(
+            () => mockNostr.queryEvents(
+              any(),
+              id: any(named: 'id'),
+              tempRelays: any(named: 'tempRelays'),
+              relayTypes: any(named: 'relayTypes'),
+              sendAfterAuth: any(named: 'sendAfterAuth'),
+            ),
+          );
+        },
+      );
     });
 
     group('fetchEventById', () {
