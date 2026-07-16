@@ -360,6 +360,9 @@ void main() {
         () =>
             deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
       ).called(1);
+      verify(
+        () => profileRepository.releaseUsername(name: 'alice'),
+      ).called(1);
     });
 
     testWidgets('does not release the username when burn is not opted in', (
@@ -402,6 +405,49 @@ void main() {
 
       verifyNever(
         () => profileRepository.releaseUsername(name: any(named: 'name')),
+      );
+    });
+
+    testWidgets('opted-in burn aborts when profileRepository is null', (
+      tester,
+    ) async {
+      final deletionService = _MockAccountDeletionService();
+      final authService = _MockAuthService();
+
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const Scaffold(body: SizedBox.shrink());
+            },
+          ),
+        ),
+      );
+
+      // profileRepository omitted (null): an opted-in burn must abort, not
+      // delete.
+      await executeAccountDeletion(
+        context: capturedContext,
+        deletionService: deletionService,
+        authService: authService,
+        burnUsername: true,
+        ownedUsername: 'alice',
+      );
+      await tester.pumpAndSettle();
+
+      verifyNever(
+        () =>
+            deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
+      );
+      expect(
+        find.text(
+          lookupAppLocalizations(
+            const Locale('en'),
+          ).deleteAccountBurnUsernameFailed,
+        ),
+        findsOneWidget,
       );
     });
   });

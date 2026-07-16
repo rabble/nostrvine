@@ -330,13 +330,15 @@ Future<void> executeAccountDeletion({
     // Burn-first hard-block: release the username before any destructive step,
     // so a failed burn leaves everything intact. Needs a working signer, which
     // exists before deleteKeycastAccount() below.
-    if (burnUsername && ownedUsername != null && profileRepository != null) {
-      final releaseResult = await profileRepository.releaseUsername(
+    if (burnUsername && ownedUsername != null) {
+      // A null repository here means we cannot honor the opted-in burn, so we
+      // must NOT proceed — treat it the same as a failed release (hard-block).
+      final releaseResult = await profileRepository?.releaseUsername(
         name: ownedUsername,
       );
       if (releaseResult is! UsernameReleaseSuccess) {
         Log.warning(
-          'Username release failed; aborting account deletion',
+          'Username release failed or unavailable; aborting account deletion',
           name: screenName,
           category: LogCategory.auth,
         );

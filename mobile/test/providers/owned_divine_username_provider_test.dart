@@ -28,8 +28,7 @@ void main() {
     test('resolves the owned name from the repository', () async {
       when(() => auth.currentPublicKeyHex).thenReturn(pubkey);
       when(
-        () =>
-            repository.getUsernameByPubkey(pubkeyHex: any(named: 'pubkeyHex')),
+        () => repository.getUsernameByPubkey(pubkeyHex: pubkey),
       ).thenAnswer((_) async => 'alice');
       final container = ProviderContainer(
         overrides: [
