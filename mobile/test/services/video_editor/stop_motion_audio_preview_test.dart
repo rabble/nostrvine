@@ -131,6 +131,24 @@ void main() {
       verify(() => players.single.seek(const Duration(seconds: 3))).called(1);
     });
 
+    test('a short forward scrub re-seeks the sound', () async {
+      await preview.setTracks([track(windowEnd: const Duration(seconds: 5))]);
+
+      await preview.syncTo(const Duration(milliseconds: 100), isPlaying: true);
+      // A 300ms forward scrub is under the jump threshold, so it is
+      // indistinguishable from a run of normal ticks — only the explicit seek
+      // flag separates them. Without it the sound plays on from 100ms.
+      await preview.syncTo(
+        const Duration(milliseconds: 400),
+        isPlaying: true,
+        isSeek: true,
+      );
+
+      verify(
+        () => players.single.seek(const Duration(milliseconds: 400)),
+      ).called(1);
+    });
+
     test('syncTo with isPlaying false pauses an active sound', () async {
       await preview.setTracks([track()]);
 

@@ -969,7 +969,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     _proVideoController.setPlayTime(_stopMotionAnchor);
     final audio = _stopMotionAudio;
     if (audio != null) {
-      unawaited(audio.syncTo(_stopMotionAnchor, isPlaying: true));
+      // Re-anchoring is a clock set, not a tick: a resume that lands mid-window
+      // must re-seek even when it re-anchors only slightly ahead.
+      unawaited(
+        audio.syncTo(_stopMotionAnchor, isPlaying: true, isSeek: true),
+      );
     }
 
     context.read<VideoEditorMainBloc>()
@@ -1012,7 +1016,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     final audio = _stopMotionAudio;
     if (audio != null) {
       unawaited(
-        audio.syncTo(clamped, isPlaying: _stopMotionStopwatch.isRunning),
+        audio.syncTo(
+          clamped,
+          isPlaying: _stopMotionStopwatch.isRunning,
+          isSeek: true,
+        ),
       );
     }
     context.read<VideoEditorMainBloc>().add(

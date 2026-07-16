@@ -117,19 +117,37 @@ class StopMotionAudioPreview {
   /// inside a window is a no-op. Fire-and-forget: dispatched `unawaited` from
   /// the ticker, so a call that arrives while another is in flight is dropped
   /// (the next frame re-syncs).
-  Future<void> syncTo(Duration position, {required bool isPlaying}) {
+  ///
+  /// Set [isSeek] when [position] comes from a scrub rather than the ticker.
+  /// The playhead moved discontinuously, so active sounds re-seek even when the
+  /// delta is small enough to pass for a normal tick.
+  Future<void> syncTo(
+    Duration position, {
+    required bool isPlaying,
+    bool isSeek = false,
+  }) {
     if (_disposed || _syncInFlight) return Future<void>.value();
     _syncInFlight = true;
-    return _enqueue(() => _syncTo(position, isPlaying: isPlaying))
+    return _enqueue(
+          () => _syncTo(position, isPlaying: isPlaying, isSeek: isSeek),
+        )
         // Fire-and-forget from the ticker: never surface as an unhandled
         // async error.
         .catchError((Object _) {})
         .whenComplete(() => _syncInFlight = false);
   }
 
-  Future<void> _syncTo(Duration position, {required bool isPlaying}) async {
+  Future<void> _syncTo(
+    Duration position, {
+    required bool isPlaying,
+    required bool isSeek,
+  }) async {
     if (_disposed) return;
+    // The threshold still covers the ticker's own discontinuity — a loop wrap
+    // arrives as a backward move — while [isSeek] catches the scrub the ticker
+    // can't be distinguished from: a small forward hop.
     final jumped =
+        isSeek ||
         position < _lastPosition ||
         position - _lastPosition > seekJumpThreshold;
     _lastPosition = position;
