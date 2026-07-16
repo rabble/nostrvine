@@ -623,10 +623,14 @@ class VideoEvent {
 
     // Resolve the Inspired By person from the trailing NIP-27 attribution
     // line the publisher appends ("Inspired by nostr:npub1..."). Anchored to
-    // the end of content so an unrelated inline nostr:npub mention earlier in
-    // the caption is never mistaken for attribution.
+    // the end of content and to a preceding blank line (or start of content,
+    // for empty-caption publishes) so a prose nostr:npub mention is never
+    // mistaken for attribution. Keep in sync with the strip regex in
+    // video_editor_provider.dart.
     String? inspiredByNpub;
-    final npubPattern = RegExp(r'Inspired by nostr:(npub1[a-z0-9]+)\s*$');
+    final npubPattern = RegExp(
+      r'(?:^|\n\n)Inspired by nostr:(npub1[a-z0-9]+)\s*$',
+    );
     final npubMatch = npubPattern.firstMatch(event.content);
     if (npubMatch != null) {
       inspiredByNpub = npubMatch.group(1);
