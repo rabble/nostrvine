@@ -30,6 +30,15 @@ class SwappableNostrService extends NostrService {
   }
 }
 
+class TestNostrSession extends NostrSession {
+  TestNostrSession(this.initialReadiness);
+
+  final NostrSessionReadiness initialReadiness;
+
+  @override
+  NostrSessionReadiness build() => initialReadiness;
+}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(<String>[]);
@@ -44,12 +53,18 @@ void main() {
     late MockNostrClient mockNostrClient;
     late MockVideoEventService mockVideoEventService;
     late StreamController<Map<String, RelayConnectionStatus>> statusController;
+    late TestNostrSession testNostrSession;
+    late String clientPublicKey;
 
     setUp(() {
       mockNostrClient = MockNostrClient();
       mockVideoEventService = MockVideoEventService();
       statusController =
           StreamController<Map<String, RelayConnectionStatus>>.broadcast();
+      testNostrSession = TestNostrSession(
+        const NostrSessionReadiness.identityKnown(pubkey: pubkeyA),
+      );
+      clientPublicKey = '';
 
       when(
         () => mockVideoEventService.resetAndResubscribeAll(),
@@ -57,7 +72,7 @@ void main() {
       when(() => mockNostrClient.isInitialized).thenReturn(true);
       when(() => mockNostrClient.forceReconnectAll()).thenAnswer((_) async {});
       when(() => mockNostrClient.defaultRelayUrl).thenReturn(defaultRelay);
-      when(() => mockNostrClient.publicKey).thenReturn(pubkeyA);
+      when(() => mockNostrClient.publicKey).thenAnswer((_) => clientPublicKey);
     });
 
     tearDown(() {
@@ -75,6 +90,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           nostrServiceProvider.overrideWithValue(mockNostrClient),
+          nostrSessionProvider.overrideWith(() => testNostrSession),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
         ],
       );
@@ -86,7 +102,7 @@ void main() {
 
     void stubClientScope(
       MockNostrClient client, {
-      String pubkey = pubkeyA,
+      String pubkey = '',
       String relay = defaultRelay,
     }) {
       when(() => client.publicKey).thenReturn(pubkey);
@@ -421,7 +437,7 @@ void main() {
       });
     });
 
-    test('carries a pending relay edit onto a replacement client', () {
+    test('keeps a pending relay edit for a same-account retry client', () {
       fakeAsync((async) {
         final replacementClient = MockNostrClient();
         final replacementStatuses =
@@ -429,6 +445,7 @@ void main() {
         const removedRelay = 'wss://relay-old.example.com';
         const addedRelay = 'wss://relay1.example.com';
         final replacementRelays = <String>{defaultRelay, removedRelay};
+        var replacementPublicKey = '';
 
         when(() => mockNostrClient.relayStatuses).thenReturn({
           defaultRelay: RelayConnectionStatus.connected(defaultRelay),
@@ -438,7 +455,12 @@ void main() {
           () => mockNostrClient.relayStatusStream,
         ).thenAnswer((_) => statusController.stream);
         when(() => replacementClient.isInitialized).thenReturn(true);
-        stubClientScope(replacementClient);
+        when(
+          () => replacementClient.publicKey,
+        ).thenAnswer((_) => replacementPublicKey);
+        when(
+          () => replacementClient.defaultRelayUrl,
+        ).thenReturn(defaultRelay);
         when(
           () => replacementClient.relayStatuses,
         ).thenAnswer(
@@ -470,6 +492,7 @@ void main() {
         final container = ProviderContainer(
           overrides: [
             nostrServiceProvider.overrideWith(() => swappableService),
+            nostrSessionProvider.overrideWith(() => testNostrSession),
             videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           ],
         );
@@ -478,6 +501,16 @@ void main() {
           (_, _) {},
           fireImmediately: true,
         );
+
+        expect(mockNostrClient.publicKey, isEmpty);
+        clientPublicKey = pubkeyA;
+        testNostrSession.update(
+          NostrSessionReadiness.nostrReady(
+            pubkey: pubkeyA,
+            client: mockNostrClient,
+          ),
+        );
+        async.flushMicrotasks();
 
         statusController.add({
           defaultRelay: RelayConnectionStatus.connected(defaultRelay),
@@ -488,7 +521,19 @@ void main() {
 
         swappableService.replaceWith(replacementClient);
         async.flushMicrotasks();
-        async.elapse(const Duration(seconds: 1));
+        expect(replacementClient.publicKey, isEmpty);
+        verifyNever(() => replacementClient.addRelays(any()));
+        verifyNever(replacementClient.forceReconnectAll);
+
+        replacementPublicKey = pubkeyA;
+        testNostrSession.update(
+          NostrSessionReadiness.nostrReady(
+            pubkey: pubkeyA,
+            client: replacementClient,
+          ),
+        );
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 2));
         async.flushMicrotasks();
 
         expect(replacementRelays, contains(addedRelay));
@@ -550,6 +595,7 @@ void main() {
         final container = ProviderContainer(
           overrides: [
             nostrServiceProvider.overrideWith(() => swappableService),
+            nostrSessionProvider.overrideWith(() => testNostrSession),
             videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           ],
         );
@@ -589,6 +635,7 @@ void main() {
             StreamController<Map<String, RelayConnectionStatus>>.broadcast();
         const editedRelay = 'wss://user-relay.example.com';
         final replacementRelays = <String>{defaultRelay};
+        var replacementPublicKey = '';
 
         when(() => mockNostrClient.relayStatuses).thenReturn({
           defaultRelay: RelayConnectionStatus.connected(defaultRelay),
@@ -597,7 +644,12 @@ void main() {
           () => mockNostrClient.relayStatusStream,
         ).thenAnswer((_) => statusController.stream);
         when(() => replacementClient.isInitialized).thenReturn(true);
-        stubClientScope(replacementClient, pubkey: pubkeyB);
+        when(
+          () => replacementClient.publicKey,
+        ).thenAnswer((_) => replacementPublicKey);
+        when(
+          () => replacementClient.defaultRelayUrl,
+        ).thenReturn(defaultRelay);
         when(
           () => replacementClient.relayStatuses,
         ).thenAnswer(
@@ -624,6 +676,7 @@ void main() {
         final container = ProviderContainer(
           overrides: [
             nostrServiceProvider.overrideWith(() => swappableService),
+            nostrSessionProvider.overrideWith(() => testNostrSession),
             videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           ],
         );
@@ -633,13 +686,35 @@ void main() {
           fireImmediately: true,
         );
 
+        expect(mockNostrClient.publicKey, isEmpty);
+        clientPublicKey = pubkeyA;
+        testNostrSession.update(
+          NostrSessionReadiness.nostrReady(
+            pubkey: pubkeyA,
+            client: mockNostrClient,
+          ),
+        );
+        async.flushMicrotasks();
+
         statusController.add({
           defaultRelay: RelayConnectionStatus.connected(defaultRelay),
           editedRelay: RelayConnectionStatus.connected(editedRelay),
         });
         async.flushMicrotasks();
         async.elapse(const Duration(seconds: 1));
+
+        testNostrSession.update(
+          const NostrSessionReadiness.tearingDown(pubkey: pubkeyA),
+        );
+        async.flushMicrotasks();
         swappableService.replaceWith(replacementClient);
+        async.flushMicrotasks();
+        expect(replacementClient.publicKey, isEmpty);
+
+        replacementPublicKey = pubkeyB;
+        testNostrSession.update(
+          const NostrSessionReadiness.identityKnown(pubkey: pubkeyB),
+        );
         async.flushMicrotasks();
         async.elapse(const Duration(seconds: 2));
         async.flushMicrotasks();
@@ -701,6 +776,7 @@ void main() {
         final container = ProviderContainer(
           overrides: [
             nostrServiceProvider.overrideWith(() => swappableService),
+            nostrSessionProvider.overrideWith(() => testNostrSession),
             videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           ],
         );
@@ -783,6 +859,7 @@ void main() {
         final container = ProviderContainer(
           overrides: [
             nostrServiceProvider.overrideWith(() => swappableService),
+            nostrSessionProvider.overrideWith(() => testNostrSession),
             videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           ],
         );
@@ -869,6 +946,7 @@ void main() {
         final container = ProviderContainer(
           overrides: [
             nostrServiceProvider.overrideWith(() => swappableService),
+            nostrSessionProvider.overrideWith(() => testNostrSession),
             videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           ],
         );
@@ -950,6 +1028,7 @@ void main() {
         final container = ProviderContainer(
           overrides: [
             nostrServiceProvider.overrideWith(() => swappableService),
+            nostrSessionProvider.overrideWith(() => testNostrSession),
             videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           ],
         );
@@ -1017,6 +1096,7 @@ void main() {
         final container = ProviderContainer(
           overrides: [
             nostrServiceProvider.overrideWith(() => swappableService),
+            nostrSessionProvider.overrideWith(() => testNostrSession),
             videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           ],
         );
@@ -1114,6 +1194,7 @@ void main() {
         final container = ProviderContainer(
           overrides: [
             nostrServiceProvider.overrideWith(() => swappableService),
+            nostrSessionProvider.overrideWith(() => testNostrSession),
             videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           ],
         );

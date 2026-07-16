@@ -339,4 +339,4 @@ final class RelaySetChangeBridgeProvider
 }
 
 String _$relaySetChangeBridgeHash() =>
-    r'af52f50afc55efae5d1f71b04e53b2a8623223b7';
+    r'8bede2eaa43817158fa03820fe7d43f07a6bf988';

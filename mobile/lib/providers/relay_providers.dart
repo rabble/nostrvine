@@ -57,17 +57,23 @@ class _RelaySetChangeCoordinator {
 
   void attach({
     required NostrClient client,
+    required String? identityPubkey,
     required VideoEventService videoEventService,
     required NostrInitializationInProgress initializationTracker,
   }) {
-    final scope = _RelayIntentScope.fromClient(client);
+    final scope = _RelayIntentScope(
+      defaultRelayUrl: client.defaultRelayUrl,
+      identityPubkey: identityPubkey,
+    );
     final currentAttachment = _attachment;
     if (currentAttachment != null &&
         identical(currentAttachment.client, client)) {
       _attachment = currentAttachment.copyWith(
         videoEventService: videoEventService,
         initializationTracker: initializationTracker,
+        scope: scope,
       );
+      _discardPendingTransactionOutside(scope);
       return;
     }
 
@@ -79,27 +85,29 @@ class _RelaySetChangeCoordinator {
       generation: ++_nextAttachmentGeneration,
     );
 
-    final transaction = _pendingTransaction;
-    if (transaction == null) return;
-
-    if (transaction.scope != scope) {
-      Log.info(
-        'Discarding pending relay reset at environment or identity boundary',
-        name: 'RelaySetChangeBridge',
-        category: LogCategory.relay,
-      );
-      _pendingTransaction = null;
-      _debounceTimer?.cancel();
-      _debounceTimer = null;
-      _rescheduleAfterOperation = false;
-      return;
-    }
+    if (_discardPendingTransactionOutside(scope)) return;
 
     if (_operationInProgress) {
       _rescheduleAfterOperation = true;
     } else if (!(_debounceTimer?.isActive ?? false)) {
       _scheduleReset();
     }
+  }
+
+  bool _discardPendingTransactionOutside(_RelayIntentScope scope) {
+    final transaction = _pendingTransaction;
+    if (transaction == null || transaction.scope == scope) return false;
+
+    Log.info(
+      'Discarding pending relay reset at environment or identity boundary',
+      name: 'RelaySetChangeBridge',
+      category: LogCategory.relay,
+    );
+    _pendingTransaction = null;
+    _debounceTimer?.cancel();
+    _debounceTimer = null;
+    _rescheduleAfterOperation = false;
+    return true;
   }
 
   bool isClientInitializing(NostrClient client) {
@@ -420,15 +428,8 @@ class _RelayIntentScope {
     required this.identityPubkey,
   });
 
-  factory _RelayIntentScope.fromClient(NostrClient client) {
-    return _RelayIntentScope(
-      defaultRelayUrl: client.defaultRelayUrl,
-      identityPubkey: client.publicKey,
-    );
-  }
-
   final String defaultRelayUrl;
-  final String identityPubkey;
+  final String? identityPubkey;
 
   @override
   bool operator ==(Object other) {
@@ -459,6 +460,7 @@ class _RelayClientAttachment {
   _RelayClientAttachment copyWith({
     required VideoEventService videoEventService,
     required NostrInitializationInProgress initializationTracker,
+    required _RelayIntentScope scope,
   }) {
     return _RelayClientAttachment(
       client: client,
@@ -635,11 +637,19 @@ void relaySetChangeBridge(Ref ref) {
   final initializationTracker = ref.read(
     nostrInitializationInProgressProvider.notifier,
   );
-  coordinator.attach(
-    client: nostrService,
-    videoEventService: videoEventService,
-    initializationTracker: initializationTracker,
-  );
+  void attachWithIdentity(String? identityPubkey) {
+    coordinator.attach(
+      client: nostrService,
+      identityPubkey: identityPubkey,
+      videoEventService: videoEventService,
+      initializationTracker: initializationTracker,
+    );
+  }
+
+  attachWithIdentity(ref.read(nostrSessionProvider).pubkey);
+  ref.listen<NostrSessionReadiness>(nostrSessionProvider, (_, next) {
+    attachWithIdentity(next.pubkey);
+  });
 
   void processStatuses(Map<String, RelayConnectionStatus> statuses) {
     ref
