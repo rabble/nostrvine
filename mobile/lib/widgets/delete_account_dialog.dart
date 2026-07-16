@@ -14,6 +14,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
+import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Show warning dialog for removing keys from device only
@@ -76,9 +77,11 @@ Future<void> showRemoveKeysWarningDialog({
 /// account deletion.
 Future<void> showDeleteAllContentWarningDialog({
   required BuildContext context,
-  required VoidCallback onConfirm,
+  required void Function({required bool burnUsername}) onConfirm,
+  String? ownedUsername,
 }) {
   final confirmationController = TextEditingController();
+  var burnUsername = false;
   const requiredText = 'DELETE';
 
   return showDialog<void>(
@@ -136,6 +139,27 @@ Future<void> showDeleteAllContentWarningDialog({
               ),
               onChanged: (_) => setState(() {}),
             ),
+            if (ownedUsername != null) ...[
+              const SizedBox(height: 16),
+              CheckboxListTile(
+                value: burnUsername,
+                onChanged: (value) =>
+                    setState(() => burnUsername = value ?? false),
+                controlAffinity: ListTileControlAffinity.leading,
+                contentPadding: EdgeInsets.zero,
+                activeColor: VineTheme.error,
+                checkColor: VineTheme.whiteText,
+                title: Text(
+                  context.l10n.deleteAccountBurnUsernameToggle(
+                    '@$ownedUsername.divine.video',
+                  ),
+                  style: const TextStyle(
+                    color: VineTheme.whiteText,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
         actionsAlignment: MainAxisAlignment.spaceBetween,
@@ -152,7 +176,7 @@ Future<void> showDeleteAllContentWarningDialog({
                 confirmationController.text.trim().toUpperCase() == requiredText
                 ? () {
                     context.pop();
-                    onConfirm();
+                    onConfirm(burnUsername: burnUsername);
                   }
                 : null,
             style: ElevatedButton.styleFrom(
@@ -249,19 +273,27 @@ class _DeletionProgressDialog extends StatelessWidget {
 
 /// Execute the full account deletion flow:
 /// 1. Show loading indicator with progress
-/// 2. Send NIP-62 deletion request (requires working signer)
-/// 3. Delete Keycast account if exists (invalidates signer)
-/// 4. Sign out and delete local keys
-/// 5. Show success snackbar (router auto-redirects to /welcome)
+/// 2. If [burnUsername], release the @divine.video handle first (needs a
+///    working signer); on failure, abort with nothing deleted (hard-block)
+/// 3. Send NIP-62 deletion request (requires working signer)
+/// 4. Delete Keycast account if exists (invalidates signer)
+/// 5. Sign out and delete local keys
+/// 6. Show success snackbar (router auto-redirects to /welcome)
 ///
 /// [context] - BuildContext for showing dialogs
 /// [deletionService] - Service to execute NIP-62 deletion
 /// [authService] - Service for Keycast deletion and sign out
+/// [profileRepository] - Burns the username when [burnUsername] is set
+/// [burnUsername] - Whether the user opted in to permanently burn their handle
+/// [ownedUsername] - The active @divine.video handle to burn (when opted in)
 /// [screenName] - Name of the calling screen for logging
 Future<void> executeAccountDeletion({
   required BuildContext context,
   required AccountDeletionService deletionService,
   required AuthService authService,
+  ProfileRepository? profileRepository,
+  bool burnUsername = false,
+  String? ownedUsername,
   String screenName = 'AccountDeletion',
 }) async {
   // Create cubit for tracking progress
@@ -295,9 +327,36 @@ Future<void> executeAccountDeletion({
   final keyDeletionWarningText = context.l10n.deleteAccountKeyDeletionWarning;
   final localDataDeletionFailedText =
       context.l10n.deleteAccountLocalDataDeletionFailed;
+  final burnUsernameFailedText = context.l10n.deleteAccountBurnUsernameFailed;
 
-  // Step 1: Execute NIP-62 deletion request (requires working signer)
   try {
+    // Burn-first hard-block: release the username before any destructive step,
+    // so a failed burn leaves everything intact. Needs a working signer, which
+    // exists before deleteKeycastAccount() below.
+    if (burnUsername && ownedUsername != null && profileRepository != null) {
+      final releaseResult = await profileRepository.releaseUsername(
+        name: ownedUsername,
+      );
+      if (releaseResult is! UsernameReleaseSuccess) {
+        Log.warning(
+          'Username release failed; aborting account deletion',
+          name: screenName,
+          category: LogCategory.auth,
+        );
+        dismissDialog();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            DivineSnackbarContainer.snackBar(
+              burnUsernameFailedText,
+              error: true,
+            ),
+          );
+        }
+        return;
+      }
+    }
+
+    // Publish the NIP-62 deletion request (requires working signer).
     final result = await deletionService.deleteAccount(
       onProgress: cubit.updateProgress,
     );

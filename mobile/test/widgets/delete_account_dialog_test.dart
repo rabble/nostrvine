@@ -10,11 +10,14 @@ import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/widgets/delete_account_dialog.dart';
+import 'package:profile_repository/profile_repository.dart';
 
 class _MockAccountDeletionService extends Mock
     implements AccountDeletionService {}
 
 class _MockAuthService extends Mock implements AuthService {}
+
+class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 /// Minimal router wrapper so [context.pop()] works inside the dialog.
 Widget _wrapWithRouter(Widget child) {
@@ -28,7 +31,11 @@ Widget _wrapWithRouter(Widget child) {
   );
 }
 
-Future<void> _showDialog(WidgetTester tester, {VoidCallback? onConfirm}) async {
+Future<void> _showDialog(
+  WidgetTester tester, {
+  void Function({required bool burnUsername})? onConfirm,
+  String? ownedUsername,
+}) async {
   await tester.pumpWidget(
     _wrapWithRouter(
       Builder(
@@ -37,7 +44,8 @@ Future<void> _showDialog(WidgetTester tester, {VoidCallback? onConfirm}) async {
             key: const Key('open'),
             onPressed: () => showDeleteAllContentWarningDialog(
               context: context,
-              onConfirm: onConfirm ?? () {},
+              ownedUsername: ownedUsername,
+              onConfirm: onConfirm ?? ({required bool burnUsername}) {},
             ),
             child: const Text('Open'),
           ),
@@ -139,7 +147,10 @@ void main() {
 
     testWidgets('tapping enabled button calls onConfirm', (tester) async {
       var called = false;
-      await _showDialog(tester, onConfirm: () => called = true);
+      await _showDialog(
+        tester,
+        onConfirm: ({required bool burnUsername}) => called = true,
+      );
 
       await tester.enterText(find.byType(TextField), 'delete');
       await tester.pump();
@@ -150,6 +161,62 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(called, isTrue);
+    });
+
+    testWidgets('burn toggle is hidden when no username is owned', (
+      tester,
+    ) async {
+      await _showDialog(tester);
+      expect(find.byType(CheckboxListTile), findsNothing);
+    });
+
+    testWidgets('burn toggle is shown when a username is owned', (
+      tester,
+    ) async {
+      await _showDialog(tester, ownedUsername: 'alice');
+      expect(find.byType(CheckboxListTile), findsOneWidget);
+    });
+
+    testWidgets('checking burn toggle passes burnUsername true on confirm', (
+      tester,
+    ) async {
+      bool? received;
+      await _showDialog(
+        tester,
+        ownedUsername: 'alice',
+        onConfirm: ({required bool burnUsername}) => received = burnUsername,
+      );
+
+      await tester.tap(find.byType(CheckboxListTile));
+      await tester.pump();
+      await tester.enterText(find.byType(TextField), 'delete');
+      await tester.pump();
+      await tester.tap(
+        find.widgetWithText(ElevatedButton, 'Delete All Content'),
+      );
+      await tester.pumpAndSettle();
+
+      expect(received, isTrue);
+    });
+
+    testWidgets('leaving burn toggle unchecked passes burnUsername false', (
+      tester,
+    ) async {
+      bool? received;
+      await _showDialog(
+        tester,
+        ownedUsername: 'alice',
+        onConfirm: ({required bool burnUsername}) => received = burnUsername,
+      );
+
+      await tester.enterText(find.byType(TextField), 'delete');
+      await tester.pump();
+      await tester.tap(
+        find.widgetWithText(ElevatedButton, 'Delete All Content'),
+      );
+      await tester.pumpAndSettle();
+
+      expect(received, isFalse);
     });
   });
 
@@ -201,6 +268,141 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Your account has been deleted'), findsNothing);
+    });
+
+    testWidgets('opted-in burn failure aborts deletion and shows error', (
+      tester,
+    ) async {
+      final deletionService = _MockAccountDeletionService();
+      final authService = _MockAuthService();
+      final profileRepository = _MockProfileRepository();
+      when(
+        () => profileRepository.releaseUsername(name: any(named: 'name')),
+      ).thenAnswer((_) async => const UsernameReleaseNotOwner());
+
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const Scaffold(body: SizedBox.shrink());
+            },
+          ),
+        ),
+      );
+
+      await executeAccountDeletion(
+        context: capturedContext,
+        deletionService: deletionService,
+        authService: authService,
+        profileRepository: profileRepository,
+        burnUsername: true,
+        ownedUsername: 'alice',
+      );
+      await tester.pumpAndSettle();
+
+      verifyNever(
+        () =>
+            deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
+      );
+      expect(
+        find.text(
+          lookupAppLocalizations(
+            const Locale('en'),
+          ).deleteAccountBurnUsernameFailed,
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('opted-in burn success proceeds with deletion', (tester) async {
+      final deletionService = _MockAccountDeletionService();
+      final authService = _MockAuthService();
+      final profileRepository = _MockProfileRepository();
+      when(
+        () => profileRepository.releaseUsername(name: any(named: 'name')),
+      ).thenAnswer((_) async => const UsernameReleaseSuccess());
+      when(
+        () =>
+            deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
+      ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
+      when(
+        authService.deleteKeycastAccount,
+      ).thenAnswer((_) async => (true, null));
+      when(
+        () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
+      ).thenAnswer((_) async {});
+
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const Scaffold(body: SizedBox.shrink());
+            },
+          ),
+        ),
+      );
+
+      await executeAccountDeletion(
+        context: capturedContext,
+        deletionService: deletionService,
+        authService: authService,
+        profileRepository: profileRepository,
+        burnUsername: true,
+        ownedUsername: 'alice',
+      );
+      await tester.pumpAndSettle();
+
+      verify(
+        () =>
+            deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
+      ).called(1);
+    });
+
+    testWidgets('does not release the username when burn is not opted in', (
+      tester,
+    ) async {
+      final deletionService = _MockAccountDeletionService();
+      final authService = _MockAuthService();
+      final profileRepository = _MockProfileRepository();
+      when(
+        () =>
+            deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
+      ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
+      when(
+        authService.deleteKeycastAccount,
+      ).thenAnswer((_) async => (true, null));
+      when(
+        () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
+      ).thenAnswer((_) async {});
+
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const Scaffold(body: SizedBox.shrink());
+            },
+          ),
+        ),
+      );
+
+      await executeAccountDeletion(
+        context: capturedContext,
+        deletionService: deletionService,
+        authService: authService,
+        profileRepository: profileRepository,
+        ownedUsername: 'alice',
+      );
+      await tester.pumpAndSettle();
+
+      verifyNever(
+        () => profileRepository.releaseUsername(name: any(named: 'name')),
+      );
     });
   });
 }

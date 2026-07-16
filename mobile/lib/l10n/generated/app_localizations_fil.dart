@@ -6693,6 +6693,15 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
+  String get deleteAccountBurnUsernameFailed =>
+      'Couldn\'t release your username. Your account was not deleted. Try again, or uncheck the option.';
+
+  @override
+  String deleteAccountBurnUsernameToggle(String username) {
+    return 'Also permanently give up $username';
+  }
+
+  @override
   String get deleteAccountConfirmationHint => 'I-type ang DELETE';
 
   @override

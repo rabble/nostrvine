@@ -16,6 +16,7 @@ import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/owned_divine_username_provider.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
@@ -259,13 +260,24 @@ class _DeleteAccountTile extends StatelessWidget {
   ) async {
     final deletionService = ref.read(accountDeletionServiceProvider);
     final authService = ref.read(authServiceProvider);
+    final profileRepository = ref.read(profileRepositoryProvider);
+    // Resolve whether the user owns a burnable @divine.video handle so the
+    // dialog can offer the opt-in burn toggle.
+    final String? ownedUsername = profileRepository == null
+        ? null
+        : await ref.read(ownedDivineUsernameProvider.future);
+    if (!context.mounted) return;
 
     await showDeleteAllContentWarningDialog(
       context: context,
-      onConfirm: () => executeAccountDeletion(
+      ownedUsername: ownedUsername,
+      onConfirm: ({required bool burnUsername}) => executeAccountDeletion(
         context: context,
         deletionService: deletionService,
         authService: authService,
+        profileRepository: profileRepository,
+        burnUsername: burnUsername,
+        ownedUsername: ownedUsername,
         screenName: 'NostrSettingsScreen',
       ),
     );
