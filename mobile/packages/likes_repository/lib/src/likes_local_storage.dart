@@ -34,6 +34,13 @@ abstract class LikesLocalStorage {
   /// Returns `null` if no record exists for the given target.
   Future<LikeRecord?> getLikeRecord(String targetEventId);
 
+  /// Gets a like record by addressable coordinate (`kind:pubkey:d-tag`).
+  ///
+  /// Resolves own-like state for an addressable target across an edit that
+  /// minted a new event id for the same coordinate (#6020). Returns `null`
+  /// if the coordinate has never been liked.
+  Future<LikeRecord?> getLikeRecordByAddressableId(String addressableId);
+
   /// Gets the reaction event ID for a target event.
   ///
   /// This is a convenience method that returns just the reaction event ID,

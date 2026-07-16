@@ -571,7 +571,10 @@ LikesRepository likesRepository(Ref ref) {
     );
     pendingActionService.registerExecutor(
       PendingActionType.unlike,
-      (action) => repository.executeUnlikeAction(action.targetId),
+      (action) => repository.executeUnlikeAction(
+        action.targetId,
+        addressableId: action.addressableId,
+      ),
     );
   }
 

@@ -751,6 +751,15 @@ class AppDatabase extends _$AppDatabase {
     await _addColumnIfMissing('outgoing_dms', 'send_batch_id', 'TEXT');
     await _addColumnIfMissing('direct_messages', 'send_batch_id', 'TEXT');
 
+    // Addressable coordinate for own-like state, so it survives a target
+    // edit that mints a new event id for the same coordinate (#6020). Same
+    // runtime ADD-COLUMN-IF-MISSING pattern as d_tag/send_batch_id above.
+    await _addColumnIfMissing('personal_reactions', 'addressable_id', 'TEXT');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_personal_reactions_addressable_id
+      ON personal_reactions (addressable_id)
+    ''');
+
     // Create the event indexes unconditionally. The `List<Index> get
     // indexes` getter on NostrEvents is not wired through
     // `@DriftDatabase(...)`, so Drift's m.createAll() never creates them —

@@ -18,6 +18,7 @@ class LikeRecord extends Equatable {
     required this.targetEventId,
     required this.reactionEventId,
     required this.createdAt,
+    this.addressableId,
   });
 
   /// The event ID that was liked (e.g., video event ID).
@@ -31,27 +32,43 @@ class LikeRecord extends Equatable {
   /// When the like was created.
   final DateTime createdAt;
 
+  /// Addressable coordinate (`kind:pubkey:d-tag`) of the target event, when
+  /// the target is a Kind 30000+ addressable event (e.g. a video).
+  ///
+  /// Null for likes on non-addressable targets (e.g. comments). Lets own-
+  /// like state resolve across a target edit that mints a new
+  /// [targetEventId] for the same coordinate (#6020).
+  final String? addressableId;
+
   /// Creates a copy of this record with the given fields replaced.
   LikeRecord copyWith({
     String? targetEventId,
     String? reactionEventId,
     DateTime? createdAt,
+    String? addressableId,
   }) {
     return LikeRecord(
       targetEventId: targetEventId ?? this.targetEventId,
       reactionEventId: reactionEventId ?? this.reactionEventId,
       createdAt: createdAt ?? this.createdAt,
+      addressableId: addressableId ?? this.addressableId,
     );
   }
 
   @override
-  List<Object?> get props => [targetEventId, reactionEventId, createdAt];
+  List<Object?> get props => [
+    targetEventId,
+    reactionEventId,
+    createdAt,
+    addressableId,
+  ];
 
   @override
   String toString() {
     return 'LikeRecord('
         'targetEventId: $targetEventId, '
         'reactionEventId: $reactionEventId, '
-        'createdAt: $createdAt)';
+        'createdAt: $createdAt, '
+        'addressableId: $addressableId)';
   }
 }

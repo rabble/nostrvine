@@ -27,11 +27,16 @@ class PersonalReactionsDao extends DatabaseAccessor<AppDatabase>
   ///
   /// Called when the user likes an event. Stores the mapping so that
   /// the reaction can later be deleted (unlike).
+  ///
+  /// [addressableId] is the `kind:pubkey:d-tag` coordinate of the target
+  /// event, when the target is addressable (e.g. a video). Null for
+  /// non-addressable targets (e.g. comments).
   Future<void> upsertReaction({
     required String targetEventId,
     required String reactionEventId,
     required String userPubkey,
     required int createdAt,
+    String? addressableId,
   }) async {
     await into(personalReactions).insertOnConflictUpdate(
       PersonalReactionsCompanion.insert(
@@ -39,6 +44,7 @@ class PersonalReactionsDao extends DatabaseAccessor<AppDatabase>
         reactionEventId: reactionEventId,
         userPubkey: userPubkey,
         createdAt: createdAt,
+        addressableId: Value(addressableId),
       ),
     );
   }
@@ -59,6 +65,7 @@ class PersonalReactionsDao extends DatabaseAccessor<AppDatabase>
             reactionEventId: r.reactionEventId,
             userPubkey: r.userPubkey,
             createdAt: r.createdAt,
+            addressableId: Value(r.addressableId),
           ),
         ),
       );
@@ -192,6 +199,29 @@ class PersonalReactionsDao extends DatabaseAccessor<AppDatabase>
             t.targetEventId.equals(targetEventId) &
             t.userPubkey.equals(userPubkey),
       );
+
+    return query.getSingleOrNull();
+  }
+
+  /// Get a reaction record by addressable coordinate.
+  ///
+  /// Resolves own-like state for an addressable (e.g. video) target across
+  /// an edit that minted a new [PersonalReactionRow.targetEventId] for the
+  /// same coordinate (#6020). Returns `null` when the coordinate has never
+  /// been liked, or when multiple rows would match the query returns the
+  /// most recently created one.
+  Future<PersonalReactionRow?> getReactionByAddressableId({
+    required String addressableId,
+    required String userPubkey,
+  }) async {
+    final query = select(personalReactions)
+      ..where(
+        (t) =>
+            t.addressableId.equals(addressableId) &
+            t.userPubkey.equals(userPubkey),
+      )
+      ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
+      ..limit(1);
 
     return query.getSingleOrNull();
   }

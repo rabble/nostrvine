@@ -170,7 +170,12 @@ extension _LikesRepoStub on _MockLikesRepository {
     when(
       watchLikedEventIds,
     ).thenAnswer((_) => const Stream<List<String>>.empty());
-    when(() => isLiked(any())).thenAnswer((_) async => false);
+    when(
+      () => isLikedResolvingCoordinate(
+        eventId: any(named: 'eventId'),
+        addressableId: any(named: 'addressableId'),
+      ),
+    ).thenAnswer((_) async => false);
     when(
       () => getLikeCount(any(), addressableId: any(named: 'addressableId')),
     ).thenAnswer((_) async => 0);

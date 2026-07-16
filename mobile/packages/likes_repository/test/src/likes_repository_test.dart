@@ -30,10 +30,12 @@ void main() {
       String targetEventId = testEventId,
       String reactionEventId = testReactionEventId,
       DateTime? createdAt,
+      String? addressableId,
     }) => LikeRecord(
       targetEventId: targetEventId,
       reactionEventId: reactionEventId,
       createdAt: createdAt ?? DateTime.now(),
+      addressableId: addressableId,
     );
 
     // Helper to create a mock reaction event
@@ -115,6 +117,9 @@ void main() {
       ).thenAnswer((_) async => false);
       when(
         () => mockLocalStorage.getLikeRecord(any()),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockLocalStorage.getLikeRecordByAddressableId(any()),
       ).thenAnswer((_) async => null);
     });
 
@@ -2231,6 +2236,131 @@ void main() {
 
         expect(result.eventIdToReactionId[targetId], equals(newerReactionId));
       });
+
+      // #6123: rows persisted before the addressable_id column existed
+      // carry no coordinate, and the relay copy of the same reaction is
+      // never *newer*, so the freshness guard alone would skip it and the
+      // coordinate would stay null forever.
+      test(
+        'backfills addressableId onto a stored record when the relay copy '
+        'of the same reaction is same-age but carries a coordinate the '
+        'stored record lacks',
+        () async {
+          const oldEventId = 'old_event_id_1234567890abcdef';
+          const newEventId = 'new_edit_event_id_1234567890abcdef';
+          const reactionId = 'reaction_event_id_1234567890abcdef';
+          const coordinate = '34236:$testAuthorPubkey:test-d-tag';
+
+          // Persisted pre-migration row: no addressableId, same instant as
+          // the relay reaction (so createdAt.isAfter is false).
+          when(() => mockLocalStorage.getAllLikeRecords()).thenAnswer(
+            (_) async => [
+              createLikeRecord(
+                targetEventId: oldEventId,
+                reactionEventId: reactionId,
+                createdAt: DateTime.fromMillisecondsSinceEpoch(
+                  defaultTimestamp * 1000,
+                ),
+              ),
+            ],
+          );
+          final relayReaction = createMockReaction(
+            id: reactionId,
+            targetEventId: oldEventId,
+            authorPubkey: testUserPubkey,
+            tags: [
+              ['e', oldEventId],
+              ['a', coordinate],
+            ],
+          );
+          mockQueryEventsSequence([
+            [relayReaction],
+            <Event>[],
+          ]);
+          when(
+            () => mockLocalStorage.saveLikeRecordsBatch(any()),
+          ).thenAnswer((_) async {});
+
+          repository = createRepository();
+          await repository.syncUserReactions();
+
+          expect(
+            await repository.isLikedResolvingCoordinate(
+              eventId: newEventId,
+              addressableId: coordinate,
+            ),
+            isTrue,
+          );
+          verify(
+            () => mockLocalStorage.saveLikeRecordsBatch(
+              any(
+                that: contains(
+                  isA<LikeRecord>()
+                      .having(
+                        (r) => r.targetEventId,
+                        'targetEventId',
+                        oldEventId,
+                      )
+                      .having(
+                        (r) => r.addressableId,
+                        'addressableId',
+                        coordinate,
+                      ),
+                ),
+              ),
+            ),
+          ).called(1);
+        },
+      );
+
+      // #6123: the backfill exemption must not repoint a stored record at a
+      // *different* (older) reaction just because that reaction carries a
+      // coordinate — unlike would then delete the wrong wire event.
+      test(
+        'does not replace a stored newer coordinate-less record with a '
+        'different older reaction that carries a coordinate',
+        () async {
+          const targetId = 'target_event_1234567890abcdef';
+          const newerReactionId = 'newer_reaction_1234567890abcdef';
+          const olderReactionId = 'older_reaction_1234567890abcdef';
+          const coordinate = '34236:$testAuthorPubkey:test-d-tag';
+
+          when(() => mockLocalStorage.getAllLikeRecords()).thenAnswer(
+            (_) async => [
+              createLikeRecord(
+                targetEventId: targetId,
+                reactionEventId: newerReactionId,
+                createdAt: DateTime.fromMillisecondsSinceEpoch(
+                  (defaultTimestamp + 100) * 1000,
+                ),
+              ),
+            ],
+          );
+          final olderRelayReaction = createMockReaction(
+            id: olderReactionId,
+            targetEventId: targetId,
+            authorPubkey: testUserPubkey,
+            tags: [
+              ['e', targetId],
+              ['a', coordinate],
+            ],
+          );
+          mockQueryEventsSequence([
+            [olderRelayReaction],
+            <Event>[],
+          ]);
+
+          repository = createRepository();
+          final result = await repository.syncUserReactions();
+
+          expect(
+            result.eventIdToReactionId[targetId],
+            equals(newerReactionId),
+          );
+          expect(await repository.isLikedByCoordinate(coordinate), isFalse);
+          verifyNever(() => mockLocalStorage.saveLikeRecordsBatch(any()));
+        },
+      );
     });
 
     group('fetchUserLikes', () {
@@ -2831,6 +2961,119 @@ void main() {
 
         verify(() => mockLocalStorage.getAllLikeRecords()).called(1);
       });
+
+      // #6123: likes persisted before the addressable_id column shipped
+      // must self-heal at startup — waiting for a Liked Videos visit
+      // leaves every pre-existing like carrying bug #6020.
+      test(
+        'backfills coordinates via syncUserReactions when a loaded record '
+        'lacks an addressableId',
+        () async {
+          const oldEventId = 'old_event_id_1234567890abcdef';
+          const newEventId = 'new_edit_event_id_1234567890abcdef';
+          const reactionId = 'reaction_event_id_1234567890abcdef';
+          const coordinate = '34236:$testAuthorPubkey:test-d-tag';
+
+          when(() => mockNostrClient.hasKeys).thenReturn(true);
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => const Stream.empty());
+          when(() => mockLocalStorage.getAllLikeRecords()).thenAnswer(
+            (_) async => [
+              createLikeRecord(
+                targetEventId: oldEventId,
+                reactionEventId: reactionId,
+                createdAt: DateTime.fromMillisecondsSinceEpoch(
+                  defaultTimestamp * 1000,
+                ),
+              ),
+            ],
+          );
+          final relayReaction = createMockReaction(
+            id: reactionId,
+            targetEventId: oldEventId,
+            authorPubkey: testUserPubkey,
+            tags: [
+              ['e', oldEventId],
+              ['a', coordinate],
+            ],
+          );
+          mockQueryEventsSequence([
+            [relayReaction],
+            <Event>[],
+          ]);
+          when(
+            () => mockLocalStorage.saveLikeRecordsBatch(any()),
+          ).thenAnswer((_) async {});
+
+          repository = createRepository();
+          await repository.initialize();
+
+          verify(() => mockNostrClient.queryEvents(any())).called(2);
+          expect(
+            await repository.isLikedResolvingCoordinate(
+              eventId: newEventId,
+              addressableId: coordinate,
+            ),
+            isTrue,
+          );
+        },
+      );
+
+      test(
+        'skips the backfill sync when every loaded record already has a '
+        'coordinate',
+        () async {
+          when(() => mockNostrClient.hasKeys).thenReturn(true);
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => const Stream.empty());
+          when(() => mockLocalStorage.getAllLikeRecords()).thenAnswer(
+            (_) async => [
+              createLikeRecord(
+                addressableId: '34236:$testAuthorPubkey:test-d-tag',
+              ),
+            ],
+          );
+
+          repository = createRepository();
+          await repository.initialize();
+
+          verifyNever(() => mockNostrClient.queryEvents(any()));
+        },
+      );
+
+      test(
+        'completes and keeps local state when the backfill sync fails',
+        () async {
+          const oldEventId = 'old_event_id_1234567890abcdef';
+
+          when(() => mockNostrClient.hasKeys).thenReturn(true);
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => const Stream.empty());
+          when(() => mockLocalStorage.getAllLikeRecords()).thenAnswer(
+            (_) async => [createLikeRecord(targetEventId: oldEventId)],
+          );
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenThrow(Exception('offline'));
+
+          repository = createRepository();
+          await repository.initialize();
+
+          expect(await repository.isLiked(oldEventId), isTrue);
+        },
+      );
     });
 
     group('real-time sync', () {
@@ -3144,6 +3387,196 @@ void main() {
         verify(() => mockLocalStorage.saveLikeRecord(any())).called(2);
       });
 
+      test(
+        // #6020: PendingActionService's own queue-time dedup only cancels
+        // opposite actions on the *same* event id — it has no visibility
+        // into a like that synced in from another device (under a
+        // different event id) for the same coordinate while this action
+        // sat in the offline queue. Without this guard, replay would
+        // publish a second, duplicate live reaction.
+        'reconciles to an already-synced coordinate reaction instead of '
+        'publishing a duplicate, when another device liked the same '
+        'coordinate while this action was queued',
+        () async {
+          const coordinate = '34236:$testAuthorPubkey:test-d-tag';
+          const otherDeviceReactionId = 'other_device_reaction_id';
+          const otherDeviceEventId = 'other_device_event_id';
+
+          when(
+            () => mockLocalStorage.saveLikeRecord(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockLocalStorage.saveLikeRecordsBatch(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockLocalStorage.deleteLikeRecord(any()),
+          ).thenAnswer((_) async => true);
+
+          // 1. Offline: queue a like for testEventId at this coordinate.
+          repository = LikesRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+            isOnline: () => false,
+            queueOfflineAction:
+                ({
+                  required isLike,
+                  required eventId,
+                  required authorPubkey,
+                  addressableId,
+                  targetKind,
+                }) async {},
+          );
+          final placeholderId = await repository.likeEvent(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+            addressableId: coordinate,
+          );
+          expect(placeholderId, startsWith('pending_like_'));
+
+          // 2. While still queued, another device's like for the SAME
+          // coordinate (different event id, real reaction id) syncs in.
+          final otherDeviceReaction = createMockReaction(
+            id: otherDeviceReactionId,
+            targetEventId: otherDeviceEventId,
+            authorPubkey: testUserPubkey,
+            tags: [
+              ['e', otherDeviceEventId],
+              ['a', coordinate],
+            ],
+          );
+          mockQueryEventsSequence([
+            [otherDeviceReaction],
+            <Event>[],
+          ]);
+          await repository.syncUserReactions();
+
+          // 3. Sync replay executes the originally-queued action.
+          final resolvedId = await repository.executeLikeAction(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+            addressableId: coordinate,
+          );
+
+          expect(resolvedId, equals(otherDeviceReactionId));
+          verifyNever(
+            () => mockNostrClient.sendLike(
+              any(),
+              content: any(named: 'content'),
+              addressableId: any(named: 'addressableId'),
+              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          );
+        },
+      );
+
+      test(
+        // #6123 review: without dropping the pending_ placeholder while
+        // reconciling, a later unlike resolves the placeholder by event id
+        // first, hits the pending_ short-circuit, and never deletes the
+        // live cross-device reaction — stranding it un-deletable.
+        'drops the queued placeholder when reconciling to a cross-device '
+        'coordinate reaction, so a later unlike deletes that reaction and '
+        'clears both lookups',
+        () async {
+          const coordinate = '34236:$testAuthorPubkey:test-d-tag';
+          const otherDeviceReactionId = 'other_device_reaction_id';
+          const otherDeviceEventId = 'other_device_event_id';
+
+          when(
+            () => mockLocalStorage.saveLikeRecord(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockLocalStorage.saveLikeRecordsBatch(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockLocalStorage.deleteLikeRecord(any()),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockNostrClient.deleteEvent(any()),
+          ).thenAnswer(
+            (_) async => createMockDeletion([otherDeviceReactionId]),
+          );
+
+          // 1. Offline: queue a like for testEventId at this coordinate.
+          var online = false;
+          repository = LikesRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+            isOnline: () => online,
+            queueOfflineAction:
+                ({
+                  required isLike,
+                  required eventId,
+                  required authorPubkey,
+                  addressableId,
+                  targetKind,
+                }) async {},
+          );
+          await repository.likeEvent(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+            addressableId: coordinate,
+          );
+
+          // 2. While queued, another device's like for the SAME coordinate
+          // (different event id, real reaction id) syncs in.
+          final otherDeviceReaction = createMockReaction(
+            id: otherDeviceReactionId,
+            targetEventId: otherDeviceEventId,
+            authorPubkey: testUserPubkey,
+            tags: [
+              ['e', otherDeviceEventId],
+              ['a', coordinate],
+            ],
+          );
+          mockQueryEventsSequence([
+            [otherDeviceReaction],
+            <Event>[],
+          ]);
+          await repository.syncUserReactions();
+
+          // 3. Back online: replay reconciles, then the user unlikes.
+          online = true;
+          final resolvedId = await repository.executeLikeAction(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+            addressableId: coordinate,
+          );
+          await repository.unlikeEvent(testEventId, addressableId: coordinate);
+
+          expect(resolvedId, equals(otherDeviceReactionId));
+          verifyNever(
+            () => mockNostrClient.sendLike(
+              any(),
+              content: any(named: 'content'),
+              addressableId: any(named: 'addressableId'),
+              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          );
+          // Reconcile dropped the placeholder row; unlike removed the real
+          // record and published Kind 5 for the real reaction.
+          verify(
+            () => mockLocalStorage.deleteLikeRecord(testEventId),
+          ).called(1);
+          verify(
+            () => mockLocalStorage.deleteLikeRecord(otherDeviceEventId),
+          ).called(1);
+          verify(
+            () => mockNostrClient.deleteEvent(otherDeviceReactionId),
+          ).called(1);
+          expect(
+            await repository.isLikedResolvingCoordinate(
+              eventId: testEventId,
+              addressableId: coordinate,
+            ),
+            isFalse,
+          );
+          expect(await repository.isLiked(otherDeviceEventId), isFalse);
+        },
+      );
+
       test('throws LikeFailedException when publish fails', () async {
         when(
           () => mockNostrClient.sendLike(
@@ -3360,6 +3793,333 @@ void main() {
         final cached = await repository.getLikeCount(testEventId);
         expect(cached, equals(10));
       });
+    });
+
+    group('coordinate-aware own-like resolution (#6020)', () {
+      const oldEventId = 'old_event_id_1234567890abcdef';
+      const newEventId = 'new_event_id_1234567890abcdef';
+      const coordinate = '34236:$testAuthorPubkey:test-d-tag';
+
+      test(
+        'isLikedByCoordinate resolves true after syncUserReactions ingests '
+        'a reaction whose e tag is a different (old) id but whose a tag '
+        'matches',
+        () async {
+          final reaction = createMockReaction(
+            id: testReactionEventId,
+            targetEventId: oldEventId,
+            tags: [
+              ['e', oldEventId],
+              ['a', coordinate],
+            ],
+          );
+          mockQueryEventsSequence([
+            [reaction],
+            <Event>[],
+          ]);
+          when(
+            () => mockLocalStorage.saveLikeRecordsBatch(any()),
+          ).thenAnswer((_) async {});
+
+          repository = createRepository();
+          await repository.syncUserReactions();
+
+          // The new (post-edit) event id was never liked directly...
+          expect(await repository.isLiked(newEventId), isFalse);
+          // ...but the coordinate resolves true, and isLikedResolvingCoordinate
+          // (what VideoInteractionsBloc calls) composes the two correctly.
+          expect(await repository.isLikedByCoordinate(coordinate), isTrue);
+          expect(
+            await repository.isLikedResolvingCoordinate(
+              eventId: newEventId,
+              addressableId: coordinate,
+            ),
+            isTrue,
+          );
+        },
+      );
+
+      test(
+        'getLikeRecordByCoordinate returns the reactionEventId needed for '
+        'unlike resolution',
+        () async {
+          final reaction = createMockReaction(
+            id: testReactionEventId,
+            targetEventId: oldEventId,
+            tags: [
+              ['e', oldEventId],
+              ['a', coordinate],
+            ],
+          );
+          mockQueryEventsSequence([
+            [reaction],
+            <Event>[],
+          ]);
+          when(
+            () => mockLocalStorage.saveLikeRecordsBatch(any()),
+          ).thenAnswer((_) async {});
+
+          repository = createRepository();
+          await repository.syncUserReactions();
+
+          final record = await repository.getLikeRecordByCoordinate(
+            coordinate,
+          );
+          expect(record, isNotNull);
+          expect(record!.targetEventId, equals(oldEventId));
+          expect(record.reactionEventId, equals(testReactionEventId));
+        },
+      );
+
+      test('clearCache wipes the addressable-id companion cache too', () async {
+        final reaction = createMockReaction(
+          id: testReactionEventId,
+          targetEventId: oldEventId,
+          tags: [
+            ['e', oldEventId],
+            ['a', coordinate],
+          ],
+        );
+        mockQueryEventsSequence([
+          [reaction],
+          <Event>[],
+        ]);
+        when(
+          () => mockLocalStorage.saveLikeRecordsBatch(any()),
+        ).thenAnswer((_) async {});
+        when(() => mockLocalStorage.clearAll()).thenAnswer((_) async {});
+
+        repository = createRepository();
+        await repository.syncUserReactions();
+        expect(await repository.isLikedByCoordinate(coordinate), isTrue);
+
+        await repository.clearCache();
+
+        expect(await repository.isLikedByCoordinate(coordinate), isFalse);
+      });
+
+      test(
+        'cold start resolves isLikedByCoordinate from persisted storage '
+        'alone, without any relay call (beats #4478s warm-cache-only limit)',
+        () async {
+          when(() => mockLocalStorage.getAllLikeRecords()).thenAnswer(
+            (_) async => [
+              createLikeRecord(
+                targetEventId: oldEventId,
+                addressableId: coordinate,
+              ),
+            ],
+          );
+
+          repository = createRepository();
+          // initialize() loads from local storage only; no relay query is
+          // stubbed for reactions/deletions, so a relay round-trip here
+          // would surface as a Mocktail MissingStubError.
+          await repository.initialize();
+
+          expect(
+            await repository.isLikedResolvingCoordinate(
+              eventId: newEventId,
+              addressableId: coordinate,
+            ),
+            isTrue,
+          );
+        },
+      );
+    });
+
+    group('duplicate-reaction guard (#6020)', () {
+      const oldEventId = 'old_event_id_1234567890abcdef';
+      const newEventId = 'new_event_id_1234567890abcdef';
+      const coordinate = '34236:$testAuthorPubkey:test-d-tag';
+
+      test(
+        'likeEvent throws AlreadyLikedException when the coordinate is '
+        'already liked under a different event id',
+        () async {
+          when(() => mockLocalStorage.getAllLikeRecords()).thenAnswer(
+            (_) async => [
+              createLikeRecord(
+                targetEventId: oldEventId,
+                addressableId: coordinate,
+              ),
+            ],
+          );
+
+          repository = createRepository();
+          await repository.initialize();
+
+          expect(
+            () => repository.likeEvent(
+              eventId: newEventId,
+              authorPubkey: testAuthorPubkey,
+              addressableId: coordinate,
+            ),
+            throwsA(isA<AlreadyLikedException>()),
+          );
+        },
+      );
+
+      test(
+        'toggleLike treats the coordinate as currently liked and unlikes '
+        'the original reaction rather than creating a duplicate',
+        () async {
+          when(() => mockLocalStorage.getAllLikeRecords()).thenAnswer(
+            (_) async => [
+              createLikeRecord(
+                targetEventId: oldEventId,
+                addressableId: coordinate,
+              ),
+            ],
+          );
+          when(
+            () => mockNostrClient.deleteEvent(testReactionEventId),
+          ).thenAnswer((_) async => MockEvent());
+          when(
+            () => mockLocalStorage.deleteLikeRecord(oldEventId),
+          ).thenAnswer((_) async => true);
+
+          repository = createRepository();
+          await repository.initialize();
+
+          final isNowLiked = await repository.toggleLike(
+            eventId: newEventId,
+            authorPubkey: testAuthorPubkey,
+            addressableId: coordinate,
+          );
+
+          expect(isNowLiked, isFalse);
+          verifyNever(
+            () => mockNostrClient.sendLike(
+              any(),
+              content: any(named: 'content'),
+              addressableId: any(named: 'addressableId'),
+              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          );
+          verify(
+            () => mockNostrClient.deleteEvent(testReactionEventId),
+          ).called(1);
+        },
+      );
+    });
+
+    group('unlikeEvent resolves by coordinate (#6020)', () {
+      const oldEventId = 'old_event_id_1234567890abcdef';
+      const newEventId = 'new_event_id_1234567890abcdef';
+      const coordinate = '34236:$testAuthorPubkey:test-d-tag';
+
+      test(
+        'unlikeEvent(newEventId, addressableId: coordinate) deletes the '
+        'reaction recorded under oldEventId',
+        () async {
+          when(() => mockLocalStorage.getAllLikeRecords()).thenAnswer(
+            (_) async => [
+              createLikeRecord(
+                targetEventId: oldEventId,
+                addressableId: coordinate,
+              ),
+            ],
+          );
+          when(
+            () => mockNostrClient.deleteEvent(testReactionEventId),
+          ).thenAnswer((_) async => MockEvent());
+          when(
+            () => mockLocalStorage.deleteLikeRecord(oldEventId),
+          ).thenAnswer((_) async => true);
+
+          repository = createRepository();
+          await repository.initialize();
+
+          await repository.unlikeEvent(newEventId, addressableId: coordinate);
+
+          verify(
+            () => mockNostrClient.deleteEvent(testReactionEventId),
+          ).called(1);
+          verify(
+            () => mockLocalStorage.deleteLikeRecord(oldEventId),
+          ).called(1);
+          expect(await repository.isLikedByCoordinate(coordinate), isFalse);
+          expect(await repository.isLiked(oldEventId), isFalse);
+        },
+      );
+
+      test(
+        'unlikeEvent falls back to local storage by coordinate when '
+        'neither the memory cache nor a direct database lookup by event id '
+        'has the record',
+        () async {
+          when(
+            () => mockLocalStorage.getLikeRecordByAddressableId(coordinate),
+          ).thenAnswer(
+            (_) async => createLikeRecord(
+              targetEventId: oldEventId,
+              addressableId: coordinate,
+            ),
+          );
+          when(
+            () => mockNostrClient.deleteEvent(testReactionEventId),
+          ).thenAnswer((_) async => MockEvent());
+          when(
+            () => mockLocalStorage.deleteLikeRecord(oldEventId),
+          ).thenAnswer((_) async => true);
+
+          repository = createRepository();
+
+          await repository.unlikeEvent(newEventId, addressableId: coordinate);
+
+          verify(
+            () => mockLocalStorage.getLikeRecordByAddressableId(coordinate),
+          ).called(1);
+          verify(
+            () => mockNostrClient.deleteEvent(testReactionEventId),
+          ).called(1);
+        },
+      );
+    });
+
+    group('like count cache dual-key (#6020)', () {
+      const oldEventId = 'old_event_id_1234567890abcdef';
+      const newEventId = 'new_event_id_1234567890abcdef';
+      const coordinate = '34236:$testAuthorPubkey:test-d-tag';
+
+      test(
+        'a count cached under the old event id resolves for the new event '
+        'id via the coordinate, without an extra relay query',
+        () async {
+          final reaction = createMockReaction(
+            id: 'liker_reaction',
+            targetEventId: oldEventId,
+            authorPubkey: 'some_liker_pubkey_1234567890abcdef',
+            tags: [
+              ['a', coordinate],
+            ],
+          );
+          mockQueryEventsSequence([
+            [reaction], // e-filter query for oldEventId
+            [reaction], // a-filter query for coordinate
+            <Event>[], // deletion-scoped query
+          ]);
+
+          repository = createRepository();
+          final firstCount = await repository.getLikeCount(
+            oldEventId,
+            addressableId: coordinate,
+          );
+          expect(firstCount, equals(1));
+
+          // Same coordinate, new (post-edit) event id — should be served
+          // from the addressable-id companion cache, not a fresh query.
+          final secondCount = await repository.getLikeCount(
+            newEventId,
+            addressableId: coordinate,
+          );
+          expect(secondCount, equals(1));
+
+          verify(() => mockNostrClient.queryEvents(any())).called(3);
+        },
+      );
     });
   });
 }

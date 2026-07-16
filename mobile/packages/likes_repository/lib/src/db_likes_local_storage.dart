@@ -31,6 +31,7 @@ class DbLikesLocalStorage implements LikesLocalStorage {
       reactionEventId: record.reactionEventId,
       userPubkey: _userPubkey,
       createdAt: record.createdAt.millisecondsSinceEpoch ~/ 1000,
+      addressableId: record.addressableId,
     );
   }
 
@@ -44,6 +45,7 @@ class DbLikesLocalStorage implements LikesLocalStorage {
         reactionEventId: record.reactionEventId,
         userPubkey: _userPubkey,
         createdAt: record.createdAt.millisecondsSinceEpoch ~/ 1000,
+        addressableId: record.addressableId,
       );
     }).toList();
 
@@ -63,6 +65,20 @@ class DbLikesLocalStorage implements LikesLocalStorage {
   Future<LikeRecord?> getLikeRecord(String targetEventId) async {
     final row = await _dao.getReaction(
       targetEventId: targetEventId,
+      userPubkey: _userPubkey,
+    );
+
+    if (row == null) return null;
+
+    return _rowToRecord(row);
+  }
+
+  @override
+  Future<LikeRecord?> getLikeRecordByAddressableId(
+    String addressableId,
+  ) async {
+    final row = await _dao.getReactionByAddressableId(
+      addressableId: addressableId,
       userPubkey: _userPubkey,
     );
 
@@ -112,6 +128,7 @@ class DbLikesLocalStorage implements LikesLocalStorage {
         row.createdAt * 1000,
         isUtc: true,
       ),
+      addressableId: row.addressableId,
     );
   }
 }

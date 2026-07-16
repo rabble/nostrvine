@@ -971,6 +971,16 @@
             "default_dart": null,
             "default_client_dart": null,
             "dsl_features": []
+          },
+          {
+            "name": "addressable_id",
+            "getter_name": "addressableId",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
           }
         ],
         "is_virtual": false,
@@ -2669,6 +2679,117 @@
           "gift_wrap_id"
         ]
       }
+    },
+    {
+      "id": 21,
+      "references": [],
+      "type": "table",
+      "data": {
+        "name": "pending_profile_saves",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "user_pubkey",
+            "getter_name": "userPubkey",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "payload_json",
+            "getter_name": "payloadJson",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "claim_confirmed",
+            "getter_name": "claimConfirmed",
+            "moor_type": "bool",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "CHECK (\"claim_confirmed\" IN (0, 1))",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "CHECK (\"claim_confirmed\" IN (0, 1))"
+            },
+            "default_dart": "const CustomExpression('0')",
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "status",
+            "getter_name": "status",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": "const CustomExpression('\\'pending\\'')",
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "retry_count",
+            "getter_name": "retryCount",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": "const CustomExpression('0')",
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "last_attempt_at",
+            "getter_name": "lastAttemptAt",
+            "moor_type": "dateTime",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "queued_at",
+            "getter_name": "queuedAt",
+            "moor_type": "dateTime",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "last_error",
+            "getter_name": "lastError",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "generation",
+            "getter_name": "generation",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": "const CustomExpression('\\'\\'')",
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [],
+        "explicit_pk": [
+          "user_pubkey"
+        ]
+      }
     }
   ],
   "fixed_sql": [
@@ -2740,7 +2861,7 @@
       "sql": [
         {
           "dialect": "sqlite",
-          "sql": "CREATE TABLE IF NOT EXISTS \"personal_reactions\" (\"target_event_id\" TEXT NOT NULL, \"reaction_event_id\" TEXT NOT NULL, \"user_pubkey\" TEXT NOT NULL, \"created_at\" INTEGER NOT NULL, PRIMARY KEY (\"target_event_id\", \"user_pubkey\"));"
+          "sql": "CREATE TABLE IF NOT EXISTS \"personal_reactions\" (\"target_event_id\" TEXT NOT NULL, \"reaction_event_id\" TEXT NOT NULL, \"user_pubkey\" TEXT NOT NULL, \"created_at\" INTEGER NOT NULL, \"addressable_id\" TEXT NULL, PRIMARY KEY (\"target_event_id\", \"user_pubkey\"));"
         }
       ]
     },
@@ -2858,6 +2979,15 @@
         {
           "dialect": "sqlite",
           "sql": "CREATE TABLE IF NOT EXISTS \"processed_gift_wraps\" (\"gift_wrap_id\" TEXT NOT NULL, \"processed_at\" INTEGER NOT NULL, \"owner_pubkey\" TEXT NULL, PRIMARY KEY (\"gift_wrap_id\"));"
+        }
+      ]
+    },
+    {
+      "name": "pending_profile_saves",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"pending_profile_saves\" (\"user_pubkey\" TEXT NOT NULL, \"payload_json\" TEXT NOT NULL, \"claim_confirmed\" INTEGER NOT NULL DEFAULT 0 CHECK (\"claim_confirmed\" IN (0, 1)), \"status\" TEXT NOT NULL DEFAULT 'pending', \"retry_count\" INTEGER NOT NULL DEFAULT 0, \"last_attempt_at\" INTEGER NULL, \"queued_at\" INTEGER NOT NULL, \"last_error\" TEXT NULL, \"generation\" TEXT NOT NULL DEFAULT '', PRIMARY KEY (\"user_pubkey\"));"
         }
       ]
     }

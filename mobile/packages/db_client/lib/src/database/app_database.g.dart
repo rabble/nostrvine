@@ -4950,12 +4950,24 @@ class $PersonalReactionsTable extends PersonalReactions
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _addressableIdMeta = const VerificationMeta(
+    'addressableId',
+  );
+  @override
+  late final GeneratedColumn<String> addressableId = GeneratedColumn<String>(
+    'addressable_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     targetEventId,
     reactionEventId,
     userPubkey,
     createdAt,
+    addressableId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -5007,6 +5019,15 @@ class $PersonalReactionsTable extends PersonalReactions
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
+    if (data.containsKey('addressable_id')) {
+      context.handle(
+        _addressableIdMeta,
+        addressableId.isAcceptableOrUnknown(
+          data['addressable_id']!,
+          _addressableIdMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -5032,6 +5053,10 @@ class $PersonalReactionsTable extends PersonalReactions
         DriftSqlType.int,
         data['${effectivePrefix}created_at'],
       )!,
+      addressableId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}addressable_id'],
+      ),
     );
   }
 
@@ -5054,11 +5079,20 @@ class PersonalReactionRow extends DataClass
 
   /// Unix timestamp when the reaction was created
   final int createdAt;
+
+  /// Addressable coordinate (`kind:pubkey:d-tag`) of the target event, when
+  /// the target is a Kind 30000+ addressable event (e.g. a video).
+  ///
+  /// Null for likes on non-addressable targets (e.g. comments), which have
+  /// no `d` tag / coordinate. Lets own-like state survive a target edit
+  /// that mints a new [targetEventId] for the same coordinate (#6020).
+  final String? addressableId;
   const PersonalReactionRow({
     required this.targetEventId,
     required this.reactionEventId,
     required this.userPubkey,
     required this.createdAt,
+    this.addressableId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -5067,6 +5101,9 @@ class PersonalReactionRow extends DataClass
     map['reaction_event_id'] = Variable<String>(reactionEventId);
     map['user_pubkey'] = Variable<String>(userPubkey);
     map['created_at'] = Variable<int>(createdAt);
+    if (!nullToAbsent || addressableId != null) {
+      map['addressable_id'] = Variable<String>(addressableId);
+    }
     return map;
   }
 
@@ -5076,6 +5113,9 @@ class PersonalReactionRow extends DataClass
       reactionEventId: Value(reactionEventId),
       userPubkey: Value(userPubkey),
       createdAt: Value(createdAt),
+      addressableId: addressableId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(addressableId),
     );
   }
 
@@ -5089,6 +5129,7 @@ class PersonalReactionRow extends DataClass
       reactionEventId: serializer.fromJson<String>(json['reactionEventId']),
       userPubkey: serializer.fromJson<String>(json['userPubkey']),
       createdAt: serializer.fromJson<int>(json['createdAt']),
+      addressableId: serializer.fromJson<String?>(json['addressableId']),
     );
   }
   @override
@@ -5099,6 +5140,7 @@ class PersonalReactionRow extends DataClass
       'reactionEventId': serializer.toJson<String>(reactionEventId),
       'userPubkey': serializer.toJson<String>(userPubkey),
       'createdAt': serializer.toJson<int>(createdAt),
+      'addressableId': serializer.toJson<String?>(addressableId),
     };
   }
 
@@ -5107,11 +5149,15 @@ class PersonalReactionRow extends DataClass
     String? reactionEventId,
     String? userPubkey,
     int? createdAt,
+    Value<String?> addressableId = const Value.absent(),
   }) => PersonalReactionRow(
     targetEventId: targetEventId ?? this.targetEventId,
     reactionEventId: reactionEventId ?? this.reactionEventId,
     userPubkey: userPubkey ?? this.userPubkey,
     createdAt: createdAt ?? this.createdAt,
+    addressableId: addressableId.present
+        ? addressableId.value
+        : this.addressableId,
   );
   PersonalReactionRow copyWithCompanion(PersonalReactionsCompanion data) {
     return PersonalReactionRow(
@@ -5125,6 +5171,9 @@ class PersonalReactionRow extends DataClass
           ? data.userPubkey.value
           : this.userPubkey,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      addressableId: data.addressableId.present
+          ? data.addressableId.value
+          : this.addressableId,
     );
   }
 
@@ -5134,14 +5183,20 @@ class PersonalReactionRow extends DataClass
           ..write('targetEventId: $targetEventId, ')
           ..write('reactionEventId: $reactionEventId, ')
           ..write('userPubkey: $userPubkey, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('addressableId: $addressableId')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(targetEventId, reactionEventId, userPubkey, createdAt);
+  int get hashCode => Object.hash(
+    targetEventId,
+    reactionEventId,
+    userPubkey,
+    createdAt,
+    addressableId,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -5149,7 +5204,8 @@ class PersonalReactionRow extends DataClass
           other.targetEventId == this.targetEventId &&
           other.reactionEventId == this.reactionEventId &&
           other.userPubkey == this.userPubkey &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.addressableId == this.addressableId);
 }
 
 class PersonalReactionsCompanion extends UpdateCompanion<PersonalReactionRow> {
@@ -5157,12 +5213,14 @@ class PersonalReactionsCompanion extends UpdateCompanion<PersonalReactionRow> {
   final Value<String> reactionEventId;
   final Value<String> userPubkey;
   final Value<int> createdAt;
+  final Value<String?> addressableId;
   final Value<int> rowid;
   const PersonalReactionsCompanion({
     this.targetEventId = const Value.absent(),
     this.reactionEventId = const Value.absent(),
     this.userPubkey = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.addressableId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   PersonalReactionsCompanion.insert({
@@ -5170,6 +5228,7 @@ class PersonalReactionsCompanion extends UpdateCompanion<PersonalReactionRow> {
     required String reactionEventId,
     required String userPubkey,
     required int createdAt,
+    this.addressableId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : targetEventId = Value(targetEventId),
        reactionEventId = Value(reactionEventId),
@@ -5180,6 +5239,7 @@ class PersonalReactionsCompanion extends UpdateCompanion<PersonalReactionRow> {
     Expression<String>? reactionEventId,
     Expression<String>? userPubkey,
     Expression<int>? createdAt,
+    Expression<String>? addressableId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -5187,6 +5247,7 @@ class PersonalReactionsCompanion extends UpdateCompanion<PersonalReactionRow> {
       if (reactionEventId != null) 'reaction_event_id': reactionEventId,
       if (userPubkey != null) 'user_pubkey': userPubkey,
       if (createdAt != null) 'created_at': createdAt,
+      if (addressableId != null) 'addressable_id': addressableId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -5196,6 +5257,7 @@ class PersonalReactionsCompanion extends UpdateCompanion<PersonalReactionRow> {
     Value<String>? reactionEventId,
     Value<String>? userPubkey,
     Value<int>? createdAt,
+    Value<String?>? addressableId,
     Value<int>? rowid,
   }) {
     return PersonalReactionsCompanion(
@@ -5203,6 +5265,7 @@ class PersonalReactionsCompanion extends UpdateCompanion<PersonalReactionRow> {
       reactionEventId: reactionEventId ?? this.reactionEventId,
       userPubkey: userPubkey ?? this.userPubkey,
       createdAt: createdAt ?? this.createdAt,
+      addressableId: addressableId ?? this.addressableId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -5222,6 +5285,9 @@ class PersonalReactionsCompanion extends UpdateCompanion<PersonalReactionRow> {
     if (createdAt.present) {
       map['created_at'] = Variable<int>(createdAt.value);
     }
+    if (addressableId.present) {
+      map['addressable_id'] = Variable<String>(addressableId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -5235,6 +5301,7 @@ class PersonalReactionsCompanion extends UpdateCompanion<PersonalReactionRow> {
           ..write('reactionEventId: $reactionEventId, ')
           ..write('userPubkey: $userPubkey, ')
           ..write('createdAt: $createdAt, ')
+          ..write('addressableId: $addressableId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -17735,6 +17802,7 @@ typedef $$PersonalReactionsTableCreateCompanionBuilder =
       required String reactionEventId,
       required String userPubkey,
       required int createdAt,
+      Value<String?> addressableId,
       Value<int> rowid,
     });
 typedef $$PersonalReactionsTableUpdateCompanionBuilder =
@@ -17743,6 +17811,7 @@ typedef $$PersonalReactionsTableUpdateCompanionBuilder =
       Value<String> reactionEventId,
       Value<String> userPubkey,
       Value<int> createdAt,
+      Value<String?> addressableId,
       Value<int> rowid,
     });
 
@@ -17772,6 +17841,11 @@ class $$PersonalReactionsTableFilterComposer
 
   ColumnFilters<int> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get addressableId => $composableBuilder(
+    column: $table.addressableId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -17804,6 +17878,11 @@ class $$PersonalReactionsTableOrderingComposer
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get addressableId => $composableBuilder(
+    column: $table.addressableId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$PersonalReactionsTableAnnotationComposer
@@ -17832,6 +17911,11 @@ class $$PersonalReactionsTableAnnotationComposer
 
   GeneratedColumn<int> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get addressableId => $composableBuilder(
+    column: $table.addressableId,
+    builder: (column) => column,
+  );
 }
 
 class $$PersonalReactionsTableTableManager
@@ -17878,12 +17962,14 @@ class $$PersonalReactionsTableTableManager
                 Value<String> reactionEventId = const Value.absent(),
                 Value<String> userPubkey = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
+                Value<String?> addressableId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PersonalReactionsCompanion(
                 targetEventId: targetEventId,
                 reactionEventId: reactionEventId,
                 userPubkey: userPubkey,
                 createdAt: createdAt,
+                addressableId: addressableId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -17892,12 +17978,14 @@ class $$PersonalReactionsTableTableManager
                 required String reactionEventId,
                 required String userPubkey,
                 required int createdAt,
+                Value<String?> addressableId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PersonalReactionsCompanion.insert(
                 targetEventId: targetEventId,
                 reactionEventId: reactionEventId,
                 userPubkey: userPubkey,
                 createdAt: createdAt,
+                addressableId: addressableId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
