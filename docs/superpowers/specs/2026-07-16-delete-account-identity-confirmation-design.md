@@ -121,6 +121,16 @@ pubkey once and derives a plain value object passed into the dialog:
 Deriving display values from model getters (not inline widget logic) follows
 the layering rules. The dialog stays free of Riverpod and is unit-testable.
 
+**Shown == typed == accepted (invariant).** The identity block, the monospace
+"type this" target, and the matcher all use the **same** value — the **full**
+`displayNip05` form (`@mjb.divine.video` for Divine, `mjb@nos.social` for
+external). We do **not** use the short/bare form (`@mjb`, `mjb`) anywhere: the
+user types exactly the identifier shown. High friction (typing the full handle)
+is appropriate for a delete-everything gate, and one rule covers Divine and
+external handles uniformly. The token covers **any** NIP-05 handle; scoping it
+to Divine-only was considered and dropped (the "give up your @divine.video
+username" concern is separate work, #6126).
+
 ### Resolve-before-confirm (Q1)
 
 `userProfileReactiveProvider` is async; `.value` can be null at tap time. On
@@ -148,7 +158,9 @@ its one production caller and tests are updated.
 
 - Username token: trim, lowercase, strip a single leading `@` on both target and
   input, then compare (so `@mjb.divine.video` and `mjb.divine.video` both pass;
-  `mjb@nos.social` matches as-is).
+  `mjb@nos.social` matches as-is). The two leniencies (`@`-optional,
+  case-insensitive) are the *only* ones — a bare/short form (`mjb`, `@mjb`) does
+  **not** match a Divine handle. The user types the full identifier shown.
 - DELETE token: trim + uppercase compare to `DELETE` (unchanged from today).
 
 A small pure helper (`matchesRequiredToken(input, target, {isUsername})`) holds
@@ -198,6 +210,11 @@ Extract the dialog's content into a small private `StatefulWidget` that owns the
 shape via `StatefulBuilder`), so it renders and tests without `showDialog`. The
 public `showDeleteAllContentWarningDialog` gains a **required** identity
 value-object parameter.
+
+Extract the identity block (avatar + name + handle/npub) into a small private
+`_DeleteIdentityHeader` stateless widget composing `UserAvatar` +
+`bestDisplayName` + `identifierLine`, so it is reused and testable rather than
+inlined.
 
 Import note: `nostr_settings_screen.dart` imports the thin `UserProfile` from
 `auth_service.dart`; adding `package:models/models.dart` requires
