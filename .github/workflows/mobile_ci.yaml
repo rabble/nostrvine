@@ -99,6 +99,8 @@ jobs:
         run: bash scripts/check_http_overrides_isolation.sh
       - name: 🧬 Verify no untagged test leaks a process-global singleton
         run: bash scripts/check_process_global_mutations.sh
+      - name: 🧯 Verify integration_test error-handler restores are exception-safe
+        run: bash scripts/check_integration_test_error_restore_safety.sh
       - name: 🔌 Verify no new raw shared-channel installs (heal-and-blame ratchet)
         run: |
           # LIST ratchet vs origin/main (fails closed if the base baseline can't

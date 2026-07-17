@@ -252,6 +252,26 @@ if [ -n "$CHANGED_SERVICE_FILES" ] || [ -n "$CHANGED_TEST_FILES" ]; then
     echo ""
 fi
 
+# Exception-safe error-handler restores in integration_test (mirrors CI's
+# check_integration_test_error_restore_safety.sh, #5839). Trigger on any
+# added/modified/deleted mobile/integration_test/*.dart so unrelated pushes are
+# not slowed.
+CHANGED_IT_FILES=$(git -C "$REPO_ROOT" diff --name-only "$BASE_BRANCH"...HEAD 2>/dev/null \
+    | grep -E '^mobile/integration_test/.*\.dart$' || true)
+if [ -n "$CHANGED_IT_FILES" ]; then
+    echo "integration_test file(s) changed; checking error-handler restore safety..."
+    if ! bash "$REPO_ROOT/mobile/scripts/check_integration_test_error_restore_safety.sh"; then
+        echo ""
+        echo "Exception-unsafe ErrorWidget.builder/FlutterError.onError restore in"
+        echo "integration_test (#5839). Restore onError via addTearDown; restore"
+        echo "ErrorWidget.builder BOTH inline (framework verify) AND via addTearDown"
+        echo "(throw path). See test/integration_test_error_restore_contract_test.dart."
+        exit 1
+    fi
+    echo "integration_test error-handler restore safety OK"
+    echo ""
+fi
+
 # Package CI floor (mirrors CI's check_package_ci_floor.sh). Every package
 # under mobile/packages must ship its own analysis_options.yaml and a
 # per-package workflow (exceptions live in the shrink-only baseline). Trigger
