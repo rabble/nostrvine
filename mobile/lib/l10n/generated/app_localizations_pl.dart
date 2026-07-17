@@ -3126,10 +3126,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get authUnknownError => 'Wystąpił nieznany błąd.';
 
   @override
-  String get authBunkerRejectedConnection =>
-      'Twoja aplikacja do podpisywania odrzuciła połączenie.';
-
-  @override
   String get authNostrConnectStartFailed =>
       'Nie udało się połączyć z aplikacją do podpisywania. Sprawdź połączenie i spróbuj ponownie.';
 

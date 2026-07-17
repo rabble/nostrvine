@@ -21,13 +21,6 @@ void main() {
       expect(
         resolveNostrConnectFailureMessage(
           en,
-          NostrConnectFailureReason.bunkerRejected,
-        ),
-        equals(en.authBunkerRejectedConnection),
-      );
-      expect(
-        resolveNostrConnectFailureMessage(
-          en,
           NostrConnectFailureReason.startFailed,
         ),
         equals(en.authNostrConnectStartFailed),
@@ -80,10 +73,6 @@ void main() {
       final de = lookupAppLocalizations(const Locale('de'));
       // The #3761 keys are now translated in every locale, so German must
       // not resolve to the English source.
-      expect(
-        de.authBunkerRejectedConnection,
-        isNot(equals(en.authBunkerRejectedConnection)),
-      );
       expect(
         de.authNostrConnectSetupFailed,
         isNot(equals(en.authNostrConnectSetupFailed)),

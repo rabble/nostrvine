@@ -3141,10 +3141,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get authUnknownError => 'A apărut o eroare necunoscută.';
 
   @override
-  String get authBunkerRejectedConnection =>
-      'Aplicația ta de semnare a refuzat conexiunea.';
-
-  @override
   String get authNostrConnectStartFailed =>
       'N-am putut contacta aplicația de semnare. Verifică-ți conexiunea și încearcă din nou.';
 

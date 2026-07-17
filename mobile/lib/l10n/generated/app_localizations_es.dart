@@ -3080,10 +3080,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get authUnknownError => 'Ocurrió un error desconocido.';
 
   @override
-  String get authBunkerRejectedConnection =>
-      'Tu app firmante rechazó la conexión.';
-
-  @override
   String get authNostrConnectStartFailed =>
       'No pudimos contactar con la app firmante. Revisá tu conexión y probá de nuevo.';
 

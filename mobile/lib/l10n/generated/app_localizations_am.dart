@@ -2990,9 +2990,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get authUnknownError => 'ያልታወቀ ስህተት ተከስቷል።';
 
   @override
-  String get authBunkerRejectedConnection => 'ፈራሚ መተግበሪያዎ ግንኙነቱን አልተቀበለም።';
-
-  @override
   String get authNostrConnectStartFailed =>
       'ፈራሚውን ማግኘት አልተቻለም። ግንኙነትዎን ያረጋግጡ እና እንደገና ይሞክሩ።';
 

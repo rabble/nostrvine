@@ -1281,7 +1281,6 @@
     "authConnectionCancelledMessage": "De verbinding is geannuleerd.",
     "authConnectionFailed": "Verbinding mislukt",
     "authUnknownError": "Er is een onbekende fout opgetreden.",
-    "authBunkerRejectedConnection": "Je signer-app heeft de verbinding geweigerd.",
     "authNostrConnectStartFailed": "De signer-app is niet bereikbaar. Controleer je verbinding en probeer het opnieuw.",
     "authNostrConnectInvalidSession": "Deze verbindingslink is niet meer geldig. Start een nieuwe.",
     "authNostrConnectSetupFailed": "Bijna gelukt — we konden het inloggen niet afronden. Probeer het opnieuw.",

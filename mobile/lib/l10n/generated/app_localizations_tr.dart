@@ -3030,10 +3030,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get authUnknownError => 'Bilinmeyen bir hata oluştu.';
 
   @override
-  String get authBunkerRejectedConnection =>
-      'İmzalama uygulaman bağlantıyı reddetti.';
-
-  @override
   String get authNostrConnectStartFailed =>
       'İmzalama uygulamasına ulaşılamadı. Bağlantını kontrol et ve tekrar dene.';
 

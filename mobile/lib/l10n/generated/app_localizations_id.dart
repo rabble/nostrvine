@@ -3021,10 +3021,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get authUnknownError => 'Terjadi kesalahan yang tidak diketahui.';
 
   @override
-  String get authBunkerRejectedConnection =>
-      'Aplikasi signer-mu menolak koneksi.';
-
-  @override
   String get authNostrConnectStartFailed =>
       'Tidak bisa menghubungi signer. Periksa koneksi kamu dan coba lagi.';
 

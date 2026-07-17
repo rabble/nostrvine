@@ -56,10 +56,6 @@ enum NostrConnectFailureReason {
   /// secret to validate against. Should never happen in practice.
   noExpectedSecret,
 
-  /// The signer set `response.error` — a terminal signer-side error or
-  /// explicit rejection.
-  bunkerRejected,
-
   /// The wait window elapsed without a valid response.
   timedOut,
 
@@ -179,6 +175,26 @@ class NostrConnectSession {
   Timer? _timeoutTimer;
   bool _isClosed = false;
 
+  /// Ids of relay events already processed. Up to 4 relays each deliver
+  /// the same event, and the fixed `since` timestamp replays history on
+  /// every reconnect — skip replays before paying for decryption.
+  /// Bounded by the events received in one short-lived pairing session.
+  final Set<String> _seenEventIds = {};
+
+  /// Response ids of auth challenges already logged, so a signer that
+  /// re-sends its challenge as a fresh event doesn't spam the log.
+  /// Bounded by session lifetime.
+  final Set<String> _seenAuthChallengeIds = {};
+
+  /// The wait window passed to [waitForConnection], kept so the timer can
+  /// be re-armed once when an auth challenge arrives.
+  Duration? _waitTimeout;
+
+  /// Whether the one allowed challenge-triggered timer restart happened.
+  /// Capped at one per session so injected challenges cannot extend the
+  /// wait indefinitely.
+  bool _challengeTimerRestarted = false;
+
   /// The since timestamp used for subscriptions, captured once at session start
   /// so reconnections use the same timestamp.
   int? _subscriptionSinceTimestamp;
@@ -244,16 +260,20 @@ class NostrConnectSession {
 
     _connectionCompleter = Completer<NostrConnectResult?>();
 
-    // Start timeout timer
+    _waitTimeout = timeout;
+    _armTimeoutTimer(timeout);
+
+    return _connectionCompleter!.future;
+  }
+
+  void _armTimeoutTimer(Duration timeout) {
     _timeoutTimer = Timer(timeout, () {
-      if (!_connectionCompleter!.isCompleted) {
+      if (!(_connectionCompleter?.isCompleted ?? true)) {
         logger('[NostrConnectSession] Connection timed out');
         _setState(NostrConnectState.timeout);
         _connectionCompleter!.complete(null);
       }
     });
-
-    return _connectionCompleter!.future;
   }
 
   /// Cancel the session.
@@ -467,6 +487,24 @@ class NostrConnectSession {
   }
 
   Future<void> _handleResponse(Event event) async {
+    // NIP-01 id integrity: an event id is the SHA-256 of its serialized
+    // content, so a tampered relay copy cannot reuse the genuine
+    // response's id without also reproducing its content. Verify before
+    // touching the replay-dedup cache — otherwise an attacker on the
+    // listening relays could reserve the real id with a junk copy that
+    // fails decryption, so the genuine response arriving from another
+    // relay is discarded as a "duplicate" and sign-in times out (#6151).
+    if (!event.isValid) {
+      logger(
+        '[NostrConnectSession] Dropped event from ${event.pubkey}: '
+        'failed id integrity',
+      );
+      return;
+    }
+    if (!_seenEventIds.add(event.id)) {
+      return;
+    }
+
     // Decrypt the response
     final response = await NostrRemoteResponse.decrypt(
       event.content,
@@ -487,10 +525,12 @@ class NostrConnectSession {
 
     // Validate the secret per NIP-46. Accept ONLY an exact match;
     // "ack"/"connect" belong to the bunker:// flow's connect method
-    // and are not valid for nostrconnect://. Non-matching, non-error
-    // responses are dropped silently — treating them as terminal would
-    // let any pubkey on the listening relays DoS pairing by racing
-    // a junk response in front of the legitimate signer's reply.
+    // and are not valid for nostrconnect://. Everything else — junk
+    // responses, signer errors, auth_url challenges — is non-terminal:
+    // the sender is unauthenticated pre-secret, so treating any of it
+    // as terminal would let any pubkey on the listening relays DoS
+    // pairing by racing a junk response in front of the legitimate
+    // signer's reply (matches nostr-tools/NDK pairing behavior).
     final validation = validateConnectResponse(
       response: response,
       expectedSecret: _info?.optionalSecret,
@@ -501,22 +541,34 @@ class NostrConnectSession {
         logger('[NostrConnectSession] No expected secret - cannot validate');
         _failureReason = NostrConnectFailureReason.noExpectedSecret;
         _setState(NostrConnectState.error);
+        _timeoutTimer?.cancel();
         if (_connectionCompleter != null &&
             !_connectionCompleter!.isCompleted) {
           _connectionCompleter!.complete(null);
         }
         return;
 
-      case NostrConnectResponseValidation.rejectedByBunker:
-        logger(
-          '[NostrConnectSession] Bunker rejected connection from '
-          '${event.pubkey}',
-        );
-        _failureReason = NostrConnectFailureReason.bunkerRejected;
-        _setState(NostrConnectState.error);
-        if (_connectionCompleter != null &&
-            !_connectionCompleter!.isCompleted) {
-          _connectionCompleter!.complete(null);
+      case NostrConnectResponseValidation.authChallenge:
+        // The challenge URL in response.error is deliberately not
+        // surfaced, opened, or logged: the sender is unauthenticated
+        // at pairing time, so the URL is attacker-suppliable (#3760).
+        // The signer answers on the same request id once the user
+        // authenticates out-of-band, so keep listening.
+        if (_seenAuthChallengeIds.add(response.id)) {
+          logger(
+            '[NostrConnectSession] Auth challenge from ${event.pubkey}; '
+            'keeping the session listening',
+          );
+        }
+        // Grant extra runway exactly once per session, since out-of-band
+        // approval can be slow. The single restart is deliberately
+        // consumable by any sender: an unauthenticated challenge must
+        // not be able to extend the wait forever.
+        if (!_challengeTimerRestarted && (_timeoutTimer?.isActive ?? false)) {
+          _challengeTimerRestarted = true;
+          _timeoutTimer!.cancel();
+          _armTimeoutTimer(_waitTimeout!);
+          logger('[NostrConnectSession] Wait window restarted once');
         }
         return;
 
@@ -526,12 +578,22 @@ class NostrConnectSession {
         // ever arrives.
         logger(
           '[NostrConnectSession] Ignoring response from ${event.pubkey}: '
-          'result did not match the expected secret',
+          'not a binding response',
         );
         return;
 
       case NostrConnectResponseValidation.match:
-        break; // fall through to the success path below
+        if (_connectionCompleter != null && _connectionCompleter!.isCompleted) {
+          // The wait already ended (timeout or cancel); binding now would
+          // flip the UI to a connected state nobody is waiting on.
+          logger(
+            '[NostrConnectSession] Ignoring late secret match from '
+            '${event.pubkey}: the wait already ended',
+          );
+          return;
+        }
+        // Fall through to the success path below.
+        break;
     }
 
     // Success! Extract remote signer pubkey from the event
@@ -577,19 +639,27 @@ enum NostrConnectResponseValidation {
   /// bind the session.
   match,
 
-  /// `response.error` is set; the signer explicitly rejected the
-  /// connection. Surface a terminal error to the user.
-  rejectedByBunker,
+  /// `response.result` is the literal `auth_url` challenge marker
+  /// (NIP-46 Auth Challenges): the signer wants the user to authenticate
+  /// out-of-band and will answer later on the same request id, so keep
+  /// listening. The challenge URL (carried in `response.error`) is
+  /// deliberately not surfaced, opened, or logged — during
+  /// nostrconnect:// pairing the sender is unauthenticated, so the URL
+  /// is attacker-suppliable (#3760, #5683).
+  authChallenge,
 
   /// Programmer error: the session is missing an expected secret.
   /// Surface a terminal error.
   invalidSession,
 
-  /// `response.result` did not match and `response.error` is empty.
-  /// Drop silently per the policy decision in #3355 — treating this
-  /// as terminal would let any pubkey on the listening relays DoS
-  /// pairing by racing junk responses in front of the legitimate
-  /// signer's reply.
+  /// Anything else: a non-matching `response.result`, or a signer error
+  /// (`response.error` set) that is not an auth challenge. Drop silently
+  /// per #3355/#5683 — the sender is unauthenticated pre-secret, so
+  /// treating errors as terminal would let any pubkey on the listening
+  /// relays DoS pairing by racing junk responses in front of the
+  /// legitimate signer's reply. Matches nostr-tools/NDK pairing
+  /// behavior; the cost is that a genuine signer-side deny waits out
+  /// the timeout instead of failing fast.
   ignore,
 }
 
@@ -604,9 +674,14 @@ NostrConnectResponseValidation validateConnectResponse({
   if (expectedSecret == null || expectedSecret.isEmpty) {
     return NostrConnectResponseValidation.invalidSession;
   }
+  if (response.isAuthChallenge) {
+    return NostrConnectResponseValidation.authChallenge;
+  }
   final error = response.error;
+  // Checked before the secret compare so a response carrying an error
+  // can never bind the session, even if its result matches the secret.
   if (error != null && error.isNotEmpty) {
-    return NostrConnectResponseValidation.rejectedByBunker;
+    return NostrConnectResponseValidation.ignore;
   }
   if (_constantTimeEqual(response.result, expectedSecret)) {
     return NostrConnectResponseValidation.match;

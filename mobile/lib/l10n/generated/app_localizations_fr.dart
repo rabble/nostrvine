@@ -3088,10 +3088,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get authUnknownError => 'Une erreur inconnue est survenue.';
 
   @override
-  String get authBunkerRejectedConnection =>
-      'Ton app de signature a refusé la connexion.';
-
-  @override
   String get authNostrConnectStartFailed =>
       'Impossible de joindre l\'app de signature. Vérifie ta connexion et réessaie.';
 
