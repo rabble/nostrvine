@@ -12,6 +12,13 @@ class NostrRemoteResponse {
 
   NostrRemoteResponse(this.id, this.result, {this.error});
 
+  /// Whether this is a NIP-46 auth challenge: [result] is the literal
+  /// `auth_url` marker and [error] carries the URL the user must visit to
+  /// authenticate out-of-band. The signer answers later on the same request
+  /// id. An `auth_url` marker without a URL is malformed and not a challenge.
+  bool get isAuthChallenge =>
+      result == 'auth_url' && error != null && error!.isNotEmpty;
+
   static Future<NostrRemoteResponse?> decrypt(
     String ciphertext,
     NostrSigner signer,

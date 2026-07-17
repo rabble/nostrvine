@@ -483,30 +483,25 @@ void main() {
       expect(validation, equals(NostrConnectResponseValidation.ignore));
     });
 
-    test('returns rejectedByBunker when response.error is non-empty', () {
+    test('returns ignore when response.error is non-empty — signer errors are '
+        'non-terminal because the sender is unauthenticated pre-secret', () {
       final validation = validateConnectResponse(
         response: buildResponse('', error: 'user denied'),
         expectedSecret: 's3cret',
       );
-      expect(
-        validation,
-        equals(NostrConnectResponseValidation.rejectedByBunker),
-      );
+      expect(validation, equals(NostrConnectResponseValidation.ignore));
     });
 
-    test('returns rejectedByBunker even when result happens to match — '
-        'an explicit error must always win', () {
+    test('returns ignore even when result happens to match — '
+        'a response carrying an error must never bind the session', () {
       final validation = validateConnectResponse(
         response: buildResponse('s3cret', error: 'user denied'),
         expectedSecret: 's3cret',
       );
-      expect(
-        validation,
-        equals(NostrConnectResponseValidation.rejectedByBunker),
-      );
+      expect(validation, equals(NostrConnectResponseValidation.ignore));
     });
 
-    test('returns rejectedByBunker for auth_url challenge responses', () {
+    test('returns authChallenge for auth_url challenge responses', () {
       final validation = validateConnectResponse(
         response: buildResponse(
           'auth_url',
@@ -514,9 +509,45 @@ void main() {
         ),
         expectedSecret: 's3cret',
       );
+      expect(validation, equals(NostrConnectResponseValidation.authChallenge));
+    });
+
+    test('NostrRemoteResponse.isAuthChallenge requires the auth_url marker '
+        'and a non-empty URL', () {
       expect(
-        validation,
-        equals(NostrConnectResponseValidation.rejectedByBunker),
+        NostrRemoteResponse(
+          'id',
+          'auth_url',
+          error: 'https://example.com/x',
+        ).isAuthChallenge,
+        isTrue,
+      );
+      expect(NostrRemoteResponse('id', 'auth_url').isAuthChallenge, isFalse);
+      expect(
+        NostrRemoteResponse('id', 'auth_url', error: '').isAuthChallenge,
+        isFalse,
+      );
+      expect(
+        NostrRemoteResponse('id', 'ack', error: 'https://x').isAuthChallenge,
+        isFalse,
+      );
+    });
+
+    test('returns ignore for an auth_url result with no challenge URL in '
+        'error — malformed challenges are dropped, not surfaced', () {
+      expect(
+        validateConnectResponse(
+          response: buildResponse('auth_url'),
+          expectedSecret: 's3cret',
+        ),
+        equals(NostrConnectResponseValidation.ignore),
+      );
+      expect(
+        validateConnectResponse(
+          response: buildResponse('auth_url', error: ''),
+          expectedSecret: 's3cret',
+        ),
+        equals(NostrConnectResponseValidation.ignore),
       );
     });
 
@@ -658,7 +689,8 @@ void main() {
       },
     );
 
-    test('reports bunkerRejected when the signer returns an error', () async {
+    test('keeps listening through an injected error response and still binds '
+        'on the real secret (pairing-DoS regression, #5683)', () async {
       final relay = await _TestRelayServer.start();
       addTearDown(relay.close);
 
@@ -667,6 +699,7 @@ void main() {
 
       await session.start();
       final info = session.info!;
+      final secret = info.optionalSecret!;
 
       final wait = session.waitForConnection(
         timeout: const Duration(seconds: 5),
@@ -680,14 +713,32 @@ void main() {
           error: 'user rejected',
         ),
       ]);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(
+        session.state,
+        equals(NostrConnectState.listening),
+        reason: 'an unauthenticated error must not terminate pairing',
+      );
+      expect(session.failureReason, isNull);
+
+      relay.push([
+        'EVENT',
+        'sub',
+        await _encryptedResponseEvent(
+          clientPubkey: info.clientPubkey!,
+          result: secret,
+          requestId: 'real-signer-request-id',
+        ),
+      ]);
       final result = await wait;
 
-      expect(result, isNull);
-      expect(session.state, equals(NostrConnectState.error));
       expect(
-        session.failureReason,
-        equals(NostrConnectFailureReason.bunkerRejected),
+        result,
+        isNotNull,
+        reason: 'the legitimate secret must still bind after the junk error',
       );
+      expect(session.state, equals(NostrConnectState.connected));
     });
 
     test('reports startFailed when no relay can be reached', () async {
@@ -704,6 +755,276 @@ void main() {
       );
     });
   });
+
+  group('auth challenge (non-terminal, #5683)', () {
+    const challengeUrl = 'https://example.com/approve?token=untrusted';
+
+    test('keeps listening through an auth_url challenge, dedupes relay '
+        'replays of the same id, and still binds on the real secret', () async {
+      final relay = await _TestRelayServer.start();
+      addTearDown(relay.close);
+
+      final logs = <String>[];
+      final session = NostrConnectSession(
+        relays: [relay.url],
+        logger: logs.add,
+      );
+      addTearDown(session.dispose);
+
+      await session.start();
+      final info = session.info!;
+      final secret = info.optionalSecret!;
+      logs.clear();
+
+      final wait = session.waitForConnection(
+        timeout: const Duration(seconds: 5),
+      );
+      final challengeEvent = await _encryptedResponseEvent(
+        clientPubkey: info.clientPubkey!,
+        result: 'auth_url',
+        error: challengeUrl,
+        requestId: 'challenge-id',
+      );
+      relay.push(['EVENT', 'sub', challengeEvent]);
+      await _waitUntil(
+        () => logs.any((line) => line.contains('Auth challenge')),
+      );
+
+      expect(
+        session.state,
+        equals(NostrConnectState.listening),
+        reason: 'an auth challenge must not terminate pairing',
+      );
+      expect(session.failureReason, isNull);
+
+      // A relay replay of the identical event and a signer re-send of the
+      // same challenge id as a fresh event must both be deduped.
+      relay.push(['EVENT', 'sub', challengeEvent]);
+      relay.push([
+        'EVENT',
+        'sub',
+        await _encryptedResponseEvent(
+          clientPubkey: info.clientPubkey!,
+          result: 'auth_url',
+          error: challengeUrl,
+          requestId: 'challenge-id',
+        ),
+      ]);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(
+        logs.where((line) => line.contains('Auth challenge')),
+        hasLength(1),
+        reason: 'a replayed challenge id must be logged once',
+      );
+
+      relay.push([
+        'EVENT',
+        'sub',
+        await _encryptedResponseEvent(
+          clientPubkey: info.clientPubkey!,
+          result: secret,
+          requestId: 'challenge-id',
+        ),
+      ]);
+      final result = await wait;
+
+      expect(
+        result,
+        isNotNull,
+        reason: 'the post-challenge secret on the same id must bind',
+      );
+      expect(session.state, equals(NostrConnectState.connected));
+    });
+
+    test(
+      'restarts the wait window exactly once across multiple challenges',
+      () async {
+        final relay = await _TestRelayServer.start();
+        addTearDown(relay.close);
+
+        final logs = <String>[];
+        final session = NostrConnectSession(
+          relays: [relay.url],
+          logger: logs.add,
+        );
+        addTearDown(session.dispose);
+
+        await session.start();
+        final info = session.info!;
+        logs.clear();
+
+        unawaited(
+          session.waitForConnection(timeout: const Duration(seconds: 5)),
+        );
+        relay.push([
+          'EVENT',
+          'sub',
+          await _encryptedResponseEvent(
+            clientPubkey: info.clientPubkey!,
+            result: 'auth_url',
+            error: challengeUrl,
+            requestId: 'challenge-1',
+          ),
+        ]);
+        relay.push([
+          'EVENT',
+          'sub',
+          await _encryptedResponseEvent(
+            clientPubkey: info.clientPubkey!,
+            result: 'auth_url',
+            error: challengeUrl,
+            requestId: 'challenge-2',
+          ),
+        ]);
+        await _waitUntil(
+          () =>
+              logs.where((line) => line.contains('Auth challenge')).length == 2,
+        );
+
+        expect(
+          logs.where((line) => line.contains('Wait window restarted once')),
+          hasLength(1),
+          reason: 'injected challenges must not extend the wait repeatedly',
+        );
+      },
+    );
+
+    test('extends the deadline once: a challenge mid-wait moves the timeout '
+        'to a full window from the challenge, then still times out', () async {
+      final relay = await _TestRelayServer.start();
+      addTearDown(relay.close);
+
+      final logs = <String>[];
+      final session = NostrConnectSession(
+        relays: [relay.url],
+        logger: logs.add,
+      );
+      addTearDown(session.dispose);
+
+      await session.start();
+      final info = session.info!;
+
+      const timeout = Duration(milliseconds: 1500);
+      const challengeDelay = Duration(milliseconds: 500);
+      final stopwatch = Stopwatch()..start();
+      final wait = session.waitForConnection(timeout: timeout);
+
+      await Future<void>.delayed(challengeDelay);
+      relay.push([
+        'EVENT',
+        'sub',
+        await _encryptedResponseEvent(
+          clientPubkey: info.clientPubkey!,
+          result: 'auth_url',
+          error: challengeUrl,
+        ),
+      ]);
+      // The restart must land while the original window is still open, or
+      // the elapsed-time assertion below would be measuring the wrong thing.
+      await _waitUntil(
+        () => logs.any((line) => line.contains('Wait window restarted once')),
+        timeout: timeout - challengeDelay,
+      );
+
+      final result = await wait;
+      stopwatch.stop();
+
+      expect(result, isNull);
+      expect(session.state, equals(NostrConnectState.timeout));
+      // Lower bound only (slow machines can only make it larger): the
+      // challenge was pushed at >= 500ms and the restarted timer runs a
+      // full 1500ms from there, so completing before ~2000ms means the
+      // original, un-cancelled timer fired instead of the restarted one.
+      expect(
+        stopwatch.elapsedMilliseconds,
+        greaterThanOrEqualTo(1990),
+        reason: 'the restart must extend the deadline, not just re-log',
+      );
+    });
+
+    test('ignores a secret match that arrives after the wait timed out — '
+        'the session must not flip to connected with nobody waiting', () async {
+      final relay = await _TestRelayServer.start();
+      addTearDown(relay.close);
+
+      final logs = <String>[];
+      final session = NostrConnectSession(
+        relays: [relay.url],
+        logger: logs.add,
+      );
+      addTearDown(session.dispose);
+
+      await session.start();
+      final info = session.info!;
+      final secret = info.optionalSecret!;
+
+      final result = await session.waitForConnection(
+        timeout: const Duration(milliseconds: 300),
+      );
+      expect(result, isNull);
+      expect(session.state, equals(NostrConnectState.timeout));
+
+      relay.push([
+        'EVENT',
+        'sub',
+        await _encryptedResponseEvent(
+          clientPubkey: info.clientPubkey!,
+          result: secret,
+        ),
+      ]);
+      await _waitUntil(
+        () => logs.any((line) => line.contains('Ignoring late secret match')),
+      );
+
+      expect(session.state, equals(NostrConnectState.timeout));
+    });
+
+    test('never logs the challenge URL (#3760 redaction contract)', () async {
+      final relay = await _TestRelayServer.start();
+      addTearDown(relay.close);
+
+      final logs = <String>[];
+      final session = NostrConnectSession(
+        relays: [relay.url],
+        logger: logs.add,
+      );
+      addTearDown(session.dispose);
+
+      await session.start();
+      final info = session.info!;
+      logs.clear();
+
+      unawaited(session.waitForConnection(timeout: const Duration(seconds: 5)));
+      relay.push([
+        'EVENT',
+        'sub',
+        await _encryptedResponseEvent(
+          clientPubkey: info.clientPubkey!,
+          result: 'auth_url',
+          error: challengeUrl,
+        ),
+      ]);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      // Guard the guard: the challenge path must actually route through
+      // the injected logger, or the redaction assertion is vacuous.
+      expect(
+        logs.any((line) => line.contains('Auth challenge')),
+        isTrue,
+        reason: 'the challenge path must log via the injected logger',
+      );
+      expect(
+        logs.where(
+          (line) =>
+              line.contains(challengeUrl) ||
+              line.contains('token=untrusted') ||
+              line.contains('example.com'),
+        ),
+        isEmpty,
+        reason: 'the attacker-suppliable challenge URL must never be logged',
+      );
+    });
+  });
 }
 
 /// Builds a NIP-44-encrypted kind-24133 response event addressed to
@@ -714,14 +1035,31 @@ Future<Map<String, dynamic>> _encryptedResponseEvent({
   required String clientPubkey,
   required String result,
   String? error,
+  String requestId = 'test-request-id',
 }) async {
   final signer = LocalNostrSigner(generatePrivateKey());
   final remoteSignerPubkey = (await signer.getPublicKey())!;
-  final response = NostrRemoteResponse('test-request-id', result, error: error);
+  final response = NostrRemoteResponse(requestId, result, error: error);
   final ciphertext = (await response.encrypt(signer, clientPubkey))!;
   return Event(remoteSignerPubkey, EventKind.nostrRemoteSigning, [
     ['p', clientPubkey],
   ], ciphertext).toJson();
+}
+
+/// Polls [condition] until it holds, failing the test after [timeout].
+/// Prefer this over fixed sleeps so slow CI machines cannot flake a
+/// positive assertion; negative assertions still need a bounded delay.
+Future<void> _waitUntil(
+  bool Function() condition, {
+  Duration timeout = const Duration(seconds: 5),
+}) async {
+  final deadline = DateTime.now().add(timeout);
+  while (!condition()) {
+    if (DateTime.now().isAfter(deadline)) {
+      fail('condition not met within $timeout');
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+  }
 }
 
 Future<int> _unusedLoopbackPort() async {
