@@ -47,7 +47,6 @@ jobs:
             --pwa-strategy=none \
             --dart-define=DEFAULT_ENV=PRODUCTION \
             --dart-define=BACKEND_URL=https://api.divine.video \
-            --dart-define=MEDIA_API_URL=https://api.openvine.co \
             --no-source-maps
 
       - name: Deploy to Cloudflare Pages

@@ -318,6 +318,25 @@ if [ -n "$CHANGED_COV_FLOOR_FILES" ]; then
     echo ""
 fi
 
+# Backend-host default guard (mirrors CI's check_backend_host_defaults.sh).
+# Backend *defaults* — app_config.dart `*BaseUrl` defaults + workflow
+# `--dart-define=<KEY>URL=` injects — must stay on *.divine.video. Trigger on
+# app_config.dart or any workflow yaml change so unrelated pushes are not slowed.
+CHANGED_HOST_CFG=$(git -C "$REPO_ROOT" diff --name-only "$BASE_BRANCH"...HEAD 2>/dev/null \
+    | grep -E '^(mobile/lib/config/app_config\.dart|\.github/workflows/[^/]+\.(yaml|yml))$' || true)
+if [ -n "$CHANGED_HOST_CFG" ]; then
+    echo "Config/workflow host file(s) changed; checking backend-host defaults..."
+    if ! bash "$REPO_ROOT/mobile/scripts/check_backend_host_defaults.sh"; then
+        echo ""
+        echo "Backend-host default guard failed — a backend default is off"
+        echo "*.divine.video. Fix it, or add a tracked exemption to the ALLOWED"
+        echo "block in mobile/scripts/check_backend_host_defaults.sh."
+        exit 1
+    fi
+    echo "Backend-host defaults OK"
+    echo ""
+fi
+
 # Get list of changed Dart files (excluding generated files)
 CHANGED_FILES=$(git -C "$REPO_ROOT" diff --name-only "$BASE_BRANCH"...HEAD 2>/dev/null \
     | grep '^mobile/.*\.dart$' \
