@@ -87,7 +87,7 @@ class ClipManagerState {
 
   /// Total combined duration of all clips.
   Duration get totalDuration {
-    return clips.fold(Duration.zero, (sum, clip) => sum + clip.duration);
+    return clips.fold(Duration.zero, (sum, clip) => sum + clip.budgetDuration);
   }
 
   /// Remaining recording time available before reaching max duration.

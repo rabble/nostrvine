@@ -77,4 +77,67 @@ void main() {
       expect(legacy.sourceStartOffset, equals(Duration.zero));
     });
   });
+
+  group('DivineVideoClip.minTrimStart', () {
+    test('defaults to zero and survives copyWith', () {
+      final original = clip('/videos/clip.mp4');
+      expect(original.minTrimStart, equals(Duration.zero));
+
+      final floored = original.copyWith(
+        minTrimStart: const Duration(seconds: 2),
+      );
+      expect(floored.minTrimStart, equals(const Duration(seconds: 2)));
+
+      // An unrelated copyWith (e.g. a later trim) must keep the floor.
+      final trimmed = floored.copyWith(trimStart: const Duration(seconds: 3));
+      expect(trimmed.minTrimStart, equals(const Duration(seconds: 2)));
+    });
+
+    test('round-trips through JSON and defaults to zero when absent', () {
+      final floored = clip('/videos/clip.mp4').copyWith(
+        minTrimStart: const Duration(milliseconds: 2500),
+      );
+
+      final restored = DivineVideoClip.fromJson(floored.toJson(), '/videos');
+      expect(
+        restored.minTrimStart,
+        equals(const Duration(milliseconds: 2500)),
+      );
+
+      // Old drafts/history entries have no key — must default to zero.
+      final legacy = DivineVideoClip.fromJson(
+        clip('/videos/clip.mp4').toJson(),
+        '/videos',
+      );
+      expect(legacy.minTrimStart, equals(Duration.zero));
+    });
+  });
+
+  group('DivineVideoClip.budgetDuration', () {
+    test('equals duration for a normal clip', () {
+      expect(
+        clip('/videos/clip.mp4').budgetDuration,
+        equals(const Duration(seconds: 5)),
+      );
+    });
+
+    test('subtracts minTrimStart so a split end half is not double-counted', () {
+      // A 5s clip split at 2s: start half [0,2s], end half [2s,5s] on the same
+      // file with minTrimStart 2s. Summing budgetDuration must recover the
+      // original 5s, not 2s + 5s = 7s.
+      final startHalf = clip('/videos/clip.mp4').copyWith(
+        duration: const Duration(seconds: 2),
+      );
+      final endHalf = clip('/videos/clip.mp4').copyWith(
+        trimStart: const Duration(seconds: 2),
+        minTrimStart: const Duration(seconds: 2),
+      );
+      expect(startHalf.budgetDuration, equals(const Duration(seconds: 2)));
+      expect(endHalf.budgetDuration, equals(const Duration(seconds: 3)));
+      expect(
+        startHalf.budgetDuration + endHalf.budgetDuration,
+        equals(const Duration(seconds: 5)),
+      );
+    });
+  });
 }

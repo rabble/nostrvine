@@ -106,7 +106,7 @@ void main() {
   });
 
   group('VideoEditorReverseService', () {
-    test('renders the source clip as a reversed video segment', () async {
+    test('reverses the whole file for an untrimmed clip', () async {
       final inputPath = path.join(tempDir.path, 'source.mp4');
       final sourceClip = _clip(id: 'clip-1', inputPath: inputPath);
 
@@ -129,9 +129,35 @@ void main() {
 
       final segment = renderData.videoSegments!.single;
       expect(segment.reverseVideo, isTrue);
+      // Untrimmed clip: the window is the whole file, so no start offset and
+      // the end is the full duration.
       expect(segment.startTime, isNull);
-      expect(segment.endTime, isNull);
+      expect(segment.endTime, const Duration(seconds: 6));
       expect(await segment.video.safeFilePath(), inputPath);
+    });
+
+    test('bakes only the visible window for a windowed clip', () async {
+      final inputPath = path.join(tempDir.path, 'source.mp4');
+      // A split end half: shares the source file, trimmed 2s–5s of 6s.
+      final sourceClip = _clip(
+        id: 'end-half',
+        inputPath: inputPath,
+        trimStart: const Duration(seconds: 2),
+        trimEnd: const Duration(seconds: 1),
+        minTrimStart: const Duration(seconds: 2),
+      );
+
+      await VideoEditorReverseService.reverseClip(
+        sourceClip: sourceClip,
+        renderId: 'reverse-render-window',
+      );
+
+      final segment = proVideoEditor.renderedData.single.videoSegments!.single;
+      expect(segment.reverseVideo, isTrue);
+      // Only [trimStart, duration - trimEnd] = [2s, 5s] is reversed, so the
+      // sibling start half's frames ([0, 2s]) can never leak into the output.
+      expect(segment.startTime, const Duration(seconds: 2));
+      expect(segment.endTime, const Duration(seconds: 5));
     });
 
     test(
@@ -225,6 +251,9 @@ void main() {
 DivineVideoClip _clip({
   required String id,
   required String inputPath,
+  Duration trimStart = Duration.zero,
+  Duration trimEnd = Duration.zero,
+  Duration minTrimStart = Duration.zero,
 }) {
   return DivineVideoClip(
     id: id,
@@ -233,5 +262,8 @@ DivineVideoClip _clip({
     recordedAt: DateTime(2026, 6, 10, 12),
     targetAspectRatio: model.AspectRatio.vertical,
     originalAspectRatio: 9 / 16,
+    trimStart: trimStart,
+    trimEnd: trimEnd,
+    minTrimStart: minTrimStart,
   );
 }

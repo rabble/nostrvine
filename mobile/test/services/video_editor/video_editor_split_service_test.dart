@@ -27,8 +27,8 @@ class MockPathProviderPlatform extends Fake
 }
 
 class MockProVideoEditor extends ProVideoEditor {
-  bool shouldThrowError = false;
-  bool createOutputFiles = true;
+  /// Records any native split request. A trim-based split must never issue
+  /// one, so this stays empty — a non-empty list means a re-encode regressed.
   final List<SplitVideoModel> splitRequests = [];
 
   @override
@@ -41,21 +41,29 @@ class MockProVideoEditor extends ProVideoEditor {
     SplitVideoModel value, {
     NativeLogLevel? nativeLogLevel,
   }) async {
-    if (shouldThrowError) {
-      throw Exception('Split failed');
-    }
     splitRequests.add(value);
-    // Simulate a frame-accurate split producing two files.
-    if (createOutputFiles) {
-      for (final outputPath in [value.startOutputPath, value.endOutputPath]) {
-        final file = File(outputPath);
-        file.parent.createSync(recursive: true);
-        file.writeAsBytesSync([0]);
-      }
-    }
-    await Future<void>.delayed(const Duration(milliseconds: 10));
     return [value.startOutputPath, value.endOutputPath];
   }
+}
+
+DivineVideoClip _clip({
+  required Duration duration,
+  String id = 'test-clip',
+  Duration trimStart = Duration.zero,
+  Duration trimEnd = Duration.zero,
+  ClipTransition? transition,
+}) {
+  return DivineVideoClip(
+    id: id,
+    video: EditorVideo.file('/test/video.mp4'),
+    duration: duration,
+    recordedAt: DateTime(2024),
+    targetAspectRatio: model.AspectRatio.square,
+    originalAspectRatio: 9 / 16,
+    trimStart: trimStart,
+    trimEnd: trimEnd,
+    transition: transition,
+  );
 }
 
 // Permanent: swaps PathProviderPlatform.instance and ProVideoEditor.instance;
@@ -204,526 +212,192 @@ void main() {
 
     group('splitClip', () {
       test('throws ArgumentError for invalid split position', () async {
-        final clip = DivineVideoClip(
-          id: 'test-clip',
-          video: EditorVideo.file('/test/video.mp4'),
-          duration: const Duration(seconds: 1),
-          recordedAt: DateTime.now(),
-          targetAspectRatio: model.AspectRatio.square,
-          originalAspectRatio: 9 / 16,
-        );
-
+        final clip = _clip(duration: const Duration(seconds: 1));
         expect(
           () => VideoEditorSplitService.splitClip(
             sourceClip: clip,
             splitPosition: const Duration(milliseconds: 10),
             onClipsCreated: null,
             onThumbnailExtracted: null,
-            onClipRendered: null,
           ),
           throwsArgumentError,
         );
       });
 
-      test('creates two clips with correct durations', () async {
-        final clip = DivineVideoClip(
-          id: 'test-clip',
-          video: EditorVideo.file('/test/video.mp4'),
-          duration: const Duration(seconds: 5),
-          recordedAt: DateTime.now(),
-          targetAspectRatio: model.AspectRatio.square,
-          originalAspectRatio: 9 / 16,
-        );
-
-        DivineVideoClip? capturedStartClip;
-        DivineVideoClip? capturedEndClip;
-
-        await VideoEditorSplitService.splitClip(
-          sourceClip: clip,
-          splitPosition: const Duration(seconds: 2),
-          onClipsCreated: (start, end) {
-            capturedStartClip = start;
-            capturedEndClip = end;
-          },
-          onThumbnailExtracted: null,
-          onClipRendered: null,
-        );
-
-        expect(capturedStartClip, isNotNull);
-        expect(capturedEndClip, isNotNull);
-        expect(capturedStartClip!.duration, const Duration(seconds: 2));
-        expect(capturedEndClip!.duration, const Duration(seconds: 5));
-        expect(capturedEndClip!.trimStart, const Duration(seconds: 2));
-        expect(capturedEndClip!.trimmedDuration, const Duration(seconds: 3));
-      });
-
-      test('calls onClipsCreated before rendering', () async {
-        final clip = DivineVideoClip(
-          id: 'test-clip',
-          video: EditorVideo.file('/test/video.mp4'),
-          duration: const Duration(seconds: 5),
-          recordedAt: DateTime.now(),
-          targetAspectRatio: model.AspectRatio.square,
-          originalAspectRatio: 9 / 16,
-        );
-
-        var onClipsCreatedCalled = false;
-        var onClipRenderedCalled = false;
-        var clipsCreatedFirst = false;
-
-        await VideoEditorSplitService.splitClip(
-          sourceClip: clip,
-          splitPosition: const Duration(seconds: 2),
-          onClipsCreated: (start, end) {
-            onClipsCreatedCalled = true;
-            if (!onClipRenderedCalled) {
-              clipsCreatedFirst = true;
-            }
-          },
-          onThumbnailExtracted: null,
-          onClipRendered: (clip, video) {
-            onClipRenderedCalled = true;
-          },
-        );
-
-        expect(onClipsCreatedCalled, isTrue);
-        expect(clipsCreatedFirst, isTrue);
-      });
-
-      test('cuts the source with a single frame-accurate split', () async {
-        final clip = DivineVideoClip(
-          id: 'test-clip',
-          video: EditorVideo.file('/test/video.mp4'),
-          duration: const Duration(seconds: 5),
-          recordedAt: DateTime.now(),
-          targetAspectRatio: model.AspectRatio.square,
-          originalAspectRatio: 9 / 16,
-        );
-
-        await VideoEditorSplitService.splitClip(
-          sourceClip: clip,
-          splitPosition: const Duration(seconds: 2),
-          onClipsCreated: null,
-          onThumbnailExtracted: null,
-          onClipRendered: null,
-        );
-
-        // A single native split replaces the two full render passes.
-        expect(mockProVideoEditor.splitRequests, hasLength(1));
-        final request = mockProVideoEditor.splitRequests.single;
-        expect(request.splitPosition, const Duration(seconds: 2));
-        expect(request.startOutputPath, contains('_start.mp4'));
-        expect(request.endOutputPath, contains('_end.mp4'));
-        expect(request.startOutputPath, isNot(request.endOutputPath));
-      });
-
-      test('reports both halves as two distinct output files', () async {
-        final clip = DivineVideoClip(
-          id: 'test-clip',
-          video: EditorVideo.file('/test/video.mp4'),
-          duration: const Duration(seconds: 5),
-          recordedAt: DateTime.now(),
-          targetAspectRatio: model.AspectRatio.square,
-          originalAspectRatio: 9 / 16,
-        );
-
-        final renderedVideos = <EditorVideo>[];
-        await VideoEditorSplitService.splitClip(
-          sourceClip: clip,
-          splitPosition: const Duration(seconds: 2),
-          onClipsCreated: null,
-          onThumbnailExtracted: null,
-          onClipRendered: (clip, video) => renderedVideos.add(video),
-        );
-        expect(renderedVideos, hasLength(2));
-        final paths = renderedVideos.map((v) => v.file?.path).toList();
-        expect(paths.any((p) => p?.contains('_start.mp4') ?? false), isTrue);
-        expect(paths.any((p) => p?.contains('_end.mp4') ?? false), isTrue);
-        expect(paths.first, isNot(paths.last));
-
-        // Regression: the clip id already ends in `_start` / `_end`, so the
-        // filename must not double that suffix (`_start_start.mp4`).
-        final request = mockProVideoEditor.splitRequests.single;
-        expect(request.startOutputPath, isNot(contains('_start_start')));
-        expect(request.endOutputPath, isNot(contains('_end_end')));
-      });
-
-      test('a second split immediately afterwards still works', () async {
-        final clip = DivineVideoClip(
-          id: 'test-clip',
-          video: EditorVideo.file('/test/video.mp4'),
-          duration: const Duration(seconds: 5),
-          recordedAt: DateTime.now(),
-          targetAspectRatio: model.AspectRatio.square,
-          originalAspectRatio: 9 / 16,
-        );
-
-        Future<int> runSplit() async {
-          var renderedCount = 0;
+      test(
+        'creates two halves that share the source video (no re-encode)',
+        () async {
+          final clip = _clip(duration: const Duration(seconds: 5));
+          DivineVideoClip? start;
+          DivineVideoClip? end;
           await VideoEditorSplitService.splitClip(
             sourceClip: clip,
             splitPosition: const Duration(seconds: 2),
-            onClipsCreated: null,
+            onClipsCreated: (s, e) {
+              start = s;
+              end = e;
+            },
             onThumbnailExtracted: null,
-            onClipRendered: (_, _) => renderedCount++,
-          );
-          return renderedCount;
-        }
-
-        // Regression for #4801: the split future always completes, so a
-        // back-to-back split is never silently dropped.
-        expect(await runSplit(), 2);
-        expect(await runSplit(), 2);
-        expect(mockProVideoEditor.splitRequests, hasLength(2));
-      });
-
-      test('calls onClipRendered for both clips', () async {
-        final clip = DivineVideoClip(
-          id: 'test-clip',
-          video: EditorVideo.file('/test/video.mp4'),
-          duration: const Duration(seconds: 5),
-          recordedAt: DateTime.now(),
-          targetAspectRatio: model.AspectRatio.square,
-          originalAspectRatio: 9 / 16,
-        );
-
-        final renderedClips = <DivineVideoClip>[];
-
-        await VideoEditorSplitService.splitClip(
-          sourceClip: clip,
-          splitPosition: const Duration(seconds: 2),
-          onClipsCreated: null,
-          onThumbnailExtracted: null,
-          onClipRendered: (clip, video) {
-            renderedClips.add(clip);
-          },
-        );
-
-        expect(renderedClips.length, 2);
-      });
-
-      test('anchors the rendered end half to the source recording', () async {
-        final clip = DivineVideoClip(
-          id: 'test-clip',
-          video: EditorVideo.file('/test/video.mp4'),
-          duration: const Duration(seconds: 5),
-          recordedAt: DateTime.now(),
-          targetAspectRatio: model.AspectRatio.square,
-          originalAspectRatio: 9 / 16,
-        );
-
-        final renderedClips = <DivineVideoClip>[];
-        await VideoEditorSplitService.splitClip(
-          sourceClip: clip,
-          splitPosition: const Duration(seconds: 2),
-          onClipsCreated: null,
-          onThumbnailExtracted: null,
-          onClipRendered: (clip, _) => renderedClips.add(clip),
-        );
-
-        // The end half's rendered file starts at the split point, so its
-        // zero-based timeline sits the split position into the recording.
-        // The start half's file still begins at the recording's start.
-        final startClip = renderedClips.singleWhere(
-          (c) => c.id.endsWith('_start'),
-        );
-        final endClip = renderedClips.singleWhere((c) => c.id.endsWith('_end'));
-        expect(startClip.sourceStartOffset, equals(Duration.zero));
-        expect(endClip.sourceStartOffset, equals(const Duration(seconds: 2)));
-      });
-
-      test(
-        'accumulates sourceStartOffset when splitting an already-shifted '
-        'clip (nested split)',
-        () async {
-          // End half of a previous split: its file starts 3 s into the
-          // original recording and is trimmed 1 s at its own start.
-          final clip = DivineVideoClip(
-            id: 'test-clip',
-            video: EditorVideo.file('/test/video.mp4'),
-            duration: const Duration(seconds: 5),
-            recordedAt: DateTime.now(),
-            targetAspectRatio: model.AspectRatio.square,
-            originalAspectRatio: 9 / 16,
-            sourceStartOffset: const Duration(seconds: 3),
-            trimStart: const Duration(seconds: 1),
           );
 
-          final renderedClips = <DivineVideoClip>[];
-          await VideoEditorSplitService.splitClip(
-            sourceClip: clip,
-            splitPosition: const Duration(milliseconds: 1500),
-            onClipsCreated: null,
-            onThumbnailExtracted: null,
-            onClipRendered: (clip, _) => renderedClips.add(clip),
-          );
-
-          // absoluteSplitPos = trimStart + splitPosition = 2.5 s into this
-          // clip's file, which itself starts 3 s into the recording — the
-          // end half's file starts 5.5 s into the recording. The start
-          // half keeps its file, so its anchor is unchanged.
-          final startClip = renderedClips.singleWhere(
-            (c) => c.id.endsWith('_start'),
-          );
-          final endClip = renderedClips.singleWhere(
-            (c) => c.id.endsWith('_end'),
-          );
-          expect(
-            startClip.sourceStartOffset,
-            equals(const Duration(seconds: 3)),
-          );
-          expect(
-            endClip.sourceStartOffset,
-            equals(const Duration(milliseconds: 5500)),
-          );
+          // Nothing is re-encoded; both halves keep the source file.
+          expect(mockProVideoEditor.splitRequests, isEmpty);
+          expect(start!.video.file?.path, clip.video.file?.path);
+          expect(end!.video.file?.path, clip.video.file?.path);
         },
       );
 
-      test('completes processing completers on success', () async {
-        final clip = DivineVideoClip(
-          id: 'test-clip',
-          video: EditorVideo.file('/test/video.mp4'),
-          duration: const Duration(seconds: 5),
-          recordedAt: DateTime.now(),
-          targetAspectRatio: model.AspectRatio.square,
-          originalAspectRatio: 9 / 16,
-        );
-
-        DivineVideoClip? capturedStartClip;
-        DivineVideoClip? capturedEndClip;
-
+      test('start half is capped at the split; end half starts at it', () async {
+        final clip = _clip(duration: const Duration(seconds: 5));
+        DivineVideoClip? start;
+        DivineVideoClip? end;
         await VideoEditorSplitService.splitClip(
           sourceClip: clip,
           splitPosition: const Duration(seconds: 2),
-          onClipsCreated: (start, end) {
-            capturedStartClip = start;
-            capturedEndClip = end;
+          onClipsCreated: (s, e) {
+            start = s;
+            end = e;
           },
           onThumbnailExtracted: null,
-          onClipRendered: null,
         );
 
-        expect(capturedStartClip!.processingCompleter?.isCompleted, isTrue);
-        expect(capturedEndClip!.processingCompleter?.isCompleted, isTrue);
-
-        final startSuccess =
-            await capturedStartClip!.processingCompleter!.future;
-        final endSuccess = await capturedEndClip!.processingCompleter!.future;
-
-        expect(startSuccess, isTrue);
-        expect(endSuccess, isTrue);
+        // Start half: [0, 2s], its duration caps the visible end at the split.
+        expect(start!.duration, const Duration(seconds: 2));
+        expect(start!.trimEnd, Duration.zero);
+        expect(start!.trimmedDuration, const Duration(seconds: 2));
+        // End half: [2s, 5s] on the full-length source.
+        expect(end!.duration, const Duration(seconds: 5));
+        expect(end!.trimStart, const Duration(seconds: 2));
+        expect(end!.trimmedDuration, const Duration(seconds: 3));
       });
 
-      test('completes processing completers on failure', () async {
-        mockProVideoEditor.shouldThrowError = true;
-
-        final clip = DivineVideoClip(
-          id: 'test-clip',
-          video: EditorVideo.file('/test/video.mp4'),
-          duration: const Duration(seconds: 5),
-          recordedAt: DateTime.now(),
-          targetAspectRatio: model.AspectRatio.square,
-          originalAspectRatio: 9 / 16,
-        );
-
-        try {
-          await VideoEditorSplitService.splitClip(
-            sourceClip: clip,
-            splitPosition: const Duration(seconds: 2),
-            onClipsCreated: null,
-            onThumbnailExtracted: null,
-            onClipRendered: null,
-          );
-          fail('Should have thrown exception');
-        } catch (e) {
-          expect(e, isException);
-        }
-      });
-
-      test(
-        'does not report rendered clips when output files are missing',
-        () async {
-          mockProVideoEditor.createOutputFiles = false;
-
-          final clip = DivineVideoClip(
-            id: 'test-clip',
-            video: EditorVideo.file('/test/video.mp4'),
-            duration: const Duration(seconds: 5),
-            recordedAt: DateTime.now(),
-            targetAspectRatio: model.AspectRatio.square,
-            originalAspectRatio: 9 / 16,
-          );
-
-          final renderedClips = <DivineVideoClip>[];
-
-          await expectLater(
-            VideoEditorSplitService.splitClip(
-              sourceClip: clip,
-              splitPosition: const Duration(seconds: 2),
-              onClipsCreated: (_, _) {},
-              onThumbnailExtracted: null,
-              onClipRendered: (renderedClip, _) {
-                renderedClips.add(renderedClip);
-              },
-            ),
-            throwsStateError,
-          );
-
-          expect(renderedClips, isEmpty);
-        },
-      );
-
-      test('generates unique IDs for split clips', () async {
-        final clip = DivineVideoClip(
-          id: 'original-clip',
-          video: EditorVideo.file('/test/video.mp4'),
-          duration: const Duration(seconds: 5),
-          recordedAt: DateTime.now(),
-          targetAspectRatio: model.AspectRatio.square,
-          originalAspectRatio: 9 / 16,
-        );
-
-        DivineVideoClip? endClip1;
-        DivineVideoClip? endClip2;
-
+      test('end half carries a source floor at the split point', () async {
+        final clip = _clip(duration: const Duration(seconds: 5));
+        DivineVideoClip? end;
         await VideoEditorSplitService.splitClip(
           sourceClip: clip,
           splitPosition: const Duration(seconds: 2),
-          onClipsCreated: (_, end) => endClip1 = end,
+          onClipsCreated: (_, e) => end = e,
           onThumbnailExtracted: null,
-          onClipRendered: null,
         );
 
-        // Wait a bit to ensure different timestamp
-        await Future<void>.delayed(const Duration(milliseconds: 2));
-
-        await VideoEditorSplitService.splitClip(
-          sourceClip: clip,
-          splitPosition: const Duration(seconds: 2),
-          onClipsCreated: (_, end) => endClip2 = end,
-          onThumbnailExtracted: null,
-          onClipRendered: null,
-        );
-
-        expect(endClip1!.id, isNot(equals(endClip2!.id)));
+        // So its left trim handle can't be dragged back before the split into
+        // the start half's frames.
+        expect(end!.minTrimStart, const Duration(seconds: 2));
       });
 
-      test('splits trimmed clip at correct absolute position', () async {
-        // 10s clip trimmed to show 3s–8s (trimmedDuration = 5s)
-        final clip = DivineVideoClip(
-          id: 'trimmed-clip',
-          video: EditorVideo.file('/test/video.mp4'),
+      test('splits a trimmed clip at the correct absolute position', () async {
+        // 10s clip trimmed to 3s–8s (trimmedDuration = 5s), split 2s in.
+        final clip = _clip(
           duration: const Duration(seconds: 10),
-          recordedAt: DateTime.now(),
-          targetAspectRatio: model.AspectRatio.square,
-          originalAspectRatio: 9 / 16,
           trimStart: const Duration(seconds: 3),
           trimEnd: const Duration(seconds: 2),
         );
-
-        DivineVideoClip? capturedStartClip;
-        DivineVideoClip? capturedEndClip;
-
+        DivineVideoClip? start;
+        DivineVideoClip? end;
         await VideoEditorSplitService.splitClip(
           sourceClip: clip,
-          // Split at 2s into the trimmed clip (absolute 5s)
           splitPosition: const Duration(seconds: 2),
-          onClipsCreated: (start, end) {
-            capturedStartClip = start;
-            capturedEndClip = end;
+          onClipsCreated: (s, e) {
+            start = s;
+            end = e;
           },
           onThumbnailExtracted: null,
-          onClipRendered: null,
         );
 
-        expect(capturedStartClip, isNotNull);
-        expect(capturedEndClip, isNotNull);
-
-        // Start clip: 0–5s (absolute), trimStart=3s, trimEnd=0
-        // trimmedDuration = 5 - 3 = 2s ✓
-        expect(capturedStartClip!.duration, const Duration(seconds: 5));
-        expect(capturedStartClip!.trimStart, const Duration(seconds: 3));
-        expect(capturedStartClip!.trimEnd, Duration.zero);
-        expect(capturedStartClip!.trimmedDuration, const Duration(seconds: 2));
-
-        // Preview end clip still points at the original source while the
-        // rendered end file is being produced, so trimStart is absolute.
-        // trimmedDuration = 10 - 5 - 2 = 3s ✓
-        expect(capturedEndClip!.duration, const Duration(seconds: 10));
-        expect(capturedEndClip!.trimStart, const Duration(seconds: 5));
-        expect(capturedEndClip!.trimEnd, const Duration(seconds: 2));
-        expect(capturedEndClip!.trimmedDuration, const Duration(seconds: 3));
-
-        // Total trimmedDuration preserved: 2 + 3 = 5s
+        // Absolute split = trimStart(3) + 2 = 5s.
+        expect(start!.duration, const Duration(seconds: 5));
+        expect(start!.trimStart, const Duration(seconds: 3));
+        expect(start!.trimEnd, Duration.zero);
+        expect(start!.trimmedDuration, const Duration(seconds: 2));
+        expect(end!.duration, const Duration(seconds: 10));
+        expect(end!.trimStart, const Duration(seconds: 5));
+        expect(end!.trimEnd, const Duration(seconds: 2));
+        expect(end!.minTrimStart, const Duration(seconds: 5));
+        expect(end!.trimmedDuration, const Duration(seconds: 3));
+        // Total trimmed duration preserved: 2 + 3 = 5s.
         expect(
-          capturedStartClip!.trimmedDuration + capturedEndClip!.trimmedDuration,
+          start!.trimmedDuration + end!.trimmedDuration,
           clip.trimmedDuration,
         );
       });
 
       test('start half drops the transition; end half keeps it', () async {
         const dissolve = ClipTransition(type: ClipTransitionType.dissolve);
-        // Source clip A → B carries the dissolve into the next clip.
-        final clip = DivineVideoClip(
-          id: 'test-clip',
-          video: EditorVideo.file('/test/video.mp4'),
+        final clip = _clip(
           duration: const Duration(seconds: 5),
-          recordedAt: DateTime.now(),
-          targetAspectRatio: model.AspectRatio.square,
-          originalAspectRatio: 9 / 16,
           transition: dissolve,
         );
-
-        DivineVideoClip? capturedStartClip;
-        DivineVideoClip? capturedEndClip;
-
+        DivineVideoClip? start;
+        DivineVideoClip? end;
         await VideoEditorSplitService.splitClip(
           sourceClip: clip,
           splitPosition: const Duration(seconds: 2),
-          onClipsCreated: (start, end) {
-            capturedStartClip = start;
-            capturedEndClip = end;
+          onClipsCreated: (s, e) {
+            start = s;
+            end = e;
           },
           onThumbnailExtracted: null,
-          onClipRendered: null,
         );
 
-        // The split point (A1 → A2) is a hard cut.
-        expect(capturedStartClip!.transition, isNull);
-        // A2 → B keeps the original boundary.
-        expect(capturedEndClip!.transition, equals(dissolve));
+        // The split point (A1 → A2) is a hard cut; A2 → B keeps the boundary.
+        expect(start!.transition, isNull);
+        expect(end!.transition, equals(dissolve));
       });
 
-      test('reports rendered end clip with trimStart reset to zero', () async {
-        final clip = DivineVideoClip(
-          id: 'trimmed-clip',
-          video: EditorVideo.file('/test/video.mp4'),
-          duration: const Duration(seconds: 10),
-          recordedAt: DateTime.now(),
-          targetAspectRatio: model.AspectRatio.square,
-          originalAspectRatio: 9 / 16,
-          trimStart: const Duration(seconds: 3),
-          trimEnd: const Duration(seconds: 2),
-        );
-
-        final renderedClips = <DivineVideoClip>[];
-
+      test('re-splitting the end half floors it at the new split', () async {
+        // First split at 2s of a 5s clip → end half [2s, 5s], floor 2s.
+        final clip = _clip(duration: const Duration(seconds: 5));
+        DivineVideoClip? firstEnd;
         await VideoEditorSplitService.splitClip(
           sourceClip: clip,
           splitPosition: const Duration(seconds: 2),
-          onClipsCreated: null,
+          onClipsCreated: (_, e) => firstEnd = e,
           onThumbnailExtracted: null,
-          onClipRendered: (clip, video) => renderedClips.add(clip),
         );
 
-        final endClip = renderedClips.singleWhere(
-          (clip) => clip.id.endsWith('_end'),
+        // Split the end half 1s in → absolute 3s.
+        DivineVideoClip? secondStart;
+        DivineVideoClip? secondEnd;
+        await VideoEditorSplitService.splitClip(
+          sourceClip: firstEnd!,
+          splitPosition: const Duration(seconds: 1),
+          onClipsCreated: (s, e) {
+            secondStart = s;
+            secondEnd = e;
+          },
+          onThumbnailExtracted: null,
         );
 
-        expect(endClip.duration, const Duration(seconds: 5));
-        expect(endClip.trimStart, Duration.zero);
-        expect(endClip.trimEnd, const Duration(seconds: 2));
-        expect(endClip.trimmedDuration, const Duration(seconds: 3));
+        // New start half inherits the first end's floor (2s), capped at 3s.
+        expect(secondStart!.duration, const Duration(seconds: 3));
+        expect(secondStart!.minTrimStart, const Duration(seconds: 2));
+        // New end half is floored at the new split (3s).
+        expect(secondEnd!.trimStart, const Duration(seconds: 3));
+        expect(secondEnd!.minTrimStart, const Duration(seconds: 3));
+      });
+
+      test('generates unique IDs for split clips', () async {
+        final clip = _clip(
+          id: 'original-clip',
+          duration: const Duration(seconds: 5),
+        );
+        DivineVideoClip? end1;
+        DivineVideoClip? end2;
+        await VideoEditorSplitService.splitClip(
+          sourceClip: clip,
+          splitPosition: const Duration(seconds: 2),
+          onClipsCreated: (_, e) => end1 = e,
+          onThumbnailExtracted: null,
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 2));
+        await VideoEditorSplitService.splitClip(
+          sourceClip: clip,
+          splitPosition: const Duration(seconds: 2),
+          onClipsCreated: (_, e) => end2 = e,
+          onThumbnailExtracted: null,
+        );
+        expect(end1!.id, isNot(equals(end2!.id)));
       });
     });
   });

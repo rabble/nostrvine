@@ -142,6 +142,12 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
     );
     _clipEditorBloc = ClipEditorBloc(
       onFinalClipInvalidated: () {
+        // A clip render (reverse / transform) can resolve after this screen is
+        // disposed — the user backed out while a long clip was still
+        // re-encoding (~15-20s). Both `ref` and `_editor` are unsafe to touch
+        // once the State is unmounted, so bail before either is used;
+        // otherwise `ref.read` throws "Using ref when unmounted".
+        if (!mounted) return;
         ref.read(videoEditorProvider.notifier).invalidateFinalRenderedClip();
 
         if (_editor != null) {

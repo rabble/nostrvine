@@ -111,9 +111,48 @@ class VideoEditorCanvas extends StatelessWidget {
     if (previous.isSplitting && current.isSplitting) return false;
     if (previous.isSplitting && !current.isSplitting) return true;
 
+    // A background thumbnail refresh (e.g. after a split) changes only the
+    // clip's poster path, which the player composition doesn't use — skip the
+    // redundant reload.
+    if (_onlyThumbnailPathsChanged(previous.clips, current.clips)) return false;
+
     return !current.isTrimDragging &&
         !previous.isTrimDragging &&
         previous.clips != current.clips;
+  }
+
+  /// Whether [current] differs from [previous] *only* in clip thumbnail paths.
+  ///
+  /// Conservative: any difference in a composition-relevant field (video,
+  /// trims, duration, volume, speed, transition, …) returns `false`, so the
+  /// player still reloads for real edits.
+  static bool _onlyThumbnailPathsChanged(
+    List<DivineVideoClip> previous,
+    List<DivineVideoClip> current,
+  ) {
+    if (identical(previous, current) || previous.length != current.length) {
+      return false;
+    }
+    var anyThumbnailDiff = false;
+    for (var i = 0; i < previous.length; i++) {
+      final a = previous[i];
+      final b = current[i];
+      if (a.id != b.id ||
+          a.video != b.video ||
+          a.trimStart != b.trimStart ||
+          a.trimEnd != b.trimEnd ||
+          a.duration != b.duration ||
+          a.minTrimStart != b.minTrimStart ||
+          a.volume != b.volume ||
+          a.playbackSpeed != b.playbackSpeed ||
+          a.reversed != b.reversed ||
+          a.sourceStartOffset != b.sourceStartOffset ||
+          a.transition != b.transition) {
+        return false;
+      }
+      if (a.thumbnailPath != b.thumbnailPath) anyThumbnailDiff = true;
+    }
+    return anyThumbnailDiff;
   }
 
   @visibleForTesting
@@ -1421,6 +1460,15 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
         _skipNextClipSnapshotSync = false;
         return;
       }
+
+      // A split (and any split still queued behind it) drives the clip list
+      // optimistically in ClipEditorBloc, one step ahead of the editor
+      // history. This snapshot reflects the *previous* split's committed
+      // state; mirroring it back now would overwrite the just-applied split —
+      // a queued split then silently vanishes and never appears. Skip while a
+      // split is in flight; the reconcile that runs once isSplitting clears
+      // mirrors the settled clip list to both the clip manager and the bloc.
+      if (context.read<ClipEditorBloc>().state.isSplitting) return;
 
       // Only update if clips actually changed to avoid unnecessary rebuilds
       // and autosave triggers. DivineVideoClip uses reference equality, so

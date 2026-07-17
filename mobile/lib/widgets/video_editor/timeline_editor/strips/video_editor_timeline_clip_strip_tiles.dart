@@ -111,13 +111,16 @@ class _TrimmableClipTileState extends State<_TrimmableClipTile> {
     final trimEnd = _dragTrimEnd ?? clip.trimEnd;
     var newTrimStart = (_dragTrimStart ?? clip.trimStart) + _dxToDuration(dx);
 
+    // A trim-based split's end half floors its start handle at the split point
+    // so it can't be dragged back into the start half's frames.
+    final minTrimStart = clip.minTrimStart;
     final maxTrimStart =
         clip.duration - trimEnd - TimelineConstants.minTrimDuration;
 
     var atLimit = false;
 
-    if (newTrimStart <= Duration.zero) {
-      newTrimStart = Duration.zero;
+    if (newTrimStart <= minTrimStart) {
+      newTrimStart = minTrimStart;
       atLimit = true;
     } else if (newTrimStart >= maxTrimStart) {
       newTrimStart = maxTrimStart;
