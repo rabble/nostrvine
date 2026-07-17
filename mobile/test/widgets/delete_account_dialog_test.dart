@@ -1,6 +1,8 @@
 // ABOUTME: Tests for the delete account confirmation dialog
 // ABOUTME: Verifies that the DELETE confirmation is case-insensitive and trims whitespace
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -33,7 +35,11 @@ Widget _wrapWithRouter(Widget child) {
 
 Future<void> _showDialog(
   WidgetTester tester, {
-  void Function({required bool burnUsername})? onConfirm,
+  void Function({
+    required bool burnUsername,
+    ({String name, String canonical})? ownedUsername,
+  })?
+  onConfirm,
   ({String name, String canonical})? ownedUsername,
 }) async {
   await tester.pumpWidget(
@@ -44,8 +50,13 @@ Future<void> _showDialog(
             key: const Key('open'),
             onPressed: () => showDeleteAllContentWarningDialog(
               context: context,
-              ownedUsername: ownedUsername,
-              onConfirm: onConfirm ?? ({required bool burnUsername}) {},
+              ownedUsernameFuture: Future.value(ownedUsername),
+              onConfirm:
+                  onConfirm ??
+                  ({
+                    required bool burnUsername,
+                    ({String name, String canonical})? ownedUsername,
+                  }) {},
             ),
             child: const Text('Open'),
           ),
@@ -149,7 +160,11 @@ void main() {
       var called = false;
       await _showDialog(
         tester,
-        onConfirm: ({required bool burnUsername}) => called = true,
+        onConfirm:
+            ({
+              required bool burnUsername,
+              ({String name, String canonical})? ownedUsername,
+            }) => called = true,
       );
 
       await tester.enterText(find.byType(TextField), 'delete');
@@ -197,7 +212,11 @@ void main() {
       await _showDialog(
         tester,
         ownedUsername: (name: 'alice', canonical: 'alice'),
-        onConfirm: ({required bool burnUsername}) => received = burnUsername,
+        onConfirm:
+            ({
+              required bool burnUsername,
+              ({String name, String canonical})? ownedUsername,
+            }) => received = burnUsername,
       );
 
       await tester.tap(find.byType(CheckboxListTile));
@@ -219,7 +238,11 @@ void main() {
       await _showDialog(
         tester,
         ownedUsername: (name: 'alice', canonical: 'alice'),
-        onConfirm: ({required bool burnUsername}) => received = burnUsername,
+        onConfirm:
+            ({
+              required bool burnUsername,
+              ({String name, String canonical})? ownedUsername,
+            }) => received = burnUsername,
       );
 
       await tester.enterText(find.byType(TextField), 'delete');
@@ -230,6 +253,77 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(received, isFalse);
+    });
+
+    testWidgets('dialog opens before the lookup resolves and reveals the '
+        'toggle only once it completes', (tester) async {
+      final completer = Completer<({String name, String canonical})?>();
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) => Scaffold(
+              body: ElevatedButton(
+                key: const Key('open'),
+                onPressed: () => showDeleteAllContentWarningDialog(
+                  context: context,
+                  ownedUsernameFuture: completer.future,
+                  onConfirm:
+                      ({
+                        required bool burnUsername,
+                        ({String name, String canonical})? ownedUsername,
+                      }) {},
+                ),
+                child: const Text('Open'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.byKey(const Key('open')));
+      await tester.pumpAndSettle();
+
+      // Dialog is already open (lookup still pending) but no toggle yet.
+      expect(
+        find.widgetWithText(ElevatedButton, 'Delete All Content'),
+        findsOneWidget,
+      );
+      expect(find.byType(CheckboxListTile), findsNothing);
+
+      completer.complete((name: 'Alice', canonical: 'alice'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CheckboxListTile), findsOneWidget);
+    });
+
+    testWidgets('confirm passes the resolved handle back to onConfirm', (
+      tester,
+    ) async {
+      ({String name, String canonical})? receivedOwned;
+      var receivedBurn = false;
+      await _showDialog(
+        tester,
+        ownedUsername: (name: 'Alice', canonical: 'alice'),
+        onConfirm:
+            ({
+              required bool burnUsername,
+              ({String name, String canonical})? ownedUsername,
+            }) {
+              receivedBurn = burnUsername;
+              receivedOwned = ownedUsername;
+            },
+      );
+
+      await tester.tap(find.byType(CheckboxListTile));
+      await tester.pump();
+      await tester.enterText(find.byType(TextField), 'delete');
+      await tester.pump();
+      await tester.tap(
+        find.widgetWithText(ElevatedButton, 'Delete All Content'),
+      );
+      await tester.pumpAndSettle();
+
+      expect(receivedBurn, isTrue);
+      expect(receivedOwned, (name: 'Alice', canonical: 'alice'));
     });
   });
 

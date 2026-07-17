@@ -71,126 +71,183 @@ Future<void> showRemoveKeysWarningDialog({
 }
 
 /// Show confirmation dialog before deleting all content (requires typing
-/// DELETE)
+/// DELETE).
 ///
 /// This dialog ensures they understand the dangerous/irreversible nature of
-/// account deletion.
+/// account deletion. The dialog opens immediately; [ownedUsernameFuture] is
+/// resolved in the background and the opt-in "burn my username" toggle is
+/// revealed only once it completes with a non-null handle — so a slow
+/// name-server lookup never blocks the tap or lets a second tap stack a
+/// duplicate dialog. [onConfirm] receives the handle the dialog actually
+/// displayed, so a burn only ever targets the name the user consented to.
 Future<void> showDeleteAllContentWarningDialog({
   required BuildContext context,
-  required void Function({required bool burnUsername}) onConfirm,
-  ({String name, String canonical})? ownedUsername,
+  required void Function({
+    required bool burnUsername,
+    ({String name, String canonical})? ownedUsername,
+  })
+  onConfirm,
+  required Future<({String name, String canonical})?> ownedUsernameFuture,
 }) {
-  final confirmationController = TextEditingController();
-  var burnUsername = false;
-  const requiredText = 'DELETE';
-
   return showDialog<void>(
     context: context,
     barrierDismissible: false,
-    builder: (context) => StatefulBuilder(
-      builder: (context, setState) => AlertDialog(
-        backgroundColor: VineTheme.cardBackground,
-        scrollable: true,
-        title: Text(
-          context.l10n.deleteAccountFinalConfirmationTitle,
-          style: const TextStyle(
-            color: VineTheme.error,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              context.l10n.deleteAccountFinalConfirmationBody,
-              style: const TextStyle(
-                color: VineTheme.whiteText,
-                fontSize: 16,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              requiredText,
-              style: TextStyle(
-                color: VineTheme.error,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'monospace',
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: confirmationController,
-              style: const TextStyle(color: VineTheme.whiteText),
-              autocorrect: false,
-              textCapitalization: TextCapitalization.characters,
-              decoration: InputDecoration(
-                hintText: context.l10n.deleteAccountConfirmationHint,
-                hintStyle: const TextStyle(color: VineTheme.lightText),
-                enabledBorder: const OutlineInputBorder(
-                  borderSide: BorderSide(color: VineTheme.cardBackground),
-                ),
-                focusedBorder: const OutlineInputBorder(
-                  borderSide: BorderSide(color: VineTheme.error),
-                ),
-              ),
-              onChanged: (_) => setState(() {}),
-            ),
-            if (ownedUsername != null) ...[
-              const SizedBox(height: 16),
-              CheckboxListTile(
-                value: burnUsername,
-                onChanged: (value) =>
-                    setState(() => burnUsername = value ?? false),
-                controlAffinity: ListTileControlAffinity.leading,
-                contentPadding: EdgeInsets.zero,
-                activeColor: VineTheme.error,
-                checkColor: VineTheme.whiteText,
-                title: Text(
-                  context.l10n.deleteAccountBurnUsernameToggle(
-                    '@${ownedUsername.name}.divine.video',
-                  ),
-                  style: VineTheme.bodyMediumFont(),
-                ),
-              ),
-            ],
-          ],
-        ),
-        actionsAlignment: MainAxisAlignment.spaceBetween,
-        actions: [
-          TextButton(
-            onPressed: context.pop,
-            child: Text(
-              context.l10n.commonCancel,
-              style: const TextStyle(color: VineTheme.lightText, fontSize: 16),
-            ),
-          ),
-          ElevatedButton(
-            onPressed:
-                confirmationController.text.trim().toUpperCase() == requiredText
-                ? () {
-                    context.pop();
-                    onConfirm(burnUsername: burnUsername);
-                  }
-                : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: VineTheme.error,
-              foregroundColor: VineTheme.whiteText,
-              disabledBackgroundColor: VineTheme.cardBackground,
-              disabledForegroundColor: VineTheme.lightText,
-            ),
-            child: Text(
-              context.l10n.deleteAccountDeleteAllContentButton,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-            ),
-          ),
-        ],
-      ),
+    builder: (context) => _DeleteAllContentDialog(
+      ownedUsernameFuture: ownedUsernameFuture,
+      onConfirm: onConfirm,
     ),
   );
+}
+
+class _DeleteAllContentDialog extends StatefulWidget {
+  const _DeleteAllContentDialog({
+    required this.ownedUsernameFuture,
+    required this.onConfirm,
+  });
+
+  final Future<({String name, String canonical})?> ownedUsernameFuture;
+  final void Function({
+    required bool burnUsername,
+    ({String name, String canonical})? ownedUsername,
+  })
+  onConfirm;
+
+  @override
+  State<_DeleteAllContentDialog> createState() =>
+      _DeleteAllContentDialogState();
+}
+
+class _DeleteAllContentDialogState extends State<_DeleteAllContentDialog> {
+  static const _requiredText = 'DELETE';
+
+  final _confirmationController = TextEditingController();
+  var _burnUsername = false;
+  ({String name, String canonical})? _ownedUsername;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.ownedUsernameFuture.then((owned) {
+      if (!mounted || owned == null) return;
+      setState(() => _ownedUsername = owned);
+    });
+  }
+
+  @override
+  void dispose() {
+    _confirmationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final owned = _ownedUsername;
+    final canConfirm =
+        _confirmationController.text.trim().toUpperCase() == _requiredText;
+    return AlertDialog(
+      backgroundColor: VineTheme.cardBackground,
+      scrollable: true,
+      title: Text(
+        context.l10n.deleteAccountFinalConfirmationTitle,
+        style: const TextStyle(
+          color: VineTheme.error,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.l10n.deleteAccountFinalConfirmationBody,
+            style: const TextStyle(
+              color: VineTheme.whiteText,
+              fontSize: 16,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            _requiredText,
+            style: TextStyle(
+              color: VineTheme.error,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'monospace',
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _confirmationController,
+            style: const TextStyle(color: VineTheme.whiteText),
+            autocorrect: false,
+            textCapitalization: TextCapitalization.characters,
+            decoration: InputDecoration(
+              hintText: context.l10n.deleteAccountConfirmationHint,
+              hintStyle: const TextStyle(color: VineTheme.lightText),
+              enabledBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: VineTheme.cardBackground),
+              ),
+              focusedBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: VineTheme.error),
+              ),
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+          if (owned != null) ...[
+            const SizedBox(height: 16),
+            CheckboxListTile(
+              value: _burnUsername,
+              onChanged: (value) =>
+                  setState(() => _burnUsername = value ?? false),
+              controlAffinity: ListTileControlAffinity.leading,
+              contentPadding: EdgeInsets.zero,
+              activeColor: VineTheme.error,
+              checkColor: VineTheme.whiteText,
+              title: Text(
+                context.l10n.deleteAccountBurnUsernameToggle(
+                  '@${owned.name}.divine.video',
+                ),
+                style: VineTheme.bodyMediumFont(),
+              ),
+            ),
+          ],
+        ],
+      ),
+      actionsAlignment: MainAxisAlignment.spaceBetween,
+      actions: [
+        TextButton(
+          onPressed: context.pop,
+          child: Text(
+            context.l10n.commonCancel,
+            style: const TextStyle(color: VineTheme.lightText, fontSize: 16),
+          ),
+        ),
+        ElevatedButton(
+          onPressed: canConfirm
+              ? () {
+                  context.pop();
+                  widget.onConfirm(
+                    burnUsername: _burnUsername,
+                    ownedUsername: _ownedUsername,
+                  );
+                }
+              : null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: VineTheme.error,
+            foregroundColor: VineTheme.whiteText,
+            disabledBackgroundColor: VineTheme.cardBackground,
+            disabledForegroundColor: VineTheme.lightText,
+          ),
+          child: Text(
+            context.l10n.deleteAccountDeleteAllContentButton,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 /// Progress dialog that shows deletion progress using BLoC pattern.

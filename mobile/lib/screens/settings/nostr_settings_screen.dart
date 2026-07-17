@@ -261,26 +261,27 @@ class _DeleteAccountTile extends StatelessWidget {
     final deletionService = ref.read(accountDeletionServiceProvider);
     final authService = ref.read(authServiceProvider);
     final profileRepository = ref.read(profileRepositoryProvider);
-    // Resolve whether the user owns a burnable @divine.video handle so the
-    // dialog can offer the opt-in burn toggle.
-    final ({String name, String canonical})? ownedUsername =
-        profileRepository == null
-        ? null
-        : await ref.read(ownedDivineUsernameProvider.future);
-    if (!context.mounted) return;
+    // Kick off the burnable-handle lookup but do not await it: the dialog opens
+    // immediately and reveals the opt-in burn toggle once this resolves, so a
+    // slow name-server call never blocks the tap.
+    final ownedUsernameFuture = ref.read(ownedDivineUsernameProvider.future);
 
     await showDeleteAllContentWarningDialog(
       context: context,
-      ownedUsername: ownedUsername,
-      onConfirm: ({required bool burnUsername}) => executeAccountDeletion(
-        context: context,
-        deletionService: deletionService,
-        authService: authService,
-        profileRepository: profileRepository,
-        burnUsername: burnUsername,
-        ownedUsername: ownedUsername,
-        screenName: 'NostrSettingsScreen',
-      ),
+      ownedUsernameFuture: ownedUsernameFuture,
+      onConfirm:
+          ({
+            required bool burnUsername,
+            ({String name, String canonical})? ownedUsername,
+          }) => executeAccountDeletion(
+            context: context,
+            deletionService: deletionService,
+            authService: authService,
+            profileRepository: profileRepository,
+            burnUsername: burnUsername,
+            ownedUsername: ownedUsername,
+            screenName: 'NostrSettingsScreen',
+          ),
     );
   }
 }
