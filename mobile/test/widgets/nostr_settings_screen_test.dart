@@ -330,5 +330,66 @@ void main() {
       expect(find.text('Rabble'), findsOneWidget);
       expect(find.text('@rabble.divine.video'), findsWidgets);
     });
+
+    testWidgets('Delete Account and Data degrades to DELETE with no profile', (
+      tester,
+    ) async {
+      when(() => mockAuthService.currentPublicKeyHex).thenReturn(_pubkeyHex);
+      final mockDeletionService = _MockAccountDeletionService();
+
+      final router = GoRouter(
+        initialLocation: NostrSettingsScreen.path,
+        routes: [
+          GoRoute(
+            path: NostrSettingsScreen.path,
+            builder: (context, state) => const NostrSettingsScreen(),
+          ),
+          GoRoute(
+            path: WelcomeScreen.path,
+            builder: (context, state) =>
+                const SizedBox(key: Key('welcome-screen')),
+          ),
+        ],
+      );
+
+      await tester.binding.setSurfaceSize(const Size(900, 1400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+            authServiceProvider.overrideWithValue(mockAuthService),
+            currentAuthStateProvider.overrideWith(
+              (ref) => AuthState.authenticated,
+            ),
+            isFeatureEnabledProvider(
+              FeatureFlag.advancedRelaySettings,
+            ).overrideWith((ref) => false),
+            accountDeletionServiceProvider.overrideWithValue(
+              mockDeletionService,
+            ),
+            // No cached or fetchable profile → fallback confirmation.
+            fetchUserProfileProvider(
+              _pubkeyHex,
+            ).overrideWith((ref) async => null),
+          ],
+          child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text(l10n.nostrSettingsDeleteAccount));
+      await tester.tap(find.text(l10n.nostrSettingsDeleteAccount));
+      await tester.pumpAndSettle();
+
+      // No username → the DELETE gate, and no handle shown.
+      expect(find.text('DELETE'), findsOneWidget);
+      expect(find.text('@rabble.divine.video'), findsNothing);
+    });
   });
 }

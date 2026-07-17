@@ -286,10 +286,14 @@ class _DeleteIdentityHeader extends StatelessWidget {
     return MergeSemantics(
       child: Row(
         children: [
-          UserAvatar(
-            imageUrl: confirmation.avatarUrl,
-            name: confirmation.displayName,
-            placeholderSeed: confirmation.pubkeyHex,
+          // Avatar is decorative here — the name is shown as text beside it, so
+          // exclude it from the merged node to avoid reading the name twice.
+          ExcludeSemantics(
+            child: UserAvatar(
+              imageUrl: confirmation.avatarUrl,
+              name: confirmation.displayName,
+              placeholderSeed: confirmation.pubkeyHex,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -406,6 +410,9 @@ class _DeletionProgressDialog extends StatelessWidget {
 /// If the burn commits but a later step fails, the error discloses that the
 /// username was permanently released (the burn is never rolled back).
 ///
+/// Aborts before any step (including the burn) when [confirmedPubkey] is set and
+/// no longer matches the signed-in account.
+///
 /// [context] - BuildContext for showing dialogs
 /// [deletionService] - Service to execute NIP-62 deletion
 /// [authService] - Service for Keycast deletion and sign out
@@ -413,6 +420,8 @@ class _DeletionProgressDialog extends StatelessWidget {
 ///   [burnUsername] is set
 /// [burnUsername] - Whether the user opted in to permanently burn their handle
 /// [ownedUsername] - The active handle (display name + canonical) to burn
+/// [confirmedPubkey] - When set, aborts before any step if the signed-in
+///   account no longer matches, binding deletion to the confirmed account
 /// [screenName] - Name of the calling screen for logging
 Future<void> executeAccountDeletion({
   required BuildContext context,

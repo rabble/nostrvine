@@ -275,8 +275,9 @@ class _DeleteAccountTile extends StatelessWidget {
     final ownedUsernameFuture = ref.read(ownedDivineUsernameProvider.future);
 
     // Resolve the local profile up front so the identity + username gate are
-    // ready when the dialog opens. Fast (Drift cache); bounded so an offline
-    // miss degrades to npub + DELETE instead of hanging.
+    // ready when the dialog opens. Cache-first (usually instant) with a bounded
+    // network fallback; a timeout or miss degrades to npub + DELETE, never
+    // hangs.
     final overlay = _ProgressOverlay.show(context);
     UserProfile? profile;
     try {

@@ -93,6 +93,14 @@ void main() {
     testWidgets('empty string keeps Delete button disabled', (tester) async {
       await _showDialog(tester);
 
+      expect(
+        find.text(
+          lookupAppLocalizations(
+            const Locale('en'),
+          ).deleteAccountConfirmDeletePrompt,
+        ),
+        findsOneWidget,
+      );
       // Button should be disabled (onPressed == null → tapping does nothing)
       final button = tester.widget<ElevatedButton>(
         find.widgetWithText(ElevatedButton, 'Delete All Content'),
@@ -388,10 +396,20 @@ void main() {
       expect(receivedOwned, (name: 'Alice', canonical: 'alice'));
     });
 
-    testWidgets('shows the identity (name + handle)', (tester) async {
+    testWidgets('shows the identity (name + handle) and username prompt', (
+      tester,
+    ) async {
       await _showDialog(tester, confirmation: _divineUsername());
       expect(find.text('Rabble'), findsOneWidget);
       expect(find.text('@rabble.divine.video'), findsWidgets);
+      expect(
+        find.text(
+          lookupAppLocalizations(
+            const Locale('en'),
+          ).deleteAccountConfirmUsernamePrompt,
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('typing DELETE does not enable the button for a username', (
