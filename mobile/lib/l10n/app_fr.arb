@@ -4318,7 +4318,6 @@
     "deleteAccountConfirmationHint": "Tape DELETE",
     "deleteAccountContentDeletionFailed": "Échec de la suppression du contenu des relays",
     "deleteAccountDeleteAllContentButton": "Supprimer tout le contenu",
-    "deleteAccountFinalConfirmationBody": "Pour confirmer la suppression définitive de TOUT ton contenu des relays Nostr, tape :",
     "deleteAccountFinalConfirmationTitle": "⚠️ Confirmation finale",
     "deleteAccountKeyDeletionWarning": "Compte supprimé, mais tes clés n'ont peut-être pas été entièrement retirées de cet appareil. Va dans Réglages → Clés Nostr → Retirer les clés pour réessayer.",
     "deleteAccountPreparingDeletion": "Préparation de la suppression...",

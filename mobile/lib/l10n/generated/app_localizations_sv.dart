@@ -6653,10 +6653,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'We couldn\'t finish deleting your account. Try again.';
 
   @override
-  String get deleteAccountFinalConfirmationBody =>
-      'För att bekräfta permanent borttagning av ALLT ditt innehåll från Nostr-reler, skriv:';
-
-  @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Slutgiltig bekräftelse';
 
   @override

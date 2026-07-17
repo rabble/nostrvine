@@ -6814,10 +6814,6 @@ class AppLocalizationsPl extends AppLocalizations {
       'We couldn\'t finish deleting your account. Try again.';
 
   @override
-  String get deleteAccountFinalConfirmationBody =>
-      'Aby potwierdzić trwałe usunięcie WSZYSTKICH twoich treści z przekaźników Nostr, wpisz:';
-
-  @override
   String get deleteAccountFinalConfirmationTitle =>
       '⚠️ Ostateczne potwierdzenie';
 

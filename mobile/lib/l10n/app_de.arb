@@ -4318,7 +4318,6 @@
     "deleteAccountConfirmationHint": "DELETE eingeben",
     "deleteAccountContentDeletionFailed": "Inhalte konnten nicht von den Relays gelöscht werden",
     "deleteAccountDeleteAllContentButton": "Alle Inhalte löschen",
-    "deleteAccountFinalConfirmationBody": "Um die dauerhafte Löschung ALL deiner Inhalte von den Nostr-Relays zu bestätigen, gib ein:",
     "deleteAccountFinalConfirmationTitle": "⚠️ Letzte Bestätigung",
     "deleteAccountKeyDeletionWarning": "Konto gelöscht, aber deine Schlüssel wurden möglicherweise nicht vollständig von diesem Gerät entfernt. Gehe zu Einstellungen → Nostr-Schlüssel → Schlüssel entfernen, um es erneut zu versuchen.",
     "deleteAccountPreparingDeletion": "Löschung wird vorbereitet …",

@@ -6724,10 +6724,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'We couldn\'t finish deleting your account. Try again.';
 
   @override
-  String get deleteAccountFinalConfirmationBody =>
-      'За да потвърдиш постоянното изтриване на ЦЯЛОТО ти съдържание от Nostr релетата, напиши:';
-
-  @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Последно потвърждение';
 
   @override

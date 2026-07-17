@@ -4318,7 +4318,6 @@
     "deleteAccountConfirmationHint": "Escribí DELETE",
     "deleteAccountContentDeletionFailed": "No se pudo eliminar el contenido de los relays",
     "deleteAccountDeleteAllContentButton": "Eliminar todo el contenido",
-    "deleteAccountFinalConfirmationBody": "Para confirmar la eliminación permanente de TODO tu contenido de los relays de Nostr, escribí:",
     "deleteAccountFinalConfirmationTitle": "⚠️ Confirmación final",
     "deleteAccountKeyDeletionWarning": "Cuenta eliminada, pero es posible que tus claves no se hayan quitado por completo de este dispositivo. Andá a Ajustes → Claves de Nostr → Quitar claves para reintentar.",
     "deleteAccountPreparingDeletion": "Preparando la eliminación...",

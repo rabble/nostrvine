@@ -6700,10 +6700,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'We couldn\'t finish deleting your account. Try again.';
 
   @override
-  String get deleteAccountFinalConfirmationBody =>
-      'Para confirmar a exclusão permanente de TODO o seu conteúdo dos relays Nostr, digite:';
-
-  @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Confirmação final';
 
   @override

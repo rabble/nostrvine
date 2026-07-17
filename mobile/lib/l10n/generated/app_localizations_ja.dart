@@ -6381,10 +6381,6 @@ class AppLocalizationsJa extends AppLocalizations {
       'We couldn\'t finish deleting your account. Try again.';
 
   @override
-  String get deleteAccountFinalConfirmationBody =>
-      'Nostr リレーからすべてのコンテンツを完全に削除することを確認するには、次を入力してね:';
-
-  @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ 最終確認';
 
   @override

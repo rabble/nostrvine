@@ -6731,10 +6731,6 @@ class AppLocalizationsFil extends AppLocalizations {
       'We couldn\'t finish deleting your account. Try again.';
 
   @override
-  String get deleteAccountFinalConfirmationBody =>
-      'Para kumpirmahin ang permanenteng pagbura ng LAHAT ng iyong content mula sa mga Nostr relay, i-type:';
-
-  @override
   String get deleteAccountFinalConfirmationTitle =>
       '⚠️ Panghuling Kumpirmasyon';
 

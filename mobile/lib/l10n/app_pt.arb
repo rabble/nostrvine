@@ -4318,7 +4318,6 @@
     "deleteAccountConfirmationHint": "Digite DELETE",
     "deleteAccountContentDeletionFailed": "Falha ao excluir o conteúdo dos relays",
     "deleteAccountDeleteAllContentButton": "Excluir todo o conteúdo",
-    "deleteAccountFinalConfirmationBody": "Para confirmar a exclusão permanente de TODO o seu conteúdo dos relays Nostr, digite:",
     "deleteAccountFinalConfirmationTitle": "⚠️ Confirmação final",
     "deleteAccountKeyDeletionWarning": "Conta excluída, mas suas chaves podem não ter sido totalmente removidas deste dispositivo. Vá em Configurações → Chaves Nostr → Remover chaves para tentar de novo.",
     "deleteAccountPreparingDeletion": "Preparando a exclusão...",

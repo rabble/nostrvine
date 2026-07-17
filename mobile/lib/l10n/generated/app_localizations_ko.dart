@@ -6407,10 +6407,6 @@ class AppLocalizationsKo extends AppLocalizations {
       'We couldn\'t finish deleting your account. Try again.';
 
   @override
-  String get deleteAccountFinalConfirmationBody =>
-      'Nostr 릴레이에서 모든 콘텐츠를 영구 삭제하는 걸 확인하려면 입력하세요:';
-
-  @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ 최종 확인';
 
   @override

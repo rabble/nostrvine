@@ -4318,7 +4318,6 @@
     "deleteAccountConfirmationHint": "DELETE と入力してね",
     "deleteAccountContentDeletionFailed": "リレーからのコンテンツ削除に失敗したよ",
     "deleteAccountDeleteAllContentButton": "すべてのコンテンツを削除",
-    "deleteAccountFinalConfirmationBody": "Nostr リレーからすべてのコンテンツを完全に削除することを確認するには、次を入力してね:",
     "deleteAccountFinalConfirmationTitle": "⚠️ 最終確認",
     "deleteAccountKeyDeletionWarning": "アカウントは削除したけど、鍵がこのデバイスから完全には消えてないかもしれないよ。[設定]→[Nostr 鍵]→[鍵を削除]でもう一回試してね。",
     "deleteAccountPreparingDeletion": "削除の準備中...",

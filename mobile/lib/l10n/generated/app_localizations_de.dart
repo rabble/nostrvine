@@ -6734,10 +6734,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'We couldn\'t finish deleting your account. Try again.';
 
   @override
-  String get deleteAccountFinalConfirmationBody =>
-      'Um die dauerhafte Löschung ALL deiner Inhalte von den Nostr-Relays zu bestätigen, gib ein:';
-
-  @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Letzte Bestätigung';
 
   @override

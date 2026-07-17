@@ -14,6 +14,8 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
+import 'package:openvine/widgets/delete_account_confirmation.dart';
+import 'package:openvine/widgets/user_avatar.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -82,6 +84,7 @@ Future<void> showRemoveKeysWarningDialog({
 /// displayed, so a burn only ever targets the name the user consented to.
 Future<void> showDeleteAllContentWarningDialog({
   required BuildContext context,
+  required DeleteAccountConfirmation confirmation,
   required void Function({
     required bool burnUsername,
     ({String name, String canonical})? ownedUsername,
@@ -93,6 +96,7 @@ Future<void> showDeleteAllContentWarningDialog({
     context: context,
     barrierDismissible: false,
     builder: (context) => _DeleteAllContentDialog(
+      confirmation: confirmation,
       ownedUsernameFuture: ownedUsernameFuture,
       onConfirm: onConfirm,
     ),
@@ -101,10 +105,12 @@ Future<void> showDeleteAllContentWarningDialog({
 
 class _DeleteAllContentDialog extends StatefulWidget {
   const _DeleteAllContentDialog({
+    required this.confirmation,
     required this.ownedUsernameFuture,
     required this.onConfirm,
   });
 
+  final DeleteAccountConfirmation confirmation;
   final Future<({String name, String canonical})?> ownedUsernameFuture;
   final void Function({
     required bool burnUsername,
@@ -118,8 +124,6 @@ class _DeleteAllContentDialog extends StatefulWidget {
 }
 
 class _DeleteAllContentDialogState extends State<_DeleteAllContentDialog> {
-  static const _requiredText = 'DELETE';
-
   final _confirmationController = TextEditingController();
   var _burnUsername = false;
   ({String name, String canonical})? _ownedUsername;
@@ -149,8 +153,8 @@ class _DeleteAllContentDialogState extends State<_DeleteAllContentDialog> {
   @override
   Widget build(BuildContext context) {
     final owned = _ownedUsername;
-    final canConfirm =
-        _confirmationController.text.trim().toUpperCase() == _requiredText;
+    final c = widget.confirmation;
+    final canConfirm = c.matches(_confirmationController.text);
     return AlertDialog(
       backgroundColor: VineTheme.cardBackground,
       scrollable: true,
@@ -166,8 +170,10 @@ class _DeleteAllContentDialogState extends State<_DeleteAllContentDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _DeleteIdentityHeader(confirmation: c),
+          const SizedBox(height: 16),
           Text(
-            context.l10n.deleteAccountFinalConfirmationBody,
+            context.l10n.deleteAccountWarningBody,
             style: const TextStyle(
               color: VineTheme.whiteText,
               fontSize: 16,
@@ -175,9 +181,16 @@ class _DeleteAllContentDialogState extends State<_DeleteAllContentDialog> {
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
-            _requiredText,
-            style: TextStyle(
+          Text(
+            c.isUsernameConfirmation
+                ? context.l10n.deleteAccountConfirmUsernamePrompt
+                : context.l10n.deleteAccountConfirmDeletePrompt,
+            style: const TextStyle(color: VineTheme.whiteText, fontSize: 16),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            c.requiredToken,
+            style: const TextStyle(
               color: VineTheme.error,
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -189,9 +202,13 @@ class _DeleteAllContentDialogState extends State<_DeleteAllContentDialog> {
             controller: _confirmationController,
             style: const TextStyle(color: VineTheme.whiteText),
             autocorrect: false,
-            textCapitalization: TextCapitalization.characters,
+            textCapitalization: c.isUsernameConfirmation
+                ? TextCapitalization.none
+                : TextCapitalization.characters,
             decoration: InputDecoration(
-              hintText: context.l10n.deleteAccountConfirmationHint,
+              hintText: c.isUsernameConfirmation
+                  ? context.l10n.deleteAccountConfirmationHintUsername
+                  : context.l10n.deleteAccountConfirmationHint,
               hintStyle: const TextStyle(color: VineTheme.lightText),
               enabledBorder: const OutlineInputBorder(
                 borderSide: BorderSide(color: VineTheme.cardBackground),
@@ -250,6 +267,46 @@ class _DeleteAllContentDialogState extends State<_DeleteAllContentDialog> {
           child: Text(
             context.l10n.deleteAccountDeleteAllContentButton,
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Identity block (avatar + name + handle/npub) for the delete dialog.
+class _DeleteIdentityHeader extends StatelessWidget {
+  const _DeleteIdentityHeader({required this.confirmation});
+
+  final DeleteAccountConfirmation confirmation;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        UserAvatar(
+          imageUrl: confirmation.avatarUrl,
+          name: confirmation.displayName,
+          placeholderSeed: confirmation.pubkeyHex,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                confirmation.displayName,
+                style: VineTheme.titleMediumFont(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                confirmation.identifierLine,
+                style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
         ),
       ],

@@ -4318,7 +4318,6 @@
     "deleteAccountConfirmationHint": "اكتب DELETE",
     "deleteAccountContentDeletionFailed": "فشل حذف المحتوى من المحوّلات",
     "deleteAccountDeleteAllContentButton": "حذف كل المحتوى",
-    "deleteAccountFinalConfirmationBody": "لتأكيد الحذف النهائي لكل محتواك من محوّلات Nostr، اكتب:",
     "deleteAccountFinalConfirmationTitle": "⚠️ التأكيد النهائي",
     "deleteAccountKeyDeletionWarning": "تم حذف الحساب، لكن قد لا تكون مفاتيحك أُزيلت بالكامل من هذا الجهاز. اذهب إلى الإعدادات ← مفاتيح Nostr ← إزالة المفاتيح لإعادة المحاولة.",
     "deleteAccountPreparingDeletion": "جارٍ التحضير للحذف...",

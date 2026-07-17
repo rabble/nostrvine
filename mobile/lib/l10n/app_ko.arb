@@ -3642,7 +3642,6 @@
     "deleteAccountConfirmationHint": "DELETE 입력",
     "deleteAccountContentDeletionFailed": "릴레이에서 콘텐츠를 삭제하지 못했어요",
     "deleteAccountDeleteAllContentButton": "모든 콘텐츠 삭제",
-    "deleteAccountFinalConfirmationBody": "Nostr 릴레이에서 모든 콘텐츠를 영구 삭제하는 걸 확인하려면 입력하세요:",
     "deleteAccountFinalConfirmationTitle": "⚠️ 최종 확인",
     "deleteAccountKeyDeletionWarning": "계정은 삭제됐지만, 키가 이 기기에서 완전히 제거되지 않았을 수 있어요. 설정 → Nostr 키 → 키 제거로 가서 다시 시도하세요.",
     "deleteAccountPreparingDeletion": "삭제 준비 중...",

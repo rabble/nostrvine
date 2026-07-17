@@ -4318,7 +4318,6 @@
     "deleteAccountConfirmationHint": "Scrie DELETE",
     "deleteAccountContentDeletionFailed": "Nu am putut șterge conținutul de pe relay-uri",
     "deleteAccountDeleteAllContentButton": "Șterge tot conținutul",
-    "deleteAccountFinalConfirmationBody": "Ca să confirmi ștergerea permanentă a ÎNTREGULUI tău conținut de pe relay-urile Nostr, scrie:",
     "deleteAccountFinalConfirmationTitle": "⚠️ Confirmare finală",
     "deleteAccountKeyDeletionWarning": "Contul a fost șters, dar cheile tale s-ar putea să nu fi fost eliminate complet de pe acest dispozitiv. Mergi la Setări → Chei Nostr → Elimină cheile ca să reîncerci.",
     "deleteAccountPreparingDeletion": "Se pregătește ștergerea...",

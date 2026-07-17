@@ -11589,12 +11589,6 @@ abstract class AppLocalizations {
   /// **'We couldn\'t finish deleting your account. Try again.'**
   String get deleteAccountDeletionIncomplete;
 
-  /// No description provided for @deleteAccountFinalConfirmationBody.
-  ///
-  /// In en, this message translates to:
-  /// **'To confirm permanent deletion of ALL your content from Nostr relays, type:'**
-  String get deleteAccountFinalConfirmationBody;
-
   /// No description provided for @deleteAccountFinalConfirmationTitle.
   ///
   /// In en, this message translates to:

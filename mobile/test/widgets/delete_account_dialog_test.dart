@@ -11,6 +11,7 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
+import 'package:openvine/widgets/delete_account_confirmation.dart';
 import 'package:openvine/widgets/delete_account_dialog.dart';
 import 'package:profile_repository/profile_repository.dart';
 
@@ -20,6 +21,23 @@ class _MockAccountDeletionService extends Mock
 class _MockAuthService extends Mock implements AuthService {}
 
 class _MockProfileRepository extends Mock implements ProfileRepository {}
+
+const _pubkeyHex =
+    '3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d';
+
+DeleteAccountConfirmation _deleteFallback() => DeleteAccountConfirmation(
+  pubkeyHex: _pubkeyHex,
+  displayName: 'Wild Otter 7',
+  avatarUrl: null,
+  handle: null,
+);
+
+DeleteAccountConfirmation _divineUsername() => DeleteAccountConfirmation(
+  pubkeyHex: _pubkeyHex,
+  displayName: 'Rabble',
+  avatarUrl: null,
+  handle: '@rabble.divine.video',
+);
 
 /// Minimal router wrapper so [context.pop()] works inside the dialog.
 Widget _wrapWithRouter(Widget child) {
@@ -35,6 +53,7 @@ Widget _wrapWithRouter(Widget child) {
 
 Future<void> _showDialog(
   WidgetTester tester, {
+  DeleteAccountConfirmation? confirmation,
   void Function({
     required bool burnUsername,
     ({String name, String canonical})? ownedUsername,
@@ -50,6 +69,7 @@ Future<void> _showDialog(
             key: const Key('open'),
             onPressed: () => showDeleteAllContentWarningDialog(
               context: context,
+              confirmation: confirmation ?? _deleteFallback(),
               ownedUsernameFuture: Future.value(ownedUsername),
               onConfirm:
                   onConfirm ??
@@ -266,6 +286,7 @@ void main() {
                 key: const Key('open'),
                 onPressed: () => showDeleteAllContentWarningDialog(
                   context: context,
+                  confirmation: _deleteFallback(),
                   ownedUsernameFuture: completer.future,
                   onConfirm:
                       ({
@@ -307,6 +328,7 @@ void main() {
                 key: const Key('open'),
                 onPressed: () => showDeleteAllContentWarningDialog(
                   context: context,
+                  confirmation: _deleteFallback(),
                   ownedUsernameFuture: completer.future,
                   onConfirm:
                       ({
@@ -364,6 +386,46 @@ void main() {
 
       expect(receivedBurn, isTrue);
       expect(receivedOwned, (name: 'Alice', canonical: 'alice'));
+    });
+
+    testWidgets('shows the identity (name + handle)', (tester) async {
+      await _showDialog(tester, confirmation: _divineUsername());
+      expect(find.text('Rabble'), findsOneWidget);
+      expect(find.text('@rabble.divine.video'), findsWidgets);
+    });
+
+    testWidgets('typing DELETE does not enable the button for a username', (
+      tester,
+    ) async {
+      await _showDialog(tester, confirmation: _divineUsername());
+      await tester.enterText(find.byType(TextField), 'DELETE');
+      await tester.pump();
+      final button = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'Delete All Content'),
+      );
+      expect(button.onPressed, isNull);
+    });
+
+    testWidgets('typing the handle enables the button', (tester) async {
+      await _showDialog(tester, confirmation: _divineUsername());
+      await tester.enterText(find.byType(TextField), '@rabble.divine.video');
+      await tester.pump();
+      final button = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'Delete All Content'),
+      );
+      expect(button.onPressed, isNotNull);
+    });
+
+    testWidgets('typing the handle without @ also enables the button', (
+      tester,
+    ) async {
+      await _showDialog(tester, confirmation: _divineUsername());
+      await tester.enterText(find.byType(TextField), 'rabble.divine.video');
+      await tester.pump();
+      final button = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'Delete All Content'),
+      );
+      expect(button.onPressed, isNotNull);
     });
   });
 

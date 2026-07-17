@@ -6628,10 +6628,6 @@ class AppLocalizationsId extends AppLocalizations {
       'We couldn\'t finish deleting your account. Try again.';
 
   @override
-  String get deleteAccountFinalConfirmationBody =>
-      'Untuk mengonfirmasi penghapusan permanen SEMUA kontenmu dari relay Nostr, ketik:';
-
-  @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Konfirmasi Terakhir';
 
   @override

@@ -6818,10 +6818,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'We couldn\'t finish deleting your account. Try again.';
 
   @override
-  String get deleteAccountFinalConfirmationBody =>
-      'Ca să confirmi ștergerea permanentă a ÎNTREGULUI tău conținut de pe relay-urile Nostr, scrie:';
-
-  @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Confirmare finală';
 
   @override

@@ -6631,10 +6631,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'We couldn\'t finish deleting your account. Try again.';
 
   @override
-  String get deleteAccountFinalConfirmationBody =>
-      'TÜM içeriğinin Nostr rölelerinden kalıcı olarak silinmesini onaylamak için şunu yaz:';
-
-  @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Son Onay';
 
   @override

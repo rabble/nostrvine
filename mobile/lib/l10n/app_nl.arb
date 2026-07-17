@@ -4318,7 +4318,6 @@
     "deleteAccountConfirmationHint": "Typ DELETE",
     "deleteAccountContentDeletionFailed": "Inhoud verwijderen van relays mislukt",
     "deleteAccountDeleteAllContentButton": "Alle inhoud verwijderen",
-    "deleteAccountFinalConfirmationBody": "Typ het volgende om de permanente verwijdering van AL je inhoud van Nostr-relays te bevestigen:",
     "deleteAccountFinalConfirmationTitle": "⚠️ Laatste bevestiging",
     "deleteAccountKeyDeletionWarning": "Account verwijderd, maar je sleutels zijn mogelijk niet volledig van dit apparaat verwijderd. Ga naar Instellingen → Nostr-sleutels → Sleutels verwijderen om het opnieuw te proberen.",
     "deleteAccountPreparingDeletion": "Verwijdering voorbereiden...",

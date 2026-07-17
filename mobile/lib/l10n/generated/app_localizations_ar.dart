@@ -6616,10 +6616,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'We couldn\'t finish deleting your account. Try again.';
 
   @override
-  String get deleteAccountFinalConfirmationBody =>
-      'لتأكيد الحذف النهائي لكل محتواك من محوّلات Nostr، اكتب:';
-
-  @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ التأكيد النهائي';
 
   @override
