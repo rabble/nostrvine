@@ -99,9 +99,14 @@ class ClipWaveformPainter extends CustomPainter {
     final paint = Paint()..color = color;
     final peaks = waveform.peaks;
 
-    // Normalize against the clip's own loudest sample, so a quietly recorded
-    // clip still fills the band. The floor keeps near-silence flat instead of
-    // amplifying room noise into a convincing-looking waveform.
+    // Normalize against the source file's loudest sample, so a quietly
+    // recorded clip still fills the band. The floor keeps near-silence flat
+    // instead of amplifying room noise into a convincing-looking waveform.
+    //
+    // A trim-based split's halves share one file, hence one normalizer: each
+    // half is drawn relative to the whole recording rather than to its own
+    // loudest moment, so splitting a clip never restyles the bars on either
+    // side of the cut.
     final normalizer = math.max(
       waveform.peak,
       TimelineConstants.clipWaveformNormalizerFloor,
