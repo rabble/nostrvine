@@ -21,6 +21,7 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/nostr_signature_verification_preference_service.dart';
 import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
 
@@ -82,8 +83,7 @@ class _RecordingFactory {
     when(
       () => client.publicKey,
     ).thenReturn(pubkey ?? '');
-    // ignore: unnecessary_lambdas
-    when(() => client.initialize()).thenAnswer((_) {
+    when(client.initialize).thenAnswer((_) {
       initializePubkeys.add(pubkey);
       return initializeCompleter?.future ?? Future<void>.value();
     });
@@ -130,7 +130,8 @@ void main() {
     return LocalNostrIdentity(keyContainer: keyContainer);
   }
 
-  setUp(() {
+  setUp(() async {
+    await LogCaptureService().clearAllLogs();
     mockAuth = _MockAuthService();
     mockDbClient = _MockAppDbClient();
     mockStats = _MockRelayStatisticsService();
@@ -200,6 +201,27 @@ void main() {
   }
 
   group('NostrService uses NostrIdentity as source of truth', () {
+    test('tracks the full outer initialization attempt', () async {
+      final initialize = Completer<void>();
+      factory.initializeCompleters[pubkeyA] = initialize;
+      when(() => mockAuth.currentIdentity).thenReturn(identityA);
+      when(() => mockAuth.currentPublicKeyHex).thenReturn(pubkeyA);
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      container.read(nostrServiceProvider);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(container.read(nostrInitializationInProgressProvider), isTrue);
+
+      initialize.complete();
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(container.read(nostrInitializationInProgressProvider), isFalse);
+    });
+
     test('initialization retry backoff is bounded exponential policy', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
@@ -819,6 +841,18 @@ void main() {
         expect(factory.callCount, equals(2));
         expect(factory.addRelaysPubkeys, equals([pubkeyA, pubkeyA]));
         expect(factory.initializePubkeys, equals([pubkeyA]));
+        final testLogs = LogCaptureService().getRecentLogs();
+        expect(
+          testLogs.any(
+            (entry) =>
+                entry.message.contains('Failed to initialize client') &&
+                entry.message.contains('stage=addingUserRelays'),
+          ),
+          isTrue,
+          reason:
+              'A remote log export must identify addRelays as the stalled '
+              'startup stage.',
+        );
         verify(timedOutClient.dispose).called(1);
         expect(
           container.read(nostrServiceProvider),
@@ -1176,6 +1210,33 @@ void main() {
   });
 
   group('disposed-ref guard (#5602 / #5600 regression)', () {
+    test(
+      'does not touch ref when disposed before init microtask runs',
+      () async {
+        when(() => mockAuth.currentIdentity).thenReturn(identityA);
+
+        final errors = <Object>[];
+        await runZonedGuarded(
+          () async {
+            final container = createContainer();
+            container.read(nostrServiceProvider);
+            container.dispose();
+
+            await Future<void>.delayed(Duration.zero);
+            await Future<void>.delayed(Duration.zero);
+          },
+          (error, _) => errors.add(error),
+        );
+
+        expect(
+          errors,
+          isEmpty,
+          reason:
+              'a disposed-ref read leaked before the init try block: $errors',
+        );
+      },
+    );
+
     test('does not touch ref after the container is disposed mid-init '
         '(success path)', () async {
       when(() => mockAuth.currentIdentity).thenReturn(identityA);

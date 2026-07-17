@@ -148,6 +148,50 @@ final nostrInitializationTimeoutProvider = Provider<Duration>(
   (ref) => _nostrInitializationTimeout,
 );
 
+/// Whether one or more app-level Nostr client initialization attempts are
+/// still running.
+///
+/// This deliberately tracks the outer [NostrService] future rather than
+/// [NostrClient.isInitialized], which becomes true as soon as RelayManager
+/// settles and can precede the rest of the service's startup bookkeeping.
+final nostrInitializationInProgressProvider =
+    NotifierProvider<NostrInitializationInProgress, bool>(
+      NostrInitializationInProgress.new,
+    );
+
+class NostrInitializationInProgress extends Notifier<bool> {
+  final Map<NostrClient, int> _attemptsByClient = Map.identity();
+
+  @override
+  bool build() => false;
+
+  bool isClientInitializing(NostrClient client) {
+    return _attemptsByClient.containsKey(client);
+  }
+
+  void begin(NostrClient client) {
+    _attemptsByClient.update(
+      client,
+      (attempts) => attempts + 1,
+      ifAbsent: () => 1,
+    );
+    state = true;
+  }
+
+  void end(NostrClient client) {
+    if (!ref.mounted) return;
+    final attempts = _attemptsByClient[client];
+    assert(attempts != null, 'No initialization attempt for this client');
+    if (attempts == null) return;
+    if (attempts == 1) {
+      _attemptsByClient.remove(client);
+    } else {
+      _attemptsByClient[client] = attempts - 1;
+    }
+    state = _attemptsByClient.isNotEmpty;
+  }
+}
+
 /// Core Nostr service via NostrClient for relay communication
 /// Uses a Notifier to react to auth state changes and recreate the client
 /// when the keyContainer changes (e.g., user signs out and signs in with different keys)
@@ -279,8 +323,18 @@ class NostrService extends _$NostrService {
     required List<String> userRelayUrls,
     required String source,
   }) async {
+    NostrInitializationInProgress? initialization;
     try {
-      await _runClientInitialization(client, userRelayUrls);
+      final initializationTracker = ref.read(
+        nostrInitializationInProgressProvider.notifier,
+      );
+      initializationTracker.begin(client);
+      initialization = initializationTracker;
+      await _runClientInitialization(
+        client,
+        userRelayUrls,
+        source: source,
+      );
       // The provider can be disposed during the await (e.g. a rapid identity
       // switch rebuilds it, or a test container is torn down mid-init). Reading
       // `ref` after disposal throws, so bail before the ref-backed checks below.
@@ -314,19 +368,69 @@ class NostrService extends _$NostrService {
       }
       _setSessionIdentityState(pubkey);
       _scheduleInitializationRetry(pubkey);
+    } finally {
+      initialization?.end(client);
     }
   }
 
   Future<void> _runClientInitialization(
     NostrClient client,
-    List<String> userRelayUrls,
-  ) {
-    return (() async {
-      if (userRelayUrls.isNotEmpty) {
-        await client.addRelays(userRelayUrls);
-      }
-      await client.initialize();
-    })().timeout(ref.read(nostrInitializationTimeoutProvider));
+    List<String> userRelayUrls, {
+    required String source,
+  }) async {
+    final timeout = ref.read(nostrInitializationTimeoutProvider);
+    final stopwatch = Stopwatch()..start();
+    var stage = 'addingUserRelays';
+    Log.info(
+      '[NostrService] Initialization started: source=$source, '
+      'userRelayCount=${userRelayUrls.length}, timeout=$timeout',
+      name: 'NostrService',
+      category: LogCategory.system,
+    );
+
+    try {
+      await (() async {
+        if (userRelayUrls.isNotEmpty) {
+          final addedRelayCount = await client.addRelays(userRelayUrls);
+          Log.info(
+            '[NostrService] Initialization stage completed: source=$source, '
+            'stage=$stage, addedRelayCount=$addedRelayCount, '
+            'elapsedMs=${stopwatch.elapsedMilliseconds}',
+            name: 'NostrService',
+            category: LogCategory.system,
+          );
+        }
+        stage = 'client.initialize';
+        client.initializationObserver = (clientStage) {
+          stage = 'client.${clientStage.name}';
+          Log.debug(
+            '[NostrService] Initialization stage started: source=$source, '
+            'stage=$stage, elapsedMs=${stopwatch.elapsedMilliseconds}',
+            name: 'NostrService',
+            category: LogCategory.system,
+          );
+        };
+        await client.initialize();
+        Log.info(
+          '[NostrService] Initialization completed: source=$source, '
+          'elapsedMs=${stopwatch.elapsedMilliseconds}',
+          name: 'NostrService',
+          category: LogCategory.system,
+        );
+      })().timeout(
+        timeout,
+        onTimeout: () {
+          throw TimeoutException(
+            'Nostr client initialization timed out: source=$source, '
+            'stage=$stage, userRelayCount=${userRelayUrls.length}, '
+            'elapsedMs=${stopwatch.elapsedMilliseconds}',
+            timeout,
+          );
+        },
+      );
+    } finally {
+      client.initializationObserver = null;
+    }
   }
 
   void _scheduleInitializationRetry(String? pubkey) {
@@ -363,8 +467,18 @@ class NostrService extends _$NostrService {
         .toList();
     final client = _createClient(identity);
     final clientGeneration = _nextClientGeneration();
+    NostrInitializationInProgress? initialization;
     try {
-      await _runClientInitialization(client, userRelayUrls);
+      final initializationTracker = ref.read(
+        nostrInitializationInProgressProvider.notifier,
+      );
+      initializationTracker.begin(client);
+      initialization = initializationTracker;
+      await _runClientInitialization(
+        client,
+        userRelayUrls,
+        source: 'retry',
+      );
       if (!_isActiveIdentity(pubkey, clientGeneration)) {
         _disposeClient(client);
         return;
@@ -396,6 +510,7 @@ class NostrService extends _$NostrService {
         category: LogCategory.system,
       );
       _disposeClient(client);
+      if (!ref.mounted) return;
       if (!_isActiveIdentity(pubkey, clientGeneration)) {
         return;
       }
@@ -404,6 +519,8 @@ class NostrService extends _$NostrService {
       }
       _setSessionIdentityState(pubkey);
       _scheduleInitializationRetry(pubkey);
+    } finally {
+      initialization?.end(client);
     }
   }
 
