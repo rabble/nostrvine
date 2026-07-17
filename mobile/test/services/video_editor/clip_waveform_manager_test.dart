@@ -147,40 +147,90 @@ void main() {
       expect(() => manager['b'], throwsA(isA<TypeError>()));
     });
 
-    test('publishes an empty waveform when extraction fails', () async {
-      final failing = ClipWaveformManager(
-        extractor: (path) async => throw Exception('no audio track'),
-      );
-      addTearDown(failing.dispose);
+    test(
+      'publishes an empty waveform for a file with no audio track',
+      () async {
+        final silent = ClipWaveformManager(
+          extractor: (path) async => throw const AudioNoTrackException(),
+        );
+        addTearDown(silent.dispose);
 
-      failing.sync(
-        clips: [_clip(id: 'a', path: '/tmp/silent.mp4')],
-      );
-      await pumpEventQueue();
+        silent.sync(
+          clips: [_clip(id: 'a', path: '/tmp/silent.mp4')],
+        );
+        await pumpEventQueue();
 
-      expect(failing['a'].value?.isEmpty, isTrue);
-    });
+        expect(silent['a'].value?.isEmpty, isTrue);
+      },
+    );
 
-    test('does not retry a file whose extraction failed', () async {
+    test('does not retry a file that has no audio track', () async {
       var calls = 0;
-      final failing = ClipWaveformManager(
+      final silent = ClipWaveformManager(
         extractor: (path) async {
           calls++;
-          throw Exception('no audio track');
+          throw const AudioNoTrackException();
         },
       );
-      addTearDown(failing.dispose);
+      addTearDown(silent.dispose);
 
-      failing.sync(
+      silent.sync(
         clips: [_clip(id: 'a', path: '/tmp/silent.mp4')],
       );
       await pumpEventQueue();
-      failing.sync(
+      // Another clip resolving to the same file must serve the cached miss.
+      silent.sync(
         clips: [_clip(id: 'b', path: '/tmp/silent.mp4')],
       );
       await pumpEventQueue();
 
       expect(calls, equals(1));
+    });
+
+    test('retries a transient extraction failure on the next sync', () async {
+      var calls = 0;
+      final failing = ClipWaveformManager(
+        extractor: (path) async {
+          calls++;
+          throw Exception('decoder busy');
+        },
+      );
+      addTearDown(failing.dispose);
+
+      failing.sync(
+        clips: [_clip(id: 'a', path: '/tmp/a.mp4')],
+      );
+      await pumpEventQueue();
+      failing.sync(
+        clips: [_clip(id: 'a', path: '/tmp/a.mp4')],
+      );
+      await pumpEventQueue();
+
+      // A decoder busy under render contention says nothing about the file —
+      // caching it as bandless would blank the clip for the whole session.
+      expect(calls, equals(2));
+    });
+
+    test('gives up on a file that keeps failing', () async {
+      var calls = 0;
+      final failing = ClipWaveformManager(
+        extractor: (path) async {
+          calls++;
+          throw Exception('decoder busy');
+        },
+      );
+      addTearDown(failing.dispose);
+
+      // A sync storm — the strip re-syncs on every trim-drag frame.
+      for (var i = 0; i < 6; i++) {
+        failing.sync(
+          clips: [_clip(id: 'a', path: '/tmp/a.mp4')],
+        );
+        await pumpEventQueue();
+      }
+
+      expect(calls, equals(3));
+      expect(failing['a'].value?.isEmpty, isTrue);
     });
 
     test(

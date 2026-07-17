@@ -27,14 +27,19 @@ class ClipWaveformManager {
   ClipWaveformManager({ClipWaveformExtractor? extractor})
     : _extract = extractor ?? _extractWithProVideoEditor;
 
-  /// Sample density for extraction. At the timeline's maximum zoom a bar
-  /// covers ~2px, so 200 samples/second still resolves more detail than the
-  /// strip can draw — at ~8KB per minute of audio.
+  /// Sample density for extraction. 200 samples/second resolves every bar the
+  /// strip can draw below ~400px/s of zoom, and stays within a few KB per clip
+  /// at the recorder's 6.3s cap.
   static const WaveformResolution _resolution = WaveformResolution.high;
 
   /// Cached waveforms retained after their clip is gone, so undo/redo does not
   /// re-extract. Insertion-ordered for FIFO eviction.
   static const _maxCachedWaveforms = 32;
+
+  /// Extraction attempts per file before a repeatedly failing one is given up
+  /// on as bandless. Bounded so a `sync` storm (every trim-drag frame) can't
+  /// retry forever.
+  static const _maxExtractionAttempts = 3;
 
   static Future<WaveformData> _extractWithProVideoEditor(String videoPath) {
     return ProVideoEditor.instance.getWaveform(
@@ -56,6 +61,9 @@ class ClipWaveformManager {
 
   final Map<String, ClipWaveform> _cache = {};
   final Set<String> _inFlight = {};
+
+  /// Consecutive transient extraction failures per file path.
+  final Map<String, int> _failures = {};
 
   /// Serializes extractions — the strip's thumbnail generator and the editor
   /// preview already compete for the same hardware decoders.
@@ -117,7 +125,13 @@ class ClipWaveformManager {
       if (_disposed || !_isReferenced(path)) return;
       final data = await _extract(path);
       if (_disposed) return;
+      _failures.remove(path);
       _publish(path, _reduce(data));
+    } on AudioNoTrackException {
+      if (_disposed) return;
+      // Cache the miss: the file carries no audio track, so retrying could
+      // never draw bars. The strip just renders none.
+      _publish(path, const ClipWaveform.empty());
     } catch (e) {
       Log.warning(
         'Failed to extract clip waveform: $e',
@@ -125,12 +139,24 @@ class ClipWaveformManager {
         category: LogCategory.video,
       );
       if (_disposed) return;
-      // Cache the miss: a file without a readable audio track would otherwise
-      // be retried on every sync. The strip just renders no bars.
-      _publish(path, const ClipWaveform.empty());
+      _onTransientFailure(path);
     } finally {
       _inFlight.remove(path);
     }
+  }
+
+  /// Reopens [path] for extraction after a failure that isn't "no audio track"
+  /// — a decoder busy under render contention says nothing about the file, and
+  /// caching it as bandless would blank the clip for the rest of the session.
+  /// Releasing the clips' resolved path lets the next [sync] re-extract.
+  void _onTransientFailure(String path) {
+    final attempts = (_failures[path] ?? 0) + 1;
+    _failures[path] = attempts;
+    if (attempts >= _maxExtractionAttempts) {
+      _publish(path, const ClipWaveform.empty());
+      return;
+    }
+    _paths.removeWhere((_, resolved) => resolved == path);
   }
 
   /// Whether any clip still points at [path]. A clip removed while its
@@ -172,5 +198,6 @@ class ClipWaveformManager {
     _paths.clear();
     _cache.clear();
     _inFlight.clear();
+    _failures.clear();
   }
 }
