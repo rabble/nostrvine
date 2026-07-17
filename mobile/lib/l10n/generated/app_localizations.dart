@@ -11523,7 +11523,7 @@ abstract class AppLocalizations {
     String messageText,
   );
 
-  /// No description provided for @deleteAccountAccountChanged.
+  /// Error shown when the signed-in account changed between confirming a deletion and executing it; nothing was deleted.
   ///
   /// In en, this message translates to:
   /// **'You switched accounts, so nothing was deleted. Reopen delete for the account you want to remove.'**
@@ -11547,13 +11547,13 @@ abstract class AppLocalizations {
   /// **'Also permanently give up {username}'**
   String deleteAccountBurnUsernameToggle(String username);
 
-  /// No description provided for @deleteAccountConfirmDeletePrompt.
+  /// Prompt above the confirmation field when the account has no username; the user types the word DELETE.
   ///
   /// In en, this message translates to:
   /// **'To confirm, type:'**
   String get deleteAccountConfirmDeletePrompt;
 
-  /// No description provided for @deleteAccountConfirmUsernamePrompt.
+  /// Prompt above the confirmation field when the account has a username; the user re-types their username to confirm deletion.
   ///
   /// In en, this message translates to:
   /// **'To confirm, type your username:'**
@@ -11565,7 +11565,7 @@ abstract class AppLocalizations {
   /// **'Type DELETE'**
   String get deleteAccountConfirmationHint;
 
-  /// No description provided for @deleteAccountConfirmationHintUsername.
+  /// Hint text in the delete-confirmation field when the user must type their username.
   ///
   /// In en, this message translates to:
   /// **'Type your username'**
@@ -11649,7 +11649,7 @@ abstract class AppLocalizations {
   /// **'Your account has been deleted'**
   String get deleteAccountSuccess;
 
-  /// No description provided for @deleteAccountWarningBody.
+  /// Warning body in the delete-account confirmation dialog, shown above the type-to-confirm field.
   ///
   /// In en, this message translates to:
   /// **'This permanently deletes your account and all your content from Divine, and sends a deletion request to other Nostr relays. Some relays and clients may still keep copies.'**
