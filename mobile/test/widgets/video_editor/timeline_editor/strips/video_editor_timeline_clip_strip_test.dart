@@ -100,6 +100,19 @@ void main() {
       );
     }
 
+    final waveformBands = find.byWidgetPredicate(
+      (w) => w is CustomPaint && w.painter is ClipWaveformPainter,
+    );
+
+    ClipWaveformManager buildWaveformManager() => ClipWaveformManager(
+      extractor: (_) async => WaveformData(
+        leftChannel: Float32List.fromList([0.5, 1, 0.5]),
+        sampleRate: 44100,
+        duration: const Duration(seconds: 3),
+        samplesPerSecond: 200,
+      ),
+    );
+
     group('renders', () {
       testWidgets('renders $VideoEditorTimelineClipStrip', (tester) async {
         await tester.pumpWidget(buildWidget());
@@ -130,26 +143,12 @@ void main() {
 
       testWidgets('draws each clip its own waveform band', (tester) async {
         await tester.pumpWidget(
-          buildWidget(
-            waveformManager: ClipWaveformManager(
-              extractor: (_) async => WaveformData(
-                leftChannel: Float32List.fromList([0.5, 1, 0.5]),
-                sampleRate: 44100,
-                duration: const Duration(seconds: 3),
-                samplesPerSecond: 200,
-              ),
-            ),
-          ),
+          buildWidget(waveformManager: buildWaveformManager()),
         );
         // Let the queued extraction resolve and publish.
         await tester.pump();
 
-        expect(
-          find.byWidgetPredicate(
-            (w) => w is CustomPaint && w.painter is ClipWaveformPainter,
-          ),
-          findsNWidgets(2),
-        );
+        expect(waveformBands, findsNWidgets(2));
       });
 
       testWidgets('draws no waveform band before extraction lands', (
@@ -164,12 +163,34 @@ void main() {
         );
         await tester.pump();
 
-        expect(
-          find.byWidgetPredicate(
-            (w) => w is CustomPaint && w.painter is ClipWaveformPainter,
-          ),
-          findsNothing,
+        expect(waveformBands, findsNothing);
+      });
+
+      testWidgets('hides every waveform band during a reorder drag', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(waveformManager: buildWaveformManager()),
         );
+        await tester.pump();
+        expect(waveformBands, findsNWidgets(2));
+
+        // Hold the press — a plain longPress releases it, ending the drag
+        // before the badges are ever on screen.
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.byType(VideoEditorTimelineClipStrip)),
+        );
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pumpAndSettle();
+
+        // Every tile — not just the picked-up one — shrinks to a 64px badge,
+        // whose window of frames a full-clip band no longer lines up with.
+        expect(waveformBands, findsNothing);
+
+        await gesture.up();
+        await tester.pumpAndSettle();
+
+        expect(waveformBands, findsNWidgets(2));
       });
     });
 
@@ -185,6 +206,66 @@ void main() {
 
       Finder frame(String path) => find.byWidgetPredicate(
         (w) => w is Image && providerHasPath(w.image, path),
+      );
+
+      // The band is indexed from clip zero while the thumbnail row starts one
+      // raster phase earlier, so the overlay carries a +phase offset inside
+      // the tile's shared translate. Get either term wrong — drop the phase,
+      // flip its sign, or lift the band out of the translate — and the bars
+      // drift against the frames on every trimmed or split clip.
+      testWidgets(
+        'anchors the waveform band to clip zero: tracking trim-start, but '
+        'not the thumbnail raster phase',
+        (tester) async {
+          final waveforms = ClipWaveformManager(
+            extractor: (_) async => WaveformData(
+              leftChannel: Float32List.fromList([0.5, 1, 0.5]),
+              sampleRate: 44100,
+              duration: const Duration(seconds: 3),
+              samplesPerSecond: 200,
+            ),
+          );
+          addTearDown(waveforms.dispose);
+
+          // 3 s of content at 100 px/s → 300 px wide. sourceStartOffset 1.3 s
+          // puts the recording-anchored slot grid 130 px in, leaving a 34 px
+          // phase (130 % 48) that shifts the frames but not the band.
+          final clip =
+              _createTestClip(
+                id: 'clip1',
+                seconds: 3,
+                trimStartMs: 500,
+              ).copyWith(
+                sourceStartOffset: const Duration(milliseconds: 1300),
+              );
+
+          await tester.pumpWidget(
+            buildWidget(
+              clips: [clip],
+              pixelsPerSecond: 100,
+              waveformManager: waveforms,
+              scrollable: false,
+            ),
+          );
+          await tester.pump();
+
+          final tileLeft = tester.getTopLeft(find.byType(ClipRRect)).dx;
+          final bandLeft = tester
+              .getTopLeft(
+                find.byWidgetPredicate(
+                  (w) => w is CustomPaint && w.painter is ClipWaveformPainter,
+                ),
+              )
+              .dx;
+
+          expect(
+            bandLeft,
+            moreOrLessEquals(tileLeft - 50),
+            reason:
+                'the band must sit exactly trim-start (0.5 s → 50 px) left '
+                'of the tile — no raster phase, which belongs to the frames',
+          );
+        },
       );
 
       // Regression for the visible leftward frame shift when a split's end

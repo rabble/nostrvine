@@ -874,7 +874,9 @@ class _TrimmingClipPositions extends StatelessWidget {
                 clipWidth: layout.widths[i],
                 pixelsPerSecond: pixelsPerSecond,
                 thumbnailNotifier: thumbnails[orderedClips[i].id],
-                waveformNotifier: waveforms[orderedClips[i].id],
+                waveformNotifier: isReordering
+                    ? null
+                    : waveforms[orderedClips[i].id],
                 onTrimChanged: onTrimChanged,
                 onTrimDragChanged: onTrimDragChanged,
                 trimExpand: trimExpand,
@@ -971,7 +973,10 @@ class _NonTrimmingClipPositions extends StatelessWidget {
                           pixelsPerSecond
                     : 0.0,
                 thumbnailNotifier: thumbnails[orderedClips[i].id],
-                waveformNotifier: waveforms[orderedClips[i].id],
+                // Every tile is a 64px badge mid-drag — no room for a band.
+                waveformNotifier: isReordering
+                    ? null
+                    : waveforms[orderedClips[i].id],
                 onReorder: onReorder,
                 onTap: onClipTapped,
                 isMultiSelectMode: isMultiSelectMode,

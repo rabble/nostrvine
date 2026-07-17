@@ -60,7 +60,9 @@ class _TrimmableClipTile extends StatefulWidget {
   final double clipWidth;
   final double pixelsPerSecond;
   final ValueNotifier<List<StripThumbnail>> thumbnailNotifier;
-  final ValueNotifier<ClipWaveform?> waveformNotifier;
+
+  /// Null while the strip is in a reorder drag — see [_ClipTile].
+  final ValueNotifier<ClipWaveform?>? waveformNotifier;
   final ClipTrimCallback? onTrimChanged;
   final ValueChanged<bool>? onTrimDragChanged;
   final VoidCallback? onTap;
@@ -277,7 +279,9 @@ class _AccessibleClipTile extends StatelessWidget {
   final double clipWidth;
   final double pixelsPerSecond;
   final ValueNotifier<List<StripThumbnail>> thumbnailNotifier;
-  final ValueNotifier<ClipWaveform?> waveformNotifier;
+
+  /// Null while the strip is in a reorder drag — see [_ClipTile].
+  final ValueNotifier<ClipWaveform?>? waveformNotifier;
   final void Function(int from, int to) onReorder;
 
   /// Extra pixels to shift thumbnails left (on top of trim-start) so a loop
@@ -367,8 +371,8 @@ class _ClipTile extends StatelessWidget {
   final double fullWidth;
   final ValueNotifier<List<StripThumbnail>> thumbnailNotifier;
 
-  /// The clip's audio waveform, drawn over the thumbnails. Null while the tile
-  /// is a reorder-drag badge, where the shrunk slot has no room for it.
+  /// The clip's audio waveform, drawn over the thumbnails. Null during a
+  /// reorder drag, where every tile shrinks to a badge with no room for it.
   final ValueNotifier<ClipWaveform?>? waveformNotifier;
 
   /// Pixel offset from the left to shift thumbnails for trim-start.
