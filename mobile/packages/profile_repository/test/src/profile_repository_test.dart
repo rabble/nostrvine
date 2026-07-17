@@ -4267,6 +4267,270 @@ void main() {
       });
     });
 
+    group('releaseUsername', () {
+      test('returns UsernameReleaseSuccess on 200', () async {
+        when(
+          () => mockNostrClient.createNip98AuthHeader(
+            url: any(named: 'url'),
+            method: any(named: 'method'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenAnswer((_) => Future.value('authHeader'));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer(
+          (_) => Future.value(
+            Response(
+              '{"ok":true,"released":true,"name":"alice","status":"burned"}',
+              200,
+            ),
+          ),
+        );
+
+        final result = await profileRepository.releaseUsername(name: 'alice');
+        expect(result, isA<UsernameReleaseSuccess>());
+        // Pin the signed contract: exact URL and byte-identical body (the body
+        // is what gets hashed into the NIP-98 payload tag the server verifies).
+        final captured = verify(
+          () => mockHttpClient.post(
+            captureAny(),
+            headers: any(named: 'headers'),
+            body: captureAny(named: 'body'),
+          ),
+        ).captured;
+        expect(
+          (captured[0] as Uri).toString(),
+          equals('https://names.divine.video/api/username/release'),
+        );
+        expect(captured[1], equals(jsonEncode({'name': 'alice'})));
+      });
+
+      test('returns UsernameReleaseError when the signer throws', () async {
+        when(
+          () => mockNostrClient.createNip98AuthHeader(
+            url: any(named: 'url'),
+            method: any(named: 'method'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenThrow(StateError('no public key'));
+
+        final result = await profileRepository.releaseUsername(name: 'alice');
+        expect(result, isA<UsernameReleaseError>());
+      });
+
+      test('returns UsernameReleaseNotOwner on 403', () async {
+        when(
+          () => mockNostrClient.createNip98AuthHeader(
+            url: any(named: 'url'),
+            method: any(named: 'method'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenAnswer((_) => Future.value('authHeader'));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) => Future.value(Response('body', 403)));
+
+        final result = await profileRepository.releaseUsername(name: 'alice');
+        expect(result, isA<UsernameReleaseNotOwner>());
+      });
+
+      test('returns UsernameReleaseNetworkError on failure', () async {
+        when(
+          () => mockNostrClient.createNip98AuthHeader(
+            url: any(named: 'url'),
+            method: any(named: 'method'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenAnswer((_) => Future.value('authHeader'));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenThrow(Exception('socket'));
+
+        final result = await profileRepository.releaseUsername(name: 'alice');
+        expect(result, isA<UsernameReleaseNetworkError>());
+      });
+
+      test('returns UsernameReleaseError when auth header is null', () async {
+        when(
+          () => mockNostrClient.createNip98AuthHeader(
+            url: any(named: 'url'),
+            method: any(named: 'method'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        final result = await profileRepository.releaseUsername(name: 'alice');
+        expect(result, isA<UsernameReleaseError>());
+      });
+
+      test('returns UsernameReleaseError with server message on 401', () async {
+        when(
+          () => mockNostrClient.createNip98AuthHeader(
+            url: any(named: 'url'),
+            method: any(named: 'method'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenAnswer((_) => Future.value('authHeader'));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer(
+          (_) => Future.value(Response('{"error":"bad auth"}', 401)),
+        );
+
+        final result = await profileRepository.releaseUsername(name: 'alice');
+        expect(
+          result,
+          isA<UsernameReleaseError>().having(
+            (e) => e.message,
+            'message',
+            'bad auth',
+          ),
+        );
+      });
+
+      test('returns UsernameReleaseError on unexpected 4xx status', () async {
+        when(
+          () => mockNostrClient.createNip98AuthHeader(
+            url: any(named: 'url'),
+            method: any(named: 'method'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenAnswer((_) => Future.value('authHeader'));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) => Future.value(Response('nope', 400)));
+
+        final result = await profileRepository.releaseUsername(name: 'alice');
+        expect(
+          result,
+          isA<UsernameReleaseError>().having(
+            (e) => e.message,
+            'message',
+            'Unexpected response: 400',
+          ),
+        );
+      });
+
+      test('returns UsernameReleaseNetworkError on 5xx status', () async {
+        // A 5xx can arrive after the burn committed but before the response
+        // survived the round trip, so the burn state is ambiguous — the caller
+        // must re-check ownership rather than assume nothing happened.
+        when(
+          () => mockNostrClient.createNip98AuthHeader(
+            url: any(named: 'url'),
+            method: any(named: 'method'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenAnswer((_) => Future.value('authHeader'));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) => Future.value(Response('gateway', 503)));
+
+        final result = await profileRepository.releaseUsername(name: 'alice');
+        expect(result, isA<UsernameReleaseNetworkError>());
+      });
+
+      test('UsernameReleaseError.toString includes the message', () {
+        expect(
+          const UsernameReleaseError('boom').toString(),
+          equals('UsernameReleaseError(boom)'),
+        );
+      });
+    });
+
+    group('getUsernameByPubkey', () {
+      const pubkey =
+          '156dd13a1f8a488037fa1b43ad934a5e58644a1d6e1ad6697a02c2e93b8b013b';
+
+      test('returns name and canonical when found', () async {
+        when(() => mockHttpClient.get(any())).thenAnswer(
+          (_) => Future.value(
+            Response(
+              '{"ok":true,"found":true,"name":"Alice","canonical":"alice"}',
+              200,
+            ),
+          ),
+        );
+        final result = await profileRepository.getUsernameByPubkey(
+          pubkeyHex: pubkey,
+        );
+        expect(result?.name, equals('Alice'));
+        expect(result?.canonical, equals('alice'));
+        // Pin the by-pubkey URL contract.
+        final captured =
+            verify(() => mockHttpClient.get(captureAny())).captured.single
+                as Uri;
+        expect(
+          captured.toString(),
+          equals('https://names.divine.video/api/username/by-pubkey/$pubkey'),
+        );
+      });
+
+      test('returns null when not found', () async {
+        when(() => mockHttpClient.get(any())).thenAnswer(
+          (_) => Future.value(Response('{"ok":true,"found":false}', 200)),
+        );
+        final result = await profileRepository.getUsernameByPubkey(
+          pubkeyHex: pubkey,
+        );
+        expect(result, isNull);
+      });
+
+      test('returns null on network exception', () async {
+        when(() => mockHttpClient.get(any())).thenThrow(Exception('socket'));
+        final result = await profileRepository.getUsernameByPubkey(
+          pubkeyHex: pubkey,
+        );
+        expect(result, isNull);
+      });
+
+      test('returns null on non-200 response', () async {
+        when(() => mockHttpClient.get(any())).thenAnswer(
+          (_) => Future.value(Response('error', 500)),
+        );
+        final result = await profileRepository.getUsernameByPubkey(
+          pubkeyHex: pubkey,
+        );
+        expect(result, isNull);
+      });
+
+      test('returns null on a non-object 200 body', () async {
+        // Valid JSON but not an object: `as Map` throws a TypeError (an Error,
+        // not an Exception), so the catch must be `on Object`.
+        when(() => mockHttpClient.get(any())).thenAnswer(
+          (_) => Future.value(Response('123', 200)),
+        );
+        final result = await profileRepository.getUsernameByPubkey(
+          pubkeyHex: pubkey,
+        );
+        expect(result, isNull);
+      });
+    });
+
     group('claimUsername', () {
       test('returns UsernameClaimSuccess when response is 200', () async {
         when(

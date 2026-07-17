@@ -179,7 +179,13 @@ void main() {
 
 // Every key in app_en.arb is currently translated in all non-English locales.
 // Add keys here only when a translation pass is intentionally deferred.
-const _knownUntranslatedDebt = <String>{};
+const _knownUntranslatedDebt = <String>{
+  // #6126: opt-in username-burn strings; translation deferred to the l10n pass.
+  'deleteAccountBurnUsernameFailed',
+  'deleteAccountBurnUsernameReleased',
+  'deleteAccountBurnUsernameToggle',
+  'deleteAccountDeletionIncomplete',
+};
 
 const _signatureVerificationKeys = <String>{
   'nostrSettingsSignatureVerification',
