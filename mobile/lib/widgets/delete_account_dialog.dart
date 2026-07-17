@@ -282,34 +282,39 @@ class _DeleteIdentityHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        UserAvatar(
-          imageUrl: confirmation.avatarUrl,
-          name: confirmation.displayName,
-          placeholderSeed: confirmation.pubkeyHex,
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                confirmation.displayName,
-                style: VineTheme.titleMediumFont(),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              Text(
-                confirmation.identifierLine,
-                style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+    // Read as one node ("Name, handle") — a single "this account" unit.
+    return MergeSemantics(
+      child: Row(
+        children: [
+          UserAvatar(
+            imageUrl: confirmation.avatarUrl,
+            name: confirmation.displayName,
+            placeholderSeed: confirmation.pubkeyHex,
           ),
-        ),
-      ],
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  confirmation.displayName,
+                  style: VineTheme.titleMediumFont(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  confirmation.identifierLine,
+                  style: VineTheme.bodyMediumFont(
+                    color: VineTheme.secondaryText,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
