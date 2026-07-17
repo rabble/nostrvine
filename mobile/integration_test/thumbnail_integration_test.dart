@@ -16,14 +16,16 @@ import 'package:patrol/patrol.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+import 'helpers/test_setup.dart';
+
 void main() {
   group('Thumbnail Integration Tests', () {
     patrolTest(
       'Record video and generate thumbnail end-to-end',
       ($) async {
         final tester = $.tester;
-        // Save ErrorWidget.builder to restore at end of test
-        final originalErrorWidgetBuilder = ErrorWidget.builder;
+        final originalErrorBuilder = saveErrorWidgetBuilder();
+        addTearDown(() => restoreErrorWidgetBuilder(originalErrorBuilder));
 
         Log.debug('🎬 Starting real thumbnail integration test...');
 
@@ -184,15 +186,16 @@ void main() {
 
         Log.debug('\n🎉 Thumbnail integration test completed!');
 
-        // Restore ErrorWidget.builder before test ends to avoid framework assertion
-        ErrorWidget.builder = originalErrorWidgetBuilder;
+        // Inline restore is required by the framework's end-of-body
+        // ErrorWidget.builder check; the addTearDown above covers throws.
+        restoreErrorWidgetBuilder(originalErrorBuilder);
       },
       timeout: const Timeout(Duration(minutes: 2)),
     );
 
     patrolTest('Test upload manager thumbnail integration', ($) async {
-      // Save ErrorWidget.builder to restore at end of test
-      final originalErrorWidgetBuilder = ErrorWidget.builder;
+      final originalErrorBuilder = saveErrorWidgetBuilder();
+      addTearDown(() => restoreErrorWidgetBuilder(originalErrorBuilder));
 
       Log.debug('\n📋 Testing UploadManager thumbnail integration...');
 
@@ -233,8 +236,9 @@ void main() {
 
       Log.debug('🎉 UploadManager thumbnail integration test passed!');
 
-      // Restore ErrorWidget.builder before test ends to avoid framework assertion
-      ErrorWidget.builder = originalErrorWidgetBuilder;
+      // Inline restore is required by the framework's end-of-body
+      // ErrorWidget.builder check; the addTearDown above covers throws.
+      restoreErrorWidgetBuilder(originalErrorBuilder);
     });
   });
 }

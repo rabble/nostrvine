@@ -28,7 +28,9 @@ void main() {
         final tester = $.tester;
         // ── Setup ──
         final originalOnError = suppressSetStateErrors();
+        addTearDown(() => restoreErrorHandler(originalOnError));
         final originalErrorBuilder = saveErrorWidgetBuilder();
+        addTearDown(() => restoreErrorWidgetBuilder(originalErrorBuilder));
         final semanticsHandle = tester.ensureSemantics();
 
         // Launch the full app (LOCAL env via --dart-define)
@@ -319,7 +321,8 @@ void main() {
         // Cleanup
         semanticsHandle.dispose();
         drainAsyncErrors(tester);
-        restoreErrorHandler(originalOnError);
+        // Inline restore is required by the framework's end-of-body
+        // ErrorWidget.builder check; the addTearDown above covers throws.
         restoreErrorWidgetBuilder(originalErrorBuilder);
       },
       timeout: const Timeout(Duration(minutes: 3)),

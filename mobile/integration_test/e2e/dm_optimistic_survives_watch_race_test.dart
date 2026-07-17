@@ -57,7 +57,9 @@ void main() {
       ($) async {
         final tester = $.tester;
         final originalOnError = suppressSetStateErrors();
+        addTearDown(() => restoreErrorHandler(originalOnError));
         final originalErrorBuilder = saveErrorWidgetBuilder();
+        addTearDown(() => restoreErrorWidgetBuilder(originalErrorBuilder));
 
         // ── Phase 1: Pre-publish recipient profile ──
         //
@@ -267,7 +269,8 @@ void main() {
 
         // ── Cleanup ──
         drainAsyncErrors(tester);
-        restoreErrorHandler(originalOnError);
+        // Inline restore is required by the framework's end-of-body
+        // ErrorWidget.builder check; the addTearDown above covers throws.
         restoreErrorWidgetBuilder(originalErrorBuilder);
       },
       timeout: const Timeout(Duration(minutes: 5)),
