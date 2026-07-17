@@ -1064,8 +1064,8 @@ class ProfileRepository {
         200 => const UsernameReleaseSuccess(),
         401 => UsernameReleaseError(serverError ?? 'Authentication failed'),
         403 => const UsernameReleaseNotOwner(),
-        // 5xx (server error / gateway): the burn may have committed before the
-        // response was lost, so the state is ambiguous — route through re-check.
+        // 5xx can arrive after the burn committed but before the response
+        // survived, so the state is ambiguous; route through the re-check.
         final code when code >= 500 => const UsernameReleaseNetworkError(),
         _ => UsernameReleaseError(
           serverError ?? 'Unexpected response: ${response.statusCode}',
