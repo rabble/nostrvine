@@ -487,6 +487,20 @@ class NostrConnectSession {
   }
 
   Future<void> _handleResponse(Event event) async {
+    // NIP-01 id integrity: an event id is the SHA-256 of its serialized
+    // content, so a tampered relay copy cannot reuse the genuine
+    // response's id without also reproducing its content. Verify before
+    // touching the replay-dedup cache — otherwise an attacker on the
+    // listening relays could reserve the real id with a junk copy that
+    // fails decryption, so the genuine response arriving from another
+    // relay is discarded as a "duplicate" and sign-in times out (#6151).
+    if (!event.isValid) {
+      logger(
+        '[NostrConnectSession] Dropped event from ${event.pubkey}: '
+        'failed id integrity',
+      );
+      return;
+    }
     if (!_seenEventIds.add(event.id)) {
       return;
     }

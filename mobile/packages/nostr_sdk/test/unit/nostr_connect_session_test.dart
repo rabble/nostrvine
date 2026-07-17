@@ -1025,6 +1025,68 @@ void main() {
       );
     });
   });
+
+  group('event id integrity (#6151)', () {
+    test('drops a tampered relay copy that reuses the real response id, so the '
+        'genuine secret still binds instead of being deduped away', () async {
+      final relay = await _TestRelayServer.start();
+      addTearDown(relay.close);
+
+      final logs = <String>[];
+      final session = NostrConnectSession(
+        relays: [relay.url],
+        logger: logs.add,
+      );
+      addTearDown(session.dispose);
+
+      await session.start();
+      final info = session.info!;
+      final secret = info.optionalSecret!;
+      logs.clear();
+
+      final wait = session.waitForConnection(
+        timeout: const Duration(seconds: 5),
+      );
+
+      // The genuine signer's binding response. Its `id` is public relay
+      // metadata that any pubkey on the listening relays can observe.
+      final genuineEvent = await _encryptedResponseEvent(
+        clientPubkey: info.clientPubkey!,
+        result: secret,
+      );
+
+      // An attacker races a copy that reuses the real id but swaps in
+      // junk content that fails NIP-44 decryption. Without the NIP-01
+      // id-integrity guard this copy would reserve the real id in the
+      // replay-dedup cache, and the genuine response arriving next would
+      // be dropped as a "duplicate" — stranding sign-in until timeout.
+      final tamperedEvent = Map<String, dynamic>.from(genuineEvent)
+        ..['content'] = 'not-a-valid-nip44-ciphertext';
+      relay.push(['EVENT', 'sub', tamperedEvent]);
+      await _waitUntil(
+        () => logs.any((line) => line.contains('failed id integrity')),
+      );
+      expect(
+        session.state,
+        equals(NostrConnectState.listening),
+        reason: 'a tampered copy must neither terminate nor bind pairing',
+      );
+
+      // The genuine response, still carrying the real id, must bind: the
+      // tampered copy must not have reserved that id in the dedup cache.
+      relay.push(['EVENT', 'sub', genuineEvent]);
+      final result = await wait;
+
+      expect(
+        result,
+        isNotNull,
+        reason:
+            'the genuine secret must still bind after a tampered copy '
+            'reused its id',
+      );
+      expect(session.state, equals(NostrConnectState.connected));
+    });
+  });
 }
 
 /// Builds a NIP-44-encrypted kind-24133 response event addressed to
