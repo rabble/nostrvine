@@ -37,9 +37,13 @@ class ClipWaveformManager {
   static const _maxCachedWaveforms = 32;
 
   /// Extraction attempts per file before a repeatedly failing one is given up
-  /// on as bandless. Bounded so a `sync` storm (every trim-drag frame) can't
-  /// retry forever.
+  /// on as bandless.
   static const _maxExtractionAttempts = 3;
+
+  /// Delay before a transiently failed extraction is retried. Long enough for
+  /// the decoder contention it usually signals — a render, the strip's own
+  /// thumbnail pass — to clear, rather than re-queuing into the same jam.
+  static const _retryDelay = Duration(seconds: 2);
 
   static Future<WaveformData> _extractWithProVideoEditor(String videoPath) {
     return ProVideoEditor.instance.getWaveform(
@@ -64,6 +68,9 @@ class ClipWaveformManager {
 
   /// Consecutive transient extraction failures per file path.
   final Map<String, int> _failures = {};
+
+  /// Pending retries per file path, so dispose can cancel them.
+  final Map<String, Timer> _retryTimers = {};
 
   /// Serializes extractions — the strip's thumbnail generator and the editor
   /// preview already compete for the same hardware decoders.
@@ -145,10 +152,14 @@ class ClipWaveformManager {
     }
   }
 
-  /// Reopens [path] for extraction after a failure that isn't "no audio track"
-  /// — a decoder busy under render contention says nothing about the file, and
-  /// caching it as bandless would blank the clip for the rest of the session.
-  /// Releasing the clips' resolved path lets the next [sync] re-extract.
+  /// Schedules a retry after a failure that isn't "no audio track" — a decoder
+  /// busy under render contention says nothing about the file, and caching it
+  /// as bandless would blank the clip for the rest of the session.
+  ///
+  /// The retry owns its own timer rather than waiting for the next [sync]:
+  /// contention peaks when the editor opens, and nothing guarantees another
+  /// sync afterwards — the strip only re-syncs when its widget updates, so an
+  /// idle timeline would keep the clip bandless indefinitely.
   void _onTransientFailure(String path) {
     final attempts = (_failures[path] ?? 0) + 1;
     _failures[path] = attempts;
@@ -156,7 +167,12 @@ class ClipWaveformManager {
       _publish(path, const ClipWaveform.empty());
       return;
     }
-    _paths.removeWhere((_, resolved) => resolved == path);
+    _retryTimers[path]?.cancel();
+    _retryTimers[path] = Timer(_retryDelay, () {
+      _retryTimers.remove(path);
+      if (_disposed || !_isReferenced(path)) return;
+      _enqueue(path);
+    });
   }
 
   /// Whether any clip still points at [path]. A clip removed while its
@@ -191,6 +207,10 @@ class ClipWaveformManager {
   /// Disposes every notifier and stops publishing queued extractions.
   void dispose() {
     _disposed = true;
+    for (final timer in _retryTimers.values) {
+      timer.cancel();
+    }
+    _retryTimers.clear();
     for (final notifier in _notifiers.values) {
       notifier.dispose();
     }

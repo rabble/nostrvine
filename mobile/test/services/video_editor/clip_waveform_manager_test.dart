@@ -1,8 +1,10 @@
 // ABOUTME: Unit tests for ClipWaveformManager.
 // ABOUTME: Validates notifier lifecycle, per-path extraction reuse, and errors.
 
+import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as model;
 import 'package:openvine/models/divine_video_clip.dart';
@@ -187,65 +189,128 @@ void main() {
       expect(calls, equals(1));
     });
 
-    test('retries a transient extraction failure on the next sync', () async {
-      var calls = 0;
-      final failing = ClipWaveformManager(
-        extractor: (path) async {
-          calls++;
-          throw Exception('decoder busy');
-        },
-      );
-      addTearDown(failing.dispose);
+    test('retries a transient extraction failure without a further sync', () {
+      fakeAsync((async) {
+        var calls = 0;
+        final failing = ClipWaveformManager(
+          extractor: (path) async {
+            calls++;
+            throw Exception('decoder busy');
+          },
+        );
 
-      failing.sync(
-        clips: [_clip(id: 'a', path: '/tmp/a.mp4')],
-      );
-      await pumpEventQueue();
-      failing.sync(
-        clips: [_clip(id: 'a', path: '/tmp/a.mp4')],
-      );
-      await pumpEventQueue();
-
-      // A decoder busy under render contention says nothing about the file —
-      // caching it as bandless would blank the clip for the whole session.
-      expect(calls, equals(2));
-    });
-
-    test('gives up on a file that keeps failing', () async {
-      var calls = 0;
-      final failing = ClipWaveformManager(
-        extractor: (path) async {
-          calls++;
-          throw Exception('decoder busy');
-        },
-      );
-      addTearDown(failing.dispose);
-
-      // A sync storm — the strip re-syncs on every trim-drag frame.
-      for (var i = 0; i < 6; i++) {
         failing.sync(
           clips: [_clip(id: 'a', path: '/tmp/a.mp4')],
         );
-        await pumpEventQueue();
-      }
+        async.flushMicrotasks();
+        expect(calls, equals(1));
 
-      expect(calls, equals(3));
-      expect(failing['a'].value?.isEmpty, isTrue);
+        // A decoder busy under render contention says nothing about the file —
+        // caching it as bandless would blank the clip for the whole session.
+        // Contention peaks as the editor opens, and the strip only re-syncs
+        // when its widget updates: an idle timeline owes us no second sync.
+        async.elapse(const Duration(seconds: 2));
+        expect(calls, equals(2));
+
+        failing.dispose();
+      });
     });
 
-    test(
-      'drops a result whose clip left the timeline mid-extraction',
-      () async {
-        manager
-          ..sync(
-            clips: [_clip(id: 'a', path: '/tmp/a.mp4')],
-          )
-          ..sync(clips: []);
-        await pumpEventQueue();
+    test('gives up on a file that keeps failing', () {
+      fakeAsync((async) {
+        var calls = 0;
+        final failing = ClipWaveformManager(
+          extractor: (path) async {
+            calls++;
+            throw Exception('decoder busy');
+          },
+        );
 
-        expect(extractedPaths, isEmpty);
-      },
-    );
+        failing.sync(
+          clips: [_clip(id: 'a', path: '/tmp/a.mp4')],
+        );
+        async.elapse(const Duration(minutes: 1));
+
+        expect(calls, equals(3));
+        expect(failing['a'].value?.isEmpty, isTrue);
+
+        failing.dispose();
+      });
+    });
+
+    test('stops retrying once its clip leaves the timeline', () {
+      fakeAsync((async) {
+        var calls = 0;
+        final failing = ClipWaveformManager(
+          extractor: (path) async {
+            calls++;
+            throw Exception('decoder busy');
+          },
+        );
+
+        failing.sync(
+          clips: [_clip(id: 'a', path: '/tmp/a.mp4')],
+        );
+        async.flushMicrotasks();
+        expect(calls, equals(1));
+
+        failing.sync(clips: []);
+        async.elapse(const Duration(minutes: 1));
+
+        // Nothing left to draw the bars on.
+        expect(calls, equals(1));
+
+        failing.dispose();
+      });
+    });
+
+    test('extracts one file at a time', () {
+      fakeAsync((async) {
+        final gates = <String, Completer<WaveformData>>{
+          '/tmp/a.mp4': Completer<WaveformData>(),
+          '/tmp/b.mp4': Completer<WaveformData>(),
+        };
+        final started = <String>[];
+        final serial = ClipWaveformManager(
+          extractor: (path) {
+            started.add(path);
+            return gates[path]!.future;
+          },
+        );
+
+        serial.sync(
+          clips: [
+            _clip(id: 'a', path: '/tmp/a.mp4'),
+            _clip(id: 'b', path: '/tmp/b.mp4'),
+          ],
+        );
+        async.flushMicrotasks();
+
+        // The strip's thumbnail generator and the editor preview already
+        // compete for the same hardware decoders — the second file waits.
+        expect(started, equals(['/tmp/a.mp4']));
+
+        gates['/tmp/a.mp4']!.complete(_waveform(left: [1]));
+        async.flushMicrotasks();
+
+        expect(started, equals(['/tmp/a.mp4', '/tmp/b.mp4']));
+
+        gates['/tmp/b.mp4']!.complete(_waveform(left: [1]));
+        async.flushMicrotasks();
+        serial.dispose();
+      });
+    });
+
+    test('skips extraction for a path no clip references anymore', () async {
+      manager
+        ..sync(
+          clips: [_clip(id: 'a', path: '/tmp/a.mp4')],
+        )
+        ..sync(clips: []);
+      await pumpEventQueue();
+
+      expect(extractedPaths, isEmpty);
+    });
   });
 }
 
