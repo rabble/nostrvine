@@ -83,5 +83,20 @@ void main() {
       expect(c.isUsernameConfirmation, isFalse);
       expect(c.requiredToken, equals('DELETE'));
     });
+
+    test('a handle that normalizes to empty falls back to DELETE', () {
+      // Malformed nip05 like "_@" renders displayNip05 as "@", which strips to
+      // empty — must not enable the gate on empty input.
+      final c = DeleteAccountConfirmation(
+        pubkeyHex: pubkeyHex,
+        displayName: 'X',
+        avatarUrl: null,
+        handle: '@',
+      );
+      expect(c.isUsernameConfirmation, isFalse);
+      expect(c.requiredToken, equals('DELETE'));
+      expect(c.matches(''), isFalse);
+      expect(c.matches('DELETE'), isTrue);
+    });
   });
 }

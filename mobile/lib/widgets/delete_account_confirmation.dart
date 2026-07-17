@@ -18,7 +18,10 @@ class DeleteAccountConfirmation {
     required String? avatarUrl,
     required String? handle,
   }) {
-    final hasHandle = handle != null && handle.isNotEmpty;
+    // A handle that normalizes to empty (e.g. a malformed nip05 of just "@")
+    // is not a usable token — fall back to DELETE so the gate can't be passed
+    // with empty input.
+    final hasHandle = handle != null && _normalizeHandle(handle).isNotEmpty;
     return DeleteAccountConfirmation._(
       pubkeyHex: pubkeyHex,
       displayName: displayName,

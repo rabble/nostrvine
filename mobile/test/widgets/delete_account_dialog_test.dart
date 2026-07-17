@@ -960,5 +960,48 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets('proceeds when confirmedPubkey matches the current account', (
+      tester,
+    ) async {
+      final deletionService = _MockAccountDeletionService();
+      final authService = _MockAuthService();
+      when(() => authService.currentPublicKeyHex).thenReturn(_pubkeyHex);
+      when(
+        () =>
+            deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
+      ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
+      when(
+        authService.deleteKeycastAccount,
+      ).thenAnswer((_) async => (true, null));
+      when(
+        () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
+      ).thenAnswer((_) async {});
+
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const Scaffold(body: SizedBox.shrink());
+            },
+          ),
+        ),
+      );
+
+      await executeAccountDeletion(
+        context: capturedContext,
+        deletionService: deletionService,
+        authService: authService,
+        confirmedPubkey: _pubkeyHex,
+      );
+      await tester.pumpAndSettle();
+
+      verify(
+        () =>
+            deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
+      ).called(1);
+    });
   });
 }
