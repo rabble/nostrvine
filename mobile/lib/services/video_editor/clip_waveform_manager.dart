@@ -192,7 +192,9 @@ class ClipWaveformManager {
   ClipWaveform _reduce(WaveformData data) {
     final left = data.leftChannel;
     final right = data.rightChannel;
-    final peaks = List<double>.filled(left.length, 0);
+    // Float32 throughout: the source channels already are, so storing the
+    // reduced peaks as boxed doubles would quadruple the cache for no detail.
+    final peaks = Float32List(left.length);
     var peak = 0.0;
     for (var i = 0; i < left.length; i++) {
       final l = left[i].abs();
