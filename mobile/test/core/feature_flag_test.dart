@@ -31,9 +31,26 @@ void main() {
       expect(FeatureFlag.values, contains(FeatureFlag.accountSwitching));
       expect(FeatureFlag.values, contains(FeatureFlag.enhancedAnalytics));
       expect(FeatureFlag.values, contains(FeatureFlag.newProfileLayout));
+      expect(FeatureFlag.values, contains(FeatureFlag.livestreamingBeta));
       expect(FeatureFlag.values, contains(FeatureFlag.debugTools));
       expect(FeatureFlag.values, contains(FeatureFlag.integratedApps));
       expect(FeatureFlag.values, contains(FeatureFlag.videoReplies));
+    });
+
+    test('livestream uses one clear on or off flag', () {
+      final liveFlags = FeatureFlag.values
+          .where((flag) => flag.name.toLowerCase().contains('live'))
+          .toList(growable: false);
+
+      expect(liveFlags, <FeatureFlag>[FeatureFlag.livestreamingBeta]);
+      expect(
+        FeatureFlag.livestreamingBeta.displayName,
+        equals('Livestream'),
+      );
+      expect(
+        FeatureFlag.livestreamingBeta.description,
+        equals('Enable livestream discovery, joining, and hosting'),
+      );
     });
 
     test('integratedApps flag should have correct metadata', () {

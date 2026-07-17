@@ -27,6 +27,7 @@ void main() {
       expect(config.getDefault(FeatureFlag.accountSwitching), isFalse);
       expect(config.getDefault(FeatureFlag.enhancedAnalytics), isFalse);
       expect(config.getDefault(FeatureFlag.newProfileLayout), isFalse);
+      expect(config.getDefault(FeatureFlag.livestreamingBeta), isFalse);
     });
 
     test('should have debug tools enabled by default in debug builds', () {
@@ -84,6 +85,10 @@ void main() {
       expect(
         config.getEnvironmentKey(FeatureFlag.videoReplies),
         equals('FF_VIDEO_REPLIES'),
+      );
+      expect(
+        config.getEnvironmentKey(FeatureFlag.livestreamingBeta),
+        equals('FF_LIVESTREAMING_BETA'),
       );
     });
 

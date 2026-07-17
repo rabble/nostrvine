@@ -8,6 +8,10 @@ enum FeatureFlag {
     'Detailed usage tracking and insights',
   ),
   newProfileLayout('New Profile Layout', 'Redesigned user profile screen'),
+  livestreamingBeta(
+    'Livestream',
+    'Enable livestream discovery, joining, and hosting',
+  ),
   debugTools('Debug Tools', 'Developer debugging utilities and diagnostics'),
   routerDrivenHome(
     'Router-Driven Home Screen',

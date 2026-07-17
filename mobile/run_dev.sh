@@ -4,6 +4,8 @@
 
 set -e
 
+MACOS_BUNDLE_ID="co.openvine.app"
+
 # Default to Chrome if no device specified
 DEVICE_ARG="${1:-chrome}"
 BUILD_MODE="${2:-debug}"
@@ -57,8 +59,9 @@ DEVICE=$(resolve_device "$DEVICE_ARG")
 
 # Reset camera permissions for macOS builds to prevent stuck TCC state
 if [ "$DEVICE" = "macos" ]; then
-    echo "🔐 Resetting camera permissions for macOS..."
-    tccutil reset Camera com.openvine.divine 2>/dev/null || true
+    echo "🔐 Resetting camera and microphone permissions for macOS..."
+    tccutil reset Camera "$MACOS_BUNDLE_ID" 2>/dev/null || true
+    tccutil reset Microphone "$MACOS_BUNDLE_ID" 2>/dev/null || true
 fi
 
 echo "🚀 Running OpenVine in $BUILD_MODE mode on $DEVICE"

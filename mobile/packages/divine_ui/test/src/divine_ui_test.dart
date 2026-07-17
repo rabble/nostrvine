@@ -1,15 +1,10 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 void main() {
   group('VineTheme', () {
-    setUpAll(() {
-      TestWidgetsFlutterBinding.ensureInitialized();
-      // Prevent GoogleFonts from trying to fetch fonts at runtime
-      GoogleFonts.config.allowRuntimeFetching = false;
-    });
+    setUpAll(TestWidgetsFlutterBinding.ensureInitialized);
     group('colors', () {
       test('has correct vineGreen color', () {
         expect(VineTheme.vineGreen, const Color(0xFF27C58B));
@@ -76,6 +71,7 @@ void main() {
     group('typography - display fonts', () {
       testWidgets('displayLargeFont returns correct style', (tester) async {
         final style = VineTheme.displayLargeFont();
+        expect(style.fontFamily, VineTheme.fontFamilyBricolage);
         expect(style.fontSize, 57);
         expect(style.fontWeight, FontWeight.w700);
       });
@@ -151,6 +147,7 @@ void main() {
     group('typography - body fonts', () {
       testWidgets('bodyLargeFont returns correct style', (tester) async {
         final style = VineTheme.bodyLargeFont();
+        expect(style.fontFamily, 'Inter');
         expect(style.fontSize, 16);
         expect(style.fontWeight, FontWeight.w400);
       });
@@ -171,6 +168,7 @@ void main() {
     group('typography - label fonts', () {
       testWidgets('labelLargeFont returns correct style', (tester) async {
         final style = VineTheme.labelLargeFont();
+        expect(style.fontFamily, 'Inter');
         expect(style.fontSize, 14);
         expect(style.fontWeight, FontWeight.w600);
       });

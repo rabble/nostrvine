@@ -11,7 +11,7 @@ cd "$(dirname "$0")"
 
 # Configuration
 APP_NAME="Divine"
-BUNDLE_ID="com.openvine.divine"
+BUNDLE_ID="co.openvine.app"
 BUILD_DIR="build/macos/Build/Products/Release"
 DMG_DIR="build/dmg"
 APP_PATH="$BUILD_DIR/$APP_NAME.app"
@@ -36,9 +36,10 @@ rm -rf "$BUILD_DIR"
 rm -rf "$DMG_DIR"
 mkdir -p "$DMG_DIR"
 
-# Step 2: Reset camera permissions
-echo "🔐 Resetting camera permissions for fresh build..."
+# Step 2: Reset media permissions
+echo "🔐 Resetting camera and microphone permissions for fresh build..."
 tccutil reset Camera "$BUNDLE_ID" 2>/dev/null || true
+tccutil reset Microphone "$BUNDLE_ID" 2>/dev/null || true
 
 # Step 3: Install dependencies
 echo "📦 Installing dependencies..."

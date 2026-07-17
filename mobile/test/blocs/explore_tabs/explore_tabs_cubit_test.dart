@@ -36,6 +36,7 @@ void main() {
 
       expect(cubit.state.classicsAvailable, isFalse);
       expect(cubit.state.forYouAvailable, isFalse);
+      expect(cubit.state.liveAvailable, isFalse);
       expect(cubit.state.appsAvailable, isFalse);
       expect(cubit.state.tabNames, const [
         'new',
@@ -52,10 +53,11 @@ void main() {
       act: (cubit) => cubit.updateAvailability(
         classicsAvailable: true,
         forYouAvailable: true,
+        liveAvailable: true,
         appsAvailable: true,
       ),
       expect: () => [
-        isA<ExploreTabsState>().having((s) => s.tabCount, 'tabCount', 7).having(
+        isA<ExploreTabsState>().having((s) => s.tabCount, 'tabCount', 8).having(
           (s) => s.tabNames,
           'tabNames',
           const [
@@ -64,6 +66,7 @@ void main() {
             'popular',
             'categories',
             'for_you',
+            'live',
             'lists',
             'apps',
           ],
@@ -77,6 +80,7 @@ void main() {
       act: (cubit) => cubit.updateAvailability(
         classicsAvailable: false,
         forYouAvailable: false,
+        liveAvailable: false,
         appsAvailable: false,
       ),
       expect: () => const <ExploreTabsState>[],
@@ -100,6 +104,7 @@ void main() {
         const state = ExploreTabsState(
           classicsAvailable: true,
           forYouAvailable: true,
+          liveAvailable: true,
           appsAvailable: true,
         );
         for (final name in state.tabNames) {

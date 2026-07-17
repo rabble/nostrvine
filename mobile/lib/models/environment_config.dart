@@ -10,6 +10,7 @@
 ///   - mobile/macos/Runner/Info.plist (NSAllowsLocalNetworking)
 /// Keep this constant in sync with the Android <domain-config> list.
 const localHost = '10.0.2.2';
+const localLoopbackHost = '127.0.0.1';
 
 /// Local Docker stack port mappings.
 const localKeycastPort = 43000;
@@ -20,7 +21,9 @@ const localRelayPort = 47777;
 const int localApiPort = localRelayPort;
 const localBlossomPort = 43003;
 const localInvitePort = 43004;
+const localLiveApiPort = 8088;
 const productionApiBaseUrl = 'https://api.divine.video';
+const productionLiveApiBaseUrl = 'https://live.api.divine.video';
 
 /// Build-time default environment
 /// Set via: --dart-define=DEFAULT_ENV=STAGING

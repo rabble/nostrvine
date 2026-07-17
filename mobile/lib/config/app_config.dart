@@ -1,6 +1,9 @@
 // ABOUTME: Application configuration including backend URLs and environment settings
 // ABOUTME: Centralizes app configuration for different environments (dev, staging, prod)
 
+import 'package:flutter/foundation.dart';
+import 'package:openvine/models/environment_config.dart';
+
 class AppConfig {
   // Backend configuration
   static const String backendBaseUrl = String.fromEnvironment(
@@ -11,6 +14,10 @@ class AppConfig {
   static const String mediaApiBaseUrl = String.fromEnvironment(
     'MEDIA_API_URL',
     defaultValue: 'https://api.openvine.co',
+  );
+
+  static const String liveApiBaseUrlOverride = String.fromEnvironment(
+    'LIVE_API_URL',
   );
 
   static const String inviteServerBaseUrl = String.fromEnvironment(
@@ -48,12 +55,39 @@ class AppConfig {
       '$mediaApiBaseUrl/v1/media/status/$videoId';
   static String get streamWebhookUrl =>
       '$mediaApiBaseUrl/v1/webhooks/stream-complete';
+  static String get liveApiBaseUrl => resolveLiveApiBaseUrl();
 
   // Cloudinary endpoints
   static String get cloudinarySignedUploadUrl =>
       '$mediaApiBaseUrl/v1/media/cloudinary/request-upload';
   static String get cloudinaryWebhookUrl => '$mediaApiBaseUrl/v1/media/webhook';
   static String get readyEventsUrl => '$mediaApiBaseUrl/v1/media/ready-events';
+
+  static String resolveLiveApiBaseUrl({
+    String? overrideBaseUrl,
+    String? environmentName,
+    TargetPlatform? targetPlatform,
+    bool? isWeb,
+  }) {
+    final explicitOverride = (overrideBaseUrl ?? liveApiBaseUrlOverride).trim();
+    if (explicitOverride.isNotEmpty) {
+      return explicitOverride.replaceFirst(RegExp(r'/+$'), '');
+    }
+
+    final currentEnvironment = (environmentName ?? environment).toLowerCase();
+    final useLocalDefaults =
+        currentEnvironment == 'development' || currentEnvironment == 'local';
+    if (useLocalDefaults) {
+      final resolvedPlatform = targetPlatform ?? defaultTargetPlatform;
+      final resolvedIsWeb = isWeb ?? kIsWeb;
+      final host = !resolvedIsWeb && resolvedPlatform == TargetPlatform.android
+          ? localHost
+          : localLoopbackHost;
+      return 'http://$host:$localLiveApiPort';
+    }
+
+    return productionLiveApiBaseUrl;
+  }
 
   // App configuration
   static const String appName = 'Divine';
@@ -98,6 +132,7 @@ class AppConfig {
     'environment': environment,
     'backendUrl': backendBaseUrl,
     'mediaApiUrl': mediaApiBaseUrl,
+    'liveApiUrl': liveApiBaseUrl,
     'inviteServerUrl': inviteServerBaseUrl,
     'appsDirectoryUrl': appsDirectoryBaseUrl,
     'isDevelopment': isDevelopment,

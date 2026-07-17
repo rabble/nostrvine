@@ -294,10 +294,11 @@ xcodebuild_signed_macos_app() {
     verify_macos_embedded_provisioning_profile "$app_path"
 }
 
-# Reset camera permissions to fix stuck TCC state
-echo "🔐 Resetting camera permissions for fresh build..."
-tccutil reset Camera com.openvine.divine 2>/dev/null || true
-echo "✅ Camera permissions reset (will need to re-grant on first launch)"
+# Reset media permissions to fix stuck TCC state
+echo "🔐 Resetting camera and microphone permissions for fresh build..."
+tccutil reset Camera "$MACOS_BUNDLE_ID" 2>/dev/null || true
+tccutil reset Microphone "$MACOS_BUNDLE_ID" 2>/dev/null || true
+echo "✅ Camera and microphone permissions reset (will need to re-grant on first launch)"
 
 DART_DEFINES=""
 if [[ -f .env ]]; then

@@ -175,11 +175,15 @@ class _ExploreViewState extends ConsumerState<ExploreView>
     final appsAvailable =
         nostrAppsSandboxSupported &&
         ref.watch(isFeatureEnabledProvider(FeatureFlag.integratedApps));
+    final liveEnabled = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.livestreamingBeta),
+    );
 
     final previousState = _tabsState;
     _tabs.updateAvailability(
       classicsAvailable: classicsAvailable,
       forYouAvailable: forYouAvailable,
+      liveAvailable: liveEnabled,
       appsAvailable: appsAvailable,
     );
 

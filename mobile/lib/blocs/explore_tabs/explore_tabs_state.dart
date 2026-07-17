@@ -18,6 +18,7 @@ class ExploreTabsState extends Equatable {
   const ExploreTabsState({
     this.classicsAvailable = false,
     this.forYouAvailable = false,
+    this.liveAvailable = false,
     this.appsAvailable = false,
   });
 
@@ -27,19 +28,23 @@ class ExploreTabsState extends Equatable {
   /// Whether the For You tab is shown.
   final bool forYouAvailable;
 
+  /// Whether the Live tab is shown.
+  final bool liveAvailable;
+
   /// Whether the integrated Apps tab is shown.
   final bool appsAvailable;
 
   /// Ordered tab names based on current availability.
   ///
   /// Canonical order: `classics?`, `new`, `popular`, `categories`,
-  /// `for_you?`, `lists`, `apps?`.
+  /// `for_you?`, `live?`, `lists`, `apps?`.
   List<String> get tabNames => [
     if (classicsAvailable) 'classics',
     'new',
     'popular',
     'categories',
     if (forYouAvailable) exploreForYouTabName,
+    if (liveAvailable) 'live',
     'lists',
     if (appsAvailable) 'apps',
   ];
@@ -72,11 +77,13 @@ class ExploreTabsState extends Equatable {
   ExploreTabsState copyWith({
     bool? classicsAvailable,
     bool? forYouAvailable,
+    bool? liveAvailable,
     bool? appsAvailable,
   }) {
     return ExploreTabsState(
       classicsAvailable: classicsAvailable ?? this.classicsAvailable,
       forYouAvailable: forYouAvailable ?? this.forYouAvailable,
+      liveAvailable: liveAvailable ?? this.liveAvailable,
       appsAvailable: appsAvailable ?? this.appsAvailable,
     );
   }
@@ -85,6 +92,7 @@ class ExploreTabsState extends Equatable {
   List<Object?> get props => [
     classicsAvailable,
     forYouAvailable,
+    liveAvailable,
     appsAvailable,
   ];
 }
