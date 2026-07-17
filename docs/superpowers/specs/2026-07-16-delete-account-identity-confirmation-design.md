@@ -243,4 +243,10 @@ Import note: `nostr_settings_screen.dart` imports the thin `UserProfile` from
 - **#6127** (reversible 28-day deletion) adopts this guarantee on its
   full-screen flow; this issue owns it independently and is backend-independent
   (that issue is blocked by divine-funnelcake#651).
-- **#6126** (username revoke+burn) is a separate axis; no overlap.
+- **#6126 / PR #6138** (opt-in @divine.video username burn on delete) is a
+  separate *feature axis* but shares the **same delete-modal code** — #6138
+  rewrites `showDeleteAllContentWarningDialog` and `executeAccountDeletion`.
+  Sequencing (decided): #6138 lands first, then this work rebases onto it and
+  re-derives against the merged dialog. The two designs fuse: identity block +
+  username gate (this) alongside the burn checkbox (#6138); `executeAccountDeletion`
+  combines burn-first (#6138) with the confirmed-pubkey verify-and-abort (this).
