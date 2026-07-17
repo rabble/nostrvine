@@ -912,5 +912,53 @@ void main() {
         () => profileRepository.releaseUsername(name: any(named: 'name')),
       );
     });
+
+    testWidgets('aborts before burn when the account changed', (tester) async {
+      final deletionService = _MockAccountDeletionService();
+      final authService = _MockAuthService();
+      final profileRepository = _MockProfileRepository();
+      when(
+        () => authService.currentPublicKeyHex,
+      ).thenReturn('now_a_different_pk');
+
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const Scaffold(body: SizedBox.shrink());
+            },
+          ),
+        ),
+      );
+
+      await executeAccountDeletion(
+        context: capturedContext,
+        deletionService: deletionService,
+        authService: authService,
+        profileRepository: profileRepository,
+        burnUsername: true,
+        ownedUsername: (name: 'rabble', canonical: 'rabble'),
+        confirmedPubkey: _pubkeyHex,
+      );
+      await tester.pumpAndSettle();
+
+      verifyNever(
+        () => profileRepository.releaseUsername(name: any(named: 'name')),
+      );
+      verifyNever(
+        () =>
+            deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
+      );
+      expect(
+        find.text(
+          lookupAppLocalizations(
+            const Locale('en'),
+          ).deleteAccountAccountChanged,
+        ),
+        findsOneWidget,
+      );
+    });
   });
 }

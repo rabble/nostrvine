@@ -416,6 +416,7 @@ Future<void> executeAccountDeletion({
   ProfileRepository? profileRepository,
   bool burnUsername = false,
   ({String name, String canonical})? ownedUsername,
+  String? confirmedPubkey,
   String screenName = 'AccountDeletion',
 }) async {
   // Create cubit for tracking progress
@@ -449,6 +450,7 @@ Future<void> executeAccountDeletion({
   final keyDeletionWarningText = context.l10n.deleteAccountKeyDeletionWarning;
   final localDataDeletionFailedText =
       context.l10n.deleteAccountLocalDataDeletionFailed;
+  final accountChangedText = context.l10n.deleteAccountAccountChanged;
   final burnUsernameFailedText = context.l10n.deleteAccountBurnUsernameFailed;
   final deletionIncompleteText = context.l10n.deleteAccountDeletionIncomplete;
   final handleLabel = ownedUsername != null
@@ -464,6 +466,24 @@ Future<void> executeAccountDeletion({
   var burnCommitted = false;
 
   try {
+    // Bind to the confirmed account: if the signed-in account changed since the
+    // user confirmed, abort before burning or deleting anything.
+    if (confirmedPubkey != null &&
+        authService.currentPublicKeyHex != confirmedPubkey) {
+      Log.warning(
+        'Deletion aborted: signed-in account changed since confirmation',
+        name: screenName,
+        category: LogCategory.auth,
+      );
+      dismissDialog();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          DivineSnackbarContainer.snackBar(accountChangedText, error: true),
+        );
+      }
+      return;
+    }
+
     // Burn-first hard-block: release the username before any destructive step,
     // so a failed burn leaves everything intact. Needs a working signer, which
     // exists before deleteKeycastAccount() below.
