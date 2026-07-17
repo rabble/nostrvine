@@ -426,10 +426,15 @@ class _ClipTile extends StatelessWidget {
                         // straight from clip time, so it starts at the phase.
                         // Both then ride the same translate, which keeps the
                         // bars glued to the frames through trim and zoom.
+                        //
+                        // Width is the clip's natural width, not displayWidth:
+                        // the band's px-per-second must stay the frames' one,
+                        // and displayWidth inflates to the slot while a reorder
+                        // animates a sub-slot-width clip back to size.
                         Positioned(
                           left: phasePx,
                           top: 0,
-                          width: displayWidth,
+                          width: fullWidth,
                           height: TimelineConstants.thumbnailStripHeight,
                           child: _ClipWaveformLayer(
                             clip: clip,
