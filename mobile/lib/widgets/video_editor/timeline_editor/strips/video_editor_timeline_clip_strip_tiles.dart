@@ -49,6 +49,7 @@ class _TrimmableClipTile extends StatefulWidget {
     required this.clipWidth,
     required this.pixelsPerSecond,
     required this.thumbnailNotifier,
+    required this.waveformNotifier,
     this.onTrimChanged,
     this.onTrimDragChanged,
     this.onTap,
@@ -59,6 +60,9 @@ class _TrimmableClipTile extends StatefulWidget {
   final double clipWidth;
   final double pixelsPerSecond;
   final ValueNotifier<List<StripThumbnail>> thumbnailNotifier;
+
+  /// Null while the strip is in a reorder drag — see [_ClipTile].
+  final ValueNotifier<ClipWaveform?>? waveformNotifier;
   final ClipTrimCallback? onTrimChanged;
   final ValueChanged<bool>? onTrimDragChanged;
   final VoidCallback? onTap;
@@ -203,6 +207,7 @@ class _TrimmableClipTileState extends State<_TrimmableClipTile> {
                   widget.pixelsPerSecond *
                   widget.clip._playbackScale,
               thumbnailNotifier: widget.thumbnailNotifier,
+              waveformNotifier: widget.waveformNotifier,
             ),
           ),
         ),
@@ -260,6 +265,7 @@ class _AccessibleClipTile extends StatelessWidget {
     required this.clipWidth,
     required this.pixelsPerSecond,
     required this.thumbnailNotifier,
+    required this.waveformNotifier,
     required this.onReorder,
     this.wrapHeadOffset = 0,
     this.onTap,
@@ -273,6 +279,9 @@ class _AccessibleClipTile extends StatelessWidget {
   final double clipWidth;
   final double pixelsPerSecond;
   final ValueNotifier<List<StripThumbnail>> thumbnailNotifier;
+
+  /// Null while the strip is in a reorder drag — see [_ClipTile].
+  final ValueNotifier<ClipWaveform?>? waveformNotifier;
   final void Function(int from, int to) onReorder;
 
   /// Extra pixels to shift thumbnails left (on top of trim-start) so a loop
@@ -333,6 +342,7 @@ class _AccessibleClipTile extends StatelessWidget {
                   clip._playbackScale +
               wrapHeadOffset,
           thumbnailNotifier: thumbnailNotifier,
+          waveformNotifier: waveformNotifier,
           selectionState: isMultiSelectMode
               ? (isSelected
                     ? _ClipSelectionState.selected
@@ -352,6 +362,7 @@ class _ClipTile extends StatelessWidget {
     required this.clip,
     required this.fullWidth,
     required this.thumbnailNotifier,
+    this.waveformNotifier,
     this.trimStartOffset = 0,
     this.selectionState = _ClipSelectionState.none,
   });
@@ -359,6 +370,10 @@ class _ClipTile extends StatelessWidget {
   final DivineVideoClip clip;
   final double fullWidth;
   final ValueNotifier<List<StripThumbnail>> thumbnailNotifier;
+
+  /// The clip's audio waveform, drawn over the thumbnails. Null during a
+  /// reorder drag, where every tile shrinks to a badge with no room for it.
+  final ValueNotifier<ClipWaveform?>? waveformNotifier;
 
   /// Pixel offset from the left to shift thumbnails for trim-start.
   final double trimStartOffset;
@@ -389,16 +404,44 @@ class _ClipTile extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: Transform.translate(
                   offset: Offset(-trimStartOffset - phasePx, 0),
-                  child: ValueListenableBuilder<List<StripThumbnail>>(
-                    valueListenable: thumbnailNotifier,
-                    builder: (context, stripThumbnails, _) {
-                      return _ClipContainer(
-                        clip: clip,
-                        displayWidth: displayWidth,
-                        contentWidth: fullWidth,
-                        stripThumbnails: stripThumbnails,
-                      );
-                    },
+                  child: Stack(
+                    // The enclosing ClipRect already trims the tile to its
+                    // visible box — a second clip layer here buys nothing.
+                    clipBehavior: .none,
+                    children: [
+                      ValueListenableBuilder<List<StripThumbnail>>(
+                        valueListenable: thumbnailNotifier,
+                        builder: (context, stripThumbnails, _) {
+                          return _ClipContainer(
+                            clip: clip,
+                            displayWidth: displayWidth,
+                            contentWidth: fullWidth,
+                            stripThumbnails: stripThumbnails,
+                          );
+                        },
+                      ),
+                      if (waveformNotifier != null)
+                        // The thumbnail row starts one raster phase before the
+                        // clip's zero (see [_rasterPhasePx]); the waveform maps
+                        // straight from clip time, so it starts at the phase.
+                        // Both then ride the same translate, which keeps the
+                        // bars glued to the frames through trim and zoom.
+                        //
+                        // Width is the clip's natural width, not displayWidth:
+                        // the band's px-per-second must stay the frames' one,
+                        // and displayWidth inflates to the slot while a reorder
+                        // animates a sub-slot-width clip back to size.
+                        Positioned(
+                          left: phasePx,
+                          top: 0,
+                          width: fullWidth,
+                          height: TimelineConstants.thumbnailStripHeight,
+                          child: _ClipWaveformLayer(
+                            clip: clip,
+                            waveformNotifier: waveformNotifier!,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),
@@ -420,6 +463,33 @@ class _ClipTile extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Repaints the clip's waveform band on its own, so an arriving waveform never
+/// rebuilds the thumbnail row next to it.
+class _ClipWaveformLayer extends StatelessWidget {
+  const _ClipWaveformLayer({
+    required this.clip,
+    required this.waveformNotifier,
+  });
+
+  final DivineVideoClip clip;
+  final ValueNotifier<ClipWaveform?> waveformNotifier;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<ClipWaveform?>(
+      valueListenable: waveformNotifier,
+      builder: (context, waveform, _) {
+        if (waveform == null) return const SizedBox.shrink();
+        return ClipWaveformOverlay(
+          waveform: waveform,
+          clipDuration: clip.duration,
+          volume: clip.volume,
+        );
+      },
     );
   }
 }

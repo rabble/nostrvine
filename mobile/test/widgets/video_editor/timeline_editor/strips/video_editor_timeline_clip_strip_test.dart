@@ -1,6 +1,9 @@
 // ABOUTME: Widget tests for VideoEditorTimelineClipStrip.
 // ABOUTME: Validates clip rendering, layout, reorder gesture, and accessibility.
 
+import 'dart:async';
+import 'dart:typed_data';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,7 +17,9 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/services/video_editor/clip_thumbnail_manager.dart';
+import 'package:openvine/services/video_editor/clip_waveform_manager.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/strips/clip_waveform_overlay.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/timeline_trim_handles.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_clip_strip.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -47,6 +52,7 @@ void main() {
       ValueChanged<List<DivineVideoClip>>? onReorder,
       ValueChanged<bool>? onReorderChanged,
       ClipThumbnailManager? thumbnailManager,
+      ClipWaveformManager? waveformManager,
       String? trimmingClipId,
       ClipTrimCallback? onTrimChanged,
       ValueChanged<bool>? onTrimDragChanged,
@@ -72,6 +78,7 @@ void main() {
         onTrimChanged: onTrimChanged,
         onTrimDragChanged: onTrimDragChanged,
         thumbnailManager: thumbnailManager,
+        waveformManager: waveformManager,
       );
 
       return MaterialApp(
@@ -92,6 +99,19 @@ void main() {
         ),
       );
     }
+
+    final waveformBands = find.byWidgetPredicate(
+      (w) => w is CustomPaint && w.painter is ClipWaveformPainter,
+    );
+
+    ClipWaveformManager buildWaveformManager() => ClipWaveformManager(
+      extractor: (_) async => WaveformData(
+        leftChannel: Float32List.fromList([0.5, 1, 0.5]),
+        sampleRate: 44100,
+        duration: const Duration(seconds: 3),
+        samplesPerSecond: 200,
+      ),
+    );
 
     group('renders', () {
       testWidgets('renders $VideoEditorTimelineClipStrip', (tester) async {
@@ -120,6 +140,118 @@ void main() {
 
         expect(find.byType(ClipRRect), findsOneWidget);
       });
+
+      testWidgets('draws each clip its own waveform band', (tester) async {
+        await tester.pumpWidget(
+          buildWidget(waveformManager: buildWaveformManager()),
+        );
+        // Let the queued extraction resolve and publish.
+        await tester.pump();
+
+        expect(waveformBands, findsNWidgets(2));
+      });
+
+      // The tile forwards the clip's volume and duration into the band. Both
+      // are one-liners in _ClipWaveformLayer, and matching on the painter's
+      // type alone lets either be dropped or crossed with the waveform's own
+      // values without a test noticing.
+      testWidgets('flattens the band of a muted clip to its baseline', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(
+            clips: [_createTestClip(id: 'muted', seconds: 3, volume: 0)],
+            pixelsPerSecond: 100,
+            waveformManager: buildWaveformManager(),
+            scrollable: false,
+          ),
+        );
+        await tester.pump();
+
+        const baseline = TimelineConstants.clipWaveformMinBarHeight;
+        expect(
+          tester.renderObject(waveformBands),
+          paints..rrect(
+            rrect: RRect.fromRectAndRadius(
+              const Rect.fromLTWH(
+                0,
+                TimelineConstants.thumbnailStripHeight - baseline,
+                TimelineConstants.clipWaveformBarWidth,
+                baseline,
+              ),
+              const Radius.circular(
+                TimelineConstants.clipWaveformBarWidth / 2,
+              ),
+            ),
+          ),
+        );
+      });
+
+      testWidgets('spans the band over the clip duration, not the audio one', (
+        tester,
+      ) async {
+        // A 4s clip against the 3s waveform the manager hands back: the bars
+        // must cover the audio's own 3s of the tile and leave the rest bare.
+        await tester.pumpWidget(
+          buildWidget(
+            clips: [_createTestClip(id: 'long', seconds: 4)],
+            pixelsPerSecond: 100,
+            waveformManager: buildWaveformManager(),
+            scrollable: false,
+          ),
+        );
+        await tester.pump();
+
+        const barStep =
+            TimelineConstants.clipWaveformBarWidth +
+            TimelineConstants.clipWaveformBarSpacing;
+        expect(
+          tester.renderObject(waveformBands),
+          paintsExactlyCountTimes(#drawRRect, (3 * 100 / barStep).floor()),
+        );
+      });
+
+      testWidgets('draws no waveform band before extraction lands', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(
+            waveformManager: ClipWaveformManager(
+              extractor: (_) => Completer<WaveformData>().future,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(waveformBands, findsNothing);
+      });
+
+      testWidgets('hides every waveform band during a reorder drag', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(waveformManager: buildWaveformManager()),
+        );
+        await tester.pump();
+        expect(waveformBands, findsNWidgets(2));
+
+        // Hold the press — a plain longPress releases it, ending the drag
+        // before the badges are ever on screen.
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.byType(VideoEditorTimelineClipStrip)),
+        );
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pumpAndSettle();
+
+        // Every tile — not just the picked-up one — shrinks to a 64px badge,
+        // whose window of frames a full-clip band no longer lines up with.
+        expect(waveformBands, findsNothing);
+
+        await gesture.up();
+        await tester.pumpAndSettle();
+
+        expect(waveformBands, findsNWidgets(2));
+      });
     });
 
     group('raster stability', () {
@@ -134,6 +266,66 @@ void main() {
 
       Finder frame(String path) => find.byWidgetPredicate(
         (w) => w is Image && providerHasPath(w.image, path),
+      );
+
+      // The band is indexed from clip zero while the thumbnail row starts one
+      // raster phase earlier, so the overlay carries a +phase offset inside
+      // the tile's shared translate. Get either term wrong — drop the phase,
+      // flip its sign, or lift the band out of the translate — and the bars
+      // drift against the frames on every trimmed or split clip.
+      testWidgets(
+        'anchors the waveform band to clip zero: tracking trim-start, but '
+        'not the thumbnail raster phase',
+        (tester) async {
+          final waveforms = ClipWaveformManager(
+            extractor: (_) async => WaveformData(
+              leftChannel: Float32List.fromList([0.5, 1, 0.5]),
+              sampleRate: 44100,
+              duration: const Duration(seconds: 3),
+              samplesPerSecond: 200,
+            ),
+          );
+          addTearDown(waveforms.dispose);
+
+          // 3 s of content at 100 px/s → 300 px wide. sourceStartOffset 1.3 s
+          // puts the recording-anchored slot grid 130 px in, leaving a 34 px
+          // phase (130 % 48) that shifts the frames but not the band.
+          final clip =
+              _createTestClip(
+                id: 'clip1',
+                seconds: 3,
+                trimStartMs: 500,
+              ).copyWith(
+                sourceStartOffset: const Duration(milliseconds: 1300),
+              );
+
+          await tester.pumpWidget(
+            buildWidget(
+              clips: [clip],
+              pixelsPerSecond: 100,
+              waveformManager: waveforms,
+              scrollable: false,
+            ),
+          );
+          await tester.pump();
+
+          final tileLeft = tester.getTopLeft(find.byType(ClipRRect)).dx;
+          final bandLeft = tester
+              .getTopLeft(
+                find.byWidgetPredicate(
+                  (w) => w is CustomPaint && w.painter is ClipWaveformPainter,
+                ),
+              )
+              .dx;
+
+          expect(
+            bandLeft,
+            moreOrLessEquals(tileLeft - 50),
+            reason:
+                'the band must sit exactly trim-start (0.5 s → 50 px) left '
+                'of the tile — no raster phase, which belongs to the frames',
+          );
+        },
       );
 
       // Regression for the visible leftward frame shift when a split's end
@@ -943,6 +1135,7 @@ DivineVideoClip _createTestClip({
   int trimStartMs = 0,
   int trimEndMs = 0,
   String? thumbnailPath,
+  double volume = 1,
 }) {
   return DivineVideoClip(
     id: id,
@@ -954,5 +1147,6 @@ DivineVideoClip _createTestClip({
     trimStart: Duration(milliseconds: trimStartMs),
     trimEnd: Duration(milliseconds: trimEndMs),
     thumbnailPath: thumbnailPath,
+    volume: volume,
   );
 }

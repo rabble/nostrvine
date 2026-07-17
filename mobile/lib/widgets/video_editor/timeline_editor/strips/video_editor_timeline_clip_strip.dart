@@ -12,12 +12,15 @@ import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.d
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/video_editor/clip_waveform.dart';
 import 'package:openvine/models/video_editor/transition_geometry.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/services/video_editor/clip_thumbnail_manager.dart';
+import 'package:openvine/services/video_editor/clip_waveform_manager.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/mounted_post_frame.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_transition_sheet.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/strips/clip_waveform_overlay.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/timeline_trim_handles.dart';
 
 part 'video_editor_timeline_clip_strip_tiles.dart';
@@ -50,6 +53,7 @@ class VideoEditorTimelineClipStrip extends StatefulWidget {
     this.isMultiSelectMode = false,
     this.selectedClipIds = const {},
     @visibleForTesting this.thumbnailManager,
+    @visibleForTesting this.waveformManager,
     super.key,
   });
 
@@ -71,6 +75,11 @@ class VideoEditorTimelineClipStrip extends StatefulWidget {
   /// native thumbnail extractor.
   @visibleForTesting
   final ClipThumbnailManager? thumbnailManager;
+
+  /// Test seam for asserting the clip waveform overlay without invoking the
+  /// native waveform extractor.
+  @visibleForTesting
+  final ClipWaveformManager? waveformManager;
 
   /// When `true` the user is scrolling or pinch-zooming — long press
   /// must not start a reorder drag.
@@ -131,6 +140,10 @@ class _VideoEditorTimelineClipStripState
   /// clip tile rebuilds, not the entire strip.
   late final ClipThumbnailManager _thumbnails;
 
+  /// Audio waveforms keyed by clip ID, drawn over each tile's thumbnails.
+  /// Independent notifiers for the same reason as [_thumbnails].
+  late final ClipWaveformManager _waveforms;
+
   /// Identity of the last split event we already seeded thumbnails
   /// for. Used to ensure each split is processed exactly once.
   ClipSplitEvent? _lastSeededSplit;
@@ -158,6 +171,7 @@ class _VideoEditorTimelineClipStripState
   void initState() {
     super.initState();
     _thumbnails = widget.thumbnailManager ?? ClipThumbnailManager();
+    _waveforms = widget.waveformManager ?? ClipWaveformManager();
     _reorderAnimController = AnimationController(
       vsync: this,
       duration: _animDuration,
@@ -202,6 +216,7 @@ class _VideoEditorTimelineClipStripState
     _volumeExitTimer?.cancel();
     _reorderAnimController.dispose();
     _thumbnails.dispose();
+    _waveforms.dispose();
     super.dispose();
   }
 
@@ -218,6 +233,7 @@ class _VideoEditorTimelineClipStripState
       devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
       priorityTimestamps: _cachedSlotTimestamps,
     );
+    _waveforms.sync(clips: clips);
   }
 
   /// Seeds the new clips' thumbnail notifiers from the source clip's
@@ -683,6 +699,7 @@ class _VideoEditorTimelineClipStripState
                 _NonTrimmingClipPositions(
                   orderedClips: _orderedClips,
                   thumbnails: _thumbnails,
+                  waveforms: _waveforms,
                   layout: layout,
                   wrap: wrap,
                   dragIndex: _dragIndex,
@@ -709,6 +726,7 @@ class _VideoEditorTimelineClipStripState
                 _TrimmingClipPositions(
                   orderedClips: _orderedClips,
                   thumbnails: _thumbnails,
+                  waveforms: _waveforms,
                   layout: layout,
                   dragIndex: _dragIndex,
                   trimmingClipId: widget.trimmingClipId,
@@ -791,6 +809,7 @@ class _TrimmingClipPositions extends StatelessWidget {
   const _TrimmingClipPositions({
     required this.orderedClips,
     required this.thumbnails,
+    required this.waveforms,
     required this.layout,
     required this.dragIndex,
     required this.trimmingClipId,
@@ -812,6 +831,7 @@ class _TrimmingClipPositions extends StatelessWidget {
 
   final List<DivineVideoClip> orderedClips;
   final ClipThumbnailManager thumbnails;
+  final ClipWaveformManager waveforms;
   final ({List<double> widths, List<double> offsets, double totalWidth}) layout;
   final int? dragIndex;
   final String? trimmingClipId;
@@ -854,6 +874,9 @@ class _TrimmingClipPositions extends StatelessWidget {
                 clipWidth: layout.widths[i],
                 pixelsPerSecond: pixelsPerSecond,
                 thumbnailNotifier: thumbnails[orderedClips[i].id],
+                waveformNotifier: isReordering
+                    ? null
+                    : waveforms[orderedClips[i].id],
                 onTrimChanged: onTrimChanged,
                 onTrimDragChanged: onTrimDragChanged,
                 trimExpand: trimExpand,
@@ -869,6 +892,7 @@ class _NonTrimmingClipPositions extends StatelessWidget {
   const _NonTrimmingClipPositions({
     required this.orderedClips,
     required this.thumbnails,
+    required this.waveforms,
     required this.layout,
     required this.wrap,
     required this.dragIndex,
@@ -891,6 +915,7 @@ class _NonTrimmingClipPositions extends StatelessWidget {
 
   final List<DivineVideoClip> orderedClips;
   final ClipThumbnailManager thumbnails;
+  final ClipWaveformManager waveforms;
   final ({List<double> widths, List<double> offsets, double totalWidth}) layout;
 
   /// Loop-wrap display geometry (or [LoopWrapDisplay.none]). The first clip's
@@ -948,6 +973,10 @@ class _NonTrimmingClipPositions extends StatelessWidget {
                           pixelsPerSecond
                     : 0.0,
                 thumbnailNotifier: thumbnails[orderedClips[i].id],
+                // Every tile is a 64px badge mid-drag — no room for a band.
+                waveformNotifier: isReordering
+                    ? null
+                    : waveforms[orderedClips[i].id],
                 onReorder: onReorder,
                 onTap: onClipTapped,
                 isMultiSelectMode: isMultiSelectMode,
