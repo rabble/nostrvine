@@ -127,10 +127,17 @@ class _DeleteAllContentDialogState extends State<_DeleteAllContentDialog> {
   @override
   void initState() {
     super.initState();
-    widget.ownedUsernameFuture.then((owned) {
-      if (!mounted || owned == null) return;
-      setState(() => _ownedUsername = owned);
-    });
+    unawaited(
+      widget.ownedUsernameFuture
+          .then<void>((owned) {
+            if (!mounted || owned == null) return;
+            setState(() => _ownedUsername = owned);
+          })
+          .catchError((Object _) {
+            // Lookup failed: treat as "no handle" and leave the toggle hidden,
+            // matching getUsernameByPubkey's unknown-means-no-name contract.
+          }),
+    );
   }
 
   @override

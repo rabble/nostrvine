@@ -295,6 +295,46 @@ void main() {
       expect(find.byType(CheckboxListTile), findsOneWidget);
     });
 
+    testWidgets('a failed lookup leaves the toggle hidden without crashing', (
+      tester,
+    ) async {
+      final completer = Completer<({String name, String canonical})?>();
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) => Scaffold(
+              body: ElevatedButton(
+                key: const Key('open'),
+                onPressed: () => showDeleteAllContentWarningDialog(
+                  context: context,
+                  ownedUsernameFuture: completer.future,
+                  onConfirm:
+                      ({
+                        required bool burnUsername,
+                        ({String name, String canonical})? ownedUsername,
+                      }) {},
+                ),
+                child: const Text('Open'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.byKey(const Key('open')));
+      await tester.pumpAndSettle();
+
+      // Dialog is open with the lookup still pending, then the lookup fails.
+      completer.completeError(Exception('lookup failed'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.widgetWithText(ElevatedButton, 'Delete All Content'),
+        findsOneWidget,
+      );
+      expect(find.byType(CheckboxListTile), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('confirm passes the resolved handle back to onConfirm', (
       tester,
     ) async {
