@@ -23,8 +23,10 @@ class ClipWaveformOverlay extends StatelessWidget {
 
   final ClipWaveform waveform;
 
-  /// Duration of the clip's source file — the span [waveform] is stretched
-  /// across the overlay's width against.
+  /// The clip's own duration — the span the overlay's width represents.
+  ///
+  /// Not necessarily the source file's length: a trim-based split's start half
+  /// is rebased to the split point while still sharing the full-length file.
   final Duration clipDuration;
 
   /// The clip's volume. Scales the bar heights, so muting flattens the band
@@ -79,16 +81,16 @@ class ClipWaveformPainter extends CustomPainter {
     final clipMs = clipDuration.inMilliseconds;
     if (waveform.isEmpty || clipMs <= 0 || size.width <= 0) return;
 
-    // An audio track that ends before the video does covers only the leading
-    // part of the tile; anything past it stays bare rather than stretching the
-    // samples over silence.
-    final audioFraction = (waveform.duration.inMilliseconds / clipMs).clamp(
-      0.0,
-      1.0,
-    );
-    final bandWidth = size.width * audioFraction;
+    // Bars map straight from clip time, so the band spans the audio's own
+    // length rather than being fitted to the tile. Shorter audio leaves the
+    // remainder bare instead of stretching over silence; longer audio — a
+    // trim-based split's start half keeps the whole source file — runs past
+    // the tile and is culled, instead of squeezing the later halves' sound
+    // under these frames.
+    final bandWidth = size.width * waveform.duration.inMilliseconds / clipMs;
     final barCount = (bandWidth / _barStep).floor();
-    if (barCount <= 0) return;
+    final visibleBarCount = math.min(barCount, (size.width / _barStep).floor());
+    if (visibleBarCount <= 0) return;
 
     final band = math.min(
       TimelineConstants.clipWaveformBandHeight,
@@ -105,10 +107,11 @@ class ClipWaveformPainter extends CustomPainter {
       TimelineConstants.clipWaveformNormalizerFloor,
     );
 
-    for (var i = 0; i < barCount; i++) {
+    for (var i = 0; i < visibleBarCount; i++) {
       // Peak across every sample the bar covers — averaging (or point
       // sampling) would alias transients away at low zoom, where one bar
-      // spans dozens of samples.
+      // spans dozens of samples. Indexed against the audio's full bar span,
+      // so a bar keeps its timestamp regardless of where the tile ends.
       final from = (i * peaks.length ~/ barCount).clamp(0, peaks.length - 1);
       final to = math.max(from + 1, (i + 1) * peaks.length ~/ barCount);
       var amplitude = 0.0;

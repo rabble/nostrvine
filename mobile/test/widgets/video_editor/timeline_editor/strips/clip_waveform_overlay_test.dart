@@ -48,16 +48,19 @@ void main() {
     RenderObject overlayRender(WidgetTester tester) =>
         tester.renderObject(waveformPaint);
 
-    /// The leftmost bar at [barHeight], grown up from the bottom edge.
-    RRect firstBar(double barHeight) => RRect.fromRectAndRadius(
+    /// The bar at [index] with [barHeight], grown up from the bottom edge.
+    RRect barAt(int index, double barHeight) => RRect.fromRectAndRadius(
       Rect.fromLTWH(
-        0,
+        index * barStep,
         height - barHeight,
         TimelineConstants.clipWaveformBarWidth,
         barHeight,
       ),
       const Radius.circular(TimelineConstants.clipWaveformBarWidth / 2),
     );
+
+    /// The leftmost bar at [barHeight], grown up from the bottom edge.
+    RRect firstBar(double barHeight) => barAt(0, barHeight);
 
     /// A bar at the band's ceiling — what the clip's own loudest sample draws.
     final fullBandBar = firstBar(band * TimelineConstants.clipWaveformGain);
@@ -85,7 +88,18 @@ void main() {
     testWidgets('keeps a near-silent clip below the band', (tester) async {
       await pumpOverlay(tester, waveform: _waveform(peaks: [0.02, 0.02, 0.02]));
 
+      // Quiet, but still audible-looking: the floor holds the band down
+      // without collapsing it to the silent baseline or hiding it outright.
+      expect(overlayRender(tester), paints..rrect());
       expect(overlayRender(tester), isNot(paints..rrect(rrect: fullBandBar)));
+      expect(
+        overlayRender(tester),
+        isNot(
+          paints..rrect(
+            rrect: firstBar(TimelineConstants.clipWaveformMinBarHeight),
+          ),
+        ),
+      );
     });
 
     testWidgets('scales bar heights with the clip volume', (tester) async {
@@ -133,6 +147,37 @@ void main() {
       expect(
         overlayRender(tester),
         paintsExactlyCountTimes(#drawRRect, width ~/ barStep ~/ 2),
+      );
+    });
+
+    testWidgets("draws only the clip's own share of a longer audio track", (
+      tester,
+    ) async {
+      // A trim-based split rebases the start half's duration to the split
+      // point while it keeps sharing the full-length source file, so its
+      // waveform outlasts it 4:1 here.
+      await pumpOverlay(
+        tester,
+        waveform: _waveform(
+          peaks: [1, 0, 0, 0],
+          duration: const Duration(seconds: 4),
+        ),
+        clipDuration: const Duration(seconds: 1),
+      );
+
+      // The loud first quarter is this clip's entire span, so every bar —
+      // right up to the tile's edge — stays at the ceiling. Fitting all four
+      // samples into the tile instead would drop the band to the baseline
+      // after a few bars, drawing the later halves' sound under these frames.
+      const gain = TimelineConstants.clipWaveformGain;
+      final ceilingBars = paints;
+      for (var i = 0; i < width ~/ barStep; i++) {
+        ceilingBars.rrect(rrect: barAt(i, band * gain));
+      }
+      expect(overlayRender(tester), ceilingBars);
+      expect(
+        overlayRender(tester),
+        paintsExactlyCountTimes(#drawRRect, width ~/ barStep),
       );
     });
 
