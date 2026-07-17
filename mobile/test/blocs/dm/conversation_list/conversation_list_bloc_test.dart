@@ -1163,43 +1163,56 @@ void main() {
       });
 
       group('following changes', () {
-        blocTest<ConversationListBloc, ConversationListState>(
-          're-splits conversations when follow list changes',
-          setUp: () {
-            final followingController = StreamController<List<String>>();
+        test('re-splits conversations when follow list changes', () async {
+          final followingController = StreamController<List<String>>();
+          addTearDown(followingController.close);
 
-            // Initially _testPubkey2 is NOT followed.
-            when(
-              () => mockFollowRepository.isFollowing(_testPubkey2),
-            ).thenReturn(false);
-            when(
-              () => mockFollowRepository.followingStream,
-            ).thenAnswer((_) => followingController.stream);
-            when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
+          // Initially _testPubkey2 (the conversation's counterparty) is NOT
+          // followed, so it classifies as a request.
+          when(
+            () => mockFollowRepository.isFollowing(_testPubkey2),
+          ).thenReturn(false);
+          when(
+            () => mockFollowRepository.followingStream,
+          ).thenAnswer((_) => followingController.stream);
+          when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
+          _stubStreams(
+            mockDmRepository,
+            potentialRequests: [_createConversation(id: _testConversationId1)],
+          );
 
-            final conversations = [
-              _createConversation(id: _testConversationId1),
-            ];
-            _stubStreams(mockDmRepository, potentialRequests: conversations);
+          final bloc = createBloc();
+          addTearDown(bloc.close);
 
-            // After a short delay, update follow state and emit on stream.
-            Future<void>.delayed(const Duration(milliseconds: 50)).then((_) {
-              when(
-                () => mockFollowRepository.isFollowing(_testPubkey2),
-              ).thenReturn(true);
-              followingController.add([_testPubkey2]);
-            });
-          },
-          build: createBloc,
-          act: (bloc) => bloc.add(const ConversationListStarted()),
-          wait: const Duration(milliseconds: 200),
-          verify: (bloc) {
-            // After following change, the conversation should move
-            // from requestConversations to conversations.
-            expect(bloc.state.conversations, hasLength(1));
-            expect(bloc.state.requestConversations, isEmpty);
-          },
-        );
+          // Register both waiters before adding the event so a prompt emission
+          // can never be missed by a late subscription. Debounce is zero (see
+          // createBloc), so re-classification is driven purely by stream order,
+          // not wall-clock time — the old version raced a real 50ms timer that
+          // emitted the follow update against blocTest's `wait`, which flaked
+          // under CI load.
+          final requestClassified = bloc.stream.firstWhere(
+            (s) => s.requestConversations.isNotEmpty,
+          );
+          final reSplit = bloc.stream.firstWhere(
+            (s) => s.conversations.isNotEmpty,
+          );
+
+          bloc.add(const ConversationListStarted());
+
+          await requestClassified;
+          expect(bloc.state.conversations, isEmpty);
+
+          // Follow the counterparty and push it through followingStream; the
+          // combineLatest re-fires and the conversation moves into the inbox.
+          when(
+            () => mockFollowRepository.isFollowing(_testPubkey2),
+          ).thenReturn(true);
+          followingController.add([_testPubkey2]);
+
+          await reSplit;
+          expect(bloc.state.conversations, hasLength(1));
+          expect(bloc.state.requestConversations, isEmpty);
+        });
       });
 
       group('group conversation classification', () {
