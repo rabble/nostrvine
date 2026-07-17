@@ -3094,10 +3094,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get authUnknownError => 'Възникна неизвестна грешка.';
 
   @override
-  String get authBunkerRejectedConnection =>
-      'Приложението ти за подписване отказа връзката.';
-
-  @override
   String get authNostrConnectStartFailed =>
       'Не успяхме да се свържем с приложението за подписване. Провери връзката си и опитай пак.';
 

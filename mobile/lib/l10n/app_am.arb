@@ -1477,7 +1477,6 @@
     "authConnectionCancelledMessage": "ግንኙነቱ ተሰርዟል።",
     "authConnectionFailed": "ግንኙነት አልተሳካም።",
     "authUnknownError": "ያልታወቀ ስህተት ተከስቷል።",
-    "authBunkerRejectedConnection": "ፈራሚ መተግበሪያዎ ግንኙነቱን አልተቀበለም።",
     "authNostrConnectStartFailed": "ፈራሚውን ማግኘት አልተቻለም። ግንኙነትዎን ያረጋግጡ እና እንደገና ይሞክሩ።",
     "authNostrConnectInvalidSession": "ይህ የግንኙነት አገናኝ ከአሁን በኋላ የሚሰራ አይደለም። አዲስ ይጀምሩ።",
     "authNostrConnectSetupFailed": "ጥቂት ቀርቷል — መግባትዎን ማጠናቀቅ አልቻልንም። እንደገና ይሞክሩ።",

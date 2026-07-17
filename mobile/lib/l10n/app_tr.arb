@@ -1278,7 +1278,6 @@
     "authConnectionCancelledMessage": "Bağlantı iptal edildi.",
     "authConnectionFailed": "Bağlantı başarısız",
     "authUnknownError": "Bilinmeyen bir hata oluştu.",
-    "authBunkerRejectedConnection": "İmzalama uygulaman bağlantıyı reddetti.",
     "authNostrConnectStartFailed": "İmzalama uygulamasına ulaşılamadı. Bağlantını kontrol et ve tekrar dene.",
     "authNostrConnectInvalidSession": "Bu bağlantı artık geçerli değil. Yeni bir tane oluştur.",
     "authNostrConnectSetupFailed": "Az kaldı — girişini tamamlayamadık. Tekrar dene.",

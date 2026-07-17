@@ -3081,10 +3081,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get authUnknownError => 'Si è verificato un errore sconosciuto.';
 
   @override
-  String get authBunkerRejectedConnection =>
-      'La tua app signer ha rifiutato la connessione.';
-
-  @override
   String get authNostrConnectStartFailed =>
       'Impossibile raggiungere il signer. Controlla la connessione e riprova.';
 

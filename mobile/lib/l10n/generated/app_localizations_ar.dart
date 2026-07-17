@@ -3025,10 +3025,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get authUnknownError => 'حدث خطأ غير معروف.';
 
   @override
-  String get authBunkerRejectedConnection =>
-      'رفض تطبيق التوقيع الخاص بك الاتصال.';
-
-  @override
   String get authNostrConnectStartFailed =>
       'تعذّر الوصول إلى تطبيق التوقيع. تحقّق من اتصالك وحاول مرّة أخرى.';
 

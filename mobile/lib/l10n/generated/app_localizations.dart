@@ -5322,12 +5322,6 @@ abstract class AppLocalizations {
   /// **'An unknown error occurred.'**
   String get authUnknownError;
 
-  /// No description provided for @authBunkerRejectedConnection.
-  ///
-  /// In en, this message translates to:
-  /// **'Your signer app declined the connection.'**
-  String get authBunkerRejectedConnection;
-
   /// No description provided for @authNostrConnectStartFailed.
   ///
   /// In en, this message translates to:

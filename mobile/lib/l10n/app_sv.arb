@@ -1281,7 +1281,6 @@
     "authConnectionCancelledMessage": "Anslutningen avbröts.",
     "authConnectionFailed": "Anslutning misslyckades",
     "authUnknownError": "Ett okänt fel uppstod.",
-    "authBunkerRejectedConnection": "Din sign-app nekade anslutningen.",
     "authNostrConnectStartFailed": "Kunde inte nå sign-appen. Kontrollera din anslutning och försök igen.",
     "authNostrConnectInvalidSession": "Den här anslutningslänken är inte längre giltig. Starta en ny.",
     "authNostrConnectSetupFailed": "Nästan klart — vi kunde inte slutföra inloggningen. Försök igen.",

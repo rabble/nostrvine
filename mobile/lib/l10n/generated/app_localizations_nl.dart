@@ -3061,10 +3061,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get authUnknownError => 'Er is een onbekende fout opgetreden.';
 
   @override
-  String get authBunkerRejectedConnection =>
-      'Je signer-app heeft de verbinding geweigerd.';
-
-  @override
   String get authNostrConnectStartFailed =>
       'De signer-app is niet bereikbaar. Controleer je verbinding en probeer het opnieuw.';
 

@@ -2901,9 +2901,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get authUnknownError => '不明なエラーが起きた。';
 
   @override
-  String get authBunkerRejectedConnection => '署名アプリが接続を拒否したよ。';
-
-  @override
   String get authNostrConnectStartFailed => '署名アプリにつながらなかった。接続を確認してもう一回試してみて。';
 
   @override

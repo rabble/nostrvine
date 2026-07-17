@@ -441,8 +441,6 @@ String resolveNostrConnectFailureMessage(
   NostrConnectFailureReason? reason,
 ) {
   return switch (reason) {
-    NostrConnectFailureReason.bunkerRejected =>
-      l10n.authBunkerRejectedConnection,
     NostrConnectFailureReason.startFailed => l10n.authNostrConnectStartFailed,
     NostrConnectFailureReason.noExpectedSecret =>
       l10n.authNostrConnectInvalidSession,

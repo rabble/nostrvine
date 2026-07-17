@@ -1355,7 +1355,6 @@
     "authConnectionCancelledMessage": "Връзката беше прекратена.",
     "authConnectionFailed": "Връзката е неуспешна",
     "authUnknownError": "Възникна неизвестна грешка.",
-    "authBunkerRejectedConnection": "Приложението ти за подписване отказа връзката.",
     "authNostrConnectStartFailed": "Не успяхме да се свържем с приложението за подписване. Провери връзката си и опитай пак.",
     "authNostrConnectInvalidSession": "Тази връзка вече не е валидна. Започни нова.",
     "authNostrConnectSetupFailed": "Почти готово — не успяхме да завършим влизането ти. Опитай пак.",

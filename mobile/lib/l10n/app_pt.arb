@@ -1281,7 +1281,6 @@
     "authConnectionCancelledMessage": "A conexão foi cancelada.",
     "authConnectionFailed": "Falha na conexão",
     "authUnknownError": "Ocorreu um erro desconhecido.",
-    "authBunkerRejectedConnection": "Seu app signer recusou a conexão.",
     "authNostrConnectStartFailed": "Não foi possível alcançar o app signer. Verifique sua conexão e tente novamente.",
     "authNostrConnectInvalidSession": "Este link de conexão não é mais válido. Inicie um novo.",
     "authNostrConnectSetupFailed": "Quase lá — não conseguimos concluir seu acesso. Tente novamente.",

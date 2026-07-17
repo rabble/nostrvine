@@ -3081,10 +3081,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get authUnknownError => 'Ein unbekannter Fehler ist aufgetreten.';
 
   @override
-  String get authBunkerRejectedConnection =>
-      'Deine Signer-App hat die Verbindung abgelehnt.';
-
-  @override
   String get authNostrConnectStartFailed =>
       'Die Signer-App ist nicht erreichbar. Prüf deine Verbindung und versuch es nochmal.';
 

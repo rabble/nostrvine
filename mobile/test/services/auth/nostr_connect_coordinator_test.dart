@@ -170,7 +170,7 @@ void main() {
         when(() => session.state).thenReturn(NostrConnectState.error);
         when(
           () => session.failureReason,
-        ).thenReturn(NostrConnectFailureReason.bunkerRejected);
+        ).thenReturn(NostrConnectFailureReason.startFailed);
         final coordinator = build();
         await coordinator.initiate();
 
@@ -178,7 +178,7 @@ void main() {
 
         expect(
           result.nostrConnectFailureReason,
-          NostrConnectFailureReason.bunkerRejected,
+          NostrConnectFailureReason.startFailed,
         );
       });
 
