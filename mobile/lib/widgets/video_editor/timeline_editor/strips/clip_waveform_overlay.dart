@@ -6,7 +6,7 @@ import 'dart:math' as math;
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
-import 'package:openvine/services/video_editor/clip_waveform_manager.dart';
+import 'package:openvine/models/video_editor/clip_waveform.dart';
 
 /// The clip's audio waveform, drawn translucently over its thumbnails.
 ///

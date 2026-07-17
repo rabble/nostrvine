@@ -6,7 +6,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
-import 'package:openvine/services/video_editor/clip_waveform_manager.dart';
+import 'package:openvine/models/video_editor/clip_waveform.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/clip_waveform_overlay.dart';
 
 void main() {
