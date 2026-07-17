@@ -120,9 +120,30 @@ class ClipWaveformManager {
       // clearing here would blink the bars away on every re-render swap.
       _enqueue(path);
     }
+
+    _forgetUnreferencedFailures();
+  }
+
+  /// Drops the retry state of files no clip points at anymore.
+  ///
+  /// Without this a tally outlives its clip: two failures, an undo, and the
+  /// clip's first fresh failure on re-add would hit the cap and blank the
+  /// band — a permanent verdict from one attempt. It also bounds the maps.
+  void _forgetUnreferencedFailures() {
+    _failures.removeWhere((path, _) => !_isReferenced(path));
+    _retryTimers.removeWhere((path, timer) {
+      if (_isReferenced(path)) return false;
+      timer.cancel();
+      return true;
+    });
   }
 
   void _enqueue(String path) {
+    // A retry armed before a sibling clip resolved the same file would
+    // otherwise re-decode it — a wasted pass under the very contention
+    // [_queue] exists to avoid, and one that can fail its way to blanking a
+    // band already on screen.
+    if (_cache.containsKey(path)) return;
     if (!_inFlight.add(path)) return;
     _queue = _queue.then((_) => _extractFor(path));
   }
@@ -180,6 +201,8 @@ class ClipWaveformManager {
   bool _isReferenced(String path) => _paths.values.contains(path);
 
   void _publish(String path, ClipWaveform waveform) {
+    // Whatever a pending retry was going to fetch, this settles it.
+    _retryTimers.remove(path)?.cancel();
     _cache[path] = waveform;
     if (_cache.length > _maxCachedWaveforms) {
       _cache.remove(_cache.keys.first);

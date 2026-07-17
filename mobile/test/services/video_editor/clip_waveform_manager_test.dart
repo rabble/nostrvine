@@ -301,6 +301,108 @@ void main() {
       });
     });
 
+    test('publishes the waveform when a retry succeeds', () {
+      fakeAsync((async) {
+        var failNext = true;
+        final recovering = ClipWaveformManager(
+          extractor: (path) async {
+            if (failNext) {
+              failNext = false;
+              throw Exception('decoder busy');
+            }
+            return _waveform(left: [0.5, 1]);
+          },
+        );
+
+        recovering.sync(
+          clips: [_clip(id: 'a', path: '/tmp/a.mp4')],
+        );
+        async.flushMicrotasks();
+        expect(recovering['a'].value, isNull);
+
+        // The retry's whole point: the band lands once the hiccup clears.
+        async.elapse(const Duration(seconds: 2));
+        expect(recovering['a'].value?.peaks, equals([0.5, 1.0]));
+
+        recovering.dispose();
+      });
+    });
+
+    test('drops a pending retry once the path is cached', () {
+      fakeAsync((async) {
+        var calls = 0;
+        var failNext = true;
+        final flaky = ClipWaveformManager(
+          extractor: (path) async {
+            calls++;
+            if (failNext) {
+              failNext = false;
+              throw Exception('decoder busy');
+            }
+            return _waveform(left: [1]);
+          },
+        );
+
+        flaky.sync(
+          clips: [_clip(id: 'a', path: '/tmp/p.mp4')],
+        );
+        async.flushMicrotasks();
+        expect(calls, equals(1));
+
+        // A split sibling on the same file resolves it while the retry is
+        // still armed, so the retry has nothing left to fetch.
+        flaky.sync(
+          clips: [
+            _clip(id: 'a', path: '/tmp/p.mp4'),
+            _clip(id: 'b', path: '/tmp/p.mp4'),
+          ],
+        );
+        async.flushMicrotasks();
+        expect(calls, equals(2));
+        expect(flaky['a'].value?.isEmpty, isFalse);
+
+        // Re-decoding a file already on screen would burn a decoder pass
+        // under exactly the contention the queue exists to avoid.
+        async.elapse(const Duration(seconds: 5));
+        expect(calls, equals(2));
+
+        flaky.dispose();
+      });
+    });
+
+    test('gives a re-added clip a fresh set of attempts', () {
+      fakeAsync((async) {
+        var calls = 0;
+        final failing = ClipWaveformManager(
+          extractor: (path) async {
+            calls++;
+            throw Exception('decoder busy');
+          },
+        );
+
+        failing.sync(
+          clips: [_clip(id: 'a', path: '/tmp/a.mp4')],
+        );
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 2));
+        expect(calls, equals(2));
+
+        failing.sync(clips: []);
+        async.elapse(const Duration(seconds: 5));
+
+        // Undo brings the clip back. It must not inherit the old tally and
+        // give up after a single fresh attempt.
+        failing.sync(
+          clips: [_clip(id: 'a', path: '/tmp/a.mp4')],
+        );
+        async.flushMicrotasks();
+        expect(calls, equals(3));
+        expect(failing['a'].value, isNull);
+
+        failing.dispose();
+      });
+    });
+
     test('skips extraction for a path no clip references anymore', () async {
       manager
         ..sync(
