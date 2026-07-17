@@ -379,8 +379,13 @@ Future<void> executeAccountDeletion({
             message = deletionIncompleteText;
           }
         }
+        final abortReason = switch (releaseResult) {
+          null when ownedUsername == null => 'no active handle to burn',
+          null => 'profile repository unavailable',
+          _ => 'release returned ${releaseResult.runtimeType}',
+        };
         Log.warning(
-          'Username release failed (${releaseResult.runtimeType}); aborting '
+          'Username burn could not be honored ($abortReason); aborting '
           'account deletion',
           name: screenName,
           category: LogCategory.auth,

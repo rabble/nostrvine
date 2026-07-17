@@ -4404,7 +4404,7 @@ void main() {
         );
       });
 
-      test('returns UsernameReleaseError on unexpected status', () async {
+      test('returns UsernameReleaseError on unexpected 4xx status', () async {
         when(
           () => mockNostrClient.createNip98AuthHeader(
             url: any(named: 'url'),
@@ -4418,7 +4418,7 @@ void main() {
             headers: any(named: 'headers'),
             body: any(named: 'body'),
           ),
-        ).thenAnswer((_) => Future.value(Response('nope', 500)));
+        ).thenAnswer((_) => Future.value(Response('nope', 400)));
 
         final result = await profileRepository.releaseUsername(name: 'alice');
         expect(
@@ -4426,9 +4426,32 @@ void main() {
           isA<UsernameReleaseError>().having(
             (e) => e.message,
             'message',
-            'Unexpected response: 500',
+            'Unexpected response: 400',
           ),
         );
+      });
+
+      test('returns UsernameReleaseNetworkError on 5xx status', () async {
+        // A 5xx can arrive after the burn committed but before the response
+        // survived the round trip, so the burn state is ambiguous — the caller
+        // must re-check ownership rather than assume nothing happened.
+        when(
+          () => mockNostrClient.createNip98AuthHeader(
+            url: any(named: 'url'),
+            method: any(named: 'method'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenAnswer((_) => Future.value('authHeader'));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) => Future.value(Response('gateway', 503)));
+
+        final result = await profileRepository.releaseUsername(name: 'alice');
+        expect(result, isA<UsernameReleaseNetworkError>());
       });
 
       test('UsernameReleaseError.toString includes the message', () {

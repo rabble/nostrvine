@@ -1003,7 +1003,7 @@ class ProfileRepository {
   /// throws. A `200` (including the server's idempotent no-op when the caller
   /// holds no active name) maps to [UsernameReleaseSuccess]. A signer failure
   /// maps to [UsernameReleaseError] — the request never left the device, so the
-  /// burn did not happen. A network/timeout failure maps to
+  /// burn did not happen. A network/timeout failure or a `5xx` response maps to
   /// [UsernameReleaseNetworkError]: the burn state is ambiguous (the request
   /// may have reached the server), so callers should re-check ownership.
   Future<UsernameReleaseResult> releaseUsername({required String name}) async {
@@ -1064,6 +1064,9 @@ class ProfileRepository {
         200 => const UsernameReleaseSuccess(),
         401 => UsernameReleaseError(serverError ?? 'Authentication failed'),
         403 => const UsernameReleaseNotOwner(),
+        // 5xx (server error / gateway): the burn may have committed before the
+        // response was lost, so the state is ambiguous — route through re-check.
+        final code when code >= 500 => const UsernameReleaseNetworkError(),
         _ => UsernameReleaseError(
           serverError ?? 'Unexpected response: ${response.statusCode}',
         ),
