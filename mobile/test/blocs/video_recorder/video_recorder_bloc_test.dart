@@ -2410,6 +2410,9 @@ void main() {
       late String framePath;
       late String frameAPath;
       late String frameBPath;
+      // Releases a gated capturePhoto() in the tests that force a still to
+      // land after a session-claiming event.
+      late Completer<void> captureGate;
 
       DivineVideoClip fakeClip() => DivineVideoClip(
         id: 'clip_sm_1',
@@ -2599,9 +2602,12 @@ void main() {
         setUp: () {
           stubClipIngest();
           // "Next" stays tappable across the slow native capture, so the
-          // assemble claims the session while this still is in flight.
+          // assemble claims the session while this still is in flight. The
+          // gate holds the capture open until the act has run the assemble,
+          // so the interleave is forced rather than timed.
+          captureGate = Completer<void>();
           when(() => cameraService.capturePhoto()).thenAnswer((_) async {
-            await Future<void>.delayed(const Duration(milliseconds: 10));
+            await captureGate.future;
             return PhotoCaptureResult(filePath: framePath);
           });
         },
@@ -2612,11 +2618,15 @@ void main() {
         ),
         act: (bloc) async {
           bloc.add(const VideoRecorderStopMotionFrameCaptured());
+          // Let the handler reach the gated capturePhoto().
+          await pumpEventQueue();
           // Tap "Next" while the capture is still in flight.
-          await Future<void>.delayed(const Duration(milliseconds: 1));
           bloc.add(const VideoRecorderStopMotionAssembleRequested());
+          await pumpEventQueue();
+          // Only now does the still land — strictly after the assemble.
+          captureGate.complete();
+          await pumpEventQueue();
         },
-        wait: const Duration(milliseconds: 60),
         verify: (bloc) {
           // A late still must not reopen the session the assemble just closed,
           // nor clobber the terminal status back to `idle` — that reopens the
@@ -2643,9 +2653,12 @@ void main() {
         setUp: () {
           stubClipIngest();
           // The mode wheel stays live during an idle capture, so a swipe can
-          // land the switch while this still is in flight.
+          // land the switch while this still is in flight. The gate holds the
+          // capture open until the act has run the switch, so the interleave
+          // is forced rather than timed.
+          captureGate = Completer<void>();
           when(() => cameraService.capturePhoto()).thenAnswer((_) async {
-            await Future<void>.delayed(const Duration(milliseconds: 10));
+            await captureGate.future;
             return PhotoCaptureResult(filePath: framePath);
           });
         },
@@ -2656,13 +2669,17 @@ void main() {
         ),
         act: (bloc) async {
           bloc.add(const VideoRecorderStopMotionFrameCaptured());
+          // Let the handler reach the gated capturePhoto().
+          await pumpEventQueue();
           // Swipe the wheel off stop-motion while the capture is in flight.
-          await Future<void>.delayed(const Duration(milliseconds: 1));
           bloc.add(
             const VideoRecorderRecorderModeSet(VideoRecorderMode.upload),
           );
+          await pumpEventQueue();
+          // Only now does the still land — strictly after the switch.
+          captureGate.complete();
+          await pumpEventQueue();
         },
-        wait: const Duration(milliseconds: 60),
         verify: (bloc) {
           // The switch discarded the session and moved the recorder off
           // stop-motion; appending the resumed still would write a phantom
