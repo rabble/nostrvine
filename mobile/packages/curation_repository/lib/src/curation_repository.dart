@@ -402,6 +402,11 @@ class CurationRepository {
         category: LogCategory.system,
       );
 
+      // TODO(realmeylisdev): flip to
+      // https://api.divine.video/analytics/trending/vines once the server route
+      // for #5274 lands. It 404s on api.divine.video today (openvine-only
+      // endpoint); do not flip blindly — verify a 200 plus the {"vines":[...]}
+      // JSON schema first, or trending breaks.
       final response = await http
           .get(
             Uri.parse(

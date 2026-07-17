@@ -3,9 +3,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
-import 'package:openvine/config/app_config.dart';
-import 'package:openvine/services/network/rate_limiter.dart'
-    show RateLimitStatus, RateLimiter;
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -28,13 +25,9 @@ class ApiService {
     required String relayManagerBaseUrl,
     http.Client? client,
     Nip98AuthService? authService,
-    RateLimiter? rateLimiter,
   }) : _relayManagerBaseUrl = relayManagerBaseUrl,
        _client = client ?? http.Client(),
-       _authService = authService,
-       _rateLimiter = rateLimiter;
-  static String get _baseUrl => AppConfig.backendBaseUrl;
-  static String get _mediaBaseUrl => AppConfig.mediaApiBaseUrl;
+       _authService = authService;
 
   /// Relay-manager worker base URL (minor-account-review endpoints live
   /// there, not on the main backend — divine-relay-manager#108). Injected
@@ -46,111 +39,6 @@ class ApiService {
 
   final http.Client _client;
   final Nip98AuthService? _authService;
-  final RateLimiter? _rateLimiter;
-
-  /// Request signed upload parameters (from previous implementation)
-  Future<Map<String, dynamic>> requestSignedUpload({
-    required String nostrPubkey,
-    required int fileSize,
-    required String mimeType,
-    String? title,
-    String? description,
-    List<String>? hashtags,
-  }) async {
-    Log.debug(
-      '📱 Requesting signed upload parameters',
-      name: 'ApiService',
-      category: LogCategory.api,
-    );
-
-    try {
-      // Check rate limit if configured
-      if (_rateLimiter != null) {
-        await _rateLimiter.checkLimit('/v1/media/request-upload');
-      }
-
-      final uri = Uri.parse('$_mediaBaseUrl/v1/media/request-upload');
-
-      final requestBody = {
-        'nostr_pubkey': nostrPubkey,
-        'file_size': fileSize,
-        'mime_type': mimeType,
-        'title': title,
-        'description': description,
-        'hashtags': hashtags,
-      };
-
-      final response = await _client
-          .post(
-            uri,
-            headers: await _getHeaders(
-              url: uri.toString(),
-              method: HttpMethod.post,
-            ),
-            body: jsonEncode(requestBody),
-          )
-          .timeout(_defaultTimeout);
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        Log.info(
-          'Received signed upload parameters',
-          name: 'ApiService',
-          category: LogCategory.api,
-        );
-        return data;
-      } else {
-        throw ApiException(
-          'Failed to get signed upload parameters',
-          statusCode: response.statusCode,
-          responseBody: response.body,
-        );
-      }
-    } on TimeoutException {
-      throw const ApiException('Request timeout for signed upload');
-    } catch (e) {
-      if (e is ApiException) rethrow;
-      throw ApiException('Network error during signed upload request: $e');
-    }
-  }
-
-  /// Get user's upload status
-  Future<Map<String, dynamic>> getUserUploadStatus() async {
-    Log.debug(
-      'Fetching user upload status',
-      name: 'ApiService',
-      category: LogCategory.api,
-    );
-
-    try {
-      final uri = Uri.parse('$_mediaBaseUrl/v1/media/status');
-
-      final response = await _client
-          .get(uri, headers: await _getHeaders(url: uri.toString()))
-          .timeout(_defaultTimeout);
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        Log.info(
-          'Retrieved upload status',
-          name: 'ApiService',
-          category: LogCategory.api,
-        );
-        return data;
-      } else {
-        throw ApiException(
-          'Failed to get upload status',
-          statusCode: response.statusCode,
-          responseBody: response.body,
-        );
-      }
-    } on TimeoutException {
-      throw const ApiException('Request timeout for upload status');
-    } catch (e) {
-      if (e is ApiException) rethrow;
-      throw ApiException('Network error during status request: $e');
-    }
-  }
 
   /// Get current account restriction and minor-account review status.
   Future<Map<String, dynamic>> getMinorAccountReviewStatus() async {
@@ -271,78 +159,6 @@ class ApiService {
     }
 
     return headers;
-  }
-
-  /// Test API connectivity
-  Future<bool> testConnection() async {
-    try {
-      Log.debug(
-        '📱 Testing API connection to: ${AppConfig.healthUrl}',
-        name: 'ApiService',
-        category: LogCategory.api,
-      );
-
-      final uri = Uri.parse(AppConfig.healthUrl);
-      final response = await _client
-          .get(uri)
-          .timeout(const Duration(seconds: 10));
-
-      final isHealthy = response.statusCode == 200;
-      Log.debug(
-        isHealthy ? '✅ API connection healthy' : '❌ API connection unhealthy',
-        name: 'ApiService',
-        category: LogCategory.api,
-      );
-
-      if (isHealthy) {
-        try {
-          final data = jsonDecode(response.body);
-          Log.debug(
-            '📊 Backend status: ${data['status']}',
-            name: 'ApiService',
-            category: LogCategory.api,
-          );
-        } catch (e) {
-          // Ignore JSON parsing errors for health check
-        }
-      }
-
-      return isHealthy;
-    } catch (e) {
-      Log.error(
-        'API connection test failed: $e',
-        name: 'ApiService',
-        category: LogCategory.api,
-      );
-      return false;
-    }
-  }
-
-  /// Get API configuration info
-  Future<Map<String, dynamic>?> getApiConfig() async {
-    try {
-      final uri = Uri.parse('$_baseUrl/v1/config');
-      final response = await _client
-          .get(uri, headers: await _getHeaders())
-          .timeout(_defaultTimeout);
-
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body) as Map<String, dynamic>;
-      }
-    } catch (e) {
-      Log.error(
-        'Failed to get API config: $e',
-        name: 'ApiService',
-        category: LogCategory.api,
-      );
-    }
-    return null;
-  }
-
-  /// Get rate limit status for an endpoint
-  RateLimitStatus? getRateLimitStatus(String endpoint) {
-    if (_rateLimiter == null) return null;
-    return _rateLimiter.getStatus(endpoint);
   }
 
   /// Close the HTTP client

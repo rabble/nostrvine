@@ -3,14 +3,15 @@
 
 class AppConfig {
   // Backend configuration
+
+  /// Canonical Divine REST API base (funnelcake, `api.divine.video`).
+  ///
+  /// Single source of truth for the Divine backend host. Retained as the base
+  /// for future `/api/*` calls; the `check_backend_host_defaults.sh` CI guard
+  /// pins this (and the other `*BaseUrl` defaults below) to `*.divine.video`.
   static const String backendBaseUrl = String.fromEnvironment(
     'BACKEND_URL',
     defaultValue: 'https://api.divine.video',
-  );
-
-  static const String mediaApiBaseUrl = String.fromEnvironment(
-    'MEDIA_API_URL',
-    defaultValue: 'https://api.openvine.co',
   );
 
   static const String inviteServerBaseUrl = String.fromEnvironment(
@@ -37,24 +38,6 @@ class AppConfig {
     'GH_ACTIONS_PR_PREVIEW',
   );
 
-  // API endpoints
-  static String get healthUrl => '$backendBaseUrl/health';
-  static String get nip96InfoUrl =>
-      '$mediaApiBaseUrl/.well-known/nostr/nip96.json';
-
-  static String get streamUploadRequestUrl =>
-      '$mediaApiBaseUrl/v1/media/request-upload';
-  static String streamStatusUrl(String videoId) =>
-      '$mediaApiBaseUrl/v1/media/status/$videoId';
-  static String get streamWebhookUrl =>
-      '$mediaApiBaseUrl/v1/webhooks/stream-complete';
-
-  // Cloudinary endpoints
-  static String get cloudinarySignedUploadUrl =>
-      '$mediaApiBaseUrl/v1/media/cloudinary/request-upload';
-  static String get cloudinaryWebhookUrl => '$mediaApiBaseUrl/v1/media/webhook';
-  static String get readyEventsUrl => '$mediaApiBaseUrl/v1/media/ready-events';
-
   // App configuration
   static const String appName = 'Divine';
   static const String appVersion = '1.0.0';
@@ -65,10 +48,6 @@ class AppConfig {
   static bool get enableDebugLogs => isDevelopment;
 
   // Feature flags - Multi-agent development coordination
-  static bool get enableStreamCDN => _getBoolFlag('ENABLE_STREAM_CDN', true);
-  static bool get enableCloudinaryUpload =>
-      _getBoolFlag('ENABLE_CLOUDINARY', false);
-  static bool get enableNIP96Upload => _getBoolFlag('ENABLE_NIP96', false);
   static bool get enableOfflineQueue =>
       _getBoolFlag('ENABLE_OFFLINE_QUEUE', true);
 
@@ -97,15 +76,11 @@ class AppConfig {
   static Map<String, dynamic> getConfigSummary() => {
     'environment': environment,
     'backendUrl': backendBaseUrl,
-    'mediaApiUrl': mediaApiBaseUrl,
     'inviteServerUrl': inviteServerBaseUrl,
     'appsDirectoryUrl': appsDirectoryBaseUrl,
     'isDevelopment': isDevelopment,
     'isProduction': isProduction,
     'isGhActionsPrPreviewBuild': isGhActionsPrPreviewBuild,
-    'enableStreamCDN': enableStreamCDN,
-    'enableCloudinaryUpload': enableCloudinaryUpload,
-    'enableNIP96Upload': enableNIP96Upload,
     // External relay configuration DELETED
     // Multi-agent development flags
     'enableCameraOptimizations': enableCameraOptimizations,
