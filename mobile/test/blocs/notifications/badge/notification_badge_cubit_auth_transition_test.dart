@@ -59,9 +59,9 @@ class _BadgeRepositorySync extends ConsumerWidget {
   }
 }
 
-/// Probe widget mirroring `main.dart`'s wiring around the badge cubit: the
-/// [BlocProvider] identity stays stable, and repository flips are forwarded to
-/// the existing cubit so descendants do not remount.
+/// Probe widget mirroring `AppShellBadgeScope`'s wiring around the badge cubit:
+/// the [BlocProvider] identity stays stable, and repository flips are forwarded
+/// to the existing cubit so descendants do not remount.
 class _BadgeProbe extends ConsumerWidget {
   const _BadgeProbe();
 
@@ -83,6 +83,11 @@ class _BadgeProbe extends ConsumerWidget {
 }
 
 void main() {
+  // The eager-create pin (`lazy: false`) for NotificationBadgeCubit lives in
+  // `test/widgets/app_shell_badge_scope_test.dart`, which pumps the real
+  // AppShellBadgeScope. This file covers the cubit's setRepository
+  // auth-transition behaviour: descendants stay mounted while only the
+  // unread-count subscription swaps.
   group('NotificationBadgeCubit auth transition', () {
     setUp(() {
       _mountCount = 0;

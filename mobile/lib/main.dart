@@ -32,12 +32,10 @@ import 'package:openvine/app_update/app_update.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
 import 'package:openvine/blocs/codec_heavy_surface/codec_heavy_surface_cubit.dart';
-import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/blocs/locale/locale_cubit.dart';
-import 'package:openvine/blocs/notifications/badge/notification_badge_cubit.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/config/app_config.dart';
 import 'package:openvine/config/zendesk_config.dart';
@@ -53,7 +51,6 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/resolve_app_ui_locale.dart';
 import 'package:openvine/network/vine_cdn_http_overrides.dart'
     if (dart.library.html) 'package:openvine/utils/platform_io_web.dart';
-import 'package:openvine/notifications/providers/notification_repository_provider.dart';
 import 'package:openvine/notifications/routing/notification_tap_target.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/observability/divine_bloc_observer.dart';
@@ -67,7 +64,6 @@ import 'package:openvine/providers/foreground_idle_warmup_provider.dart';
 import 'package:openvine/providers/individual_video_providers.dart'
     show fvpLiveControllerCount;
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/providers/official_accounts_providers.dart';
 import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/router.dart';
@@ -123,7 +119,7 @@ import 'package:openvine/utils/recoverable_flutter_error.dart';
 import 'package:openvine/utils/sensitive_uri_for_logs.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/app_lifecycle_handler.dart';
-import 'package:openvine/widgets/dm_restriction_gate_sync.dart';
+import 'package:openvine/widgets/app_shell_badge_scope.dart';
 import 'package:openvine/widgets/geo_blocking_gate.dart';
 import 'package:openvine/widgets/upload_failure_sheet.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
@@ -2603,29 +2599,11 @@ class _DivineAppState extends ConsumerState<DivineApp>
           ),
           dispose: (client) => client.dispose(),
         ),
-        BlocProvider(
-          create: (_) => DmUnreadCountCubit(
-            dmRepository: ref.read(dmRepositoryProvider),
-            followRepository: ref.read(followRepositoryProvider),
-            contentBlocklistRepository: ref.read(
-              contentBlocklistRepositoryProvider,
-            ),
-            protectedMinorInboxGate: ref.read(
-              protectedMinorInboxGateProvider,
-            ),
-          ),
-        ),
-        // Notification badge cubit. Keep the provider identity stable so
-        // repository readiness/account switches do not remount MaterialApp
-        // and AppShell; the sync widget below swaps only the cubit's stream
-        // subscription when the repository identity changes.
-        BlocProvider(
-          create: (_) => NotificationBadgeCubit(
-            repository: ref.read(notificationRepositoryProvider),
-          ),
-        ),
       ],
-      child: _InboxBadgeRepositorySync(
+      // The two app-shell badge cubits + their repository-sync listeners live
+      // in AppShellBadgeScope so main.dart and its test pump the exact same
+      // eager (`lazy: false`) wiring that stops the #6115 re-entrant create.
+      child: AppShellBadgeScope(
         child: MultiBlocProvider(
           providers: [
             BlocProvider(
@@ -2756,48 +2734,6 @@ class _DivineAppState extends ConsumerState<DivineApp>
     }
 
     return wrapped; // ProviderScope now wraps DivineApp from outside
-  }
-}
-
-/// Re-points the app-shell badge cubits at fresh repository instances when
-/// their providers rebuild (Nostr/auth becomes ready, account switch).
-///
-/// Both [NotificationBadgeCubit] and [DmUnreadCountCubit] are provided once
-/// above MaterialApp via `ref.read`, so without this they keep their captured
-/// pre-auth repositories and silently undercount. The DM repositories
-/// (`dmRepositoryProvider` / `followRepositoryProvider` /
-/// `contentBlocklistRepositoryProvider`) all `ref.watch(nostrServiceProvider)`
-/// and so rebuild on auth-ready. Swapping only the cubit subscriptions avoids
-/// remounting MaterialApp/AppShell.
-class _InboxBadgeRepositorySync extends ConsumerWidget {
-  const _InboxBadgeRepositorySync({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    ref.listen(notificationRepositoryProvider, (_, repository) {
-      context.read<NotificationBadgeCubit>().setRepository(repository);
-    });
-
-    void syncDmUnread() {
-      context.read<DmUnreadCountCubit>().setRepositories(
-        dmRepository: ref.read(dmRepositoryProvider),
-        followRepository: ref.read(followRepositoryProvider),
-        contentBlocklistRepository: ref.read(
-          contentBlocklistRepositoryProvider,
-        ),
-      );
-    }
-
-    ref
-      ..listen(dmRepositoryProvider, (_, _) => syncDmUnread())
-      ..listen(followRepositoryProvider, (_, _) => syncDmUnread())
-      ..listen(contentBlocklistRepositoryProvider, (_, _) => syncDmUnread());
-
-    // #176: pump DM-restriction flips into the shared inbox gate so the badge
-    // (and any mounted list) re-filters without waiting for a new DM event.
-    return DmRestrictionGateSync(child: child);
   }
 }
 

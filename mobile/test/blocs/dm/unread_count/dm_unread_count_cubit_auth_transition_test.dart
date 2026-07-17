@@ -68,8 +68,8 @@ class _MountProbeState extends State<_MountProbe> {
   Widget build(BuildContext context) => widget.child;
 }
 
-/// Mirrors `main.dart`'s `_InboxBadgeRepositorySync`: forwards new repository
-/// identities to the existing cubit instead of recreating it.
+/// Mirrors `AppShellBadgeScope`'s `_InboxBadgeRepositorySync`: forwards new
+/// repository identities to the existing cubit instead of recreating it.
 class _DmRepositorySync extends ConsumerWidget {
   const _DmRepositorySync({required this.child});
 
@@ -90,7 +90,7 @@ class _DmRepositorySync extends ConsumerWidget {
   }
 }
 
-/// Probe mirroring `main.dart`'s wiring around the badge cubit: the
+/// Probe mirroring `AppShellBadgeScope`'s wiring around the badge cubit: the
 /// [BlocProvider] identity stays stable and repository flips are forwarded to
 /// the existing cubit, so descendants do not remount.
 class _BadgeProbe extends ConsumerWidget {
