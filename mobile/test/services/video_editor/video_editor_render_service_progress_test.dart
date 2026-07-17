@@ -331,6 +331,7 @@ void main() {
               aspectRatio,
               parameters,
               taskId,
+              maxOutputDuration,
             }) async {
               // The composite render receives the materialized (video-backed)
               // clip, not the frames-only one.

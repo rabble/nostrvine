@@ -33,10 +33,13 @@ import 'package:openvine/services/video_editor/video_editor_audio_render.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:pro_image_editor/pro_image_editor.dart'
     show CompleteParameters, WidgetLayer, WidgetLayerExportConfigs;
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../mocks/mock_path_provider_platform.dart';
 
 class _MockDraftStorageService extends Mock implements DraftStorageService {}
 
@@ -2943,24 +2946,24 @@ void main() {
     });
 
     test('container teardown reaps a replaced final rendered file', () async {
-      final suffix = DateTime.now().microsecondsSinceEpoch;
-      final documentsDir = Directory('/tmp/documents')
-        ..createSync(recursive: true);
-      final source = File(p.join(documentsDir.path, 'source-$suffix.mp4'))
+      // Point the documents dir at this group's unique per-test temp dir
+      // instead of the shared global `/tmp/documents`: the draft_storage suite
+      // recursively wipes that path, and races these files away when
+      // `flutter test` runs the suites concurrently.
+      final documentsDir = tempDir;
+      final originalPathProvider = PathProviderPlatform.instance;
+      PathProviderPlatform.instance = MockPathProviderPlatform()
+        ..setApplicationDocumentsPath(documentsDir.path);
+      addTearDown(() => PathProviderPlatform.instance = originalPathProvider);
+
+      final source = File(p.join(documentsDir.path, 'source.mp4'))
         ..writeAsBytesSync(const [1, 2, 3]);
       final oldRendered = File(
-        p.join(documentsDir.path, 'old-rendered-$suffix.mp4'),
+        p.join(documentsDir.path, 'old-rendered.mp4'),
       )..writeAsBytesSync(const [4, 5, 6]);
       final newRendered = File(
-        p.join(documentsDir.path, 'new-rendered-$suffix.mp4'),
+        p.join(documentsDir.path, 'new-rendered.mp4'),
       )..writeAsBytesSync(const [7, 8, 9]);
-      addTearDown(() async {
-        for (final file in [source, oldRendered, newRendered]) {
-          if (file.existsSync()) {
-            await file.delete();
-          }
-        }
-      });
       final realDraftStorage = DraftStorageService(
         draftsDao: database.draftsDao,
         clipsDao: database.clipsDao,
