@@ -332,3 +332,34 @@ class ClipEditorAllClipsVolumeChanged extends ClipEditorEvent {
   @override
   List<Object?> get props => [volume];
 }
+
+// === SAVE TO CLIP LIBRARY ===
+
+/// Save the clip with [clipId] to the persistent clip library as a standalone
+/// clip, so its trimmed section can be reused in an unrelated project (#5322).
+///
+/// The bloc re-encodes the trim window into its own file and persists it,
+/// emitting a [ClipLibrarySaveResult] one-shot signal for the widget layer to
+/// surface. The timeline is left untouched — this only ever adds a copy to the
+/// library.
+///
+/// [clipId] binds the request to a specific clip, captured at dispatch time so
+/// the save still targets the intended clip if the user selects another one
+/// while the render is running.
+///
+/// [overlays] is the editor's overlay state captured at dispatch time, spanning
+/// the whole composition; the handler windows it down to this clip's slice. The
+/// widget layer captures it because only it can reach the editor — see
+/// `ProImageEditorState.captureOverlaySnapshot`. `null` renders the bare video.
+class ClipEditorSaveClipToLibraryRequested extends ClipEditorEvent {
+  const ClipEditorSaveClipToLibraryRequested({
+    required this.clipId,
+    this.overlays,
+  });
+
+  final String clipId;
+  final EditorOverlaySnapshot? overlays;
+
+  @override
+  List<Object?> get props => [clipId, overlays];
+}

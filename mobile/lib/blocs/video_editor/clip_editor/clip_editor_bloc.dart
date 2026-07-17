@@ -4,8 +4,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/video_editor/editor_overlay_snapshot.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/audio_extraction_service.dart';
+import 'package:openvine/services/video_editor/video_editor_clip_library_save_service.dart';
 import 'package:openvine/services/video_editor/video_editor_merge_service.dart';
 import 'package:openvine/services/video_editor/video_editor_reverse_service.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
@@ -59,6 +61,27 @@ typedef MergeClipsFn =
       required String renderId,
     });
 
+/// Function signature matching
+/// [VideoEditorClipLibrarySaveService.flattenClipForLibrary], used as an
+/// injectable seam so tests can swap in a pure-Dart fake that does not touch
+/// `path_provider` or `pro_video_editor` plugins.
+typedef FlattenClipForLibraryFn =
+    Future<DivineVideoClip?> Function({
+      required DivineVideoClip clip,
+      required String renderId,
+      EditorOverlaySnapshot? overlays,
+    });
+
+/// Persists an already-flattened clip to the device's clip library, returning
+/// whether it was stored.
+///
+/// Wired by the widget layer to `ClipManagerNotifier.saveClipToLibrary`. The
+/// library lives behind a Riverpod provider this BLoC cannot reach, so the
+/// dependency arrives as a callback — the same transition seam that already
+/// brings the clip list in (see [ClipEditorBloc]).
+typedef SaveClipToLibraryFn =
+    Future<bool> Function({required DivineVideoClip clip});
+
 /// BLoC for managing video clip editor state.
 ///
 /// Owns a local copy of the clip list so that all mutations (add, remove,
@@ -74,11 +97,13 @@ typedef MergeClipsFn =
 class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
   ClipEditorBloc({
     required this.onFinalClipInvalidated,
+    required SaveClipToLibraryFn saveClipToLibrary,
     AudioExtractionService? audioExtractionService,
     SplitClipFn? splitClip,
     ReverseClipFn? reverseClip,
     TransformClipFn? transformClip,
     MergeClipsFn? mergeClips,
+    FlattenClipForLibraryFn? flattenClipForLibrary,
   }) : _audioExtractionService =
            audioExtractionService ?? AudioExtractionService(),
        _splitClip = splitClip ?? VideoEditorSplitService.splitClip,
@@ -86,6 +111,10 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
        _transformClip =
            transformClip ?? VideoEditorTransformService.transformClip,
        _mergeClips = mergeClips ?? VideoEditorMergeService.mergeClips,
+       _flattenClipForLibrary =
+           flattenClipForLibrary ??
+           VideoEditorClipLibrarySaveService.flattenClipForLibrary,
+       _saveClipToLibrary = saveClipToLibrary,
        super(const ClipEditorState()) {
     // Clip data
     on<ClipEditorInitialized>(_onInitialized);
@@ -144,6 +173,12 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       transformer: droppable(),
     );
 
+    // Save a single clip to the persistent clip library
+    on<ClipEditorSaveClipToLibraryRequested>(
+      _onSaveClipToLibraryRequested,
+      transformer: droppable(),
+    );
+
     // Volume
     on<ClipEditorClipVolumeChanged>(
       _onClipVolumeChanged,
@@ -161,6 +196,8 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
   final ReverseClipFn _reverseClip;
   final TransformClipFn _transformClip;
   final MergeClipsFn _mergeClips;
+  final FlattenClipForLibraryFn _flattenClipForLibrary;
+  final SaveClipToLibraryFn _saveClipToLibrary;
 
   // === CLIP DATA ===
 
@@ -839,6 +876,137 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         clipsVolumeRevision: state.clipsVolumeRevision + 1,
       ),
     );
+  }
+
+  // === SAVE TO CLIP LIBRARY ===
+
+  /// Re-encodes the requested clip's trim window into its own file and stores
+  /// it in the clip library, leaving the timeline untouched.
+  ///
+  /// `droppable` rather than `sequential`: the Save control is disabled for the
+  /// in-flight clip, so a second event here can only come from a double-tap
+  /// race — queuing it would silently store a duplicate copy.
+  Future<void> _onSaveClipToLibraryRequested(
+    ClipEditorSaveClipToLibraryRequested event,
+    Emitter<ClipEditorState> emit,
+  ) async {
+    final index = state.clips.indexWhere((c) => c.id == event.clipId);
+    if (index == -1) return;
+    final clip = state.clips[index];
+
+    // Overlay windows are authored against the editor timeline — every clip at
+    // its full playback length — so this clip's slice of it starts after every
+    // preceding clip's playbackDuration. Window the overlays down to that slice
+    // and rebase to zero, so the standalone render draws exactly what sat over
+    // this clip, at the right moments (#5322).
+    var clipStart = Duration.zero;
+    for (var i = 0; i < index; i++) {
+      clipStart += state.clips[i].playbackDuration;
+    }
+    final overlays = event.overlays?.windowedTo(
+      start: clipStart,
+      end: clipStart + clip.playbackDuration,
+    );
+
+    // Namespaced from the clip id so it can't collide with a concurrent
+    // reverse render keyed on the same clip id.
+    final renderId = '${clip.id}_clip_library_save';
+
+    Log.info(
+      '💾 Saving clip ${clip.id} to the clip library',
+      name: 'ClipEditorBloc',
+      category: LogCategory.video,
+    );
+
+    emit(
+      state.copyWith(
+        isSavingClipToLibrary: true,
+        savingClipToLibraryClipId: clip.id,
+      ),
+    );
+
+    try {
+      final flattened = await _flattenClipForLibrary(
+        clip: clip,
+        renderId: renderId,
+        overlays: overlays,
+      );
+
+      if (flattened == null) {
+        // Matrix-NO: render cancel/failure surfaces as a null output from
+        // VideoEditorRenderService.renderVideo (Network/IO).
+        emit(
+          state.copyWith(
+            isSavingClipToLibrary: false,
+            clearSavingClipToLibraryClipId: true,
+            lastClipLibrarySave: ClipLibrarySaveFailure(),
+          ),
+        );
+        return;
+      }
+
+      // Reconcile after the async gap: the user can delete the source clip
+      // while the ~15-20s re-encode runs. Saving it anyway would resurrect a
+      // clip they just discarded.
+      if (state.clips.every((c) => c.id != clip.id)) {
+        Log.warning(
+          '⚠️ Library save discarded: clip ${clip.id} no longer exists',
+          name: 'ClipEditorBloc',
+          category: LogCategory.video,
+        );
+        emit(
+          state.copyWith(
+            isSavingClipToLibrary: false,
+            clearSavingClipToLibraryClipId: true,
+            lastClipLibrarySave: ClipLibrarySaveDiscarded(),
+          ),
+        );
+        return;
+      }
+
+      final saved = await _saveClipToLibrary(clip: flattened);
+
+      emit(
+        state.copyWith(
+          isSavingClipToLibrary: false,
+          clearSavingClipToLibraryClipId: true,
+          lastClipLibrarySave: saved
+              ? ClipLibrarySaveSuccess()
+              : ClipLibrarySaveFailure(),
+        ),
+      );
+
+      Log.info(
+        saved
+            ? '✅ Saved clip ${clip.id} to the library as ${flattened.id}'
+            : '❌ Library rejected clip ${flattened.id}',
+        name: 'ClipEditorBloc',
+        category: LogCategory.video,
+      );
+    } catch (e, stackTrace) {
+      final error = switch (e) {
+        StateError() || TypeError() || RangeError() => Reportable(
+          e,
+          context: '_onSaveClipToLibraryRequested',
+        ),
+        _ => e,
+      };
+      addError(error, stackTrace);
+      Log.error(
+        '❌ Failed to save clip to library: $e',
+        name: 'ClipEditorBloc',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      emit(
+        state.copyWith(
+          isSavingClipToLibrary: false,
+          clearSavingClipToLibraryClipId: true,
+          lastClipLibrarySave: ClipLibrarySaveFailure(),
+        ),
+      );
+    }
   }
 
   // === REVERSE ===

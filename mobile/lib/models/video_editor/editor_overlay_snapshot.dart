@@ -1,0 +1,124 @@
+// ABOUTME: Snapshot of the editor's overlays (layers, filters, tune, blur)
+// ABOUTME: Windows them down to one clip's slice of the editor timeline
+
+import 'dart:ui';
+
+import 'package:pro_image_editor/pro_image_editor.dart';
+
+/// The overlays sitting over the composition at one moment: captured layers
+/// (text / stickers / drawings), colour filters, tune adjustments and blur.
+///
+/// Overlay time windows are authored on the **editor timeline** — every clip at
+/// its full playback length, `sum(clip.playbackDuration)` — which is the same
+/// axis `TransitionTimelineMap` maps from. [windowedTo] slices that axis down to
+/// a single clip so the clip can be rendered on its own with exactly the
+/// overlays that were over it.
+class EditorOverlaySnapshot {
+  const EditorOverlaySnapshot({
+    this.capturedLayers = const [],
+    this.filterStates = const [],
+    this.tuneAdjustments = const [],
+    this.blur = 0,
+    this.bodySize,
+  });
+
+  /// Overlay layers, each already rasterized to bytes.
+  final List<ExportedLayer> capturedLayers;
+
+  /// Colour filters (sepia, noir, …), each with its own time window.
+  final List<FilterState> filterStates;
+
+  /// Tune adjustments (brightness, contrast, …), each with its own window.
+  final List<TuneAdjustmentMatrix> tuneAdjustments;
+
+  /// Blur strength applied to the whole composition. Carries no time window.
+  final double blur;
+
+  /// The editor body size the layers were laid out against. Layer offsets are
+  /// meaningless without it, so the render skips layers when it is `null`.
+  final Size? bodySize;
+
+  /// Whether there is nothing to bake, so the render can skip the overlay pass.
+  bool get isEmpty =>
+      capturedLayers.isEmpty &&
+      filterStates.isEmpty &&
+      tuneAdjustments.isEmpty &&
+      blur == 0;
+
+  /// Returns the overlays visible between [start] and [end] on the editor
+  /// timeline, rebased so the window starts at zero.
+  ///
+  /// Overlays that don't reach into the window are dropped; overlays that only
+  /// partly cover it are clamped to it. A `null` start/end means "unbounded" —
+  /// after windowing every bound is concrete, because an overlay that outlives
+  /// the window still ends where the clip does.
+  ///
+  /// [blur] and [bodySize] carry through untouched: blur has no time window and
+  /// body size is a layout constant, not a timeline value.
+  EditorOverlaySnapshot windowedTo({
+    required Duration start,
+    required Duration end,
+  }) {
+    if (end <= start) {
+      return EditorOverlaySnapshot(blur: blur, bodySize: bodySize);
+    }
+
+    return EditorOverlaySnapshot(
+      capturedLayers: [
+        for (final item in capturedLayers)
+          if (_windowFor(item.layer.startTime, item.layer.endTime, start, end)
+              case final w?)
+            ExportedLayer(
+              // copyWith returns a base Layer, dropping the text/paint subtype.
+              // That is fine — the layer is already rasterized into `bytes`, and
+              // the render only reads offset, time window and animations back
+              // off it. Copying (rather than mutating) matters: Layer.startTime
+              // is mutable and this instance is the editor's live layer.
+              layer: item.layer.copyWith(startTime: w.start, endTime: w.end),
+              bytes: item.bytes,
+              logicalSize: item.logicalSize,
+            ),
+      ],
+      filterStates: [
+        for (final filter in filterStates)
+          if (_windowFor(filter.startTime, filter.endTime, start, end)
+              case final w?)
+            filter.copyWith(startTime: w.start, endTime: w.end),
+      ],
+      tuneAdjustments: [
+        for (final tune in tuneAdjustments)
+          if (_windowFor(tune.startTime, tune.endTime, start, end)
+              case final w?)
+            tune.copyWith(startTime: w.start, endTime: w.end),
+      ],
+      blur: blur,
+      bodySize: bodySize,
+    );
+  }
+
+  /// Intersects an overlay's `[from, to]` window (either side `null` for
+  /// unbounded) with `[windowStart, windowEnd]`, rebased to the window's start.
+  ///
+  /// Returns `null` when the overlay never shows inside the window.
+  static ({Duration start, Duration end})? _windowFor(
+    Duration? from,
+    Duration? to,
+    Duration windowStart,
+    Duration windowEnd,
+  ) {
+    final effectiveFrom = from ?? Duration.zero;
+    // An unbounded end runs to the window's end by definition.
+    final effectiveTo = to ?? windowEnd;
+
+    // Touching the boundary is not overlapping: an overlay that ends exactly
+    // where the clip starts was never over it.
+    if (effectiveFrom >= windowEnd || effectiveTo <= windowStart) return null;
+
+    final clampedFrom = effectiveFrom < windowStart
+        ? windowStart
+        : effectiveFrom;
+    final clampedTo = effectiveTo > windowEnd ? windowEnd : effectiveTo;
+
+    return (start: clampedFrom - windowStart, end: clampedTo - windowStart);
+  }
+}

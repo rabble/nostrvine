@@ -39,6 +39,7 @@ void main() {
             aspectRatio,
             parameters,
             taskId,
+            maxOutputDuration,
           }) async {
             called = true;
             return '/out.mp4';
@@ -66,6 +67,7 @@ void main() {
               aspectRatio,
               parameters,
               taskId,
+              maxOutputDuration,
             }) async {
               forwardedClips = clips;
               forwardedTaskId = taskId;
@@ -96,6 +98,7 @@ void main() {
     );
 
     test('keeps the full merged duration uncapped (no export limit)', () async {
+      var capWasSet = true;
       VideoEditorRenderService.renderVideoOverride =
           ({
             required clips,
@@ -103,7 +106,11 @@ void main() {
             aspectRatio,
             parameters,
             taskId,
-          }) async => '/documents/merged.mp4';
+            maxOutputDuration,
+          }) async {
+            capWasSet = maxOutputDuration != null;
+            return '/documents/merged.mp4';
+          };
 
       // 5s + 5s = 10s, well beyond the ~6.3s final-export cap, which must not
       // truncate an intermediate merged clip.
@@ -116,6 +123,13 @@ void main() {
       );
 
       expect(result!.duration, equals(const Duration(seconds: 10)));
+      expect(
+        capWasSet,
+        isFalse,
+        reason:
+            'the render must be uncapped, or the file is truncated at '
+            'the export limit even though the clip claims the full duration',
+      );
     });
 
     test('accounts for playback speed when summing duration', () async {
@@ -126,6 +140,7 @@ void main() {
             aspectRatio,
             parameters,
             taskId,
+            maxOutputDuration,
           }) async => '/documents/merged.mp4';
 
       // 4s at 2x = 2s playback; 2s at 1x = 2s → 4s total.
@@ -152,6 +167,7 @@ void main() {
             aspectRatio,
             parameters,
             taskId,
+            maxOutputDuration,
           }) async => null;
 
       final result = await VideoEditorMergeService.mergeClips(

@@ -32,6 +32,7 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
       clipCount,
       isExtractingAudioCurrentClip,
       isSplittingCurrentClip,
+      isSavingCurrentClipToLibrary,
       isReversed,
     ) = context.select((ClipEditorBloc b) {
       final state = b.state;
@@ -50,6 +51,9 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
         state.isSplitting &&
             currentClipId != null &&
             state.splittingClipId == currentClipId,
+        state.isSavingClipToLibrary &&
+            currentClipId != null &&
+            state.savingClipToLibraryClipId == currentClipId,
         hasClip && state.clips[index].reversed,
       );
     });
@@ -66,6 +70,8 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
       onTransform: () => _transformClip(context),
       onExtractAudio: () => _requestExtractAudio(context),
       onReversed: () => _reverseClip(context),
+      onSaveToLibrary: () => _saveClipToLibrary(context),
+      isSavingToLibrary: isSavingCurrentClipToLibrary,
       onMultiSelect: isLastClip ? null : () => _startMultiSelect(context),
       isReversed: isReversed,
       isExtractingAudio: isExtractingAudioCurrentClip,
@@ -188,6 +194,38 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
       ClipEditorAudioExtractionRequested(
         clipId: state.clips[state.currentClipIndex].id,
         clipTitle: context.l10n.videoEditorClipAudioTitle,
+      ),
+    );
+  }
+
+  Future<void> _saveClipToLibrary(BuildContext context) async {
+    final bloc = context.read<ClipEditorBloc>();
+    final state = bloc.state;
+    if (state.currentClipIndex < 0 ||
+        state.currentClipIndex >= state.clips.length) {
+      return;
+    }
+    final clipId = state.clips[state.currentClipIndex].id;
+
+    // Whatever sits over the clip — text, stickers, drawings, filters, tune,
+    // blur — has to be baked in too, so the saved clip looks the way it looks
+    // on the timeline. Only the editor holds that state, and it hands it over
+    // in CompleteParameters solely on Done, so capture it here; the BLoC then
+    // windows it down to this clip's slice of the timeline.
+    //
+    // No editor means the route is already gone (a gesture that resolved after
+    // the pop). Bail rather than save the bare video: a clip silently missing
+    // the text and filters the user was looking at is worse than no clip.
+    final editor = _editorOrNull(context);
+    if (editor == null) return;
+    final overlays = await editor.captureOverlaySnapshot();
+
+    bloc.add(
+      // Bind the request to this clip so the render still targets the intended
+      // clip even if the selection changes while it runs.
+      ClipEditorSaveClipToLibraryRequested(
+        clipId: clipId,
+        overlays: overlays,
       ),
     );
   }

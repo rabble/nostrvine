@@ -18,6 +18,8 @@ class VideoEditorTimelineControls extends StatelessWidget {
     this.onExtractAudio,
     this.isExtractingAudio = false,
     this.isSplitting = false,
+    this.onSaveToLibrary,
+    this.isSavingToLibrary = false,
     this.onMultiSelect,
     this.multiSelectSemanticLabel,
     super.key,
@@ -41,6 +43,12 @@ class VideoEditorTimelineControls extends StatelessWidget {
   /// Split action disabled (rather than removing it) so the control stays in
   /// place instead of confusingly disappearing mid-operation.
   final bool isSplitting;
+
+  /// Saves the active clip to the clip library as a standalone clip.
+  final VoidCallback? onSaveToLibrary;
+
+  /// Whether the active clip is currently being re-encoded for the library.
+  final bool isSavingToLibrary;
   final VoidCallback? onMultiSelect;
 
   /// Overrides the multi-select button's accessibility label. Defaults to the
@@ -154,6 +162,14 @@ class VideoEditorTimelineControls extends StatelessWidget {
                           .videoEditorExtractAudioFromClipSemanticLabel,
                       onPressed: isExtractingAudio ? null : onExtractAudio,
                       isLoading: isExtractingAudio,
+                    ),
+                  if (onSaveToLibrary != null)
+                    _ControlButton(
+                      icon: .save,
+                      label: context.l10n.videoEditorSaveClip,
+                      semanticLabel: context.l10n.videoEditorSaveSelectedClip,
+                      onPressed: isSavingToLibrary ? null : onSaveToLibrary,
+                      isLoading: isSavingToLibrary,
                     ),
                   if (onMultiSelect != null)
                     _ControlButton(

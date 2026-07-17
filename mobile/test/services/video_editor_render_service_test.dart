@@ -210,6 +210,7 @@ void main() {
               aspectRatio,
               parameters,
               taskId,
+              maxOutputDuration,
             }) async {
               expect(usePersistentStorage, isTrue);
               expect(taskId, equals('composite-sequence-test'));

@@ -367,5 +367,61 @@ void main() {
         () => bloc.add(const ClipEditorMultiSelectStarted('clip-1')),
       ).called(1);
     });
+
+    testWidgets('library save is a no-op when the editor scope is gone', (
+      tester,
+    ) async {
+      final controls = await pumpWithMissingEditorScope(tester);
+
+      controls.onSaveToLibrary?.call();
+      await tester.pumpAndSettle();
+
+      // The overlays over the clip can only be read off the editor. With it
+      // gone they are unreachable, and saving the bare video would hand the
+      // user a clip missing the text/filters they were looking at.
+      verifyNever(
+        () => bloc.add(any(that: isA<ClipEditorSaveClipToLibraryRequested>())),
+      );
+    });
+
+    testWidgets('Save shows a spinner while this clip is being saved', (
+      tester,
+    ) async {
+      when(() => bloc.state).thenReturn(
+        ClipEditorState(
+          clips: [clip('clip-1')],
+          isSavingClipToLibrary: true,
+          savingClipToLibraryClipId: 'clip-1',
+        ),
+      );
+
+      await tester.pumpWidget(build());
+
+      final controls = tester.widget<VideoEditorTimelineControls>(
+        find.byType(VideoEditorTimelineControls),
+      );
+      expect(controls.isSavingToLibrary, isTrue);
+    });
+
+    testWidgets('Save stays available while a different clip is saving', (
+      tester,
+    ) async {
+      when(() => bloc.state).thenReturn(
+        ClipEditorState(
+          clips: [clip('clip-1'), clip('clip-2')],
+          currentClipIndex: 1,
+          isSavingClipToLibrary: true,
+          savingClipToLibraryClipId: 'clip-1',
+        ),
+      );
+
+      await tester.pumpWidget(build());
+
+      final controls = tester.widget<VideoEditorTimelineControls>(
+        find.byType(VideoEditorTimelineControls),
+      );
+      expect(controls.onSaveToLibrary, isNotNull);
+      expect(controls.isSavingToLibrary, isFalse);
+    });
   });
 }

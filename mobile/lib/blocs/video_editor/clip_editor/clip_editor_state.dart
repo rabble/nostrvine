@@ -37,6 +37,9 @@ class ClipEditorState extends Equatable {
     this.mergingRenderId,
     this.lastMergeResult,
     this.lastClipsRemovedResult,
+    this.isSavingClipToLibrary = false,
+    this.savingClipToLibraryClipId,
+    this.lastClipLibrarySave,
   });
 
   /// Local copy of clips managed by this editor session.
@@ -181,6 +184,21 @@ class ClipEditorState extends Equatable {
   /// rebase timeline markers and commit the new clip list to editor history.
   final ClipsRemovedResult? lastClipsRemovedResult;
 
+  /// Whether a save-to-clip-library re-encode is currently running.
+  final bool isSavingClipToLibrary;
+
+  /// Id of the clip being saved to the library.
+  ///
+  /// Non-`null` while [isSavingClipToLibrary] is `true`. Lets the controls
+  /// disable Save for *that* clip only — the user can keep editing, and save,
+  /// other clips while this render runs.
+  final String? savingClipToLibraryClipId;
+
+  /// Last completed save-to-clip-library result.
+  ///
+  /// Consumed by the widget layer to surface a success/failure snackbar.
+  final ClipLibrarySaveResult? lastClipLibrarySave;
+
   /// Total wall-clock duration of all clips (respecting trim and playback speed).
   Duration get totalDuration =>
       clips.fold(Duration.zero, (sum, clip) => sum + clip.playbackDuration);
@@ -223,6 +241,10 @@ class ClipEditorState extends Equatable {
     bool clearMergingRenderId = false,
     ClipMergeResult? lastMergeResult,
     ClipsRemovedResult? lastClipsRemovedResult,
+    bool? isSavingClipToLibrary,
+    String? savingClipToLibraryClipId,
+    bool clearSavingClipToLibraryClipId = false,
+    ClipLibrarySaveResult? lastClipLibrarySave,
   }) {
     return ClipEditorState(
       clips: clips ?? this.clips,
@@ -269,6 +291,12 @@ class ClipEditorState extends Equatable {
       lastMergeResult: lastMergeResult ?? this.lastMergeResult,
       lastClipsRemovedResult:
           lastClipsRemovedResult ?? this.lastClipsRemovedResult,
+      isSavingClipToLibrary:
+          isSavingClipToLibrary ?? this.isSavingClipToLibrary,
+      savingClipToLibraryClipId: clearSavingClipToLibraryClipId
+          ? null
+          : (savingClipToLibraryClipId ?? this.savingClipToLibraryClipId),
+      lastClipLibrarySave: lastClipLibrarySave ?? this.lastClipLibrarySave,
     );
   }
 
@@ -307,6 +335,10 @@ class ClipEditorState extends Equatable {
     identityHashCode(lastMergeResult),
     // Identity-only: each ClipsRemovedResult is a fresh instance per removal.
     identityHashCode(lastClipsRemovedResult),
+    isSavingClipToLibrary,
+    savingClipToLibraryClipId,
+    // Identity-only: each ClipLibrarySaveResult is a fresh instance per save.
+    identityHashCode(lastClipLibrarySave),
   ];
 }
 
@@ -448,3 +480,25 @@ final class ClipsRemovedResult {
 
   final List<DivineVideoClip> previousClips;
 }
+
+// === CLIP LIBRARY SAVE RESULT ===
+
+/// One-shot signal describing the outcome of a save-to-clip-library attempt.
+///
+/// Emitted into [ClipEditorState.lastClipLibrarySave] after each attempt.
+/// Identity-compared so the scaffold [BlocListener] fires exactly once per
+/// attempt even when the same outcome repeats.
+sealed class ClipLibrarySaveResult {}
+
+/// The clip was re-encoded and stored in the library.
+final class ClipLibrarySaveSuccess extends ClipLibrarySaveResult {}
+
+/// The re-encode or the library write failed; widget should show a snackbar.
+final class ClipLibrarySaveFailure extends ClipLibrarySaveResult {}
+
+/// The re-encode finished but the source clip had been removed from the
+/// timeline meanwhile, so the result was dropped.
+///
+/// Silent by design: the user deleted the clip they asked to save, so neither
+/// a success nor a failure snackbar would make sense.
+final class ClipLibrarySaveDiscarded extends ClipLibrarySaveResult {}

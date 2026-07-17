@@ -46,7 +46,10 @@ void main() {
       prefs = await SharedPreferences.getInstance();
       mainBloc = VideoEditorMainBloc();
       overlayBloc = TimelineOverlayBloc();
-      clipBloc = ClipEditorBloc(onFinalClipInvalidated: () {});
+      clipBloc = ClipEditorBloc(
+        onFinalClipInvalidated: () {},
+        saveClipToLibrary: ({required clip}) async => false,
+      );
       filterBloc = VideoEditorFilterBloc();
     });
 

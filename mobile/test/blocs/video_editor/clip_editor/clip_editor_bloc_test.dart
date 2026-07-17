@@ -2,17 +2,22 @@
 // ABOUTME: trimming, and split operations.
 
 import 'dart:async';
+import 'dart:typed_data';
+import 'dart:ui';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/video_editor/editor_overlay_snapshot.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/audio_extraction_service.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import 'package:pro_image_editor/pro_image_editor.dart'
+    show ExportedLayer, Layer;
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 class _MockAudioExtractionService extends Mock
@@ -209,6 +214,38 @@ Future<DivineVideoClip?> _fakeMergeClipsThrow({
   throw StateError('merge boom');
 }
 
+/// Pure-Dart fake of
+/// [VideoEditorClipLibrarySaveService.flattenClipForLibrary]. Returns a fresh
+/// clip carrying no residual trim, as the real re-encode does.
+Future<DivineVideoClip?> _fakeFlattenClipForLibrary({
+  required DivineVideoClip clip,
+  required String renderId,
+  EditorOverlaySnapshot? overlays,
+}) async {
+  return _createClip(
+    id: 'flattened-${clip.id}',
+    duration: clip.playbackDuration,
+  );
+}
+
+/// Fake flatten that fails (render cancelled / null output path).
+Future<DivineVideoClip?> _fakeFlattenClipForLibraryFail({
+  required DivineVideoClip clip,
+  required String renderId,
+  EditorOverlaySnapshot? overlays,
+}) async {
+  return null;
+}
+
+/// Fake flatten that throws — exercises the BLoC's catch / [Reportable] path.
+Future<DivineVideoClip?> _fakeFlattenClipForLibraryThrow({
+  required DivineVideoClip clip,
+  required String renderId,
+  EditorOverlaySnapshot? overlays,
+}) async {
+  throw StateError('flatten boom');
+}
+
 void main() {
   group(ClipEditorBloc, () {
     late List<DivineVideoClip> twoClips;
@@ -243,6 +280,8 @@ void main() {
       ReverseClipFn? reverseClip,
       TransformClipFn? transformClip,
       MergeClipsFn? mergeClips,
+      FlattenClipForLibraryFn? flattenClipForLibrary,
+      SaveClipToLibraryFn? saveClipToLibrary,
     }) {
       return ClipEditorBloc(
         onFinalClipInvalidated: () {},
@@ -251,6 +290,11 @@ void main() {
         reverseClip: reverseClip,
         transformClip: transformClip,
         mergeClips: mergeClips,
+        flattenClipForLibrary: flattenClipForLibrary,
+        // Defaults to "the library rejected it" so a test that never opts in
+        // can't silently pass a save it didn't wire up.
+        saveClipToLibrary:
+            saveClipToLibrary ?? ({required clip}) async => false,
       );
     }
 
@@ -2974,6 +3018,321 @@ void main() {
           );
           expect(bloc.state.isMerging, isFalse);
           expect(bloc.state.isMultiSelectMode, isFalse);
+        },
+      );
+    });
+
+    group('ClipEditorSaveClipToLibraryRequested', () {
+      late List<DivineVideoClip> twoClips;
+      late List<DivineVideoClip> savedToLibrary;
+      late Completer<DivineVideoClip?> flattenCompleter;
+
+      /// Records what the BLoC handed to the library.
+      Future<bool> recordSave({required DivineVideoClip clip}) async {
+        savedToLibrary.add(clip);
+        return true;
+      }
+
+      setUp(() {
+        twoClips = [
+          _createClip(id: 'a', duration: const Duration(seconds: 2)),
+          _createClip(id: 'b', duration: const Duration(seconds: 4)),
+        ];
+        savedToLibrary = [];
+      });
+
+      group('overlay windowing', () {
+        late EditorOverlaySnapshot? forwardedOverlays;
+
+        /// Captures the overlays the BLoC windowed for the render.
+        Future<DivineVideoClip?> recordOverlays({
+          required DivineVideoClip clip,
+          required String renderId,
+          EditorOverlaySnapshot? overlays,
+        }) async {
+          forwardedOverlays = overlays;
+          return _createClip(id: 'flattened-${clip.id}');
+        }
+
+        /// A layer spanning 3s-4s of the editor timeline. Clip 'a' occupies
+        /// 0s-2s and clip 'b' 2s-6s, so this sits over 'b' only — one second in.
+        EditorOverlaySnapshot snapshotWithLayerAt3to4() {
+          return EditorOverlaySnapshot(
+            bodySize: const Size(100, 200),
+            capturedLayers: [
+              ExportedLayer(
+                layer: Layer(
+                  id: 'text',
+                  startTime: const Duration(seconds: 3),
+                  endTime: const Duration(seconds: 4),
+                ),
+                bytes: Uint8List.fromList([1]),
+                logicalSize: const Size(10, 10),
+              ),
+            ],
+          );
+        }
+
+        setUp(() => forwardedOverlays = null);
+
+        blocTest<ClipEditorBloc, ClipEditorState>(
+          'rebases a layer onto the saved clip position on the timeline',
+          build: () => buildBloc(
+            flattenClipForLibrary: recordOverlays,
+            saveClipToLibrary: recordSave,
+          ),
+          seed: () => ClipEditorState(clips: twoClips),
+          act: (bloc) => bloc.add(
+            ClipEditorSaveClipToLibraryRequested(
+              clipId: 'b',
+              overlays: snapshotWithLayerAt3to4(),
+            ),
+          ),
+          verify: (bloc) {
+            // Clip 'b' starts 2s into the composition, so a layer at 3s-4s
+            // must land at 1s-2s of the standalone clip.
+            final layer = forwardedOverlays!.capturedLayers.single.layer;
+            expect(layer.startTime, equals(const Duration(seconds: 1)));
+            expect(layer.endTime, equals(const Duration(seconds: 2)));
+          },
+        );
+
+        blocTest<ClipEditorBloc, ClipEditorState>(
+          'drops a layer that was never over the saved clip',
+          build: () => buildBloc(
+            flattenClipForLibrary: recordOverlays,
+            saveClipToLibrary: recordSave,
+          ),
+          seed: () => ClipEditorState(clips: twoClips),
+          act: (bloc) => bloc.add(
+            ClipEditorSaveClipToLibraryRequested(
+              clipId: 'a',
+              overlays: snapshotWithLayerAt3to4(),
+            ),
+          ),
+          verify: (bloc) {
+            // Clip 'a' is 0s-2s; the layer only shows from 3s.
+            expect(forwardedOverlays!.capturedLayers, isEmpty);
+          },
+        );
+
+        blocTest<ClipEditorBloc, ClipEditorState>(
+          'forwards no overlays when the editor had none to capture',
+          build: () => buildBloc(
+            flattenClipForLibrary: recordOverlays,
+            saveClipToLibrary: recordSave,
+          ),
+          seed: () => ClipEditorState(clips: twoClips),
+          act: (bloc) => bloc.add(
+            const ClipEditorSaveClipToLibraryRequested(clipId: 'a'),
+          ),
+          verify: (bloc) {
+            expect(forwardedOverlays, isNull);
+          },
+        );
+      });
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'stores the flattened clip and emits success',
+        build: () => buildBloc(
+          flattenClipForLibrary: _fakeFlattenClipForLibrary,
+          saveClipToLibrary: recordSave,
+        ),
+        seed: () => ClipEditorState(clips: twoClips),
+        act: (bloc) => bloc.add(
+          const ClipEditorSaveClipToLibraryRequested(clipId: 'a'),
+        ),
+        verify: (bloc) {
+          expect(savedToLibrary.map((c) => c.id), equals(['flattened-a']));
+          expect(bloc.state.lastClipLibrarySave, isA<ClipLibrarySaveSuccess>());
+          expect(bloc.state.isSavingClipToLibrary, isFalse);
+          expect(bloc.state.savingClipToLibraryClipId, isNull);
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'leaves the timeline untouched — saving only copies to the library',
+        build: () => buildBloc(
+          flattenClipForLibrary: _fakeFlattenClipForLibrary,
+          saveClipToLibrary: recordSave,
+        ),
+        seed: () => ClipEditorState(clips: twoClips, currentClipIndex: 1),
+        act: (bloc) => bloc.add(
+          const ClipEditorSaveClipToLibraryRequested(clipId: 'b'),
+        ),
+        verify: (bloc) {
+          expect(bloc.state.clips.map((c) => c.id), equals(['a', 'b']));
+          expect(bloc.state.currentClipIndex, equals(1));
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'saves the clip named by the event, not the current selection',
+        build: () => buildBloc(
+          flattenClipForLibrary: _fakeFlattenClipForLibrary,
+          saveClipToLibrary: recordSave,
+        ),
+        seed: () => ClipEditorState(clips: twoClips, currentClipIndex: 1),
+        act: (bloc) => bloc.add(
+          const ClipEditorSaveClipToLibraryRequested(clipId: 'a'),
+        ),
+        verify: (bloc) {
+          expect(savedToLibrary.map((c) => c.id), equals(['flattened-a']));
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'does nothing when the requested clip does not exist',
+        build: () => buildBloc(
+          flattenClipForLibrary: _fakeFlattenClipForLibrary,
+          saveClipToLibrary: recordSave,
+        ),
+        seed: () => ClipEditorState(clips: twoClips),
+        act: (bloc) => bloc.add(
+          const ClipEditorSaveClipToLibraryRequested(clipId: 'missing'),
+        ),
+        verify: (bloc) {
+          expect(savedToLibrary, isEmpty);
+          expect(bloc.state.lastClipLibrarySave, isNull);
+          expect(bloc.state.isSavingClipToLibrary, isFalse);
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'emits failure and stores nothing when the re-encode fails',
+        build: () => buildBloc(
+          flattenClipForLibrary: _fakeFlattenClipForLibraryFail,
+          saveClipToLibrary: recordSave,
+        ),
+        seed: () => ClipEditorState(clips: twoClips),
+        act: (bloc) => bloc.add(
+          const ClipEditorSaveClipToLibraryRequested(clipId: 'a'),
+        ),
+        verify: (bloc) {
+          expect(savedToLibrary, isEmpty);
+          expect(bloc.state.lastClipLibrarySave, isA<ClipLibrarySaveFailure>());
+          expect(bloc.state.isSavingClipToLibrary, isFalse);
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'emits failure when the library rejects the write',
+        build: () => buildBloc(
+          flattenClipForLibrary: _fakeFlattenClipForLibrary,
+          saveClipToLibrary: ({required clip}) async => false,
+        ),
+        seed: () => ClipEditorState(clips: twoClips),
+        act: (bloc) => bloc.add(
+          const ClipEditorSaveClipToLibraryRequested(clipId: 'a'),
+        ),
+        verify: (bloc) {
+          expect(bloc.state.lastClipLibrarySave, isA<ClipLibrarySaveFailure>());
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'reports the error and emits failure when the re-encode throws',
+        build: () => buildBloc(
+          flattenClipForLibrary: _fakeFlattenClipForLibraryThrow,
+          saveClipToLibrary: recordSave,
+        ),
+        seed: () => ClipEditorState(clips: twoClips),
+        act: (bloc) => bloc.add(
+          const ClipEditorSaveClipToLibraryRequested(clipId: 'a'),
+        ),
+        errors: () => [
+          isA<Reportable<Object>>().having(
+            (r) => r.unwrap(),
+            'unwrap',
+            isA<StateError>(),
+          ),
+        ],
+        verify: (bloc) {
+          expect(savedToLibrary, isEmpty);
+          expect(bloc.state.lastClipLibrarySave, isA<ClipLibrarySaveFailure>());
+          expect(bloc.state.isSavingClipToLibrary, isFalse);
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'discards the result when the source clip is removed mid-render',
+        build: () => buildBloc(
+          flattenClipForLibrary:
+              ({required clip, required renderId, overlays}) =>
+                  flattenCompleter.future,
+          saveClipToLibrary: recordSave,
+        ),
+        seed: () => ClipEditorState(clips: twoClips),
+        act: (bloc) async {
+          flattenCompleter = Completer<DivineVideoClip?>();
+          bloc.add(const ClipEditorSaveClipToLibraryRequested(clipId: 'a'));
+          // Let the save start (emits isSavingClipToLibrary) and suspend.
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(const ClipEditorClipRemoved('a'));
+          await Future<void>.delayed(Duration.zero);
+          flattenCompleter.complete(
+            _createClip(id: 'flattened-a'),
+          );
+        },
+        verify: (bloc) {
+          // The user deleted the clip they asked to save — storing it anyway
+          // would resurrect it in the library.
+          expect(savedToLibrary, isEmpty);
+          expect(
+            bloc.state.lastClipLibrarySave,
+            isA<ClipLibrarySaveDiscarded>(),
+          );
+          expect(bloc.state.isSavingClipToLibrary, isFalse);
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'drops a second request while one is in flight (no duplicate copy)',
+        build: () => buildBloc(
+          flattenClipForLibrary:
+              ({required clip, required renderId, overlays}) =>
+                  flattenCompleter.future,
+          saveClipToLibrary: recordSave,
+        ),
+        seed: () => ClipEditorState(clips: twoClips),
+        act: (bloc) async {
+          flattenCompleter = Completer<DivineVideoClip?>();
+          bloc.add(const ClipEditorSaveClipToLibraryRequested(clipId: 'a'));
+          await Future<void>.delayed(Duration.zero);
+          // A double-tap while the first render is still running.
+          bloc.add(const ClipEditorSaveClipToLibraryRequested(clipId: 'a'));
+          await Future<void>.delayed(Duration.zero);
+          flattenCompleter.complete(
+            _createClip(id: 'flattened-a'),
+          );
+          await Future<void>.delayed(Duration.zero);
+        },
+        verify: (bloc) {
+          expect(savedToLibrary.map((c) => c.id), equals(['flattened-a']));
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'marks the in-flight clip while the re-encode runs',
+        build: () => buildBloc(
+          flattenClipForLibrary:
+              ({required clip, required renderId, overlays}) =>
+                  flattenCompleter.future,
+          saveClipToLibrary: recordSave,
+        ),
+        seed: () => ClipEditorState(clips: twoClips),
+        act: (bloc) async {
+          flattenCompleter = Completer<DivineVideoClip?>();
+          bloc.add(const ClipEditorSaveClipToLibraryRequested(clipId: 'a'));
+          await Future<void>.delayed(Duration.zero);
+          // Assert mid-flight: the controls disable Save for this clip only.
+          expect(bloc.state.isSavingClipToLibrary, isTrue);
+          expect(bloc.state.savingClipToLibraryClipId, equals('a'));
+          flattenCompleter.complete(null);
+        },
+        verify: (bloc) {
+          expect(bloc.state.isSavingClipToLibrary, isFalse);
+          expect(bloc.state.savingClipToLibraryClipId, isNull);
         },
       );
     });
