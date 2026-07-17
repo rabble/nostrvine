@@ -6,6 +6,7 @@ import 'package:blurhash_dart/blurhash_dart.dart' as blurhash_dart;
 import 'package:blurhash_service/blurhash_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
+import 'package:unified_logger/unified_logger.dart';
 
 /// Creates a solid-colour JPEG with the given [width] and [height].
 Uint8List _makeJpeg({required int width, required int height}) {
@@ -98,6 +99,32 @@ void main() {
       expect(BlurhashService.decodeBlurhash(''), isNull);
       expect(BlurhashService.decodeBlurhash('short'), isNull);
     });
+
+    test(
+      'logs an error when a valid-charset hash has a mismatched length',
+      () async {
+        await LogCaptureService().clearAllLogs();
+
+        // A real hash truncated mid-string: passes the charset/length-floor
+        // check but its length no longer matches its declared component count,
+        // so decoding bails. Corrupt/truncated tags must stay observable.
+        const truncatedHash = 'L6Pj0^jE.AyE_3t7t7R*';
+
+        expect(BlurhashService.decodeBlurhash(truncatedHash), isNull);
+
+        final errors = LogCaptureService()
+            .getRecentLogs(minLevel: LogLevel.error)
+            .where((entry) => entry.name == 'BlurhashService')
+            .toList();
+        expect(
+          errors,
+          isNotEmpty,
+          reason:
+              'a malformed blurhash must emit an error log, not fail '
+              'silently',
+        );
+      },
+    );
 
     test('blurhash data provides gradient', () {
       final testBlurhash = BlurhashService.getDefaultVineBlurhash();

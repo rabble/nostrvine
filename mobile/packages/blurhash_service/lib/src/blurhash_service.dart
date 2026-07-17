@@ -141,7 +141,16 @@ class BlurhashService {
     final sizeFlag = _decode83(blurhash, 0, 1);
     final numCompX = (sizeFlag % 9) + 1;
     final numCompY = (sizeFlag ~/ 9) + 1;
-    if (blurhash.length != 4 + 2 * numCompX * numCompY) return null;
+    final expectedLength = 4 + 2 * numCompX * numCompY;
+    if (blurhash.length != expectedLength) {
+      Log.error(
+        'Malformed blurhash: length ${blurhash.length} does not match the '
+        'declared ${numCompX}x$numCompY components (expected $expectedLength)',
+        name: 'BlurhashService',
+        category: LogCategory.system,
+      );
+      return null;
+    }
 
     final maxAc = (_decode83(blurhash, 1, 2) + 1) / 166.0 * punch;
     final dcValue = _decode83(blurhash, 2, 6);
