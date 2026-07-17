@@ -90,6 +90,39 @@ abstract class TimelineConstants {
   /// Bar width for the compact sound-overlay waveform.
   static const double soundWaveformBarWidth = 1;
 
+  // --- Clip waveform overlay ---
+
+  /// Bar width of the waveform drawn over a clip's thumbnails.
+  static const double clipWaveformBarWidth = 1;
+
+  /// Gap between the bars of the waveform drawn over a clip's thumbnails.
+  static const double clipWaveformBarSpacing = 1;
+
+  /// Height of the waveform band along a clip's bottom edge. Roughly a third
+  /// of the strip, so the frames above stay readable.
+  static const double clipWaveformBandHeight = 22;
+
+  /// Opacity of the waveform drawn over a clip's thumbnails — legible over
+  /// both bright and dark frames without competing with them.
+  static const double clipWaveformOpacity = 0.55;
+
+  /// Headroom multiplier for clip-waveform bars, so a peak at full amplitude
+  /// stops just short of the band's top edge.
+  static const double clipWaveformGain = 0.9;
+
+  /// Lower bound for the per-clip waveform normalizer. A clip whose loudest
+  /// sample sits below this stays quiet on screen rather than being stretched
+  /// to full scale — the difference between "quiet" and "silent" survives.
+  static const double clipWaveformNormalizerFloor = 0.2;
+
+  /// Exponent applied to the normalized amplitude. Below 1 it lifts the quiet
+  /// body of the signal toward the peaks; 1 would be a linear (near-flat) band.
+  static const double clipWaveformCurve = 0.6;
+
+  /// Baseline height of a clip-waveform bar. Keeps a continuous line visible
+  /// through silence and at zero volume.
+  static const double clipWaveformMinBarHeight = 1;
+
   /// Vertical gap between overlay rows within a strip.
   static const double overlayRowGap = 6;
 

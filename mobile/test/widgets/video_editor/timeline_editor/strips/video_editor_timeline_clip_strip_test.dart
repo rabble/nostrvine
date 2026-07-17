@@ -1,6 +1,9 @@
 // ABOUTME: Widget tests for VideoEditorTimelineClipStrip.
 // ABOUTME: Validates clip rendering, layout, reorder gesture, and accessibility.
 
+import 'dart:async';
+import 'dart:typed_data';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,7 +17,9 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/services/video_editor/clip_thumbnail_manager.dart';
+import 'package:openvine/services/video_editor/clip_waveform_manager.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/strips/clip_waveform_overlay.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/timeline_trim_handles.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_clip_strip.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -47,6 +52,7 @@ void main() {
       ValueChanged<List<DivineVideoClip>>? onReorder,
       ValueChanged<bool>? onReorderChanged,
       ClipThumbnailManager? thumbnailManager,
+      ClipWaveformManager? waveformManager,
       String? trimmingClipId,
       ClipTrimCallback? onTrimChanged,
       ValueChanged<bool>? onTrimDragChanged,
@@ -72,6 +78,7 @@ void main() {
         onTrimChanged: onTrimChanged,
         onTrimDragChanged: onTrimDragChanged,
         thumbnailManager: thumbnailManager,
+        waveformManager: waveformManager,
       );
 
       return MaterialApp(
@@ -119,6 +126,50 @@ void main() {
         await tester.pumpWidget(buildWidget(clips: clips, totalWidth: 400));
 
         expect(find.byType(ClipRRect), findsOneWidget);
+      });
+
+      testWidgets('draws each clip its own waveform band', (tester) async {
+        await tester.pumpWidget(
+          buildWidget(
+            waveformManager: ClipWaveformManager(
+              extractor: (_) async => WaveformData(
+                leftChannel: Float32List.fromList([0.5, 1, 0.5]),
+                sampleRate: 44100,
+                duration: const Duration(seconds: 3),
+                samplesPerSecond: 200,
+              ),
+            ),
+          ),
+        );
+        // Let the queued extraction resolve and publish.
+        await tester.pump();
+
+        expect(
+          find.byWidgetPredicate(
+            (w) => w is CustomPaint && w.painter is ClipWaveformPainter,
+          ),
+          findsNWidgets(2),
+        );
+      });
+
+      testWidgets('draws no waveform band before extraction lands', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(
+            waveformManager: ClipWaveformManager(
+              extractor: (_) => Completer<WaveformData>().future,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(
+          find.byWidgetPredicate(
+            (w) => w is CustomPaint && w.painter is ClipWaveformPainter,
+          ),
+          findsNothing,
+        );
       });
     });
 
