@@ -1,6 +1,7 @@
 // ABOUTME: Tests for VideoEditorClipLibrarySaveService - flattening one clip
 // ABOUTME: into a standalone library clip via the render pipeline.
 
+import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui';
 
@@ -356,6 +357,76 @@ void main() {
           );
 
       expect(result, isNull);
+    });
+
+    group('cleanupFlattenedClip', () {
+      late Directory tempDir;
+
+      setUp(
+        () => tempDir = Directory.systemTemp.createTempSync('clip_lib_save'),
+      );
+      tearDown(() {
+        if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
+      });
+
+      DivineVideoClip flattenedWith({
+        required String videoPath,
+        String? thumbnailPath,
+      }) {
+        return DivineVideoClip(
+          id: 'clip_library_1',
+          video: EditorVideo.file(videoPath),
+          duration: const Duration(seconds: 2),
+          recordedAt: DateTime(2025),
+          targetAspectRatio: model.AspectRatio.vertical,
+          originalAspectRatio: 9 / 16,
+          thumbnailPath: thumbnailPath,
+        );
+      }
+
+      test(
+        'deletes the rendered video and freshly extracted thumbnail',
+        () async {
+          final video = File('${tempDir.path}/out.mp4')..writeAsBytesSync([1]);
+          final thumb = File('${tempDir.path}/thumb.jpg')
+            ..writeAsBytesSync([1]);
+
+          await VideoEditorClipLibrarySaveService.cleanupFlattenedClip(
+            flattenedWith(videoPath: video.path, thumbnailPath: thumb.path),
+          );
+
+          expect(video.existsSync(), isFalse);
+          expect(thumb.existsSync(), isFalse);
+        },
+      );
+
+      test('keeps a thumbnail it fell back to rather than created', () async {
+        final video = File('${tempDir.path}/out.mp4')..writeAsBytesSync([1]);
+        // Extraction failed, so the flattened clip carries the source clip's
+        // thumbnail — still referenced by the live source clip.
+        final sourceThumb = File('${tempDir.path}/source.jpg')
+          ..writeAsBytesSync([1]);
+
+        await VideoEditorClipLibrarySaveService.cleanupFlattenedClip(
+          flattenedWith(
+            videoPath: video.path,
+            thumbnailPath: sourceThumb.path,
+          ),
+          keepThumbnailPath: sourceThumb.path,
+        );
+
+        expect(video.existsSync(), isFalse);
+        expect(sourceThumb.existsSync(), isTrue);
+      });
+
+      test('tolerates already-missing files', () async {
+        await expectLater(
+          VideoEditorClipLibrarySaveService.cleanupFlattenedClip(
+            flattenedWith(videoPath: '${tempDir.path}/never_written.mp4'),
+          ),
+          completes,
+        );
+      });
     });
   });
 }

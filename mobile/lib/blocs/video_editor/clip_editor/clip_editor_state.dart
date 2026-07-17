@@ -189,9 +189,10 @@ class ClipEditorState extends Equatable {
 
   /// Id of the clip being saved to the library.
   ///
-  /// Non-`null` while [isSavingClipToLibrary] is `true`. Lets the controls
-  /// disable Save for *that* clip only — the user can keep editing, and save,
-  /// other clips while this render runs.
+  /// Non-`null` while [isSavingClipToLibrary] is `true`. Save is disabled on
+  /// every clip while a save runs (only one heavy re-encode at a time); this
+  /// id picks which clip shows the in-flight spinner versus a plain disabled
+  /// button. The user can still select and edit other clips meanwhile.
   final String? savingClipToLibraryClipId;
 
   /// Last completed save-to-clip-library result.

@@ -33,6 +33,7 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
       isExtractingAudioCurrentClip,
       isSplittingCurrentClip,
       isSavingCurrentClipToLibrary,
+      isSavingAnyClipToLibrary,
       isReversed,
     ) = context.select((ClipEditorBloc b) {
       final state = b.state;
@@ -43,6 +44,11 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
       // *this* clip. A split or audio extraction rendering on a different clip
       // (the user can switch clips mid-render) leaves the current clip's
       // actions available.
+      //
+      // Save is the exception: a library re-encode is a heavy render we run one
+      // at a time, so it is disabled on every clip while any save runs. Only
+      // the in-flight clip shows a spinner; the rest show a plain disabled
+      // button, so a tap on another clip's Save can never be silently dropped.
       return (
         state.clips.length,
         state.isExtractingAudio &&
@@ -54,6 +60,7 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
         state.isSavingClipToLibrary &&
             currentClipId != null &&
             state.savingClipToLibraryClipId == currentClipId,
+        state.isSavingClipToLibrary,
         hasClip && state.clips[index].reversed,
       );
     });
@@ -72,6 +79,7 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
       onReversed: () => _reverseClip(context),
       onSaveToLibrary: () => _saveClipToLibrary(context),
       isSavingToLibrary: isSavingCurrentClipToLibrary,
+      isSaveToLibraryDisabled: isSavingAnyClipToLibrary,
       onMultiSelect: isLastClip ? null : () => _startMultiSelect(context),
       isReversed: isReversed,
       isExtractingAudio: isExtractingAudioCurrentClip,
@@ -219,6 +227,14 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
     final editor = _editorOrNull(context);
     if (editor == null) return;
     final overlays = await editor.captureOverlaySnapshot();
+
+    // Capturing the snapshot rasterizes every layer and costs at least a frame,
+    // during which the editor screen can be popped and its bloc closed. Adding
+    // to a closed bloc throws, so bail. Guard on the bloc rather than `mounted`:
+    // leaving edit mode unmounts these controls while the bloc lives on, and
+    // that save should still go through (the scaffold-level listener surfaces
+    // its result).
+    if (bloc.isClosed) return;
 
     bloc.add(
       // Bind the request to this clip so the render still targets the intended

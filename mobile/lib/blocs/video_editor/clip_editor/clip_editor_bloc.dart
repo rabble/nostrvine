@@ -72,6 +72,17 @@ typedef FlattenClipForLibraryFn =
       EditorOverlaySnapshot? overlays,
     });
 
+/// Function signature matching
+/// [VideoEditorClipLibrarySaveService.cleanupFlattenedClip], the injectable
+/// seam that deletes a flattened clip's documents-dir files when the save
+/// doesn't reach the library, so tests can assert cleanup without touching the
+/// file system.
+typedef CleanupFlattenedClipFn =
+    Future<void> Function(
+      DivineVideoClip flattened, {
+      String? keepThumbnailPath,
+    });
+
 /// Persists an already-flattened clip to the device's clip library, returning
 /// whether it was stored.
 ///
@@ -104,6 +115,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     TransformClipFn? transformClip,
     MergeClipsFn? mergeClips,
     FlattenClipForLibraryFn? flattenClipForLibrary,
+    CleanupFlattenedClipFn? cleanupFlattenedClip,
   }) : _audioExtractionService =
            audioExtractionService ?? AudioExtractionService(),
        _splitClip = splitClip ?? VideoEditorSplitService.splitClip,
@@ -114,6 +126,9 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
        _flattenClipForLibrary =
            flattenClipForLibrary ??
            VideoEditorClipLibrarySaveService.flattenClipForLibrary,
+       _cleanupFlattenedClip =
+           cleanupFlattenedClip ??
+           VideoEditorClipLibrarySaveService.cleanupFlattenedClip,
        _saveClipToLibrary = saveClipToLibrary,
        super(const ClipEditorState()) {
     // Clip data
@@ -197,6 +212,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
   final TransformClipFn _transformClip;
   final MergeClipsFn _mergeClips;
   final FlattenClipForLibraryFn _flattenClipForLibrary;
+  final CleanupFlattenedClipFn _cleanupFlattenedClip;
   final SaveClipToLibraryFn _saveClipToLibrary;
 
   // === CLIP DATA ===
@@ -883,9 +899,12 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
   /// Re-encodes the requested clip's trim window into its own file and stores
   /// it in the clip library, leaving the timeline untouched.
   ///
-  /// `droppable` rather than `sequential`: the Save control is disabled for the
-  /// in-flight clip, so a second event here can only come from a double-tap
-  /// race — queuing it would silently store a duplicate copy.
+  /// `droppable` rather than `sequential`: while a save runs the controls
+  /// disable Save on *every* clip (not just the in-flight one), so a second
+  /// event here can only come from a double-tap race in the frame before that
+  /// disable renders — queuing it would silently store a duplicate copy. Only
+  /// one re-encode runs at a time; the user can still select and edit other
+  /// clips, they just can't launch a concurrent save.
   Future<void> _onSaveClipToLibraryRequested(
     ClipEditorSaveClipToLibraryRequested event,
     Emitter<ClipEditorState> emit,
@@ -925,8 +944,13 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       ),
     );
 
+    // The flattened file lands in the persistent documents dir, so any path
+    // that doesn't hand it to the library must delete it — nothing else ever
+    // reclaims an unreferenced documents-dir file. Held outside the try so the
+    // catch can clean up a file that was rendered before a later step threw.
+    DivineVideoClip? flattened;
     try {
-      final flattened = await _flattenClipForLibrary(
+      flattened = await _flattenClipForLibrary(
         clip: clip,
         renderId: renderId,
         overlays: overlays,
@@ -934,7 +958,8 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
 
       if (flattened == null) {
         // Matrix-NO: render cancel/failure surfaces as a null output from
-        // VideoEditorRenderService.renderVideo (Network/IO).
+        // VideoEditorRenderService.renderVideo (Network/IO). No file was
+        // written, so there is nothing to clean up.
         emit(
           state.copyWith(
             isSavingClipToLibrary: false,
@@ -954,6 +979,10 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
           name: 'ClipEditorBloc',
           category: LogCategory.video,
         );
+        await _cleanupFlattenedClip(
+          flattened,
+          keepThumbnailPath: clip.thumbnailPath,
+        );
         emit(
           state.copyWith(
             isSavingClipToLibrary: false,
@@ -965,6 +994,13 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       }
 
       final saved = await _saveClipToLibrary(clip: flattened);
+
+      if (!saved) {
+        await _cleanupFlattenedClip(
+          flattened,
+          keepThumbnailPath: clip.thumbnailPath,
+        );
+      }
 
       emit(
         state.copyWith(
@@ -984,6 +1020,12 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         category: LogCategory.video,
       );
     } catch (e, stackTrace) {
+      if (flattened != null) {
+        await _cleanupFlattenedClip(
+          flattened,
+          keepThumbnailPath: clip.thumbnailPath,
+        );
+      }
       final error = switch (e) {
         StateError() || TypeError() || RangeError() => Reportable(
           e,

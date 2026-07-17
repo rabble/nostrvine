@@ -20,6 +20,7 @@ class VideoEditorTimelineControls extends StatelessWidget {
     this.isSplitting = false,
     this.onSaveToLibrary,
     this.isSavingToLibrary = false,
+    this.isSaveToLibraryDisabled = false,
     this.onMultiSelect,
     this.multiSelectSemanticLabel,
     super.key,
@@ -48,7 +49,15 @@ class VideoEditorTimelineControls extends StatelessWidget {
   final VoidCallback? onSaveToLibrary;
 
   /// Whether the active clip is currently being re-encoded for the library.
+  /// Shows the Save action as a spinner.
   final bool isSavingToLibrary;
+
+  /// Whether Save should be shown disabled because a library re-encode of some
+  /// (possibly other) clip is already running. Only one save runs at a time, so
+  /// the button is greyed rather than left tappable-but-ignored. Distinct from
+  /// [isSavingToLibrary], which additionally swaps the button for a spinner on
+  /// the clip actually being saved.
+  final bool isSaveToLibraryDisabled;
   final VoidCallback? onMultiSelect;
 
   /// Overrides the multi-select button's accessibility label. Defaults to the
@@ -168,7 +177,9 @@ class VideoEditorTimelineControls extends StatelessWidget {
                       icon: .save,
                       label: context.l10n.videoEditorSaveClip,
                       semanticLabel: context.l10n.videoEditorSaveSelectedClip,
-                      onPressed: isSavingToLibrary ? null : onSaveToLibrary,
+                      onPressed: isSavingToLibrary || isSaveToLibraryDisabled
+                          ? null
+                          : onSaveToLibrary,
                       isLoading: isSavingToLibrary,
                     ),
                   if (onMultiSelect != null)

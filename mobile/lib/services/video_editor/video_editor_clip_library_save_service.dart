@@ -1,6 +1,7 @@
 // ABOUTME: Flattens one timeline clip into a standalone file for the clip library
 // ABOUTME: Bakes trim/speed/volume plus the overlays over it into a fresh documents-dir clip
 
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:openvine/models/divine_video_clip.dart';
@@ -37,12 +38,17 @@ class VideoEditorClipLibrarySaveService {
   /// already windowed and rebased to start at zero by
   /// [EditorOverlaySnapshot.windowedTo]. They get baked into the output too, so
   /// the saved clip looks the way it looked on the timeline. Pass `null` (or an
-  /// empty snapshot) to render the bare video.
+  /// empty snapshot) to render the bare video. Only *visual* overlays are baked
+  /// — session audio (background music, voice-over) spans the whole project
+  /// timeline and is deliberately not carried onto a single saved clip.
   ///
   /// [renderId] keys the native progress/cancel stream.
   ///
   /// Returns `null` when the render is cancelled or fails — both already
   /// surface as a `null` output path from [VideoEditorRenderService.renderVideo].
+  /// The returned clip's file lives in the persistent documents dir; if the
+  /// caller does not go on to store it in the library, it must call
+  /// [cleanupFlattenedClip] to avoid leaving an orphan there.
   static Future<DivineVideoClip?> flattenClipForLibrary({
     required DivineVideoClip clip,
     required String renderId,
@@ -88,6 +94,44 @@ class VideoEditorClipLibrarySaveService {
     );
   }
 
+  /// Deletes the files a [flattenClipForLibrary] result left in the documents
+  /// dir when the clip never reached the library — the re-encoded video and,
+  /// when it was freshly extracted, its thumbnail.
+  ///
+  /// The render writes into persistent storage, so nothing reclaims these files
+  /// unless a library row ends up referencing them. Call this on every path
+  /// where the save does not land (render discarded, library write rejected, or
+  /// the save threw) so the documents dir isn't left with permanent orphans.
+  ///
+  /// [keepThumbnailPath] is the source clip's own thumbnail: when frame
+  /// extraction fails, [flattenClipForLibrary] falls back to it, and it is still
+  /// referenced by the live source clip, so it must never be deleted here.
+  static Future<void> cleanupFlattenedClip(
+    DivineVideoClip flattened, {
+    String? keepThumbnailPath,
+  }) async {
+    await _deleteQuietly(flattened.video.file?.path);
+
+    final thumbnailPath = flattened.thumbnailPath;
+    if (thumbnailPath != null && thumbnailPath != keepThumbnailPath) {
+      await _deleteQuietly(thumbnailPath);
+    }
+  }
+
+  static Future<void> _deleteQuietly(String? path) async {
+    if (path == null) return;
+    try {
+      final file = File(path);
+      if (file.existsSync()) await file.delete();
+    } catch (e) {
+      Log.warning(
+        '⚠️ Failed to delete orphaned library-clip file $path: $e',
+        name: 'VideoEditorClipLibrarySaveService',
+        category: LogCategory.video,
+      );
+    }
+  }
+
   /// Wraps [overlays] in the [CompleteParameters] shape the render pipeline
   /// reads, or `null` when there is nothing to bake.
   ///
@@ -106,19 +150,24 @@ class VideoEditorClipLibrarySaveService {
       filterStates: overlays.filterStates,
       tuneAdjustments: overlays.tuneAdjustments,
       bodySize: overlays.bodySize,
-      // The render pipeline reads none of the below for overlays; they are
-      // required constructor args, so they carry inert defaults.
+      // Geometry: the render pipeline *does* read these into its ExportTransform,
+      // so they are deliberately left at identity — a clip's own spatial
+      // transform is already baked into its file, and the aspect-ratio crop
+      // comes from targetAspectRatio in renderVideo. Applying geometry here
+      // would double-transform.
+      rotateTurns: 0,
+      flipX: false,
+      flipY: false,
+      // The render pipeline reads none of the below for an overlay bake; they
+      // are required constructor args, so they carry inert defaults.
       matrixFilterList: const [],
       matrixTuneAdjustmentsList: const [],
       startTime: null,
       endTime: null,
       cropWidth: null,
       cropHeight: null,
-      rotateTurns: 0,
       cropX: null,
       cropY: null,
-      flipX: false,
-      flipY: false,
       image: Uint8List(0),
       isTransformed: false,
       layers: const [],

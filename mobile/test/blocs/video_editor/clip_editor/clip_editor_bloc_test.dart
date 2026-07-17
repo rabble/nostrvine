@@ -281,6 +281,7 @@ void main() {
       TransformClipFn? transformClip,
       MergeClipsFn? mergeClips,
       FlattenClipForLibraryFn? flattenClipForLibrary,
+      CleanupFlattenedClipFn? cleanupFlattenedClip,
       SaveClipToLibraryFn? saveClipToLibrary,
     }) {
       return ClipEditorBloc(
@@ -291,6 +292,10 @@ void main() {
         transformClip: transformClip,
         mergeClips: mergeClips,
         flattenClipForLibrary: flattenClipForLibrary,
+        // Defaults to a no-op so tests that don't exercise the non-landing
+        // paths never touch the file system.
+        cleanupFlattenedClip:
+            cleanupFlattenedClip ?? (clip, {keepThumbnailPath}) async {},
         // Defaults to "the library rejected it" so a test that never opts in
         // can't silently pass a save it didn't wire up.
         saveClipToLibrary:
@@ -3325,7 +3330,8 @@ void main() {
           flattenCompleter = Completer<DivineVideoClip?>();
           bloc.add(const ClipEditorSaveClipToLibraryRequested(clipId: 'a'));
           await Future<void>.delayed(Duration.zero);
-          // Assert mid-flight: the controls disable Save for this clip only.
+          // Assert mid-flight: Save is disabled on every clip, and this id
+          // marks which one shows the spinner.
           expect(bloc.state.isSavingClipToLibrary, isTrue);
           expect(bloc.state.savingClipToLibraryClipId, equals('a'));
           flattenCompleter.complete(null);
@@ -3335,6 +3341,102 @@ void main() {
           expect(bloc.state.savingClipToLibraryClipId, isNull);
         },
       );
+
+      group('render id', () {
+        late String? forwardedRenderId;
+
+        setUp(() => forwardedRenderId = null);
+
+        blocTest<ClipEditorBloc, ClipEditorState>(
+          'namespaces the render id so a save cannot cancel a reverse render',
+          build: () => buildBloc(
+            flattenClipForLibrary:
+                ({required clip, required renderId, overlays}) async {
+                  forwardedRenderId = renderId;
+                  return _createClip(id: 'flattened-${clip.id}');
+                },
+            saveClipToLibrary: recordSave,
+          ),
+          seed: () => ClipEditorState(clips: twoClips),
+          act: (bloc) =>
+              bloc.add(const ClipEditorSaveClipToLibraryRequested(clipId: 'a')),
+          verify: (bloc) {
+            // The bare clip id keys the reverse render, which the native layer
+            // cancels on a colliding id — so the save id must be namespaced.
+            expect(forwardedRenderId, equals('a_clip_library_save'));
+          },
+        );
+      });
+
+      group('orphan cleanup', () {
+        late List<DivineVideoClip> cleanedUp;
+
+        /// Records which flattened clips the BLoC asked the service to delete.
+        Future<void> recordCleanup(
+          DivineVideoClip clip, {
+          String? keepThumbnailPath,
+        }) async {
+          cleanedUp.add(clip);
+        }
+
+        setUp(() => cleanedUp = []);
+
+        blocTest<ClipEditorBloc, ClipEditorState>(
+          'deletes the flattened file when the library rejects the write',
+          build: () => buildBloc(
+            flattenClipForLibrary: _fakeFlattenClipForLibrary,
+            cleanupFlattenedClip: recordCleanup,
+            saveClipToLibrary: ({required clip}) async => false,
+          ),
+          seed: () => ClipEditorState(clips: twoClips),
+          act: (bloc) =>
+              bloc.add(const ClipEditorSaveClipToLibraryRequested(clipId: 'a')),
+          verify: (bloc) {
+            // Rejected write leaves a documents-dir file nothing references.
+            expect(cleanedUp.map((c) => c.id), equals(['flattened-a']));
+          },
+        );
+
+        blocTest<ClipEditorBloc, ClipEditorState>(
+          'deletes the flattened file when the source clip was removed',
+          build: () => buildBloc(
+            flattenClipForLibrary:
+                ({required clip, required renderId, overlays}) =>
+                    flattenCompleter.future,
+            cleanupFlattenedClip: recordCleanup,
+            saveClipToLibrary: recordSave,
+          ),
+          seed: () => ClipEditorState(clips: twoClips),
+          act: (bloc) async {
+            flattenCompleter = Completer<DivineVideoClip?>();
+            bloc.add(const ClipEditorSaveClipToLibraryRequested(clipId: 'a'));
+            await Future<void>.delayed(Duration.zero);
+            bloc.add(const ClipEditorClipRemoved('a'));
+            await Future<void>.delayed(Duration.zero);
+            flattenCompleter.complete(_createClip(id: 'flattened-a'));
+          },
+          verify: (bloc) {
+            expect(savedToLibrary, isEmpty);
+            expect(cleanedUp.map((c) => c.id), equals(['flattened-a']));
+          },
+        );
+
+        blocTest<ClipEditorBloc, ClipEditorState>(
+          'keeps the flattened file when the save succeeds',
+          build: () => buildBloc(
+            flattenClipForLibrary: _fakeFlattenClipForLibrary,
+            cleanupFlattenedClip: recordCleanup,
+            saveClipToLibrary: recordSave,
+          ),
+          seed: () => ClipEditorState(clips: twoClips),
+          act: (bloc) =>
+              bloc.add(const ClipEditorSaveClipToLibraryRequested(clipId: 'a')),
+          verify: (bloc) {
+            // Success hands the file to the library, which now references it.
+            expect(cleanedUp, isEmpty);
+          },
+        );
+      });
     });
   });
 }

@@ -16,6 +16,34 @@ ExportedLayer _layer({String id = 'l', Duration? start, Duration? end}) {
   );
 }
 
+ExportedLayer _animatedLayer({
+  String id = 'l',
+  Duration? start,
+  Duration? end,
+  Duration? enterDuration,
+  Duration? exitDuration,
+  List<LayerAnimation> animations = const [],
+}) {
+  return ExportedLayer(
+    layer: Layer(
+      id: id,
+      startTime: start,
+      endTime: end,
+      enterDuration: enterDuration,
+      exitDuration: exitDuration,
+      animations: animations,
+    ),
+    bytes: Uint8List.fromList([1, 2, 3]),
+    logicalSize: const Size(10, 10),
+  );
+}
+
+LayerAnimation _anim(AnimationPhase phase) => LayerAnimation(
+  type: LayerAnimationType.fade,
+  phase: phase,
+  duration: const Duration(milliseconds: 300),
+);
+
 FilterState _filter({String id = 'f', Duration? start, Duration? end}) {
   return FilterState(
     id: id,
@@ -244,6 +272,161 @@ void main() {
         expect(result.filterStates, isEmpty);
         expect(result.blur, equals(5));
         expect(result.bodySize, equals(const Size(100, 200)));
+      });
+    });
+
+    group('windowedTo clamped-edge animations', () {
+      Layer windowedLayer(ExportedLayer source) => EditorOverlaySnapshot(
+        capturedLayers: [source],
+      ).windowedTo(start: _s3, end: _s6).capturedLayers.single.layer;
+
+      test('keeps enter and exit fades for a layer fully inside the clip', () {
+        // 4s-5s sits inside the 3s-6s clip: both edges are the layer's own, so
+        // its fades belong.
+        final layer = windowedLayer(
+          _animatedLayer(
+            start: _s4,
+            end: _s5,
+            enterDuration: const Duration(milliseconds: 200),
+            exitDuration: const Duration(milliseconds: 200),
+          ),
+        );
+
+        expect(layer.enterDuration, equals(const Duration(milliseconds: 200)));
+        expect(layer.exitDuration, equals(const Duration(milliseconds: 200)));
+      });
+
+      test('drops the enter fade when the layer began before the clip', () {
+        // 1s-4s over a 3s-6s clip: the fade-in played at 1s, before the clip.
+        final layer = windowedLayer(
+          _animatedLayer(
+            start: _s1,
+            end: _s4,
+            enterDuration: const Duration(milliseconds: 200),
+            exitDuration: const Duration(milliseconds: 200),
+          ),
+        );
+
+        expect(layer.enterDuration, isNull);
+        // The layer still ends inside the clip, so its exit fade stays.
+        expect(layer.exitDuration, equals(const Duration(milliseconds: 200)));
+      });
+
+      test('drops the exit fade when the layer outlives the clip', () {
+        // 4s-10s over a 3s-6s clip: the fade-out plays at 10s, after the clip.
+        final layer = windowedLayer(
+          _animatedLayer(
+            start: _s4,
+            end: const Duration(seconds: 10),
+            enterDuration: const Duration(milliseconds: 200),
+            exitDuration: const Duration(milliseconds: 200),
+          ),
+        );
+
+        expect(layer.enterDuration, equals(const Duration(milliseconds: 200)));
+        expect(layer.exitDuration, isNull);
+      });
+
+      test('drops both fades for an unbounded layer', () {
+        // null/null spans the whole composition — steadily on screen over the
+        // clip, so neither fade ever played over it.
+        final layer = windowedLayer(
+          _animatedLayer(
+            enterDuration: const Duration(milliseconds: 200),
+            exitDuration: const Duration(milliseconds: 200),
+          ),
+        );
+
+        expect(layer.enterDuration, isNull);
+        expect(layer.exitDuration, isNull);
+      });
+
+      test('drops the animateIn animation when the layer began earlier', () {
+        final layer = windowedLayer(
+          _animatedLayer(
+            start: _s1,
+            end: _s4,
+            animations: [
+              _anim(AnimationPhase.animateIn),
+              _anim(AnimationPhase.animateOut),
+            ],
+          ),
+        );
+
+        expect(
+          layer.animations.map((a) => a.phase),
+          equals([AnimationPhase.animateOut]),
+        );
+      });
+
+      test(
+        'drops the animateOut animation when the layer outlives the clip',
+        () {
+          final layer = windowedLayer(
+            _animatedLayer(
+              start: _s4,
+              end: const Duration(seconds: 10),
+              animations: [
+                _anim(AnimationPhase.animateIn),
+                _anim(AnimationPhase.animateOut),
+              ],
+            ),
+          );
+
+          expect(
+            layer.animations.map((a) => a.phase),
+            equals([AnimationPhase.animateIn]),
+          );
+        },
+      );
+
+      test('drops an animateInOut only when both edges were clamped', () {
+        // Layer 1s-10s spans past both edges of the 3s-6s clip.
+        final bothClamped = windowedLayer(
+          _animatedLayer(
+            start: _s1,
+            end: const Duration(seconds: 10),
+            animations: [_anim(AnimationPhase.animateInOut)],
+          ),
+        );
+        expect(bothClamped.animations, isEmpty);
+
+        // Layer 1s-4s is only clamped at the start, so the inOut phase stays.
+        final oneEdgeClamped = windowedLayer(
+          _animatedLayer(
+            start: _s1,
+            end: _s4,
+            animations: [_anim(AnimationPhase.animateInOut)],
+          ),
+        );
+        expect(
+          oneEdgeClamped.animations.map((a) => a.phase),
+          equals([AnimationPhase.animateInOut]),
+        );
+      });
+
+      test('does not mutate the source layer when stripping animations', () {
+        final source = _animatedLayer(
+          start: _s1,
+          end: const Duration(seconds: 10),
+          enterDuration: const Duration(milliseconds: 200),
+          exitDuration: const Duration(milliseconds: 200),
+          animations: [_anim(AnimationPhase.animateIn)],
+        );
+
+        EditorOverlaySnapshot(
+          capturedLayers: [source],
+        ).windowedTo(start: _s3, end: _s6);
+
+        expect(
+          source.layer.enterDuration,
+          equals(const Duration(milliseconds: 200)),
+        );
+        expect(
+          source.layer.exitDuration,
+          equals(const Duration(milliseconds: 200)),
+        );
+        expect(source.layer.animations, hasLength(1));
       });
     });
   });

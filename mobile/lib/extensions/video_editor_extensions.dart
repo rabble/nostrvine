@@ -37,8 +37,17 @@ extension VideoEditorExtensions on ProImageEditorState {
   ///
   /// Rasterizing the layers costs a frame, so only call this when a render is
   /// actually about to run.
+  ///
+  /// Passes the same `basePixelRatio` the Done/export path uses
+  /// (`configs.imageGeneration.customPixelRatio`, the export-resolution ratio)
+  /// so a layer baked into a saved clip is captured at the same resolution it
+  /// would be in a full export, not the lower device pixel ratio the bare call
+  /// would fall back to. Global transforms are deliberately *not* applied — a
+  /// clip's own geometry is already baked into its file (#5322).
   Future<EditorOverlaySnapshot> captureOverlaySnapshot() async {
-    final capturedLayers = await captureAllLayersWithMeta();
+    final capturedLayers = await captureAllLayersWithMeta(
+      basePixelRatio: configs.imageGeneration.customPixelRatio,
+    );
     return EditorOverlaySnapshot(
       capturedLayers: capturedLayers,
       filterStates: List.of(stateManager.activeFilters),

@@ -69,12 +69,7 @@ class EditorOverlaySnapshot {
           if (_windowFor(item.layer.startTime, item.layer.endTime, start, end)
               case final w?)
             ExportedLayer(
-              // copyWith returns a base Layer, dropping the text/paint subtype.
-              // That is fine — the layer is already rasterized into `bytes`, and
-              // the render only reads offset, time window and animations back
-              // off it. Copying (rather than mutating) matters: Layer.startTime
-              // is mutable and this instance is the editor's live layer.
-              layer: item.layer.copyWith(startTime: w.start, endTime: w.end),
+              layer: _windowedLayer(item.layer, w),
               bytes: item.bytes,
               logicalSize: item.logicalSize,
             ),
@@ -96,11 +91,60 @@ class EditorOverlaySnapshot {
     );
   }
 
+  /// Copies [layer] onto its clip-local window [w], dropping any enter/leave
+  /// animation whose edge was clamped away.
+  ///
+  /// The copy is safe even though `copyWith` on a concrete layer subtype
+  /// (text/paint/…) returns that same subtype: the visual content already
+  /// travels in the rasterized `bytes`, and the render reads back only base
+  /// `Layer` fields — offset, time window, animations. Copying rather than
+  /// mutating matters because these fields are mutable and the source is the
+  /// editor's live layer.
+  ///
+  /// A layer that reached past the window on a side sat steadily on screen
+  /// there on the timeline — its enter (start clamped) or leave (end clamped)
+  /// played *outside* this clip. Replaying it inside the saved clip would show
+  /// motion that never happened over the clip, so the clamped-away phase (and
+  /// the legacy fade synthesized from [Layer.enterDuration] /
+  /// [Layer.exitDuration]) is dropped.
+  static Layer _windowedLayer(Layer layer, _OverlayWindow w) {
+    final strip = w.startClamped || w.endClamped;
+    final animations = layer.animations.isEmpty || !strip
+        ? layer.animations
+        : [
+            for (final a in layer.animations)
+              if (!_isClampedAway(a.phase, w)) a,
+          ];
+
+    final windowed = layer.copyWith(
+      startTime: w.start,
+      endTime: w.end,
+      animations: animations,
+    );
+    // copyWith can't null a Duration field (it null-coalesces to the old
+    // value), so clear the legacy fade convenience on the fresh copy directly.
+    if (w.startClamped) windowed.enterDuration = null;
+    if (w.endClamped) windowed.exitDuration = null;
+    return windowed;
+  }
+
+  /// Whether an animation of [phase] belongs to time outside the clip and so
+  /// should be dropped. `animateInOut` spans both edges, so it only goes when
+  /// *both* were clamped.
+  static bool _isClampedAway(AnimationPhase phase, _OverlayWindow w) =>
+      (w.startClamped && phase == AnimationPhase.animateIn) ||
+      (w.endClamped && phase == AnimationPhase.animateOut) ||
+      (w.startClamped && w.endClamped && phase == AnimationPhase.animateInOut);
+
   /// Intersects an overlay's `[from, to]` window (either side `null` for
   /// unbounded) with `[windowStart, windowEnd]`, rebased to the window's start.
   ///
+  /// `startClamped` / `endClamped` report whether the overlay reached past that
+  /// edge of the window (or was unbounded there) — i.e. its enter/leave belongs
+  /// to time outside the clip.
+  ///
   /// Returns `null` when the overlay never shows inside the window.
-  static ({Duration start, Duration end})? _windowFor(
+  static _OverlayWindow? _windowFor(
     Duration? from,
     Duration? to,
     Duration windowStart,
@@ -119,6 +163,20 @@ class EditorOverlaySnapshot {
         : effectiveFrom;
     final clampedTo = effectiveTo > windowEnd ? windowEnd : effectiveTo;
 
-    return (start: clampedFrom - windowStart, end: clampedTo - windowStart);
+    return (
+      start: clampedFrom - windowStart,
+      end: clampedTo - windowStart,
+      startClamped: from == null || from < windowStart,
+      endClamped: to == null || to > windowEnd,
+    );
   }
 }
+
+/// A clip-local overlay window plus whether each edge was clamped from a wider
+/// span (so an enter/leave animation on that edge played outside the clip).
+typedef _OverlayWindow = ({
+  Duration start,
+  Duration end,
+  bool startClamped,
+  bool endClamped,
+});

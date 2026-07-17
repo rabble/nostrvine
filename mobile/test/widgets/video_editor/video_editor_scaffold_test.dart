@@ -314,6 +314,78 @@ void main() {
       },
     );
 
+    testWidgets('shows a snackbar when a clip is saved to the library', (
+      tester,
+    ) async {
+      final clipBloc = _MockClipEditorBloc();
+      final successState = ClipEditorState(
+        lastClipLibrarySave: ClipLibrarySaveSuccess(),
+      );
+
+      when(() => clipBloc.state).thenReturn(const ClipEditorState());
+      whenListen(
+        clipBloc,
+        Stream<ClipEditorState>.fromIterable([successState]),
+        initialState: const ClipEditorState(),
+      );
+
+      await tester.pumpWidget(
+        buildWidget(isLoading: true, clipBlocOverride: clipBloc),
+      );
+      await tester.pump();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.videoEditorClipSavedSuccess), findsOneWidget);
+    });
+
+    testWidgets('shows a snackbar when a clip library save fails', (
+      tester,
+    ) async {
+      final clipBloc = _MockClipEditorBloc();
+      final failureState = ClipEditorState(
+        lastClipLibrarySave: ClipLibrarySaveFailure(),
+      );
+
+      when(() => clipBloc.state).thenReturn(const ClipEditorState());
+      whenListen(
+        clipBloc,
+        Stream<ClipEditorState>.fromIterable([failureState]),
+        initialState: const ClipEditorState(),
+      );
+
+      await tester.pumpWidget(
+        buildWidget(isLoading: true, clipBlocOverride: clipBloc),
+      );
+      await tester.pump();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.videoEditorClipSaveFailed), findsOneWidget);
+    });
+
+    testWidgets(
+      'ignores a discarded clip library save without a snackbar',
+      (tester) async {
+        final clipBloc = _MockClipEditorBloc();
+        final discardedState = ClipEditorState(
+          lastClipLibrarySave: ClipLibrarySaveDiscarded(),
+        );
+
+        when(() => clipBloc.state).thenReturn(const ClipEditorState());
+        whenListen(
+          clipBloc,
+          Stream<ClipEditorState>.fromIterable([discardedState]),
+          initialState: const ClipEditorState(),
+        );
+
+        await tester.pumpWidget(
+          buildWidget(isLoading: true, clipBlocOverride: clipBloc),
+        );
+        await tester.pump();
+
+        expect(find.byType(SnackBar), findsNothing);
+      },
+    );
+
     testWidgets(
       'ignores discarded extraction results without snackbar or history write',
       (tester) async {

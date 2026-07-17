@@ -16,8 +16,9 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_clip_controls.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_controls.dart';
-import 'package:pro_image_editor/pro_image_editor.dart'
-    show ProImageEditorState;
+import 'package:pro_image_editor/features/main_editor/services/sizes_manager.dart'
+    show SizesManager;
+import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 class _MockClipEditorBloc extends MockBloc<ClipEditorEvent, ClipEditorState>
@@ -26,6 +27,16 @@ class _MockClipEditorBloc extends MockBloc<ClipEditorEvent, ClipEditorState>
 class _MockTimelineOverlayBloc
     extends MockBloc<TimelineOverlayEvent, TimelineOverlayState>
     implements TimelineOverlayBloc {}
+
+class _MockProImageEditorState extends Mock implements ProImageEditorState {
+  @override
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) =>
+      '_MockProImageEditorState';
+}
+
+class _MockStateManager extends Mock implements StateManager {}
+
+class _MockSizesManager extends Mock implements SizesManager {}
 
 void main() {
   group(TimelineClipControls, () {
@@ -41,6 +52,8 @@ void main() {
       when(
         () => bloc.stream,
       ).thenAnswer((_) => const Stream<ClipEditorState>.empty());
+      // The save dispatch guards on `bloc.isClosed` after the capture await.
+      when(() => bloc.isClosed).thenReturn(false);
     });
 
     Widget build() {
@@ -384,6 +397,91 @@ void main() {
       );
     });
 
+    testWidgets(
+      'captures overlays and dispatches a save for the current clip',
+      (tester) async {
+        when(() => bloc.state).thenReturn(
+          ClipEditorState(clips: [clip('clip-1'), clip('clip-2')]),
+        );
+        final overlayBloc = _MockTimelineOverlayBloc();
+        when(() => overlayBloc.state).thenReturn(const TimelineOverlayState());
+        when(
+          () => overlayBloc.stream,
+        ).thenAnswer((_) => const Stream<TimelineOverlayState>.empty());
+
+        final editor = _MockProImageEditorState();
+        final stateManager = _MockStateManager();
+        final sizesManager = _MockSizesManager();
+        when(
+          () => editor.captureAllLayersWithMeta(
+            basePixelRatio: any(named: 'basePixelRatio'),
+          ),
+        ).thenAnswer((_) async => <ExportedLayer>[]);
+        when(() => editor.stateManager).thenReturn(stateManager);
+        when(() => editor.sizesManager).thenReturn(sizesManager);
+        when(() => editor.configs).thenReturn(const ProImageEditorConfigs());
+        when(() => stateManager.activeFilters).thenReturn(const []);
+        when(() => stateManager.activeTuneAdjustments).thenReturn(const []);
+        when(() => stateManager.activeBlur).thenReturn(0);
+        when(() => sizesManager.bodySize).thenReturn(const Size(400, 600));
+
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: VideoEditorScope(
+                  editorKey: GlobalKey<ProImageEditorState>(),
+                  editorOverride: editor,
+                  removeAreaKey: GlobalKey(),
+                  originalClipAspectRatio: 9 / 16,
+                  bodySizeNotifier: ValueNotifier(const Size(400, 600)),
+                  zoomMatrixNotifier: ValueNotifier(Matrix4.identity()),
+                  fromLibrary: false,
+                  onOpenCamera: () {},
+                  onOpenClipsEditor: () {},
+                  onAddStickers: () {},
+                  onOpenMusicLibrary: () {},
+                  onOpenVoiceOver: () {},
+                  onAddEditTextLayer: ([layer]) async => null,
+                  child: MultiBlocProvider(
+                    providers: [
+                      BlocProvider<ClipEditorBloc>.value(value: bloc),
+                      BlocProvider<TimelineOverlayBloc>.value(
+                        value: overlayBloc,
+                      ),
+                    ],
+                    child: TimelineClipControls(
+                      playheadPosition: ValueNotifier(Duration.zero),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final controls = tester.widget<VideoEditorTimelineControls>(
+          find.byType(VideoEditorTimelineControls),
+        );
+        controls.onSaveToLibrary!();
+        await tester.pumpAndSettle();
+
+        // The dispatch binds the *current* clip and carries a captured (never
+        // null) overlay snapshot, so a regression that binds the wrong clip or
+        // drops the overlays fails here.
+        final captured = verify(
+          () => bloc.add(
+            captureAny(that: isA<ClipEditorSaveClipToLibraryRequested>()),
+          ),
+        ).captured;
+        final event = captured.single as ClipEditorSaveClipToLibraryRequested;
+        expect(event.clipId, equals('clip-1'));
+        expect(event.overlays, isNotNull);
+      },
+    );
+
     testWidgets('Save shows a spinner while this clip is being saved', (
       tester,
     ) async {
@@ -403,7 +501,7 @@ void main() {
       expect(controls.isSavingToLibrary, isTrue);
     });
 
-    testWidgets('Save stays available while a different clip is saving', (
+    testWidgets('Save is disabled without a spinner while another clip saves', (
       tester,
     ) async {
       when(() => bloc.state).thenReturn(
@@ -420,8 +518,11 @@ void main() {
       final controls = tester.widget<VideoEditorTimelineControls>(
         find.byType(VideoEditorTimelineControls),
       );
-      expect(controls.onSaveToLibrary, isNotNull);
+      // Only one re-encode runs at a time, so Save on clip-2 is greyed rather
+      // than tappable-but-ignored: no spinner (that clip isn't the one saving),
+      // but disabled so the tap can't be silently dropped by the bloc.
       expect(controls.isSavingToLibrary, isFalse);
+      expect(controls.isSaveToLibraryDisabled, isTrue);
     });
   });
 }
