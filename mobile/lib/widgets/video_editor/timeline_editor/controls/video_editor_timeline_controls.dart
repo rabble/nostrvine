@@ -18,6 +18,9 @@ class VideoEditorTimelineControls extends StatelessWidget {
     this.onExtractAudio,
     this.isExtractingAudio = false,
     this.isSplitting = false,
+    this.onSaveToLibrary,
+    this.isSavingToLibrary = false,
+    this.isSaveToLibraryDisabled = false,
     this.onMultiSelect,
     this.multiSelectSemanticLabel,
     super.key,
@@ -41,6 +44,20 @@ class VideoEditorTimelineControls extends StatelessWidget {
   /// Split action disabled (rather than removing it) so the control stays in
   /// place instead of confusingly disappearing mid-operation.
   final bool isSplitting;
+
+  /// Saves the active clip to the clip library as a standalone clip.
+  final VoidCallback? onSaveToLibrary;
+
+  /// Whether the active clip is currently being re-encoded for the library.
+  /// Shows the Save action as a spinner.
+  final bool isSavingToLibrary;
+
+  /// Whether Save should be shown disabled because a library re-encode of some
+  /// (possibly other) clip is already running. Only one save runs at a time, so
+  /// the button is greyed rather than left tappable-but-ignored. Distinct from
+  /// [isSavingToLibrary], which additionally swaps the button for a spinner on
+  /// the clip actually being saved.
+  final bool isSaveToLibraryDisabled;
   final VoidCallback? onMultiSelect;
 
   /// Overrides the multi-select button's accessibility label. Defaults to the
@@ -154,6 +171,16 @@ class VideoEditorTimelineControls extends StatelessWidget {
                           .videoEditorExtractAudioFromClipSemanticLabel,
                       onPressed: isExtractingAudio ? null : onExtractAudio,
                       isLoading: isExtractingAudio,
+                    ),
+                  if (onSaveToLibrary != null)
+                    _ControlButton(
+                      icon: .save,
+                      label: context.l10n.videoEditorSaveClip,
+                      semanticLabel: context.l10n.videoEditorSaveSelectedClip,
+                      onPressed: isSavingToLibrary || isSaveToLibraryDisabled
+                          ? null
+                          : onSaveToLibrary,
+                      isLoading: isSavingToLibrary,
                     ),
                   if (onMultiSelect != null)
                     _ControlButton(

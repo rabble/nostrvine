@@ -2,6 +2,7 @@ import 'package:models/models.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/video_editor/editor_overlay_snapshot.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_geometry.dart';
 import 'package:pro_image_editor/pro_image_editor.dart' hide AudioTrack;
 
@@ -26,6 +27,36 @@ Map<String, dynamic> buildAppendedAudioMeta({
 }
 
 extension VideoEditorExtensions on ProImageEditorState {
+  /// Captures the overlays currently over the composition — layers, colour
+  /// filters, tune adjustments and blur — so they can be baked into a render
+  /// mid-session.
+  ///
+  /// The export path gets the same data handed to it in `CompleteParameters`,
+  /// but only once the user taps Done; anything that renders *during* editing
+  /// (saving a single clip to the library) has to ask for it.
+  ///
+  /// Rasterizing the layers costs a frame, so only call this when a render is
+  /// actually about to run.
+  ///
+  /// Passes the same `basePixelRatio` the Done/export path uses
+  /// (`configs.imageGeneration.customPixelRatio`, the export-resolution ratio)
+  /// so a layer baked into a saved clip is captured at the same resolution it
+  /// would be in a full export, not the lower device pixel ratio the bare call
+  /// would fall back to. Global transforms are deliberately *not* applied — a
+  /// clip's own geometry is already baked into its file (#5322).
+  Future<EditorOverlaySnapshot> captureOverlaySnapshot() async {
+    final capturedLayers = await captureAllLayersWithMeta(
+      basePixelRatio: configs.imageGeneration.customPixelRatio,
+    );
+    return EditorOverlaySnapshot(
+      capturedLayers: capturedLayers,
+      filterStates: List.of(stateManager.activeFilters),
+      tuneAdjustments: List.of(stateManager.activeTuneAdjustments),
+      blur: stateManager.activeBlur,
+      bodySize: sizesManager.bodySize,
+    );
+  }
+
   void setSoundTimeline({
     required int index,
     Duration? startTime,

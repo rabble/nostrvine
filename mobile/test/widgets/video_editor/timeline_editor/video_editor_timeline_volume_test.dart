@@ -21,7 +21,10 @@ void main() {
     late ValueNotifier<double?> volumePreviewNotifier;
 
     setUp(() {
-      clipBloc = ClipEditorBloc(onFinalClipInvalidated: () {});
+      clipBloc = ClipEditorBloc(
+        onFinalClipInvalidated: () {},
+        saveClipToLibrary: ({required clip}) async => false,
+      );
       overlayBloc = TimelineOverlayBloc();
       volumePreviewNotifier = ValueNotifier<double?>(null);
     });

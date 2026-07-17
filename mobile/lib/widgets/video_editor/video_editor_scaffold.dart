@@ -55,7 +55,9 @@ class VideoEditorScaffold extends StatelessWidget {
               child: _ClipMergeResultListener(
                 child: _ClipsRemovedResultListener(
                   child: _AudioExtractionResultListener(
-                    child: _ScaffoldBody(isLoading: isLoading),
+                    child: _ClipLibrarySaveResultListener(
+                      child: _ScaffoldBody(isLoading: isLoading),
+                    ),
                   ),
                 ),
               ),
@@ -403,6 +405,54 @@ class _AudioExtractionResultListener extends StatelessWidget {
     // so undo/redo reverts both the mute and the added track together.
     final updatedTracks = [...editor.stateManager.audioTracks, audioEvent];
     editor.setClipAndAudioState(clips: state.clips, audioTracks: updatedTracks);
+  }
+}
+
+/// Listens to [ClipEditorBloc.state.lastClipLibrarySave] from a widget that
+/// stays mounted for the entire editor session, so the save's outcome still
+/// reaches the user after they leave edit mode or switch clips mid-render.
+///
+/// No history is written: saving to the library copies the clip out of the
+/// session and never mutates the timeline.
+class _ClipLibrarySaveResultListener extends StatelessWidget {
+  const _ClipLibrarySaveResultListener({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<ClipEditorBloc, ClipEditorState>(
+      listenWhen: (prev, curr) =>
+          !identical(prev.lastClipLibrarySave, curr.lastClipLibrarySave) &&
+          curr.lastClipLibrarySave != null,
+      listener: _onClipLibrarySaveResult,
+      child: child,
+    );
+  }
+
+  void _onClipLibrarySaveResult(BuildContext context, ClipEditorState state) {
+    final result = state.lastClipLibrarySave;
+    if (result == null) return;
+
+    switch (result) {
+      case ClipLibrarySaveSuccess():
+        ScaffoldMessenger.of(context).showSnackBar(
+          DivineSnackbarContainer.snackBar(
+            context.l10n.videoEditorClipSavedSuccess,
+          ),
+        );
+      case ClipLibrarySaveDiscarded():
+        // The source clip was deleted while the re-encode ran — the user
+        // discarded what they asked to save, so neither outcome warrants a
+        // snackbar.
+        break;
+      case ClipLibrarySaveFailure():
+        ScaffoldMessenger.of(context).showSnackBar(
+          DivineSnackbarContainer.snackBar(
+            context.l10n.videoEditorClipSaveFailed,
+          ),
+        );
+    }
   }
 }
 

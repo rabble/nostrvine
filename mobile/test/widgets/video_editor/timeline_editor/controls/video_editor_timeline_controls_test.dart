@@ -216,5 +216,76 @@ void main() {
       await tester.pump();
       expect(speedCount, equals(1));
     });
+
+    testWidgets('hides Save when onSaveToLibrary is not provided', (
+      tester,
+    ) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: VideoEditorTimelineControls(onDone: () {})),
+        ),
+      );
+
+      expect(find.text(l10n.videoEditorSaveClip), findsNothing);
+    });
+
+    testWidgets('invokes onSaveToLibrary when idle', (tester) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      var saveCount = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: VideoEditorTimelineControls(
+              onSaveToLibrary: () => saveCount++,
+              onDone: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text(l10n.videoEditorSaveClip), findsOneWidget);
+      await tester.tap(
+        find.bySemanticsLabel(l10n.videoEditorSaveSelectedClip),
+      );
+      await tester.pump();
+      expect(saveCount, equals(1));
+    });
+
+    testWidgets('swaps Save for a spinner while saving to the library', (
+      tester,
+    ) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      var saveCount = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: VideoEditorTimelineControls(
+              onSaveToLibrary: () => saveCount++,
+              isSavingToLibrary: true,
+              onDone: () {},
+            ),
+          ),
+        ),
+      );
+
+      // The label stays put so the control set doesn't reshuffle mid-render,
+      // but the button is replaced by the spinner and can't be tapped again.
+      expect(find.text(l10n.videoEditorSaveClip), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(l10n.videoEditorSaveSelectedClip),
+        findsNothing,
+      );
+      expect(saveCount, equals(0));
+    });
   });
 }

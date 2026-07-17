@@ -305,6 +305,7 @@ class VideoEditorRenderService {
     model.AspectRatio? aspectRatio,
     CompleteParameters? parameters,
     String? taskId,
+    Duration? maxOutputDuration,
   })?
   renderVideoOverride;
 
@@ -517,6 +518,7 @@ class VideoEditorRenderService {
         aspectRatio: aspectRatio,
         parameters: parameters,
         taskId: taskId,
+        maxOutputDuration: maxOutputDuration,
       );
     }
 

@@ -141,6 +141,15 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
       onPrecacheStickers: _precacheStickers,
     );
     _clipEditorBloc = ClipEditorBloc(
+      // The clip library sits behind a Riverpod provider the BLoC can't reach,
+      // so it arrives as a callback — the same transition seam that brings the
+      // clip list in. `ref` is unsafe once this State unmounts, so bail rather
+      // than let a save that outlived the screen throw "Using ref when
+      // unmounted"; the render is abandoned with the editor session either way.
+      saveClipToLibrary: ({required clip}) async {
+        if (!mounted) return false;
+        return ref.read(clipManagerProvider.notifier).saveClipToLibrary(clip);
+      },
       onFinalClipInvalidated: () {
         // A clip render (reverse / transform) can resolve after this screen is
         // disposed — the user backed out while a long clip was still

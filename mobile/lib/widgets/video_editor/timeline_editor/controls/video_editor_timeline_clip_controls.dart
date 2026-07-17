@@ -32,6 +32,8 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
       clipCount,
       isExtractingAudioCurrentClip,
       isSplittingCurrentClip,
+      isSavingCurrentClipToLibrary,
+      isSavingAnyClipToLibrary,
       isReversed,
     ) = context.select((ClipEditorBloc b) {
       final state = b.state;
@@ -42,6 +44,11 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
       // *this* clip. A split or audio extraction rendering on a different clip
       // (the user can switch clips mid-render) leaves the current clip's
       // actions available.
+      //
+      // Save is the exception: a library re-encode is a heavy render we run one
+      // at a time, so it is disabled on every clip while any save runs. Only
+      // the in-flight clip shows a spinner; the rest show a plain disabled
+      // button, so a tap on another clip's Save can never be silently dropped.
       return (
         state.clips.length,
         state.isExtractingAudio &&
@@ -50,6 +57,10 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
         state.isSplitting &&
             currentClipId != null &&
             state.splittingClipId == currentClipId,
+        state.isSavingClipToLibrary &&
+            currentClipId != null &&
+            state.savingClipToLibraryClipId == currentClipId,
+        state.isSavingClipToLibrary,
         hasClip && state.clips[index].reversed,
       );
     });
@@ -66,6 +77,9 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
       onTransform: () => _transformClip(context),
       onExtractAudio: () => _requestExtractAudio(context),
       onReversed: () => _reverseClip(context),
+      onSaveToLibrary: () => _saveClipToLibrary(context),
+      isSavingToLibrary: isSavingCurrentClipToLibrary,
+      isSaveToLibraryDisabled: isSavingAnyClipToLibrary,
       onMultiSelect: isLastClip ? null : () => _startMultiSelect(context),
       isReversed: isReversed,
       isExtractingAudio: isExtractingAudioCurrentClip,
@@ -188,6 +202,46 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
       ClipEditorAudioExtractionRequested(
         clipId: state.clips[state.currentClipIndex].id,
         clipTitle: context.l10n.videoEditorClipAudioTitle,
+      ),
+    );
+  }
+
+  Future<void> _saveClipToLibrary(BuildContext context) async {
+    final bloc = context.read<ClipEditorBloc>();
+    final state = bloc.state;
+    if (state.currentClipIndex < 0 ||
+        state.currentClipIndex >= state.clips.length) {
+      return;
+    }
+    final clipId = state.clips[state.currentClipIndex].id;
+
+    // Whatever sits over the clip — text, stickers, drawings, filters, tune,
+    // blur — has to be baked in too, so the saved clip looks the way it looks
+    // on the timeline. Only the editor holds that state, and it hands it over
+    // in CompleteParameters solely on Done, so capture it here; the BLoC then
+    // windows it down to this clip's slice of the timeline.
+    //
+    // No editor means the route is already gone (a gesture that resolved after
+    // the pop). Bail rather than save the bare video: a clip silently missing
+    // the text and filters the user was looking at is worse than no clip.
+    final editor = _editorOrNull(context);
+    if (editor == null) return;
+    final overlays = await editor.captureOverlaySnapshot();
+
+    // Capturing the snapshot rasterizes every layer and costs at least a frame,
+    // during which the editor screen can be popped and its bloc closed. Adding
+    // to a closed bloc throws, so bail. Guard on the bloc rather than `mounted`:
+    // leaving edit mode unmounts these controls while the bloc lives on, and
+    // that save should still go through (the scaffold-level listener surfaces
+    // its result).
+    if (bloc.isClosed) return;
+
+    bloc.add(
+      // Bind the request to this clip so the render still targets the intended
+      // clip even if the selection changes while it runs.
+      ClipEditorSaveClipToLibraryRequested(
+        clipId: clipId,
+        overlays: overlays,
       ),
     );
   }
