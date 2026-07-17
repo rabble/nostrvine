@@ -185,6 +185,12 @@ const _knownUntranslatedDebt = <String>{
   'deleteAccountBurnUsernameReleased',
   'deleteAccountBurnUsernameToggle',
   'deleteAccountDeletionIncomplete',
+  // #6137: identity + username-confirmation strings; translation deferred.
+  'deleteAccountAccountChanged',
+  'deleteAccountConfirmDeletePrompt',
+  'deleteAccountConfirmUsernamePrompt',
+  'deleteAccountConfirmationHintUsername',
+  'deleteAccountWarningBody',
 };
 
 const _signatureVerificationKeys = <String>{

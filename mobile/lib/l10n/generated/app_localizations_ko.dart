@@ -6366,6 +6366,10 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get deleteAccountAccountChanged =>
+      'You switched accounts, so nothing was deleted. Reopen delete for the account you want to remove.';
+
+  @override
   String get deleteAccountBurnUsernameFailed =>
       'Couldn\'t release your username. Your account was not deleted. Try again, or uncheck the option.';
 
@@ -6380,7 +6384,17 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get deleteAccountConfirmDeletePrompt => 'To confirm, type:';
+
+  @override
+  String get deleteAccountConfirmUsernamePrompt =>
+      'To confirm, type your username:';
+
+  @override
   String get deleteAccountConfirmationHint => 'DELETE 입력';
+
+  @override
+  String get deleteAccountConfirmationHintUsername => 'Type your username';
 
   @override
   String get deleteAccountContentDeletionFailed => '릴레이에서 콘텐츠를 삭제하지 못했어요';
@@ -6431,6 +6445,10 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get deleteAccountSuccess => '계정이 삭제됐어요';
+
+  @override
+  String get deleteAccountWarningBody =>
+      'This permanently deletes your account and all your content from Divine, and sends a deletion request to other Nostr relays. Some relays and clients may still keep copies.';
 
   @override
   String get exportProgressStageApplyingTextOverlay => '텍스트 오버레이 추가 중...';

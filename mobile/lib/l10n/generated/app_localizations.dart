@@ -3785,7 +3785,7 @@ abstract class AppLocalizations {
   /// No description provided for @nostrSettingsDeleteAccountSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'PERMANENTLY delete your account and ALL content from Nostr relays. This cannot be undone.'**
+  /// **'Permanently delete your account and content from Divine, and request removal from other Nostr relays. Some copies may remain.'**
   String get nostrSettingsDeleteAccountSubtitle;
 
   /// Relay diagnostics screen app bar title
@@ -11523,6 +11523,12 @@ abstract class AppLocalizations {
     String messageText,
   );
 
+  /// No description provided for @deleteAccountAccountChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'You switched accounts, so nothing was deleted. Reopen delete for the account you want to remove.'**
+  String get deleteAccountAccountChanged;
+
   /// Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted.
   ///
   /// In en, this message translates to:
@@ -11541,11 +11547,29 @@ abstract class AppLocalizations {
   /// **'Also permanently give up {username}'**
   String deleteAccountBurnUsernameToggle(String username);
 
+  /// No description provided for @deleteAccountConfirmDeletePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'To confirm, type:'**
+  String get deleteAccountConfirmDeletePrompt;
+
+  /// No description provided for @deleteAccountConfirmUsernamePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'To confirm, type your username:'**
+  String get deleteAccountConfirmUsernamePrompt;
+
   /// No description provided for @deleteAccountConfirmationHint.
   ///
   /// In en, this message translates to:
   /// **'Type DELETE'**
   String get deleteAccountConfirmationHint;
+
+  /// No description provided for @deleteAccountConfirmationHintUsername.
+  ///
+  /// In en, this message translates to:
+  /// **'Type your username'**
+  String get deleteAccountConfirmationHintUsername;
 
   /// No description provided for @deleteAccountContentDeletionFailed.
   ///
@@ -11630,6 +11654,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your account has been deleted'**
   String get deleteAccountSuccess;
+
+  /// No description provided for @deleteAccountWarningBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This permanently deletes your account and all your content from Divine, and sends a deletion request to other Nostr relays. Some relays and clients may still keep copies.'**
+  String get deleteAccountWarningBody;
 
   /// No description provided for @exportProgressStageApplyingTextOverlay.
   ///
