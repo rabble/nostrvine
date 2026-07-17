@@ -20,12 +20,15 @@ import 'package:openvine/widgets/dm_restriction_gate_sync.dart';
 ///
 /// Both cubits are created **eagerly** (`lazy: false`). The descendant
 /// [_InboxBadgeRepositorySync] `context.read`s them from inside Riverpod
-/// notifications; a lazy create started from there re-enters itself when its
-/// own `ref.read` flushes another still-dirty provider of the same
+/// notifications. [DmUnreadCountCubit]'s create reads three repository
+/// providers, so a lazy create triggered from that listener re-enters itself
+/// when its own `ref.read` flushes another still-dirty provider of the same
 /// invalidation wave, and the re-entrant read throws a `Null`-cast `TypeError`
-/// (#6115). Creating both cubits during this widget's build — before the sync
-/// listener can register — means no create can ever start inside a Riverpod
-/// notification.
+/// (#6115). [NotificationBadgeCubit] reads a single provider and cannot
+/// self-flush today, but is `context.read` from the same listener and one
+/// refactor from the same trap, so it is created eagerly too. Creating both
+/// during this widget's build — before the sync listener can register — means
+/// no create can start inside a Riverpod notification.
 ///
 /// `main.dart` and `app_shell_badge_scope_test.dart` pump this same widget, so
 /// the `lazy: false` flags are pinned: flipping either back to lazy turns the
