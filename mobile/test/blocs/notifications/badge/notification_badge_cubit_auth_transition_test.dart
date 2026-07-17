@@ -59,33 +59,9 @@ class _BadgeRepositorySync extends ConsumerWidget {
   }
 }
 
-int _eagerCreateCount = 0;
-
-/// Mirrors `main.dart`'s eager wiring (#6115): the sync listener above
-/// context.reads the cubit from inside a Riverpod notification, so the cubit
-/// must already exist before any repository wave can fire — its child is
-/// deliberately not a consumer.
-class _EagerBadgeProbe extends ConsumerWidget {
-  const _EagerBadgeProbe();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return BlocProvider(
-      lazy: false,
-      create: (_) {
-        _eagerCreateCount += 1;
-        return NotificationBadgeCubit(
-          repository: ref.read(notificationRepositoryProvider),
-        );
-      },
-      child: const _BadgeRepositorySync(child: SizedBox.shrink()),
-    );
-  }
-}
-
-/// Probe widget mirroring `main.dart`'s wiring around the badge cubit: the
-/// [BlocProvider] identity stays stable, and repository flips are forwarded to
-/// the existing cubit so descendants do not remount.
+/// Probe widget mirroring `AppShellBadgeScope`'s wiring around the badge cubit:
+/// the [BlocProvider] identity stays stable, and repository flips are forwarded
+/// to the existing cubit so descendants do not remount.
 class _BadgeProbe extends ConsumerWidget {
   const _BadgeProbe();
 
@@ -107,49 +83,11 @@ class _BadgeProbe extends ConsumerWidget {
 }
 
 void main() {
-  group('NotificationBadgeCubit eager create (#6115)', () {
-    setUp(() {
-      _eagerCreateCount = 0;
-    });
-
-    testWidgets(
-      'is created at mount, before any consumer or repository wave can '
-      'trigger a lazy create',
-      (tester) async {
-        final controller = StreamController<int>.broadcast();
-        addTearDown(controller.close);
-        final repo = _MockNotificationRepository();
-        when(repo.watchUnreadCount).thenAnswer((_) => controller.stream);
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              notificationRepositoryProvider.overrideWith(
-                (ref) => ref.watch(_testRepoSelector),
-              ),
-            ],
-            child: const MaterialApp(home: _EagerBadgeProbe()),
-          ),
-        );
-
-        expect(_eagerCreateCount, 1);
-        expect(tester.takeException(), isNull);
-
-        // The wave still re-points the existing cubit through the sync
-        // listener rather than creating a second one.
-        final container = ProviderScope.containerOf(
-          tester.element(find.byType(_EagerBadgeProbe)),
-        );
-        container.read(_testRepoSelector.notifier).state = repo;
-        await tester.pumpAndSettle();
-
-        expect(_eagerCreateCount, 1);
-        verify(repo.watchUnreadCount).called(1);
-        expect(tester.takeException(), isNull);
-      },
-    );
-  });
-
+  // The eager-create pin (`lazy: false`) for NotificationBadgeCubit lives in
+  // `test/widgets/app_shell_badge_scope_test.dart`, which pumps the real
+  // AppShellBadgeScope. This file covers the cubit's setRepository
+  // auth-transition behaviour: descendants stay mounted while only the
+  // unread-count subscription swaps.
   group('NotificationBadgeCubit auth transition', () {
     setUp(() {
       _mountCount = 0;
