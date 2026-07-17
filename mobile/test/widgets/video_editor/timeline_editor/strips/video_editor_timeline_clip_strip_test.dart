@@ -151,6 +151,66 @@ void main() {
         expect(waveformBands, findsNWidgets(2));
       });
 
+      // The tile forwards the clip's volume and duration into the band. Both
+      // are one-liners in _ClipWaveformLayer, and matching on the painter's
+      // type alone lets either be dropped or crossed with the waveform's own
+      // values without a test noticing.
+      testWidgets('flattens the band of a muted clip to its baseline', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(
+            clips: [_createTestClip(id: 'muted', seconds: 3, volume: 0)],
+            pixelsPerSecond: 100,
+            waveformManager: buildWaveformManager(),
+            scrollable: false,
+          ),
+        );
+        await tester.pump();
+
+        const baseline = TimelineConstants.clipWaveformMinBarHeight;
+        expect(
+          tester.renderObject(waveformBands),
+          paints..rrect(
+            rrect: RRect.fromRectAndRadius(
+              const Rect.fromLTWH(
+                0,
+                TimelineConstants.thumbnailStripHeight - baseline,
+                TimelineConstants.clipWaveformBarWidth,
+                baseline,
+              ),
+              const Radius.circular(
+                TimelineConstants.clipWaveformBarWidth / 2,
+              ),
+            ),
+          ),
+        );
+      });
+
+      testWidgets('spans the band over the clip duration, not the audio one', (
+        tester,
+      ) async {
+        // A 4s clip against the 3s waveform the manager hands back: the bars
+        // must cover the audio's own 3s of the tile and leave the rest bare.
+        await tester.pumpWidget(
+          buildWidget(
+            clips: [_createTestClip(id: 'long', seconds: 4)],
+            pixelsPerSecond: 100,
+            waveformManager: buildWaveformManager(),
+            scrollable: false,
+          ),
+        );
+        await tester.pump();
+
+        const barStep =
+            TimelineConstants.clipWaveformBarWidth +
+            TimelineConstants.clipWaveformBarSpacing;
+        expect(
+          tester.renderObject(waveformBands),
+          paintsExactlyCountTimes(#drawRRect, (3 * 100 / barStep).floor()),
+        );
+      });
+
       testWidgets('draws no waveform band before extraction lands', (
         tester,
       ) async {
@@ -1075,6 +1135,7 @@ DivineVideoClip _createTestClip({
   int trimStartMs = 0,
   int trimEndMs = 0,
   String? thumbnailPath,
+  double volume = 1,
 }) {
   return DivineVideoClip(
     id: id,
@@ -1086,5 +1147,6 @@ DivineVideoClip _createTestClip({
     trimStart: Duration(milliseconds: trimStartMs),
     trimEnd: Duration(milliseconds: trimEndMs),
     thumbnailPath: thumbnailPath,
+    volume: volume,
   );
 }
