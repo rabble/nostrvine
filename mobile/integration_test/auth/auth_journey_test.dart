@@ -32,7 +32,9 @@ void main() {
         final l10n = lookupAppLocalizations(const Locale('en'));
         // ── Setup: suppress non-critical errors ──
         final originalOnError = suppressSetStateErrors();
+        addTearDown(() => restoreErrorHandler(originalOnError));
         final originalErrorBuilder = saveErrorWidgetBuilder();
+        addTearDown(() => restoreErrorWidgetBuilder(originalErrorBuilder));
 
         // Pre-enable semantics so the handle is disposed at the right time.
         // find.bySemanticsLabel() calls ensureSemantics() implicitly; if we
@@ -790,7 +792,8 @@ void main() {
         // Drain pending errors before restoring handlers.
         semanticsHandle.dispose();
         drainAsyncErrors(tester);
-        restoreErrorHandler(originalOnError);
+        // Inline restore is required by the framework's end-of-body
+        // ErrorWidget.builder check; the addTearDown above covers throws.
         restoreErrorWidgetBuilder(originalErrorBuilder);
       },
       timeout: const Timeout(Duration(minutes: 7)),

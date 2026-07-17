@@ -17,7 +17,9 @@ void main() {
     patrolTest('C2PA hardware signer creates cert file on emulator', ($) async {
       final tester = $.tester;
       final originalOnError = suppressSetStateErrors();
+      addTearDown(() => restoreErrorHandler(originalOnError));
       final originalErrorBuilder = saveErrorWidgetBuilder();
+      addTearDown(() => restoreErrorWidgetBuilder(originalErrorBuilder));
 
       final appDir = await getApplicationDocumentsDirectory();
       final certFile = File('${appDir.path}/c2pa_signing_divine.cert');
@@ -63,8 +65,9 @@ void main() {
         reason: 'Cert file should contain a valid PEM certificate',
       );
 
+      // Inline restore is required by the framework's end-of-body
+      // ErrorWidget.builder check; the addTearDown above covers throws.
       restoreErrorWidgetBuilder(originalErrorBuilder);
-      restoreErrorHandler(originalOnError);
       drainAsyncErrors(tester);
     });
   });

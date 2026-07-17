@@ -19,6 +19,7 @@ void main() {
         final originalOnError = suppressSetStateErrors();
         addTearDown(() => restoreErrorHandler(originalOnError));
         final originalErrorBuilder = saveErrorWidgetBuilder();
+        addTearDown(() => restoreErrorWidgetBuilder(originalErrorBuilder));
 
         // Launch app in guarded zone to catch external relay errors
         launchAppGuarded(app.main);
@@ -61,6 +62,8 @@ void main() {
 
         await pumpUntilSettled(tester, maxSeconds: 3);
         drainAsyncErrors(tester);
+        // Inline restore is required by the framework's end-of-body
+        // ErrorWidget.builder check; the addTearDown above covers throws.
         restoreErrorWidgetBuilder(originalErrorBuilder);
       },
       timeout: const Timeout(Duration(minutes: 2)),

@@ -16,7 +16,9 @@ void main() {
         final tester = $.tester;
 
         final originalOnError = suppressSetStateErrors();
+        addTearDown(() => restoreErrorHandler(originalOnError));
         final originalErrorBuilder = saveErrorWidgetBuilder();
+        addTearDown(() => restoreErrorWidgetBuilder(originalErrorBuilder));
 
         launchAppGuarded(app.main);
         await tester.pumpAndSettle(const Duration(seconds: 3));
@@ -49,7 +51,8 @@ void main() {
         );
 
         drainAsyncErrors(tester);
-        restoreErrorHandler(originalOnError);
+        // Inline restore is required by the framework's end-of-body
+        // ErrorWidget.builder check; the addTearDown above covers throws.
         restoreErrorWidgetBuilder(originalErrorBuilder);
       },
       timeout: const Timeout(Duration(minutes: 2)),

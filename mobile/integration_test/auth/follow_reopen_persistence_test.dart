@@ -24,7 +24,9 @@ void main() {
         const password = 'TestPass123!';
 
         final originalOnError = suppressSetStateErrors();
+        addTearDown(() => restoreErrorHandler(originalOnError));
         final originalErrorBuilder = saveErrorWidgetBuilder();
+        addTearDown(() => restoreErrorWidgetBuilder(originalErrorBuilder));
         final semanticsHandle = tester.ensureSemantics();
 
         launchAppGuarded(app.main);
@@ -127,7 +129,8 @@ void main() {
 
         semanticsHandle.dispose();
         drainAsyncErrors(tester);
-        restoreErrorHandler(originalOnError);
+        // Inline restore is required by the framework's end-of-body
+        // ErrorWidget.builder check; the addTearDown above covers throws.
         restoreErrorWidgetBuilder(originalErrorBuilder);
       },
       timeout: const Timeout(Duration(minutes: 4)),

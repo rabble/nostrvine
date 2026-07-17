@@ -2,7 +2,6 @@
 // ABOUTME: Requires: local Docker stack running (mise run local_up).
 
 import 'package:divine_ui/divine_ui.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/main.dart' as app;
 import 'package:patrol/patrol.dart';
@@ -17,7 +16,9 @@ void main() {
       ($) async {
         final tester = $.tester;
         final originalOnError = suppressSetStateErrors();
+        addTearDown(() => restoreErrorHandler(originalOnError));
         final originalErrorBuilder = saveErrorWidgetBuilder();
+        addTearDown(() => restoreErrorWidgetBuilder(originalErrorBuilder));
 
         launchAppGuarded(app.main);
         await tester.pumpAndSettle(const Duration(seconds: 3));
@@ -50,8 +51,9 @@ void main() {
         expect(find.text('Complete your registration'), findsNothing);
 
         drainAsyncErrors(tester);
+        // Inline restore is required by the framework's end-of-body
+        // ErrorWidget.builder check; the addTearDown above covers throws.
         restoreErrorWidgetBuilder(originalErrorBuilder);
-        FlutterError.onError = originalOnError;
       },
       timeout: const Timeout(Duration(minutes: 2)),
     );
