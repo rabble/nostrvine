@@ -4,7 +4,9 @@ sealed class UsernameReleaseResult {
   const UsernameReleaseResult();
 }
 
-/// The username was permanently burned (or was already not active).
+/// The username was permanently burned, or the caller no longer holds an
+/// active name (the server's idempotent no-op). Does not imply the requested
+/// handle is inactive for everyone — it may be active under another pubkey.
 class UsernameReleaseSuccess extends UsernameReleaseResult {
   /// Creates a success result.
   const UsernameReleaseSuccess();

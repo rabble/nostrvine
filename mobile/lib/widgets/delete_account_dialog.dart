@@ -78,7 +78,7 @@ Future<void> showRemoveKeysWarningDialog({
 Future<void> showDeleteAllContentWarningDialog({
   required BuildContext context,
   required void Function({required bool burnUsername}) onConfirm,
-  String? ownedUsername,
+  ({String name, String canonical})? ownedUsername,
 }) {
   final confirmationController = TextEditingController();
   var burnUsername = false;
@@ -151,7 +151,7 @@ Future<void> showDeleteAllContentWarningDialog({
                 checkColor: VineTheme.whiteText,
                 title: Text(
                   context.l10n.deleteAccountBurnUsernameToggle(
-                    '@$ownedUsername.divine.video',
+                    '@${ownedUsername.name}.divine.video',
                   ),
                   style: VineTheme.bodyMediumFont(),
                 ),
@@ -277,12 +277,16 @@ class _DeletionProgressDialog extends StatelessWidget {
 /// 5. Sign out and delete local keys
 /// 6. Show success snackbar (router auto-redirects to /welcome)
 ///
+/// If the burn commits but a later step fails, the error discloses that the
+/// username was permanently released (the burn is never rolled back).
+///
 /// [context] - BuildContext for showing dialogs
 /// [deletionService] - Service to execute NIP-62 deletion
 /// [authService] - Service for Keycast deletion and sign out
-/// [profileRepository] - Burns the username when [burnUsername] is set
+/// [profileRepository] - Burns the username / re-checks ownership when
+///   [burnUsername] is set
 /// [burnUsername] - Whether the user opted in to permanently burn their handle
-/// [ownedUsername] - The active @divine.video handle to burn (when opted in)
+/// [ownedUsername] - The active handle (display name + canonical) to burn
 /// [screenName] - Name of the calling screen for logging
 Future<void> executeAccountDeletion({
   required BuildContext context,
@@ -290,7 +294,7 @@ Future<void> executeAccountDeletion({
   required AuthService authService,
   ProfileRepository? profileRepository,
   bool burnUsername = false,
-  String? ownedUsername,
+  ({String name, String canonical})? ownedUsername,
   String screenName = 'AccountDeletion',
 }) async {
   // Create cubit for tracking progress
@@ -325,30 +329,66 @@ Future<void> executeAccountDeletion({
   final localDataDeletionFailedText =
       context.l10n.deleteAccountLocalDataDeletionFailed;
   final burnUsernameFailedText = context.l10n.deleteAccountBurnUsernameFailed;
+  final deletionIncompleteText = context.l10n.deleteAccountDeletionIncomplete;
+  final handleLabel = ownedUsername != null
+      ? '@${ownedUsername.name}.divine.video'
+      : null;
+  // Disclosure message for when the burn committed but the account could not
+  // be fully deleted — states the permanent release (never rolled back).
+  final burnReleasedText = handleLabel != null
+      ? context.l10n.deleteAccountBurnUsernameReleased(handleLabel)
+      : null;
+
+  // Whether the @divine.video handle was permanently released this run.
+  var burnCommitted = false;
 
   try {
     // Burn-first hard-block: release the username before any destructive step,
     // so a failed burn leaves everything intact. Needs a working signer, which
     // exists before deleteKeycastAccount() below.
-    if (burnUsername && ownedUsername != null) {
-      // A null repository here means we cannot honor the opted-in burn, so we
-      // must NOT proceed — treat it the same as a failed release (hard-block).
-      final releaseResult = await profileRepository?.releaseUsername(
-        name: ownedUsername,
-      );
-      if (releaseResult is! UsernameReleaseSuccess) {
+    if (burnUsername) {
+      // Opted in to burn. A missing handle or repository means we cannot honor
+      // it, so we must NOT proceed — treated the same as a failed release
+      // (hard-block, symmetric in both directions).
+      final releaseResult = (ownedUsername == null)
+          ? null
+          : await profileRepository?.releaseUsername(
+              name: ownedUsername.canonical,
+            );
+      if (releaseResult is UsernameReleaseSuccess) {
+        burnCommitted = true;
+        Log.info(
+          'Released $handleLabel before account deletion',
+          name: screenName,
+          category: LogCategory.auth,
+        );
+      } else {
+        // Nothing was destroyed. Pick an honest message:
+        //  - definite failure (not-owner / signer / null repo) -> nothing
+        //    happened, safe to retry.
+        //  - ambiguous network failure -> re-check ownership: if the name is
+        //    still present the burn definitely did not happen; if we cannot
+        //    tell, stay neutral and make no claim about the handle.
+        var message = burnUsernameFailedText;
+        if (releaseResult is UsernameReleaseNetworkError) {
+          final pubkey = authService.currentPublicKeyHex;
+          final stillOwned = (profileRepository != null && pubkey != null)
+              ? await profileRepository.getUsernameByPubkey(pubkeyHex: pubkey)
+              : null;
+          if (stillOwned == null) {
+            message = deletionIncompleteText;
+          }
+        }
         Log.warning(
-          'Username release failed or unavailable; aborting account deletion',
+          'Username release failed (${releaseResult.runtimeType}); aborting '
+          'account deletion',
           name: screenName,
           category: LogCategory.auth,
         );
         dismissDialog();
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            DivineSnackbarContainer.snackBar(
-              burnUsernameFailedText,
-              error: true,
-            ),
+            DivineSnackbarContainer.snackBar(message, error: true),
           );
         }
         return;
@@ -368,18 +408,18 @@ Future<void> executeAccountDeletion({
         // divineOAuth users MUST have their Keycast account deleted to
         // prevent re-login. Show error and do NOT sign out.
         Log.error(
-          'Keycast account deletion failed for registered user: '
-          '$keycastError',
+          'Keycast account deletion failed for registered user: $keycastError'
+          '${burnCommitted ? ' (username $handleLabel already released)' : ''}',
           name: screenName,
           category: LogCategory.auth,
         );
         dismissDialog();
         if (context.mounted) {
+          final text = (burnCommitted && burnReleasedText != null)
+              ? burnReleasedText
+              : context.l10n.deleteAccountServerDeletionFailed;
           ScaffoldMessenger.of(context).showSnackBar(
-            DivineSnackbarContainer.snackBar(
-              context.l10n.deleteAccountServerDeletionFailed,
-              error: true,
-            ),
+            DivineSnackbarContainer.snackBar(text, error: true),
           );
         }
         return;
@@ -436,14 +476,21 @@ Future<void> executeAccountDeletion({
         );
       }
     } else {
-      // Close loading indicator and show error
+      // Content deletion (NIP-62) failed.
+      if (burnCommitted) {
+        Log.error(
+          'Content deletion failed after releasing $handleLabel',
+          name: screenName,
+          category: LogCategory.auth,
+        );
+      }
       dismissDialog();
       if (context.mounted) {
+        final text = (burnCommitted && burnReleasedText != null)
+            ? burnReleasedText
+            : (result.error ?? context.l10n.deleteAccountContentDeletionFailed);
         ScaffoldMessenger.of(context).showSnackBar(
-          DivineSnackbarContainer.snackBar(
-            result.error ?? context.l10n.deleteAccountContentDeletionFailed,
-            error: true,
-          ),
+          DivineSnackbarContainer.snackBar(text, error: true),
         );
       }
     }

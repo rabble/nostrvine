@@ -263,7 +263,8 @@ class _DeleteAccountTile extends StatelessWidget {
     final profileRepository = ref.read(profileRepositoryProvider);
     // Resolve whether the user owns a burnable @divine.video handle so the
     // dialog can offer the opt-in burn toggle.
-    final String? ownedUsername = profileRepository == null
+    final ({String name, String canonical})? ownedUsername =
+        profileRepository == null
         ? null
         : await ref.read(ownedDivineUsernameProvider.future);
     if (!context.mounted) return;

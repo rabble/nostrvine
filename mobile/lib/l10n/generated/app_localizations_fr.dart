@@ -6708,6 +6708,11 @@ class AppLocalizationsFr extends AppLocalizations {
       'Couldn\'t release your username. Your account was not deleted. Try again, or uncheck the option.';
 
   @override
+  String deleteAccountBurnUsernameReleased(String username) {
+    return 'Your username $username has been permanently released, but we couldn\'t finish deleting your account. Tap Delete again to finish.';
+  }
+
+  @override
   String deleteAccountBurnUsernameToggle(String username) {
     return 'Also permanently give up $username';
   }
@@ -6721,6 +6726,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Supprimer tout le contenu';
+
+  @override
+  String get deleteAccountDeletionIncomplete =>
+      'We couldn\'t finish deleting your account. Try again.';
 
   @override
   String get deleteAccountFinalConfirmationBody =>

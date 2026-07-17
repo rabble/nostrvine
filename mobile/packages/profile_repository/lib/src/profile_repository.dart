@@ -999,25 +999,43 @@ class ProfileRepository {
   /// authenticated request to `names.divine.video/api/username/release`.
   ///
   /// The server verifies the authenticated pubkey owns [name] as an active
-  /// username before burning it. Returns a [UsernameReleaseResult]. A `200`
-  /// (including the server's idempotent no-op when no active name is owned)
-  /// maps to [UsernameReleaseSuccess]: the post-condition "the handle is no
-  /// longer active" holds either way.
+  /// username before burning it. Returns a [UsernameReleaseResult]; never
+  /// throws. A `200` (including the server's idempotent no-op when the caller
+  /// holds no active name) maps to [UsernameReleaseSuccess]. A signer failure
+  /// maps to [UsernameReleaseError] — the request never left the device, so the
+  /// burn did not happen. A network/timeout failure maps to
+  /// [UsernameReleaseNetworkError]: the burn state is ambiguous (the request
+  /// may have reached the server), so callers should re-check ownership.
   Future<UsernameReleaseResult> releaseUsername({required String name}) async {
     final payload = jsonEncode({'name': name});
-    final authHeader = await _nostrClient.createNip98AuthHeader(
-      url: _usernameReleaseUrl,
-      method: 'POST',
-      payload: payload,
-    );
 
-    if (authHeader == null) {
+    final String authHeader;
+    try {
+      final header = await _nostrClient.createNip98AuthHeader(
+        url: _usernameReleaseUrl,
+        method: 'POST',
+        payload: payload,
+      );
+      if (header == null) {
+        Log.error(
+          'NIP-98 auth header generation returned null (release: $name)',
+          name: 'ProfileRepository.releaseUsername',
+          category: LogCategory.auth,
+        );
+        return const UsernameReleaseError('Nip98 authorization failed');
+      }
+      authHeader = header;
+    } on Object catch (e, st) {
+      // Signer threw (e.g. Keycast RPC error or timeout). The request never
+      // left the device, so the burn definitely did not happen.
       Log.error(
-        'NIP-98 auth header generation returned null (release: $name)',
+        'release signing failed (username: $name)',
         name: 'ProfileRepository.releaseUsername',
         category: LogCategory.auth,
+        error: e,
+        stackTrace: st,
       );
-      return const UsernameReleaseError('Nip98 authorization failed');
+      return const UsernameReleaseError('Signing failed');
     }
 
     try {
@@ -1037,8 +1055,8 @@ class ProfileRepository {
         try {
           final data = jsonDecode(response.body) as Map<String, dynamic>;
           serverError = data['error'] as String?;
-        } on Exception {
-          // Ignore JSON parse failures.
+        } on Object {
+          // Ignore parse/cast failures on the error body.
         }
       }
 
@@ -1050,7 +1068,9 @@ class ProfileRepository {
           serverError ?? 'Unexpected response: ${response.statusCode}',
         ),
       };
-    } on Exception catch (e, st) {
+    } on Object catch (e, st) {
+      // Network / timeout: the request may or may not have reached the server,
+      // so the burn state is ambiguous.
       Log.error(
         'release network error (username: $name)',
         name: 'ProfileRepository.releaseUsername',
@@ -1062,13 +1082,17 @@ class ProfileRepository {
     }
   }
 
-  /// Returns the active `@divine.video` display name owned by [pubkeyHex], or
+  /// Returns the active `@divine.video` name owned by [pubkeyHex] as a
+  /// `(name, canonical)` record — `name` is the display form (for UI labels),
+  /// `canonical` is the round-trip-safe key to send back to `/release` — or
   /// `null` if the pubkey owns none.
   ///
-  /// A lookup failure (network, timeout, non-200, or unparseable body) also
-  /// returns `null`: callers treat "unknown" as "no owned name" and simply do
-  /// not offer the burn option.
-  Future<String?> getUsernameByPubkey({required String pubkeyHex}) async {
+  /// A lookup failure (network, timeout, non-200, or unparseable/wrong-shaped
+  /// body) also returns `null`: callers treat "unknown" as "no owned name" and
+  /// simply do not offer the burn option.
+  Future<({String name, String canonical})?> getUsernameByPubkey({
+    required String pubkeyHex,
+  }) async {
     try {
       final response = await _httpClient
           .get(Uri.parse('$_usernameByPubkeyUrl/$pubkeyHex'))
@@ -1076,8 +1100,11 @@ class ProfileRepository {
       if (response.statusCode != 200) return null;
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       if (data['found'] != true) return null;
-      return data['name'] as String?;
-    } on Exception catch (e) {
+      final name = data['name'] as String?;
+      final canonical = data['canonical'] as String?;
+      if (name == null || canonical == null) return null;
+      return (name: name, canonical: canonical);
+    } on Object catch (e) {
       Log.warning(
         'by-pubkey lookup failed: $e',
         name: 'ProfileRepository.getUsernameByPubkey',

@@ -34,7 +34,7 @@ Widget _wrapWithRouter(Widget child) {
 Future<void> _showDialog(
   WidgetTester tester, {
   void Function({required bool burnUsername})? onConfirm,
-  String? ownedUsername,
+  ({String name, String canonical})? ownedUsername,
 }) async {
   await tester.pumpWidget(
     _wrapWithRouter(
@@ -173,8 +173,21 @@ void main() {
     testWidgets('burn toggle is shown when a username is owned', (
       tester,
     ) async {
-      await _showDialog(tester, ownedUsername: 'alice');
+      await _showDialog(
+        tester,
+        ownedUsername: (name: 'Alice', canonical: 'alice'),
+      );
       expect(find.byType(CheckboxListTile), findsOneWidget);
+      // Pin the consent label naming the exact handle (display form, not
+      // canonical) so swapping the interpolated variable can't slip through.
+      expect(
+        find.text(
+          lookupAppLocalizations(
+            const Locale('en'),
+          ).deleteAccountBurnUsernameToggle('@Alice.divine.video'),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('checking burn toggle passes burnUsername true on confirm', (
@@ -183,7 +196,7 @@ void main() {
       bool? received;
       await _showDialog(
         tester,
-        ownedUsername: 'alice',
+        ownedUsername: (name: 'alice', canonical: 'alice'),
         onConfirm: ({required bool burnUsername}) => received = burnUsername,
       );
 
@@ -205,7 +218,7 @@ void main() {
       bool? received;
       await _showDialog(
         tester,
-        ownedUsername: 'alice',
+        ownedUsername: (name: 'alice', canonical: 'alice'),
         onConfirm: ({required bool burnUsername}) => received = burnUsername,
       );
 
@@ -298,7 +311,7 @@ void main() {
         authService: authService,
         profileRepository: profileRepository,
         burnUsername: true,
-        ownedUsername: 'alice',
+        ownedUsername: (name: 'alice', canonical: 'alice'),
       );
       await tester.pumpAndSettle();
 
@@ -352,7 +365,7 @@ void main() {
         authService: authService,
         profileRepository: profileRepository,
         burnUsername: true,
-        ownedUsername: 'alice',
+        ownedUsername: (name: 'alice', canonical: 'alice'),
       );
       await tester.pumpAndSettle();
 
@@ -399,7 +412,7 @@ void main() {
         deletionService: deletionService,
         authService: authService,
         profileRepository: profileRepository,
-        ownedUsername: 'alice',
+        ownedUsername: (name: 'alice', canonical: 'alice'),
       );
       await tester.pumpAndSettle();
 
@@ -433,7 +446,7 @@ void main() {
         deletionService: deletionService,
         authService: authService,
         burnUsername: true,
-        ownedUsername: 'alice',
+        ownedUsername: (name: 'alice', canonical: 'alice'),
       );
       await tester.pumpAndSettle();
 
@@ -448,6 +461,259 @@ void main() {
           ).deleteAccountBurnUsernameFailed,
         ),
         findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'discloses the release when content deletion fails after burn',
+      (
+        tester,
+      ) async {
+        final deletionService = _MockAccountDeletionService();
+        final authService = _MockAuthService();
+        final profileRepository = _MockProfileRepository();
+        when(
+          () => profileRepository.releaseUsername(name: any(named: 'name')),
+        ).thenAnswer((_) async => const UsernameReleaseSuccess());
+        when(
+          () => deletionService.deleteAccount(
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenAnswer((_) async => DeleteAccountResult.failure('relay down'));
+
+        late BuildContext capturedContext;
+        await tester.pumpWidget(
+          _wrapWithRouter(
+            Builder(
+              builder: (context) {
+                capturedContext = context;
+                return const Scaffold(body: SizedBox.shrink());
+              },
+            ),
+          ),
+        );
+
+        await executeAccountDeletion(
+          context: capturedContext,
+          deletionService: deletionService,
+          authService: authService,
+          profileRepository: profileRepository,
+          burnUsername: true,
+          ownedUsername: (name: 'alice', canonical: 'alice'),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(
+            lookupAppLocalizations(
+              const Locale('en'),
+            ).deleteAccountBurnUsernameReleased('@alice.divine.video'),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'discloses the release when keycast deletion fails after burn',
+      (
+        tester,
+      ) async {
+        final deletionService = _MockAccountDeletionService();
+        final authService = _MockAuthService();
+        final profileRepository = _MockProfileRepository();
+        when(
+          () => profileRepository.releaseUsername(name: any(named: 'name')),
+        ).thenAnswer((_) async => const UsernameReleaseSuccess());
+        when(
+          () => deletionService.deleteAccount(
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenAnswer(
+          (_) async => DeleteAccountResult.createSuccess('event-id'),
+        );
+        when(
+          authService.deleteKeycastAccount,
+        ).thenAnswer((_) async => (false, 'fk error'));
+        when(() => authService.isRegistered).thenReturn(true);
+
+        late BuildContext capturedContext;
+        await tester.pumpWidget(
+          _wrapWithRouter(
+            Builder(
+              builder: (context) {
+                capturedContext = context;
+                return const Scaffold(body: SizedBox.shrink());
+              },
+            ),
+          ),
+        );
+
+        await executeAccountDeletion(
+          context: capturedContext,
+          deletionService: deletionService,
+          authService: authService,
+          profileRepository: profileRepository,
+          burnUsername: true,
+          ownedUsername: (name: 'alice', canonical: 'alice'),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(
+            lookupAppLocalizations(
+              const Locale('en'),
+            ).deleteAccountBurnUsernameReleased('@alice.divine.video'),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'network-error release with name still owned aborts as failed',
+      (
+        tester,
+      ) async {
+        final deletionService = _MockAccountDeletionService();
+        final authService = _MockAuthService();
+        final profileRepository = _MockProfileRepository();
+        when(
+          () => profileRepository.releaseUsername(name: any(named: 'name')),
+        ).thenAnswer((_) async => const UsernameReleaseNetworkError());
+        when(() => authService.currentPublicKeyHex).thenReturn('abc');
+        when(
+          () => profileRepository.getUsernameByPubkey(
+            pubkeyHex: any(named: 'pubkeyHex'),
+          ),
+        ).thenAnswer((_) async => (name: 'alice', canonical: 'alice'));
+
+        late BuildContext capturedContext;
+        await tester.pumpWidget(
+          _wrapWithRouter(
+            Builder(
+              builder: (context) {
+                capturedContext = context;
+                return const Scaffold(body: SizedBox.shrink());
+              },
+            ),
+          ),
+        );
+
+        await executeAccountDeletion(
+          context: capturedContext,
+          deletionService: deletionService,
+          authService: authService,
+          profileRepository: profileRepository,
+          burnUsername: true,
+          ownedUsername: (name: 'alice', canonical: 'alice'),
+        );
+        await tester.pumpAndSettle();
+
+        verifyNever(
+          () => deletionService.deleteAccount(
+            onProgress: any(named: 'onProgress'),
+          ),
+        );
+        expect(
+          find.text(
+            lookupAppLocalizations(
+              const Locale('en'),
+            ).deleteAccountBurnUsernameFailed,
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('network-error release we cannot resolve shows incomplete', (
+      tester,
+    ) async {
+      final deletionService = _MockAccountDeletionService();
+      final authService = _MockAuthService();
+      final profileRepository = _MockProfileRepository();
+      when(
+        () => profileRepository.releaseUsername(name: any(named: 'name')),
+      ).thenAnswer((_) async => const UsernameReleaseNetworkError());
+      when(() => authService.currentPublicKeyHex).thenReturn('abc');
+      when(
+        () => profileRepository.getUsernameByPubkey(
+          pubkeyHex: any(named: 'pubkeyHex'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const Scaffold(body: SizedBox.shrink());
+            },
+          ),
+        ),
+      );
+
+      await executeAccountDeletion(
+        context: capturedContext,
+        deletionService: deletionService,
+        authService: authService,
+        profileRepository: profileRepository,
+        burnUsername: true,
+        ownedUsername: (name: 'alice', canonical: 'alice'),
+      );
+      await tester.pumpAndSettle();
+
+      verifyNever(
+        () =>
+            deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
+      );
+      expect(
+        find.text(
+          lookupAppLocalizations(
+            const Locale('en'),
+          ).deleteAccountDeletionIncomplete,
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('opted-in burn aborts when no username is owned', (
+      tester,
+    ) async {
+      final deletionService = _MockAccountDeletionService();
+      final authService = _MockAuthService();
+      final profileRepository = _MockProfileRepository();
+
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const Scaffold(body: SizedBox.shrink());
+            },
+          ),
+        ),
+      );
+
+      // Opted in (burnUsername: true) but ownedUsername omitted (null): the
+      // burn cannot be honored, so deletion must abort, not proceed.
+      await executeAccountDeletion(
+        context: capturedContext,
+        deletionService: deletionService,
+        authService: authService,
+        profileRepository: profileRepository,
+        burnUsername: true,
+      );
+      await tester.pumpAndSettle();
+
+      verifyNever(
+        () =>
+            deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
+      );
+      verifyNever(
+        () => profileRepository.releaseUsername(name: any(named: 'name')),
       );
     });
   });

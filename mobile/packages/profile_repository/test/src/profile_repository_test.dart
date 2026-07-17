@@ -4293,6 +4293,33 @@ void main() {
 
         final result = await profileRepository.releaseUsername(name: 'alice');
         expect(result, isA<UsernameReleaseSuccess>());
+        // Pin the signed contract: exact URL and byte-identical body (the body
+        // is what gets hashed into the NIP-98 payload tag the server verifies).
+        final captured = verify(
+          () => mockHttpClient.post(
+            captureAny(),
+            headers: any(named: 'headers'),
+            body: captureAny(named: 'body'),
+          ),
+        ).captured;
+        expect(
+          (captured[0] as Uri).toString(),
+          equals('https://names.divine.video/api/username/release'),
+        );
+        expect(captured[1], equals(jsonEncode({'name': 'alice'})));
+      });
+
+      test('returns UsernameReleaseError when the signer throws', () async {
+        when(
+          () => mockNostrClient.createNip98AuthHeader(
+            url: any(named: 'url'),
+            method: any(named: 'method'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenThrow(StateError('no public key'));
+
+        final result = await profileRepository.releaseUsername(name: 'alice');
+        expect(result, isA<UsernameReleaseError>());
       });
 
       test('returns UsernameReleaseNotOwner on 403', () async {
@@ -4416,16 +4443,28 @@ void main() {
       const pubkey =
           '156dd13a1f8a488037fa1b43ad934a5e58644a1d6e1ad6697a02c2e93b8b013b';
 
-      test('returns the display name when found', () async {
+      test('returns name and canonical when found', () async {
         when(() => mockHttpClient.get(any())).thenAnswer(
           (_) => Future.value(
-            Response('{"ok":true,"found":true,"name":"alice"}', 200),
+            Response(
+              '{"ok":true,"found":true,"name":"Alice","canonical":"alice"}',
+              200,
+            ),
           ),
         );
         final result = await profileRepository.getUsernameByPubkey(
           pubkeyHex: pubkey,
         );
-        expect(result, equals('alice'));
+        expect(result?.name, equals('Alice'));
+        expect(result?.canonical, equals('alice'));
+        // Pin the by-pubkey URL contract.
+        final captured =
+            verify(() => mockHttpClient.get(captureAny())).captured.single
+                as Uri;
+        expect(
+          captured.toString(),
+          equals('https://names.divine.video/api/username/by-pubkey/$pubkey'),
+        );
       });
 
       test('returns null when not found', () async {
@@ -4449,6 +4488,18 @@ void main() {
       test('returns null on non-200 response', () async {
         when(() => mockHttpClient.get(any())).thenAnswer(
           (_) => Future.value(Response('error', 500)),
+        );
+        final result = await profileRepository.getUsernameByPubkey(
+          pubkeyHex: pubkey,
+        );
+        expect(result, isNull);
+      });
+
+      test('returns null on a non-object 200 body', () async {
+        // Valid JSON but not an object: `as Map` throws a TypeError (an Error,
+        // not an Exception), so the catch must be `on Object`.
+        when(() => mockHttpClient.get(any())).thenAnswer(
+          (_) => Future.value(Response('123', 200)),
         );
         final result = await profileRepository.getUsernameByPubkey(
           pubkeyHex: pubkey,

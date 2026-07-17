@@ -20,7 +20,7 @@
 - **l10n:** any new `app_en.arb` key is mirrored to every `app_*.arb` (or added to `_knownUntranslatedDebt`); run `flutter test test/l10n/arb_consistency_test.dart`.
 - **Divine dark-mode only:** use `VineTheme` + `divine_ui` components, no raw `Colors.*`.
 - **Verify before push:** `dart format`, `flutter analyze lib test`, scoped tests (Part B); `npm test` / `vitest` (Part A).
-- Part B mobile toggle is inert until Part A is deployed to staging; unit tests use a mocked client.
+- Part B's `/by-pubkey` lookup is a pre-existing prod endpoint, so the toggle renders for handle owners immediately — it is **not** inert. Until Part A (`/release`) is deployed to prod, an opted-in confirm hard-blocks the whole account deletion (the user can uncheck to proceed), so **deploy #65 to prod before a mobile build with the toggle ships**. Unit tests use a mocked client.
 
 ---
 
@@ -684,5 +684,5 @@ git commit -m "feat(account): burn username first with hard-block during deletio
 
 - **Spec coverage:** endpoint (A1) ✓; releaseUsername + typed result (B1) ✓; getUsernameByPubkey ownership lookup (B2) ✓; ownership gate provider (B3) ✓; opt-in toggle + copy + l10n (B4) ✓; burn-first hard-block orchestration (B5) ✓; keycast#296/#6127 interactions are documented in the spec, no code ✓.
 - **Type consistency:** `UsernameReleaseSuccess/NotOwner/NetworkError/Error` used identically across B1/B5; `releaseUsername({required String name})` and `getUsernameByPubkey({required String pubkeyHex})` consistent across tasks; endpoint response keys (`released`, `reason:'no_active_name'`, `status:'burned'`) consistent A1↔B1.
-- **Ordering/dependency:** A1 independent; B1→B5 depend as noted; mobile toggle inert until A1 deployed to staging (unit-tested with mocks).
+- **Ordering/dependency:** A1 independent; B1→B5 depend as noted; the mobile toggle renders live (the `/by-pubkey` lookup is already in prod), so A1 (`/release`) must be deployed to prod before shipping a mobile build with the toggle, else an opted-in confirm hard-blocks deletion (unit-tested with mocks).
 - **Draft-PR gates:** flagged after A1's first commit and after B1's first commit — draft the PR description for Matt before pushing/opening.

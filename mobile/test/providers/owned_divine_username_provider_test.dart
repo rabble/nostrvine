@@ -25,11 +25,11 @@ void main() {
       repository = _MockProfileRepository();
     });
 
-    test('resolves the owned name from the repository', () async {
+    test('resolves the owned name + canonical from the repository', () async {
       when(() => auth.currentPublicKeyHex).thenReturn(pubkey);
       when(
         () => repository.getUsernameByPubkey(pubkeyHex: pubkey),
-      ).thenAnswer((_) async => 'alice');
+      ).thenAnswer((_) async => (name: 'Alice', canonical: 'alice'));
       final container = ProviderContainer(
         overrides: [
           authServiceProvider.overrideWithValue(auth),
@@ -38,10 +38,9 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      expect(
-        await container.read(ownedDivineUsernameProvider.future),
-        equals('alice'),
-      );
+      final result = await container.read(ownedDivineUsernameProvider.future);
+      expect(result?.name, equals('Alice'));
+      expect(result?.canonical, equals('alice'));
     });
 
     test('returns null when there is no signed-in pubkey', () async {

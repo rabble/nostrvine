@@ -182,7 +182,9 @@ void main() {
 const _knownUntranslatedDebt = <String>{
   // #6126: opt-in username-burn strings; translation deferred to the l10n pass.
   'deleteAccountBurnUsernameFailed',
+  'deleteAccountBurnUsernameReleased',
   'deleteAccountBurnUsernameToggle',
+  'deleteAccountDeletionIncomplete',
 };
 
 const _signatureVerificationKeys = <String>{
