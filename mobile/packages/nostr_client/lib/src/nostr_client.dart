@@ -446,7 +446,7 @@ class NostrClient {
   void _reportInitializationStage(NostrClientInitializationStage stage) {
     try {
       initializationObserver?.call(stage);
-    } catch (e, st) {
+    } on Object catch (e, st) {
       log(
         'Initialization stage observer failed',
         name: 'NostrClient',
