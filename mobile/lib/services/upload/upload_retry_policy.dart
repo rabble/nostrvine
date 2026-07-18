@@ -2,13 +2,13 @@
 // ABOUTME: persistence, and manual/automatic retry lifecycle for UploadManager.
 
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/upload/pending_upload_store.dart';
 import 'package:openvine/services/upload/upload_session_errors.dart';
 import 'package:openvine/services/upload_manager.dart';
-import 'package:openvine/utils/async_utils.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Owns the retry and session-persistence concerns extracted from [UploadManager].
@@ -23,6 +23,8 @@ class UploadRetryPolicy {
   final UploadRetryConfig _retryConfig;
 
   final Map<String, Future<void>> _sessionPersistFutures = {};
+  final Map<String, Completer<void>> _backoffWakeCompleters = {};
+  bool _isDisposed = false;
 
   // ---------------------------------------------------------------------------
   // Public API
@@ -33,6 +35,8 @@ class UploadRetryPolicy {
     Future<void> Function() executeUpload, {
     required bool Function(dynamic) isRetriable,
   }) async {
+    if (_isDisposed) return;
+
     // Local-only counter for how many auto-attempts have been made in this
     // call. Must NOT be persisted to Hive: PendingUpload.retryCount is the
     // manual-retry budget (canRetry gates on retryCount < 3). Writing
@@ -41,8 +45,8 @@ class UploadRetryPolicy {
     var autoAttempt = 0;
 
     try {
-      await AsyncUtils.retryWithBackoff(
-        operation: () async {
+      while (!_isDisposed && autoAttempt <= _retryConfig.maxRetries) {
+        try {
           await drainSessionPersist(upload.id);
           final currentUpload = _store.getUpload(upload.id) ?? upload;
 
@@ -66,14 +70,51 @@ class UploadRetryPolicy {
           );
 
           await executeUpload();
-        },
-        maxRetries: _retryConfig.maxRetries,
-        baseDelay: _retryConfig.initialDelay,
-        maxDelay: _retryConfig.maxDelay,
-        backoffMultiplier: _retryConfig.backoffMultiplier,
-        retryWhen: isRetriable,
-        debugName: 'Upload-${upload.id}',
-      );
+          if (autoAttempt > 1) {
+            Log.warning(
+              'Upload retry succeeded after ${autoAttempt - 1} retries: ${upload.id}',
+              name: 'UploadManager',
+              category: LogCategory.video,
+            );
+          }
+          return;
+        } catch (error) {
+          if (!isRetriable(error)) {
+            Log.error(
+              'Upload retry policy not retrying error for ${upload.id}: $error',
+              name: 'UploadManager',
+              category: LogCategory.video,
+            );
+            rethrow;
+          }
+
+          if (autoAttempt > _retryConfig.maxRetries) {
+            Log.error(
+              'Upload retry policy max retries exceeded for ${upload.id}: $error',
+              name: 'UploadManager',
+              category: LogCategory.video,
+            );
+            rethrow;
+          }
+
+          final delayMs = math
+              .min(
+                _retryConfig.initialDelay.inMilliseconds *
+                    math.pow(_retryConfig.backoffMultiplier, autoAttempt - 1),
+                _retryConfig.maxDelay.inMilliseconds.toDouble(),
+              )
+              .round();
+          final delay = Duration(milliseconds: delayMs);
+          Log.error(
+            'Upload attempt $autoAttempt failed, retrying in ${delay.inMilliseconds}ms: ${upload.id}',
+            name: 'UploadManager',
+            category: LogCategory.video,
+          );
+
+          await _waitForBackoff(upload.id, delay);
+          if (_isDisposed) return;
+        }
+      }
     } catch (e) {
       Log.error(
         'Upload failed after all retries: $e',
@@ -83,6 +124,19 @@ class UploadRetryPolicy {
       rethrow;
     }
   }
+
+  bool wakeBackoff(String uploadId) {
+    if (_isDisposed) return false;
+    final completer = _backoffWakeCompleters.remove(uploadId);
+    if (completer == null) return false;
+    if (!completer.isCompleted) {
+      completer.complete();
+    }
+    return true;
+  }
+
+  bool isWaitingForBackoff(String uploadId) =>
+      _backoffWakeCompleters.containsKey(uploadId);
 
   void enqueueSessionPersist(
     String uploadId,
@@ -306,12 +360,41 @@ class UploadRetryPolicy {
   }
 
   void dispose() {
+    _isDisposed = true;
+    for (final completer in _backoffWakeCompleters.values) {
+      if (!completer.isCompleted) {
+        completer.complete();
+      }
+    }
+    _backoffWakeCompleters.clear();
     _sessionPersistFutures.clear();
   }
 
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------
+
+  Future<void> _waitForBackoff(String uploadId, Duration delay) async {
+    final completer = Completer<void>();
+    _backoffWakeCompleters[uploadId] = completer;
+    final timer = Timer(delay, () {
+      if (identical(_backoffWakeCompleters[uploadId], completer)) {
+        _backoffWakeCompleters.remove(uploadId);
+      }
+      if (!completer.isCompleted) {
+        completer.complete();
+      }
+    });
+
+    try {
+      await completer.future;
+    } finally {
+      timer.cancel();
+      if (identical(_backoffWakeCompleters[uploadId], completer)) {
+        _backoffWakeCompleters.remove(uploadId);
+      }
+    }
+  }
 
   Future<void> _storeResumableSessionProgress(
     String uploadId,

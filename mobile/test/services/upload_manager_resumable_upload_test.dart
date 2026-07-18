@@ -599,50 +599,68 @@ void main() {
       },
     );
 
-    test('initialize does not auto-resume interrupted uploads', () async {
-      final upload =
-          PendingUpload.create(
-            localVideoPath: videoFile.path,
-            nostrPubkey: 'test-pubkey',
-            title: 'Interrupted video',
-          ).copyWith(
-            status: UploadStatus.uploading,
-            uploadProgress: 0.3,
-            resumableSession: const BlossomResumableUploadSession(
-              uploadId: 'up_789',
-              uploadUrl: 'https://upload.divine.video/sessions/up_789',
-              chunkSize: 8,
-              nextOffset: 8,
-            ),
+    test(
+      'initialize auto-resumes interrupted uploads from a prior session',
+      () async {
+        final upload =
+            PendingUpload.create(
+              localVideoPath: videoFile.path,
+              nostrPubkey: 'test-pubkey',
+              title: 'Interrupted video',
+            ).copyWith(
+              status: UploadStatus.uploading,
+              uploadProgress: 0.3,
+              resumableSession: const BlossomResumableUploadSession(
+                uploadId: 'up_789',
+                uploadUrl: 'https://upload.divine.video/sessions/up_789',
+                chunkSize: 8,
+                nextOffset: 8,
+              ),
+            );
+
+        final uploadStarted = Completer<void>();
+        when(
+          () => mockBlossomService.uploadVideo(
+            videoFile: any(named: 'videoFile'),
+            nostrPubkey: any(named: 'nostrPubkey'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            proofManifestJson: any(named: 'proofManifestJson'),
+            resumableSession: any(named: 'resumableSession'),
+            onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenAnswer((_) async {
+          if (!uploadStarted.isCompleted) uploadStarted.complete();
+          return const BlossomUploadResult(
+            success: true,
+            url: 'https://media.divine.video/abc',
+            thumbnailUrl: 'https://media.divine.video/abc-thumb.jpg',
           );
+        });
 
-      final box = Hive.box<PendingUpload>('pending_uploads');
-      await box.put(upload.id, upload);
-      uploadManager.dispose();
+        final box = Hive.box<PendingUpload>('pending_uploads');
+        await box.put(upload.id, upload);
+        uploadManager.dispose();
 
-      uploadManager = UploadManager(blossomService: mockBlossomService);
-      await uploadManager.initialize();
+        uploadManager = UploadManager(
+          blossomService: mockBlossomService,
+          retryConfig: const UploadRetryConfig(
+            initialDelay: Duration.zero,
+            maxDelay: Duration.zero,
+          ),
+        );
+        await uploadManager.initialize();
 
-      await Future<void>.delayed(const Duration(milliseconds: 200));
-
-      final current = uploadManager.getUpload(upload.id);
-      expect(current, isNotNull);
-      expect(current!.status, equals(UploadStatus.uploading));
-
-      verifyNever(
-        () => mockBlossomService.uploadVideo(
-          videoFile: any(named: 'videoFile'),
-          nostrPubkey: any(named: 'nostrPubkey'),
-          title: any(named: 'title'),
-          description: any(named: 'description'),
-          hashtags: any(named: 'hashtags'),
-          proofManifestJson: any(named: 'proofManifestJson'),
-          resumableSession: any(named: 'resumableSession'),
-          onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
-          onProgress: any(named: 'onProgress'),
-        ),
-      );
-    });
+        // The startup recovery sweep should re-drive the stuck upload.
+        await TestHelpers.waitForCondition(
+          () => uploadStarted.isCompleted,
+          timeout: const Duration(seconds: 2),
+          checkInterval: const Duration(milliseconds: 20),
+        );
+      },
+    );
   });
 
   group('UploadManager findReusableUpload', () {

@@ -13,6 +13,7 @@ import 'package:models/models.dart' show NativeProofData;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/pending_upload.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/circuit_breaker_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/upload/pending_upload_store.dart';
@@ -119,7 +120,7 @@ class CrashReportingUploadReporter implements UploadCrashReporter {
 
 /// Manages video uploads and their persistent state with enhanced reliability
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
-class UploadManager {
+class UploadManager implements BackgroundAwareService {
   UploadManager({
     required BlossomUploadService blossomService,
     String? defaultBlossomUrl,
@@ -129,6 +130,7 @@ class UploadManager {
     UploadRetryConfig? retryConfig,
     UploadCrashReporter? crashReporter,
     this.useBackgroundUpload = false,
+    BackgroundActivityManager? backgroundActivityManager,
   }) : _blossomService = blossomService,
        _defaultBlossomUrl =
            defaultBlossomUrl ?? BlossomUploadService.defaultBlossomServer,
@@ -137,7 +139,12 @@ class UploadManager {
        _store = PendingUploadStore(
          scopeUploadsToCurrentUser: scopeUploadsToCurrentUser,
          currentNostrPubkey: currentNostrPubkey,
-       ) {
+       ),
+       // Defaults to the process-global singleton; injectable so lifecycle
+       // tests can verify register/unregister with a fake (mirrors AuthService
+       // per #4743 B3).
+       _backgroundActivityManager =
+           backgroundActivityManager ?? BackgroundActivityManager() {
     _retryPolicy = UploadRetryPolicy(store: _store, retryConfig: _retryConfig);
     _reporter = UploadProgressReporter(
       store: _store,
@@ -161,6 +168,12 @@ class UploadManager {
   final UploadRetryConfig _retryConfig;
   final Dio _dio = Dio();
 
+  // Background-aware lifecycle. The manager registers itself so that
+  // [onAppResumed] can re-drive uploads whose retry backoff froze while the
+  // app was suspended (Dart Timers do not fire while iOS suspends the app).
+  final BackgroundActivityManager _backgroundActivityManager;
+  bool _isBackgroundRegistered = false;
+
   // Extracted concerns
   late final UploadRetryPolicy _retryPolicy;
   late final UploadProgressReporter _reporter;
@@ -174,15 +187,44 @@ class UploadManager {
   // flight. Cancelling an OS background transfer emits a `cancelled` terminal
   // event that resolves the in-flight [_performUpload] future as a failure; a
   // marker here lets that path recognise a user-initiated stop and skip
-  // [_handleUploadFailure], so a pause is not overwritten with `failed` and a
-  // cancel does not emit a spurious failure crash report. Cleared when the
+  // [_handleUploadFailure], so a pause is not overwritten with `failed` and
+  // a cancel does not emit a spurious failure crash report. Cleared when the
   // owning [_performUpload] run settles.
   final Set<String> _userStoppedUploadIds = <String>{};
+
+  // In-process single-flight guard. Every entry point that can drive an upload
+  // shares this map, so a sweep and a user retry cannot start overlapping Dart
+  // upload pipelines for the same PendingUpload.
+  final Map<String, Future<void>> _inFlightUploads = <String, Future<void>>{};
+
+  // Re-entrancy latch for [_recoverStuckUploads]; startup and app-resume
+  // recovery can run close together while missing-file updates are awaiting.
+  bool _isRecovering = false;
 
   bool _isInitialized = false;
 
   /// Check if the upload manager is initialized
   bool get isInitialized => _isInitialized && _store.isReady;
+
+  /// Whether an upload's [_performUpload] future is currently on the event
+  /// loop. Visible for testing the recovery sweep's in-flight skip logic.
+  @visibleForTesting
+  bool isUploadInFlight(String uploadId) =>
+      _inFlightUploads.containsKey(uploadId);
+
+  @visibleForTesting
+  bool isUploadWaitingForRetryBackoff(String uploadId) =>
+      _retryPolicy.isWaitingForBackoff(uploadId);
+
+  /// Drives a recovery sweep on demand. Visible for testing.
+  @visibleForTesting
+  Future<void> recoverStuckUploadsForTest() => _recoverStuckUploads();
+
+  void _registerForBackgroundActivity() {
+    if (_isBackgroundRegistered) return;
+    _backgroundActivityManager.registerService(this);
+    _isBackgroundRegistered = true;
+  }
 
   /// Initialize the upload manager and load persisted uploads
   /// Uses robust initialization with retry logic and recovery strategies
@@ -226,11 +268,16 @@ class UploadManager {
       // Clean up old completed/published uploads to prevent accumulation
       await cleanupCompletedUploads();
 
-      // Interrupted resumable uploads are NOT auto-resumed here.
-      // The bottom sheet flow (resumePendingPublishes → BackgroundPublishBloc)
-      // lets the user decide whether to retry or save to drafts.
-      // VideoPublishService._getOrCreateUpload reuses existing PendingUpload
-      // records (and their resumable sessions) when the user taps "Try Again".
+      // Register for background-lifecycle callbacks so [onAppResumed] can
+      // re-drive uploads whose retry backoff froze while the app was
+      // suspended (Dart Timers do not fire while iOS suspends the app).
+      _registerForBackgroundActivity();
+
+      // Re-drive uploads left in `uploading`/`retrying` by a prior crash or
+      // background freeze. Fire-and-forget: this runs on the event loop and
+      // must not block startup. `failed` uploads are intentionally left to the
+      // user-driven retry flow (they carry a manual retry budget).
+      unawaited(_recoverStuckUploads());
     } catch (e, stackTrace) {
       _isInitialized = false;
 
@@ -492,6 +539,7 @@ class UploadManager {
 
         if (_store.isReady) {
           _isInitialized = true;
+          _registerForBackgroundActivity();
           Log.info(
             '✅ Robust initialization successful',
             name: 'UploadManager',
@@ -664,6 +712,31 @@ class UploadManager {
 
   /// Perform upload with circuit breaker and retry logic
   Future<void> _performUpload(
+    PendingUpload upload, {
+    ValueChanged<double>? onProgress,
+  }) async {
+    final existing = _inFlightUploads[upload.id];
+    if (existing != null) {
+      Log.info(
+        'Upload ${upload.id} already in flight; joining existing upload',
+        name: 'UploadManager',
+        category: LogCategory.video,
+      );
+      return existing;
+    }
+
+    late final Future<void> uploadFuture;
+    uploadFuture = _performUploadInternal(upload, onProgress: onProgress)
+        .whenComplete(() {
+          if (identical(_inFlightUploads[upload.id], uploadFuture)) {
+            _inFlightUploads.remove(upload.id);
+          }
+        });
+    _inFlightUploads[upload.id] = uploadFuture;
+    return uploadFuture;
+  }
+
+  Future<void> _performUploadInternal(
     PendingUpload upload, {
     ValueChanged<double>? onProgress,
   }) async {
@@ -1261,6 +1334,118 @@ class UploadManager {
     );
   }
 
+  // ============================================================
+  // Background recovery
+  // ============================================================
+
+  /// Recovers uploads stuck in [UploadStatus.uploading] or
+  /// [UploadStatus.retrying] after a crash, force-quit, or suspended retry
+  /// backoff.
+  ///
+  /// iOS suspends the app on background and Dart [Timer]s do not fire while
+  /// suspended. If an upload is still alive but parked in retry backoff, the
+  /// sweep wakes that wait so the existing [_performUpload] future continues.
+  /// If no live future exists, the sweep re-drives the persisted row.
+  ///
+  /// Only `uploading`/`retrying` are re-driven — those states are
+  /// unambiguously interrupted and have consumed no manual-retry budget.
+  /// `failed` uploads are left to the user-driven retry flow (they carry a
+  /// `retryCount < 3` budget surfaced via the publish bottom sheet).
+  ///
+  /// Called on app resume ([onAppResumed]) and once at startup. Re-entrancy is
+  /// guarded by [_isRecovering].
+  Future<void> _recoverStuckUploads() async {
+    if (_isRecovering) return;
+    if (!_isInitialized || !_store.isReady) return;
+    _isRecovering = true;
+    try {
+      final stuck = _store.pendingUploads
+          .where(
+            (u) =>
+                u.status == UploadStatus.uploading ||
+                u.status == UploadStatus.retrying,
+          )
+          .toList();
+
+      if (stuck.isEmpty) return;
+
+      var recovered = 0;
+      var wokeBackoff = 0;
+      var markedMissingFile = 0;
+      for (final upload in stuck) {
+        if (_inFlightUploads.containsKey(upload.id)) {
+          if (_retryPolicy.wakeBackoff(upload.id)) {
+            wokeBackoff++;
+          }
+          continue;
+        }
+        // A user just paused/cancelled; leave the authoritative status alone.
+        if (_userStoppedUploadIds.contains(upload.id)) continue;
+
+        if (!File(upload.localVideoPath).existsSync()) {
+          // The source file is gone (e.g. temp cleared by the OS), so resume
+          // is impossible — mark it failed so the publish flow can tell the
+          // user instead of silently spinning.
+          await _store.update(
+            upload.copyWith(
+              status: UploadStatus.failed,
+              errorMessage:
+                  'Video file missing after restart: '
+                  '${upload.localVideoPath}',
+            ),
+          );
+          markedMissingFile++;
+          continue;
+        }
+
+        resumeInterruptedUpload(upload.id);
+        recovered++;
+      }
+
+      Log.info(
+        '🔄 Recovery sweep: re-drove $recovered stuck upload(s), '
+        'woke $wokeBackoff retry backoff wait(s), '
+        'marked $markedMissingFile failed (missing file), '
+        'skipped ${stuck.length - recovered - wokeBackoff - markedMissingFile} active',
+        name: 'UploadManager',
+        category: LogCategory.video,
+      );
+    } finally {
+      _isRecovering = false;
+    }
+  }
+
+  // ============================================================
+  // BackgroundAwareService implementation
+  // ============================================================
+
+  @override
+  String get serviceName => 'UploadManager';
+
+  @override
+  void onAppBackgrounded() {
+    // No-op: the OS owns an in-flight background transfer, and there is no
+    // Dart-side work to pause. The recovery sweep runs on [onAppResumed].
+  }
+
+  @override
+  void onExtendedBackground() {
+    // No-op: same rationale as [onAppBackgrounded].
+  }
+
+  @override
+  void onAppResumed() {
+    // Fire-and-forget: the interface is synchronous. The sweep's own
+    // re-entrancy latch makes overlapping startup/resume calls safe.
+    unawaited(_recoverStuckUploads());
+  }
+
+  @override
+  void onPeriodicCleanup() {
+    // No-op: recovery is driven by resume/startup events, not the periodic
+    // timer.
+  }
+
   /// Cancel an upload (stops the upload but keeps it for retry)
   Future<void> cancelUpload(String uploadId) async {
     final upload = getUpload(uploadId);
@@ -1611,6 +1796,12 @@ class UploadManager {
   }
 
   void dispose() {
+    // Unregister from background-lifecycle callbacks before tearing down.
+    if (_isBackgroundRegistered) {
+      _backgroundActivityManager.unregisterService(this);
+      _isBackgroundRegistered = false;
+    }
+
     // Delegate to extracted policy/reporter (handles subscriptions, timers,
     // session futures, and metrics cleanup).
     _retryPolicy.dispose();
