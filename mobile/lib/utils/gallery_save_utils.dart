@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/gallery_save_service.dart';
@@ -21,30 +22,38 @@ Future<void> saveToGallery(BuildContext context, WidgetRef ref) async {
   final finalRenderedClip = ref.read(videoEditorProvider).finalRenderedClip;
   if (finalRenderedClip == null) return;
 
-  // Stop-motion clips render their mp4 on demand; a normal clip passes through.
-  final materialized = await StopMotionRenderService.materialize(
-    finalRenderedClip,
-  );
-  if (materialized == null || !context.mounted) return;
-  final video = materialized.requireVideo;
+  DivineVideoClip? materialized;
+  try {
+    // Stop-motion clips render their mp4 on demand; a normal clip passes through.
+    materialized = await StopMotionRenderService.materialize(
+      finalRenderedClip,
+    );
+    if (materialized == null || !context.mounted) return;
+    final video = materialized.requireVideo;
 
-  final gallerySaveService = ref.read(gallerySaveServiceProvider);
-  final result = await gallerySaveService.saveVideoToGallery(video);
+    final gallerySaveService = ref.read(gallerySaveServiceProvider);
+    final result = await gallerySaveService.saveVideoToGallery(video);
 
-  if (result is! GallerySavePermissionDenied || !context.mounted) {
-    return;
-  }
+    if (result is! GallerySavePermissionDenied || !context.mounted) {
+      return;
+    }
 
-  // Permission denied — show an actionable sheet instead of a snackbar.
-  final permissionsService = ref.read(permissionsServiceProvider);
-  final choice = await showGalleryPermissionSheet(
-    context,
-    permissionsService: permissionsService,
-  );
+    // Permission denied — show an actionable sheet instead of a snackbar.
+    final permissionsService = ref.read(permissionsServiceProvider);
+    final choice = await showGalleryPermissionSheet(
+      context,
+      permissionsService: permissionsService,
+    );
 
-  if (choice == GalleryPermissionChoice.openedSettings ||
-      choice == GalleryPermissionChoice.granted) {
-    // Retry once — the user may have just granted access.
-    await gallerySaveService.saveVideoToGallery(video);
+    if (choice == GalleryPermissionChoice.openedSettings ||
+        choice == GalleryPermissionChoice.granted) {
+      // Retry once — the user may have just granted access.
+      await gallerySaveService.saveVideoToGallery(video);
+    }
+  } finally {
+    await StopMotionRenderService.cleanupMaterializedOutput(
+      sourceClip: finalRenderedClip,
+      materializedClip: materialized,
+    );
   }
 }

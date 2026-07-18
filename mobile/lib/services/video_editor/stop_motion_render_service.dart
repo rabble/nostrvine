@@ -140,6 +140,36 @@ class StopMotionRenderService {
     );
   }
 
+  /// Deletes the mp4 [materialize] created when [sourceClip] was frames-only.
+  ///
+  /// Normal video clips and already-materialized stop-motion clips pass through
+  /// [materialize] unchanged, so their video files remain caller-owned. Gallery
+  /// saves use this after copying the transient render to the camera roll.
+  static Future<void> cleanupMaterializedOutput({
+    required DivineVideoClip sourceClip,
+    required DivineVideoClip? materializedClip,
+  }) async {
+    if (materializedClip == null ||
+        sourceClip.video != null ||
+        !sourceClip.isStopMotion) {
+      return;
+    }
+
+    final outputPath = materializedClip.video?.file?.path;
+    if (outputPath == null) return;
+
+    try {
+      final file = File(outputPath);
+      if (file.existsSync()) await file.delete();
+    } catch (e) {
+      Log.debug(
+        '⚠️ Failed to delete transient stop-motion render $outputPath: $e',
+        name: _logName,
+        category: LogCategory.video,
+      );
+    }
+  }
+
   /// The real encoded duration of the assembled mp4 at [outputPath], or `null`
   /// when it can't be probed (caller falls back to the frame-hold estimate).
   static Future<Duration?> _probeEncodedDuration(String outputPath) async {

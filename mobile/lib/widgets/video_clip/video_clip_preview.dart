@@ -104,11 +104,12 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreview> {
 
     setState(() => _isSaving = true);
 
+    DivineVideoClip? materialized;
     try {
       final gallerySaveService = ref.read(gallerySaveServiceProvider);
       // Stop-motion clips render their mp4 on demand; a normal clip passes
       // through unchanged.
-      final materialized = await StopMotionRenderService.materialize(
+      materialized = await StopMotionRenderService.materialize(
         widget.clip,
       );
       if (!mounted) return;
@@ -166,6 +167,10 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreview> {
         );
       }
     } finally {
+      await StopMotionRenderService.cleanupMaterializedOutput(
+        sourceClip: widget.clip,
+        materializedClip: materialized,
+      );
       if (mounted) setState(() => _isSaving = false);
     }
   }

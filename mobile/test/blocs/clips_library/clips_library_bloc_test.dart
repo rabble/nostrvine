@@ -2,6 +2,7 @@
 // ABOUTME: Tests loading, selection, deletion, and gallery export
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -12,6 +13,7 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/gallery_save_service.dart';
+import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -72,6 +74,11 @@ void main() {
       when(() => mockClipLibraryService.recoverMissingAssets(any())).thenAnswer(
         (inv) async => inv.positionalArguments.first as List<DivineVideoClip>,
       );
+    });
+
+    tearDown(() {
+      StopMotionRenderService.assembleOverride = null;
+      StopMotionRenderService.probeDurationOverride = null;
     });
 
     DivineVideoClip createStopMotionClip({
@@ -963,6 +970,48 @@ void main() {
                     .having((r) => r.failureCount, 'failureCount', 0),
               ),
         ],
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'cleans up the transient mp4 after saving a stop-motion clip',
+        setUp: () {
+          final tempDir = Directory.systemTemp.createTempSync(
+            'clips_library_stop_motion_gallery_test',
+          );
+          addTearDown(() async {
+            if (tempDir.existsSync()) await tempDir.delete(recursive: true);
+          });
+          final output = File('${tempDir.path}/rendered.mp4')
+            ..writeAsStringSync('rendered');
+          StopMotionRenderService.assembleOverride =
+              ({
+                required frames,
+                required aspectRatio,
+                frameRate = StopMotionRenderService.defaultFrameRate,
+                String? taskId,
+              }) async => output.path;
+          StopMotionRenderService.probeDurationOverride = (_) async => null;
+          when(
+            () => mockGallerySaveService.saveVideoToGallery(any()),
+          ).thenAnswer((_) async => const GallerySaveSuccess());
+        },
+        seed: () => ClipsLibraryState(
+          status: ClipsLibraryStatus.loaded,
+          clips: [createStopMotionClip(id: 'sm1')],
+          selectedClipIds: const {'sm1'},
+          selectedDuration: const Duration(seconds: 1),
+        ),
+        build: createBloc,
+        act: (bloc) => bloc.add(const ClipsLibrarySaveToGallery()),
+        verify: (_) {
+          final captured =
+              verify(
+                    () =>
+                        mockGallerySaveService.saveVideoToGallery(captureAny()),
+                  ).captured.single
+                  as EditorVideo;
+          expect(File(captured.file!.path).existsSync(), isFalse);
+        },
       );
 
       blocTest<ClipsLibraryBloc, ClipsLibraryState>(

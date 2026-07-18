@@ -352,9 +352,10 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
     var failureCount = 0;
 
     for (final clip in clipsToSave) {
+      DivineVideoClip? materialized;
       try {
         // Stop-motion clips render their mp4 on demand before saving.
-        final materialized = await StopMotionRenderService.materialize(clip);
+        materialized = await StopMotionRenderService.materialize(clip);
         if (materialized == null) {
           failureCount++;
           continue;
@@ -391,6 +392,11 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
           ),
         );
         return;
+      } finally {
+        await StopMotionRenderService.cleanupMaterializedOutput(
+          sourceClip: clip,
+          materializedClip: materialized,
+        );
       }
     }
 

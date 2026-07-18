@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/constants/video_editor_constants.dart';
@@ -310,6 +312,71 @@ void main() {
         );
 
         expect(result, isNull);
+      });
+    });
+
+    group('cleanupMaterializedOutput', () {
+      test('deletes the rendered mp4 for a frames-only source clip', () async {
+        final tempDir = await Directory.systemTemp.createTemp(
+          'stop_motion_cleanup_test',
+        );
+        addTearDown(() async {
+          if (tempDir.existsSync()) await tempDir.delete(recursive: true);
+        });
+        final output = File('${tempDir.path}/rendered.mp4')
+          ..writeAsStringSync('rendered');
+
+        final source = DivineVideoClip(
+          id: 'sm-cleanup',
+          stopMotionFrames: const [
+            StopMotionClipFrame(
+              path: '/a.jpg',
+              duration: Duration(milliseconds: 83),
+            ),
+          ],
+          duration: const Duration(milliseconds: 83),
+          recordedAt: DateTime(2024),
+          targetAspectRatio: model.AspectRatio.vertical,
+          originalAspectRatio: 9 / 16,
+        );
+        final materialized = source.copyWith(
+          video: EditorVideo.file(output.path),
+          clearStopMotionFrames: true,
+        );
+
+        await StopMotionRenderService.cleanupMaterializedOutput(
+          sourceClip: source,
+          materializedClip: materialized,
+        );
+
+        expect(output.existsSync(), isFalse);
+      });
+
+      test('does not delete an already video-backed source clip', () async {
+        final tempDir = await Directory.systemTemp.createTemp(
+          'stop_motion_cleanup_video_test',
+        );
+        addTearDown(() async {
+          if (tempDir.existsSync()) await tempDir.delete(recursive: true);
+        });
+        final output = File('${tempDir.path}/source.mp4')
+          ..writeAsStringSync('video');
+
+        final source = DivineVideoClip(
+          id: 'video-cleanup',
+          video: EditorVideo.file(output.path),
+          duration: const Duration(seconds: 1),
+          recordedAt: DateTime(2024),
+          targetAspectRatio: model.AspectRatio.vertical,
+          originalAspectRatio: 9 / 16,
+        );
+
+        await StopMotionRenderService.cleanupMaterializedOutput(
+          sourceClip: source,
+          materializedClip: source,
+        );
+
+        expect(output.existsSync(), isTrue);
       });
     });
   });
