@@ -213,9 +213,12 @@ List _buildOverrides({
   LikesRepository? likesRepository,
   CommentsRepository? commentsRepository,
   RepostsRepository? repostsRepository,
+  MockAuthService? authService,
 }) {
   return [
-    ...getStandardTestOverrides(mockAuthService: createMockAuthService()),
+    ...getStandardTestOverrides(
+      mockAuthService: authService ?? createMockAuthService(),
+    ),
     analyticsServiceProvider.overrideWithValue(_NoopAnalyticsService()),
     seenVideosServiceProvider.overrideWithValue(_NoopSeenVideosService()),
     connectionStatusServiceProvider.overrideWithValue(
@@ -253,6 +256,7 @@ Future<void> _pumpFeedVideos(
   _MockLikesRepository? likesRepository,
   _MockCommentsRepository? commentsRepository,
   _MockRepostsRepository? repostsRepository,
+  MockAuthService? authService,
   bool isActive = true,
   bool appForeground = true,
   bool hasMore = false,
@@ -277,6 +281,7 @@ Future<void> _pumpFeedVideos(
       likesRepository: likesRepository,
       commentsRepository: commentsRepository,
       repostsRepository: repostsRepository,
+      authService: authService,
     ).cast(),
   );
   container.read(appForegroundProvider.notifier).setForeground(appForeground);
@@ -675,6 +680,39 @@ void main() {
         final semanticsNode = tester.getSemantics(surfaceFinder);
         expect(semanticsNode.flagsCollection.isButton, isTrue);
         expect(semanticsNode.hint, equals(l10n.videoPlayerTapHint));
+      } finally {
+        semantics.dispose();
+      }
+    });
+
+    testWidgets('omits double-tap-like semantics hint on own video', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        InfiniteVideoFeed.debugIsSupportedOverride = true;
+
+        final video = _makeVideo();
+        final authService = createMockAuthService();
+        when(() => authService.currentPublicKeyHex).thenReturn(video.pubkey);
+        final cubit = _MockVideoPlaybackStatusCubit()
+          ..stub(PlaybackStatus.ready, video.id);
+
+        await _pumpFeedVideos(
+          tester,
+          videos: [video],
+          videoPlaybackStatusCubit: cubit,
+          authService: authService,
+        );
+        await tester.pump(const Duration(seconds: 4));
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final surfaceFinder = find.bySemanticsLabel(l10n.videoPlayerPlayVideo);
+
+        expect(surfaceFinder, findsOneWidget);
+        final semanticsNode = tester.getSemantics(surfaceFinder);
+        expect(semanticsNode.flagsCollection.isButton, isTrue);
+        expect(semanticsNode.hint, isEmpty);
       } finally {
         semantics.dispose();
       }

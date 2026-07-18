@@ -729,7 +729,7 @@ class __OverlayState extends ConsumerState<_Overlay> {
                 return Semantics(
                   button: true,
                   label: context.l10n.videoPlayerPlayVideo,
-                  hint: context.l10n.videoPlayerTapHint,
+                  hint: isOwnVideo ? null : context.l10n.videoPlayerTapHint,
                   child: GestureDetector(
                     behavior: .translucent,
                     onTap: interactiveReady ? _handlePlayerTap : null,
