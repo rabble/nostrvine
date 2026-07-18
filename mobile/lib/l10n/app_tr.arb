@@ -4326,7 +4326,6 @@
     "deleteAccountConfirmationHint": "DELETE yaz",
     "deleteAccountContentDeletionFailed": "İçerik rölelerden silinemedi",
     "deleteAccountDeleteAllContentButton": "Tüm İçeriği Sil",
-    "deleteAccountFinalConfirmationBody": "TÜM içeriğinin Nostr rölelerinden kalıcı olarak silinmesini onaylamak için şunu yaz:",
     "deleteAccountFinalConfirmationTitle": "⚠️ Son Onay",
     "deleteAccountKeyDeletionWarning": "Hesap silindi ama anahtarların bu cihazdan tamamen kaldırılmamış olabilir. Tekrar denemek için Ayarlar → Nostr Anahtarları → Anahtarları Kaldır'a git.",
     "deleteAccountPreparingDeletion": "Silme hazırlanıyor...",

@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart'
@@ -14,6 +15,8 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
+import 'package:openvine/widgets/delete_account_confirmation.dart';
+import 'package:openvine/widgets/user_avatar.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -82,6 +85,7 @@ Future<void> showRemoveKeysWarningDialog({
 /// displayed, so a burn only ever targets the name the user consented to.
 Future<void> showDeleteAllContentWarningDialog({
   required BuildContext context,
+  required DeleteAccountConfirmation confirmation,
   required void Function({
     required bool burnUsername,
     ({String name, String canonical})? ownedUsername,
@@ -93,6 +97,7 @@ Future<void> showDeleteAllContentWarningDialog({
     context: context,
     barrierDismissible: false,
     builder: (context) => _DeleteAllContentDialog(
+      confirmation: confirmation,
       ownedUsernameFuture: ownedUsernameFuture,
       onConfirm: onConfirm,
     ),
@@ -101,10 +106,12 @@ Future<void> showDeleteAllContentWarningDialog({
 
 class _DeleteAllContentDialog extends StatefulWidget {
   const _DeleteAllContentDialog({
+    required this.confirmation,
     required this.ownedUsernameFuture,
     required this.onConfirm,
   });
 
+  final DeleteAccountConfirmation confirmation;
   final Future<({String name, String canonical})?> ownedUsernameFuture;
   final void Function({
     required bool burnUsername,
@@ -118,8 +125,6 @@ class _DeleteAllContentDialog extends StatefulWidget {
 }
 
 class _DeleteAllContentDialogState extends State<_DeleteAllContentDialog> {
-  static const _requiredText = 'DELETE';
-
   final _confirmationController = TextEditingController();
   var _burnUsername = false;
   ({String name, String canonical})? _ownedUsername;
@@ -149,8 +154,8 @@ class _DeleteAllContentDialogState extends State<_DeleteAllContentDialog> {
   @override
   Widget build(BuildContext context) {
     final owned = _ownedUsername;
-    final canConfirm =
-        _confirmationController.text.trim().toUpperCase() == _requiredText;
+    final c = widget.confirmation;
+    final canConfirm = c.matches(_confirmationController.text);
     return AlertDialog(
       backgroundColor: VineTheme.cardBackground,
       scrollable: true,
@@ -166,8 +171,10 @@ class _DeleteAllContentDialogState extends State<_DeleteAllContentDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _DeleteIdentityHeader(confirmation: c),
+          const SizedBox(height: 16),
           Text(
-            context.l10n.deleteAccountFinalConfirmationBody,
+            context.l10n.deleteAccountWarningBody,
             style: const TextStyle(
               color: VineTheme.whiteText,
               fontSize: 16,
@@ -175,9 +182,16 @@ class _DeleteAllContentDialogState extends State<_DeleteAllContentDialog> {
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
-            _requiredText,
-            style: TextStyle(
+          Text(
+            c.isUsernameConfirmation
+                ? context.l10n.deleteAccountConfirmUsernamePrompt
+                : context.l10n.deleteAccountConfirmDeletePrompt,
+            style: VineTheme.bodyLargeFont(),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            c.requiredToken,
+            style: const TextStyle(
               color: VineTheme.error,
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -189,9 +203,13 @@ class _DeleteAllContentDialogState extends State<_DeleteAllContentDialog> {
             controller: _confirmationController,
             style: const TextStyle(color: VineTheme.whiteText),
             autocorrect: false,
-            textCapitalization: TextCapitalization.characters,
+            textCapitalization: c.isUsernameConfirmation
+                ? TextCapitalization.none
+                : TextCapitalization.characters,
             decoration: InputDecoration(
-              hintText: context.l10n.deleteAccountConfirmationHint,
+              hintText: c.isUsernameConfirmation
+                  ? context.l10n.deleteAccountConfirmationHintUsername
+                  : context.l10n.deleteAccountConfirmationHint,
               hintStyle: const TextStyle(color: VineTheme.lightText),
               enabledBorder: const OutlineInputBorder(
                 borderSide: BorderSide(color: VineTheme.cardBackground),
@@ -253,6 +271,55 @@ class _DeleteAllContentDialogState extends State<_DeleteAllContentDialog> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Identity block (avatar + name + handle/npub) for the delete dialog.
+class _DeleteIdentityHeader extends StatelessWidget {
+  const _DeleteIdentityHeader({required this.confirmation});
+
+  final DeleteAccountConfirmation confirmation;
+
+  @override
+  Widget build(BuildContext context) {
+    // Read as one node ("Name, handle") — a single "this account" unit.
+    return MergeSemantics(
+      child: Row(
+        children: [
+          // Avatar is decorative here — the name is shown as text beside it, so
+          // exclude it from the merged node to avoid reading the name twice.
+          ExcludeSemantics(
+            child: UserAvatar(
+              imageUrl: confirmation.avatarUrl,
+              name: confirmation.displayName,
+              placeholderSeed: confirmation.pubkeyHex,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  confirmation.displayName,
+                  style: VineTheme.titleMediumFont(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  confirmation.identifierLine,
+                  style: VineTheme.bodyMediumFont(
+                    color: VineTheme.secondaryText,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -344,6 +411,9 @@ class _DeletionProgressDialog extends StatelessWidget {
 /// If the burn commits but a later step fails, the error discloses that the
 /// username was permanently released (the burn is never rolled back).
 ///
+/// Aborts before any step (including the burn) when [confirmedPubkey] is set and
+/// no longer matches the signed-in account.
+///
 /// [context] - BuildContext for showing dialogs
 /// [deletionService] - Service to execute NIP-62 deletion
 /// [authService] - Service for Keycast deletion and sign out
@@ -351,6 +421,8 @@ class _DeletionProgressDialog extends StatelessWidget {
 ///   [burnUsername] is set
 /// [burnUsername] - Whether the user opted in to permanently burn their handle
 /// [ownedUsername] - The active handle (display name + canonical) to burn
+/// [confirmedPubkey] - When set, aborts before any step if the signed-in
+///   account no longer matches, binding deletion to the confirmed account
 /// [screenName] - Name of the calling screen for logging
 Future<void> executeAccountDeletion({
   required BuildContext context,
@@ -359,6 +431,7 @@ Future<void> executeAccountDeletion({
   ProfileRepository? profileRepository,
   bool burnUsername = false,
   ({String name, String canonical})? ownedUsername,
+  String? confirmedPubkey,
   String screenName = 'AccountDeletion',
 }) async {
   // Create cubit for tracking progress
@@ -387,11 +460,23 @@ Future<void> executeAccountDeletion({
     }
   }
 
+  // Speak each delete outcome so screen-reader users hear the result the
+  // snackbar shows visually. Mirrors the snackbar text at every outcome site.
+  void announceOutcome(String message) {
+    if (!context.mounted) return;
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      message,
+      Directionality.of(context),
+    );
+  }
+
   // Captured before the first await so the post-sign-out catch can localize
   // without reading BuildContext across an async gap.
   final keyDeletionWarningText = context.l10n.deleteAccountKeyDeletionWarning;
   final localDataDeletionFailedText =
       context.l10n.deleteAccountLocalDataDeletionFailed;
+  final accountChangedText = context.l10n.deleteAccountAccountChanged;
   final burnUsernameFailedText = context.l10n.deleteAccountBurnUsernameFailed;
   final deletionIncompleteText = context.l10n.deleteAccountDeletionIncomplete;
   final handleLabel = ownedUsername != null
@@ -407,6 +492,25 @@ Future<void> executeAccountDeletion({
   var burnCommitted = false;
 
   try {
+    // Bind to the confirmed account: if the signed-in account changed since the
+    // user confirmed, abort before burning or deleting anything.
+    if (confirmedPubkey != null &&
+        authService.currentPublicKeyHex != confirmedPubkey) {
+      Log.warning(
+        'Deletion aborted: signed-in account changed since confirmation',
+        name: screenName,
+        category: LogCategory.auth,
+      );
+      dismissDialog();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          DivineSnackbarContainer.snackBar(accountChangedText, error: true),
+        );
+        announceOutcome(accountChangedText);
+      }
+      return;
+    }
+
     // Burn-first hard-block: release the username before any destructive step,
     // so a failed burn leaves everything intact. Needs a working signer, which
     // exists before deleteKeycastAccount() below.
@@ -459,6 +563,7 @@ Future<void> executeAccountDeletion({
           ScaffoldMessenger.of(context).showSnackBar(
             DivineSnackbarContainer.snackBar(message, error: true),
           );
+          announceOutcome(message);
         }
         return;
       }
@@ -467,6 +572,7 @@ Future<void> executeAccountDeletion({
     // Publish the NIP-62 deletion request (requires working signer).
     final result = await deletionService.deleteAccount(
       onProgress: cubit.updateProgress,
+      expectedPubkey: confirmedPubkey,
     );
 
     if (result.success) {
@@ -490,6 +596,7 @@ Future<void> executeAccountDeletion({
           ScaffoldMessenger.of(context).showSnackBar(
             DivineSnackbarContainer.snackBar(text, error: true),
           );
+          announceOutcome(text);
         }
         return;
       }
@@ -543,6 +650,7 @@ Future<void> executeAccountDeletion({
                 keyDeletionWarning != null || localDataDeletionFailure != null,
           ),
         );
+        announceOutcome(snackbarText);
       }
     } else {
       // Content deletion (NIP-62) failed.
@@ -557,10 +665,13 @@ Future<void> executeAccountDeletion({
       if (context.mounted) {
         final text = (burnCommitted && burnReleasedText != null)
             ? burnReleasedText
+            : result.accountChanged
+            ? accountChangedText
             : (result.error ?? context.l10n.deleteAccountContentDeletionFailed);
         ScaffoldMessenger.of(context).showSnackBar(
           DivineSnackbarContainer.snackBar(text, error: true),
         );
+        announceOutcome(text);
       }
     }
   } finally {

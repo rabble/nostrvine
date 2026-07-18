@@ -4457,7 +4457,6 @@
     "deleteAccountConfirmationHint": "Напиши DELETE",
     "deleteAccountContentDeletionFailed": "Неуспешно изтриване на съдържание от релетата",
     "deleteAccountDeleteAllContentButton": "Изтрий цялото съдържание",
-    "deleteAccountFinalConfirmationBody": "За да потвърдиш постоянното изтриване на ЦЯЛОТО ти съдържание от Nostr релетата, напиши:",
     "deleteAccountFinalConfirmationTitle": "⚠️ Последно потвърждение",
     "deleteAccountKeyDeletionWarning": "Акаунтът е изтрит, но ключовете ти може да не са премахнати напълно от това устройство. Отиди в Настройки → Nostr ключове → Премахни ключовете, за да опиташ пак.",
     "deleteAccountPreparingDeletion": "Подготовка за изтриване...",

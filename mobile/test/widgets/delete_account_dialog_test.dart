@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
@@ -11,6 +12,7 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
+import 'package:openvine/widgets/delete_account_confirmation.dart';
 import 'package:openvine/widgets/delete_account_dialog.dart';
 import 'package:profile_repository/profile_repository.dart';
 
@@ -20,6 +22,23 @@ class _MockAccountDeletionService extends Mock
 class _MockAuthService extends Mock implements AuthService {}
 
 class _MockProfileRepository extends Mock implements ProfileRepository {}
+
+const _pubkeyHex =
+    '3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d';
+
+DeleteAccountConfirmation _deleteFallback() => DeleteAccountConfirmation(
+  pubkeyHex: _pubkeyHex,
+  displayName: 'Wild Otter 7',
+  avatarUrl: null,
+  handle: null,
+);
+
+DeleteAccountConfirmation _divineUsername() => DeleteAccountConfirmation(
+  pubkeyHex: _pubkeyHex,
+  displayName: 'Rabble',
+  avatarUrl: null,
+  handle: '@rabble.divine.video',
+);
 
 /// Minimal router wrapper so [context.pop()] works inside the dialog.
 Widget _wrapWithRouter(Widget child) {
@@ -35,6 +54,7 @@ Widget _wrapWithRouter(Widget child) {
 
 Future<void> _showDialog(
   WidgetTester tester, {
+  DeleteAccountConfirmation? confirmation,
   void Function({
     required bool burnUsername,
     ({String name, String canonical})? ownedUsername,
@@ -50,6 +70,7 @@ Future<void> _showDialog(
             key: const Key('open'),
             onPressed: () => showDeleteAllContentWarningDialog(
               context: context,
+              confirmation: confirmation ?? _deleteFallback(),
               ownedUsernameFuture: Future.value(ownedUsername),
               onConfirm:
                   onConfirm ??
@@ -73,6 +94,14 @@ void main() {
     testWidgets('empty string keeps Delete button disabled', (tester) async {
       await _showDialog(tester);
 
+      expect(
+        find.text(
+          lookupAppLocalizations(
+            const Locale('en'),
+          ).deleteAccountConfirmDeletePrompt,
+        ),
+        findsOneWidget,
+      );
       // Button should be disabled (onPressed == null → tapping does nothing)
       final button = tester.widget<ElevatedButton>(
         find.widgetWithText(ElevatedButton, 'Delete All Content'),
@@ -266,6 +295,7 @@ void main() {
                 key: const Key('open'),
                 onPressed: () => showDeleteAllContentWarningDialog(
                   context: context,
+                  confirmation: _deleteFallback(),
                   ownedUsernameFuture: completer.future,
                   onConfirm:
                       ({
@@ -307,6 +337,7 @@ void main() {
                 key: const Key('open'),
                 onPressed: () => showDeleteAllContentWarningDialog(
                   context: context,
+                  confirmation: _deleteFallback(),
                   ownedUsernameFuture: completer.future,
                   onConfirm:
                       ({
@@ -365,6 +396,56 @@ void main() {
       expect(receivedBurn, isTrue);
       expect(receivedOwned, (name: 'Alice', canonical: 'alice'));
     });
+
+    testWidgets('shows the identity (name + handle) and username prompt', (
+      tester,
+    ) async {
+      await _showDialog(tester, confirmation: _divineUsername());
+      expect(find.text('Rabble'), findsOneWidget);
+      expect(find.text('@rabble.divine.video'), findsWidgets);
+      expect(
+        find.text(
+          lookupAppLocalizations(
+            const Locale('en'),
+          ).deleteAccountConfirmUsernamePrompt,
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('typing DELETE does not enable the button for a username', (
+      tester,
+    ) async {
+      await _showDialog(tester, confirmation: _divineUsername());
+      await tester.enterText(find.byType(TextField), 'DELETE');
+      await tester.pump();
+      final button = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'Delete All Content'),
+      );
+      expect(button.onPressed, isNull);
+    });
+
+    testWidgets('typing the handle enables the button', (tester) async {
+      await _showDialog(tester, confirmation: _divineUsername());
+      await tester.enterText(find.byType(TextField), '@rabble.divine.video');
+      await tester.pump();
+      final button = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'Delete All Content'),
+      );
+      expect(button.onPressed, isNotNull);
+    });
+
+    testWidgets('typing the handle without @ also enables the button', (
+      tester,
+    ) async {
+      await _showDialog(tester, confirmation: _divineUsername());
+      await tester.enterText(find.byType(TextField), 'rabble.divine.video');
+      await tester.pump();
+      final button = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'Delete All Content'),
+      );
+      expect(button.onPressed, isNotNull);
+    });
   });
 
   group('executeAccountDeletion', () {
@@ -374,8 +455,10 @@ void main() {
       final deletionService = _MockAccountDeletionService();
       final authService = _MockAuthService();
       when(
-        () =>
-            deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
       ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
       when(
         authService.deleteKeycastAccount,
@@ -450,8 +533,10 @@ void main() {
       await tester.pumpAndSettle();
 
       verifyNever(
-        () =>
-            deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
       );
       expect(
         find.text(
@@ -471,8 +556,10 @@ void main() {
         () => profileRepository.releaseUsername(name: any(named: 'name')),
       ).thenAnswer((_) async => const UsernameReleaseSuccess());
       when(
-        () =>
-            deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
       ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
       when(
         authService.deleteKeycastAccount,
@@ -504,8 +591,10 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(
-        () =>
-            deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
       ).called(1);
       verify(
         () => profileRepository.releaseUsername(name: 'alice'),
@@ -519,8 +608,10 @@ void main() {
       final authService = _MockAuthService();
       final profileRepository = _MockProfileRepository();
       when(
-        () =>
-            deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
       ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
       when(
         authService.deleteKeycastAccount,
@@ -585,8 +676,10 @@ void main() {
       await tester.pumpAndSettle();
 
       verifyNever(
-        () =>
-            deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
       );
       expect(
         find.text(
@@ -799,8 +892,10 @@ void main() {
       await tester.pumpAndSettle();
 
       verifyNever(
-        () =>
-            deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
       );
       expect(
         find.text(
@@ -843,12 +938,192 @@ void main() {
       await tester.pumpAndSettle();
 
       verifyNever(
-        () =>
-            deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
       );
       verifyNever(
         () => profileRepository.releaseUsername(name: any(named: 'name')),
       );
+    });
+
+    testWidgets('aborts before burn when the account changed', (tester) async {
+      final deletionService = _MockAccountDeletionService();
+      final authService = _MockAuthService();
+      final profileRepository = _MockProfileRepository();
+      when(
+        () => authService.currentPublicKeyHex,
+      ).thenReturn('now_a_different_pk');
+
+      final announcements = <Map<Object?, Object?>>[];
+      tester.binding.defaultBinaryMessenger
+          .setMockDecodedMessageHandler<Object?>(
+            SystemChannels.accessibility,
+            (Object? message) async {
+              if (message is Map) announcements.add(message);
+              return null;
+            },
+          );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger
+            .setMockDecodedMessageHandler<Object?>(
+              SystemChannels.accessibility,
+              null,
+            ),
+      );
+
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const Scaffold(body: SizedBox.shrink());
+            },
+          ),
+        ),
+      );
+
+      await executeAccountDeletion(
+        context: capturedContext,
+        deletionService: deletionService,
+        authService: authService,
+        profileRepository: profileRepository,
+        burnUsername: true,
+        ownedUsername: (name: 'rabble', canonical: 'rabble'),
+        confirmedPubkey: _pubkeyHex,
+      );
+      await tester.pumpAndSettle();
+
+      verifyNever(
+        () => profileRepository.releaseUsername(name: any(named: 'name')),
+      );
+      verifyNever(
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
+      );
+      expect(
+        find.text(
+          lookupAppLocalizations(
+            const Locale('en'),
+          ).deleteAccountAccountChanged,
+        ),
+        findsOneWidget,
+      );
+
+      // The abort outcome is spoken to screen-reader users, not just shown.
+      final announced = announcements
+          .where((message) => message['type'] == 'announce')
+          .map((message) => (message['data'] as Map?)?['message'])
+          .toList();
+      expect(
+        announced,
+        contains(
+          lookupAppLocalizations(
+            const Locale('en'),
+          ).deleteAccountAccountChanged,
+        ),
+      );
+    });
+
+    testWidgets(
+      'localizes the account-changed outcome when the service reports it',
+      (tester) async {
+        final deletionService = _MockAccountDeletionService();
+        final authService = _MockAuthService();
+        // UI pre-check passes (signer still matches), but the service reports a
+        // mid-flight switch — the UI must localize, not surface the raw string.
+        when(() => authService.currentPublicKeyHex).thenReturn(_pubkeyHex);
+        when(
+          () => deletionService.deleteAccount(
+            onProgress: any(named: 'onProgress'),
+            expectedPubkey: any(named: 'expectedPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => DeleteAccountResult.failure(
+            'Signed-in account changed; deletion aborted',
+            accountChanged: true,
+          ),
+        );
+
+        late BuildContext capturedContext;
+        await tester.pumpWidget(
+          _wrapWithRouter(
+            Builder(
+              builder: (context) {
+                capturedContext = context;
+                return const Scaffold(body: SizedBox.shrink());
+              },
+            ),
+          ),
+        );
+
+        await executeAccountDeletion(
+          context: capturedContext,
+          deletionService: deletionService,
+          authService: authService,
+          confirmedPubkey: _pubkeyHex,
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.deleteAccountAccountChanged), findsOneWidget);
+        // The raw service string must never reach the user.
+        expect(
+          find.text('Signed-in account changed; deletion aborted'),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets('proceeds when confirmedPubkey matches the current account', (
+      tester,
+    ) async {
+      final deletionService = _MockAccountDeletionService();
+      final authService = _MockAuthService();
+      when(() => authService.currentPublicKeyHex).thenReturn(_pubkeyHex);
+      when(
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
+      ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
+      when(
+        authService.deleteKeycastAccount,
+      ).thenAnswer((_) async => (true, null));
+      when(
+        () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
+      ).thenAnswer((_) async {});
+
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const Scaffold(body: SizedBox.shrink());
+            },
+          ),
+        ),
+      );
+
+      await executeAccountDeletion(
+        context: capturedContext,
+        deletionService: deletionService,
+        authService: authService,
+        confirmedPubkey: _pubkeyHex,
+      );
+      await tester.pumpAndSettle();
+
+      verify(
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
+      ).called(1);
     });
   });
 }

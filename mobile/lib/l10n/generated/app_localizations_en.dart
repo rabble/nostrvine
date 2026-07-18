@@ -2168,7 +2168,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get nostrSettingsDeleteAccountSubtitle =>
-      'PERMANENTLY delete your account and ALL content from Nostr relays. This cannot be undone.';
+      'Permanently delete your account and content from Divine, and request removal from other Nostr relays. Some copies may remain.';
 
   @override
   String get relayDiagnosticTitle => 'Relay Diagnostics';
@@ -6628,6 +6628,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get deleteAccountAccountChanged =>
+      'You switched accounts, so nothing was deleted. Reopen delete for the account you want to remove.';
+
+  @override
   String get deleteAccountBurnUsernameFailed =>
       'Couldn\'t release your username. Your account was not deleted. Try again, or uncheck the option.';
 
@@ -6642,7 +6646,17 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get deleteAccountConfirmDeletePrompt => 'To confirm, type:';
+
+  @override
+  String get deleteAccountConfirmUsernamePrompt =>
+      'To confirm, type your username:';
+
+  @override
   String get deleteAccountConfirmationHint => 'Type DELETE';
+
+  @override
+  String get deleteAccountConfirmationHintUsername => 'Type your username';
 
   @override
   String get deleteAccountContentDeletionFailed =>
@@ -6654,10 +6668,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get deleteAccountDeletionIncomplete =>
       'We couldn\'t finish deleting your account. Try again.';
-
-  @override
-  String get deleteAccountFinalConfirmationBody =>
-      'To confirm permanent deletion of ALL your content from Nostr relays, type:';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Final Confirmation';
@@ -6695,6 +6705,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteAccountSuccess => 'Your account has been deleted';
+
+  @override
+  String get deleteAccountWarningBody =>
+      'This permanently deletes your account and all your content from Divine, and sends a deletion request to other Nostr relays. Some relays and clients may still keep copies.';
 
   @override
   String get exportProgressStageApplyingTextOverlay => 'Adding text overlay...';

@@ -715,5 +715,99 @@ void main() {
         },
       );
     });
+
+    group('expectedPubkey binding', () {
+      test(
+        'aborts before signing when the account changes mid-deletion',
+        () async {
+          var current = testPublicKey;
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenAnswer((_) => current);
+          when(() => mockNostrService.queryEvents(any())).thenAnswer((_) async {
+            // Account switches away during the event fetch, before any signing.
+            current = 'a_different_pubkey_than_confirmed';
+            return [
+              createTestEvent(
+                pubkey: testPublicKey,
+                kind: 1,
+                tags: const [],
+                content: 'note',
+              ),
+            ];
+          });
+
+          final result = await service.deleteAccount(
+            expectedPubkey: testPublicKey,
+          );
+
+          expect(result.success, isFalse);
+          expect(result.error, contains('account changed'));
+          expect(result.accountChanged, isTrue);
+          verifyNever(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'aborts at entry when expectedPubkey already differs from the signer',
+        () async {
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn('a_different_pubkey_than_confirmed');
+
+          final result = await service.deleteAccount(
+            expectedPubkey: testPublicKey,
+          );
+
+          expect(result.success, isFalse);
+          expect(result.accountChanged, isTrue);
+          // Bailed before fetching or signing anything.
+          verifyNever(() => mockNostrService.queryEvents(any()));
+          verifyNever(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'reaches signing when expectedPubkey stays the current account',
+        () async {
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn(testPublicKey);
+          when(
+            () => mockNostrService.queryEvents(any()),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async => null);
+
+          await service.deleteAccount(expectedPubkey: testPublicKey);
+
+          // Guard passed with a matching account → reached the kind-62 signing.
+          verify(
+            () => mockAuthService.createAndSignEvent(
+              kind: 62,
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).called(1);
+        },
+      );
+    });
   });
 }

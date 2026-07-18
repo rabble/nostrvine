@@ -7,6 +7,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart' show Nip89ClientTag;
 import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyStorageException;
@@ -17,14 +18,16 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/owned_divine_username_provider.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/settings/nip05_settings_screen.dart';
-import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/nostr_signature_verification_preference_service.dart';
+import 'package:openvine/widgets/delete_account_confirmation.dart';
 import 'package:openvine/widgets/delete_account_dialog.dart';
 
 class NostrSettingsScreen extends ConsumerWidget {
@@ -237,6 +240,8 @@ class _ProgressOverlay {
   }
 }
 
+const Duration _profileResolveTimeout = Duration(seconds: 3);
+
 class _DeleteAccountTile extends StatelessWidget {
   const _DeleteAccountTile({required this.ref});
 
@@ -261,13 +266,47 @@ class _DeleteAccountTile extends StatelessWidget {
     final deletionService = ref.read(accountDeletionServiceProvider);
     final authService = ref.read(authServiceProvider);
     final profileRepository = ref.read(profileRepositoryProvider);
+    final pubkey = authService.currentPublicKeyHex;
+    if (pubkey == null || pubkey.isEmpty) return;
+
     // Kick off the burnable-handle lookup but do not await it: the dialog opens
     // immediately and reveals the opt-in burn toggle once this resolves, so a
     // slow name-server call never blocks the tap.
     final ownedUsernameFuture = ref.read(ownedDivineUsernameProvider.future);
 
+    // Resolve the local profile up front so the identity + username gate are
+    // ready when the dialog opens. Cache-first (usually instant) with a bounded
+    // network fallback; a timeout or miss degrades to npub + DELETE, never
+    // hangs.
+    final overlay = _ProgressOverlay.show(context);
+    UserProfile? profile;
+    try {
+      profile = await ref
+          .read(fetchUserProfileProvider(pubkey).future)
+          .timeout(_profileResolveTimeout, onTimeout: () => null);
+    } catch (_) {
+      profile = null;
+    } finally {
+      overlay.dismiss();
+    }
+    if (!context.mounted) return;
+
+    // The gate anchors on the shown profile identity (displayNip05) to confirm
+    // *which account* is being erased — deliberately distinct from the burn
+    // target (the owned @divine.video handle, which the burn toggle names for
+    // itself). The two can differ for an external-NIP-05 user who also owns a
+    // divine username; that divergence is intended, not a mismatch to reconcile.
+    final confirmation = DeleteAccountConfirmation(
+      pubkeyHex: pubkey,
+      displayName:
+          profile?.bestDisplayName ?? UserProfile.defaultDisplayNameFor(pubkey),
+      avatarUrl: profile?.picture,
+      handle: profile?.displayNip05,
+    );
+
     await showDeleteAllContentWarningDialog(
       context: context,
+      confirmation: confirmation,
       ownedUsernameFuture: ownedUsernameFuture,
       onConfirm:
           ({
@@ -280,6 +319,7 @@ class _DeleteAccountTile extends StatelessWidget {
             profileRepository: profileRepository,
             burnUsername: burnUsername,
             ownedUsername: ownedUsername,
+            confirmedPubkey: pubkey,
             screenName: 'NostrSettingsScreen',
           ),
     );

@@ -4326,7 +4326,6 @@
     "deleteAccountConfirmationHint": "Skriv DELETE",
     "deleteAccountContentDeletionFailed": "Kunde inte ta bort innehåll från relerna",
     "deleteAccountDeleteAllContentButton": "Ta bort allt innehåll",
-    "deleteAccountFinalConfirmationBody": "För att bekräfta permanent borttagning av ALLT ditt innehåll från Nostr-reler, skriv:",
     "deleteAccountFinalConfirmationTitle": "⚠️ Slutgiltig bekräftelse",
     "deleteAccountKeyDeletionWarning": "Kontot borttaget, men dina nycklar kan finnas kvar på den här enheten. Gå till Inställningar → Nostr-nycklar → Ta bort nycklar för att försöka igen.",
     "deleteAccountPreparingDeletion": "Förbereder borttagning...",

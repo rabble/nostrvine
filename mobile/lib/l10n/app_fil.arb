@@ -2909,7 +2909,6 @@
     "deleteAccountConfirmationHint": "I-type ang DELETE",
     "deleteAccountContentDeletionFailed": "Hindi nabura ang content mula sa mga relay",
     "deleteAccountDeleteAllContentButton": "Burahin Lahat ng Content",
-    "deleteAccountFinalConfirmationBody": "Para kumpirmahin ang permanenteng pagbura ng LAHAT ng iyong content mula sa mga Nostr relay, i-type:",
     "deleteAccountFinalConfirmationTitle": "⚠️ Panghuling Kumpirmasyon",
     "deleteAccountKeyDeletionWarning": "Nabura ang account, pero maaaring hindi pa lubusang naalis ang iyong mga key sa device na ito. Pumunta sa Settings → Nostr Keys → Remove Keys para subukan ulit.",
     "deleteAccountPreparingDeletion": "Inihahanda ang pagbura...",

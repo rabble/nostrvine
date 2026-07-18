@@ -3785,7 +3785,7 @@ abstract class AppLocalizations {
   /// No description provided for @nostrSettingsDeleteAccountSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'PERMANENTLY delete your account and ALL content from Nostr relays. This cannot be undone.'**
+  /// **'Permanently delete your account and content from Divine, and request removal from other Nostr relays. Some copies may remain.'**
   String get nostrSettingsDeleteAccountSubtitle;
 
   /// Relay diagnostics screen app bar title
@@ -11565,6 +11565,12 @@ abstract class AppLocalizations {
     String messageText,
   );
 
+  /// Error shown when the signed-in account changed between confirming a deletion and executing it; nothing was deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'You switched accounts, so nothing was deleted. Reopen delete for the account you want to remove.'**
+  String get deleteAccountAccountChanged;
+
   /// Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted.
   ///
   /// In en, this message translates to:
@@ -11583,11 +11589,29 @@ abstract class AppLocalizations {
   /// **'Also permanently give up {username}'**
   String deleteAccountBurnUsernameToggle(String username);
 
+  /// Prompt above the confirmation field when the account has no username; the user types the word DELETE.
+  ///
+  /// In en, this message translates to:
+  /// **'To confirm, type:'**
+  String get deleteAccountConfirmDeletePrompt;
+
+  /// Prompt above the confirmation field when the account has a username; the user re-types their username to confirm deletion.
+  ///
+  /// In en, this message translates to:
+  /// **'To confirm, type your username:'**
+  String get deleteAccountConfirmUsernamePrompt;
+
   /// No description provided for @deleteAccountConfirmationHint.
   ///
   /// In en, this message translates to:
   /// **'Type DELETE'**
   String get deleteAccountConfirmationHint;
+
+  /// Hint text in the delete-confirmation field when the user must type their username.
+  ///
+  /// In en, this message translates to:
+  /// **'Type your username'**
+  String get deleteAccountConfirmationHintUsername;
 
   /// No description provided for @deleteAccountContentDeletionFailed.
   ///
@@ -11606,12 +11630,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'We couldn\'t finish deleting your account. Try again.'**
   String get deleteAccountDeletionIncomplete;
-
-  /// No description provided for @deleteAccountFinalConfirmationBody.
-  ///
-  /// In en, this message translates to:
-  /// **'To confirm permanent deletion of ALL your content from Nostr relays, type:'**
-  String get deleteAccountFinalConfirmationBody;
 
   /// No description provided for @deleteAccountFinalConfirmationTitle.
   ///
@@ -11672,6 +11690,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your account has been deleted'**
   String get deleteAccountSuccess;
+
+  /// Warning body in the delete-account confirmation dialog, shown above the type-to-confirm field.
+  ///
+  /// In en, this message translates to:
+  /// **'This permanently deletes your account and all your content from Divine, and sends a deletion request to other Nostr relays. Some relays and clients may still keep copies.'**
+  String get deleteAccountWarningBody;
 
   /// No description provided for @exportProgressStageApplyingTextOverlay.
   ///

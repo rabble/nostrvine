@@ -4326,7 +4326,6 @@
     "deleteAccountConfirmationHint": "Wpisz DELETE",
     "deleteAccountContentDeletionFailed": "Nie udało się usunąć treści z przekaźników",
     "deleteAccountDeleteAllContentButton": "Usuń wszystkie treści",
-    "deleteAccountFinalConfirmationBody": "Aby potwierdzić trwałe usunięcie WSZYSTKICH twoich treści z przekaźników Nostr, wpisz:",
     "deleteAccountFinalConfirmationTitle": "⚠️ Ostateczne potwierdzenie",
     "deleteAccountKeyDeletionWarning": "Konto usunięte, ale twoje klucze mogły nie zostać w pełni usunięte z tego urządzenia. Przejdź do Ustawienia → Klucze Nostr → Usuń klucze, aby spróbować ponownie.",
     "deleteAccountPreparingDeletion": "Przygotowywanie usuwania...",

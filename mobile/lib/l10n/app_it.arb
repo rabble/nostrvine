@@ -4326,7 +4326,6 @@
     "deleteAccountConfirmationHint": "Digita DELETE",
     "deleteAccountContentDeletionFailed": "Impossibile eliminare i contenuti dai relay",
     "deleteAccountDeleteAllContentButton": "Elimina tutti i contenuti",
-    "deleteAccountFinalConfirmationBody": "Per confermare l'eliminazione permanente di TUTTI i tuoi contenuti dai relay Nostr, digita:",
     "deleteAccountFinalConfirmationTitle": "⚠️ Conferma finale",
     "deleteAccountKeyDeletionWarning": "Account eliminato, ma le tue chiavi potrebbero non essere state rimosse completamente da questo dispositivo. Vai su Impostazioni → Chiavi Nostr → Rimuovi chiavi per riprovare.",
     "deleteAccountPreparingDeletion": "Preparazione dell'eliminazione...",

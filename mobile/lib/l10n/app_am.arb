@@ -4451,7 +4451,6 @@
     "deleteAccountConfirmationHint": "DELETE ብለው ይተይቡ",
     "deleteAccountContentDeletionFailed": "ይዘትን ከማስተላለፊያዎች መሰረዝ አልተሳካም",
     "deleteAccountDeleteAllContentButton": "ሁሉንም ይዘት ሰርዝ",
-    "deleteAccountFinalConfirmationBody": "ሁሉንም ይዘትዎን ከNostr ማስተላለፊያዎች እስከመጨረሻው መሰረዝን ለማረጋገጥ ይተይቡ፦",
     "deleteAccountFinalConfirmationTitle": "⚠️ የመጨረሻ ማረጋገጫ",
     "deleteAccountKeyDeletionWarning": "መለያ ተሰርዟል፣ ግን ቁልፎችዎ ከዚህ መሣሪያ ሙሉ በሙሉ ላይወገዱ ይችላሉ። እንደገና ለመሞከር ወደ ቅንብሮች → Nostr ቁልፎች → ቁልፎችን አስወግድ ይሂዱ።",
     "deleteAccountPreparingDeletion": "ስረዛን በማዘጋጀት ላይ...",
