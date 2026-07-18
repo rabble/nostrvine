@@ -46,6 +46,7 @@ class VideoRecorderBlocState extends Equatable {
     this.lastRawZoom = 1.0,
     this.snapTime,
     this.showZoomIndicator = false,
+    this.isPinchActive = false,
   });
 
   /// Recorder mode from the camera.
@@ -188,6 +189,14 @@ class VideoRecorderBlocState extends Equatable {
   /// only shows up while the user is actively changing the zoom.
   final bool showZoomIndicator;
 
+  /// True while a scale gesture is in progress on the camera preview.
+  ///
+  /// The zoom ruler stops accepting pointers while this is set, so the
+  /// second finger of a pinch landing on the ruler strip falls through
+  /// to the preview and completes the pinch instead of being swallowed
+  /// by the ruler's drag scrubber.
+  final bool isPinchActive;
+
   /// Whether currently recording.
   bool get isRecording => recordingState == VideoRecorderState.recording;
 
@@ -238,6 +247,7 @@ class VideoRecorderBlocState extends Equatable {
     double? lastRawZoom,
     DateTime? snapTime,
     bool? showZoomIndicator,
+    bool? isPinchActive,
   }) {
     return VideoRecorderBlocState(
       recorderMode: recorderMode ?? this.recorderMode,
@@ -281,6 +291,7 @@ class VideoRecorderBlocState extends Equatable {
       lastRawZoom: lastRawZoom ?? this.lastRawZoom,
       snapTime: snapTime ?? this.snapTime,
       showZoomIndicator: showZoomIndicator ?? this.showZoomIndicator,
+      isPinchActive: isPinchActive ?? this.isPinchActive,
     );
   }
 
@@ -319,5 +330,6 @@ class VideoRecorderBlocState extends Equatable {
     lastRawZoom,
     snapTime,
     showZoomIndicator,
+    isPinchActive,
   ];
 }

@@ -157,8 +157,8 @@ class CameraMobileService extends CameraService {
   }
 
   @override
-  Future<bool> setZoomLevel(double value) async {
-    if (!_isInitialized) return false;
+  Future<double?> setZoomLevel(double value) async {
+    if (!_isInitialized) return null;
     try {
       Log.info(
         '📷 Setting zoom level to $value',
@@ -166,17 +166,25 @@ class CameraMobileService extends CameraService {
         category: .video,
       );
 
-      await _camera.setZoomLevel(
-        value.clamp(_camera.minZoomLevel, _camera.maxZoomLevel),
-      );
-      return true;
+      // DivineCamera clamps the request and returns what the camera
+      // actually applied (which iOS can silently cap below the request).
+      final applied = await _camera.setZoomLevel(value);
+      if (applied != null && (applied - value).abs() > 0.01) {
+        Log.info(
+          '📷 Zoom clamped by platform: requested $value, applied $applied '
+          '(available ${_camera.minZoomLevel}-${_camera.maxZoomLevel})',
+          name: 'CameraMobileService',
+          category: .video,
+        );
+      }
+      return applied;
     } catch (e) {
       Log.error(
         '📷 Failed to set zoom level (unexpected error): $e',
         name: 'CameraMobileService',
         category: .video,
       );
-      return false;
+      return null;
     }
   }
 

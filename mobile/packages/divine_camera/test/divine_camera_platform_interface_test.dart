@@ -35,7 +35,8 @@ class TestDivineCameraPlatform extends DivineCameraPlatform
   Future<bool> setExposurePoint(Offset offset) async => true;
 
   @override
-  Future<bool> setZoomLevel(double level) async => true;
+  Future<CameraZoomState?> setZoomLevel(double level) async =>
+      CameraZoomState(zoomLevel: level, minZoomLevel: 1, maxZoomLevel: 10);
 
   @override
   Future<CameraState> switchCamera(DivineCameraLens lens) async =>

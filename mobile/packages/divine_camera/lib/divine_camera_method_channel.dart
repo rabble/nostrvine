@@ -5,6 +5,7 @@ import 'package:divine_camera/divine_camera_platform_interface.dart';
 import 'package:divine_camera/src/models/audio_device.dart';
 import 'package:divine_camera/src/models/camera_lens.dart';
 import 'package:divine_camera/src/models/camera_state.dart';
+import 'package:divine_camera/src/models/camera_zoom_state.dart';
 import 'package:divine_camera/src/models/flash_mode.dart';
 import 'package:divine_camera/src/models/photo_capture_result.dart';
 import 'package:divine_camera/src/models/remote_record_trigger.dart';
@@ -201,11 +202,13 @@ class MethodChannelDivineCamera extends DivineCameraPlatform {
   }
 
   @override
-  Future<bool> setZoomLevel(double level) async {
-    final result = await methodChannel.invokeMethod<bool>('setZoomLevel', {
-      'level': level,
-    });
-    return result ?? false;
+  Future<CameraZoomState?> setZoomLevel(double level) async {
+    final result = await methodChannel.invokeMapMethod<dynamic, dynamic>(
+      'setZoomLevel',
+      {'level': level},
+    );
+    if (result == null) return null;
+    return CameraZoomState.fromMap(result);
   }
 
   @override

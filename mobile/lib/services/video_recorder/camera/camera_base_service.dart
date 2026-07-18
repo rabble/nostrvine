@@ -69,8 +69,14 @@ abstract class CameraService {
   /// Sets the exposure point in normalized coordinates (0.0-1.0).
   Future<bool> setExposurePoint(Offset offset);
 
-  /// Sets the zoom level. Returns true if successful.
-  Future<bool> setZoomLevel(double value);
+  /// Sets the zoom level.
+  ///
+  /// Returns the zoom level the camera actually applied, or null on
+  /// failure. The applied zoom can be lower than [value] when the OS
+  /// restricts the available zoom range at runtime (iOS clamps such
+  /// requests silently); [minZoomLevel] / [maxZoomLevel] reflect the
+  /// refreshed range after the call.
+  Future<double?> setZoomLevel(double value);
 
   /// Switches between front and back camera. Returns true if successful.
   Future<bool> switchCamera();

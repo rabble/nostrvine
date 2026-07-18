@@ -20,6 +20,7 @@ class CameraPreviewWidget extends StatefulWidget {
     this.onTap,
     this.onScaleStart,
     this.onScaleUpdate,
+    this.onScaleEnd,
     this.loadingWidget,
     this.focusIndicatorBuilder,
     super.key,
@@ -46,6 +47,11 @@ class CameraPreviewWidget extends StatefulWidget {
   /// Optional callback when a scale gesture updates (pinch-to-zoom).
   /// Used to handle zoom level changes during the gesture.
   final ValueChanged<ScaleUpdateDetails>? onScaleUpdate;
+
+  /// Optional callback when a scale gesture ends (all pointers lifted or
+  /// the pointer configuration changed). Lets callers track whether a
+  /// preview gesture is currently in progress.
+  final ValueChanged<ScaleEndDetails>? onScaleEnd;
 
   @override
   State<CameraPreviewWidget> createState() => _CameraPreviewWidgetState();
@@ -214,6 +220,7 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget> {
               },
               onScaleStart: widget.onScaleStart,
               onScaleUpdate: widget.onScaleUpdate,
+              onScaleEnd: widget.onScaleEnd,
               child: _CameraPreview(
                 constraints: constraints,
                 textureId: textureToShow,

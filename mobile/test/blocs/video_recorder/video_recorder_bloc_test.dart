@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_camera/divine_camera.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -222,20 +223,55 @@ void main() {
     });
 
     group('showZoomIndicator', () {
-      test('shows the zoom ruler when a pinch starts', () async {
+      test('shows the zoom ruler when a two-pointer pinch starts', () async {
         final bloc = buildBloc();
         addTearDown(bloc.close);
 
-        bloc.add(VideoRecorderScaleStarted(ScaleStartDetails()));
+        bloc.add(VideoRecorderScaleStarted(ScaleStartDetails(pointerCount: 2)));
         await Future<void>.delayed(Duration.zero);
 
         expect(bloc.state.showZoomIndicator, isTrue);
       });
 
+      test('does not summon the zoom ruler on a one-pointer pan', () async {
+        final bloc = buildBloc();
+        addTearDown(bloc.close);
+
+        bloc.add(VideoRecorderScaleStarted(ScaleStartDetails(pointerCount: 1)));
+        bloc.add(
+          VideoRecorderScaleUpdated(ScaleUpdateDetails(pointerCount: 1)),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(bloc.state.showZoomIndicator, isFalse);
+      });
+
+      test(
+        'summons the zoom ruler when a second finger lands mid-pan',
+        () async {
+          final bloc = buildBloc();
+          addTearDown(bloc.close);
+
+          // Pan→pinch escalation: the just-landed second finger reports an
+          // unchanged scale (1.0) but a pointerCount of 2, so the update must
+          // proceed past the one-pointer pan guard and summon the ruler.
+          bloc.add(
+            VideoRecorderScaleStarted(ScaleStartDetails(pointerCount: 1)),
+          );
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(
+            VideoRecorderScaleUpdated(ScaleUpdateDetails(pointerCount: 2)),
+          );
+          await Future<void>.delayed(Duration.zero);
+
+          expect(bloc.state.showZoomIndicator, isTrue);
+        },
+      );
+
       test('shows the zoom ruler when the zoom level is set', () async {
         when(
           () => cameraService.setZoomLevel(any()),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((inv) async => inv.positionalArguments.first as double);
         final bloc = buildBloc();
         addTearDown(bloc.close);
 
@@ -245,15 +281,97 @@ void main() {
         expect(bloc.state.showZoomIndicator, isTrue);
       });
 
-      test('auto-hides the zoom ruler after the pinch settles', () async {
+      test('auto-hides the zoom ruler after the pinch settles', () {
+        // Drive the 1000ms auto-hide timer with fakeAsync instead of racing
+        // wall-clock, which flakes under the merged-isolate CI run.
+        fakeAsync((async) {
+          final bloc = buildBloc();
+
+          bloc.add(
+            VideoRecorderScaleStarted(ScaleStartDetails(pointerCount: 2)),
+          );
+          async.flushMicrotasks();
+          expect(bloc.state.showZoomIndicator, isTrue);
+
+          async.elapse(const Duration(milliseconds: 1000));
+          async.flushMicrotasks();
+
+          expect(bloc.state.showZoomIndicator, isFalse);
+
+          // Close inside the fake zone: a real-zone teardown would await
+          // microtasks this (now dead) zone can no longer drain and hang.
+          unawaited(bloc.close());
+          async.flushMicrotasks();
+        });
+      });
+    });
+
+    group('isPinchActive', () {
+      test('is set while a preview scale gesture is in progress', () async {
         final bloc = buildBloc();
         addTearDown(bloc.close);
 
-        bloc.add(VideoRecorderScaleStarted(ScaleStartDetails()));
-        // The auto-hide timer is 1000ms — give it room to fire.
-        await Future<void>.delayed(const Duration(milliseconds: 1100));
+        bloc.add(VideoRecorderScaleStarted(ScaleStartDetails(pointerCount: 1)));
+        await Future<void>.delayed(Duration.zero);
+        expect(bloc.state.isPinchActive, isTrue);
 
-        expect(bloc.state.showZoomIndicator, isFalse);
+        bloc.add(const VideoRecorderScaleEnded());
+        await Future<void>.delayed(Duration.zero);
+        expect(bloc.state.isPinchActive, isFalse);
+      });
+
+      test('is cleared by the indicator auto-hide timer as a safety net '
+          'when the scale-end callback is lost', () {
+        fakeAsync((async) {
+          final bloc = buildBloc();
+
+          bloc.add(
+            VideoRecorderScaleStarted(ScaleStartDetails(pointerCount: 2)),
+          );
+          async.flushMicrotasks();
+          // No VideoRecorderScaleEnded — the 1000ms auto-hide timer must
+          // release the guard so the ruler doesn't stay non-interactive.
+          async.elapse(const Duration(milliseconds: 1000));
+          async.flushMicrotasks();
+
+          expect(bloc.state.isPinchActive, isFalse);
+
+          // Close inside the fake zone: a real-zone teardown would await
+          // microtasks this (now dead) zone can no longer drain and hang.
+          unawaited(bloc.close());
+          async.flushMicrotasks();
+        });
+      });
+
+      test('is re-asserted when a stationary pinch resumes after the timer '
+          'fired mid-gesture', () {
+        fakeAsync((async) {
+          final bloc = buildBloc();
+
+          bloc.add(
+            VideoRecorderScaleStarted(ScaleStartDetails(pointerCount: 2)),
+          );
+          async.flushMicrotasks();
+          // Held stationary >1s: no updates, so the auto-hide timer fires
+          // while the two fingers are still down and clears the guard.
+          async.elapse(const Duration(milliseconds: 1000));
+          async.flushMicrotasks();
+          expect(bloc.state.isPinchActive, isFalse);
+
+          // The pinch resumes (second finger still down, unchanged scale):
+          // the flag must come back so the ruler can't turn interactive and
+          // swallow the lower pinch finger.
+          bloc.add(
+            VideoRecorderScaleUpdated(ScaleUpdateDetails(pointerCount: 2)),
+          );
+          async.flushMicrotasks();
+
+          expect(bloc.state.isPinchActive, isTrue);
+          expect(bloc.state.showZoomIndicator, isTrue);
+
+          unawaited(bloc.close());
+          async.flushMicrotasks();
+        });
       });
     });
 
@@ -261,7 +379,7 @@ void main() {
       test('pinching down across the 1× detent snaps zoom to 1.0', () async {
         when(
           () => cameraService.setZoomLevel(any()),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((inv) async => inv.positionalArguments.first as double);
         final bloc = buildBloc();
         addTearDown(bloc.close);
 
@@ -285,7 +403,7 @@ void main() {
       test('maps zoom multiplicatively as base × pinch scale', () async {
         when(
           () => cameraService.setZoomLevel(any()),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((inv) async => inv.positionalArguments.first as double);
         final bloc = buildBloc();
         addTearDown(bloc.close);
 
@@ -307,7 +425,7 @@ void main() {
       setUp(() {
         when(
           () => cameraService.setZoomLevel(any()),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((inv) async => inv.positionalArguments.first as double);
       });
 
       test('a full upward drag reaches the camera max zoom', () async {
@@ -385,7 +503,7 @@ void main() {
       setUp(() {
         when(
           () => cameraService.setZoomLevel(any()),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((inv) async => inv.positionalArguments.first as double);
       });
 
       test('captures the current zoom as the drag base', () async {
@@ -753,13 +871,93 @@ void main() {
         setUp: () {
           when(
             () => cameraService.setZoomLevel(any()),
-          ).thenAnswer((_) async => true);
+          ).thenAnswer(
+            (inv) async => inv.positionalArguments.first as double,
+          );
         },
         build: buildBloc,
         act: (bloc) => bloc.add(const VideoRecorderZoomLevelSet(2)),
         expect: () => const [
-          VideoRecorderBlocState(zoomLevel: 2, showZoomIndicator: true),
+          VideoRecorderBlocState(
+            zoomLevel: 2,
+            minZoomLevel: 0.5,
+            maxZoomLevel: 5,
+            showZoomIndicator: true,
+          ),
         ],
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'emits the zoom the camera actually applied — not the request — '
+        'when the OS silently clamps it, and mirrors the shrunk range',
+        setUp: () {
+          // Runtime-restricted camera: requests above 2.5 are applied as
+          // 2.5 (iOS clamps them silently, without an error). The service
+          // getters still report the stale configure-time range (5.0)
+          // until the first set refreshes them to the live range (2.5) —
+          // mirroring how the real service learns of the restriction.
+          var restricted = false;
+          when(() => cameraService.setZoomLevel(any())).thenAnswer((
+            inv,
+          ) async {
+            final requested = inv.positionalArguments.first as double;
+            if (requested <= 2.5) return requested;
+            restricted = true;
+            return 2.5;
+          });
+          when(
+            () => cameraService.maxZoomLevel,
+          ).thenAnswer((_) => restricted ? 2.5 : 5.0);
+        },
+        build: buildBloc,
+        act: (bloc) => bloc.add(const VideoRecorderZoomLevelSet(4)),
+        expect: () => const [
+          VideoRecorderBlocState(
+            zoomLevel: 2.5,
+            minZoomLevel: 0.5,
+            maxZoomLevel: 2.5,
+            showZoomIndicator: true,
+          ),
+        ],
+      );
+
+      test(
+        'heals a stale shrunk ceiling on pinch-out even when the clamp '
+        'pins the zoom to the current level',
+        () async {
+          // The live max was restricted to 2.5 and the user is pinned there.
+          // The restriction has since lifted (live max back to 5.0) but the
+          // service still advertises the stale 2.5 until the next set's
+          // read-back refreshes it. A pinch-out clamps back to 2.5 (== the
+          // current zoom), so the applied zoom doesn't move — the dispatch
+          // must still fire so the ceiling heals on this gesture rather than
+          // staying capped until the user first pinches back in.
+          var healed = false;
+          when(() => cameraService.setZoomLevel(any())).thenAnswer((inv) async {
+            healed = true;
+            return inv.positionalArguments.first as double;
+          });
+          when(
+            () => cameraService.maxZoomLevel,
+          ).thenAnswer((_) => healed ? 5.0 : 2.5);
+
+          final bloc = buildBloc()
+            ..emit(
+              const VideoRecorderBlocState(zoomLevel: 2.5, maxZoomLevel: 2.5),
+            );
+          addTearDown(bloc.close);
+
+          bloc.add(
+            VideoRecorderScaleStarted(ScaleStartDetails(pointerCount: 2)),
+          );
+          await pumpEventQueue();
+          // 2.5 × 1.6 = 4.0 > stale max 2.5, so clampedZoom pins back to 2.5.
+          bloc.add(VideoRecorderScaleUpdated(ScaleUpdateDetails(scale: 1.6)));
+          await pumpEventQueue();
+
+          verify(() => cameraService.setZoomLevel(2.5)).called(1);
+          expect(bloc.state.maxZoomLevel, 5.0);
+        },
       );
 
       blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
@@ -777,7 +975,7 @@ void main() {
         setUp: () {
           when(
             () => cameraService.setZoomLevel(any()),
-          ).thenAnswer((_) async => false);
+          ).thenAnswer((_) async => null);
         },
         build: buildBloc,
         act: (bloc) => bloc.add(const VideoRecorderZoomLevelSet(2)),

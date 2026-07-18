@@ -94,25 +94,33 @@ void main() {
         final maxZoom = cameraService.maxZoomLevel;
 
         final midZoom = (minZoom + maxZoom) / 2;
-        final success = await cameraService.setZoomLevel(midZoom);
+        // setZoomLevel returns the zoom the camera actually applied
+        // (double?, null on failure), not a bool — assert it lands inside
+        // the advertised range.
+        final applied = await cameraService.setZoomLevel(midZoom);
 
-        expect(success, isA<bool>());
+        expect(applied, isNotNull);
+        expect(applied, inInclusiveRange(minZoom, maxZoom));
       });
 
       patrolTest('can set zoom to minimum', ($) async {
         await _grantPermissions($);
         final minZoom = cameraService.minZoomLevel;
-        final success = await cameraService.setZoomLevel(minZoom);
+        final maxZoom = cameraService.maxZoomLevel;
+        final applied = await cameraService.setZoomLevel(minZoom);
 
-        expect(success, isA<bool>());
+        expect(applied, isNotNull);
+        expect(applied, inInclusiveRange(minZoom, maxZoom));
       });
 
       patrolTest('can set zoom to maximum', ($) async {
         await _grantPermissions($);
+        final minZoom = cameraService.minZoomLevel;
         final maxZoom = cameraService.maxZoomLevel;
-        final success = await cameraService.setZoomLevel(maxZoom);
+        final applied = await cameraService.setZoomLevel(maxZoom);
 
-        expect(success, isA<bool>());
+        expect(applied, isNotNull);
+        expect(applied, inInclusiveRange(minZoom, maxZoom));
       });
 
       patrolTest('can smoothly transition zoom levels', ($) async {

@@ -317,12 +317,13 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
     }
 
     private func setZoomLevel(level: Double, result: @escaping FlutterResult) {
-        guard let controller = cameraController else {
+        guard cameraController != nil else {
             result(Self.cameraError("NOT_INITIALIZED", "Camera not initialized"))
             return
         }
-        let success = controller.setZoomLevel(level: CGFloat(level))
-        result(success)
+        // Programmatic zoom is unsupported on macOS cameras; nil signals
+        // failure in the shared channel contract (applied-zoom map or nil).
+        result(nil)
     }
 
     private func switchCamera(lens: String, result: @escaping FlutterResult) {

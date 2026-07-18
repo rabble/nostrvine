@@ -85,7 +85,11 @@ class MockDivineCameraPlatform
   Future<bool> cancelFocusAndMetering() async => true;
 
   @override
-  Future<bool> setZoomLevel(double level) async => true;
+  Future<CameraZoomState?> setZoomLevel(double level) async => CameraZoomState(
+    zoomLevel: level,
+    minZoomLevel: _state.minZoomLevel,
+    maxZoomLevel: _state.maxZoomLevel,
+  );
 
   @override
   Future<bool> setVideoStabilizationMode(
@@ -195,6 +199,7 @@ void main() {
     Widget Function(Offset)? focusIndicatorBuilder,
     ValueChanged<ScaleStartDetails>? onScaleStart,
     ValueChanged<ScaleUpdateDetails>? onScaleUpdate,
+    ValueChanged<ScaleEndDetails>? onScaleEnd,
   }) {
     return MaterialApp(
       home: Scaffold(
@@ -208,6 +213,7 @@ void main() {
             focusIndicatorBuilder: focusIndicatorBuilder,
             onScaleStart: onScaleStart,
             onScaleUpdate: onScaleUpdate,
+            onScaleEnd: onScaleEnd,
           ),
         ),
       ),
@@ -534,6 +540,24 @@ void main() {
         find.byType(GestureDetector),
       );
       expect(gestureDetector.onScaleUpdate, isNotNull);
+    });
+
+    testWidgets('passes onScaleEnd callback to GestureDetector', (
+      tester,
+    ) async {
+      await camera.initialize();
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          onScaleEnd: (details) {},
+        ),
+      );
+
+      // Verify GestureDetector is present and accepts the callback
+      final gestureDetector = tester.widget<GestureDetector>(
+        find.byType(GestureDetector),
+      );
+      expect(gestureDetector.onScaleEnd, isNotNull);
     });
 
     testWidgets('shows last frame during camera switch', (tester) async {

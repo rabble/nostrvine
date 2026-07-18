@@ -203,6 +203,12 @@ final class VideoRecorderScaleUpdated extends VideoRecorderEvent {
   List<Object?> get props => [details];
 }
 
+/// Scale gesture on the preview ended (all pointers lifted or the pointer
+/// configuration changed) — releases the zoom ruler's pinch guard.
+final class VideoRecorderScaleEnded extends VideoRecorderEvent {
+  const VideoRecorderScaleEnded();
+}
+
 /// Disposes the camera service so the next route can take over the
 /// AVAudioSession cleanly. The View dispatches this just before
 /// navigating to a screen that owns the camera, after the push

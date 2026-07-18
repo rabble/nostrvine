@@ -1818,11 +1818,15 @@ class CameraController(
      * accepts a virtual zoom level spanning all available back lenses.
      * 1.0 = main at native 1x. Below 1.0 = ultra-wide. Above
      * telephoto ratio = telephoto.
+     *
+     * Returns the applied zoom plus the currently available range as a
+     * map for the platform channel (shared contract with iOS, where the
+     * OS can silently clamp the request), or null on failure.
      */
-    fun setZoomLevel(level: Float): Boolean {
+    fun setZoomLevel(level: Float): Map<String, Double>? {
         // Without auto lens switching, use direct camera zoom
         if (!autoLensSwitchEnabled) {
-            val cam = camera ?: return false
+            val cam = camera ?: return null
             return try {
                 // When auto lens switch is disabled, clamp to 1.0 minimum
                 // to prevent native HAL from switching to ultra-wide on
@@ -1833,10 +1837,10 @@ class CameraController(
                 cam.cameraControl.setZoomRatio(clampedLevel)
                 currentZoom = clampedLevel
                 DivineCameraLog.d(TAG, "Zoom level set: $clampedLevel")
-                true
+                zoomStateMap(clampedLevel, effectiveMin, maxZoom)
             } catch (e: Exception) {
                 DivineCameraLog.e(TAG, "Failed to set zoom level", e)
-                false
+                null
             }
         }
 
@@ -1851,22 +1855,32 @@ class CameraController(
         // Switch lens if needed (skip during recording)
         if (targetLens != currentLensType && !isRecording) {
             autoSwitchToLens(targetLens, nativeZoom)
-            return true
+            return zoomStateMap(clampedVirtual, virtualMinZoom, virtualMaxZoom)
         }
 
         // Same lens: adjust native zoom directly
-        val cam = camera ?: return false
+        val cam = camera ?: return null
         return try {
             val clampedNative =
                 nativeZoom.coerceIn(minZoom, maxZoom)
             cam.cameraControl.setZoomRatio(clampedNative)
             currentZoom = clampedNative
-            true
+            zoomStateMap(clampedVirtual, virtualMinZoom, virtualMaxZoom)
         } catch (e: Exception) {
             DivineCameraLog.e(TAG, "Failed to set zoom level", e)
-            false
+            null
         }
     }
+
+    private fun zoomStateMap(
+        zoom: Float,
+        min: Float,
+        max: Float
+    ): Map<String, Double> = mapOf(
+        "zoomLevel" to zoom.toDouble(),
+        "minZoomLevel" to min.toDouble(),
+        "maxZoomLevel" to max.toDouble()
+    )
 
     /**
      * Sets the requested video stabilization mode.

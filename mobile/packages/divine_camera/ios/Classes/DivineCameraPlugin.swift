@@ -379,8 +379,8 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
             result(Self.cameraError("NOT_INITIALIZED", "Camera not initialized"))
             return
         }
-        let success = controller.setZoomLevel(level: CGFloat(level))
-        result(success)
+        // Map with the applied zoom + live available range, nil on failure.
+        result(controller.setZoomLevel(level: CGFloat(level)))
     }
 
     private func setVideoStabilizationMode(mode: String, result: @escaping FlutterResult) {

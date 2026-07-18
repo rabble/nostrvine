@@ -116,10 +116,10 @@ void main() {
         expect(result, isFalse);
       });
 
-      test('setZoomLevel returns false', () async {
+      test('setZoomLevel returns null (zoom unsupported)', () async {
         final result = await service.setZoomLevel(2);
 
-        expect(result, isFalse);
+        expect(result, isNull);
       });
 
       test('switchCamera returns false', () async {

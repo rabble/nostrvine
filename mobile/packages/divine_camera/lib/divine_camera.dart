@@ -18,6 +18,7 @@ export 'src/models/audio_device.dart';
 export 'src/models/camera_lens.dart';
 export 'src/models/camera_lens_metadata.dart';
 export 'src/models/camera_state.dart';
+export 'src/models/camera_zoom_state.dart';
 export 'src/models/flash_mode.dart';
 export 'src/models/photo_capture_result.dart';
 export 'src/models/remote_record_trigger.dart';
@@ -216,15 +217,26 @@ class DivineCamera {
   /// Sets the zoom level.
   ///
   /// [level] the zoom level to set.
-  /// Returns true if successful.
-  Future<bool> setZoomLevel(double level) async {
+  ///
+  /// Returns the zoom level the camera actually applied, or `null` when
+  /// the platform failed to apply it. The applied zoom can be lower than
+  /// [level]: on iOS virtual multi-camera devices the system restricts
+  /// the available zoom range at runtime and silently clamps out-of-range
+  /// assignments, so the platform reads the factor back after setting it.
+  /// The live range reported alongside it replaces [minZoomLevel] /
+  /// [maxZoomLevel], keeping [state] honest in both directions (it heals
+  /// once a runtime restriction lifts).
+  Future<double?> setZoomLevel(double level) async {
     final clampedLevel = level.clamp(_state.minZoomLevel, _state.maxZoomLevel);
-    final success = await _platform.setZoomLevel(clampedLevel);
-    if (success) {
-      _state = _state.copyWith(zoomLevel: clampedLevel);
-      _notifyStateChanged();
-    }
-    return success;
+    final zoom = await _platform.setZoomLevel(clampedLevel);
+    if (zoom == null) return null;
+    _state = _state.copyWith(
+      zoomLevel: zoom.zoomLevel,
+      minZoomLevel: zoom.minZoomLevel,
+      maxZoomLevel: zoom.maxZoomLevel,
+    );
+    _notifyStateChanged();
+    return zoom.zoomLevel;
   }
 
   /// Switches between front and back camera.

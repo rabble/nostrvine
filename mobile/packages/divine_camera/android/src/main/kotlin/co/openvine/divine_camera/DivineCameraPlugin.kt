@@ -324,8 +324,8 @@ class DivineCameraPlugin :
             return
         }
         try {
-            val success = controller.setZoomLevel(level)
-            result.success(success)
+            // Map with the applied zoom + available range, null on failure.
+            result.success(controller.setZoomLevel(level))
         } catch (e: Exception) {
             result.error("ZOOM_ERROR", e.message, null)
         }
