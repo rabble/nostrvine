@@ -142,8 +142,14 @@ class _ClassicVinesTabState extends ConsumerState<ClassicVinesTab> {
   Future<void> _refreshClassics() async {
     ref.read(funnelcakeAvailableProvider.notifier).refresh();
     await ref.read(funnelcakeAvailableProvider.future);
+    // The widget can be disposed during any of these awaits (e.g. the Explore
+    // TabController settling on another tab, or navigating away) while a
+    // throttled-network refresh is still in flight. Using `ref` after that
+    // throws a StateError, so bail out once unmounted. See issue #6157.
+    if (!mounted) return;
     ref.invalidate(classicVinesAvailableProvider);
     await ref.read(classicVinesAvailableProvider.future);
+    if (!mounted) return;
     await ref.read(classicVinesFeedProvider.notifier).refresh();
   }
 }
