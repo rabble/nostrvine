@@ -5985,6 +5985,27 @@ class AppLocalizationsRo extends AppLocalizations {
       'Coperta a fost actualizată';
 
   @override
+  String get videoMetadataC2paMissingTitle =>
+      'Publici fără verificarea autenticității?';
+
+  @override
+  String get videoMetadataC2paMissingBody =>
+      'Nu am putut adăuga acreditările de conținut, așa că acest videoclip nu va fi confirmat ca fiind făcut de om. Regenerează pentru a încerca din nou sau publică-l așa cum este.';
+
+  @override
+  String get videoMetadataC2paMissingNote =>
+      'Acreditările de conținut necesită o conexiune la internet.';
+
+  @override
+  String get videoMetadataC2paMissingRegenerate => 'Regenerează';
+
+  @override
+  String get videoMetadataC2paMissingPostAnyway => 'Publică oricum';
+
+  @override
+  String get videoMetadataGenerationFailed => 'Generarea a eșuat';
+
+  @override
   String get videoMetadataTags => 'Etichete';
 
   @override

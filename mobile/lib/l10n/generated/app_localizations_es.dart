@@ -5876,6 +5876,27 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoMetadataEditCoverSuccessAnnouncement => 'Portada actualizada';
 
   @override
+  String get videoMetadataC2paMissingTitle =>
+      '¿Publicar sin la verificación de autenticidad?';
+
+  @override
+  String get videoMetadataC2paMissingBody =>
+      'No pudimos añadir las credenciales de contenido, así que este vídeo no se confirmará como hecho por humanos. Vuelve a generarlo para intentarlo de nuevo o publícalo tal cual.';
+
+  @override
+  String get videoMetadataC2paMissingNote =>
+      'Las credenciales de contenido necesitan conexión a internet.';
+
+  @override
+  String get videoMetadataC2paMissingRegenerate => 'Volver a generar';
+
+  @override
+  String get videoMetadataC2paMissingPostAnyway => 'Publicar igualmente';
+
+  @override
+  String get videoMetadataGenerationFailed => 'Generación fallida';
+
+  @override
   String get videoMetadataTags => 'Etiquetas';
 
   @override

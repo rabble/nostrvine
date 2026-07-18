@@ -5906,6 +5906,27 @@ class AppLocalizationsFr extends AppLocalizations {
       'Couverture mise à jour';
 
   @override
+  String get videoMetadataC2paMissingTitle =>
+      'Publier sans la vérification d’authenticité ?';
+
+  @override
+  String get videoMetadataC2paMissingBody =>
+      'Nous n’avons pas pu ajouter les informations d’authenticité, cette vidéo ne sera donc pas confirmée comme faite par un humain. Régénérez pour réessayer, ou publiez-la telle quelle.';
+
+  @override
+  String get videoMetadataC2paMissingNote =>
+      'Les informations d’authenticité nécessitent une connexion internet.';
+
+  @override
+  String get videoMetadataC2paMissingRegenerate => 'Régénérer';
+
+  @override
+  String get videoMetadataC2paMissingPostAnyway => 'Publier quand même';
+
+  @override
+  String get videoMetadataGenerationFailed => 'Échec de la génération';
+
+  @override
   String get videoMetadataTags => 'Tags';
 
   @override

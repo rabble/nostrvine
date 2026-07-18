@@ -5827,6 +5827,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoMetadataEditCoverSuccessAnnouncement => 'Cover updated';
 
   @override
+  String get videoMetadataC2paMissingTitle =>
+      'Post without the human-made check?';
+
+  @override
+  String get videoMetadataC2paMissingBody =>
+      'We couldn\'t add content credentials, so this video won\'t be confirmed as Human-Made. Regenerate to try again, or post it as-is.';
+
+  @override
+  String get videoMetadataC2paMissingNote =>
+      'Content credentials need an internet connection.';
+
+  @override
+  String get videoMetadataC2paMissingRegenerate => 'Regenerate';
+
+  @override
+  String get videoMetadataC2paMissingPostAnyway => 'Post anyway';
+
+  @override
+  String get videoMetadataGenerationFailed => 'Generation failed';
+
+  @override
   String get videoMetadataTags => 'Tags';
 
   @override

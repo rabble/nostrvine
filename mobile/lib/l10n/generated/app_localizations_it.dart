@@ -5884,6 +5884,27 @@ class AppLocalizationsIt extends AppLocalizations {
       'Copertina aggiornata';
 
   @override
+  String get videoMetadataC2paMissingTitle =>
+      'Pubblicare senza la verifica di autenticità?';
+
+  @override
+  String get videoMetadataC2paMissingBody =>
+      'Non è stato possibile aggiungere le credenziali di contenuto, quindi questo video non sarà confermato come fatto da un umano. Rigenera per riprovare oppure pubblicalo così com’è.';
+
+  @override
+  String get videoMetadataC2paMissingNote =>
+      'Le credenziali di contenuto richiedono una connessione a internet.';
+
+  @override
+  String get videoMetadataC2paMissingRegenerate => 'Rigenera';
+
+  @override
+  String get videoMetadataC2paMissingPostAnyway => 'Pubblica comunque';
+
+  @override
+  String get videoMetadataGenerationFailed => 'Generazione non riuscita';
+
+  @override
   String get videoMetadataTags => 'Tag';
 
   @override

@@ -98,8 +98,10 @@ class _VideoMetadataClassicPreviewThumbnailState
     if (clips.isEmpty) return const SizedBox.shrink();
     final clip = clips.first;
 
-    final (finalRenderedClip, isProcessing) = ref.watch(
-      videoEditorProvider.select((s) => (s.finalRenderedClip, s.isProcessing)),
+    final (finalRenderedClip, isProcessing, renderFailed) = ref.watch(
+      videoEditorProvider.select(
+        (s) => (s.finalRenderedClip, s.isProcessing, s.renderFailed),
+      ),
     );
 
     return AspectRatio(
@@ -132,6 +134,10 @@ class _VideoMetadataClassicPreviewThumbnailState
                               clip: clip,
                               isProcessing:
                                   finalRenderedClip == null && isProcessing,
+                              hasFailed: renderFailed,
+                              onRetry: () => ref
+                                  .read(videoEditorProvider.notifier)
+                                  .startRenderVideo(),
                             ),
                           ],
                         ),
@@ -168,6 +174,16 @@ class _VideoMetadataClassicPreviewThumbnailState
                         ),
                       ),
                     ),
+                  ),
+
+                // A re-sign over an already-rendered clip (retryC2paSigning)
+                // keeps the looping player up, so overlay a progress indicator
+                // on top of it — otherwise classic mode looks idle while
+                // capture mode shows a spinner (#6058).
+                if (finalRenderedClip != null && isProcessing)
+                  VideoEditorProcessingOverlay(
+                    clip: clip,
+                    isProcessing: true,
                   ),
               ],
             ),

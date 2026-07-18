@@ -3445,6 +3445,30 @@
   "@videoMetadataEditCoverSuccessAnnouncement": {
     "description": "Screen-reader announcement spoken after the user confirms a new cover thumbnail and the screen is about to close. Visual users get the screen pop as feedback; this is the audio equivalent."
   },
+  "videoMetadataC2paMissingTitle": "Post without the human-made check?",
+  "@videoMetadataC2paMissingTitle": {
+    "description": "Title of a bottom sheet shown after rendering a video when the C2PA content-credential signature could not be created (e.g. offline). Asks whether to regenerate or post without provenance."
+  },
+  "videoMetadataC2paMissingBody": "We couldn't add content credentials, so this video won't be confirmed as Human-Made. Regenerate to try again, or post it as-is.",
+  "@videoMetadataC2paMissingBody": {
+    "description": "Body text of the bottom sheet warning that a video will be published without a C2PA content credential, meaning it will not be verifiably confirmed as human-made."
+  },
+  "videoMetadataC2paMissingNote": "Content credentials need an internet connection.",
+  "@videoMetadataC2paMissingNote": {
+    "description": "Small trailing note under the missing-content-credential bottom sheet, hinting that the (remote) content-credential signing step requires connectivity. Not phrased as the definitive cause, since signing can also fail for other reasons."
+  },
+  "videoMetadataC2paMissingRegenerate": "Regenerate",
+  "@videoMetadataC2paMissingRegenerate": {
+    "description": "Primary button on the missing-content-credential bottom sheet. Re-renders the video to attempt the C2PA signature again."
+  },
+  "videoMetadataC2paMissingPostAnyway": "Post anyway",
+  "@videoMetadataC2paMissingPostAnyway": {
+    "description": "Secondary button on the missing-content-credential bottom sheet. Publishes the video without a C2PA content credential."
+  },
+  "videoMetadataGenerationFailed": "Generation failed",
+  "@videoMetadataGenerationFailed": {
+    "description": "Warning shown over the metadata screen preview when rendering (generating) the final video failed and no clip was produced. Sits above a retry icon button."
+  },
   "videoMetadataTags": "Tags",
   "videoMetadataExpiration": "Expiration",
   "videoMetadataExpirationNotExpire": "Does not expire",

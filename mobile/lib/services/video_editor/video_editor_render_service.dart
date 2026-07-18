@@ -430,6 +430,30 @@ class VideoEditorRenderService {
     }
   }
 
+  /// Re-runs ProofMode / C2PA signing on an already-rendered clip's file,
+  /// without re-encoding the video.
+  ///
+  /// Used when the render succeeded but the C2PA content credential could not
+  /// be attached (e.g. offline) — re-attaching provenance must not pay the cost
+  /// of a full re-render (#6058). Returns the refreshed proofManifestJson, or
+  /// null when no proof is available.
+  static Future<String?> reproofRenderedClip({
+    required DivineVideoClip clip,
+    required List<DivineVideoClip> clips,
+    required Map<String, dynamic> editorStateHistory,
+  }) async {
+    final path = clip.video.file?.path;
+    if (path == null) return null;
+
+    final attestedClips = await _ensureClipProofs(clips);
+    final proofData = await NativeProofModeService.proofFile(
+      File(path),
+      clips: attestedClips,
+      editorStateHistory: editorStateHistory,
+    );
+    return proofData != null ? jsonEncode(proofData) : null;
+  }
+
   /// Ensures every clip has a [proofManifestJson].
   ///
   /// Clips that already have proof data are returned as-is. For clips without

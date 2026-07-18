@@ -20,6 +20,8 @@ class VideoEditorProviderState {
   /// Creates a video editor state with optional initial values.
   VideoEditorProviderState({
     this.isProcessing = false,
+    this.renderFailed = false,
+    this.c2paSigningFailed = false,
     this.isSavingDraft = false,
     this.isAutosavedDraft = true,
     this.allowAudioReuse = false,
@@ -47,6 +49,30 @@ class VideoEditorProviderState {
   /// Whether a long-running operation (e.g., export, processing) is in
   /// progress.
   final bool isProcessing;
+
+  /// Whether the last render attempt failed to produce a [finalRenderedClip].
+  ///
+  /// Drives the metadata screen's failure overlay (error + retry) instead of an
+  /// endless spinner, so a failed generation can be restarted in place (#6058).
+  /// Cleared when a new render starts and whenever [finalRenderedClip] is set or
+  /// invalidated.
+  final bool renderFailed;
+
+  /// Whether the render produced a clip but no usable content credential /
+  /// provenance manifest was attached.
+  ///
+  /// This is the broad "provenance could not be confirmed" condition, not a
+  /// pure signing-error signal: it is true both when C2PA signing itself failed
+  /// and when signing succeeded but the ProofMode manifest could not be
+  /// generated or read (see [VideoEditorNotifier.c2paSigningFailedFor]). Either
+  /// way the output cannot be confirmed as Human-Made, so the same recovery
+  /// prompt applies.
+  ///
+  /// Only ever true in builds with signing configured (never in CI). Drives the
+  /// "try again or post without provenance" prompt on the metadata screen
+  /// (#6058). Cleared once the user acts on it, when a new render starts, and
+  /// whenever [finalRenderedClip] is invalidated.
+  final bool c2paSigningFailed;
 
   /// Whether a draft save operation is currently in progress.
   final bool isSavingDraft;
@@ -180,6 +206,8 @@ class VideoEditorProviderState {
   /// [selectedSound] to null.
   VideoEditorProviderState copyWith({
     bool? isProcessing,
+    bool? renderFailed,
+    bool? c2paSigningFailed,
     bool? isSavingDraft,
     bool? isAutosavedDraft,
     bool? allowAudioReuse,
@@ -211,8 +239,24 @@ class VideoEditorProviderState {
     String? customThumbnailPath,
     bool clearCustomThumbnailPath = false,
   }) {
+    // clearFinalRenderedClip forces renderFailed and c2paSigningFailed back to
+    // false below, so passing either as `true` in the same call would be
+    // silently dropped. Fail loudly instead of hiding the contradiction.
+    assert(
+      !clearFinalRenderedClip ||
+          (renderFailed != true && c2paSigningFailed != true),
+      'clearFinalRenderedClip resets renderFailed and c2paSigningFailed to '
+      'false; do not also pass either as true in the same copyWith call.',
+    );
     return VideoEditorProviderState(
       isProcessing: isProcessing ?? this.isProcessing,
+      // A produced or invalidated clip always ends the failed state.
+      renderFailed:
+          !clearFinalRenderedClip && (renderFailed ?? this.renderFailed),
+      // Invalidating the rendered clip also drops any pending C2PA prompt.
+      c2paSigningFailed:
+          !clearFinalRenderedClip &&
+          (c2paSigningFailed ?? this.c2paSigningFailed),
       isSavingDraft: isSavingDraft ?? this.isSavingDraft,
       isAutosavedDraft: isAutosavedDraft ?? this.isAutosavedDraft,
       allowAudioReuse: allowAudioReuse ?? this.allowAudioReuse,

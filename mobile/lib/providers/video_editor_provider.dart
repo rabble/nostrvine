@@ -9,7 +9,8 @@ import 'package:db_client/db_client.dart' show ClipsDao, DraftsDao;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:models/models.dart' show AudioEvent, InspiredByInfo, VideoEvent;
+import 'package:models/models.dart'
+    show AudioEvent, InspiredByInfo, NativeProofData, VideoEvent;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/complete_parameters_extensions.dart';
 import 'package:openvine/models/content_label.dart';
@@ -24,6 +25,7 @@ import 'package:openvine/providers/preferences_providers.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/providers/video_reply_context_provider.dart';
+import 'package:openvine/services/c2pa_signing_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
@@ -33,6 +35,15 @@ import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/core/models/video/progress_model.dart';
 import 'package:unified_logger/unified_logger.dart';
+
+/// Debug-only escape hatch to exercise the "regenerate or post without
+/// provenance" prompt without a configured signing server. Enable with
+/// `--dart-define=DIVINE_FORCE_C2PA_PROMPT=true`.
+///
+/// Off by default and ignored outside debug builds, so CI, integration tests,
+/// and release are never affected (#6058).
+const bool kForceC2paPromptInDebug =
+    kDebugMode && bool.fromEnvironment('DIVINE_FORCE_C2PA_PROMPT');
 
 /// Result of a [VideoEditorNotifier.saveAsDraft] attempt.
 ///
@@ -201,6 +212,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         .isAudioSharingEnabled;
     state = state.copyWith(
       isProcessing: false,
+      renderFailed: false,
+      c2paSigningFailed: false,
       isSavingDraft: false,
       allowAudioReuse: audioSharingEnabled,
     );
@@ -1096,7 +1109,13 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       name: 'VideoEditorNotifier',
       category: .video,
     );
-    setProcessing(true);
+    // Clear any prior failure explicitly: setProcessing is a no-op when
+    // isProcessing is already true (e.g. set by the editor before navigation).
+    state = state.copyWith(
+      isProcessing: true,
+      renderFailed: false,
+      c2paSigningFailed: false,
+    );
 
     final generation = ++_renderGeneration;
     late final Future<void> renderFuture;
@@ -1110,43 +1129,176 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   }
 
   Future<void> _runRenderVideo(int generation) async {
-    final renderParameters = _buildRenderParameters();
+    try {
+      final renderParameters = _buildRenderParameters();
 
-    final result = await VideoEditorRenderService.renderVideoToClip(
-      clips: _clips,
-      parameters: renderParameters,
-      editorStateHistory: state.editorStateHistory,
-      taskId: draftId,
-    );
+      final result = await VideoEditorRenderService.renderVideoToClip(
+        clips: _clips,
+        parameters: renderParameters,
+        editorStateHistory: state.editorStateHistory,
+        taskId: draftId,
+      );
 
-    // A newer render was started while this one was running — discard.
-    if (generation != _renderGeneration) return;
+      // A newer render was started while this one was running — discard.
+      if (generation != _renderGeneration) return;
 
-    if (result == null) {
-      Log.warning(
-        '⚠️ Video render cancelled or failed',
+      if (result == null) {
+        // A user cancel bumps the generation and is caught above, so reaching
+        // here with a matching generation is a genuine render failure — surface
+        // the retry affordance (#6058).
+        Log.warning(
+          '⚠️ Video render failed',
+          name: 'VideoEditorNotifier',
+          category: .video,
+        );
+        state = state.copyWith(isProcessing: false, renderFailed: true);
+        return;
+      }
+
+      final (finalRenderedClip, proofManifestJson) = result;
+
+      Log.info(
+        '✅ Video rendered successfully - duration: '
+        '${finalRenderedClip.duration.inSeconds}s',
         name: 'VideoEditorNotifier',
         category: .video,
       );
-      state = state.copyWith(isProcessing: false);
-      return;
+
+      final signingConfigured =
+          C2paSigningService.isSigningConfigured || kForceC2paPromptInDebug;
+      final c2paSigningFailed = c2paSigningFailedFor(
+        signingConfigured: signingConfigured,
+        proofManifestJson: proofManifestJson,
+      );
+      Log.debug(
+        '🔐 C2PA prompt gate — configured: $signingConfigured, '
+        'hasProof: ${proofManifestJson != null}, failed: $c2paSigningFailed',
+        name: 'VideoEditorNotifier',
+        category: .video,
+      );
+
+      state = state.copyWith(
+        isProcessing: false,
+        renderFailed: false,
+        c2paSigningFailed: c2paSigningFailed,
+        finalRenderedClip: finalRenderedClip,
+        proofManifestJson: proofManifestJson,
+      );
+      autosaveChanges();
+    } catch (error, stackTrace) {
+      // A newer render owns the processing flag now — leave it alone.
+      if (generation != _renderGeneration) return;
+      // Surface the failure (e.g. a hung/failed C2PA proof step) as an error +
+      // retry so the user can restart the render instead of being stuck on the
+      // processing overlay (#6058).
+      Log.error(
+        '❌ Video render failed',
+        name: 'VideoEditorNotifier',
+        category: .video,
+        error: error,
+        stackTrace: stackTrace,
+      );
+      state = state.copyWith(isProcessing: false, renderFailed: true);
     }
+  }
 
-    final (finalRenderedClip, proofManifestJson) = result;
+  /// Whether a rendered clip lacks a usable content credential in a build where
+  /// signing is configured.
+  ///
+  /// The only signal available here is [proofManifestJson], which
+  /// [NativeProofModeService.proofFile] returns null (or without a
+  /// `c2paManifestId`) for *both* a genuine C2PA signing failure *and* the case
+  /// where signing succeeded but the ProofMode manifest could not be generated
+  /// or read. This helper deliberately treats that whole set as "provenance
+  /// could not be confirmed" rather than trying to distinguish the two — the
+  /// recovery is identical (re-sign or post as-is), and a re-sign re-runs the
+  /// proof step regardless. So a true result means "no confirmable
+  /// content-credential manifest", not strictly "signing threw".
+  ///
+  /// [signingConfigured] is [C2paSigningService.isSigningConfigured]; passed in
+  /// so the decision is pure and testable. Returns false whenever signing isn't
+  /// configured (CI / unconfigured builds), so those never prompt.
+  @visibleForTesting
+  static bool c2paSigningFailedFor({
+    required bool signingConfigured,
+    required String? proofManifestJson,
+  }) {
+    if (!signingConfigured) return false;
+    if (proofManifestJson == null || proofManifestJson.isEmpty) return true;
+    try {
+      final decoded = jsonDecode(proofManifestJson);
+      if (decoded is! Map<String, dynamic>) return true;
+      final manifestId = NativeProofData.fromJson(decoded).c2paManifestId;
+      return manifestId == null || manifestId.isEmpty;
+    } catch (_) {
+      return true;
+    }
+  }
 
-    Log.info(
-      '✅ Video rendered successfully - duration: '
-      '${finalRenderedClip.duration.inSeconds}s',
-      name: 'VideoEditorNotifier',
-      category: .video,
-    );
+  /// Clears the pending C2PA-missing prompt once the user has decided to post
+  /// without a content credential (#6058).
+  void acknowledgeC2paSigningFailure() {
+    if (!state.c2paSigningFailed) return;
+    state = state.copyWith(c2paSigningFailed: false);
+  }
 
-    state = state.copyWith(
-      isProcessing: false,
-      finalRenderedClip: finalRenderedClip,
-      proofManifestJson: proofManifestJson,
-    );
-    autosaveChanges();
+  /// Re-attempts C2PA signing on the already-rendered clip without re-encoding
+  /// the video — the render succeeded, only the content credential failed
+  /// (#6058). Falls back to a full render if there is no rendered clip.
+  Future<void> retryC2paSigning() {
+    final clip = state.finalRenderedClip;
+    // No rendered clip to re-sign (defensive: the prompt that calls this only
+    // appears once a clip exists) — fall back to a full render.
+    if (clip == null) return startRenderVideo();
+
+    state = state.copyWith(isProcessing: true, c2paSigningFailed: false);
+
+    final generation = ++_renderGeneration;
+    late final Future<void> future;
+    future = _runReproof(generation, clip).whenComplete(() {
+      if (identical(_activeRenderFuture, future)) {
+        _activeRenderFuture = null;
+      }
+    });
+    _activeRenderFuture = future;
+    return future;
+  }
+
+  Future<void> _runReproof(int generation, DivineVideoClip clip) async {
+    try {
+      final refreshed = await VideoEditorRenderService.reproofRenderedClip(
+        clip: clip,
+        clips: _clips,
+        editorStateHistory: state.editorStateHistory,
+      );
+
+      // A newer render/re-sign superseded this one — discard.
+      if (generation != _renderGeneration) return;
+
+      final proofManifestJson = refreshed ?? state.proofManifestJson;
+      final signingConfigured =
+          C2paSigningService.isSigningConfigured || kForceC2paPromptInDebug;
+      state = state.copyWith(
+        isProcessing: false,
+        proofManifestJson: proofManifestJson,
+        c2paSigningFailed: c2paSigningFailedFor(
+          signingConfigured: signingConfigured,
+          proofManifestJson: proofManifestJson,
+        ),
+      );
+      autosaveChanges();
+    } catch (error, stackTrace) {
+      if (generation != _renderGeneration) return;
+      Log.error(
+        '❌ C2PA re-sign failed',
+        name: 'VideoEditorNotifier',
+        category: .video,
+        error: error,
+        stackTrace: stackTrace,
+      );
+      // The re-sign itself errored — offer the prompt again.
+      state = state.copyWith(isProcessing: false, c2paSigningFailed: true);
+    }
   }
 
   /// Cancel an ongoing video render operation.
@@ -1166,7 +1318,11 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       }
     }
     if (generation == _renderGeneration) {
-      state = state.copyWith(isProcessing: false);
+      state = state.copyWith(
+        isProcessing: false,
+        renderFailed: false,
+        c2paSigningFailed: false,
+      );
     }
   }
 

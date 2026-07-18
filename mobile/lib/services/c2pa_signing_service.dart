@@ -1,6 +1,7 @@
 // ABOUTME: Service for signing videos with C2PA content credentials
 // ABOUTME: Embeds provenance information into video files before upload
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:c2pa_flutter/c2pa.dart';
@@ -62,14 +63,47 @@ class C2paSigningResult {
 /// cryptographic provenance information directly into media files,
 /// establishing the origin and history of digital content.
 class C2paSigningService {
-  C2paSigningService({C2pa? c2pa, C2paIdentityManifestService? manifestService})
-    : _c2pa = c2pa ?? C2pa(),
-      _manifestService = manifestService ?? C2paIdentityManifestService();
+  C2paSigningService({
+    C2pa? c2pa,
+    C2paIdentityManifestService? manifestService,
+    Duration? signingTimeout,
+  }) : _c2pa = c2pa ?? C2pa(),
+       _manifestService = manifestService ?? C2paIdentityManifestService(),
+       _signingTimeout = signingTimeout ?? defaultSigningTimeout;
 
   final C2pa _c2pa;
   final C2paIdentityManifestService _manifestService;
+  final Duration _signingTimeout;
 
   static const String _videoMimeType = 'video/mp4';
+
+  /// Upper bound on the remote-signing network call.
+  ///
+  /// [RemoteSigner] fetches its signer configuration and an RFC-3161 timestamp
+  /// over the network, and the native call carries no timeout of its own. On a
+  /// half-open connection (e.g. network dropped mid-generation) that leaves the
+  /// signing future suspended forever, wedging the whole publish/render flow so
+  /// it can neither finish nor be restarted (#6058). Bounding it converts a
+  /// hang into a normal best-effort failure: the video publishes without C2PA
+  /// instead of getting stuck.
+  ///
+  /// 20s is a deliberate hang-guard, not a tight performance budget: signing
+  /// makes two sequential network round-trips (signer config fetch + RFC-3161
+  /// TSA timestamp) plus TLS, which on a slow-but-alive mobile connection can
+  /// legitimately take 10-15s. Setting the bound well above that avoids
+  /// stripping a valid "Human Made" credential from a user who merely has a
+  /// slow connection — it only fires for a genuine hang, and the user can
+  /// still cancel the wait via back navigation.
+  static const Duration defaultSigningTimeout = Duration(seconds: 20);
+
+  /// Whether the remote signing pipeline is configured for this build.
+  ///
+  /// Signing is a network call to [SIGNING_SERVER_ENDPOINT], which is injected
+  /// as a `--dart-define` only in builds that opt in (see `build_*.sh` /
+  /// `run_dev.sh`). CI and unconfigured builds leave it empty, so a missing
+  /// C2PA signature there is expected and must never be surfaced to the user —
+  /// callers gate the "sign or skip" prompt on this (#6058).
+  static bool get isSigningConfigured => SIGNING_SERVER_ENDPOINT.isNotEmpty;
 
   /// Signs a video file with C2PA content credentials.
   ///
@@ -134,15 +168,26 @@ class C2paSigningService {
       Log.info('prepared C2PA manifest json: ${manifestResult.manifestJson}');
 
       // Create signer for RemoteSigning against proofsign
-      final signer = _createSigner();
+      final signer = await _createSigner();
 
-      // Sign the file
-      await _c2pa.signFile(
+      // Sign the file. Bounded so a network hang surfaces as a best-effort
+      // failure instead of wedging the generation (#6058).
+      final signFuture = _c2pa.signFile(
         sourcePath: videoPath,
         destPath: signedPath,
         manifestJson: manifestResult.manifestJson,
-        signer: await signer,
+        signer: signer,
       );
+      try {
+        await signFuture.timeout(_signingTimeout);
+      } on TimeoutException {
+        // timeout() does not cancel the native call — it can still finish and
+        // write signedPath after we've bailed. Delete that orphan once the
+        // call settles so repeated timeouts on a bad connection don't
+        // accumulate stray c2pa_signed_*.mp4 files (#6058).
+        unawaited(_deleteAbandonedSignedFile(signFuture, signedPath));
+        rethrow;
+      }
 
       // Verify signed file was created
       final signedFile = File(signedPath);
@@ -304,8 +349,35 @@ class C2paSigningService {
     }
   }
 
+  /// Removes the signed-file the native call may still write after a timeout.
+  ///
+  /// [signFuture] is the un-awaited native signing call abandoned by the
+  /// timeout; once it settles (success or failure) any file it left at
+  /// [signedPath] is orphaned — the caller already returned failure using the
+  /// original path — so delete it best-effort.
+  static Future<void> _deleteAbandonedSignedFile(
+    Future<void> signFuture,
+    String signedPath,
+  ) async {
+    try {
+      await signFuture;
+    } catch (_) {
+      // The abandoned call failed on its own — still clean up any partial file.
+    }
+    try {
+      final orphan = File(signedPath);
+      if (orphan.existsSync()) orphan.deleteSync();
+    } catch (_) {
+      // Best-effort cleanup; a failure here is not worth surfacing.
+    }
+  }
+
   @visibleForTesting
   static C2paSigningFailureReason classifyFailureReason(Object error) {
+    if (error is TimeoutException) {
+      return C2paSigningFailureReason.network;
+    }
+
     final message = switch (error) {
       PlatformException(:final code, :final message, :final details) =>
         '$code $message $details'.toLowerCase(),

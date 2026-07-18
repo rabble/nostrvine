@@ -3862,6 +3862,12 @@
         "description": "Snackbar message shown when saving the chosen cover thumbnail fails on the cover-edit screen. The user can dismiss and try again."
     },
     "videoMetadataEditCoverSuccessAnnouncement": "Cover updated",
+    "videoMetadataC2paMissingTitle": "ያለ የእውነተኛነት ማረጋገጫ ይለጠፍ?",
+    "videoMetadataC2paMissingBody": "የይዘት መታወቂያዎችን መጨመር አልቻልንም፣ ስለዚህ ይህ ቪዲዮ በሰው እንደተሰራ አይረጋገጥም። እንደገና ለመሞከር እንደገና ይፍጠሩ ወይም እንዳለ ይለጥፉ።",
+    "videoMetadataC2paMissingNote": "የይዘት መታወቂያዎች የበይነመረብ ግንኙነት ያስፈልጋቸዋል።",
+    "videoMetadataC2paMissingRegenerate": "እንደገና ፍጠር",
+    "videoMetadataC2paMissingPostAnyway": "ለማንኛውም ለጥፍ",
+    "videoMetadataGenerationFailed": "ማመንጨት አልተሳካም",
     "@videoMetadataEditCoverSuccessAnnouncement": {
         "description": "Screen-reader announcement spoken after the user confirms a new cover thumbnail and the screen is about to close. Visual users get the screen pop as feedback; this is the audio equivalent."
     },

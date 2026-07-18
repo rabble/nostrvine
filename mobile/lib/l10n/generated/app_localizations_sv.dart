@@ -5830,6 +5830,26 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoMetadataEditCoverSuccessAnnouncement => 'Omslag uppdaterat';
 
   @override
+  String get videoMetadataC2paMissingTitle => 'Publicera utan äkthetskontroll?';
+
+  @override
+  String get videoMetadataC2paMissingBody =>
+      'Vi kunde inte lägga till innehållsuppgifter, så den här videon bekräftas inte som gjord av människa. Generera om för att försöka igen, eller publicera som den är.';
+
+  @override
+  String get videoMetadataC2paMissingNote =>
+      'Innehållsuppgifter kräver en internetanslutning.';
+
+  @override
+  String get videoMetadataC2paMissingRegenerate => 'Generera om';
+
+  @override
+  String get videoMetadataC2paMissingPostAnyway => 'Publicera ändå';
+
+  @override
+  String get videoMetadataGenerationFailed => 'Genereringen misslyckades';
+
+  @override
   String get videoMetadataTags => 'Taggar';
 
   @override

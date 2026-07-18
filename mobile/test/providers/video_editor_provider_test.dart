@@ -25,6 +25,7 @@ import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/draft_storage_service.dart';
+import 'package:openvine/services/native_proofmode_service.dart';
 import 'package:openvine/services/video_editor/video_editor_audio_render.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
@@ -536,7 +537,8 @@ void main() {
         expect(state.isProcessing, isFalse);
       });
 
-      test('sets isProcessing to false when render returns null', () async {
+      test('flags renderFailed and clears isProcessing when render returns '
+          'null (#6058)', () async {
         final notifier = container.read(videoEditorProvider.notifier);
 
         container
@@ -559,8 +561,75 @@ void main() {
 
         await notifier.startRenderVideo();
 
-        expect(container.read(videoEditorProvider).isProcessing, isFalse);
-        expect(container.read(videoEditorProvider).finalRenderedClip, isNull);
+        final state = container.read(videoEditorProvider);
+        expect(state.isProcessing, isFalse);
+        expect(state.finalRenderedClip, isNull);
+        // The null-return path is the primary way a genuine render failure
+        // surfaces the retry overlay — a regression that drops this flag would
+        // leave the user stuck with no way to retry (#6058).
+        expect(
+          state.renderFailed,
+          isTrue,
+          reason: 'a null render result surfaces the retry affordance',
+        );
+      });
+
+      test('flags renderFailed and clears isProcessing when render throws, '
+          'then a retry re-renders (#6058)', () async {
+        final notifier = container.read(videoEditorProvider.notifier);
+
+        container
+            .read(clipManagerProvider.notifier)
+            .addClip(
+              limitClipDuration: false,
+              video: EditorVideo.file('/docs/clip.mp4'),
+              targetAspectRatio: .vertical,
+              originalAspectRatio: 9 / 16,
+              duration: const Duration(seconds: 2),
+            );
+
+        VideoEditorRenderService.renderVideoToClipOverride =
+            ({
+              required clips,
+              required editorStateHistory,
+              parameters,
+              taskId,
+            }) async => throw Exception('C2PA network failure'); // hung proof
+
+        await notifier.startRenderVideo();
+
+        final failed = container.read(videoEditorProvider);
+        expect(failed.isProcessing, isFalse);
+        expect(
+          failed.renderFailed,
+          isTrue,
+          reason: 'a failed render surfaces the retry affordance',
+        );
+        expect(failed.finalRenderedClip, isNull);
+
+        // Retry: the render now succeeds and the failure state clears.
+        final renderedClip = DivineVideoClip(
+          id: 'rendered-after-retry',
+          video: EditorVideo.file('/docs/rendered.mp4'),
+          duration: const Duration(seconds: 2),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+        VideoEditorRenderService.renderVideoToClipOverride =
+            ({
+              required clips,
+              required editorStateHistory,
+              parameters,
+              taskId,
+            }) async => (renderedClip, null);
+
+        await notifier.startRenderVideo();
+
+        final retried = container.read(videoEditorProvider);
+        expect(retried.renderFailed, isFalse);
+        expect(retried.isProcessing, isFalse);
+        expect(retried.finalRenderedClip, equals(renderedClip));
       });
 
       test('discards stale render when a newer render was started', () async {
@@ -772,6 +841,212 @@ void main() {
               'no draftId is set',
         );
       });
+    });
+
+    group('c2paSigningFailedFor (#6058)', () {
+      String proofJson({String? c2paManifestId}) => jsonEncode(
+        NativeProofData(
+          videoHash: 'hash',
+          c2paManifestId: c2paManifestId,
+        ).toJson(),
+      );
+
+      test('is false when signing is not configured (CI / unconfigured)', () {
+        expect(
+          VideoEditorNotifier.c2paSigningFailedFor(
+            signingConfigured: false,
+            proofManifestJson: proofJson(),
+          ),
+          isFalse,
+        );
+      });
+
+      test('is true when configured but the proof has no C2PA manifest', () {
+        expect(
+          VideoEditorNotifier.c2paSigningFailedFor(
+            signingConfigured: true,
+            proofManifestJson: proofJson(),
+          ),
+          isTrue,
+        );
+      });
+
+      test('is true when configured and there is no proof at all', () {
+        expect(
+          VideoEditorNotifier.c2paSigningFailedFor(
+            signingConfigured: true,
+            proofManifestJson: null,
+          ),
+          isTrue,
+        );
+      });
+
+      test(
+        'is false when configured and the proof carries a C2PA manifest',
+        () {
+          expect(
+            VideoEditorNotifier.c2paSigningFailedFor(
+              signingConfigured: true,
+              proofManifestJson: proofJson(c2paManifestId: 'urn:c2pa:abc'),
+            ),
+            isFalse,
+          );
+        },
+      );
+    });
+
+    group('copyWith clearFinalRenderedClip (#6058)', () {
+      test(
+        'drops renderFailed and c2paSigningFailed when the clip is cleared',
+        () {
+          final rendered = DivineVideoClip(
+            id: 'rendered',
+            video: EditorVideo.file('/docs/rendered.mp4'),
+            duration: const Duration(seconds: 3),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          );
+          final failed = VideoEditorProviderState(
+            renderFailed: true,
+            c2paSigningFailed: true,
+            finalRenderedClip: rendered,
+          );
+
+          // invalidateFinalRenderedClip clears the clip on every post-render
+          // edit; a stuck failure/prompt over a clip that no longer exists must
+          // not survive that clear (#6058).
+          final cleared = failed.copyWith(clearFinalRenderedClip: true);
+
+          expect(cleared.finalRenderedClip, isNull);
+          expect(cleared.renderFailed, isFalse);
+          expect(cleared.c2paSigningFailed, isFalse);
+        },
+      );
+    });
+
+    group('acknowledgeC2paSigningFailure (#6058)', () {
+      test('clears the pending C2PA prompt flag', () {
+        final notifier = container.read(videoEditorProvider.notifier);
+        notifier.state = notifier.state.copyWith(c2paSigningFailed: true);
+
+        notifier.acknowledgeC2paSigningFailure();
+
+        expect(container.read(videoEditorProvider).c2paSigningFailed, isFalse);
+      });
+    });
+
+    group('retryC2paSigning (#6058)', () {
+      tearDown(() {
+        VideoEditorRenderService.renderVideoToClipOverride = null;
+        NativeProofModeService.proofFileOverride = null;
+      });
+
+      test('re-signs the existing render without re-encoding', () async {
+        final notifier = container.read(videoEditorProvider.notifier);
+        final rendered = DivineVideoClip(
+          id: 'rendered',
+          video: EditorVideo.file('/docs/rendered.mp4'),
+          duration: const Duration(seconds: 3),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+        notifier.state = notifier.state.copyWith(
+          finalRenderedClip: rendered,
+          c2paSigningFailed: true,
+        );
+
+        var reRendered = false;
+        VideoEditorRenderService.renderVideoToClipOverride =
+            ({
+              required clips,
+              required editorStateHistory,
+              parameters,
+              taskId,
+            }) async {
+              reRendered = true;
+              return null;
+            };
+        NativeProofModeService.proofFileOverride =
+            (
+              file, {
+              required enableAdvancedCawgEmbedding,
+              creatorBindingAssertion,
+              cawgIdentityAssertion,
+              verifiedIdentityBundle,
+              clips,
+              editorStateHistory,
+            }) async => const NativeProofData(
+              videoHash: 'h',
+              c2paManifestId: 'urn:c2pa:new',
+            );
+
+        await notifier.retryC2paSigning();
+
+        final state = container.read(videoEditorProvider);
+        expect(
+          reRendered,
+          isFalse,
+          reason: 'a C2PA-only retry must not re-encode the video',
+        );
+        expect(
+          state.finalRenderedClip,
+          equals(rendered),
+          reason: 'the existing rendered clip is reused',
+        );
+        expect(state.proofManifestJson, contains('urn:c2pa:new'));
+        expect(state.isProcessing, isFalse);
+      });
+
+      test(
+        're-raises the prompt when the re-sign fails again (#6058)',
+        () async {
+          final notifier = container.read(videoEditorProvider.notifier);
+          final rendered = DivineVideoClip(
+            id: 'rendered',
+            video: EditorVideo.file('/docs/rendered.mp4'),
+            duration: const Duration(seconds: 3),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          );
+          notifier.state = notifier.state.copyWith(
+            finalRenderedClip: rendered,
+            c2paSigningFailed: false,
+          );
+
+          // Network still down on retry — the re-sign throws.
+          NativeProofModeService.proofFileOverride =
+              (
+                file, {
+                required enableAdvancedCawgEmbedding,
+                creatorBindingAssertion,
+                cawgIdentityAssertion,
+                verifiedIdentityBundle,
+                clips,
+                editorStateHistory,
+              }) async => throw Exception('still offline');
+
+          await notifier.retryC2paSigning();
+
+          final state = container.read(videoEditorProvider);
+          expect(
+            state.c2paSigningFailed,
+            isTrue,
+            reason:
+                'a failed re-sign must re-raise the prompt so the user '
+                'learns it did not work',
+          );
+          expect(state.isProcessing, isFalse);
+          expect(
+            state.finalRenderedClip,
+            equals(rendered),
+            reason:
+                'the rendered clip is kept — only the credential is missing',
+          );
+        },
+      );
     });
 
     group('invalidateFinalRenderedClip', () {

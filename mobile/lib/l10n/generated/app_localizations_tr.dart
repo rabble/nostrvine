@@ -5813,6 +5813,27 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoMetadataEditCoverSuccessAnnouncement => 'Kapak güncellendi';
 
   @override
+  String get videoMetadataC2paMissingTitle =>
+      'Gerçeklik doğrulaması olmadan paylaşılsın mı?';
+
+  @override
+  String get videoMetadataC2paMissingBody =>
+      'İçerik kimlik bilgilerini ekleyemedik, bu nedenle bu video insan yapımı olarak doğrulanmayacak. Yeniden denemek için yeniden oluştur ya da olduğu gibi paylaş.';
+
+  @override
+  String get videoMetadataC2paMissingNote =>
+      'İçerik kimlik bilgileri internet bağlantısı gerektirir.';
+
+  @override
+  String get videoMetadataC2paMissingRegenerate => 'Yeniden oluştur';
+
+  @override
+  String get videoMetadataC2paMissingPostAnyway => 'Yine de paylaş';
+
+  @override
+  String get videoMetadataGenerationFailed => 'Oluşturma başarısız';
+
+  @override
   String get videoMetadataTags => 'Etiketler';
 
   @override

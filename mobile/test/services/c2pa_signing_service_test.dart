@@ -1,6 +1,7 @@
 // ABOUTME: Tests C2PA signing failure handling and derived-file re-signing
 // ABOUTME: Covers typed failures, manifest gates, and parent ingredients
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:c2pa_flutter/c2pa.dart';
@@ -85,6 +86,14 @@ void main() {
         expect(reason, C2paSigningFailureReason.network);
       });
 
+      test('classifies signing timeouts as network errors', () {
+        final reason = C2paSigningService.classifyFailureReason(
+          TimeoutException('signing timed out'),
+        );
+
+        expect(reason, C2paSigningFailureReason.network);
+      });
+
       test('returns typed failure reason when remote signing throws', () async {
         final video = writeFile('video.mp4', const [0, 1, 2, 3]);
         final failingService = C2paSigningService(
@@ -103,6 +112,62 @@ void main() {
         expect(result.failureReason, C2paSigningFailureReason.tls);
         expect(result.error, contains('A TLS error caused'));
       });
+
+      test(
+        'times out a hung remote-signing call and fails best-effort (#6058)',
+        () async {
+          final video = writeFile('video.mp4', const [0, 1, 2, 3]);
+          final hangingService = C2paSigningService(
+            c2pa: _HangingC2pa(),
+            signingTimeout: const Duration(milliseconds: 10),
+          );
+
+          final result = await hangingService.signVideo(videoPath: video.path);
+
+          expect(result.success, isFalse);
+          expect(
+            result.signedFilePath,
+            video.path,
+            reason: 'the original file is returned untouched on failure',
+          );
+          expect(result.failureReason, C2paSigningFailureReason.network);
+        },
+      );
+
+      test(
+        'deletes the orphaned signed file when the native call finishes after '
+        'the timeout (#6058)',
+        () async {
+          final video = writeFile('video.mp4', const [0, 1, 2, 3]);
+          final slowService = C2paSigningService(
+            c2pa: _SlowWritingC2pa(const Duration(milliseconds: 60)),
+            signingTimeout: const Duration(milliseconds: 10),
+          );
+
+          final result = await slowService.signVideo(videoPath: video.path);
+          expect(result.success, isFalse);
+          expect(result.failureReason, C2paSigningFailureReason.network);
+
+          // The abandoned native call is still running: wait for it to finish
+          // writing the signed file and for the cleanup to remove the orphan.
+          await Future<void>.delayed(const Duration(milliseconds: 150));
+
+          final orphans = tempDir
+              .listSync()
+              .whereType<File>()
+              .where(
+                (f) => f.uri.pathSegments.last.startsWith('c2pa_signed_'),
+              )
+              .toList();
+          expect(
+            orphans,
+            isEmpty,
+            reason:
+                'a signing call that finishes past the timeout must not leave '
+                'a stray c2pa_signed_*.mp4 behind',
+          );
+        },
+      );
     });
 
     group('resignDerived', () {
@@ -225,5 +290,37 @@ class _FailingC2pa extends C2pa {
     required C2paSigner signer,
   }) async {
     throw error;
+  }
+}
+
+/// Simulates a remote-signing call that never returns — the network-hang
+/// failure mode that [C2paSigningService]'s timeout guards against (#6058).
+class _HangingC2pa extends C2pa {
+  @override
+  Future<void> signFile({
+    required String sourcePath,
+    required String destPath,
+    required String manifestJson,
+    required C2paSigner signer,
+  }) => Completer<void>().future;
+}
+
+/// Simulates a remote-signing call that outlives the timeout: it eventually
+/// writes [destPath] after [delay], leaving an orphan the service must clean
+/// up because it already bailed with a [TimeoutException] (#6058).
+class _SlowWritingC2pa extends C2pa {
+  _SlowWritingC2pa(this.delay);
+
+  final Duration delay;
+
+  @override
+  Future<void> signFile({
+    required String sourcePath,
+    required String destPath,
+    required String manifestJson,
+    required C2paSigner signer,
+  }) async {
+    await Future<void>.delayed(delay);
+    File(destPath).writeAsBytesSync(const [7, 7, 7]);
   }
 }

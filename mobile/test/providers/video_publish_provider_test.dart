@@ -12,18 +12,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show NativeProofData;
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/l10n/publish_error_kind_l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/video_publish/video_publish_state.dart';
 import 'package:openvine/models/video_reply_context.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
+import 'package:openvine/router/navigator_keys.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/services/cawg_verifier_client.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/mention_resolution_service.dart';
+import 'package:openvine/services/video_publish/publish_error_kind.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:profile_repository/profile_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MockProfileRepository extends Mock implements ProfileRepository {}
 
@@ -359,6 +364,96 @@ void main() {
         await tester.pump();
 
         verify(() => mockDraftStorage.saveDraft(any())).called(1);
+      },
+    );
+
+    testWidgets(
+      'clears the preparing guard when preparation fails so the publish can '
+      'be restarted (#6058)',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+
+        final mockDraftStorage = _MockDraftStorageService();
+        // A failing (not hanging) prep step drops into publishVideo's catch —
+        // the path that previously left publishState stuck at .preparing.
+        when(
+          () => mockDraftStorage.saveDraft(any()),
+        ).thenThrow(Exception('disk write failed'));
+
+        final container = ProviderContainer(
+          overrides: [
+            draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
+            sharedPreferencesProvider.overrideWithValue(prefs),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(home: SizedBox()),
+          ),
+        );
+        final context = tester.element(find.byType(SizedBox));
+        final notifier = container.read(videoPublishProvider.notifier);
+
+        await notifier.publishVideo(context, createDraft());
+
+        expect(
+          container.read(videoPublishProvider).publishState,
+          isNot(VideoPublishState.preparing),
+          reason:
+              'the re-entry guard must clear on failure so a retry is allowed',
+        );
+      },
+    );
+
+    testWidgets(
+      'surfaces a snackbar when preparation fails so the failure is not '
+      'silent (#6058)',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+
+        final mockDraftStorage = _MockDraftStorageService();
+        when(
+          () => mockDraftStorage.saveDraft(any()),
+        ).thenThrow(Exception('disk write failed'));
+
+        final container = ProviderContainer(
+          overrides: [
+            draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
+            sharedPreferencesProvider.overrideWithValue(prefs),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              navigatorKey: NavigatorKeys.root,
+              home: const Scaffold(body: SizedBox()),
+            ),
+          ),
+        );
+        final context = tester.element(find.byType(SizedBox));
+        final notifier = container.read(videoPublishProvider.notifier);
+
+        await notifier.publishVideo(context, createDraft());
+        await tester.pump(); // let the snackbar animate in
+
+        final expectedMessage = lookupAppLocalizations(
+          const Locale('en'),
+        ).publishErrorMessage(PublishErrorKind.generic);
+        expect(
+          find.widgetWithText(SnackBar, expectedMessage),
+          findsOneWidget,
+          reason:
+              'a pre-handoff failure has no on-screen state consumer, so it '
+              'must be surfaced with a snackbar rather than vanishing',
+        );
       },
     );
   });
