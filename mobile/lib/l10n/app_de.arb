@@ -4131,6 +4131,8 @@
     "@notificationsBadgeUnread": {"description": "Screen-reader announcement for the notifications badge overlay on top of nav icons. Conveys the unread count to assistive technology users.", "placeholders": {"count": {"type": "int"}}},
     "feedLoadingMore": "Weitere Videos werden geladen …",
     "@feedLoadingMore": {"description": "Shown in a small pill at the bottom of the fullscreen video feed while the next page of videos is being fetched."},
+    "feedRefreshed": "Feed aktualisiert",
+    "@feedRefreshed": {"description": "Screen-reader announcement after the home feed finished reloading because the user re-tapped the home tab."},
     "reportReasonChildSafety": "Verstoß gegen den Kinderschutz",
     "reportReasonChildSafetySubtitle": "Allgemeine Bedenken zur Sicherheit von Minderjährigen",
     "reportReasonUnderageUser": "Nutzer scheint unter 16 zu sein",

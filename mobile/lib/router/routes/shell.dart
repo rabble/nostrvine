@@ -1,6 +1,7 @@
 // ABOUTME: Bottom-nav StatefulShellRoute (home/explore/inbox/profile branches)
 // ABOUTME: Split from app_router.dart (#4508); owns per-branch pageContext scoping
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -11,6 +12,7 @@ import 'package:openvine/router/providers/page_context_provider.dart';
 import 'package:openvine/router/route_error_screen.dart';
 import 'package:openvine/router/routes/router_guards.dart';
 import 'package:openvine/screens/explore/explore_screen.dart';
+import 'package:openvine/screens/feed/home_feed_retap_cubit.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
 import 'package:openvine/screens/liked_videos_screen_router.dart';
@@ -36,9 +38,16 @@ List<RouteBase> shellRoutes() {
       // #5242 in its post-splash form. Pinned by shell_transition_test.
       pageBuilder: (context, state, navigationShell) => NoTransitionPage<void>(
         key: state.pageKey,
-        child: AppShell(
-          currentIndex: navigationShell.currentIndex,
-          child: navigationShell,
+        // Provided above AppShell so both consumers can reach the same
+        // instance: VineBottomNav (inside AppShell) signals a home-tab retap
+        // and renders the refresh spinner; VideoFeedView (inside the home
+        // branch) listens and performs the refresh.
+        child: BlocProvider<HomeFeedRetapCubit>(
+          create: (_) => HomeFeedRetapCubit(),
+          child: AppShell(
+            currentIndex: navigationShell.currentIndex,
+            child: navigationShell,
+          ),
         ),
       ),
       navigatorContainerBuilder: (context, navigationShell, children) =>

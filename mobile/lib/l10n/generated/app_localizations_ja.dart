@@ -4057,6 +4057,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get feedLoadingMore => '動画をもっと読み込んでるよ…';
 
   @override
+  String get feedRefreshed => 'フィードを更新しました';
+
+  @override
   String get uploadWaitingToUpload => 'アップロード待ち';
 
   @override

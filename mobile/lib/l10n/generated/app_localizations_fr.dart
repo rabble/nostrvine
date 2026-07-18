@@ -4318,6 +4318,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get feedLoadingMore => 'Chargement d\'autres vidéos…';
 
   @override
+  String get feedRefreshed => 'Fil actualisé';
+
+  @override
   String get uploadWaitingToUpload => 'En attente d\'envoi';
 
   @override

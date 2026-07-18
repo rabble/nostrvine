@@ -4384,6 +4384,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get feedLoadingMore => 'Se încarcă mai multe videoclipuri…';
 
   @override
+  String get feedRefreshed => 'Feedul a fost reîncărcat';
+
+  @override
   String get uploadWaitingToUpload => 'Se așteaptă încărcarea';
 
   @override

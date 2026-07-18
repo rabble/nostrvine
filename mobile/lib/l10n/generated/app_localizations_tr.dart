@@ -4237,6 +4237,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get feedLoadingMore => 'Daha fazla video yükleniyor…';
 
   @override
+  String get feedRefreshed => 'Akış yenilendi';
+
+  @override
   String get uploadWaitingToUpload => 'Yüklemek için bekleniyor';
 
   @override

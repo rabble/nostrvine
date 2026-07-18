@@ -3455,6 +3455,8 @@
     "@notificationsBadgeUnread": {"description": "Screen-reader announcement for the notifications badge overlay on top of nav icons. Conveys the unread count to assistive technology users.", "placeholders": {"count": {"type": "int"}}},
     "feedLoadingMore": "영상을 더 불러오는 중…",
     "@feedLoadingMore": {"description": "Shown in a small pill at the bottom of the fullscreen video feed while the next page of videos is being fetched."},
+    "feedRefreshed": "피드를 새로고침했어요",
+    "@feedRefreshed": {"description": "Screen-reader announcement after the home feed finished reloading because the user re-tapped the home tab."},
     "reportReasonChildSafety": "아동 안전 위반",
     "reportReasonChildSafetySubtitle": "미성년자 안전에 대한 전반적인 우려",
     "reportReasonUnderageUser": "사용자가 16세 미만으로 보임",

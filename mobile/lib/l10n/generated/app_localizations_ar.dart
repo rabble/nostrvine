@@ -4227,6 +4227,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get feedLoadingMore => 'جارٍ تحميل المزيد من الفيديوهات…';
 
   @override
+  String get feedRefreshed => 'تم تحديث الخلاصة';
+
+  @override
   String get uploadWaitingToUpload => 'في انتظار الرفع';
 
   @override

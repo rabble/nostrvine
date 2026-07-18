@@ -4253,6 +4253,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get feedLoadingMore => 'Läser in fler videor…';
 
   @override
+  String get feedRefreshed => 'Flödet har uppdaterats';
+
+  @override
   String get uploadWaitingToUpload => 'Väntar på att laddas upp';
 
   @override

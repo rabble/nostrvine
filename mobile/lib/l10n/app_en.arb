@@ -2432,6 +2432,10 @@
   "@feedLoadingMore": {
     "description": "Shown in a small pill at the bottom of the fullscreen video feed while the next page of videos is being fetched."
   },
+  "feedRefreshed": "Feed refreshed",
+  "@feedRefreshed": {
+    "description": "Screen-reader announcement after the home feed finished reloading because the user re-tapped the home tab."
+  },
   "uploadWaitingToUpload": "Waiting to upload",
   "uploadUploadingVideo": "Uploading video",
   "uploadProcessingVideo": "Processing video",

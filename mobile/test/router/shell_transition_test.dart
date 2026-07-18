@@ -3,10 +3,12 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/router/routes/shell.dart';
+import 'package:openvine/screens/feed/home_feed_retap_cubit.dart';
 
 class _FakeGoRouterState extends Fake implements GoRouterState {
   @override
@@ -55,7 +57,12 @@ void main() {
       expect(transitionPage.transitionDuration, Duration.zero);
       expect(transitionPage.reverseTransitionDuration, Duration.zero);
       expect(transitionPage.key, const ValueKey('shell'));
-      expect(transitionPage.child, isA<AppShell>());
+      // The retap cubit wraps AppShell so the bottom nav and the home
+      // branch's feed share one instance (see shell.dart).
+      expect(transitionPage.child, isA<BlocProvider<HomeFeedRetapCubit>>());
+      final retapProvider =
+          transitionPage.child as BlocProvider<HomeFeedRetapCubit>;
+      expect(retapProvider.child, isA<AppShell>());
     });
   });
 }

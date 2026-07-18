@@ -4168,6 +4168,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get feedLoadingMore => 'ተጨማሪ ቪዲዮዎችን በመጫን ላይ…';
 
   @override
+  String get feedRefreshed => 'ፊድ ታድሷል';
+
+  @override
   String get uploadWaitingToUpload => 'ለመስቀል በመጠበቅ ላይ';
 
   @override

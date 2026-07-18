@@ -20,6 +20,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/router.dart';
+import 'package:openvine/screens/feed/home_feed_retap_cubit.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -67,6 +68,7 @@ Widget _wrapWithBlocs(Widget child) {
       BlocProvider<DmUnreadCountCubit>.value(value: dmCubit),
       BlocProvider<NotificationBadgeCubit>.value(value: notifBadgeCubit),
       BlocProvider<AppUpdateBloc>.value(value: appUpdateBloc),
+      BlocProvider<HomeFeedRetapCubit>(create: (_) => HomeFeedRetapCubit()),
     ],
     child: child,
   );

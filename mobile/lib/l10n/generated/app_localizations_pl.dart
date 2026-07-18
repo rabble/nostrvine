@@ -4371,6 +4371,9 @@ class AppLocalizationsPl extends AppLocalizations {
   String get feedLoadingMore => 'Wczytywanie kolejnych filmów…';
 
   @override
+  String get feedRefreshed => 'Kanał odświeżony';
+
+  @override
   String get uploadWaitingToUpload => 'Czekam na przesłanie';
 
   @override

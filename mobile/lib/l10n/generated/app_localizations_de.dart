@@ -4307,6 +4307,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get feedLoadingMore => 'Weitere Videos werden geladen …';
 
   @override
+  String get feedRefreshed => 'Feed aktualisiert';
+
+  @override
   String get uploadWaitingToUpload => 'Warten auf Upload';
 
   @override

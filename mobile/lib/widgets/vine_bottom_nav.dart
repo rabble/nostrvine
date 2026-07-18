@@ -1,6 +1,7 @@
 // ABOUTME: Shared bottom navigation bar widget for app shell and profile screens
 // ABOUTME: Provides consistent bottom nav across screens with/without shell
 
+import 'dart:math' show pi;
 import 'dart:ui' show ImageFilter;
 
 import 'package:divine_ui/divine_ui.dart';
@@ -15,6 +16,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore/explore_screen.dart';
+import 'package:openvine/screens/feed/home_feed_retap_cubit.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
@@ -55,6 +57,13 @@ class VineBottomNav extends ConsumerWidget {
       name: 'Navigation',
       category: LogCategory.ui,
     );
+
+    // Re-tapping the active home tab refreshes the feed instead of
+    // navigating. The cubit is provided above AppShell (see shell.dart).
+    if (tabIndex == 0 && currentIndex == 0) {
+      context.read<HomeFeedRetapCubit>().request();
+      return;
+    }
 
     // Pop any pushed routes first
     final navigator = Navigator.of(context);
@@ -101,6 +110,10 @@ class VineBottomNav extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Rebuilds only when the refreshing flag flips, not on every state emit.
+    final isHomeRefreshing = context.select(
+      (HomeFeedRetapCubit cubit) => cubit.state.isRefreshing,
+    );
     return ColoredBox(
       color: VineTheme.surfaceBackground,
       // The bottom nav has no Container padding — all four edges of the
@@ -128,11 +141,10 @@ class VineBottomNav extends ConsumerWidget {
 
             return Row(
               children: [
-                _IconTabButton(
-                  semanticIdentifier: 'home_tab',
+                _HomeTabButton(
                   semanticLabel: context.l10n.navHome,
-                  icon: DivineIconName.houseSimple,
                   isSelected: currentIndex == 0,
+                  isRefreshing: isHomeRefreshing,
                   onTap: () => _handleTabTap(context, ref, 0),
                   tapTargetWidth: _kHorizontalEdgePad + iconWidth + halfGap,
                   iconAlignment: AlignmentDirectional.centerStart,
@@ -227,7 +239,257 @@ const double _kHorizontalEdgePad = 16;
 //     `onSurfaceDisabled`); no filter / opacity / shadow on the avatar
 //     itself.
 
-/// Tap target + Semantics wrapper shared by the three icon tabs.
+/// Shared hit-target + [Semantics] wrapper for every bottom-nav tab.
+///
+/// Holds the Figma hit geometry in one place: an opaque [GestureDetector]
+/// filling [tapTargetWidth] × [_kTabSlotHeight] so taps in the surrounding
+/// gap route to the right tab, with the visible [child] positioned by
+/// [edgePadding] and [iconAlignment] (defaults centre the child, matching a
+/// bare [Center]).
+class _TabSlot extends StatelessWidget {
+  const _TabSlot({
+    required this.identifier,
+    required this.label,
+    required this.onTap,
+    required this.tapTargetWidth,
+    required this.child,
+    this.value,
+    this.edgePadding = EdgeInsets.zero,
+    this.iconAlignment = Alignment.center,
+  });
+
+  final String identifier;
+  final String label;
+
+  /// Optional [Semantics.value] — e.g. the unread badge count on the Inbox
+  /// tab. Null on tabs that carry no supplementary value.
+  final String? value;
+  final VoidCallback onTap;
+
+  /// Full width the [GestureDetector] occupies inside the nav row — usually
+  /// larger than the visible icon so taps in the surrounding gap and edge
+  /// strips also route to this tab.
+  final double tapTargetWidth;
+
+  /// Inset folded into the hit target on the outermost tabs (Home / Profile)
+  /// so taps in the screen-edge strip still route to the adjacent tab.
+  final EdgeInsetsGeometry edgePadding;
+  final AlignmentGeometry iconAlignment;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      identifier: identifier,
+      button: true,
+      label: label,
+      value: value,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: SizedBox(
+          width: tapTargetWidth,
+          height: _kTabSlotHeight,
+          child: Padding(
+            padding: edgePadding,
+            child: Align(alignment: iconAlignment, child: child),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Home tab button that animates between the house icon and a spinning
+/// refresh arrow while the feed is reloading after a retap.
+///
+/// On retap: house zooms out and fades, arrow fades in, zooms in, and spins.
+/// On load complete: arrow fades out and shrinks back, house fades in and
+/// zooms back to full size. Rotation always completes its current turn.
+class _HomeTabButton extends StatefulWidget {
+  const _HomeTabButton({
+    required this.semanticLabel,
+    required this.isSelected,
+    required this.isRefreshing,
+    required this.onTap,
+    required this.tapTargetWidth,
+    required this.iconAlignment,
+    required this.edgePadding,
+  });
+
+  final String semanticLabel;
+  final bool isSelected;
+  final bool isRefreshing;
+  final VoidCallback onTap;
+  final double tapTargetWidth;
+  final AlignmentGeometry iconAlignment;
+  final EdgeInsetsGeometry edgePadding;
+
+  @override
+  State<_HomeTabButton> createState() => _HomeTabButtonState();
+}
+
+class _HomeTabButtonState extends State<_HomeTabButton>
+    with TickerProviderStateMixin {
+  // Controls house ↔ arrow cross-fade and scale (0 = house, 1 = arrow).
+  late final AnimationController _swapController;
+  // Controls continuous rotation of the arrow icon.
+  late final AnimationController _rotationController;
+
+  late final Animation<double> _houseOpacity;
+  late final Animation<double> _houseScale;
+  late final Animation<double> _arrowOpacity;
+  late final Animation<double> _arrowScale;
+
+  bool _didSyncInitialRefresh = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _swapController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+    );
+
+    _rotationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+
+    // House: full size + opaque at 0, scaled down + transparent at 1.
+    _houseOpacity = Tween<double>(begin: 1, end: 0).animate(
+      CurvedAnimation(parent: _swapController, curve: Curves.easeInOut),
+    );
+    _houseScale = Tween<double>(begin: 1, end: 0.5).animate(
+      CurvedAnimation(parent: _swapController, curve: Curves.easeInOut),
+    );
+
+    // Arrow: transparent + small at 0, full size + opaque at 1.
+    _arrowOpacity = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _swapController, curve: Curves.easeInOut),
+    );
+    _arrowScale = Tween<double>(begin: 0.5, end: 1).animate(
+      CurvedAnimation(parent: _swapController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Sync the initial controller state on first mount. If the widget mounts
+    // while a refresh is already in flight (the cubit outlives this widget),
+    // start in the spinning-arrow state instead of the static house.
+    // Subsequent transitions are handled by [didUpdateWidget]. This lives in
+    // didChangeDependencies rather than initState because the sync reads
+    // MediaQuery.disableAnimationsOf(context) via _startRefreshAnimation.
+    if (!_didSyncInitialRefresh) {
+      _didSyncInitialRefresh = true;
+      if (widget.isRefreshing) _startRefreshAnimation();
+    }
+  }
+
+  @override
+  void dispose() {
+    _swapController.dispose();
+    _rotationController.dispose();
+    super.dispose();
+  }
+
+  void _startRefreshAnimation() {
+    if (MediaQuery.disableAnimationsOf(context)) {
+      // Reduced motion: swap to the arrow instantly, without zoom or spin.
+      _swapController.value = 1;
+      return;
+    }
+    _swapController.forward();
+    _rotationController.repeat();
+  }
+
+  void _stopRefreshAnimation() {
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _swapController.value = 0;
+      _rotationController
+        ..stop()
+        ..value = 0;
+      return;
+    }
+    // Let the current rotation complete before stopping.
+    _rotationController.forward(from: _rotationController.value).then((_) {
+      if (mounted) _rotationController.stop();
+    });
+    _swapController.reverse();
+  }
+
+  @override
+  void didUpdateWidget(_HomeTabButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isRefreshing && !oldWidget.isRefreshing) {
+      _startRefreshAnimation();
+    } else if (!widget.isRefreshing && oldWidget.isRefreshing) {
+      _stopRefreshAnimation();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final iconBox = SizedBox.square(
+      dimension: kMinInteractiveDimension,
+      child: Center(
+        child: Opacity(
+          opacity: widget.isSelected ? 1.0 : 0.32,
+          child: AnimatedBuilder(
+            animation: Listenable.merge([_swapController, _rotationController]),
+            builder: (context, _) {
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  // House icon — fades out and shrinks on refresh.
+                  Opacity(
+                    opacity: _houseOpacity.value,
+                    child: Transform.scale(
+                      scale: _houseScale.value,
+                      child: _ShadowedNavIcon(
+                        icon: DivineIconName.houseSimple,
+                        showShadow: widget.isSelected,
+                      ),
+                    ),
+                  ),
+                  // Refresh arrow — fades in, scales up, and rotates.
+                  Opacity(
+                    opacity: _arrowOpacity.value,
+                    child: Transform.scale(
+                      scale: _arrowScale.value,
+                      child: Transform.rotate(
+                        angle: _rotationController.value * 2 * pi,
+                        child: const DivineIcon(
+                          icon: DivineIconName.arrowClockwise,
+                          color: VineTheme.whiteText,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    return _TabSlot(
+      identifier: 'home_tab',
+      label: widget.semanticLabel,
+      onTap: widget.onTap,
+      tapTargetWidth: widget.tapTargetWidth,
+      edgePadding: widget.edgePadding,
+      iconAlignment: widget.iconAlignment,
+      child: iconBox,
+    );
+  }
+}
+
+/// Tap target + Semantics wrapper shared by the Explore and Inbox tabs.
 ///
 /// The child gets the 32 %-opacity dim in the unselected state and the
 /// glyph-shaped shadow pair in the selected state. See [_ShadowedNavIcon].
@@ -235,8 +497,7 @@ const double _kHorizontalEdgePad = 16;
 /// [tapTargetWidth] is the full width the GestureDetector occupies inside
 /// the bottom nav row — usually larger than the 48 px icon container so
 /// taps in the surrounding gap also route to this tab. The icon itself
-/// stays a [kMinInteractiveDimension]-sized box positioned via
-/// [iconAlignment].
+/// stays a centred [kMinInteractiveDimension]-sized box.
 class _IconTabButton extends StatelessWidget {
   const _IconTabButton({
     required this.semanticIdentifier,
@@ -245,8 +506,6 @@ class _IconTabButton extends StatelessWidget {
     required this.isSelected,
     required this.onTap,
     required this.tapTargetWidth,
-    this.iconAlignment = Alignment.center,
-    this.edgePadding = EdgeInsets.zero,
     this.badgeCount,
   });
 
@@ -256,21 +515,6 @@ class _IconTabButton extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
   final double tapTargetWidth;
-
-  /// Where to place the 48 px icon container inside the slot. Defaults to
-  /// [Alignment.center] so the icon sits at the slot's centre with equal
-  /// hit-target padding above and below it. Use `centerStart` /
-  /// `centerEnd` (combined with [edgePadding]) for the leftmost /
-  /// rightmost tabs so they hug the row's edge.
-  final AlignmentGeometry iconAlignment;
-
-  /// Horizontal inset between the slot edge and the icon container.
-  /// Non-zero only for Home and Profile, where the slot extends all the
-  /// way to the screen edge but the icon must still sit
-  /// [_kHorizontalEdgePad] in from that edge per the Figma spec. The
-  /// edge strip itself stays inside the [GestureDetector] so taps there
-  /// route to the tab.
-  final EdgeInsetsGeometry edgePadding;
 
   /// When non-null, wraps the inner icon container in a [NotificationBadge]
   /// so the badge stays anchored to the icon's top-right corner rather
@@ -302,23 +546,13 @@ class _IconTabButton extends StatelessWidget {
         ? context.l10n.notificationsBadgeUnread(badgeCount!)
         : null;
 
-    return Semantics(
+    return _TabSlot(
       identifier: semanticIdentifier,
-      button: true,
       label: semanticLabel,
       value: semanticValue,
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: .opaque,
-        child: SizedBox(
-          width: tapTargetWidth,
-          height: _kTabSlotHeight,
-          child: Padding(
-            padding: edgePadding,
-            child: Align(alignment: iconAlignment, child: iconBox),
-          ),
-        ),
-      ),
+      onTap: onTap,
+      tapTargetWidth: tapTargetWidth,
+      child: iconBox,
     );
   }
 }
@@ -407,7 +641,7 @@ class _ProfileTabButton extends ConsumerWidget {
   final double tapTargetWidth;
   final AlignmentGeometry iconAlignment;
 
-  /// See [_IconTabButton.edgePadding].
+  /// See [_TabSlot.edgePadding].
   final EdgeInsetsGeometry edgePadding;
 
   @override
@@ -438,22 +672,14 @@ class _ProfileTabButton extends ConsumerWidget {
       ),
     );
 
-    return Semantics(
+    return _TabSlot(
       identifier: 'profile_tab',
-      button: true,
       label: semanticLabel,
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: .opaque,
-        child: SizedBox(
-          width: tapTargetWidth,
-          height: _kTabSlotHeight,
-          child: Padding(
-            padding: edgePadding,
-            child: Align(alignment: iconAlignment, child: iconBox),
-          ),
-        ),
-      ),
+      onTap: onTap,
+      tapTargetWidth: tapTargetWidth,
+      edgePadding: edgePadding,
+      iconAlignment: iconAlignment,
+      child: iconBox,
     );
   }
 }
@@ -522,32 +748,23 @@ class _CameraButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
+    // The pill is centred (default [_TabSlot] alignment) so it keeps its
+    // on-screen position even though the slot is taller and wider than the
+    // pill — the extra space all goes to hit-target absorption.
+    return _TabSlot(
       identifier: 'camera_button',
-      button: true,
       label: context.l10n.navOpenCamera,
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: .opaque,
-        child: SizedBox(
-          width: tapTargetWidth,
-          height: _kTabSlotHeight,
-          // Centered so the visible pill keeps its on-screen position
-          // even though the slot is taller and wider than the pill —
-          // the extra space all goes to hit-target absorption.
-          child: Center(
-            child: Container(
-              width: _kCameraButtonWidth,
-              height: kMinInteractiveDimension,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              decoration: BoxDecoration(
-                color: VineTheme.cameraButtonGreen,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const DivineIcon(icon: .cameraRetro, size: 32),
-            ),
-          ),
+      onTap: onTap,
+      tapTargetWidth: tapTargetWidth,
+      child: Container(
+        width: _kCameraButtonWidth,
+        height: kMinInteractiveDimension,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        decoration: BoxDecoration(
+          color: VineTheme.cameraButtonGreen,
+          borderRadius: BorderRadius.circular(20),
         ),
+        child: const DivineIcon(icon: .cameraRetro, size: 32),
       ),
     );
   }

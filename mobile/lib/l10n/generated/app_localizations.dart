@@ -7386,6 +7386,12 @@ abstract class AppLocalizations {
   /// **'Loading more videos…'**
   String get feedLoadingMore;
 
+  /// Screen-reader announcement after the home feed finished reloading because the user re-tapped the home tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Feed refreshed'**
+  String get feedRefreshed;
+
   /// No description provided for @uploadWaitingToUpload.
   ///
   /// In en, this message translates to:

@@ -8,6 +8,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:feed_tuning_repository/feed_tuning_repository.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -25,6 +26,7 @@ import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/shell_obscured_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore/explore_screen.dart';
+import 'package:openvine/screens/feed/home_feed_retap_cubit.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/feed/video_feed_page/feed_empty_widget.dart';
 import 'package:openvine/services/view_event_publisher.dart';
@@ -41,6 +43,27 @@ class _MockVideoFeedBloc extends MockBloc<VideoFeedEvent, VideoFeedBlocState>
 
 class _MockVideoVolumeCubit extends MockCubit<VideoVolumeState>
     implements VideoVolumeCubit {}
+
+List<Object?> _captureAnnouncements(WidgetTester tester) {
+  final announced = <Object?>[];
+  tester.binding.defaultBinaryMessenger.setMockDecodedMessageHandler<Object?>(
+    SystemChannels.accessibility,
+    (message) async {
+      if (message is Map && message['type'] == 'announce') {
+        announced.add((message['data'] as Map?)?['message']);
+      }
+      return null;
+    },
+  );
+  addTearDown(
+    () => tester.binding.defaultBinaryMessenger
+        .setMockDecodedMessageHandler<Object?>(
+          SystemChannels.accessibility,
+          null,
+        ),
+  );
+  return announced;
+}
 
 Widget _buildEmptyFeedSubject(VideoFeedBlocState state, {GoRouter? router}) {
   final child = Scaffold(body: FeedEmptyWidget(state: state));
@@ -262,6 +285,272 @@ void main() {
     });
 
     testWidgets(
+      'builds without a $HomeFeedRetapCubit ancestor (direct construction)',
+      (tester) async {
+        final video = createTestVideoEvent();
+        final state = VideoFeedBlocState(
+          status: VideoFeedStatus.success,
+          videos: [video],
+        );
+        when(() => videoFeedBloc.state).thenReturn(state);
+        whenListen(
+          videoFeedBloc,
+          const Stream<VideoFeedBlocState>.empty(),
+          initialState: state,
+        );
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            home: MultiBlocProvider(
+              providers: [
+                BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),
+                BlocProvider<VideoPlaybackStatusCubit>(
+                  create: (_) => VideoPlaybackStatusCubit(),
+                ),
+                BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
+              ],
+              child: const VideoFeedView(),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byType(VideoFeedView), findsOneWidget);
+        expect(tester.takeException(), isNull);
+
+        await tester.pump(const Duration(seconds: 3));
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      },
+    );
+
+    testWidgets('home retap refreshes the feed and settles the retap cubit', (
+      tester,
+    ) async {
+      final video = createTestVideoEvent();
+      final state = VideoFeedBlocState(
+        status: VideoFeedStatus.success,
+        videos: [video],
+      );
+      when(() => videoFeedBloc.state).thenReturn(state);
+      whenListen(
+        videoFeedBloc,
+        const Stream<VideoFeedBlocState>.empty(),
+        initialState: state,
+      );
+      final retapCubit = HomeFeedRetapCubit();
+      addTearDown(retapCubit.close);
+
+      await tester.pumpWidget(
+        testMaterialApp(
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider<HomeFeedRetapCubit>.value(value: retapCubit),
+              BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),
+              BlocProvider<VideoPlaybackStatusCubit>(
+                create: (_) => VideoPlaybackStatusCubit(),
+              ),
+              BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
+            ],
+            child: const VideoFeedView(),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      retapCubit.request();
+      expect(retapCubit.state.isRefreshing, isTrue);
+      // Bounded pumps instead of pumpAndSettle: the native feed keeps a
+      // continuous animation alive, so pumpAndSettle would never settle.
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      verify(
+        () => videoFeedBloc.add(const VideoFeedRefreshRequested()),
+      ).called(1);
+      expect(retapCubit.state.isRefreshing, isFalse);
+
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets(
+      'announces the feed refresh only after a successful retap refresh',
+      (tester) async {
+        final announced = _captureAnnouncements(tester);
+        final video = createTestVideoEvent();
+        final initialState = VideoFeedBlocState(
+          status: VideoFeedStatus.success,
+          videos: [video],
+        );
+        final feedStates = StreamController<VideoFeedBlocState>();
+        addTearDown(feedStates.close);
+        when(() => videoFeedBloc.state).thenReturn(initialState);
+        whenListen(
+          videoFeedBloc,
+          feedStates.stream,
+          initialState: initialState,
+        );
+        final retapCubit = HomeFeedRetapCubit();
+        addTearDown(retapCubit.close);
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            home: MultiBlocProvider(
+              providers: [
+                BlocProvider<HomeFeedRetapCubit>.value(value: retapCubit),
+                BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),
+                BlocProvider<VideoPlaybackStatusCubit>(
+                  create: (_) => VideoPlaybackStatusCubit(),
+                ),
+                BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
+              ],
+              child: const VideoFeedView(),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        retapCubit.request();
+        await tester.pump();
+        feedStates.add(initialState);
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+
+        expect(announced, contains('Feed refreshed'));
+
+        await tester.pump(const Duration(seconds: 3));
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'does not announce the feed refresh after a failed retap refresh',
+      (tester) async {
+        final announced = _captureAnnouncements(tester);
+        final video = createTestVideoEvent();
+        final initialState = VideoFeedBlocState(
+          status: VideoFeedStatus.success,
+          videos: [video],
+        );
+        final failureState = VideoFeedBlocState(
+          status: VideoFeedStatus.failure,
+          videos: [video],
+        );
+        final feedStates = StreamController<VideoFeedBlocState>();
+        addTearDown(feedStates.close);
+        when(() => videoFeedBloc.state).thenReturn(initialState);
+        whenListen(
+          videoFeedBloc,
+          feedStates.stream,
+          initialState: initialState,
+        );
+        final retapCubit = HomeFeedRetapCubit();
+        addTearDown(retapCubit.close);
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            home: MultiBlocProvider(
+              providers: [
+                BlocProvider<HomeFeedRetapCubit>.value(value: retapCubit),
+                BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),
+                BlocProvider<VideoPlaybackStatusCubit>(
+                  create: (_) => VideoPlaybackStatusCubit(),
+                ),
+                BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
+              ],
+              child: const VideoFeedView(),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        retapCubit.request();
+        await tester.pump();
+        feedStates.add(failureState);
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+
+        expect(announced, isNot(contains('Feed refreshed')));
+
+        await tester.pump(const Duration(seconds: 3));
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      },
+    );
+
+    testWidgets('settles the retap cubit when the view unmounts mid-refresh', (
+      tester,
+    ) async {
+      final video = createTestVideoEvent();
+      final state = VideoFeedBlocState(
+        status: VideoFeedStatus.success,
+        videos: [video],
+      );
+      // Drive the bloc stream by hand so the refresh can be held in flight:
+      // the view's _refreshFeed awaits this stream settling, so while it
+      // emits nothing the retap cubit stays in the refreshing state.
+      final feedStates = StreamController<VideoFeedBlocState>();
+      addTearDown(feedStates.close);
+      when(() => videoFeedBloc.state).thenReturn(state);
+      whenListen(videoFeedBloc, feedStates.stream, initialState: state);
+      // The cubit is owned by the test so it outlives the view — the whole
+      // point of settling via the captured cubit rather than through
+      // BuildContext.
+      final retapCubit = HomeFeedRetapCubit();
+      addTearDown(retapCubit.close);
+
+      await tester.pumpWidget(
+        testMaterialApp(
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider<HomeFeedRetapCubit>.value(value: retapCubit),
+              BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),
+              BlocProvider<VideoPlaybackStatusCubit>(
+                create: (_) => VideoPlaybackStatusCubit(),
+              ),
+              BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
+            ],
+            child: const VideoFeedView(),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Start the refresh; it cannot settle while the stream emits nothing.
+      retapCubit.request();
+      await tester.pump();
+      expect(retapCubit.state.isRefreshing, isTrue);
+      verify(
+        () => videoFeedBloc.add(const VideoFeedRefreshRequested()),
+      ).called(1);
+
+      // Drain the native feed's preload grace timer while the view is still
+      // mounted (as the sibling tests do), so no timer is left pending once
+      // the tree is disposed. The refresh is unaffected: the stream has not
+      // settled, so the retap cubit stays refreshing.
+      await tester.pump(const Duration(seconds: 3));
+      expect(retapCubit.state.isRefreshing, isTrue);
+
+      // Unmount the feed while the refresh is still in flight.
+      await tester.pumpWidget(const SizedBox());
+      // Still refreshing: the finally block has not run because the refresh
+      // has not settled yet.
+      expect(retapCubit.state.isRefreshing, isTrue);
+
+      // The refresh settles after the view is gone: _refreshFeed's firstWhere
+      // matches this terminal state, _onHomeRetap hits
+      // `if (!context.mounted) return`, and the finally block on the captured
+      // cubit must still fire even though the view is disposed.
+      feedStates.add(state);
+      await tester.pump();
+
+      expect(retapCubit.state.isRefreshing, isFalse);
+    });
+
+    testWidgets(
       'holds the overlay bottom inset steady while a modal keyboard is open '
       '(no slide on keyboard close, #5758 follow-up)',
       (tester) async {
@@ -417,11 +706,7 @@ void main() {
       final controller = StreamController<VideoFeedBlocState>();
       addTearDown(controller.close);
       when(() => videoFeedBloc.state).thenReturn(initialState);
-      whenListen(
-        videoFeedBloc,
-        controller.stream,
-        initialState: initialState,
-      );
+      whenListen(videoFeedBloc, controller.stream, initialState: initialState);
 
       await tester.pumpWidget(
         testMaterialApp(

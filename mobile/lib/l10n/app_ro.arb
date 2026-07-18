@@ -4131,6 +4131,8 @@
     "@notificationsBadgeUnread": {"description": "Screen-reader announcement for the notifications badge overlay on top of nav icons. Conveys the unread count to assistive technology users.", "placeholders": {"count": {"type": "int"}}},
     "feedLoadingMore": "Se încarcă mai multe videoclipuri…",
     "@feedLoadingMore": {"description": "Shown in a small pill at the bottom of the fullscreen video feed while the next page of videos is being fetched."},
+    "feedRefreshed": "Feedul a fost reîncărcat",
+    "@feedRefreshed": {"description": "Screen-reader announcement after the home feed finished reloading because the user re-tapped the home tab."},
     "reportReasonChildSafety": "Încălcare privind siguranța copiilor",
     "reportReasonChildSafetySubtitle": "Îngrijorări generale privind siguranța minorilor",
     "reportReasonUnderageUser": "Utilizatorul pare să aibă sub 16 ani",

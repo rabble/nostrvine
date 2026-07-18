@@ -4075,6 +4075,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get feedLoadingMore => '영상을 더 불러오는 중…';
 
   @override
+  String get feedRefreshed => '피드를 새로고침했어요';
+
+  @override
   String get uploadWaitingToUpload => '업로드 대기 중';
 
   @override

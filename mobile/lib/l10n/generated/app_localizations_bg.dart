@@ -4302,6 +4302,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get feedLoadingMore => 'Зареждане на още видеа…';
 
   @override
+  String get feedRefreshed => 'Емисията е опреснена';
+
+  @override
   String get uploadWaitingToUpload => 'Чака качване';
 
   @override
