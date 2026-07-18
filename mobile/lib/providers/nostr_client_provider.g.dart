@@ -109,7 +109,7 @@ final class NostrServiceProvider
   }
 }
 
-String _$nostrServiceHash() => r'd7c3f2c2e7d765f85b62b264f403bbfbbc09db82';
+String _$nostrServiceHash() => r'25763f4f11d5562473bb22fceaaeaadedd7b4344';
 
 /// Core Nostr service via NostrClient for relay communication
 /// Uses a Notifier to react to auth state changes and recreate the client
