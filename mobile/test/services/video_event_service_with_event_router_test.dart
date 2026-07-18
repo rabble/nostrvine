@@ -83,8 +83,11 @@ void main() {
       testDbPath = p.join(tempDir.path, 'test.db');
       db = AppDatabase.test(NativeDatabase(File(testDbPath)));
 
-      // Create EventRouter
-      eventRouter = EventRouter(db);
+      // Create EventRouter (autoStart off so tests drain deterministically)
+      eventRouter = EventRouter(
+        db,
+        config: const EventRouterConfig(autoStart: false),
+      );
 
       // Create mock NostrService
       mockNostrService = MockNostrService();
@@ -110,6 +113,15 @@ void main() {
         await file.delete();
       }
     });
+
+    /// Flushes the mock event stream into the router, then drains it
+    /// deterministically. Replaces wall-clock waits: [pumpEventQueue] lets the
+    /// broadcast-stream listener forward the emitted event into the router's
+    /// queue, then [EventRouter.drainForTesting] persists it.
+    Future<void> settle() async {
+      await pumpEventQueue();
+      await eventRouter.drainForTesting();
+    }
 
     test('exposes the injected EventRouter via eventRouter getter', () {
       expect(videoEventService.eventRouter, same(eventRouter));
@@ -140,8 +152,7 @@ void main() {
       // Emit event via mock NostrService
       mockNostrService.emitEvent(videoEvent);
 
-      // Wait for event processing
-      await Future.delayed(const Duration(milliseconds: 100));
+      await settle();
 
       // Verify event was cached to database via EventRouter
       final cachedEvent = await db.nostrEventsDao.getEventById(
@@ -181,8 +192,7 @@ void main() {
         // Emit profile event via mock NostrService
         mockNostrService.emitEvent(profileEvent);
 
-        // Wait for event processing
-        await Future.delayed(const Duration(milliseconds: 100));
+        await settle();
 
         // Verify event was cached to NostrEvents table
         final cachedEvent = await db.nostrEventsDao.getEventById(
@@ -234,8 +244,7 @@ void main() {
       // Emit contacts event via mock NostrService
       mockNostrService.emitEvent(contactsEvent);
 
-      // Wait for event processing
-      await Future.delayed(const Duration(milliseconds: 100));
+      await settle();
 
       // Verify event was cached to database
       final cachedEvent = await db.nostrEventsDao.getEventById(
@@ -273,8 +282,7 @@ void main() {
       // Emit reaction event via mock NostrService
       mockNostrService.emitEvent(reactionEvent);
 
-      // Wait for event processing
-      await Future.delayed(const Duration(milliseconds: 100));
+      await settle();
 
       // Verify event was cached to database
       final cachedEvent = await db.nostrEventsDao.getEventById(
@@ -307,8 +315,7 @@ void main() {
       // Emit unknown event via mock NostrService
       mockNostrService.emitEvent(unknownEvent);
 
-      // Wait for event processing
-      await Future.delayed(const Duration(milliseconds: 100));
+      await settle();
 
       // Verify event was cached to database
       final cachedEvent = await db.nostrEventsDao.getEventById(
@@ -319,17 +326,21 @@ void main() {
       expect(cachedEvent.content, equals('Unknown kind content'));
     });
 
-    test('Multiple events from same subscription are all cached', () async {
+    test('caches every event from one subscription (distinct authors)', () async {
       // Subscribe to discovery feed
       await videoEventService.subscribeToVideoFeed(
         subscriptionType: SubscriptionType.discovery,
       );
 
-      // Create and emit multiple test events
+      // Distinct pubkeys: one feed subscription carries videos from many
+      // authors, so each event is a distinct addressable coordinate and none
+      // supersede each other. (The original fixture reused a single pubkey with
+      // no d-tag, collapsing all 5 to one coordinate so only the newest
+      // survived the addressable upsert.)
       final events = <Event>[];
-      for (int i = 0; i < 5; i++) {
+      for (var i = 0; i < 5; i++) {
         final event = Event(
-          'abababababababababababababababababababababababababababababababab',
+          '${i + 1}'.padLeft(64, '0'),
           34236,
           [
             ['url', 'https://example.com/video$i.mp4'],
@@ -347,18 +358,13 @@ void main() {
         mockNostrService.emitEvent(event);
       }
 
-      // Wait for all events to process
-      await Future.delayed(const Duration(milliseconds: 200));
+      await settle();
 
-      // Verify all events were cached
-      for (int i = 0; i < 5; i++) {
-        final cachedEvent = await db.nostrEventsDao.getEventById(
-          'event${i}00000000000000000000000000000000000000000000000000000000000',
-        );
-        expect(cachedEvent, isNotNull, reason: 'Event $i should be cached');
+      for (final event in events) {
+        final cachedEvent = await db.nostrEventsDao.getEventById(event.id);
+        expect(cachedEvent, isNotNull, reason: '${event.id} should be cached');
         expect(cachedEvent!.kind, equals(34236));
       }
-      // TODO(any): Fix and re-enable this test
-    }, skip: true);
+    });
   });
 }

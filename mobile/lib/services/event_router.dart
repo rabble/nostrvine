@@ -289,6 +289,20 @@ class EventRouter {
     return routeBatch;
   }
 
+  /// Extracts denormalized rows for kinds that have a dedicated table.
+  ///
+  /// Only kind 0 (profiles) is denormalized, into UserProfiles. The other
+  /// routed kinds — 3 (contacts, NIP-02), 6 (repost, NIP-18), 7 (reactions,
+  /// NIP-25), and 34236 (video, NIP-71) — are intentionally raw-cached only
+  /// via [_persistRawEvents] and NOT denormalized here.
+  ///
+  /// No feed-aggregate table exists for them; their surfaced data comes from
+  /// other paths: like/reaction counts from the relay (NIP-45) and
+  /// LikesRepository, the user's own likes from PersonalReactions, follower
+  /// counts from the backend (ProfileStats), and VideoMetrics parsed from the
+  /// video event's own tags during raw caching. The cases stay listed
+  /// explicitly so this "unsupported by design" choice is visible rather than
+  /// an implicit default.
   Future<void> _routeEvent(Event event) async {
     switch (event.kind) {
       case 0:
