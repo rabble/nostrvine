@@ -60,7 +60,6 @@ test/services/video_event_publisher_native_proof_test.dart
 test/services/video_event_service_deduplication_test.dart
 test/services/video_event_service_replaceable_test.dart
 test/services/video_event_service_repost_test.dart
-test/services/video_event_service_with_event_router_test.dart
 test/tools/future_delayed_detector_test.dart
 test/tools/naming_convention_test.dart
 test/unit/services/classic_vines_priority_test.dart

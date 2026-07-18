@@ -34,7 +34,6 @@ test/services/subscription_manager_cache_test.dart
 test/services/video_event_service_deduplication_test.dart
 test/services/video_event_service_pagination_test.dart
 test/services/video_event_service_repost_test.dart
-test/services/video_event_service_with_event_router_test.dart
 test/startup/startup_diagnostics_test.dart
 test/unit/services/video_event_service_force_refresh_test.dart
 test/unit/services/video_event_service_infinite_scroll_test.dart
