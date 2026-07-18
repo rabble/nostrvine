@@ -5,6 +5,7 @@ import 'dart:convert';
 
 import 'package:db_client/db_client.dart';
 import 'package:drift/native.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:nostr_sdk/event.dart';
@@ -349,6 +350,107 @@ void main() {
         expect(router.queuedLength, equals(1000));
         expect(router.droppedEventCount, equals(0));
       });
+    });
+
+    group('unsupported routing kinds', () {
+      test('raw-caches kind 3 (contacts) and kind 7 (reactions) without '
+          'denormalizing them', () async {
+        final contacts = Event(pubkeyFor(80), 3, const [], '');
+        final reaction = Event(pubkeyFor(81), 7, const [], '+');
+
+        await flush([contacts, reaction]);
+
+        // Both are stored raw in the events table...
+        expect(await db.nostrEventsDao.getEventById(contacts.id), isNotNull);
+        expect(await db.nostrEventsDao.getEventById(reaction.id), isNotNull);
+        // ...but neither is denormalized: _routeEvent is a no-op for these
+        // kinds, so no profile (or any other derived row) is written.
+        expect(await db.userProfilesDao.getProfile(contacts.pubkey), isNull);
+        expect(await db.userProfilesDao.getProfile(reaction.pubkey), isNull);
+      });
+    });
+
+    group('autoStart ingestion path', () {
+      test('flushes immediately when the batch reaches maxBatchSize', () async {
+        final r = EventRouter(
+          db,
+          config: const EventRouterConfig(maxBatchSize: 3),
+        );
+        addTearDown(r.dispose);
+        final events = [videoEvent(93), videoEvent(94), videoEvent(95)];
+
+        r.handleEvent(events[0]);
+        r.handleEvent(events[1]);
+        // Below the threshold: a flush timer is armed, nothing drained yet.
+        expect(r.queuedLength, equals(2));
+
+        r.handleEvent(events[2]);
+        // Reaching maxBatchSize cancels the timer and drains synchronously
+        // (the batch is dequeued before the first await in _processNextBatch).
+        expect(r.queuedLength, equals(0));
+
+        await pumpEventQueue();
+        for (final event in events) {
+          expect(await db.nostrEventsDao.getEventById(event.id), isNotNull);
+        }
+      });
+
+      test('arms a flush timer that drains the queue on elapse', () {
+        fakeAsync((async) {
+          final r = EventRouter(
+            db,
+            config: const EventRouterConfig(
+              flushDelay: Duration(milliseconds: 20),
+              maxBatchSize: 10,
+            ),
+          );
+
+          r.handleEvent(videoEvent(90));
+          // Timer armed but not yet fired.
+          expect(r.queuedLength, equals(1));
+
+          async.elapse(const Duration(milliseconds: 20));
+          // Timer fired: _takeNextBatch dequeues synchronously, so the queue
+          // is empty even though the DB write completes on the real loop
+          // (asserting queuedLength here needs no DB under the fake clock).
+          expect(r.queuedLength, equals(0));
+
+          r.dispose();
+        });
+      });
+
+      test('persists an enqueued event without a manual drain', () async {
+        final r = EventRouter(
+          db,
+          config: const EventRouterConfig(flushDelay: Duration.zero),
+        );
+        addTearDown(r.dispose);
+        final event = videoEvent(91);
+
+        r.handleEvent(event);
+        // Duration.zero takes the immediate branch; pump the real event loop
+        // so the fire-and-forget persist completes.
+        await pumpEventQueue();
+
+        expect(await db.nostrEventsDao.getEventById(event.id), isNotNull);
+      });
+
+      test(
+        'swallows a persistence error so ingestion is not aborted',
+        () async {
+          // Close the shared database so the DAO throws mid-persist. The group
+          // tearDown closes it again, which drift tolerates.
+          await db.close();
+
+          router.handleEvent(videoEvent(92));
+
+          // drainForTesting must complete without rethrowing, and the batch is
+          // still consumed (the error is caught and logged in _persistBatch).
+          await router.drainForTesting();
+
+          expect(router.queuedLength, equals(0));
+        },
+      );
     });
   });
 }
