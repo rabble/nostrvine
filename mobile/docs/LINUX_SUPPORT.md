@@ -7,9 +7,9 @@ divine-mobile can be built and run on Linux desktop for browsing and watching vi
 | Feature | Status |
 |---------|--------|
 | Browse / discover videos | Works |
-| Watch videos | Works (requires GStreamer) |
+| Watch videos | Works (requires libmpv) |
 | Login / auth (bunker, nsec) | Works |
-| Notifications | Works (requires libnotify) |
+| Notifications | Works (via D-Bus) |
 | Video recording | Not available |
 | Gallery save | Skipped on desktop |
 | Firebase / Crashlytics | Gracefully disabled |
@@ -20,19 +20,23 @@ Install these before building:
 
 ```bash
 # Ubuntu / Debian
-sudo apt install libgtk-3-dev libsecret-1-dev libjsoncpp-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-good libnotify-dev
+sudo apt install libgtk-3-dev libsecret-1-dev libmpv-dev libepoxy-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-good libwebkit2gtk-4.1-dev libasound2-dev
 
 # Fedora
-sudo dnf install gtk3-devel libsecret-devel jsoncpp-devel gstreamer1-devel gstreamer1-plugins-base-devel gstreamer1-plugins-good libnotify-devel
+sudo dnf install gtk3-devel libsecret-devel mpv-devel libepoxy-devel gstreamer1-devel gstreamer1-plugins-base-devel gstreamer1-plugins-good webkit2gtk4.1-devel alsa-lib-devel
 ```
 
 | Package | Used by |
 |---------|---------|
-| `libgtk-3-dev` | Flutter Linux embedding |
-| `libsecret-1-dev` | `flutter_secure_storage` (keychain) |
-| `libjsoncpp-dev` | `flutter_secure_storage` |
-| `gstreamer1.0-*` | `video_player` (video playback) |
-| `libnotify-dev` | `flutter_local_notifications` |
+| `libgtk-3-dev` | Flutter Linux embedding (all plugins) |
+| `libsecret-1-dev` | `flutter_secure_storage_linux` (keychain) |
+| `libmpv-dev` | `media_kit_video` — **video playback** engine (libmpv) |
+| `libepoxy-dev` | `media_kit_video` — GL texture rendering |
+| `libgstreamer1.0-dev`, `libgstreamer-plugins-base1.0-dev` | `pro_video_editor` — video metadata & thumbnail generation (**not** playback) |
+| `libwebkit2gtk-4.1-dev` | `desktop_webview_window` (embedded webview) |
+| `libasound2-dev` | `volume_controller` (system volume via ALSA) |
+
+> **Video playback vs. GStreamer:** playback runs through `media_kit` → **libmpv** (which decodes via FFmpeg, not GStreamer). GStreamer is required only by `pro_video_editor` for metadata extraction and thumbnail generation. `video_player` has no Linux implementation and plays no part on this platform.
 
 ## Building
 
