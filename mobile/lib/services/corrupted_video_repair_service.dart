@@ -40,12 +40,23 @@ class CorruptedVideoRepairService {
   static const String _logName = 'CorruptedVideoRepair';
 
   /// Run the repair if it hasn't been completed yet.
-  /// Returns the number of events repaired, or -1 if skipped (already done).
+  ///
+  /// Returns the number of events repaired, `-1` if skipped (already done), or
+  /// `0` without marking complete when there is no authenticated identity /
+  /// public key yet (the caller retries once the Nostr session is ready).
+  ///
+  /// The completion flag is only set once the scan actually ran, so calling
+  /// this during the pre-restore startup window (no identity yet) cannot
+  /// silently disable the one-time migration (#5909-adjacent regression).
   Future<int> repairIfNeeded() async {
     if (_prefs.getBool(_completedKey) == true) return -1;
 
     try {
       final repaired = await _repairCorruptedEvents();
+      if (repaired == null) {
+        // Not ready to run: don't mark complete, let the caller retry.
+        return 0;
+      }
       await _prefs.setBool(_completedKey, true);
       return repaired;
     } catch (e, s) {
@@ -61,14 +72,19 @@ class CorruptedVideoRepairService {
     }
   }
 
-  Future<int> _repairCorruptedEvents() async {
+  /// Scans and repairs the user's corrupted video events.
+  ///
+  /// Returns the number repaired, or `null` when the repair could not run
+  /// because there is no authenticated identity / public key yet — the caller
+  /// must not treat that as a completed run.
+  Future<int?> _repairCorruptedEvents() async {
     if (!_authService.isAuthenticated) {
       Log.debug(
         'Not authenticated, skipping repair',
         name: _logName,
         category: LogCategory.video,
       );
-      return 0;
+      return null;
     }
 
     final pubkey = _nostrClient.publicKey;
@@ -78,7 +94,7 @@ class CorruptedVideoRepairService {
         name: _logName,
         category: LogCategory.video,
       );
-      return 0;
+      return null;
     }
 
     // Query all of the user's own kind 34236 events from relay

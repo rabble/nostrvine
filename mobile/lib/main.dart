@@ -1897,32 +1897,53 @@ class _DivineAppState extends ConsumerState<DivineApp>
     // (watched in AppShell) which reacts to auth state changes and
     // covers both already-authenticated startup and post-login scenarios.
 
-    // One-time repair for corrupted video events with local file paths (#2144)
-    unawaited(
-      Future.microtask(() async {
-        try {
-          final nostrClient = ref.read(nostrServiceProvider);
-          final authService = ref.read(authServiceProvider);
-          final env = ref.read(currentEnvironmentProvider);
-          final prefs = ref.read(sharedPreferencesProvider);
-          final videoEventService = ref.read(videoEventServiceProvider);
-          final repairService = CorruptedVideoRepairService(
-            nostrClient: nostrClient,
-            authService: authService,
-            prefs: prefs,
-            blossomBaseUrl: env.blossomUrl,
-            videoEventService: videoEventService,
-          );
-          await repairService.repairIfNeeded();
-        } catch (e) {
-          Log.warning(
-            '[INIT] Corrupted video repair failed (non-critical): $e',
-            name: 'Main',
-            category: LogCategory.system,
-          );
-        }
-      }),
-    );
+    // One-time repair for corrupted video events with local file paths (#2144).
+    // It needs a signed-in identity and a connected client, so it is deferred
+    // until the Nostr session reaches nostrReady — NOT run in the pre-restore
+    // startup window where currentIdentity is still null. There it would no-op
+    // and (before the CorruptedVideoRepairService flag fix) permanently mark
+    // itself complete, silently disabling the migration. Reading
+    // nostrServiceProvider only after restore is safe because NostrService's
+    // in-flight-target guard (#5909) keeps a build-after-restore ordering from
+    // spuriously rebuilding the client.
+    _runCorruptedVideoRepairWhenReady();
+  }
+
+  void _runCorruptedVideoRepairWhenReady() {
+    var started = false;
+    bool runIfReady(NostrSessionReadiness session) {
+      if (started || session.phase != NostrSessionPhase.nostrReady) {
+        return false;
+      }
+      started = true;
+      unawaited(_runCorruptedVideoRepair());
+      return true;
+    }
+
+    if (runIfReady(ref.read(nostrSessionProvider))) return;
+    late final ProviderSubscription<NostrSessionReadiness> subscription;
+    subscription = ref.listenManual(nostrSessionProvider, (_, next) {
+      if (runIfReady(next)) subscription.close();
+    });
+  }
+
+  Future<void> _runCorruptedVideoRepair() async {
+    try {
+      final repairService = CorruptedVideoRepairService(
+        nostrClient: ref.read(nostrServiceProvider),
+        authService: ref.read(authServiceProvider),
+        prefs: ref.read(sharedPreferencesProvider),
+        blossomBaseUrl: ref.read(currentEnvironmentProvider).blossomUrl,
+        videoEventService: ref.read(videoEventServiceProvider),
+      );
+      await repairService.repairIfNeeded();
+    } catch (e) {
+      Log.warning(
+        '[INIT] Corrupted video repair failed (non-critical): $e',
+        name: 'Main',
+        category: LogCategory.system,
+      );
+    }
   }
 
   @override
