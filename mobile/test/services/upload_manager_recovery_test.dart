@@ -75,16 +75,16 @@ void main() {
         ..writeAsBytesSync(List<int>.generate(32, (index) => index));
 
       mockBlossomService = _MockBlossomUploadService();
-      when(() => mockBlossomService.isBlossomEnabled()).thenAnswer(
-        (_) async => false,
-      );
+      when(
+        () => mockBlossomService.isBlossomEnabled(),
+      ).thenAnswer((_) async => false);
       _mockConnectivity('wifi');
 
       uploadManager = UploadManager(
         blossomService: mockBlossomService,
         retryConfig: const UploadRetryConfig(
-          initialDelay: Duration.zero,
-          maxDelay: Duration.zero,
+          initialDelay: Duration(milliseconds: 10),
+          maxDelay: Duration(milliseconds: 10),
         ),
       );
       await uploadManager.initialize();
@@ -142,6 +142,74 @@ void main() {
         timeout: const Duration(seconds: 2),
         checkInterval: const Duration(milliseconds: 20),
       );
+    });
+
+    test('onAppResumed wakes a live upload parked in retry backoff', () async {
+      uploadManager.dispose();
+      uploadManager = UploadManager(
+        blossomService: mockBlossomService,
+        retryConfig: const UploadRetryConfig(
+          initialDelay: Duration(hours: 1),
+          maxDelay: Duration(hours: 1),
+        ),
+      );
+      await uploadManager.initialize();
+      await TestHelpers.ensureBoxEmpty<PendingUpload>('pending_uploads');
+
+      var uploadAttempts = 0;
+      final firstAttemptFailed = Completer<void>();
+      final secondAttemptStarted = Completer<void>();
+      when(
+        () => mockBlossomService.uploadVideo(
+          videoFile: any(named: 'videoFile'),
+          nostrPubkey: any(named: 'nostrPubkey'),
+          title: any(named: 'title'),
+          description: any(named: 'description'),
+          hashtags: any(named: 'hashtags'),
+          proofManifestJson: any(named: 'proofManifestJson'),
+          resumableSession: any(named: 'resumableSession'),
+          onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).thenAnswer((_) async {
+        uploadAttempts++;
+        if (uploadAttempts == 1) {
+          firstAttemptFailed.complete();
+          throw Exception('network timeout');
+        }
+        secondAttemptStarted.complete();
+        return _okResult;
+      });
+
+      final uploadFuture = uploadManager.startUpload(
+        videoFile: videoFile,
+        nostrPubkey: 'test-pubkey',
+        title: 'Backoff video',
+      );
+
+      await TestHelpers.waitForCondition(
+        () => firstAttemptFailed.isCompleted,
+        timeout: const Duration(seconds: 2),
+        checkInterval: const Duration(milliseconds: 20),
+      );
+
+      final uploadId = uploadManager.pendingUploads.single.id;
+      await TestHelpers.waitForCondition(
+        () => uploadManager.isUploadWaitingForRetryBackoff(uploadId),
+        timeout: const Duration(seconds: 2),
+        checkInterval: const Duration(milliseconds: 20),
+      );
+
+      uploadManager.onAppResumed();
+
+      await TestHelpers.waitForCondition(
+        () => secondAttemptStarted.isCompleted,
+        timeout: const Duration(seconds: 2),
+        checkInterval: const Duration(milliseconds: 20),
+      );
+      await uploadFuture;
+      expect(uploadAttempts, equals(2));
+      expect(uploadManager.isUploadInFlight(uploadId), isFalse);
     });
 
     test('onAppResumed re-drives uploads stuck in retrying state', () async {
@@ -232,52 +300,63 @@ void main() {
       },
     );
 
+    test('resumeInterruptedUpload is single-flight per upload id', () async {
+      final upload = seedUpload();
+
+      var uploadCallCount = 0;
+      final blockGate = Completer<void>();
+      when(
+        () => mockBlossomService.uploadVideo(
+          videoFile: any(named: 'videoFile'),
+          nostrPubkey: any(named: 'nostrPubkey'),
+          title: any(named: 'title'),
+          description: any(named: 'description'),
+          hashtags: any(named: 'hashtags'),
+          proofManifestJson: any(named: 'proofManifestJson'),
+          resumableSession: any(named: 'resumableSession'),
+          onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).thenAnswer((_) async {
+        uploadCallCount++;
+        await blockGate.future;
+        return _okResult;
+      });
+
+      uploadManager.resumeInterruptedUpload(upload.id);
+      uploadManager.resumeInterruptedUpload(upload.id);
+
+      await TestHelpers.waitForCondition(
+        () => uploadManager.isUploadInFlight(upload.id),
+        timeout: const Duration(seconds: 2),
+        checkInterval: const Duration(milliseconds: 20),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(uploadCallCount, equals(1));
+
+      blockGate.complete();
+      await TestHelpers.waitForCondition(
+        () => !uploadManager.isUploadInFlight(upload.id),
+        timeout: const Duration(seconds: 2),
+        checkInterval: const Duration(milliseconds: 20),
+      );
+    });
+
     test(
-      're-entrancy guard prevents overlapping sweeps from double-driving',
+      'resumeInterruptedUpload clears in-flight marker when file is missing',
       () async {
-        // Seed a single stuck upload.
-        final upload = seedUpload();
+        final missingPath = '${tempDir.path}/resume-missing.mp4';
+        final upload = seedUpload(localVideoPath: missingPath);
 
-        var uploadCallCount = 0;
-        final blockGate = Completer<void>();
-        when(
-          () => mockBlossomService.uploadVideo(
-            videoFile: any(named: 'videoFile'),
-            nostrPubkey: any(named: 'nostrPubkey'),
-            title: any(named: 'title'),
-            description: any(named: 'description'),
-            hashtags: any(named: 'hashtags'),
-            proofManifestJson: any(named: 'proofManifestJson'),
-            resumableSession: any(named: 'resumableSession'),
-            onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
-            onProgress: any(named: 'onProgress'),
-          ),
-        ).thenAnswer((_) async {
-          uploadCallCount++;
-          await blockGate.future;
-          return _okResult;
-        });
+        uploadManager.resumeInterruptedUpload(upload.id);
 
-        // Fire two sweeps in quick succession. The first reserves the
-        // re-entrancy latch; the second must no-op rather than iterate the
-        // same upload again.
-        final first = uploadManager.recoverStuckUploadsForTest();
-        final second = uploadManager.recoverStuckUploadsForTest();
-        // Allow both microtasks to reach the guard check.
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-
-        // Only one upload drive should have started, regardless of whether
-        // the first sweep has finished iterating yet.
-        expect(uploadCallCount, lessThanOrEqualTo(1));
-
-        // Release the gate so the in-flight upload can settle.
-        blockGate.complete();
-        await first;
-        await second;
-
-        // The upload was driven exactly once — not once per sweep call.
-        expect(uploadCallCount, equals(1));
-        expect(upload.id, isNotEmpty);
+        await TestHelpers.waitForCondition(
+          () =>
+              uploadManager.getUpload(upload.id)?.status == UploadStatus.failed,
+          timeout: const Duration(seconds: 2),
+          checkInterval: const Duration(milliseconds: 20),
+        );
+        expect(uploadManager.isUploadInFlight(upload.id), isFalse);
       },
     );
   });

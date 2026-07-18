@@ -131,7 +131,6 @@ class UploadManager implements BackgroundAwareService {
     UploadCrashReporter? crashReporter,
     this.useBackgroundUpload = false,
     BackgroundActivityManager? backgroundActivityManager,
-    Stream<bool>? appForegroundStream,
   }) : _blossomService = blossomService,
        _defaultBlossomUrl =
            defaultBlossomUrl ?? BlossomUploadService.defaultBlossomServer,
@@ -145,8 +144,7 @@ class UploadManager implements BackgroundAwareService {
        // tests can verify register/unregister with a fake (mirrors AuthService
        // per #4743 B3).
        _backgroundActivityManager =
-           backgroundActivityManager ?? BackgroundActivityManager(),
-       _appForegroundStream = appForegroundStream {
+           backgroundActivityManager ?? BackgroundActivityManager() {
     _retryPolicy = UploadRetryPolicy(store: _store, retryConfig: _retryConfig);
     _reporter = UploadProgressReporter(
       store: _store,
@@ -174,8 +172,7 @@ class UploadManager implements BackgroundAwareService {
   // [onAppResumed] can re-drive uploads whose retry backoff froze while the
   // app was suspended (Dart Timers do not fire while iOS suspends the app).
   final BackgroundActivityManager _backgroundActivityManager;
-  final Stream<bool>? _appForegroundStream;
-  StreamSubscription<bool>? _foregroundSubscription;
+  bool _isBackgroundRegistered = false;
 
   // Extracted concerns
   late final UploadRetryPolicy _retryPolicy;
@@ -195,16 +192,13 @@ class UploadManager implements BackgroundAwareService {
   // owning [_performUpload] run settles.
   final Set<String> _userStoppedUploadIds = <String>{};
 
-  // Upload ids whose [_performUpload] future is currently on the event loop.
-  // This is the only in-process signal distinguishing "actively uploading
-  // right now" from "stuck in `uploading` status after a crash/background
-  // freeze" — [_recoverStuckUploads] consults it to avoid double-driving an
-  // upload that is genuinely in flight.
-  final Set<String> _inFlightUploadIds = <String>{};
+  // In-process single-flight guard. Every entry point that can drive an upload
+  // shares this map, so a sweep and a user retry cannot start overlapping Dart
+  // upload pipelines for the same PendingUpload.
+  final Map<String, Future<void>> _inFlightUploads = <String, Future<void>>{};
 
-  // Re-entrancy latch for [_recoverStuckUploads]: both [onAppResumed] and the
-  // foreground stream subscription can fire the sweep, so guard against
-  // overlapping runs.
+  // Re-entrancy latch for [_recoverStuckUploads]; startup and app-resume
+  // recovery can run close together while missing-file updates are awaiting.
   bool _isRecovering = false;
 
   bool _isInitialized = false;
@@ -216,16 +210,21 @@ class UploadManager implements BackgroundAwareService {
   /// loop. Visible for testing the recovery sweep's in-flight skip logic.
   @visibleForTesting
   bool isUploadInFlight(String uploadId) =>
-      _inFlightUploadIds.contains(uploadId);
+      _inFlightUploads.containsKey(uploadId);
 
-  /// Whether a recovery sweep is currently running. Visible for testing the
-  /// re-entrancy guard.
   @visibleForTesting
-  bool get isRecovering => _isRecovering;
+  bool isUploadWaitingForRetryBackoff(String uploadId) =>
+      _retryPolicy.isWaitingForBackoff(uploadId);
 
   /// Drives a recovery sweep on demand. Visible for testing.
   @visibleForTesting
   Future<void> recoverStuckUploadsForTest() => _recoverStuckUploads();
+
+  void _registerForBackgroundActivity() {
+    if (_isBackgroundRegistered) return;
+    _backgroundActivityManager.registerService(this);
+    _isBackgroundRegistered = true;
+  }
 
   /// Initialize the upload manager and load persisted uploads
   /// Uses robust initialization with retry logic and recovery strategies
@@ -272,17 +271,7 @@ class UploadManager implements BackgroundAwareService {
       // Register for background-lifecycle callbacks so [onAppResumed] can
       // re-drive uploads whose retry backoff froze while the app was
       // suspended (Dart Timers do not fire while iOS suspends the app).
-      _backgroundActivityManager.registerService(this);
-
-      // Subscribe to the app-foreground stream as a secondary resume trigger:
-      // it fires on the same resumed edge as [onAppResumed], but also lets a
-      // sweep run if the store was not yet ready when the first resume fired.
-      // The [_isRecovering] latch keeps overlapping calls safe.
-      _foregroundSubscription = _appForegroundStream?.listen((foreground) {
-        if (foreground) {
-          unawaited(_recoverStuckUploads());
-        }
-      });
+      _registerForBackgroundActivity();
 
       // Re-drive uploads left in `uploading`/`retrying` by a prior crash or
       // background freeze. Fire-and-forget: this runs on the event loop and
@@ -550,6 +539,7 @@ class UploadManager implements BackgroundAwareService {
 
         if (_store.isReady) {
           _isInitialized = true;
+          _registerForBackgroundActivity();
           Log.info(
             '✅ Robust initialization successful',
             name: 'UploadManager',
@@ -725,6 +715,31 @@ class UploadManager implements BackgroundAwareService {
     PendingUpload upload, {
     ValueChanged<double>? onProgress,
   }) async {
+    final existing = _inFlightUploads[upload.id];
+    if (existing != null) {
+      Log.info(
+        'Upload ${upload.id} already in flight; joining existing upload',
+        name: 'UploadManager',
+        category: LogCategory.video,
+      );
+      return existing;
+    }
+
+    late final Future<void> uploadFuture;
+    uploadFuture = _performUploadInternal(upload, onProgress: onProgress)
+        .whenComplete(() {
+          if (identical(_inFlightUploads[upload.id], uploadFuture)) {
+            _inFlightUploads.remove(upload.id);
+          }
+        });
+    _inFlightUploads[upload.id] = uploadFuture;
+    return uploadFuture;
+  }
+
+  Future<void> _performUploadInternal(
+    PendingUpload upload, {
+    ValueChanged<double>? onProgress,
+  }) async {
     Log.info(
       '🏃 === PERFORM UPLOAD STARTED ===',
       name: 'UploadManager',
@@ -752,11 +767,6 @@ class UploadManager implements BackgroundAwareService {
 
     final startTime = DateTime.now();
     final videoFile = File(upload.localVideoPath);
-
-    // Mark this upload as actively driven on the event loop while the
-    // transfer runs, so [_recoverStuckUploads] can tell "genuinely in flight"
-    // from "stuck in `uploading` status after a crash". Removed in `finally`.
-    _inFlightUploadIds.add(upload.id);
 
     Log.info(
       '📁 Checking video file: ${upload.localVideoPath}',
@@ -826,7 +836,6 @@ class UploadManager implements BackgroundAwareService {
       await _handleUploadFailure(upload, e);
     } finally {
       _userStoppedUploadIds.remove(upload.id);
-      _inFlightUploadIds.remove(upload.id);
     }
   }
 
@@ -1329,23 +1338,22 @@ class UploadManager implements BackgroundAwareService {
   // Background recovery
   // ============================================================
 
-  /// Re-drives uploads stuck in [UploadStatus.uploading] or
-  /// [UploadStatus.retrying] after a crash, force-quit, or app suspension.
+  /// Recovers uploads stuck in [UploadStatus.uploading] or
+  /// [UploadStatus.retrying] after a crash, force-quit, or suspended retry
+  /// backoff.
   ///
   /// iOS suspends the app on background and Dart [Timer]s do not fire while
-  /// suspended, so an upload whose retry backoff was pending freezes until the
-  /// app returns to the foreground. Without this sweep those uploads stay in
-  /// `uploading`/`retrying` forever (no live [_performUpload] future is
-  /// driving them) and the video never publishes.
+  /// suspended. If an upload is still alive but parked in retry backoff, the
+  /// sweep wakes that wait so the existing [_performUpload] future continues.
+  /// If no live future exists, the sweep re-drives the persisted row.
   ///
   /// Only `uploading`/`retrying` are re-driven — those states are
   /// unambiguously interrupted and have consumed no manual-retry budget.
   /// `failed` uploads are left to the user-driven retry flow (they carry a
   /// `retryCount < 3` budget surfaced via the publish bottom sheet).
   ///
-  /// Called on app resume ([onAppResumed]), on the app-foreground stream edge
-  /// ([initialize]), and once at startup. Re-entrancy is guarded by
-  /// [_isRecovering].
+  /// Called on app resume ([onAppResumed]) and once at startup. Re-entrancy is
+  /// guarded by [_isRecovering].
   Future<void> _recoverStuckUploads() async {
     if (_isRecovering) return;
     if (!_isInitialized || !_store.isReady) return;
@@ -1362,11 +1370,15 @@ class UploadManager implements BackgroundAwareService {
       if (stuck.isEmpty) return;
 
       var recovered = 0;
+      var wokeBackoff = 0;
       var markedMissingFile = 0;
       for (final upload in stuck) {
-        // Skip uploads that are genuinely active right now — only re-drive
-        // the ones no live [_performUpload] future is driving.
-        if (_inFlightUploadIds.contains(upload.id)) continue;
+        if (_inFlightUploads.containsKey(upload.id)) {
+          if (_retryPolicy.wakeBackoff(upload.id)) {
+            wokeBackoff++;
+          }
+          continue;
+        }
         // A user just paused/cancelled; leave the authoritative status alone.
         if (_userStoppedUploadIds.contains(upload.id)) continue;
 
@@ -1392,8 +1404,9 @@ class UploadManager implements BackgroundAwareService {
 
       Log.info(
         '🔄 Recovery sweep: re-drove $recovered stuck upload(s), '
+        'woke $wokeBackoff retry backoff wait(s), '
         'marked $markedMissingFile failed (missing file), '
-        'skipped ${stuck.length - recovered - markedMissingFile} in-flight',
+        'skipped ${stuck.length - recovered - wokeBackoff - markedMissingFile} active',
         name: 'UploadManager',
         category: LogCategory.video,
       );
@@ -1423,8 +1436,7 @@ class UploadManager implements BackgroundAwareService {
   @override
   void onAppResumed() {
     // Fire-and-forget: the interface is synchronous. The sweep's own
-    // re-entrancy latch makes overlapping resume + foreground-stream calls
-    // safe.
+    // re-entrancy latch makes overlapping startup/resume calls safe.
     unawaited(_recoverStuckUploads());
   }
 
@@ -1785,9 +1797,10 @@ class UploadManager implements BackgroundAwareService {
 
   void dispose() {
     // Unregister from background-lifecycle callbacks before tearing down.
-    _backgroundActivityManager.unregisterService(this);
-    _foregroundSubscription?.cancel();
-    _foregroundSubscription = null;
+    if (_isBackgroundRegistered) {
+      _backgroundActivityManager.unregisterService(this);
+      _isBackgroundRegistered = false;
+    }
 
     // Delegate to extracted policy/reporter (handles subscriptions, timers,
     // session futures, and metrics cleanup).
