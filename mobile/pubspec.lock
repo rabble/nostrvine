@@ -1446,11 +1446,10 @@ packages:
   media_kit_video:
     dependency: transitive
     description:
-      path: media_kit_video
-      ref: "6b718491261e40ddebf1fe9b880b3d5d30205ee0"
-      resolved-ref: "6b718491261e40ddebf1fe9b880b3d5d30205ee0"
-      url: "https://github.com/divinevideo/media-kit"
-    source: git
+      name: media_kit_video
+      sha256: afaa509e7b7e0bf247557a3a740cde903a52c34ace9810f94500e127bd7b043d
+      url: "https://pub.dev"
+    source: hosted
     version: "2.0.1"
   melos:
     dependency: "direct dev"
