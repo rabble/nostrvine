@@ -291,6 +291,11 @@ class _DeleteAccountTile extends StatelessWidget {
     }
     if (!context.mounted) return;
 
+    // The gate anchors on the shown profile identity (displayNip05) to confirm
+    // *which account* is being erased — deliberately distinct from the burn
+    // target (the owned @divine.video handle, which the burn toggle names for
+    // itself). The two can differ for an external-NIP-05 user who also owns a
+    // divine username; that divergence is intended, not a mismatch to reconcile.
     final confirmation = DeleteAccountConfirmation(
       pubkeyHex: pubkey,
       displayName:

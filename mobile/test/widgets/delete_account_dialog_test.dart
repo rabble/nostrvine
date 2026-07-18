@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
@@ -454,8 +455,10 @@ void main() {
       final deletionService = _MockAccountDeletionService();
       final authService = _MockAuthService();
       when(
-        () =>
-            deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
       ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
       when(
         authService.deleteKeycastAccount,
@@ -530,8 +533,10 @@ void main() {
       await tester.pumpAndSettle();
 
       verifyNever(
-        () =>
-            deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
       );
       expect(
         find.text(
@@ -551,8 +556,10 @@ void main() {
         () => profileRepository.releaseUsername(name: any(named: 'name')),
       ).thenAnswer((_) async => const UsernameReleaseSuccess());
       when(
-        () =>
-            deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
       ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
       when(
         authService.deleteKeycastAccount,
@@ -584,8 +591,10 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(
-        () =>
-            deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
       ).called(1);
       verify(
         () => profileRepository.releaseUsername(name: 'alice'),
@@ -599,8 +608,10 @@ void main() {
       final authService = _MockAuthService();
       final profileRepository = _MockProfileRepository();
       when(
-        () =>
-            deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
       ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
       when(
         authService.deleteKeycastAccount,
@@ -665,8 +676,10 @@ void main() {
       await tester.pumpAndSettle();
 
       verifyNever(
-        () =>
-            deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
       );
       expect(
         find.text(
@@ -879,8 +892,10 @@ void main() {
       await tester.pumpAndSettle();
 
       verifyNever(
-        () =>
-            deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
       );
       expect(
         find.text(
@@ -923,8 +938,10 @@ void main() {
       await tester.pumpAndSettle();
 
       verifyNever(
-        () =>
-            deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
       );
       verifyNever(
         () => profileRepository.releaseUsername(name: any(named: 'name')),
@@ -938,6 +955,23 @@ void main() {
       when(
         () => authService.currentPublicKeyHex,
       ).thenReturn('now_a_different_pk');
+
+      final announcements = <Map<Object?, Object?>>[];
+      tester.binding.defaultBinaryMessenger
+          .setMockDecodedMessageHandler<Object?>(
+            SystemChannels.accessibility,
+            (Object? message) async {
+              if (message is Map) announcements.add(message);
+              return null;
+            },
+          );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger
+            .setMockDecodedMessageHandler<Object?>(
+              SystemChannels.accessibility,
+              null,
+            ),
+      );
 
       late BuildContext capturedContext;
       await tester.pumpWidget(
@@ -966,8 +1000,10 @@ void main() {
         () => profileRepository.releaseUsername(name: any(named: 'name')),
       );
       verifyNever(
-        () =>
-            deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
       );
       expect(
         find.text(
@@ -976,6 +1012,20 @@ void main() {
           ).deleteAccountAccountChanged,
         ),
         findsOneWidget,
+      );
+
+      // The abort outcome is spoken to screen-reader users, not just shown.
+      final announced = announcements
+          .where((message) => message['type'] == 'announce')
+          .map((message) => (message['data'] as Map?)?['message'])
+          .toList();
+      expect(
+        announced,
+        contains(
+          lookupAppLocalizations(
+            const Locale('en'),
+          ).deleteAccountAccountChanged,
+        ),
       );
     });
 
@@ -986,8 +1036,10 @@ void main() {
       final authService = _MockAuthService();
       when(() => authService.currentPublicKeyHex).thenReturn(_pubkeyHex);
       when(
-        () =>
-            deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
       ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
       when(
         authService.deleteKeycastAccount,
@@ -1017,8 +1069,10 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(
-        () =>
-            deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
       ).called(1);
     });
   });

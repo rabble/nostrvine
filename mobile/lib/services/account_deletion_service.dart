@@ -35,6 +35,15 @@ class DeleteAccountResult {
       DeleteAccountResult(success: false, error: error);
 }
 
+/// Thrown when the signed-in account changes mid-deletion, so no kind-5 or
+/// kind-62 event is ever signed for an account the user did not confirm.
+class AccountChangedDuringDeletion implements Exception {
+  const AccountChangedDuringDeletion();
+
+  @override
+  String toString() => 'AccountChangedDuringDeletion';
+}
+
 /// Service for deleting user's entire Nostr account via NIP-62
 class AccountDeletionService {
   AccountDeletionService({
@@ -46,12 +55,24 @@ class AccountDeletionService {
   final NostrClient _nostrService;
   final AuthService _authService;
 
+  /// Aborts (via [AccountChangedDuringDeletion]) if [expectedPubkey] is set and
+  /// no longer matches the live signer. Called immediately before every
+  /// destructive sign/publish so a mid-flight account switch can't delete a
+  /// different account's content.
+  void _assertSignerMatches(String? expectedPubkey) {
+    if (expectedPubkey != null &&
+        _authService.currentPublicKeyHex != expectedPubkey) {
+      throw const AccountChangedDuringDeletion();
+    }
+  }
+
   /// Delete user's account using NIP-62 Request to Vanish
   /// First fetches all user events and publishes kind 5 deletion requests for each
   /// Then publishes kind 62 account deletion request
   Future<DeleteAccountResult> deleteAccount({
     String? customReason,
     void Function(int current, int total)? onProgress,
+    String? expectedPubkey,
   }) async {
     try {
       if (!_authService.isAuthenticated) {
@@ -61,6 +82,11 @@ class AccountDeletionService {
       final pubkey = _authService.currentPublicKeyHex;
       if (pubkey == null || pubkey.isEmpty) {
         return DeleteAccountResult.failure('No pubkey available');
+      }
+      if (expectedPubkey != null && pubkey != expectedPubkey) {
+        return DeleteAccountResult.failure(
+          'Signed-in account changed; deletion aborted',
+        );
       }
 
       final reason =
@@ -85,6 +111,7 @@ class AccountDeletionService {
         deletedCount = await _publishDeletionEventsForAll(
           allUserEvents,
           reason,
+          expectedPubkey: expectedPubkey,
           onProgress: onProgress,
         );
 
@@ -95,12 +122,17 @@ class AccountDeletionService {
         );
       }
 
-      final event = await createNip62Event(reason: reason);
+      final event = await createNip62Event(
+        reason: reason,
+        expectedPubkey: expectedPubkey,
+      );
 
       if (event == null) {
         return DeleteAccountResult.failure('Failed to create deletion event');
       }
 
+      // Final guard immediately before the network-wide kind-62 publish.
+      _assertSignerMatches(expectedPubkey);
       final sentEvent = await _nostrService.publishEvent(event);
 
       final failureReason = sentEvent.failureReason;
@@ -124,6 +156,15 @@ class AccountDeletionService {
       return DeleteAccountResult.createSuccess(
         event.id,
         deletedEventsCount: deletedCount,
+      );
+    } on AccountChangedDuringDeletion {
+      Log.warning(
+        'Deletion aborted: signed-in account changed mid-flight',
+        name: 'AccountDeletionService',
+        category: LogCategory.auth,
+      );
+      return DeleteAccountResult.failure(
+        'Signed-in account changed; deletion aborted',
       );
     } catch (e) {
       Log.error(
@@ -165,6 +206,7 @@ class AccountDeletionService {
   Future<int> _publishDeletionEventsForAll(
     List<Event> events,
     String reason, {
+    String? expectedPubkey,
     void Function(int current, int total)? onProgress,
   }) async {
     int successCount = 0;
@@ -183,6 +225,7 @@ class AccountDeletionService {
         events: kindEvents,
         kind: kind,
         reason: reason,
+        expectedPubkey: expectedPubkey,
       );
 
       if (deleteEvent != null) {
@@ -214,6 +257,7 @@ class AccountDeletionService {
     required List<Event> events,
     required int kind,
     required String reason,
+    String? expectedPubkey,
   }) async {
     try {
       if (!_authService.isAuthenticated) {
@@ -228,6 +272,8 @@ class AccountDeletionService {
 
       tags.add(['k', kind.toString()]);
 
+      // Immediately before signing the kind-5 deletion for this account.
+      _assertSignerMatches(expectedPubkey);
       final signedEvent = await _authService.createAndSignEvent(
         kind: 5,
         content: reason,
@@ -235,6 +281,8 @@ class AccountDeletionService {
       );
 
       return signedEvent;
+    } on AccountChangedDuringDeletion {
+      rethrow;
     } catch (e) {
       Log.error(
         'Failed to create batch delete event: $e',
@@ -246,7 +294,10 @@ class AccountDeletionService {
   }
 
   /// Create NIP-62 kind 62 event with ALL_RELAYS tag
-  Future<Event?> createNip62Event({required String reason}) async {
+  Future<Event?> createNip62Event({
+    required String reason,
+    String? expectedPubkey,
+  }) async {
     try {
       if (!_authService.isAuthenticated) {
         Log.error(
@@ -278,6 +329,8 @@ class AccountDeletionService {
         category: LogCategory.system,
       );
 
+      // Immediately before signing the network-wide kind-62 vanish.
+      _assertSignerMatches(expectedPubkey);
       // Create and sign event via AuthService
       final signedEvent = await _authService.createAndSignEvent(
         kind: 62, // NIP-62 account deletion kind
@@ -301,6 +354,8 @@ class AccountDeletionService {
       );
 
       return signedEvent;
+    } on AccountChangedDuringDeletion {
+      rethrow;
     } catch (e, stackTrace) {
       Log.error(
         'Failed to create NIP-62 event: $e\nStack trace: $stackTrace',

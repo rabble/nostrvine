@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart'
@@ -185,7 +186,7 @@ class _DeleteAllContentDialogState extends State<_DeleteAllContentDialog> {
             c.isUsernameConfirmation
                 ? context.l10n.deleteAccountConfirmUsernamePrompt
                 : context.l10n.deleteAccountConfirmDeletePrompt,
-            style: const TextStyle(color: VineTheme.whiteText, fontSize: 16),
+            style: VineTheme.bodyLargeFont(),
           ),
           const SizedBox(height: 8),
           Text(
@@ -459,6 +460,17 @@ Future<void> executeAccountDeletion({
     }
   }
 
+  // Speak each delete outcome so screen-reader users hear the result the
+  // snackbar shows visually. Mirrors the snackbar text at every outcome site.
+  void announceOutcome(String message) {
+    if (!context.mounted) return;
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      message,
+      Directionality.of(context),
+    );
+  }
+
   // Captured before the first await so the post-sign-out catch can localize
   // without reading BuildContext across an async gap.
   final keyDeletionWarningText = context.l10n.deleteAccountKeyDeletionWarning;
@@ -494,6 +506,7 @@ Future<void> executeAccountDeletion({
         ScaffoldMessenger.of(context).showSnackBar(
           DivineSnackbarContainer.snackBar(accountChangedText, error: true),
         );
+        announceOutcome(accountChangedText);
       }
       return;
     }
@@ -550,6 +563,7 @@ Future<void> executeAccountDeletion({
           ScaffoldMessenger.of(context).showSnackBar(
             DivineSnackbarContainer.snackBar(message, error: true),
           );
+          announceOutcome(message);
         }
         return;
       }
@@ -558,6 +572,7 @@ Future<void> executeAccountDeletion({
     // Publish the NIP-62 deletion request (requires working signer).
     final result = await deletionService.deleteAccount(
       onProgress: cubit.updateProgress,
+      expectedPubkey: confirmedPubkey,
     );
 
     if (result.success) {
@@ -581,6 +596,7 @@ Future<void> executeAccountDeletion({
           ScaffoldMessenger.of(context).showSnackBar(
             DivineSnackbarContainer.snackBar(text, error: true),
           );
+          announceOutcome(text);
         }
         return;
       }
@@ -634,6 +650,7 @@ Future<void> executeAccountDeletion({
                 keyDeletionWarning != null || localDataDeletionFailure != null,
           ),
         );
+        announceOutcome(snackbarText);
       }
     } else {
       // Content deletion (NIP-62) failed.
@@ -652,6 +669,7 @@ Future<void> executeAccountDeletion({
         ScaffoldMessenger.of(context).showSnackBar(
           DivineSnackbarContainer.snackBar(text, error: true),
         );
+        announceOutcome(text);
       }
     }
   } finally {
