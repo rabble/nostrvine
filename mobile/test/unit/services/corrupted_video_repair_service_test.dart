@@ -269,6 +269,13 @@ void main() {
 
         expect(result, equals(0));
         expect(publishedEvents, isEmpty);
+        expect(
+          prefs.getBool('corrupted_video_repair_v1_completed'),
+          isNull,
+          reason:
+              'A pre-restore unauthenticated run must not mark the one-time '
+              'repair complete; it has to retry once an identity is available.',
+        );
       });
 
       test('skips when no public key available', () async {
@@ -278,6 +285,13 @@ void main() {
 
         expect(result, equals(0));
         expect(publishedEvents, isEmpty);
+        expect(
+          prefs.getBool('corrupted_video_repair_v1_completed'),
+          isNull,
+          reason:
+              'A run without a restored Nostr pubkey must not mark the '
+              'one-time repair complete.',
+        );
       });
 
       test('handles signing failure gracefully', () async {

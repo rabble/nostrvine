@@ -761,6 +761,186 @@ void main() {
     });
 
     test(
+      'same-pubkey RPC-upgrade nudge after a successful restore is deduped '
+      '(no spurious NostrClient rebuild) — #5909',
+      () async {
+        // Reproduces the production Divine-OAuth cold-start sequence that
+        // issue #5909 flags. On every production launch NostrService.build()
+        // runs BEFORE AuthService restores the identity (Case B: the
+        // corrupted-video-repair microtask forces the provider ahead of the
+        // MethodChannel-gated key-storage restore), so build() sees a null
+        // identity and creates a placeholder client. The `authenticated`
+        // restore then recreates the client once (placeholder -> real) and,
+        // on success, records _lastPubkey. The RPC-upgrade path later re-emits
+        // the SAME auth state unconditionally (auth_service.dart:733) once the
+        // background Keycast refresh resolves; because it is serialized behind
+        // the restore on _authStateChangeQueue and carries the same pubkey, it
+        // must be deduped — NOT trigger a second full client rebuild.
+        //
+        // Guards the WAI conclusion of #5909: if the queue serialization or
+        // the `newPubkey != _lastPubkey` dedup ever regressed, this nudge
+        // would rebuild the whole client mid-startup and this test would fail
+        // (callCount 3 instead of 2).
+
+        // Case B: currentIdentity is null at build() (baseline from setUp).
+        final container = createContainer();
+        addTearDown(container.dispose);
+
+        container.read(nostrServiceProvider);
+        await Future<void>.delayed(Duration.zero);
+        expect(
+          factory.callCount,
+          equals(1),
+          reason:
+              'build() creates the placeholder client before restore (Case B).',
+        );
+        expect(factory.signers.single, isNull);
+
+        // Identity restore: the authenticated emission carries the real
+        // identity, recreating the placeholder into a real client exactly once.
+        when(() => mockAuth.currentIdentity).thenReturn(identityA);
+        when(() => mockAuth.currentPublicKeyHex).thenReturn(pubkeyA);
+        authStream.add(AuthState.authenticated);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          factory.callCount,
+          equals(2),
+          reason:
+              'the authenticated restore recreates once (placeholder -> real).',
+        );
+        expect(factory.signers.last, same(identityA));
+        expect(
+          container.read(nostrSessionProvider).phase,
+          equals(NostrSessionPhase.nostrReady),
+          reason:
+              'the successful restore init records _lastPubkey and marks ready.',
+        );
+
+        // RPC-upgrade nudge: same pubkey re-emitted after the background
+        // Keycast upgrade resolves (auth_service.dart:733, unconditional add).
+        authStream.add(AuthState.authenticated);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          factory.callCount,
+          equals(2),
+          reason:
+              'a same-pubkey RPC-upgrade nudge must be deduped '
+              '(newPubkey == _lastPubkey) — no spurious NostrClient rebuild '
+              'during startup (#5909).',
+        );
+        expect(
+          container.read(nostrServiceProvider),
+          same(factory.clients.last),
+          reason: 'the client identity is unchanged by the deduped nudge.',
+        );
+      },
+    );
+
+    test(
+      'does not rebuild the connecting client when a same-pubkey nudge '
+      'arrives while the build-path init is still in flight (#5909)',
+      () async {
+        // Case A hardening: if NostrService.build() runs AFTER the identity is
+        // restored (e.g. a future change removes the incidental pre-restore
+        // read that currently forces build() early), the build-path init is in
+        // flight for the real pubkey with _lastPubkey still null. Without the
+        // in-flight-target guard, the same-pubkey RPC-upgrade nudge
+        // (auth_service.dart:733) would satisfy `newPubkey != _lastPubkey` and
+        // tear down the connecting client to rebuild an identical one. This
+        // test FAILS on pre-fix code (callCount 2) and passes with the
+        // _pendingPubkey guard (callCount 1).
+        final gate = Completer<void>();
+        factory.initializeCompleters[pubkeyA] = gate;
+        when(() => mockAuth.currentIdentity).thenReturn(identityA);
+        when(() => mockAuth.currentPublicKeyHex).thenReturn(pubkeyA);
+
+        final container = createContainer();
+        addTearDown(container.dispose);
+
+        container.read(nostrServiceProvider);
+        await Future<void>.delayed(Duration.zero);
+        expect(
+          factory.callCount,
+          equals(1),
+          reason: 'build() creates one client for the known identity (Case A).',
+        );
+        expect(
+          factory.initializePubkeys,
+          contains(pubkeyA),
+          reason: 'the build-path init is parked in flight (_lastPubkey null).',
+        );
+
+        // RPC-upgrade nudge: same pubkey re-emitted while relay connect is
+        // still running.
+        authStream.add(AuthState.authenticated);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          factory.callCount,
+          equals(1),
+          reason:
+              'a same-pubkey nudge during the in-flight init must NOT tear '
+              'down and rebuild the connecting client (#5909).',
+        );
+
+        // Completing the gated init lets the ORIGINAL client reach ready.
+        gate.complete();
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        expect(factory.callCount, equals(1));
+        expect(
+          container.read(nostrSessionProvider).phase,
+          equals(NostrSessionPhase.nostrReady),
+        );
+        expect(container.read(nostrSessionProvider).pubkey, equals(pubkeyA));
+      },
+    );
+
+    test(
+      'still recreates for a DIFFERENT pubkey that arrives while the '
+      'build-path init is in flight (#5909 suppression is pubkey-scoped)',
+      () async {
+        final gate = Completer<void>();
+        factory.initializeCompleters[pubkeyA] = gate;
+        when(() => mockAuth.currentIdentity).thenReturn(identityA);
+        when(() => mockAuth.currentPublicKeyHex).thenReturn(pubkeyA);
+
+        final container = createContainer();
+        addTearDown(container.dispose);
+
+        container.read(nostrServiceProvider);
+        await Future<void>.delayed(Duration.zero);
+        expect(factory.callCount, equals(1));
+
+        // A genuine account switch to B while A's build init is in flight must
+        // still recreate — the in-flight guard is scoped to the SAME pubkey.
+        when(() => mockAuth.currentIdentity).thenReturn(identityB);
+        when(() => mockAuth.currentPublicKeyHex).thenReturn(pubkeyB);
+        authStream.add(AuthState.authenticated);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          factory.callCount,
+          equals(2),
+          reason:
+              'a different-pubkey emission must recreate even mid-init — the '
+              '#5909 suppression is pubkey-scoped, not blanket.',
+        );
+        expect(factory.signers.last, same(identityB));
+
+        // Drain the abandoned A init cleanly.
+        gate.complete();
+        await Future<void>.delayed(Duration.zero);
+      },
+    );
+
+    test(
       'failed initial build retries automatically for same identity',
       () async {
         final failedInitialAInitialize = Completer<void>();

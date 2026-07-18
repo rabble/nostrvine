@@ -200,6 +200,16 @@ class NostrService extends _$NostrService {
   StreamSubscription<AuthState>? _authSubscription;
   Timer? _initializationRetryTimer;
   String? _lastPubkey;
+
+  /// Pubkey the current client was created to serve, recorded at creation
+  /// time (before its initialization completes). Unlike [_lastPubkey] — which
+  /// is only set once an init *succeeds* — this tracks the in-flight target so
+  /// a same-pubkey auth re-emission (e.g. the Divine RPC-upgrade nudge) that
+  /// lands while the client is still connecting relays is recognised as
+  /// already-served and does not tear the connecting client down to rebuild an
+  /// identical one (#5909). Cleared on init failure so failure-recovery
+  /// re-emissions still recreate.
+  String? _pendingPubkey;
   Future<void> _authStateChangeQueue = Future<void>.value();
   int _clientGeneration = 0;
   int _initializationFailureCount = 0;
@@ -245,6 +255,7 @@ class NostrService extends _$NostrService {
     // once the user authenticates.
     final client = _createClient(authService.currentIdentity);
     final clientGeneration = _nextClientGeneration();
+    _pendingPubkey = initialPubkey;
 
     // NIP-65 discovered-relays callback — see _userRelaysDiscoveredCallbackFor.
     _registerClientCallbacks(
@@ -366,6 +377,11 @@ class NostrService extends _$NostrService {
       if (_lastPubkey == pubkey) {
         _lastPubkey = null;
       }
+      // Init settled (failed) for this in-flight target, so a later
+      // same-pubkey re-emission must be free to recreate for recovery.
+      if (_pendingPubkey == pubkey) {
+        _pendingPubkey = null;
+      }
       _setSessionIdentityState(pubkey);
       _scheduleInitializationRetry(pubkey);
     } finally {
@@ -467,6 +483,7 @@ class NostrService extends _$NostrService {
         .toList();
     final client = _createClient(identity);
     final clientGeneration = _nextClientGeneration();
+    _pendingPubkey = pubkey;
     NostrInitializationInProgress? initialization;
     try {
       final initializationTracker = ref.read(
@@ -517,6 +534,9 @@ class NostrService extends _$NostrService {
       if (_lastPubkey == pubkey) {
         _lastPubkey = null;
       }
+      if (_pendingPubkey == pubkey) {
+        _pendingPubkey = null;
+      }
       _setSessionIdentityState(pubkey);
       _scheduleInitializationRetry(pubkey);
     } finally {
@@ -566,8 +586,18 @@ class NostrService extends _$NostrService {
     final newPubkey = newIdentity?.pubkey;
 
     final activeClientPubkey = state.hasKeys ? state.publicKey : null;
-    if (newPubkey != _lastPubkey ||
-        (newPubkey == null && activeClientPubkey != null)) {
+    // #5909: a client for newPubkey may already be in flight (created but not
+    // yet initialized — _lastPubkey is only set on success). A same-pubkey
+    // re-emission (the Divine RPC-upgrade nudge landing during startup relay
+    // connect) must not tear that connecting client down to rebuild an
+    // identical one. Recreate only when the current/in-flight client is NOT
+    // already serving newPubkey. Cleared-on-failure semantics keep recovery
+    // re-emissions (see the failure path) free to recreate.
+    final alreadyServingNewPubkey =
+        newPubkey != null && newPubkey == _pendingPubkey;
+    if (!alreadyServingNewPubkey &&
+        (newPubkey != _lastPubkey ||
+            (newPubkey == null && activeClientPubkey != null))) {
       _invalidateClientGeneration();
       Log.info(
         '[NostrService] Public key changed from $_lastPubkey to $newPubkey, '
@@ -601,6 +631,7 @@ class NostrService extends _$NostrService {
 
       final newClient = _createClient(newIdentity);
       final clientGeneration = _nextClientGeneration();
+      _pendingPubkey = newPubkey;
 
       // NIP-65 discovered-relays callback — see _userRelaysDiscoveredCallbackFor.
       _registerClientCallbacks(
