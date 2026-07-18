@@ -37,6 +37,7 @@ import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/blocs/locale/locale_cubit.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
+import 'package:openvine/bootstrap/font_licenses.dart';
 import 'package:openvine/config/app_config.dart';
 import 'package:openvine/config/zendesk_config.dart';
 import 'package:openvine/constants/app_constants.dart';
@@ -982,6 +983,10 @@ Future<void> _startOpenVineApp() async {
 
   // Ensure bindings are initialized first (required for everything)
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+
+  // Register bundled OFL font licenses so they surface on the in-app
+  // Open Source Licenses page (Settings → Legal). See #3659.
+  registerBundledFontLicenses();
 
   // Give the in-memory image cache a larger byte budget than Flutter's 100 MB
   // default so thumbnails survive fast scrolling instead of being evicted and

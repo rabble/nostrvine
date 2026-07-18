@@ -392,7 +392,7 @@ flutter:
     - assets/categories/
     - assets/top_1000_hashtags.json
     - assets/fonts/
-    - google_fonts/
+    - assets/licenses/
     - assets/icon/
     - assets/loading-brand.gif
     - assets/loading-brand-sprite.png

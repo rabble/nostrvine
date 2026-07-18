@@ -27,14 +27,10 @@ void main() {
 const _fontPaths = <String>[
   'assets/fonts/BricolageGrotesque-Bold.ttf',
   'assets/fonts/BricolageGrotesque-ExtraBold.ttf',
+  'assets/fonts/ChivoMono-Light.ttf',
   'assets/fonts/Inter-Regular.ttf',
   'assets/fonts/Inter-SemiBold.ttf',
   'assets/fonts/Pacifico-Regular.ttf',
-  'google_fonts/BricolageGrotesque-Bold.ttf',
-  'google_fonts/BricolageGrotesque-ExtraBold.ttf',
-  'google_fonts/Inter-Medium.ttf',
-  'google_fonts/Inter-Regular.ttf',
-  'google_fonts/Inter-SemiBold.ttf',
 ];
 
 bool _hasKnownFontSignature(List<int> bytes) {
