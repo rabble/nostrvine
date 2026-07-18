@@ -268,7 +268,7 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "0.0.3"
+      ref: "847d0c0183c9c09946ce321c107decd3fd9f56b2"
       resolved-ref: "847d0c0183c9c09946ce321c107decd3fd9f56b2"
       url: "https://github.com/guardianproject/c2pa-flutter.git"
     source: git
@@ -1438,11 +1438,10 @@ packages:
   media_kit_video:
     dependency: transitive
     description:
-      path: media_kit_video
-      ref: "6b718491261e40ddebf1fe9b880b3d5d30205ee0"
-      resolved-ref: "6b718491261e40ddebf1fe9b880b3d5d30205ee0"
-      url: "https://github.com/divinevideo/media-kit"
-    source: git
+      name: media_kit_video
+      sha256: afaa509e7b7e0bf247557a3a740cde903a52c34ace9810f94500e127bd7b043d
+      url: "https://pub.dev"
+    source: hosted
     version: "2.0.1"
   melos:
     dependency: "direct dev"
