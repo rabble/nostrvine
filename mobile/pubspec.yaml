@@ -131,10 +131,17 @@ dependencies:
   record: ^7.1.0 # Microphone capture for voice-over recording
 
   # Camera and media
+  # c2pa_flutter is intentionally git-pinned: the guardianproject plugin Divine
+  # uses is not published on pub.dev. (pub.dev's same-named package is an
+  # unrelated third-party FFI rewrite — different author, c2pa-rs 0.75.x, no
+  # RemoteSigner.) Pinned by immutable commit (tag 0.0.3) so a moved tag cannot
+  # silently change the build.
+  # TODO(#6166): revert to a pub/version dep if guardianproject publishes
+  # c2pa_flutter to pub.dev.
   c2pa_flutter:
     git:
       url: https://github.com/guardianproject/c2pa-flutter.git
-      ref: 0.0.3
+      ref: 847d0c0183c9c09946ce321c107decd3fd9f56b2 # tag 0.0.3
   divine_camera:
     path: packages/divine_camera
   divine_quick_actions:
