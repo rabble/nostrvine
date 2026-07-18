@@ -33,6 +33,7 @@ import 'package:openvine/widgets/divine_video_metrics_tracker.dart';
 import 'package:openvine/widgets/video_feed_item/blurred_video_backdrop.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
+import 'package:openvine/widgets/video_feed_item/double_tap_like_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/live_engagement_counts.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/paused_video_overlay.dart';
@@ -512,20 +513,32 @@ class __OverlayState extends ConsumerState<_Overlay> {
     super.dispose();
   }
 
-  void _handleDoubleTapLike(BuildContext context, TapDownDetails details) {
-    final showWarning = shouldShowContentWarningOverlay(
-      contentWarningLabels: widget.video.contentWarningLabels,
-      warnLabels: widget.video.warnLabels,
-    );
-    if (showWarning && !widget.contentWarningRevealed) return;
+  void _handleDoubleTapLike(
+    BuildContext context,
+    TapDownDetails details, {
+    required bool isOwnVideo,
+  }) {
+    final contentWarningBlocking =
+        shouldShowContentWarningOverlay(
+          contentWarningLabels: widget.video.contentWarningLabels,
+          warnLabels: widget.video.warnLabels,
+        ) &&
+        !widget.contentWarningRevealed;
 
     final bloc = context.read<VideoInteractionsBloc>();
-    final state = bloc.state;
-    if (!state.isLiked) {
+    final action = resolveDoubleTapLikeAction(
+      isOwnVideo: isOwnVideo,
+      contentWarningBlocking: contentWarningBlocking,
+      alreadyLiked: bloc.state.isLiked,
+    );
+
+    if (action == DoubleTapLikeAction.ignore) return;
+
+    if (action == DoubleTapLikeAction.likeAndAnimate) {
       bloc.add(const VideoInteractionsLikeToggled());
     }
 
-    // Always show heart animation at tap position (even if already liked)
+    // Show heart animation at tap position (also when already liked).
     _heartTrigger.value = (
       offset: details.localPosition,
       id: ++_heartTriggerId,
@@ -716,12 +729,16 @@ class __OverlayState extends ConsumerState<_Overlay> {
                 return Semantics(
                   button: true,
                   label: context.l10n.videoPlayerPlayVideo,
-                  hint: context.l10n.videoPlayerTapHint,
+                  hint: isOwnVideo ? null : context.l10n.videoPlayerTapHint,
                   child: GestureDetector(
                     behavior: .translucent,
                     onTap: interactiveReady ? _handlePlayerTap : null,
                     onDoubleTapDown: interactiveReady
-                        ? (details) => _handleDoubleTapLike(context, details)
+                        ? (details) => _handleDoubleTapLike(
+                            context,
+                            details,
+                            isOwnVideo: isOwnVideo,
+                          )
                         : null,
                     child: Stack(
                       children: [
