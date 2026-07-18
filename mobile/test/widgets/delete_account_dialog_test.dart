@@ -1029,6 +1029,56 @@ void main() {
       );
     });
 
+    testWidgets(
+      'localizes the account-changed outcome when the service reports it',
+      (tester) async {
+        final deletionService = _MockAccountDeletionService();
+        final authService = _MockAuthService();
+        // UI pre-check passes (signer still matches), but the service reports a
+        // mid-flight switch — the UI must localize, not surface the raw string.
+        when(() => authService.currentPublicKeyHex).thenReturn(_pubkeyHex);
+        when(
+          () => deletionService.deleteAccount(
+            onProgress: any(named: 'onProgress'),
+            expectedPubkey: any(named: 'expectedPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => DeleteAccountResult.failure(
+            'Signed-in account changed; deletion aborted',
+            accountChanged: true,
+          ),
+        );
+
+        late BuildContext capturedContext;
+        await tester.pumpWidget(
+          _wrapWithRouter(
+            Builder(
+              builder: (context) {
+                capturedContext = context;
+                return const Scaffold(body: SizedBox.shrink());
+              },
+            ),
+          ),
+        );
+
+        await executeAccountDeletion(
+          context: capturedContext,
+          deletionService: deletionService,
+          authService: authService,
+          confirmedPubkey: _pubkeyHex,
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.deleteAccountAccountChanged), findsOneWidget);
+        // The raw service string must never reach the user.
+        expect(
+          find.text('Signed-in account changed; deletion aborted'),
+          findsNothing,
+        );
+      },
+    );
+
     testWidgets('proceeds when confirmedPubkey matches the current account', (
       tester,
     ) async {

@@ -743,6 +743,32 @@ void main() {
 
           expect(result.success, isFalse);
           expect(result.error, contains('account changed'));
+          expect(result.accountChanged, isTrue);
+          verifyNever(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'aborts at entry when expectedPubkey already differs from the signer',
+        () async {
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn('a_different_pubkey_than_confirmed');
+
+          final result = await service.deleteAccount(
+            expectedPubkey: testPublicKey,
+          );
+
+          expect(result.success, isFalse);
+          expect(result.accountChanged, isTrue);
+          // Bailed before fetching or signing anything.
+          verifyNever(() => mockNostrService.queryEvents(any()));
           verifyNever(
             () => mockAuthService.createAndSignEvent(
               kind: any(named: 'kind'),

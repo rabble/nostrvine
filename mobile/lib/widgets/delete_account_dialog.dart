@@ -665,6 +665,8 @@ Future<void> executeAccountDeletion({
       if (context.mounted) {
         final text = (burnCommitted && burnReleasedText != null)
             ? burnReleasedText
+            : result.accountChanged
+            ? accountChangedText
             : (result.error ?? context.l10n.deleteAccountContentDeletionFailed);
         ScaffoldMessenger.of(context).showSnackBar(
           DivineSnackbarContainer.snackBar(text, error: true),

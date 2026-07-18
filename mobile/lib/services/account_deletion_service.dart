@@ -15,12 +15,18 @@ class DeleteAccountResult {
     this.error,
     this.deleteEventId,
     this.deletedEventsCount = 0,
+    this.accountChanged = false,
   });
 
   final bool success;
   final String? error;
   final String? deleteEventId;
   final int deletedEventsCount;
+
+  /// True when the deletion aborted because the signed-in account no longer
+  /// matches the account the user confirmed. Lets the UI localize the outcome
+  /// rather than surfacing the raw abort string.
+  final bool accountChanged;
 
   static DeleteAccountResult createSuccess(
     String deleteEventId, {
@@ -31,8 +37,14 @@ class DeleteAccountResult {
     deletedEventsCount: deletedEventsCount,
   );
 
-  static DeleteAccountResult failure(String error) =>
-      DeleteAccountResult(success: false, error: error);
+  static DeleteAccountResult failure(
+    String error, {
+    bool accountChanged = false,
+  }) => DeleteAccountResult(
+    success: false,
+    error: error,
+    accountChanged: accountChanged,
+  );
 }
 
 /// Thrown when the signed-in account changes mid-deletion, so no kind-5 or
@@ -86,6 +98,7 @@ class AccountDeletionService {
       if (expectedPubkey != null && pubkey != expectedPubkey) {
         return DeleteAccountResult.failure(
           'Signed-in account changed; deletion aborted',
+          accountChanged: true,
         );
       }
 
@@ -165,6 +178,7 @@ class AccountDeletionService {
       );
       return DeleteAccountResult.failure(
         'Signed-in account changed; deletion aborted',
+        accountChanged: true,
       );
     } catch (e) {
       Log.error(
