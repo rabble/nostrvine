@@ -12,7 +12,7 @@ void main() {
       () async {
         final entries = await bundledFontLicenseEntries(rootBundle).toList();
 
-        expect(entries, hasLength(3));
+        expect(entries, hasLength(4));
 
         final textByFamily = <String, String>{
           for (final entry in entries)
@@ -23,7 +23,12 @@ void main() {
 
         expect(
           textByFamily.keys,
-          containsAll(<String>['Inter', 'Bricolage Grotesque', 'Pacifico']),
+          containsAll(<String>[
+            'Inter',
+            'Bricolage Grotesque',
+            'Pacifico',
+            'Chivo Mono',
+          ]),
         );
 
         // Copyright year matches the copyright embedded in the shipped .ttf
@@ -49,6 +54,13 @@ void main() {
             contains('SIL Open Font License, Version 1.1'),
           ),
         );
+        expect(
+          textByFamily['Chivo Mono'],
+          allOf(
+            contains('Copyright 2018 The Chivo Project Authors'),
+            contains('SIL Open Font License, Version 1.1'),
+          ),
+        );
       },
     );
   });
@@ -67,7 +79,12 @@ void main() {
 
       expect(
         registeredPackages,
-        containsAll(<String>['Inter', 'Bricolage Grotesque', 'Pacifico']),
+        containsAll(<String>[
+          'Inter',
+          'Bricolage Grotesque',
+          'Pacifico',
+          'Chivo Mono',
+        ]),
       );
     });
   });

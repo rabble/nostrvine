@@ -18,6 +18,9 @@ const _bundledFontLicenses = <_BundledFontLicense>[
     assetPath: 'assets/licenses/BricolageGrotesque-OFL.txt',
   ),
   (family: 'Pacifico', assetPath: 'assets/licenses/Pacifico-OFL.txt'),
+  // Rendered via GoogleFonts.chivoMono (VineTheme.captionPillFont / codeFont);
+  // bundled as assets/fonts/ChivoMono-Light.ttf, so its license ships too.
+  (family: 'Chivo Mono', assetPath: 'assets/licenses/ChivoMono-OFL.txt'),
 ];
 
 /// Yields one [LicenseEntry] per bundled OFL font so [showLicensePage]

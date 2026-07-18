@@ -27,6 +27,7 @@ void main() {
 const _fontPaths = <String>[
   'assets/fonts/BricolageGrotesque-Bold.ttf',
   'assets/fonts/BricolageGrotesque-ExtraBold.ttf',
+  'assets/fonts/ChivoMono-Light.ttf',
   'assets/fonts/Inter-Regular.ttf',
   'assets/fonts/Inter-SemiBold.ttf',
   'assets/fonts/Pacifico-Regular.ttf',
