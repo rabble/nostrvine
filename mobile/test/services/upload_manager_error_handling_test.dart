@@ -800,7 +800,7 @@ void main() {
       } catch (_) {}
     });
 
-    /// Stubs [mock] so that [uploadVideo] fails [failCount] times before
+    /// Stubs [mock] so that [uploadVideoWithResume] fails [failCount] times before
     /// succeeding. The success result includes a server thumbnail URL so these
     /// retry-counter tests do not depend on thumbnail extraction from fake
     /// video bytes.
@@ -820,13 +820,16 @@ void main() {
 
       var calls = 0;
       when(
-        () => mock.uploadVideo(
+        () => mock.uploadVideoWithResume(
           videoFile: any(named: 'videoFile'),
           nostrPubkey: any(named: 'nostrPubkey'),
+          taskId: any(named: 'taskId'),
           title: any(named: 'title'),
           description: any(named: 'description'),
           hashtags: any(named: 'hashtags'),
           proofManifestJson: any(named: 'proofManifestJson'),
+          useBackgroundFirst: any(named: 'useBackgroundFirst'),
+          resumableTimeout: any(named: 'resumableTimeout'),
           resumableSession: any(named: 'resumableSession'),
           onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
           onProgress: any(named: 'onProgress'),
@@ -859,16 +862,19 @@ void main() {
         // Fail once then succeed so we observe exactly two status snapshots.
         stubUploadSequence(retryMockBlossom, failCount: 1);
 
-        // Replace the uploadVideo stub with one that also captures status.
+        // Replace the uploadVideoWithResume stub with one that also captures status.
         var calls = 0;
         when(
-          () => retryMockBlossom.uploadVideo(
+          () => retryMockBlossom.uploadVideoWithResume(
             videoFile: any(named: 'videoFile'),
             nostrPubkey: any(named: 'nostrPubkey'),
+            taskId: any(named: 'taskId'),
             title: any(named: 'title'),
             description: any(named: 'description'),
             hashtags: any(named: 'hashtags'),
             proofManifestJson: any(named: 'proofManifestJson'),
+            useBackgroundFirst: any(named: 'useBackgroundFirst'),
+            resumableTimeout: any(named: 'resumableTimeout'),
             resumableSession: any(named: 'resumableSession'),
             onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
             onProgress: any(named: 'onProgress'),
@@ -946,13 +952,16 @@ void main() {
         // Verify retryUpload() actually re-activates the upload and does not
         // hard-return due to canRetry being false.
         when(
-          () => retryMockBlossom.uploadVideo(
+          () => retryMockBlossom.uploadVideoWithResume(
             videoFile: any(named: 'videoFile'),
             nostrPubkey: any(named: 'nostrPubkey'),
+            taskId: any(named: 'taskId'),
             title: any(named: 'title'),
             description: any(named: 'description'),
             hashtags: any(named: 'hashtags'),
             proofManifestJson: any(named: 'proofManifestJson'),
+            useBackgroundFirst: any(named: 'useBackgroundFirst'),
+            resumableTimeout: any(named: 'resumableTimeout'),
             resumableSession: any(named: 'resumableSession'),
             onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
             onProgress: any(named: 'onProgress'),
@@ -998,13 +1007,16 @@ void main() {
           ),
         ).thenAnswer((_) async => const BlossomUploadResult(success: false));
         when(
-          () => retryMockBlossom.uploadVideo(
+          () => retryMockBlossom.uploadVideoWithResume(
             videoFile: any(named: 'videoFile'),
             nostrPubkey: any(named: 'nostrPubkey'),
+            taskId: any(named: 'taskId'),
             title: any(named: 'title'),
             description: any(named: 'description'),
             hashtags: any(named: 'hashtags'),
             proofManifestJson: any(named: 'proofManifestJson'),
+            useBackgroundFirst: any(named: 'useBackgroundFirst'),
+            resumableTimeout: any(named: 'resumableTimeout'),
             resumableSession: any(named: 'resumableSession'),
             onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
             onProgress: any(named: 'onProgress'),
@@ -1046,13 +1058,16 @@ void main() {
         await retryUploadManager.retryUpload(upload.id);
 
         verifyNever(
-          () => retryMockBlossom.uploadVideo(
+          () => retryMockBlossom.uploadVideoWithResume(
             videoFile: any(named: 'videoFile'),
             nostrPubkey: any(named: 'nostrPubkey'),
+            taskId: any(named: 'taskId'),
             title: any(named: 'title'),
             description: any(named: 'description'),
             hashtags: any(named: 'hashtags'),
             proofManifestJson: any(named: 'proofManifestJson'),
+            useBackgroundFirst: any(named: 'useBackgroundFirst'),
+            resumableTimeout: any(named: 'resumableTimeout'),
             resumableSession: any(named: 'resumableSession'),
             onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
             onProgress: any(named: 'onProgress'),

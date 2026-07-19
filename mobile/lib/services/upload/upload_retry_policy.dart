@@ -300,7 +300,10 @@ class UploadRetryPolicy {
           reason == BlossomUploadFailureReason.network) {
         return true;
       }
-      if (reason == BlossomUploadFailureReason.auth ||
+      // A user pause/cancel is a deliberate, terminal stop — never retry it,
+      // or the retry loop would re-upload the file the user just stopped.
+      if (reason == BlossomUploadFailureReason.cancelled ||
+          reason == BlossomUploadFailureReason.auth ||
           reason == BlossomUploadFailureReason.fileTooLarge) {
         return false;
       }

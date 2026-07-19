@@ -110,6 +110,13 @@ enum BlossomUploadFailureReason {
   /// "our servers are temporarily unavailable".
   server,
 
+  /// The user stopped the upload (pause / cancel) while it was in flight.
+  /// User-initiated and terminal: the caller must NOT retry or fall back to
+  /// another transport, and it is NOT reportable to Crashlytics. Distinct
+  /// from [unknown] so a deliberate stop is never mistaken for a transport
+  /// failure that warrants re-uploading the whole file.
+  cancelled,
+
   /// Anything else: unmapped 4xx, malformed responses, configuration
   /// errors, or unexpected exceptions. Caller falls back to a generic
   /// "upload failed" message.
@@ -2242,6 +2249,138 @@ class BlossomUploadService {
     await backgroundTransport?.cancel(taskId);
   }
 
+  /// Uploads [videoFile], combining the OS-backed whole-file transfer with
+  /// Divine resumable sessions so an interrupted publish never re-sends the
+  /// whole file.
+  ///
+  /// Sequencing:
+  /// - When [resumableSession] is `null` (a fresh publish), the OS-backed
+  ///   [uploadVideoInBackground] whole-file `PUT` is attempted first. It
+  ///   survives app suspension and is the fastest path on a healthy
+  ///   connection. If it succeeds, we are done.
+  /// - When that first attempt fails, *or* when [resumableSession] is already
+  ///   present (a prior attempt created a session), the request falls through
+  ///   to [uploadVideo], which runs the chunked resumable protocol:
+  ///   `POST /upload/init` → `HEAD {uploadUrl}` to recover the server's last
+  ///   committed `Upload-Offset` → upload only the remaining chunks →
+  ///   `POST /upload/{id}/complete`. Each committed chunk is reported via
+  ///   [onResumableSessionUpdated] so the caller can persist the offset; the
+  ///   next retry therefore resumes from the last committed byte instead of
+  ///   byte 0.
+  ///
+  /// [useBackgroundFirst] controls the OS-first attempt. Flip it to `false` to
+  /// skip the whole-file PUT and go straight to chunked resumable (the kill-
+  /// switch equivalent of the pre-combined `useBackgroundUpload` flag). When
+  /// `false`, or when no [backgroundTransport] is configured, this behaves
+  /// like [uploadVideo].
+  ///
+  /// [resumableTimeout] bounds only the in-process chunked-resumable leg (and
+  /// only when this method reaches it). It is deliberately NOT applied to the
+  /// OS-backed [uploadVideoInBackground] attempt, which legitimately survives
+  /// long app suspensions under its own generous internal timeout; cutting it
+  /// with an aggressive in-process timeout would defeat the suspension
+  /// survival that is the whole point of the OS path.
+  ///
+  /// The OS uploader is whole-file-only on both platforms, so byte-level
+  /// resume always happens through the in-process chunk path. The OS path is
+  /// only ever used for the first whole-file attempt of a fresh publish.
+  Future<BlossomUploadResult> uploadVideoWithResume({
+    required File videoFile,
+    required String nostrPubkey,
+    required String taskId,
+    required String title,
+    required String? proofManifestJson,
+    required String? description,
+    required List<String>? hashtags,
+    bool useBackgroundFirst = true,
+    Duration? resumableTimeout,
+    BlossomResumableUploadSession? resumableSession,
+    void Function(BlossomResumableUploadSession)? onResumableSessionUpdated,
+    void Function(double)? onProgress,
+  }) async {
+    // A prior attempt already created a session with committed chunks on the
+    // server. Re-running the whole-file OS PUT would discard that progress,
+    // so go straight to chunked resume via HEAD -> remaining chunks.
+    final hasSession = resumableSession != null;
+
+    if (useBackgroundFirst && !hasSession && backgroundTransport != null) {
+      Log.info(
+        'OS-first upload attempt for task $taskId '
+        '(no resumable session yet)',
+        name: 'BlossomUploadService',
+        category: LogCategory.video,
+      );
+      try {
+        final backgroundResult = await uploadVideoInBackground(
+          videoFile: videoFile,
+          taskId: taskId,
+          proofManifestJson: proofManifestJson,
+          onProgress: onProgress,
+        );
+        if (backgroundResult.success) {
+          return backgroundResult;
+        }
+        // A user pause/cancel tears down the OS transfer, which surfaces as a
+        // `cancelled` terminal event. That is a deliberate, terminal stop —
+        // falling through to runResumable() would re-upload the whole file
+        // from byte 0 and let a later success overwrite the paused/cancelled
+        // state (#6086). Only genuine transport failures fall through.
+        if (backgroundResult.failureReason ==
+            BlossomUploadFailureReason.cancelled) {
+          return backgroundResult;
+        }
+        Log.warning(
+          'OS-first upload failed '
+          '(${backgroundResult.failureReason}); '
+          'falling back to chunked resumable',
+          name: 'BlossomUploadService',
+          category: LogCategory.video,
+        );
+      } on Object catch (e) {
+        // uploadVideoInBackground normally returns failures rather than
+        // throwing, but guard against unexpected exceptions so the publish
+        // still gets a resumable retry rather than dying.
+        Log.warning(
+          'OS-first upload threw ($e); '
+          'falling back to chunked resumable',
+          name: 'BlossomUploadService',
+          category: LogCategory.video,
+        );
+      }
+
+      // The OS attempt failed (or threw) without being cancelled, so we are
+      // about to run the in-process resumable leg. The native transfer may
+      // still be live — e.g. the OS leg gave up on its own safety timeout
+      // while the OS keeps streaming — so cancel it first; otherwise both
+      // legs would upload the same file concurrently.
+      await cancelBackgroundUpload(taskId);
+    }
+
+    // Resumable path (also the only path when the OS attempt is disabled or
+    // unavailable). uploadVideo handles capability discovery, server
+    // iteration, and the init/HEAD/chunk/complete flow, threading the session
+    // callback through so each committed chunk is persisted by the caller.
+    //
+    // Only this in-process leg is bounded by resumableTimeout — the OS leg
+    // above already completed (success or failure) under its own timeout.
+    Future<BlossomUploadResult> runResumable() => uploadVideo(
+      videoFile: videoFile,
+      nostrPubkey: nostrPubkey,
+      title: title,
+      proofManifestJson: proofManifestJson,
+      description: description,
+      hashtags: hashtags,
+      resumableSession: resumableSession,
+      onResumableSessionUpdated: onResumableSessionUpdated,
+      onProgress: onProgress,
+    );
+
+    if (resumableTimeout == null) {
+      return runResumable();
+    }
+    return runResumable().timeout(resumableTimeout);
+  }
+
   /// Maps a terminal [BlossomBackgroundTransferEvent] to a
   /// [BlossomUploadResult].
   ///
@@ -2301,7 +2440,7 @@ class BlossomUploadService {
         return const BlossomUploadResult(
           success: false,
           errorMessage: 'Upload cancelled',
-          failureReason: BlossomUploadFailureReason.unknown,
+          failureReason: BlossomUploadFailureReason.cancelled,
         );
       case BlossomBackgroundTransferStatus.running:
       case BlossomBackgroundTransferStatus.failed:

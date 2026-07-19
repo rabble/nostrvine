@@ -154,10 +154,14 @@ class UploadManager implements BackgroundAwareService {
     );
   }
 
-  /// Routes the video transfer through the OS background uploader
-  /// ([BlossomUploadService.uploadVideoInBackground]) instead of the in-process
-  /// chunked/legacy path, so it survives app suspension. Requires the
-  /// blossom service to have been built with a background transport.
+  /// Attempts the OS background uploader
+  /// ([BlossomUploadService.uploadVideoInBackground]) *first* for a fresh
+  /// publish — it survives app suspension and is fastest on a healthy
+  /// connection — then falls back to the in-process chunked resumable path if
+  /// that OS attempt fails (a user cancel is treated as terminal and does NOT
+  /// fall back). Set to `false` to skip the OS attempt and go straight to the
+  /// in-process path. Requires the blossom service to have been built with a
+  /// background transport.
   final bool useBackgroundUpload;
 
   // Core services
@@ -864,6 +868,15 @@ class UploadManager implements BackgroundAwareService {
         onProgress,
       );
 
+      if (_userStoppedUploadIds.contains(upload.id)) {
+        Log.info(
+          'Upload ${upload.id} stopped by user; skipping success handling',
+          name: 'UploadManager',
+          category: LogCategory.video,
+        );
+        return;
+      }
+
       // Success - record metrics and complete
       await _handleUploadSuccess(currentUpload, result);
     }, isRetriable: _retryPolicy.isRetriableError);
@@ -941,66 +954,73 @@ class UploadManager implements BackgroundAwareService {
         onProgress?.call(progress);
       }
 
-      // Background uploads are a single OS-owned PUT that survives suspension.
-      // The OS keeps the transfer alive across app suspension, so it must not
-      // be cut off by the aggressive in-process network timeout;
-      // uploadVideoInBackground applies its own generous safety timeout and
-      // releases its event subscription internally. The in-process path keeps
-      // chunked-resumable behind networkTimeout.
-      final BlossomUploadResult result;
-      if (useBackgroundUpload) {
-        result = await _blossomService.uploadVideoInBackground(
+      // Combined upload path: a fresh publish attempts the OS-owned whole-file
+      // PUT first (it survives app suspension and is fastest on a healthy
+      // connection); on failure, or when a resumable session already exists
+      // from a prior attempt, the request falls through to the chunked
+      // resumable protocol so retries resume from the server's last committed
+      // offset instead of byte 0.
+      //
+      // The OS transfer applies its own generous safety timeout internally and
+      // must NOT be cut by the in-process network timeout — doing so would
+      // defeat the suspension survival that is the whole point of the OS path.
+      // Only the in-process chunked-resumable leg is bounded by networkTimeout
+      // (passed as resumableTimeout), so a stalled socket does not hang
+      // forever. `useBackgroundUpload` is the kill-switch for the OS-first
+      // attempt: flip it to false to go straight to chunked resumable.
+      BlossomUploadResult result;
+      try {
+        result = await _blossomService.uploadVideoWithResume(
           videoFile: videoFile,
+          nostrPubkey: upload.nostrPubkey,
           taskId: upload.id,
+          title: upload.title ?? '',
+          description: upload.description,
+          hashtags: upload.hashtags,
           proofManifestJson: upload.proofManifestJson,
+          useBackgroundFirst: useBackgroundUpload,
+          resumableTimeout: _retryConfig.networkTimeout,
+          resumableSession: upload.resumableSession,
+          onResumableSessionUpdated: (session) {
+            _retryPolicy.enqueueSessionPersist(
+              upload.id,
+              session,
+              videoFile.lengthSync(),
+            );
+          },
           onProgress: reportProgress,
         );
-      } else {
-        result = await _blossomService
-            .uploadVideo(
-              videoFile: videoFile,
-              nostrPubkey: upload.nostrPubkey,
-              title: upload.title ?? '',
-              description: upload.description,
-              hashtags: upload.hashtags,
-              proofManifestJson: upload.proofManifestJson,
-              resumableSession: upload.resumableSession,
-              onResumableSessionUpdated: (session) {
-                _retryPolicy.enqueueSessionPersist(
-                  upload.id,
-                  session,
-                  videoFile.lengthSync(),
-                );
-              },
-              onProgress: reportProgress,
-            )
-            .timeout(
-              _retryConfig.networkTimeout,
-              onTimeout: () {
-                Log.error(
-                  '⏱️ Upload timed out!',
-                  name: 'UploadManager',
-                  category: LogCategory.video,
-                );
-                final timeoutError = TimeoutException(
-                  'Upload timed out after '
-                  '${_retryConfig.networkTimeout.inMinutes} minutes',
-                );
+      } on TimeoutException catch (_) {
+        Log.error(
+          '⏱️ Upload timed out!',
+          name: 'UploadManager',
+          category: LogCategory.video,
+        );
+        final timeoutError = TimeoutException(
+          'Upload timed out after '
+          '${_retryConfig.networkTimeout.inMinutes} minutes',
+        );
 
-                // Send timeout crash report asynchronously
-                _reporter
-                    .sendTimeoutCrashReport(upload, timeoutError)
-                    .catchError((e) {
-                      Log.error(
-                        'Failed to send timeout crash report: $e',
-                        name: 'UploadManager',
-                        category: LogCategory.video,
-                      );
-                    });
+        // Send timeout crash report asynchronously
+        _reporter.sendTimeoutCrashReport(upload, timeoutError).catchError((e) {
+          Log.error(
+            'Failed to send timeout crash report: $e',
+            name: 'UploadManager',
+            category: LogCategory.video,
+          );
+        });
 
-                throw timeoutError;
-              },
-            );
+        rethrow;
+      }
+
+      if (_userStoppedUploadIds.contains(upload.id)) {
+        Log.info(
+          'Upload ${upload.id} stopped by user after video transfer; '
+          'skipping thumbnail and success handling',
+          name: 'UploadManager',
+          category: LogCategory.video,
+        );
+        return result;
       }
 
       // Generate and upload thumbnail after video upload succeeds
@@ -1078,6 +1098,15 @@ class UploadManager implements BackgroundAwareService {
     final metrics = _reporter.metricsFor(upload.id);
 
     if (result.success == true) {
+      if (_userStoppedUploadIds.contains(upload.id)) {
+        Log.info(
+          'Upload ${upload.id} stopped by user; ignoring late success result',
+          name: 'UploadManager',
+          category: LogCategory.video,
+        );
+        return;
+      }
+
       // Get the LATEST upload record from Hive (may have been updated with thumbnail URL)
       final latestUpload = getUpload(upload.id) ?? upload;
 
@@ -1238,16 +1267,19 @@ class UploadManager implements BackgroundAwareService {
       category: LogCategory.video,
     );
 
-    // Mark before tearing down the transfer: cancelling it emits a terminal
-    // event that would otherwise drive the in-flight upload into
-    // [_handleUploadFailure] and overwrite the paused status below.
+    // Mark before tearing down the transfer: cancelling the OS transfer emits
+    // a terminal `cancelled` event that resolves the in-flight upload as a
+    // (terminal, non-retriable) failure, which would otherwise reach
+    // [_handleUploadFailure] and overwrite the paused status below. The marker
+    // lets [_performUpload] recognise the user-initiated stop and skip it.
     _userStoppedUploadIds.add(uploadId);
 
     // Stop the OS-owned background transfer while paused so it doesn't keep
-    // uploading in the background. A background transfer is a single OS-owned
-    // PUT with no resumable checkpoint, so resuming re-enqueues it from byte 0
-    // (unlike the in-process path, which resumes from its resumable session).
-    // The in-process path is torn down by its request timeout.
+    // uploading in the background. With OS-first uploads the transfer may have
+    // already fallen through to the in-process resumable leg; that leg is torn
+    // down by its request timeout, and this cancel is then a harmless no-op on
+    // the already-finished OS task. If the OS leg was still the active one it
+    // has no resumable checkpoint, so resuming re-enqueues it from byte 0.
     if (useBackgroundUpload) {
       await _blossomService.cancelBackgroundUpload(uploadId);
     }
