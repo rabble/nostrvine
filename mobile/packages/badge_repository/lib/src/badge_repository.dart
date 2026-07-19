@@ -1,7 +1,7 @@
+import 'package:badge_repository/src/nip58_badge_models.dart';
+import 'package:badge_repository/src/nip58_badge_parser.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:openvine/services/badges/nip58_badge_models.dart';
-import 'package:openvine/services/badges/nip58_badge_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 typedef BadgeCurrentPubkeyReader = String? Function();
@@ -399,13 +399,14 @@ class BadgeRepository {
   Future<void> _publishProfileBadges(List<Nip58ProfileBadgeRef> refs) async {
     final tags = <List<String>>[];
     for (final ref in refs) {
-      tags.add(['a', ref.definitionCoordinate]);
-      tags.add([
-        'e',
-        ref.awardEventId,
-        if (ref.awardRelay != null && ref.awardRelay!.isNotEmpty)
-          ref.awardRelay!,
-      ]);
+      tags
+        ..add(['a', ref.definitionCoordinate])
+        ..add([
+          'e',
+          ref.awardEventId,
+          if (ref.awardRelay != null && ref.awardRelay!.isNotEmpty)
+            ref.awardRelay!,
+        ]);
     }
 
     final event = await _signEvent(

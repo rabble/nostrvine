@@ -1,10 +1,9 @@
+import 'package:badge_repository/badge_repository.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/blocs/badges/badges_cubit.dart';
-import 'package:openvine/services/badges/badge_repository.dart';
-import 'package:openvine/services/badges/nip58_badge_models.dart';
 
 class _MockBadgeRepository extends Mock implements BadgeRepository {}
 

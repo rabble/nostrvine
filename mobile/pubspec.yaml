@@ -27,6 +27,7 @@ workspace:
   - packages/app_update_repository
   - packages/app_version_client
   - packages/background_uploader
+  - packages/badge_repository
   - packages/blossom_upload_service
   - packages/blurhash_service
   - packages/cache_sync
@@ -91,6 +92,9 @@ dependencies:
 
   # OS-backed background uploads that survive app suspension.
   background_uploader:
+
+  # NIP-58 badge repository — award/definition/profile-badges parsing + dashboard (#3866)
+  badge_repository:
 
   blossom_upload_service:
 

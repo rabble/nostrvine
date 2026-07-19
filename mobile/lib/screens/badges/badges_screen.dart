@@ -1,6 +1,7 @@
 // ABOUTME: Badge dashboard for reviewing NIP-58 awards and issued badge status.
 // ABOUTME: Offers accept/reject actions plus a bridge into badges.divine.video.
 
+import 'package:badge_repository/badge_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,7 +12,6 @@ import 'package:openvine/blocs/badges/badges_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
-import 'package:openvine/services/badges/badge_repository.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
 /// Shows the current user's Nostr badge dashboard.

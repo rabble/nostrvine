@@ -1,3 +1,4 @@
+import 'package:badge_repository/badge_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,8 +9,6 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
 import 'package:openvine/screens/badges/badges_screen.dart';
-import 'package:openvine/services/badges/badge_repository.dart';
-import 'package:openvine/services/badges/nip58_badge_models.dart';
 
 import '../../helpers/go_router.dart';
 

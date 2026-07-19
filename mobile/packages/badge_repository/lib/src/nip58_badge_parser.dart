@@ -1,9 +1,9 @@
+import 'package:badge_repository/src/nip58_badge_models.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:openvine/services/badges/nip58_badge_models.dart';
 
-class Nip58BadgeParser {
-  const Nip58BadgeParser._();
-
+/// Parses NIP-58 badge events. Non-instantiable static-only namespace
+/// (`abstract class`) so it stays 100%-coverable without a constructor line.
+abstract class Nip58BadgeParser {
   static Nip58BadgeDefinition? parseDefinition(Event event) {
     if (event.kind != EventKind.badgeDefinition) return null;
 
