@@ -868,6 +868,15 @@ class UploadManager implements BackgroundAwareService {
         onProgress,
       );
 
+      if (_userStoppedUploadIds.contains(upload.id)) {
+        Log.info(
+          'Upload ${upload.id} stopped by user; skipping success handling',
+          name: 'UploadManager',
+          category: LogCategory.video,
+        );
+        return;
+      }
+
       // Success - record metrics and complete
       await _handleUploadSuccess(currentUpload, result);
     }, isRetriable: _retryPolicy.isRetriableError);
@@ -1004,6 +1013,16 @@ class UploadManager implements BackgroundAwareService {
         rethrow;
       }
 
+      if (_userStoppedUploadIds.contains(upload.id)) {
+        Log.info(
+          'Upload ${upload.id} stopped by user after video transfer; '
+          'skipping thumbnail and success handling',
+          name: 'UploadManager',
+          category: LogCategory.video,
+        );
+        return result;
+      }
+
       // Generate and upload thumbnail after video upload succeeds
       String? thumbnailCdnUrl;
       if (result.success && result.cdnUrl != null) {
@@ -1079,6 +1098,15 @@ class UploadManager implements BackgroundAwareService {
     final metrics = _reporter.metricsFor(upload.id);
 
     if (result.success == true) {
+      if (_userStoppedUploadIds.contains(upload.id)) {
+        Log.info(
+          'Upload ${upload.id} stopped by user; ignoring late success result',
+          name: 'UploadManager',
+          category: LogCategory.video,
+        );
+        return;
+      }
+
       // Get the LATEST upload record from Hive (may have been updated with thumbnail URL)
       final latestUpload = getUpload(upload.id) ?? upload;
 

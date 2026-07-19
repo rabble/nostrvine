@@ -107,7 +107,7 @@ void main() {
           const BlossomUploadResult(
             success: false,
             errorMessage: 'Upload cancelled',
-            failureReason: BlossomUploadFailureReason.unknown,
+            failureReason: BlossomUploadFailureReason.cancelled,
           ),
         );
       }
@@ -156,6 +156,70 @@ void main() {
           () => mockBlossomService.cancelBackgroundUpload(upload.id),
         ).called(1);
         // The user-initiated pause is not a crash.
+        verifyNever(
+          () => mockCrashReporter.recordError(
+            any(),
+            any(),
+            reason: any(named: 'reason'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'pausing during in-process fallback ignores a later successful result',
+      () async {
+        final upload = await seedPausedUpload();
+        final transfer = Completer<BlossomUploadResult>();
+        when(
+          () => mockBlossomService.uploadVideoWithResume(
+            videoFile: any(named: 'videoFile'),
+            nostrPubkey: any(named: 'nostrPubkey'),
+            taskId: any(named: 'taskId'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            proofManifestJson: any(named: 'proofManifestJson'),
+            useBackgroundFirst: any(named: 'useBackgroundFirst'),
+            resumableTimeout: any(named: 'resumableTimeout'),
+            resumableSession: any(named: 'resumableSession'),
+            onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenAnswer((_) => transfer.future);
+        when(
+          () => mockBlossomService.cancelBackgroundUpload(any()),
+        ).thenAnswer((_) async {});
+
+        final runFuture = uploadManager.resumeUpload(upload.id);
+        await _pumpUntil(
+          () =>
+              uploadManager.getUpload(upload.id)?.status ==
+              UploadStatus.uploading,
+        );
+
+        await uploadManager.pauseUpload(upload.id);
+        transfer.complete(
+          const BlossomUploadResult(
+            success: true,
+            videoId: 'video-after-pause',
+            url: 'https://media.divine.video/video-after-pause',
+            fallbackUrl: 'https://media.divine.video/video-after-pause',
+            thumbnailUrl:
+                'https://media.divine.video/video-after-pause-thumb.jpg',
+          ),
+        );
+        await runFuture;
+
+        final result = uploadManager.getUpload(upload.id);
+        expect(result?.status, equals(UploadStatus.paused));
+        expect(result?.videoId, isNull);
+        expect(result?.cdnUrl, isNull);
+        expect(result?.thumbnailPath, isNull);
+        expect(result?.errorMessage, isNull);
+        verify(
+          () => mockBlossomService.cancelBackgroundUpload(upload.id),
+        ).called(1);
         verifyNever(
           () => mockCrashReporter.recordError(
             any(),

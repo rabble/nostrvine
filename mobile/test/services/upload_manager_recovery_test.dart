@@ -119,13 +119,16 @@ void main() {
 
       final resumeStarted = Completer<void>();
       when(
-        () => mockBlossomService.uploadVideo(
+        () => mockBlossomService.uploadVideoWithResume(
           videoFile: any(named: 'videoFile'),
           nostrPubkey: any(named: 'nostrPubkey'),
+          taskId: any(named: 'taskId'),
           title: any(named: 'title'),
           description: any(named: 'description'),
           hashtags: any(named: 'hashtags'),
           proofManifestJson: any(named: 'proofManifestJson'),
+          useBackgroundFirst: any(named: 'useBackgroundFirst'),
+          resumableTimeout: any(named: 'resumableTimeout'),
           resumableSession: any(named: 'resumableSession'),
           onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
           onProgress: any(named: 'onProgress'),
@@ -160,13 +163,16 @@ void main() {
       final firstAttemptFailed = Completer<void>();
       final secondAttemptStarted = Completer<void>();
       when(
-        () => mockBlossomService.uploadVideo(
+        () => mockBlossomService.uploadVideoWithResume(
           videoFile: any(named: 'videoFile'),
           nostrPubkey: any(named: 'nostrPubkey'),
+          taskId: any(named: 'taskId'),
           title: any(named: 'title'),
           description: any(named: 'description'),
           hashtags: any(named: 'hashtags'),
           proofManifestJson: any(named: 'proofManifestJson'),
+          useBackgroundFirst: any(named: 'useBackgroundFirst'),
+          resumableTimeout: any(named: 'resumableTimeout'),
           resumableSession: any(named: 'resumableSession'),
           onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
           onProgress: any(named: 'onProgress'),
@@ -217,13 +223,16 @@ void main() {
 
       final resumeStarted = Completer<void>();
       when(
-        () => mockBlossomService.uploadVideo(
+        () => mockBlossomService.uploadVideoWithResume(
           videoFile: any(named: 'videoFile'),
           nostrPubkey: any(named: 'nostrPubkey'),
+          taskId: any(named: 'taskId'),
           title: any(named: 'title'),
           description: any(named: 'description'),
           hashtags: any(named: 'hashtags'),
           proofManifestJson: any(named: 'proofManifestJson'),
+          useBackgroundFirst: any(named: 'useBackgroundFirst'),
+          resumableTimeout: any(named: 'resumableTimeout'),
           resumableSession: any(named: 'resumableSession'),
           onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
           onProgress: any(named: 'onProgress'),
@@ -250,13 +259,16 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
       verifyNever(
-        () => mockBlossomService.uploadVideo(
+        () => mockBlossomService.uploadVideoWithResume(
           videoFile: any(named: 'videoFile'),
           nostrPubkey: any(named: 'nostrPubkey'),
+          taskId: any(named: 'taskId'),
           title: any(named: 'title'),
           description: any(named: 'description'),
           hashtags: any(named: 'hashtags'),
           proofManifestJson: any(named: 'proofManifestJson'),
+          useBackgroundFirst: any(named: 'useBackgroundFirst'),
+          resumableTimeout: any(named: 'resumableTimeout'),
           resumableSession: any(named: 'resumableSession'),
           onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
           onProgress: any(named: 'onProgress'),
@@ -285,13 +297,16 @@ void main() {
         );
 
         verifyNever(
-          () => mockBlossomService.uploadVideo(
+          () => mockBlossomService.uploadVideoWithResume(
             videoFile: any(named: 'videoFile'),
             nostrPubkey: any(named: 'nostrPubkey'),
+            taskId: any(named: 'taskId'),
             title: any(named: 'title'),
             description: any(named: 'description'),
             hashtags: any(named: 'hashtags'),
             proofManifestJson: any(named: 'proofManifestJson'),
+            useBackgroundFirst: any(named: 'useBackgroundFirst'),
+            resumableTimeout: any(named: 'resumableTimeout'),
             resumableSession: any(named: 'resumableSession'),
             onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
             onProgress: any(named: 'onProgress'),
@@ -306,13 +321,16 @@ void main() {
       var uploadCallCount = 0;
       final blockGate = Completer<void>();
       when(
-        () => mockBlossomService.uploadVideo(
+        () => mockBlossomService.uploadVideoWithResume(
           videoFile: any(named: 'videoFile'),
           nostrPubkey: any(named: 'nostrPubkey'),
+          taskId: any(named: 'taskId'),
           title: any(named: 'title'),
           description: any(named: 'description'),
           hashtags: any(named: 'hashtags'),
           proofManifestJson: any(named: 'proofManifestJson'),
+          useBackgroundFirst: any(named: 'useBackgroundFirst'),
+          resumableTimeout: any(named: 'resumableTimeout'),
           resumableSession: any(named: 'resumableSession'),
           onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
           onProgress: any(named: 'onProgress'),
