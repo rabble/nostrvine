@@ -350,13 +350,20 @@ void main() {
 
         uploadManager.resumeInterruptedUpload(upload.id);
 
+        // Hive's synchronous put lands `failed` one future-completion before
+        // whenComplete clears the marker; wait for each transition separately
+        // so a stall names the exact one that failed, not a combined timeout.
         await TestHelpers.waitForCondition(
           () =>
               uploadManager.getUpload(upload.id)?.status == UploadStatus.failed,
           timeout: const Duration(seconds: 2),
           checkInterval: const Duration(milliseconds: 20),
         );
-        expect(uploadManager.isUploadInFlight(upload.id), isFalse);
+        await TestHelpers.waitForCondition(
+          () => !uploadManager.isUploadInFlight(upload.id),
+          timeout: const Duration(seconds: 2),
+          checkInterval: const Duration(milliseconds: 20),
+        );
       },
     );
   });
