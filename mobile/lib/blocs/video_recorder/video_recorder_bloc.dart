@@ -1686,6 +1686,7 @@ class VideoRecorderBloc
         name: 'VideoRecorderBloc',
         category: LogCategory.video,
       );
+      unawaited(_deleteFrameFile(photo.filePath));
       return;
     }
 

@@ -84,6 +84,7 @@ void main() {
     DivineVideoClip createStopMotionClip({
       String? id,
       Duration duration = const Duration(seconds: 1),
+      DateTime? deletedAt,
     }) {
       return DivineVideoClip(
         id: id ?? 'sm-${DateTime.now().millisecondsSinceEpoch}',
@@ -98,6 +99,7 @@ void main() {
         recordedAt: DateTime.now(),
         targetAspectRatio: .vertical,
         originalAspectRatio: 9 / 16,
+        deletedAt: deletedAt,
       );
     }
 
@@ -717,6 +719,11 @@ void main() {
         deletedAt: DateTime(2026, 5),
       );
 
+      final trashedStopMotionClip = createStopMotionClip(
+        id: 'trashed-sm',
+        deletedAt: DateTime(2026, 5),
+      );
+
       blocTest<ClipsLibraryBloc, ClipsLibraryState>(
         'loads trashed clips',
         setUp: () {
@@ -731,6 +738,28 @@ void main() {
           isA<ClipsLibraryState>()
               .having((s) => s.status, 'status', ClipsLibraryStatus.trashLoaded)
               .having((s) => s.trashedClips, 'trashedClips', [trashedClip]),
+        ],
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'applies the type filter when loading trashed clips',
+        setUp: () {
+          when(() => mockClipLibraryService.getTrashedClips()).thenAnswer(
+            (_) async => [trashedClip, trashedStopMotionClip],
+          );
+        },
+        build: () =>
+            createBloc(clipTypeFilter: LibraryClipTypeFilter.stopMotion),
+        act: (bloc) => bloc.add(const ClipsLibraryTrashLoadRequested()),
+        expect: () => [
+          const ClipsLibraryState(status: ClipsLibraryStatus.trashLoading),
+          isA<ClipsLibraryState>()
+              .having((s) => s.status, 'status', ClipsLibraryStatus.trashLoaded)
+              .having(
+                (s) => s.trashedClips.map((c) => c.id).toList(),
+                'trashed clip ids',
+                ['trashed-sm'],
+              ),
         ],
       );
 
@@ -790,6 +819,41 @@ void main() {
           verify(() => mockClipLibraryService.getAllClips()).called(1);
           verify(() => mockClipLibraryService.getTrashedClips()).called(1);
         },
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'applies the type filter after restoring from trash',
+        setUp: () {
+          when(
+            () => mockClipLibraryService.restore('trashed-sm'),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockClipLibraryService.getAllClips(),
+          ).thenAnswer((_) async => [activeClip, trashedStopMotionClip]);
+          when(() => mockClipLibraryService.getTrashedClips()).thenAnswer(
+            (_) async => [trashedClip, trashedStopMotionClip],
+          );
+        },
+        seed: () => ClipsLibraryState(
+          status: ClipsLibraryStatus.trashLoaded,
+          trashedClips: [trashedStopMotionClip],
+        ),
+        build: () =>
+            createBloc(clipTypeFilter: LibraryClipTypeFilter.stopMotion),
+        act: (bloc) => bloc.add(const ClipsLibraryRestoreClips({'trashed-sm'})),
+        expect: () => [
+          isA<ClipsLibraryState>()
+              .having(
+                (s) => s.clips.map((c) => c.id).toList(),
+                'active clip ids',
+                ['trashed-sm'],
+              )
+              .having(
+                (s) => s.trashedClips.map((c) => c.id).toList(),
+                'trashed clip ids',
+                ['trashed-sm'],
+              ),
+        ],
       );
 
       blocTest<ClipsLibraryBloc, ClipsLibraryState>(
@@ -889,6 +953,36 @@ void main() {
         verify: (_) {
           verify(() => mockClipLibraryService.getTrashedClips()).called(1);
           verify(() => mockClipLibraryService.hardDelete('trashed')).called(1);
+        },
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'empty trash only purges clips matching the type filter',
+        setUp: () {
+          when(() => mockClipLibraryService.getTrashedClips()).thenAnswer(
+            (_) async => [trashedClip, trashedStopMotionClip],
+          );
+          when(
+            () => mockClipLibraryService.hardDelete('trashed-sm'),
+          ).thenAnswer((_) async {});
+        },
+        seed: () => ClipsLibraryState(
+          status: ClipsLibraryStatus.trashLoaded,
+          trashedClips: [trashedStopMotionClip],
+        ),
+        build: () =>
+            createBloc(clipTypeFilter: LibraryClipTypeFilter.stopMotion),
+        act: (bloc) => bloc.add(const ClipsLibraryEmptyTrash()),
+        expect: () => [
+          isA<ClipsLibraryState>()
+              .having((s) => s.status, 'status', ClipsLibraryStatus.trashLoaded)
+              .having((s) => s.trashedClips, 'trashedClips', isEmpty),
+        ],
+        verify: (_) {
+          verifyNever(() => mockClipLibraryService.hardDelete('trashed'));
+          verify(
+            () => mockClipLibraryService.hardDelete('trashed-sm'),
+          ).called(1);
         },
       );
 

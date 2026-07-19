@@ -71,6 +71,9 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
     return clips.where(clipTypeFilter.matches).toList();
   }
 
+  Future<List<DivineVideoClip>> _getFilteredTrashedClips() async =>
+      _applyTypeFilter(await _clipLibraryService.getTrashedClips());
+
   static ClipSort _readPersistedSort(SharedPreferences prefs) {
     final saved = prefs.getString(_sortPrefsKey);
     if (saved == null) return ClipSort.newestCreation;
@@ -516,7 +519,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
   ) async {
     emit(state.copyWith(status: ClipsLibraryStatus.trashLoading));
     try {
-      final trashed = await _clipLibraryService.getTrashedClips();
+      final trashed = await _getFilteredTrashedClips();
       emit(
         state.copyWith(
           status: ClipsLibraryStatus.trashLoaded,
@@ -566,7 +569,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
   ) async {
     try {
       await _clipLibraryService.hardDelete(event.clip.id);
-      final trashed = await _clipLibraryService.getTrashedClips();
+      final trashed = await _getFilteredTrashedClips();
       emit(
         state.copyWith(
           status: ClipsLibraryStatus.trashLoaded,
@@ -589,7 +592,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
     Emitter<ClipsLibraryState> emit,
   ) async {
     try {
-      final trashed = await _clipLibraryService.getTrashedClips();
+      final trashed = await _getFilteredTrashedClips();
       for (final clip in trashed) {
         await _clipLibraryService.hardDelete(clip.id);
       }
@@ -619,7 +622,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
   /// so both views reflect the change.
   Future<void> _reloadClipsAndTrash(Emitter<ClipsLibraryState> emit) async {
     final clips = _applyTypeFilter(await _clipLibraryService.getAllClips());
-    final trashed = await _clipLibraryService.getTrashedClips();
+    final trashed = await _getFilteredTrashedClips();
     emit(
       state.copyWith(
         status:

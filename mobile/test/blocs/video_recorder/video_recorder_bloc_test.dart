@@ -2791,6 +2791,39 @@ void main() {
       );
 
       blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'deletes an unreadable captured frame instead of leaking it',
+        setUp: () {
+          final unreadablePath = '${frameDir.path}/unreadable.jpg';
+          File(unreadablePath).writeAsBytesSync(const []);
+          framePath = unreadablePath;
+          when(() => cameraService.capturePhoto()).thenAnswer(
+            (_) async => PhotoCaptureResult(filePath: unreadablePath),
+          );
+        },
+        build: buildBloc,
+        seed: () => const VideoRecorderBlocState(
+          recorderMode: VideoRecorderMode.stopMotion,
+        ),
+        act: (bloc) => bloc.add(const VideoRecorderStopMotionFrameCaptured()),
+        wait: const Duration(milliseconds: 20),
+        verify: (bloc) {
+          expect(bloc.state.stopMotionFrames, isEmpty);
+          expect(File(framePath).existsSync(), isFalse);
+          verifyNever(
+            () => clipManager.saveStopMotionSessionToLibrary(
+              id: any(named: 'id'),
+              frames: any(named: 'frames'),
+              originalAspectRatio: any(named: 'originalAspectRatio'),
+              targetAspectRatio: any(named: 'targetAspectRatio'),
+              duration: any(named: 'duration'),
+              thumbnailPath: any(named: 'thumbnailPath'),
+              lensMetadata: any(named: 'lensMetadata'),
+            ),
+          );
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
         'undo removes the last captured frame and re-syncs the library',
         build: buildBloc,
         seed: () => VideoRecorderBlocState(
