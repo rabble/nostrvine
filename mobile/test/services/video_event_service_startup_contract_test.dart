@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:db_client/db_client.dart' hide Filter;
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -56,6 +57,29 @@ class _RecordingPerformanceMonitor implements PerformanceTraceMonitor {
   Future<void> stopTrace(String traceName) async {
     stoppedTraces.add(traceName);
   }
+}
+
+/// Asserts a feed-load trace was started once, stopped exactly once, and closed
+/// with the expected first-wins [completion] label and [eventCount] metric.
+///
+/// The "exactly once" check on [stoppedTraces] is what enforces the trace
+/// completion guard's idempotency: if a later completion path leaked past the
+/// `traceCompleted` guard it would append a second stop (and overwrite the
+/// completion attribute), failing this helper.
+void _expectSingleCompletion(
+  _RecordingPerformanceMonitor monitor, {
+  required String traceName,
+  required String completion,
+  required int eventCount,
+}) {
+  expect(monitor.startedTraces, contains(traceName));
+  expect(
+    monitor.stoppedTraces.where((t) => t == traceName).length,
+    1,
+    reason: 'trace $traceName must be stopped exactly once (first-wins guard)',
+  );
+  expect(monitor.metrics[traceName]?['event_count'], eventCount);
+  expect(monitor.attributes[traceName]?['completion'], completion);
 }
 
 void main() {
@@ -130,8 +154,25 @@ void main() {
       if (!batchFetchCompleter.isCompleted) {
         batchFetchCompleter.complete(<String, UserProfile>{});
       }
-      await relayController.close();
+      // Cancel the stream subscription and clear params BEFORE closing the
+      // controller, so onDone never fires and no 5s reconnection Timer leaks
+      // into later suites in the merged VGV isolate.
+      await videoEventService.unsubscribeFromVideoFeed();
+      if (!relayController.isClosed) {
+        await relayController.close();
+      }
     });
+
+    // Configures the cache DAO to return no cached events, so the relay
+    // completion paths — not the 'cache' path — win the trace.
+    void withEmptyCache() {
+      when(
+        () => mockNostrEventsDao.getEventsByFilter(
+          any(),
+          sortBy: any(named: 'sortBy'),
+        ),
+      ).thenAnswer((_) async => const <Event>[]);
+    }
 
     test(
       'returns after cached events without waiting for batch profile hydration',
@@ -150,9 +191,8 @@ void main() {
       },
     );
 
-    test(
-      'stops profile feed trace when cached events populate the feed',
-      () async {
+    group('feed-load trace completion', () {
+      test('cache: cached events populate the feed', () async {
         await videoEventService
             .subscribeToVideoFeed(
               subscriptionType: SubscriptionType.profile,
@@ -160,45 +200,167 @@ void main() {
             )
             .timeout(const Duration(milliseconds: 100));
 
-        expect(performanceMonitor.startedTraces, contains('feed_load_profile'));
-        expect(performanceMonitor.stoppedTraces, contains('feed_load_profile'));
-        expect(
-          performanceMonitor.metrics['feed_load_profile']?['event_count'],
-          1,
+        _expectSingleCompletion(
+          performanceMonitor,
+          traceName: 'feed_load_profile',
+          completion: 'cache',
+          eventCount: 1,
         );
-        expect(
-          performanceMonitor.attributes['feed_load_profile']?['completion'],
-          'cache',
+      });
+
+      test('eose_empty: relay completes with no events', () async {
+        withEmptyCache();
+
+        await videoEventService
+            .subscribeToVideoFeed(
+              subscriptionType: SubscriptionType.profile,
+              authors: ['a' * 64],
+            )
+            .timeout(const Duration(milliseconds: 100));
+
+        relayEose!();
+
+        _expectSingleCompletion(
+          performanceMonitor,
+          traceName: 'feed_load_profile',
+          completion: 'eose_empty',
+          eventCount: 0,
         );
-      },
-    );
+      });
 
-    test('stops profile feed trace when relay completes empty', () async {
-      when(
-        () => mockNostrEventsDao.getEventsByFilter(
-          any(),
-          sortBy: any(named: 'sortBy'),
-        ),
-      ).thenAnswer((_) async => const <Event>[]);
+      test('first_relay_event: first relay event arrives', () async {
+        withEmptyCache();
 
-      await videoEventService
-          .subscribeToVideoFeed(
+        await videoEventService
+            .subscribeToVideoFeed(
+              subscriptionType: SubscriptionType.profile,
+              authors: ['a' * 64],
+            )
+            .timeout(const Duration(milliseconds: 100));
+
+        relayController.add(_relayVideoEvent());
+        await pumpEventQueue();
+
+        _expectSingleCompletion(
+          performanceMonitor,
+          traceName: 'feed_load_profile',
+          completion: 'first_relay_event',
+          eventCount: 1,
+        );
+      });
+
+      test('error: relay stream errors before any completion', () async {
+        withEmptyCache();
+
+        await videoEventService
+            .subscribeToVideoFeed(
+              subscriptionType: SubscriptionType.profile,
+              authors: ['a' * 64],
+            )
+            .timeout(const Duration(milliseconds: 100));
+
+        relayController.addError(Exception('relay boom'));
+        await pumpEventQueue();
+
+        _expectSingleCompletion(
+          performanceMonitor,
+          traceName: 'feed_load_profile',
+          completion: 'error',
+          eventCount: 0,
+        );
+      });
+
+      test('done: relay stream closes before any completion', () async {
+        withEmptyCache();
+
+        // Non-persistent type: onDone cleans up instead of scheduling a
+        // reconnection timer, keeping the test timer-clean.
+        await videoEventService
+            .subscribeToVideoFeed(subscriptionType: SubscriptionType.search)
+            .timeout(const Duration(milliseconds: 100));
+
+        await relayController.close();
+
+        _expectSingleCompletion(
+          performanceMonitor,
+          traceName: 'feed_load_search',
+          completion: 'done',
+          eventCount: 0,
+        );
+      });
+
+      test('timeout: no events and no EOSE within the timeout window', () {
+        withEmptyCache();
+
+        fakeAsync((async) {
+          videoEventService.subscribeToVideoFeed(
             subscriptionType: SubscriptionType.profile,
             authors: ['a' * 64],
-          )
-          .timeout(const Duration(milliseconds: 100));
+          );
+          async.flushMicrotasks();
 
-      relayEose!();
+          async.elapse(const Duration(seconds: 31));
+          async.flushMicrotasks();
 
-      expect(performanceMonitor.startedTraces, contains('feed_load_profile'));
-      expect(performanceMonitor.stoppedTraces, contains('feed_load_profile'));
-      expect(
-        performanceMonitor.metrics['feed_load_profile']?['event_count'],
-        0,
+          _expectSingleCompletion(
+            performanceMonitor,
+            traceName: 'feed_load_profile',
+            completion: 'timeout',
+            eventCount: 0,
+          );
+        });
+      });
+
+      test(
+        'idempotent: first relay event wins, later EOSE does not re-complete',
+        () async {
+          withEmptyCache();
+
+          await videoEventService
+              .subscribeToVideoFeed(
+                subscriptionType: SubscriptionType.profile,
+                authors: ['a' * 64],
+              )
+              .timeout(const Duration(milliseconds: 100));
+
+          relayController.add(_relayVideoEvent());
+          await pumpEventQueue();
+
+          // eventCount is now 1, so this drives the 'eose' branch — which must
+          // be blocked by the first-wins guard rather than re-completing.
+          relayEose!();
+          await pumpEventQueue();
+
+          _expectSingleCompletion(
+            performanceMonitor,
+            traceName: 'feed_load_profile',
+            completion: 'first_relay_event',
+            eventCount: 1,
+          );
+        },
       );
-      expect(
-        performanceMonitor.attributes['feed_load_profile']?['completion'],
-        'eose_empty',
+
+      test(
+        'idempotent: first relay event wins, later done does not re-complete',
+        () async {
+          withEmptyCache();
+
+          await videoEventService
+              .subscribeToVideoFeed(subscriptionType: SubscriptionType.search)
+              .timeout(const Duration(milliseconds: 100));
+
+          relayController.add(_relayVideoEvent());
+          await pumpEventQueue();
+
+          await relayController.close();
+
+          _expectSingleCompletion(
+            performanceMonitor,
+            traceName: 'feed_load_search',
+            completion: 'first_relay_event',
+            eventCount: 1,
+          );
+        },
       );
     });
   });
@@ -218,5 +380,22 @@ Event _cachedVideoEvent() {
     createdAt: 1_700_000_000,
   );
   event.id = 'b' * 64;
+  return event;
+}
+
+Event _relayVideoEvent() {
+  final event = Event(
+    'a' * 64,
+    34236,
+    const [
+      ['url', 'https://example.com/relay-video.mp4'],
+      ['m', 'video/mp4'],
+      ['thumb', 'https://example.com/relay-thumb.jpg'],
+      ['title', 'Relay video'],
+    ],
+    'relay content',
+    createdAt: 1_700_000_001,
+  );
+  event.id = 'c' * 64;
   return event;
 }
