@@ -151,6 +151,10 @@ private final class BackgroundUploadCoordinator: NSObject {
 
   func handleBackgroundEvents(completionHandler: @escaping () -> Void) {
     backgroundCompletionHandler = completionHandler
+    // The app-delegate callback starts a new delivery batch. Clear any
+    // foreground-only finish marker left by a prior batch that never needed an
+    // app-delegate completion handler.
+    backgroundEventsFinished = false
     // Ensure the session (and its delegate) exists to drain pending events.
     _ = session
     finishBackgroundEventsIfReady()

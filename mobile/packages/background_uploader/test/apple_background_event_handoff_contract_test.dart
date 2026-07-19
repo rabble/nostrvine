@@ -40,6 +40,13 @@ void main() {
     );
 
     test('defers the app-delegate completion until publish work ends', () {
+      final handleBackgroundEvents = source.indexOf(
+        'func handleBackgroundEvents(',
+      );
+      final resetDeliveryBatch = source.indexOf(
+        'backgroundEventsFinished = false',
+        handleBackgroundEvents,
+      );
       final urlSessionFinished = source.indexOf(
         'func urlSessionDidFinishEvents(',
       );
@@ -59,6 +66,9 @@ void main() {
         urlSessionFinished,
       );
 
+      expect(handleBackgroundEvents, greaterThanOrEqualTo(0));
+      expect(resetDeliveryBatch, greaterThan(handleBackgroundEvents));
+      expect(resetDeliveryBatch, lessThan(urlSessionFinished));
       expect(urlSessionFinished, greaterThanOrEqualTo(0));
       expect(guardedCompletion, greaterThanOrEqualTo(0));
       expect(activeSessionGuard, greaterThan(guardedCompletion));
