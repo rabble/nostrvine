@@ -1,7 +1,7 @@
+import 'package:badge_repository/src/nip58_badge_models.dart';
+import 'package:badge_repository/src/nip58_badge_parser.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:openvine/services/badges/nip58_badge_models.dart';
-import 'package:openvine/services/badges/nip58_badge_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 typedef BadgeCurrentPubkeyReader = String? Function();
