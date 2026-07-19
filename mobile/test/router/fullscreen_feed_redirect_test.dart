@@ -1,13 +1,16 @@
-// ABOUTME: Tests the fullscreen video feed route redirect — falls back to the
-// ABOUTME: home feed when its in-memory `extra` args are missing (web reload).
+// ABOUTME: Tests pooled-feed route recovery when lifecycle restoration loses
+// ABOUTME: in-memory `extra`, including durable selected-video URL fallback.
 
 import 'package:feed_repository/feed_repository.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/router/pooled_fullscreen_feed_route.dart'
-    show fullscreenFeedRedirect;
+    show buildPooledFullscreenFeed, fullscreenFeedRedirect;
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
+import 'package:openvine/screens/video_detail_screen.dart';
 
 VideoEvent _video(String id) => VideoEvent(
   id: id,
@@ -17,6 +20,19 @@ VideoEvent _video(String id) => VideoEvent(
   timestamp: DateTime.fromMillisecondsSinceEpoch(1000 * 1000),
 );
 
+class _RestoredPooledFeedState extends Fake implements GoRouterState {
+  _RestoredPooledFeedState(String videoId)
+    : uri = Uri.parse(
+        PooledFullscreenVideoFeedScreen.pathForVideoId(videoId),
+      );
+
+  @override
+  final Uri uri;
+
+  @override
+  Object? get extra => null;
+}
+
 void main() {
   group('fullscreenFeedRedirect', () {
     test('redirects to the home feed when extra is null (web reload)', () {
@@ -25,6 +41,16 @@ void main() {
         equals(VideoFeedPage.pathForIndex(0)),
       );
     });
+
+    test(
+      'recovers the selected video when lifecycle restoration loses extra',
+      () {
+        expect(
+          fullscreenFeedRedirect(null, fallbackVideoId: 'video-123'),
+          equals(VideoDetailScreen.pathForId('video-123')),
+        );
+      },
+    );
 
     test('redirects to the home feed when extra is the wrong type', () {
       expect(
@@ -51,5 +77,39 @@ void main() {
 
       expect(fullscreenFeedRedirect(args), isNull);
     });
+  });
+
+  group('PooledFullscreenVideoFeedScreen.pathForVideoId', () {
+    test('puts the selected video identity in the route URL', () {
+      expect(
+        PooledFullscreenVideoFeedScreen.pathForVideoId('video/with spaces'),
+        equals('/pooled-video-feed?video=video%2Fwith+spaces'),
+      );
+    });
+
+    testWidgets(
+      'builder recovers directly if extra disappears after redirect',
+      (
+        tester,
+      ) async {
+        late Widget recovered;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Builder(
+              builder: (context) {
+                recovered = buildPooledFullscreenFeed(
+                  context,
+                  _RestoredPooledFeedState('video-123'),
+                );
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        );
+
+        expect(recovered, isA<VideoDetailScreen>());
+        expect((recovered as VideoDetailScreen).videoId, 'video-123');
+      },
+    );
   });
 }

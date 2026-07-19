@@ -89,7 +89,7 @@ class _VideosContentState extends ConsumerState<_VideosContent> {
   void _onVideoTap(List<VideoEvent> videos, int index) {
     final bloc = context.read<VideoSearchBloc>();
     context.push(
-      PooledFullscreenVideoFeedScreen.path,
+      PooledFullscreenVideoFeedScreen.pathForVideoId(videos[index].id),
       extra: PooledFullscreenVideoFeedArgs(
         source: SearchViewSource(bloc.state.query),
         feedRepository: StreamFeedRepository(
@@ -100,6 +100,7 @@ class _VideosContentState extends ConsumerState<_VideosContent> {
           onLoadMore: () async => bloc.add(const VideoSearchLoadMore()),
         ),
         initialIndex: index,
+        initialVideoId: videos[index].id,
         contextTitle: 'Search Results',
         trafficSource: ViewTrafficSource.search,
         sourceDetail: bloc.state.query,

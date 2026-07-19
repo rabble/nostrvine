@@ -38,13 +38,26 @@ private final class BackgroundUploadCoordinator: NSObject {
 
   #if os(iOS)
   /// Held while the OS relaunches us in the background to drain session
-  /// events; called once those events have been delivered. iOS-only — macOS
-  /// apps are not relaunched to finish background sessions.
+  /// events; called once those events and their Dart follow-up work have been
+  /// delivered. iOS-only — macOS apps are not relaunched to finish background
+  /// sessions.
   private var backgroundCompletionHandler: (() -> Void)?
 
-  /// Background-task assertions keyed by session id, so the app keeps running
-  /// long enough to finish in-process publish steps (signing, relay broadcast)
-  /// after the background URLSession upload completes while suspended.
+  /// Whether URLSession has finished delivering the current batch of native
+  /// events. The app-delegate completion handler can be released only after
+  /// this is true and every logical publish session has ended.
+  private var backgroundEventsFinished = false
+
+  /// Logical publish sessions that still have Dart follow-up work after the
+  /// OS-owned upload (thumbnail, signing, relay broadcast). This is deliberately
+  /// separate from `backgroundTasks`: iOS may expire a UIBackgroundTask before
+  /// a large upload finishes, but the later URLSession wake must still remain
+  /// open until Dart calls endForegroundSession.
+  private var activeForegroundSessionIds: Set<String> = []
+
+  /// Short-lived UI background-task assertions keyed by publish session id.
+  /// These bridge brief suspensions but are not the source of truth for whether
+  /// a publish is complete.
   private var backgroundTasks: [String: UIBackgroundTaskIdentifier] = [:]
   #endif
 
@@ -113,16 +126,23 @@ private final class BackgroundUploadCoordinator: NSObject {
 
   #if os(iOS)
   func beginForegroundSession(_ sessionId: String) {
-    endForegroundSession(sessionId)
+    expireBackgroundTaskAssertion(sessionId)
+    activeForegroundSessionIds.insert(sessionId)
     let task = UIApplication.shared.beginBackgroundTask(
       withName: "co.openvine.background_uploader.\(sessionId)"
     ) { [weak self] in
-      self?.endForegroundSession(sessionId)
+      self?.expireBackgroundTaskAssertion(sessionId)
     }
     backgroundTasks[sessionId] = task
   }
 
   func endForegroundSession(_ sessionId: String) {
+    activeForegroundSessionIds.remove(sessionId)
+    expireBackgroundTaskAssertion(sessionId)
+    finishBackgroundEventsIfReady()
+  }
+
+  private func expireBackgroundTaskAssertion(_ sessionId: String) {
     guard let task = backgroundTasks.removeValue(forKey: sessionId),
       task != .invalid
     else { return }
@@ -131,8 +151,25 @@ private final class BackgroundUploadCoordinator: NSObject {
 
   func handleBackgroundEvents(completionHandler: @escaping () -> Void) {
     backgroundCompletionHandler = completionHandler
+    // The app-delegate callback starts a new delivery batch. Clear any
+    // foreground-only finish marker left by a prior batch that never needed an
+    // app-delegate completion handler.
+    backgroundEventsFinished = false
     // Ensure the session (and its delegate) exists to drain pending events.
     _ = session
+    finishBackgroundEventsIfReady()
+  }
+
+  /// Releases iOS's background-URLSession wake only after both sides of the
+  /// handoff are finished: native delegate delivery and the publish work that
+  /// the terminal event triggered in Dart.
+  private func finishBackgroundEventsIfReady() {
+    guard backgroundEventsFinished else { return }
+    guard activeForegroundSessionIds.isEmpty else { return }
+    guard let handler = backgroundCompletionHandler else { return }
+    backgroundCompletionHandler = nil
+    backgroundEventsFinished = false
+    handler()
   }
   #endif
 
@@ -209,9 +246,8 @@ extension BackgroundUploadCoordinator: URLSessionDataDelegate {
     forBackgroundURLSession session: URLSession
   ) {
     DispatchQueue.main.async {
-      let handler = self.backgroundCompletionHandler
-      self.backgroundCompletionHandler = nil
-      handler?()
+      self.backgroundEventsFinished = true
+      self.finishBackgroundEventsIfReady()
     }
   }
   #endif

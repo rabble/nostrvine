@@ -193,7 +193,9 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
                   category: LogCategory.video,
                 );
                 context.push(
-                  PooledFullscreenVideoFeedScreen.path,
+                  PooledFullscreenVideoFeedScreen.pathForVideoId(
+                    videoList[index].id,
+                  ),
                   extra: PooledFullscreenVideoFeedArgs(
                     source: const ForYouViewSource(),
                     feedRepository: ref.read(feedRepositoryProvider),

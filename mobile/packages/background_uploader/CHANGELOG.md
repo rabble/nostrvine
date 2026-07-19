@@ -7,3 +7,5 @@
   `BackgroundUploadEvent`) with method-channel + event plumbing.
 - Darwin (iOS + macOS) background `URLSession` implementation.
 - Android foreground-service implementation.
+- Keep iOS background-session wakes alive until Dart publish follow-up work
+  explicitly finishes.

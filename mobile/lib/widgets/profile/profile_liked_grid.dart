@@ -185,7 +185,7 @@ class _LikedGridTile extends ConsumerWidget {
         );
         final bloc = context.read<ProfileLikedVideosBloc>();
         context.push(
-          PooledFullscreenVideoFeedScreen.path,
+          PooledFullscreenVideoFeedScreen.pathForVideoId(videoEvent.id),
           extra: PooledFullscreenVideoFeedArgs(
             source: LikedViewSource(userIdHex),
             feedRepository: StreamFeedRepository(

@@ -250,7 +250,9 @@ class _PopularVideosTrendingContentState
                   category: LogCategory.video,
                 );
                 context.push(
-                  PooledFullscreenVideoFeedScreen.path,
+                  PooledFullscreenVideoFeedScreen.pathForVideoId(
+                    videoList[index].id,
+                  ),
                   extra: PooledFullscreenVideoFeedArgs(
                     source: const PopularViewSource(),
                     feedRepository: ref.read(feedRepositoryProvider),

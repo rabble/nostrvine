@@ -242,7 +242,9 @@ class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent>
                 category: LogCategory.video,
               );
               context.push(
-                PooledFullscreenVideoFeedScreen.path,
+                PooledFullscreenVideoFeedScreen.pathForVideoId(
+                  videos[index].id,
+                ),
                 extra: PooledFullscreenVideoFeedArgs(
                   source: const ClassicVinesViewSource(),
                   feedRepository: ref.read(feedRepositoryProvider),

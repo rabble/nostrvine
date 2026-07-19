@@ -110,7 +110,7 @@ class _ProfileCollabsGridState extends ConsumerState<ProfileCollabsGrid>
 
     final bloc = context.read<ProfileCollabVideosBloc>();
     context.push(
-      PooledFullscreenVideoFeedScreen.path,
+      PooledFullscreenVideoFeedScreen.pathForVideoId(allVideos[index].id),
       extra: PooledFullscreenVideoFeedArgs(
         source: CollabsViewSource(widget.userIdHex),
         feedRepository: StreamFeedRepository(
