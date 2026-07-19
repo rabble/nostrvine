@@ -350,12 +350,19 @@ void main() {
 
         uploadManager.resumeInterruptedUpload(upload.id);
 
+        // The failed status lands (synchronous in-memory Hive put) one future
+        // completion before the in-flight marker is cleared in whenComplete, so
+        // wait for both transitions rather than assuming they are atomic.
         await TestHelpers.waitForCondition(
           () =>
-              uploadManager.getUpload(upload.id)?.status == UploadStatus.failed,
+              uploadManager.getUpload(upload.id)?.status ==
+                  UploadStatus.failed &&
+              !uploadManager.isUploadInFlight(upload.id),
           timeout: const Duration(seconds: 2),
           checkInterval: const Duration(milliseconds: 20),
         );
+        // The wait above already gates on both transitions; assert the
+        // named contract (marker cleared) explicitly for a clear failure.
         expect(uploadManager.isUploadInFlight(upload.id), isFalse);
       },
     );
