@@ -6,6 +6,7 @@ import 'package:models/models.dart' show VideoCategory;
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/router/navigator_keys.dart';
 import 'package:openvine/router/route_error_screen.dart';
+import 'package:openvine/router/routes/route_extras.dart';
 import 'package:openvine/screens/category_gallery_screen.dart';
 import 'package:openvine/screens/hashtag_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
@@ -61,7 +62,7 @@ List<RouteBase> searchRoutes() {
       builder: (ctx, st) {
         final categoryName = st.pathParameters['categoryName'];
         final category =
-            st.extra as VideoCategory? ??
+            extraAs<VideoCategory>(st.extra) ??
             VideoCategory(name: categoryName ?? '', videoCount: 0);
 
         if (category.name.isEmpty) {

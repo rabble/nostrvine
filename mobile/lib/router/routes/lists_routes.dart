@@ -30,7 +30,7 @@ List<RouteBase> listsRoutes(Ref ref) {
           return RouteErrorScreen(message: ctx.l10n.routeInvalidListId);
         }
         // Extra data contains listName, videoIds, authorPubkey
-        final extra = st.extra as CuratedListRouteExtra?;
+        final extra = extraAs<CuratedListRouteExtra>(st.extra);
         return CuratedListFeedScreen(
           listId: listId,
           listName: extra?.listName ?? ctx.l10n.routeDefaultListName,
@@ -55,10 +55,7 @@ List<RouteBase> listsRoutes(Ref ref) {
             listId.isEmpty) {
           return RouteErrorScreen(message: ctx.l10n.routeInvalidListId);
         }
-        return CuratedListByAuthorScreen(
-          authorPubkey: pubkey,
-          listId: listId,
-        );
+        return CuratedListByAuthorScreen(authorPubkey: pubkey, listId: listId);
       },
     ),
 
