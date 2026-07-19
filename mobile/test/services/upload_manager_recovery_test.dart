@@ -356,6 +356,11 @@ void main() {
           timeout: const Duration(seconds: 2),
           checkInterval: const Duration(milliseconds: 20),
         );
+        await TestHelpers.waitForCondition(
+          () => !uploadManager.isUploadInFlight(upload.id),
+          timeout: const Duration(seconds: 2),
+          checkInterval: const Duration(milliseconds: 20),
+        );
         expect(uploadManager.isUploadInFlight(upload.id), isFalse);
       },
     );
