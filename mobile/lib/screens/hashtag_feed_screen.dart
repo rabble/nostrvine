@@ -211,7 +211,7 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
       category: LogCategory.video,
     );
     context.push(
-      PooledFullscreenVideoFeedScreen.path,
+      PooledFullscreenVideoFeedScreen.pathForVideoId(videoList[index].id),
       extra: PooledFullscreenVideoFeedArgs(
         source: HashtagViewSource(widget.hashtag),
         feedRepository: ref.read(feedRepositoryProvider),

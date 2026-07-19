@@ -95,7 +95,9 @@ class _CategoryGalleryScreenState extends ConsumerState<CategoryGalleryScreen> {
             },
             onVideoTap: (videos, index) {
               context.push(
-                PooledFullscreenVideoFeedScreen.path,
+                PooledFullscreenVideoFeedScreen.pathForVideoId(
+                  videos[index].id,
+                ),
                 extra: PooledFullscreenVideoFeedArgs(
                   source: CategoryViewSource(widget.category.name),
                   feedRepository: StreamFeedRepository(
@@ -109,6 +111,7 @@ class _CategoryGalleryScreenState extends ConsumerState<CategoryGalleryScreen> {
                         _bloc.add(const CategoryVideosLoadMore()),
                   ),
                   initialIndex: index,
+                  initialVideoId: videos[index].id,
                   contextTitle: localizedCategoryName(
                     context.l10n,
                     widget.category.name,

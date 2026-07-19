@@ -167,7 +167,7 @@ class _SavedGridTile extends ConsumerWidget {
         );
         final bloc = context.read<ProfileSavedVideosBloc>();
         context.push(
-          PooledFullscreenVideoFeedScreen.path,
+          PooledFullscreenVideoFeedScreen.pathForVideoId(videoEvent.id),
           extra: PooledFullscreenVideoFeedArgs(
             source: SavedViewSource(userIdHex),
             feedRepository: StreamFeedRepository(
