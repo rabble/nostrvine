@@ -59,6 +59,23 @@ Uint8List decodeBlurHash(
     componentsB[i] = signPow((quantB - 9) / 9, 2) * maxAc;
   }
 
+  // Precomputed DCT basis tables: this decode runs synchronously on the
+  // caller's isolate, and cos() per (pixel, component) pair would cost
+  // width*height*numCompY*(numCompX+1) evaluations vs. these
+  // width*numCompX + height*numCompY.
+  final basisX = Float64List(width * numCompX);
+  for (var x = 0; x < width; x++) {
+    for (var i = 0; i < numCompX; i++) {
+      basisX[x * numCompX + i] = math.cos(math.pi * x * i / width);
+    }
+  }
+  final basisY = Float64List(height * numCompY);
+  for (var y = 0; y < height; y++) {
+    for (var j = 0; j < numCompY; j++) {
+      basisY[y * numCompY + j] = math.cos(math.pi * y * j / height);
+    }
+  }
+
   final pixels = Uint8List(width * height * 4);
   var offset = 0;
   for (var y = 0; y < height; y++) {
@@ -67,9 +84,9 @@ Uint8List decodeBlurHash(
       var g = 0.0;
       var b = 0.0;
       for (var j = 0; j < numCompY; j++) {
-        final basisY = math.cos(math.pi * y * j / height);
+        final cosY = basisY[y * numCompY + j];
         for (var i = 0; i < numCompX; i++) {
-          final basis = math.cos(math.pi * x * i / width) * basisY;
+          final basis = basisX[x * numCompX + i] * cosY;
           final index = i + j * numCompX;
           r += componentsR[index] * basis;
           g += componentsG[index] * basis;

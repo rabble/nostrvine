@@ -192,7 +192,7 @@ void main() {
       );
       expect(hash, isNotNull);
 
-      final data = BlurhashService.decodeBlurhash(hash!, punch: 1);
+      final data = BlurhashService.decodeBlurhash(hash!);
       expect(data, isNotNull);
       final pixels = data!.pixels!;
       for (var i = 0; i + 3 < pixels.length; i += 4) {
@@ -264,13 +264,13 @@ void main() {
     );
 
     test(
-      'defaultPunch softens a legacy high-component (4x7) hash',
+      'decodes a legacy high-component (4x7) hash without a tint',
       () async {
-        // The PR softens DCT ringing on already-published legacy hashes,
-        // which used 4x7 / 4x4 components. Those hashes are still live and
-        // decode with defaultPunch (0.8), never a punch override, so exercise
-        // that exact path: a 4x7 hash decoded at 0.8 must show a smaller
-        // value spread (less overshoot/ringing) than the same hash at 1.0.
+        // Pre-PR production hashes used 4x7 / 4x4 components and are still
+        // live in published Nostr events — the decoder must keep handling
+        // them. The high-contrast grayscale checkerboard also pins channel
+        // symmetry under heavy ringing: the old blurhash_dart decode bug
+        // tinted exactly this kind of content.
         final source = img.Image(width: 128, height: 227);
         for (var y = 0; y < source.height; y++) {
           for (var x = 0; x < source.width; x++) {
@@ -288,28 +288,20 @@ void main() {
           numCompY: 7,
         );
 
-        int valueSpread(double punch) {
-          final data = BlurhashService.decodeBlurhash(
-            legacyHash,
-            punch: punch,
-          )!;
-          final pixels = data.pixels!;
-          var lo = 255;
-          var hi = 0;
-          for (var i = 0; i + 3 < pixels.length; i += 4) {
-            for (var c = 0; c < 3; c++) {
-              lo = lo < pixels[i + c] ? lo : pixels[i + c];
-              hi = hi > pixels[i + c] ? hi : pixels[i + c];
-            }
-          }
-          return hi - lo;
+        final data = BlurhashService.decodeBlurhash(legacyHash);
+        expect(data, isNotNull);
+        final pixels = data!.pixels!;
+        expect(pixels, hasLength(32 * 32 * 4));
+        for (var i = 0; i + 3 < pixels.length; i += 4) {
+          final r = pixels[i];
+          final g = pixels[i + 1];
+          final b = pixels[i + 2];
+          expect(
+            (r - g).abs() <= 2 && (g - b).abs() <= 2 && (r - b).abs() <= 2,
+            isTrue,
+            reason: 'pixel ${i ~/ 4} is tinted: r=$r g=$g b=$b',
+          );
         }
-
-        expect(
-          valueSpread(BlurhashService.defaultPunch),
-          lessThan(valueSpread(1)),
-          reason: 'defaultPunch must damp legacy-hash contrast/ringing',
-        );
       },
     );
 

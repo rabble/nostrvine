@@ -38,6 +38,19 @@ String encodeBlurHash(
   final factorsB = Float64List(count);
   final scale = 1.0 / (width * height);
 
+  // Precomputed linear-light pixels: sRgbToLinear costs a pow() call, so
+  // converting once per pixel instead of once per (pixel, component) pair
+  // cuts that work by the component count.
+  final pixelCount = width * height;
+  final linearR = Float64List(pixelCount);
+  final linearG = Float64List(pixelCount);
+  final linearB = Float64List(pixelCount);
+  for (var p = 0; p < pixelCount; p++) {
+    linearR[p] = sRgbToLinear(rgba[p * 4]);
+    linearG[p] = sRgbToLinear(rgba[p * 4 + 1]);
+    linearB[p] = sRgbToLinear(rgba[p * 4 + 2]);
+  }
+
   for (var j = 0; j < numCompY; j++) {
     for (var i = 0; i < numCompX; i++) {
       final normalisation = (i == 0 && j == 0) ? 1.0 : 2.0;
@@ -49,10 +62,10 @@ String encodeBlurHash(
         for (var x = 0; x < width; x++) {
           final basis =
               normalisation * math.cos(math.pi * i * x / width) * basisY;
-          final offset = (y * width + x) * 4;
-          r += basis * sRgbToLinear(rgba[offset]);
-          g += basis * sRgbToLinear(rgba[offset + 1]);
-          b += basis * sRgbToLinear(rgba[offset + 2]);
+          final p = y * width + x;
+          r += basis * linearR[p];
+          g += basis * linearG[p];
+          b += basis * linearB[p];
         }
       }
       final index = i + j * numCompX;

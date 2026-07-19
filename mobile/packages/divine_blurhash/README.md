@@ -10,7 +10,7 @@ caller owns image decoding/resizing.
 import 'package:divine_blurhash/divine_blurhash.dart';
 
 final hash = encodeBlurHash(rgba, width, height, numCompX: 3, numCompY: 4);
-final pixels = decodeBlurHash(hash, 32, 32, punch: 0.8); // RGBA
+final pixels = decodeBlurHash(hash, 32, 32); // RGBA
 ```
 
 ## Why this exists
@@ -34,4 +34,4 @@ spec-compliant decoder (e.g. divine-web's JS decoder).
 
 - `String encodeBlurHash(Uint8List rgba, int width, int height, {int numCompX = 4, int numCompY = 3})`
 - `Uint8List decodeBlurHash(String blurHash, int width, int height, {double punch = 1.0})`
-  — throws [`BlurHashDecodeException`] on a malformed hash.
+  — throws `BlurHashDecodeException` on a malformed hash.

@@ -58,11 +58,10 @@ class BlurhashService {
   /// Max width used when downscaling before encoding.
   static const int _encodeMaxWidth = 128;
 
-  /// Default punch (contrast) applied to every decoded hash. Kept below 1
-  /// on purpose: the softer look reads better in the feed and it also damps
-  /// the DCT overshoot high-component legacy hashes produce. This is an
-  /// intentional product choice for all placeholders, not only legacy ones.
-  static const double defaultPunch = 0.8;
+  /// Default punch (contrast) applied to every decoded hash. Kept at 1 to
+  /// match divine-web's decoder default, so the same hash renders with
+  /// identical contrast on both clients.
+  static const double defaultPunch = 1;
 
   /// Process-wide memo for [decodeBlurhash]. Decoding is a pure function
   /// of (hash, width, height, punch) and runs synchronously on the UI
