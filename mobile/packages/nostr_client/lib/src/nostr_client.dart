@@ -1507,18 +1507,20 @@ class NostrClient {
   }) {
     if (cached.isEmpty && network.isEmpty) return [];
     if (cached.isEmpty) {
-      return limit != null && network.length > limit
-          ? (network..sort((a, b) => b.createdAt - a.createdAt))
-                .take(limit)
-                .toList()
-          : network;
+      final result = List<Event>.of(network);
+      if (limit != null && result.length > limit) {
+        result.sort((a, b) => b.createdAt - a.createdAt);
+        return result.take(limit).toList();
+      }
+      return result;
     }
     if (network.isEmpty) {
-      return limit != null && cached.length > limit
-          ? (cached..sort((a, b) => b.createdAt - a.createdAt))
-                .take(limit)
-                .toList()
-          : cached;
+      final result = List<Event>.of(cached);
+      if (limit != null && result.length > limit) {
+        result.sort((a, b) => b.createdAt - a.createdAt);
+        return result.take(limit).toList();
+      }
+      return result;
     }
 
     final eventMap = <String, Event>{};

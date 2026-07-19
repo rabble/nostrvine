@@ -3017,6 +3017,41 @@ void main() {
       });
 
       group('queryEvents with cache-first', () {
+        test('limited merge does not reorder the persistence batch', () async {
+          final filters = [
+            Filter(kinds: [EventKind.textNote], limit: 1),
+          ];
+          final older = _createTestEvent(content: 'older', createdAt: 1);
+          final newer = _createTestEvent(content: 'newer', createdAt: 2);
+          final websocketEvents = [older, newer];
+          late List<Event> persistedEvents;
+
+          when(
+            () => mockNostrEventsDao.getEventsByFilter(any()),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockNostr.queryEvents(
+              any(),
+              id: any(named: 'id'),
+              tempRelays: any(named: 'tempRelays'),
+              relayTypes: any(named: 'relayTypes'),
+              sendAfterAuth: any(named: 'sendAfterAuth'),
+            ),
+          ).thenAnswer((_) async => websocketEvents);
+          when(
+            () => mockNostrEventsDao.upsertEventsBatch(any()),
+          ).thenAnswer((invocation) async {
+            persistedEvents =
+                invocation.positionalArguments.first as List<Event>;
+          });
+
+          final result = await clientWithCache.queryEvents(filters);
+
+          expect(result, equals([newer]));
+          expect(persistedEvents, equals([older, newer]));
+          expect(websocketEvents, equals([older, newer]));
+        });
+
         test('returns merged cache + websocket events', () async {
           final filters = [
             Filter(kinds: [EventKind.textNote], limit: 10),

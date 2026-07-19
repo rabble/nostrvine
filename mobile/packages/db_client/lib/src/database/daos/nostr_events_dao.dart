@@ -214,11 +214,12 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
   Future<void> upsertEventsBatch(List<Event> events, {int? expireAt}) async {
     if (events.isEmpty) return;
 
+    final eventsSnapshot = List<Event>.of(events);
     final effectiveExpireAt = expireAt ?? _defaultExpireAt();
 
     await transaction(() async {
       // Batch upsert all events with replaceable logic
-      for (final event in events) {
+      for (final event in eventsSnapshot) {
         await upsertEvent(event, expireAt: effectiveExpireAt);
       }
     });

@@ -193,6 +193,27 @@ void main() {
     });
 
     group('upsertEventsBatch', () {
+      test(
+        'persists a stable snapshot when the caller mutates its list',
+        () async {
+          final first = createEvent(content: 'first', createdAt: 1000);
+          final second = createEvent(content: 'second', createdAt: 2000);
+          final addedLater = createEvent(
+            content: 'added later',
+            createdAt: 3000,
+          );
+          final events = [first, second];
+
+          final persistence = dao.upsertEventsBatch(events);
+          events.add(addedLater);
+
+          await expectLater(persistence, completes);
+          expect(await appDbClient.getEvent(first.id), isNotNull);
+          expect(await appDbClient.getEvent(second.id), isNotNull);
+          expect(await appDbClient.getEvent(addedLater.id), isNull);
+        },
+      );
+
       test('inserts multiple events in a transaction', () async {
         final events = [
           createEvent(content: 'event 1', createdAt: 1000),
