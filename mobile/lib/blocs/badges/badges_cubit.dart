@@ -1,9 +1,9 @@
 // ABOUTME: Cubit that loads NIP-58 badge dashboard data and
 // ABOUTME: coordinates accept, remove, and hide badge actions.
 
+import 'package:badge_repository/badge_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:openvine/services/badges/badge_repository.dart';
 
 part 'badges_state.dart';
 
