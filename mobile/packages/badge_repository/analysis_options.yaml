@@ -1,17 +1,8 @@
 include: package:very_good_analysis/analysis_options.yaml
 
 # The badge code was relocated verbatim from mobile/lib/services/badges (#3866).
-# These rules are disabled in the app's mobile/analysis_options.yaml too, so the
-# moved code and tests lint identically to their prior home (pure relocation).
-# `public_member_api_docs` + `lines_longer_than_80_chars` mirror follow_repository;
-# the rest mirror the app's app-wide (`analyzer: errors:`) relaxations — they
-# apply to lib + test in mobile/analysis_options.yaml, not test-only. Import
-# ordering and package-import style stay enforced.
+# These relaxations match extracted repository-package precedent.
 linter:
   rules:
     public_member_api_docs: false
     lines_longer_than_80_chars: false
-    avoid_types_on_closure_parameters: false
-    only_throw_errors: false
-    join_return_with_assignment: false
-    cascade_invocations: false

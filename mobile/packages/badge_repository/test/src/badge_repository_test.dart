@@ -40,18 +40,17 @@ void main() {
         currentPubkey: () => _pubkey(1),
         signEvent:
             ({
-              required int kind,
-              required String content,
-              required List<List<String>> tags,
+              required kind,
+              required content,
+              required tags,
             }) async {
-              signedEvent = _event(
+              return signedEvent = _event(
                 id: _eventId(900 + kind),
                 pubkey: _pubkey(1),
                 kind: kind,
                 tags: tags,
                 content: content,
               );
-              return signedEvent;
             },
       );
     });
@@ -563,9 +562,9 @@ void main() {
         currentPubkey: () => _pubkey(1),
         signEvent:
             ({
-              required int kind,
-              required String content,
-              required List<List<String>> tags,
+              required kind,
+              required content,
+              required tags,
             }) async => null,
       );
       final award = _awardEvent(
@@ -613,9 +612,9 @@ void main() {
         currentPubkey: () => null,
         signEvent:
             ({
-              required int kind,
-              required String content,
-              required List<List<String>> tags,
+              required kind,
+              required content,
+              required tags,
             }) async => _event(
               id: _eventId(946),
               pubkey: _pubkey(1),
@@ -790,7 +789,7 @@ Map<String, int> _stubQueries(
   _MockNostrClient nostrClient,
   Map<String, List<Event>> eventsByQueryKey, {
   Map<String, Duration> delaysByQueryKey = const {},
-  Map<String, Object> errorsByQueryKey = const {},
+  Map<String, Exception> errorsByQueryKey = const {},
 }) {
   final callCounts = <String, int>{};
   when(() => nostrClient.queryEvents(any())).thenAnswer((invocation) async {

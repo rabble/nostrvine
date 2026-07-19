@@ -399,13 +399,14 @@ class BadgeRepository {
   Future<void> _publishProfileBadges(List<Nip58ProfileBadgeRef> refs) async {
     final tags = <List<String>>[];
     for (final ref in refs) {
-      tags.add(['a', ref.definitionCoordinate]);
-      tags.add([
-        'e',
-        ref.awardEventId,
-        if (ref.awardRelay != null && ref.awardRelay!.isNotEmpty)
-          ref.awardRelay!,
-      ]);
+      tags
+        ..add(['a', ref.definitionCoordinate])
+        ..add([
+          'e',
+          ref.awardEventId,
+          if (ref.awardRelay != null && ref.awardRelay!.isNotEmpty)
+            ref.awardRelay!,
+        ]);
     }
 
     final event = await _signEvent(
