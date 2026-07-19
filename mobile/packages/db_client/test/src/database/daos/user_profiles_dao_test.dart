@@ -1,12 +1,14 @@
 // ABOUTME: Unit tests for UserProfilesDao with UserProfile domain model.
 // ABOUTME: Tests upsertProfile for inserting and updating user profiles.
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:db_client/db_client.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
+import 'package:nostr_sdk/event.dart';
 
 void main() {
   late AppDatabase database;
@@ -213,6 +215,179 @@ void main() {
       });
     });
 
+    group('upsertProfile newest-wins', () {
+      test(
+        'older kind-0 does not overwrite a newer richer cached row',
+        () async {
+          await dao.upsertProfile(
+            createProfile(
+              eventId: 'new',
+              name: 'Alice',
+              displayName: 'Alice in Wonderland',
+              picture: 'https://example.com/alice.jpg',
+              createdAt: DateTime.utc(2024, 1, 2),
+            ),
+          );
+
+          // A stale kind-0 arriving late on a background subscription.
+          await dao.upsertProfile(
+            createProfile(
+              eventId: 'old',
+              name: 'Old Alice',
+              displayName: 'Old',
+              createdAt: DateTime.utc(2024),
+            ),
+          );
+
+          final result = await dao.getProfile(testPubkey);
+          expect(result, isNotNull);
+          expect(result!.name, equals('Alice'));
+          expect(result.displayName, equals('Alice in Wonderland'));
+          expect(result.picture, equals('https://example.com/alice.jpg'));
+          expect(result.eventId, equals('new'));
+        },
+      );
+
+      test('older blank kind-0 leaves name and picture intact', () async {
+        await dao.upsertProfile(
+          createProfile(
+            eventId: 'good',
+            name: 'Alice',
+            picture: 'https://example.com/alice.jpg',
+            createdAt: DateTime.utc(2024, 1, 2),
+          ),
+        );
+
+        // Blank placeholder profile (identicon + name-from-pubkey) that is
+        // older than the good cached row must not blank it.
+        await dao.upsertProfile(
+          createProfile(eventId: 'blank', createdAt: DateTime.utc(2024)),
+        );
+
+        final result = await dao.getProfile(testPubkey);
+        expect(result, isNotNull);
+        expect(result!.name, equals('Alice'));
+        expect(result.picture, equals('https://example.com/alice.jpg'));
+        expect(result.eventId, equals('good'));
+      });
+
+      test(
+        'newer kind-0 applies, including a legitimate field clear',
+        () async {
+          await dao.upsertProfile(
+            createProfile(
+              eventId: 'old',
+              name: 'Alice',
+              picture: 'https://example.com/alice.jpg',
+              about: 'the original bio',
+              createdAt: DateTime.utc(2024),
+            ),
+          );
+
+          // The user deliberately removed their picture in a newer event.
+          // A field clear in a NEWER event is a real edit and must apply.
+          await dao.upsertProfile(
+            createProfile(
+              eventId: 'new',
+              name: 'Alice',
+              about: 'the original bio',
+              createdAt: DateTime.utc(2024, 1, 2),
+            ),
+          );
+
+          final result = await dao.getProfile(testPubkey);
+          expect(result, isNotNull);
+          expect(result!.eventId, equals('new'));
+          expect(result.picture, isNull);
+          expect(result.name, equals('Alice'));
+        },
+      );
+
+      test('equal-createdAt richer profile wins', () async {
+        final sameTime = DateTime.utc(2024, 6);
+        await dao.upsertProfile(
+          createProfile(eventId: 'sparse', name: 'Alice', createdAt: sameTime),
+        );
+
+        await dao.upsertProfile(
+          createProfile(
+            eventId: 'rich',
+            name: 'Alice',
+            displayName: 'Alice in Wonderland',
+            picture: 'https://example.com/alice.jpg',
+            createdAt: sameTime,
+          ),
+        );
+
+        final result = await dao.getProfile(testPubkey);
+        expect(result, isNotNull);
+        expect(result!.eventId, equals('rich'));
+        expect(result.displayName, equals('Alice in Wonderland'));
+        expect(result.picture, equals('https://example.com/alice.jpg'));
+      });
+
+      test('equal-createdAt blank profile does not win', () async {
+        final sameTime = DateTime.utc(2024, 6);
+        await dao.upsertProfile(
+          createProfile(
+            eventId: 'rich',
+            name: 'Alice',
+            displayName: 'Alice in Wonderland',
+            picture: 'https://example.com/alice.jpg',
+            createdAt: sameTime,
+          ),
+        );
+
+        await dao.upsertProfile(
+          createProfile(eventId: 'blank', createdAt: sameTime),
+        );
+
+        final result = await dao.getProfile(testPubkey);
+        expect(result, isNotNull);
+        expect(result!.eventId, equals('rich'));
+        expect(result.name, equals('Alice'));
+        expect(result.picture, equals('https://example.com/alice.jpg'));
+      });
+
+      test(
+        'stale blank kind-0 through EventRouter conversion keeps good row',
+        () async {
+          // Mirrors EventRouter._handleProfileEvent: build a kind-0 event,
+          // convert with UserProfile.fromNostrEvent, then upsert. A good
+          // profile arrives first, then a stale blank kind-0 fans in on a
+          // background feed subscription — the good row must survive.
+          UserProfile fromKind0(
+            Map<String, dynamic> content,
+            DateTime createdAt,
+          ) => UserProfile.fromNostrEvent(
+            Event(
+              testPubkey,
+              0,
+              const <List<String>>[],
+              jsonEncode(content),
+              createdAt: createdAt.millisecondsSinceEpoch ~/ 1000,
+            ),
+          );
+
+          await dao.upsertProfile(
+            fromKind0(
+              {'name': 'Alice', 'picture': 'https://example.com/alice.jpg'},
+              DateTime.utc(2024, 1, 2),
+            ),
+          );
+
+          await dao.upsertProfile(
+            fromKind0(<String, dynamic>{}, DateTime.utc(2024)),
+          );
+
+          final result = await dao.getProfile(testPubkey);
+          expect(result, isNotNull);
+          expect(result!.name, equals('Alice'));
+          expect(result.picture, equals('https://example.com/alice.jpg'));
+        },
+      );
+    });
+
     group('getProfilesByPubkeys', () {
       test('returns empty list for empty input', () async {
         final results = await dao.getProfilesByPubkeys([]);
@@ -225,9 +400,10 @@ void main() {
           createProfile(pubkey: testPubkey2, name: 'Bob'),
         );
 
-        final results = await dao.getProfilesByPubkeys(
-          [testPubkey, testPubkey2],
-        );
+        final results = await dao.getProfilesByPubkeys([
+          testPubkey,
+          testPubkey2,
+        ]);
         expect(results, hasLength(2));
 
         final names = results.map((p) => p.name).toSet();
@@ -237,9 +413,10 @@ void main() {
       test('omits pubkeys not in database', () async {
         await dao.upsertProfile(createProfile(name: 'Alice'));
 
-        final results = await dao.getProfilesByPubkeys(
-          [testPubkey, testPubkey2],
-        );
+        final results = await dao.getProfilesByPubkeys([
+          testPubkey,
+          testPubkey2,
+        ]);
         expect(results, hasLength(1));
         expect(results.first.name, equals('Alice'));
       });
