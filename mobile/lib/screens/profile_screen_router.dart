@@ -129,6 +129,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
       }
 
       return BlocProvider<MyProfileBloc>(
+        key: ValueKey((profileRepository, identityClaimsRepository)),
         create: (context) =>
             MyProfileBloc(
                 profileRepository: profileRepository,

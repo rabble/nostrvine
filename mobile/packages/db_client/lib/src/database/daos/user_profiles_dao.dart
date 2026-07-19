@@ -15,35 +15,75 @@ class UserProfilesDao extends DatabaseAccessor<AppDatabase>
     with _$UserProfilesDaoMixin {
   UserProfilesDao(super.attachedDatabase);
 
-  /// Upsert profile from domain model (insert or update)
+  /// Upsert profile from domain model, keeping the newest version.
   ///
-  /// Converts UserProfile domain model to database companion and
-  /// inserts/updates.
-  /// If profile with same pubkey exists, updates it. Otherwise inserts
-  /// new profile.
+  /// Converts a [UserProfile] domain model to a database companion and writes
+  /// it only when it should win over the currently-cached row for the same
+  /// pubkey. Newest-wins is applied here — at the single write chokepoint —
+  /// so every caller (relay event routing, REST caching, direct cache writes)
+  /// is protected from a stale or blank kind-0 clobbering a good cached
+  /// profile, without each caller having to guard on its own.
+  ///
+  /// Replacement rule for an incoming profile vs the existing row:
+  /// - no existing row: insert;
+  /// - incoming is newer (`createdAt` later): replace;
+  /// - incoming is older: keep the existing row untouched;
+  /// - same `createdAt`: replace only when the incoming profile is *richer*
+  ///   (more non-empty identity fields), which breaks ties toward the more
+  ///   complete profile. A genuine field clear rides in on a strictly newer
+  ///   event, so it still applies.
+  ///
+  /// The read and the conditional write run in a transaction so concurrent
+  /// writers cannot race between the compare and the write.
   ///
   /// For simple CRUD operations (get, watch, delete), use AppDbClient instead.
   Future<void> upsertProfile(UserProfile profile) {
-    return into(userProfiles).insertOnConflictUpdate(
-      UserProfilesCompanion.insert(
-        pubkey: profile.pubkey,
-        displayName: Value(profile.displayName),
-        name: Value(profile.name),
-        about: Value(profile.about),
-        picture: Value(profile.picture),
-        banner: Value(profile.banner),
-        website: Value(profile.website),
-        nip05: Value(profile.nip05),
-        lud16: Value(profile.lud16),
-        lud06: Value(profile.lud06),
-        rawData: Value(
-          profile.rawData.isNotEmpty ? jsonEncode(profile.rawData) : null,
+    return transaction(() async {
+      final existing = await getProfile(profile.pubkey);
+      if (existing != null && !_incomingWins(profile, existing)) {
+        return;
+      }
+      await into(userProfiles).insertOnConflictUpdate(
+        UserProfilesCompanion.insert(
+          pubkey: profile.pubkey,
+          displayName: Value(profile.displayName),
+          name: Value(profile.name),
+          about: Value(profile.about),
+          picture: Value(profile.picture),
+          banner: Value(profile.banner),
+          website: Value(profile.website),
+          nip05: Value(profile.nip05),
+          lud16: Value(profile.lud16),
+          lud06: Value(profile.lud06),
+          rawData: Value(
+            profile.rawData.isNotEmpty ? jsonEncode(profile.rawData) : null,
+          ),
+          createdAt: profile.createdAt,
+          eventId: profile.eventId,
+          lastFetched: DateTime.now(),
         ),
-        createdAt: profile.createdAt,
-        eventId: profile.eventId,
-        lastFetched: DateTime.now(),
-      ),
-    );
+      );
+    });
+  }
+
+  /// Whether [incoming] should replace [existing] under the newest-wins rule
+  /// documented on [upsertProfile].
+  static bool _incomingWins(UserProfile incoming, UserProfile existing) {
+    if (incoming.createdAt.isAfter(existing.createdAt)) return true;
+    if (incoming.createdAt.isBefore(existing.createdAt)) return false;
+    return _identityRichness(incoming) > _identityRichness(existing);
+  }
+
+  /// Counts the non-empty identity fields on [profile], used only as the
+  /// equal-`createdAt` tiebreak in [_incomingWins].
+  static int _identityRichness(UserProfile profile) {
+    var count = 0;
+    if (profile.name?.isNotEmpty ?? false) count++;
+    if (profile.displayName?.isNotEmpty ?? false) count++;
+    if (profile.picture?.isNotEmpty ?? false) count++;
+    if (profile.about?.isNotEmpty ?? false) count++;
+    if (profile.banner?.isNotEmpty ?? false) count++;
+    return count;
   }
 
   /// Get a single profile by pubkey with domain model conversion.
@@ -125,6 +165,10 @@ class UserProfilesDao extends DatabaseAccessor<AppDatabase>
   ///
   /// Inserts or updates all given profiles in a single batch operation.
   /// Uses a Drift batch for efficiency when writing many profiles at once.
+  ///
+  /// This is intentionally a blind batch write for uncached bulk imports.
+  /// Use [upsertProfile] when writing an already-cached pubkey where
+  /// newest-wins clobber protection matters.
   Future<void> upsertProfiles(List<UserProfile> profiles) async {
     if (profiles.isEmpty) return;
     await batch((b) {
