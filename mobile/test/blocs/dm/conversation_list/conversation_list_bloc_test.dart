@@ -565,11 +565,17 @@ void main() {
         },
       );
 
-      blocTest<ConversationListBloc, ConversationListState>(
+      test(
         'emits updated state when streams emit multiple values',
-        setUp: () {
-          final acceptedController = StreamController<List<DmConversation>>();
-          final requestsController = StreamController<List<DmConversation>>();
+        () async {
+          final acceptedSubscribed = Completer<void>();
+          final requestsSubscribed = Completer<void>();
+          final acceptedController = StreamController<List<DmConversation>>(
+            onListen: acceptedSubscribed.complete,
+          );
+          final requestsController = StreamController<List<DmConversation>>(
+            onListen: requestsSubscribed.complete,
+          );
 
           when(
             () => mockDmRepository.watchAcceptedConversations(
@@ -584,62 +590,73 @@ void main() {
             () => mockDmRepository.historyRecoveryStream,
           ).thenAnswer((_) => const Stream<bool>.empty());
 
-          // Emit initial empty requests, then accepted values.
-          Future<void>.delayed(const Duration(milliseconds: 10)).then((_) {
-            requestsController.add(const []);
-            acceptedController.add([
-              _createConversation(
-                id: _testConversationId1,
-                currentUserHasSent: true,
-              ),
-            ]);
+          final firstConversation = _createConversation(
+            id: _testConversationId1,
+            currentUserHasSent: true,
+          );
+          final secondConversation = _createConversation(
+            id: _testConversationId2,
+            currentUserHasSent: true,
+          );
+          final emitted = <ConversationListState>[];
+          final loadingEmitted = Completer<void>();
+          final firstLoadedEmitted = Completer<void>();
+          final secondLoadedEmitted = Completer<void>();
+
+          final bloc = createBloc();
+          late final StreamSubscription<ConversationListState> subscription;
+          subscription = bloc.stream.listen((state) {
+            emitted.add(state);
+            if (!loadingEmitted.isCompleted &&
+                state.status == ConversationListStatus.loading) {
+              loadingEmitted.complete();
+            }
+            if (!firstLoadedEmitted.isCompleted &&
+                state.status == ConversationListStatus.loaded &&
+                state.conversations.length == 1) {
+              firstLoadedEmitted.complete();
+            }
+            if (!secondLoadedEmitted.isCompleted &&
+                state.status == ConversationListStatus.loaded &&
+                state.conversations.length == 2) {
+              secondLoadedEmitted.complete();
+            }
+          });
+          addTearDown(() async {
+            await subscription.cancel();
+            await bloc.close();
+            await acceptedController.close();
+            await requestsController.close();
           });
 
-          Future<void>.delayed(const Duration(milliseconds: 50)).then((_) {
-            acceptedController.add([
-              _createConversation(
-                id: _testConversationId1,
-                currentUserHasSent: true,
-              ),
-              _createConversation(
-                id: _testConversationId2,
-                currentUserHasSent: true,
-              ),
-            ]);
-            acceptedController.close();
-            requestsController.close();
-          });
+          bloc.add(const ConversationListStarted());
+          await loadingEmitted.future.timeout(const Duration(seconds: 2));
+          await Future.wait([
+            acceptedSubscribed.future,
+            requestsSubscribed.future,
+          ]).timeout(const Duration(seconds: 2));
+
+          requestsController.add(const []);
+          acceptedController.add([firstConversation]);
+          await firstLoadedEmitted.future.timeout(const Duration(seconds: 2));
+
+          acceptedController.add([firstConversation, secondConversation]);
+          await secondLoadedEmitted.future.timeout(const Duration(seconds: 2));
+
+          expect(emitted, [
+            const ConversationListState(status: ConversationListStatus.loading),
+            ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: [firstConversation],
+              hasMore: false,
+            ),
+            ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: [firstConversation, secondConversation],
+              hasMore: false,
+            ),
+          ]);
         },
-        build: createBloc,
-        act: (bloc) => bloc.add(const ConversationListStarted()),
-        wait: const Duration(milliseconds: 200),
-        expect: () => [
-          const ConversationListState(status: ConversationListStatus.loading),
-          ConversationListState(
-            status: ConversationListStatus.loaded,
-            conversations: [
-              _createConversation(
-                id: _testConversationId1,
-                currentUserHasSent: true,
-              ),
-            ],
-            hasMore: false,
-          ),
-          ConversationListState(
-            status: ConversationListStatus.loaded,
-            conversations: [
-              _createConversation(
-                id: _testConversationId1,
-                currentUserHasSent: true,
-              ),
-              _createConversation(
-                id: _testConversationId2,
-                currentUserHasSent: true,
-              ),
-            ],
-            hasMore: false,
-          ),
-        ],
       );
     });
 
