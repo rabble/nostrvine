@@ -1,6 +1,6 @@
+import 'package:badge_repository/badge_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:openvine/services/badges/nip58_badge_parser.dart';
 
 void main() {
   group('Nip58BadgeParser', () {

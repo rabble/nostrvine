@@ -1,9 +1,8 @@
+import 'package:badge_repository/badge_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:openvine/services/badges/badge_repository.dart';
-import 'package:openvine/services/badges/nip58_badge_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
@@ -519,6 +518,217 @@ void main() {
         expect(issued.single.award.event.id, _eventId(12));
         expect(issued.single.recipients.single.pubkey, _pubkey(2));
         expect(issued.single.recipients.single.isAccepted, isTrue);
+      },
+    );
+
+    test(
+      'ProfileBadgeViewData exposes issuer, recipients, deduplicated unique '
+      'recipients, and a coordinate-derived name without a definition',
+      () {
+        final coordinate = '30009:${_pubkey(5)}:daily-diviner';
+        final award = Nip58BadgeParser.parseAward(
+          _awardEvent(
+            id: _eventId(40),
+            issuerPubkey: _pubkey(5),
+            definitionCoordinate: coordinate,
+            recipients: [_pubkey(6), _pubkey(6), _pubkey(7)],
+          ),
+        )!;
+        final viewData = ProfileBadgeViewData(
+          badge: Nip58ProfileBadgeRef(
+            definitionCoordinate: coordinate,
+            awardEventId: _eventId(40),
+          ),
+          award: award,
+        );
+
+        expect(viewData.issuerPubkey, _pubkey(5));
+        expect(viewData.recipientPubkeys, [_pubkey(6), _pubkey(6), _pubkey(7)]);
+        expect(viewData.uniqueRecipientPubkeys, [_pubkey(6), _pubkey(7)]);
+        expect(viewData.displayName, 'daily-diviner');
+        expect(viewData.description, isNull);
+        expect(viewData.imageUrl, isNull);
+      },
+    );
+
+    test(
+      'BadgeAwardViewData exposes award id, coordinate, coordinate-derived '
+      'name, and null image without a definition',
+      () {
+        final coordinate = '30009:${_pubkey(8)}:weekly-diviner';
+        final award = Nip58BadgeParser.parseAward(
+          _awardEvent(
+            id: _eventId(41),
+            issuerPubkey: _pubkey(8),
+            definitionCoordinate: coordinate,
+            recipients: [_pubkey(1)],
+          ),
+        )!;
+        final viewData = BadgeAwardViewData(award: award);
+
+        expect(viewData.awardEventId, _eventId(41));
+        expect(viewData.definitionCoordinate, coordinate);
+        expect(viewData.displayName, 'weekly-diviner');
+        expect(viewData.imageUrl, isNull);
+      },
+    );
+
+    test(
+      'acceptAward keeps an already-accepted award and preserves relay hints',
+      () async {
+        final coordinate = '30009:${_pubkey(2)}:daily-diviner';
+        final award = _awardEvent(
+          id: _eventId(42),
+          issuerPubkey: _pubkey(2),
+          definitionCoordinate: coordinate,
+          recipients: [_pubkey(1)],
+        );
+        final existingProfileBadges = _profileBadgesEvent(
+          id: _eventId(43),
+          pubkey: _pubkey(1),
+          tags: [
+            ['a', coordinate],
+            ['e', _eventId(42), 'wss://relay.divine.video'],
+          ],
+        );
+        _stubQueries(nostrClient, {
+          'profileCurrent:${_pubkey(1)}': [existingProfileBadges],
+        });
+
+        await repository.acceptAward(
+          BadgeAwardViewData(award: Nip58BadgeParser.parseAward(award)!),
+        );
+
+        final event = lastSignedEvent();
+        expect(event, isNotNull);
+        expect(event!.tags, [
+          ['a', coordinate],
+          ['e', _eventId(42), 'wss://relay.divine.video'],
+        ]);
+      },
+    );
+
+    test('acceptAward throws a StateError when signing fails', () async {
+      final failingRepository = BadgeRepository(
+        nostrClient: nostrClient,
+        sharedPreferences: preferences,
+        currentPubkey: () => _pubkey(1),
+        signEvent:
+            ({
+              required int kind,
+              required String content,
+              required List<List<String>> tags,
+            }) async => null,
+      );
+      final award = _awardEvent(
+        id: _eventId(44),
+        issuerPubkey: _pubkey(2),
+        definitionCoordinate: '30009:${_pubkey(2)}:daily-diviner',
+        recipients: [_pubkey(1)],
+      );
+
+      await expectLater(
+        failingRepository.acceptAward(
+          BadgeAwardViewData(award: Nip58BadgeParser.parseAward(award)!),
+        ),
+        throwsA(isA<StateError>()),
+      );
+    });
+
+    test('acceptAward throws a StateError when publishing fails', () async {
+      when(
+        () => nostrClient.publishEvent(any()),
+      ).thenAnswer((_) async => const PublishFailed());
+      final award = _awardEvent(
+        id: _eventId(45),
+        issuerPubkey: _pubkey(2),
+        definitionCoordinate: '30009:${_pubkey(2)}:daily-diviner',
+        recipients: [_pubkey(1)],
+      );
+
+      await expectLater(
+        repository.acceptAward(
+          BadgeAwardViewData(award: Nip58BadgeParser.parseAward(award)!),
+        ),
+        throwsA(isA<StateError>()),
+      );
+    });
+
+    test('acceptAward throws a StateError without a current pubkey', () async {
+      final anonymousRepository = BadgeRepository(
+        nostrClient: nostrClient,
+        sharedPreferences: preferences,
+        currentPubkey: () => null,
+        signEvent:
+            ({
+              required int kind,
+              required String content,
+              required List<List<String>> tags,
+            }) async => null,
+      );
+      final award = _awardEvent(
+        id: _eventId(46),
+        issuerPubkey: _pubkey(2),
+        definitionCoordinate: '30009:${_pubkey(2)}:daily-diviner',
+        recipients: [_pubkey(1)],
+      );
+
+      await expectLater(
+        anonymousRepository.acceptAward(
+          BadgeAwardViewData(award: Nip58BadgeParser.parseAward(award)!),
+        ),
+        throwsA(isA<StateError>()),
+      );
+    });
+
+    test(
+      'acceptAward bases new profile badges on the newest of multiple events',
+      () async {
+        final award = _awardEvent(
+          id: _eventId(47),
+          issuerPubkey: _pubkey(2),
+          definitionCoordinate: '30009:${_pubkey(2)}:daily-diviner',
+          recipients: [_pubkey(1)],
+        );
+        final olderProfileBadges = _event(
+          id: _eventId(48),
+          pubkey: _pubkey(1),
+          kind: EventKind.profileBadges,
+          createdAt: 500,
+          tags: [
+            ['a', '30009:${_pubkey(3)}:older-badge'],
+            ['e', _eventId(49)],
+          ],
+        );
+        final newerProfileBadges = _event(
+          id: _eventId(50),
+          pubkey: _pubkey(1),
+          kind: EventKind.profileBadges,
+          createdAt: 2000,
+          tags: [
+            ['a', '30009:${_pubkey(3)}:newer-badge'],
+            ['e', _eventId(51)],
+          ],
+        );
+        _stubQueries(nostrClient, {
+          'profileCurrent:${_pubkey(1)}': [
+            olderProfileBadges,
+            newerProfileBadges,
+          ],
+        });
+
+        await repository.acceptAward(
+          BadgeAwardViewData(award: Nip58BadgeParser.parseAward(award)!),
+        );
+
+        final event = lastSignedEvent();
+        expect(event, isNotNull);
+        expect(event!.tags, [
+          ['a', '30009:${_pubkey(3)}:newer-badge'],
+          ['e', _eventId(51)],
+          ['a', '30009:${_pubkey(2)}:daily-diviner'],
+          ['e', _eventId(47)],
+        ]);
       },
     );
   });
