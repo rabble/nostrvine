@@ -3,8 +3,10 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:blurhash_service/blurhash_service.dart';
+import 'package:divine_blurhash/divine_blurhash.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
+import 'package:unified_logger/unified_logger.dart';
 
 /// Creates a solid-colour JPEG with the given [width] and [height].
 Uint8List _makeJpeg({required int width, required int height}) {
@@ -98,6 +100,32 @@ void main() {
       expect(BlurhashService.decodeBlurhash('short'), isNull);
     });
 
+    test(
+      'logs an error when a valid-charset hash has a mismatched length',
+      () async {
+        await LogCaptureService().clearAllLogs();
+
+        // A real hash truncated mid-string: passes the charset/length-floor
+        // check but its length no longer matches its declared component count,
+        // so decoding bails. Corrupt/truncated tags must stay observable.
+        const truncatedHash = 'L6Pj0^jE.AyE_3t7t7R*';
+
+        expect(BlurhashService.decodeBlurhash(truncatedHash), isNull);
+
+        final errors = LogCaptureService()
+            .getRecentLogs(minLevel: LogLevel.error)
+            .where((entry) => entry.name == 'BlurhashService')
+            .toList();
+        expect(
+          errors,
+          isNotEmpty,
+          reason:
+              'a malformed blurhash must emit an error log, not fail '
+              'silently',
+        );
+      },
+    );
+
     test('blurhash data provides gradient', () {
       final testBlurhash = BlurhashService.getDefaultVineBlurhash();
       final data = BlurhashService.decodeBlurhash(testBlurhash);
@@ -114,23 +142,203 @@ void main() {
       expect(data!.isValid, isTrue);
     });
 
+    test('decodes grayscale content without a color tint', () async {
+      // Regression: blurhash_dart's decodeAc misses the spec's integer
+      // division, which inflates red/green in every AC component — a
+      // white→black gradient decoded with navy blue shadows and a cream
+      // top. The spec-correct decode must keep gray pixels gray.
+      final gradient = img.Image(width: 128, height: 227);
+      for (var y = 0; y < gradient.height; y++) {
+        final v = (230 - (y / gradient.height) * 215).round();
+        for (var x = 0; x < gradient.width; x++) {
+          gradient.setPixelRgb(x, y, v, v, v);
+        }
+      }
+      final hash = await BlurhashService.generateBlurhash(
+        Uint8List.fromList(img.encodePng(gradient)),
+      );
+      expect(hash, isNotNull);
+
+      final data = BlurhashService.decodeBlurhash(hash!);
+      expect(data, isNotNull);
+      final pixels = data!.pixels!;
+      for (var i = 0; i + 3 < pixels.length; i += 4) {
+        final r = pixels[i];
+        final g = pixels[i + 1];
+        final b = pixels[i + 2];
+        expect(
+          (r - g).abs() <= 2 && (g - b).abs() <= 2 && (r - b).abs() <= 2,
+          isTrue,
+          reason: 'pixel ${i ~/ 4} is tinted: r=$r g=$g b=$b',
+        );
+      }
+    });
+
+    test('decodes a solid fill back to its source color', () async {
+      // DC reference vector: a solid fill carries no AC energy, so every
+      // decoded pixel must round-trip the DC (average) color on all three
+      // channels. The expected values are the source color itself — an
+      // independent reference, not this decoder's own output — so a channel
+      // swap or a broken DC/sRGB round-trip fails it. (The AC division
+      // regression is guarded separately by the grayscale-tint test above;
+      // it can't be pinned here because a solid fill has ~zero AC energy.)
+      const sourceR = 100;
+      const sourceG = 149;
+      const sourceB = 237;
+      final image = img.Image(width: 128, height: 128);
+      img.fill(image, color: img.ColorRgb8(sourceR, sourceG, sourceB));
+      final hash = await BlurhashService.generateBlurhash(
+        Uint8List.fromList(img.encodePng(image)),
+      );
+      expect(hash, isNotNull);
+
+      final data = BlurhashService.decodeBlurhash(hash!, punch: 1);
+      expect(data, isNotNull);
+      final pixels = data!.pixels!;
+      for (var i = 0; i + 3 < pixels.length; i += 4) {
+        expect(
+          (pixels[i] - sourceR).abs(),
+          lessThanOrEqualTo(5),
+          reason: 'red @ ${i ~/ 4}: ${pixels[i]}',
+        );
+        expect(
+          (pixels[i + 1] - sourceG).abs(),
+          lessThanOrEqualTo(5),
+          reason: 'green @ ${i ~/ 4}: ${pixels[i + 1]}',
+        );
+        expect(
+          (pixels[i + 2] - sourceB).abs(),
+          lessThanOrEqualTo(5),
+          reason: 'blue @ ${i ~/ 4}: ${pixels[i + 2]}',
+        );
+      }
+    });
+
+    test(
+      'punch scales AC contrast, including the first component row',
+      () async {
+        // A pure horizontal gradient puts nearly all of its AC energy in the
+        // first component row (j = 0, i > 0) — exactly the row blurhash_dart's
+        // punch skipped. Our decode bakes punch into maxAc for every AC term,
+        // so the left↔right contrast must scale ~linearly with punch. A plain
+        // `contrast(high) > contrast(low)` check is NOT enough: the upstream
+        // first-row-skip bug still satisfies it via the tiny residual energy
+        // in the punched j > 0 rows (measured 175 vs 173 at punch 1 vs 0.5).
+        // The ratio assertion below fails under that bug (it needs the
+        // dominant first-row AC to actually be scaled): correct decode gives
+        // ~175 vs ~81, the skip bug gives ~175 vs ~173.
+        final gradient = img.Image(width: 128, height: 128);
+        for (var x = 0; x < gradient.width; x++) {
+          final v = (x / (gradient.width - 1) * 255).round();
+          for (var y = 0; y < gradient.height; y++) {
+            gradient.setPixelRgb(x, y, v, v, v);
+          }
+        }
+        final hash = await BlurhashService.generateBlurhash(
+          Uint8List.fromList(img.encodePng(gradient)),
+        );
+        expect(hash, isNotNull);
+
+        int horizontalContrast(double punch) {
+          final data = BlurhashService.decodeBlurhash(
+            hash!,
+            width: 16,
+            punch: punch,
+          )!;
+          final pixels = data.pixels!;
+          final left = pixels[0];
+          final right = pixels[(16 - 1) * 4];
+          return (right - left).abs();
+        }
+
+        final softContrast = horizontalContrast(0.5);
+        final fullContrast = horizontalContrast(1);
+        expect(
+          fullContrast,
+          greaterThan((softContrast * 1.4).round()),
+          reason:
+              'punch must scale the dominant first-row AC contrast, '
+              'not skip it',
+        );
+      },
+    );
+
+    test(
+      'defaultPunch softens a legacy high-component (4x7) hash',
+      () async {
+        // The PR softens DCT ringing on already-published legacy hashes,
+        // which used 4x7 / 4x4 components. Those hashes are still live and
+        // decode with defaultPunch (0.8), never a punch override, so exercise
+        // that exact path: a 4x7 hash decoded at 0.8 must show a smaller
+        // value spread (less overshoot/ringing) than the same hash at 1.0.
+        final source = img.Image(width: 128, height: 227);
+        for (var y = 0; y < source.height; y++) {
+          for (var x = 0; x < source.width; x++) {
+            final v = ((x ~/ 16) + (y ~/ 16)).isEven ? 245 : 10;
+            source.setPixelRgb(x, y, v, v, v);
+          }
+        }
+        // Encode the legacy shape directly — the service only emits 3x4/3x3
+        // now, so this reproduces a pre-PR production hash. numCompX defaults
+        // to 4; numCompY: 7 makes it the 4x7 shape.
+        final legacyHash = encodeBlurHash(
+          source.getBytes(order: img.ChannelOrder.rgba),
+          source.width,
+          source.height,
+          numCompY: 7,
+        );
+
+        int valueSpread(double punch) {
+          final data = BlurhashService.decodeBlurhash(
+            legacyHash,
+            punch: punch,
+          )!;
+          final pixels = data.pixels!;
+          var lo = 255;
+          var hi = 0;
+          for (var i = 0; i + 3 < pixels.length; i += 4) {
+            for (var c = 0; c < 3; c++) {
+              lo = lo < pixels[i + c] ? lo : pixels[i + c];
+              hi = hi > pixels[i + c] ? hi : pixels[i + c];
+            }
+          }
+          return hi - lo;
+        }
+
+        expect(
+          valueSpread(BlurhashService.defaultPunch),
+          lessThan(valueSpread(1)),
+          reason: 'defaultPunch must damp legacy-hash contrast/ringing',
+        );
+      },
+    );
+
     group('generateBlurhash aspect-ratio component selection', () {
       // Blurhash length = 6 + 2 * (compX * compY - 1)
-      // Portrait 4×7 → 6 + 2*27 = 60 chars
-      // Square   4×4 → 6 + 2*15 = 36 chars
+      // Portrait 3×4 → 6 + 2*11 = 28 chars
+      // Square   3×3 → 6 + 2*8  = 22 chars
 
-      test('uses 4×7 components for 9:16 portrait image', () async {
+      test('uses 3×4 components for 9:16 portrait image', () async {
         final bytes = _makeJpeg(width: 90, height: 160);
         final hash = await BlurhashService.generateBlurhash(bytes);
         expect(hash, isNotNull);
-        expect(hash!.length, equals(60));
+        expect(hash!.length, equals(28));
       });
 
-      test('uses 4×4 components for 1:1 square image', () async {
+      test('uses 3×3 components for 1:1 square image', () async {
         final bytes = _makeJpeg(width: 100, height: 100);
         final hash = await BlurhashService.generateBlurhash(bytes);
         expect(hash, isNotNull);
-        expect(hash!.length, equals(36));
+        expect(hash!.length, equals(22));
+      });
+
+      test('falls back to square components for landscape input', () async {
+        // Divine only produces 9:16 and 1:1 videos; wider input (e.g.
+        // imported media) shares the square components.
+        final bytes = _makeJpeg(width: 160, height: 90);
+        final hash = await BlurhashService.generateBlurhash(bytes);
+        expect(hash, isNotNull);
+        expect(hash!.length, equals(22));
       });
 
       test('accepts valid square hashes that do not start with L', () async {
@@ -151,7 +359,7 @@ void main() {
           await thumbnailFile.readAsBytes(),
         );
         expect(hash, isNotNull);
-        expect(hash!.length, equals(60));
+        expect(hash!.length, equals(28));
       });
 
       test('runs encoding in a background isolate '
