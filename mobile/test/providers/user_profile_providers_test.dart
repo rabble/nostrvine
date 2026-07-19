@@ -32,6 +32,8 @@ class _MockProfileStatsDao extends Mock implements ProfileStatsDao {}
 class _MockPendingProfileSavesDao extends Mock
     implements PendingProfileSavesDao {}
 
+class _MockIdentityEventsDao extends Mock implements IdentityEventsDao {}
+
 class _TestNostrSession extends NostrSession {
   _TestNostrSession(this._readiness);
 
@@ -213,6 +215,9 @@ void main() {
         when(
           () => database.pendingProfileSavesDao,
         ).thenReturn(pendingProfileSavesDao);
+        when(
+          () => database.identityEventsDao,
+        ).thenReturn(_MockIdentityEventsDao());
 
         final container = ProviderContainer(
           overrides: [
