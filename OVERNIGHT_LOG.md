@@ -19,8 +19,9 @@
   `divine_video_player` tests. App and uploader static analysis report no
   issues. A final iOS Simulator build succeeds, and `git diff --check` is
   clean.
-- Work is committed on `overnight/2026-07-19`. The original conflicted
-  checkout was not modified.
+- Work is committed on `overnight/2026-07-19` and published as
+  [PR #6184](https://github.com/divinevideo/divine-mobile/pull/6184). All
+  initial PR checks passed. The original conflicted checkout was not modified.
 
 ### Still open or blocked
 
@@ -199,3 +200,16 @@
   simulator can supply the missing native stack from the reporter's earlier
   failure. A speculative native-player change was rejected; the current
   package's complete regression suite is green.
+
+### 06 — Published the review branch and monitored CI
+
+- Pushed only `overnight/2026-07-19`, without force or history rewriting, and
+  opened [PR #6184](https://github.com/divinevideo/divine-mobile/pull/6184)
+  against `main` with the semantic title
+  `fix(ios): finish background publishes and recover playback routes`.
+- The pre-push hook independently reran analysis and 145 changed-file tests;
+  both passed.
+- Monitored the initial PR run to completion. Uploader CI, app analysis,
+  formatting, generated-file verification, the full app test job, web preview,
+  semantic title, issue-link, CLA, VGV, and mergeability checks all passed.
+  The branch was mergeable and exactly matched its remote at handoff.
