@@ -9,6 +9,7 @@ import 'package:openvine/router/fade_upwards_page.dart';
 import 'package:openvine/router/navigator_keys.dart';
 import 'package:openvine/router/pooled_fullscreen_feed_route.dart';
 import 'package:openvine/router/route_error_screen.dart';
+import 'package:openvine/router/routes/route_extras.dart';
 import 'package:openvine/router/widgets/sound_detail_loader.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
@@ -29,10 +30,8 @@ List<RouteBase> videoRoutes() {
       name: VideoRecorderScreen.routeName,
       // The recorder is a modal creation mode, not the next screen in a
       // flow — open it with the fade-upwards transition.
-      pageBuilder: (_, state) => fadeUpwardsPage(
-        state: state,
-        child: const VideoRecorderRoute(),
-      ),
+      pageBuilder: (_, state) =>
+          fadeUpwardsPage(state: state, child: const VideoRecorderRoute()),
     ),
     GoRoute(
       path: CreatorAnalyticsScreen.path,
@@ -77,8 +76,8 @@ List<RouteBase> videoRoutes() {
         if (extra is AudioEvent) {
           sound = extra;
         } else if (extra is Map<String, dynamic>) {
-          sound = extra['sound'] as AudioEvent?;
-          sourceVideo = extra['sourceVideo'] as VideoEvent?;
+          sound = extraAs<AudioEvent>(extra['sound']);
+          sourceVideo = extraAs<VideoEvent>(extra['sourceVideo']);
         }
         if (sound != null) {
           return SoundDetailScreen(sound: sound, sourceVideo: sourceVideo);
@@ -93,7 +92,7 @@ List<RouteBase> videoRoutes() {
       name: OriginalSoundDetailScreen.routeName,
       builder: (ctx, st) {
         final pubkey = st.pathParameters['pubkey'];
-        final video = st.extra as VideoEvent?;
+        final video = extraAs<VideoEvent>(st.extra);
         if (pubkey == null || pubkey.isEmpty) {
           return RouteErrorScreen(message: ctx.l10n.routerInvalidCreator);
         }
@@ -143,7 +142,7 @@ List<RouteBase> videoRoutes() {
         if (videoId == null || videoId.isEmpty) {
           return RouteErrorScreen(message: ctx.l10n.routeInvalidVideoId);
         }
-        final prefetched = st.extra as VideoEvent?;
+        final prefetched = extraAs<VideoEvent>(st.extra);
         return VideoMetadataEditScreen(
           videoId: videoId,
           prefetched: prefetched,
@@ -158,7 +157,7 @@ List<RouteBase> videoRoutes() {
         if (videoId == null || videoId.isEmpty) {
           return RouteErrorScreen(message: ctx.l10n.routeInvalidVideoId);
         }
-        final prefetched = st.extra as VideoEvent?;
+        final prefetched = extraAs<VideoEvent>(st.extra);
         return SubtitleEditorScreen(videoId: videoId, prefetched: prefetched);
       },
     ),

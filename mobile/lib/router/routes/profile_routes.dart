@@ -4,6 +4,7 @@
 import 'package:go_router/go_router.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/router/route_error_screen.dart';
+import 'package:openvine/router/routes/route_extras.dart';
 import 'package:openvine/router/widgets/followers_screen_router.dart';
 import 'package:openvine/router/widgets/following_screen_router.dart';
 import 'package:openvine/router/widgets/other_profile_screen_router.dart';
@@ -73,14 +74,11 @@ List<RouteBase> profileRoutes() {
       name: FollowersScreenRouter.routeName,
       builder: (ctx, st) {
         final pubkey = st.pathParameters['pubkey'];
-        final displayName = st.extra as String?;
+        final displayName = extraAs<String>(st.extra);
         if (pubkey == null || pubkey.isEmpty) {
           return RouteErrorScreen(message: ctx.l10n.routeInvalidUserId);
         }
-        return FollowersScreenRouter(
-          pubkey: pubkey,
-          displayName: displayName,
-        );
+        return FollowersScreenRouter(pubkey: pubkey, displayName: displayName);
       },
     ),
     // Following screen - routes to My or Others based on pubkey
@@ -89,14 +87,11 @@ List<RouteBase> profileRoutes() {
       name: FollowingScreenRouter.routeName,
       builder: (ctx, st) {
         final pubkey = st.pathParameters['pubkey'];
-        final displayName = st.extra as String?;
+        final displayName = extraAs<String>(st.extra);
         if (pubkey == null || pubkey.isEmpty) {
           return RouteErrorScreen(message: ctx.l10n.routeInvalidUserId);
         }
-        return FollowingScreenRouter(
-          pubkey: pubkey,
-          displayName: displayName,
-        );
+        return FollowingScreenRouter(pubkey: pubkey, displayName: displayName);
       },
     ),
     // Other user's profile screen (no bottom nav, pushed from feeds/search)
@@ -110,9 +105,9 @@ List<RouteBase> profileRoutes() {
           return RouteErrorScreen(message: ctx.l10n.routeInvalidProfileId);
         }
         // Extract profile hints from extra (for users without Kind 0 profiles)
-        final extra = st.extra as Map<String, String?>?;
-        final displayNameHint = extra?['displayName'];
-        final avatarUrlHint = extra?['avatarUrl'];
+        final extra = extraAs<Map<String, dynamic>>(st.extra);
+        final displayNameHint = extra?['displayName'] as String?;
+        final avatarUrlHint = extra?['avatarUrl'] as String?;
         return OtherProfileScreenRouter(
           npub: npub,
           displayNameHint: displayNameHint,
