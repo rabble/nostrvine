@@ -13,7 +13,7 @@ import 'package:openvine/services/video_editor/video_editor_render_service.dart'
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
-import '../mocks/mock_path_provider_platform.dart';
+import '../../mocks/mock_path_provider_platform.dart';
 
 class _ProgressProVideoEditor extends ProVideoEditor {
   final _progressController = StreamController<ProgressModel>.broadcast();
