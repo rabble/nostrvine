@@ -13,6 +13,7 @@ import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/models/known_account.dart';
+import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/repository_providers.dart';
@@ -403,11 +404,16 @@ VerifierClient verifierClient(Ref ref) {
 }
 
 /// Provider for [IdentityClaimsRepository] composing the verifier client
-/// with NIP-39 i tag parsing.
+/// with NIP-39 i tag parsing and the persistent verdict cache (#3936).
 @Riverpod(keepAlive: true)
 IdentityClaimsRepository identityClaimsRepository(Ref ref) {
   return IdentityClaimsRepository(
     verifierClient: ref.watch(verifierClientProvider),
+    identityVerificationsDao: ref
+        .watch(
+          databaseProvider,
+        )
+        .identityVerificationsDao,
   );
 }
 

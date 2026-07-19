@@ -1347,5 +1347,154 @@ void main() {
         },
       );
     });
+
+    group('VerifiedClaimsRequested (SWR cache, #3936)', () {
+      late _MockIdentityClaimsRepository mockClaimsRepository;
+
+      const identityTags = [
+        ['i', 'github:alice', 'proof-a'],
+      ];
+      const aliceClaim = IdentityClaim(
+        pubkey: testPubkey,
+        platform: 'github',
+        identity: 'alice',
+        proof: 'proof-a',
+      );
+
+      setUp(() {
+        mockClaimsRepository = _MockIdentityClaimsRepository();
+        registerFallbackValue(<List<String>>[]);
+        when(
+          () => mockProfileRepository.cachedIdentityTags(testPubkey),
+        ).thenAnswer((_) async => identityTags);
+        when(
+          () => mockProfileRepository.freshIdentityTags(
+            pubkey: testPubkey,
+            kind0Tags: any(named: 'kind0Tags'),
+            kind0CreatedAt: any(named: 'kind0CreatedAt'),
+          ),
+        ).thenAnswer((_) async => identityTags);
+      });
+
+      MyProfileBloc createClaimsBloc() => MyProfileBloc(
+        profileRepository: mockProfileRepository,
+        pubkey: testPubkey,
+        identityClaimsRepository: mockClaimsRepository,
+      );
+
+      blocTest<MyProfileBloc, MyProfileState>(
+        'renders cached claims without a verifier call when the snapshot '
+        'is fresh and covers every claim',
+        seed: () => MyProfileLoaded(
+          profile: createTestProfile(),
+          isFresh: true,
+        ),
+        setUp: () {
+          when(
+            () => mockClaimsRepository.cachedVerifiedClaims(
+              pubkey: testPubkey,
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async => const CachedVerifiedClaims(
+              claims: [aliceClaim],
+              isFresh: true,
+            ),
+          );
+        },
+        build: createClaimsBloc,
+        act: (bloc) => bloc.add(const VerifiedClaimsRequested()),
+        expect: () => [
+          isA<MyProfileLoaded>().having(
+            (s) => s.verifiedClaims,
+            'verifiedClaims',
+            [aliceClaim],
+          ),
+        ],
+        verify: (_) {
+          verifyNever(
+            () => mockClaimsRepository.verifiedClaims(
+              pubkey: any(named: 'pubkey'),
+              tags: any(named: 'tags'),
+            ),
+          );
+        },
+      );
+
+      blocTest<MyProfileBloc, MyProfileState>(
+        'keeps last-known-good claims when the verifier fails',
+        seed: () => MyProfileUpdated(
+          profile: createTestProfile(),
+        ),
+        setUp: () {
+          when(
+            () => mockClaimsRepository.cachedVerifiedClaims(
+              pubkey: testPubkey,
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async => const CachedVerifiedClaims(
+              claims: [aliceClaim],
+              isFresh: false,
+            ),
+          );
+          when(
+            () => mockClaimsRepository.verifiedClaims(
+              pubkey: testPubkey,
+              tags: any(named: 'tags'),
+            ),
+          ).thenThrow(const VerifierApiException(503, 'down'));
+        },
+        build: createClaimsBloc,
+        act: (bloc) => bloc.add(const VerifiedClaimsRequested()),
+        expect: () => [
+          isA<MyProfileUpdated>().having(
+            (s) => s.verifiedClaims,
+            'verifiedClaims',
+            [aliceClaim],
+          ),
+        ],
+        errors: () => [isA<VerifierApiException>()],
+      );
+
+      blocTest<MyProfileBloc, MyProfileState>(
+        'emits cached claims then re-verifies when the snapshot is stale',
+        seed: () => MyProfileLoaded(
+          profile: createTestProfile(),
+          isFresh: true,
+        ),
+        setUp: () {
+          when(
+            () => mockClaimsRepository.cachedVerifiedClaims(
+              pubkey: testPubkey,
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async => const CachedVerifiedClaims(
+              claims: [],
+              isFresh: false,
+            ),
+          );
+          when(
+            () => mockClaimsRepository.verifiedClaims(
+              pubkey: testPubkey,
+              tags: identityTags,
+            ),
+          ).thenAnswer((_) async => const [aliceClaim]);
+        },
+        build: createClaimsBloc,
+        act: (bloc) => bloc.add(const VerifiedClaimsRequested()),
+        expect: () => [
+          isA<MyProfileLoaded>().having(
+            (s) => s.verifiedClaims,
+            'verifiedClaims',
+            [aliceClaim],
+          ),
+        ],
+      );
+    });
   });
 }
+
+class _MockIdentityClaimsRepository extends Mock
+    implements IdentityClaimsRepository {}

@@ -402,6 +402,7 @@ class _VerifiedAccountsBlock extends StatelessWidget {
       return context.select<OtherProfileBloc, List<IdentityClaim>>((bloc) {
         final state = bloc.state;
         if (state is OtherProfileLoaded) return state.verifiedClaims;
+        if (state is OtherProfileLoading) return state.verifiedClaims;
         return const [];
       });
     } on ProviderNotFoundException {

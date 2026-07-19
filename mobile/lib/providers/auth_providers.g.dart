@@ -740,13 +740,13 @@ final class VerifierClientProvider
 String _$verifierClientHash() => r'1d6966c5483814cd7fa203e7e9e198dc5c9c232d';
 
 /// Provider for [IdentityClaimsRepository] composing the verifier client
-/// with NIP-39 i tag parsing.
+/// with NIP-39 i tag parsing and the persistent verdict cache (#3936).
 
 @ProviderFor(identityClaimsRepository)
 final identityClaimsRepositoryProvider = IdentityClaimsRepositoryProvider._();
 
 /// Provider for [IdentityClaimsRepository] composing the verifier client
-/// with NIP-39 i tag parsing.
+/// with NIP-39 i tag parsing and the persistent verdict cache (#3936).
 
 final class IdentityClaimsRepositoryProvider
     extends
@@ -757,7 +757,7 @@ final class IdentityClaimsRepositoryProvider
         >
     with $Provider<IdentityClaimsRepository> {
   /// Provider for [IdentityClaimsRepository] composing the verifier client
-  /// with NIP-39 i tag parsing.
+  /// with NIP-39 i tag parsing and the persistent verdict cache (#3936).
   IdentityClaimsRepositoryProvider._()
     : super(
         from: null,
@@ -793,7 +793,7 @@ final class IdentityClaimsRepositoryProvider
 }
 
 String _$identityClaimsRepositoryHash() =>
-    r'451c65b551cddcf8cf2ef3d23ac862ab0ae1441d';
+    r'105116da1cf679bd06838f6fbfc290832057a8ec';
 
 /// NIP-98 authentication service
 

@@ -116,7 +116,15 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
       OtherProfileLoaded(:final profile) => profile,
       OtherProfileError(:final profile) => profile,
     };
-    emit(OtherProfileLoading(profile: currentProfile));
+    // Carry claims through the refresh so chips do not vanish and re-pop
+    // after the round-trip (#3936).
+    final currentClaims = _claimsFromState(state);
+    emit(
+      OtherProfileLoading(
+        profile: currentProfile,
+        verifiedClaims: currentClaims,
+      ),
+    );
 
     try {
       final freshProfile = await _profileRepository.fetchFreshProfile(
@@ -125,7 +133,13 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
       );
       if (isClosed) return;
       if (freshProfile != null) {
-        emit(OtherProfileLoaded(profile: freshProfile, isFresh: true));
+        emit(
+          OtherProfileLoaded(
+            profile: freshProfile,
+            isFresh: true,
+            verifiedClaims: currentClaims,
+          ),
+        );
         add(const VerifiedClaimsRequested());
       } else {
         emit(
@@ -138,7 +152,13 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
     } catch (e) {
       if (isClosed) return;
       if (currentProfile != null) {
-        emit(OtherProfileLoaded(profile: currentProfile, isFresh: false));
+        emit(
+          OtherProfileLoaded(
+            profile: currentProfile,
+            isFresh: false,
+            verifiedClaims: currentClaims,
+          ),
+        );
         add(const VerifiedClaimsRequested());
       } else {
         emit(
@@ -161,28 +181,91 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
     if (current is! OtherProfileLoaded) return;
     final profile = current.profile;
 
+    // Instant path (#3936): cached claims source ∩ persisted verdict
+    // snapshot renders chips without any network round-trip.
+    CachedVerifiedClaims? cached;
+    try {
+      final cachedTags = await _profileRepository.cachedIdentityTags(
+        profile.pubkey,
+      );
+      if (isClosed) return;
+      cached = await repo.cachedVerifiedClaims(
+        pubkey: profile.pubkey,
+        tags: cachedTags ?? profile.rawTags,
+      );
+      if (isClosed) return;
+      if (cached != null) {
+        _emitClaims(emit, profile.pubkey, cached.claims);
+      }
+    } on Exception catch (e, stackTrace) {
+      // Cache read failure — degrade straight to the network path.
+      addError(e, stackTrace);
+    }
+
+    // Refresh the claims source: kind 10011 wins, kind-0 tags fall back.
+    List<List<String>> freshTags;
+    try {
+      freshTags = await _profileRepository.freshIdentityTags(
+        pubkey: profile.pubkey,
+        kind0Tags: profile.rawTags,
+        kind0CreatedAt: profile.createdAt.millisecondsSinceEpoch ~/ 1000,
+      );
+    } on Exception catch (e, stackTrace) {
+      // Source-cache write failure — verify against the kind-0 tags we have.
+      addError(e, stackTrace);
+      freshTags = profile.rawTags;
+    }
+    if (isClosed) return;
+    final freshClaims = IdentityClaimsRepository.parseClaims(
+      profile.pubkey,
+      freshTags,
+    );
+
+    // Snapshot fresh and covering every current claim → skip the verifier.
+    if (cached != null && cached.isFresh) {
+      final verifiedSet = cached.claims.toSet();
+      if (freshClaims.every(verifiedSet.contains)) {
+        _emitClaims(emit, profile.pubkey, freshClaims);
+        return;
+      }
+    }
+
     try {
       final claims = await repo.verifiedClaims(
         pubkey: profile.pubkey,
-        tags: profile.rawTags,
+        tags: freshTags,
       );
       if (isClosed) return;
-      final latest = state;
-      if (latest is OtherProfileLoaded &&
-          latest.profile.pubkey == profile.pubkey) {
-        emit(latest.copyWith(verifiedClaims: claims));
-      }
+      _emitClaims(emit, profile.pubkey, claims);
     } on Exception catch (e, stackTrace) {
       // Verifier failures are expected (network/4xx/5xx/timeout). Per
-      // .claude/rules/error_handling.md they are NOT Reportable.
+      // .claude/rules/error_handling.md they are NOT Reportable. Keep the
+      // last-known-good claims instead of erasing rendered chips.
       addError(e, stackTrace);
-      if (isClosed) return;
-      final latest = state;
-      if (latest is OtherProfileLoaded &&
-          latest.profile.pubkey == profile.pubkey) {
-        emit(latest.copyWith(verifiedClaims: const []));
-      }
     }
+  }
+
+  /// Emits [claims] onto the latest state when it still shows
+  /// [profilePubkey]'s profile. State may have changed mid-await, so the
+  /// check runs at emit time.
+  void _emitClaims(
+    Emitter<OtherProfileState> emit,
+    String profilePubkey,
+    List<IdentityClaim> claims,
+  ) {
+    final latest = state;
+    if (latest is OtherProfileLoaded &&
+        latest.profile.pubkey == profilePubkey) {
+      emit(latest.copyWith(verifiedClaims: claims));
+    }
+  }
+
+  List<IdentityClaim> _claimsFromState(OtherProfileState state) {
+    return switch (state) {
+      OtherProfileLoaded(:final verifiedClaims) => verifiedClaims,
+      OtherProfileLoading(:final verifiedClaims) => verifiedClaims,
+      _ => const [],
+    };
   }
 
   Future<void> _onBlockRequested(

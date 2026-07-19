@@ -27,14 +27,18 @@ final class OtherProfileInitial extends OtherProfileState {
 
 /// Loading state - may contain cached profile while fetching fresh.
 final class OtherProfileLoading extends OtherProfileState {
-  const OtherProfileLoading({this.profile});
+  const OtherProfileLoading({this.profile, this.verifiedClaims = const []});
 
   /// Cached profile to display while loading fresh data.
   /// Null if no cached profile exists.
   final UserProfile? profile;
 
+  /// Claims carried over from the previous state so chips do not vanish
+  /// during a refresh (#3936).
+  final List<IdentityClaim> verifiedClaims;
+
   @override
-  List<Object?> get props => [profile];
+  List<Object?> get props => [profile, verifiedClaims];
 }
 
 /// Successfully loaded profile state.
