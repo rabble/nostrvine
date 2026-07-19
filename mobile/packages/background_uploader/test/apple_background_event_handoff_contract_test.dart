@@ -57,10 +57,7 @@ void main() {
         'guard activeForegroundSessionIds.isEmpty',
         guardedCompletion,
       );
-      final completionCall = source.indexOf(
-        'handler()',
-        guardedCompletion,
-      );
+      final completionCall = source.indexOf('handler()', guardedCompletion);
       final finishCallFromUrlSession = source.indexOf(
         'self.finishBackgroundEventsIfReady()',
         urlSessionFinished,
@@ -96,6 +93,43 @@ void main() {
         expect(retryCompletion, greaterThan(removeSession));
       },
     );
+
+    test('arms a watchdog that balances the app-delegate completion', () {
+      final handleBackgroundEvents = source.indexOf(
+        'func handleBackgroundEvents(',
+      );
+      final watchdogInterval = source.indexOf(
+        'backgroundCompletionWatchdogInterval',
+      );
+      final scheduledTimer = source.indexOf(
+        'Timer.scheduledTimer',
+        handleBackgroundEvents,
+      );
+      final forceFinish = source.indexOf('func forceFinishBackgroundEvents()');
+      final completeBackgroundEvents = source.indexOf(
+        'func completeBackgroundEvents()',
+      );
+      final clearsHandler = source.indexOf(
+        'backgroundCompletionHandler = nil',
+        completeBackgroundEvents,
+      );
+      final invalidatesWatchdog = source.indexOf(
+        'backgroundCompletionWatchdog?.invalidate()',
+        completeBackgroundEvents,
+      );
+      final completionCall = source.indexOf(
+        'handler()',
+        completeBackgroundEvents,
+      );
+
+      expect(watchdogInterval, greaterThanOrEqualTo(0));
+      expect(scheduledTimer, greaterThan(handleBackgroundEvents));
+      expect(forceFinish, greaterThan(scheduledTimer));
+      expect(completeBackgroundEvents, greaterThan(forceFinish));
+      expect(clearsHandler, greaterThan(completeBackgroundEvents));
+      expect(invalidatesWatchdog, greaterThan(clearsHandler));
+      expect(completionCall, greaterThan(invalidatesWatchdog));
+    });
   });
 }
 

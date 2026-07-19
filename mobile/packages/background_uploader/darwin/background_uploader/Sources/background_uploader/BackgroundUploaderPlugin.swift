@@ -43,6 +43,13 @@ private final class BackgroundUploadCoordinator: NSObject {
   /// sessions.
   private var backgroundCompletionHandler: (() -> Void)?
 
+  /// Maximum time to retain iOS's background-session wake for Dart follow-up
+  /// work. The OS completion handler must always be balanced, even if Dart's
+  /// publish future wedges.
+  private static let backgroundCompletionWatchdogInterval: TimeInterval = 25
+
+  private var backgroundCompletionWatchdog: Timer?
+
   /// Whether URLSession has finished delivering the current batch of native
   /// events. The app-delegate completion handler can be released only after
   /// this is true and every logical publish session has ended.
@@ -151,6 +158,15 @@ private final class BackgroundUploadCoordinator: NSObject {
 
   func handleBackgroundEvents(completionHandler: @escaping () -> Void) {
     backgroundCompletionHandler = completionHandler
+    backgroundCompletionWatchdog?.invalidate()
+    backgroundCompletionWatchdog = Timer.scheduledTimer(
+      withTimeInterval: Self.backgroundCompletionWatchdogInterval,
+      repeats: false
+    ) { [weak self] _ in
+      DispatchQueue.main.async {
+        self?.forceFinishBackgroundEvents()
+      }
+    }
     // The app-delegate callback starts a new delivery batch. Clear any
     // foreground-only finish marker left by a prior batch that never needed an
     // app-delegate completion handler.
@@ -166,9 +182,23 @@ private final class BackgroundUploadCoordinator: NSObject {
   private func finishBackgroundEventsIfReady() {
     guard backgroundEventsFinished else { return }
     guard activeForegroundSessionIds.isEmpty else { return }
+    completeBackgroundEvents()
+  }
+
+  /// Safety net for a Dart publish future that never resolves. This releases
+  /// iOS's app-delegate completion handler but does not cancel Dart work; if
+  /// the publish later ends, `endForegroundSession` becomes a no-op for the
+  /// already-released handler.
+  private func forceFinishBackgroundEvents() {
+    completeBackgroundEvents()
+  }
+
+  private func completeBackgroundEvents() {
     guard let handler = backgroundCompletionHandler else { return }
     backgroundCompletionHandler = nil
     backgroundEventsFinished = false
+    backgroundCompletionWatchdog?.invalidate()
+    backgroundCompletionWatchdog = nil
     handler()
   }
   #endif

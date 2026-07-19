@@ -8,4 +8,4 @@
 - Darwin (iOS + macOS) background `URLSession` implementation.
 - Android foreground-service implementation.
 - Keep iOS background-session wakes alive until Dart publish follow-up work
-  explicitly finishes.
+  explicitly finishes, with a native watchdog to balance the completion handler.
