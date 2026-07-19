@@ -228,8 +228,12 @@ void main() {
         // instead of misclassifying the 1:1 as a group and dropping it.
         expect(cubit.state, equals(0));
 
+        // Identity arrival re-fires the recompute. Wait for the emission via
+        // `emitsThrough(1)` instead of a wall-clock `_settle()`, which raced the
+        // cubit's real-timer `debounceTime` under merged-isolate CI load (#5374).
+        final counted = expectLater(cubit.stream, emitsThrough(equals(1)));
         pubkeyController.add(_me);
-        await _settle();
+        await counted;
         // Identity arrived → the followed-but-unreplied 1:1 is counted.
         expect(cubit.state, equals(1));
       },
