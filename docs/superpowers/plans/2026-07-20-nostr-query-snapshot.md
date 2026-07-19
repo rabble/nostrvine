@@ -13,7 +13,7 @@
 ### Task 1: Make completed SDK results stable
 
 **Files:**
-- Create: `mobile/packages/nostr_sdk/test/unit/event_mem_box_test.dart`
+- Create: `mobile/packages/nostr_sdk/test/event_mem_box_test.dart`
 - Modify: `mobile/packages/nostr_sdk/lib/event_mem_box.dart`
 
 - [ ] **Step 1: Write the failing snapshot test**
@@ -53,7 +53,7 @@ Run:
 
 ```bash
 cd mobile/packages/nostr_sdk
-flutter test test/unit/event_mem_box_test.dart
+flutter test test/event_mem_box_test.dart
 ```
 
 Expected: failure because `completedResult` also contains `second`.
@@ -72,7 +72,7 @@ Run:
 
 ```bash
 cd mobile/packages/nostr_sdk
-flutter test test/unit/event_mem_box_test.dart
+flutter test test/event_mem_box_test.dart
 ```
 
 Expected: all tests pass.
@@ -238,12 +238,12 @@ Run the same `flutter test --plain-name` command. Expected: pass.
 cd mobile
 dart format \
   packages/nostr_sdk/lib/event_mem_box.dart \
-  packages/nostr_sdk/test/unit/event_mem_box_test.dart \
+  packages/nostr_sdk/test/event_mem_box_test.dart \
   packages/nostr_client/lib/src/nostr_client.dart \
   packages/nostr_client/test/src/nostr_client_test.dart \
   packages/db_client/lib/src/database/daos/nostr_events_dao.dart \
   packages/db_client/test/src/database/daos/nostr_events_dao_test.dart
-cd packages/nostr_sdk && flutter test test/unit/event_mem_box_test.dart
+cd packages/nostr_sdk && flutter test test/event_mem_box_test.dart
 cd ../nostr_client && flutter test test/src/nostr_client_test.dart
 cd ../db_client && flutter test test/src/database/daos/nostr_events_dao_test.dart
 ```
@@ -268,7 +268,7 @@ unrelated refactor or generated output is present.
 ```bash
 git add \
   mobile/packages/nostr_sdk/lib/event_mem_box.dart \
-  mobile/packages/nostr_sdk/test/unit/event_mem_box_test.dart \
+  mobile/packages/nostr_sdk/test/event_mem_box_test.dart \
   mobile/packages/nostr_client/lib/src/nostr_client.dart \
   mobile/packages/nostr_client/test/src/nostr_client_test.dart \
   mobile/packages/db_client/lib/src/database/daos/nostr_events_dao.dart \
