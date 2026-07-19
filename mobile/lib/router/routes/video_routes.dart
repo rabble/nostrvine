@@ -166,7 +166,12 @@ List<RouteBase> videoRoutes() {
     GoRoute(
       path: PooledFullscreenVideoFeedScreen.path,
       name: PooledFullscreenVideoFeedScreen.routeName,
-      redirect: (context, state) => fullscreenFeedRedirect(state.extra),
+      redirect: (context, state) => fullscreenFeedRedirect(
+        state.extra,
+        fallbackVideoId:
+            state.uri.queryParameters[PooledFullscreenVideoFeedScreen
+                .videoQueryParameter],
+      ),
       builder: buildPooledFullscreenFeed,
     ),
     // Engagement lists for own videos: who liked / reposted this video.

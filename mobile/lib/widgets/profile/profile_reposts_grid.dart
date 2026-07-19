@@ -173,7 +173,7 @@ class _RepostGridTile extends ConsumerWidget {
 
       final bloc = context.read<ProfileRepostedVideosBloc>();
       context.push(
-        PooledFullscreenVideoFeedScreen.path,
+        PooledFullscreenVideoFeedScreen.pathForVideoId(videoEvent.id),
         extra: PooledFullscreenVideoFeedArgs(
           source: RepostsViewSource(userIdHex),
           feedRepository: StreamFeedRepository(

@@ -193,7 +193,7 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
     prefetchAroundIndex(resolvedIndex, videos);
 
     context.push(
-      PooledFullscreenVideoFeedScreen.path,
+      PooledFullscreenVideoFeedScreen.pathForVideoId(tappedVideo.id),
       extra: ProfilePooledFullscreenVideoFeedArgs(
         userIdHex: widget.userIdHex,
         initialIndex: resolvedIndex,

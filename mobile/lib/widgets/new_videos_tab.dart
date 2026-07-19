@@ -218,7 +218,7 @@ class _NewVideosContentState extends ConsumerState<_NewVideosContent> {
           category: LogCategory.video,
         );
         context.push(
-          PooledFullscreenVideoFeedScreen.path,
+          PooledFullscreenVideoFeedScreen.pathForVideoId(videoList[index].id),
           extra: PooledFullscreenVideoFeedArgs(
             source: const NewVideosViewSource(),
             feedRepository: ref.read(feedRepositoryProvider),

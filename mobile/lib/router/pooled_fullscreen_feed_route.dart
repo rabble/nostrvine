@@ -7,25 +7,32 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/router/route_error_screen.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
+import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/widgets/profile/profile_video_feed_view.dart';
 
 /// Redirect target for the fullscreen video feed route.
 ///
-/// The route receives its videos through in-memory `extra` args, which the web
-/// platform discards on page reload / direct navigation. When [extra] is not a
-/// valid args object, redirect to the home feed instead of showing an error
-/// screen. Returns `null` (no redirect) when the args are present.
-String? fullscreenFeedRedirect(Object? extra) {
+/// The route receives its feed through in-memory `extra` args, which can be
+/// discarded on page reload or mobile lifecycle restoration. When that
+/// happens, recover the selected video through its durable URL identity.
+/// Falls back to the home feed only for legacy URLs with no video identity.
+String? fullscreenFeedRedirect(
+  Object? extra, {
+  String? fallbackVideoId,
+}) {
   if (extra is PooledFullscreenVideoFeedArgs ||
       extra is ProfilePooledFullscreenVideoFeedArgs) {
     return null;
+  }
+  if (fallbackVideoId != null && fallbackVideoId.isNotEmpty) {
+    return VideoDetailScreen.pathForId(fallbackVideoId);
   }
   return VideoFeedPage.pathForIndex(0);
 }
 
 /// Builds the fullscreen video feed for the matched route, resolving the
-/// in-memory `extra` args. [fullscreenFeedRedirect] guarantees valid args
-/// before this runs; the final [RouteErrorScreen] is a defensive fallback.
+/// in-memory `extra` args. The URL identity is also handled here because route
+/// state can change between redirect evaluation and builder execution.
 Widget buildPooledFullscreenFeed(BuildContext context, GoRouterState state) {
   final extra = state.extra;
   if (extra is PooledFullscreenVideoFeedArgs) {
@@ -54,5 +61,15 @@ Widget buildPooledFullscreenFeed(BuildContext context, GoRouterState state) {
       onPageChanged: extra.onPageChanged ?? (_) {},
     );
   }
-  return RouteErrorScreen(message: context.l10n.routeNoVideosToDisplay);
+  final fallbackVideoId = state
+      .uri
+      .queryParameters[PooledFullscreenVideoFeedScreen.videoQueryParameter];
+  if (fallbackVideoId != null && fallbackVideoId.isNotEmpty) {
+    return VideoDetailScreen(videoId: fallbackVideoId);
+  }
+  return RouteErrorScreen(
+    message: context.l10n.routeNoVideosToDisplay,
+    showBackButton: true,
+    onBackPressed: () => context.go(VideoFeedPage.pathForIndex(0)),
+  );
 }
