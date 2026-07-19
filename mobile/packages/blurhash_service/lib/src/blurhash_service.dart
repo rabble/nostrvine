@@ -5,7 +5,7 @@
 
 import 'dart:ui' as ui;
 
-import 'package:blurhash_dart/blurhash_dart.dart' as blurhash_dart;
+import 'package:divine_blurhash/divine_blurhash.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 import 'package:unified_logger/unified_logger.dart';
@@ -22,32 +22,45 @@ String? _generateBlurhashSync(Uint8List imageBytes) {
     image.height,
   );
 
+  // Average (box) interpolation: the default (nearest) picks single source
+  // pixels when downscaling, which skews the encoded colors on high-detail
+  // frames.
   final resized = image.width > BlurhashService._encodeMaxWidth
-      ? img.copyResize(image, width: BlurhashService._encodeMaxWidth)
+      ? img.copyResize(
+          image,
+          width: BlurhashService._encodeMaxWidth,
+          interpolation: img.Interpolation.average,
+        )
       : image;
 
-  return blurhash_dart.BlurHash.encode(
-    resized,
+  return encodeBlurHash(
+    resized.getBytes(order: img.ChannelOrder.rgba),
+    resized.width,
+    resized.height,
     numCompX: componentX,
     numCompY: componentY,
-  ).hash;
+  );
 }
 
 /// Service for generating and decoding Blurhash
 /// placeholders.
 class BlurhashService {
-  /// Components for 9:16 portrait videos (4:7 ≈ 0.57, matches 9:16 ≈ 0.5625).
-  static const int _portraitComponentX = 4;
-  static const int _portraitComponentY = 7;
+  /// Components for 9:16 portrait videos. Kept low on purpose: high counts
+  /// (the previous 4×7) cause visible DCT ringing — dark/bright blobs that
+  /// aren't in the source frame.
+  static const int _portraitComponentX = 3;
+  static const int _portraitComponentY = 4;
 
-  /// Components for 1:1 square and landscape videos (balanced).
-  static const int _squareComponentX = 4;
-  static const int _squareComponentY = 4;
+  /// Components for 1:1 square videos.
+  static const int _squareComponentX = 3;
+  static const int _squareComponentY = 3;
 
   /// Max width used when downscaling before encoding.
   static const int _encodeMaxWidth = 128;
 
-  /// Default punch (contrast) value.
+  /// Default punch (contrast) applied to every decoded hash. Kept at 1 to
+  /// match divine-web's decoder default, so the same hash renders with
+  /// identical contrast on both clients.
   static const double defaultPunch = 1;
 
   /// Process-wide memo for [decodeBlurhash]. Decoding is a pure function
@@ -63,7 +76,8 @@ class BlurhashService {
   );
 
   /// Returns component counts suited to the image's aspect ratio.
-  /// Supports 9:16 portrait, 1:1 square, and landscape; falls back to portrait.
+  /// Divine only produces 9:16 portrait and 1:1 square videos; anything
+  /// square-or-wider gets square components, tall formats get portrait.
   static (int compX, int compY) _componentsForAspectRatio(
     int width,
     int height,
@@ -72,7 +86,7 @@ class BlurhashService {
       return (_portraitComponentX, _portraitComponentY);
     }
     final ratio = width / height;
-    // Square or landscape: ratio ≥ 0.9 (covers 1:1 and any wider format)
+    // 1:1 square (and any wider format)
     if (ratio >= 0.9) return (_squareComponentX, _squareComponentY);
     // Portrait 9:16 (and any other tall format)
     return (_portraitComponentX, _portraitComponentY);
@@ -148,16 +162,17 @@ class BlurhashService {
         return cached;
       }
 
-      // Use real blurhash_dart library to decode
-      final blurHashObject = blurhash_dart.BlurHash.decode(
-        blurhash,
-        punch: punch,
-      );
-      final image = blurHashObject.toImage(width, height);
-
-      // RGBA pixel data of the decoded image (getBytes already returns a
-      // buffer we own — no defensive copy needed)
-      final pixels = image.getBytes(order: img.ChannelOrder.rgba);
+      final Uint8List pixels;
+      try {
+        pixels = decodeBlurHash(blurhash, width, height, punch: punch);
+      } on BlurHashDecodeException catch (e) {
+        Log.error(
+          'Malformed blurhash: ${e.message}',
+          name: 'BlurhashService',
+          category: LogCategory.system,
+        );
+        return null;
+      }
 
       // Extract colors from the decoded pixel data
       final colors = _extractColorsFromPixels(

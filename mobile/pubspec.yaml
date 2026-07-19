@@ -39,6 +39,7 @@ workspace:
   - packages/count_formatter
   - packages/curated_list_repository
   - packages/curation_repository
+  - packages/divine_blurhash
   - packages/divine_ui
   - packages/db_client
   - packages/divine_camera
@@ -183,7 +184,6 @@ dependencies:
   share_plus: ^12.0.0 # Cross-platform sharing
   google_fonts: ^6.3.2 # For using Google Fonts including Pacifico
   flutter_svg: ^2.0.10+1 # For custom SVG icons
-  blurhash_dart: ^1.2.1 # Generate blurhash for progressive image loading
   skeletonizer: ^2.1.2 # Skeleton loading animations with shimmer effect
 
   # Blurhash Service - Blurhash generation and decoding for image placeholders

@@ -21,6 +21,7 @@ count_formatter 100
 curated_list_repository 100
 curation_repository 100
 db_client 40
+divine_blurhash 100
 divine_camera 100
 divine_quick_actions 76
 divine_ui 100

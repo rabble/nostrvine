@@ -1,0 +1,16 @@
+name: divine_blurhash
+description: >
+  Spec-correct BlurHash encoder and decoder for Divine. Pure Dart, no
+  Flutter dependency; operates on raw RGBA byte buffers. Replaces the
+  unmaintained blurhash_dart package, whose decode path had two spec
+  bugs (integer-division tint and a punch first-row/column skip).
+version: 0.1.0
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.11.0
+
+dev_dependencies:
+  test: ^1.26.3
+  very_good_analysis: ^10.2.0
