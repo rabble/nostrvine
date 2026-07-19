@@ -165,6 +165,10 @@ class UserProfilesDao extends DatabaseAccessor<AppDatabase>
   ///
   /// Inserts or updates all given profiles in a single batch operation.
   /// Uses a Drift batch for efficiency when writing many profiles at once.
+  ///
+  /// This is intentionally a blind batch write for uncached bulk imports.
+  /// Use [upsertProfile] when writing an already-cached pubkey where
+  /// newest-wins clobber protection matters.
   Future<void> upsertProfiles(List<UserProfile> profiles) async {
     if (profiles.isEmpty) return;
     await batch((b) {
