@@ -43,4 +43,9 @@ class IdentityVerificationsDao extends DatabaseAccessor<AppDatabase>
       identityVerifications,
     )..where((t) => t.pubkey.equals(pubkey))).go();
   }
+
+  /// Clears every verified-claims snapshot row.
+  Future<int> clearAll() {
+    return delete(identityVerifications).go();
+  }
 }

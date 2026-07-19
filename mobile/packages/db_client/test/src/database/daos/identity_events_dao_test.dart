@@ -72,5 +72,30 @@ void main() {
         expect(await dao.getEvent(testPubkey), isNull);
       });
     });
+
+    group('clearAll', () {
+      test('removes every identity event row', () async {
+        const secondPubkey =
+            '1111111111111111111111111111111111111111111111111111111111111111';
+        await dao.upsertEvent(
+          pubkey: testPubkey,
+          tagsJson: tagsJson,
+          sourceKind: 10011,
+        );
+        await dao.upsertEvent(
+          pubkey: secondPubkey,
+          tagsJson: '[["i","github:bob","proof-b"]]',
+          sourceKind: 10011,
+        );
+
+        expect(await dao.clearAll(), equals(2));
+        expect(await dao.getEvent(testPubkey), isNull);
+        expect(await dao.getEvent(secondPubkey), isNull);
+      });
+
+      test('returns 0 when no row exists', () async {
+        expect(await dao.clearAll(), equals(0));
+      });
+    });
   });
 }

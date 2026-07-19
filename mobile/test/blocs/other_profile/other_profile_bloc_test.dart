@@ -1002,6 +1002,57 @@ void main() {
         errors: () => [isA<Exception>()],
       );
 
+      late Completer<List<IdentityClaim>> staleResolve;
+      blocTest<OtherProfileBloc, OtherProfileState>(
+        'uses the newest verification result when requests overlap',
+        seed: () => OtherProfileLoaded(
+          profile: createTestProfile(),
+          isFresh: true,
+        ),
+        setUp: () {
+          staleResolve = Completer<List<IdentityClaim>>();
+          var resolveCall = 0;
+          addTearDown(() {
+            if (!staleResolve.isCompleted) {
+              staleResolve.complete(const [aliceClaim]);
+            }
+          });
+          when(
+            () => mockClaimsRepository.cachedVerifiedClaims(
+              pubkey: testPubkey,
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockClaimsRepository.resolveClaims(
+              pubkey: testPubkey,
+              freshTags: any(named: 'freshTags'),
+              cached: any(named: 'cached'),
+            ),
+          ).thenAnswer((_) {
+            resolveCall += 1;
+            if (resolveCall == 1) return staleResolve.future;
+            return Future.value(const [bobClaim]);
+          });
+        },
+        build: createClaimsBloc,
+        act: (bloc) async {
+          bloc.add(const VerifiedClaimsRequested());
+          await pumpEventQueue();
+          bloc.add(const VerifiedClaimsRequested());
+          await pumpEventQueue();
+          staleResolve.complete(const [aliceClaim]);
+          await pumpEventQueue();
+        },
+        expect: () => [
+          isA<OtherProfileLoaded>().having(
+            (s) => s.verifiedClaims,
+            'verifiedClaims',
+            [bobClaim],
+          ),
+        ],
+      );
+
       blocTest<OtherProfileBloc, OtherProfileState>(
         'carries claims through refresh instead of dropping them',
         seed: () => OtherProfileLoaded(

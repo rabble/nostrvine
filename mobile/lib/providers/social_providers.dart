@@ -660,6 +660,10 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
         // after its DM data is cleared. See #5452.
         await db.processedGiftWrapsDao.clearAll();
         await db.notificationsDao.clearAll();
+        // Issue #3936 requires the NIP-39 identity caches to clear on logout
+        // and account switches rather than persisting across identities.
+        await db.identityEventsDao.clearAll();
+        await db.identityVerificationsDao.clearAll();
         // Clear DM sync cursors so the next login triggers a full re-fetch
         // from relays instead of using stale `since:` boundaries.
         await DmSyncState(prefs).clearAll();

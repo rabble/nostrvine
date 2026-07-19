@@ -1,6 +1,7 @@
 // ABOUTME: BLoC for viewing another user's profile
 // ABOUTME: Implements cache+fresh pattern and block/unblock actions
 
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -44,7 +45,10 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
     on<OtherProfileRefreshRequested>(_onRefreshRequested);
     on<OtherProfileBlockRequested>(_onBlockRequested);
     on<OtherProfileUnblockRequested>(_onUnblockRequested);
-    on<VerifiedClaimsRequested>(_onVerifiedClaimsRequested);
+    on<VerifiedClaimsRequested>(
+      _onVerifiedClaimsRequested,
+      transformer: restartable(),
+    );
   }
 
   final ProfileRepository _profileRepository;

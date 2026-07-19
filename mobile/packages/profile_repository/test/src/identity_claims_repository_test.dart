@@ -644,5 +644,56 @@ void main() {
         );
       },
     );
+
+    test(
+      'returns cached current claims when stale revalidation is rate-limited',
+      () async {
+        const cachedOctocatClaim = IdentityClaim(
+          pubkey: _pubkey,
+          platform: 'github',
+          identity: 'octocat',
+          proof: 'a',
+        );
+        const removedCachedClaim = IdentityClaim(
+          pubkey: _pubkey,
+          platform: 'twitter',
+          identity: 'old',
+          proof: 'removed-proof',
+        );
+        when(() => client.verifyBatch(any())).thenAnswer(
+          (_) async => const [
+            VerificationResult(
+              platform: 'github',
+              identity: 'octocat',
+              verified: false,
+              checkedAt: 900,
+              cached: false,
+              error: 'Rate limit exceeded for this pubkey',
+            ),
+          ],
+        );
+
+        final result = await repo.resolveClaims(
+          pubkey: _pubkey,
+          freshTags: [
+            ['i', 'github:octocat', 'a'],
+          ],
+          cached: const CachedVerifiedClaims(
+            claims: [cachedOctocatClaim, removedCachedClaim],
+            isFresh: false,
+          ),
+        );
+
+        expect(result, equals([cachedOctocatClaim]));
+        verifyNever(() => dao.deleteVerification(any()));
+        verifyNever(
+          () => dao.upsertVerification(
+            pubkey: any(named: 'pubkey'),
+            verifiedClaimsJson: any(named: 'verifiedClaimsJson'),
+            checkedAtFloor: any(named: 'checkedAtFloor'),
+          ),
+        );
+      },
+    );
   });
 }

@@ -90,5 +90,31 @@ void main() {
         expect(await dao.deleteVerification(testPubkey), equals(0));
       });
     });
+
+    group('clearAll', () {
+      test('removes every verification snapshot row', () async {
+        const secondPubkey =
+            '1111111111111111111111111111111111111111111111111111111111111111';
+        await dao.upsertVerification(
+          pubkey: testPubkey,
+          verifiedClaimsJson: claimsJson,
+          checkedAtFloor: 100,
+        );
+        await dao.upsertVerification(
+          pubkey: secondPubkey,
+          verifiedClaimsJson:
+              '[{"platform":"github","identity":"bob","proof":"proof-b"}]',
+          checkedAtFloor: 200,
+        );
+
+        expect(await dao.clearAll(), equals(2));
+        expect(await dao.getVerification(testPubkey), isNull);
+        expect(await dao.getVerification(secondPubkey), isNull);
+      });
+
+      test('returns 0 when no row exists', () async {
+        expect(await dao.clearAll(), equals(0));
+      });
+    });
   });
 }

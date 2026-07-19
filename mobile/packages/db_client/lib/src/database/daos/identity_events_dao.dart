@@ -34,4 +34,9 @@ class IdentityEventsDao extends DatabaseAccessor<AppDatabase>
     final query = select(identityEvents)..where((t) => t.pubkey.equals(pubkey));
     return query.getSingleOrNull();
   }
+
+  /// Clears every cached identity-claims source row.
+  Future<int> clearAll() {
+    return delete(identityEvents).go();
+  }
 }

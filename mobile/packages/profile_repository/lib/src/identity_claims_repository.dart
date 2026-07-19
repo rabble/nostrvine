@@ -21,6 +21,16 @@ class CachedVerifiedClaims {
   final bool isFresh;
 }
 
+class _VerificationOutcome {
+  const _VerificationOutcome({
+    required this.verified,
+    required this.rateLimited,
+  });
+
+  final List<IdentityClaim> verified;
+  final bool rateLimited;
+}
+
 /// Composes [VerifierClient] with NIP-39 `i` tag parsing off identity
 /// events (kind 10011, with kind-0 tags as the legacy fallback) and a
 /// persistent verified-claims cache.
@@ -150,7 +160,15 @@ class IdentityClaimsRepository {
         return freshClaims;
       }
     }
-    return _verifyClaims(pubkey: pubkey, claims: freshClaims);
+    final outcome = await _verifyClaims(pubkey: pubkey, claims: freshClaims);
+    if (outcome.rateLimited && cached != null && cached.claims.isNotEmpty) {
+      return _preserveCachedCurrentClaims(
+        freshClaims: freshClaims,
+        cachedClaims: cached.claims,
+        verifiedClaims: outcome.verified,
+      );
+    }
+    return outcome.verified;
   }
 
   /// Asks the verifier to re-check [claims] and returns only the verified
@@ -164,11 +182,13 @@ class IdentityClaimsRepository {
   /// untouched so a rate-limit burst cannot overwrite real verdicts.
   ///
   /// Throws [VerifierClientException] subtypes.
-  Future<List<IdentityClaim>> _verifyClaims({
+  Future<_VerificationOutcome> _verifyClaims({
     required String pubkey,
     required List<IdentityClaim> claims,
   }) async {
-    if (claims.isEmpty) return const [];
+    if (claims.isEmpty) {
+      return const _VerificationOutcome(verified: [], rateLimited: false);
+    }
     final results = await _verifierClient.verifyBatch(claims);
     final verifiedKeys = <String>{
       for (final r in results)
@@ -182,22 +202,42 @@ class IdentityClaimsRepository {
           ),
         )
         .toList();
-    await _persistOutcome(pubkey: pubkey, results: results, verified: verified);
-    return verified;
+    final rateLimited = _isRateLimited(results);
+    await _persistOutcome(
+      pubkey: pubkey,
+      results: results,
+      verified: verified,
+      rateLimited: rateLimited,
+    );
+    return _VerificationOutcome(verified: verified, rateLimited: rateLimited);
+  }
+
+  List<IdentityClaim> _preserveCachedCurrentClaims({
+    required List<IdentityClaim> freshClaims,
+    required List<IdentityClaim> cachedClaims,
+    required List<IdentityClaim> verifiedClaims,
+  }) {
+    final cachedTuples = {for (final claim in cachedClaims) _tupleOf(claim)};
+    final verifiedTuples = {
+      for (final claim in verifiedClaims) _tupleOf(claim),
+    };
+    return [
+      for (final claim in freshClaims)
+        if (verifiedTuples.contains(_tupleOf(claim)) ||
+            cachedTuples.contains(_tupleOf(claim)))
+          claim,
+    ];
   }
 
   Future<void> _persistOutcome({
     required String pubkey,
     required List<VerificationResult> results,
     required List<IdentityClaim> verified,
+    required bool rateLimited,
   }) async {
     final dao = _verificationsDao;
     if (dao == null) return;
 
-    final rateLimited = results.any(
-      (r) =>
-          !r.verified && (r.error?.startsWith(rateLimitErrorPrefix) ?? false),
-    );
     if (rateLimited) return;
 
     if (verified.isEmpty) {
@@ -219,12 +259,16 @@ class IdentityClaimsRepository {
     );
   }
 
+  bool _isRateLimited(List<VerificationResult> results) {
+    return results.any(
+      (r) =>
+          !r.verified && (r.error?.startsWith(rateLimitErrorPrefix) ?? false),
+    );
+  }
+
   /// Normalized comparison tuple for snapshot matching.
-  static (String, String, String) _tupleOf(IdentityClaim claim) => (
-    claim.platform.toLowerCase(),
-    claim.identity.toLowerCase(),
-    claim.proof,
-  );
+  static (String, String, String) _tupleOf(IdentityClaim claim) =>
+      (claim.platform.toLowerCase(), claim.identity.toLowerCase(), claim.proof);
 
   /// Decodes a stored snapshot into comparison tuples; null when malformed
   /// or wrong-shaped.

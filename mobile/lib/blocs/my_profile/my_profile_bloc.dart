@@ -31,7 +31,10 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
       _onRefreshRequested,
       transformer: sequential(),
     );
-    on<VerifiedClaimsRequested>(_onVerifiedClaimsRequested);
+    on<VerifiedClaimsRequested>(
+      _onVerifiedClaimsRequested,
+      transformer: restartable(),
+    );
   }
 
   final ProfileRepository _profileRepository;
