@@ -59,10 +59,11 @@ lib/services/user_service.dart
 **Do not add tests under `test/unit/` or loose at the `test/` root.** `test/unit/`
 is a frozen legacy bucket that duplicates the `lib/` mirror one level down
 (`test/unit/services/foo_test.dart` instead of `test/services/foo_test.dart`); a
-CI ratchet blocks it from growing (see **Test-structure floor** below). Root-loose
-tests (`test/foo_test.dart` with no `lib/foo.dart`) are only correct when they
-mirror a root `lib/` file (e.g. `lib/main.dart` → `test/main_*_test.dart`) or test
-a `test/` helper. Everything else mirrors its `lib/` source path.
+CI ratchet blocks `test/unit/` from growing (see **Test-structure floor** below).
+Root-loose tests (`test/foo_test.dart` with no `lib/foo.dart`) are only correct
+when they mirror a root `lib/` file (e.g. `lib/main.dart` →
+`test/main_*_test.dart`) or test a `test/` helper. Everything else mirrors its
+`lib/` source path.
 
 ### Group Structure
 Split tests into groups for readability:
