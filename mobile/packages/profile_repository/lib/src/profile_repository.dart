@@ -73,6 +73,7 @@ class ProfileRepository {
     ProfileSearchFilter? profileSearchFilter,
     BlockedProfileFilter? blockFilter,
     PendingProfileSavesDao? pendingProfileSavesDao,
+    IdentityEventsDao? identityEventsDao,
     List<String> indexerRelays = defaultProfileIndexerRelays,
   }) : _nostrClient = nostrClient,
        _userProfilesDao = userProfilesDao,
@@ -82,7 +83,13 @@ class ProfileRepository {
        _profileSearchFilter = profileSearchFilter,
        _blockFilter = blockFilter,
        _pendingProfileSavesDao = pendingProfileSavesDao,
+       _identityEventsDao = identityEventsDao,
        _indexerRelays = indexerRelays;
+
+  /// Event kind carrying NIP-39 identity claims since the 2026-02 spec
+  /// revision (nostr-protocol/nips#2216). Kind-0 `i` tags are the legacy
+  /// fallback for pre-migration profiles.
+  static const int identityEventKind = 10011;
 
   final NostrClient _nostrClient;
   final UserProfilesDao _userProfilesDao;
@@ -97,6 +104,12 @@ class ProfileRepository {
   /// offline-tolerant save path (e.g. legacy tests) — the queue methods
   /// no-op in that case.
   final PendingProfileSavesDao? _pendingProfileSavesDao;
+
+  /// Cache of the NIP-39 identity-claims source (`i` tags) per profile
+  /// (#3936). Null when the caller does not wire the identity cache — the
+  /// identity-tag methods then skip persistence and fall through to the
+  /// kind-0 tags.
+  final IdentityEventsDao? _identityEventsDao;
   final List<String> _indexerRelays;
 
   /// In-flight relay fetches keyed by pubkey. Concurrent callers for the
@@ -229,6 +242,155 @@ class ProfileRepository {
   /// back to the cache and automatically flow through this stream.
   Stream<UserProfile?> watchProfile({required String pubkey}) {
     return _userProfilesDao.watchProfile(pubkey);
+  }
+
+  /// Returns the cached NIP-39 `i` tag list for [pubkey] from local storage.
+  ///
+  /// Does NOT hit the network. Returns `null` when no identity source has
+  /// been cached yet, when the cached row is corrupt, or when no
+  /// [IdentityEventsDao] is wired. Use for instant chip rendering while
+  /// [freshIdentityTags] runs (#3936).
+  Future<List<List<String>>?> cachedIdentityTags(String pubkey) async {
+    final dao = _identityEventsDao;
+    if (dao == null) return null;
+    final row = await dao.getEvent(pubkey);
+    if (row == null) return null;
+    return _decodeIdentityTags(row.tagsJson);
+  }
+
+  /// Fetches the freshest NIP-39 identity-claims source for [pubkey] and
+  /// returns its `i` tags, updating the local cache.
+  ///
+  /// Consult order mirrors the verifier web UI
+  /// (divine-identify-verification-service): a live kind-10011 relay query
+  /// wins; when none is found, a previously cached kind-10011 row wins over
+  /// the kind-0 fallback so a transient relay miss never downgrades the
+  /// source; otherwise the caller-provided kind-0 [kind0Tags] are used and
+  /// cached so cold starts can render claims for pre-migration profiles.
+  ///
+  /// Never throws — relay failures fall through the consult order, and
+  /// cache reads/writes are best-effort so a local persistence failure
+  /// never discards tags already in hand.
+  Future<List<List<String>>> freshIdentityTags({
+    required String pubkey,
+    required List<List<String>> kind0Tags,
+  }) async {
+    final dao = _identityEventsDao;
+    final live = await _fetchIdentityEvent(pubkey);
+    if (live != null) {
+      final iTags = _identityTagsOf(live.tags);
+      await _cacheIdentityTags(pubkey, iTags, identityEventKind);
+      return iTags;
+    }
+
+    var cacheReadFailed = false;
+    if (dao != null) {
+      try {
+        final cachedRow = await dao.getEvent(pubkey);
+        if (cachedRow != null && cachedRow.sourceKind == identityEventKind) {
+          final cachedTags = _decodeIdentityTags(cachedRow.tagsJson);
+          if (cachedTags != null) return cachedTags;
+        }
+      } on Exception catch (e) {
+        cacheReadFailed = true;
+        Log.warning(
+          'Identity-tags cache read failed for $pubkey: $e',
+          name: 'ProfileRepository',
+        );
+      }
+    }
+
+    final kind0ITags = _identityTagsOf(kind0Tags);
+    // When the cached row could not be read, skip the fallback write — a
+    // blind upsert here could downgrade a valid but unreadable-this-tick
+    // kind-10011 row to a kind-0 source.
+    if (!cacheReadFailed) {
+      await _cacheIdentityTags(pubkey, kind0ITags, 0);
+    }
+    return kind0ITags;
+  }
+
+  /// Best-effort persistence of the identity-claims source cache — a
+  /// failed write is logged and swallowed so [freshIdentityTags] can
+  /// still return the tags it already fetched.
+  Future<void> _cacheIdentityTags(
+    String pubkey,
+    List<List<String>> iTags,
+    int sourceKind,
+  ) async {
+    try {
+      await _identityEventsDao?.upsertEvent(
+        pubkey: pubkey,
+        tagsJson: jsonEncode(iTags),
+        sourceKind: sourceKind,
+      );
+    } on Exception catch (e) {
+      Log.warning(
+        'Identity-tags cache write failed for $pubkey: $e',
+        name: 'ProfileRepository',
+      );
+    }
+  }
+
+  /// Queries relays for the newest kind-10011 identity event of [pubkey].
+  ///
+  /// Returns `null` when no event is found or the query fails.
+  Future<Event?> _fetchIdentityEvent(String pubkey) async {
+    try {
+      final events = await _nostrClient.queryEvents(
+        [
+          Filter(kinds: const [identityEventKind], authors: [pubkey], limit: 5),
+        ],
+        useCache: false,
+      );
+      final identityEvents = events
+          .where((e) => e.kind == identityEventKind)
+          .toList();
+      if (identityEvents.isEmpty) return null;
+      // Relays do not guarantee newest-first ordering, so pick the newest
+      // event by created_at. On a same-second tie, NIP-01 breaks by lowest
+      // event id, so same-second events resolve to one deterministic winner
+      // regardless of relay return order.
+      return identityEvents.reduce((a, b) {
+        if (a.createdAt != b.createdAt) {
+          return b.createdAt > a.createdAt ? b : a;
+        }
+        return b.id.compareTo(a.id) < 0 ? b : a;
+      });
+    } on Exception catch (e) {
+      Log.warning(
+        'Kind-$identityEventKind fetch failed for $pubkey: $e',
+        name: 'ProfileRepository',
+      );
+      return null;
+    }
+  }
+
+  /// Filters [tags] down to structurally valid NIP-39 `i` tags.
+  static List<List<String>> _identityTagsOf(List<List<String>> tags) {
+    return [
+      for (final tag in tags)
+        if (tag.length >= 3 && tag[0] == 'i') tag,
+    ];
+  }
+
+  /// Decodes a stored `i` tag list; `null` when the JSON is malformed or
+  /// wrong-shaped.
+  ///
+  /// Catches [Object] (not just [Exception]): a valid-JSON-but-wrong-shape
+  /// row throws a [TypeError] (an [Error]) on the casts, which must still
+  /// uphold the null-when-malformed contract rather than escaping to a
+  /// reportable crash.
+  static List<List<String>>? _decodeIdentityTags(String tagsJson) {
+    try {
+      final decoded = jsonDecode(tagsJson) as List<dynamic>;
+      return [
+        for (final tag in decoded)
+          (tag as List<dynamic>).map((v) => v as String).toList(),
+      ];
+    } on Object {
+      return null;
+    }
   }
 
   /// Watches profile stats by pubkey, emitting updates from local storage.

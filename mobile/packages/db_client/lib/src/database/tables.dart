@@ -1475,3 +1475,69 @@ class ProcessedGiftWraps extends Table {
   @override
   Set<Column> get primaryKey => {giftWrapId};
 }
+
+/// Cache of the NIP-39 identity-claims source event per profile.
+///
+/// One row per viewed profile, mirroring the latest identity event seen on
+/// relays. Claims live in kind 10011 since the 2026-02 NIP-39 revision; the
+/// verifier web UI publishes kind 10011 only, so kind 0 `i` tags are a
+/// legacy fallback for pre-migration profiles (#3936). Rows are refreshed on
+/// every profile open (cache+fresh, like `user_profiles`), never expire, and
+/// survive logout — same class of viewer-independent public data as
+/// [UserProfiles].
+@DataClassName('IdentityEventRow')
+class IdentityEvents extends Table {
+  @override
+  String get tableName => 'identity_events';
+
+  /// Hex pubkey of the profile the identity event belongs to.
+  TextColumn get pubkey => text()();
+
+  /// JSON-encoded `List<List<String>>` of the event's `i` tags only.
+  TextColumn get tagsJson => text().named('tags_json')();
+
+  /// Which event kind the tags came from: 10011 (current spec) or 0
+  /// (legacy fallback).
+  IntColumn get sourceKind => integer().named('source_kind')();
+
+  @override
+  Set<Column> get primaryKey => {pubkey};
+}
+
+/// Persistent cache of NIP-39 identity-claim verification verdicts.
+///
+/// One row per profile holding the set of claims the verifier confirmed,
+/// as a JSON list of `{platform, identity, proof}` tuples. Only
+/// `verified: true` results are ever persisted — negative results are not
+/// cached because the verifier returns rate-limit rejections as HTTP-200
+/// `verified: false` bodies that must never be frozen locally (#3936).
+///
+/// Freshness is anchored on the verifier's own `checked_at`:
+/// [checkedAtFloor] is the minimum `checked_at` across the batch, and the
+/// entry counts as fresh until `checkedAtFloor + 24h` — the verifier's
+/// server-side TTL for verified results. Stale entries are re-verified on
+/// the next profile open (stale-while-revalidate), not deleted. Rows
+/// survive logout, like [Nip05Verifications].
+@DataClassName('IdentityVerificationRow')
+class IdentityVerifications extends Table {
+  @override
+  String get tableName => 'identity_verifications';
+
+  /// Hex pubkey of the profile the verified claims belong to.
+  TextColumn get pubkey => text()();
+
+  /// JSON-encoded list of verified claim objects
+  /// `{"platform": ..., "identity": ..., "proof": ...}`.
+  ///
+  /// Proof participates in cache matching: a rotated proof no longer
+  /// matches its snapshot entry, so the claim re-verifies instead of
+  /// serving a stale verdict.
+  TextColumn get verifiedClaimsJson => text().named('verified_claims_json')();
+
+  /// Minimum verifier `checked_at` (unix seconds) across the verified
+  /// batch. Freshness = `checkedAtFloor + 24h > now`.
+  IntColumn get checkedAtFloor => integer().named('checked_at_floor')();
+
+  @override
+  Set<Column> get primaryKey => {pubkey};
+}

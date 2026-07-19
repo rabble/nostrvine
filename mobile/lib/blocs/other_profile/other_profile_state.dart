@@ -27,14 +27,18 @@ final class OtherProfileInitial extends OtherProfileState {
 
 /// Loading state - may contain cached profile while fetching fresh.
 final class OtherProfileLoading extends OtherProfileState {
-  const OtherProfileLoading({this.profile});
+  const OtherProfileLoading({this.profile, this.verifiedClaims = const []});
 
   /// Cached profile to display while loading fresh data.
   /// Null if no cached profile exists.
   final UserProfile? profile;
 
+  /// Claims carried over from the previous state so chips do not vanish
+  /// during a refresh (#3936).
+  final List<IdentityClaim> verifiedClaims;
+
   @override
-  List<Object?> get props => [profile];
+  List<Object?> get props => [profile, verifiedClaims];
 }
 
 /// Successfully loaded profile state.
@@ -52,8 +56,10 @@ final class OtherProfileLoaded extends OtherProfileState {
   /// or loaded from cache (false).
   final bool isFresh;
 
-  /// Verifier-confirmed NIP-39 identity claims for this profile. Empty until
-  /// [VerifiedClaimsRequested] resolves; stays empty if the verifier fails.
+  /// Verifier-confirmed NIP-39 identity claims for this profile. Carried
+  /// over from the previous state while [VerifiedClaimsRequested]
+  /// revalidates; kept at last-known-good when the verifier fails or
+  /// rate-limits, and cleared only by a confirmed negative resolve.
   final List<IdentityClaim> verifiedClaims;
 
   /// Returns a copy of this state with the given fields replaced.

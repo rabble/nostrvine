@@ -39,6 +39,8 @@ const _notificationRetentionDays = 7;
     PendingGiftWraps,
     ProcessedGiftWraps,
     PendingProfileSaves,
+    IdentityEvents,
+    IdentityVerifications,
   ],
   daos: [
     UserProfilesDao,
@@ -63,6 +65,8 @@ const _notificationRetentionDays = 7;
     PendingGiftWrapsDao,
     ProcessedGiftWrapsDao,
     PendingProfileSavesDao,
+    IdentityEventsDao,
+    IdentityVerificationsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -734,6 +738,45 @@ class AppDatabase extends _$AppDatabase {
           processed_at INTEGER NOT NULL,
           owner_pubkey TEXT,
           PRIMARY KEY (gift_wrap_id)
+        )
+      ''');
+    }
+
+    // Check if identity_events table exists, create if missing.
+    // Added for #3936 (NIP-39 kind-10011 source + verification cache).
+    // Schema version stays at 1 — same runtime CREATE-IF-NOT-EXISTS pattern
+    // as processed_gift_wraps above. Column order/types must match Drift's
+    // m.createAll() output (pinned by the schema-parity tests in
+    // app_database_test.dart).
+    final identityEventsResult = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type='table' "
+      "AND name='identity_events'",
+    ).get();
+
+    if (identityEventsResult.isEmpty) {
+      await customStatement('''
+        CREATE TABLE identity_events (
+          pubkey TEXT NOT NULL PRIMARY KEY,
+          tags_json TEXT NOT NULL,
+          source_kind INTEGER NOT NULL
+        )
+      ''');
+    }
+
+    // Check if identity_verifications table exists, create if missing.
+    // Added for #3936 — same pattern as identity_events above. No index:
+    // the only access is a primary-key lookup on pubkey.
+    final identityVerificationsResult = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type='table' "
+      "AND name='identity_verifications'",
+    ).get();
+
+    if (identityVerificationsResult.isEmpty) {
+      await customStatement('''
+        CREATE TABLE identity_verifications (
+          pubkey TEXT NOT NULL PRIMARY KEY,
+          verified_claims_json TEXT NOT NULL,
+          checked_at_floor INTEGER NOT NULL
         )
       ''');
     }

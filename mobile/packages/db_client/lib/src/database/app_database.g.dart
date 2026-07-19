@@ -15362,6 +15362,584 @@ class PendingProfileSavesCompanion
   }
 }
 
+class $IdentityEventsTable extends IdentityEvents
+    with TableInfo<$IdentityEventsTable, IdentityEventRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $IdentityEventsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _pubkeyMeta = const VerificationMeta('pubkey');
+  @override
+  late final GeneratedColumn<String> pubkey = GeneratedColumn<String>(
+    'pubkey',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tagsJsonMeta = const VerificationMeta(
+    'tagsJson',
+  );
+  @override
+  late final GeneratedColumn<String> tagsJson = GeneratedColumn<String>(
+    'tags_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceKindMeta = const VerificationMeta(
+    'sourceKind',
+  );
+  @override
+  late final GeneratedColumn<int> sourceKind = GeneratedColumn<int>(
+    'source_kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [pubkey, tagsJson, sourceKind];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'identity_events';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<IdentityEventRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('pubkey')) {
+      context.handle(
+        _pubkeyMeta,
+        pubkey.isAcceptableOrUnknown(data['pubkey']!, _pubkeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pubkeyMeta);
+    }
+    if (data.containsKey('tags_json')) {
+      context.handle(
+        _tagsJsonMeta,
+        tagsJson.isAcceptableOrUnknown(data['tags_json']!, _tagsJsonMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tagsJsonMeta);
+    }
+    if (data.containsKey('source_kind')) {
+      context.handle(
+        _sourceKindMeta,
+        sourceKind.isAcceptableOrUnknown(data['source_kind']!, _sourceKindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceKindMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {pubkey};
+  @override
+  IdentityEventRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return IdentityEventRow(
+      pubkey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}pubkey'],
+      )!,
+      tagsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tags_json'],
+      )!,
+      sourceKind: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}source_kind'],
+      )!,
+    );
+  }
+
+  @override
+  $IdentityEventsTable createAlias(String alias) {
+    return $IdentityEventsTable(attachedDatabase, alias);
+  }
+}
+
+class IdentityEventRow extends DataClass
+    implements Insertable<IdentityEventRow> {
+  /// Hex pubkey of the profile the identity event belongs to.
+  final String pubkey;
+
+  /// JSON-encoded `List<List<String>>` of the event's `i` tags only.
+  final String tagsJson;
+
+  /// Which event kind the tags came from: 10011 (current spec) or 0
+  /// (legacy fallback).
+  final int sourceKind;
+  const IdentityEventRow({
+    required this.pubkey,
+    required this.tagsJson,
+    required this.sourceKind,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['pubkey'] = Variable<String>(pubkey);
+    map['tags_json'] = Variable<String>(tagsJson);
+    map['source_kind'] = Variable<int>(sourceKind);
+    return map;
+  }
+
+  IdentityEventsCompanion toCompanion(bool nullToAbsent) {
+    return IdentityEventsCompanion(
+      pubkey: Value(pubkey),
+      tagsJson: Value(tagsJson),
+      sourceKind: Value(sourceKind),
+    );
+  }
+
+  factory IdentityEventRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return IdentityEventRow(
+      pubkey: serializer.fromJson<String>(json['pubkey']),
+      tagsJson: serializer.fromJson<String>(json['tagsJson']),
+      sourceKind: serializer.fromJson<int>(json['sourceKind']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'pubkey': serializer.toJson<String>(pubkey),
+      'tagsJson': serializer.toJson<String>(tagsJson),
+      'sourceKind': serializer.toJson<int>(sourceKind),
+    };
+  }
+
+  IdentityEventRow copyWith({
+    String? pubkey,
+    String? tagsJson,
+    int? sourceKind,
+  }) => IdentityEventRow(
+    pubkey: pubkey ?? this.pubkey,
+    tagsJson: tagsJson ?? this.tagsJson,
+    sourceKind: sourceKind ?? this.sourceKind,
+  );
+  IdentityEventRow copyWithCompanion(IdentityEventsCompanion data) {
+    return IdentityEventRow(
+      pubkey: data.pubkey.present ? data.pubkey.value : this.pubkey,
+      tagsJson: data.tagsJson.present ? data.tagsJson.value : this.tagsJson,
+      sourceKind: data.sourceKind.present
+          ? data.sourceKind.value
+          : this.sourceKind,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('IdentityEventRow(')
+          ..write('pubkey: $pubkey, ')
+          ..write('tagsJson: $tagsJson, ')
+          ..write('sourceKind: $sourceKind')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(pubkey, tagsJson, sourceKind);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is IdentityEventRow &&
+          other.pubkey == this.pubkey &&
+          other.tagsJson == this.tagsJson &&
+          other.sourceKind == this.sourceKind);
+}
+
+class IdentityEventsCompanion extends UpdateCompanion<IdentityEventRow> {
+  final Value<String> pubkey;
+  final Value<String> tagsJson;
+  final Value<int> sourceKind;
+  final Value<int> rowid;
+  const IdentityEventsCompanion({
+    this.pubkey = const Value.absent(),
+    this.tagsJson = const Value.absent(),
+    this.sourceKind = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  IdentityEventsCompanion.insert({
+    required String pubkey,
+    required String tagsJson,
+    required int sourceKind,
+    this.rowid = const Value.absent(),
+  }) : pubkey = Value(pubkey),
+       tagsJson = Value(tagsJson),
+       sourceKind = Value(sourceKind);
+  static Insertable<IdentityEventRow> custom({
+    Expression<String>? pubkey,
+    Expression<String>? tagsJson,
+    Expression<int>? sourceKind,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (pubkey != null) 'pubkey': pubkey,
+      if (tagsJson != null) 'tags_json': tagsJson,
+      if (sourceKind != null) 'source_kind': sourceKind,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  IdentityEventsCompanion copyWith({
+    Value<String>? pubkey,
+    Value<String>? tagsJson,
+    Value<int>? sourceKind,
+    Value<int>? rowid,
+  }) {
+    return IdentityEventsCompanion(
+      pubkey: pubkey ?? this.pubkey,
+      tagsJson: tagsJson ?? this.tagsJson,
+      sourceKind: sourceKind ?? this.sourceKind,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (pubkey.present) {
+      map['pubkey'] = Variable<String>(pubkey.value);
+    }
+    if (tagsJson.present) {
+      map['tags_json'] = Variable<String>(tagsJson.value);
+    }
+    if (sourceKind.present) {
+      map['source_kind'] = Variable<int>(sourceKind.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('IdentityEventsCompanion(')
+          ..write('pubkey: $pubkey, ')
+          ..write('tagsJson: $tagsJson, ')
+          ..write('sourceKind: $sourceKind, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $IdentityVerificationsTable extends IdentityVerifications
+    with TableInfo<$IdentityVerificationsTable, IdentityVerificationRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $IdentityVerificationsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _pubkeyMeta = const VerificationMeta('pubkey');
+  @override
+  late final GeneratedColumn<String> pubkey = GeneratedColumn<String>(
+    'pubkey',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _verifiedClaimsJsonMeta =
+      const VerificationMeta('verifiedClaimsJson');
+  @override
+  late final GeneratedColumn<String> verifiedClaimsJson =
+      GeneratedColumn<String>(
+        'verified_claims_json',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _checkedAtFloorMeta = const VerificationMeta(
+    'checkedAtFloor',
+  );
+  @override
+  late final GeneratedColumn<int> checkedAtFloor = GeneratedColumn<int>(
+    'checked_at_floor',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    pubkey,
+    verifiedClaimsJson,
+    checkedAtFloor,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'identity_verifications';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<IdentityVerificationRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('pubkey')) {
+      context.handle(
+        _pubkeyMeta,
+        pubkey.isAcceptableOrUnknown(data['pubkey']!, _pubkeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pubkeyMeta);
+    }
+    if (data.containsKey('verified_claims_json')) {
+      context.handle(
+        _verifiedClaimsJsonMeta,
+        verifiedClaimsJson.isAcceptableOrUnknown(
+          data['verified_claims_json']!,
+          _verifiedClaimsJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_verifiedClaimsJsonMeta);
+    }
+    if (data.containsKey('checked_at_floor')) {
+      context.handle(
+        _checkedAtFloorMeta,
+        checkedAtFloor.isAcceptableOrUnknown(
+          data['checked_at_floor']!,
+          _checkedAtFloorMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_checkedAtFloorMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {pubkey};
+  @override
+  IdentityVerificationRow map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return IdentityVerificationRow(
+      pubkey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}pubkey'],
+      )!,
+      verifiedClaimsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}verified_claims_json'],
+      )!,
+      checkedAtFloor: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}checked_at_floor'],
+      )!,
+    );
+  }
+
+  @override
+  $IdentityVerificationsTable createAlias(String alias) {
+    return $IdentityVerificationsTable(attachedDatabase, alias);
+  }
+}
+
+class IdentityVerificationRow extends DataClass
+    implements Insertable<IdentityVerificationRow> {
+  /// Hex pubkey of the profile the verified claims belong to.
+  final String pubkey;
+
+  /// JSON-encoded list of verified claim objects
+  /// `{"platform": ..., "identity": ..., "proof": ...}`.
+  ///
+  /// Proof participates in cache matching: a rotated proof no longer
+  /// matches its snapshot entry, so the claim re-verifies instead of
+  /// serving a stale verdict.
+  final String verifiedClaimsJson;
+
+  /// Minimum verifier `checked_at` (unix seconds) across the verified
+  /// batch. Freshness = `checkedAtFloor + 24h > now`.
+  final int checkedAtFloor;
+  const IdentityVerificationRow({
+    required this.pubkey,
+    required this.verifiedClaimsJson,
+    required this.checkedAtFloor,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['pubkey'] = Variable<String>(pubkey);
+    map['verified_claims_json'] = Variable<String>(verifiedClaimsJson);
+    map['checked_at_floor'] = Variable<int>(checkedAtFloor);
+    return map;
+  }
+
+  IdentityVerificationsCompanion toCompanion(bool nullToAbsent) {
+    return IdentityVerificationsCompanion(
+      pubkey: Value(pubkey),
+      verifiedClaimsJson: Value(verifiedClaimsJson),
+      checkedAtFloor: Value(checkedAtFloor),
+    );
+  }
+
+  factory IdentityVerificationRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return IdentityVerificationRow(
+      pubkey: serializer.fromJson<String>(json['pubkey']),
+      verifiedClaimsJson: serializer.fromJson<String>(
+        json['verifiedClaimsJson'],
+      ),
+      checkedAtFloor: serializer.fromJson<int>(json['checkedAtFloor']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'pubkey': serializer.toJson<String>(pubkey),
+      'verifiedClaimsJson': serializer.toJson<String>(verifiedClaimsJson),
+      'checkedAtFloor': serializer.toJson<int>(checkedAtFloor),
+    };
+  }
+
+  IdentityVerificationRow copyWith({
+    String? pubkey,
+    String? verifiedClaimsJson,
+    int? checkedAtFloor,
+  }) => IdentityVerificationRow(
+    pubkey: pubkey ?? this.pubkey,
+    verifiedClaimsJson: verifiedClaimsJson ?? this.verifiedClaimsJson,
+    checkedAtFloor: checkedAtFloor ?? this.checkedAtFloor,
+  );
+  IdentityVerificationRow copyWithCompanion(
+    IdentityVerificationsCompanion data,
+  ) {
+    return IdentityVerificationRow(
+      pubkey: data.pubkey.present ? data.pubkey.value : this.pubkey,
+      verifiedClaimsJson: data.verifiedClaimsJson.present
+          ? data.verifiedClaimsJson.value
+          : this.verifiedClaimsJson,
+      checkedAtFloor: data.checkedAtFloor.present
+          ? data.checkedAtFloor.value
+          : this.checkedAtFloor,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('IdentityVerificationRow(')
+          ..write('pubkey: $pubkey, ')
+          ..write('verifiedClaimsJson: $verifiedClaimsJson, ')
+          ..write('checkedAtFloor: $checkedAtFloor')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(pubkey, verifiedClaimsJson, checkedAtFloor);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is IdentityVerificationRow &&
+          other.pubkey == this.pubkey &&
+          other.verifiedClaimsJson == this.verifiedClaimsJson &&
+          other.checkedAtFloor == this.checkedAtFloor);
+}
+
+class IdentityVerificationsCompanion
+    extends UpdateCompanion<IdentityVerificationRow> {
+  final Value<String> pubkey;
+  final Value<String> verifiedClaimsJson;
+  final Value<int> checkedAtFloor;
+  final Value<int> rowid;
+  const IdentityVerificationsCompanion({
+    this.pubkey = const Value.absent(),
+    this.verifiedClaimsJson = const Value.absent(),
+    this.checkedAtFloor = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  IdentityVerificationsCompanion.insert({
+    required String pubkey,
+    required String verifiedClaimsJson,
+    required int checkedAtFloor,
+    this.rowid = const Value.absent(),
+  }) : pubkey = Value(pubkey),
+       verifiedClaimsJson = Value(verifiedClaimsJson),
+       checkedAtFloor = Value(checkedAtFloor);
+  static Insertable<IdentityVerificationRow> custom({
+    Expression<String>? pubkey,
+    Expression<String>? verifiedClaimsJson,
+    Expression<int>? checkedAtFloor,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (pubkey != null) 'pubkey': pubkey,
+      if (verifiedClaimsJson != null)
+        'verified_claims_json': verifiedClaimsJson,
+      if (checkedAtFloor != null) 'checked_at_floor': checkedAtFloor,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  IdentityVerificationsCompanion copyWith({
+    Value<String>? pubkey,
+    Value<String>? verifiedClaimsJson,
+    Value<int>? checkedAtFloor,
+    Value<int>? rowid,
+  }) {
+    return IdentityVerificationsCompanion(
+      pubkey: pubkey ?? this.pubkey,
+      verifiedClaimsJson: verifiedClaimsJson ?? this.verifiedClaimsJson,
+      checkedAtFloor: checkedAtFloor ?? this.checkedAtFloor,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (pubkey.present) {
+      map['pubkey'] = Variable<String>(pubkey.value);
+    }
+    if (verifiedClaimsJson.present) {
+      map['verified_claims_json'] = Variable<String>(verifiedClaimsJson.value);
+    }
+    if (checkedAtFloor.present) {
+      map['checked_at_floor'] = Variable<int>(checkedAtFloor.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('IdentityVerificationsCompanion(')
+          ..write('pubkey: $pubkey, ')
+          ..write('verifiedClaimsJson: $verifiedClaimsJson, ')
+          ..write('checkedAtFloor: $checkedAtFloor, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -15398,6 +15976,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $ProcessedGiftWrapsTable(this);
   late final $PendingProfileSavesTable pendingProfileSaves =
       $PendingProfileSavesTable(this);
+  late final $IdentityEventsTable identityEvents = $IdentityEventsTable(this);
+  late final $IdentityVerificationsTable identityVerifications =
+      $IdentityVerificationsTable(this);
   late final UserProfilesDao userProfilesDao = UserProfilesDao(
     this as AppDatabase,
   );
@@ -15456,6 +16037,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       ProcessedGiftWrapsDao(this as AppDatabase);
   late final PendingProfileSavesDao pendingProfileSavesDao =
       PendingProfileSavesDao(this as AppDatabase);
+  late final IdentityEventsDao identityEventsDao = IdentityEventsDao(
+    this as AppDatabase,
+  );
+  late final IdentityVerificationsDao identityVerificationsDao =
+      IdentityVerificationsDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -15483,6 +16069,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     pendingGiftWraps,
     processedGiftWraps,
     pendingProfileSaves,
+    identityEvents,
+    identityVerifications,
   ];
 }
 
@@ -22671,6 +23259,361 @@ typedef $$PendingProfileSavesTableProcessedTableManager =
       PendingProfileSaveRow,
       PrefetchHooks Function()
     >;
+typedef $$IdentityEventsTableCreateCompanionBuilder =
+    IdentityEventsCompanion Function({
+      required String pubkey,
+      required String tagsJson,
+      required int sourceKind,
+      Value<int> rowid,
+    });
+typedef $$IdentityEventsTableUpdateCompanionBuilder =
+    IdentityEventsCompanion Function({
+      Value<String> pubkey,
+      Value<String> tagsJson,
+      Value<int> sourceKind,
+      Value<int> rowid,
+    });
+
+class $$IdentityEventsTableFilterComposer
+    extends Composer<_$AppDatabase, $IdentityEventsTable> {
+  $$IdentityEventsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get pubkey => $composableBuilder(
+    column: $table.pubkey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tagsJson => $composableBuilder(
+    column: $table.tagsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sourceKind => $composableBuilder(
+    column: $table.sourceKind,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$IdentityEventsTableOrderingComposer
+    extends Composer<_$AppDatabase, $IdentityEventsTable> {
+  $$IdentityEventsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get pubkey => $composableBuilder(
+    column: $table.pubkey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tagsJson => $composableBuilder(
+    column: $table.tagsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sourceKind => $composableBuilder(
+    column: $table.sourceKind,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$IdentityEventsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $IdentityEventsTable> {
+  $$IdentityEventsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get pubkey =>
+      $composableBuilder(column: $table.pubkey, builder: (column) => column);
+
+  GeneratedColumn<String> get tagsJson =>
+      $composableBuilder(column: $table.tagsJson, builder: (column) => column);
+
+  GeneratedColumn<int> get sourceKind => $composableBuilder(
+    column: $table.sourceKind,
+    builder: (column) => column,
+  );
+}
+
+class $$IdentityEventsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $IdentityEventsTable,
+          IdentityEventRow,
+          $$IdentityEventsTableFilterComposer,
+          $$IdentityEventsTableOrderingComposer,
+          $$IdentityEventsTableAnnotationComposer,
+          $$IdentityEventsTableCreateCompanionBuilder,
+          $$IdentityEventsTableUpdateCompanionBuilder,
+          (
+            IdentityEventRow,
+            BaseReferences<
+              _$AppDatabase,
+              $IdentityEventsTable,
+              IdentityEventRow
+            >,
+          ),
+          IdentityEventRow,
+          PrefetchHooks Function()
+        > {
+  $$IdentityEventsTableTableManager(
+    _$AppDatabase db,
+    $IdentityEventsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$IdentityEventsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$IdentityEventsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$IdentityEventsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> pubkey = const Value.absent(),
+                Value<String> tagsJson = const Value.absent(),
+                Value<int> sourceKind = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => IdentityEventsCompanion(
+                pubkey: pubkey,
+                tagsJson: tagsJson,
+                sourceKind: sourceKind,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String pubkey,
+                required String tagsJson,
+                required int sourceKind,
+                Value<int> rowid = const Value.absent(),
+              }) => IdentityEventsCompanion.insert(
+                pubkey: pubkey,
+                tagsJson: tagsJson,
+                sourceKind: sourceKind,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$IdentityEventsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $IdentityEventsTable,
+      IdentityEventRow,
+      $$IdentityEventsTableFilterComposer,
+      $$IdentityEventsTableOrderingComposer,
+      $$IdentityEventsTableAnnotationComposer,
+      $$IdentityEventsTableCreateCompanionBuilder,
+      $$IdentityEventsTableUpdateCompanionBuilder,
+      (
+        IdentityEventRow,
+        BaseReferences<_$AppDatabase, $IdentityEventsTable, IdentityEventRow>,
+      ),
+      IdentityEventRow,
+      PrefetchHooks Function()
+    >;
+typedef $$IdentityVerificationsTableCreateCompanionBuilder =
+    IdentityVerificationsCompanion Function({
+      required String pubkey,
+      required String verifiedClaimsJson,
+      required int checkedAtFloor,
+      Value<int> rowid,
+    });
+typedef $$IdentityVerificationsTableUpdateCompanionBuilder =
+    IdentityVerificationsCompanion Function({
+      Value<String> pubkey,
+      Value<String> verifiedClaimsJson,
+      Value<int> checkedAtFloor,
+      Value<int> rowid,
+    });
+
+class $$IdentityVerificationsTableFilterComposer
+    extends Composer<_$AppDatabase, $IdentityVerificationsTable> {
+  $$IdentityVerificationsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get pubkey => $composableBuilder(
+    column: $table.pubkey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get verifiedClaimsJson => $composableBuilder(
+    column: $table.verifiedClaimsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get checkedAtFloor => $composableBuilder(
+    column: $table.checkedAtFloor,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$IdentityVerificationsTableOrderingComposer
+    extends Composer<_$AppDatabase, $IdentityVerificationsTable> {
+  $$IdentityVerificationsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get pubkey => $composableBuilder(
+    column: $table.pubkey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get verifiedClaimsJson => $composableBuilder(
+    column: $table.verifiedClaimsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get checkedAtFloor => $composableBuilder(
+    column: $table.checkedAtFloor,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$IdentityVerificationsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $IdentityVerificationsTable> {
+  $$IdentityVerificationsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get pubkey =>
+      $composableBuilder(column: $table.pubkey, builder: (column) => column);
+
+  GeneratedColumn<String> get verifiedClaimsJson => $composableBuilder(
+    column: $table.verifiedClaimsJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get checkedAtFloor => $composableBuilder(
+    column: $table.checkedAtFloor,
+    builder: (column) => column,
+  );
+}
+
+class $$IdentityVerificationsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $IdentityVerificationsTable,
+          IdentityVerificationRow,
+          $$IdentityVerificationsTableFilterComposer,
+          $$IdentityVerificationsTableOrderingComposer,
+          $$IdentityVerificationsTableAnnotationComposer,
+          $$IdentityVerificationsTableCreateCompanionBuilder,
+          $$IdentityVerificationsTableUpdateCompanionBuilder,
+          (
+            IdentityVerificationRow,
+            BaseReferences<
+              _$AppDatabase,
+              $IdentityVerificationsTable,
+              IdentityVerificationRow
+            >,
+          ),
+          IdentityVerificationRow,
+          PrefetchHooks Function()
+        > {
+  $$IdentityVerificationsTableTableManager(
+    _$AppDatabase db,
+    $IdentityVerificationsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$IdentityVerificationsTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$IdentityVerificationsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$IdentityVerificationsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> pubkey = const Value.absent(),
+                Value<String> verifiedClaimsJson = const Value.absent(),
+                Value<int> checkedAtFloor = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => IdentityVerificationsCompanion(
+                pubkey: pubkey,
+                verifiedClaimsJson: verifiedClaimsJson,
+                checkedAtFloor: checkedAtFloor,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String pubkey,
+                required String verifiedClaimsJson,
+                required int checkedAtFloor,
+                Value<int> rowid = const Value.absent(),
+              }) => IdentityVerificationsCompanion.insert(
+                pubkey: pubkey,
+                verifiedClaimsJson: verifiedClaimsJson,
+                checkedAtFloor: checkedAtFloor,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$IdentityVerificationsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $IdentityVerificationsTable,
+      IdentityVerificationRow,
+      $$IdentityVerificationsTableFilterComposer,
+      $$IdentityVerificationsTableOrderingComposer,
+      $$IdentityVerificationsTableAnnotationComposer,
+      $$IdentityVerificationsTableCreateCompanionBuilder,
+      $$IdentityVerificationsTableUpdateCompanionBuilder,
+      (
+        IdentityVerificationRow,
+        BaseReferences<
+          _$AppDatabase,
+          $IdentityVerificationsTable,
+          IdentityVerificationRow
+        >,
+      ),
+      IdentityVerificationRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -22719,4 +23662,8 @@ class $AppDatabaseManager {
       $$ProcessedGiftWrapsTableTableManager(_db, _db.processedGiftWraps);
   $$PendingProfileSavesTableTableManager get pendingProfileSaves =>
       $$PendingProfileSavesTableTableManager(_db, _db.pendingProfileSaves);
+  $$IdentityEventsTableTableManager get identityEvents =>
+      $$IdentityEventsTableTableManager(_db, _db.identityEvents);
+  $$IdentityVerificationsTableTableManager get identityVerifications =>
+      $$IdentityVerificationsTableTableManager(_db, _db.identityVerifications);
 }

@@ -31,7 +31,10 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
       _onRefreshRequested,
       transformer: sequential(),
     );
-    on<VerifiedClaimsRequested>(_onVerifiedClaimsRequested);
+    on<VerifiedClaimsRequested>(
+      _onVerifiedClaimsRequested,
+      transformer: restartable(),
+    );
   }
 
   final ProfileRepository _profileRepository;
@@ -49,12 +52,17 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
       pubkey: pubkey,
     );
     if (isClosed) return;
+    // Carry claims through the reload so chips do not vanish and re-pop
+    // while the verifier revalidates (#3936). Read AFTER the await so an
+    // authoritative claims resolve landing during the cache read is not
+    // clobbered by a stale capture.
+    final currentClaims = _claimsFromState(state);
     emit(
       MyProfileLoading(
         profile: cachedProfile,
         extractedUsername: cachedProfile?.divineUsername,
         externalNip05: cachedProfile?.externalNip05,
-        verifiedClaims: _claimsFromState(state),
+        verifiedClaims: currentClaims,
       ),
     );
 
@@ -65,6 +73,7 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
       );
       if (isClosed) return;
 
+      final latestClaims = _claimsFromState(state);
       if (freshProfile != null) {
         emit(
           MyProfileLoaded(
@@ -72,6 +81,7 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
             isFresh: true,
             extractedUsername: freshProfile.divineUsername,
             externalNip05: freshProfile.externalNip05,
+            verifiedClaims: latestClaims,
           ),
         );
         add(const VerifiedClaimsRequested());
@@ -82,6 +92,7 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
             isFresh: false,
             extractedUsername: cachedProfile.divineUsername,
             externalNip05: cachedProfile.externalNip05,
+            verifiedClaims: latestClaims,
           ),
         );
         add(const VerifiedClaimsRequested());
@@ -97,6 +108,7 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
             isFresh: false,
             extractedUsername: cachedProfile.divineUsername,
             externalNip05: cachedProfile.externalNip05,
+            verifiedClaims: _claimsFromState(state),
           ),
         );
         add(const VerifiedClaimsRequested());
@@ -123,6 +135,7 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
         profile: cachedProfile,
         extractedUsername: cachedProfile?.divineUsername,
         externalNip05: cachedProfile?.externalNip05,
+        verifiedClaims: _claimsFromState(state),
       ),
     );
 
@@ -132,10 +145,13 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
         if (isClosed) return state;
         if (profile != null) {
           add(const VerifiedClaimsRequested());
+          // Carry claims through the stream tick so chips do not blank
+          // while the verifier revalidates (#3936).
           return MyProfileUpdated(
             profile: profile,
             extractedUsername: profile.divineUsername,
             externalNip05: profile.externalNip05,
+            verifiedClaims: _claimsFromState(state),
           );
         }
         final currentProfile = _profileFromState(state);
@@ -243,37 +259,115 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
       return;
     }
 
+    // Instant path (#3936): cached claims source ∩ persisted verdict
+    // snapshot renders chips without any network round-trip.
+    CachedVerifiedClaims? cached;
     try {
-      final claims = await repo.verifiedClaims(
-        pubkey: profile.pubkey,
-        tags: profile.rawTags,
+      final cachedTags = await _profileRepository.cachedIdentityTags(
+        profile.pubkey,
       );
       if (isClosed) return;
-      // State may have changed mid-await; re-check before emitting.
-      final latest = state;
-      if (latest is MyProfileLoaded &&
-          latest.profile.pubkey == profile.pubkey) {
-        emit(latest.copyWith(verifiedClaims: claims));
-      } else if (latest is MyProfileUpdated &&
-          latest.profile.pubkey == profile.pubkey) {
-        emit(latest.copyWith(verifiedClaims: claims));
+      cached = await repo.cachedVerifiedClaims(
+        pubkey: profile.pubkey,
+        tags: cachedTags ?? profile.rawTags,
+      );
+      if (isClosed) return;
+      if (cached != null) {
+        _emitClaims(emit, profile.pubkey, cached.claims, authoritative: false);
       }
     } on Exception catch (e, stackTrace) {
-      // Verifier failures are expected (network/4xx/5xx/timeout). Per
-      // .claude/rules/error_handling.md they are NOT Reportable. Surface as
-      // empty list rather than blocking the UI.
+      // Cache read failure — degrade straight to the network path.
       addError(e, stackTrace);
+    }
+
+    // Refresh the claims source: kind 10011 wins, kind-0 tags fall back.
+    List<List<String>> freshTags;
+    try {
+      freshTags = await _profileRepository.freshIdentityTags(
+        pubkey: profile.pubkey,
+        kind0Tags: profile.rawTags,
+      );
+    } on Exception catch (e, stackTrace) {
+      // Degraded claims source (cache I/O failure). Resolving against the
+      // kind-0 fallback could authoritatively clear chips for a profile
+      // whose claims live in kind 10011, so keep last-known-good and let
+      // the next revalidation tick retry.
+      addError(e, stackTrace);
+      return;
+    }
+    if (isClosed) return;
+
+    // The repository owns the skip-or-verify (stale-while-revalidate)
+    // decision; the bloc just renders whatever it resolves to (#3936). The
+    // currently-rendered claims ride along so a rate-limited (inconclusive)
+    // outcome cannot clear visible chips.
+    try {
+      final claims = await repo.resolveClaims(
+        pubkey: profile.pubkey,
+        freshTags: freshTags,
+        cached: cached,
+        renderedClaims: _claimsFromState(state),
+      );
       if (isClosed) return;
-      final latest = state;
-      if (latest is MyProfileLoaded &&
-          latest.profile.pubkey == profile.pubkey) {
-        emit(latest.copyWith(verifiedClaims: const []));
-      } else if (latest is MyProfileUpdated &&
-          latest.profile.pubkey == profile.pubkey) {
-        emit(latest.copyWith(verifiedClaims: const []));
-      }
+      _emitClaims(emit, profile.pubkey, claims, authoritative: true);
+    } on Exception catch (e, stackTrace) {
+      // Verifier failures are expected (network/4xx/5xx/timeout). Per
+      // .claude/rules/error_handling.md they are NOT Reportable. Keep the
+      // last-known-good claims instead of erasing rendered chips.
+      addError(e, stackTrace);
     }
   }
+
+  /// Emits [claims] onto the latest state when it still shows
+  /// [profilePubkey]'s profile. State may have changed mid-await, so the
+  /// check runs at emit time.
+  ///
+  /// A non-[authoritative] emit (the instant cache path) may only add
+  /// chips: it is unioned with the rendered set, so a reduced or empty
+  /// snapshot intersection never clears claims the verifier has not
+  /// negatively confirmed. Only the authoritative resolve path replaces
+  /// the rendered set outright.
+  void _emitClaims(
+    Emitter<MyProfileState> emit,
+    String profilePubkey,
+    List<IdentityClaim> claims, {
+    required bool authoritative,
+  }) {
+    final latest = state;
+    if (latest is MyProfileLoaded && latest.profile.pubkey == profilePubkey) {
+      final next = authoritative
+          ? claims
+          : _withRenderedPreserved(claims, latest.verifiedClaims);
+      emit(latest.copyWith(verifiedClaims: next));
+    } else if (latest is MyProfileUpdated &&
+        latest.profile.pubkey == profilePubkey) {
+      final next = authoritative
+          ? claims
+          : _withRenderedPreserved(claims, latest.verifiedClaims);
+      emit(latest.copyWith(verifiedClaims: next));
+    }
+  }
+
+  /// Rendered-first union keyed on case-insensitive `platform:identity`:
+  /// order-stable (no chip reorder churn across revalidation ticks, and
+  /// the steady-state result is deep-equal to [rendered] so the emit is
+  /// Equatable-suppressed) and dedup-safe across casing or proof drift.
+  List<IdentityClaim> _withRenderedPreserved(
+    List<IdentityClaim> incoming,
+    List<IdentityClaim> rendered,
+  ) {
+    if (rendered.isEmpty) return incoming;
+    final renderedKeys = {for (final claim in rendered) _identityKeyOf(claim)};
+    return [
+      ...rendered,
+      ...incoming.where(
+        (claim) => !renderedKeys.contains(_identityKeyOf(claim)),
+      ),
+    ];
+  }
+
+  String _identityKeyOf(IdentityClaim claim) =>
+      '${claim.platform.toLowerCase()}:${claim.identity.toLowerCase()}';
 
   UserProfile? _profileFromState(MyProfileState state) {
     final profile = switch (state) {
@@ -286,13 +380,18 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
   }
 
   List<IdentityClaim> _claimsFromState(MyProfileState state) {
+    // A null Loading profile just means no cached profile row yet — the
+    // carried claims are still this bloc's own-[pubkey] claims, so they
+    // must survive the guard.
     final claims = switch (state) {
       MyProfileLoaded(:final profile, :final verifiedClaims) =>
         profile.pubkey == pubkey ? verifiedClaims : const <IdentityClaim>[],
       MyProfileUpdated(:final profile, :final verifiedClaims) =>
         profile.pubkey == pubkey ? verifiedClaims : const <IdentityClaim>[],
       MyProfileLoading(:final profile, :final verifiedClaims) =>
-        profile?.pubkey == pubkey ? verifiedClaims : const <IdentityClaim>[],
+        profile == null || profile.pubkey == pubkey
+            ? verifiedClaims
+            : const <IdentityClaim>[],
       _ => const <IdentityClaim>[],
     };
     return claims;

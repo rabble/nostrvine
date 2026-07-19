@@ -354,6 +354,8 @@ ProfileRepository _buildProfileRepository(Ref ref, {required bool warmCache}) {
     profileStatsDao: ref.watch(databaseProvider).profileStatsDao,
     // Durable pending-save slot for the offline-tolerant username save (#3161).
     pendingProfileSavesDao: ref.watch(databaseProvider).pendingProfileSavesDao,
+    // NIP-39 identity-claims source cache (#3936).
+    identityEventsDao: ref.watch(databaseProvider).identityEventsDao,
     httpClient: Client(),
     funnelcakeApiClient: funnelcakeClient,
     indexerRelays: env.indexerRelays,

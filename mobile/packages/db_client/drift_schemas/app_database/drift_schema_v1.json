@@ -2790,6 +2790,100 @@
           "user_pubkey"
         ]
       }
+    },
+    {
+      "id": 22,
+      "references": [],
+      "type": "table",
+      "data": {
+        "name": "identity_events",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "pubkey",
+            "getter_name": "pubkey",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "tags_json",
+            "getter_name": "tagsJson",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "source_kind",
+            "getter_name": "sourceKind",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [],
+        "explicit_pk": [
+          "pubkey"
+        ]
+      }
+    },
+    {
+      "id": 23,
+      "references": [],
+      "type": "table",
+      "data": {
+        "name": "identity_verifications",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "pubkey",
+            "getter_name": "pubkey",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "verified_claims_json",
+            "getter_name": "verifiedClaimsJson",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "checked_at_floor",
+            "getter_name": "checkedAtFloor",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [],
+        "explicit_pk": [
+          "pubkey"
+        ]
+      }
     }
   ],
   "fixed_sql": [
@@ -2988,6 +3082,24 @@
         {
           "dialect": "sqlite",
           "sql": "CREATE TABLE IF NOT EXISTS \"pending_profile_saves\" (\"user_pubkey\" TEXT NOT NULL, \"payload_json\" TEXT NOT NULL, \"claim_confirmed\" INTEGER NOT NULL DEFAULT 0 CHECK (\"claim_confirmed\" IN (0, 1)), \"status\" TEXT NOT NULL DEFAULT 'pending', \"retry_count\" INTEGER NOT NULL DEFAULT 0, \"last_attempt_at\" INTEGER NULL, \"queued_at\" INTEGER NOT NULL, \"last_error\" TEXT NULL, \"generation\" TEXT NOT NULL DEFAULT '', PRIMARY KEY (\"user_pubkey\"));"
+        }
+      ]
+    },
+    {
+      "name": "identity_events",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"identity_events\" (\"pubkey\" TEXT NOT NULL, \"tags_json\" TEXT NOT NULL, \"source_kind\" INTEGER NOT NULL, PRIMARY KEY (\"pubkey\"));"
+        }
+      ]
+    },
+    {
+      "name": "identity_verifications",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"identity_verifications\" (\"pubkey\" TEXT NOT NULL, \"verified_claims_json\" TEXT NOT NULL, \"checked_at_floor\" INTEGER NOT NULL, PRIMARY KEY (\"pubkey\"));"
         }
       ]
     }

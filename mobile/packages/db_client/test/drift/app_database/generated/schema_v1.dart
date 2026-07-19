@@ -2865,6 +2865,119 @@ class PendingProfileSaves extends Table with TableInfo {
   bool get dontWriteConstraints => true;
 }
 
+class IdentityEvents extends Table with TableInfo {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  IdentityEvents(this.attachedDatabase, [this._alias]);
+  late final GeneratedColumn<String> pubkey = GeneratedColumn<String>(
+    'pubkey',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  late final GeneratedColumn<String> tagsJson = GeneratedColumn<String>(
+    'tags_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  late final GeneratedColumn<int> sourceKind = GeneratedColumn<int>(
+    'source_kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  @override
+  List<GeneratedColumn> get $columns => [pubkey, tagsJson, sourceKind];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'identity_events';
+  @override
+  Set<GeneratedColumn> get $primaryKey => {pubkey};
+  @override
+  Never map(Map<String, dynamic> data, {String? tablePrefix}) {
+    throw UnsupportedError('TableInfo.map in schema verification code');
+  }
+
+  @override
+  IdentityEvents createAlias(String alias) {
+    return IdentityEvents(attachedDatabase, alias);
+  }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(pubkey)'];
+  @override
+  bool get dontWriteConstraints => true;
+}
+
+class IdentityVerifications extends Table with TableInfo {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  IdentityVerifications(this.attachedDatabase, [this._alias]);
+  late final GeneratedColumn<String> pubkey = GeneratedColumn<String>(
+    'pubkey',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  late final GeneratedColumn<String> verifiedClaimsJson =
+      GeneratedColumn<String>(
+        'verified_claims_json',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+        $customConstraints: 'NOT NULL',
+      );
+  late final GeneratedColumn<int> checkedAtFloor = GeneratedColumn<int>(
+    'checked_at_floor',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    pubkey,
+    verifiedClaimsJson,
+    checkedAtFloor,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'identity_verifications';
+  @override
+  Set<GeneratedColumn> get $primaryKey => {pubkey};
+  @override
+  Never map(Map<String, dynamic> data, {String? tablePrefix}) {
+    throw UnsupportedError('TableInfo.map in schema verification code');
+  }
+
+  @override
+  IdentityVerifications createAlias(String alias) {
+    return IdentityVerifications(attachedDatabase, alias);
+  }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(pubkey)'];
+  @override
+  bool get dontWriteConstraints => true;
+}
+
 class DatabaseAtV1 extends GeneratedDatabase {
   DatabaseAtV1(QueryExecutor e) : super(e);
   late final Event event = Event(this);
@@ -2893,6 +3006,9 @@ class DatabaseAtV1 extends GeneratedDatabase {
   late final PendingProfileSaves pendingProfileSaves = PendingProfileSaves(
     this,
   );
+  late final IdentityEvents identityEvents = IdentityEvents(this);
+  late final IdentityVerifications identityVerifications =
+      IdentityVerifications(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2920,6 +3036,8 @@ class DatabaseAtV1 extends GeneratedDatabase {
     pendingGiftWraps,
     processedGiftWraps,
     pendingProfileSaves,
+    identityEvents,
+    identityVerifications,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([

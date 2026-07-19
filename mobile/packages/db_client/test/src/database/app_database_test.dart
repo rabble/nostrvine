@@ -1114,6 +1114,141 @@ void main() {
       });
     });
 
+    group('identity caches (#3936)', () {
+      test(
+        'upgrade path — pre-#3936 database gets both identity tables on '
+        'reopen',
+        () async {
+          await database.customStatement('DROP TABLE identity_events');
+          await database.customStatement('DROP TABLE identity_verifications');
+          await database.close();
+
+          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+
+          final tables = await database
+              .customSelect(
+                "SELECT name FROM sqlite_master WHERE type='table' "
+                "AND name IN ('identity_events', 'identity_verifications')",
+              )
+              .get();
+          expect(
+            tables,
+            hasLength(2),
+            reason: 'both identity tables must be re-created on reopen',
+          );
+
+          await database.identityEventsDao.upsertEvent(
+            pubkey: testPubkey,
+            tagsJson: '[["i","github:alice","proof-a"]]',
+            sourceKind: 10011,
+          );
+          final eventRow = await database.identityEventsDao.getEvent(
+            testPubkey,
+          );
+          expect(eventRow, isNotNull);
+
+          await database.identityVerificationsDao.upsertVerification(
+            pubkey: testPubkey,
+            verifiedClaimsJson: '[]',
+            checkedAtFloor: 100,
+          );
+          final verificationRow = await database.identityVerificationsDao
+              .getVerification(testPubkey);
+          expect(verificationRow, isNotNull);
+        },
+      );
+
+      test(
+        'schema parity — identity_events fresh-install matches runtime '
+        'CREATE-IF-NOT-EXISTS path',
+        () async {
+          final freshColumns = await _collectTableInfo(
+            database,
+            'identity_events',
+          );
+          final freshIndexes = await _collectIndexNames(
+            database,
+            'identity_events',
+          );
+
+          expect(
+            freshColumns,
+            isNotEmpty,
+            reason: 'precondition: fresh install should have identity_events',
+          );
+
+          await database.customStatement('DROP TABLE identity_events');
+          await database.close();
+
+          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+          await database
+              .customSelect(
+                "SELECT name FROM sqlite_master WHERE type='table' "
+                "AND name='identity_events'",
+              )
+              .get();
+
+          final recreatedColumns = await _collectTableInfo(
+            database,
+            'identity_events',
+          );
+          final recreatedIndexes = await _collectIndexNames(
+            database,
+            'identity_events',
+          );
+
+          expect(recreatedColumns, equals(freshColumns));
+          expect(recreatedIndexes, equals(freshIndexes));
+        },
+      );
+
+      test(
+        'schema parity — identity_verifications fresh-install matches '
+        'runtime CREATE-IF-NOT-EXISTS path',
+        () async {
+          final freshColumns = await _collectTableInfo(
+            database,
+            'identity_verifications',
+          );
+          final freshIndexes = await _collectIndexNames(
+            database,
+            'identity_verifications',
+          );
+
+          expect(
+            freshColumns,
+            isNotEmpty,
+            reason:
+                'precondition: fresh install should have '
+                'identity_verifications',
+          );
+
+          await database.customStatement('DROP TABLE identity_verifications');
+          await database.close();
+
+          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+          await database
+              .customSelect(
+                "SELECT name FROM sqlite_master WHERE type='table' "
+                "AND name='identity_verifications'",
+              )
+              .get();
+
+          final recreatedColumns = await _collectTableInfo(
+            database,
+            'identity_verifications',
+          );
+          final recreatedIndexes = await _collectIndexNames(
+            database,
+            'identity_verifications',
+          );
+
+          expect(recreatedColumns, equals(freshColumns));
+          expect(recreatedIndexes, equals(freshIndexes));
+        },
+      );
+    });
+
     group('event table d_tag column', () {
       test(
         'upgrade path — adds, indexes, and backfills d_tag on reopen',
