@@ -51,8 +51,11 @@ final stillRunning = await uploader.activeTaskIds();
 - **Apple (iOS + macOS)** — a shared Darwin background `URLSession`
   (`uploadTask(with:fromFile:)`). On iOS the app-delegate forwarding hook
   (`handleEventsForBackgroundURLSession`) lets the OS relaunch the app to finish
-  a transfer; that relaunch path is iOS-only (`#if os(iOS)`), since macOS apps
-  are not suspended the same way. Requires no extra entitlements.
+  a transfer. When a foreground session is active, the plugin retains that
+  background-event wake until Dart ends the session, allowing follow-up work
+  such as thumbnail upload and event publication to finish before iOS suspends
+  the app again. That relaunch path is iOS-only (`#if os(iOS)`), since macOS
+  apps are not suspended the same way. Requires no extra entitlements.
 - **Android** — a foreground service streams the upload. The plugin manifest
   contributes `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_DATA_SYNC`,
   `POST_NOTIFICATIONS`, and `INTERNET`. On Android 13+ the ongoing notification
