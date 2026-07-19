@@ -15,4 +15,15 @@ class CacheDatabase extends _$CacheDatabase {
 
   @override
   int get schemaVersion => 1;
+
+  /// Migration strategy for the cache store.
+  ///
+  /// `cache_sync` is a disposable local cache with a single [CacheEntries]
+  /// table and no schema-shape migration yet. This is the explicit anchor
+  /// point for the first real migration; see `MIGRATIONS.md` for the
+  /// versioning path and the #4382 decision not to ship a legacy-key-residue
+  /// data delete.
+  @override
+  MigrationStrategy get migration =>
+      MigrationStrategy(onCreate: (m) => m.createAll());
 }

@@ -513,4 +513,117 @@ void main() {
       expect(events[0].data.pubkeys, ['fresh']);
     });
   });
+
+  group('cache key shape guardrail (#4382 re-orphan prevention)', () {
+    // follow_repository was the sole cache_sync key-writer that ever used the
+    // orphan-prone legacy `operation_${pubkey}` underscore shape (between #4251
+    // and #4361, before RFC #4244's `${pubkey}:operation` colon shape landed).
+    // Those keys did not start with the pubkey, so invalidatePrefix(pubkey)
+    // never reached them, and with no TTL they were never re-read. These tests
+    // fail loudly if any key builder ever re-emits one of those legacy
+    // prefixes, which would silently re-introduce that orphan-prone shape.
+    //
+    // All four current builders are covered — my_followers_, my_following_,
+    // others_followers_, others_following_ — so the guard has no 2-of-4 blind
+    // spot.
+    void expectNoLegacyPrefixedKey() {
+      const legacyPrefixes = [
+        'my_followers_',
+        'my_following_',
+        'others_followers_',
+        'others_following_',
+      ];
+      expect(
+        dao.keys.every(
+          (k) => legacyPrefixes.every((prefix) => !k.startsWith(prefix)),
+        ),
+        isTrue,
+        reason:
+            'follow_repository cache keys must use the RFC #4244 '
+            'pubkey-prefixed "pubkey:operation" shape, never the legacy '
+            '"operation_pubkey" shape (#4382).',
+      );
+    }
+
+    test(
+      'watchMyFollowersCached writes a colon-scoped key, not legacy',
+      () async {
+        final repo = _TestableFollowRepository(
+          nostrClient: mockNostrClient,
+          myFollowersResult: const ['a'],
+          myFollowerCountResult: 1,
+          myFollowingStream: const Stream.empty(),
+          othersFollowersResult: const [],
+          othersFollowingResult: const FollowingSnapshot(pubkeys: [], count: 0),
+        );
+
+        await repo.watchMyFollowersCached().take(1).toList();
+
+        expect(dao.rawRead('current-user:my_followers'), isNotNull);
+        expect(dao.keys, isNotEmpty);
+        expectNoLegacyPrefixedKey();
+      },
+    );
+
+    test(
+      'watchMyFollowingCached writes a colon-scoped key, not legacy',
+      () async {
+        final repo = _TestableFollowRepository(
+          nostrClient: mockNostrClient,
+          myFollowingStream: const Stream.empty(),
+          othersFollowersResult: const [],
+          othersFollowingResult: const FollowingSnapshot(
+            pubkeys: ['a'],
+            count: 1,
+          ),
+        );
+
+        await repo.watchMyFollowingCached().take(1).toList();
+
+        expect(dao.rawRead('current-user:my_following'), isNotNull);
+        expect(dao.keys, isNotEmpty);
+        expectNoLegacyPrefixedKey();
+      },
+    );
+
+    test(
+      'watchOthersFollowersCached writes a colon-scoped key, not legacy',
+      () async {
+        final repo = _TestableFollowRepository(
+          nostrClient: mockNostrClient,
+          myFollowingStream: const Stream.empty(),
+          othersFollowersResult: const ['a'],
+          othersFollowerCountResult: 1,
+          othersFollowingResult: const FollowingSnapshot(pubkeys: [], count: 0),
+        );
+
+        await repo.watchOthersFollowersCached('target').take(1).toList();
+
+        expect(dao.rawRead('target:others_followers'), isNotNull);
+        expect(dao.keys, isNotEmpty);
+        expectNoLegacyPrefixedKey();
+      },
+    );
+
+    test(
+      'watchOthersFollowingCached writes a colon-scoped key, not legacy',
+      () async {
+        final repo = _TestableFollowRepository(
+          nostrClient: mockNostrClient,
+          myFollowingStream: const Stream.empty(),
+          othersFollowersResult: const [],
+          othersFollowingResult: const FollowingSnapshot(
+            pubkeys: ['a'],
+            count: 1,
+          ),
+        );
+
+        await repo.watchOthersFollowingCached('target').take(1).toList();
+
+        expect(dao.rawRead('target:others_following'), isNotNull);
+        expect(dao.keys, isNotEmpty);
+        expectNoLegacyPrefixedKey();
+      },
+    );
+  });
 }

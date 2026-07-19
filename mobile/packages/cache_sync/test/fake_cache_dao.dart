@@ -68,6 +68,9 @@ class FakeCacheDao implements CacheDao {
   /// Number of stored entries (for assertions).
   int get length => _store.length;
 
+  /// All stored cache keys (for assertions on key shape).
+  Iterable<String> get keys => _store.keys;
+
   /// Raw payload access without TTL check (for assertions).
   String? rawRead(String key) => _store[key]?.payload;
 }
