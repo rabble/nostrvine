@@ -3,6 +3,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/router/providers/route_normalization_provider.dart';
+import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/minor_account_review_parent_consent_screen.dart';
 import 'package:openvine/screens/minor_account_review_parent_contact_screen.dart';
 import 'package:openvine/screens/minor_account_review_screen.dart';
@@ -55,6 +56,18 @@ void main() {
     test('does not skip canonical internal routes', () {
       expect(shouldSkipRouteNormalization('/video/abc123'), isFalse);
       expect(shouldSkipRouteNormalization('/home/0'), isFalse);
+    });
+
+    test('skips pooled feed routes carrying a selected video identity', () {
+      const videoId =
+          '672c4eb9fc29adb6b505713bc6da94af2244c1de55dc6f034e2bcdaba133ebbe';
+
+      expect(
+        shouldSkipRouteNormalization(
+          PooledFullscreenVideoFeedScreen.pathForVideoId(videoId),
+        ),
+        isTrue,
+      );
     });
 
     test('skips minor account review route family', () {
