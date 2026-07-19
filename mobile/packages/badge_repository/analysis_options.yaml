@@ -4,8 +4,9 @@ include: package:very_good_analysis/analysis_options.yaml
 # These rules are disabled in the app's mobile/analysis_options.yaml too, so the
 # moved code and tests lint identically to their prior home (pure relocation).
 # `public_member_api_docs` + `lines_longer_than_80_chars` mirror follow_repository;
-# the rest mirror the app's test-code relaxations. Import ordering and
-# package-import style stay enforced.
+# the rest mirror the app's app-wide (`analyzer: errors:`) relaxations — they
+# apply to lib + test in mobile/analysis_options.yaml, not test-only. Import
+# ordering and package-import style stay enforced.
 linter:
   rules:
     public_member_api_docs: false

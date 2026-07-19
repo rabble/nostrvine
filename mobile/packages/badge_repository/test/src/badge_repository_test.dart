@@ -522,58 +522,6 @@ void main() {
     );
 
     test(
-      'ProfileBadgeViewData exposes issuer, recipients, deduplicated unique '
-      'recipients, and a coordinate-derived name without a definition',
-      () {
-        final coordinate = '30009:${_pubkey(5)}:daily-diviner';
-        final award = Nip58BadgeParser.parseAward(
-          _awardEvent(
-            id: _eventId(40),
-            issuerPubkey: _pubkey(5),
-            definitionCoordinate: coordinate,
-            recipients: [_pubkey(6), _pubkey(6), _pubkey(7)],
-          ),
-        )!;
-        final viewData = ProfileBadgeViewData(
-          badge: Nip58ProfileBadgeRef(
-            definitionCoordinate: coordinate,
-            awardEventId: _eventId(40),
-          ),
-          award: award,
-        );
-
-        expect(viewData.issuerPubkey, _pubkey(5));
-        expect(viewData.recipientPubkeys, [_pubkey(6), _pubkey(6), _pubkey(7)]);
-        expect(viewData.uniqueRecipientPubkeys, [_pubkey(6), _pubkey(7)]);
-        expect(viewData.displayName, 'daily-diviner');
-        expect(viewData.description, isNull);
-        expect(viewData.imageUrl, isNull);
-      },
-    );
-
-    test(
-      'BadgeAwardViewData exposes award id, coordinate, coordinate-derived '
-      'name, and null image without a definition',
-      () {
-        final coordinate = '30009:${_pubkey(8)}:weekly-diviner';
-        final award = Nip58BadgeParser.parseAward(
-          _awardEvent(
-            id: _eventId(41),
-            issuerPubkey: _pubkey(8),
-            definitionCoordinate: coordinate,
-            recipients: [_pubkey(1)],
-          ),
-        )!;
-        final viewData = BadgeAwardViewData(award: award);
-
-        expect(viewData.awardEventId, _eventId(41));
-        expect(viewData.definitionCoordinate, coordinate);
-        expect(viewData.displayName, 'weekly-diviner');
-        expect(viewData.imageUrl, isNull);
-      },
-    );
-
-    test(
       'acceptAward keeps an already-accepted award and preserves relay hints',
       () async {
         final coordinate = '30009:${_pubkey(2)}:daily-diviner';
@@ -655,6 +603,10 @@ void main() {
     });
 
     test('acceptAward throws a StateError without a current pubkey', () async {
+      // A WORKING signer is injected so the only possible StateError source is
+      // the missing-pubkey guard. If that guard were removed the signer would
+      // succeed and this test would fail — so it can fail for the right reason
+      // rather than being satisfied by an unrelated null-signer StateError.
       final anonymousRepository = BadgeRepository(
         nostrClient: nostrClient,
         sharedPreferences: preferences,
@@ -664,7 +616,13 @@ void main() {
               required int kind,
               required String content,
               required List<List<String>> tags,
-            }) async => null,
+            }) async => _event(
+              id: _eventId(946),
+              pubkey: _pubkey(1),
+              kind: kind,
+              tags: tags,
+              content: content,
+            ),
       );
       final award = _awardEvent(
         id: _eventId(46),
@@ -677,7 +635,13 @@ void main() {
         anonymousRepository.acceptAward(
           BadgeAwardViewData(award: Nip58BadgeParser.parseAward(award)!),
         ),
-        throwsA(isA<StateError>()),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            'Cannot load badges without a current pubkey',
+          ),
+        ),
       );
     });
 
@@ -729,6 +693,92 @@ void main() {
           ['a', '30009:${_pubkey(2)}:daily-diviner'],
           ['e', _eventId(47)],
         ]);
+      },
+    );
+  });
+
+  group(ProfileBadgeViewData, () {
+    test(
+      'exposes issuer, recipients, deduplicated unique recipients, and a '
+      'coordinate-derived name when no definition is present',
+      () {
+        final coordinate = '30009:${_pubkey(5)}:daily-diviner';
+        final award = Nip58BadgeParser.parseAward(
+          _awardEvent(
+            id: _eventId(40),
+            issuerPubkey: _pubkey(5),
+            definitionCoordinate: coordinate,
+            recipients: [_pubkey(6), _pubkey(6), _pubkey(7)],
+          ),
+        )!;
+        final viewData = ProfileBadgeViewData(
+          badge: Nip58ProfileBadgeRef(
+            definitionCoordinate: coordinate,
+            awardEventId: _eventId(40),
+          ),
+          award: award,
+        );
+
+        expect(viewData.issuerPubkey, _pubkey(5));
+        expect(viewData.recipientPubkeys, [_pubkey(6), _pubkey(6), _pubkey(7)]);
+        expect(viewData.uniqueRecipientPubkeys, [_pubkey(6), _pubkey(7)]);
+        expect(viewData.displayName, 'daily-diviner');
+        expect(viewData.description, isNull);
+        expect(viewData.imageUrl, isNull);
+      },
+    );
+  });
+
+  group(BadgeAwardViewData, () {
+    test(
+      'exposes award id, coordinate, and a coordinate-derived name when no '
+      'definition is present',
+      () {
+        final coordinate = '30009:${_pubkey(8)}:weekly-diviner';
+        final award = Nip58BadgeParser.parseAward(
+          _awardEvent(
+            id: _eventId(41),
+            issuerPubkey: _pubkey(8),
+            definitionCoordinate: coordinate,
+            recipients: [_pubkey(1)],
+          ),
+        )!;
+        final viewData = BadgeAwardViewData(award: award);
+
+        expect(viewData.awardEventId, _eventId(41));
+        expect(viewData.definitionCoordinate, coordinate);
+        expect(viewData.displayName, 'weekly-diviner');
+        expect(viewData.imageUrl, isNull);
+      },
+    );
+
+    test(
+      'prefers the definition name and image when a definition is present',
+      () {
+        final coordinate = '30009:${_pubkey(8)}:weekly-diviner';
+        final award = Nip58BadgeParser.parseAward(
+          _awardEvent(
+            id: _eventId(41),
+            issuerPubkey: _pubkey(8),
+            definitionCoordinate: coordinate,
+            recipients: [_pubkey(1)],
+          ),
+        )!;
+        final definition = Nip58BadgeParser.parseDefinition(
+          _definitionEvent(
+            pubkey: _pubkey(8),
+            dTag: 'weekly-diviner',
+            name: 'Weekly Diviner',
+            imageUrl: 'https://media.divine.video/weekly.png',
+          ),
+        )!;
+        final viewData = BadgeAwardViewData(
+          award: award,
+          definition: definition,
+        );
+
+        expect(viewData.displayName, 'Weekly Diviner');
+        expect(viewData.imageUrl, 'https://media.divine.video/weekly.png');
       },
     );
   });

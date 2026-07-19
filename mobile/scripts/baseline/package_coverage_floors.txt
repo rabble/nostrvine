@@ -8,6 +8,7 @@ analytics 73
 app_update_repository 89
 app_version_client 76
 background_uploader 69
+badge_repository 100
 blossom_upload_service 100
 blurhash_service 100
 cache_sync 100
