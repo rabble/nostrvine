@@ -1500,13 +1500,6 @@ class IdentityEvents extends Table {
   /// (legacy fallback).
   IntColumn get sourceKind => integer().named('source_kind')();
 
-  /// `created_at` of the source event (unix seconds), used to keep the
-  /// newest event when relays disagree.
-  IntColumn get eventCreatedAt => integer().named('event_created_at')();
-
-  /// When this row was last written from a relay fetch.
-  DateTimeColumn get fetchedAt => dateTime().named('fetched_at')();
-
   @override
   Set<Column> get primaryKey => {pubkey};
 }

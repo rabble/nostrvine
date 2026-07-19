@@ -2894,30 +2894,8 @@ class IdentityEvents extends Table with TableInfo {
     requiredDuringInsert: true,
     $customConstraints: 'NOT NULL',
   );
-  late final GeneratedColumn<int> eventCreatedAt = GeneratedColumn<int>(
-    'event_created_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-    $customConstraints: 'NOT NULL',
-  );
-  late final GeneratedColumn<int> fetchedAt = GeneratedColumn<int>(
-    'fetched_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-    $customConstraints: 'NOT NULL',
-  );
   @override
-  List<GeneratedColumn> get $columns => [
-    pubkey,
-    tagsJson,
-    sourceKind,
-    eventCreatedAt,
-    fetchedAt,
-  ];
+  List<GeneratedColumn> get $columns => [pubkey, tagsJson, sourceKind];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override

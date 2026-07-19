@@ -44,8 +44,6 @@ IdentityEventRow _row({
     pubkey: _pubkey,
     tagsJson: tagsJson,
     sourceKind: sourceKind,
-    eventCreatedAt: 1000,
-    fetchedAt: DateTime(2026),
   );
 }
 
@@ -77,7 +75,6 @@ void main() {
         pubkey: any(named: 'pubkey'),
         tagsJson: any(named: 'tagsJson'),
         sourceKind: any(named: 'sourceKind'),
-        eventCreatedAt: any(named: 'eventCreatedAt'),
       ),
     ).thenAnswer((_) async {});
   });
@@ -119,6 +116,26 @@ void main() {
       ).thenAnswer((_) async => _row(tagsJson: 'not json'));
       expect(await repository.cachedIdentityTags(_pubkey), isNull);
     });
+
+    test(
+      'returns null when the cached row is valid JSON of the wrong shape '
+      '(TypeError, not just Exception)',
+      () async {
+        // Valid JSON whose shape breaks the decode casts throws a TypeError
+        // (an Error, not an Exception); the decoder must still degrade to
+        // null rather than let it escape to a reportable crash.
+        for (final malformed in const ['{"not":"a list"}', '[1,2,3]']) {
+          when(
+            () => identityEventsDao.getEvent(_pubkey),
+          ).thenAnswer((_) async => _row(tagsJson: malformed));
+          expect(
+            await repository.cachedIdentityTags(_pubkey),
+            isNull,
+            reason: 'wrong-shape "$malformed" should decode to null',
+          );
+        }
+      },
+    );
   });
 
   group('ProfileRepository.freshIdentityTags', () {
@@ -152,9 +169,52 @@ void main() {
             pubkey: _pubkey,
             tagsJson: '[["i","github:newest","newest-proof"]]',
             sourceKind: ProfileRepository.identityEventKind,
-            eventCreatedAt: 200,
           ),
         ).called(1);
+      },
+    );
+
+    test(
+      'breaks a same-second tie by lowest event id (deterministic across '
+      'relay return order)',
+      () async {
+        final eventA = _identityEvent(
+          createdAt: 500,
+          tags: const [
+            ['i', 'github:aaa', 'proof-a'],
+          ],
+        );
+        final eventB = _identityEvent(
+          createdAt: 500,
+          tags: const [
+            ['i', 'github:bbb', 'proof-b'],
+          ],
+        );
+        // Both share created_at, so NIP-01 picks the lowest event id.
+        final winner = eventA.id.compareTo(eventB.id) < 0 ? eventA : eventB;
+        final expectedTags = [
+          for (final tag in winner.tags)
+            if (tag.length >= 3 && tag[0] == 'i') tag,
+        ];
+
+        stubQuery([eventA, eventB]);
+        expect(
+          await repository.freshIdentityTags(
+            pubkey: _pubkey,
+            kind0Tags: _kind0Tags,
+          ),
+          equals(expectedTags),
+        );
+
+        stubQuery([eventB, eventA]);
+        expect(
+          await repository.freshIdentityTags(
+            pubkey: _pubkey,
+            kind0Tags: _kind0Tags,
+          ),
+          equals(expectedTags),
+          reason: 'winner must not depend on relay return order',
+        );
       },
     );
 
@@ -189,7 +249,6 @@ void main() {
           pubkey: any(named: 'pubkey'),
           tagsJson: any(named: 'tagsJson'),
           sourceKind: any(named: 'sourceKind'),
-          eventCreatedAt: any(named: 'eventCreatedAt'),
         ),
       );
     });
@@ -219,7 +278,6 @@ void main() {
             pubkey: any(named: 'pubkey'),
             tagsJson: any(named: 'tagsJson'),
             sourceKind: any(named: 'sourceKind'),
-            eventCreatedAt: any(named: 'eventCreatedAt'),
           ),
         );
       },
@@ -237,7 +295,6 @@ void main() {
         final tags = await repository.freshIdentityTags(
           pubkey: _pubkey,
           kind0Tags: _kind0Tags,
-          kind0CreatedAt: 42,
         );
 
         expect(
@@ -251,7 +308,6 @@ void main() {
             pubkey: _pubkey,
             tagsJson: '[["i","github:legacy","legacy-proof"]]',
             sourceKind: 0,
-            eventCreatedAt: 42,
           ),
         ).called(1);
       },

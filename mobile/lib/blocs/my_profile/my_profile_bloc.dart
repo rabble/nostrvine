@@ -270,32 +270,21 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
       freshTags = await _profileRepository.freshIdentityTags(
         pubkey: profile.pubkey,
         kind0Tags: profile.rawTags,
-        kind0CreatedAt: profile.createdAt.millisecondsSinceEpoch ~/ 1000,
       );
     } on Exception catch (e, stackTrace) {
-      // Source-cache write failure — verify against the kind-0 tags we have.
+      // Source-cache write failure — resolve against the kind-0 tags we have.
       addError(e, stackTrace);
       freshTags = profile.rawTags;
     }
     if (isClosed) return;
-    final freshClaims = IdentityClaimsRepository.parseClaims(
-      profile.pubkey,
-      freshTags,
-    );
 
-    // Snapshot fresh and covering every current claim → skip the verifier.
-    if (cached != null && cached.isFresh) {
-      final verifiedSet = cached.claims.toSet();
-      if (freshClaims.every(verifiedSet.contains)) {
-        _emitClaims(emit, profile.pubkey, freshClaims);
-        return;
-      }
-    }
-
+    // The repository owns the skip-or-verify (stale-while-revalidate)
+    // decision; the bloc just renders whatever it resolves to (#3936).
     try {
-      final claims = await repo.verifiedClaims(
+      final claims = await repo.resolveClaims(
         pubkey: profile.pubkey,
-        tags: freshTags,
+        freshTags: freshTags,
+        cached: cached,
       );
       if (isClosed) return;
       _emitClaims(emit, profile.pubkey, claims);

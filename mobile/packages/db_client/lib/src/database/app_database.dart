@@ -747,7 +747,7 @@ class AppDatabase extends _$AppDatabase {
     // Schema version stays at 1 — same runtime CREATE-IF-NOT-EXISTS pattern
     // as processed_gift_wraps above. Column order/types must match Drift's
     // m.createAll() output (pinned by the schema-parity tests in
-    // app_database_test.dart); DateTime columns → INTEGER (seconds codec).
+    // app_database_test.dart).
     final identityEventsResult = await customSelect(
       "SELECT name FROM sqlite_master WHERE type='table' "
       "AND name='identity_events'",
@@ -758,9 +758,7 @@ class AppDatabase extends _$AppDatabase {
         CREATE TABLE identity_events (
           pubkey TEXT NOT NULL PRIMARY KEY,
           tags_json TEXT NOT NULL,
-          source_kind INTEGER NOT NULL,
-          event_created_at INTEGER NOT NULL,
-          fetched_at INTEGER NOT NULL
+          source_kind INTEGER NOT NULL
         )
       ''');
     }

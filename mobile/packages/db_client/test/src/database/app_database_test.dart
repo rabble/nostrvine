@@ -1141,7 +1141,6 @@ void main() {
             pubkey: testPubkey,
             tagsJson: '[["i","github:alice","proof-a"]]',
             sourceKind: 10011,
-            eventCreatedAt: 100,
           );
           final eventRow = await database.identityEventsDao.getEvent(
             testPubkey,

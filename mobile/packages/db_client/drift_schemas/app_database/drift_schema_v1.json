@@ -2828,26 +2828,6 @@
             "default_dart": null,
             "default_client_dart": null,
             "dsl_features": []
-          },
-          {
-            "name": "event_created_at",
-            "getter_name": "eventCreatedAt",
-            "moor_type": "int",
-            "nullable": false,
-            "customConstraints": null,
-            "default_dart": null,
-            "default_client_dart": null,
-            "dsl_features": []
-          },
-          {
-            "name": "fetched_at",
-            "getter_name": "fetchedAt",
-            "moor_type": "dateTime",
-            "nullable": false,
-            "customConstraints": null,
-            "default_dart": null,
-            "default_client_dart": null,
-            "dsl_features": []
           }
         ],
         "is_virtual": false,
@@ -3110,7 +3090,7 @@
       "sql": [
         {
           "dialect": "sqlite",
-          "sql": "CREATE TABLE IF NOT EXISTS \"identity_events\" (\"pubkey\" TEXT NOT NULL, \"tags_json\" TEXT NOT NULL, \"source_kind\" INTEGER NOT NULL, \"event_created_at\" INTEGER NOT NULL, \"fetched_at\" INTEGER NOT NULL, PRIMARY KEY (\"pubkey\"));"
+          "sql": "CREATE TABLE IF NOT EXISTS \"identity_events\" (\"pubkey\" TEXT NOT NULL, \"tags_json\" TEXT NOT NULL, \"source_kind\" INTEGER NOT NULL, PRIMARY KEY (\"pubkey\"));"
         }
       ]
     },

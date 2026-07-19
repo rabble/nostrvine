@@ -1,4 +1,4 @@
-// ABOUTME: Tests for IdentityClaimsRepository — parseClaims, verifiedClaims,
+// ABOUTME: Tests for IdentityClaimsRepository — parseClaims, resolveClaims,
 // ABOUTME: and the persistent verified-claims cache (#3936).
 
 import 'package:db_client/db_client.dart' hide Filter;
@@ -114,7 +114,7 @@ void main() {
     });
   });
 
-  group('IdentityClaimsRepository.verifiedClaims', () {
+  group('IdentityClaimsRepository.resolveClaims (verify path)', () {
     late _MockVerifierClient client;
     late IdentityClaimsRepository repo;
 
@@ -123,6 +123,7 @@ void main() {
       repo = IdentityClaimsRepository(verifierClient: client);
     });
 
+    // A null cache forces the verify path (no snapshot to skip against).
     test('returns only claims the verifier confirmed', () async {
       when(() => client.verifyBatch(any())).thenAnswer(
         (_) async => const [
@@ -142,27 +143,32 @@ void main() {
           ),
         ],
       );
-      final result = await repo.verifiedClaims(
+      final result = await repo.resolveClaims(
         pubkey: _pubkey,
-        tags: [
+        freshTags: [
           ['i', 'github:octocat', 'a'],
           ['i', 'twitter:fake', 'b'],
         ],
+        cached: null,
       );
       expect(result, hasLength(1));
       expect(result.single.platform, equals('github'));
     });
 
-    test('returns empty when there are no i tags', () async {
-      final result = await repo.verifiedClaims(
-        pubkey: _pubkey,
-        tags: const [
-          ['p', 'someone'],
-        ],
-      );
-      expect(result, isEmpty);
-      verifyNever(() => client.verifyBatch(any()));
-    });
+    test(
+      'returns empty and skips the verifier when there are no i tags',
+      () async {
+        final result = await repo.resolveClaims(
+          pubkey: _pubkey,
+          freshTags: const [
+            ['p', 'someone'],
+          ],
+          cached: null,
+        );
+        expect(result, isEmpty);
+        verifyNever(() => client.verifyBatch(any()));
+      },
+    );
 
     test('case-insensitively matches verifier results to claims', () async {
       // Verifier returns lowercase platform/identity even if claim used
@@ -178,11 +184,12 @@ void main() {
           ),
         ],
       );
-      final result = await repo.verifiedClaims(
+      final result = await repo.resolveClaims(
         pubkey: _pubkey,
-        tags: [
+        freshTags: [
           ['i', 'GitHub:Octocat', 'a'],
         ],
+        cached: null,
       );
       expect(result, hasLength(1));
       expect(result.single.platform, equals('GitHub'));
@@ -194,15 +201,114 @@ void main() {
         const VerifierApiException(500, 'boom'),
       );
       await expectLater(
-        () => repo.verifiedClaims(
+        () => repo.resolveClaims(
           pubkey: _pubkey,
-          tags: [
+          freshTags: [
             ['i', 'github:octocat', 'abc'],
           ],
+          cached: null,
         ),
         throwsA(isA<VerifierApiException>()),
       );
     });
+  });
+
+  group('IdentityClaimsRepository.resolveClaims (SWR decision)', () {
+    late _MockVerifierClient client;
+    late IdentityClaimsRepository repo;
+
+    const octocatClaim = IdentityClaim(
+      pubkey: _pubkey,
+      platform: 'github',
+      identity: 'octocat',
+      proof: 'a',
+    );
+
+    setUp(() {
+      client = _MockVerifierClient();
+      repo = IdentityClaimsRepository(verifierClient: client);
+    });
+
+    test(
+      'skips the verifier when a fresh snapshot covers every current claim',
+      () async {
+        final result = await repo.resolveClaims(
+          pubkey: _pubkey,
+          freshTags: [
+            ['i', 'github:octocat', 'a'],
+          ],
+          cached: const CachedVerifiedClaims(
+            claims: [octocatClaim],
+            isFresh: true,
+          ),
+        );
+        expect(result, equals([octocatClaim]));
+        verifyNever(() => client.verifyBatch(any()));
+      },
+    );
+
+    test('re-verifies when the snapshot is stale', () async {
+      when(() => client.verifyBatch(any())).thenAnswer(
+        (_) async => const [
+          VerificationResult(
+            platform: 'github',
+            identity: 'octocat',
+            verified: true,
+            checkedAt: 1,
+            cached: false,
+          ),
+        ],
+      );
+      final result = await repo.resolveClaims(
+        pubkey: _pubkey,
+        freshTags: [
+          ['i', 'github:octocat', 'a'],
+        ],
+        cached: const CachedVerifiedClaims(
+          claims: [octocatClaim],
+          isFresh: false,
+        ),
+      );
+      expect(result, equals([octocatClaim]));
+      verify(() => client.verifyBatch(any())).called(1);
+    });
+
+    test(
+      're-verifies when a fresh snapshot does not cover a new claim',
+      () async {
+        when(() => client.verifyBatch(any())).thenAnswer(
+          (_) async => const [
+            VerificationResult(
+              platform: 'github',
+              identity: 'octocat',
+              verified: true,
+              checkedAt: 1,
+              cached: false,
+            ),
+            VerificationResult(
+              platform: 'telegram',
+              identity: 'octo',
+              verified: true,
+              checkedAt: 1,
+              cached: false,
+            ),
+          ],
+        );
+        final result = await repo.resolveClaims(
+          pubkey: _pubkey,
+          freshTags: [
+            ['i', 'github:octocat', 'a'],
+            ['i', 'telegram:octo', 'b'],
+          ],
+          cached: const CachedVerifiedClaims(
+            claims: [octocatClaim],
+            isFresh: true,
+          ),
+        );
+        expect(result, hasLength(2));
+        verify(() => client.verifyBatch(any())).called(1);
+      },
+    );
   });
 
   group('IdentityClaimsRepository.cachedVerifiedClaims', () {
@@ -247,6 +353,34 @@ void main() {
         isNull,
       );
     });
+
+    test(
+      'returns null when the snapshot is valid JSON of the wrong shape '
+      '(TypeError, not just Exception)',
+      () async {
+        // A JSON object instead of a list, and a list of the wrong element
+        // shape, both throw TypeError on the decode casts — the decoder must
+        // still degrade to null rather than let an Error escape.
+        for (final malformed in const [
+          '{"platform":"github"}',
+          '[{"platform":123,"identity":"octocat","proof":"a"}]',
+        ]) {
+          when(() => dao.getVerification(_pubkey)).thenAnswer(
+            (_) async => _row(claimsJson: malformed, checkedAtFloor: 1),
+          );
+          expect(
+            await repo.cachedVerifiedClaims(
+              pubkey: _pubkey,
+              tags: [
+                ['i', 'github:octocat', 'a'],
+              ],
+            ),
+            isNull,
+            reason: 'wrong-shape snapshot "$malformed" should decode to null',
+          );
+        }
+      },
+    );
 
     test(
       'intersects current claims with the snapshot — case-insensitive '
@@ -306,7 +440,7 @@ void main() {
     });
   });
 
-  group('IdentityClaimsRepository.verifiedClaims persistence', () {
+  group('IdentityClaimsRepository.resolveClaims persistence', () {
     late _MockVerifierClient client;
     late _MockIdentityVerificationsDao dao;
     late IdentityClaimsRepository repo;
@@ -358,13 +492,14 @@ void main() {
           ],
         );
 
-        await repo.verifiedClaims(
+        await repo.resolveClaims(
           pubkey: _pubkey,
-          tags: [
+          freshTags: [
             ['i', 'github:octocat', 'a'],
             ['i', 'telegram:octo', 'b'],
             ['i', 'twitter:fake', 'c'],
           ],
+          cached: null,
         );
 
         final captured =
@@ -399,11 +534,12 @@ void main() {
         ],
       );
 
-      await repo.verifiedClaims(
+      await repo.resolveClaims(
         pubkey: _pubkey,
-        tags: [
+        freshTags: [
           ['i', 'github:octocat', 'a'],
         ],
+        cached: null,
       );
 
       verify(() => dao.deleteVerification(_pubkey)).called(1);
@@ -439,12 +575,13 @@ void main() {
           ],
         );
 
-        final result = await repo.verifiedClaims(
+        final result = await repo.resolveClaims(
           pubkey: _pubkey,
-          tags: [
+          freshTags: [
             ['i', 'github:octocat', 'a'],
             ['i', 'twitter:octo', 'b'],
           ],
+          cached: null,
         );
 
         expect(result, hasLength(1));
@@ -456,6 +593,55 @@ void main() {
           ),
         );
         verifyNever(() => dao.deleteVerification(any()));
+      },
+    );
+
+    test(
+      'leaves the snapshot untouched when every result is rate-limited '
+      '(zero verified must not trigger the delete path)',
+      () async {
+        // The rate-limit guard must be checked BEFORE the zero-verified
+        // delete: an all-rate-limited burst has no verified claims, so
+        // reordering the guards would wipe a good snapshot here.
+        when(() => client.verifyBatch(any())).thenAnswer(
+          (_) async => const [
+            VerificationResult(
+              platform: 'github',
+              identity: 'octocat',
+              verified: false,
+              checkedAt: 900,
+              cached: false,
+              error: 'Rate limit exceeded for this pubkey',
+            ),
+            VerificationResult(
+              platform: 'twitter',
+              identity: 'octo',
+              verified: false,
+              checkedAt: 900,
+              cached: false,
+              error: 'Rate limit exceeded for this platform',
+            ),
+          ],
+        );
+
+        final result = await repo.resolveClaims(
+          pubkey: _pubkey,
+          freshTags: [
+            ['i', 'github:octocat', 'a'],
+            ['i', 'twitter:octo', 'b'],
+          ],
+          cached: null,
+        );
+
+        expect(result, isEmpty);
+        verifyNever(() => dao.deleteVerification(any()));
+        verifyNever(
+          () => dao.upsertVerification(
+            pubkey: any(named: 'pubkey'),
+            verifiedClaimsJson: any(named: 'verifiedClaimsJson'),
+            checkedAtFloor: any(named: 'checkedAtFloor'),
+          ),
+        );
       },
     );
   });

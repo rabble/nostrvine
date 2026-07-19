@@ -13,22 +13,18 @@ class IdentityEventsDao extends DatabaseAccessor<AppDatabase>
 
   /// Upserts the identity-claims source for [pubkey].
   ///
-  /// [tagsJson] is the JSON-encoded `i` tag list, [sourceKind] the event
-  /// kind the tags came from (10011 or 0), and [eventCreatedAt] the source
-  /// event's `created_at` in unix seconds.
+  /// [tagsJson] is the JSON-encoded `i` tag list and [sourceKind] the event
+  /// kind the tags came from (10011 or 0).
   Future<void> upsertEvent({
     required String pubkey,
     required String tagsJson,
     required int sourceKind,
-    required int eventCreatedAt,
   }) {
     return into(identityEvents).insertOnConflictUpdate(
       IdentityEventsCompanion.insert(
         pubkey: pubkey,
         tagsJson: tagsJson,
         sourceKind: sourceKind,
-        eventCreatedAt: eventCreatedAt,
-        fetchedAt: DateTime.now(),
       ),
     );
   }

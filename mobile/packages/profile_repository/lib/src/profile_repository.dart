@@ -272,7 +272,6 @@ class ProfileRepository {
   Future<List<List<String>>> freshIdentityTags({
     required String pubkey,
     required List<List<String>> kind0Tags,
-    int kind0CreatedAt = 0,
   }) async {
     final dao = _identityEventsDao;
     final live = await _fetchIdentityEvent(pubkey);
@@ -282,7 +281,6 @@ class ProfileRepository {
         pubkey: pubkey,
         tagsJson: jsonEncode(iTags),
         sourceKind: identityEventKind,
-        eventCreatedAt: live.createdAt,
       );
       return iTags;
     }
@@ -300,7 +298,6 @@ class ProfileRepository {
       pubkey: pubkey,
       tagsJson: jsonEncode(kind0ITags),
       sourceKind: 0,
-      eventCreatedAt: kind0CreatedAt,
     );
     return kind0ITags;
   }
@@ -320,9 +317,16 @@ class ProfileRepository {
           .where((e) => e.kind == identityEventKind)
           .toList();
       if (identityEvents.isEmpty) return null;
-      // Relays do not guarantee newest-first ordering, so pick the event
-      // with the highest createdAt — same rule as the kind-0 fetch above.
-      return identityEvents.reduce((a, b) => b.createdAt > a.createdAt ? b : a);
+      // Relays do not guarantee newest-first ordering, so pick the newest
+      // event by created_at. On a same-second tie, NIP-01 breaks by lowest
+      // event id, so same-second events resolve to one deterministic winner
+      // regardless of relay return order.
+      return identityEvents.reduce((a, b) {
+        if (a.createdAt != b.createdAt) {
+          return b.createdAt > a.createdAt ? b : a;
+        }
+        return b.id.compareTo(a.id) < 0 ? b : a;
+      });
     } on Exception catch (e) {
       Log.warning(
         'Kind-$identityEventKind fetch failed for $pubkey: $e',
@@ -340,7 +344,13 @@ class ProfileRepository {
     ];
   }
 
-  /// Decodes a stored `i` tag list; `null` when the JSON is malformed.
+  /// Decodes a stored `i` tag list; `null` when the JSON is malformed or
+  /// wrong-shaped.
+  ///
+  /// Catches [Object] (not just [Exception]): a valid-JSON-but-wrong-shape
+  /// row throws a [TypeError] (an [Error]) on the casts, which must still
+  /// uphold the null-when-malformed contract rather than escaping to a
+  /// reportable crash.
   static List<List<String>>? _decodeIdentityTags(String tagsJson) {
     try {
       final decoded = jsonDecode(tagsJson) as List<dynamic>;
@@ -348,7 +358,7 @@ class ProfileRepository {
         for (final tag in decoded)
           (tag as List<dynamic>).map((v) => v as String).toList(),
       ];
-    } on Exception {
+    } on Object {
       return null;
     }
   }

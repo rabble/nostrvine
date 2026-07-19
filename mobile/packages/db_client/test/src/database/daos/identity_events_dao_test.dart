@@ -35,13 +35,11 @@ void main() {
 
   group(IdentityEventsDao, () {
     group('upsertEvent', () {
-      test('inserts a new row with the fetch timestamp', () async {
-        final before = DateTime.now().subtract(const Duration(seconds: 1));
+      test('inserts a new row', () async {
         await dao.upsertEvent(
           pubkey: testPubkey,
           tagsJson: tagsJson,
           sourceKind: 10011,
-          eventCreatedAt: 1784396891,
         );
 
         final row = await dao.getEvent(testPubkey);
@@ -49,8 +47,6 @@ void main() {
         expect(row!.pubkey, equals(testPubkey));
         expect(row.tagsJson, equals(tagsJson));
         expect(row.sourceKind, equals(10011));
-        expect(row.eventCreatedAt, equals(1784396891));
-        expect(row.fetchedAt.isAfter(before), isTrue);
       });
 
       test('replaces the existing row for the same pubkey', () async {
@@ -58,19 +54,16 @@ void main() {
           pubkey: testPubkey,
           tagsJson: tagsJson,
           sourceKind: 0,
-          eventCreatedAt: 100,
         );
         await dao.upsertEvent(
           pubkey: testPubkey,
           tagsJson: '[["i","github:alice","proof-b"]]',
           sourceKind: 10011,
-          eventCreatedAt: 200,
         );
 
         final row = await dao.getEvent(testPubkey);
         expect(row!.tagsJson, equals('[["i","github:alice","proof-b"]]'));
         expect(row.sourceKind, equals(10011));
-        expect(row.eventCreatedAt, equals(200));
       });
     });
 

@@ -28,8 +28,8 @@ class IdentityClaimsRepository {
   /// Creates an [IdentityClaimsRepository] backed by [verifierClient].
   ///
   /// [identityVerificationsDao] enables the persistent verdict cache;
-  /// when null, [cachedVerifiedClaims] returns null and [verifiedClaims]
-  /// skips persistence.
+  /// when null, [cachedVerifiedClaims] returns null and [resolveClaims]
+  /// skips persistence on its verify path.
   IdentityClaimsRepository({
     required VerifierClient verifierClient,
     IdentityVerificationsDao? identityVerificationsDao,
@@ -40,6 +40,18 @@ class IdentityClaimsRepository {
   /// verifier's `checked_at`. Mirrors the service's KV TTL for verified
   /// results (divine-identify-verification-service/src/utils/cache.ts:4).
   static const Duration verifiedTtl = Duration(hours: 24);
+
+  /// Prefix of the verifier's rate-limit rejection message
+  /// (divine-identify-verification-service/src/routes/verify.ts:59-81). The
+  /// verifier returns rate-limit rejections as HTTP-200 `verified: false`
+  /// bodies it never caches server-side, so any result carrying this prefix
+  /// must leave the local snapshot untouched — otherwise a rate-limit burst
+  /// could overwrite real verdicts.
+  ///
+  /// [VerificationResult.error] is documented as a free-form, non-stable
+  /// string, so this is a best-effort prefix match; a stable server-side
+  /// rate-limit flag would remove the fragility entirely.
+  static const String rateLimitErrorPrefix = 'Rate limit exceeded';
 
   final VerifierClient _verifierClient;
   final IdentityVerificationsDao? _verificationsDao;
@@ -111,25 +123,51 @@ class IdentityClaimsRepository {
     return CachedVerifiedClaims(claims: verified, isFresh: isFresh);
   }
 
-  /// Parses claims from [tags] and asks the verifier to re-check them.
-  /// Returns only the verified ones, preserving input order.
+  /// Resolves the claims to render for [pubkey] from the freshest claim
+  /// source [freshTags], reusing the instant-path snapshot [cached] already
+  /// read via [cachedVerifiedClaims].
+  ///
+  /// This owns the stale-while-revalidate decision (kept here, not in the
+  /// blocs, per architecture.md's repository-owns-source-selection rule):
+  /// when [cached] is fresh and already covers every current claim, the
+  /// verifier is skipped and the parsed fresh claims are returned as-is.
+  /// Otherwise the claims are re-verified against the service, which also
+  /// refreshes the persistent snapshot. The source tags are parsed exactly
+  /// once regardless of which branch is taken.
+  ///
+  /// Throws [VerifierClientException] subtypes on the verify path — callers
+  /// should catch and keep the last-known-good claims rather than clearing
+  /// them.
+  Future<List<IdentityClaim>> resolveClaims({
+    required String pubkey,
+    required List<List<String>> freshTags,
+    required CachedVerifiedClaims? cached,
+  }) async {
+    final freshClaims = parseClaims(pubkey, freshTags);
+    if (cached != null && cached.isFresh) {
+      final verifiedSet = cached.claims.toSet();
+      if (freshClaims.every(verifiedSet.contains)) {
+        return freshClaims;
+      }
+    }
+    return _verifyClaims(pubkey: pubkey, claims: freshClaims);
+  }
+
+  /// Asks the verifier to re-check [claims] and returns only the verified
+  /// ones, preserving input order.
   ///
   /// On success the persistent snapshot for [pubkey] is updated: verified
   /// tuples are stored with the batch's minimum `checked_at`; a
   /// zero-verified response deletes the snapshot. Only positive verdicts
   /// are ever persisted — and when any result carries the verifier's
-  /// rate-limit error (an HTTP-200 `verified: false` the server itself
-  /// never caches, divine-identify-verification-service/src/routes/
-  /// verify.ts:59-81), the snapshot is left untouched so a rate-limit
-  /// burst cannot overwrite real verdicts.
+  /// rate-limit error (see [rateLimitErrorPrefix]) the snapshot is left
+  /// untouched so a rate-limit burst cannot overwrite real verdicts.
   ///
-  /// Throws [VerifierClientException] subtypes — callers should catch and
-  /// keep the last-known-good claims rather than clearing them.
-  Future<List<IdentityClaim>> verifiedClaims({
+  /// Throws [VerifierClientException] subtypes.
+  Future<List<IdentityClaim>> _verifyClaims({
     required String pubkey,
-    required List<List<String>> tags,
+    required List<IdentityClaim> claims,
   }) async {
-    final claims = parseClaims(pubkey, tags);
     if (claims.isEmpty) return const [];
     final results = await _verifierClient.verifyBatch(claims);
     final verifiedKeys = <String>{
@@ -158,7 +196,7 @@ class IdentityClaimsRepository {
 
     final rateLimited = results.any(
       (r) =>
-          !r.verified && (r.error?.startsWith('Rate limit exceeded') ?? false),
+          !r.verified && (r.error?.startsWith(rateLimitErrorPrefix) ?? false),
     );
     if (rateLimited) return;
 
@@ -188,7 +226,13 @@ class IdentityClaimsRepository {
     claim.proof,
   );
 
-  /// Decodes a stored snapshot into comparison tuples; null when malformed.
+  /// Decodes a stored snapshot into comparison tuples; null when malformed
+  /// or wrong-shaped.
+  ///
+  /// Catches [Object] (not just [Exception]): a valid-JSON-but-wrong-shape
+  /// row throws a [TypeError] (an [Error]) on the casts, which must still
+  /// uphold the null-when-malformed contract rather than escaping to a
+  /// reportable crash.
   static Set<(String, String, String)>? _decodeSnapshot(String json) {
     try {
       final decoded = jsonDecode(json) as List<dynamic>;
@@ -200,7 +244,7 @@ class IdentityClaimsRepository {
             entry['proof'] as String,
           ),
       };
-    } on Exception {
+    } on Object {
       return null;
     }
   }

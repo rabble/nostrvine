@@ -856,6 +856,9 @@ void main() {
       setUp(() {
         mockClaimsRepository = _MockIdentityClaimsRepository();
         registerFallbackValue(<List<String>>[]);
+        registerFallbackValue(
+          const CachedVerifiedClaims(claims: [], isFresh: false),
+        );
         when(
           () => mockProfileRepository.cachedIdentityTags(testPubkey),
         ).thenAnswer((_) async => identityTags);
@@ -863,7 +866,6 @@ void main() {
           () => mockProfileRepository.freshIdentityTags(
             pubkey: testPubkey,
             kind0Tags: any(named: 'kind0Tags'),
-            kind0CreatedAt: any(named: 'kind0CreatedAt'),
           ),
         ).thenAnswer((_) async => identityTags);
       });
@@ -878,8 +880,7 @@ void main() {
       );
 
       blocTest<OtherProfileBloc, OtherProfileState>(
-        'renders cached claims without a verifier call when the snapshot '
-        'is fresh and covers every claim',
+        'renders the cached snapshot instantly, then the resolved claims',
         seed: () => OtherProfileLoaded(
           profile: createTestProfile(),
           isFresh: true,
@@ -896,118 +897,41 @@ void main() {
               isFresh: true,
             ),
           );
+          when(
+            () => mockClaimsRepository.resolveClaims(
+              pubkey: testPubkey,
+              freshTags: any(named: 'freshTags'),
+              cached: any(named: 'cached'),
+            ),
+          ).thenAnswer((_) async => const [aliceClaim, bobClaim]);
         },
         build: createClaimsBloc,
         act: (bloc) => bloc.add(const VerifiedClaimsRequested()),
+        // Instant chips from the cached snapshot, then whatever the
+        // repository's stale-while-revalidate resolveClaims returns. The
+        // skip-or-verify decision itself lives in (and is tested at) the
+        // repository, not the bloc.
         expect: () => [
           isA<OtherProfileLoaded>().having(
             (s) => s.verifiedClaims,
             'verifiedClaims',
             [aliceClaim],
+          ),
+          isA<OtherProfileLoaded>().having(
+            (s) => s.verifiedClaims,
+            'verifiedClaims',
+            [aliceClaim, bobClaim],
           ),
         ],
         verify: (_) {
-          verifyNever(
-            () => mockClaimsRepository.verifiedClaims(
-              pubkey: any(named: 'pubkey'),
-              tags: any(named: 'tags'),
+          verify(
+            () => mockClaimsRepository.resolveClaims(
+              pubkey: testPubkey,
+              freshTags: any(named: 'freshTags'),
+              cached: any(named: 'cached'),
             ),
-          );
+          ).called(1);
         },
-      );
-
-      blocTest<OtherProfileBloc, OtherProfileState>(
-        'emits cached claims then re-verifies when the snapshot is stale',
-        seed: () => OtherProfileLoaded(
-          profile: createTestProfile(),
-          isFresh: true,
-        ),
-        setUp: () {
-          when(
-            () => mockClaimsRepository.cachedVerifiedClaims(
-              pubkey: testPubkey,
-              tags: any(named: 'tags'),
-            ),
-          ).thenAnswer(
-            (_) async => const CachedVerifiedClaims(
-              claims: [aliceClaim],
-              isFresh: false,
-            ),
-          );
-          when(
-            () => mockClaimsRepository.verifiedClaims(
-              pubkey: testPubkey,
-              tags: identityTags,
-            ),
-          ).thenAnswer((_) async => const [aliceClaim, bobClaim]);
-        },
-        build: createClaimsBloc,
-        act: (bloc) => bloc.add(const VerifiedClaimsRequested()),
-        expect: () => [
-          isA<OtherProfileLoaded>().having(
-            (s) => s.verifiedClaims,
-            'verifiedClaims',
-            [aliceClaim],
-          ),
-          isA<OtherProfileLoaded>().having(
-            (s) => s.verifiedClaims,
-            'verifiedClaims',
-            [aliceClaim, bobClaim],
-          ),
-        ],
-      );
-
-      blocTest<OtherProfileBloc, OtherProfileState>(
-        're-verifies when a fresh snapshot does not cover a new claim',
-        seed: () => OtherProfileLoaded(
-          profile: createTestProfile(),
-          isFresh: true,
-        ),
-        setUp: () {
-          when(
-            () => mockProfileRepository.freshIdentityTags(
-              pubkey: testPubkey,
-              kind0Tags: any(named: 'kind0Tags'),
-              kind0CreatedAt: any(named: 'kind0CreatedAt'),
-            ),
-          ).thenAnswer(
-            (_) async => const [
-              ['i', 'github:alice', 'proof-a'],
-              ['i', 'telegram:bob', 'proof-b'],
-            ],
-          );
-          when(
-            () => mockClaimsRepository.cachedVerifiedClaims(
-              pubkey: testPubkey,
-              tags: any(named: 'tags'),
-            ),
-          ).thenAnswer(
-            (_) async => const CachedVerifiedClaims(
-              claims: [aliceClaim],
-              isFresh: true,
-            ),
-          );
-          when(
-            () => mockClaimsRepository.verifiedClaims(
-              pubkey: testPubkey,
-              tags: any(named: 'tags'),
-            ),
-          ).thenAnswer((_) async => const [aliceClaim, bobClaim]);
-        },
-        build: createClaimsBloc,
-        act: (bloc) => bloc.add(const VerifiedClaimsRequested()),
-        expect: () => [
-          isA<OtherProfileLoaded>().having(
-            (s) => s.verifiedClaims,
-            'verifiedClaims',
-            [aliceClaim],
-          ),
-          isA<OtherProfileLoaded>().having(
-            (s) => s.verifiedClaims,
-            'verifiedClaims',
-            [aliceClaim, bobClaim],
-          ),
-        ],
       );
 
       blocTest<OtherProfileBloc, OtherProfileState>(
@@ -1029,9 +953,10 @@ void main() {
             ),
           );
           when(
-            () => mockClaimsRepository.verifiedClaims(
+            () => mockClaimsRepository.resolveClaims(
               pubkey: testPubkey,
-              tags: any(named: 'tags'),
+              freshTags: any(named: 'freshTags'),
+              cached: any(named: 'cached'),
             ),
           ).thenThrow(const VerifierApiException(503, 'down'));
         },
@@ -1058,9 +983,10 @@ void main() {
             () => mockProfileRepository.cachedIdentityTags(testPubkey),
           ).thenThrow(Exception('db corrupt'));
           when(
-            () => mockClaimsRepository.verifiedClaims(
+            () => mockClaimsRepository.resolveClaims(
               pubkey: testPubkey,
-              tags: identityTags,
+              freshTags: any(named: 'freshTags'),
+              cached: any(named: 'cached'),
             ),
           ).thenAnswer((_) async => const [aliceClaim]);
         },
@@ -1101,6 +1027,13 @@ void main() {
               isFresh: true,
             ),
           );
+          when(
+            () => mockClaimsRepository.resolveClaims(
+              pubkey: testPubkey,
+              freshTags: any(named: 'freshTags'),
+              cached: any(named: 'cached'),
+            ),
+          ).thenAnswer((_) async => const [aliceClaim]);
         },
         build: createClaimsBloc,
         act: (bloc) => bloc.add(const OtherProfileRefreshRequested()),

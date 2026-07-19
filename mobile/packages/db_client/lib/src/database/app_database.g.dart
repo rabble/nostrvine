@@ -15399,36 +15399,8 @@ class $IdentityEventsTable extends IdentityEvents
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _eventCreatedAtMeta = const VerificationMeta(
-    'eventCreatedAt',
-  );
   @override
-  late final GeneratedColumn<int> eventCreatedAt = GeneratedColumn<int>(
-    'event_created_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _fetchedAtMeta = const VerificationMeta(
-    'fetchedAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> fetchedAt = GeneratedColumn<DateTime>(
-    'fetched_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
-  );
-  @override
-  List<GeneratedColumn> get $columns => [
-    pubkey,
-    tagsJson,
-    sourceKind,
-    eventCreatedAt,
-    fetchedAt,
-  ];
+  List<GeneratedColumn> get $columns => [pubkey, tagsJson, sourceKind];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -15465,25 +15437,6 @@ class $IdentityEventsTable extends IdentityEvents
     } else if (isInserting) {
       context.missing(_sourceKindMeta);
     }
-    if (data.containsKey('event_created_at')) {
-      context.handle(
-        _eventCreatedAtMeta,
-        eventCreatedAt.isAcceptableOrUnknown(
-          data['event_created_at']!,
-          _eventCreatedAtMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_eventCreatedAtMeta);
-    }
-    if (data.containsKey('fetched_at')) {
-      context.handle(
-        _fetchedAtMeta,
-        fetchedAt.isAcceptableOrUnknown(data['fetched_at']!, _fetchedAtMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_fetchedAtMeta);
-    }
     return context;
   }
 
@@ -15505,14 +15458,6 @@ class $IdentityEventsTable extends IdentityEvents
         DriftSqlType.int,
         data['${effectivePrefix}source_kind'],
       )!,
-      eventCreatedAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}event_created_at'],
-      )!,
-      fetchedAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}fetched_at'],
-      )!,
     );
   }
 
@@ -15533,19 +15478,10 @@ class IdentityEventRow extends DataClass
   /// Which event kind the tags came from: 10011 (current spec) or 0
   /// (legacy fallback).
   final int sourceKind;
-
-  /// `created_at` of the source event (unix seconds), used to keep the
-  /// newest event when relays disagree.
-  final int eventCreatedAt;
-
-  /// When this row was last written from a relay fetch.
-  final DateTime fetchedAt;
   const IdentityEventRow({
     required this.pubkey,
     required this.tagsJson,
     required this.sourceKind,
-    required this.eventCreatedAt,
-    required this.fetchedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -15553,8 +15489,6 @@ class IdentityEventRow extends DataClass
     map['pubkey'] = Variable<String>(pubkey);
     map['tags_json'] = Variable<String>(tagsJson);
     map['source_kind'] = Variable<int>(sourceKind);
-    map['event_created_at'] = Variable<int>(eventCreatedAt);
-    map['fetched_at'] = Variable<DateTime>(fetchedAt);
     return map;
   }
 
@@ -15563,8 +15497,6 @@ class IdentityEventRow extends DataClass
       pubkey: Value(pubkey),
       tagsJson: Value(tagsJson),
       sourceKind: Value(sourceKind),
-      eventCreatedAt: Value(eventCreatedAt),
-      fetchedAt: Value(fetchedAt),
     );
   }
 
@@ -15577,8 +15509,6 @@ class IdentityEventRow extends DataClass
       pubkey: serializer.fromJson<String>(json['pubkey']),
       tagsJson: serializer.fromJson<String>(json['tagsJson']),
       sourceKind: serializer.fromJson<int>(json['sourceKind']),
-      eventCreatedAt: serializer.fromJson<int>(json['eventCreatedAt']),
-      fetchedAt: serializer.fromJson<DateTime>(json['fetchedAt']),
     );
   }
   @override
@@ -15588,8 +15518,6 @@ class IdentityEventRow extends DataClass
       'pubkey': serializer.toJson<String>(pubkey),
       'tagsJson': serializer.toJson<String>(tagsJson),
       'sourceKind': serializer.toJson<int>(sourceKind),
-      'eventCreatedAt': serializer.toJson<int>(eventCreatedAt),
-      'fetchedAt': serializer.toJson<DateTime>(fetchedAt),
     };
   }
 
@@ -15597,14 +15525,10 @@ class IdentityEventRow extends DataClass
     String? pubkey,
     String? tagsJson,
     int? sourceKind,
-    int? eventCreatedAt,
-    DateTime? fetchedAt,
   }) => IdentityEventRow(
     pubkey: pubkey ?? this.pubkey,
     tagsJson: tagsJson ?? this.tagsJson,
     sourceKind: sourceKind ?? this.sourceKind,
-    eventCreatedAt: eventCreatedAt ?? this.eventCreatedAt,
-    fetchedAt: fetchedAt ?? this.fetchedAt,
   );
   IdentityEventRow copyWithCompanion(IdentityEventsCompanion data) {
     return IdentityEventRow(
@@ -15613,10 +15537,6 @@ class IdentityEventRow extends DataClass
       sourceKind: data.sourceKind.present
           ? data.sourceKind.value
           : this.sourceKind,
-      eventCreatedAt: data.eventCreatedAt.present
-          ? data.eventCreatedAt.value
-          : this.eventCreatedAt,
-      fetchedAt: data.fetchedAt.present ? data.fetchedAt.value : this.fetchedAt,
     );
   }
 
@@ -15625,68 +15545,51 @@ class IdentityEventRow extends DataClass
     return (StringBuffer('IdentityEventRow(')
           ..write('pubkey: $pubkey, ')
           ..write('tagsJson: $tagsJson, ')
-          ..write('sourceKind: $sourceKind, ')
-          ..write('eventCreatedAt: $eventCreatedAt, ')
-          ..write('fetchedAt: $fetchedAt')
+          ..write('sourceKind: $sourceKind')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(pubkey, tagsJson, sourceKind, eventCreatedAt, fetchedAt);
+  int get hashCode => Object.hash(pubkey, tagsJson, sourceKind);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is IdentityEventRow &&
           other.pubkey == this.pubkey &&
           other.tagsJson == this.tagsJson &&
-          other.sourceKind == this.sourceKind &&
-          other.eventCreatedAt == this.eventCreatedAt &&
-          other.fetchedAt == this.fetchedAt);
+          other.sourceKind == this.sourceKind);
 }
 
 class IdentityEventsCompanion extends UpdateCompanion<IdentityEventRow> {
   final Value<String> pubkey;
   final Value<String> tagsJson;
   final Value<int> sourceKind;
-  final Value<int> eventCreatedAt;
-  final Value<DateTime> fetchedAt;
   final Value<int> rowid;
   const IdentityEventsCompanion({
     this.pubkey = const Value.absent(),
     this.tagsJson = const Value.absent(),
     this.sourceKind = const Value.absent(),
-    this.eventCreatedAt = const Value.absent(),
-    this.fetchedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   IdentityEventsCompanion.insert({
     required String pubkey,
     required String tagsJson,
     required int sourceKind,
-    required int eventCreatedAt,
-    required DateTime fetchedAt,
     this.rowid = const Value.absent(),
   }) : pubkey = Value(pubkey),
        tagsJson = Value(tagsJson),
-       sourceKind = Value(sourceKind),
-       eventCreatedAt = Value(eventCreatedAt),
-       fetchedAt = Value(fetchedAt);
+       sourceKind = Value(sourceKind);
   static Insertable<IdentityEventRow> custom({
     Expression<String>? pubkey,
     Expression<String>? tagsJson,
     Expression<int>? sourceKind,
-    Expression<int>? eventCreatedAt,
-    Expression<DateTime>? fetchedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (pubkey != null) 'pubkey': pubkey,
       if (tagsJson != null) 'tags_json': tagsJson,
       if (sourceKind != null) 'source_kind': sourceKind,
-      if (eventCreatedAt != null) 'event_created_at': eventCreatedAt,
-      if (fetchedAt != null) 'fetched_at': fetchedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -15695,16 +15598,12 @@ class IdentityEventsCompanion extends UpdateCompanion<IdentityEventRow> {
     Value<String>? pubkey,
     Value<String>? tagsJson,
     Value<int>? sourceKind,
-    Value<int>? eventCreatedAt,
-    Value<DateTime>? fetchedAt,
     Value<int>? rowid,
   }) {
     return IdentityEventsCompanion(
       pubkey: pubkey ?? this.pubkey,
       tagsJson: tagsJson ?? this.tagsJson,
       sourceKind: sourceKind ?? this.sourceKind,
-      eventCreatedAt: eventCreatedAt ?? this.eventCreatedAt,
-      fetchedAt: fetchedAt ?? this.fetchedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -15721,12 +15620,6 @@ class IdentityEventsCompanion extends UpdateCompanion<IdentityEventRow> {
     if (sourceKind.present) {
       map['source_kind'] = Variable<int>(sourceKind.value);
     }
-    if (eventCreatedAt.present) {
-      map['event_created_at'] = Variable<int>(eventCreatedAt.value);
-    }
-    if (fetchedAt.present) {
-      map['fetched_at'] = Variable<DateTime>(fetchedAt.value);
-    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -15739,8 +15632,6 @@ class IdentityEventsCompanion extends UpdateCompanion<IdentityEventRow> {
           ..write('pubkey: $pubkey, ')
           ..write('tagsJson: $tagsJson, ')
           ..write('sourceKind: $sourceKind, ')
-          ..write('eventCreatedAt: $eventCreatedAt, ')
-          ..write('fetchedAt: $fetchedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -23373,8 +23264,6 @@ typedef $$IdentityEventsTableCreateCompanionBuilder =
       required String pubkey,
       required String tagsJson,
       required int sourceKind,
-      required int eventCreatedAt,
-      required DateTime fetchedAt,
       Value<int> rowid,
     });
 typedef $$IdentityEventsTableUpdateCompanionBuilder =
@@ -23382,8 +23271,6 @@ typedef $$IdentityEventsTableUpdateCompanionBuilder =
       Value<String> pubkey,
       Value<String> tagsJson,
       Value<int> sourceKind,
-      Value<int> eventCreatedAt,
-      Value<DateTime> fetchedAt,
       Value<int> rowid,
     });
 
@@ -23408,16 +23295,6 @@ class $$IdentityEventsTableFilterComposer
 
   ColumnFilters<int> get sourceKind => $composableBuilder(
     column: $table.sourceKind,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get eventCreatedAt => $composableBuilder(
-    column: $table.eventCreatedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get fetchedAt => $composableBuilder(
-    column: $table.fetchedAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -23445,16 +23322,6 @@ class $$IdentityEventsTableOrderingComposer
     column: $table.sourceKind,
     builder: (column) => ColumnOrderings(column),
   );
-
-  ColumnOrderings<int> get eventCreatedAt => $composableBuilder(
-    column: $table.eventCreatedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get fetchedAt => $composableBuilder(
-    column: $table.fetchedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
 }
 
 class $$IdentityEventsTableAnnotationComposer
@@ -23476,14 +23343,6 @@ class $$IdentityEventsTableAnnotationComposer
     column: $table.sourceKind,
     builder: (column) => column,
   );
-
-  GeneratedColumn<int> get eventCreatedAt => $composableBuilder(
-    column: $table.eventCreatedAt,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<DateTime> get fetchedAt =>
-      $composableBuilder(column: $table.fetchedAt, builder: (column) => column);
 }
 
 class $$IdentityEventsTableTableManager
@@ -23526,15 +23385,11 @@ class $$IdentityEventsTableTableManager
                 Value<String> pubkey = const Value.absent(),
                 Value<String> tagsJson = const Value.absent(),
                 Value<int> sourceKind = const Value.absent(),
-                Value<int> eventCreatedAt = const Value.absent(),
-                Value<DateTime> fetchedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => IdentityEventsCompanion(
                 pubkey: pubkey,
                 tagsJson: tagsJson,
                 sourceKind: sourceKind,
-                eventCreatedAt: eventCreatedAt,
-                fetchedAt: fetchedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -23542,15 +23397,11 @@ class $$IdentityEventsTableTableManager
                 required String pubkey,
                 required String tagsJson,
                 required int sourceKind,
-                required int eventCreatedAt,
-                required DateTime fetchedAt,
                 Value<int> rowid = const Value.absent(),
               }) => IdentityEventsCompanion.insert(
                 pubkey: pubkey,
                 tagsJson: tagsJson,
                 sourceKind: sourceKind,
-                eventCreatedAt: eventCreatedAt,
-                fetchedAt: fetchedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
