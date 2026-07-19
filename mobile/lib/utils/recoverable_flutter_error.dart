@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:media_cache/media_cache.dart';
 
 const _recoverableMediaLoadReason = 'Recoverable media load failure';
 const _recoverableMediaHosts = <String>{
@@ -48,11 +49,20 @@ String? classifyRecoverableFlutterError(FlutterErrorDetails details) {
           context.contains('image codec') ||
           context.contains('instantiateImageCodecWithSize'));
 
+  // A MediaCacheImageProvider download that finishes without a usable file
+  // (dead legacy media, non-2xx, DNS failure) is recoverable by contract —
+  // the widget falls back to a placeholder. It is host-agnostic because dead
+  // Vine avatars are commonly proxied through web.archive.org, which is not a
+  // recoverable-media host.
+  final isMediaCacheLoadFailure =
+      details.exception is MediaCacheImageLoadException;
+
   if (isImage404 ||
       isMediaHostLookup ||
       isInterruptedMediaDownload ||
       isMissingHttpHost ||
-      isInvalidImageData) {
+      isInvalidImageData ||
+      isMediaCacheLoadFailure) {
     return _recoverableMediaLoadReason;
   }
 

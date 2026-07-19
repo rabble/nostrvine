@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:media_cache/media_cache.dart';
 import 'package:openvine/utils/recoverable_flutter_error.dart';
 
 void main() {
@@ -65,6 +66,27 @@ void main() {
       final details = FlutterErrorDetails(
         exception: ArgumentError('No host specified in URI https:///thumb.jpg'),
         library: 'dart:_http',
+      );
+
+      expect(
+        classifyRecoverableFlutterError(details),
+        'Recoverable media load failure',
+      );
+    });
+
+    test('classifies MediaCacheImageProvider download-without-file failures as '
+        'recoverable regardless of host', () {
+      // Dead legacy Vine avatars are commonly served through
+      // web.archive.org, which is not in the recoverable-media host set —
+      // the exception type alone must classify it, so the broken avatar
+      // falls back to a placeholder instead of a fatal crash (#5782 follow
+      // up: the download-without-file branch was still reported as fatal).
+      const details = FlutterErrorDetails(
+        exception: MediaCacheImageLoadException(
+          'https://web.archive.org/web/20150907190604/'
+          'http://v.cdn.vine.co/r/avatars/broken.jpg',
+        ),
+        library: 'package:media_cache/src/media_cache_image_provider.dart',
       );
 
       expect(
