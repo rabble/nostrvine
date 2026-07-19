@@ -14,10 +14,10 @@ import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 
 // Mock classes
-class MockNostrService extends Mock implements NostrClient {}
+class _MockNostrService extends Mock implements NostrClient {}
 
-class TestSubscriptionManager extends Mock implements SubscriptionManager {
-  TestSubscriptionManager(this.eventStreamController);
+class _TestSubscriptionManager extends Mock implements SubscriptionManager {
+  _TestSubscriptionManager(this.eventStreamController);
   final StreamController<Event> eventStreamController;
 
   @override
@@ -37,7 +37,7 @@ class TestSubscriptionManager extends Mock implements SubscriptionManager {
   Future<void> cancelSubscription(String subscriptionId) async {}
 }
 
-class FakeFilter extends Fake implements Filter {}
+class _FakeFilter extends Fake implements Filter {}
 
 VideoEvent _videoEvent({
   required String id,
@@ -63,17 +63,17 @@ VideoEvent _videoEvent({
 
 void main() {
   setUpAll(() {
-    registerFallbackValue(FakeFilter());
+    registerFallbackValue(_FakeFilter());
     registerFallbackValue(<Filter>[]);
   });
 
   group('VideoEventService.removeVideoCompletely()', () {
     late VideoEventService videoEventService;
-    late MockNostrService mockNostrService;
+    late _MockNostrService mockNostrService;
     late StreamController<Event> eventStreamController;
 
     setUp(() {
-      mockNostrService = MockNostrService();
+      mockNostrService = _MockNostrService();
       eventStreamController = StreamController<Event>.broadcast();
 
       when(() => mockNostrService.isInitialized).thenReturn(true);
@@ -82,7 +82,7 @@ void main() {
         () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => eventStreamController.stream);
 
-      final testSubscriptionManager = TestSubscriptionManager(
+      final testSubscriptionManager = _TestSubscriptionManager(
         eventStreamController,
       );
 

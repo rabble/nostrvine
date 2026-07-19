@@ -565,11 +565,17 @@ void main() {
         },
       );
 
-      blocTest<ConversationListBloc, ConversationListState>(
+      test(
         'emits updated state when streams emit multiple values',
-        setUp: () {
-          final acceptedController = StreamController<List<DmConversation>>();
-          final requestsController = StreamController<List<DmConversation>>();
+        () async {
+          final acceptedSubscribed = Completer<void>();
+          final requestsSubscribed = Completer<void>();
+          final acceptedController = StreamController<List<DmConversation>>(
+            onListen: acceptedSubscribed.complete,
+          );
+          final requestsController = StreamController<List<DmConversation>>(
+            onListen: requestsSubscribed.complete,
+          );
 
           when(
             () => mockDmRepository.watchAcceptedConversations(
@@ -584,62 +590,73 @@ void main() {
             () => mockDmRepository.historyRecoveryStream,
           ).thenAnswer((_) => const Stream<bool>.empty());
 
-          // Emit initial empty requests, then accepted values.
-          Future<void>.delayed(const Duration(milliseconds: 10)).then((_) {
-            requestsController.add(const []);
-            acceptedController.add([
-              _createConversation(
-                id: _testConversationId1,
-                currentUserHasSent: true,
-              ),
-            ]);
+          final firstConversation = _createConversation(
+            id: _testConversationId1,
+            currentUserHasSent: true,
+          );
+          final secondConversation = _createConversation(
+            id: _testConversationId2,
+            currentUserHasSent: true,
+          );
+          final emitted = <ConversationListState>[];
+          final loadingEmitted = Completer<void>();
+          final firstLoadedEmitted = Completer<void>();
+          final secondLoadedEmitted = Completer<void>();
+
+          final bloc = createBloc();
+          late final StreamSubscription<ConversationListState> subscription;
+          subscription = bloc.stream.listen((state) {
+            emitted.add(state);
+            if (!loadingEmitted.isCompleted &&
+                state.status == ConversationListStatus.loading) {
+              loadingEmitted.complete();
+            }
+            if (!firstLoadedEmitted.isCompleted &&
+                state.status == ConversationListStatus.loaded &&
+                state.conversations.length == 1) {
+              firstLoadedEmitted.complete();
+            }
+            if (!secondLoadedEmitted.isCompleted &&
+                state.status == ConversationListStatus.loaded &&
+                state.conversations.length == 2) {
+              secondLoadedEmitted.complete();
+            }
+          });
+          addTearDown(() async {
+            await subscription.cancel();
+            await bloc.close();
+            await acceptedController.close();
+            await requestsController.close();
           });
 
-          Future<void>.delayed(const Duration(milliseconds: 50)).then((_) {
-            acceptedController.add([
-              _createConversation(
-                id: _testConversationId1,
-                currentUserHasSent: true,
-              ),
-              _createConversation(
-                id: _testConversationId2,
-                currentUserHasSent: true,
-              ),
-            ]);
-            acceptedController.close();
-            requestsController.close();
-          });
+          bloc.add(const ConversationListStarted());
+          await loadingEmitted.future.timeout(const Duration(seconds: 2));
+          await Future.wait([
+            acceptedSubscribed.future,
+            requestsSubscribed.future,
+          ]).timeout(const Duration(seconds: 2));
+
+          requestsController.add(const []);
+          acceptedController.add([firstConversation]);
+          await firstLoadedEmitted.future.timeout(const Duration(seconds: 2));
+
+          acceptedController.add([firstConversation, secondConversation]);
+          await secondLoadedEmitted.future.timeout(const Duration(seconds: 2));
+
+          expect(emitted, [
+            const ConversationListState(status: ConversationListStatus.loading),
+            ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: [firstConversation],
+              hasMore: false,
+            ),
+            ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: [firstConversation, secondConversation],
+              hasMore: false,
+            ),
+          ]);
         },
-        build: createBloc,
-        act: (bloc) => bloc.add(const ConversationListStarted()),
-        wait: const Duration(milliseconds: 200),
-        expect: () => [
-          const ConversationListState(status: ConversationListStatus.loading),
-          ConversationListState(
-            status: ConversationListStatus.loaded,
-            conversations: [
-              _createConversation(
-                id: _testConversationId1,
-                currentUserHasSent: true,
-              ),
-            ],
-            hasMore: false,
-          ),
-          ConversationListState(
-            status: ConversationListStatus.loaded,
-            conversations: [
-              _createConversation(
-                id: _testConversationId1,
-                currentUserHasSent: true,
-              ),
-              _createConversation(
-                id: _testConversationId2,
-                currentUserHasSent: true,
-              ),
-            ],
-            hasMore: false,
-          ),
-        ],
       );
     });
 
@@ -820,16 +837,31 @@ void main() {
       });
 
       group('restartable() on $ConversationListStarted', () {
+        late StreamController<List<DmConversation>> acceptedCtrl1;
+        late StreamController<List<DmConversation>> acceptedCtrl2;
+        late StreamController<List<DmConversation>> requestsCtrl1;
+        late StreamController<List<DmConversation>> requestsCtrl2;
+        late Completer<void> acceptedSecondSubscribed;
+        late Completer<void> requestsSecondSubscribed;
+        var acceptedCallCount = 0;
+        var requestsCallCount = 0;
+
         blocTest<ConversationListBloc, ConversationListState>(
           'cancels the old subscription and starts a new one '
           'when $ConversationListStarted is re-added',
           setUp: () {
-            final acceptedCtrl1 = StreamController<List<DmConversation>>();
-            final acceptedCtrl2 = StreamController<List<DmConversation>>();
-            final requestsCtrl1 = StreamController<List<DmConversation>>();
-            final requestsCtrl2 = StreamController<List<DmConversation>>();
-            var acceptedCallCount = 0;
-            var requestsCallCount = 0;
+            acceptedSecondSubscribed = Completer<void>();
+            requestsSecondSubscribed = Completer<void>();
+            acceptedCtrl1 = StreamController<List<DmConversation>>();
+            requestsCtrl1 = StreamController<List<DmConversation>>();
+            acceptedCtrl2 = StreamController<List<DmConversation>>(
+              onListen: acceptedSecondSubscribed.complete,
+            );
+            requestsCtrl2 = StreamController<List<DmConversation>>(
+              onListen: requestsSecondSubscribed.complete,
+            );
+            acceptedCallCount = 0;
+            requestsCallCount = 0;
 
             when(
               () => mockDmRepository.watchAcceptedConversations(
@@ -853,55 +885,58 @@ void main() {
             when(
               () => mockDmRepository.historyRecoveryStream,
             ).thenAnswer((_) => const Stream<bool>.empty());
-
-            // First streams emit quickly
-            Future<void>.delayed(const Duration(milliseconds: 10)).then((_) {
-              requestsCtrl1.add(const []);
-              acceptedCtrl1.add([
-                _createConversation(
-                  id: _testConversationId1,
-                  currentUserHasSent: true,
-                ),
-              ]);
-            });
-
-            // After restart, emit on old stream (should be ignored)
-            Future<void>.delayed(const Duration(milliseconds: 60)).then((_) {
-              acceptedCtrl1.add([
-                _createConversation(
-                  id: _testConversationId1,
-                  currentUserHasSent: true,
-                ),
-                _createConversation(
-                  id: _testConversationId2,
-                  currentUserHasSent: true,
-                ),
-              ]);
-              acceptedCtrl1.close();
-              requestsCtrl1.close();
-            });
-
-            // New stream emits its data
-            Future<void>.delayed(const Duration(milliseconds: 70)).then((_) {
-              requestsCtrl2.add(const []);
-              acceptedCtrl2.add([
-                _createConversation(
-                  id: _testConversationId2,
-                  currentUserHasSent: true,
-                ),
-              ]);
-              acceptedCtrl2.close();
-              requestsCtrl2.close();
-            });
           },
           build: createBloc,
           act: (bloc) async {
             bloc.add(const ConversationListStarted());
-            // Wait for first emission, then restart
-            await Future<void>.delayed(const Duration(milliseconds: 30));
+            requestsCtrl1.add(const []);
+            acceptedCtrl1.add([
+              _createConversation(
+                id: _testConversationId1,
+                currentUserHasSent: true,
+              ),
+            ]);
+            await bloc.stream.firstWhere(
+              (state) =>
+                  state.status == ConversationListStatus.loaded &&
+                  state.conversations.length == 1 &&
+                  state.conversations.first.id == _testConversationId1,
+            );
+
             bloc.add(const ConversationListStarted());
+            await Future.wait([
+              acceptedSecondSubscribed.future,
+              requestsSecondSubscribed.future,
+            ]);
+
+            // The old streams emit after restart; restartable() should ignore them.
+            requestsCtrl1.add(const []);
+            acceptedCtrl1.add([
+              _createConversation(
+                id: _testConversationId1,
+                currentUserHasSent: true,
+              ),
+              _createConversation(
+                id: _testConversationId2,
+                currentUserHasSent: true,
+              ),
+            ]);
+
+            final secondLoaded = bloc.stream.firstWhere(
+              (state) =>
+                  state.status == ConversationListStatus.loaded &&
+                  state.conversations.length == 1 &&
+                  state.conversations.first.id == _testConversationId2,
+            );
+            requestsCtrl2.add(const []);
+            acceptedCtrl2.add([
+              _createConversation(
+                id: _testConversationId2,
+                currentUserHasSent: true,
+              ),
+            ]);
+            await secondLoaded;
           },
-          wait: const Duration(milliseconds: 200),
           expect: () => [
             // First subscription starts (initial → loading)
             const ConversationListState(status: ConversationListStatus.loading),
@@ -937,6 +972,13 @@ void main() {
                 limit: any(named: 'limit'),
               ),
             ).called(2);
+            verify(() => mockDmRepository.watchPotentialRequests()).called(2);
+          },
+          tearDown: () async {
+            await acceptedCtrl1.close();
+            await acceptedCtrl2.close();
+            await requestsCtrl1.close();
+            await requestsCtrl2.close();
           },
         );
       });
