@@ -18,7 +18,6 @@ crash_reporting_service # defer: #4338 C2 singleton-to-DI
 curated_list_service
 geo_blocking_service
 hashtag_cache_service
-hashtag_service
 identity_manager_service
 immediate_completion_helper # noise: helper
 js_stub # noise: web/io shim
