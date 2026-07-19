@@ -25,10 +25,16 @@ class _VerificationOutcome {
   const _VerificationOutcome({
     required this.verified,
     required this.rateLimited,
+    this.confirmedNegativeKeys = const {},
   });
 
   final List<IdentityClaim> verified;
   final bool rateLimited;
+
+  /// Lowercased `platform:identity` keys the verifier explicitly judged
+  /// negative with a non-rate-limited result. Honored even inside a
+  /// rate-limited batch, where they must still drop their claim.
+  final Set<String> confirmedNegativeKeys;
 }
 
 /// Composes [VerifierClient] with NIP-39 `i` tag parsing off identity
@@ -54,9 +60,10 @@ class IdentityClaimsRepository {
   /// Prefix of the verifier's rate-limit rejection message
   /// (divine-identify-verification-service/src/routes/verify.ts:59-81). The
   /// verifier returns rate-limit rejections as HTTP-200 `verified: false`
-  /// bodies it never caches server-side, so any result carrying this prefix
-  /// must leave the local snapshot untouched — otherwise a rate-limit burst
-  /// could overwrite real verdicts.
+  /// bodies it never caches server-side, so a batch containing this prefix
+  /// must not write new verdicts to the local snapshot — otherwise a
+  /// rate-limit burst could overwrite real verdicts. (Per-claim confirmed
+  /// negatives inside such a batch are conclusive and are still pruned.)
   ///
   /// [VerificationResult.error] is documented as a free-form, non-stable
   /// string, so this is a best-effort prefix match; a stable server-side
@@ -145,6 +152,16 @@ class IdentityClaimsRepository {
   /// refreshes the persistent snapshot. The source tags are parsed exactly
   /// once regardless of which branch is taken.
   ///
+  /// [renderedClaims] is the caller's currently-rendered last-known-good
+  /// claim set. A rate-limited verifier outcome is inconclusive (the
+  /// service never caches it server-side), so it must not clear chips the
+  /// user can already see: any rendered or snapshot-cached claim still
+  /// present in [freshTags] is preserved, matched per `platform:identity`
+  /// case-insensitively (proof-agnostic, so a proof rotation coinciding
+  /// with a rate-limit window keeps the chip). Only a per-claim confirmed
+  /// negative verdict from a non-rate-limited result, or the claim's
+  /// removal from the source tags, drops a claim from the result.
+  ///
   /// Throws [VerifierClientException] subtypes on the verify path — callers
   /// should catch and keep the last-known-good claims rather than clearing
   /// them.
@@ -152,6 +169,7 @@ class IdentityClaimsRepository {
     required String pubkey,
     required List<List<String>> freshTags,
     required CachedVerifiedClaims? cached,
+    List<IdentityClaim> renderedClaims = const [],
   }) async {
     final freshClaims = parseClaims(pubkey, freshTags);
     if (cached != null && cached.isFresh) {
@@ -161,11 +179,11 @@ class IdentityClaimsRepository {
       }
     }
     final outcome = await _verifyClaims(pubkey: pubkey, claims: freshClaims);
-    if (outcome.rateLimited && cached != null && cached.claims.isNotEmpty) {
-      return _preserveCachedCurrentClaims(
+    if (outcome.rateLimited) {
+      return _preserveKnownGoodClaims(
         freshClaims: freshClaims,
-        cachedClaims: cached.claims,
-        verifiedClaims: outcome.verified,
+        knownGoodClaims: [...?cached?.claims, ...renderedClaims],
+        outcome: outcome,
       );
     }
     return outcome.verified;
@@ -178,8 +196,11 @@ class IdentityClaimsRepository {
   /// tuples are stored with the batch's minimum `checked_at`; a
   /// zero-verified response deletes the snapshot. Only positive verdicts
   /// are ever persisted — and when any result carries the verifier's
-  /// rate-limit error (see [rateLimitErrorPrefix]) the snapshot is left
-  /// untouched so a rate-limit burst cannot overwrite real verdicts.
+  /// rate-limit error (see [rateLimitErrorPrefix]) no new verdicts are
+  /// written, so a rate-limit burst cannot overwrite real verdicts. The
+  /// one exception: entries whose own result is a confirmed negative are
+  /// pruned from the snapshot even in a rate-limited batch, so a negated
+  /// claim cannot keep resurrecting from cache.
   ///
   /// Throws [VerifierClientException] subtypes.
   Future<_VerificationOutcome> _verifyClaims({
@@ -195,36 +216,54 @@ class IdentityClaimsRepository {
         if (r.verified)
           '${r.platform.toLowerCase()}:${r.identity.toLowerCase()}',
     };
+    final confirmedNegativeKeys = <String>{
+      for (final r in results)
+        if (!r.verified && !_isRateLimitResult(r))
+          '${r.platform.toLowerCase()}:${r.identity.toLowerCase()}',
+    };
     final verified = claims
-        .where(
-          (c) => verifiedKeys.contains(
-            '${c.platform.toLowerCase()}:${c.identity.toLowerCase()}',
-          ),
-        )
+        .where((c) => verifiedKeys.contains(_identityKeyOf(c)))
         .toList();
-    final rateLimited = _isRateLimited(results);
+    final rateLimited = results.any(_isRateLimitResult);
     await _persistOutcome(
       pubkey: pubkey,
       results: results,
       verified: verified,
       rateLimited: rateLimited,
+      confirmedNegativeKeys: confirmedNegativeKeys,
     );
-    return _VerificationOutcome(verified: verified, rateLimited: rateLimited);
+    return _VerificationOutcome(
+      verified: verified,
+      rateLimited: rateLimited,
+      confirmedNegativeKeys: confirmedNegativeKeys,
+    );
   }
 
-  List<IdentityClaim> _preserveCachedCurrentClaims({
+  /// Preservation for a rate-limited (inconclusive) batch: a fresh claim
+  /// survives when its own result verified it, or when it was known-good
+  /// (snapshot or rendered) and its own result was not a confirmed
+  /// negative. Matching is per `platform:identity`, case-insensitive and
+  /// proof-agnostic — the verifier judges identities, not proof strings,
+  /// so a rotated proof must not silently drop a chip while the verdict
+  /// is inconclusive.
+  List<IdentityClaim> _preserveKnownGoodClaims({
     required List<IdentityClaim> freshClaims,
-    required List<IdentityClaim> cachedClaims,
-    required List<IdentityClaim> verifiedClaims,
+    required List<IdentityClaim> knownGoodClaims,
+    required _VerificationOutcome outcome,
   }) {
-    final cachedTuples = {for (final claim in cachedClaims) _tupleOf(claim)};
-    final verifiedTuples = {
-      for (final claim in verifiedClaims) _tupleOf(claim),
+    final knownGoodKeys = {
+      for (final claim in knownGoodClaims) _identityKeyOf(claim),
+    };
+    final verifiedKeys = {
+      for (final claim in outcome.verified) _identityKeyOf(claim),
     };
     return [
       for (final claim in freshClaims)
-        if (verifiedTuples.contains(_tupleOf(claim)) ||
-            cachedTuples.contains(_tupleOf(claim)))
+        if (verifiedKeys.contains(_identityKeyOf(claim)) ||
+            (knownGoodKeys.contains(_identityKeyOf(claim)) &&
+                !outcome.confirmedNegativeKeys.contains(
+                  _identityKeyOf(claim),
+                )))
           claim,
     ];
   }
@@ -234,11 +273,19 @@ class IdentityClaimsRepository {
     required List<VerificationResult> results,
     required List<IdentityClaim> verified,
     required bool rateLimited,
+    required Set<String> confirmedNegativeKeys,
   }) async {
     final dao = _verificationsDao;
     if (dao == null) return;
 
-    if (rateLimited) return;
+    if (rateLimited) {
+      // A rate-limited batch persists no new verdicts, but any per-claim
+      // confirmed negative inside it is conclusive — prune those tuples
+      // so a negated claim cannot resurrect from the snapshot through
+      // the instant path or the fresh-and-covering skip.
+      await _pruneConfirmedNegatives(dao, pubkey, confirmedNegativeKeys);
+      return;
+    }
 
     if (verified.isEmpty) {
       await dao.deleteVerification(pubkey);
@@ -259,16 +306,57 @@ class IdentityClaimsRepository {
     );
   }
 
-  bool _isRateLimited(List<VerificationResult> results) {
-    return results.any(
-      (r) =>
-          !r.verified && (r.error?.startsWith(rateLimitErrorPrefix) ?? false),
-    );
+  /// Removes snapshot entries whose `platform:identity` key received a
+  /// confirmed (non-rate-limited) negative verdict. Rows that are missing
+  /// or malformed are left alone — the read path already treats them as
+  /// no-snapshot.
+  Future<void> _pruneConfirmedNegatives(
+    IdentityVerificationsDao dao,
+    String pubkey,
+    Set<String> confirmedNegativeKeys,
+  ) async {
+    if (confirmedNegativeKeys.isEmpty) return;
+    final row = await dao.getVerification(pubkey);
+    if (row == null) return;
+    final List<Map<String, dynamic>> kept;
+    try {
+      final entries = (jsonDecode(row.verifiedClaimsJson) as List<dynamic>)
+          .cast<Map<String, dynamic>>();
+      kept = [
+        for (final entry in entries)
+          if (!confirmedNegativeKeys.contains(
+            '${(entry['platform'] as String).toLowerCase()}'
+            ':${(entry['identity'] as String).toLowerCase()}',
+          ))
+            entry,
+      ];
+      if (kept.length == entries.length) return;
+    } on Object {
+      return;
+    }
+    if (kept.isEmpty) {
+      await dao.deleteVerification(pubkey);
+    } else {
+      await dao.upsertVerification(
+        pubkey: pubkey,
+        verifiedClaimsJson: jsonEncode(kept),
+        checkedAtFloor: row.checkedAtFloor,
+      );
+    }
   }
+
+  static bool _isRateLimitResult(VerificationResult result) =>
+      !result.verified &&
+      (result.error?.startsWith(rateLimitErrorPrefix) ?? false);
 
   /// Normalized comparison tuple for snapshot matching.
   static (String, String, String) _tupleOf(IdentityClaim claim) =>
       (claim.platform.toLowerCase(), claim.identity.toLowerCase(), claim.proof);
+
+  /// Normalized `platform:identity` key — the granularity the verifier
+  /// judges at (proofs are evidence, not identity).
+  static String _identityKeyOf(IdentityClaim claim) =>
+      '${claim.platform.toLowerCase()}:${claim.identity.toLowerCase()}';
 
   /// Decodes a stored snapshot into comparison tuples; null when malformed
   /// or wrong-shaped.

@@ -87,8 +87,10 @@ final class MyProfileLoaded extends MyProfileState {
   /// Null if the NIP-05 is a divine.video/openvine.co domain or not set.
   final String? externalNip05;
 
-  /// Verifier-confirmed NIP-39 identity claims for this profile. Empty until
-  /// [VerifiedClaimsRequested] resolves; stays empty if the verifier fails.
+  /// Verifier-confirmed NIP-39 identity claims for this profile. Carried
+  /// over from the previous state while [VerifiedClaimsRequested]
+  /// revalidates; kept at last-known-good when the verifier fails or
+  /// rate-limits, and cleared only by a confirmed negative resolve.
   final List<IdentityClaim> verifiedClaims;
 
   /// Returns a copy of this state with the given fields replaced.

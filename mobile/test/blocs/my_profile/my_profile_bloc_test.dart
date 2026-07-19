@@ -1370,6 +1370,7 @@ void main() {
       setUp(() {
         mockClaimsRepository = _MockIdentityClaimsRepository();
         registerFallbackValue(<List<String>>[]);
+        registerFallbackValue(const <IdentityClaim>[]);
         registerFallbackValue(
           const CachedVerifiedClaims(claims: [], isFresh: false),
         );
@@ -1413,6 +1414,7 @@ void main() {
               pubkey: testPubkey,
               freshTags: any(named: 'freshTags'),
               cached: any(named: 'cached'),
+              renderedClaims: any(named: 'renderedClaims'),
             ),
           ).thenAnswer((_) async => const [aliceClaim, bobClaim]);
         },
@@ -1458,6 +1460,7 @@ void main() {
               pubkey: testPubkey,
               freshTags: any(named: 'freshTags'),
               cached: any(named: 'cached'),
+              renderedClaims: any(named: 'renderedClaims'),
             ),
           ).thenThrow(const VerifierApiException(503, 'down'));
         },
@@ -1498,6 +1501,7 @@ void main() {
               pubkey: testPubkey,
               freshTags: any(named: 'freshTags'),
               cached: any(named: 'cached'),
+              renderedClaims: any(named: 'renderedClaims'),
             ),
           ).thenAnswer((_) {
             resolveCall += 1;
@@ -1519,6 +1523,346 @@ void main() {
             (s) => s.verifiedClaims,
             'verifiedClaims',
             [bobClaim],
+          ),
+        ],
+      );
+
+      blocTest<MyProfileBloc, MyProfileState>(
+        'keeps rendered chips when the instant-path intersection is empty '
+        'and the verifier is unreachable',
+        seed: () => MyProfileLoaded(
+          profile: createTestProfile(),
+          isFresh: true,
+          verifiedClaims: const [aliceClaim],
+        ),
+        setUp: () {
+          when(
+            () => mockClaimsRepository.cachedVerifiedClaims(
+              pubkey: testPubkey,
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async => const CachedVerifiedClaims(claims: [], isFresh: false),
+          );
+          when(
+            () => mockClaimsRepository.resolveClaims(
+              pubkey: testPubkey,
+              freshTags: any(named: 'freshTags'),
+              cached: any(named: 'cached'),
+              renderedClaims: any(named: 'renderedClaims'),
+            ),
+          ).thenThrow(const VerifierApiException(503, 'down'));
+        },
+        build: createClaimsBloc,
+        act: (bloc) => bloc.add(const VerifiedClaimsRequested()),
+        // An empty snapshot intersection is not a confirmed negative, so
+        // the non-authoritative instant path must not clear visible chips.
+        expect: () => const <MyProfileState>[],
+        errors: () => [isA<VerifierApiException>()],
+      );
+
+      blocTest<MyProfileBloc, MyProfileState>(
+        'passes the rendered claims to resolveClaims so a rate-limited '
+        'outcome can preserve them',
+        seed: () => MyProfileUpdated(
+          profile: createTestProfile(),
+          verifiedClaims: const [aliceClaim],
+        ),
+        setUp: () {
+          when(
+            () => mockClaimsRepository.cachedVerifiedClaims(
+              pubkey: testPubkey,
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockClaimsRepository.resolveClaims(
+              pubkey: testPubkey,
+              freshTags: any(named: 'freshTags'),
+              cached: any(named: 'cached'),
+              renderedClaims: any(named: 'renderedClaims'),
+            ),
+          ).thenAnswer((_) async => const [aliceClaim]);
+        },
+        build: createClaimsBloc,
+        act: (bloc) => bloc.add(const VerifiedClaimsRequested()),
+        expect: () => const <MyProfileState>[],
+        verify: (_) {
+          verify(
+            () => mockClaimsRepository.resolveClaims(
+              pubkey: testPubkey,
+              freshTags: any(named: 'freshTags'),
+              cached: null,
+              renderedClaims: const [aliceClaim],
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<MyProfileBloc, MyProfileState>(
+        'carries rendered claims through profile stream ticks',
+        seed: () => MyProfileLoaded(
+          profile: createTestProfile(),
+          isFresh: true,
+          verifiedClaims: const [aliceClaim],
+        ),
+        setUp: () {
+          when(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => createTestProfile());
+          when(
+            () => mockProfileRepository.watchProfile(pubkey: testPubkey),
+          ).thenAnswer((_) => Stream.value(createTestProfile()));
+          when(
+            () => mockClaimsRepository.cachedVerifiedClaims(
+              pubkey: testPubkey,
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockClaimsRepository.resolveClaims(
+              pubkey: testPubkey,
+              freshTags: any(named: 'freshTags'),
+              cached: any(named: 'cached'),
+              renderedClaims: any(named: 'renderedClaims'),
+            ),
+          ).thenAnswer((_) async => const [aliceClaim]);
+        },
+        build: createClaimsBloc,
+        act: (bloc) => bloc.add(const MyProfileSubscriptionRequested()),
+        expect: () => [
+          isA<MyProfileLoading>().having(
+            (s) => s.verifiedClaims,
+            'verifiedClaims',
+            [aliceClaim],
+          ),
+          isA<MyProfileUpdated>().having(
+            (s) => s.verifiedClaims,
+            'verifiedClaims',
+            [aliceClaim],
+          ),
+        ],
+      );
+
+      blocTest<MyProfileBloc, MyProfileState>(
+        'unions instant-path chips rendered-first instead of replacing',
+        seed: () => MyProfileLoaded(
+          profile: createTestProfile(),
+          isFresh: true,
+          verifiedClaims: const [aliceClaim],
+        ),
+        setUp: () {
+          when(
+            () => mockClaimsRepository.cachedVerifiedClaims(
+              pubkey: testPubkey,
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async => const CachedVerifiedClaims(
+              claims: [bobClaim],
+              isFresh: false,
+            ),
+          );
+          when(
+            () => mockClaimsRepository.resolveClaims(
+              pubkey: testPubkey,
+              freshTags: any(named: 'freshTags'),
+              cached: any(named: 'cached'),
+              renderedClaims: any(named: 'renderedClaims'),
+            ),
+          ).thenAnswer((_) async => const [aliceClaim, bobClaim]);
+        },
+        build: createClaimsBloc,
+        act: (bloc) => bloc.add(const VerifiedClaimsRequested()),
+        // Rendered-first union keeps chip order stable, so the
+        // authoritative resolve emit is Equatable-suppressed afterwards.
+        expect: () => [
+          isA<MyProfileLoaded>().having(
+            (s) => s.verifiedClaims,
+            'verifiedClaims',
+            [aliceClaim, bobClaim],
+          ),
+        ],
+      );
+
+      blocTest<MyProfileBloc, MyProfileState>(
+        'clears chips when the authoritative resolve confirms a negative',
+        seed: () => MyProfileLoaded(
+          profile: createTestProfile(),
+          isFresh: true,
+          verifiedClaims: const [aliceClaim],
+        ),
+        setUp: () {
+          when(
+            () => mockClaimsRepository.cachedVerifiedClaims(
+              pubkey: testPubkey,
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockClaimsRepository.resolveClaims(
+              pubkey: testPubkey,
+              freshTags: any(named: 'freshTags'),
+              cached: any(named: 'cached'),
+              renderedClaims: any(named: 'renderedClaims'),
+            ),
+          ).thenAnswer((_) async => const <IdentityClaim>[]);
+        },
+        build: createClaimsBloc,
+        act: (bloc) => bloc.add(const VerifiedClaimsRequested()),
+        expect: () => [
+          isA<MyProfileLoaded>().having(
+            (s) => s.verifiedClaims,
+            'verifiedClaims',
+            isEmpty,
+          ),
+        ],
+      );
+
+      blocTest<MyProfileBloc, MyProfileState>(
+        'keeps chips and skips the resolve when the claims source read fails',
+        seed: () => MyProfileLoaded(
+          profile: createTestProfile(),
+          isFresh: true,
+          verifiedClaims: const [aliceClaim],
+        ),
+        setUp: () {
+          when(
+            () => mockClaimsRepository.cachedVerifiedClaims(
+              pubkey: testPubkey,
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockProfileRepository.freshIdentityTags(
+              pubkey: testPubkey,
+              kind0Tags: any(named: 'kind0Tags'),
+            ),
+          ).thenThrow(Exception('db closed'));
+        },
+        build: createClaimsBloc,
+        act: (bloc) => bloc.add(const VerifiedClaimsRequested()),
+        // Resolving against the kind-0 fallback could authoritatively
+        // clear kind-10011 chips, so the degraded tick keeps
+        // last-known-good and does not consult the verifier at all.
+        expect: () => const <MyProfileState>[],
+        errors: () => [isA<Exception>()],
+        verify: (_) {
+          verifyNever(
+            () => mockClaimsRepository.resolveClaims(
+              pubkey: any(named: 'pubkey'),
+              freshTags: any(named: 'freshTags'),
+              cached: any(named: 'cached'),
+              renderedClaims: any(named: 'renderedClaims'),
+            ),
+          );
+        },
+      );
+
+      blocTest<MyProfileBloc, MyProfileState>(
+        'does not double-render one identity when the cached casing differs',
+        seed: () => MyProfileLoaded(
+          profile: createTestProfile(),
+          isFresh: true,
+          verifiedClaims: const [aliceClaim],
+        ),
+        setUp: () {
+          when(
+            () => mockClaimsRepository.cachedVerifiedClaims(
+              pubkey: testPubkey,
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async => const CachedVerifiedClaims(
+              claims: [
+                IdentityClaim(
+                  pubkey: testPubkey,
+                  platform: 'GitHub',
+                  identity: 'Alice',
+                  proof: 'rotated-proof',
+                ),
+              ],
+              isFresh: false,
+            ),
+          );
+          when(
+            () => mockClaimsRepository.resolveClaims(
+              pubkey: testPubkey,
+              freshTags: any(named: 'freshTags'),
+              cached: any(named: 'cached'),
+              renderedClaims: any(named: 'renderedClaims'),
+            ),
+          ).thenThrow(const VerifierApiException(503, 'down'));
+        },
+        build: createClaimsBloc,
+        act: (bloc) => bloc.add(const VerifiedClaimsRequested()),
+        // The cached claim is the same platform:identity under different
+        // casing/proof — the union must not produce a second chip.
+        expect: () => const <MyProfileState>[],
+        errors: () => [isA<VerifierApiException>()],
+      );
+
+      late Completer<UserProfile?> cachedProfileGate;
+      blocTest<MyProfileBloc, MyProfileState>(
+        'reads claims after the cache await so a resolve landing mid-load '
+        'is not clobbered',
+        seed: () => MyProfileLoaded(
+          profile: createTestProfile(),
+          isFresh: true,
+          verifiedClaims: const [aliceClaim],
+        ),
+        setUp: () {
+          cachedProfileGate = Completer<UserProfile?>();
+          addTearDown(() {
+            if (!cachedProfileGate.isCompleted) {
+              cachedProfileGate.complete(null);
+            }
+          });
+          when(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).thenAnswer((_) => cachedProfileGate.future);
+          when(
+            () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => createTestProfile());
+          when(
+            () => mockClaimsRepository.cachedVerifiedClaims(
+              pubkey: testPubkey,
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockClaimsRepository.resolveClaims(
+              pubkey: testPubkey,
+              freshTags: any(named: 'freshTags'),
+              cached: any(named: 'cached'),
+              renderedClaims: any(named: 'renderedClaims'),
+            ),
+          ).thenAnswer((_) async => const [aliceClaim, bobClaim]);
+        },
+        build: createClaimsBloc,
+        act: (bloc) async {
+          bloc.add(const MyProfileLoadRequested());
+          await pumpEventQueue();
+          bloc.add(const VerifiedClaimsRequested());
+          await pumpEventQueue();
+          cachedProfileGate.complete(createTestProfile());
+          await pumpEventQueue();
+        },
+        expect: () => [
+          isA<MyProfileLoaded>().having(
+            (s) => s.verifiedClaims,
+            'verifiedClaims',
+            [aliceClaim, bobClaim],
+          ),
+          isA<MyProfileLoading>().having(
+            (s) => s.verifiedClaims,
+            'verifiedClaims',
+            [aliceClaim, bobClaim],
+          ),
+          isA<MyProfileLoaded>().having(
+            (s) => s.verifiedClaims,
+            'verifiedClaims',
+            [aliceClaim, bobClaim],
           ),
         ],
       );

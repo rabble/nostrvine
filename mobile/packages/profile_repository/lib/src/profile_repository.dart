@@ -268,7 +268,9 @@ class ProfileRepository {
   /// source; otherwise the caller-provided kind-0 [kind0Tags] are used and
   /// cached so cold starts can render claims for pre-migration profiles.
   ///
-  /// Never throws — relay failures fall through the consult order.
+  /// Never throws — relay failures fall through the consult order, and
+  /// cache reads/writes are best-effort so a local persistence failure
+  /// never discards tags already in hand.
   Future<List<List<String>>> freshIdentityTags({
     required String pubkey,
     required List<List<String>> kind0Tags,
@@ -277,29 +279,57 @@ class ProfileRepository {
     final live = await _fetchIdentityEvent(pubkey);
     if (live != null) {
       final iTags = _identityTagsOf(live.tags);
-      await dao?.upsertEvent(
-        pubkey: pubkey,
-        tagsJson: jsonEncode(iTags),
-        sourceKind: identityEventKind,
-      );
+      await _cacheIdentityTags(pubkey, iTags, identityEventKind);
       return iTags;
     }
 
+    var cacheReadFailed = false;
     if (dao != null) {
-      final cachedRow = await dao.getEvent(pubkey);
-      if (cachedRow != null && cachedRow.sourceKind == identityEventKind) {
-        final cachedTags = _decodeIdentityTags(cachedRow.tagsJson);
-        if (cachedTags != null) return cachedTags;
+      try {
+        final cachedRow = await dao.getEvent(pubkey);
+        if (cachedRow != null && cachedRow.sourceKind == identityEventKind) {
+          final cachedTags = _decodeIdentityTags(cachedRow.tagsJson);
+          if (cachedTags != null) return cachedTags;
+        }
+      } on Exception catch (e) {
+        cacheReadFailed = true;
+        Log.warning(
+          'Identity-tags cache read failed for $pubkey: $e',
+          name: 'ProfileRepository',
+        );
       }
     }
 
     final kind0ITags = _identityTagsOf(kind0Tags);
-    await dao?.upsertEvent(
-      pubkey: pubkey,
-      tagsJson: jsonEncode(kind0ITags),
-      sourceKind: 0,
-    );
+    // When the cached row could not be read, skip the fallback write — a
+    // blind upsert here could downgrade a valid but unreadable-this-tick
+    // kind-10011 row to a kind-0 source.
+    if (!cacheReadFailed) {
+      await _cacheIdentityTags(pubkey, kind0ITags, 0);
+    }
     return kind0ITags;
+  }
+
+  /// Best-effort persistence of the identity-claims source cache — a
+  /// failed write is logged and swallowed so [freshIdentityTags] can
+  /// still return the tags it already fetched.
+  Future<void> _cacheIdentityTags(
+    String pubkey,
+    List<List<String>> iTags,
+    int sourceKind,
+  ) async {
+    try {
+      await _identityEventsDao?.upsertEvent(
+        pubkey: pubkey,
+        tagsJson: jsonEncode(iTags),
+        sourceKind: sourceKind,
+      );
+    } on Exception catch (e) {
+      Log.warning(
+        'Identity-tags cache write failed for $pubkey: $e',
+        name: 'ProfileRepository',
+      );
+    }
   }
 
   /// Queries relays for the newest kind-10011 identity event of [pubkey].

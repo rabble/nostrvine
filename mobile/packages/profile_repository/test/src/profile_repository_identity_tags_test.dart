@@ -378,5 +378,65 @@ void main() {
         ]),
       );
     });
+
+    test(
+      'still returns the live kind-10011 tags when the cache write fails',
+      () async {
+        stubQuery([_identityEvent()]);
+        when(
+          () => identityEventsDao.upsertEvent(
+            pubkey: any(named: 'pubkey'),
+            tagsJson: any(named: 'tagsJson'),
+            sourceKind: any(named: 'sourceKind'),
+          ),
+        ).thenThrow(Exception('disk full'));
+
+        final tags = await repository.freshIdentityTags(
+          pubkey: _pubkey,
+          kind0Tags: _kind0Tags,
+        );
+
+        // Persistence is best-effort — a failed cache write must not
+        // discard tags already fetched from the relay.
+        expect(
+          tags,
+          equals([
+            ['i', 'github:modern', 'modern-proof'],
+          ]),
+        );
+      },
+    );
+
+    test(
+      'falls back to kind-0 i tags when the cache read throws, without '
+      'writing the fallback over the unreadable row',
+      () async {
+        stubQuery(const []);
+        when(
+          () => identityEventsDao.getEvent(_pubkey),
+        ).thenThrow(Exception('db closed'));
+
+        final tags = await repository.freshIdentityTags(
+          pubkey: _pubkey,
+          kind0Tags: _kind0Tags,
+        );
+
+        expect(
+          tags,
+          equals([
+            ['i', 'github:legacy', 'legacy-proof'],
+          ]),
+        );
+        // A blind upsert here could downgrade a valid but
+        // unreadable-this-tick kind-10011 row to a kind-0 source.
+        verifyNever(
+          () => identityEventsDao.upsertEvent(
+            pubkey: any(named: 'pubkey'),
+            tagsJson: any(named: 'tagsJson'),
+            sourceKind: any(named: 'sourceKind'),
+          ),
+        );
+      },
+    );
   });
 }
