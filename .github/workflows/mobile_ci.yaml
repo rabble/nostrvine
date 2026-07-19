@@ -155,6 +155,14 @@ jobs:
         run: |
           git fetch --quiet --depth=1 origin main
           bash scripts/check_untested_services_floor.sh
+      - name: 🧱 Verify test/unit does not re-accrete (test-structure ratchet)
+        run: |
+          # Freezes the legacy non-mirroring test/unit bucket per-file so it can
+          # only shrink. New tests must mirror lib/ (test/services/foo_test.dart),
+          # never test/unit/. Fails closed if the base baseline cannot load.
+          # Test-org epic: #4337 (WS-7).
+          git fetch --quiet --depth=1 origin main
+          bash scripts/check_test_unit_structure.sh
       - name: 🧱 Verify every package ships analysis options + a CI workflow (package CI floor)
         run: |
           # Issues #3574 / #3575: optionless packages silently inherit the
