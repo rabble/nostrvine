@@ -14,15 +14,28 @@ class _MockAuthProvider extends Mock implements BlossomAuthProvider {}
 
 class _MockDio extends Mock implements Dio {}
 
-/// A controllable [BlossomBackgroundTransport] that records enqueue calls and
-/// either completes or fails the OS-backed whole-file PUT.
+/// The terminal state a [_FakeTransport] drives its OS-backed PUT to.
+enum _FakeOutcome { completed, failed, cancelled }
+
+/// A controllable [BlossomBackgroundTransport] that records enqueue/cancel
+/// calls and drives the OS-backed whole-file PUT to a chosen terminal state,
+/// optionally after a delay so a test can model an OS transfer that outlasts a
+/// short resumable timeout.
 class _FakeTransport implements BlossomBackgroundTransport {
   _FakeTransport({
-    this.completeSuccessfully = true,
-  });
+    bool completeSuccessfully = true,
+    _FakeOutcome? outcome,
+    this.completionDelay,
+  }) : outcome =
+           outcome ??
+           (completeSuccessfully
+               ? _FakeOutcome.completed
+               : _FakeOutcome.failed);
 
-  final bool completeSuccessfully;
+  final _FakeOutcome outcome;
+  final Duration? completionDelay;
   final List<String> enqueuedTaskIds = <String>[];
+  final List<String> cancelledTaskIds = <String>[];
   final StreamController<BlossomBackgroundTransferEvent> _controller =
       StreamController<BlossomBackgroundTransferEvent>.broadcast();
 
@@ -38,9 +51,23 @@ class _FakeTransport implements BlossomBackgroundTransport {
     required String filePath,
   }) async {
     enqueuedTaskIds.add(taskId);
-    if (completeSuccessfully) {
-      _controller.add(
-        BlossomBackgroundTransferEvent(
+    void emit() {
+      if (_controller.isClosed) return;
+      _controller.add(_terminalEvent(taskId));
+    }
+
+    final delay = completionDelay;
+    if (delay == null) {
+      emit();
+    } else {
+      Timer(delay, emit);
+    }
+  }
+
+  BlossomBackgroundTransferEvent _terminalEvent(String taskId) {
+    switch (outcome) {
+      case _FakeOutcome.completed:
+        return BlossomBackgroundTransferEvent(
           taskId: taskId,
           status: BlossomBackgroundTransferStatus.completed,
           progress: 1,
@@ -48,21 +75,25 @@ class _FakeTransport implements BlossomBackgroundTransport {
           responseBody:
               '{"url":"https://media.divine.video/bg-final",'
               '"fallbackUrl":"https://media.divine.video/bg-final"}',
-        ),
-      );
-    } else {
-      _controller.add(
-        BlossomBackgroundTransferEvent(
+        );
+      case _FakeOutcome.failed:
+        return BlossomBackgroundTransferEvent(
           taskId: taskId,
           status: BlossomBackgroundTransferStatus.failed,
           error: 'network drop',
-        ),
-      );
+        );
+      case _FakeOutcome.cancelled:
+        return BlossomBackgroundTransferEvent(
+          taskId: taskId,
+          status: BlossomBackgroundTransferStatus.cancelled,
+        );
     }
   }
 
   @override
-  Future<void> cancel(String taskId) async {}
+  Future<void> cancel(String taskId) async {
+    cancelledTaskIds.add(taskId);
+  }
 
   @override
   Future<BlossomBackgroundTransferEvent?> takeBufferedTerminalEvent(
@@ -619,8 +650,53 @@ void main() {
     );
 
     test(
-      'resumableTimeout bounds only the in-process resumable leg',
+      'resumableTimeout does NOT bound the OS-first leg',
       () async {
+        // The OS PUT succeeds only after a delay that far exceeds the tiny
+        // resumableTimeout. If a regression wrapped the OS leg in
+        // `.timeout(resumableTimeout)`, that timeout would fire first and this
+        // upload would fail / fall through to the resumable path. Because the
+        // OS leg is deliberately unbounded by resumableTimeout, the delayed OS
+        // success is returned and the resumable control plane is never touched.
+        final transport = _FakeTransport(
+          completionDelay: const Duration(milliseconds: 150),
+        );
+        final service = BlossomUploadService(
+          authProvider: auth,
+          dio: dio,
+          defaultServerUrl: _testServer,
+          backgroundTransport: transport,
+        );
+
+        final result = await service.uploadVideoWithResume(
+          videoFile: videoFile,
+          nostrPubkey: _testPublicKey,
+          taskId: 'task-os-slow',
+          title: 'slow OS success under short resumable timeout',
+          description: null,
+          hashtags: null,
+          proofManifestJson: null,
+          resumableTimeout: const Duration(milliseconds: 5),
+        );
+
+        expect(result.success, isTrue);
+        expect(transport.enqueuedTaskIds, equals(['task-os-slow']));
+        // Resumable leg never reached: the OS leg outlived resumableTimeout and
+        // still won, proving resumableTimeout did not cut it.
+        verifyNever(
+          () => dio.head<dynamic>(any(), options: any(named: 'options')),
+        );
+      },
+    );
+
+    test(
+      'resumableTimeout bounds the in-process resumable leg when reached',
+      () async {
+        // OS PUT fails, so the request falls through to the in-process
+        // resumable leg. That leg hangs (the chunk PUT never completes), so the
+        // only way this returns is via resumableTimeout firing. If a regression
+        // dropped the `.timeout(resumableTimeout)`, the hung PUT would never
+        // resolve and no TimeoutException would surface.
         final transport = _FakeTransport(completeSuccessfully: false);
         final service = BlossomUploadService(
           authProvider: auth,
@@ -631,6 +707,7 @@ void main() {
 
         stubResumableControlPlane(uploadId: 'up_to');
 
+        // Chunk PUT hangs forever — the resumable leg cannot finish on its own.
         when(
           () => dio.put<dynamic>(
             any(),
@@ -638,37 +715,79 @@ void main() {
             options: any(named: 'options'),
             onSendProgress: any(named: 'onSendProgress'),
           ),
-        ).thenAnswer((invocation) async {
-          final options = invocation.namedArguments[#options] as Options;
-          final contentRange = options.headers?['Content-Range'] as String;
-          final nextOffset = switch (contentRange) {
-            'bytes 0-3/8' => '4',
-            'bytes 4-7/8' => '8',
-            _ => throw StateError('Unexpected range: $contentRange'),
-          };
-          return Response(
-            requestOptions: RequestOptions(path: '/sessions/up_to'),
-            statusCode: 204,
-            headers: Headers.fromMap({
-              DivineUploadHeaders.uploadOffset: [nextOffset],
-            }),
-          );
-        });
+        ).thenAnswer(
+          (_) => Completer<Response<dynamic>>().future,
+        );
 
-        // A generous timeout that the fast mock resumable leg stays well
-        // under — proves the timeout branch is wired without flaking.
+        await expectLater(
+          service.uploadVideoWithResume(
+            videoFile: videoFile,
+            nostrPubkey: _testPublicKey,
+            taskId: 'task-to',
+            title: 'resumable timeout',
+            description: null,
+            hashtags: null,
+            proofManifestJson: null,
+            resumableTimeout: const Duration(milliseconds: 50),
+          ),
+          throwsA(isA<TimeoutException>()),
+        );
+      },
+    );
+
+    test(
+      'OS-first cancellation is terminal and never falls back to resumable',
+      () async {
+        // Reproduces #6086: a user pause/cancel tears down the OS transfer,
+        // which emits a `cancelled` terminal event. uploadVideoWithResume must
+        // surface that cancellation terminally — NOT re-upload the whole file
+        // via the resumable/chunked path, which would later overwrite the
+        // paused/cancelled state with a spurious success.
+        final transport = _FakeTransport(outcome: _FakeOutcome.cancelled);
+        final service = BlossomUploadService(
+          authProvider: auth,
+          dio: dio,
+          defaultServerUrl: _testServer,
+          backgroundTransport: transport,
+        );
+
         final result = await service.uploadVideoWithResume(
           videoFile: videoFile,
           nostrPubkey: _testPublicKey,
-          taskId: 'task-to',
-          title: 'resumable timeout',
+          taskId: 'task-cancel',
+          title: 'user cancelled mid-upload',
           description: null,
           hashtags: null,
           proofManifestJson: null,
-          resumableTimeout: const Duration(minutes: 1),
         );
 
-        expect(result.success, isTrue);
+        expect(result.success, isFalse);
+        expect(
+          result.failureReason,
+          equals(BlossomUploadFailureReason.cancelled),
+        );
+        // The OS attempt was enqueued...
+        expect(transport.enqueuedTaskIds, equals(['task-cancel']));
+        // ...but the chunked resumable path was never touched: no capability
+        // HEAD, no init/complete POST, no chunk PUT.
+        verifyNever(
+          () => dio.head<dynamic>(any(), options: any(named: 'options')),
+        );
+        verifyNever(
+          () => dio.post<dynamic>(
+            any(),
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+          ),
+        );
+        verifyNever(
+          () => dio.put<dynamic>(
+            any(),
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+            onSendProgress: any(named: 'onSendProgress'),
+          ),
+        );
       },
     );
   });

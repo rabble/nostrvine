@@ -197,6 +197,9 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       BlossomUploadFailureReason.auth => AvatarUploadError.auth,
       BlossomUploadFailureReason.fileTooLarge => AvatarUploadError.fileTooLarge,
       BlossomUploadFailureReason.server => AvatarUploadError.server,
+      // A user-cancelled avatar upload has no meaningful error to show; fall
+      // through to the generic copy alongside other unclassified failures.
+      BlossomUploadFailureReason.cancelled ||
       BlossomUploadFailureReason.unknown => AvatarUploadError.generic,
     };
   }
@@ -356,6 +359,9 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       BlossomUploadFailureReason.auth => BannerUploadError.auth,
       BlossomUploadFailureReason.fileTooLarge => BannerUploadError.fileTooLarge,
       BlossomUploadFailureReason.server => BannerUploadError.server,
+      // A user-cancelled banner upload has no meaningful error to show; fall
+      // through to the generic copy alongside other unclassified failures.
+      BlossomUploadFailureReason.cancelled ||
       BlossomUploadFailureReason.unknown => BannerUploadError.generic,
     };
   }

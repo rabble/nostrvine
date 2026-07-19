@@ -110,6 +110,13 @@ enum BlossomUploadFailureReason {
   /// "our servers are temporarily unavailable".
   server,
 
+  /// The user stopped the upload (pause / cancel) while it was in flight.
+  /// User-initiated and terminal: the caller must NOT retry or fall back to
+  /// another transport, and it is NOT reportable to Crashlytics. Distinct
+  /// from [unknown] so a deliberate stop is never mistaken for a transport
+  /// failure that warrants re-uploading the whole file.
+  cancelled,
+
   /// Anything else: unmapped 4xx, malformed responses, configuration
   /// errors, or unexpected exceptions. Caller falls back to a generic
   /// "upload failed" message.
@@ -2313,6 +2320,15 @@ class BlossomUploadService {
         if (backgroundResult.success) {
           return backgroundResult;
         }
+        // A user pause/cancel tears down the OS transfer, which surfaces as a
+        // `cancelled` terminal event. That is a deliberate, terminal stop —
+        // falling through to runResumable() would re-upload the whole file
+        // from byte 0 and let a later success overwrite the paused/cancelled
+        // state (#6086). Only genuine transport failures fall through.
+        if (backgroundResult.failureReason ==
+            BlossomUploadFailureReason.cancelled) {
+          return backgroundResult;
+        }
         Log.warning(
           'OS-first upload failed '
           '(${backgroundResult.failureReason}); '
@@ -2331,6 +2347,13 @@ class BlossomUploadService {
           category: LogCategory.video,
         );
       }
+
+      // The OS attempt failed (or threw) without being cancelled, so we are
+      // about to run the in-process resumable leg. The native transfer may
+      // still be live — e.g. the OS leg gave up on its own safety timeout
+      // while the OS keeps streaming — so cancel it first; otherwise both
+      // legs would upload the same file concurrently.
+      await cancelBackgroundUpload(taskId);
     }
 
     // Resumable path (also the only path when the OS attempt is disabled or
@@ -2417,7 +2440,7 @@ class BlossomUploadService {
         return const BlossomUploadResult(
           success: false,
           errorMessage: 'Upload cancelled',
-          failureReason: BlossomUploadFailureReason.unknown,
+          failureReason: BlossomUploadFailureReason.cancelled,
         );
       case BlossomBackgroundTransferStatus.running:
       case BlossomBackgroundTransferStatus.failed:

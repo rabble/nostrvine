@@ -154,10 +154,14 @@ class UploadManager implements BackgroundAwareService {
     );
   }
 
-  /// Routes the video transfer through the OS background uploader
-  /// ([BlossomUploadService.uploadVideoInBackground]) instead of the in-process
-  /// chunked/legacy path, so it survives app suspension. Requires the
-  /// blossom service to have been built with a background transport.
+  /// Attempts the OS background uploader
+  /// ([BlossomUploadService.uploadVideoInBackground]) *first* for a fresh
+  /// publish — it survives app suspension and is fastest on a healthy
+  /// connection — then falls back to the in-process chunked resumable path if
+  /// that OS attempt fails (a user cancel is treated as terminal and does NOT
+  /// fall back). Set to `false` to skip the OS attempt and go straight to the
+  /// in-process path. Requires the blossom service to have been built with a
+  /// background transport.
   final bool useBackgroundUpload;
 
   // Core services
@@ -1235,16 +1239,19 @@ class UploadManager implements BackgroundAwareService {
       category: LogCategory.video,
     );
 
-    // Mark before tearing down the transfer: cancelling it emits a terminal
-    // event that would otherwise drive the in-flight upload into
-    // [_handleUploadFailure] and overwrite the paused status below.
+    // Mark before tearing down the transfer: cancelling the OS transfer emits
+    // a terminal `cancelled` event that resolves the in-flight upload as a
+    // (terminal, non-retriable) failure, which would otherwise reach
+    // [_handleUploadFailure] and overwrite the paused status below. The marker
+    // lets [_performUpload] recognise the user-initiated stop and skip it.
     _userStoppedUploadIds.add(uploadId);
 
     // Stop the OS-owned background transfer while paused so it doesn't keep
-    // uploading in the background. A background transfer is a single OS-owned
-    // PUT with no resumable checkpoint, so resuming re-enqueues it from byte 0
-    // (unlike the in-process path, which resumes from its resumable session).
-    // The in-process path is torn down by its request timeout.
+    // uploading in the background. With OS-first uploads the transfer may have
+    // already fallen through to the in-process resumable leg; that leg is torn
+    // down by its request timeout, and this cancel is then a harmless no-op on
+    // the already-finished OS task. If the OS leg was still the active one it
+    // has no resumable checkpoint, so resuming re-enqueues it from byte 0.
     if (useBackgroundUpload) {
       await _blossomService.cancelBackgroundUpload(uploadId);
     }
