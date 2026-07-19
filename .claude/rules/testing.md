@@ -56,6 +56,14 @@ lib/services/user_service.dart
 
 **Note:** Barrel files (`models.dart`, `widgets.dart`) do not need tests.
 
+**Do not add tests under `test/unit/` or loose at the `test/` root.** `test/unit/`
+is a frozen legacy bucket that duplicates the `lib/` mirror one level down
+(`test/unit/services/foo_test.dart` instead of `test/services/foo_test.dart`); a
+CI ratchet blocks it from growing (see **Test-structure floor** below). Root-loose
+tests (`test/foo_test.dart` with no `lib/foo.dart`) are only correct when they
+mirror a root `lib/` file (e.g. `lib/main.dart` → `test/main_*_test.dart`) or test
+a `test/` helper. Everything else mirrors its `lib/` source path.
+
 ### Group Structure
 Split tests into groups for readability:
 - **Widget tests:** Group by "renders", "navigation", "interactions"
@@ -427,6 +435,24 @@ the test, ratchet the floor and commit the baseline:
 ```bash
 UPDATE_BASELINE=1 bash mobile/scripts/check_untested_services_floor.sh
 ```
+
+### Test-structure floor
+
+The legacy non-mirroring `mobile/test/unit/` bucket is frozen in
+`mobile/scripts/baseline/test_unit_files.txt` and may only ever **shrink**.
+Adding any new `*_test.dart` under `test/unit/` fails CI
+(`check_test_unit_structure.sh`) — write it at its `lib/` mirror path instead
+(`lib/services/foo.dart` → `test/services/foo_test.dart`). When you intentionally
+move a test out of `test/unit/` to its mirror (or delete it), shrink the baseline
+and commit it:
+
+```bash
+UPDATE_BASELINE=1 bash mobile/scripts/check_test_unit_structure.sh
+```
+
+The guard freezes `test/unit/` only; it does not force draining it. Two sibling
+non-mirroring buckets — `test/tdd` and `test/widget` (a split-brain vs the
+282-file `test/widgets`) — are known and deferred as a fast-follow, not frozen here.
 
 ---
 
