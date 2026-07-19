@@ -33,26 +33,52 @@ class CrosspostSettingsCubit extends Cubit<CrosspostSettingsState> {
         state.copyWith(
           status: CrosspostSettingsStatus.loaded,
           enabled: result.crosspostEnabled,
+          username: result.username,
           handle: result.handle,
           provisioningState: result.provisioningState,
+          clearError: true,
         ),
       );
     } catch (e, stackTrace) {
       addError(e, stackTrace);
-      emit(state.copyWith(status: CrosspostSettingsStatus.failure));
+      emit(
+        state.copyWith(
+          status: CrosspostSettingsStatus.failure,
+          error: CrosspostSettingsError.generic,
+          attempt: state.attempt + 1,
+        ),
+      );
     }
   }
 
   /// Toggle crossposting with optimistic update.
   ///
-  /// Immediately emits the new value, then calls the API.
-  /// Reverts on failure.
+  /// Enabling requires a claimed `.divine.video` username; without one, the
+  /// keycast call is guaranteed to fail, so short-circuit to a
+  /// [CrosspostSettingsError.usernameNotClaimed] failure and let the UI route
+  /// the user into the claim flow instead of optimistically flipping a toggle
+  /// that will snap back.
+  ///
+  /// Otherwise emits the new value optimistically, calls the API, and reverts
+  /// with a categorized [CrosspostSettingsError] on failure.
   Future<void> toggleCrosspost({required bool enabled}) async {
+    if (enabled && !state.usernameClaimed) {
+      emit(
+        state.copyWith(
+          status: CrosspostSettingsStatus.failure,
+          error: CrosspostSettingsError.usernameNotClaimed,
+          attempt: state.attempt + 1,
+        ),
+      );
+      return;
+    }
+
     final previousState = state;
     emit(
       state.copyWith(
         status: CrosspostSettingsStatus.toggling,
         enabled: enabled,
+        clearError: true,
       ),
     );
 
@@ -65,14 +91,45 @@ class CrosspostSettingsCubit extends Cubit<CrosspostSettingsState> {
         state.copyWith(
           status: CrosspostSettingsStatus.loaded,
           enabled: result.crosspostEnabled,
+          username: result.username,
           handle: result.handle,
           provisioningState: result.provisioningState,
+          clearError: true,
         ),
       );
     } catch (e, stackTrace) {
       addError(e, stackTrace);
-      // Revert to previous state on failure
-      emit(previousState.copyWith(status: CrosspostSettingsStatus.failure));
+      // Revert to previous state on failure, tagging the reason.
+      emit(
+        previousState.copyWith(
+          status: CrosspostSettingsStatus.failure,
+          error: _errorFromException(e),
+          attempt: previousState.attempt + 1,
+        ),
+      );
     }
+  }
+
+  /// Clear a surfaced error after the UI has acted on it, returning to a
+  /// loaded state so the same error does not fire again.
+  void acknowledgeError() {
+    if (state.error == null) return;
+    emit(
+      state.copyWith(status: CrosspostSettingsStatus.loaded, clearError: true),
+    );
+  }
+
+  CrosspostSettingsError _errorFromException(Object exception) {
+    if (exception is CrosspostApiException) {
+      switch (exception.kind) {
+        case CrosspostApiErrorKind.usernameNotClaimed:
+          return CrosspostSettingsError.usernameNotClaimed;
+        case CrosspostApiErrorKind.unavailable:
+          return CrosspostSettingsError.unavailable;
+        case CrosspostApiErrorKind.generic:
+          return CrosspostSettingsError.generic;
+      }
+    }
+    return CrosspostSettingsError.generic;
   }
 }

@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/crosspost_settings/crosspost_settings_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/settings/nip05_settings_screen.dart';
 
 class BlueskySettingsScreen extends ConsumerWidget {
   static const routeName = 'bluesky-settings';
@@ -65,16 +66,7 @@ class _BlueskySettingsView extends StatelessWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 600),
           child: BlocConsumer<CrosspostSettingsCubit, CrosspostSettingsState>(
-            listener: (context, state) {
-              if (state.status == CrosspostSettingsStatus.failure) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(context.l10n.blueskyFailedToUpdateCrosspost),
-                    backgroundColor: VineTheme.error,
-                  ),
-                );
-              }
-            },
+            listener: _onStateChanged,
             builder: (context, state) {
               if (state.status == CrosspostSettingsStatus.loading) {
                 return const Center(
@@ -85,6 +77,7 @@ class _BlueskySettingsView extends StatelessWidget {
               return ListView(
                 children: [
                   const SizedBox(height: 16),
+                  if (!state.usernameClaimed) const _UsernameRequiredNotice(),
                   _CrosspostToggle(state: state),
                   if (state.handle != null) _HandleInfo(handle: state.handle!),
                   _ProvisioningStatus(state: state),
@@ -92,6 +85,77 @@ class _BlueskySettingsView extends StatelessWidget {
               );
             },
           ),
+        ),
+      ),
+    );
+  }
+
+  void _onStateChanged(BuildContext context, CrosspostSettingsState state) {
+    if (state.status != CrosspostSettingsStatus.failure) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    switch (state.error) {
+      case CrosspostSettingsError.usernameNotClaimed:
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(context.l10n.blueskyUsernameRequired),
+            backgroundColor: VineTheme.error,
+            action: SnackBarAction(
+              label: context.l10n.blueskySetUpHandle,
+              textColor: VineTheme.whiteText,
+              onPressed: () {
+                context.read<CrosspostSettingsCubit>().acknowledgeError();
+                context.push(Nip05SettingsScreen.path);
+              },
+            ),
+          ),
+        );
+      case CrosspostSettingsError.unavailable:
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(context.l10n.blueskyTemporarilyUnavailable),
+            backgroundColor: VineTheme.error,
+          ),
+        );
+      case CrosspostSettingsError.generic:
+      case null:
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(context.l10n.blueskyFailedToUpdateCrosspost),
+            backgroundColor: VineTheme.error,
+          ),
+        );
+    }
+  }
+}
+
+class _UsernameRequiredNotice extends StatelessWidget {
+  const _UsernameRequiredNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: const DivineIcon(
+        icon: DivineIconName.sealCheck,
+        color: VineTheme.accentOrange,
+      ),
+      title: Text(
+        context.l10n.blueskyUsernameRequired,
+        style: const TextStyle(
+          color: VineTheme.whiteText,
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      subtitle: Text(
+        context.l10n.blueskyUsernameRequiredSubtitle,
+        style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
+      ),
+      trailing: TextButton(
+        onPressed: () => context.push(Nip05SettingsScreen.path),
+        child: Text(
+          context.l10n.blueskySetUpHandle,
+          style: const TextStyle(color: VineTheme.vineGreen),
         ),
       ),
     );

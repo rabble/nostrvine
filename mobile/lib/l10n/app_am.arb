@@ -2987,6 +2987,10 @@
     "blueskyStatusFailed": "መለያውን ማዘጋጀት አልተሳካም",
     "blueskyStatusDisabled": "መለያው ተሰናክሏል",
     "blueskyStatusNotLinked": "ምንም የBluesky መለያ አልተገናኘም",
+    "blueskyUsernameRequired": "Set up a divine.video handle before publishing to Bluesky",
+    "blueskyUsernameRequiredSubtitle": "Bluesky publishing needs a claimed username.divine.video handle.",
+    "blueskySetUpHandle": "Set up",
+    "blueskyTemporarilyUnavailable": "Bluesky publishing is temporarily unavailable. Please try again.",
     "invitesTitle": "ጓደኞችን ይጋብዙ",
     "invitesGenerateCardTitle": "{count, plural, =1{1 ግብዣ ለማመንጨት ዝግጁ ነው} other{{count} ግብዣዎች ለማመንጨት ዝግጁ ናቸው}}",
     "@invitesGenerateCardTitle": {

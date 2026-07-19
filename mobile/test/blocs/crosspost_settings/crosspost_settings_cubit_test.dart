@@ -15,6 +15,7 @@ void main() {
     const testPubkey = 'abc123def456';
     const loadedStatus = CrosspostStatus(
       crosspostEnabled: true,
+      username: 'testuser',
       handle: 'testuser.divine.video',
       provisioningState: 'ready',
       did: 'did:plc:test123',
@@ -119,6 +120,7 @@ void main() {
         expect: () => [
           const CrosspostSettingsState(
             status: CrosspostSettingsStatus.loaded,
+            username: 'testuser',
             handle: 'testuser.divine.video',
             provisioningState: 'ready',
           ),
@@ -149,11 +151,171 @@ void main() {
           CrosspostSettingsState(
             status: CrosspostSettingsStatus.failure,
             enabled: true,
+            username: 'testuser',
             handle: 'testuser.divine.video',
             provisioningState: 'ready',
+            error: CrosspostSettingsError.generic,
+            attempt: 1,
           ),
         ],
         errors: () => [isA<CrosspostApiException>()],
+      );
+
+      blocTest<CrosspostSettingsCubit, CrosspostSettingsState>(
+        'short-circuits to usernameNotClaimed when enabling without a username',
+        setUp: () {
+          when(() => apiClient.getStatus()).thenAnswer(
+            (_) async => const CrosspostStatus(crosspostEnabled: false),
+          );
+        },
+        build: () =>
+            CrosspostSettingsCubit(apiClient: apiClient, pubkey: testPubkey),
+        act: (cubit) async {
+          await Future<void>.delayed(Duration.zero);
+          await cubit.toggleCrosspost(enabled: true);
+        },
+        skip: 1,
+        expect: () => const [
+          CrosspostSettingsState(
+            status: CrosspostSettingsStatus.failure,
+            error: CrosspostSettingsError.usernameNotClaimed,
+            attempt: 1,
+          ),
+        ],
+        verify: (_) {
+          verifyNever(
+            () => apiClient.setCrosspost(
+              pubkey: any(named: 'pubkey'),
+              enabled: any(named: 'enabled'),
+            ),
+          );
+        },
+      );
+
+      blocTest<CrosspostSettingsCubit, CrosspostSettingsState>(
+        'emits a distinct state on each repeated failed enable attempt',
+        setUp: () {
+          when(() => apiClient.getStatus()).thenAnswer(
+            (_) async => const CrosspostStatus(crosspostEnabled: false),
+          );
+        },
+        build: () =>
+            CrosspostSettingsCubit(apiClient: apiClient, pubkey: testPubkey),
+        act: (cubit) async {
+          await Future<void>.delayed(Duration.zero);
+          await cubit.toggleCrosspost(enabled: true);
+          await cubit.toggleCrosspost(enabled: true);
+        },
+        skip: 1,
+        expect: () => const [
+          CrosspostSettingsState(
+            status: CrosspostSettingsStatus.failure,
+            error: CrosspostSettingsError.usernameNotClaimed,
+            attempt: 1,
+          ),
+          CrosspostSettingsState(
+            status: CrosspostSettingsStatus.failure,
+            error: CrosspostSettingsError.usernameNotClaimed,
+            attempt: 2,
+          ),
+        ],
+      );
+
+      blocTest<CrosspostSettingsCubit, CrosspostSettingsState>(
+        'maps a 404 toggle failure to usernameNotClaimed',
+        setUp: () {
+          when(
+            () => apiClient.getStatus(),
+          ).thenAnswer((_) async => loadedStatus);
+          when(
+            () => apiClient.setCrosspost(pubkey: testPubkey, enabled: true),
+          ).thenAnswer(
+            (_) async => throw const CrosspostApiException(
+              'not found',
+              statusCode: 404,
+              kind: CrosspostApiErrorKind.usernameNotClaimed,
+            ),
+          );
+        },
+        build: () =>
+            CrosspostSettingsCubit(apiClient: apiClient, pubkey: testPubkey),
+        act: (cubit) async {
+          await Future<void>.delayed(Duration.zero);
+          await cubit.toggleCrosspost(enabled: true);
+        },
+        skip: 2,
+        expect: () => const [
+          CrosspostSettingsState(
+            status: CrosspostSettingsStatus.failure,
+            enabled: true,
+            username: 'testuser',
+            handle: 'testuser.divine.video',
+            provisioningState: 'ready',
+            error: CrosspostSettingsError.usernameNotClaimed,
+            attempt: 1,
+          ),
+        ],
+        errors: () => [isA<CrosspostApiException>()],
+      );
+
+      blocTest<CrosspostSettingsCubit, CrosspostSettingsState>(
+        'maps a 503 toggle failure to unavailable',
+        setUp: () {
+          when(
+            () => apiClient.getStatus(),
+          ).thenAnswer((_) async => loadedStatus);
+          when(
+            () => apiClient.setCrosspost(pubkey: testPubkey, enabled: true),
+          ).thenAnswer(
+            (_) async => throw const CrosspostApiException(
+              'unavailable',
+              statusCode: 503,
+              kind: CrosspostApiErrorKind.unavailable,
+            ),
+          );
+        },
+        build: () =>
+            CrosspostSettingsCubit(apiClient: apiClient, pubkey: testPubkey),
+        act: (cubit) async {
+          await Future<void>.delayed(Duration.zero);
+          await cubit.toggleCrosspost(enabled: true);
+        },
+        skip: 2,
+        expect: () => const [
+          CrosspostSettingsState(
+            status: CrosspostSettingsStatus.failure,
+            enabled: true,
+            username: 'testuser',
+            handle: 'testuser.divine.video',
+            provisioningState: 'ready',
+            error: CrosspostSettingsError.unavailable,
+            attempt: 1,
+          ),
+        ],
+        errors: () => [isA<CrosspostApiException>()],
+      );
+
+      blocTest<CrosspostSettingsCubit, CrosspostSettingsState>(
+        'acknowledgeError clears the error and returns to loaded',
+        setUp: () {
+          when(() => apiClient.getStatus()).thenAnswer(
+            (_) async => const CrosspostStatus(crosspostEnabled: false),
+          );
+        },
+        build: () =>
+            CrosspostSettingsCubit(apiClient: apiClient, pubkey: testPubkey),
+        act: (cubit) async {
+          await Future<void>.delayed(Duration.zero);
+          await cubit.toggleCrosspost(enabled: true);
+          cubit.acknowledgeError();
+        },
+        skip: 2,
+        expect: () => const [
+          CrosspostSettingsState(
+            status: CrosspostSettingsStatus.loaded,
+            attempt: 1,
+          ),
+        ],
       );
 
       test('emits toggling state optimistically before API call', () async {

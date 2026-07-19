@@ -12678,6 +12678,30 @@ abstract class AppLocalizations {
   /// **'No Bluesky account linked'**
   String get blueskyStatusNotLinked;
 
+  /// No description provided for @blueskyUsernameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up a divine.video handle before publishing to Bluesky'**
+  String get blueskyUsernameRequired;
+
+  /// No description provided for @blueskyUsernameRequiredSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluesky publishing needs a claimed username.divine.video handle.'**
+  String get blueskyUsernameRequiredSubtitle;
+
+  /// No description provided for @blueskySetUpHandle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up'**
+  String get blueskySetUpHandle;
+
+  /// No description provided for @blueskyTemporarilyUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluesky publishing is temporarily unavailable. Please try again.'**
+  String get blueskyTemporarilyUnavailable;
+
   /// No description provided for @invitesTitle.
   ///
   /// In en, this message translates to:
