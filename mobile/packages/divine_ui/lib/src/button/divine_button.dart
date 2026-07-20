@@ -274,9 +274,7 @@ class _DivineButtonContent extends StatelessWidget {
     DivineButtonType.ghost => VineTheme.scrim65,
     DivineButtonType.ghostSecondary => VineTheme.scrim15,
     DivineButtonType.link => VineTheme.transparent,
-    // Darker than VineTheme.error so the near-white onErrorContainer label
-    // clears the 4.5:1 WCAG AA contrast ratio.
-    DivineButtonType.error => VineTheme.errorButtonBackground,
+    DivineButtonType.error => VineTheme.error,
   };
 
   Color get _foregroundColor => switch (type) {
@@ -286,7 +284,9 @@ class _DivineButtonContent extends StatelessWidget {
     DivineButtonType.ghost ||
     DivineButtonType.ghostSecondary => VineTheme.onSurface,
     DivineButtonType.link => VineTheme.onSurfaceVariant,
-    DivineButtonType.error => VineTheme.onErrorContainer,
+    // Darker than VineTheme.onErrorContainer so the label clears the 4.5:1
+    // WCAG AA contrast ratio against the unchanged VineTheme.error background.
+    DivineButtonType.error => VineTheme.onErrorButton,
   };
 
   Color? get _borderColor => switch (type) {
@@ -397,11 +397,16 @@ class _DivineButtonContent extends StatelessWidget {
       ),
     );
 
-    // small (40px) and tiny (32px) chips are below the 48dp minimum tap target.
-    // Centre the chip inside a 48dp minimum box that IS the InkWell's child, so
-    // the tappable/semantics node the accessibility guideline measures is >= 48
+    // small (40px) is below the 48dp minimum tap target. Centre the chip
+    // inside a 48dp minimum box that IS the InkWell's child, so the
+    // tappable/semantics node the accessibility guideline measures is >= 48
     // while the visible chip keeps its design size. base is already 48+.
-    if (size != DivineButtonSize.base) {
+    //
+    // tiny (32px) deliberately keeps a 32px tap target — it sits flush next
+    // to a 32px avatar / type icon, and expanding the tap target would bleed
+    // into that neighbor's hit area. Tracked as a known a11y gap in #6235
+    // pending design input.
+    if (size == DivineButtonSize.small) {
       inkChild = ConstrainedBox(
         constraints: const BoxConstraints(
           minWidth: kMinInteractiveDimension,
@@ -425,25 +430,6 @@ class _DivineButtonContent extends StatelessWidget {
         ),
       ),
     );
-
-    // Tiny must stay 32px tall so it sits flush with a 32px avatar / type icon
-    // without inflating the row's height. Keep the layout height at 32 while
-    // the 48dp tap target overflows into the row's surrounding gaps.
-    if (size == DivineButtonSize.tiny) {
-      button = SizedBox(
-        height: 32,
-        // deferToChild sizes the box to the (natural-width) child rather than
-        // to the incoming constraints, so an unbounded-width parent (e.g. a Row
-        // after a Spacer) doesn't blow the width up to infinity. The child is
-        // forced to the 48dp tap-target height and overflows the 32px slot.
-        child: OverflowBox(
-          fit: OverflowBoxFit.deferToChild,
-          minHeight: kMinInteractiveDimension,
-          maxHeight: kMinInteractiveDimension,
-          child: button,
-        ),
-      );
-    }
 
     // Give an icon-only button an accessible name. A labelled button already
     // exposes one via its Text child, so this is only wired when provided.
