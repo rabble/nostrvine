@@ -39,15 +39,10 @@ VideoContentFilter createNsfwFilter(
     // are noisy and would otherwise block autoplay on ordinary videos.
     final modLabels = video.moderationLabels;
     if (modLabels.isNotEmpty) {
-      final recognizedLabels = modLabels
-          .where((label) => ContentLabel.fromValue(label) != null)
-          .toList();
-      if (recognizedLabels.isNotEmpty) {
-        final pref = contentFilterService.getPreferenceForLabels(
-          recognizedLabels,
-        );
-        if (pref == ContentFilterPreference.hide) return true;
-      }
+      // getPreferenceForLabels ignores unrecognized labels, so a video tagged
+      // only with labels this client does not understand never force-hides.
+      final pref = contentFilterService.getPreferenceForLabels(modLabels);
+      if (pref == ContentFilterPreference.hide) return true;
     }
 
     return false;

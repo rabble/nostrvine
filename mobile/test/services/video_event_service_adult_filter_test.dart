@@ -268,7 +268,9 @@ void main() {
 
         expect(filtered, isEmpty);
         verify(
-          () => mockContentFilterService.getPreferenceForLabels(['nudity']),
+          () => mockContentFilterService.getPreferenceForLabels(
+            ['nudity', 'some-new-server-label'],
+          ),
         ).called(greaterThanOrEqualTo(1));
       },
     );
