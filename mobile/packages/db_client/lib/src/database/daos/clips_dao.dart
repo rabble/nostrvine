@@ -63,13 +63,23 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
   }
 
   /// Get all clips sorted by recorded date (newest first). Excludes
-  /// trashed clips. When [ownerPubkey] is provided, returns only clips
-  /// owned by that account **plus** legacy clips with no owner.
-  Future<List<ClipRow>> getAllClips({int? limit, String? ownerPubkey}) {
+  /// trashed clips unless [includeTrashed] is true. When [ownerPubkey] is
+  /// provided, returns only clips owned by that account **plus** legacy
+  /// clips with no owner.
+  ///
+  /// [includeTrashed] is for file-reference scans that must keep a
+  /// trashed (restorable) clip's files alive — active-clip listings should
+  /// leave it at its default.
+  Future<List<ClipRow>> getAllClips({
+    int? limit,
+    String? ownerPubkey,
+    bool includeTrashed = false,
+  }) {
     final query = select(clips)
       ..where(
-        (t) =>
-            _ownedOrLegacy(t.ownerPubkey, ownerPubkey) & t.deletedAt.isNull(),
+        (t) => includeTrashed
+            ? _ownedOrLegacy(t.ownerPubkey, ownerPubkey)
+            : _ownedOrLegacy(t.ownerPubkey, ownerPubkey) & t.deletedAt.isNull(),
       )
       ..orderBy([
         (t) => OrderingTerm(expression: t.recordedAt, mode: OrderingMode.desc),

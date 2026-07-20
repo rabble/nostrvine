@@ -1669,6 +1669,75 @@ void main() {
         );
       });
 
+      test('keeps a ghost frame still referenced by a trashed clip when the '
+          'draft is deleted', () async {
+        final ghost = writeGhost('ghost_trashed_shared.jpg');
+        final draft = draftWithGhost(
+          id: 'draft_trashed_sibling',
+          ghostPath: ghost.path,
+        );
+        await service.saveDraft(draft);
+
+        // A soft-deleted clip that still references the same ghost frame.
+        // It can be restored from trash, so its ghost file must survive the
+        // draft deletion. Clip data blobs store the ghost basename.
+        await database.clipsDao.upsertClip(
+          id: 'trashed_sharing_clip',
+          orderIndex: 0,
+          durationMs: 6000,
+          recordedAt: DateTime(2025),
+          data: json.encode({'ghostFramePath': 'ghost_trashed_shared.jpg'}),
+          filePath: null,
+          thumbnailPath: null,
+        );
+        await database.clipsDao.softDeleteClip(
+          id: 'trashed_sharing_clip',
+          deletedAt: DateTime(2025, 6),
+        );
+
+        await service.deleteDraft(draft.id);
+
+        expect(
+          ghost.existsSync(),
+          isTrue,
+          reason:
+              'a ghost frame still referenced by a trashed (restorable) clip '
+              'must not be deleted when a sharing draft is removed',
+        );
+      });
+
+      test('keeps a ghost frame referenced by a surviving library clip when '
+          'all drafts are cleared', () async {
+        final ghost = writeGhost('ghost_cleared_shared.jpg');
+        final draft = draftWithGhost(
+          id: 'draft_cleared',
+          ghostPath: ghost.path,
+        );
+        await service.saveDraft(draft);
+
+        // A library clip (no draftId) survives clearAllDrafts and still
+        // references the same ghost frame. Clip data blobs store the basename.
+        await database.clipsDao.upsertClip(
+          id: 'surviving_library_clip',
+          orderIndex: 0,
+          durationMs: 6000,
+          recordedAt: DateTime(2025),
+          data: json.encode({'ghostFramePath': 'ghost_cleared_shared.jpg'}),
+          filePath: null,
+          thumbnailPath: null,
+        );
+
+        await service.clearAllDrafts();
+
+        expect(
+          ghost.existsSync(),
+          isTrue,
+          reason:
+              'clearing all drafts must not delete a ghost frame a surviving '
+              'library clip still references',
+        );
+      });
+
       test('still deletes the target ghost frame when a sibling clip row has a '
           'corrupt data blob', () async {
         final ghost = writeGhost('ghost_target.jpg');

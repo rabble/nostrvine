@@ -324,6 +324,70 @@ void main() {
         final results = await dao.getAllClips();
         expect(results, isEmpty);
       });
+
+      test('excludes trashed clips by default', () async {
+        await dao.upsertClip(
+          id: 'clip_active',
+          draftId: testDraftId,
+          orderIndex: 0,
+          durationMs: 3000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: 'active.mp4',
+          thumbnailPath: 'active.jpeg',
+          data: '{}',
+        );
+        await dao.upsertClip(
+          id: 'clip_trashed',
+          draftId: testDraftId,
+          orderIndex: 1,
+          durationMs: 4000,
+          recordedAt: DateTime(2023, 11, 14, 11),
+          filePath: 'trashed.mp4',
+          thumbnailPath: 'trashed.jpeg',
+          data: '{}',
+        );
+        await dao.softDeleteClip(
+          id: 'clip_trashed',
+          deletedAt: DateTime(2023, 11, 15),
+        );
+
+        final results = await dao.getAllClips();
+        expect(results, hasLength(1));
+        expect(results.single.id, equals('clip_active'));
+      });
+
+      test('includes trashed clips when includeTrashed is true', () async {
+        await dao.upsertClip(
+          id: 'clip_active',
+          draftId: testDraftId,
+          orderIndex: 0,
+          durationMs: 3000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: 'active.mp4',
+          thumbnailPath: 'active.jpeg',
+          data: '{}',
+        );
+        await dao.upsertClip(
+          id: 'clip_trashed',
+          draftId: testDraftId,
+          orderIndex: 1,
+          durationMs: 4000,
+          recordedAt: DateTime(2023, 11, 14, 11),
+          filePath: 'trashed.mp4',
+          thumbnailPath: 'trashed.jpeg',
+          data: '{}',
+        );
+        await dao.softDeleteClip(
+          id: 'clip_trashed',
+          deletedAt: DateTime(2023, 11, 15),
+        );
+
+        final results = await dao.getAllClips(includeTrashed: true);
+        expect(
+          results.map((c) => c.id),
+          containsAll(<String>['clip_active', 'clip_trashed']),
+        );
+      });
     });
 
     group('updateOrderIndex', () {
