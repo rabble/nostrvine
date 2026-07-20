@@ -2,6 +2,12 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+/// Duration for the floating-label / input-position transition animation.
+///
+/// Shared by [_AuthTextFieldContent] (label position) and
+/// [_AuthTextFieldInput] (input text-row position) so the two stay in sync.
+const Duration _fieldAnimationDuration = Duration(milliseconds: 200);
+
 /// A styled text field for the authentication flow.
 ///
 /// Designed specifically for sign-in and sign-up screens with a fixed-height
@@ -321,9 +327,6 @@ class _AuthTextFieldContent extends StatelessWidget {
   static const double _inputLineHeight = 24;
   static const double _totalHeight = 76;
 
-  /// Duration for the floating label transition animation.
-  static const Duration _animationDuration = Duration(milliseconds: 200);
-
   /// Label top offset when floating above the input (16px).
   static const double _labelTopFloating = _verticalPadding;
 
@@ -337,13 +340,13 @@ class _AuthTextFieldContent extends StatelessWidget {
       children: [
         if (hasLabel)
           AnimatedPositioned(
-            duration: _animationDuration,
+            duration: _fieldAnimationDuration,
             curve: Curves.easeOut,
             top: isFloating ? _labelTopFloating : _labelTopCentered,
             left: 0,
             right: 0,
             child: AnimatedDefaultTextStyle(
-              duration: _animationDuration,
+              duration: _fieldAnimationDuration,
               curve: Curves.easeOut,
               style: isFloating
                   ? VineTheme.labelSmallFont(
@@ -411,49 +414,58 @@ class _AuthTextFieldInput extends StatelessWidget {
   final EdgeInsetsGeometry? contentPadding;
   final Iterable<String>? autofillHints;
 
+  /// Text-row vertical alignment when the label is floating, on
+  /// [TextAlignVertical]'s -1..1 scale over the 76px field: shifts the 24px
+  /// text row down from centred (top 26) to sit below the floated label (top
+  /// 36) — (36 - 26) / 26 ~= 0.385.
+  static const double _floatingTextAlignY = 0.385;
+
   @override
   Widget build(BuildContext context) {
-    return TextFormField(
-      controller: controller,
-      focusNode: focusNode,
-      obscureText: obscureText,
-      obscuringCharacter: '✱',
-      enabled: enabled,
-      readOnly: readOnly,
-      autocorrect: autocorrect,
-      keyboardType: keyboardType,
-      textInputAction: textInputAction,
-      textCapitalization: textCapitalization,
-      inputFormatters: inputFormatters,
-      validator: validator,
-      onTap: onTap,
-      onChanged: onChanged,
-      onFieldSubmitted: onSubmitted,
-      onEditingComplete: onEditingComplete,
-      maxLength: maxLength,
-      autofillHints: autofillHints,
-      style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
-      // The input fills the full 76px field height so its editable/tap
-      // semantics node meets the 48dp minimum. Place the 24px text line on the
-      // correct visual row: centred (y=0 -> top 26) normally, and lower when
-      // the label floats so it clears the label ((36-26)/26 ~= 0.385).
-      textAlignVertical: isFloating
-          ? const TextAlignVertical(y: 0.385)
-          : TextAlignVertical.center,
-      cursorColor: hasError ? VineTheme.error : VineTheme.primary,
-      decoration: InputDecoration(
-        isDense: true,
-        contentPadding: contentPadding ?? EdgeInsets.zero,
-        border: InputBorder.none,
-        enabledBorder: InputBorder.none,
-        focusedBorder: InputBorder.none,
-        errorBorder: InputBorder.none,
-        focusedErrorBorder: InputBorder.none,
-        disabledBorder: InputBorder.none,
-        filled: false,
-        // Hide the built-in error text from TextFormField.
-        // Error display is handled by _ErrorSupportingText via errorText.
-        errorStyle: const TextStyle(fontSize: 0, height: 0),
+    // The input fills the full 76px field height so its editable/tap
+    // semantics node meets the 48dp minimum. Animate the visible text row
+    // between its centred and floating-label positions in step with the
+    // label's own AnimatedPositioned, so the two don't visually desync.
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(end: isFloating ? _floatingTextAlignY : 0),
+      duration: _fieldAnimationDuration,
+      curve: Curves.easeOut,
+      builder: (context, textAlignY, _) => TextFormField(
+        controller: controller,
+        focusNode: focusNode,
+        obscureText: obscureText,
+        obscuringCharacter: '✱',
+        enabled: enabled,
+        readOnly: readOnly,
+        autocorrect: autocorrect,
+        keyboardType: keyboardType,
+        textInputAction: textInputAction,
+        textCapitalization: textCapitalization,
+        inputFormatters: inputFormatters,
+        validator: validator,
+        onTap: onTap,
+        onChanged: onChanged,
+        onFieldSubmitted: onSubmitted,
+        onEditingComplete: onEditingComplete,
+        maxLength: maxLength,
+        autofillHints: autofillHints,
+        style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
+        textAlignVertical: TextAlignVertical(y: textAlignY),
+        cursorColor: hasError ? VineTheme.error : VineTheme.primary,
+        decoration: InputDecoration(
+          isDense: true,
+          contentPadding: contentPadding ?? EdgeInsets.zero,
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          errorBorder: InputBorder.none,
+          focusedErrorBorder: InputBorder.none,
+          disabledBorder: InputBorder.none,
+          filled: false,
+          // Hide the built-in error text from TextFormField.
+          // Error display is handled by _ErrorSupportingText via errorText.
+          errorStyle: const TextStyle(fontSize: 0, height: 0),
+        ),
       ),
     );
   }
