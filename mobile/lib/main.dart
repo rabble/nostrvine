@@ -1761,12 +1761,17 @@ class _DivineAppState extends ConsumerState<DivineApp>
     // Tear down in-flight media downloads before the OS suspends the app.
     // On Apple platforms cupertino_http delivers NSURLSession callbacks
     // through a Dart FFI trampoline that aborts if the isolate is suspended
-    // mid-request. The caches stay usable and resume downloading on return.
+    // mid-request. Cancellation also latches a suspension so prefetch loops
+    // cannot re-arm fresh native requests in the same window; the latch is
+    // lifted on resume, when downloads work again.
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.hidden ||
         state == AppLifecycleState.detached) {
       openVineMediaCache.cancelInFlightDownloads();
       openVineImageCache.cancelInFlightDownloads();
+    } else if (state == AppLifecycleState.resumed) {
+      openVineMediaCache.resumeDownloads();
+      openVineImageCache.resumeDownloads();
     }
   }
 

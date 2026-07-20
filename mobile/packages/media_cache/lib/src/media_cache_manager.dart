@@ -412,6 +412,13 @@ class MediaCacheManager extends CacheManager {
 
   bool _isClosed = false;
 
+  /// Latched by [cancelInFlightDownloads], cleared by [resumeDownloads].
+  /// While set, cancellable downloads complete with `null` instead of
+  /// reaching the network, so autonomous prefetch loops (disk prefetcher
+  /// cycles, [preCacheFiles] batches) cannot re-arm fresh native requests
+  /// after a background cancellation.
+  bool _downloadsSuspended = false;
+
   bool _isProcessingResponse(FileInfo fileInfo) =>
       fileInfo.statusCode == HttpStatus.accepted;
 
@@ -744,6 +751,14 @@ class MediaCacheManager extends CacheManager {
           getCachedFileSync(key) ??
           (aliasKey != null ? getCachedFileSync(aliasKey) : null);
       if (cached != null) return CancellableCacheOperation.completed(cached);
+    }
+
+    // Suspended (app backgrounded): refuse to start anything new. Prefetch
+    // loops keep requesting the next item after their current download is
+    // cancelled; without this gate they would re-arm fresh native requests
+    // right in the suspension window [cancelInFlightDownloads] just cleared.
+    if (_downloadsSuspended) {
+      return CancellableCacheOperation.fromDownload(_CompletedNullDownload());
     }
 
     // Join an in-flight download for the same key (started by either
@@ -1221,6 +1236,11 @@ class MediaCacheManager extends CacheManager {
 
     // Process in batches
     for (var i = 0; i < items.length; i += batchSize) {
+      // Backgrounded mid-run: stop opening new batches. The downloads would
+      // be refused by the suspension gate anyway; bailing here also skips
+      // the per-item cache probes. Callers re-trigger prefetch on the next
+      // interaction after resume.
+      if (_downloadsSuspended) return;
       final batch = <Future<File?>>[];
       final end = (i + batchSize > items.length) ? items.length : i + batchSize;
 
@@ -1326,15 +1346,24 @@ class MediaCacheManager extends CacheManager {
   @visibleForTesting
   Future<void> waitForPendingAliasWrites() => _aliasWriteQueue;
 
-  /// Cancels in-flight cancellable downloads without closing the manager.
+  /// Cancels in-flight cancellable downloads and suspends new ones without
+  /// closing the manager.
   ///
-  /// Unlike [close], the manager stays usable — new downloads work again once
-  /// the app resumes. Wire this to app-background transitions so in-flight
-  /// NSURLSession (`cupertino_http`) requests are torn down before the OS
-  /// suspends the Dart isolate; a late delegate callback into a suspended
-  /// isolate aborts the process in the FFI trampoline.
+  /// Unlike [close], the manager stays usable — cached files still resolve,
+  /// and downloads work again after [resumeDownloads]. Wire this to
+  /// app-background transitions so in-flight NSURLSession (`cupertino_http`)
+  /// requests are torn down before the OS suspends the Dart isolate; a late
+  /// delegate callback into a suspended isolate aborts the process in the
+  /// FFI trampoline.
+  ///
+  /// The suspension latch is required on top of the one-shot cancellation:
+  /// prefetch loops (disk prefetcher cycles, [preCacheFiles] batches) react
+  /// to a cancelled download by advancing to their next item, which would
+  /// otherwise start a fresh native request inside the same suspension
+  /// window.
   void cancelInFlightDownloads() {
     if (_isClosed) return;
+    _downloadsSuspended = true;
     // Cancel manager-level operations first, mirroring [close]. An operation
     // still awaiting _resolveBaseCacheDir() has not started its download yet,
     // so it is absent from the downloader's active set; cancelling it here
@@ -1346,6 +1375,15 @@ class MediaCacheManager extends CacheManager {
       operation.cancel();
     }
     _downloader.cancelActiveDownloads();
+  }
+
+  /// Lifts the download suspension latched by [cancelInFlightDownloads].
+  ///
+  /// Wire this to the app returning to the foreground
+  /// (`AppLifecycleState.resumed`) so prefetch and on-demand downloads work
+  /// again.
+  void resumeDownloads() {
+    _downloadsSuspended = false;
   }
 
   /// Closes this manager and releases owned downloader resources.
