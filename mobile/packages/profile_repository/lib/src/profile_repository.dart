@@ -1336,8 +1336,13 @@ class ProfileRepository {
           .get(Uri.parse('$_byPubkeyUrlBase/$normalized'))
           .timeout(_nameServerHttpTimeout);
       if (response.statusCode == 200) {
-        final body = jsonDecode(response.body) as Map<String, dynamic>;
-        found = body['found'] == true;
+        // Decode-then-check: a naive cast throws a TypeError (an Error, not
+        // an Exception) for valid non-object JSON like `[]`, escaping the
+        // catch below instead of resolving to the documented false.
+        final body = jsonDecode(response.body) as Object?;
+        if (body is Map<String, dynamic>) {
+          found = body['found'] == true;
+        }
       }
     } on Exception catch (e) {
       Log.warning(

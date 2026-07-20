@@ -69,6 +69,32 @@ void main() {
       expect(result, isFalse);
     });
 
+    test(
+      'returns false when a 200 body is valid JSON but not an object',
+      () async {
+        // `[]` decodes fine, so a naive cast to Map throws a TypeError —
+        // an Error, not an Exception — which would escape the catch and
+        // propagate to callers instead of the documented false.
+        when(
+          () => mockHttpClient.get(byPubkeyUri),
+        ).thenAnswer((_) async => Response('[]', 200));
+
+        final result = await repository.hasDivineIdentity(pubkey);
+
+        expect(result, isFalse);
+      },
+    );
+
+    test('returns false when a 200 body is not valid JSON', () async {
+      when(
+        () => mockHttpClient.get(byPubkeyUri),
+      ).thenAnswer((_) async => Response('<html>gateway error</html>', 200));
+
+      final result = await repository.hasDivineIdentity(pubkey);
+
+      expect(result, isFalse);
+    });
+
     test('returns false when the request throws', () async {
       when(
         () => mockHttpClient.get(byPubkeyUri),
