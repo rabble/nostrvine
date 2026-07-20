@@ -6,17 +6,28 @@
 # divine_ui rather than a raw Material button (rule: ui_theming.md, self-review
 # checklist → design system).
 #
-# Detector (occurrences, outside full-line comments):
-#   \b(IconButton|ElevatedButton|TextButton|FilledButton|OutlinedButton
-#      |BackButton|CloseButton)(\.(icon|filled|filledTonal|outlined|tonal))?\(
+# Detector (occurrences, in code only — see lib/dart_code_only.awk):
+#   \b(<Material button type>)(\.(<named ctor>))?[[:space:]]*[(<]
+# covering the ButtonStyleButton family (IconButton, ElevatedButton, TextButton,
+# FilledButton, OutlinedButton, BackButton, CloseButton, MaterialButton,
+# RawMaterialButton), FloatingActionButton, and the menu-anchor buttons that read
+# as buttons at the call site (PopupMenuButton, DropdownButton[FormField|
+# HideUnderline], SegmentedButton, ToggleButtons, MenuItemButton, SubmenuButton).
 # The word boundary EXCLUDES the sanctioned/custom set — DivineButton,
 # DivineIconButton(, RoundedIconButton(, CircularIconButton(, VideoEditorIconButton(
-# — and named params like showBackButton:/AuthBackButton. The optional named-ctor
-# group catches ElevatedButton.icon( and the other Material button constructors
-# (.filled/.filledTonal/.outlined/.tonal), but NOT `.styleFrom(` — that returns a
-# ButtonStyle (a style helper, legitimately used with DivineButton too), not a
-# button widget, so it is intentionally not counted. divine_ui (where DivineButton
-# lives) is a separate package, out of scope by construction.
+# — and named params like showBackButton:/AuthBackButton/floatingActionButton:
+# (grep is case-sensitive). The optional named-ctor group catches
+# ElevatedButton.icon( and friends (.filled/.filledTonal/.outlined/.tonal/
+# .tonalIcon) plus FloatingActionButton.small/.large/.extended, but NOT
+# `.styleFrom(` — that returns a ButtonStyle (a style helper, legitimately used
+# with DivineButton too), not a button widget, so it is intentionally not counted.
+#
+# The trailing `[(<]` (rather than a bare `\(`) is deliberate: several of these are
+# generic and are called with an explicit type argument — PopupMenuButton<Action>(,
+# SegmentedButton<T>(, DropdownButton<String>( — which a `...\(` regex would miss
+# and a dev could add a type arg to bypass. Requiring a call/generic opener also
+# keeps bare prose mentions of a type name from counting. divine_ui (where
+# DivineButton lives) is a separate package, out of scope by construction.
 #
 # Per-key NUMERIC ceiling: a file may drop buttons freely while above zero without
 # churning the baseline; only growth / new file / raised ceiling / drop-to-zero
@@ -42,16 +53,16 @@ BASE_REF="${MATERIAL_BUTTON_BASELINE_BASE_REF:-origin/main}"
 ALLOW_NO_BASE="${MATERIAL_BUTTON_CEILING_ALLOW_NO_BASE:-0}"
 ALLOW_NO_BASE_VAR="MATERIAL_BUTTON_CEILING_ALLOW_NO_BASE"
 
-DETECT_RE='\b(IconButton|ElevatedButton|TextButton|FilledButton|OutlinedButton|BackButton|CloseButton)(\.(icon|filled|filledTonal|outlined|tonal))?\('
+DETECT_RE='\b(IconButton|ElevatedButton|TextButton|FilledButton|OutlinedButton|BackButton|CloseButton|FloatingActionButton|PopupMenuButton|MaterialButton|RawMaterialButton|DropdownButton|DropdownButtonFormField|DropdownButtonHideUnderline|SegmentedButton|ToggleButtons|MenuItemButton|SubmenuButton)(\.(icon|filled|filledTonal|outlined|tonal|tonalIcon|small|large|extended))?[[:space:]]*[(<]'
 
-NEW_HINT="Don't add direct Material buttons — use DivineButton / DivineIconButton from divine_ui. ui_theming.md + self-review checklist; #6145."
+NEW_HINT="Don't add direct Material buttons — use DivineButton / DivineIconButton from divine_ui. ui_theming.md + self-review checklist; #6145. Only real code counts (comments and string literals are stripped)."
 STALE_HINT="A file dropped its Material buttons (migrated to DivineButton or removed)."
 FOOTER="Direct Material button counts under mobile/lib are frozen and may only
 decrease. Use DivineButton / DivineIconButton rather than adding more.
 See ui_theming.md and epics #6145 / #4339."
 
 # Print "relpath<TAB>count" for every non-generated Dart file under SCAN_DIR that
-# constructs a direct Material button (outside full-line comments), sorted by path.
+# constructs a direct Material button (in code only), sorted by path.
 emit_current() {
   find "$SCAN_DIR" \
     -type f -name '*.dart' \
@@ -62,7 +73,7 @@ emit_current() {
     ! -name '*.config.dart' ! -name '*.mocks.dart' \
     -print0 2>/dev/null \
   | while IFS= read -r -d '' f; do
-      count="$(grep -vE '^[[:space:]]*//' "$f" 2>/dev/null \
+      count="$(awk -f "$SCRIPT_DIR/lib/dart_code_only.awk" "$f" 2>/dev/null \
         | grep -oE "$DETECT_RE" \
         | grep -c . || true)"
       count="${count//[[:space:]]/}"
@@ -77,11 +88,13 @@ print_baseline_header() {
   cat <<EOF
 # Frozen baseline: Dart files under mobile/lib constructing a direct Material
 # button (IconButton/ElevatedButton/TextButton/FilledButton/OutlinedButton/
-# BackButton/CloseButton, incl .icon), each with its current count as a CEILING
+# BackButton/CloseButton/MaterialButton/RawMaterialButton/FloatingActionButton/
+# PopupMenuButton/DropdownButton*/SegmentedButton/ToggleButtons/MenuItemButton/
+# SubmenuButton, incl named ctors), each with its current count as a CEILING
 # (format: relpath<TAB>count). Generated by scripts/check_material_button_ceiling.sh.
 # A ceiling may only SHRINK; more buttons, a new file, or a raised ceiling fails CI
-# vs ${BASE_REF}. Use DivineButton / DivineIconButton. Full-line comments are not
-# counted. Issue: #6145. Regenerate after migrating:
+# vs ${BASE_REF}. Use DivineButton / DivineIconButton. Comments and string literals
+# are not counted. Issue: #6145. Regenerate after migrating:
 #   UPDATE_BASELINE=1 bash scripts/check_material_button_ceiling.sh
 EOF
 }
