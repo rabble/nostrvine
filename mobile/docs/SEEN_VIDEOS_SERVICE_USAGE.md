@@ -109,10 +109,10 @@ List<VideoEvent> buildFreshFirstFeed(List<VideoEvent> videos) {
 
 ## Automatic Tracking
 
-Video viewing is tracked automatically via `VideoMetricsTracker` widget. When a video finishes playing or user navigates away, metrics are saved:
+Video viewing is tracked automatically via `DivineVideoMetricsTracker` widget. When a video finishes playing or user navigates away, metrics are saved:
 
 ```dart
-// This happens automatically in VideoMetricsTracker
+// This happens automatically in DivineVideoMetricsTracker
 seenVideosService.recordVideoView(
   videoId,
   loopCount: loopCount,

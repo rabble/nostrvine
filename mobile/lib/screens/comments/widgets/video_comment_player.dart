@@ -48,11 +48,18 @@ class _VideoCommentPlayerState extends State<VideoCommentPlayer>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    unawaited(_stateSubscription?.cancel());
+    // Null the fields before the async teardown so any late callback (e.g. a
+    // final VisibilityDetector frame after unmount) can't reach the
+    // now-disposing controller and drive an operation on it.
+    final subscription = _stateSubscription;
+    final controller = _controller;
+    _stateSubscription = null;
+    _controller = null;
+    unawaited(subscription?.cancel());
     // divine_video_player tears down its native player safely on dispose and
     // suspends frame delivery when backgrounded, so no manual pause-before-
     // dispose dance is needed (unlike the old video_player/FVP pipeline).
-    unawaited(_controller?.dispose());
+    unawaited(controller?.dispose());
     super.dispose();
   }
 
@@ -105,7 +112,19 @@ class _VideoCommentPlayerState extends State<VideoCommentPlayer>
         name: 'VideoCommentPlayer',
         category: LogCategory.video,
       );
-      await controller.dispose();
+      // Drop the references before disposing so a later tap starts a fresh
+      // controller instead of calling into this disposed one (which would
+      // throw StateError from the package's initialized/disposed guard).
+      // Drop the references before tearing the controller down so a later tap
+      // starts a fresh controller instead of calling into this disposed one
+      // (which would throw StateError from the package's initialized/disposed
+      // guard). Teardown is fire-and-forget so the retry affordance returns
+      // immediately rather than waiting on the native player to release.
+      final subscription = _stateSubscription;
+      _stateSubscription = null;
+      _controller = null;
+      unawaited(subscription?.cancel());
+      unawaited(controller.dispose());
       if (mounted) setState(() => _isInitializing = false);
     }
   }
@@ -126,6 +145,7 @@ class _VideoCommentPlayerState extends State<VideoCommentPlayer>
   }
 
   void _onVisibilityChanged(VisibilityInfo info) {
+    if (!mounted) return;
     if (info.visibleFraction < 0.35 &&
         (_controller?.state.isPlaying ?? false)) {
       _controller?.pause();

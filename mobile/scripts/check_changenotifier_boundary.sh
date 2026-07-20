@@ -48,7 +48,6 @@ MOBILE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 # ---------------------------------------------------------------------------
 
 ALLOWLIST=(
-  "providers/individual_video_providers.dart"
   "features/feature_flags/services/feature_flag_service.dart"
   "router/app_router.dart"
   "services/connection_status_service.dart"
