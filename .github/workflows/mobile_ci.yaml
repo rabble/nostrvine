@@ -210,6 +210,27 @@ jobs:
           # the anti-bypass check; fails closed if it cannot load the baseline.
           git fetch --quiet --depth=1 origin main
           bash scripts/check_raw_icons_ceiling.sh
+      - name: 🎨 Verify raw TextStyle( count does not increase (VineTheme ratchet)
+        run: |
+          # Design-system drift ceilings (#6145, epic #4339). Each freezes a
+          # per-file count of raw UI patterns under mobile/lib so new drift is
+          # intentional; existing debt is baselined, not fixed. Fails closed if
+          # the base baseline cannot be loaded. New UI must use the divine_ui /
+          # VineTheme sanctioned replacements — see the script headers.
+          git fetch --quiet --depth=1 origin main
+          bash scripts/check_raw_textstyle_ceiling.sh
+      - name: 🎨 Verify raw color count does not increase (VineTheme ratchet)
+        run: |
+          git fetch --quiet --depth=1 origin main
+          bash scripts/check_raw_colors_ceiling.sh
+      - name: 🎨 Verify direct Material-button count does not increase (DivineButton ratchet)
+        run: |
+          git fetch --quiet --depth=1 origin main
+          bash scripts/check_material_button_ceiling.sh
+      - name: 🎨 Verify raw dialog/bottom-sheet count does not increase (VineBottomSheet ratchet)
+        run: |
+          git fetch --quiet --depth=1 origin main
+          bash scripts/check_raw_dialog_ceiling.sh
       - name: 🔨 Verify generated files are up-to-date
         run: |
           dart run build_runner build --delete-conflicting-outputs
