@@ -190,5 +190,44 @@ void main() {
       expect(result, isTrue);
       verify(() => mockHttpClient.get(byPubkeyUri)).called(1);
     });
+
+    group('resolveDivineIdentity', () {
+      test('returns the genuine verdict on a 200', () async {
+        when(() => mockHttpClient.get(byPubkeyUri)).thenAnswer(
+          (_) async => Response('{"ok":true,"found":true,"name":"alice"}', 200),
+        );
+
+        expect(await repository.resolveDivineIdentity(pubkey), isTrue);
+      });
+
+      test('returns false for an empty pubkey without querying', () async {
+        expect(await repository.resolveDivineIdentity('   '), isFalse);
+        verifyNever(() => mockHttpClient.get(any()));
+      });
+
+      test('returns null (undetermined) on a non-200', () async {
+        when(
+          () => mockHttpClient.get(byPubkeyUri),
+        ).thenAnswer((_) async => Response('{"ok":false}', 503));
+
+        expect(await repository.resolveDivineIdentity(pubkey), isNull);
+      });
+
+      test('returns null (undetermined) when the request throws', () async {
+        when(
+          () => mockHttpClient.get(byPubkeyUri),
+        ).thenThrow(Exception('network down'));
+
+        expect(await repository.resolveDivineIdentity(pubkey), isNull);
+      });
+
+      test('returns null (undetermined) on a non-object 200 body', () async {
+        when(
+          () => mockHttpClient.get(byPubkeyUri),
+        ).thenAnswer((_) async => Response('[]', 200));
+
+        expect(await repository.resolveDivineIdentity(pubkey), isNull);
+      });
+    });
   });
 }

@@ -134,5 +134,31 @@ void main() {
       expect(service.warnLabelsFor(video), isEmpty);
       verify(() => repository.communityLabelsForVideo(any())).called(1);
     });
+
+    test(
+      'prefetch does not cache a degraded result, so the next call retries',
+      () async {
+        // Transient failure first, then recovery. A cached empty here would
+        // suppress a real warning for the whole session.
+        var calls = 0;
+        when(() => repository.communityLabelsForVideo(any())).thenAnswer((
+          _,
+        ) async {
+          calls++;
+          if (calls == 1) {
+            throw const CommunityLabelUnavailableException('relay down');
+          }
+          return {'gambling'};
+        });
+
+        await service.prefetch(video);
+        expect(service.warnLabelsFor(video), isEmpty);
+
+        await service.prefetch(video);
+
+        expect(service.warnLabelsFor(video), equals({'gambling'}));
+        verify(() => repository.communityLabelsForVideo(any())).called(2);
+      },
+    );
   });
 }

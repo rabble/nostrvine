@@ -1306,19 +1306,30 @@ class ProfileRepository {
   /// Whether [pubkey] resolves to a Divine identity (a `name@divine.video`
   /// NIP-05 registered with the name server).
   ///
+  /// Convenience wrapper over [resolveDivineIdentity] that collapses an
+  /// unknown (transient-failure) verdict to `false`. Callers that need to
+  /// distinguish "not a Divine identity" from "couldn't determine" — e.g. to
+  /// avoid caching a degraded result — should use [resolveDivineIdentity].
+  Future<bool> hasDivineIdentity(String pubkey) async =>
+      await resolveDivineIdentity(pubkey) ?? false;
+
+  /// Resolves whether [pubkey] is a Divine identity, distinguishing a genuine
+  /// verdict from an undetermined one.
+  ///
   /// Used to bound "community" membership for viewer-suggested content
   /// warnings (#4771): only suggestions from pubkeys with a Divine identity
   /// count toward the display threshold. Anyone can still publish a label;
   /// this only decides which authors the app counts.
   ///
-  /// Successful (200) verdicts are cached for [_divineIdentityCacheTtl]
-  /// (24h). Returns `false` on any network or parse failure — a documented
-  /// sentinel, not a throw, so callers degrade gracefully (an uncounted
-  /// author, never an error state) — and failures are never cached, so the
+  /// Returns `true`/`false` on a genuine `200` verdict (cached for
+  /// [_divineIdentityCacheTtl], 24h), and **`null`** when the lookup could
+  /// not be determined — a network/timeout error, a non-200 response, or an
+  /// unparseable/non-object body. `null` verdicts are never cached, so the
   /// next lookup retries. See the `_divineIdentityCacheTtl` note for the
   /// #4948 alignment.
-  Future<bool> hasDivineIdentity(String pubkey) async {
+  Future<bool?> resolveDivineIdentity(String pubkey) async {
     final normalized = pubkey.trim().toLowerCase();
+    // An empty pubkey is genuinely not a Divine identity, not "undetermined".
     if (normalized.isEmpty) return false;
 
     final cached = _divineIdentityCache[normalized];
@@ -1327,8 +1338,7 @@ class ProfileRepository {
       return cached.value;
     }
 
-    var found = false;
-    var resolved = false;
+    bool? verdict;
     try {
       final response = await _httpClient
           .get(Uri.parse('$_usernameByPubkeyUrl/$normalized'))
@@ -1336,31 +1346,31 @@ class ProfileRepository {
       if (response.statusCode == 200) {
         // Decode-then-check: a naive cast throws a TypeError (an Error, not
         // an Exception) for valid non-object JSON like `[]`, escaping the
-        // catch below instead of resolving to the documented false.
+        // catch below instead of resolving to the documented sentinel.
         final body = jsonDecode(response.body) as Object?;
         if (body is Map<String, dynamic>) {
-          found = body['found'] == true;
-          resolved = true;
+          verdict = body['found'] == true;
         }
       }
     } on Exception catch (e) {
       Log.warning(
         'by-pubkey lookup failed: $e',
-        name: 'ProfileRepository.hasDivineIdentity',
+        name: 'ProfileRepository.resolveDivineIdentity',
         category: LogCategory.api,
       );
     }
 
-    // Only a genuine 200 verdict is cached; failures stay uncached so the
-    // next lookup retries (same posture as the backend identity cache).
-    if (resolved) {
+    // Only a genuine 200 verdict is cached; undetermined lookups stay
+    // uncached so the next lookup retries (same posture as the backend
+    // identity cache).
+    if (verdict != null) {
       if (_divineIdentityCache.length >= _divineIdentityCacheMax &&
           !_divineIdentityCache.containsKey(normalized)) {
         _divineIdentityCache.remove(_divineIdentityCache.keys.first);
       }
-      _divineIdentityCache[normalized] = (value: found, at: DateTime.now());
+      _divineIdentityCache[normalized] = (value: verdict, at: DateTime.now());
     }
-    return found;
+    return verdict;
   }
 
   /// Checks if a username is available for registration.

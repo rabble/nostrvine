@@ -72,9 +72,9 @@ void main() {
       when(() => video.id).thenReturn(videoId);
       when(() => video.pubkey).thenReturn(creatorPubkey);
       when(() => video.addressableId).thenReturn(addressableId);
-      // Default: every author is a Divine identity unless overridden.
+      // Default: every author resolves to a Divine identity unless overridden.
       when(
-        () => profileRepository.hasDivineIdentity(any()),
+        () => profileRepository.resolveDivineIdentity(any()),
       ).thenAnswer((_) async => true);
     });
 
@@ -133,7 +133,7 @@ void main() {
 
           await repository.communityLabelsForVideo(video);
 
-          verifyNever(() => profileRepository.hasDivineIdentity(any()));
+          verifyNever(() => profileRepository.resolveDivineIdentity(any()));
         },
       );
 
@@ -141,7 +141,7 @@ void main() {
         'excludes authors without a Divine identity from the count',
         () async {
           when(
-            () => profileRepository.hasDivineIdentity(authorC),
+            () => profileRepository.resolveDivineIdentity(authorC),
           ).thenAnswer((_) async => false);
           stubQuery([
             _labelEvent(authorA, ['gambling'], videoId: videoId),
@@ -179,15 +179,88 @@ void main() {
         expect(result, isEmpty);
       });
 
-      test('returns empty set when the query throws', () async {
+      test('throws CommunityLabelUnavailable when the query fails', () async {
         when(
           () => nostrClient.queryEvents(any()),
         ).thenThrow(Exception('relay down'));
 
-        final result = await repository.communityLabelsForVideo(video);
-
-        expect(result, isEmpty);
+        expect(
+          () => repository.communityLabelsForVideo(video),
+          throwsA(isA<CommunityLabelUnavailableException>()),
+        );
       });
+
+      test(
+        'throws CommunityLabelUnavailable when an undetermined identity '
+        'could have crossed the threshold',
+        () async {
+          // 3 raw authors, one lookup undetermined (null): confirmed 2 < 3
+          // but 2 + 1 >= 3, so the failure could have been the deciding vote.
+          when(
+            () => profileRepository.resolveDivineIdentity(authorC),
+          ).thenAnswer((_) async => null);
+          stubQuery([
+            _labelEvent(authorA, ['gambling'], videoId: videoId),
+            _labelEvent(authorB, ['gambling'], videoId: videoId),
+            _labelEvent(authorC, ['gambling'], videoId: videoId),
+          ]);
+
+          expect(
+            () => repository.communityLabelsForVideo(video),
+            throwsA(isA<CommunityLabelUnavailableException>()),
+          );
+        },
+      );
+
+      test(
+        'does not throw when confirmed authors already cross, despite an '
+        'undetermined lookup',
+        () async {
+          // 4 raw authors, 3 confirmed Divine + 1 undetermined: the label
+          // crosses regardless, so the uncertainty is irrelevant.
+          final authorD = _hex('e');
+          when(
+            () => profileRepository.resolveDivineIdentity(authorD),
+          ).thenAnswer((_) async => null);
+          stubQuery([
+            _labelEvent(authorA, ['gambling'], videoId: videoId),
+            _labelEvent(authorB, ['gambling'], videoId: videoId),
+            _labelEvent(authorC, ['gambling'], videoId: videoId),
+            _labelEvent(authorD, ['gambling'], videoId: videoId),
+          ]);
+
+          final result = await repository.communityLabelsForVideo(video);
+
+          expect(result, equals({'gambling'}));
+        },
+      );
+
+      test(
+        'returns empty (not degraded) when an undetermined lookup cannot '
+        'reach the threshold',
+        () async {
+          // 3 raw authors, 2 confirmed NOT Divine + 1 undetermined: even if
+          // the undetermined one is Divine, 1 < 3, so it cannot cross.
+          when(
+            () => profileRepository.resolveDivineIdentity(authorA),
+          ).thenAnswer((_) async => false);
+          when(
+            () => profileRepository.resolveDivineIdentity(authorB),
+          ).thenAnswer((_) async => false);
+          when(
+            () => profileRepository.resolveDivineIdentity(authorC),
+          ).thenAnswer((_) async => null);
+          stubQuery([
+            _labelEvent(authorA, ['gambling'], videoId: videoId),
+            _labelEvent(authorB, ['gambling'], videoId: videoId),
+            _labelEvent(authorC, ['gambling'], videoId: videoId),
+          ]);
+
+          final result = await repository.communityLabelsForVideo(video);
+
+          expect(result, isEmpty);
+        },
+      );
 
       test(
         'ignores label tags outside the content-warning namespace',

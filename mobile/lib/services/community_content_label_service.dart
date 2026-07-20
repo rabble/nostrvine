@@ -63,6 +63,10 @@ class CommunityContentLabelService extends ChangeNotifier {
       if (labels.isNotEmpty) {
         notifyListeners();
       }
+    } on CommunityLabelUnavailableException {
+      // Degraded (transient relay/identity failure): leave the video
+      // uncached so the next prefetch retries, rather than freezing an empty
+      // "no warnings" that would suppress a real warning for the session.
     } finally {
       _inFlight.remove(id);
     }

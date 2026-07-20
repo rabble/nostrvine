@@ -22,6 +22,24 @@ class CommunityLabelPublishException implements Exception {
       'CommunityLabelPublishException: ${message ?? 'publish failed'}';
 }
 
+/// Thrown when the community-label aggregation could not complete because of a
+/// transient failure (the relay query failed, or an undetermined identity
+/// lookup could have changed the outcome).
+///
+/// Distinct from a genuine empty result: callers use it to avoid caching a
+/// degraded "no warnings" answer, so the next attempt retries.
+class CommunityLabelUnavailableException implements Exception {
+  /// Creates the exception with an optional [message].
+  const CommunityLabelUnavailableException([this.message]);
+
+  /// Human-readable context for logs (never surfaced directly to the UI).
+  final String? message;
+
+  @override
+  String toString() =>
+      'CommunityLabelUnavailableException: ${message ?? 'aggregation degraded'}';
+}
+
 /// Repository for viewer-suggested (community) content-warning labels.
 ///
 /// Reads all-author NIP-32 (kind 1985) labels targeting a video, counts the
@@ -53,12 +71,18 @@ class CommunityContentLabelRepository {
   ///
   /// Returns the set of normalized label values suggested by at least
   /// [CommunityContentWarningConstants.displayThreshold] distinct authors that
-  /// each resolve to a Divine identity. Returns an empty set when the relay
-  /// query fails (graceful degradation — the video simply shows without the
-  /// community warning; authoritative creator / trusted-labeler warnings are
-  /// unaffected).
+  /// each resolve to a Divine identity.
+  ///
+  /// Throws [CommunityLabelUnavailableException] when the result could not be
+  /// determined — the relay query failed, or an undetermined identity lookup
+  /// could have tipped an otherwise-empty result over the threshold. Callers
+  /// use that to avoid caching a degraded "no warnings" answer. A genuine
+  /// empty (successful query, nothing crossed) returns an empty set.
   Future<Set<String>> communityLabelsForVideo(VideoEvent video) async {
     final events = await _queryLabelEvents(video);
+    if (events == null) {
+      throw const CommunityLabelUnavailableException('relay query failed');
+    }
     if (events.isEmpty) return {};
 
     final authorsByLabel = <String, Set<String>>{};
@@ -67,14 +91,15 @@ class CommunityContentLabelRepository {
         (authorsByLabel[value] ??= <String>{}).add(event.pubkey);
       }
     }
+
+    const threshold = CommunityContentWarningConstants.displayThreshold;
+
     // A label below the threshold on raw author count can never cross it
     // after Divine-identity filtering, so skip those authors' name-server
     // lookups entirely.
     final candidateLabels = <String, Set<String>>{
       for (final entry in authorsByLabel.entries)
-        if (entry.value.length >=
-            CommunityContentWarningConstants.displayThreshold)
-          entry.key: entry.value,
+        if (entry.value.length >= threshold) entry.key: entry.value,
     };
     if (candidateLabels.isEmpty) return {};
 
@@ -83,13 +108,28 @@ class CommunityContentLabelRepository {
     );
 
     final surfaced = <String>{};
+    var couldHaveCrossed = false;
     for (final entry in candidateLabels.entries) {
-      final divineCount = entry.value
+      final confirmed = entry.value
           .where((author) => divineByAuthor[author] == true)
           .length;
-      if (divineCount >= CommunityContentWarningConstants.displayThreshold) {
+      if (confirmed >= threshold) {
         surfaced.add(entry.key);
+        continue;
       }
+      final undetermined = entry.value
+          .where((author) => divineByAuthor[author] == null)
+          .length;
+      // The undetermined authors could be Divine and tip this label over.
+      if (confirmed + undetermined >= threshold) couldHaveCrossed = true;
+    }
+
+    // Only signal degradation when the uncertainty actually matters: nothing
+    // surfaced, but a label might have crossed had the failed lookups
+    // resolved. A non-empty result already blurs the video, so caching it is
+    // correct even if a secondary label stayed uncertain.
+    if (surfaced.isEmpty && couldHaveCrossed) {
+      throw const CommunityLabelUnavailableException('identity lookup failed');
     }
     return surfaced;
   }
@@ -144,7 +184,9 @@ class CommunityContentLabelRepository {
     VideoEvent video,
     String myPubkey,
   ) async {
-    final events = await _queryLabelEvents(video);
+    // A relay failure here degrades to the session-remembered suggestions
+    // only, rather than throwing — the "already suggested" hint is advisory.
+    final events = await _queryLabelEvents(video) ?? const <Event>[];
     final labels = <String>{...?_ownSuggestionsThisSession[video.id]};
     for (final event in events.where((event) => event.pubkey == myPubkey)) {
       labels.addAll(_contentWarningValues(event));
@@ -152,7 +194,9 @@ class CommunityContentLabelRepository {
     return labels;
   }
 
-  Future<List<Event>> _queryLabelEvents(VideoEvent video) async {
+  /// Queries the video's kind 1985 label events, deduped by id. Returns `null`
+  /// when the relay query fails (distinct from a successful empty result).
+  Future<List<Event>?> _queryLabelEvents(VideoEvent video) async {
     try {
       final addressableId = video.addressableId;
       final filters = <Filter>[
@@ -169,16 +213,19 @@ class CommunityContentLabelRepository {
         name: 'CommunityContentLabelRepository',
         category: LogCategory.api,
       );
-      return [];
+      return null;
     }
   }
 
-  Future<Map<String, bool>> _resolveDivineAuthors(Set<String> authors) async {
+  /// Resolves each author to `true` (Divine), `false` (not), or `null`
+  /// (undetermined — a transient lookup failure). The `null` verdicts let the
+  /// caller decide whether the uncertainty changes the outcome.
+  Future<Map<String, bool?>> _resolveDivineAuthors(Set<String> authors) async {
     final entries = await Future.wait(
       authors.map(
         (author) async => MapEntry(
           author,
-          await _profileRepository.hasDivineIdentity(author),
+          await _profileRepository.resolveDivineIdentity(author),
         ),
       ),
     );
