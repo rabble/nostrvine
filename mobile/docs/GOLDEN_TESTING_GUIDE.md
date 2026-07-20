@@ -222,3 +222,57 @@ Golden testing is fully integrated into Divine with:
 - ✅ CI/CD guidelines established
 
 Start using golden tests for new UI components to maintain visual consistency!
+
+## divine_ui package goldens
+
+The `divine_ui` package has its own golden setup, separate from the app's
+`golden.sh` flow, so component goldens run **inline in CI** under the VeryGood
+`flutter_package.yml` workflow (no dart-define, no separate step).
+
+**How it works**
+
+- `packages/divine_ui/test/flutter_test_config.dart` applies
+  `AlchemistConfig(platformGoldensConfig: PlatformGoldensConfig(enabled: false))`,
+  so only the **platform-agnostic CI variant** runs. That variant obscures
+  text (renders it as blocks), which makes goldens byte-identical on a dev's
+  machine and on Ubuntu CI. It also sets `GoogleFonts.config.allowRuntimeFetching
+  = false` (no network in tests).
+- The package bundles the theme TTFs under `assets/fonts/` (declared in the
+  package `pubspec.yaml`) because obscured text still needs font **metrics** —
+  without them `google_fonts` throws. SIL OFL 1.1 licenses ship in
+  `assets/licenses/`.
+- Goldens are stored next to their test at `test/**/goldens/ci/<fileName>.png`
+  and committed.
+
+**Add / update a component golden**
+
+```dart
+// test/src/<area>/<component>_golden_test.dart
+Future<void> main() async {
+  await goldenTest(
+    'DivineFoo — variants',
+    fileName: 'divine_foo_variants',
+    builder: () => GoldenTestGroup(
+      columns: 2,
+      children: [
+        GoldenTestScenario(name: 'a', child: const DivineFoo()),
+      ],
+    ),
+  );
+}
+```
+
+```bash
+# from mobile/packages/divine_ui
+flutter test --update-goldens test/src/<area>/<component>_golden_test.dart
+flutter test test/src/<area>/<component>_golden_test.dart   # verify compare
+```
+
+**Known limitations (tracked as a fast-follow)**
+
+- Components that render SVGs via `DivineIcon` (icon buttons, the checkbox
+  sprite, the field's error/password icons) render empty in package tests:
+  `DivineIcon` loads `assets/icon/*.svg` by app-root path, which the package
+  doesn't bundle. Fixing this needs `DivineIcon` to load via `package:`.
+- `DivineSlider` goldens fail because Material `Slider`'s `OverlayPortal`
+  asserts under alchemist's grid layout.

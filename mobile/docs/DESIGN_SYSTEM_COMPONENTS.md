@@ -138,3 +138,32 @@ DivineRowCheckbox(
   label: Text('I agree to the terms'),
 )
 ```
+
+## Accessibility & Visual Contract
+
+`divine_ui` is the canonical accessibility + visual contract for the core
+reusable controls. App-layer reviewers can point at the package tests instead
+of re-checking these guarantees per screen.
+
+### Guaranteed accessibility (enforced by `meetsGuideline` / semantics tests)
+
+| Component | Guarantee |
+|-----------|-----------|
+| `DivineButton` | All sizes meet the 48dp Android / 44pt iOS tap-target minimum. `small` (40px) and `tiny` (32px) keep their visual size; the tap target is expanded on the InkWell (`tiny` overflows into row gaps so it stays flush without inflating height). Optional `semanticLabel` for icon-only buttons. `error` type text clears WCAG AA 4.5:1 (uses `VineTheme.errorButtonBackground`, a darker red than `VineTheme.error`). |
+| `DivineIconButton` | Tap target ≥ 48dp (small pill centred in a 48px InkWell). Pass `semanticLabel` (or `tooltip`) for an accessible name. |
+| `DivineRowCheckbox` | Exposes a checkbox semantics node with checked / mixed / enabled state. A `disabled` checkbox is non-interactive (no tap, no `onChanged`). |
+| `DivineSlider` | Optional `semanticLabel` describing what it controls; interactive touch height ≥ 44pt without moving the visual track. |
+| `DivineAuthTextField` | Password toggle and the editable field both meet the 48dp / 44pt tap-target minimum (the input fills the field; text is placed via `textAlignVertical`). |
+
+**Icon-only interactive controls need an accessible name.** Enforcing this at
+every call site (and labelling the app's unlabeled `DivineIconButton`
+usages) is tracked as a fast-follow; the components already accept the label.
+
+### Visual (golden) coverage
+
+Deterministic alchemist gallery goldens (platform-agnostic CI variant, text
+obscured) cover `DivineButton` (types + sizes) and `DivineAuthTextField`
+(default + disabled). See `GOLDEN_TESTING_GUIDE.md` → "divine_ui package
+goldens". Slider, checkbox, icon-button, and icon-bearing states are tracked
+as a fast-follow (Material `Slider`'s `OverlayPortal` and `DivineIcon`'s
+app-root SVG paths don't render inside package tests yet).
