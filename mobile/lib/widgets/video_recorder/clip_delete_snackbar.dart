@@ -17,6 +17,12 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 /// before showing so rapid taps see only the latest snackbar.
 void showClipDeleteSnackbar(BuildContext context, WidgetRef ref) {
   final messenger = ScaffoldMessenger.of(context)..removeCurrentSnackBar();
+  // The snackbar is hosted by ScaffoldMessenger (above the Navigator), so it
+  // outlives the recorder route: the user can tap Undo after navigating on to
+  // the metadata screen, by which point this widget's `ref` is deactivated.
+  // Capture the (keep-alive) notifier now, while `ref` is still valid, instead
+  // of reading it in the deferred callback.
+  final clipManager = ref.read(clipManagerProvider.notifier);
   messenger.showSnackBar(
     DivineSnackbarContainer.snackBar(
       context.l10n.videoRecorderClipDeletedMessage,
@@ -25,7 +31,7 @@ void showClipDeleteSnackbar(BuildContext context, WidgetRef ref) {
       actionLabel: context.l10n.videoRecorderClipUndoLabel,
       onActionPressed: () {
         messenger.hideCurrentSnackBar();
-        ref.read(clipManagerProvider.notifier).undoPendingDeletion();
+        clipManager.undoPendingDeletion();
       },
     ),
   );
