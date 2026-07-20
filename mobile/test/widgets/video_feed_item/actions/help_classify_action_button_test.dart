@@ -4,7 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag_state.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/features/feature_flags/services/build_configuration.dart';
 import 'package:openvine/features/feature_flags/services/feature_flag_service.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -13,6 +15,7 @@ import 'package:openvine/repositories/community_content_label_repository.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/widgets/video_feed_item/actions/help_classify_action_button.dart';
 import 'package:openvine/widgets/video_feed_item/actions/video_action_button.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockRepository extends Mock implements CommunityContentLabelRepository {}
 
@@ -21,6 +24,23 @@ class _MockAuthService extends Mock implements AuthService {}
 class _MockFeatureFlagService extends Mock implements FeatureFlagService {}
 
 class _MockVideoEvent extends Mock implements VideoEvent {}
+
+FeatureFlagService _mockFlags({required bool flagEnabled}) {
+  final flags = _MockFeatureFlagService();
+  when(() => flags.isEnabled(any())).thenReturn(false);
+  when(
+    () => flags.isEnabled(FeatureFlag.communityContentWarnings),
+  ).thenReturn(flagEnabled);
+  // The reactive gating chain reads currentState via
+  // featureFlagStateProvider rather than isEnabled directly.
+  when(() => flags.currentState).thenReturn(
+    FeatureFlagState({
+      for (final flag in FeatureFlag.values)
+        flag: flag == FeatureFlag.communityContentWarnings && flagEnabled,
+    }),
+  );
+  return flags;
+}
 
 void main() {
   group(HelpClassifyActionButton, () {
@@ -50,12 +70,9 @@ void main() {
     Widget wrap({
       CommunityContentLabelRepository? repo,
       bool flagEnabled = true,
+      FeatureFlagService? flagService,
     }) {
-      final flags = _MockFeatureFlagService();
-      when(() => flags.isEnabled(any())).thenReturn(false);
-      when(
-        () => flags.isEnabled(FeatureFlag.communityContentWarnings),
-      ).thenReturn(flagEnabled);
+      final flags = flagService ?? _mockFlags(flagEnabled: flagEnabled);
       return ProviderScope(
         overrides: [
           communityContentLabelRepositoryProvider.overrideWithValue(repo),
@@ -106,6 +123,28 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(VideoActionButton), findsNothing);
+    });
+
+    testWidgets('appears when the flag is toggled on at runtime', (
+      tester,
+    ) async {
+      // Settings -> Experimental Features flips the flag through the real
+      // service; the button must react without a remount, so the gating
+      // read has to go through the reactive provider chain.
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final prefs = await SharedPreferences.getInstance();
+      final service = FeatureFlagService(prefs, const BuildConfiguration());
+      await service.initialize();
+      addTearDown(service.dispose);
+
+      await tester.pumpWidget(wrap(repo: repository, flagService: service));
+      await tester.pumpAndSettle();
+      expect(find.byType(VideoActionButton), findsNothing);
+
+      await service.setFlag(FeatureFlag.communityContentWarnings, true);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(VideoActionButton), findsOneWidget);
     });
 
     testWidgets('opens the suggestion sheet when tapped', (tester) async {

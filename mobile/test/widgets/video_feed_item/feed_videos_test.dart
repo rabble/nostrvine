@@ -19,6 +19,7 @@ import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag_state.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/feature_flags/services/feature_flag_service.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
@@ -93,6 +94,14 @@ FeatureFlagService _communityFlagsOn() {
   when(
     () => service.isEnabled(FeatureFlag.communityContentWarnings),
   ).thenReturn(true);
+  // The reactive gating chain reads currentState via
+  // featureFlagStateProvider rather than isEnabled directly.
+  when(() => service.currentState).thenReturn(
+    FeatureFlagState({
+      for (final flag in FeatureFlag.values)
+        flag: flag == FeatureFlag.communityContentWarnings,
+    }),
+  );
   return service;
 }
 

@@ -535,9 +535,9 @@ class __OverlayState extends ConsumerState<_Overlay> {
   // Gated on the kill-switch: with the flag off nothing is fetched, so the
   // cache stays empty and neither the overlay nor the autoplay gate react.
   void _prefetchCommunityLabels() {
-    final flagEnabled = ref
-        .read(featureFlagServiceProvider)
-        .isEnabled(FeatureFlag.communityContentWarnings);
+    final flagEnabled = ref.read(
+      isFeatureEnabledProvider(FeatureFlag.communityContentWarnings),
+    );
     if (!flagEnabled) return;
     unawaited(
       ref.read(communityContentLabelServiceProvider).prefetch(widget.video),

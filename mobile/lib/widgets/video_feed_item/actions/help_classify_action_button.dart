@@ -33,9 +33,11 @@ class HelpClassifyActionButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final flagEnabled = ref
-        .watch(featureFlagServiceProvider)
-        .isEnabled(FeatureFlag.communityContentWarnings);
+    // Reactive read: the flag is user-flippable at runtime via Settings ->
+    // Experimental Features, so the button must follow live toggles.
+    final flagEnabled = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.communityContentWarnings),
+    );
     if (!flagEnabled) return const SizedBox.shrink();
 
     final repository = ref.watch(communityContentLabelRepositoryProvider);
