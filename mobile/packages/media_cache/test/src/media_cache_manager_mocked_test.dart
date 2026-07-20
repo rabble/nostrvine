@@ -21,6 +21,9 @@ class _ThrowingCancellableDownloader implements CancellableDownloader {
   }
 
   @override
+  void cancelActiveDownloads() {}
+
+  @override
   Future<void> close() async {}
 }
 
@@ -45,6 +48,181 @@ void main() {
 
     tearDown(() {
       cacheManager.resetForTesting();
+    });
+
+    group('cancelInFlightDownloads', () {
+      test('forwards to the downloader without closing the manager', () async {
+        final downloader = FakeCancellableDownloader();
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        cacheManager = TestableMediaCacheManager(
+          config: MediaCacheConfig(
+            cacheKey: 'cancel_inflight_$timestamp',
+            enableSyncManifest: true,
+          ),
+          mockGetFileFromCache: (key) async => null,
+          downloaderOverride: downloader,
+        );
+        expect(downloader.cancelActiveCallCount, 0);
+
+        cacheManager.cancelInFlightDownloads();
+
+        expect(downloader.cancelActiveCallCount, 1);
+        expect(downloader.closed, isFalse);
+      });
+
+      test('is a no-op once the manager is closed', () async {
+        final downloader = FakeCancellableDownloader();
+        final repo = MockCacheInfoRepository();
+        when(repo.open).thenAnswer((_) async => true);
+        when(repo.getAllObjects).thenAnswer((_) async => []);
+        when(repo.close).thenAnswer((_) async => true);
+
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        cacheManager = TestableMediaCacheManager(
+          config: MediaCacheConfig(
+            cacheKey: 'cancel_inflight_closed_$timestamp',
+            enableSyncManifest: true,
+          ),
+          repoOverride: repo,
+          mockGetFileFromCache: (key) async => null,
+          downloaderOverride: downloader,
+        );
+
+        await cacheManager.close();
+        expect(downloader.closed, isTrue);
+
+        cacheManager.cancelInFlightDownloads();
+        expect(downloader.cancelActiveCallCount, 0);
+      });
+
+      test(
+        'cancels a deferred op before it issues a download',
+        () async {
+          final downloader = FakeCancellableDownloader();
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          cacheManager = TestableMediaCacheManager(
+            config: MediaCacheConfig(
+              cacheKey: 'cancel_inflight_deferred_$timestamp',
+              enableSyncManifest: true,
+            ),
+            downloaderOverride: downloader,
+          );
+
+          // Register an operation but do not pump: it is suspended in the
+          // deferred _resolveBaseCacheDir window, before _downloader.download()
+          // has run, so it is not yet in the downloader's active set.
+          final op = cacheManager.cacheFileCancellable(
+            'https://example.com/video.mp4',
+            key: 'cancel_inflight_deferred_key',
+          );
+
+          cacheManager.cancelInFlightDownloads();
+
+          // Let the deferred startDownload resume. It must bail at the
+          // cancelledBeforeStart guard and never issue a download — otherwise
+          // a fresh NSURLSession request fires after the app is suspended.
+          for (var i = 0; i < 50 && downloader.downloads.isEmpty; i++) {
+            await Future<void>.delayed(const Duration(milliseconds: 1));
+          }
+
+          expect(downloader.downloads, isEmpty);
+          expect(op.isCancelled, isTrue);
+          expect(await op.file, isNull);
+        },
+      );
+
+      test(
+        'suspends later preCacheFiles batches until resumeDownloads',
+        () async {
+          final downloader = FakeCancellableDownloader();
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          cacheManager = TestableMediaCacheManager(
+            config: MediaCacheConfig(
+              cacheKey: 'cancel_inflight_batches_$timestamp',
+              enableSyncManifest: true,
+            ),
+            mockGetFileFromCache: (key) async => null,
+            downloaderOverride: downloader,
+          );
+
+          final preCacheFuture = cacheManager.preCacheFiles(
+            [
+              (url: 'https://example.com/v1.mp4', key: 'v1'),
+              (url: 'https://example.com/v2.mp4', key: 'v2'),
+              (url: 'https://example.com/v3.mp4', key: 'v3'),
+              (url: 'https://example.com/v4.mp4', key: 'v4'),
+            ],
+            batchSize: 2,
+          );
+          for (var i = 0; i < 50 && downloader.downloads.length < 2; i++) {
+            await Future<void>.delayed(const Duration(milliseconds: 1));
+          }
+          expect(downloader.downloads, hasLength(2));
+
+          // Backgrounding cancels batch 1. Cancellation resolves the batch's
+          // Future.wait, so without the suspension latch the loop would
+          // advance to batch 2 and issue two fresh native requests inside
+          // the same suspension window.
+          cacheManager.cancelInFlightDownloads();
+          for (var i = 0; i < 50 && downloader.downloads.length < 4; i++) {
+            await Future<void>.delayed(const Duration(milliseconds: 1));
+          }
+          expect(downloader.downloads, hasLength(2));
+          await preCacheFuture;
+
+          // Foregrounding lifts the latch; a fresh prefetch downloads again.
+          cacheManager.resumeDownloads();
+          final resumedFuture = cacheManager.preCacheFiles(
+            [
+              (url: 'https://example.com/v5.mp4', key: 'v5'),
+              (url: 'https://example.com/v6.mp4', key: 'v6'),
+            ],
+            batchSize: 2,
+          );
+          for (var i = 0; i < 50 && downloader.downloads.length < 4; i++) {
+            await Future<void>.delayed(const Duration(milliseconds: 1));
+          }
+          expect(downloader.downloads, hasLength(4));
+          downloader.downloads[2].completeNull();
+          downloader.downloads[3].completeNull();
+          await resumedFuture;
+        },
+      );
+
+      test(
+        'refuses new downloads while suspended and works after '
+        'resumeDownloads',
+        () async {
+          final downloader = FakeCancellableDownloader();
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          cacheManager = TestableMediaCacheManager(
+            config: MediaCacheConfig(
+              cacheKey: 'cancel_inflight_suspend_$timestamp',
+              enableSyncManifest: true,
+            ),
+            downloaderOverride: downloader,
+          )..cancelInFlightDownloads();
+
+          final suspendedOp = cacheManager.cacheFileCancellable(
+            'https://example.com/video.mp4',
+            key: 'cancel_inflight_suspend_key',
+          );
+          expect(await suspendedOp.file, isNull);
+          expect(downloader.downloads, isEmpty);
+
+          cacheManager.resumeDownloads();
+          final resumedOp = cacheManager.cacheFileCancellable(
+            'https://example.com/video.mp4',
+            key: 'cancel_inflight_suspend_key',
+          );
+          for (var i = 0; i < 50 && downloader.downloads.isEmpty; i++) {
+            await Future<void>.delayed(const Duration(milliseconds: 1));
+          }
+          expect(downloader.downloads, hasLength(1));
+          downloader.downloads.single.completeNull();
+          expect(await resumedOp.file, isNull);
+        },
+      );
     });
 
     group('cacheFile', () {

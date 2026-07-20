@@ -54,6 +54,16 @@ abstract class CancellableDownloader {
     Map<String, String>? headers,
   });
 
+  /// Cancels every in-flight download without releasing the downloader.
+  ///
+  /// Unlike [close], the downloader stays usable afterwards — new [download]
+  /// calls still work. Used to tear down in-flight requests when the app is
+  /// backgrounded: on Apple platforms the native NSURLSession stack
+  /// (`cupertino_http`) delivers delegate callbacks through a Dart FFI
+  /// trampoline that aborts the process if the isolate is suspended while a
+  /// request is still in flight.
+  void cancelActiveDownloads();
+
   /// Releases any resources owned by this downloader.
   Future<void> close();
 }
@@ -109,6 +119,17 @@ class HttpCancellableDownloader implements CancellableDownloader {
     }
     await Future.wait<File?>(activeDownloads.map((download) => download.file));
     _client.close();
+  }
+
+  @override
+  void cancelActiveDownloads() {
+    if (_isClosed) return;
+    // Copy first: cancel() settles each download and removes it from the set
+    // via its onComplete callback, which would mutate _activeDownloads mid
+    // iteration. The client is left open so the downloader keeps working.
+    for (final download in _activeDownloads.toList(growable: false)) {
+      download.cancel();
+    }
   }
 }
 

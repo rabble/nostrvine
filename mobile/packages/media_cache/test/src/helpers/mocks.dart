@@ -210,6 +210,17 @@ class FakeCancellableDownloader implements CancellableDownloader {
     return dl;
   }
 
+  /// Number of times [cancelActiveDownloads] was called.
+  int cancelActiveCallCount = 0;
+
+  @override
+  void cancelActiveDownloads() {
+    cancelActiveCallCount += 1;
+    for (final dl in downloads) {
+      dl.cancel();
+    }
+  }
+
   @override
   Future<void> close() async {
     closed = true;
