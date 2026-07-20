@@ -211,15 +211,6 @@ class _DivineAuthTextFieldState extends State<DivineAuthTextField> {
     return error;
   }
 
-  void _handleContainerTap() {
-    if (!widget.enabled) return;
-
-    if (!widget.readOnly) {
-      _focusNode.requestFocus();
-    }
-    widget.onTap?.call();
-  }
-
   void _toggleObscured() {
     setState(() => _isObscured = !_isObscured);
   }
@@ -259,36 +250,35 @@ class _DivineAuthTextFieldState extends State<DivineAuthTextField> {
               child: Row(
                 children: [
                   Expanded(
-                    child: GestureDetector(
-                      onTap: _handleContainerTap,
-                      behavior: HitTestBehavior.opaque,
-                      child: _AuthTextFieldContent(
-                        label: label,
-                        hasLabel: hasLabel,
+                    // The input now fills the field and handles tap-to-focus +
+                    // onTap itself, so no wrapping container GestureDetector is
+                    // needed.
+                    child: _AuthTextFieldContent(
+                      label: label,
+                      hasLabel: hasLabel,
+                      isFloating: _isFloating,
+                      hasError: _hasError,
+                      child: _AuthTextFieldInput(
+                        controller: _controller,
+                        focusNode: _focusNode,
                         isFloating: _isFloating,
+                        obscureText: widget.obscureText && _isObscured,
+                        enabled: widget.enabled,
+                        readOnly: widget.readOnly,
+                        autocorrect: widget.autocorrect,
+                        keyboardType: widget.keyboardType,
+                        textInputAction: widget.textInputAction,
+                        textCapitalization: widget.textCapitalization,
+                        inputFormatters: widget.inputFormatters,
+                        validator: _wrappedValidator,
+                        onTap: widget.onTap,
+                        onChanged: widget.onChanged,
+                        onSubmitted: widget.onSubmitted,
+                        onEditingComplete: widget.onEditingComplete,
+                        maxLength: widget.maxLength,
+                        contentPadding: widget.contentPadding,
                         hasError: _hasError,
-                        child: _AuthTextFieldInput(
-                          controller: _controller,
-                          focusNode: _focusNode,
-                          isFloating: _isFloating,
-                          obscureText: widget.obscureText && _isObscured,
-                          enabled: widget.enabled,
-                          readOnly: widget.readOnly,
-                          autocorrect: widget.autocorrect,
-                          keyboardType: widget.keyboardType,
-                          textInputAction: widget.textInputAction,
-                          textCapitalization: widget.textCapitalization,
-                          inputFormatters: widget.inputFormatters,
-                          validator: _wrappedValidator,
-                          onTap: widget.onTap,
-                          onChanged: widget.onChanged,
-                          onSubmitted: widget.onSubmitted,
-                          onEditingComplete: widget.onEditingComplete,
-                          maxLength: widget.maxLength,
-                          contentPadding: widget.contentPadding,
-                          hasError: _hasError,
-                          autofillHints: widget.autofillHints,
-                        ),
+                        autofillHints: widget.autofillHints,
                       ),
                     ),
                   ),

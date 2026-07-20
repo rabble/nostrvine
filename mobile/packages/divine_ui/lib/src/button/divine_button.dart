@@ -274,7 +274,9 @@ class _DivineButtonContent extends StatelessWidget {
     DivineButtonType.ghost => VineTheme.scrim65,
     DivineButtonType.ghostSecondary => VineTheme.scrim15,
     DivineButtonType.link => VineTheme.transparent,
-    DivineButtonType.error => VineTheme.error,
+    // Darker than VineTheme.error so the near-white onErrorContainer label
+    // clears the 4.5:1 WCAG AA contrast ratio.
+    DivineButtonType.error => VineTheme.errorButtonBackground,
   };
 
   Color get _foregroundColor => switch (type) {

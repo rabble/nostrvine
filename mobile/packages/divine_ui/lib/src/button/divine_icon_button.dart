@@ -252,7 +252,9 @@ class _DivineIconButtonContent extends StatelessWidget {
         DivineIconButtonType.tertiary => VineTheme.inverseSurface,
         DivineIconButtonType.ghost => VineTheme.scrim65,
         DivineIconButtonType.ghostSecondary => VineTheme.scrim15,
-        DivineIconButtonType.error => VineTheme.error,
+        // Matches DivineButton's error background (darker than VineTheme.error
+        // for contrast) so the two error variants stay visually consistent.
+        DivineIconButtonType.error => VineTheme.errorButtonBackground,
       };
 
   Color get _iconColor =>

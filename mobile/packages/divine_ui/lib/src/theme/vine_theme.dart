@@ -345,6 +345,12 @@ class VineTheme {
   /// On-error-container color for text/icons on error container backgrounds.
   static const Color onErrorContainer = Color(0xFFFFEDEA);
 
+  /// Background for the destructive (error) button variants. Darker than
+  /// [error] so near-white [onErrorContainer] label text clears the WCAG AA
+  /// 4.5:1 contrast ratio (~4.9:1); the brighter [error] (#F44336) only reaches
+  /// ~3.7:1. Used only by DivineButton / DivineIconButton error type.
+  static const Color errorButtonBackground = Color(0xFFC62828);
+
   /// Primary container background color.
   static const Color primaryContainer = Color(0xFFD0FBCB);
 

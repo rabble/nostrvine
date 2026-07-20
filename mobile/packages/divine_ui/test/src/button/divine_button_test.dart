@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -5,6 +7,23 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void _noop() {}
+
+/// WCAG relative luminance of [c] (channels are 0..1 in Flutter's Color API).
+double _relativeLuminance(Color c) {
+  double lin(double channel) => channel <= 0.03928
+      ? channel / 12.92
+      : math.pow((channel + 0.055) / 1.055, 2.4).toDouble();
+  return 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b);
+}
+
+/// WCAG contrast ratio between two colors (1.0 – 21.0).
+double _contrastRatio(Color a, Color b) {
+  final la = _relativeLuminance(a);
+  final lb = _relativeLuminance(b);
+  final hi = math.max(la, lb);
+  final lo = math.min(la, lb);
+  return (hi + 0.05) / (lo + 0.05);
+}
 
 void main() {
   group('DivineButton', () {
@@ -530,6 +549,30 @@ void main() {
           );
           await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
           handle.dispose();
+        },
+      );
+
+      testWidgets(
+        'error type label/background contrast meets WCAG AA (>= 4.5:1)',
+        (tester) async {
+          // Verifies the colour pair directly (deterministic, font-free): the
+          // rendered meetsGuideline(textContrastGuideline) can't run here
+          // because the package doesn't bundle google_fonts TTFs. The error
+          // button reads as normal text to the guideline (w800 != w700), so it
+          // needs the full 4.5:1, not the 3:1 large-text floor.
+          await tester.pumpWidget(
+            buildTestWidget(type: DivineButtonType.error, onPressed: () {}),
+          );
+
+          final ink = tester.widget<Ink>(find.byType(Ink));
+          final background = (ink.decoration! as BoxDecoration).color!;
+          final label = tester.widget<Text>(find.text('Test'));
+          final foreground = label.style!.color!;
+
+          expect(
+            _contrastRatio(foreground, background),
+            greaterThanOrEqualTo(4.5),
+          );
         },
       );
     });
