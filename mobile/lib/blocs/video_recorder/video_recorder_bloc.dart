@@ -310,9 +310,12 @@ class VideoRecorderBloc
     );
 
     const traceName = 'camera_startup';
-    // Fire-and-forget so the native init dispatch is not delayed a microtask;
-    // the trace still stops in `finally`, tagged with the outcome so the
-    // console can filter startups that never reached a live preview.
+    // Start and stop the trace fire-and-forget: an awaited start would run
+    // trace.start()'s platform round-trip before dispatching the native camera
+    // init, and an awaited stop would gate preview bring-up on trace.stop() —
+    // both add latency to the exact startup path this trace measures. The trace
+    // still stops in `finally`, tagged with the outcome so the console can
+    // filter startups that never reached a live preview.
     unawaited(_performanceMonitor.startTrace(traceName));
 
     Object? initError;
@@ -335,7 +338,7 @@ class VideoRecorderBloc
               ? 'error'
               : (_cameraService.isInitialized ? 'success' : 'failed'),
         );
-      await _performanceMonitor.stopTrace(traceName);
+      unawaited(_performanceMonitor.stopTrace(traceName));
     }
 
     if (initError != null) {

@@ -138,6 +138,13 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   int _renderGeneration = 0;
   Future<void>? _activeRenderFuture;
 
+  /// Generation that currently owns the single-named `video_generation`
+  /// performance trace. Bumped only by [_runRenderVideo] (never by cancel or
+  /// re-sign), so a render superseded by an overlapping render sees this change
+  /// and leaves the newer render's trace alone, while a render superseded by a
+  /// cancel still owns — and stops — its own trace.
+  int _videoGenerationTraceOwner = 0;
+
   /// When true, [triggerAutosave] is a no-op.
   ///
   /// Set to `true` by [initFromPublishedVideo] and intentionally never reset.
@@ -1135,13 +1142,27 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     // the future still completes), by which point this notifier may be disposed
     // and `ref.read` would throw — the captured instance stays valid. Start the
     // trace fire-and-forget so render dispatch stays synchronous; an awaited
-    // start would defer the first renderVideoToClip call by a microtask.
+    // start would run trace.start()'s platform round-trip before (and defer) the
+    // first renderVideoToClip call, which the overlapping-render test relies on
+    // dispatching synchronously.
     final performance = ref.read(performanceMonitoringServiceProvider);
     const traceName = 'video_generation';
     final clipCount = _clips.length;
     final aspectRatio = _clips.isEmpty
         ? null
         : _clips.first.targetAspectRatio.name;
+    // Claim the single-named trace. An overlapping render bumps this and takes
+    // the trace over (the service keys traces by name), after which our tags and
+    // stop below are skipped so we can't mis-tag or prematurely stop the newer
+    // render's trace.
+    _videoGenerationTraceOwner = generation;
+    bool ownsTrace() => _videoGenerationTraceOwner == generation;
+    void tagOutcome(String outcome) {
+      if (ownsTrace()) {
+        performance.putAttribute(traceName, 'outcome', outcome);
+      }
+    }
+
     unawaited(performance.startTrace(traceName));
 
     try {
@@ -1155,10 +1176,10 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       );
 
       // A newer render was started or the user cancelled while this one was
-      // running — the trace still stops in `finally`; tag it so the console can
+      // running — tag it (when we still own the trace) so the console can
       // exclude non-completing renders from the generation-time distribution.
       if (generation != _renderGeneration) {
-        performance.putAttribute(traceName, 'outcome', 'incomplete');
+        tagOutcome('incomplete');
         return;
       }
 
@@ -1166,7 +1187,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         // A user cancel bumps the generation and is caught above, so reaching
         // here with a matching generation is a genuine render failure — surface
         // the retry affordance (#6058).
-        performance.putAttribute(traceName, 'outcome', 'failed');
+        tagOutcome('failed');
         Log.warning(
           '⚠️ Video render failed',
           name: 'VideoEditorNotifier',
@@ -1176,7 +1197,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         return;
       }
 
-      performance.putAttribute(traceName, 'outcome', 'success');
+      tagOutcome('success');
 
       final (finalRenderedClip, proofManifestJson) = result;
 
@@ -1211,10 +1232,10 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     } catch (error, stackTrace) {
       // A newer render owns the processing flag now — leave it alone.
       if (generation != _renderGeneration) {
-        performance.putAttribute(traceName, 'outcome', 'incomplete');
+        tagOutcome('incomplete');
         return;
       }
-      performance.putAttribute(traceName, 'outcome', 'error');
+      tagOutcome('error');
       // Surface the failure (e.g. a hung/failed C2PA proof step) as an error +
       // retry so the user can restart the render instead of being stuck on the
       // processing overlay (#6058).
@@ -1227,11 +1248,15 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       );
       state = state.copyWith(isProcessing: false, renderFailed: true);
     } finally {
-      performance.putAttribute(traceName, 'clip_count', '$clipCount');
-      if (aspectRatio != null) {
-        performance.putAttribute(traceName, 'aspect_ratio', aspectRatio);
+      // Skip when a later render took over the trace. Stop fire-and-forget so a
+      // trace.stop() platform round-trip doesn't gate the render's completion.
+      if (ownsTrace()) {
+        performance.putAttribute(traceName, 'clip_count', '$clipCount');
+        if (aspectRatio != null) {
+          performance.putAttribute(traceName, 'aspect_ratio', aspectRatio);
+        }
+        unawaited(performance.stopTrace(traceName));
       }
-      await performance.stopTrace(traceName);
     }
   }
 
