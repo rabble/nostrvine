@@ -1113,7 +1113,7 @@ class CommentsRepository {
   }
 
   _CommentVideoMetadata _parseVideoMetadataFromImetaTags(
-    Iterable<dynamic> tags,
+    List<List<String>> tags,
   ) {
     String? videoUrl;
     String? thumbnailUrl;
@@ -1121,16 +1121,14 @@ class CommentsRepository {
     int? videoDuration;
     String? videoBlurhash;
 
-    for (final rawTag in tags) {
-      if (rawTag is! List) continue;
-      final tag = rawTag;
+    for (final tag in tags) {
       if (tag.isEmpty || tag.first != 'imeta') continue;
 
       String? imetaUrlCandidate;
       String? imetaMimeType;
 
       for (var i = 1; i < tag.length; i++) {
-        final field = tag[i].toString().trim();
+        final field = tag[i].trim();
         if (field.startsWith('url ')) {
           imetaUrlCandidate = field.substring(4).trim();
         } else if (field.startsWith('m ')) {

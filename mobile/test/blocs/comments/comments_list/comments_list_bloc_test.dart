@@ -627,6 +627,7 @@ void main() {
             validId('c1'): makeComment(
               validId('c1'),
               content: 'REST video reply',
+              replyToEventId: validId('parent'),
             ),
           },
         ),
@@ -646,6 +647,9 @@ void main() {
         verify: (b) {
           final comment = b.state.commentsById[validId('c1')]!;
           expect(comment.hasVideo, isTrue);
+          // Upgrade must merge in place, not replace with the echo: the
+          // existing REST copy's threading (a field the echo lacks) survives.
+          expect(comment.replyToEventId, equals(validId('parent')));
           expect(
             comment.videoUrl,
             equals('https://media.divine.video/reply/12345'),
