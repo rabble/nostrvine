@@ -107,11 +107,19 @@ class DivineButton extends StatelessWidget {
     this.trailingIcon,
     this.expanded = false,
     this.isLoading = false,
+    this.semanticLabel,
     super.key,
   });
 
   /// The text label displayed on the button.
   final String label;
+
+  /// Optional accessibility label announced by screen readers.
+  ///
+  /// Needed for icon-only buttons (empty [label]), which otherwise present an
+  /// unlabeled tappable node. A labelled button already derives its accessible
+  /// name from [label] and doesn't need this.
+  final String? semanticLabel;
 
   /// Called when the button is tapped.
   /// If null, the button is displayed in its disabled state.
@@ -161,6 +169,7 @@ class DivineButton extends StatelessWidget {
       trailingIcon: trailingIcon,
       expanded: expanded,
       isLoading: isLoading,
+      semanticLabel: semanticLabel,
     );
   }
 }
@@ -175,6 +184,7 @@ class _DivineButtonContent extends StatelessWidget {
     required this.isLoading,
     this.leadingIcon,
     this.trailingIcon,
+    this.semanticLabel,
   });
 
   final String label;
@@ -185,6 +195,7 @@ class _DivineButtonContent extends StatelessWidget {
   final DivineIconName? trailingIcon;
   final bool expanded;
   final bool isLoading;
+  final String? semanticLabel;
 
   /// Thickness of the visible border on bordered [type]s (e.g. secondary).
   static const double _kBorderWidth = 2;
@@ -424,6 +435,16 @@ class _DivineButtonContent extends StatelessWidget {
           maxHeight: kMinInteractiveDimension,
           child: button,
         ),
+      );
+    }
+
+    // Give an icon-only button an accessible name. A labelled button already
+    // exposes one via its Text child, so this is only wired when provided.
+    if (semanticLabel != null) {
+      button = Semantics(
+        button: true,
+        label: semanticLabel,
+        child: button,
       );
     }
 

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+void _noop() {}
+
 void main() {
   group('DivineButton', () {
     Widget buildTestWidget({
@@ -507,6 +509,29 @@ void main() {
         await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
         handle.dispose();
       });
+
+      testWidgets(
+        'icon-only with semanticLabel meets the labeled-tap-target guideline',
+        (tester) async {
+          final handle = tester.ensureSemantics();
+          await tester.pumpWidget(
+            const MaterialApp(
+              home: Scaffold(
+                body: Center(
+                  child: DivineButton(
+                    label: '',
+                    leadingIcon: DivineIconName.heart,
+                    semanticLabel: 'Like',
+                    onPressed: _noop,
+                  ),
+                ),
+              ),
+            ),
+          );
+          await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+          handle.dispose();
+        },
+      );
     });
 
     group('label inner padding', () {
