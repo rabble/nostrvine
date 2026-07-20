@@ -99,6 +99,11 @@ void main() {
     for (final events in playerEvents.values) {
       unawaited(events.close());
     }
+    // Restore the foreground lifecycle so a test that backgrounds the app
+    // doesn't leak a paused state into the next test's playback guard.
+    TestWidgetsFlutterBinding.instance.handleAppLifecycleStateChanged(
+      AppLifecycleState.resumed,
+    );
   });
 
   Widget buildPlayer({VoidCallback? onOpenVideo}) {
@@ -250,4 +255,61 @@ void main() {
       expect(DivineVideoPlayerController.liveControllerCount, 0);
     },
   );
+
+  testWidgets('aborts playback when the app is not in the foreground', (
+    tester,
+  ) async {
+    await tester.pumpWidget(buildPlayer());
+
+    // Backgrounding does not unmount an inline comment player, and the play()
+    // decision happens only after the initialize()/setSource() awaits. The
+    // widget must abort instead of starting playback in the background.
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    await tester.pump();
+    await startPlayback(tester);
+
+    expect(methodCalls, isNot(contains('play')));
+    expect(DivineVideoPlayerController.liveControllerCount, 0);
+  });
+
+  testWidgets('pauses when scrolled offscreen after playback starts', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: ListView(
+            children: const [
+              SizedBox(
+                height: 400,
+                child: VideoCommentPlayer(
+                  videoUrl: 'https://media.divine.video/comment-video.mp4',
+                ),
+              ),
+              SizedBox(height: 1200),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    // Start playback. No 'playing' event is emitted, so controller.state
+    // .isPlaying stays false and only the optimistic _isPlaying flag is set.
+    await tester.tap(find.byType(VideoCommentPlayer));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    methodCalls.clear();
+    // Scroll the 400px player mostly offscreen (~12% visible, below the 0.35
+    // threshold) while keeping it mounted (a full scroll past the ListView
+    // cacheExtent would dispose it instead). The pause must still fire even
+    // though state.isPlaying never flipped.
+    await tester.drag(find.byType(Scrollable), const Offset(0, -350));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(methodCalls, contains('pause'));
+  });
 }

@@ -93,8 +93,17 @@ class _VideoCommentPlayerState extends State<VideoCommentPlayer>
       await controller.setSource(VideoClip.network(widget.videoUrl));
       await controller.setLooping(looping: true);
       await controller.setVolume(_isMuted ? 0 : 1);
-      if (!mounted) {
+      // Backgrounding does not unmount an inline comment player, and the
+      // lifecycle handler cannot pause a controller that isn't assigned yet.
+      // If the app left the foreground while the awaits above ran, abort
+      // instead of starting playback in the background.
+      final lifecycle = WidgetsBinding.instance.lifecycleState;
+      final leftForeground =
+          lifecycle == AppLifecycleState.paused ||
+          lifecycle == AppLifecycleState.hidden;
+      if (!mounted || leftForeground) {
         await controller.dispose();
+        if (mounted) setState(() => _isInitializing = false);
         return;
       }
       _stateSubscription = controller.stateStream.listen(_onStateChanged);
@@ -112,9 +121,6 @@ class _VideoCommentPlayerState extends State<VideoCommentPlayer>
         name: 'VideoCommentPlayer',
         category: LogCategory.video,
       );
-      // Drop the references before disposing so a later tap starts a fresh
-      // controller instead of calling into this disposed one (which would
-      // throw StateError from the package's initialized/disposed guard).
       // Drop the references before tearing the controller down so a later tap
       // starts a fresh controller instead of calling into this disposed one
       // (which would throw StateError from the package's initialized/disposed
@@ -146,8 +152,11 @@ class _VideoCommentPlayerState extends State<VideoCommentPlayer>
 
   void _onVisibilityChanged(VisibilityInfo info) {
     if (!mounted) return;
-    if (info.visibleFraction < 0.35 &&
-        (_controller?.state.isPlaying ?? false)) {
+    // Gate on the optimistic _isPlaying flag, not controller.state.isPlaying:
+    // play() does not flip state.isPlaying synchronously, so a visibility drop
+    // right after the tap would otherwise skip the pause and keep decoding
+    // offscreen until a playing event that never re-checks visibility.
+    if (info.visibleFraction < 0.35 && _isPlaying) {
       _controller?.pause();
     }
   }
