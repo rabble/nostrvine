@@ -161,9 +161,9 @@ usages) is tracked as a fast-follow; the components already accept the label.
 
 ### Visual (golden) coverage
 
-Deterministic alchemist gallery goldens (platform-agnostic CI variant, text
-obscured) cover `DivineButton` (types + sizes) and `DivineAuthTextField`
-(default + disabled). See `GOLDEN_TESTING_GUIDE.md` → "divine_ui package
-goldens". Slider, checkbox, icon-button, and icon-bearing states are tracked
-as a fast-follow (Material `Slider`'s `OverlayPortal` and `DivineIcon`'s
-app-root SVG paths don't render inside package tests yet).
+Component gallery goldens for `divine_ui` are tracked as a fast-follow
+(**#6235**): alchemist obscured-text goldens are non-deterministic under the
+package's `very_good test --optimization` merged isolate (google_fonts loads
+asynchronously, so the block-text metrics vary), and would need a CI-side
+generation workflow. Behaviour and accessibility are already covered by the
+widget + `meetsGuideline` tests above.

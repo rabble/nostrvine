@@ -18,15 +18,7 @@ dependencies:
   skeletonizer: ^2.1.2
 
 dev_dependencies:
-  alchemist: ^0.12.1
   flutter_test:
     sdk: flutter
   mocktail: ^1.0.4
   very_good_analysis: ^10.0.0
-
-flutter:
-  # Bundled so google_fonts resolves the theme fonts from assets (runtime HTTP
-  # fetching is disabled in tests). SIL OFL 1.1 texts ship alongside in
-  # assets/licenses/. Required for text-bearing golden tests to render.
-  assets:
-    - assets/fonts/
