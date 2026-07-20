@@ -4,17 +4,12 @@
 import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:unified_logger/unified_logger.dart';
-import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
-
-/// Builds a [VideoPlayerController] for the given [url].
-///
-/// Injectable so tests can supply a fake/recording controller.
-typedef VideoControllerFactory = VideoPlayerController Function(Uri url);
 
 class VideoCommentPlayer extends StatefulWidget {
   const VideoCommentPlayer({
@@ -23,7 +18,6 @@ class VideoCommentPlayer extends StatefulWidget {
     this.blurhash,
     this.borderRadius,
     this.onOpenVideo,
-    this.controllerFactory = VideoPlayerController.networkUrl,
     super.key,
   });
 
@@ -32,7 +26,6 @@ class VideoCommentPlayer extends StatefulWidget {
   final String? blurhash;
   final BorderRadiusGeometry? borderRadius;
   final VoidCallback? onOpenVideo;
-  final VideoControllerFactory controllerFactory;
 
   @override
   State<VideoCommentPlayer> createState() => _VideoCommentPlayerState();
@@ -40,7 +33,8 @@ class VideoCommentPlayer extends StatefulWidget {
 
 class _VideoCommentPlayerState extends State<VideoCommentPlayer>
     with WidgetsBindingObserver {
-  VideoPlayerController? _controller;
+  DivineVideoPlayerController? _controller;
+  StreamSubscription<DivineVideoPlayerState>? _stateSubscription;
   bool _isInitializing = false;
   bool _isPlaying = false;
   bool _isMuted = true;
@@ -54,39 +48,18 @@ class _VideoCommentPlayerState extends State<VideoCommentPlayer>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    // Pause before dispose so the native CADisplayLink stops firing frames
-    // into freed memory (FVPFrameUpdater EXC_BAD_ACCESS crash). State.dispose
-    // can't await, so hand the teardown to an async closure.
-    final controller = _controller;
-    _controller = null;
-    controller?.removeListener(_syncPlaybackState);
-    unawaited(() async {
-      try {
-        await controller?.pause();
-      } catch (e) {
-        Log.warning(
-          'Failed to pause comment video before dispose: $e',
-          name: 'VideoCommentPlayer',
-          category: LogCategory.video,
-        );
-      }
-      try {
-        await controller?.dispose();
-      } catch (e) {
-        Log.warning(
-          'Failed to dispose comment video controller: $e',
-          name: 'VideoCommentPlayer',
-          category: LogCategory.video,
-        );
-      }
-    }());
+    unawaited(_stateSubscription?.cancel());
+    // divine_video_player tears down its native player safely on dispose and
+    // suspends frame delivery when backgrounded, so no manual pause-before-
+    // dispose dance is needed (unlike the old video_player/FVP pipeline).
+    unawaited(_controller?.dispose());
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // All crash samples are processState=BACKGROUND: stop playback the moment
-    // the app is backgrounded so no frame lands after the view is torn down.
+    // Stop decoding when the app leaves the foreground; the native guard keeps
+    // frame delivery safe, this just avoids burning battery on a hidden video.
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.hidden) {
       _controller?.pause();
@@ -96,39 +69,44 @@ class _VideoCommentPlayerState extends State<VideoCommentPlayer>
   Future<void> _togglePlay() async {
     if (_isInitializing) return;
 
-    if (_controller == null) {
-      setState(() => _isInitializing = true);
-      final controller = widget.controllerFactory(Uri.parse(widget.videoUrl));
-      try {
-        await controller.initialize();
-        await controller.setLooping(true);
-        await controller.setVolume(0);
-        controller.addListener(_syncPlaybackState);
-        if (!mounted) {
-          controller.removeListener(_syncPlaybackState);
-          await controller.pause();
-          await controller.dispose();
-          return;
-        }
-        _controller = controller;
-        await controller.play();
-        if (mounted) {
-          setState(() {
-            _isInitializing = false;
-            _isPlaying = true;
-          });
-        }
-      } on Exception {
-        await controller.dispose();
-        if (mounted) setState(() => _isInitializing = false);
+    final existing = _controller;
+    if (existing != null) {
+      if (existing.state.isPlaying) {
+        await existing.pause();
+      } else {
+        await existing.play();
       }
       return;
     }
 
-    if (_controller!.value.isPlaying) {
-      await _controller!.pause();
-    } else {
-      await _controller!.play();
+    setState(() => _isInitializing = true);
+    final controller = DivineVideoPlayerController(useTexture: true);
+    try {
+      await controller.initialize();
+      await controller.setSource(VideoClip.network(widget.videoUrl));
+      await controller.setLooping(looping: true);
+      await controller.setVolume(_isMuted ? 0 : 1);
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+      _stateSubscription = controller.stateStream.listen(_onStateChanged);
+      _controller = controller;
+      await controller.play();
+      if (mounted) {
+        setState(() {
+          _isInitializing = false;
+          _isPlaying = true;
+        });
+      }
+    } on Object catch (error) {
+      Log.warning(
+        'Failed to start comment video: $error',
+        name: 'VideoCommentPlayer',
+        category: LogCategory.video,
+      );
+      await controller.dispose();
+      if (mounted) setState(() => _isInitializing = false);
     }
   }
 
@@ -140,23 +118,23 @@ class _VideoCommentPlayerState extends State<VideoCommentPlayer>
     if (mounted) setState(() => _isMuted = nextMuted);
   }
 
-  void _syncPlaybackState() {
+  void _onStateChanged(DivineVideoPlayerState state) {
     if (!mounted) return;
-    final nextPlaying = _controller?.value.isPlaying ?? false;
-    if (nextPlaying != _isPlaying) {
-      setState(() => _isPlaying = nextPlaying);
+    if (state.isPlaying != _isPlaying) {
+      setState(() => _isPlaying = state.isPlaying);
     }
   }
 
   void _onVisibilityChanged(VisibilityInfo info) {
     if (info.visibleFraction < 0.35 &&
-        (_controller?.value.isPlaying ?? false)) {
+        (_controller?.state.isPlaying ?? false)) {
       _controller?.pause();
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isReady = _controller?.isInitialized ?? false;
     final player = VisibilityDetector(
       key: Key('video-comment-${widget.videoUrl}'),
       onVisibilityChanged: _onVisibilityChanged,
@@ -169,15 +147,12 @@ class _VideoCommentPlayerState extends State<VideoCommentPlayer>
             child: Stack(
               fit: StackFit.expand,
               children: [
-                if (_controller?.value.isInitialized ?? false)
-                  VideoPlayer(_controller!)
-                else if (widget.thumbnailUrl?.isNotEmpty ?? false)
-                  VineCachedImage(
-                    imageUrl: widget.thumbnailUrl!,
-                    errorWidget: (_, _, _) => const _VideoPlaceholder(),
-                  )
-                else
-                  const _VideoPlaceholder(),
+                DivineVideoPlayer(
+                  controller: isReady ? _controller : null,
+                  placeholder: _CommentVideoThumbnail(
+                    thumbnailUrl: widget.thumbnailUrl,
+                  ),
+                ),
                 if (_isInitializing)
                   const Center(
                     child: SizedBox.square(
@@ -190,7 +165,7 @@ class _VideoCommentPlayerState extends State<VideoCommentPlayer>
                   )
                 else if (!_isPlaying)
                   const _PlayOverlay(),
-                if (_controller?.value.isInitialized ?? false)
+                if (isReady)
                   Positioned(
                     right: 8,
                     bottom: 8,
@@ -279,6 +254,24 @@ class _MuteButton extends StatelessWidget {
       type: DivineIconButtonType.ghostSecondary,
       onPressed: onTap,
     );
+  }
+}
+
+class _CommentVideoThumbnail extends StatelessWidget {
+  const _CommentVideoThumbnail({required this.thumbnailUrl});
+
+  final String? thumbnailUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = thumbnailUrl;
+    if (url != null && url.isNotEmpty) {
+      return VineCachedImage(
+        imageUrl: url,
+        errorWidget: (_, _, _) => const _VideoPlaceholder(),
+      );
+    }
+    return const _VideoPlaceholder();
   }
 }
 

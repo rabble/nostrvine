@@ -14,7 +14,6 @@ import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
-import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -538,8 +537,6 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
             'Tapped discovered list: ${list.name}',
             category: LogCategory.ui,
           );
-          // Stop any playing videos before navigating
-          disposeAllVideoControllers(ref);
           // Use Navigator directly since we're outside the go_router shell
           Navigator.of(context).push(
             MaterialPageRoute(

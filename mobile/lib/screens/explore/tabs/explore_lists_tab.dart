@@ -12,7 +12,6 @@ import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/router/routes/route_extras.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/discover_lists_screen.dart';
-import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/add_to_list_dialog.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/list_card.dart';
@@ -51,8 +50,6 @@ class ExploreListsTab extends ConsumerWidget {
                   'Tapped Discover Lists button',
                   category: LogCategory.ui,
                 );
-                // Stop any playing videos before navigating
-                disposeAllVideoControllers(ref);
                 context.push(DiscoverListsScreen.path);
               },
             ),
@@ -245,8 +242,6 @@ class ExploreListsTab extends ConsumerWidget {
                             'Tapped my curated list: ${curatedList.name}',
                             category: LogCategory.ui,
                           );
-                          // Stop any playing videos before navigating
-                          disposeAllVideoControllers(ref);
                           context.push(
                             CuratedListFeedScreen.pathForId(curatedList.id),
                             extra: CuratedListRouteExtra(
@@ -293,8 +288,6 @@ class ExploreListsTab extends ConsumerWidget {
                             'Tapped user list: ${userList.name}',
                             category: LogCategory.ui,
                           );
-                          // Stop any playing videos before navigating
-                          disposeAllVideoControllers(ref);
                           context.push(
                             '/people-lists/'
                             '${Uri.encodeComponent(userList.id)}',
@@ -413,8 +406,6 @@ class _SubscribedListsSection extends ConsumerWidget {
                 'Tapped subscribed list: ${curatedList.name}',
                 category: LogCategory.ui,
               );
-              // Stop any playing videos before navigating
-              disposeAllVideoControllers(ref);
               context.push(
                 CuratedListFeedScreen.pathForId(curatedList.id),
                 extra: CuratedListRouteExtra(listName: curatedList.name),

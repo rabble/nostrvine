@@ -10,7 +10,6 @@ class MemorySnapshot {
     required this.rssBytes,
     required this.peakRssBytes,
     required this.nativeControllers,
-    required this.fvpControllers,
     required this.queueDepth,
   });
 
@@ -23,17 +22,13 @@ class MemorySnapshot {
   /// Live `divine_video_player` native controllers.
   final int nativeControllers;
 
-  /// Live `video_player`/FVP controllers.
-  final int fvpControllers;
-
   /// Events queued for ingestion across all priorities.
   final int queueDepth;
 
   @override
   String toString() =>
       'MemorySnapshot(rssBytes: $rssBytes, peakRssBytes: $peakRssBytes, '
-      'nativeControllers: $nativeControllers, fvpControllers: $fvpControllers, '
-      'queueDepth: $queueDepth)';
+      'nativeControllers: $nativeControllers, queueDepth: $queueDepth)';
 }
 
 /// Samples memory-relevant gauges and emits a [MemorySnapshot].
@@ -45,19 +40,16 @@ class MemoryTelemetryService {
   MemoryTelemetryService({
     required int Function() readRssBytes,
     required int Function() nativeControllerCount,
-    required int Function() fvpControllerCount,
     required int Function() queueDepth,
     required void Function(MemorySnapshot) emit,
     this.interval = const Duration(seconds: 30),
   }) : _readRssBytes = readRssBytes,
        _nativeControllerCount = nativeControllerCount,
-       _fvpControllerCount = fvpControllerCount,
        _queueDepth = queueDepth,
        _emit = emit;
 
   final int Function() _readRssBytes;
   final int Function() _nativeControllerCount;
-  final int Function() _fvpControllerCount;
   final int Function() _queueDepth;
   final void Function(MemorySnapshot) _emit;
 
@@ -76,7 +68,6 @@ class MemoryTelemetryService {
         rssBytes: rss,
         peakRssBytes: _peakRssBytes,
         nativeControllers: _nativeControllerCount(),
-        fvpControllers: _fvpControllerCount(),
         queueDepth: _queueDepth(),
       ),
     );

@@ -15,7 +15,6 @@ import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/blocs/notifications/badge/notification_badge_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/environment_config.dart';
-import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -42,7 +41,6 @@ List<Override> _overrides({
   required Stream<RouteContext> contextStream,
 }) => [
   pageContextProvider.overrideWith((ref) => contextStream),
-  videoControllerAutoCleanupProvider.overrideWithValue(null),
   relayStatisticsBridgeProvider.overrideWithValue(null),
   relaySetChangeBridgeProvider.overrideWithValue(null),
   zendeskIdentitySyncProvider.overrideWithValue(null),

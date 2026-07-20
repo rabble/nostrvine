@@ -10,7 +10,6 @@ import 'package:openvine/providers/profile_feed_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/state/video_feed_state.dart';
-import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Active video ID derived from router state and app lifecycle
@@ -204,42 +203,3 @@ final ProviderFamily<bool, String> isVideoActiveProvider =
       final activeVideoId = ref.watch(activeVideoIdProvider);
       return activeVideoId == videoId;
     });
-
-/// Auto-cleanup provider that disposes all video controllers when navigating
-/// between different screens (e.g., home → explore, home → camera).
-///
-/// This ensures videos stop playing when leaving a video feed screen.
-/// Does NOT dispose on swipe within the same feed to avoid flicker.
-///
-/// Must be watched at app level to activate.
-final videoControllerAutoCleanupProvider = Provider<void>((ref) {
-  // Track previous route type to detect screen changes vs swipes
-  RouteType? previousRouteType;
-
-  // Listen to page context changes to detect route type changes
-  ref.listen<AsyncValue<RouteContext>>(pageContextProvider, (previous, next) {
-    final prevCtx = previous?.asData?.value;
-    final nextCtx = next.asData?.value;
-
-    // Update previous route type for next comparison
-    final prevType = prevCtx?.type ?? previousRouteType;
-    final nextType = nextCtx?.type;
-
-    if (nextType != null) {
-      previousRouteType = nextType;
-    }
-
-    // Only dispose controllers when route TYPE changes (screen navigation)
-    // Don't dispose on videoIndex change (swipe within same feed)
-    if (prevType != null && nextType != null && prevType != nextType) {
-      Log.info(
-        '🧹 Route type changed ($prevType → $nextType), disposing all video controllers',
-        name: 'VideoControllerCleanup',
-        category: LogCategory.video,
-      );
-
-      // Dispose all controllers when leaving a video feed screen
-      disposeAllVideoControllers(ref.container);
-    }
-  });
-});

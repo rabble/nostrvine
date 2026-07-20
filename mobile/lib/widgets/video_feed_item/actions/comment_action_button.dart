@@ -3,15 +3,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/providers/individual_video_providers.dart';
 import 'package:openvine/screens/comments/comments.dart';
 import 'package:openvine/widgets/video_feed_item/actions/video_action_button.dart';
 import 'package:openvine/widgets/video_feed_item/live_engagement_counts.dart';
-import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Comment action button with count display for video overlay.
@@ -20,7 +17,7 @@ import 'package:unified_logger/unified_logger.dart';
 /// Uses [VideoInteractionsBloc] for live comment count.
 ///
 /// Requires [VideoInteractionsBloc] to be provided in the widget tree.
-class CommentActionButton extends ConsumerWidget {
+class CommentActionButton extends StatelessWidget {
   const CommentActionButton({
     required this.video,
     this.isPreviewMode = false,
@@ -39,7 +36,7 @@ class CommentActionButton extends ConsumerWidget {
   final VoidCallback? onInteracted;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     if (isPreviewMode) return const _ActionButton();
     final video = this.video;
     if (video == null) return const SizedBox.shrink();
@@ -64,29 +61,6 @@ class CommentActionButton extends ConsumerWidget {
               name: 'VideoFeedItem',
               category: LogCategory.ui,
             );
-            // Pause video before navigating to comments
-            if (video.videoUrl != null) {
-              try {
-                final controllerParams = videoControllerParamsFor(ref, video);
-                final controller = ref.read(
-                  individualVideoControllerProvider(controllerParams),
-                );
-                if (controller.value.isInitialized &&
-                    controller.value.isPlaying) {
-                  safePause(controller, video.id);
-                }
-              } catch (e) {
-                final errorStr = e.toString().toLowerCase();
-                if (!errorStr.contains('no active player') &&
-                    !errorStr.contains('disposed')) {
-                  Log.error(
-                    'Failed to pause video before comments: $e',
-                    name: 'VideoFeedItem',
-                    category: LogCategory.video,
-                  );
-                }
-              }
-            }
             final interactionsBloc = context.read<VideoInteractionsBloc?>();
             CommentsScreen.show(
               context,

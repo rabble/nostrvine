@@ -388,8 +388,8 @@ void main() {
         // AsyncLoading while retaining its previous value. The router must
         // NOT treat that transient refetch as a cold load and bounce to the
         // loading screen — that redirect is a navigation that tears down the
-        // video feed (VideoStopNavigatorObserver disposes all controllers on
-        // push), which manifested as videos stopping while swiping the feed.
+        // video feed, which manifested as videos stopping while swiping the
+        // feed.
         //
         // SupportCenterScreen stands in for any non-review authenticated
         // route: the loading-bounce decision is independent of the

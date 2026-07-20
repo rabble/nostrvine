@@ -10,7 +10,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/app_update/app_update.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
-import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
@@ -313,9 +312,6 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
       final notifier = ref.read(activeBranchIndexProvider.notifier);
       if (notifier.state != activeIndex) notifier.state = activeIndex;
     });
-
-    // Initialize auto-cleanup provider to ensure only one video plays at a time
-    ref.watch(videoControllerAutoCleanupProvider);
 
     // Transitional scaffold: records relay connection events for analytics.
     // TODO(#4338): remove when relay management moves to a dedicated cubit/service.

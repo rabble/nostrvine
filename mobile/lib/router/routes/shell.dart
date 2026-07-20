@@ -185,8 +185,7 @@ List<RouteBase> shellRoutes() {
 /// Scoping caveat: only a *direct* `ref.watch(pageContextProvider)` from a
 /// widget in this subtree observes the branch-local override. A root-level
 /// provider that derives from [pageContextProvider] (e.g.
-/// [activeVideoIdProvider], [videoControllerAutoCleanupProvider]) is
-/// instantiated in the root container
+/// [activeVideoIdProvider]) is instantiated in the root container
 /// and therefore always reads the *global* route — by design, since playback
 /// gating must follow the genuinely-active tab. Any new provider that reads
 /// [pageContextProvider] inherits this global behaviour even when consumed

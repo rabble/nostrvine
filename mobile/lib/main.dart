@@ -62,8 +62,6 @@ import 'package:openvine/providers/db_cipher_key_provider.dart';
 import 'package:openvine/providers/deep_link_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/foreground_idle_warmup_provider.dart';
-import 'package:openvine/providers/individual_video_providers.dart'
-    show fvpLiveControllerCount;
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -118,7 +116,6 @@ import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/platform_support.dart';
 import 'package:openvine/utils/recoverable_flutter_error.dart';
 import 'package:openvine/utils/sensitive_uri_for_logs.dart';
-import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/app_lifecycle_handler.dart';
 import 'package:openvine/widgets/app_shell_badge_scope.dart';
 import 'package:openvine/widgets/geo_blocking_gate.dart';
@@ -691,7 +688,6 @@ class _AppQuickActionsNavigator implements QuickActionsNavigator {
 
   @override
   void openCamera() {
-    disposeAllVideoControllers(container);
     _router.go(VideoRecorderScreen.path);
   }
 
@@ -1015,11 +1011,8 @@ Future<void> _startOpenVineApp() async {
 
   // NOTE: Native video players (AVPlayer on iOS/macOS, ExoPlayer on Android)
   // do not require explicit player-wide initialization.
-  // They initialize automatically when VideoPlayerController is first created.
-  //
-  // NOTE: video_player_web_hls auto-registers for HLS support on web.
-  // Just needs <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-  // in web/index.html (already added).
+  // They initialize automatically when a DivineVideoPlayerController is
+  // first created.
 
   // Configure the native video player disk cache (500 MB, LRU eviction).
   // Skip on web/Linux/Windows — divine_video_player has no native plugin
@@ -1704,7 +1697,6 @@ class _DivineAppState extends ConsumerState<DivineApp>
       readRssBytes: () => kIsWeb ? 0 : io.ProcessInfo.currentRss,
       nativeControllerCount: () =>
           DivineVideoPlayerController.liveControllerCount,
-      fvpControllerCount: () => fvpLiveControllerCount,
       queueDepth: () =>
           ref.read(videoEventServiceProvider).eventRouter?.queuedLength ?? 0,
       emit: _emitMemorySnapshot,
@@ -1764,7 +1756,6 @@ class _DivineAppState extends ConsumerState<DivineApp>
     Log.info(
       'Memory: rss $rssMb MB (peak $peakMb MB), '
       'vc_native=${snapshot.nativeControllers}, '
-      'vc_fvp=${snapshot.fvpControllers}, '
       'ingest_queue_depth=${snapshot.queueDepth}',
       name: 'MemoryTelemetry',
       category: LogCategory.system,
@@ -1775,7 +1766,6 @@ class _DivineAppState extends ConsumerState<DivineApp>
     unawaited(
       crashReporting.setCustomKey('vc_native', snapshot.nativeControllers),
     );
-    unawaited(crashReporting.setCustomKey('vc_fvp', snapshot.fvpControllers));
     unawaited(
       crashReporting.setCustomKey('ingest_queue_depth', snapshot.queueDepth),
     );
