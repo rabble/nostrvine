@@ -1087,6 +1087,7 @@ class CommentsRepository {
       final parsedReplyToEventId = restComment.replyToEventId;
       final isTopLevel =
           parsedReplyToEventId == null || parsedReplyToEventId == rootEventId;
+      final videoMetadata = _parseVideoMetadataFromImetaTags(restComment.tags);
 
       return Comment(
         id: restComment.id,
@@ -1100,6 +1101,11 @@ class CommentsRepository {
         rootAddressableId: parsedRootAddressableId ?? rootAddressableId,
         replyToEventId: isTopLevel ? null : parsedReplyToEventId,
         replyToAuthorPubkey: isTopLevel ? null : restComment.replyToPubkey,
+        videoUrl: videoMetadata.videoUrl,
+        thumbnailUrl: videoMetadata.thumbnailUrl,
+        videoDimensions: videoMetadata.videoDimensions,
+        videoDuration: videoMetadata.videoDuration,
+        videoBlurhash: videoMetadata.videoBlurhash,
       );
     } on Exception {
       return null;
@@ -1107,7 +1113,7 @@ class CommentsRepository {
   }
 
   _CommentVideoMetadata _parseVideoMetadataFromImetaTags(
-    List<List<dynamic>> tags,
+    Iterable<dynamic> tags,
   ) {
     String? videoUrl;
     String? thumbnailUrl;
@@ -1115,7 +1121,9 @@ class CommentsRepository {
     int? videoDuration;
     String? videoBlurhash;
 
-    for (final tag in tags) {
+    for (final rawTag in tags) {
+      if (rawTag is! List) continue;
+      final tag = rawTag;
       if (tag.isEmpty || tag.first != 'imeta') continue;
 
       String? imetaUrlCandidate;

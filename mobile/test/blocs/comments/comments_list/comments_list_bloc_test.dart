@@ -49,6 +49,11 @@ void main() {
       DateTime? createdAt,
       String? replyToEventId,
       String? replyToAuthorPubkey,
+      String? videoUrl,
+      String? thumbnailUrl,
+      String? videoDimensions,
+      int? videoDuration,
+      String? videoBlurhash,
     }) => Comment(
       id: id,
       content: content ?? 'hello',
@@ -58,6 +63,11 @@ void main() {
       rootAuthorPubkey: validId('author'),
       replyToEventId: replyToEventId,
       replyToAuthorPubkey: replyToAuthorPubkey,
+      videoUrl: videoUrl,
+      thumbnailUrl: thumbnailUrl,
+      videoDimensions: videoDimensions,
+      videoDuration: videoDuration,
+      videoBlurhash: videoBlurhash,
     );
 
     CommentsListBloc createBloc({
@@ -606,6 +616,52 @@ void main() {
         ),
         act: (b) => b.add(NewCommentReceived(makeComment(validId('c1')))),
         expect: () => isEmpty,
+      );
+
+      blocTest<CommentsListBloc, CommentsListState>(
+        'upgrades duplicate relay echo when it adds missing video metadata',
+        build: createBloc,
+        seed: () => CommentsListState(
+          status: CommentsStatus.success,
+          commentsById: {
+            validId('c1'): makeComment(
+              validId('c1'),
+              content: 'REST video reply',
+            ),
+          },
+        ),
+        act: (b) => b.add(
+          NewCommentReceived(
+            makeComment(
+              validId('c1'),
+              content: 'REST video reply',
+              videoUrl: 'https://media.divine.video/reply/12345',
+              thumbnailUrl: 'https://media.divine.video/reply/12345.jpg',
+              videoDimensions: '720x1280',
+              videoDuration: 6,
+              videoBlurhash: 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH',
+            ),
+          ),
+        ),
+        verify: (b) {
+          final comment = b.state.commentsById[validId('c1')]!;
+          expect(comment.hasVideo, isTrue);
+          expect(
+            comment.videoUrl,
+            equals('https://media.divine.video/reply/12345'),
+          );
+          expect(
+            comment.thumbnailUrl,
+            equals('https://media.divine.video/reply/12345.jpg'),
+          );
+          expect(comment.videoDimensions, equals('720x1280'));
+          expect(comment.videoDuration, equals(6));
+          expect(
+            comment.videoBlurhash,
+            equals('LKO2?U%2Tw=w]~RBVZRi};RPxuwH'),
+          );
+          expect(b.state.newCommentCount, 0);
+        },
       );
 
       blocTest<CommentsListBloc, CommentsListState>(
