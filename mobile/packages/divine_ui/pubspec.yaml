@@ -18,6 +18,7 @@ dependencies:
   skeletonizer: ^2.1.2
 
 dev_dependencies:
+  alchemist: ^0.12.1
   flutter_test:
     sdk: flutter
   mocktail: ^1.0.4
