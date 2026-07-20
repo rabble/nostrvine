@@ -182,10 +182,11 @@ class DraftsTab extends ConsumerWidget {
     // Untitled drafts stay untitled; a titled draft gets a numbered copy
     // suffix that skips titles already taken, so repeated copies read
     // "Trip (copy 1)", "Trip (copy 2)" rather than stacking "(copy) (copy)".
-    final newTitle = draft.title.trim().isEmpty
+    final trimmedTitle = draft.title.trim();
+    final newTitle = trimmedTitle.isEmpty
         ? null
         : nextDuplicateDraftTitle(
-            sourceTitle: draft.title,
+            sourceTitle: trimmedTitle,
             existingTitles: _draftTitles(context),
             format: (base, number) =>
                 context.l10n.libraryDraftCopyTitle(base, number),

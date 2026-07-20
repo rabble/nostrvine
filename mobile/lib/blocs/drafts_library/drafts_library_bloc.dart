@@ -21,17 +21,23 @@ class DraftsLibraryBloc extends Bloc<DraftsLibraryEvent, DraftsLibraryState> {
     : _draftStorageService = draftStorageService,
       super(const DraftsLibraryInitial()) {
     on<DraftsLibraryLoadRequested>(_onLoadRequested, transformer: droppable());
-    on<DraftsLibraryDuplicateRequested>(
-      _onDuplicateRequested,
-      transformer: sequential(),
-    );
-    on<DraftsLibraryDeleteRequested>(
-      _onDeleteRequested,
-      transformer: sequential(),
-    );
+    // Duplicate and delete share ONE sequential queue so their handlers never
+    // interleave; separate buckets would let one finish mid-flight and emit a
+    // stale draft list (see [DraftsLibraryMutationEvent]).
+    on<DraftsLibraryMutationEvent>(_onMutation, transformer: sequential());
   }
 
   final DraftStorageService _draftStorageService;
+
+  Future<void> _onMutation(
+    DraftsLibraryMutationEvent event,
+    Emitter<DraftsLibraryState> emit,
+  ) {
+    return switch (event) {
+      DraftsLibraryDuplicateRequested() => _onDuplicateRequested(event, emit),
+      DraftsLibraryDeleteRequested() => _onDeleteRequested(event, emit),
+    };
+  }
 
   Future<void> _onLoadRequested(
     DraftsLibraryLoadRequested event,

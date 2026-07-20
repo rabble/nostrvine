@@ -346,6 +346,68 @@ void main() {
         ).called(1);
       });
     });
+
+    group('snackbar feedback', () {
+      Future<void> pumpWithEmittedState(
+        WidgetTester tester,
+        DraftsLibraryState emitted,
+      ) async {
+        final drafts = [createDraft(id: 'draft1')];
+        whenListen(
+          mockBloc,
+          Stream<DraftsLibraryState>.value(emitted),
+          initialState: DraftsLibraryLoaded(drafts: drafts),
+        );
+
+        await tester.pumpWidget(buildWidget());
+        await tester.pump(); // deliver the emitted state
+        await tester.pump(); // start the snackbar entrance animation
+      }
+
+      testWidgets('shows the duplicated snackbar on '
+          '$DraftsLibraryDraftDuplicated', (tester) async {
+        await pumpWithEmittedState(
+          tester,
+          DraftsLibraryDraftDuplicated(drafts: [createDraft(id: 'draft1')]),
+        );
+
+        expect(find.text(en.libraryDraftDuplicatedSnackbar), findsOneWidget);
+      });
+
+      testWidgets('shows the duplicate-failed snackbar on '
+          '$DraftsLibraryDuplicateFailed', (tester) async {
+        await pumpWithEmittedState(
+          tester,
+          DraftsLibraryDuplicateFailed(drafts: [createDraft(id: 'draft1')]),
+        );
+
+        expect(
+          find.text(en.libraryDraftDuplicateFailedSnackbar),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('shows the deleted snackbar on $DraftsLibraryDraftDeleted', (
+        tester,
+      ) async {
+        await pumpWithEmittedState(
+          tester,
+          const DraftsLibraryDraftDeleted(drafts: []),
+        );
+
+        expect(find.text(en.libraryDraftDeletedSnackbar), findsOneWidget);
+      });
+
+      testWidgets('shows the delete-failed snackbar on '
+          '$DraftsLibraryDeleteFailed', (tester) async {
+        await pumpWithEmittedState(
+          tester,
+          DraftsLibraryDeleteFailed(drafts: [createDraft(id: 'draft1')]),
+        );
+
+        expect(find.text(en.libraryDraftDeleteFailedSnackbar), findsOneWidget);
+      });
+    });
   });
 
   group(DraftListTile, () {

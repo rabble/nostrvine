@@ -2,8 +2,10 @@
 // ABOUTME: Validates fresh id/timestamps, reset publish state, shared content
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:models/models.dart' show AudioEvent, InspiredByInfo;
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
+import 'package:openvine/models/video_reply_context.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 DivineVideoClip _createTestClip([String id = 'clip_1']) => DivineVideoClip(
@@ -28,11 +30,31 @@ DivineVideoDraft _createDraft() => DivineVideoDraft(
   publishAttempts: 3,
   publishError: 'some error',
   sourceDraftId: 'draft_source',
+  expireTime: const Duration(days: 7),
+  allowAudioReuse: true,
   proofManifestJson: '{"videoHash":"abc"}',
   editorStateHistory: const {'foo': 'bar'},
+  editorEditingParameters: const {'brightness': 0.5},
   collaboratorPubkeys: const {'pubkey1'},
+  inspiredByVideo: const InspiredByInfo(addressableId: '34236:pubkey:dtag'),
+  inspiredByNpub: 'npub_inspired',
+  selectedSound: AudioEvent.fromLocalImport(
+    id: 'audio_1',
+    filePath: '/tmp/sound.m4a',
+    createdAt: 1700000000,
+    title: 'A sound',
+    mimeType: 'audio/mp4',
+  ),
   finalRenderedClip: _createTestClip('rendered'),
   contentWarning: 'sensitive',
+  videoReplyContext: const VideoReplyContext(
+    rootEventId: 'root_event',
+    rootEventKind: 34236,
+    rootAuthorPubkey: 'author_pubkey',
+  ),
+  shareReplyToFeed: true,
+  thumbnailTimestamp: const Duration(milliseconds: 500),
+  customThumbnailPath: '/tmp/cover.jpg',
 );
 
 void main() {
@@ -87,6 +109,29 @@ void main() {
       expect(copy.proofManifestJson, equals(draft.proofManifestJson));
       expect(copy.contentWarning, equals(draft.contentWarning));
       expect(copy.finalRenderedClip, equals(draft.finalRenderedClip));
+    });
+
+    // Guards against a field silently dropped from duplicate(): unlike
+    // copyWith, duplicate() has no `?? this.x` fallback, so an omitted argument
+    // resets to a default. Every non-publish field the copy must carry is
+    // asserted here so a future drop fails loudly.
+    test('carries every non-publish field to the copy', () {
+      final draft = _createDraft();
+      final copy = draft.duplicate();
+
+      expect(copy.expireTime, equals(draft.expireTime));
+      expect(copy.allowAudioReuse, equals(draft.allowAudioReuse));
+      expect(
+        copy.editorEditingParameters,
+        equals(draft.editorEditingParameters),
+      );
+      expect(copy.inspiredByVideo, equals(draft.inspiredByVideo));
+      expect(copy.inspiredByNpub, equals(draft.inspiredByNpub));
+      expect(copy.selectedSound, equals(draft.selectedSound));
+      expect(copy.videoReplyContext, equals(draft.videoReplyContext));
+      expect(copy.shareReplyToFeed, equals(draft.shareReplyToFeed));
+      expect(copy.thumbnailTimestamp, equals(draft.thumbnailTimestamp));
+      expect(copy.customThumbnailPath, equals(draft.customThumbnailPath));
     });
 
     test('leaves the source draft unchanged', () {

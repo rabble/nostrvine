@@ -77,5 +77,33 @@ void main() {
         equals('テスト（コピー 2）'),
       );
     });
+
+    test(
+      'strips a copy suffix from a multi-line title instead of stacking',
+      () {
+        expect(
+          nextDuplicateDraftTitle(
+            sourceTitle: 'Line 1\nLine 2 (copy 1)',
+            existingTitles: const ['Line 1\nLine 2 (copy 1)'],
+            format: _en,
+          ),
+          equals('Line 1\nLine 2 (copy 2)'),
+        );
+      },
+    );
+
+    test('fails soft when the format drops the number placeholder', () {
+      // A broken translation that ignores {number} would otherwise loop
+      // forever; the guard returns the number-1 form instead of hanging.
+      String noNumber(String base, int number) => '$base (copy)';
+      expect(
+        nextDuplicateDraftTitle(
+          sourceTitle: 'Trip',
+          existingTitles: const ['Trip (copy)'],
+          format: noNumber,
+        ),
+        equals('Trip (copy)'),
+      );
+    });
   });
 }

@@ -1586,5 +1586,119 @@ void main() {
         );
       });
     });
+
+    group('clip ghost-frame file hygiene', () {
+      late Directory docsDir;
+
+      setUp(() {
+        docsDir = Directory(documentsPath)..createSync(recursive: true);
+      });
+
+      tearDown(() {
+        if (docsDir.existsSync()) docsDir.deleteSync(recursive: true);
+      });
+
+      File writeGhost(String basename) {
+        final file = File(p.join(documentsPath, basename));
+        file.parent.createSync(recursive: true);
+        file.writeAsBytesSync(const [0, 1, 2, 3]);
+        return file;
+      }
+
+      DivineVideoDraft draftWithGhost({
+        required String id,
+        required String ghostPath,
+      }) => DivineVideoDraft.create(
+        id: id,
+        clips: [
+          DivineVideoClip(
+            id: 'clip_$id',
+            video: EditorVideo.file('/path/to/video.mp4'),
+            duration: const Duration(seconds: 6),
+            recordedAt: DateTime(2025),
+            targetAspectRatio: AspectRatio.square,
+            originalAspectRatio: 9 / 16,
+            ghostFramePath: ghostPath,
+          ),
+        ],
+        title: 'Ghost draft',
+        description: '',
+        hashtags: const {},
+        selectedApproach: 'video',
+      );
+
+      test('deletes a clip ghost frame when the draft is deleted', () async {
+        final ghost = writeGhost('ghost_only.jpg');
+        final draft = draftWithGhost(id: 'draft_ghost', ghostPath: ghost.path);
+        await service.saveDraft(draft);
+
+        await service.deleteDraft(draft.id);
+
+        expect(
+          ghost.existsSync(),
+          isFalse,
+          reason:
+              'deleting the only draft that references a ghost frame must '
+              'remove its file',
+        );
+      });
+
+      test('keeps a ghost frame shared with a duplicate when the source draft '
+          'is deleted', () async {
+        final ghost = writeGhost('ghost_shared.jpg');
+        final source = draftWithGhost(
+          id: 'draft_source',
+          ghostPath: ghost.path,
+        );
+        // duplicate() shares the source's clip objects (including
+        // ghostFramePath) with a fresh draft id — the flagship "copy then edit
+        // independently" flow.
+        final copy = source.duplicate(title: 'Copy');
+
+        await service.saveDraft(source);
+        await service.saveDraft(copy);
+
+        await service.deleteDraft(source.id);
+
+        expect(
+          ghost.existsSync(),
+          isTrue,
+          reason:
+              'a ghost frame shared with a surviving duplicate must not be '
+              'deleted until the last referencing draft is gone',
+        );
+      });
+
+      test('still deletes the target ghost frame when a sibling clip row has a '
+          'corrupt data blob', () async {
+        final ghost = writeGhost('ghost_target.jpg');
+        final draft = draftWithGhost(
+          id: 'draft_target',
+          ghostPath: ghost.path,
+        );
+        await service.saveDraft(draft);
+
+        // A sibling clip row whose data blob can't be parsed. The ghost-frame
+        // reference scan runs after the target draft's rows are deleted, so an
+        // unguarded throw here would leak the deleted draft's ghost file.
+        await database.clipsDao.upsertClip(
+          id: 'corrupt_sibling_clip',
+          orderIndex: 0,
+          durationMs: 6000,
+          recordedAt: DateTime(2025),
+          data: 'not-json',
+          filePath: null,
+          thumbnailPath: null,
+        );
+
+        await service.deleteDraft(draft.id);
+
+        expect(
+          ghost.existsSync(),
+          isFalse,
+          reason: 'a corrupt sibling clip must not block ghost-frame cleanup',
+        );
+      });
+    });
   });
 }

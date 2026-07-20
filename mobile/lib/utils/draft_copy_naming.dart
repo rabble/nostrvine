@@ -23,6 +23,10 @@ String nextDuplicateDraftTitle({
   required String Function(String base, int number) format,
 }) {
   final base = _stripCopySuffix(sourceTitle, format);
+  // Guard against a translation that drops the {number} placeholder: if the
+  // formatted title doesn't vary with the number, the loop below could never
+  // terminate. Fail soft to the number-1 form rather than hang the UI thread.
+  if (format(base, 1) == format(base, 2)) return format(base, 1);
   final taken = existingTitles.toSet();
   var number = 1;
   while (taken.contains(format(base, number))) {
@@ -42,6 +46,9 @@ String _stripCopySuffix(
   final source = RegExp.escape(sample)
       .replaceFirst(_titleSentinel, '(.*)')
       .replaceFirst('$_numberSentinel', r'(\d+)');
-  final match = RegExp('^$source\$').firstMatch(title);
+  // dotAll so the title slot `(.*)` spans newlines — a pasted multi-line title
+  // would otherwise never match, leaving its old suffix to stack on the next
+  // duplicate.
+  final match = RegExp('^$source\$', dotAll: true).firstMatch(title);
   return match != null ? match.group(1)! : title;
 }
