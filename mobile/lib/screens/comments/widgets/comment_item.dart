@@ -15,6 +15,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show UserProfile;
 import 'package:openvine/blocs/comments/comment_composer/comment_composer_bloc.dart';
 import 'package:openvine/blocs/comments/comment_reactions/comment_reactions_bloc.dart';
+import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -151,7 +152,11 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                             child: ConstrainedBox(
                               constraints: const BoxConstraints(maxWidth: 248),
                               child: VideoCommentPlayer(
-                                videoUrl: widget.comment.videoUrl!,
+                                videoUrl:
+                                    widget.comment
+                                        .toSyntheticVideoEvent()
+                                        .inlinePlayerVideoUrl ??
+                                    widget.comment.videoUrl!,
                                 thumbnailUrl: widget.comment.thumbnailUrl,
                                 blurhash: widget.comment.videoBlurhash,
                                 borderRadius: BorderRadius.circular(12),
