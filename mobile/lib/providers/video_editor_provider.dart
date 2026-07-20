@@ -22,6 +22,7 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/preferences_providers.dart';
+import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/providers/video_reply_context_provider.dart';
@@ -1129,6 +1130,20 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   }
 
   Future<void> _runRenderVideo(int generation) async {
+    // Capture the monitor and render inputs up front: a final render can settle
+    // well after the user backs out (dispose cancels via cancelRenderVideo, but
+    // the future still completes), by which point this notifier may be disposed
+    // and `ref.read` would throw — the captured instance stays valid. Start the
+    // trace fire-and-forget so render dispatch stays synchronous; an awaited
+    // start would defer the first renderVideoToClip call by a microtask.
+    final performance = ref.read(performanceMonitoringServiceProvider);
+    const traceName = 'video_generation';
+    final clipCount = _clips.length;
+    final aspectRatio = _clips.isEmpty
+        ? null
+        : _clips.first.targetAspectRatio.name;
+    unawaited(performance.startTrace(traceName));
+
     try {
       final renderParameters = _buildRenderParameters();
 
@@ -1139,13 +1154,19 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         taskId: draftId,
       );
 
-      // A newer render was started while this one was running — discard.
-      if (generation != _renderGeneration) return;
+      // A newer render was started or the user cancelled while this one was
+      // running — the trace still stops in `finally`; tag it so the console can
+      // exclude non-completing renders from the generation-time distribution.
+      if (generation != _renderGeneration) {
+        performance.putAttribute(traceName, 'outcome', 'incomplete');
+        return;
+      }
 
       if (result == null) {
         // A user cancel bumps the generation and is caught above, so reaching
         // here with a matching generation is a genuine render failure — surface
         // the retry affordance (#6058).
+        performance.putAttribute(traceName, 'outcome', 'failed');
         Log.warning(
           '⚠️ Video render failed',
           name: 'VideoEditorNotifier',
@@ -1154,6 +1175,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         state = state.copyWith(isProcessing: false, renderFailed: true);
         return;
       }
+
+      performance.putAttribute(traceName, 'outcome', 'success');
 
       final (finalRenderedClip, proofManifestJson) = result;
 
@@ -1187,7 +1210,11 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       autosaveChanges();
     } catch (error, stackTrace) {
       // A newer render owns the processing flag now — leave it alone.
-      if (generation != _renderGeneration) return;
+      if (generation != _renderGeneration) {
+        performance.putAttribute(traceName, 'outcome', 'incomplete');
+        return;
+      }
+      performance.putAttribute(traceName, 'outcome', 'error');
       // Surface the failure (e.g. a hung/failed C2PA proof step) as an error +
       // retry so the user can restart the render instead of being stuck on the
       // processing overlay (#6058).
@@ -1199,6 +1226,12 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         stackTrace: stackTrace,
       );
       state = state.copyWith(isProcessing: false, renderFailed: true);
+    } finally {
+      performance.putAttribute(traceName, 'clip_count', '$clipCount');
+      if (aspectRatio != null) {
+        performance.putAttribute(traceName, 'aspect_ratio', aspectRatio);
+      }
+      await performance.stopTrace(traceName);
     }
   }
 
