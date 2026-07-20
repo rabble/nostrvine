@@ -978,7 +978,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
     }
 
     private func sendStateUpdateOnMain() {
-        guard let player, let sink = eventSink else { return }
+        guard !isBackgrounded, let player, let sink = eventSink else { return }
 
         let currentTime = CMTimeGetSeconds(player.currentTime())
         let actualPositionMs = currentTime.millisecondsClamped
@@ -1160,6 +1160,15 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
     /// Whether the player was playing before the app went to background.
     private var wasPlayingBeforePause = false
 
+    /// Suspends `EventChannel` sends while the app is backgrounded. A periodic
+    /// time-observer tick (or a KVO / end-of-item callback) firing during the
+    /// resign-active → suspend window would otherwise reach `sink(...)` after
+    /// the Flutter shell is torn down, throwing
+    /// `NSInternalInconsistencyException: Sending a message before the
+    /// FlutterEngine has been run.` This is the EventChannel analog of
+    /// `VideoTextureOutput.suspendFrameDelivery()`.
+    private var isBackgrounded = false
+
     func onAppBackgrounded() {
         // Stop the texture frame driver first. A display-link or
         // AVFoundation-notification frame delivered during the
@@ -1172,11 +1181,16 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         if wasPlayingBeforePause {
             player?.pause()
             audioOverlayManager.pauseAndDeactivateAll()
+            // Runs synchronously on the resign-active callback while the shell
+            // is still alive, so the final paused state reaches Dart before the
+            // gate below closes.
             sendStateUpdate()
         }
+        isBackgrounded = true
     }
 
     func onAppForegrounded() {
+        isBackgrounded = false
         textureOutput?.resumeFrameDelivery()
         if wasPlayingBeforePause {
             player?.play()
