@@ -9,6 +9,7 @@ This directory is the index for current repository documentation. Use it to find
 
 - [docs/P1_LAUNCH_HUB.md](P1_LAUNCH_HUB.md) - launch-critical docs for P1 submission
 - [CONTRIBUTING.md](../CONTRIBUTING.md) - setup, workflow, tests, and PR expectations
+- [docs/ARCHITECTURE.md](ARCHITECTURE.md) - app layers and dependency direction (UI → BLoC → Repository → Client)
 - [docs/STATE_MANAGEMENT.md](STATE_MANAGEMENT.md) - current architecture direction
 - [docs/BLOC_UI_MIGRATION_PRD.md](BLOC_UI_MIGRATION_PRD.md) - migration policy and rationale
 - [docs/DOCUMENTATION_GUIDELINES.md](DOCUMENTATION_GUIDELINES.md) - how to keep docs current
@@ -24,8 +25,10 @@ This directory is the index for current repository documentation. Use it to find
 
 ## Current Engineering Docs
 
+- [docs/ARCHITECTURE.md](ARCHITECTURE.md) - app layers and dependency direction
 - [docs/STATE_MANAGEMENT.md](STATE_MANAGEMENT.md)
 - [docs/BLOC_UI_MIGRATION_PRD.md](BLOC_UI_MIGRATION_PRD.md)
+- [docs/NOSTR_SDK_ARCHITECTURE.md](NOSTR_SDK_ARCHITECTURE.md) - Nostr SDK internals
 - [docs/BUILD_SCRIPTS_README.md](BUILD_SCRIPTS_README.md)
 - [docs/BUILD_SPEED_CHECKLIST.md](BUILD_SPEED_CHECKLIST.md)
 - [mobile/docs/settings_screen_structure.md](../mobile/docs/settings_screen_structure.md)

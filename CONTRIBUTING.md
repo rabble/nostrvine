@@ -193,6 +193,10 @@ Rules:
 
 ## Architecture Expectations
 
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the layer map, the allowed
+dependency direction, the repository-owns-fallback rule, and how CI enforces the
+boundaries.
+
 - Prefer `UI -> BLoC/Cubit -> Repository -> Client` for new work.
 - Repositories and blocs should not depend on Flutter UI types.
 - Prefer constructor injection over hidden singletons.
