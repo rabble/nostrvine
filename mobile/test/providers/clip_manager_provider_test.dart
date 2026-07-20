@@ -257,6 +257,39 @@ void main() {
       expect(state.clips.length, equals(1));
     });
 
+    test(
+      'commitPendingDeletion finalizes the delete so a later undo no-ops',
+      () async {
+        final notifier = container.read(clipManagerProvider.notifier);
+
+        notifier.addClip(
+          limitClipDuration: false,
+          video: EditorVideo.file('/path/to/video1.mp4'),
+          duration: const Duration(seconds: 1),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+        notifier.addClip(
+          limitClipDuration: false,
+          video: EditorVideo.file('/path/to/video2.mp4'),
+          duration: const Duration(seconds: 2),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+        await notifier.scheduleDeleteLastClip();
+        expect(container.read(clipManagerProvider).pendingDeletion, isNotNull);
+
+        await notifier.commitPendingDeletion();
+
+        expect(container.read(clipManagerProvider).pendingDeletion, isNull);
+
+        await notifier.undoPendingDeletion();
+
+        expect(container.read(clipManagerProvider).clips.length, equals(1));
+        verifyNever(() => mockClipLibraryService.restore(any()));
+      },
+    );
+
     test('clearAll removes all clips and resets state', () async {
       final notifier = container.read(clipManagerProvider.notifier);
 

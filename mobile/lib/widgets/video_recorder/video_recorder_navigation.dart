@@ -51,6 +51,16 @@ Future<void> openVideoEditorFromRecorder(
   final bloc = context.read<VideoRecorderBloc>();
   final recorderMode = bloc.state.recorderMode;
 
+  // Both next steps snapshot the clip list right here (classic renders it
+  // below, the editor seeds its session from it on init), so a clip-delete
+  // Undo honored after this point would silently diverge from that snapshot.
+  // Finalize the pending deletion and drop its snackbar instead.
+  if (ref.read(clipManagerProvider).pendingDeletion != null) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    await ref.read(clipManagerProvider.notifier).commitPendingDeletion();
+    if (!context.mounted) return;
+  }
+
   // Lip-sync records against a selected sound, so silence the clips before the
   // editor: only the chosen audio should be heard, with the clips muted and
   // the sound carried in as its own track (seeded on editor init).

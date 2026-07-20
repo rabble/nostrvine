@@ -14,6 +14,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/clip_manager_state.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -24,7 +25,9 @@ import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/widgets/video_recorder/clip_delete_snackbar.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_navigation.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:sound_service/sound_service.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
@@ -225,6 +228,38 @@ void main() {
         verify(() => audioSessionService.configureForMixedPlayback()).called(1);
       });
 
+      testWidgets('openVideoEditorFromRecorder finalizes a pending clip '
+          'deletion and dismisses the Undo snackbar', (tester) async {
+        fakeClipManager.initialPendingDeletion = ClipPendingDeletion(
+          clip: DivineVideoClip(
+            id: 'pending-clip',
+            video: EditorVideo.file('/path/to/video.mp4'),
+            duration: const Duration(seconds: 1),
+            recordedAt: DateTime(2026),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          ),
+          originalIndex: 0,
+        );
+
+        await tester.pumpWidget(buildHarness());
+        await tester.pumpAndSettle();
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        await tester.tap(find.byKey(const Key('show-delete-snackbar')));
+        await tester.pump();
+        expect(find.text(l10n.videoRecorderClipUndoLabel), findsOneWidget);
+
+        await tester.tap(find.byKey(const Key('open-editor')));
+        await tester.pumpAndSettle();
+
+        // The editor seeds its session from the clip list at navigation time
+        // (classic renders it), so a pending Undo must not survive the push.
+        expect(find.text('editor'), findsOneWidget);
+        expect(fakeClipManager.commitPendingDeletionCalls, equals(1));
+        expect(find.text(l10n.videoRecorderClipUndoLabel), findsNothing);
+      });
+
       testWidgets('openVideoEditorFromRecorder resets the session for a mode '
           'without a video editor (routes to metadata)', (tester) async {
         when(() => recorderBloc.state).thenReturn(
@@ -318,13 +353,22 @@ void main() {
 
 class _FakeClipManagerNotifier extends ClipManagerNotifier {
   bool muteAllClipsCalled = false;
+  int commitPendingDeletionCalls = 0;
+  ClipPendingDeletion? initialPendingDeletion;
 
   @override
-  ClipManagerState build() => ClipManagerState();
+  ClipManagerState build() =>
+      ClipManagerState(pendingDeletion: initialPendingDeletion);
 
   @override
   void muteAllClips() {
     muteAllClipsCalled = true;
+  }
+
+  @override
+  Future<void> commitPendingDeletion() async {
+    commitPendingDeletionCalls++;
+    state = state.copyWith(clearPendingDeletion: true);
   }
 }
 
@@ -346,6 +390,11 @@ class _RecorderHarness extends ConsumerWidget {
             key: const Key('open-library'),
             onPressed: () => unawaited(openRecorderLibrary(context, ref)),
             child: const Text('open library'),
+          ),
+          ElevatedButton(
+            key: const Key('show-delete-snackbar'),
+            onPressed: () => showClipDeleteSnackbar(context, ref),
+            child: const Text('show delete snackbar'),
           ),
         ],
       ),
