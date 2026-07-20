@@ -30,6 +30,7 @@ import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dar
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/haptic_service.dart';
+import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -146,6 +147,7 @@ class VideoRecorderBloc
     CameraService? cameraService,
     CountdownSoundServiceFactory? countdownSoundServiceFactory,
     AudioPlaybackServiceFactory? audioPlaybackServiceFactory,
+    PerformanceTraceMonitor? performanceMonitor,
   }) : _readClipManager = readClipManager,
        _readVideoEditor = readVideoEditor,
        _readVideoEditorState = readVideoEditorState,
@@ -155,6 +157,8 @@ class VideoRecorderBloc
            countdownSoundServiceFactory ?? defaultCountdownSoundServiceFactory,
        _audioPlaybackServiceFactory =
            audioPlaybackServiceFactory ?? defaultAudioPlaybackServiceFactory,
+       _performanceMonitor =
+           performanceMonitor ?? const NoOpPerformanceTraceMonitor(),
        super(const VideoRecorderBlocState()) {
     _cameraService =
         _cameraServiceOverride ??
@@ -241,6 +245,7 @@ class VideoRecorderBloc
   final CameraService? _cameraServiceOverride;
   final CountdownSoundServiceFactory _countdownSoundServiceFactory;
   final AudioPlaybackServiceFactory _audioPlaybackServiceFactory;
+  final PerformanceTraceMonitor _performanceMonitor;
 
   late final CameraService _cameraService;
   AudioPlaybackService? _audioPlaybackService;
@@ -304,6 +309,13 @@ class VideoRecorderBloc
       category: LogCategory.video,
     );
 
+    const traceName = 'camera_startup';
+    // Fire-and-forget so the native init dispatch is not delayed a microtask;
+    // the trace still stops in `finally`, tagged with the outcome so the
+    // console can filter startups that never reached a live preview.
+    unawaited(_performanceMonitor.startTrace(traceName));
+
+    Object? initError;
     try {
       await _cameraService.initialize(
         videoQuality: event.videoQuality,
@@ -311,14 +323,31 @@ class VideoRecorderBloc
         enableAutoLensSwitch: true,
       );
     } catch (e) {
+      initError = e;
+    } finally {
+      _performanceMonitor
+        ..putAttribute(traceName, 'lens', initialLens.name)
+        ..putAttribute(traceName, 'quality', event.videoQuality.value)
+        ..putAttribute(
+          traceName,
+          'outcome',
+          initError != null
+              ? 'error'
+              : (_cameraService.isInitialized ? 'success' : 'failed'),
+        );
+      await _performanceMonitor.stopTrace(traceName);
+    }
+
+    if (initError != null) {
       Log.error(
-        '📹 Camera service initialization threw exception: $e',
+        '📹 Camera service initialization threw exception: $initError',
         name: 'VideoRecorderBloc',
         category: LogCategory.video,
       );
       emit(
         state.copyWith(
-          initializationErrorMessage: 'Camera initialization failed: $e',
+          initializationErrorMessage:
+              'Camera initialization failed: $initError',
         ),
       );
       return;

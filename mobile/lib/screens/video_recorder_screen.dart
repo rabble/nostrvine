@@ -19,6 +19,7 @@ import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
+import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
@@ -99,6 +100,7 @@ class _VideoRecorderBlocScope extends ConsumerWidget {
         readVideoEditor: () => ref.read(videoEditorProvider.notifier),
         readVideoEditorState: () => ref.read(videoEditorProvider),
         readSharedPreferences: () => ref.read(sharedPreferencesProvider),
+        performanceMonitor: ref.read(performanceMonitoringServiceProvider),
       ),
       child: child,
     );
