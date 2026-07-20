@@ -1,330 +1,89 @@
-# Architecture Documentation
+# App Architecture: Layers & Dependency Direction
 
-This document provides a detailed overview of the Nostr SDK architecture, design patterns, and internal workings.
+Status: Current
+Validated against: current mobile architecture direction on 2026-07-20.
 
-## Overview
+This is the map a contributor needs to place new code correctly: the app's
+layers, the one direction dependencies may point, and how CI enforces it.
 
-The Nostr SDK is built around a layered architecture that separates concerns and provides flexibility:
+**Source of truth:** the full contract — per-layer responsibilities, the
+dependency graph, dependency injection, barrel files, and package-extraction
+guidance, with worked good/bad examples — lives in
+[`.claude/rules/architecture.md`](../.claude/rules/architecture.md). This page
+summarizes and links it; it never restates the code examples, so the two cannot
+drift. For Nostr SDK internals (the innards of the `Client` layer) see
+[docs/NOSTR_SDK_ARCHITECTURE.md](NOSTR_SDK_ARCHITECTURE.md).
 
-1. **Application Layer**: User-facing APIs and high-level operations
-2. **Protocol Layer**: Nostr protocol implementation and NIP support
-3. **Transport Layer**: WebSocket relay connections and messaging
-4. **Storage Layer**: Local SQLite database for caching and offline support
-5. **Crypto Layer**: Signing, encryption, and key management
+## The layered flow
 
-## Core Components
+New feature work flows `UI → BLoC/Cubit → Repository → Client`. A layer may only
+depend on the layer directly beneath it; data flows back up. Nothing above the
+repository decides *where* data comes from.
 
-### 1. Nostr Client (`lib/nostr.dart`)
+```mermaid
+graph TD
+    UI["UI / Presentation<br/>screens · widgets · views"]
+    BLOC["BLoC / Cubit<br/>feature state · UI side effects"]
+    REPO["Repository<br/>composition · fallback · domain rules"]
+    CLIENT["Client / Data<br/>API · relay · local DB · device"]
 
-The main `Nostr` class serves as the primary interface for all operations:
+    UI -->|"dispatches events, reads state"| BLOC
+    BLOC -->|"calls"| REPO
+    REPO -->|"calls"| CLIENT
 
-```dart
-class Nostr {
-  late RelayPool _pool;
-  NostrSigner nostrSigner;
-  String _publicKey;
-  // ...
-}
+    CLIENT -.->|"data flows back up"| REPO
+    REPO -.-> BLOC
+    BLOC -.-> UI
 ```
 
-**Responsibilities:**
-- Event lifecycle management (create, sign, send, receive)
-- Relay pool coordination
-- Subscription management
-- High-level API methods (`sendLike`, `sendRepost`, etc.)
-
-**Key Design Patterns:**
-- **Facade Pattern**: Provides simplified interface to complex relay and signing subsystems
-- **Strategy Pattern**: Uses pluggable signers for different signing strategies
-
-### 2. Event System (`lib/event.dart`)
-
-Events are the fundamental data structure in Nostr:
-
-```dart
-class Event {
-  String id;           // SHA256 hash
-  String pubkey;       // Author's public key
-  int createdAt;       // Unix timestamp
-  int kind;           // Event type
-  List<dynamic> tags; // JSON array of tags
-  String content;     // Event content
-  String sig;         // Schnorr signature
-}
-```
-
-**Features:**
-- Automatic ID generation using SHA256
-- Schnorr signature validation
-- Proof-of-work support
-- JSON serialization/deserialization
-
-### 3. Relay Pool (`lib/relay/relay_pool.dart`)
-
-Manages multiple relay connections with sophisticated routing:
-
-```dart
-class RelayPool {
-  final Map<String, Relay> _tempRelays = {};
-  final Map<String, Relay> _relays = {};
-  final Map<String, Relay> _cacheRelays = {};
-  final Map<String, Subscription> _subscriptions = {};
-}
-```
-
-**Connection Types:**
-- **Normal Relays**: Primary relays for reading/writing
-- **Temporary Relays**: Short-lived connections for specific operations
-- **Cache Relays**: Specialized relays for caching frequently accessed data
-
-**Features:**
-- Connection pooling and management
-- Load balancing across relays
-- Subscription multiplexing
-- Automatic reconnection
-- Relay health monitoring
-
-### 4. Signing System (`lib/signer/`)
-
-Pluggable signing architecture supporting multiple strategies:
-
-```dart
-abstract class NostrSigner {
-  Future<String?> getPublicKey();
-  Future<Event?> signEvent(Event event);
-  Future<String?> encrypt(pubkey, plaintext);
-  Future<String?> decrypt(pubkey, ciphertext);
-  // NIP-44 encryption
-  Future<String?> nip44Encrypt(pubkey, plaintext);
-  Future<String?> nip44Decrypt(pubkey, ciphertext);
-}
-```
-
-**Implementations:**
-- **LocalNostrSigner**: Local private key signing
-- **NostrRemoteSigner**: NIP-46 remote signing
-- **PubkeyOnlyNostrSigner**: Read-only mode
-- **AndroidNostrSigner**: NIP-55 Android signer integration
-
-### 5. Local Storage (`lib/relay_local/`)
-
-SQLite-based storage system for offline support:
-
-**Components:**
-- **RelayLocal**: Main interface for local relay functionality
-- **RelayDb**: Database schema and operations
-- **Event caching**: Store events locally for offline access
-- **Relay metadata**: Store relay information and capabilities
-
-## Data Flow
-
-### 1. Sending Events
-
-```
-Application
-    ↓ createEvent()
-Event Creation
-    ↓ signEvent()
-Signer
-    ↓ sendEvent()
-Nostr Client
-    ↓ send()
-RelayPool
-    ↓ WebSocket
-Multiple Relays
-```
-
-### 2. Receiving Events
-
-```
-Relay WebSocket
-    ↓ onMessage()
-RelayPool
-    ↓ processEvent()
-Event Validation
-    ↓ onEvent()
-Subscription Callbacks
-    ↓
-Application
-```
-
-### 3. Subscription Management
-
-```
-Application
-    ↓ subscribe()
-Nostr Client
-    ↓ subscribe()
-RelayPool
-    ↓ REQ message
-Multiple Relays
-    ↓ EVENT responses
-Subscription Handler
-    ↓ onEvent()
-Application Callback
-```
-
-## Design Patterns
-
-### 1. Observer Pattern
-- Subscriptions use callbacks for event notifications
-- Relay status changes notify observers
-
-### 2. Factory Pattern
-- Relay creation through `tempRelayGener` function
-- Event creation with validation
-
-### 3. Strategy Pattern
-- Multiple signer implementations
-- Pluggable upload services
-
-### 4. Singleton Pattern
-- Database connections per platform
-- Crypto utilities
-
-## Threading Model
-
-The SDK is designed for asynchronous operations:
-
-- **Main Thread**: UI and application logic
-- **Background Threads**: Network operations, database I/O
-- **WebSocket Threads**: Relay connection management
-- **Crypto Threads**: Signing and encryption operations
-
-## Error Handling
-
-Comprehensive error handling at multiple levels:
-
-### 1. Network Errors
-- Connection failures
-- Timeout handling
-- Retry logic
-
-### 2. Protocol Errors
-- Invalid event formats
-- Signature validation failures
-- Relay-specific errors
-
-### 3. Application Errors
-- Invalid parameters
-- State management errors
-- Resource constraints
-
-## Security Considerations
-
-### 1. Key Management
-- Private keys never leave the signer implementation
-- Memory-safe key handling
-- Secure random number generation
-
-### 2. Network Security
-- WebSocket over TLS (WSS)
-- Certificate validation
-- Protection against replay attacks
-
-### 3. Event Validation
-- Signature verification
-- Event ID validation
-- Timestamp validation
-
-## Performance Optimizations
-
-### 1. Connection Management
-- Connection pooling reduces setup overhead
-- Persistent connections for active relays
-- Intelligent relay selection
-
-### 2. Event Processing
-- Efficient JSON parsing
-- Memory-conscious event storage
-- Subscription filtering
-
-### 3. Database Operations
-- Prepared statements
-- Batch operations
-- Indexing strategies
-
-## Extension Points
-
-The architecture provides several extension points:
-
-### 1. Custom Signers
-Implement `NostrSigner` interface for custom signing logic:
-
-```dart
-class CustomSigner implements NostrSigner {
-  // Custom implementation
-}
-```
-
-### 2. Custom Relays
-Extend `Relay` class for specialized relay types:
-
-```dart
-class CustomRelay extends Relay {
-  // Custom relay logic
-}
-```
-
-### 3. Custom NIPs
-Add new NIP implementations in dedicated directories:
-
-```
-lib/nip[number]/
-├── nip[number].dart
-├── [feature]_info.dart
-└── [utilities].dart
-```
-
-## Testing Architecture
-
-### 1. Unit Tests
-- Individual component testing
-- Mock implementations for external dependencies
-- Crypto function validation
-
-### 2. Integration Tests
-- End-to-end event flow
-- Multi-relay scenarios
-- Signer integration
-
-### 3. Performance Tests
-- Connection handling under load
-- Memory usage profiling
-- Latency measurements
-
-## Platform Considerations
-
-### 1. Flutter Web
-- WebSocket limitations
-- Browser security restrictions
-- Local storage alternatives
-
-### 2. Mobile Platforms
-- Background execution
-- Network connectivity changes
-- Battery optimization
-
-### 3. Desktop Platforms
-- File system access
-- Multiple windows
-- System integration
-
-## Future Architecture Plans
-
-### 1. Modularization
-- Split into separate packages by functionality
-- Core package with optional feature packages
-- Reduced bundle size for specific use cases
-
-### 2. Performance Improvements
-- Event streaming optimizations
-- Lazy loading strategies
-- Better memory management
-
-### 3. Enhanced Security
-- Hardware security module integration
-- Advanced key derivation
-- Zero-knowledge proof support
-
-This architecture provides a solid foundation for building robust Nostr applications while maintaining flexibility for future enhancements and protocol evolution.
+Solid arrows are the allowed dependency direction; dashed arrows are the data
+returning upward.
+
+## What each layer owns
+
+| Layer | Owns | Must **not** |
+|-------|------|--------------|
+| **UI** (`screens`, `widgets`, `view(s)`) | Building widgets; reading state; dispatching events | Filtering, sorting, conditional fetching, retry/fallback; importing `services/` directly (go through a BLoC/Cubit) |
+| **BLoC / Cubit** | Feature UI state; loading/success/failure status; UI side effects | Depending on another BLoC; depending on Flutter UI types; holding mutable instance fields; storing error strings/exceptions in state (use status enums + `addError`) |
+| **Repository** | Composing one or more clients; applying domain rules; **owning fallback and source-selection** between sources | Importing Flutter; depending on another repository |
+| **Client** | Retrieving raw data from one external source (REST API, relay, local DB, device) | Feature/domain logic; choosing between sources |
+
+## The rule people miss: the repository owns fallback
+
+When data can come from more than one source — try the API, fall back to a relay
+or local cache — **the repository decides the strategy.** BLoCs and UI never
+implement source-selection or fallback logic; a widget doing more than reading
+state and dispatching events is a layering violation. See
+[`.claude/rules/architecture.md`](../.claude/rules/architecture.md) for the
+worked good/bad examples.
+
+State management specifics (BLoC-first for new UI; Riverpod is legacy migration
+glue) live in [docs/STATE_MANAGEMENT.md](STATE_MANAGEMENT.md) and the migration
+policy in [docs/BLOC_UI_MIGRATION_PRD.md](BLOC_UI_MIGRATION_PRD.md).
+
+## How CI enforces it
+
+Three scripts under `mobile/scripts/` guard these boundaries. They are **not the
+same kind of check**, and all three run **only in CI** — in the `Generated
+Files` job of
+[`.github/workflows/mobile_ci.yaml`](../.github/workflows/mobile_ci.yaml) — so a
+local `--no-verify` or a machine without the git hooks installed is caught only
+on the PR.
+
+| Script | Guards | Kind |
+|--------|--------|------|
+| [`check_ui_service_boundary.sh`](../mobile/scripts/check_ui_service_boundary.sh) | A UI-layer file (`mobile/lib/**/{screens,widgets,view,views}/**`) importing the service layer directly, bypassing BLoC/Cubit | **Shrink-only baseline ratchet** vs `origin/main` — the allowed set is frozen in [`mobile/scripts/baseline/ui_service_imports.txt`](../mobile/scripts/baseline/ui_service_imports.txt) and may only shrink; regenerate after fixing a file with `UPDATE_BASELINE=1 bash mobile/scripts/check_ui_service_boundary.sh` |
+| [`check_riverpod_boundary.sh`](../mobile/scripts/check_riverpod_boundary.sh) | A new `@riverpod`/`@Riverpod(` annotation or `StateProvider(` in `mobile/lib/` outside the allowed provider directories | Hardcoded directory-exclude guard — **no baseline file** |
+| [`check_changenotifier_boundary.sh`](../mobile/scripts/check_changenotifier_boundary.sh) | A new `ChangeNotifier` subclass (`extends`/`with`) in `mobile/lib/` outside the sanctioned allowlist | Hardcoded allowlist guard — **no baseline file**; adding a sanctioned class requires editing both the script's allowlist and the "Sanctioned Riverpod (STAYS)" table in [docs/BLOC_UI_MIGRATION_PRD.md](BLOC_UI_MIGRATION_PRD.md) |
+
+The riverpod and changenotifier guards scan `mobile/lib/` only (packages are out
+of scope); the ui-service guard is further narrowed to the presentation
+subtrees. The full ratchet policy is in
+[docs/BLOC_UI_MIGRATION_PRD.md](BLOC_UI_MIGRATION_PRD.md).
+
+## Go deeper
+
+- [`.claude/rules/architecture.md`](../.claude/rules/architecture.md) — the full contract (per-layer responsibilities, dependency graph, DI, barrel files, when to extract a package). **Source of truth.**
+- [docs/BLOC_UI_MIGRATION_PRD.md](BLOC_UI_MIGRATION_PRD.md) — Riverpod→BLoC migration policy and the CI ratchet reference.
+- [docs/STATE_MANAGEMENT.md](STATE_MANAGEMENT.md) — current state-management direction.
+- [docs/NOSTR_SDK_ARCHITECTURE.md](NOSTR_SDK_ARCHITECTURE.md) — Nostr SDK internals (the `Client` layer's innards).

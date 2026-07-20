@@ -114,7 +114,8 @@ The launch-critical release, review, and compliance docs live in `docs/P1_LAUNCH
 - `CONTRIBUTING.md` — setup, workflow, verification, and PR expectations.
 - `AGENTS.md` — repository guidelines, workflow, and verification rules.
 - `docs/README.md` — documentation map and source-of-truth guide.
-- `docs/ARCHITECTURE.md` — system architecture.
+- `docs/ARCHITECTURE.md` — app architecture: layers and dependency direction.
+- `docs/NOSTR_SDK_ARCHITECTURE.md` — Nostr SDK internals.
 - `SERVICE-INVENTORY.md` — lightweight repo inventory.
 
 If a doc conflicts with current code, tests, or the focused docs above, trust the implementation first. Older plans, migration notes, and postmortems are preserved in `docs/archive/`.

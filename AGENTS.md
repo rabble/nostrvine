@@ -61,7 +61,7 @@
 
 ## Architecture And State Management
 
-- Prefer the layered flow `UI -> BLoC/Cubit -> Repository -> Client` for new feature work.
+- Prefer the layered flow `UI -> BLoC/Cubit -> Repository -> Client` for new feature work. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the layer map, dependency direction, the repository-owns-fallback rule, and CI enforcement.
 - Repositories and blocs should not depend on Flutter UI types.
 - Prefer constructor injection over hidden singleton-style dependencies.
 - New UI state should use BLoC/Cubit. Riverpod is legacy and compatibility glue while the migration is in progress.
