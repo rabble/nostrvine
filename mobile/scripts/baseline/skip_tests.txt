@@ -15,7 +15,6 @@ test/providers/curation_provider_tab_refresh_test.dart
 test/providers/explore_active_video_test.dart
 test/providers/readiness_gate_providers_test.dart
 test/providers/seen_videos_notifier_test.dart
-test/providers/video_controller_lifecycle_test.dart
 test/providers/video_events_listener_simple_test.dart
 test/providers/video_events_provider_fresh_test.dart
 test/providers/video_events_provider_test.dart
