@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' hide AspectRatio;
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/widgets/blurhash_display.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 
 Finder _divineIcon(DivineIconName name) =>
@@ -353,6 +354,50 @@ void main() {
           );
         },
       );
+    });
+
+    // Covers the BoxFit branch (portrait -> cover, square/landscape -> contain)
+    // that was previously only exercised by the deleted video_thumbnail golden.
+    group('BoxFit strategy from aspect ratio', () {
+      Future<BlurhashDisplay> pumpFor(
+        WidgetTester tester,
+        String dimensions,
+      ) async {
+        final now = DateTime.now();
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: VideoThumbnailWidget(
+                video: VideoEvent(
+                  id: 'fit-$dimensions',
+                  pubkey: 'test-pubkey',
+                  createdAt: now.millisecondsSinceEpoch ~/ 1000,
+                  timestamp: now,
+                  content: 'Fit test',
+                  videoUrl: 'https://example.com/video.mp4',
+                  dimensions: dimensions,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        return tester.widget<BlurhashDisplay>(find.byType(BlurhashDisplay));
+      }
+
+      testWidgets('portrait (720x1280) uses BoxFit.cover', (tester) async {
+        expect((await pumpFor(tester, '720x1280')).fit, BoxFit.cover);
+      });
+
+      testWidgets('landscape (1280x720) uses BoxFit.contain', (tester) async {
+        expect((await pumpFor(tester, '1280x720')).fit, BoxFit.contain);
+      });
+
+      testWidgets('square (480x480) uses BoxFit.contain', (tester) async {
+        expect((await pumpFor(tester, '480x480')).fit, BoxFit.contain);
+      });
     });
   });
 }

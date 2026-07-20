@@ -1,5 +1,6 @@
 // ABOUTME: Test configuration file that sets up app-wide plugin mocks.
-// ABOUTME: Golden-only font and Alchemist setup is opt-in to keep unit tests fast.
+// ABOUTME: Alchemist config (platform goldens off) is always applied so migrated
+// ABOUTME: goldens gate CI inline; real-font loading stays opt-in for speed.
 
 import 'dart:async';
 
@@ -39,24 +40,28 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   // every test so avatar failure caching stays test-local.
   tearDown(AvatarFailureCache.instance.clear);
 
-  // Web / `flutter test --platform chrome`: skip golden font loading and
-  // Alchemist. Those paths can stall headless Chrome with almost no CPU while
+  // Web / `flutter test --platform chrome`: skip golden/font setup entirely.
+  // Those paths can stall headless Chrome with almost no CPU while
   // `loading ...` is shown.
-  if (kIsWeb || !_runGoldenSetup) {
+  if (kIsWeb) {
     return testMain();
   }
 
-  // Golden runs opt in with:
-  //   flutter test -D DIVINE_GOLDEN_TESTS=true test/goldens/
-  await loadAppFonts();
-
-  // Configure Alchemist for better golden test output
+  // Alchemist goldens run INLINE in the normal suite (no --dart-define): a plain
+  // `very_good test` compares them, so migrated component goldens gate CI. We
+  // disable platform goldens so only the platform-agnostic CI variant (Ahem-
+  // obscured text, no shadows) is generated and compared — byte-identical on a
+  // dev's macOS and Ubuntu CI. Real fonts are loaded only for the opt-in local
+  // golden suite (`--dart-define=DIVINE_GOLDEN_TESTS=true`); the block-text CI
+  // goldens don't need them. Applying the config for every test is inert for
+  // non-golden tests (it only sets a zone value) and is alchemist's intended
+  // flutter_test_config usage.
+  if (_runGoldenSetup) {
+    await loadAppFonts();
+  }
   return AlchemistConfig.runWithConfig(
     config: const AlchemistConfig(
-      // Platform variants to test
-      platformGoldensConfig: PlatformGoldensConfig(),
-      // CI-specific configuration
-      ciGoldensConfig: CiGoldensConfig(),
+      platformGoldensConfig: PlatformGoldensConfig(enabled: false),
     ),
     run: testMain,
   );
