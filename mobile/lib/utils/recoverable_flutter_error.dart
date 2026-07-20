@@ -24,13 +24,14 @@ String? classifyRecoverableFlutterError(FlutterErrorDetails details) {
   final context = details.context?.toDescription() ?? '';
   final hasRecoverableMediaHost = _containsRecoverableMediaHost(error);
 
-  // A raw NetworkImage load that fails with ANY non-2xx HTTP status is
+  // A raw NetworkImage load that fails with any non-200 HTTP status is
   // recoverable — the widget falls back to a placeholder. Flutter throws the
   // same NetworkImageLoadException ("HTTP request failed, statusCode: <code>")
-  // for 404 (missing), 401/403 (unauthorized), and 5xx (server error) alike,
-  // so match the status-agnostic prefix rather than a single code. Classified
-  // by Flutter's image-loading library/context rather than host, because a
-  // failed image from any source is recoverable.
+  // for every response where statusCode != 200 — 404 (missing), 401/403
+  // (unauthorized), and 5xx (server error) alike — so match the
+  // status-agnostic prefix rather than a single code. Classified by Flutter's
+  // image-loading library/context rather than host, because a failed image
+  // from any source is recoverable.
   final isImageHttpFailure =
       error.contains('HTTP request failed, statusCode: ') &&
       (library.contains('_network_image_io') ||
