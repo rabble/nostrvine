@@ -29,15 +29,18 @@ VideoEvent _video({
 VideoStats _videoStats({
   required String id,
   required String pubkey,
+  String? dTag,
+  int createdAtSeconds = 1739350000,
   int? loops,
   int? views,
+  Map<String, String> rawTags = const {},
 }) {
   return VideoStats(
     id: id,
     pubkey: pubkey,
-    createdAt: DateTime.fromMillisecondsSinceEpoch(1739350000 * 1000),
+    createdAt: DateTime.fromMillisecondsSinceEpoch(createdAtSeconds * 1000),
     kind: 34236,
-    dTag: id,
+    dTag: dTag ?? id,
     title: id,
     thumbnail: 'thumb',
     videoUrl: 'videoUrl',
@@ -47,6 +50,7 @@ VideoStats _videoStats({
     engagementScore: 0,
     loops: loops,
     views: views,
+    rawTags: rawTags,
   );
 }
 
@@ -204,5 +208,90 @@ void main() {
         expect(snapshot.videos.first.rawTags['views'], '0');
       },
     );
+
+    test('dedupes edited addressable videos by profile feed key', () async {
+      const pubkey = 'pubkey';
+      final api = MockFunnelcakeApiClient();
+
+      when(() => api.isAvailable).thenReturn(true);
+      when(() => api.getSocialCounts(pubkey)).thenAnswer((_) async => null);
+      when(
+        () => api.getBulkVideoStats(any()),
+      ).thenAnswer((_) async => const BulkVideoStatsResponse(stats: {}));
+      when(() => api.getVideoViews(any())).thenAnswer((_) async => 0);
+
+      when(
+        () => api.getVideosByAuthor(
+          pubkey: pubkey,
+          limit: 100,
+          before: any(named: 'before'),
+        ),
+      ).thenAnswer(
+        (_) async => VideosByAuthorResponse(
+          videos: [
+            _videoStats(
+              id: 'older-event',
+              pubkey: pubkey,
+              dTag: 'same-video',
+              loops: 12,
+              rawTags: const {'views': '12'},
+            ),
+            _videoStats(
+              id: 'newer-event',
+              pubkey: pubkey,
+              dTag: 'same-video',
+              createdAtSeconds: 1739350100,
+              loops: 18,
+              rawTags: const {'views': '18'},
+            ),
+          ],
+        ),
+      );
+
+      final repo = FunnelcakeCreatorAnalyticsRepository(api);
+      final snapshot = await repo.fetchCreatorAnalytics(pubkey);
+
+      expect(snapshot.diagnostics.totalVideos, 1);
+      expect(snapshot.videos.single.id, 'newer-event');
+      expect(snapshot.videos.single.rawTags['views'], '18');
+      expect(snapshot.videos.single.originalLoops, 18);
+      verify(() => api.getBulkVideoStats(['newer-event'])).called(1);
+      verifyNever(() => api.getVideoViews('older-event'));
+    });
+
+    test('excludes collaborator rows leaked by author endpoint', () async {
+      const pubkey = 'pubkey';
+      final api = MockFunnelcakeApiClient();
+
+      when(() => api.isAvailable).thenReturn(true);
+      when(() => api.getSocialCounts(pubkey)).thenAnswer((_) async => null);
+      when(
+        () => api.getBulkVideoStats(any()),
+      ).thenAnswer((_) async => const BulkVideoStatsResponse(stats: {}));
+      when(() => api.getVideoViews(any())).thenAnswer((_) async => 0);
+
+      when(
+        () => api.getVideosByAuthor(
+          pubkey: pubkey,
+          limit: 100,
+          before: any(named: 'before'),
+        ),
+      ).thenAnswer(
+        (_) async => VideosByAuthorResponse(
+          videos: [
+            _videoStats(id: 'authored', pubkey: pubkey),
+            _videoStats(id: 'collaborator-leak', pubkey: 'collaborator-pubkey'),
+          ],
+        ),
+      );
+
+      final repo = FunnelcakeCreatorAnalyticsRepository(api);
+      final snapshot = await repo.fetchCreatorAnalytics(pubkey);
+
+      expect(snapshot.diagnostics.totalVideos, 1);
+      expect(snapshot.videos.single.id, 'authored');
+      verifyNever(() => api.getBulkVideoStats(['collaborator-leak']));
+      verifyNever(() => api.getVideoViews('collaborator-leak'));
+    });
   });
 }

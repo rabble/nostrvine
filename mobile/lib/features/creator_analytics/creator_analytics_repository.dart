@@ -5,6 +5,7 @@ import 'dart:math' as math;
 
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart';
+import 'package:videos_repository/videos_repository.dart';
 
 /// Provenance source for analytics values.
 enum AnalyticsDataSource { authorVideos, bulkVideoStats, videoViewsEndpoint }
@@ -166,8 +167,10 @@ class FunnelcakeCreatorAnalyticsRepository
       if (before <= 0) break;
     }
 
-    final seen = <String>{};
-    return collected.where((video) => seen.add(video.id)).toList();
+    final authored = collected
+        .where((video) => !video.isRepost && video.pubkey == pubkey)
+        .toList();
+    return mergeProfileFeedVideoLists(const [], authored);
   }
 
   Future<_HydrationResult> _enrichVideosWithBulkStats(
