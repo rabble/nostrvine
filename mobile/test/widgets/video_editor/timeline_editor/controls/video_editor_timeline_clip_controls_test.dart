@@ -2,7 +2,6 @@
 // ABOUTME: Verifies visible actions and done-event dispatch.
 
 import 'package:bloc_test/bloc_test.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -172,7 +171,10 @@ void main() {
     ) async {
       await tester.pumpWidget(build());
 
-      await tester.tap(find.byType(DivineIconButton).last);
+      final controls = tester.widget<VideoEditorTimelineControls>(
+        find.byType(VideoEditorTimelineControls),
+      );
+      controls.onDone!();
       await tester.pump();
 
       verify(() => bloc.add(const ClipEditorEditingStopped())).called(1);
@@ -230,7 +232,7 @@ void main() {
       );
       expect(controls.onDone, isNotNull);
 
-      await tester.tap(find.byType(DivineIconButton).last);
+      controls.onDone!();
       await tester.pump();
 
       verify(() => bloc.add(const ClipEditorEditingStopped())).called(1);
