@@ -695,13 +695,13 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
 
           // Check moderation labels (hide-only — never warn)
           if (modLabels.isNotEmpty) {
-            final hasUnknown = modLabels.any(
-              (label) => ContentLabel.fromValue(label) == null,
-            );
-            if (hasUnknown) return false;
-
-            final pref = service.getPreferenceForLabels(modLabels);
-            if (pref == ContentFilterPreference.hide) return false;
+            final recognizedLabels = modLabels
+                .where((label) => ContentLabel.fromValue(label) != null)
+                .toList();
+            if (recognizedLabels.isNotEmpty) {
+              final pref = service.getPreferenceForLabels(recognizedLabels);
+              if (pref == ContentFilterPreference.hide) return false;
+            }
           }
 
           return true;
