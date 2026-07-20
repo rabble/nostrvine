@@ -20,8 +20,10 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/collaborator_invite.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/providers/watermark_download_provider.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_view.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/widgets.dart';
+import 'package:openvine/services/watermark_download_service.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:videos_repository/videos_repository.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -43,6 +45,9 @@ class _MockConversationReactionsCubit
     implements ConversationReactionsCubit {}
 
 class _MockVideosRepository extends Mock implements VideosRepository {}
+
+class _MockWatermarkDownloadService extends Mock
+    implements WatermarkDownloadService {}
 
 class _MockContentBlocklistRepository extends Mock
     implements ContentBlocklistRepository {}
@@ -79,6 +84,7 @@ void main() {
     late _MockCollaboratorInviteActionsCubit mockInviteActionsCubit;
     late _MockConversationReactionsCubit mockReactionsCubit;
     late _MockVideosRepository mockVideosRepository;
+    late _MockWatermarkDownloadService mockWatermarkDownloadService;
     late MockNostrClient mockNostrClient;
     late _MockAuthService mockAuthService;
     late _MockContentBlocklistRepository mockBlocklist;
@@ -104,6 +110,7 @@ void main() {
           emoji: '',
         ),
       );
+      registerFallbackValue(VideoEventBuilder().build());
     });
 
     setUp(() {
@@ -115,6 +122,7 @@ void main() {
       mockInviteActionsCubit = _MockCollaboratorInviteActionsCubit();
       mockReactionsCubit = _MockConversationReactionsCubit();
       mockVideosRepository = _MockVideosRepository();
+      mockWatermarkDownloadService = _MockWatermarkDownloadService();
       mockNostrClient = createMockNostrService();
       mockAuthService = _MockAuthService(currentPubkey);
       mockBlocklist = _MockContentBlocklistRepository();
@@ -165,6 +173,10 @@ void main() {
         mockNostrService: mockNostrClient,
         additionalOverrides: [
           videosRepositoryProvider.overrideWithValue(mockVideosRepository),
+          watermarkDownloadServiceProvider.overrideWithValue(
+            mockWatermarkDownloadService,
+          ),
+          profileRepositoryProvider.overrideWithValue(null),
           fetchUserProfileProvider(
             otherPubkey,
           ).overrideWith((ref) async => otherProfile),
@@ -1552,6 +1564,177 @@ void main() {
           expect(find.byType(EmojiEditor), findsOneWidget);
         },
       );
+    });
+
+    group('shared video saving', () {
+      const stableId = 'skate-loop';
+
+      DmMessage sharedVideoMessage({
+        required String senderPubkey,
+      }) => DmMessage(
+        id: 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+        conversationId:
+            'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+        senderPubkey: senderPubkey,
+        content: 'watch this',
+        createdAt: now.millisecondsSinceEpoch ~/ 1000,
+        giftWrapId:
+            'aaaaaaaabbbbbbbbccccccccddddddddaaaaaaaabbbbbbbbccccccccdddddddd',
+        sharedVideoRef: DmSharedVideoRef(
+          coordinateOrId: '34236:$senderPubkey:$stableId',
+          videoKind: DmSharedVideoKind.addressableShortVideo,
+        ),
+      );
+
+      Future<void> openSaveAction(
+        WidgetTester tester, {
+        required DmMessage message,
+      }) async {
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationState(
+              status: ConversationStatus.loaded,
+              messages: [message],
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.longPress(find.text('watch this'));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.dmMessageActionCopyVideoUrl), findsOneWidget);
+        expect(find.text(l10n.shareSheetSaveVideo), findsOneWidget);
+      }
+
+      testWidgets(
+        'saves the original for the current user structured share',
+        (tester) async {
+          final message = sharedVideoMessage(senderPubkey: currentPubkey);
+          final video = VideoEventBuilder(
+            id: stableId,
+            pubkey: currentPubkey,
+          ).build();
+          when(
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+              stableId,
+              fallbackRouteIds: ['34236:$currentPubkey:$stableId'],
+            ),
+          ).thenAnswer((_) async => video);
+          when(
+            () => mockWatermarkDownloadService.downloadOriginal(
+              video: video,
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).thenAnswer((invocation) async {
+            final onProgress =
+                invocation.namedArguments[#onProgress]
+                    as void Function(OriginalSaveStage);
+            onProgress(OriginalSaveStage.downloading);
+            onProgress(OriginalSaveStage.saving);
+            return const WatermarkDownloadSuccess('/tmp/original.mp4');
+          });
+
+          await openSaveAction(tester, message: message);
+          await tester.tap(find.text(l10n.shareSheetSaveVideo));
+          await tester.pumpAndSettle();
+
+          verify(
+            () => mockWatermarkDownloadService.downloadOriginal(
+              video: video,
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockWatermarkDownloadService.downloadWithWatermark(
+              video: any(named: 'video'),
+              watermarkText: any(named: 'watermarkText'),
+              onProgress: any(named: 'onProgress'),
+            ),
+          );
+        },
+      );
+
+      testWidgets(
+        'saves a watermarked copy for another creator structured share',
+        (tester) async {
+          final message = sharedVideoMessage(senderPubkey: otherPubkey);
+          final video = VideoEventBuilder(
+            id: stableId,
+            pubkey: otherPubkey,
+          ).build();
+          when(
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+              stableId,
+              fallbackRouteIds: ['34236:$otherPubkey:$stableId'],
+            ),
+          ).thenAnswer((_) async => video);
+          when(
+            () => mockWatermarkDownloadService.downloadWithWatermark(
+              video: video,
+              watermarkText: any(named: 'watermarkText'),
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).thenAnswer((invocation) async {
+            final onProgress =
+                invocation.namedArguments[#onProgress]
+                    as void Function(WatermarkDownloadStage);
+            onProgress(WatermarkDownloadStage.downloading);
+            onProgress(WatermarkDownloadStage.watermarking);
+            onProgress(WatermarkDownloadStage.saving);
+            return const WatermarkDownloadSuccess('/tmp/watermarked.mp4');
+          });
+
+          await openSaveAction(tester, message: message);
+          await tester.tap(find.text(l10n.shareSheetSaveVideo));
+          await tester.pumpAndSettle();
+
+          verify(
+            () => mockWatermarkDownloadService.downloadWithWatermark(
+              video: video,
+              watermarkText: any(named: 'watermarkText'),
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockWatermarkDownloadService.downloadOriginal(
+              video: any(named: 'video'),
+              onProgress: any(named: 'onProgress'),
+            ),
+          );
+        },
+      );
+
+      testWidgets('shows unavailable feedback when the video cannot resolve', (
+        tester,
+      ) async {
+        final message = sharedVideoMessage(senderPubkey: otherPubkey);
+
+        await openSaveAction(tester, message: message);
+        await tester.tap(find.text(l10n.shareSheetSaveVideo));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.descendant(
+            of: find.byType(SnackBar),
+            matching: find.text(l10n.notificationsVideoUnavailable),
+          ),
+          findsOneWidget,
+        );
+        verifyNever(
+          () => mockWatermarkDownloadService.downloadOriginal(
+            video: any(named: 'video'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        );
+        verifyNever(
+          () => mockWatermarkDownloadService.downloadWithWatermark(
+            video: any(named: 'video'),
+            watermarkText: any(named: 'watermarkText'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        );
+      });
     });
 
     // #5418 — the reaction pill + who-reacted sheet must hide reactions from

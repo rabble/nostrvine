@@ -13,6 +13,9 @@ enum MessageAction {
   /// Copy the divine.video video URL embedded in the message.
   copyVideoUrl,
 
+  /// Save the shared video to the device gallery.
+  saveVideo,
+
   /// Delete the message for everyone (NIP-09 kind 5).
   delete,
 
@@ -26,9 +29,8 @@ enum MessageAction {
 /// - Sent messages: Copy, Delete for everyone
 /// - Received messages: Copy, Report
 ///
-/// When [isVideoShare] is true, an extra "Copy video URL" entry is
-/// surfaced after "Copy text" so the user can grab the shared video's
-/// link without the surrounding message body.
+/// When [isVideoShare] is true, "Copy video URL" and "Save Video" entries
+/// are surfaced after "Copy text".
 ///
 /// Returns the selected [MessageAction], or null if dismissed.
 class MessageActionsSheet {
@@ -51,6 +53,12 @@ class MessageActionsSheet {
           iconPath: DivineIconName.linkSimple.assetPath,
           label: l10n.dmMessageActionCopyVideoUrl,
           onTap: () => result = MessageAction.copyVideoUrl,
+        ),
+      if (isVideoShare)
+        VineBottomSheetActionData(
+          iconPath: DivineIconName.downloadSimple.assetPath,
+          label: l10n.shareSheetSaveVideo,
+          onTap: () => result = MessageAction.saveVideo,
         ),
       if (isSent)
         VineBottomSheetActionData(

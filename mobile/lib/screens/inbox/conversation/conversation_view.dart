@@ -16,18 +16,21 @@ import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/feed/dm_reply_context.dart';
+import 'package:openvine/screens/inbox/conversation/dm_video_target.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/widgets.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/collaborator_invite_parser.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
-import 'package:openvine/utils/divine_video_url.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/utils/watermark_text_resolver.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_content.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_result.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart'
     show truncateNpubForDisplay;
 import 'package:openvine/widgets/report_content_dialog.dart';
+import 'package:openvine/widgets/save_original_progress_sheet.dart';
+import 'package:openvine/widgets/watermark_download_progress_sheet.dart';
 
 /// View for a single DM conversation.
 ///
@@ -51,6 +54,56 @@ class ConversationView extends ConsumerStatefulWidget {
 enum _FailedMessageAction { resend, delete }
 
 class _ConversationViewState extends ConsumerState<ConversationView> {
+  Future<void> _saveSharedVideo(DmVideoTarget target) async {
+    try {
+      final video = await ref
+          .read(videosRepositoryProvider)
+          .fetchVideoWithStatsForRouteId(
+            target.stableId,
+            fallbackRouteIds: target.fallbackRouteIds,
+          );
+      if (!mounted) return;
+      if (video == null) {
+        _showVideoUnavailable();
+        return;
+      }
+
+      final currentPubkey = ref.read(authServiceProvider).currentPublicKeyHex;
+      if (video.pubkey == currentPubkey) {
+        await showSaveOriginalSheet(context: context, ref: ref, video: video);
+        return;
+      }
+
+      final profile = await ref
+          .read(profileRepositoryProvider)
+          ?.getCachedProfile(pubkey: video.pubkey);
+      if (!mounted) return;
+      final watermarkText = resolveWatermarkText(
+        profile: profile,
+        fallbackAuthorName: video.authorName,
+      );
+      await showWatermarkDownloadSheet(
+        context: context,
+        ref: ref,
+        video: video,
+        watermarkText: watermarkText,
+      );
+    } on Exception {
+      if (mounted) _showVideoUnavailable();
+    }
+  }
+
+  void _showVideoUnavailable() {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        DivineSnackbarContainer.snackBar(
+          context.l10n.notificationsVideoUnavailable,
+          error: true,
+        ),
+      );
+  }
+
   Future<void> _onOptions(String otherPubkey, String displayName) async {
     if (otherPubkey.isEmpty) return;
 
@@ -214,6 +267,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                               displayName: displayName,
                               imageUrl: profile?.picture,
                               nip05: profile?.shortDisplayNip05,
+                              onSaveVideo: _saveSharedVideo,
                               onViewProfile: () {
                                 final npub = NostrKeyUtils.encodePubKey(
                                   otherPubkey,
@@ -347,6 +401,7 @@ class _ConversationContent extends StatelessWidget {
     required this.participantPubkeys,
     required this.blockedPubkeys,
     required this.displayName,
+    required this.onSaveVideo,
     this.imageUrl,
     this.nip05,
     this.onViewProfile,
@@ -359,6 +414,7 @@ class _ConversationContent extends StatelessWidget {
   /// Effective block/mute set; reactions from these pubkeys are hidden.
   final Set<String> blockedPubkeys;
   final String displayName;
+  final Future<void> Function(DmVideoTarget target) onSaveVideo;
   final String? imageUrl;
   final String? nip05;
   final VoidCallback? onViewProfile;
@@ -399,6 +455,7 @@ class _ConversationContent extends StatelessWidget {
                     participantPubkeys: participantPubkeys,
                     blockedPubkeys: blockedPubkeys,
                     senderDisplayName: displayName,
+                    onSaveVideo: onSaveVideo,
                   ),
         };
       },
@@ -443,6 +500,7 @@ class _MessageList extends StatelessWidget {
     required this.participantPubkeys,
     required this.blockedPubkeys,
     required this.senderDisplayName,
+    required this.onSaveVideo,
   });
 
   final List<DmMessage> messages;
@@ -452,6 +510,7 @@ class _MessageList extends StatelessWidget {
   /// Effective block/mute set; reactions from these pubkeys are hidden.
   final Set<String> blockedPubkeys;
   final String senderDisplayName;
+  final Future<void> Function(DmVideoTarget target) onSaveVideo;
 
   Future<void> _onMessageLongPress(
     BuildContext context,
@@ -459,7 +518,10 @@ class _MessageList extends StatelessWidget {
     bool isSent,
     DmDeliveryStatus deliveryStatus,
   ) async {
-    final videoUrl = tryExtractDivineVideoUrl(message.content);
+    final videoTarget = resolveDmVideoTarget(
+      content: message.content,
+      sharedVideoRef: resolveOwnShareVideoRef(message),
+    );
     // Reaction picker hidden on failed-send own DMs — reacting to a
     // message the recipient never received is meaningless (#4633 round 25).
     // A failed bubble's resend/delete affordance lives on a single TAP
@@ -468,7 +530,7 @@ class _MessageList extends StatelessWidget {
     final result = await ReactionPickerOverlay.show(
       context: context,
       isSent: isSent,
-      isVideoShare: videoUrl != null,
+      isVideoShare: videoTarget != null,
       showPicker: showPicker,
     );
     if (result == null) return;
@@ -490,8 +552,11 @@ class _MessageList extends StatelessWidget {
       case MessageAction.copy:
         await ClipboardUtils.copy(context, message.content);
       case MessageAction.copyVideoUrl:
-        if (videoUrl == null) return;
-        await ClipboardUtils.copy(context, videoUrl);
+        if (videoTarget == null) return;
+        await ClipboardUtils.copy(context, videoTarget.canonicalUrl);
+      case MessageAction.saveVideo:
+        if (videoTarget == null) return;
+        await onSaveVideo(videoTarget);
       case MessageAction.delete:
         context.read<ConversationBloc>().add(
           ConversationMessageDeleted(rumorId: message.id),

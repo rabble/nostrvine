@@ -18,6 +18,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/screens/feed/dm_reply_context.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/screens/inbox/conversation/dm_video_target.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/video_link_preview_cubit.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
@@ -151,10 +152,13 @@ class MessageBubble extends StatelessWidget {
     // well-formed input.
     final safeMessage = StringUtils.sanitizeUtf16(message);
     final videoMatch = divineVideoUrlRegex.firstMatch(safeMessage);
-    final structuredVideo = _videoTargetFromRef(sharedVideoRef);
-    final videoStableId = videoMatch?.group(1) ?? structuredVideo?.stableId;
-    final videoAuthorPubkey = structuredVideo?.authorPubkey;
-    final videoKind = structuredVideo?.videoKind;
+    final videoTarget = resolveDmVideoTarget(
+      content: safeMessage,
+      sharedVideoRef: sharedVideoRef,
+    );
+    final videoStableId = videoTarget?.stableId;
+    final videoAuthorPubkey = videoTarget?.authorPubkey;
+    final videoKind = videoTarget?.videoKind;
 
     // Slice the message body around the video URL.
     //
@@ -194,7 +198,7 @@ class MessageBubble extends StatelessWidget {
           .where((line) => !_nostrRefLineRegex.hasMatch(line))
           .toList();
       personalMessage = beforeLines.isEmpty ? null : beforeLines.join('\n');
-    } else if (structuredVideo != null) {
+    } else if (videoTarget != null) {
       final lines = safeMessage
           .split('\n')
           .map((line) => line.trim())
@@ -400,42 +404,6 @@ class MessageBubble extends StatelessWidget {
       bottomRight: Radius.circular(isSent ? 4 : 16),
     );
   }
-}
-
-class _SharedVideoTarget {
-  const _SharedVideoTarget({
-    required this.stableId,
-    required this.videoKind,
-    this.authorPubkey,
-  });
-
-  final String stableId;
-  final int videoKind;
-  final String? authorPubkey;
-}
-
-_SharedVideoTarget? _videoTargetFromRef(DmSharedVideoRef? ref) {
-  if (ref == null) return null;
-  if (!ref.isAddressable) {
-    return _SharedVideoTarget(
-      stableId: ref.coordinateOrId,
-      videoKind: ref.videoKind.kind,
-      authorPubkey: ref.authorPubkey,
-    );
-  }
-
-  final coordParts = ref.coordinateOrId.split(':');
-  if (coordParts.length < 3) return null;
-  final kind = int.tryParse(coordParts[0]);
-  final author = coordParts[1];
-  final dTag = coordParts.sublist(2).join(':');
-  if (kind == null || dTag.isEmpty) return null;
-
-  return _SharedVideoTarget(
-    stableId: dTag,
-    videoKind: kind,
-    authorPubkey: author.isNotEmpty ? author : ref.authorPubkey,
-  );
 }
 
 /// Renders message text with inline markdown (bold / italic / strike /
@@ -710,7 +678,10 @@ class _QuotedVideoPreview extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final target = _videoTargetFromRef(quotedVideoRef);
+    final target = resolveDmVideoTarget(
+      content: '',
+      sharedVideoRef: quotedVideoRef,
+    );
     if (target == null) return const SizedBox.shrink();
     final videosRepository = ref.watch(videosRepositoryProvider);
     return BlocProvider(

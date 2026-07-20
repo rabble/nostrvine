@@ -5,6 +5,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/screens/inbox/conversation/dm_video_target.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -65,9 +66,14 @@ class VideoLinkPreviewCubit extends Cubit<VideoLinkPreviewState> {
 
   Future<void> _resolve() async {
     try {
+      final target = DmVideoTarget(
+        stableId: _videoStableId,
+        authorPubkey: _authorPubkey,
+        videoKind: _videoKind,
+      );
       final video = await _videosRepository.fetchVideoWithStatsForRouteId(
-        _videoStableId,
-        fallbackRouteIds: _authorScopedFallbackRouteIds(),
+        target.stableId,
+        fallbackRouteIds: target.fallbackRouteIds,
       );
       if (isClosed) return;
       if (video != null) {
@@ -83,18 +89,5 @@ class VideoLinkPreviewCubit extends Cubit<VideoLinkPreviewState> {
     }
 
     if (!isClosed) emit(const VideoLinkPreviewNotFound());
-  }
-
-  /// Author/kind-scoped addressable coordinate used as a resolution fallback.
-  ///
-  /// The primary bare-id lookup already covers every acceptable video kind, but
-  /// an invite preview knows the exact creator and kind, so an addressable
-  /// `kind:pubkey:d-tag` route lets the repository disambiguate should the bare
-  /// d-tag ever be shared across authors.
-  List<String> _authorScopedFallbackRouteIds() {
-    final author = _authorPubkey;
-    final kind = _videoKind;
-    if (author == null || kind == null) return const [];
-    return ['$kind:$author:$_videoStableId'];
   }
 }

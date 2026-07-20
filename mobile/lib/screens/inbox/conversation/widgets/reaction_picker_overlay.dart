@@ -238,6 +238,12 @@ class _ActionList extends StatelessWidget {
           label: l10n.dmMessageActionCopyVideoUrl,
           onTap: () => onSelected(MessageAction.copyVideoUrl),
         ),
+      if (isVideoShare)
+        _ActionTile(
+          icon: DivineIconName.downloadSimple,
+          label: l10n.shareSheetSaveVideo,
+          onTap: () => onSelected(MessageAction.saveVideo),
+        ),
       if (isSent)
         _ActionTile(
           icon: DivineIconName.trash,
