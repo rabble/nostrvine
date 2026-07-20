@@ -149,11 +149,11 @@ of re-checking these guarantees per screen.
 
 | Component | Guarantee |
 |-----------|-----------|
-| `DivineButton` | All sizes meet the 48dp Android / 44pt iOS tap-target minimum. `small` (40px) and `tiny` (32px) keep their visual size; the tap target is expanded on the InkWell (`tiny` overflows into row gaps so it stays flush without inflating height). Optional `semanticLabel` for icon-only buttons. `error` type text clears WCAG AA 4.5:1 (uses `VineTheme.errorButtonBackground`, a darker red than `VineTheme.error`). |
+| `DivineButton` | `base` (48px) and `small` (40px visible / 48dp tap target) meet the 48dp Android / 44pt iOS tap-target minimum — `small` keeps its visual size while the tap target is expanded on the InkWell. `tiny` (32px) deliberately keeps a 32px tap target (it sits flush next to 32px avatars / type icons; expanding it would bleed into that neighbor's hit area) — tracked as a known gap in #6235 pending design input. Optional `semanticLabel` for icon-only buttons. `error` type text clears WCAG AA 4.5:1 via `VineTheme.onErrorButton`, a darker label color on the unchanged `VineTheme.error` background. |
 | `DivineIconButton` | Tap target ≥ 48dp (small pill centred in a 48px InkWell). Pass `semanticLabel` (or `tooltip`) for an accessible name. |
 | `DivineRowCheckbox` | Exposes a checkbox semantics node with checked / mixed / enabled state. A `disabled` checkbox is non-interactive (no tap, no `onChanged`). |
-| `DivineSlider` | Optional `semanticLabel` describing what it controls; interactive touch height ≥ 44pt without moving the visual track. |
-| `DivineAuthTextField` | Password toggle and the editable field both meet the 48dp / 44pt tap-target minimum (the input fills the field; text is placed via `textAlignVertical`). |
+| `DivineSlider` | Optional `semanticLabel` describing what it controls. Touch-target height is unchanged (32px) — growing it shifts adjacent widgets in real screens (storage settings, video editor sheets); tracked as a known gap in #6235 pending Figma-fit confirmation. |
+| `DivineAuthTextField` | Password toggle and the editable field both meet the 48dp / 44pt tap-target minimum (the input fills the field; text is placed via an animated `textAlignVertical` that stays in sync with the floating label). |
 
 **Icon-only interactive controls need an accessible name.** Enforcing this at
 every call site (and labelling the app's unlabeled `DivineIconButton`
