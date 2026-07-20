@@ -187,7 +187,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     // A new recording supersedes any pending undo from a previous tap.
     if (state.pendingDeletion != null) {
       _cancelPendingDeletionTimer();
-      unawaited(_commitPendingDeletion());
+      unawaited(commitPendingDeletion());
     }
 
     final clipDuration =
@@ -403,7 +403,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
   Future<bool> removeClipById(String clipId) async {
     if (state.pendingDeletion != null) {
       _cancelPendingDeletionTimer();
-      await _commitPendingDeletion();
+      await commitPendingDeletion();
     }
 
     final index = _clips.indexWhere((c) => c.id == clipId);
@@ -470,7 +470,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
   void reorderClip(int oldIndex, int newIndex) {
     if (state.pendingDeletion != null) {
       _cancelPendingDeletionTimer();
-      unawaited(_commitPendingDeletion());
+      unawaited(commitPendingDeletion());
     }
 
     if (oldIndex < 0 ||
@@ -714,7 +714,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     // its draft-decoupling effect by overwriting state.pendingDeletion.
     if (state.pendingDeletion != null) {
       _cancelPendingDeletionTimer();
-      await _commitPendingDeletion();
+      await commitPendingDeletion();
     }
 
     final lastIndex = _clips.length - 1;
@@ -743,7 +743,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
 
     _pendingDeletionTimer = Timer(pendingDeletionWindow, () {
       _pendingDeletionTimer = null;
-      unawaited(_commitPendingDeletion());
+      unawaited(commitPendingDeletion());
     });
   }
 
@@ -782,7 +782,12 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
 
   /// Drop the pending-deletion marker. The clip stays in library trash
   /// and the 30-day retention window owns hard-deletion from here.
-  Future<void> _commitPendingDeletion() async {
+  ///
+  /// Called internally when the user moves on from the undo opportunity
+  /// (new recording, reorder, another delete), and by the recorder-exit
+  /// navigation before the next step snapshots the clip list. No-ops
+  /// when no deletion is pending.
+  Future<void> commitPendingDeletion() async {
     final pending = state.pendingDeletion;
     if (pending == null) return;
     _cancelPendingDeletionTimer();
@@ -816,7 +821,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
   Future<void> clearAll({bool keepAutosavedDraft = false}) async {
     _cancelPendingDeletionTimer();
     if (state.pendingDeletion != null) {
-      await _commitPendingDeletion();
+      await commitPendingDeletion();
     }
     final clipCount = _clips.length;
     _clips.clear();
