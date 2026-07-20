@@ -1087,6 +1087,7 @@ class CommentsRepository {
       final parsedReplyToEventId = restComment.replyToEventId;
       final isTopLevel =
           parsedReplyToEventId == null || parsedReplyToEventId == rootEventId;
+      final videoMetadata = _parseVideoMetadataFromImetaTags(restComment.tags);
 
       return Comment(
         id: restComment.id,
@@ -1100,6 +1101,11 @@ class CommentsRepository {
         rootAddressableId: parsedRootAddressableId ?? rootAddressableId,
         replyToEventId: isTopLevel ? null : parsedReplyToEventId,
         replyToAuthorPubkey: isTopLevel ? null : restComment.replyToPubkey,
+        videoUrl: videoMetadata.videoUrl,
+        thumbnailUrl: videoMetadata.thumbnailUrl,
+        videoDimensions: videoMetadata.videoDimensions,
+        videoDuration: videoMetadata.videoDuration,
+        videoBlurhash: videoMetadata.videoBlurhash,
       );
     } on Exception {
       return null;
@@ -1107,7 +1113,7 @@ class CommentsRepository {
   }
 
   _CommentVideoMetadata _parseVideoMetadataFromImetaTags(
-    List<List<dynamic>> tags,
+    List<List<String>> tags,
   ) {
     String? videoUrl;
     String? thumbnailUrl;
@@ -1122,7 +1128,7 @@ class CommentsRepository {
       String? imetaMimeType;
 
       for (var i = 1; i < tag.length; i++) {
-        final field = tag[i].toString().trim();
+        final field = tag[i].trim();
         if (field.startsWith('url ')) {
           imetaUrlCandidate = field.substring(4).trim();
         } else if (field.startsWith('m ')) {

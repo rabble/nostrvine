@@ -281,10 +281,29 @@ class CommentsListBloc extends Bloc<CommentsListEvent, CommentsListState> {
   ) {
     final comment = event.comment;
 
-    // Skip if already in the map by id (relay echo of a confirmed comment).
+    // Skip if already in the map by id (relay echo of a confirmed comment),
+    // unless the echo carries video metadata missing from the REST bootstrap
+    // copy. In that case, upgrade in place so a REST-loaded video reply can
+    // render as soon as the relay echo arrives.
     // Blocked/muted authors are already filtered by the repository's
     // watchComments stream, so no additional check is needed here.
-    if (state.commentsById.containsKey(comment.id)) return;
+    final existingComment = state.commentsById[comment.id];
+    if (existingComment != null) {
+      if (!existingComment.hasVideo && comment.hasVideo) {
+        _emitStore(
+          emit,
+          Map<String, Comment>.from(state.commentsById)
+            ..[comment.id] = existingComment.copyWith(
+              videoUrl: comment.videoUrl,
+              thumbnailUrl: comment.thumbnailUrl,
+              videoDimensions: comment.videoDimensions,
+              videoDuration: comment.videoDuration,
+              videoBlurhash: comment.videoBlurhash,
+            ),
+        );
+      }
+      return;
+    }
 
     // Optimistic-post reconciliation: if a pending placeholder matches this
     // relay echo by author + content, swap it for the canonical comment so

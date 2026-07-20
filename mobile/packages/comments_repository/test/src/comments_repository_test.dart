@@ -237,6 +237,82 @@ void main() {
         },
       );
 
+      test('maps video metadata from REST imeta tags', () async {
+        when(() => mockFunnelcakeApiClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeApiClient.getVideoComments(
+            videoId: any(named: 'videoId'),
+            sort: any(named: 'sort'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            cacheBustToken: any(named: 'cacheBustToken'),
+          ),
+        ).thenAnswer(
+          (_) async => VideoCommentsResponse(
+            comments: [
+              VideoComment(
+                id: 'rest_video_reply',
+                pubkey: testUserPubkey,
+                createdAt: 1000,
+                kind: EventKind.videoVertical,
+                content: 'REST video reply',
+                sig: 'sig',
+                tags: [
+                  ['E', testRootEventId],
+                  ['K', _testRootEventKind.toString()],
+                  ['P', testRootAuthorPubkey],
+                  ['e', testRootEventId],
+                  ['k', _testRootEventKind.toString()],
+                  ['p', testRootAuthorPubkey],
+                  [
+                    'imeta',
+                    'url https://media.divine.video/reply/12345',
+                    'm video/mp4',
+                    'image https://media.divine.video/reply/12345.jpg',
+                    'dim 720x1280',
+                    'duration 6',
+                    'blurhash LKO2?U%2Tw=w]~RBVZRi};RPxuwH',
+                  ],
+                ],
+              ),
+            ],
+            total: 1,
+          ),
+        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => []);
+
+        repository = CommentsRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeApiClient,
+        );
+
+        final result = await repository.loadComments(
+          rootEventId: testRootEventId,
+          rootEventKind: _testRootEventKind,
+          includeVideoReplies: true,
+        );
+
+        expect(result.comments, hasLength(1));
+        expect(result.comments.first.hasVideo, isTrue);
+        expect(
+          result.comments.first.videoUrl,
+          equals('https://media.divine.video/reply/12345'),
+        );
+        expect(
+          result.comments.first.thumbnailUrl,
+          equals('https://media.divine.video/reply/12345.jpg'),
+        );
+        expect(result.comments.first.videoDimensions, equals('720x1280'));
+        expect(result.comments.first.videoDuration, equals(6));
+        expect(
+          result.comments.first.videoBlurhash,
+          equals('LKO2?U%2Tw=w]~RBVZRi};RPxuwH'),
+        );
+        verifyNever(() => mockNostrClient.queryEvents(any()));
+      });
+
       test('falls back to relay query when REST bootstrap throws', () async {
         when(() => mockFunnelcakeApiClient.isAvailable).thenReturn(true);
         when(
