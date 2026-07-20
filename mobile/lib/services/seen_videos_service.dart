@@ -78,6 +78,7 @@ class SeenVideosService {
   final Map<String, SeenVideoMetrics> _seenVideos = {};
   SharedPreferences? _prefs;
   bool _isInitialized = false;
+  Future<void>? _initializeFuture;
 
   /// Whether the service has been initialized
   bool get isInitialized => _isInitialized;
@@ -86,9 +87,17 @@ class SeenVideosService {
   int get seenVideoCount => _seenVideos.length;
 
   /// Initialize the service and load seen videos from storage
-  Future<void> initialize() async {
-    if (_isInitialized) return;
+  Future<void> initialize() {
+    if (_isInitialized) return Future.value();
+    final pending = _initializeFuture;
+    if (pending != null) return pending;
 
+    final future = _initialize();
+    _initializeFuture = future;
+    return future;
+  }
+
+  Future<void> _initialize() async {
     try {
       _prefs = await SharedPreferences.getInstance();
       await _loadSeenVideos();
@@ -105,6 +114,10 @@ class SeenVideosService {
         name: 'SeenVideosService',
         category: LogCategory.system,
       );
+    } finally {
+      if (!_isInitialized) {
+        _initializeFuture = null;
+      }
     }
   }
 

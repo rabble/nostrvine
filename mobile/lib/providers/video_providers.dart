@@ -485,6 +485,7 @@ VideosRepository videosRepository(Ref ref) {
     inMemoryFeedCache: InMemoryFeedCache(),
     seenVideoLookup: SeenVideoLookup(
       wasSeenRecently: seenVideosService.wasSeenRecently,
+      initialize: seenVideosService.initialize,
     ),
   );
 

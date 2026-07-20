@@ -10682,6 +10682,152 @@ void main() {
       );
 
       test(
+        'waits for seen lookup initialization before freshness ordering',
+        () async {
+          final recentlySeen = _createVideoStats(
+            id: 'recently-seen-video',
+            pubkey: 'recently-seen-pubkey',
+            dTag: 'recently-seen-dtag',
+            videoUrl: 'https://example.com/recently-seen.mp4',
+          );
+          final unseen = _createVideoStats(
+            id: 'unseen-video',
+            pubkey: 'unseen-pubkey',
+            dTag: 'unseen-dtag',
+            videoUrl: 'https://example.com/unseen.mp4',
+          );
+          when(
+            () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              fallback: any(named: 'fallback'),
+              category: any(named: 'category'),
+              preferredLanguages: any(named: 'preferredLanguages'),
+              viewerCountry: any(named: 'viewerCountry'),
+            ),
+          ).thenAnswer(
+            (_) async => RecommendationsResponse(
+              videos: [recentlySeen, unseen],
+              source: 'personalized',
+            ),
+          );
+
+          final initializeCompleter = Completer<void>();
+          var initialized = false;
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            seenVideoLookup: SeenVideoLookup(
+              initialize: () => initializeCompleter.future,
+              wasSeenRecently:
+                  (videoId, {within = const Duration(hours: 24)}) =>
+                      initialized && videoId == 'recently-seen-video',
+            ),
+          );
+
+          var completed = false;
+          final resultFuture = repo
+              .getRecommendedVideos(userPubkey: 'user-pubkey', limit: 10)
+              .then((result) {
+                completed = true;
+                return result;
+              });
+
+          await pumpEventQueue();
+          expect(completed, isFalse);
+
+          initialized = true;
+          initializeCompleter.complete();
+          final result = await resultFuture;
+
+          expect(result.videos.map((video) => video.id), [
+            'unseen-video',
+            'recently-seen-video',
+          ]);
+        },
+      );
+
+      test(
+        'fetches deeper recommendation pages when the first page is all seen',
+        () async {
+          final firstSeen = _createVideoStats(
+            id: 'first-seen-video',
+            pubkey: 'first-seen-pubkey',
+            dTag: 'first-seen-dtag',
+            videoUrl: 'https://example.com/first-seen.mp4',
+          );
+          final secondSeen = _createVideoStats(
+            id: 'second-seen-video',
+            pubkey: 'second-seen-pubkey',
+            dTag: 'second-seen-dtag',
+            videoUrl: 'https://example.com/second-seen.mp4',
+          );
+          final deeperUnseen = _createVideoStats(
+            id: 'deeper-unseen-video',
+            pubkey: 'deeper-unseen-pubkey',
+            dTag: 'deeper-unseen-dtag',
+            videoUrl: 'https://example.com/deeper-unseen.mp4',
+          );
+          final requestedCursors = <String?>[];
+          when(
+            () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              cursor: any(named: 'cursor'),
+              fallback: any(named: 'fallback'),
+              category: any(named: 'category'),
+              preferredLanguages: any(named: 'preferredLanguages'),
+              viewerCountry: any(named: 'viewerCountry'),
+            ),
+          ).thenAnswer((invocation) async {
+            final cursor = invocation.namedArguments[#cursor] as String?;
+            requestedCursors.add(cursor);
+            if (cursor == null) {
+              return RecommendationsResponse(
+                videos: [firstSeen, secondSeen],
+                source: 'personalized',
+                nextCursor: 'page-2',
+                hasMore: true,
+              );
+            }
+            expect(cursor, equals('page-2'));
+            return RecommendationsResponse(
+              videos: [deeperUnseen],
+              source: 'personalized',
+              nextCursor: 'page-3',
+              hasMore: true,
+            );
+          });
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            seenVideoLookup: SeenVideoLookup(
+              wasSeenRecently:
+                  (videoId, {within = const Duration(hours: 24)}) =>
+                      videoId != 'deeper-unseen-video',
+            ),
+          );
+
+          final result = await repo.getRecommendedVideos(
+            userPubkey: 'user-pubkey',
+            limit: 2,
+          );
+
+          expect(result.videos.map((video) => video.id), [
+            'deeper-unseen-video',
+            'first-seen-video',
+            'second-seen-video',
+          ]);
+          expect(result.paginationCursor, equals('page-3'));
+          expect(result.hasMore, isTrue);
+          expect(requestedCursors, [null, 'page-2']);
+        },
+      );
+
+      test(
         'orders cursor pages while preserving pagination metadata',
         () async {
           final requestedCursors = <String?>[];
@@ -11116,11 +11262,17 @@ void main() {
       test(
         'falls back to popular videos when recommendations are empty',
         () async {
-          final popular = _createVideoStats(
-            id: 'popular-video',
-            pubkey: 'popular-pubkey',
-            dTag: 'popular-dtag',
-            videoUrl: 'https://example.com/popular.mp4',
+          final seenPopular = _createVideoStats(
+            id: 'seen-popular-video',
+            pubkey: 'seen-popular-pubkey',
+            dTag: 'seen-popular-dtag',
+            videoUrl: 'https://example.com/seen-popular.mp4',
+          );
+          final unseenPopular = _createVideoStats(
+            id: 'unseen-popular-video',
+            pubkey: 'unseen-popular-pubkey',
+            dTag: 'unseen-popular-dtag',
+            videoUrl: 'https://example.com/unseen-popular.mp4',
           );
           when(
             () => mockFunnelcakeClient.getRecommendations(
@@ -11139,11 +11291,16 @@ void main() {
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
-          ).thenAnswer((_) async => [popular]);
+          ).thenAnswer((_) async => [seenPopular, unseenPopular]);
 
           final repo = VideosRepository(
             nostrClient: mockNostrClient,
             funnelcakeApiClient: mockFunnelcakeClient,
+            seenVideoLookup: SeenVideoLookup(
+              wasSeenRecently:
+                  (videoId, {within = const Duration(hours: 24)}) =>
+                      videoId == 'seen-popular-video',
+            ),
           );
 
           final result = await repo.getRecommendedVideos(
@@ -11151,8 +11308,10 @@ void main() {
             limit: 10,
           );
 
-          expect(result.videos, hasLength(1));
-          expect(result.videos.single.id, equals('popular-video'));
+          expect(result.videos.map((video) => video.id), [
+            'unseen-popular-video',
+            'seen-popular-video',
+          ]);
           verify(
             () => mockFunnelcakeClient.getWatchingVideos(limit: 10),
           ).called(1);

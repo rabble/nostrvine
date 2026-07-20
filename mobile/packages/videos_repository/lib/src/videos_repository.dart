@@ -2513,7 +2513,7 @@ class VideosRepository {
         _funnelcakeApiClient == null ||
         !_funnelcakeApiClient.isAvailable) {
       return HomeFeedResult(
-        videos: prioritizeNotRecentlySeenVideos(
+        videos: await _orderForYouFreshness(
           await getPopularVideos(
             limit: limit,
             until: until,
@@ -2521,7 +2521,6 @@ class VideosRepository {
             preferredLanguages: preferredLanguages,
             viewerCountry: viewerCountry,
           ),
-          seenVideoLookup: _seenVideoLookup,
         ),
       );
     }
@@ -2529,26 +2528,18 @@ class VideosRepository {
     final recommendationCursor = cursor ?? until?.toString();
     late final RecommendationsResponse response;
     try {
-      response = recommendationCursor == null
-          ? await _funnelcakeApiClient.getRecommendations(
-              pubkey: effectiveUserPubkey,
-              limit: limit,
-              seed: requestSeed,
-              preferredLanguages: preferredLanguages,
-              viewerCountry: viewerCountry,
-            )
-          : await _funnelcakeApiClient.getRecommendations(
-              pubkey: effectiveUserPubkey,
-              limit: limit,
-              cursor: recommendationCursor,
-              seed: requestSeed,
-              preferredLanguages: preferredLanguages,
-              viewerCountry: viewerCountry,
-            );
+      response = await _fetchRecommendationsPage(
+        pubkey: effectiveUserPubkey,
+        limit: limit,
+        cursor: recommendationCursor,
+        seed: requestSeed,
+        preferredLanguages: preferredLanguages,
+        viewerCountry: viewerCountry,
+      );
     } on FunnelcakeException {
       if (recommendationCursor != null) rethrow;
       return HomeFeedResult(
-        videos: prioritizeNotRecentlySeenVideos(
+        videos: await _orderForYouFreshness(
           await getPopularVideos(
             limit: limit,
             until: until,
@@ -2556,42 +2547,34 @@ class VideosRepository {
             preferredLanguages: preferredLanguages,
             viewerCountry: viewerCountry,
           ),
-          seenVideoLookup: _seenVideoLookup,
         ),
       );
     }
-    // Recommendation responses can carry the same addressable video more than
-    // once in a single page: the server's emitted-id cursor dedupes by event
-    // id, so a republished coordinate (same kind:pubkey:d-tag, fresh event id)
-    // slips through. Dedupe by feedDedupKey here — as getNewVideos already does
-    // — so the forYou feed never shows the same video twice.
-    final videos = <VideoEvent>[];
-    _appendUniqueVideos(
-      videos,
-      _transformVideoStats(response.videos),
-      seenVideoKeys: <String>{},
+
+    final result = await _buildRecommendedVideosResult(
+      response: response,
+      pubkey: effectiveUserPubkey,
+      limit: limit,
+      requestSeed: requestSeed,
+      recommendationCursor: recommendationCursor,
+      preferredLanguages: preferredLanguages,
+      viewerCountry: viewerCountry,
     );
 
-    if (videos.isEmpty) {
+    if (result.videos.isEmpty) {
       return HomeFeedResult(
-        videos: await getPopularVideos(
-          limit: limit,
-          until: until,
-          skipCache: skipCache,
-          preferredLanguages: preferredLanguages,
-          viewerCountry: viewerCountry,
+        videos: await _orderForYouFreshness(
+          await getPopularVideos(
+            limit: limit,
+            until: until,
+            skipCache: skipCache,
+            preferredLanguages: preferredLanguages,
+            viewerCountry: viewerCountry,
+          ),
         ),
       );
     }
 
-    final result = HomeFeedResult(
-      videos: prioritizeNotRecentlySeenVideos(
-        videos,
-        seenVideoLookup: _seenVideoLookup,
-      ),
-      paginationCursor: response.nextCursor,
-      hasMore: response.hasMore,
-    );
     if (isFirstPage) {
       _recommendationSessionSeed = requestSeed;
     }
@@ -2601,11 +2584,123 @@ class VideosRepository {
     return result;
   }
 
-  HomeFeedResult _withForYouFreshnessOrdering(HomeFeedResult result) {
-    final orderedVideos = prioritizeNotRecentlySeenVideos(
-      result.videos,
+  Future<RecommendationsResponse> _fetchRecommendationsPage({
+    required String pubkey,
+    required int limit,
+    required String? cursor,
+    required String seed,
+    required List<String> preferredLanguages,
+    required String? viewerCountry,
+  }) {
+    if (cursor == null) {
+      return _funnelcakeApiClient!.getRecommendations(
+        pubkey: pubkey,
+        limit: limit,
+        seed: seed,
+        preferredLanguages: preferredLanguages,
+        viewerCountry: viewerCountry,
+      );
+    }
+
+    return _funnelcakeApiClient!.getRecommendations(
+      pubkey: pubkey,
+      limit: limit,
+      cursor: cursor,
+      seed: seed,
+      preferredLanguages: preferredLanguages,
+      viewerCountry: viewerCountry,
+    );
+  }
+
+  Future<HomeFeedResult> _buildRecommendedVideosResult({
+    required RecommendationsResponse response,
+    required String pubkey,
+    required int limit,
+    required String requestSeed,
+    required String? recommendationCursor,
+    required List<String> preferredLanguages,
+    required String? viewerCountry,
+  }) async {
+    await _seenVideoLookup?.ensureInitialized();
+
+    // Recommendation responses can carry the same addressable video more than
+    // once in a page: the server's emitted-id cursor dedupes by event id, so a
+    // republished coordinate (same kind:pubkey:d-tag, fresh event id) slips
+    // through. Dedupe by feedDedupKey here — as getNewVideos already does — so
+    // the forYou feed never shows the same video twice.
+    final videos = <VideoEvent>[];
+    final seenVideoKeys = <String>{};
+    var currentResponse = response;
+    var nextCursor = currentResponse.nextCursor;
+    var hasMore = currentResponse.hasMore;
+    var fetchedCursor = recommendationCursor;
+
+    while (true) {
+      _appendUniqueVideos(
+        videos,
+        _transformVideoStats(currentResponse.videos),
+        seenVideoKeys: seenVideoKeys,
+      );
+
+      if (videos.isEmpty ||
+          _seenVideoLookup == null ||
+          _hasNotRecentlySeenForYouCandidate(videos) ||
+          !hasMore ||
+          nextCursor == null ||
+          nextCursor == fetchedCursor) {
+        break;
+      }
+
+      fetchedCursor = nextCursor;
+      currentResponse = await _fetchRecommendationsPage(
+        pubkey: pubkey,
+        limit: limit,
+        cursor: fetchedCursor,
+        seed: requestSeed,
+        preferredLanguages: preferredLanguages,
+        viewerCountry: viewerCountry,
+      );
+      nextCursor = currentResponse.nextCursor;
+      hasMore = currentResponse.hasMore;
+    }
+
+    return HomeFeedResult(
+      videos: prioritizeNotRecentlySeenVideos(
+        videos,
+        seenVideoLookup: _seenVideoLookup,
+      ),
+      paginationCursor: nextCursor,
+      hasMore: hasMore,
+    );
+  }
+
+  bool _hasNotRecentlySeenForYouCandidate(List<VideoEvent> videos) {
+    final lookup = _seenVideoLookup;
+    if (lookup == null) return true;
+    return videos.any(
+      (video) =>
+          video.id.isEmpty ||
+          !lookup.wasSeenRecently(
+            video.id,
+            within: defaultRecentlySeenVideoWindow,
+          ),
+    );
+  }
+
+  Future<List<VideoEvent>> _orderForYouFreshness(
+    List<VideoEvent> videos,
+  ) async {
+    await _seenVideoLookup?.ensureInitialized();
+    return prioritizeNotRecentlySeenVideos(
+      videos,
       seenVideoLookup: _seenVideoLookup,
     );
+  }
+
+  Future<HomeFeedResult> _withForYouFreshnessOrdering(
+    HomeFeedResult result,
+  ) async {
+    final orderedVideos = await _orderForYouFreshness(result.videos);
     if (identical(orderedVideos, result.videos)) return result;
     return HomeFeedResult(
       videos: orderedVideos,

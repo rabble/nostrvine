@@ -150,10 +150,17 @@ class ForYouFeed extends _$ForYouFeed {
               .toList(),
         ),
       );
+      final seenVideosService = ref.read(seenVideosServiceProvider);
+      await seenVideosService.initialize();
+      if (!ref.mounted) {
+        return const VideoFeedState(videos: [], hasMoreContent: false);
+      }
+
       final freshOrderedVideos = prioritizeNotRecentlySeenVideos(
         filteredVideos,
         seenVideoLookup: SeenVideoLookup(
-          wasSeenRecently: ref.read(seenVideosServiceProvider).wasSeenRecently,
+          wasSeenRecently: seenVideosService.wasSeenRecently,
+          initialize: seenVideosService.initialize,
         ),
       );
 
@@ -239,13 +246,16 @@ class ForYouFeed extends _$ForYouFeed {
             .where((v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey))
             .toList(),
       );
+      final seenVideosService = ref.read(seenVideosServiceProvider);
+      await seenVideosService.initialize();
+      if (!ref.mounted) return;
+
       final newVideos = dedupeByFeedKey(
         prioritizeNotRecentlySeenVideos(
           filteredVideos,
           seenVideoLookup: SeenVideoLookup(
-            wasSeenRecently: ref
-                .read(seenVideosServiceProvider)
-                .wasSeenRecently,
+            wasSeenRecently: seenVideosService.wasSeenRecently,
+            initialize: seenVideosService.initialize,
           ),
         ),
         alreadySeen: currentState.videos.map((video) => video.feedDedupKey),
