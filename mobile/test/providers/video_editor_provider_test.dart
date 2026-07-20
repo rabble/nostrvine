@@ -1043,6 +1043,66 @@ void main() {
       });
 
       test(
+        're-signs rendered stop-motion output without requiring a source mp4',
+        () async {
+          final notifier = container.read(videoEditorProvider.notifier);
+          container
+              .read(clipManagerProvider.notifier)
+              .addStopMotionClip(
+                id: 'frames-only',
+                frames: [
+                  const StopMotionClipFrame(
+                    path: '/docs/frame.jpg',
+                    duration: Duration(milliseconds: 83),
+                  ),
+                ],
+                duration: const Duration(milliseconds: 83),
+                targetAspectRatio: .vertical,
+                originalAspectRatio: 9 / 16,
+              );
+          final rendered = DivineVideoClip(
+            id: 'rendered',
+            video: EditorVideo.file('/docs/rendered.mp4'),
+            duration: const Duration(seconds: 3),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          );
+          notifier.state = notifier.state.copyWith(
+            finalRenderedClip: rendered,
+            c2paSigningFailed: true,
+          );
+
+          String? proofedPath;
+          NativeProofModeService.proofFileOverride =
+              (
+                file, {
+                required enableAdvancedCawgEmbedding,
+                creatorBindingAssertion,
+                cawgIdentityAssertion,
+                verifiedIdentityBundle,
+                clips,
+                editorStateHistory,
+              }) async {
+                proofedPath = file.path;
+                return const NativeProofData(
+                  videoHash: 'h',
+                  c2paManifestId: 'urn:c2pa:stop-motion',
+                );
+              };
+
+          await notifier.retryC2paSigning();
+
+          final state = container.read(videoEditorProvider);
+          expect(proofedPath, '/docs/rendered.mp4');
+          expect(state.c2paSigningFailed, isFalse);
+          expect(state.proofManifestJson, contains('urn:c2pa:stop-motion'));
+          expect(state.finalRenderedClip, equals(rendered));
+          expect(state.isProcessing, isFalse);
+        },
+      );
+
+      test(
         're-raises the prompt when the re-sign fails again (#6058)',
         () async {
           final notifier = container.read(videoEditorProvider.notifier);

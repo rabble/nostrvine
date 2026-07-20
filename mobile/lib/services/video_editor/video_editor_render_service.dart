@@ -554,7 +554,7 @@ class VideoEditorRenderService {
         continue;
       }
 
-      final videoFile = clip.requireVideo.file;
+      final videoFile = clip.video?.file;
       if (videoFile == null) {
         result.add(clip);
         onClipProcessed?.call();
