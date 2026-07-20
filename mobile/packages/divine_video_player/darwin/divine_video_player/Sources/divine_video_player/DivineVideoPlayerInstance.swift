@@ -1197,8 +1197,12 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             player?.rate = Float(speed)
             audioOverlayManager.resumeActive(speed: speed)
             wasPlayingBeforePause = false
-            sendStateUpdate()
         }
+        // Resync unconditionally: a status change suppressed by the gate
+        // while backgrounded (e.g. a paused item that failed on a dropped
+        // connection) would otherwise leave Dart on stale state until the
+        // next interaction.
+        sendStateUpdate()
     }
 
     // MARK: - Dispose
