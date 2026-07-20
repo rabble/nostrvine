@@ -11041,6 +11041,82 @@ void main() {
         ).called(2);
       });
 
+      test(
+        'reorders cached recommendations when seen state changes',
+        () async {
+          final first = _createVideoStats(
+            id: 'first-video',
+            pubkey: 'first-pubkey',
+            dTag: 'first-dtag',
+            videoUrl: 'https://example.com/first.mp4',
+          );
+          final second = _createVideoStats(
+            id: 'second-video',
+            pubkey: 'second-pubkey',
+            dTag: 'second-dtag',
+            videoUrl: 'https://example.com/second.mp4',
+          );
+          when(
+            () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              fallback: any(named: 'fallback'),
+              category: any(named: 'category'),
+              preferredLanguages: any(named: 'preferredLanguages'),
+              viewerCountry: any(named: 'viewerCountry'),
+            ),
+          ).thenAnswer(
+            (_) async => RecommendationsResponse(
+              videos: [first, second],
+              source: 'personalized',
+              nextCursor: 'page-2',
+              hasMore: true,
+            ),
+          );
+
+          final recentlySeenIds = <String>{};
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            inMemoryFeedCache: InMemoryFeedCache(),
+            seenVideoLookup: SeenVideoLookup(
+              wasSeenRecently:
+                  (videoId, {within = const Duration(hours: 24)}) =>
+                      recentlySeenIds.contains(videoId),
+            ),
+          );
+
+          final fresh = await repo.getRecommendedVideos(
+            userPubkey: 'user-pubkey',
+            limit: 10,
+          );
+          recentlySeenIds.add('first-video');
+          final cached = await repo.getRecommendedVideos(
+            userPubkey: 'user-pubkey',
+            limit: 10,
+          );
+
+          expect(fresh.videos.map((video) => video.id), [
+            'first-video',
+            'second-video',
+          ]);
+          expect(cached.videos.map((video) => video.id), [
+            'second-video',
+            'first-video',
+          ]);
+          expect(cached.paginationCursor, equals('page-2'));
+          expect(cached.hasMore, isTrue);
+          verify(
+            () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
+              pubkey: 'user-pubkey',
+              limit: 10,
+            ),
+          ).called(1);
+        },
+      );
+
       test('keeps the same session seed across cursor pagination', () async {
         final requestedSeeds = <String?>[];
         var callCount = 0;
