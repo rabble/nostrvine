@@ -22,10 +22,12 @@ import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/database_provider.dart';
+import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
+import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/video_editor/video_editor_audio_render.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
@@ -37,15 +39,52 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockDraftStorageService extends Mock implements DraftStorageService {}
 
+/// An operation-scoped trace handle that records its attributes and stop count
+/// so tests can assert the `video_generation` per-render trace behaviour —
+/// which the real (uninitialised) service would silently no-op.
+class _RecordingTrace implements PerformanceTrace {
+  _RecordingTrace(this.name);
+
+  final String name;
+  final Map<String, String> attributes = {};
+  int stopCount = 0;
+
+  @override
+  void putAttribute(String attribute, String value) =>
+      attributes[attribute] = value;
+
+  @override
+  Future<void> stop() async => stopCount++;
+}
+
+/// Hands out — and retains — a [_RecordingTrace] per [startOperationTrace] call.
+class _RecordingPerformanceMonitor extends PerformanceMonitoringService {
+  final List<_RecordingTrace> traces = [];
+
+  @override
+  PerformanceTrace startOperationTrace(String traceName) {
+    final trace = _RecordingTrace(traceName);
+    traces.add(trace);
+    return trace;
+  }
+}
+
 void main() {
   group('VideoEditorProvider', () {
     late ProviderContainer container;
+    late _RecordingPerformanceMonitor performanceMonitor;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
+      performanceMonitor = _RecordingPerformanceMonitor();
       container = ProviderContainer(
-        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          performanceMonitoringServiceProvider.overrideWithValue(
+            performanceMonitor,
+          ),
+        ],
       );
     });
 
@@ -1173,6 +1212,128 @@ void main() {
           reason:
               'updateCover must record the cover image path durably so cover '
               'displays survive finalRenderedClip being cleared',
+        );
+      });
+    });
+
+    group('video_generation trace', () {
+      // Telemetry-only: a regression here mislabels a Firebase sample, not a
+      // user-facing bug — a touch belt-and-suspenders, kept so the per-render
+      // trace scoping and outcome mapping can't silently rot.
+      tearDown(() {
+        VideoEditorRenderService.renderVideoToClipOverride = null;
+      });
+
+      void addOneClip() {
+        container
+            .read(clipManagerProvider.notifier)
+            .addClip(
+              limitClipDuration: false,
+              video: EditorVideo.file('/docs/clip.mp4'),
+              targetAspectRatio: .vertical,
+              originalAspectRatio: 9 / 16,
+              duration: const Duration(seconds: 2),
+            );
+      }
+
+      test(
+        'overlapping renders each own a trace, stopped once, with their own '
+        'attributes',
+        () async {
+          final notifier = container.read(videoEditorProvider.notifier);
+          addOneClip();
+
+          final slowCompleter = Completer<(DivineVideoClip, String?)?>();
+          final fastCompleter = Completer<(DivineVideoClip, String?)?>();
+          var callCount = 0;
+          VideoEditorRenderService.renderVideoToClipOverride =
+              ({
+                required clips,
+                required editorStateHistory,
+                parameters,
+                taskId,
+              }) {
+                callCount++;
+                return callCount == 1
+                    ? slowCompleter.future
+                    : fastCompleter.future;
+              };
+
+          final freshClip = DivineVideoClip(
+            id: 'fresh',
+            video: EditorVideo.file('/docs/fresh.mp4'),
+            duration: const Duration(seconds: 3),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          );
+
+          // render1 = generation 1 (slow, superseded); render2 = generation 2
+          // (fast, winner). Each captures its own operation-scoped trace.
+          final render1 = notifier.startRenderVideo();
+          final render2 = notifier.startRenderVideo();
+          expect(callCount, equals(2));
+          expect(
+            performanceMonitor.traces.length,
+            2,
+            reason: 'each render must start its own trace, not share one',
+          );
+
+          fastCompleter.complete((freshClip, null));
+          await render2;
+          slowCompleter.complete((freshClip, null));
+          await render1;
+
+          final trace1 = performanceMonitor.traces[0];
+          final trace2 = performanceMonitor.traces[1];
+
+          // Each trace is stopped exactly once — neither render stops the
+          // other's trace.
+          expect(trace1.stopCount, 1);
+          expect(trace2.stopCount, 1);
+
+          // Each trace keeps its own outcome: the winner is success, the
+          // superseded render is incomplete (not overwritten onto the winner).
+          expect(trace2.attributes['outcome'], 'success');
+          expect(trace1.attributes['outcome'], 'incomplete');
+          expect(trace1.attributes['clip_count'], '1');
+          expect(trace2.attributes['clip_count'], '1');
+        },
+      );
+
+      test('tags outcome=failed when the render returns null', () async {
+        final notifier = container.read(videoEditorProvider.notifier);
+        addOneClip();
+        VideoEditorRenderService.renderVideoToClipOverride =
+            ({
+              required clips,
+              required editorStateHistory,
+              parameters,
+              taskId,
+            }) async => null;
+
+        await notifier.startRenderVideo();
+        expect(
+          performanceMonitor.traces.single.attributes['outcome'],
+          'failed',
+        );
+      });
+
+      test('tags outcome=error when the render throws', () async {
+        final notifier = container.read(videoEditorProvider.notifier);
+        addOneClip();
+        VideoEditorRenderService.renderVideoToClipOverride =
+            ({
+              required clips,
+              required editorStateHistory,
+              parameters,
+              taskId,
+            }) async => throw Exception('render boom');
+
+        await notifier.startRenderVideo();
+        expect(
+          performanceMonitor.traces.single.attributes['outcome'],
+          'error',
         );
       });
     });

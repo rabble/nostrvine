@@ -75,5 +75,30 @@ void main() {
         throwsException,
       );
     });
+
+    test(
+      'startOperationTrace returns a handle that tags and stops cleanly',
+      () async {
+        await service.initialize();
+
+        final trace = service.startOperationTrace('test_operation');
+
+        // Tagging and stopping the handle must be safe even when Firebase
+        // isn't configured (the uninitialised path returns a no-op handle).
+        trace.putAttribute('outcome', 'success');
+        await expectLater(trace.stop(), completes);
+      },
+    );
+  });
+
+  group(NoOpPerformanceTraceMonitor, () {
+    test('startOperationTrace hands out a no-op trace handle', () async {
+      const monitor = NoOpPerformanceTraceMonitor();
+
+      final trace = monitor.startOperationTrace('test_operation');
+      trace.putAttribute('outcome', 'success');
+
+      await expectLater(trace.stop(), completes);
+    });
   });
 }

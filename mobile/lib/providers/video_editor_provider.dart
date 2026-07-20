@@ -22,6 +22,7 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/preferences_providers.dart';
+import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/providers/video_reply_context_provider.dart';
@@ -1129,6 +1130,22 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   }
 
   Future<void> _runRenderVideo(int generation) async {
+    // Capture the monitor and render inputs up front: a final render can settle
+    // well after the user backs out (dispose cancels via cancelRenderVideo, but
+    // the future still completes), by which point this notifier may be disposed
+    // and `ref.read` would throw — the captured instance stays valid. The trace
+    // is operation-scoped: this render owns the returned handle, so an
+    // overlapping render gets its own trace instead of stopping or
+    // re-attributing this one, and start stays fire-and-forget so render
+    // dispatch is synchronous (the overlapping-render test relies on that).
+    final performance = ref.read(performanceMonitoringServiceProvider);
+    final trace = performance.startOperationTrace('video_generation');
+    final clipCount = _clips.length;
+    final aspectRatio = _clips.isEmpty
+        ? null
+        : _clips.first.targetAspectRatio.name;
+    void tagOutcome(String outcome) => trace.putAttribute('outcome', outcome);
+
     try {
       final renderParameters = _buildRenderParameters();
 
@@ -1139,13 +1156,19 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         taskId: draftId,
       );
 
-      // A newer render was started while this one was running — discard.
-      if (generation != _renderGeneration) return;
+      // A newer render was started or the user cancelled while this one was
+      // running — tag this render's own trace so the console can exclude
+      // non-completing renders from the generation-time distribution.
+      if (generation != _renderGeneration) {
+        tagOutcome('incomplete');
+        return;
+      }
 
       if (result == null) {
         // A user cancel bumps the generation and is caught above, so reaching
         // here with a matching generation is a genuine render failure — surface
         // the retry affordance (#6058).
+        tagOutcome('failed');
         Log.warning(
           '⚠️ Video render failed',
           name: 'VideoEditorNotifier',
@@ -1154,6 +1177,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         state = state.copyWith(isProcessing: false, renderFailed: true);
         return;
       }
+
+      tagOutcome('success');
 
       final (finalRenderedClip, proofManifestJson) = result;
 
@@ -1187,7 +1212,11 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       autosaveChanges();
     } catch (error, stackTrace) {
       // A newer render owns the processing flag now — leave it alone.
-      if (generation != _renderGeneration) return;
+      if (generation != _renderGeneration) {
+        tagOutcome('incomplete');
+        return;
+      }
+      tagOutcome('error');
       // Surface the failure (e.g. a hung/failed C2PA proof step) as an error +
       // retry so the user can restart the render instead of being stuck on the
       // processing overlay (#6058).
@@ -1199,6 +1228,15 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         stackTrace: stackTrace,
       );
       state = state.copyWith(isProcessing: false, renderFailed: true);
+    } finally {
+      // This render owns its trace handle, so tag and stop it unconditionally.
+      // Stop fire-and-forget so a trace.stop() platform round-trip doesn't gate
+      // the render's completion.
+      trace.putAttribute('clip_count', '$clipCount');
+      if (aspectRatio != null) {
+        trace.putAttribute('aspect_ratio', aspectRatio);
+      }
+      unawaited(trace.stop());
     }
   }
 

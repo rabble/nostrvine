@@ -19,6 +19,7 @@ import 'package:openvine/models/video_recorder/video_recorder_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
@@ -31,6 +32,48 @@ import 'package:wakelock_plus_platform_interface/wakelock_plus_platform_interfac
 import '../../mocks/mock_path_provider_platform.dart';
 
 class _MockCameraService extends Mock implements CameraService {}
+
+/// An operation-scoped trace handle that records its attributes and stop count.
+class _RecordingTrace implements PerformanceTrace {
+  final Map<String, String> attributes = {};
+  int stopCount = 0;
+
+  @override
+  void putAttribute(String attribute, String value) =>
+      attributes[attribute] = value;
+
+  @override
+  Future<void> stop() async => stopCount++;
+}
+
+/// Hands out a [_RecordingTrace] per operation so the `camera_startup` outcome
+/// mapping can be asserted; the bloc's default [NoOpPerformanceTraceMonitor]
+/// would swallow it.
+class _RecordingTraceMonitor implements PerformanceTraceMonitor {
+  final List<_RecordingTrace> traces = [];
+
+  @override
+  PerformanceTrace startOperationTrace(String traceName) {
+    final trace = _RecordingTrace();
+    traces.add(trace);
+    return trace;
+  }
+
+  @override
+  Future<void> startTrace(String traceName) async {}
+
+  @override
+  Future<void> stopTrace(String traceName) async {}
+
+  @override
+  void putAttribute(String traceName, String attribute, String value) {}
+
+  @override
+  void incrementMetric(String traceName, String metricName, int value) {}
+
+  @override
+  void setMetric(String traceName, String metricName, int value) {}
+}
 
 class _MockClipManager extends Mock implements ClipManagerNotifier {}
 
@@ -2027,6 +2070,65 @@ void main() {
             enabled: any(named: 'enabled'),
           ),
         ).thenAnswer((_) async => true);
+      });
+
+      group('camera_startup trace', () {
+        // Telemetry-only: a regression here mislabels a Firebase sample, not a
+        // user-facing bug — a touch belt-and-suspenders, kept so the outcome
+        // mapping can't silently rot.
+        late _RecordingTraceMonitor monitor;
+
+        setUp(() {
+          monitor = _RecordingTraceMonitor();
+        });
+
+        VideoRecorderBloc buildTraced() => VideoRecorderBloc(
+          readClipManager: () => clipManager,
+          readVideoEditor: () => videoEditor,
+          readVideoEditorState: VideoEditorProviderState.new,
+          readSharedPreferences: () => prefs,
+          cameraService: cameraService,
+          performanceMonitor: monitor,
+        );
+
+        blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+          'tags outcome=success and stops the trace when the camera '
+          'initializes',
+          build: buildTraced,
+          act: (bloc) => bloc.add(const VideoRecorderInitializeRequested()),
+          verify: (_) {
+            expect(monitor.traces.single.attributes['outcome'], 'success');
+            expect(monitor.traces.single.stopCount, 1);
+          },
+        );
+
+        blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+          'tags outcome=failed when initialize completes but the camera '
+          'never becomes ready',
+          setUp: () =>
+              when(() => cameraService.isInitialized).thenReturn(false),
+          build: buildTraced,
+          act: (bloc) => bloc.add(const VideoRecorderInitializeRequested()),
+          verify: (_) {
+            expect(monitor.traces.single.attributes['outcome'], 'failed');
+          },
+        );
+
+        blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+          'tags outcome=error when initialize throws',
+          setUp: () => when(
+            () => cameraService.initialize(
+              videoQuality: any(named: 'videoQuality'),
+              initialLens: any(named: 'initialLens'),
+              enableAutoLensSwitch: any(named: 'enableAutoLensSwitch'),
+            ),
+          ).thenThrow(Exception('camera boom')),
+          build: buildTraced,
+          act: (bloc) => bloc.add(const VideoRecorderInitializeRequested()),
+          verify: (_) {
+            expect(monitor.traces.single.attributes['outcome'], 'error');
+          },
+        );
       });
 
       blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
