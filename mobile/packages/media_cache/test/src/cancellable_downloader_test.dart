@@ -140,6 +140,32 @@ void main() {
       },
     );
 
+    test('cancelActiveDownloads cancels every concurrent download', () async {
+      final client = _CallbackClient((request) async {
+        await (request as http.AbortableRequest).abortTrigger;
+        throw http.RequestAbortedException(request.url);
+      });
+      final downloader = HttpCancellableDownloader(client);
+
+      final first = downloader.download(
+        url: 'https://example.com/multi_first.mp4',
+        targetFile: File('${tempDir.path}/multi_first.mp4'),
+      );
+      final second = downloader.download(
+        url: 'https://example.com/multi_second.mp4',
+        targetFile: File('${tempDir.path}/multi_second.mp4'),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      downloader.cancelActiveDownloads();
+
+      expect(await first.file, isNull);
+      expect(await second.file, isNull);
+      expect(first.isCancelled, isTrue);
+      expect(second.isCancelled, isTrue);
+      expect(client.closed, isFalse);
+    });
+
     test('download still works after cancelActiveDownloads', () async {
       var firstRequest = true;
       final client = _CallbackClient((request) async {

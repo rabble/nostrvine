@@ -94,6 +94,42 @@ void main() {
         cacheManager.cancelInFlightDownloads();
         expect(downloader.cancelActiveCallCount, 0);
       });
+
+      test(
+        'cancels a deferred op before it issues a download',
+        () async {
+          final downloader = FakeCancellableDownloader();
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          cacheManager = TestableMediaCacheManager(
+            config: MediaCacheConfig(
+              cacheKey: 'cancel_inflight_deferred_$timestamp',
+              enableSyncManifest: true,
+            ),
+            downloaderOverride: downloader,
+          );
+
+          // Register an operation but do not pump: it is suspended in the
+          // deferred _resolveBaseCacheDir window, before _downloader.download()
+          // has run, so it is not yet in the downloader's active set.
+          final op = cacheManager.cacheFileCancellable(
+            'https://example.com/video.mp4',
+            key: 'cancel_inflight_deferred_key',
+          );
+
+          cacheManager.cancelInFlightDownloads();
+
+          // Let the deferred startDownload resume. It must bail at the
+          // cancelledBeforeStart guard and never issue a download — otherwise
+          // a fresh NSURLSession request fires after the app is suspended.
+          for (var i = 0; i < 50 && downloader.downloads.isEmpty; i++) {
+            await Future<void>.delayed(const Duration(milliseconds: 1));
+          }
+
+          expect(downloader.downloads, isEmpty);
+          expect(op.isCancelled, isTrue);
+          expect(await op.file, isNull);
+        },
+      );
     });
 
     group('cacheFile', () {

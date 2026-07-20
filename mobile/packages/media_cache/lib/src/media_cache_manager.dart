@@ -1335,6 +1335,16 @@ class MediaCacheManager extends CacheManager {
   /// isolate aborts the process in the FFI trampoline.
   void cancelInFlightDownloads() {
     if (_isClosed) return;
+    // Cancel manager-level operations first, mirroring [close]. An operation
+    // still awaiting _resolveBaseCacheDir() has not started its download yet,
+    // so it is absent from the downloader's active set; cancelling it here
+    // sets cancelledBeforeStart so startDownload() bails instead of issuing a
+    // fresh NSURLSession request after the isolate is already suspended.
+    for (final operation in _activeCancellableOperations.toList(
+      growable: false,
+    )) {
+      operation.cancel();
+    }
     _downloader.cancelActiveDownloads();
   }
 
