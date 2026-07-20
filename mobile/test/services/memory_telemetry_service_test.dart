@@ -16,14 +16,12 @@ void main() {
     MemoryTelemetryService build({
       required int Function() readRssBytes,
       int Function() nativeControllerCount = _zero,
-      int Function() fvpControllerCount = _zero,
       int Function() queueDepth = _zero,
       Duration interval = const Duration(seconds: 30),
     }) {
       return MemoryTelemetryService(
         readRssBytes: readRssBytes,
         nativeControllerCount: nativeControllerCount,
-        fvpControllerCount: fvpControllerCount,
         queueDepth: queueDepth,
         emit: emitted.add,
         interval: interval,
@@ -48,7 +46,6 @@ void main() {
       final service = build(
         readRssBytes: () => 4242,
         nativeControllerCount: () => 3,
-        fvpControllerCount: () => 5,
         queueDepth: () => 7,
       );
 
@@ -59,7 +56,6 @@ void main() {
       expect(snapshot.rssBytes, equals(4242));
       expect(snapshot.peakRssBytes, equals(4242));
       expect(snapshot.nativeControllers, equals(3));
-      expect(snapshot.fvpControllers, equals(5));
       expect(snapshot.queueDepth, equals(7));
     });
 

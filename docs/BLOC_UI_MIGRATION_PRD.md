@@ -54,7 +54,6 @@ a UI BLoC would be the wrong layer.
 
 | File | Role |
 |------|------|
-| `lib/providers/individual_video_providers.dart` | Native `VideoPlayerController` lifecycle + fallback/retry/caching (`DisposedControllersTracker extends ChangeNotifier`). |
 | `lib/features/feature_flags/services/feature_flag_service.dart` | Feature-flag service. |
 | `lib/router/app_router.dart` | `_StreamListenable extends ChangeNotifier` — GoRouter `refreshListenable` adapter. |
 | `lib/services/connection_status_service.dart` | Connectivity monitor. |

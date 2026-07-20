@@ -25,11 +25,11 @@
 /// // Get cached file synchronously (no async overhead)
 /// final file = videoCache.getCachedFileSync('video_123');
 /// if (file != null) {
-///   // Use cached file immediately
-///   videoController = VideoPlayerController.file(file);
+///   // Play the cached file immediately (no network round-trip)
+///   await controller.setSource(VideoClip.file(file.path));
 /// } else {
 ///   // Fall back to network
-///   videoController = VideoPlayerController.networkUrl(Uri.parse(url));
+///   await controller.setSource(VideoClip.network(url));
 ///   // Cache in background for next time
 ///   unawaited(videoCache.cacheFile(url, key: 'video_123'));
 /// }

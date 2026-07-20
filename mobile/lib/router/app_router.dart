@@ -41,7 +41,6 @@ import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/deep_link_service.dart';
-import 'package:openvine/services/video_stop_navigator_observer.dart';
 import 'package:openvine/utils/sensitive_uri_for_logs.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -113,7 +112,6 @@ List<NavigatorObserver> _buildRouterObservers() {
   final observers = <NavigatorObserver>[
     routeObserver,
     PageLoadObserver(),
-    VideoStopNavigatorObserver(),
   ];
 
   return observers;

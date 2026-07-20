@@ -21,7 +21,6 @@ import 'package:openvine/screens/explore/widgets/explore_tab_bar.dart';
 import 'package:openvine/screens/explore/widgets/explore_tab_view.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/utils/nostr_apps_platform_support.dart';
-import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/nav_rounded_shell.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -144,20 +143,10 @@ class _ExploreViewState extends ConsumerState<ExploreView>
     if (!mounted) return;
 
     final pageContext = ref.read(pageContextProvider);
-    final wasInFeedMode =
-        pageContext.whenOrNull(data: (ctx) => ctx.videoIndex != null) ?? false;
     final shouldReset =
         pageContext.whenOrNull(data: (ctx) => ctx.videoIndex != null) ?? false;
 
     if (shouldReset) {
-      // Stop all video playback BEFORE navigating back to grid mode so videos
-      // don't keep playing in the background when switching tabs.
-      // videoControllerAutoCleanupProvider only triggers on route TYPE changes,
-      // not when staying on the same route type (explore), so cleanup here.
-      if (wasInFeedMode) {
-        disposeAllVideoControllers(ref);
-      }
-
       // Navigate back to grid mode (no videoIndex) — URL drives UI state.
       // TabController's index persists across route changes.
       context.go(ExploreScreen.path);

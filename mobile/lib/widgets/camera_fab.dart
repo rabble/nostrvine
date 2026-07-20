@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/utils/camera_permission_check.dart';
-import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/age_verification_dialog.dart';
 
 class CameraFAB extends ConsumerWidget {
@@ -18,9 +17,6 @@ class CameraFAB extends ConsumerWidget {
     return FloatingActionButton(
       onPressed: () async {
         final scaffoldContext = context;
-
-        // Stop any playing videos before opening camera
-        disposeAllVideoControllers(ref);
 
         // Check age verification
         final ageVerificationService = ref.read(ageVerificationServiceProvider);

@@ -192,8 +192,7 @@ String? appRouterRedirect(Ref ref, GoRouterState state) {
   // currentAuthStateProvider re-invalidates on an authStateStream event.
   // Treating those transient refetches as "loading" would redirect away
   // from the current route to the review loading screen and back, which
-  // tears down the video feed (VideoStopNavigatorObserver disposes all
-  // controllers on push).
+  // tears down and rebuilds the video feed.
   if (authState == AuthState.authenticated &&
       reviewStatusAsync.isLoading &&
       !reviewStatusAsync.hasValue) {

@@ -8,11 +8,8 @@ import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
-import 'package:video_player_platform_interface/video_player_platform_interface.dart'
-    as video_platform;
 
 import '../../helpers/test_provider_overrides.dart';
-import '../../helpers/web_video_player_test_doubles.dart';
 import '../../test_data/video_test_data.dart';
 
 class MockVideoFeedBloc extends MockBloc<VideoFeedEvent, VideoFeedBlocState>
@@ -22,7 +19,6 @@ void main() {
   group('VideoFeedView web', () {
     late MockVideoFeedBloc mockBloc;
     late MockProfileRepository mockProfileRepository;
-    late video_platform.VideoPlayerPlatform originalPlatform;
 
     setUpAll(() {
       registerFallbackValue(const VideoFeedStarted());
@@ -31,13 +27,7 @@ void main() {
     setUp(() {
       mockBloc = MockVideoFeedBloc();
       mockProfileRepository = createMockProfileRepository();
-      originalPlatform = video_platform.VideoPlayerPlatform.instance;
-      video_platform.VideoPlayerPlatform.instance = FakeVideoPlayerPlatform();
       when(() => mockBloc.stream).thenAnswer((_) => const Stream.empty());
-    });
-
-    tearDown(() {
-      video_platform.VideoPlayerPlatform.instance = originalPlatform;
     });
 
     testWidgets('renders Auto action in the home web overlay', (tester) async {

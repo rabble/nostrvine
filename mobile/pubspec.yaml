@@ -151,7 +151,6 @@ dependencies:
   infinite_video_feed:
     path: packages/infinite_video_feed
   dm_repository:
-  video_player: ^2.9.1 # Uses native AVPlayer (iOS/macOS) and ExoPlayer (Android)
   visibility_detector: ^0.4.0+2 # Detect widget visibility for proper video control
   wakelock_plus: ^1.5.2 # Prevent screen timeout during active video recording
   image: ^4.1.7 # Image processing for GIF generation
@@ -312,7 +311,6 @@ dependencies:
   # 3.x bundles the selected native SQLite implementation through hooks, and
   # extra Flutter-specific native SQLite providers can make plain SQLite win.
   sqlite3: ^3.3.3
-  video_player_web_hls: ^1.3.0
   firebase_performance: ^0.11.1+4
   firebase_messaging: ^16.1.1
   audio_session: ^0.2.2

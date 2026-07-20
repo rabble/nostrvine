@@ -23,7 +23,6 @@ import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
-import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/camera_permission_gate.dart';
 import 'package:openvine/widgets/video_recorder/modes/capture/video_recorder_capture_stack.dart';
 import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_classic_stack.dart';
@@ -171,8 +170,6 @@ class _VideoRecorderViewState extends ConsumerState<VideoRecorderView>
       category: LogCategory.video,
     );
 
-    _disposeVideoControllers();
-
     context.read<VideoRecorderBloc>().add(
       VideoRecorderInitializeRequested(fromEditor: widget.fromEditor),
     );
@@ -269,30 +266,11 @@ class _VideoRecorderViewState extends ConsumerState<VideoRecorderView>
     }
   }
 
-  /// Dispose all video controllers to free resources before recording
-  void _disposeVideoControllers() {
-    try {
-      disposeAllVideoControllers(ref);
-      Log.info(
-        '🗑️ Disposed all video controllers',
-        name: 'VideoRecorderScreen',
-        category: .video,
-      );
-    } catch (e) {
-      Log.warning(
-        '📹 Failed to dispose video controllers: $e',
-        name: 'VideoRecorderScreen',
-        category: .video,
-      );
-    }
-  }
-
   /// Force all background video playback to pause while camera is open.
   void _pauseBackgroundPlayback() {
     try {
       _overlayVisibilityNotifier = ref.read(overlayVisibilityProvider.notifier);
       _overlayVisibilityNotifier!.setPageOpen(true);
-      _disposeVideoControllers();
       Log.info(
         '⏸️ Paused background playback for camera',
         name: 'VideoRecorderScreen',

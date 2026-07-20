@@ -221,6 +221,21 @@ extension VideoEventAppExtensions on VideoEvent {
     return '$_divineMediaBase/$hash/720p.mp4';
   }
 
+  /// URL for the inline comment / collaborator-invite player, which assigns the
+  /// URL straight to a `<video>` element (see `web_video_player_backend_web`).
+  /// Older desktop Chrome (< 150) and Firefox lack native HLS, so an HLS
+  /// `.m3u8` won't play there. Resolve HLS to the progressive variant — the
+  /// same [getOptimalVideoUrlForPlatform] selection the feed already uses on
+  /// every platform. Progressive URLs pass through unchanged, so the common
+  /// case (and its transcode readiness) is never touched.
+  String? get inlinePlayerVideoUrl {
+    final url = videoUrl;
+    if (url == null) return null;
+    final isHls = url.toLowerCase().contains('.m3u8');
+    if (!isHls) return url;
+    return getOptimalVideoUrlForPlatform() ?? url;
+  }
+
   /// HLS URL selected by bandwidth tracker quality.
   String? _hlsForBandwidth() {
     final hlsQuality = switch (bandwidthTracker.recommendedQuality) {

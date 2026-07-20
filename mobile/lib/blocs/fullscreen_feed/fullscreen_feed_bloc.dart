@@ -81,7 +81,7 @@ const _maxConcurrentCacheDownloads = 1;
 /// **Playback hooks integration:**
 /// - Background caching triggered via [FullscreenFeedVideoCacheStarted]
 /// - Loop enforcement handled by the FeedVideos player configuration
-/// - Cache resolution happens at the player level (individual_video_providers)
+/// - Cache resolution happens at the player/repository level
 class FullscreenFeedBloc
     extends Bloc<FullscreenFeedEvent, FullscreenFeedState> {
   FullscreenFeedBloc({
@@ -216,8 +216,7 @@ class FullscreenFeedBloc
   /// - Emits states for each data event
   /// - Cancels the subscription when the bloc is closed
   ///
-  /// Cache resolution is handled at the player level by
-  /// individualVideoControllerProvider, not here.
+  /// Cache resolution is handled at the player/repository level, not here.
   Future<void> _onStarted(
     FullscreenFeedStarted event,
     Emitter<FullscreenFeedState> emit,

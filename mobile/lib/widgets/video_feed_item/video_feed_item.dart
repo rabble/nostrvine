@@ -8,13 +8,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
-import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
 // For isVideoActiveProvider (router-driven)
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/individual_video_providers.dart'; // For individualVideoControllerProvider only
 import 'package:openvine/providers/og_viner_cache_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
@@ -37,25 +35,6 @@ import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_shee
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
 import 'package:openvine/widgets/video_reply_parent_link.dart';
 import 'package:unified_logger/unified_logger.dart';
-
-VideoControllerParams videoControllerParamsFor(
-  WidgetRef ref,
-  VideoEvent video,
-) {
-  final fallbackUrl = ref.read(fallbackUrlCacheProvider)[video.id];
-  if (fallbackUrl != null) {
-    final cacheableUrl = video.getCacheableVideoUrlForPlatform();
-    return VideoControllerParams(
-      videoId: video.id,
-      videoUrl: fallbackUrl,
-      cacheUrl: cacheableUrl,
-      videoEvent: video,
-      allowCaching: cacheableUrl != null,
-    );
-  }
-
-  return VideoControllerParams.fromVideoEvent(video);
-}
 
 class VideoOverlayPreviewData {
   const VideoOverlayPreviewData({

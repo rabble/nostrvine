@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide AspectRatio, LogCategory;
 import 'package:openvine/blocs/dm/conversation/collaborator_invite_actions_cubit.dart';
+import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/collaborator_invite.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -272,7 +273,7 @@ class _InvitePreviewSurface extends StatelessWidget {
         children: [
           VideoCommentPlayer(
             key: const ValueKey('collaborator_invite_inline_player'),
-            videoUrl: videoUrl,
+            videoUrl: resolvedVideo!.inlinePlayerVideoUrl ?? videoUrl,
             thumbnailUrl: thumbnailUrl,
           ),
           PositionedDirectional(
