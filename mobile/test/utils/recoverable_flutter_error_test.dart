@@ -23,6 +23,30 @@ void main() {
       );
     });
 
+    // A raw NetworkImage that fails with a non-404 HTTP status (401, 403, 500,
+    // …) is just as recoverable as a 404 — the widget falls back to a
+    // placeholder. Before this was broadened, only 404 was downgraded, so
+    // these slipped through as FATAL Crashlytics reports
+    // (issue 72eb9f44799fa6513097c0049f68bc3b was dominated by 401/500).
+    for (final statusCode in const [401, 403, 500, 502]) {
+      test('classifies image $statusCode codec failures as recoverable', () {
+        final details = FlutterErrorDetails(
+          exception: Exception(
+            'HTTP request failed, statusCode: $statusCode, '
+            'https://media.divine.video/hash.jpg. '
+            'Error thrown resolving an image codec.',
+          ),
+          context: ErrorDescription('resolving an image codec'),
+          library: 'image resource service',
+        );
+
+        expect(
+          classifyRecoverableFlutterError(details),
+          'Recoverable media load failure',
+        );
+      });
+    }
+
     test('classifies Divine media host lookup failures as recoverable', () {
       const details = FlutterErrorDetails(
         exception: SocketException("Failed host lookup: 'media.divine.video'"),
