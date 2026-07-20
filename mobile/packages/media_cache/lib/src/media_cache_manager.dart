@@ -1326,6 +1326,18 @@ class MediaCacheManager extends CacheManager {
   @visibleForTesting
   Future<void> waitForPendingAliasWrites() => _aliasWriteQueue;
 
+  /// Cancels in-flight cancellable downloads without closing the manager.
+  ///
+  /// Unlike [close], the manager stays usable — new downloads work again once
+  /// the app resumes. Wire this to app-background transitions so in-flight
+  /// NSURLSession (`cupertino_http`) requests are torn down before the OS
+  /// suspends the Dart isolate; a late delegate callback into a suspended
+  /// isolate aborts the process in the FFI trampoline.
+  void cancelInFlightDownloads() {
+    if (_isClosed) return;
+    _downloader.cancelActiveDownloads();
+  }
+
   /// Closes this manager and releases owned downloader resources.
   ///
   /// Cancels active cancellable downloads and completes pending cache

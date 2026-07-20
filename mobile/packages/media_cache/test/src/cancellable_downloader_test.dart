@@ -115,6 +115,79 @@ void main() {
     });
 
     test(
+      'cancelActiveDownloads aborts in-flight downloads without closing '
+      'the client',
+      () async {
+        final client = _CallbackClient((request) async {
+          await (request as http.AbortableRequest).abortTrigger;
+          throw http.RequestAbortedException(request.url);
+        });
+        final downloader = HttpCancellableDownloader(client);
+        final target = File('${tempDir.path}/cancel_active.mp4');
+
+        final download = downloader.download(
+          url: 'https://example.com/cancel_active.mp4',
+          targetFile: target,
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        downloader.cancelActiveDownloads();
+
+        expect(await download.file, isNull);
+        expect(download.isCancelled, isTrue);
+        expect(client.closed, isFalse);
+        expect(target.existsSync(), isFalse);
+      },
+    );
+
+    test('download still works after cancelActiveDownloads', () async {
+      var firstRequest = true;
+      final client = _CallbackClient((request) async {
+        if (firstRequest) {
+          firstRequest = false;
+          await (request as http.AbortableRequest).abortTrigger;
+          throw http.RequestAbortedException(request.url);
+        }
+        return http.StreamedResponse(
+          Stream<List<int>>.fromIterable([utf8.encode('ok')]),
+          200,
+        );
+      });
+      final downloader = HttpCancellableDownloader(client);
+
+      final first = downloader.download(
+        url: 'https://example.com/first.mp4',
+        targetFile: File('${tempDir.path}/first.mp4'),
+      );
+      await Future<void>.delayed(Duration.zero);
+      downloader.cancelActiveDownloads();
+      await first.file;
+
+      final second = await downloader
+          .download(
+            url: 'https://example.com/second.mp4',
+            targetFile: File('${tempDir.path}/second.mp4'),
+          )
+          .file;
+
+      expect(second, isNotNull);
+      expect(second!.readAsStringSync(), equals('ok'));
+      expect(client.closed, isFalse);
+    });
+
+    test('cancelActiveDownloads is a no-op after close', () async {
+      final client = _CallbackClient(
+        (_) async => http.StreamedResponse(const Stream.empty(), 200),
+      );
+      final downloader = HttpCancellableDownloader(client);
+
+      await downloader.close();
+      downloader.cancelActiveDownloads();
+
+      expect(client.closed, isTrue);
+    });
+
+    test(
       'download after close completes with null without using client',
       () async {
         var sendCalled = false;

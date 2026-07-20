@@ -21,6 +21,9 @@ class _ThrowingCancellableDownloader implements CancellableDownloader {
   }
 
   @override
+  void cancelActiveDownloads() {}
+
+  @override
   Future<void> close() async {}
 }
 
@@ -45,6 +48,52 @@ void main() {
 
     tearDown(() {
       cacheManager.resetForTesting();
+    });
+
+    group('cancelInFlightDownloads', () {
+      test('forwards to the downloader without closing the manager', () async {
+        final downloader = FakeCancellableDownloader();
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        cacheManager = TestableMediaCacheManager(
+          config: MediaCacheConfig(
+            cacheKey: 'cancel_inflight_$timestamp',
+            enableSyncManifest: true,
+          ),
+          mockGetFileFromCache: (key) async => null,
+          downloaderOverride: downloader,
+        );
+        expect(downloader.cancelActiveCallCount, 0);
+
+        cacheManager.cancelInFlightDownloads();
+
+        expect(downloader.cancelActiveCallCount, 1);
+        expect(downloader.closed, isFalse);
+      });
+
+      test('is a no-op once the manager is closed', () async {
+        final downloader = FakeCancellableDownloader();
+        final repo = MockCacheInfoRepository();
+        when(repo.open).thenAnswer((_) async => true);
+        when(repo.getAllObjects).thenAnswer((_) async => []);
+        when(repo.close).thenAnswer((_) async => true);
+
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        cacheManager = TestableMediaCacheManager(
+          config: MediaCacheConfig(
+            cacheKey: 'cancel_inflight_closed_$timestamp',
+            enableSyncManifest: true,
+          ),
+          repoOverride: repo,
+          mockGetFileFromCache: (key) async => null,
+          downloaderOverride: downloader,
+        );
+
+        await cacheManager.close();
+        expect(downloader.closed, isTrue);
+
+        cacheManager.cancelInFlightDownloads();
+        expect(downloader.cancelActiveCallCount, 0);
+      });
     });
 
     group('cacheFile', () {
