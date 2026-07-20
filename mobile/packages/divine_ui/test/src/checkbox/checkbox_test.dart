@@ -287,6 +287,76 @@ void main() {
 
         expect(newValue, isFalse);
       });
+
+      testWidgets('does not call onChanged when disabled', (tester) async {
+        var called = false;
+        await tester.pumpWidget(
+          buildTestWidget(
+            state: DivineCheckboxState.disabled,
+            onChanged: (_) => called = true,
+          ),
+        );
+
+        await tester.tap(find.byType(DivineRowCheckbox));
+        await tester.pumpAndSettle();
+
+        expect(called, isFalse);
+      });
+    });
+
+    group('accessibility', () {
+      testWidgets('exposes checked checkbox semantics when selected', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildTestWidget(
+            state: DivineCheckboxState.selected,
+            onChanged: (_) {},
+          ),
+        );
+
+        expect(
+          tester.getSemantics(find.byType(DivineRowCheckbox)),
+          isSemantics(
+            hasCheckedState: true,
+            isChecked: true,
+            isEnabled: true,
+          ),
+        );
+        handle.dispose();
+      });
+
+      testWidgets('exposes unchecked semantics when unselected', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(buildTestWidget(onChanged: (_) {}));
+
+        expect(
+          tester.getSemantics(find.byType(DivineRowCheckbox)),
+          isSemantics(hasCheckedState: true, isChecked: false),
+        );
+        handle.dispose();
+      });
+
+      testWidgets('is marked disabled in semantics when disabled', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildTestWidget(
+            state: DivineCheckboxState.disabled,
+            onChanged: (_) {},
+          ),
+        );
+
+        expect(
+          tester.getSemantics(find.byType(DivineRowCheckbox)),
+          isSemantics(hasEnabledState: true, isEnabled: false),
+        );
+        handle.dispose();
+      });
     });
 
     group('border styling', () {

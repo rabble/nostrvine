@@ -46,6 +46,28 @@ void main() {
       );
     }
 
+    group('accessibility', () {
+      testWidgets('exposes the semanticLabel to screen readers', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: DivineSlider(
+                value: 0.5,
+                onChanged: (_) {},
+                semanticLabel: 'Volume',
+              ),
+            ),
+          ),
+        );
+
+        expect(find.bySemanticsLabel('Volume'), findsOneWidget);
+        handle.dispose();
+      });
+    });
+
     group('renders', () {
       testWidgets('$DivineSlider with default properties', (tester) async {
         await tester.pumpWidget(buildSlider());

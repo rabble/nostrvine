@@ -24,6 +24,7 @@ class DivineSlider extends StatelessWidget {
     this.activeColor = VineTheme.primary,
     this.inactiveColor = VineTheme.onSurfaceDisabled,
     this.thumbColor = VineTheme.onSurface,
+    this.semanticLabel,
     super.key,
   }) : assert(min <= max, 'min must be <= max'),
        assert(divisions == null || divisions > 0, 'divisions must be > 0'),
@@ -71,11 +72,25 @@ class DivineSlider extends StatelessWidget {
   /// Color of the thumb indicator.
   final Color thumbColor;
 
+  /// Optional accessibility label describing what the slider controls (e.g.
+  /// "Volume"). Screen readers otherwise announce only the value.
+  final String? semanticLabel;
+
+  /// Minimum interactive target height (44pt iOS / 48dp Android floor).
+  static const double _minTouchHeight = 44;
+
   @override
   Widget build(BuildContext context) {
-    return SliderTheme(
+    // Grow the vertical touch area to the 44pt minimum without moving the
+    // visually-centred track: the extra height is symmetric padding around the
+    // thumb, so the drag target is easier to grab on touch devices.
+    final verticalPadding = ((_minTouchHeight - thumbHeight) / 2).clamp(
+      0.0,
+      double.infinity,
+    );
+    final slider = SliderTheme(
       data: SliderThemeData(
-        padding: EdgeInsets.zero,
+        padding: EdgeInsets.symmetric(vertical: verticalPadding),
         activeTrackColor: activeColor,
         inactiveTrackColor: inactiveColor,
         trackHeight: trackHeight,
@@ -97,6 +112,9 @@ class DivineSlider extends StatelessWidget {
         onChangeEnd: onChangeEnd,
       ),
     );
+
+    if (semanticLabel == null) return slider;
+    return Semantics(label: semanticLabel, child: slider);
   }
 }
 
