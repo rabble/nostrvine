@@ -39,28 +39,33 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockDraftStorageService extends Mock implements DraftStorageService {}
 
-/// Records every trace call so tests can assert the `video_generation` owner
-/// guard and outcome tagging — which the real (uninitialised) service would
-/// silently early-return on, leaving that logic uncovered.
+/// An operation-scoped trace handle that records its attributes and stop count
+/// so tests can assert the `video_generation` per-render trace behaviour —
+/// which the real (uninitialised) service would silently no-op.
+class _RecordingTrace implements PerformanceTrace {
+  _RecordingTrace(this.name);
+
+  final String name;
+  final Map<String, String> attributes = {};
+  int stopCount = 0;
+
+  @override
+  void putAttribute(String attribute, String value) =>
+      attributes[attribute] = value;
+
+  @override
+  Future<void> stop() async => stopCount++;
+}
+
+/// Hands out — and retains — a [_RecordingTrace] per [startOperationTrace] call.
 class _RecordingPerformanceMonitor extends PerformanceMonitoringService {
-  final List<String> started = [];
-  final List<String> stopped = [];
-  final Map<String, Map<String, String>> attributes = {};
-
-  int stopCountFor(String traceName) =>
-      stopped.where((t) => t == traceName).length;
-
-  String? outcomeFor(String traceName) => attributes[traceName]?['outcome'];
+  final List<_RecordingTrace> traces = [];
 
   @override
-  Future<void> startTrace(String traceName) async => started.add(traceName);
-
-  @override
-  Future<void> stopTrace(String traceName) async => stopped.add(traceName);
-
-  @override
-  void putAttribute(String traceName, String attribute, String value) {
-    (attributes[traceName] ??= {})[attribute] = value;
+  PerformanceTrace startOperationTrace(String traceName) {
+    final trace = _RecordingTrace(traceName);
+    traces.add(trace);
+    return trace;
   }
 }
 
@@ -1213,8 +1218,8 @@ void main() {
 
     group('video_generation trace', () {
       // Telemetry-only: a regression here mislabels a Firebase sample, not a
-      // user-facing bug — a touch belt-and-suspenders, kept so the owner-guard
-      // and outcome mapping can't silently rot.
+      // user-facing bug — a touch belt-and-suspenders, kept so the per-render
+      // trace scoping and outcome mapping can't silently rot.
       tearDown(() {
         VideoEditorRenderService.renderVideoToClipOverride = null;
       });
@@ -1232,7 +1237,8 @@ void main() {
       }
 
       test(
-        'a superseded render leaves the winning trace untouched (owner guard)',
+        'overlapping renders each own a trace, stopped once, with their own '
+        'attributes',
         () async {
           final notifier = container.read(videoEditorProvider.notifier);
           addOneClip();
@@ -1262,34 +1268,36 @@ void main() {
             originalAspectRatio: 9 / 16,
           );
 
-          // render1 = generation 1 (slow); render2 = generation 2 (fast) and
-          // takes ownership of the single-named trace.
+          // render1 = generation 1 (slow, superseded); render2 = generation 2
+          // (fast, winner). Each captures its own operation-scoped trace.
           final render1 = notifier.startRenderVideo();
           final render2 = notifier.startRenderVideo();
           expect(callCount, equals(2));
+          expect(
+            performanceMonitor.traces.length,
+            2,
+            reason: 'each render must start its own trace, not share one',
+          );
 
-          // The winning render finishes first: tags success, stops once.
           fastCompleter.complete((freshClip, null));
           await render2;
-          expect(performanceMonitor.stopCountFor('video_generation'), 1);
-          expect(performanceMonitor.outcomeFor('video_generation'), 'success');
-
-          // The superseded render finishes after — its finally must skip the
-          // trace, or it would double-stop and re-tag the winning render's
-          // trace as 'incomplete'.
           slowCompleter.complete((freshClip, null));
           await render1;
-          expect(
-            performanceMonitor.stopCountFor('video_generation'),
-            1,
-            reason: 'superseded render must not stop the winning trace again',
-          );
-          expect(
-            performanceMonitor.outcomeFor('video_generation'),
-            'success',
-            reason:
-                'superseded render must not overwrite outcome to incomplete',
-          );
+
+          final trace1 = performanceMonitor.traces[0];
+          final trace2 = performanceMonitor.traces[1];
+
+          // Each trace is stopped exactly once — neither render stops the
+          // other's trace.
+          expect(trace1.stopCount, 1);
+          expect(trace2.stopCount, 1);
+
+          // Each trace keeps its own outcome: the winner is success, the
+          // superseded render is incomplete (not overwritten onto the winner).
+          expect(trace2.attributes['outcome'], 'success');
+          expect(trace1.attributes['outcome'], 'incomplete');
+          expect(trace1.attributes['clip_count'], '1');
+          expect(trace2.attributes['clip_count'], '1');
         },
       );
 
@@ -1305,7 +1313,10 @@ void main() {
             }) async => null;
 
         await notifier.startRenderVideo();
-        expect(performanceMonitor.outcomeFor('video_generation'), 'failed');
+        expect(
+          performanceMonitor.traces.single.attributes['outcome'],
+          'failed',
+        );
       });
 
       test('tags outcome=error when the render throws', () async {
@@ -1320,7 +1331,10 @@ void main() {
             }) async => throw Exception('render boom');
 
         await notifier.startRenderVideo();
-        expect(performanceMonitor.outcomeFor('video_generation'), 'error');
+        expect(
+          performanceMonitor.traces.single.attributes['outcome'],
+          'error',
+        );
       });
     });
 

@@ -33,22 +33,40 @@ import '../../mocks/mock_path_provider_platform.dart';
 
 class _MockCameraService extends Mock implements CameraService {}
 
-/// Records trace calls so the `camera_startup` outcome mapping can be asserted;
-/// the bloc's default [NoOpPerformanceTraceMonitor] would swallow them.
-class _RecordingTraceMonitor implements PerformanceTraceMonitor {
+/// An operation-scoped trace handle that records its attributes and stop count.
+class _RecordingTrace implements PerformanceTrace {
   final Map<String, String> attributes = {};
-  int startCount = 0;
   int stopCount = 0;
 
   @override
-  Future<void> startTrace(String traceName) async => startCount++;
+  void putAttribute(String attribute, String value) =>
+      attributes[attribute] = value;
 
   @override
-  Future<void> stopTrace(String traceName) async => stopCount++;
+  Future<void> stop() async => stopCount++;
+}
+
+/// Hands out a [_RecordingTrace] per operation so the `camera_startup` outcome
+/// mapping can be asserted; the bloc's default [NoOpPerformanceTraceMonitor]
+/// would swallow it.
+class _RecordingTraceMonitor implements PerformanceTraceMonitor {
+  final List<_RecordingTrace> traces = [];
 
   @override
-  void putAttribute(String traceName, String attribute, String value) =>
-      attributes['$traceName.$attribute'] = value;
+  PerformanceTrace startOperationTrace(String traceName) {
+    final trace = _RecordingTrace();
+    traces.add(trace);
+    return trace;
+  }
+
+  @override
+  Future<void> startTrace(String traceName) async {}
+
+  @override
+  Future<void> stopTrace(String traceName) async {}
+
+  @override
+  void putAttribute(String traceName, String attribute, String value) {}
 
   @override
   void incrementMetric(String traceName, String metricName, int value) {}
@@ -2079,8 +2097,8 @@ void main() {
           build: buildTraced,
           act: (bloc) => bloc.add(const VideoRecorderInitializeRequested()),
           verify: (_) {
-            expect(monitor.attributes['camera_startup.outcome'], 'success');
-            expect(monitor.stopCount, 1);
+            expect(monitor.traces.single.attributes['outcome'], 'success');
+            expect(monitor.traces.single.stopCount, 1);
           },
         );
 
@@ -2092,7 +2110,7 @@ void main() {
           build: buildTraced,
           act: (bloc) => bloc.add(const VideoRecorderInitializeRequested()),
           verify: (_) {
-            expect(monitor.attributes['camera_startup.outcome'], 'failed');
+            expect(monitor.traces.single.attributes['outcome'], 'failed');
           },
         );
 
@@ -2108,7 +2126,7 @@ void main() {
           build: buildTraced,
           act: (bloc) => bloc.add(const VideoRecorderInitializeRequested()),
           verify: (_) {
-            expect(monitor.attributes['camera_startup.outcome'], 'error');
+            expect(monitor.traces.single.attributes['outcome'], 'error');
           },
         );
       });

@@ -309,14 +309,14 @@ class VideoRecorderBloc
       category: LogCategory.video,
     );
 
-    const traceName = 'camera_startup';
-    // Start and stop the trace fire-and-forget: an awaited start would run
-    // trace.start()'s platform round-trip before dispatching the native camera
-    // init, and an awaited stop would gate preview bring-up on trace.stop() —
-    // both add latency to the exact startup path this trace measures. The trace
-    // still stops in `finally`, tagged with the outcome so the console can
-    // filter startups that never reached a live preview.
-    unawaited(_performanceMonitor.startTrace(traceName));
+    // Operation-scoped trace: this init owns the returned handle, so a
+    // concurrent init gets its own trace instead of stopping or re-attributing
+    // this one. Start is fire-and-forget so it doesn't add a platform round-trip
+    // to the exact startup path this trace measures; stop is fire-and-forget so
+    // it doesn't gate preview bring-up. The handle is still stopped in `finally`,
+    // tagged with the outcome so the console can filter startups that never
+    // reached a live preview.
+    final trace = _performanceMonitor.startOperationTrace('camera_startup');
 
     Object? initError;
     try {
@@ -328,17 +328,16 @@ class VideoRecorderBloc
     } catch (e) {
       initError = e;
     } finally {
-      _performanceMonitor
-        ..putAttribute(traceName, 'lens', initialLens.name)
-        ..putAttribute(traceName, 'quality', event.videoQuality.value)
+      trace
+        ..putAttribute('lens', initialLens.name)
+        ..putAttribute('quality', event.videoQuality.value)
         ..putAttribute(
-          traceName,
           'outcome',
           initError != null
               ? 'error'
               : (_cameraService.isInitialized ? 'success' : 'failed'),
         );
-      unawaited(_performanceMonitor.stopTrace(traceName));
+      unawaited(trace.stop());
     }
 
     if (initError != null) {

@@ -1,8 +1,26 @@
 // ABOUTME: Performance monitoring service for tracking app performance metrics
 // ABOUTME: Uses Firebase Performance Monitoring to track screen transitions, network requests, and custom operations
 
+import 'dart:async';
+
 import 'package:firebase_performance/firebase_performance.dart';
 import 'package:unified_logger/unified_logger.dart';
+
+/// A handle to a single started performance trace.
+///
+/// Callers capture the handle returned by
+/// [PerformanceTraceMonitor.startOperationTrace] and tag/stop *that* handle, so
+/// each operation owns its own trace. This avoids the name-keyed pitfalls of
+/// the legacy [PerformanceTraceMonitor.startTrace] API: a fast operation can't
+/// tag/stop before a shared registration completes, and two overlapping
+/// operations can't stop or re-attribute each other's trace.
+abstract class PerformanceTrace {
+  /// Adds an attribute for filtering in the Firebase console.
+  void putAttribute(String attribute, String value);
+
+  /// Stops the trace and records its duration.
+  Future<void> stop();
+}
 
 /// Minimal trace API used by services that need testable performance spans.
 abstract class PerformanceTraceMonitor {
@@ -10,11 +28,56 @@ abstract class PerformanceTraceMonitor {
 
   Future<void> stopTrace(String traceName);
 
+  /// Starts a trace and returns an operation-scoped [PerformanceTrace] handle.
+  /// Prefer this over [startTrace] for any operation that can overlap another
+  /// of the same name or complete before its trace round-trip settles. Returns
+  /// a no-op handle when monitoring is unavailable.
+  PerformanceTrace startOperationTrace(String traceName);
+
   void incrementMetric(String traceName, String metricName, int value);
 
   void setMetric(String traceName, String metricName, int value);
 
   void putAttribute(String traceName, String attribute, String value);
+}
+
+/// No-op [PerformanceTrace] returned when monitoring is unavailable.
+class _NoOpPerformanceTrace implements PerformanceTrace {
+  const _NoOpPerformanceTrace();
+
+  @override
+  void putAttribute(String attribute, String value) {}
+
+  @override
+  Future<void> stop() async {}
+}
+
+/// A [PerformanceTrace] backed by a live Firebase [Trace].
+class _FirebasePerformanceTrace implements PerformanceTrace {
+  _FirebasePerformanceTrace(this._trace);
+
+  final Trace _trace;
+
+  @override
+  void putAttribute(String attribute, String value) {
+    try {
+      _trace.putAttribute(attribute, value);
+    } catch (e) {
+      Log.error(
+        'Failed to put attribute $attribute: $e',
+        name: 'PerformanceMonitoring',
+      );
+    }
+  }
+
+  @override
+  Future<void> stop() async {
+    try {
+      await _trace.stop();
+    } catch (e) {
+      Log.error('Failed to stop trace: $e', name: 'PerformanceMonitoring');
+    }
+  }
 }
 
 /// No-op [PerformanceTraceMonitor] used as the default when no real monitor is
@@ -28,6 +91,10 @@ class NoOpPerformanceTraceMonitor implements PerformanceTraceMonitor {
 
   @override
   Future<void> stopTrace(String traceName) async {}
+
+  @override
+  PerformanceTrace startOperationTrace(String traceName) =>
+      const _NoOpPerformanceTrace();
 
   @override
   void incrementMetric(String traceName, String metricName, int value) {}
@@ -95,6 +162,37 @@ class PerformanceMonitoringService implements PerformanceTraceMonitor {
         'Failed to start trace $traceName: $e',
         name: 'PerformanceMonitoring',
       );
+    }
+  }
+
+  /// Start an operation-scoped trace and return its handle.
+  ///
+  /// Unlike [startTrace], nothing is stored in [_activeTraces]: the caller
+  /// owns the returned [PerformanceTrace] and tags/stops it directly, so
+  /// overlapping operations of the same name keep independent traces. Start is
+  /// fire-and-forget so callers stay synchronous; attribute/stop calls on the
+  /// handle are delivered to the platform in order after it.
+  @override
+  PerformanceTrace startOperationTrace(String traceName) {
+    if (!_initialized) return const _NoOpPerformanceTrace();
+
+    try {
+      final trace = _performance.newTrace(traceName);
+      unawaited(
+        trace.start().catchError((Object e) {
+          Log.error(
+            'Failed to start trace $traceName: $e',
+            name: 'PerformanceMonitoring',
+          );
+        }),
+      );
+      return _FirebasePerformanceTrace(trace);
+    } catch (e) {
+      Log.error(
+        'Failed to start trace $traceName: $e',
+        name: 'PerformanceMonitoring',
+      );
+      return const _NoOpPerformanceTrace();
     }
   }
 

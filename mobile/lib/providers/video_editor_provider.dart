@@ -138,13 +138,6 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   int _renderGeneration = 0;
   Future<void>? _activeRenderFuture;
 
-  /// Generation that currently owns the single-named `video_generation`
-  /// performance trace. Bumped only by [_runRenderVideo] (never by cancel or
-  /// re-sign), so a render superseded by an overlapping render sees this change
-  /// and leaves the newer render's trace alone, while a render superseded by a
-  /// cancel still owns — and stops — its own trace.
-  int _videoGenerationTraceOwner = 0;
-
   /// When true, [triggerAutosave] is a no-op.
   ///
   /// Set to `true` by [initFromPublishedVideo] and intentionally never reset.
@@ -1140,30 +1133,18 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     // Capture the monitor and render inputs up front: a final render can settle
     // well after the user backs out (dispose cancels via cancelRenderVideo, but
     // the future still completes), by which point this notifier may be disposed
-    // and `ref.read` would throw — the captured instance stays valid. Start the
-    // trace fire-and-forget so render dispatch stays synchronous; an awaited
-    // start would run trace.start()'s platform round-trip before (and defer) the
-    // first renderVideoToClip call, which the overlapping-render test relies on
-    // dispatching synchronously.
+    // and `ref.read` would throw — the captured instance stays valid. The trace
+    // is operation-scoped: this render owns the returned handle, so an
+    // overlapping render gets its own trace instead of stopping or
+    // re-attributing this one, and start stays fire-and-forget so render
+    // dispatch is synchronous (the overlapping-render test relies on that).
     final performance = ref.read(performanceMonitoringServiceProvider);
-    const traceName = 'video_generation';
+    final trace = performance.startOperationTrace('video_generation');
     final clipCount = _clips.length;
     final aspectRatio = _clips.isEmpty
         ? null
         : _clips.first.targetAspectRatio.name;
-    // Claim the single-named trace. An overlapping render bumps this and takes
-    // the trace over (the service keys traces by name), after which our tags and
-    // stop below are skipped so we can't mis-tag or prematurely stop the newer
-    // render's trace.
-    _videoGenerationTraceOwner = generation;
-    bool ownsTrace() => _videoGenerationTraceOwner == generation;
-    void tagOutcome(String outcome) {
-      if (ownsTrace()) {
-        performance.putAttribute(traceName, 'outcome', outcome);
-      }
-    }
-
-    unawaited(performance.startTrace(traceName));
+    void tagOutcome(String outcome) => trace.putAttribute('outcome', outcome);
 
     try {
       final renderParameters = _buildRenderParameters();
@@ -1176,8 +1157,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       );
 
       // A newer render was started or the user cancelled while this one was
-      // running — tag it (when we still own the trace) so the console can
-      // exclude non-completing renders from the generation-time distribution.
+      // running — tag this render's own trace so the console can exclude
+      // non-completing renders from the generation-time distribution.
       if (generation != _renderGeneration) {
         tagOutcome('incomplete');
         return;
@@ -1248,15 +1229,14 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       );
       state = state.copyWith(isProcessing: false, renderFailed: true);
     } finally {
-      // Skip when a later render took over the trace. Stop fire-and-forget so a
-      // trace.stop() platform round-trip doesn't gate the render's completion.
-      if (ownsTrace()) {
-        performance.putAttribute(traceName, 'clip_count', '$clipCount');
-        if (aspectRatio != null) {
-          performance.putAttribute(traceName, 'aspect_ratio', aspectRatio);
-        }
-        unawaited(performance.stopTrace(traceName));
+      // This render owns its trace handle, so tag and stop it unconditionally.
+      // Stop fire-and-forget so a trace.stop() platform round-trip doesn't gate
+      // the render's completion.
+      trace.putAttribute('clip_count', '$clipCount');
+      if (aspectRatio != null) {
+        trace.putAttribute('aspect_ratio', aspectRatio);
       }
+      unawaited(trace.stop());
     }
   }
 

@@ -57,6 +57,11 @@ class _RecordingPerformanceMonitor implements PerformanceTraceMonitor {
   Future<void> stopTrace(String traceName) async {
     stoppedTraces.add(traceName);
   }
+
+  @override
+  PerformanceTrace startOperationTrace(String traceName) =>
+      // VideoEventService uses the name-keyed trace API, not the handle API.
+      throw UnimplementedError();
 }
 
 /// Asserts a feed-load trace was started once, stopped exactly once, and closed
