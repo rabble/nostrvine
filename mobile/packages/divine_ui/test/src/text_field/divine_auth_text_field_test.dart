@@ -41,6 +41,32 @@ void main() {
       );
     }
 
+    group('accessibility', () {
+      testWidgets('password field meets 48dp / 44pt tap-target guidelines', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildTestWidget(label: 'Password', obscureText: true),
+        );
+        await tester.pump();
+        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        handle.dispose();
+      });
+
+      testWidgets('text field meets 48dp / 44pt tap-target guidelines', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(buildTestWidget(label: 'Email'));
+        await tester.pump();
+        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        handle.dispose();
+      });
+    });
+
     group('renders', () {
       testWidgets('renders with label text', (tester) async {
         await tester.pumpWidget(

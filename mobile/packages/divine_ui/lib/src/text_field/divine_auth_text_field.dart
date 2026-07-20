@@ -270,6 +270,7 @@ class _DivineAuthTextFieldState extends State<DivineAuthTextField> {
                         child: _AuthTextFieldInput(
                           controller: _controller,
                           focusNode: _focusNode,
+                          isFloating: _isFloating,
                           obscureText: widget.obscureText && _isObscured,
                           enabled: widget.enabled,
                           readOnly: widget.readOnly,
@@ -327,8 +328,6 @@ class _AuthTextFieldContent extends StatelessWidget {
   final Widget child;
 
   static const double _verticalPadding = 16;
-  static const double _labelLineHeight = 16;
-  static const double _labelGap = 4;
   static const double _inputLineHeight = 24;
   static const double _totalHeight = 76;
 
@@ -340,13 +339,6 @@ class _AuthTextFieldContent extends StatelessWidget {
 
   /// Label top offset when centered with the input (26px).
   static const double _labelTopCentered = (_totalHeight - _inputLineHeight) / 2;
-
-  /// Input top offset when the label is floating (36px).
-  static const double _inputTopFloating =
-      _verticalPadding + _labelLineHeight + _labelGap;
-
-  /// Input top offset when centered, no floating label (26px).
-  static const double _inputTopCentered = (_totalHeight - _inputLineHeight) / 2;
 
   @override
   Widget build(BuildContext context) {
@@ -373,15 +365,11 @@ class _AuthTextFieldContent extends StatelessWidget {
               child: Text(label!),
             ),
           ),
-        AnimatedPositioned(
-          duration: _animationDuration,
-          curve: Curves.easeOut,
-          top: isFloating ? _inputTopFloating : _inputTopCentered,
-          left: 0,
-          right: 0,
-          height: _inputLineHeight,
-          child: child,
-        ),
+        // The input fills the whole field so its editable/tap semantics node
+        // is 76px tall (meets the 48dp minimum). The visible text row is placed
+        // via textAlignVertical inside the input, which shifts down when the
+        // label floats so it never overlaps the label.
+        Positioned.fill(child: child),
       ],
     );
   }
@@ -392,6 +380,7 @@ class _AuthTextFieldInput extends StatelessWidget {
   const _AuthTextFieldInput({
     required this.controller,
     required this.focusNode,
+    required this.isFloating,
     required this.obscureText,
     required this.enabled,
     required this.readOnly,
@@ -413,6 +402,7 @@ class _AuthTextFieldInput extends StatelessWidget {
 
   final TextEditingController controller;
   final FocusNode focusNode;
+  final bool isFloating;
   final bool obscureText;
   final bool enabled;
   final bool readOnly;
@@ -453,6 +443,13 @@ class _AuthTextFieldInput extends StatelessWidget {
       maxLength: maxLength,
       autofillHints: autofillHints,
       style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
+      // The input fills the full 76px field height so its editable/tap
+      // semantics node meets the 48dp minimum. Place the 24px text line on the
+      // correct visual row: centred (y=0 -> top 26) normally, and lower when
+      // the label floats so it clears the label ((36-26)/26 ~= 0.385).
+      textAlignVertical: isFloating
+          ? const TextAlignVertical(y: 0.385)
+          : TextAlignVertical.center,
       cursorColor: hasError ? VineTheme.error : VineTheme.primary,
       decoration: InputDecoration(
         isDense: true,
@@ -549,8 +546,14 @@ class _VisibilityToggle extends StatelessWidget {
   /// right = 18 + parent padding 8 = 26px.
   static const double _iconRightPadding = 18;
 
-  /// Left, top, and bottom padding for the visibility toggle.
+  /// Left padding for the visibility toggle.
   static const double _iconOtherPadding = 8;
+
+  /// Top and bottom padding for the visibility toggle. 12 (not 8) so the
+  /// tappable area is 24 (icon) + 12 + 12 = 48px tall, meeting the 48dp
+  /// Android / 44pt iOS minimum tap-target guideline. The icon stays
+  /// vertically centred, so its painted position is unchanged.
+  static const double _iconVerticalPadding = 12;
 
   @override
   Widget build(BuildContext context) {
@@ -563,8 +566,8 @@ class _VisibilityToggle extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.only(
             left: _iconOtherPadding,
-            top: _iconOtherPadding,
-            bottom: _iconOtherPadding,
+            top: _iconVerticalPadding,
+            bottom: _iconVerticalPadding,
             right: _iconRightPadding,
           ),
           child: DivineIcon(
