@@ -432,7 +432,12 @@ class _DivineButtonContent extends StatelessWidget {
     if (size == DivineButtonSize.tiny) {
       button = SizedBox(
         height: 32,
+        // deferToChild sizes the box to the (natural-width) child rather than
+        // to the incoming constraints, so an unbounded-width parent (e.g. a Row
+        // after a Spacer) doesn't blow the width up to infinity. The child is
+        // forced to the 48dp tap-target height and overflows the 32px slot.
         child: OverflowBox(
+          fit: OverflowBoxFit.deferToChild,
           minHeight: kMinInteractiveDimension,
           maxHeight: kMinInteractiveDimension,
           child: button,
