@@ -1311,10 +1311,12 @@ class ProfileRepository {
   /// count toward the display threshold. Anyone can still publish a label;
   /// this only decides which authors the app counts.
   ///
-  /// Results are cached for [_divineIdentityCacheTtl] (24h). Returns `false`
-  /// on any network or parse failure — a documented sentinel, not a throw,
-  /// so callers degrade gracefully (an uncounted author, never an error
-  /// state). See the `_divineIdentityCacheTtl` note for the #4948 alignment.
+  /// Successful (200) verdicts are cached for [_divineIdentityCacheTtl]
+  /// (24h). Returns `false` on any network or parse failure — a documented
+  /// sentinel, not a throw, so callers degrade gracefully (an uncounted
+  /// author, never an error state) — and failures are never cached, so the
+  /// next lookup retries. See the `_divineIdentityCacheTtl` note for the
+  /// #4948 alignment.
   Future<bool> hasDivineIdentity(String pubkey) async {
     final normalized = pubkey.trim().toLowerCase();
     if (normalized.isEmpty) return false;
@@ -1326,6 +1328,7 @@ class ProfileRepository {
     }
 
     var found = false;
+    var resolved = false;
     try {
       final response = await _httpClient
           .get(Uri.parse('$_usernameByPubkeyUrl/$normalized'))
@@ -1337,6 +1340,7 @@ class ProfileRepository {
         final body = jsonDecode(response.body) as Object?;
         if (body is Map<String, dynamic>) {
           found = body['found'] == true;
+          resolved = true;
         }
       }
     } on Exception catch (e) {
@@ -1345,14 +1349,17 @@ class ProfileRepository {
         name: 'ProfileRepository.hasDivineIdentity',
         category: LogCategory.api,
       );
-      found = false;
     }
 
-    if (_divineIdentityCache.length >= _divineIdentityCacheMax &&
-        !_divineIdentityCache.containsKey(normalized)) {
-      _divineIdentityCache.remove(_divineIdentityCache.keys.first);
+    // Only a genuine 200 verdict is cached; failures stay uncached so the
+    // next lookup retries (same posture as the backend identity cache).
+    if (resolved) {
+      if (_divineIdentityCache.length >= _divineIdentityCacheMax &&
+          !_divineIdentityCache.containsKey(normalized)) {
+        _divineIdentityCache.remove(_divineIdentityCache.keys.first);
+      }
+      _divineIdentityCache[normalized] = (value: found, at: DateTime.now());
     }
-    _divineIdentityCache[normalized] = (value: found, at: DateTime.now());
     return found;
   }
 

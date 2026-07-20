@@ -106,6 +106,42 @@ void main() {
     });
 
     test(
+      'does not cache a non-200 response, so the next call retries',
+      () async {
+        final responses = [
+          Response('{"ok":false}', 500),
+          Response('{"ok":true,"found":true,"name":"alice"}', 200),
+        ];
+        when(
+          () => mockHttpClient.get(byPubkeyUri),
+        ).thenAnswer((_) async => responses.removeAt(0));
+
+        final first = await repository.hasDivineIdentity(pubkey);
+        final second = await repository.hasDivineIdentity(pubkey);
+
+        expect(first, isFalse);
+        expect(second, isTrue);
+        verify(() => mockHttpClient.get(byPubkeyUri)).called(2);
+      },
+    );
+
+    test('does not cache a thrown lookup, so the next call retries', () async {
+      var calls = 0;
+      when(() => mockHttpClient.get(byPubkeyUri)).thenAnswer((_) async {
+        calls++;
+        if (calls == 1) throw Exception('network down');
+        return Response('{"ok":true,"found":true,"name":"alice"}', 200);
+      });
+
+      final first = await repository.hasDivineIdentity(pubkey);
+      final second = await repository.hasDivineIdentity(pubkey);
+
+      expect(first, isFalse);
+      expect(second, isTrue);
+      verify(() => mockHttpClient.get(byPubkeyUri)).called(2);
+    });
+
+    test(
       'caches within the TTL so a repeat lookup hits the network once',
       () async {
         when(() => mockHttpClient.get(byPubkeyUri)).thenAnswer(
