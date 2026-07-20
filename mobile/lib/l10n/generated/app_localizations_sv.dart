@@ -6030,13 +6030,28 @@ class AppLocalizationsSv extends AppLocalizations {
       'Det gick inte att ta bort utkastet';
 
   @override
+  String get libraryDraftDuplicatedSnackbar => 'Utkast duplicerat';
+
+  @override
+  String get libraryDraftDuplicateFailedSnackbar =>
+      'Det gick inte att duplicera utkastet';
+
+  @override
   String get libraryDraftActionPost => 'Publicera';
 
   @override
   String get libraryDraftActionEdit => 'Redigera';
 
   @override
+  String get libraryDraftActionDuplicate => 'Duplicera';
+
+  @override
   String get libraryDraftActionDelete => 'Ta bort utkast';
+
+  @override
+  String libraryDraftCopyTitle(String title, int number) {
+    return '$title (kopia $number)';
+  }
 
   @override
   String get libraryDeleteDraftTitle => 'Ta bort utkast';

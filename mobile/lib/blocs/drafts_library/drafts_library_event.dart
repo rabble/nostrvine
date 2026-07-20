@@ -1,5 +1,5 @@
 // ABOUTME: Events for DraftsLibraryBloc - managing draft video projects
-// ABOUTME: Supports loading, and deleting drafts from the library
+// ABOUTME: Supports loading, duplicating, and deleting drafts from the library
 
 part of 'drafts_library_bloc.dart';
 
@@ -14,6 +14,20 @@ sealed class DraftsLibraryEvent extends Equatable {
 /// Event to load all drafts from storage.
 final class DraftsLibraryLoadRequested extends DraftsLibraryEvent {
   const DraftsLibraryLoadRequested();
+}
+
+/// Event to duplicate a specific draft into a new independent project.
+final class DraftsLibraryDuplicateRequested extends DraftsLibraryEvent {
+  const DraftsLibraryDuplicateRequested(this.draftId, {this.newTitle});
+
+  /// The ID of the draft to duplicate.
+  final String draftId;
+
+  /// Title for the copy. When null, the original title is kept.
+  final String? newTitle;
+
+  @override
+  List<Object?> get props => [draftId, newTitle];
 }
 
 /// Event to delete a specific draft.

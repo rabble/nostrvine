@@ -2429,6 +2429,20 @@
     "libraryDraftActionPost": "投稿",
     "libraryDraftDeleteFailedSnackbar": "下書きを削除できませんでした",
     "libraryDraftDeletedSnackbar": "下書きを削除しました",
+    "libraryDraftDuplicatedSnackbar": "下書きを複製しました",
+    "libraryDraftDuplicateFailedSnackbar": "下書きを複製できませんでした",
+    "libraryDraftActionDuplicate": "複製",
+    "libraryDraftCopyTitle": "{title}（コピー {number}）",
+    "@libraryDraftCopyTitle": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            },
+            "number": {
+                "type": "int"
+            }
+        }
+    },
     "libraryGalleryPermissionDenied": "{destination}の権限が拒否されました",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {

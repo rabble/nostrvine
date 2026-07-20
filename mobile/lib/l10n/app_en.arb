@@ -3570,9 +3570,24 @@
   "libraryNoClipsYetSubtitle": "Your recorded video clips will appear here",
   "libraryDraftDeletedSnackbar": "Draft deleted",
   "libraryDraftDeleteFailedSnackbar": "Failed to delete draft",
+  "libraryDraftDuplicatedSnackbar": "Draft duplicated",
+  "libraryDraftDuplicateFailedSnackbar": "Failed to duplicate draft",
   "libraryDraftActionPost": "Post",
   "libraryDraftActionEdit": "Edit",
+  "libraryDraftActionDuplicate": "Duplicate",
   "libraryDraftActionDelete": "Delete draft",
+  "libraryDraftCopyTitle": "{title} (copy {number})",
+  "@libraryDraftCopyTitle": {
+    "description": "Title given to a duplicated draft. {number} disambiguates repeated copies, e.g. \"Trip (copy 2)\".",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "number": {
+        "type": "int"
+      }
+    }
+  },
   "libraryDeleteDraftTitle": "Delete Draft",
   "libraryDeleteDraftMessage": "Are you sure you want to delete \"{title}\"?",
   "@libraryDeleteDraftMessage": {

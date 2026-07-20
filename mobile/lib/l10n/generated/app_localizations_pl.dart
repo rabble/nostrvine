@@ -6188,13 +6188,28 @@ class AppLocalizationsPl extends AppLocalizations {
       'Nie udało się usunąć wersji roboczej';
 
   @override
+  String get libraryDraftDuplicatedSnackbar => 'Zduplikowano wersję roboczą';
+
+  @override
+  String get libraryDraftDuplicateFailedSnackbar =>
+      'Nie udało się zduplikować wersji roboczej';
+
+  @override
   String get libraryDraftActionPost => 'Opublikuj';
 
   @override
   String get libraryDraftActionEdit => 'Edytuj';
 
   @override
+  String get libraryDraftActionDuplicate => 'Duplikuj';
+
+  @override
   String get libraryDraftActionDelete => 'Usuń wersję roboczą';
+
+  @override
+  String libraryDraftCopyTitle(String title, int number) {
+    return '$title (kopia $number)';
+  }
 
   @override
   String get libraryDeleteDraftTitle => 'Usuń wersję roboczą';

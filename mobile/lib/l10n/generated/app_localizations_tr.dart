@@ -6013,13 +6013,27 @@ class AppLocalizationsTr extends AppLocalizations {
   String get libraryDraftDeleteFailedSnackbar => 'Taslak silinemedi';
 
   @override
+  String get libraryDraftDuplicatedSnackbar => 'Taslak çoğaltıldı';
+
+  @override
+  String get libraryDraftDuplicateFailedSnackbar => 'Taslak çoğaltılamadı';
+
+  @override
   String get libraryDraftActionPost => 'Paylaş';
 
   @override
   String get libraryDraftActionEdit => 'Düzenle';
 
   @override
+  String get libraryDraftActionDuplicate => 'Çoğalt';
+
+  @override
   String get libraryDraftActionDelete => 'Taslağı sil';
+
+  @override
+  String libraryDraftCopyTitle(String title, int number) {
+    return '$title (kopya $number)';
+  }
 
   @override
   String get libraryDeleteDraftTitle => 'Taslağı sil';

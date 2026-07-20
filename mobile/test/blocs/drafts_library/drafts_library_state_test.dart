@@ -79,6 +79,36 @@ void main() {
       });
     });
 
+    group(DraftsLibraryDraftDuplicated, () {
+      test('supports value equality', () {
+        final draft = createDraft(id: 'draft1');
+        expect(
+          DraftsLibraryDraftDuplicated(drafts: [draft]),
+          equals(DraftsLibraryDraftDuplicated(drafts: [draft])),
+        );
+      });
+
+      test('props contains drafts', () {
+        final drafts = [createDraft(id: 'draft1')];
+        expect(DraftsLibraryDraftDuplicated(drafts: drafts).props, [drafts]);
+      });
+    });
+
+    group(DraftsLibraryDuplicateFailed, () {
+      test('supports value equality', () {
+        final draft = createDraft(id: 'draft1');
+        expect(
+          DraftsLibraryDuplicateFailed(drafts: [draft]),
+          equals(DraftsLibraryDuplicateFailed(drafts: [draft])),
+        );
+      });
+
+      test('props contains drafts', () {
+        final drafts = [createDraft(id: 'draft1')];
+        expect(DraftsLibraryDuplicateFailed(drafts: drafts).props, [drafts]);
+      });
+    });
+
     group(DraftsLibraryDraftDeleted, () {
       test('supports value equality', () {
         final draft = createDraft(id: 'draft1');

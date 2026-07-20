@@ -5815,13 +5815,27 @@ class AppLocalizationsKo extends AppLocalizations {
   String get libraryDraftDeleteFailedSnackbar => '임시 저장을 삭제하지 못했어요';
 
   @override
+  String get libraryDraftDuplicatedSnackbar => '임시 저장을 복제했어요';
+
+  @override
+  String get libraryDraftDuplicateFailedSnackbar => '임시 저장을 복제하지 못했어요';
+
+  @override
   String get libraryDraftActionPost => '게시';
 
   @override
   String get libraryDraftActionEdit => '편집';
 
   @override
+  String get libraryDraftActionDuplicate => '복제';
+
+  @override
   String get libraryDraftActionDelete => '임시 저장 삭제';
+
+  @override
+  String libraryDraftCopyTitle(String title, int number) {
+    return '$title (사본 $number)';
+  }
 
   @override
   String get libraryDeleteDraftTitle => '임시 저장 삭제';

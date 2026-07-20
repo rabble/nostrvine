@@ -2437,6 +2437,20 @@
     "libraryDraftActionPost": "Publicar",
     "libraryDraftDeleteFailedSnackbar": "Falha ao excluir rascunho",
     "libraryDraftDeletedSnackbar": "Rascunho excluído",
+    "libraryDraftDuplicatedSnackbar": "Rascunho duplicado",
+    "libraryDraftDuplicateFailedSnackbar": "Falha ao duplicar rascunho",
+    "libraryDraftActionDuplicate": "Duplicar",
+    "libraryDraftCopyTitle": "{title} (cópia {number})",
+    "@libraryDraftCopyTitle": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            },
+            "number": {
+                "type": "int"
+            }
+        }
+    },
     "libraryGalleryPermissionDenied": "Permissão negada para {destination}",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {

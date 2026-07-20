@@ -6009,13 +6009,27 @@ class AppLocalizationsId extends AppLocalizations {
   String get libraryDraftDeleteFailedSnackbar => 'Gagal menghapus draf';
 
   @override
+  String get libraryDraftDuplicatedSnackbar => 'Draf diduplikat';
+
+  @override
+  String get libraryDraftDuplicateFailedSnackbar => 'Gagal menduplikat draf';
+
+  @override
   String get libraryDraftActionPost => 'Posting';
 
   @override
   String get libraryDraftActionEdit => 'Edit';
 
   @override
+  String get libraryDraftActionDuplicate => 'Duplikat';
+
+  @override
   String get libraryDraftActionDelete => 'Hapus draf';
+
+  @override
+  String libraryDraftCopyTitle(String title, int number) {
+    return '$title (salinan $number)';
+  }
 
   @override
   String get libraryDeleteDraftTitle => 'Hapus draf';

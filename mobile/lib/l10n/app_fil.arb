@@ -1546,6 +1546,20 @@
     "libraryNoClipsYetTitle": "Wala Pang Clip",
     "libraryNoClipsYetSubtitle": "Lalabas dito ang mga na-record mong video clip",
     "libraryDraftDeletedSnackbar": "Nabura ang draft",
+    "libraryDraftDuplicatedSnackbar": "Na-duplicate ang draft",
+    "libraryDraftDuplicateFailedSnackbar": "Hindi na-duplicate ang draft",
+    "libraryDraftActionDuplicate": "I-duplicate",
+    "libraryDraftCopyTitle": "{title} (kopya {number})",
+    "@libraryDraftCopyTitle": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            },
+            "number": {
+                "type": "int"
+            }
+        }
+    },
     "libraryDraftDeleteFailedSnackbar": "Hindi nabura ang draft",
     "libraryDraftActionPost": "I-post",
     "libraryDraftActionEdit": "I-edit",

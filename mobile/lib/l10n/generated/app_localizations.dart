@@ -10542,6 +10542,18 @@ abstract class AppLocalizations {
   /// **'Failed to delete draft'**
   String get libraryDraftDeleteFailedSnackbar;
 
+  /// No description provided for @libraryDraftDuplicatedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft duplicated'**
+  String get libraryDraftDuplicatedSnackbar;
+
+  /// No description provided for @libraryDraftDuplicateFailedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to duplicate draft'**
+  String get libraryDraftDuplicateFailedSnackbar;
+
   /// No description provided for @libraryDraftActionPost.
   ///
   /// In en, this message translates to:
@@ -10554,11 +10566,23 @@ abstract class AppLocalizations {
   /// **'Edit'**
   String get libraryDraftActionEdit;
 
+  /// No description provided for @libraryDraftActionDuplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate'**
+  String get libraryDraftActionDuplicate;
+
   /// No description provided for @libraryDraftActionDelete.
   ///
   /// In en, this message translates to:
   /// **'Delete draft'**
   String get libraryDraftActionDelete;
+
+  /// Title given to a duplicated draft. {number} disambiguates repeated copies, e.g. "Trip (copy 2)".
+  ///
+  /// In en, this message translates to:
+  /// **'{title} (copy {number})'**
+  String libraryDraftCopyTitle(String title, int number);
 
   /// No description provided for @libraryDeleteDraftTitle.
   ///

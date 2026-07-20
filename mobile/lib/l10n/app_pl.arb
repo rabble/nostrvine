@@ -2437,6 +2437,20 @@
     "libraryDraftActionPost": "Opublikuj",
     "libraryDraftDeleteFailedSnackbar": "Nie udało się usunąć wersji roboczej",
     "libraryDraftDeletedSnackbar": "Usunięto wersję roboczą",
+    "libraryDraftDuplicatedSnackbar": "Zduplikowano wersję roboczą",
+    "libraryDraftDuplicateFailedSnackbar": "Nie udało się zduplikować wersji roboczej",
+    "libraryDraftActionDuplicate": "Duplikuj",
+    "libraryDraftCopyTitle": "{title} (kopia {number})",
+    "@libraryDraftCopyTitle": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            },
+            "number": {
+                "type": "int"
+            }
+        }
+    },
     "libraryGalleryPermissionDenied": "Odmowa uprawnień: {destination}",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {

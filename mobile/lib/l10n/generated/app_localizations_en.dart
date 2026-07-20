@@ -6029,13 +6029,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get libraryDraftDeleteFailedSnackbar => 'Failed to delete draft';
 
   @override
+  String get libraryDraftDuplicatedSnackbar => 'Draft duplicated';
+
+  @override
+  String get libraryDraftDuplicateFailedSnackbar => 'Failed to duplicate draft';
+
+  @override
   String get libraryDraftActionPost => 'Post';
 
   @override
   String get libraryDraftActionEdit => 'Edit';
 
   @override
+  String get libraryDraftActionDuplicate => 'Duplicate';
+
+  @override
   String get libraryDraftActionDelete => 'Delete draft';
+
+  @override
+  String libraryDraftCopyTitle(String title, int number) {
+    return '$title (copy $number)';
+  }
 
   @override
   String get libraryDeleteDraftTitle => 'Delete Draft';

@@ -2809,6 +2809,20 @@
     "libraryNoClipsYetTitle": "እስካሁን ምንም ክሊፖች የሉም",
     "libraryNoClipsYetSubtitle": "የተቀዱ የቪዲዮ ቅንጥቦችህ እዚህ ይታያሉ",
     "libraryDraftDeletedSnackbar": "ረቂቅ ተሰርዟል።",
+    "libraryDraftDuplicatedSnackbar": "ረቂቅ ተባዝቷል።",
+    "libraryDraftDuplicateFailedSnackbar": "ረቂቅን ማባዛት አልተሳካም።",
+    "libraryDraftActionDuplicate": "አባዛ",
+    "libraryDraftCopyTitle": "{title} (ቅጂ {number})",
+    "@libraryDraftCopyTitle": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            },
+            "number": {
+                "type": "int"
+            }
+        }
+    },
     "libraryDraftDeleteFailedSnackbar": "ረቂቅን መሰረዝ አልተሳካም።",
     "libraryDraftActionPost": "ለጥፍ",
     "libraryDraftActionEdit": "አርትዕ",

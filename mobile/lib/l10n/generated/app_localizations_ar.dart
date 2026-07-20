@@ -5999,13 +5999,27 @@ class AppLocalizationsAr extends AppLocalizations {
   String get libraryDraftDeleteFailedSnackbar => 'تعذّر حذف المسودة';
 
   @override
+  String get libraryDraftDuplicatedSnackbar => 'تم تكرار المسودة';
+
+  @override
+  String get libraryDraftDuplicateFailedSnackbar => 'تعذّر تكرار المسودة';
+
+  @override
   String get libraryDraftActionPost => 'نشر';
 
   @override
   String get libraryDraftActionEdit => 'تعديل';
 
   @override
+  String get libraryDraftActionDuplicate => 'تكرار';
+
+  @override
   String get libraryDraftActionDelete => 'حذف المسودة';
+
+  @override
+  String libraryDraftCopyTitle(String title, int number) {
+    return '$title (نسخة $number)';
+  }
 
   @override
   String get libraryDeleteDraftTitle => 'حذف المسودة';

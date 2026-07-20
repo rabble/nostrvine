@@ -2437,6 +2437,20 @@
     "libraryDraftActionPost": "Publier",
     "libraryDraftDeleteFailedSnackbar": "Échec de la suppression du brouillon",
     "libraryDraftDeletedSnackbar": "Brouillon supprimé",
+    "libraryDraftDuplicatedSnackbar": "Brouillon dupliqué",
+    "libraryDraftDuplicateFailedSnackbar": "Échec de la duplication du brouillon",
+    "libraryDraftActionDuplicate": "Dupliquer",
+    "libraryDraftCopyTitle": "{title} (copie {number})",
+    "@libraryDraftCopyTitle": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            },
+            "number": {
+                "type": "int"
+            }
+        }
+    },
     "libraryGalleryPermissionDenied": "Permission refusée pour {destination}",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {

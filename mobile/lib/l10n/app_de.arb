@@ -2437,6 +2437,20 @@
     "libraryDraftActionPost": "Posten",
     "libraryDraftDeleteFailedSnackbar": "Entwurf konnte nicht gelöscht werden",
     "libraryDraftDeletedSnackbar": "Entwurf gelöscht",
+    "libraryDraftDuplicatedSnackbar": "Entwurf dupliziert",
+    "libraryDraftDuplicateFailedSnackbar": "Entwurf konnte nicht dupliziert werden",
+    "libraryDraftActionDuplicate": "Duplizieren",
+    "libraryDraftCopyTitle": "{title} (Kopie {number})",
+    "@libraryDraftCopyTitle": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            },
+            "number": {
+                "type": "int"
+            }
+        }
+    },
     "libraryGalleryPermissionDenied": "{destination}: Berechtigung verweigert",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {

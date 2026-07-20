@@ -6111,13 +6111,28 @@ class AppLocalizationsFr extends AppLocalizations {
       'Échec de la suppression du brouillon';
 
   @override
+  String get libraryDraftDuplicatedSnackbar => 'Brouillon dupliqué';
+
+  @override
+  String get libraryDraftDuplicateFailedSnackbar =>
+      'Échec de la duplication du brouillon';
+
+  @override
   String get libraryDraftActionPost => 'Publier';
 
   @override
   String get libraryDraftActionEdit => 'Modifier';
 
   @override
+  String get libraryDraftActionDuplicate => 'Dupliquer';
+
+  @override
   String get libraryDraftActionDelete => 'Supprimer le brouillon';
+
+  @override
+  String libraryDraftCopyTitle(String title, int number) {
+    return '$title (copie $number)';
+  }
 
   @override
   String get libraryDeleteDraftTitle => 'Supprimer le brouillon';

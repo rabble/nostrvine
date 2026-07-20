@@ -32,6 +32,28 @@ final class DraftsLibraryLoaded extends DraftsLibraryState {
   List<Object?> get props => [drafts];
 }
 
+/// A draft was successfully duplicated.
+final class DraftsLibraryDraftDuplicated extends DraftsLibraryState {
+  const DraftsLibraryDraftDuplicated({required this.drafts});
+
+  /// Updated list of drafts including the new copy.
+  final List<DivineVideoDraft> drafts;
+
+  @override
+  List<Object?> get props => [drafts];
+}
+
+/// Draft duplication failed.
+final class DraftsLibraryDuplicateFailed extends DraftsLibraryState {
+  const DraftsLibraryDuplicateFailed({required this.drafts});
+
+  /// Original list of drafts (unchanged due to failure).
+  final List<DivineVideoDraft> drafts;
+
+  @override
+  List<Object?> get props => [drafts];
+}
+
 /// A draft was successfully deleted.
 final class DraftsLibraryDraftDeleted extends DraftsLibraryState {
   const DraftsLibraryDraftDeleted({required this.drafts});
