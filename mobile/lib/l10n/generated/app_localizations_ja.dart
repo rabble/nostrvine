@@ -5787,13 +5787,27 @@ class AppLocalizationsJa extends AppLocalizations {
   String get libraryDraftDeleteFailedSnackbar => '下書きを削除できませんでした';
 
   @override
+  String get libraryDraftDuplicatedSnackbar => '下書きを複製しました';
+
+  @override
+  String get libraryDraftDuplicateFailedSnackbar => '下書きを複製できませんでした';
+
+  @override
   String get libraryDraftActionPost => '投稿';
 
   @override
   String get libraryDraftActionEdit => '編集';
 
   @override
+  String get libraryDraftActionDuplicate => '複製';
+
+  @override
   String get libraryDraftActionDelete => '下書きを削除';
+
+  @override
+  String libraryDraftCopyTitle(String title, int number) {
+    return '$title（コピー $number）';
+  }
 
   @override
   String get libraryDeleteDraftTitle => '下書きを削除';

@@ -6094,13 +6094,28 @@ class AppLocalizationsBg extends AppLocalizations {
       'Не успяхме да изтрием черновата';
 
   @override
+  String get libraryDraftDuplicatedSnackbar => 'Черновата е дублирана';
+
+  @override
+  String get libraryDraftDuplicateFailedSnackbar =>
+      'Не успяхме да дублираме черновата';
+
+  @override
   String get libraryDraftActionPost => 'Публикувай';
 
   @override
   String get libraryDraftActionEdit => 'Редактиране';
 
   @override
+  String get libraryDraftActionDuplicate => 'Дублирай';
+
+  @override
   String get libraryDraftActionDelete => 'Изтрий черновата';
+
+  @override
+  String libraryDraftCopyTitle(String title, int number) {
+    return '$title (копие $number)';
+  }
 
   @override
   String get libraryDeleteDraftTitle => 'Изтрий чернова';

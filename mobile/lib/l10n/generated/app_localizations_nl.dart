@@ -6062,13 +6062,28 @@ class AppLocalizationsNl extends AppLocalizations {
   String get libraryDraftDeleteFailedSnackbar => 'Concept verwijderen mislukt';
 
   @override
+  String get libraryDraftDuplicatedSnackbar => 'Concept gedupliceerd';
+
+  @override
+  String get libraryDraftDuplicateFailedSnackbar =>
+      'Concept dupliceren mislukt';
+
+  @override
   String get libraryDraftActionPost => 'Plaatsen';
 
   @override
   String get libraryDraftActionEdit => 'Bewerken';
 
   @override
+  String get libraryDraftActionDuplicate => 'Dupliceren';
+
+  @override
   String get libraryDraftActionDelete => 'Concept verwijderen';
+
+  @override
+  String libraryDraftCopyTitle(String title, int number) {
+    return '$title (kopie $number)';
+  }
 
   @override
   String get libraryDeleteDraftTitle => 'Concept verwijderen';

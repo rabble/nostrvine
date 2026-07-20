@@ -19,6 +19,45 @@ void main() {
       });
     });
 
+    group(DraftsLibraryDuplicateRequested, () {
+      test('supports value equality', () {
+        expect(
+          const DraftsLibraryDuplicateRequested('draft1', newTitle: 'Copy'),
+          equals(
+            const DraftsLibraryDuplicateRequested('draft1', newTitle: 'Copy'),
+          ),
+        );
+      });
+
+      test('different draftIds are not equal', () {
+        expect(
+          const DraftsLibraryDuplicateRequested('draft1'),
+          isNot(equals(const DraftsLibraryDuplicateRequested('draft2'))),
+        );
+      });
+
+      test('different titles are not equal', () {
+        expect(
+          const DraftsLibraryDuplicateRequested('draft1', newTitle: 'A'),
+          isNot(
+            equals(
+              const DraftsLibraryDuplicateRequested('draft1', newTitle: 'B'),
+            ),
+          ),
+        );
+      });
+
+      test('props contains draftId and newTitle', () {
+        expect(
+          const DraftsLibraryDuplicateRequested(
+            'draft1',
+            newTitle: 'Copy',
+          ).props,
+          ['draft1', 'Copy'],
+        );
+      });
+    });
+
     group(DraftsLibraryDeleteRequested, () {
       test('supports value equality', () {
         expect(

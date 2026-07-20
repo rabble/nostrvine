@@ -392,6 +392,50 @@ class DivineVideoDraft {
 
   static const _sentinel = Object();
 
+  /// Returns an independent copy of this draft as a brand-new project.
+  ///
+  /// The copy gets a fresh [id] and `createdAt`/`lastModified` timestamps, and
+  /// its publish state is reset (`draft` status, no attempts, no error, no
+  /// [sourceDraftId]) so it starts clean. Pass [title] to rename the copy,
+  /// otherwise the original title is kept.
+  ///
+  /// Clip and rendered-file references are shared with the source rather than
+  /// copied on disk: clips are immutable inputs — edits produce new files or
+  /// live in metadata — so the two projects can be edited independently. This
+  /// mirrors how a publish copy shares files with its source, and file
+  /// reference-counting keeps shared files alive until the last referencing
+  /// draft is deleted.
+  DivineVideoDraft duplicate({String? title}) {
+    final now = DateTime.now();
+    return DivineVideoDraft(
+      id: 'draft_${now.microsecondsSinceEpoch}',
+      clips: clips,
+      title: title ?? this.title,
+      description: description,
+      hashtags: hashtags,
+      selectedApproach: selectedApproach,
+      createdAt: now,
+      lastModified: now,
+      expireTime: expireTime,
+      allowAudioReuse: allowAudioReuse,
+      publishStatus: PublishStatus.draft,
+      publishAttempts: 0,
+      proofManifestJson: proofManifestJson,
+      editorStateHistory: editorStateHistory,
+      editorEditingParameters: editorEditingParameters,
+      finalRenderedClip: finalRenderedClip,
+      collaboratorPubkeys: collaboratorPubkeys,
+      inspiredByVideo: inspiredByVideo,
+      inspiredByNpub: inspiredByNpub,
+      selectedSound: selectedSound,
+      contentWarning: contentWarning,
+      videoReplyContext: videoReplyContext,
+      shareReplyToFeed: shareReplyToFeed,
+      thumbnailTimestamp: thumbnailTimestamp,
+      customThumbnailPath: customThumbnailPath,
+    );
+  }
+
   Map<String, dynamic> toJson() => {
     'id': id,
     'clips': clips.map((clip) => clip.toJson()).toList(),

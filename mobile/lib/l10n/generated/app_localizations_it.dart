@@ -6085,13 +6085,28 @@ class AppLocalizationsIt extends AppLocalizations {
       'Eliminazione bozza non riuscita';
 
   @override
+  String get libraryDraftDuplicatedSnackbar => 'Bozza duplicata';
+
+  @override
+  String get libraryDraftDuplicateFailedSnackbar =>
+      'Duplicazione bozza non riuscita';
+
+  @override
   String get libraryDraftActionPost => 'Pubblica';
 
   @override
   String get libraryDraftActionEdit => 'Modifica';
 
   @override
+  String get libraryDraftActionDuplicate => 'Duplica';
+
+  @override
   String get libraryDraftActionDelete => 'Elimina bozza';
+
+  @override
+  String libraryDraftCopyTitle(String title, int number) {
+    return '$title (copia $number)';
+  }
 
   @override
   String get libraryDeleteDraftTitle => 'Elimina bozza';

@@ -2436,6 +2436,20 @@
     "libraryDraftActionPost": "Posting",
     "libraryDraftDeleteFailedSnackbar": "Gagal menghapus draf",
     "libraryDraftDeletedSnackbar": "Draf dihapus",
+    "libraryDraftDuplicatedSnackbar": "Draf diduplikat",
+    "libraryDraftDuplicateFailedSnackbar": "Gagal menduplikat draf",
+    "libraryDraftActionDuplicate": "Duplikat",
+    "libraryDraftCopyTitle": "{title} (salinan {number})",
+    "@libraryDraftCopyTitle": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            },
+            "number": {
+                "type": "int"
+            }
+        }
+    },
     "libraryGalleryPermissionDenied": "Izin ditolak untuk {destination}",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {

@@ -121,39 +121,95 @@ class FileCleanupService {
     }
   }
 
-  /// Deletes files for a RecordingClip if not referenced
+  /// Deletes clip ghost-frame files in [ghostFramePaths], skipping any still
+  /// referenced by another clip.
+  ///
+  /// A clip's ghost frame (the last-frame overlay used for continue-recording
+  /// alignment and transitions) is persisted only inside the clip `data` blob,
+  /// not an indexed file column, so a surviving clip that shares the same ghost
+  /// file (e.g. a draft and its duplicate) cannot be detected by the
+  /// indexed-column check. The caller supplies [referencedGhostFrameFilenames]
+  /// — the basenames of ghost frames still referenced by other clips — and a
+  /// file is kept when its basename is in that set. The indexed clip/draft
+  /// reference check still runs as a defensive backstop.
+  ///
+  /// Throws:
+  ///
+  /// * No exceptions – errors are logged and silently handled.
+  static Future<void> deleteGhostFrameFiles(
+    Iterable<String?> ghostFramePaths, {
+    required DraftsDao draftsDao,
+    required ClipsDao clipsDao,
+    Set<String> referencedGhostFrameFilenames = const {},
+  }) async {
+    for (final path in ghostFramePaths) {
+      if (path == null || path.isEmpty) continue;
+      if (referencedGhostFrameFilenames.contains(p.basename(path))) {
+        Log.info(
+          '🔗 Ghost frame still referenced by another clip, skipping delete: '
+          '$path',
+          name: 'FileCleanupService',
+          category: LogCategory.video,
+        );
+        continue;
+      }
+      await deleteFileIfUnreferenced(
+        path,
+        draftsDao: draftsDao,
+        clipsDao: clipsDao,
+      );
+    }
+  }
+
+  /// Deletes files for a RecordingClip if not referenced.
+  ///
+  /// Video and thumbnail files are protected by their indexed columns; ghost
+  /// frames live only in the clip `data` blob and are guarded instead by
+  /// [referencedGhostFrameFilenames] (see [deleteGhostFrameFiles]).
   static Future<void> deleteRecordingClipFiles(
     DivineVideoClip clip, {
     required DraftsDao draftsDao,
     required ClipsDao clipsDao,
+    Set<String> referencedGhostFrameFilenames = const {},
   }) async {
     await deleteFilesIfUnreferenced(
-      [clip.video.file?.path, clip.thumbnailPath, clip.ghostFramePath],
+      [clip.video.file?.path, clip.thumbnailPath],
       draftsDao: draftsDao,
       clipsDao: clipsDao,
     );
+    await deleteGhostFrameFiles(
+      [clip.ghostFramePath],
+      draftsDao: draftsDao,
+      clipsDao: clipsDao,
+      referencedGhostFrameFilenames: referencedGhostFrameFilenames,
+    );
   }
 
-  /// Deletes files for multiple RecordingClips if not referenced
+  /// Deletes files for multiple RecordingClips if not referenced.
+  ///
+  /// Video and thumbnail files are protected by their indexed columns; ghost
+  /// frames live only in the clip `data` blob and are guarded instead by
+  /// [referencedGhostFrameFilenames] (see [deleteGhostFrameFiles]).
   static Future<void> deleteRecordingClipsFiles(
     List<DivineVideoClip> clips, {
     required DraftsDao draftsDao,
     required ClipsDao clipsDao,
+    Set<String> referencedGhostFrameFilenames = const {},
   }) async {
-    final paths = clips
-        .expand(
-          (clip) => [
-            clip.video.file?.path,
-            clip.thumbnailPath,
-            clip.ghostFramePath,
-          ],
-        )
+    final indexedPaths = clips
+        .expand((clip) => [clip.video.file?.path, clip.thumbnailPath])
         .toList();
 
     await deleteFilesIfUnreferenced(
-      paths,
+      indexedPaths,
       draftsDao: draftsDao,
       clipsDao: clipsDao,
+    );
+    await deleteGhostFrameFiles(
+      clips.map((clip) => clip.ghostFramePath),
+      draftsDao: draftsDao,
+      clipsDao: clipsDao,
+      referencedGhostFrameFilenames: referencedGhostFrameFilenames,
     );
   }
 

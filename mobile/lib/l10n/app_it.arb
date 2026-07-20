@@ -2437,6 +2437,20 @@
     "libraryDraftActionPost": "Pubblica",
     "libraryDraftDeleteFailedSnackbar": "Eliminazione bozza non riuscita",
     "libraryDraftDeletedSnackbar": "Bozza eliminata",
+    "libraryDraftDuplicatedSnackbar": "Bozza duplicata",
+    "libraryDraftDuplicateFailedSnackbar": "Duplicazione bozza non riuscita",
+    "libraryDraftActionDuplicate": "Duplica",
+    "libraryDraftCopyTitle": "{title} (copia {number})",
+    "@libraryDraftCopyTitle": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            },
+            "number": {
+                "type": "int"
+            }
+        }
+    },
     "libraryGalleryPermissionDenied": "Permesso negato per {destination}",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {

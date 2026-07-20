@@ -5915,13 +5915,27 @@ class AppLocalizationsAm extends AppLocalizations {
   String get libraryDraftDeleteFailedSnackbar => 'ረቂቅን መሰረዝ አልተሳካም።';
 
   @override
+  String get libraryDraftDuplicatedSnackbar => 'ረቂቅ ተባዝቷል።';
+
+  @override
+  String get libraryDraftDuplicateFailedSnackbar => 'ረቂቅን ማባዛት አልተሳካም።';
+
+  @override
   String get libraryDraftActionPost => 'ለጥፍ';
 
   @override
   String get libraryDraftActionEdit => 'አርትዕ';
 
   @override
+  String get libraryDraftActionDuplicate => 'አባዛ';
+
+  @override
   String get libraryDraftActionDelete => 'ረቂቅ ሰርዝ';
+
+  @override
+  String libraryDraftCopyTitle(String title, int number) {
+    return '$title (ቅጂ $number)';
+  }
 
   @override
   String get libraryDeleteDraftTitle => 'ረቂቅ ሰርዝ';

@@ -2429,6 +2429,20 @@
     "libraryDraftActionPost": "نشر",
     "libraryDraftDeleteFailedSnackbar": "تعذّر حذف المسودة",
     "libraryDraftDeletedSnackbar": "تم حذف المسودة",
+    "libraryDraftDuplicatedSnackbar": "تم تكرار المسودة",
+    "libraryDraftDuplicateFailedSnackbar": "تعذّر تكرار المسودة",
+    "libraryDraftActionDuplicate": "تكرار",
+    "libraryDraftCopyTitle": "{title} (نسخة {number})",
+    "@libraryDraftCopyTitle": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            },
+            "number": {
+                "type": "int"
+            }
+        }
+    },
     "libraryGalleryPermissionDenied": "تم رفض إذن {destination}",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {

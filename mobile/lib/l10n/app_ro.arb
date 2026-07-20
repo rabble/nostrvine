@@ -2437,6 +2437,20 @@
     "libraryDraftActionPost": "Publică",
     "libraryDraftDeleteFailedSnackbar": "Nu s-a putut șterge ciorna",
     "libraryDraftDeletedSnackbar": "Ciornă ștearsă",
+    "libraryDraftDuplicatedSnackbar": "Ciornă duplicată",
+    "libraryDraftDuplicateFailedSnackbar": "Nu s-a putut duplica ciorna",
+    "libraryDraftActionDuplicate": "Duplică",
+    "libraryDraftCopyTitle": "{title} (copie {number})",
+    "@libraryDraftCopyTitle": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            },
+            "number": {
+                "type": "int"
+            }
+        }
+    },
     "libraryGalleryPermissionDenied": "Permisiune refuzată pentru {destination}",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {

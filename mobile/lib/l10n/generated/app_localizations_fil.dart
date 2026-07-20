@@ -6104,13 +6104,28 @@ class AppLocalizationsFil extends AppLocalizations {
   String get libraryDraftDeleteFailedSnackbar => 'Hindi nabura ang draft';
 
   @override
+  String get libraryDraftDuplicatedSnackbar => 'Na-duplicate ang draft';
+
+  @override
+  String get libraryDraftDuplicateFailedSnackbar =>
+      'Hindi na-duplicate ang draft';
+
+  @override
   String get libraryDraftActionPost => 'I-post';
 
   @override
   String get libraryDraftActionEdit => 'I-edit';
 
   @override
+  String get libraryDraftActionDuplicate => 'I-duplicate';
+
+  @override
   String get libraryDraftActionDelete => 'Burahin ang draft';
+
+  @override
+  String libraryDraftCopyTitle(String title, int number) {
+    return '$title (kopya $number)';
+  }
 
   @override
   String get libraryDeleteDraftTitle => 'Burahin ang Draft';

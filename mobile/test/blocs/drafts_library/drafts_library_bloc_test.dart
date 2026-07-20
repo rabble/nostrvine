@@ -221,6 +221,91 @@ void main() {
       );
     });
 
+    group('DraftsLibraryDuplicateRequested', () {
+      setUpAll(() {
+        registerFallbackValue(createDraft());
+      });
+
+      blocTest<DraftsLibraryBloc, DraftsLibraryState>(
+        'does nothing when not in loaded state',
+        build: createBloc,
+        act: (bloc) =>
+            bloc.add(const DraftsLibraryDuplicateRequested('draft1')),
+        expect: () => [],
+      );
+
+      blocTest<DraftsLibraryBloc, DraftsLibraryState>(
+        'does nothing when the draft id is not in the list',
+        seed: () => DraftsLibraryLoaded(drafts: [createDraft(id: 'draft1')]),
+        build: createBloc,
+        act: (bloc) =>
+            bloc.add(const DraftsLibraryDuplicateRequested('missing')),
+        expect: () => [],
+      );
+
+      blocTest<DraftsLibraryBloc, DraftsLibraryState>(
+        'duplicates the draft, saves it, and updates the list',
+        setUp: () {
+          when(
+            () => mockDraftStorageService.saveDraft(any()),
+          ).thenAnswer((_) async {});
+        },
+        seed: () => DraftsLibraryLoaded(drafts: [createDraft(id: 'draft1')]),
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          const DraftsLibraryDuplicateRequested('draft1', newTitle: 'Copy'),
+        ),
+        expect: () => [
+          isA<DraftsLibraryDraftDuplicated>().having(
+            (s) => s.drafts.length,
+            'drafts.length',
+            2,
+          ),
+          isA<DraftsLibraryLoaded>().having(
+            (s) => s.drafts.length,
+            'drafts.length',
+            2,
+          ),
+        ],
+        verify: (_) {
+          final saved =
+              verify(
+                    () => mockDraftStorageService.saveDraft(captureAny()),
+                  ).captured.single
+                  as DivineVideoDraft;
+          expect(saved.id, isNot('draft1'));
+          expect(saved.title, 'Copy');
+          expect(saved.publishStatus, PublishStatus.draft);
+        },
+      );
+
+      blocTest<DraftsLibraryBloc, DraftsLibraryState>(
+        'emits failure result when save fails',
+        setUp: () {
+          when(
+            () => mockDraftStorageService.saveDraft(any()),
+          ).thenThrow(Exception('Save failed'));
+        },
+        seed: () => DraftsLibraryLoaded(drafts: [createDraft(id: 'draft1')]),
+        build: createBloc,
+        act: (bloc) =>
+            bloc.add(const DraftsLibraryDuplicateRequested('draft1')),
+        errors: () => [isA<Exception>()],
+        expect: () => [
+          isA<DraftsLibraryDuplicateFailed>().having(
+            (s) => s.drafts.length,
+            'drafts.length',
+            1,
+          ),
+          isA<DraftsLibraryLoaded>().having(
+            (s) => s.drafts.length,
+            'drafts.length',
+            1,
+          ),
+        ],
+      );
+    });
+
     group('DraftsLibraryDeleteRequested', () {
       blocTest<DraftsLibraryBloc, DraftsLibraryState>(
         'does nothing when not in loaded state',

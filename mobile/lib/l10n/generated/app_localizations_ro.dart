@@ -6186,13 +6186,28 @@ class AppLocalizationsRo extends AppLocalizations {
   String get libraryDraftDeleteFailedSnackbar => 'Nu s-a putut șterge ciorna';
 
   @override
+  String get libraryDraftDuplicatedSnackbar => 'Ciornă duplicată';
+
+  @override
+  String get libraryDraftDuplicateFailedSnackbar =>
+      'Nu s-a putut duplica ciorna';
+
+  @override
   String get libraryDraftActionPost => 'Publică';
 
   @override
   String get libraryDraftActionEdit => 'Editează';
 
   @override
+  String get libraryDraftActionDuplicate => 'Duplică';
+
+  @override
   String get libraryDraftActionDelete => 'Șterge ciorna';
+
+  @override
+  String libraryDraftCopyTitle(String title, int number) {
+    return '$title (copie $number)';
+  }
 
   @override
   String get libraryDeleteDraftTitle => 'Șterge ciorna';

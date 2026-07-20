@@ -6081,13 +6081,28 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se pudo eliminar el borrador';
 
   @override
+  String get libraryDraftDuplicatedSnackbar => 'Borrador duplicado';
+
+  @override
+  String get libraryDraftDuplicateFailedSnackbar =>
+      'No se pudo duplicar el borrador';
+
+  @override
   String get libraryDraftActionPost => 'Publicar';
 
   @override
   String get libraryDraftActionEdit => 'Editar';
 
   @override
+  String get libraryDraftActionDuplicate => 'Duplicar';
+
+  @override
   String get libraryDraftActionDelete => 'Eliminar borrador';
+
+  @override
+  String libraryDraftCopyTitle(String title, int number) {
+    return '$title (copia $number)';
+  }
 
   @override
   String get libraryDeleteDraftTitle => 'Eliminar borrador';

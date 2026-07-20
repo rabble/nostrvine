@@ -6105,13 +6105,28 @@ class AppLocalizationsDe extends AppLocalizations {
       'Entwurf konnte nicht gelöscht werden';
 
   @override
+  String get libraryDraftDuplicatedSnackbar => 'Entwurf dupliziert';
+
+  @override
+  String get libraryDraftDuplicateFailedSnackbar =>
+      'Entwurf konnte nicht dupliziert werden';
+
+  @override
   String get libraryDraftActionPost => 'Posten';
 
   @override
   String get libraryDraftActionEdit => 'Bearbeiten';
 
   @override
+  String get libraryDraftActionDuplicate => 'Duplizieren';
+
+  @override
   String get libraryDraftActionDelete => 'Entwurf löschen';
+
+  @override
+  String libraryDraftCopyTitle(String title, int number) {
+    return '$title (Kopie $number)';
+  }
 
   @override
   String get libraryDeleteDraftTitle => 'Entwurf löschen';

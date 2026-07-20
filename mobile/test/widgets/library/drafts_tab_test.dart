@@ -257,6 +257,157 @@ void main() {
         },
       );
     });
+
+    group('duplicate action', () {
+      testWidgets('shows duplicate action in the options menu', (tester) async {
+        when(
+          () => mockBloc.state,
+        ).thenReturn(DraftsLibraryLoaded(drafts: [createDraft(id: 'draft1')]));
+
+        await tester.pumpWidget(buildWidget());
+        await tester.tap(find.byType(IconButton));
+        await tester.pumpAndSettle();
+
+        expect(find.text(en.libraryDraftActionDuplicate), findsOneWidget);
+      });
+
+      testWidgets(
+        'dispatches duplicate event with a numbered copy title when tapped',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            DraftsLibraryLoaded(
+              drafts: [createDraft(id: 'draft1', title: 'My Project')],
+            ),
+          );
+
+          await tester.pumpWidget(buildWidget());
+          await tester.tap(find.byType(IconButton));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text(en.libraryDraftActionDuplicate));
+          await tester.pumpAndSettle();
+
+          verify(
+            () => mockBloc.add(
+              DraftsLibraryDuplicateRequested(
+                'draft1',
+                newTitle: en.libraryDraftCopyTitle('My Project', 1),
+              ),
+            ),
+          ).called(1);
+        },
+      );
+
+      testWidgets('numbers the next copy instead of stacking suffixes', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          DraftsLibraryLoaded(
+            drafts: [
+              createDraft(id: 'copy', title: 'My Project (copy 1)'),
+              createDraft(id: 'orig', title: 'My Project'),
+            ],
+          ),
+        );
+
+        await tester.pumpWidget(buildWidget());
+        // First tile is the existing copy; open its options menu.
+        await tester.tap(find.byType(IconButton).first);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(en.libraryDraftActionDuplicate));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockBloc.add(
+            DraftsLibraryDuplicateRequested(
+              'copy',
+              newTitle: en.libraryDraftCopyTitle('My Project', 2),
+            ),
+          ),
+        ).called(1);
+      });
+
+      testWidgets('duplicate of an untitled draft keeps a null title', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          DraftsLibraryLoaded(
+            drafts: [createDraft(id: 'draft1', title: '')],
+          ),
+        );
+
+        await tester.pumpWidget(buildWidget());
+        await tester.tap(find.byType(IconButton));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(en.libraryDraftActionDuplicate));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockBloc.add(const DraftsLibraryDuplicateRequested('draft1')),
+        ).called(1);
+      });
+    });
+
+    group('snackbar feedback', () {
+      Future<void> pumpWithEmittedState(
+        WidgetTester tester,
+        DraftsLibraryState emitted,
+      ) async {
+        final drafts = [createDraft(id: 'draft1')];
+        whenListen(
+          mockBloc,
+          Stream<DraftsLibraryState>.value(emitted),
+          initialState: DraftsLibraryLoaded(drafts: drafts),
+        );
+
+        await tester.pumpWidget(buildWidget());
+        await tester.pump(); // deliver the emitted state
+        await tester.pump(); // start the snackbar entrance animation
+      }
+
+      testWidgets('shows the duplicated snackbar on '
+          '$DraftsLibraryDraftDuplicated', (tester) async {
+        await pumpWithEmittedState(
+          tester,
+          DraftsLibraryDraftDuplicated(drafts: [createDraft(id: 'draft1')]),
+        );
+
+        expect(find.text(en.libraryDraftDuplicatedSnackbar), findsOneWidget);
+      });
+
+      testWidgets('shows the duplicate-failed snackbar on '
+          '$DraftsLibraryDuplicateFailed', (tester) async {
+        await pumpWithEmittedState(
+          tester,
+          DraftsLibraryDuplicateFailed(drafts: [createDraft(id: 'draft1')]),
+        );
+
+        expect(
+          find.text(en.libraryDraftDuplicateFailedSnackbar),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('shows the deleted snackbar on $DraftsLibraryDraftDeleted', (
+        tester,
+      ) async {
+        await pumpWithEmittedState(
+          tester,
+          const DraftsLibraryDraftDeleted(drafts: []),
+        );
+
+        expect(find.text(en.libraryDraftDeletedSnackbar), findsOneWidget);
+      });
+
+      testWidgets('shows the delete-failed snackbar on '
+          '$DraftsLibraryDeleteFailed', (tester) async {
+        await pumpWithEmittedState(
+          tester,
+          DraftsLibraryDeleteFailed(drafts: [createDraft(id: 'draft1')]),
+        );
+
+        expect(find.text(en.libraryDraftDeleteFailedSnackbar), findsOneWidget);
+      });
+    });
   });
 
   group(DraftListTile, () {

@@ -1,5 +1,5 @@
 // ABOUTME: Drafts tab widget for the clip library screen
-// ABOUTME: Displays a list of saved video drafts with options to edit or delete
+// ABOUTME: Lists saved video drafts with options to post, edit, duplicate, delete
 
 import 'dart:async';
 import 'dart:io';
@@ -16,6 +16,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
+import 'package:openvine/utils/draft_copy_naming.dart';
 import 'package:openvine/widgets/library/empty_library_state.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -41,19 +42,28 @@ class DraftsTab extends ConsumerWidget {
     return BlocConsumer<DraftsLibraryBloc, DraftsLibraryState>(
       listenWhen: (previous, current) =>
           current is DraftsLibraryDraftDeleted ||
-          current is DraftsLibraryDeleteFailed,
+          current is DraftsLibraryDeleteFailed ||
+          current is DraftsLibraryDraftDuplicated ||
+          current is DraftsLibraryDuplicateFailed,
       listener: (context, state) {
-        final isSuccess = state is DraftsLibraryDraftDeleted;
+        final label = switch (state) {
+          DraftsLibraryDraftDeleted() =>
+            context.l10n.libraryDraftDeletedSnackbar,
+          DraftsLibraryDeleteFailed() =>
+            context.l10n.libraryDraftDeleteFailedSnackbar,
+          DraftsLibraryDraftDuplicated() =>
+            context.l10n.libraryDraftDuplicatedSnackbar,
+          DraftsLibraryDuplicateFailed() =>
+            context.l10n.libraryDraftDuplicateFailedSnackbar,
+          _ => null,
+        };
+        if (label == null) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: VineTheme.transparent,
             elevation: 0,
             behavior: SnackBarBehavior.floating,
-            content: DivineSnackbarContainer(
-              label: isSuccess
-                  ? context.l10n.libraryDraftDeletedSnackbar
-                  : context.l10n.libraryDraftDeleteFailedSnackbar,
-            ),
+            content: DivineSnackbarContainer(label: label),
           ),
         );
       },
@@ -94,6 +104,8 @@ class DraftsTab extends ConsumerWidget {
             ),
           ),
           DraftsLibraryLoaded(:final drafts) ||
+          DraftsLibraryDraftDuplicated(:final drafts) ||
+          DraftsLibraryDuplicateFailed(:final drafts) ||
           DraftsLibraryDraftDeleted(:final drafts) ||
           DraftsLibraryDeleteFailed(:final drafts) => () {
             final filtered = showAutosavedDraft
@@ -147,6 +159,11 @@ class DraftsTab extends ConsumerWidget {
           onTap: () => _openDraft(context, ref, draft),
         ),
         VineBottomSheetActionData(
+          iconPath: DivineIconName.copySimple.assetPath,
+          label: context.l10n.libraryDraftActionDuplicate,
+          onTap: () => _duplicateDraft(context, draft),
+        ),
+        VineBottomSheetActionData(
           iconPath: DivineIconName.trash.assetPath,
           label: context.l10n.libraryDraftActionDelete,
           isDestructive: true,
@@ -154,6 +171,41 @@ class DraftsTab extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  void _duplicateDraft(BuildContext context, DivineVideoDraft draft) {
+    Log.info(
+      '📚 Duplicate draft: ${draft.id}',
+      name: 'DraftsTab',
+      category: LogCategory.video,
+    );
+    // Untitled drafts stay untitled; a titled draft gets a numbered copy
+    // suffix that skips titles already taken, so repeated copies read
+    // "Trip (copy 1)", "Trip (copy 2)" rather than stacking "(copy) (copy)".
+    final trimmedTitle = draft.title.trim();
+    final newTitle = trimmedTitle.isEmpty
+        ? null
+        : nextDuplicateDraftTitle(
+            sourceTitle: trimmedTitle,
+            existingTitles: _draftTitles(context),
+            format: (base, number) =>
+                context.l10n.libraryDraftCopyTitle(base, number),
+          );
+    context.read<DraftsLibraryBloc>().add(
+      DraftsLibraryDuplicateRequested(draft.id, newTitle: newTitle),
+    );
+  }
+
+  Iterable<String> _draftTitles(BuildContext context) {
+    final state = context.read<DraftsLibraryBloc>().state;
+    return switch (state) {
+      DraftsLibraryLoaded(:final drafts) ||
+      DraftsLibraryDraftDuplicated(:final drafts) ||
+      DraftsLibraryDuplicateFailed(:final drafts) ||
+      DraftsLibraryDraftDeleted(:final drafts) ||
+      DraftsLibraryDeleteFailed(:final drafts) => drafts.map((d) => d.title),
+      _ => const <String>[],
+    };
   }
 
   Future<void> _postDraft(

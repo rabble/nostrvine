@@ -2436,6 +2436,20 @@
     "libraryDraftActionPost": "Paylaş",
     "libraryDraftDeleteFailedSnackbar": "Taslak silinemedi",
     "libraryDraftDeletedSnackbar": "Taslak silindi",
+    "libraryDraftDuplicatedSnackbar": "Taslak çoğaltıldı",
+    "libraryDraftDuplicateFailedSnackbar": "Taslak çoğaltılamadı",
+    "libraryDraftActionDuplicate": "Çoğalt",
+    "libraryDraftCopyTitle": "{title} (kopya {number})",
+    "@libraryDraftCopyTitle": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            },
+            "number": {
+                "type": "int"
+            }
+        }
+    },
     "libraryGalleryPermissionDenied": "{destination} izni reddedildi",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {

@@ -6070,13 +6070,28 @@ class AppLocalizationsPt extends AppLocalizations {
   String get libraryDraftDeleteFailedSnackbar => 'Falha ao excluir rascunho';
 
   @override
+  String get libraryDraftDuplicatedSnackbar => 'Rascunho duplicado';
+
+  @override
+  String get libraryDraftDuplicateFailedSnackbar =>
+      'Falha ao duplicar rascunho';
+
+  @override
   String get libraryDraftActionPost => 'Publicar';
 
   @override
   String get libraryDraftActionEdit => 'Editar';
 
   @override
+  String get libraryDraftActionDuplicate => 'Duplicar';
+
+  @override
   String get libraryDraftActionDelete => 'Excluir rascunho';
+
+  @override
+  String libraryDraftCopyTitle(String title, int number) {
+    return '$title (cópia $number)';
+  }
 
   @override
   String get libraryDeleteDraftTitle => 'Excluir rascunho';

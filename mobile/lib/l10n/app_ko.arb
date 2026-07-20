@@ -1760,6 +1760,20 @@
     "libraryDraftActionPost": "게시",
     "libraryDraftDeleteFailedSnackbar": "임시 저장을 삭제하지 못했어요",
     "libraryDraftDeletedSnackbar": "임시 저장을 삭제했어요",
+    "libraryDraftDuplicatedSnackbar": "임시 저장을 복제했어요",
+    "libraryDraftDuplicateFailedSnackbar": "임시 저장을 복제하지 못했어요",
+    "libraryDraftActionDuplicate": "복제",
+    "libraryDraftCopyTitle": "{title} (사본 {number})",
+    "@libraryDraftCopyTitle": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            },
+            "number": {
+                "type": "int"
+            }
+        }
+    },
     "libraryGalleryPermissionDenied": "{destination} 권한이 거부되었어요",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {

@@ -2639,6 +2639,20 @@
     "libraryNoClipsYetTitle": "Още няма клипове",
     "libraryNoClipsYetSubtitle": "Записаните ти видео клипове ще се появят тук",
     "libraryDraftDeletedSnackbar": "Черновата е изтрита",
+    "libraryDraftDuplicatedSnackbar": "Черновата е дублирана",
+    "libraryDraftDuplicateFailedSnackbar": "Не успяхме да дублираме черновата",
+    "libraryDraftActionDuplicate": "Дублирай",
+    "libraryDraftCopyTitle": "{title} (копие {number})",
+    "@libraryDraftCopyTitle": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            },
+            "number": {
+                "type": "int"
+            }
+        }
+    },
     "libraryDraftDeleteFailedSnackbar": "Не успяхме да изтрием черновата",
     "libraryDraftActionPost": "Публикувай",
     "libraryDraftActionEdit": "Редактиране",

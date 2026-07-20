@@ -542,11 +542,22 @@ class DraftStorageService {
     // Delete from DB first (clips cascade via FK), then delete files
     await _draftsDao.deleteDraft(id);
 
+    // Ghost frames live only in the clip `data` blob, so — like draft-local
+    // audio — the indexed-column check can't tell that a surviving draft (e.g.
+    // a duplicate sharing this draft's clips) still references them. Scan the
+    // other drafts' clips for shared ghost frames and keep those alive.
+    // Exclude this draft's own clips so its ghost frames aren't kept alive by
+    // rows that haven't cascade-deleted yet.
+    final referencedGhostFrames = await _referencedGhostFrameFilenames(
+      excludeDraftId: id,
+    );
+
     // Delete clip files only if not referenced by clip library
     await FileCleanupService.deleteRecordingClipsFiles(
       draft.clips,
       draftsDao: _draftsDao,
       clipsDao: _clipsDao,
+      referencedGhostFrameFilenames: referencedGhostFrames,
     );
 
     // Delete final rendered clip if present
@@ -555,6 +566,7 @@ class DraftStorageService {
         draft.finalRenderedClip!,
         draftsDao: _draftsDao,
         clipsDao: _clipsDao,
+        referencedGhostFrameFilenames: referencedGhostFrames,
       );
     }
 
@@ -621,6 +633,47 @@ class DraftStorageService {
     return filenames;
   }
 
+  /// Basenames of clip ghost-frame files referenced by any clip other than
+  /// those belonging to [excludeDraftId], across all accounts.
+  ///
+  /// A clip's ghost frame is persisted only inside the clip `data` blob (no
+  /// indexed column), so a draft that shares clips with another draft — a
+  /// duplicate, or a publish copy — cannot be protected by the indexed-column
+  /// check when the sibling is deleted. This scans every remaining clip's blob
+  /// and collects the shared ghost basenames so deletion keeps them alive until
+  /// the last referencing clip is gone. Never throws: a corrupt blob is logged
+  /// and skipped.
+  ///
+  /// Trashed clips are included (`includeTrashed: true`): a soft-deleted clip
+  /// can still be restored, so a ghost frame it shares with the draft being
+  /// deleted must survive. This mirrors [ClipsDao.isFileReferenced], which
+  /// already protects the indexed video/thumbnail files of trashed clips.
+  Future<Set<String>> _referencedGhostFrameFilenames({
+    String? excludeDraftId,
+  }) async {
+    final clipRows = await _clipsDao.getAllClips(includeTrashed: true);
+    final filenames = <String>{};
+
+    for (final row in clipRows) {
+      if (row.draftId == excludeDraftId) continue;
+      try {
+        final data = json.decode(row.data) as Map<String, dynamic>;
+        final ghostFramePath = data['ghostFramePath'] as String?;
+        if (ghostFramePath != null && ghostFramePath.isNotEmpty) {
+          filenames.add(p.basename(ghostFramePath));
+        }
+      } catch (e) {
+        Log.error(
+          '🧹 Skipping clip ${row.id} during ghost-frame reference scan: $e',
+          name: 'DraftStorageService',
+          category: LogCategory.video,
+        );
+      }
+    }
+
+    return filenames;
+  }
+
   /// Clear all drafts from storage and delete associated files
   Future<void> clearAllDrafts() async {
     Log.info(
@@ -644,16 +697,24 @@ class DraftStorageService {
     // Clear DB first (clips cascade via FK), then delete files
     await _draftsDao.clearAll();
 
+    // Every draft and its clips are gone; the clips that survive are library
+    // clips (active or trashed). Ghost frames live only in the clip `data`
+    // blob, so protect any a surviving library clip still references. No
+    // excludeDraftId — all remaining clips are legitimate survivors.
+    final referencedGhostFrames = await _referencedGhostFrameFilenames();
+
     // Delete clip files only if not referenced by clip library
     await FileCleanupService.deleteRecordingClipsFiles(
       allClips,
       draftsDao: _draftsDao,
       clipsDao: _clipsDao,
+      referencedGhostFrameFilenames: referencedGhostFrames,
     );
     await FileCleanupService.deleteRecordingClipsFiles(
       allFinalRenderedClips,
       draftsDao: _draftsDao,
       clipsDao: _clipsDao,
+      referencedGhostFrameFilenames: referencedGhostFrames,
     );
     await FileCleanupService.deleteFilesIfUnreferenced(
       allCustomThumbnailPaths,

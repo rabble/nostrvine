@@ -21,13 +21,23 @@ class DraftsLibraryBloc extends Bloc<DraftsLibraryEvent, DraftsLibraryState> {
     : _draftStorageService = draftStorageService,
       super(const DraftsLibraryInitial()) {
     on<DraftsLibraryLoadRequested>(_onLoadRequested, transformer: droppable());
-    on<DraftsLibraryDeleteRequested>(
-      _onDeleteRequested,
-      transformer: sequential(),
-    );
+    // Duplicate and delete share ONE sequential queue so their handlers never
+    // interleave; separate buckets would let one finish mid-flight and emit a
+    // stale draft list (see [DraftsLibraryMutationEvent]).
+    on<DraftsLibraryMutationEvent>(_onMutation, transformer: sequential());
   }
 
   final DraftStorageService _draftStorageService;
+
+  Future<void> _onMutation(
+    DraftsLibraryMutationEvent event,
+    Emitter<DraftsLibraryState> emit,
+  ) {
+    return switch (event) {
+      DraftsLibraryDuplicateRequested() => _onDuplicateRequested(event, emit),
+      DraftsLibraryDeleteRequested() => _onDeleteRequested(event, emit),
+    };
+  }
 
   Future<void> _onLoadRequested(
     DraftsLibraryLoadRequested event,
@@ -69,12 +79,64 @@ class DraftsLibraryBloc extends Bloc<DraftsLibraryEvent, DraftsLibraryState> {
     }
   }
 
+  Future<void> _onDuplicateRequested(
+    DraftsLibraryDuplicateRequested event,
+    Emitter<DraftsLibraryState> emit,
+  ) async {
+    final currentDrafts = switch (state) {
+      DraftsLibraryLoaded(:final drafts) ||
+      DraftsLibraryDraftDuplicated(:final drafts) ||
+      DraftsLibraryDuplicateFailed(:final drafts) ||
+      DraftsLibraryDraftDeleted(:final drafts) ||
+      DraftsLibraryDeleteFailed(:final drafts) => drafts,
+      _ => null,
+    };
+    if (currentDrafts == null) return;
+
+    DivineVideoDraft? source;
+    for (final draft in currentDrafts) {
+      if (draft.id == event.draftId) {
+        source = draft;
+        break;
+      }
+    }
+    if (source == null) return;
+
+    try {
+      Log.info(
+        '📚 Duplicating draft: ${event.draftId}',
+        name: 'DraftsLibraryBloc',
+        category: LogCategory.video,
+      );
+
+      final copy = source.duplicate(title: event.newTitle);
+      await _draftStorageService.saveDraft(copy);
+
+      final updatedDrafts = [...currentDrafts, copy]
+        ..sort((a, b) => b.lastModified.compareTo(a.lastModified));
+
+      emit(DraftsLibraryDraftDuplicated(drafts: updatedDrafts));
+      emit(DraftsLibraryLoaded(drafts: updatedDrafts));
+    } catch (e, stackTrace) {
+      Log.error(
+        '📚 Failed to duplicate draft: $e',
+        name: 'DraftsLibraryBloc',
+        category: LogCategory.video,
+      );
+      addError(e, stackTrace);
+      emit(DraftsLibraryDuplicateFailed(drafts: currentDrafts));
+      emit(DraftsLibraryLoaded(drafts: currentDrafts));
+    }
+  }
+
   Future<void> _onDeleteRequested(
     DraftsLibraryDeleteRequested event,
     Emitter<DraftsLibraryState> emit,
   ) async {
     final currentDrafts = switch (state) {
       DraftsLibraryLoaded(:final drafts) ||
+      DraftsLibraryDraftDuplicated(:final drafts) ||
+      DraftsLibraryDuplicateFailed(:final drafts) ||
       DraftsLibraryDraftDeleted(:final drafts) ||
       DraftsLibraryDeleteFailed(:final drafts) => drafts,
       _ => null,
