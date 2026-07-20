@@ -5,6 +5,7 @@ import 'dart:math' as math;
 
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart';
+import 'package:videos_repository/videos_repository.dart';
 
 /// Provenance source for analytics values.
 enum AnalyticsDataSource { authorVideos, bulkVideoStats, videoViewsEndpoint }
@@ -96,12 +97,12 @@ class FunnelcakeCreatorAnalyticsRepository
     final sourcesUsed = <AnalyticsDataSource>{};
 
     final socialFuture = _getSocialCounts(pubkey);
-    final videos = await _fetchAuthorVideos(pubkey);
-    if (videos.isNotEmpty) {
+    final authored = await _fetchAuthorVideos(pubkey);
+    if (authored.isNotEmpty) {
       sourcesUsed.add(AnalyticsDataSource.authorVideos);
     }
 
-    final bulkResult = await _enrichVideosWithBulkStats(videos);
+    final bulkResult = await _enrichVideosWithBulkStats(authored);
     var hydratedVideos = bulkResult.videos;
     if (bulkResult.hydratedCount > 0) {
       sourcesUsed.add(AnalyticsDataSource.bulkVideoStats);
@@ -113,18 +114,24 @@ class FunnelcakeCreatorAnalyticsRepository
       sourcesUsed.add(AnalyticsDataSource.videoViewsEndpoint);
     }
 
+    // Collapse edited addressable videos AFTER hydration so the cross-source
+    // max-merge sees each edit sibling's hydrated counts — matching the profile
+    // feed's getAuthorFeed (hydrate-then-merge). Collapsing first would fetch
+    // stats only for the surviving event id and drop older edits' counts.
+    final videos = mergeProfileFeedVideoLists(const [], hydratedVideos);
+
     final social = await socialFuture;
-    final withViewData = hydratedVideos
+    final withViewData = videos
         .where((video) => extractViewLikeCount(video) != null)
         .length;
 
     return CreatorAnalyticsSnapshot(
-      videos: hydratedVideos,
+      videos: videos,
       socialCounts: social,
       diagnostics: CreatorAnalyticsDiagnostics(
-        totalVideos: hydratedVideos.length,
+        totalVideos: videos.length,
         videosWithAnyViews: withViewData,
-        videosMissingViews: hydratedVideos.length - withViewData,
+        videosMissingViews: videos.length - withViewData,
         videosHydratedByBulkStats: bulkResult.hydratedCount,
         videosHydratedByViewsEndpoint: endpointResult.hydratedCount,
         sourcesUsed: sourcesUsed,
@@ -166,8 +173,13 @@ class FunnelcakeCreatorAnalyticsRepository
       if (before <= 0) break;
     }
 
-    final seen = <String>{};
-    return collected.where((video) => seen.add(video.id)).toList();
+    // Guard: the author endpoint can leak videos where the pubkey is a
+    // p-tagged collaborator rather than the event author. Mirrors the profile
+    // feed's getAuthorFeed filter. Edit siblings are collapsed later, after
+    // hydration, by the caller.
+    return collected
+        .where((video) => !video.isRepost && video.pubkey == pubkey)
+        .toList();
   }
 
   Future<_HydrationResult> _enrichVideosWithBulkStats(

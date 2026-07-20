@@ -29,15 +29,18 @@ VideoEvent _video({
 VideoStats _videoStats({
   required String id,
   required String pubkey,
+  String? dTag,
+  int createdAtSeconds = 1739350000,
   int? loops,
   int? views,
+  Map<String, String> rawTags = const {},
 }) {
   return VideoStats(
     id: id,
     pubkey: pubkey,
-    createdAt: DateTime.fromMillisecondsSinceEpoch(1739350000 * 1000),
+    createdAt: DateTime.fromMillisecondsSinceEpoch(createdAtSeconds * 1000),
     kind: 34236,
-    dTag: id,
+    dTag: dTag ?? id,
     title: id,
     thumbnail: 'thumb',
     videoUrl: 'videoUrl',
@@ -47,6 +50,7 @@ VideoStats _videoStats({
     engagementScore: 0,
     loops: loops,
     views: views,
+    rawTags: rawTags,
   );
 }
 
@@ -204,5 +208,110 @@ void main() {
         expect(snapshot.videos.first.rawTags['views'], '0');
       },
     );
+
+    test(
+      'collapses edit siblings after hydration so higher counts survive',
+      () async {
+        const pubkey = 'pubkey';
+        final api = MockFunnelcakeApiClient();
+
+        when(() => api.isAvailable).thenReturn(true);
+        when(() => api.getSocialCounts(pubkey)).thenAnswer((_) async => null);
+        when(() => api.getVideoViews(any())).thenAnswer((_) async => 0);
+        // Per-event-id stats: the older edit accumulated more views while it
+        // was live than the newer edit has since.
+        when(() => api.getBulkVideoStats(any())).thenAnswer((invocation) async {
+          final ids = invocation.positionalArguments[0] as List<String>;
+          return BulkVideoStatsResponse(
+            stats: {
+              for (final id in ids)
+                id: BulkVideoStatsEntry(
+                  eventId: id,
+                  reactions: 0,
+                  comments: 0,
+                  reposts: 0,
+                  loops: 0,
+                  views: id == 'older-event' ? 1000 : 5,
+                ),
+            },
+          );
+        });
+
+        when(
+          () => api.getVideosByAuthor(
+            pubkey: pubkey,
+            limit: 100,
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer(
+          (_) async => VideosByAuthorResponse(
+            videos: [
+              _videoStats(
+                id: 'older-event',
+                pubkey: pubkey,
+                dTag: 'same-video',
+              ),
+              _videoStats(
+                id: 'newer-event',
+                pubkey: pubkey,
+                dTag: 'same-video',
+                createdAtSeconds: 1739350100,
+              ),
+            ],
+          ),
+        );
+
+        final repo = FunnelcakeCreatorAnalyticsRepository(api);
+        final snapshot = await repo.fetchCreatorAnalytics(pubkey);
+
+        // Both edit siblings collapse to one video keyed on the newest event
+        // id, but stats are hydrated for every sibling BEFORE the collapse, so
+        // the max-merge keeps the older edit's higher view count.
+        expect(snapshot.diagnostics.totalVideos, 1);
+        expect(snapshot.videos.single.id, 'newer-event');
+        expect(snapshot.videos.single.rawTags['views'], '1000');
+        verify(
+          () => api.getBulkVideoStats(['older-event', 'newer-event']),
+        ).called(1);
+      },
+    );
+
+    test('excludes collaborator rows leaked by author endpoint', () async {
+      const pubkey = 'pubkey';
+      final api = MockFunnelcakeApiClient();
+
+      when(() => api.isAvailable).thenReturn(true);
+      when(() => api.getSocialCounts(pubkey)).thenAnswer((_) async => null);
+      when(
+        () => api.getBulkVideoStats(any()),
+      ).thenAnswer((_) async => const BulkVideoStatsResponse(stats: {}));
+      when(() => api.getVideoViews(any())).thenAnswer((_) async => 0);
+
+      when(
+        () => api.getVideosByAuthor(
+          pubkey: pubkey,
+          limit: 100,
+          before: any(named: 'before'),
+        ),
+      ).thenAnswer(
+        (_) async => VideosByAuthorResponse(
+          videos: [
+            _videoStats(id: 'authored', pubkey: pubkey),
+            _videoStats(id: 'collaborator-leak', pubkey: 'collaborator-pubkey'),
+          ],
+        ),
+      );
+
+      final repo = FunnelcakeCreatorAnalyticsRepository(api);
+      final snapshot = await repo.fetchCreatorAnalytics(pubkey);
+
+      expect(snapshot.diagnostics.totalVideos, 1);
+      expect(snapshot.videos.single.id, 'authored');
+      // Bulk stats are batched into one call, so a filter regression would
+      // surface as ['authored', 'collaborator-leak'] here — assert the exact
+      // surviving-id list rather than the (unreachable) single-leak list.
+      verify(() => api.getBulkVideoStats(['authored'])).called(1);
+      verifyNever(() => api.getVideoViews('collaborator-leak'));
+    });
   });
 }
