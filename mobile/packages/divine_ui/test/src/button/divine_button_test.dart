@@ -383,7 +383,7 @@ void main() {
       );
 
       testWidgets(
-        'tiny outer == inner == 32px (no tap-padding inflation)',
+        'tiny footprint stays 32px tall with a 48dp overflow tap target',
         (tester) async {
           await tester.pumpWidget(
             buildTestWidget(
@@ -392,16 +392,18 @@ void main() {
             ),
           );
 
-          // Tiny intentionally skips the outer tap-padding wrap so its
-          // painted bounds match the 32px module of the avatar / type
-          // icon it usually sits next to. A row that swaps the button in
-          // and out (e.g. a Follow back affordance) keeps the same
-          // intrinsic height because the button never adds height
-          // beyond what the avatar already contributes.
+          // Tiny keeps a 32px painted/layout height so it sits flush with the
+          // 32px module of the avatar / type icon it usually sits next to — a
+          // row that swaps the button in and out (e.g. a Follow back
+          // affordance) keeps the same intrinsic height. The 48dp minimum tap
+          // target is met by overflowing into the row's surrounding gaps
+          // rather than inflating the layout.
           final outerSize = tester.getSize(find.byType(DivineButton));
-          final innerSize = tester.getSize(find.byType(AnimatedOpacity));
+          final chipSize = tester.getSize(find.byType(Ink));
+          final tapTarget = tester.getSize(find.byType(InkWell));
           expect(outerSize.height, equals(32));
-          expect(innerSize.height, equals(32));
+          expect(chipSize.height, equals(32));
+          expect(tapTarget.height, greaterThanOrEqualTo(48));
         },
       );
 
@@ -454,7 +456,7 @@ void main() {
       );
 
       testWidgets(
-        'small visible chip is 40px tall (4px outer × 2 + 40 = 48 tap target)',
+        'small visible chip is 40px tall with a 48dp tap target',
         (tester) async {
           await tester.pumpWidget(
             buildTestWidget(
@@ -463,12 +465,48 @@ void main() {
             ),
           );
 
-          final outerSize = tester.getSize(find.byType(DivineButton));
-          final innerSize = tester.getSize(find.byType(AnimatedOpacity));
-          expect(outerSize.height - innerSize.height, equals(8));
-          expect(innerSize.height, equals(40));
+          // The visible chip stays 40px; the InkWell tap target is padded out
+          // to the 48dp minimum inside, so the footprint is 48 with no dead
+          // (non-tappable) outer margin.
+          final tapTarget = tester.getSize(find.byType(DivineButton));
+          final chipSize = tester.getSize(find.byType(Ink));
+          expect(tapTarget.height, equals(48));
+          expect(chipSize.height, equals(40));
         },
       );
+    });
+
+    group('accessibility', () {
+      testWidgets('small meets the 48dp / 44pt tap-target guidelines', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildTestWidget(size: DivineButtonSize.small, onPressed: () {}),
+        );
+        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        handle.dispose();
+      });
+
+      testWidgets('tiny meets the 48dp / 44pt tap-target guidelines', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildTestWidget(size: DivineButtonSize.tiny, onPressed: () {}),
+        );
+        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        handle.dispose();
+      });
+
+      testWidgets('base meets the 48dp tap-target guideline', (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(buildTestWidget(onPressed: () {}));
+        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+        handle.dispose();
+      });
     });
 
     group('label inner padding', () {
@@ -985,9 +1023,12 @@ void main() {
         expect(find.byType(DivineIcon), findsOneWidget);
         expect(find.text(''), findsNothing);
 
-        // Tiny icon-only is 6 + 20 + 6 = 32 visible.
-        final innerSize = tester.getSize(find.byType(AnimatedOpacity));
-        expect(innerSize.height, equals(32));
+        // Tiny icon-only chip is 6 + 20 + 6 = 32 visible; the tap target is
+        // padded out to the 48dp minimum.
+        final chipSize = tester.getSize(find.byType(Ink));
+        final tapTarget = tester.getSize(find.byType(InkWell));
+        expect(chipSize.height, equals(32));
+        expect(tapTarget.height, greaterThanOrEqualTo(48));
       });
 
       testWidgets('small size uses DivineIconButton padding', (tester) async {

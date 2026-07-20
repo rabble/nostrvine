@@ -374,6 +374,30 @@ class _DivineButtonContent extends StatelessWidget {
       boxShadow: _isEnabled ? _boxShadow : null,
     );
 
+    Widget inkChild = Ink(
+      decoration: decoration,
+      child: _AdaptiveButtonPadding(
+        vertical: _verticalPadding,
+        looseHorizontal: _looseHorizontalPadding,
+        forceTight: _forceTightPadding,
+        child: content,
+      ),
+    );
+
+    // small (40px) and tiny (32px) chips are below the 48dp minimum tap target.
+    // Centre the chip inside a 48dp minimum box that IS the InkWell's child, so
+    // the tappable/semantics node the accessibility guideline measures is >= 48
+    // while the visible chip keeps its design size. base is already 48+.
+    if (size != DivineButtonSize.base) {
+      inkChild = ConstrainedBox(
+        constraints: const BoxConstraints(
+          minWidth: kMinInteractiveDimension,
+          minHeight: kMinInteractiveDimension,
+        ),
+        child: Center(widthFactor: 1, heightFactor: 1, child: inkChild),
+      );
+    }
+
     Widget button = AnimatedOpacity(
       duration: const Duration(milliseconds: 150),
       opacity: _isEnabled ? 1.0 : _disabledOpacity,
@@ -384,25 +408,23 @@ class _DivineButtonContent extends StatelessWidget {
           borderRadius: BorderRadius.circular(_borderRadius),
           splashColor: _foregroundColor.withValues(alpha: 0.1),
           highlightColor: _foregroundColor.withValues(alpha: 0.05),
-          child: Ink(
-            decoration: decoration,
-            child: _AdaptiveButtonPadding(
-              vertical: _verticalPadding,
-              looseHorizontal: _looseHorizontalPadding,
-              forceTight: _forceTightPadding,
-              child: content,
-            ),
-          ),
+          child: inkChild,
         ),
       ),
     );
 
-    // Small variant only: wrap in extra outer padding so the visible
-    // chip is 40px while the tap target stays at 48px. Tiny deliberately
-    // skips this — its outer == inner == 32px so it can sit flush with a
-    // 32px avatar / type icon without inflating the row's height.
-    if (size == DivineButtonSize.small) {
-      button = Padding(padding: const EdgeInsets.all(4), child: button);
+    // Tiny must stay 32px tall so it sits flush with a 32px avatar / type icon
+    // without inflating the row's height. Keep the layout height at 32 while
+    // the 48dp tap target overflows into the row's surrounding gaps.
+    if (size == DivineButtonSize.tiny) {
+      button = SizedBox(
+        height: 32,
+        child: OverflowBox(
+          minHeight: kMinInteractiveDimension,
+          maxHeight: kMinInteractiveDimension,
+          child: button,
+        ),
+      );
     }
 
     return button;
