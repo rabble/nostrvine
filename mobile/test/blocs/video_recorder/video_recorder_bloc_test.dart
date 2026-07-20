@@ -84,6 +84,8 @@ class _MockSharedPreferences extends Mock implements SharedPreferences {}
 
 class _MockEditorVideo extends Mock implements EditorVideo {}
 
+class _MockFile extends Mock implements File {}
+
 /// A fake wakelock platform —
 /// production code calls `WakelockPlus.enable/disable` around every
 /// recording session, which hits a platform channel that isn't bound
@@ -2790,36 +2792,66 @@ void main() {
         verify: (bloc) => expect(bloc.state.stopMotionFrames, isEmpty),
       );
 
-      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
-        'deletes an unreadable captured frame instead of leaking it',
-        setUp: () {
-          final unreadablePath = '${frameDir.path}/unreadable.jpg';
-          File(unreadablePath).writeAsBytesSync(const []);
-          framePath = unreadablePath;
-          when(() => cameraService.capturePhoto()).thenAnswer(
-            (_) async => PhotoCaptureResult(filePath: unreadablePath),
-          );
-        },
-        build: buildBloc,
-        seed: () => const VideoRecorderBlocState(
-          recorderMode: VideoRecorderMode.stopMotion,
-        ),
-        act: (bloc) => bloc.add(const VideoRecorderStopMotionFrameCaptured()),
-        wait: const Duration(milliseconds: 20),
-        verify: (bloc) {
-          expect(bloc.state.stopMotionFrames, isEmpty);
-          expect(File(framePath).existsSync(), isFalse);
-          verifyNever(
-            () => clipManager.saveStopMotionSessionToLibrary(
-              id: any(named: 'id'),
-              frames: any(named: 'frames'),
-              originalAspectRatio: any(named: 'originalAspectRatio'),
-              targetAspectRatio: any(named: 'targetAspectRatio'),
-              duration: any(named: 'duration'),
-              thumbnailPath: any(named: 'thumbnailPath'),
-              lensMetadata: any(named: 'lensMetadata'),
-            ),
-          );
+      test(
+        'waits for unreadable frame deletion before accepting another capture',
+        () {
+          fakeAsync((async) {
+            const unreadablePath = '/unreadable.jpg';
+            final unreadableFile = _MockFile();
+            final deleteGate = Completer<File>();
+            when(unreadableFile.existsSync).thenReturn(true);
+            when(unreadableFile.lengthSync).thenReturn(0);
+            when(unreadableFile.delete).thenAnswer(
+              (_) => deleteGate.future,
+            );
+            when(() => cameraService.capturePhoto()).thenAnswer(
+              (_) async => const PhotoCaptureResult(filePath: unreadablePath),
+            );
+
+            IOOverrides.runZoned(
+              () {
+                final bloc = buildBloc();
+                bloc.emit(
+                  const VideoRecorderBlocState(
+                    recorderMode: VideoRecorderMode.stopMotion,
+                  ),
+                );
+
+                bloc.add(
+                  const VideoRecorderStopMotionFrameCaptured(),
+                );
+                async.flushMicrotasks();
+                verify(() => cameraService.capturePhoto()).called(1);
+
+                // The droppable handler must still own the invalid capture
+                // until its file is deleted, so a second shutter event cannot
+                // start another native capture in the cleanup window.
+                bloc.add(
+                  const VideoRecorderStopMotionFrameCaptured(),
+                );
+                async.flushMicrotasks();
+                verifyNever(() => cameraService.capturePhoto());
+
+                deleteGate.complete(unreadableFile);
+                async.flushMicrotasks();
+                unawaited(bloc.close());
+                async.flushMicrotasks();
+
+                verifyNever(
+                  () => clipManager.saveStopMotionSessionToLibrary(
+                    id: any(named: 'id'),
+                    frames: any(named: 'frames'),
+                    originalAspectRatio: any(named: 'originalAspectRatio'),
+                    targetAspectRatio: any(named: 'targetAspectRatio'),
+                    duration: any(named: 'duration'),
+                    thumbnailPath: any(named: 'thumbnailPath'),
+                    lensMetadata: any(named: 'lensMetadata'),
+                  ),
+                );
+              },
+              createFile: (_) => unreadableFile,
+            );
+          });
         },
       );
 
