@@ -418,6 +418,36 @@ abstract class AppLocalizations {
   /// **'APP'**
   String get generalSettingsSectionApp;
 
+  /// No description provided for @appearanceSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get appearanceSettingsTitle;
+
+  /// No description provided for @appearanceSettingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how Divine looks on this device'**
+  String get appearanceSettingsSubtitle;
+
+  /// No description provided for @appearanceSettingsSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System default'**
+  String get appearanceSettingsSystem;
+
+  /// No description provided for @appearanceSettingsLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get appearanceSettingsLight;
+
+  /// No description provided for @appearanceSettingsDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get appearanceSettingsDark;
+
   /// No description provided for @generalSettingsClosedCaptions.
   ///
   /// In en, this message translates to:

@@ -11,6 +11,8 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
@@ -22,33 +24,45 @@ import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 /// ([FeedAutoAdvanceCubit], [VideoVolumeCubit], `subtitleVisibilityProvider`),
 /// so the pill takes no constructor params and works as a drop-in child of
 /// any feed surface that provides those scopes.
-class FeedPlaybackTogglesPill extends StatelessWidget {
+class FeedPlaybackTogglesPill extends ConsumerWidget {
   const FeedPlaybackTogglesPill({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colors = Theme.of(context).extension<VineThemeColors>()!;
+    final adaptiveMediaChrome =
+        ref.watch(
+          isFeatureEnabledProvider(FeatureFlag.adaptiveMediaChrome),
+        ) &&
+        Theme.of(context).brightness == Brightness.light;
+    final chromeBackground = adaptiveMediaChrome
+        ? colors.mediaChrome
+        : VineTheme.scrim30;
+    final chromeForeground = adaptiveMediaChrome
+        ? colors.mediaChromeForeground
+        : VineTheme.onSurface;
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: VineTheme.scrim30,
+            color: chromeBackground,
             borderRadius: BorderRadius.circular(24),
             border: Border.all(color: VineTheme.scrim15),
             boxShadow: const [
               BoxShadow(color: VineTheme.shadow25, blurRadius: 4),
             ],
           ),
-          child: const Padding(
+          child: Padding(
             padding: EdgeInsets.all(12),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               spacing: 8,
               children: [
-                _PlaybackModeToggle(),
-                _AudioToggle(),
-                _CaptionsToggle(),
+                _PlaybackModeToggle(foregroundColor: chromeForeground),
+                _AudioToggle(foregroundColor: chromeForeground),
+                _CaptionsToggle(foregroundColor: chromeForeground),
               ],
             ),
           ),
@@ -65,7 +79,9 @@ class FeedPlaybackTogglesPill extends StatelessWidget {
 /// surface without requiring callers to wire up the cubit when they
 /// don't use auto-advance.
 class _PlaybackModeToggle extends StatelessWidget {
-  const _PlaybackModeToggle();
+  const _PlaybackModeToggle({required this.foregroundColor});
+
+  final Color foregroundColor;
 
   @override
   Widget build(BuildContext context) {
@@ -95,7 +111,7 @@ class _PlaybackModeToggle extends StatelessWidget {
             icon: enabled
                 ? DivineIconName.playbackModeOn
                 : DivineIconName.playbackModeOff,
-            color: VineTheme.onSurface,
+            color: foregroundColor,
           ),
         );
       },
@@ -105,7 +121,9 @@ class _PlaybackModeToggle extends StatelessWidget {
 
 /// Audio mute toggle. Drives [VideoVolumeCubit] directly.
 class _AudioToggle extends StatelessWidget {
-  const _AudioToggle();
+  const _AudioToggle({required this.foregroundColor});
+
+  final Color foregroundColor;
 
   @override
   Widget build(BuildContext context) {
@@ -131,7 +149,7 @@ class _AudioToggle extends StatelessWidget {
         icon: isMuted
             ? DivineIconName.speakerSimpleSlash
             : DivineIconName.speakerSimpleHigh,
-        color: VineTheme.onSurface,
+        color: foregroundColor,
       ),
     );
   }
@@ -139,7 +157,9 @@ class _AudioToggle extends StatelessWidget {
 
 /// Closed-captions toggle. Active state means subtitles are visible.
 class _CaptionsToggle extends ConsumerWidget {
-  const _CaptionsToggle();
+  const _CaptionsToggle({required this.foregroundColor});
+
+  final Color foregroundColor;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -156,7 +176,7 @@ class _CaptionsToggle extends ConsumerWidget {
         icon: enabled
             ? DivineIconName.closedCaptioningFill
             : DivineIconName.closedCaptioning,
-        color: VineTheme.onSurface,
+        color: foregroundColor,
       ),
     );
   }

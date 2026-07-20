@@ -5,6 +5,146 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// Semantic palette used by widgets that support both appearance modes.
+@immutable
+class VineThemeColors extends ThemeExtension<VineThemeColors> {
+  /// Creates a semantic palette.
+  const VineThemeColors({
+    required this.background,
+    required this.card,
+    required this.surface,
+    required this.surfaceContainer,
+    required this.surfaceContainerHigh,
+    required this.nav,
+    required this.iconButton,
+    required this.primaryText,
+    required this.secondaryText,
+    required this.mutedText,
+    required this.onSurface,
+    required this.onSurfaceVariant,
+    required this.outline,
+    required this.disabled,
+    required this.mediaChrome,
+    required this.mediaChromeForeground,
+  });
+
+  /// App background.
+  final Color background;
+
+  /// Card background.
+  final Color card;
+
+  /// Primary surface.
+  final Color surface;
+
+  /// Low-emphasis surface container.
+  final Color surfaceContainer;
+
+  /// High-emphasis surface container.
+  final Color surfaceContainerHigh;
+
+  /// Navigation background.
+  final Color nav;
+
+  /// Icon button background.
+  final Color iconButton;
+
+  /// Primary text.
+  final Color primaryText;
+
+  /// Secondary text.
+  final Color secondaryText;
+
+  /// Muted text.
+  final Color mutedText;
+
+  /// Primary content on surfaces.
+  final Color onSurface;
+
+  /// Variant content on surfaces.
+  final Color onSurfaceVariant;
+
+  /// Border and divider color.
+  final Color outline;
+
+  /// Disabled content color.
+  final Color disabled;
+
+  /// Media controls background.
+  final Color mediaChrome;
+
+  /// Media controls foreground.
+  final Color mediaChromeForeground;
+
+  @override
+  VineThemeColors copyWith({
+    Color? background,
+    Color? card,
+    Color? surface,
+    Color? surfaceContainer,
+    Color? surfaceContainerHigh,
+    Color? nav,
+    Color? iconButton,
+    Color? primaryText,
+    Color? secondaryText,
+    Color? mutedText,
+    Color? onSurface,
+    Color? onSurfaceVariant,
+    Color? outline,
+    Color? disabled,
+    Color? mediaChrome,
+    Color? mediaChromeForeground,
+  }) => VineThemeColors(
+    background: background ?? this.background,
+    card: card ?? this.card,
+    surface: surface ?? this.surface,
+    surfaceContainer: surfaceContainer ?? this.surfaceContainer,
+    surfaceContainerHigh: surfaceContainerHigh ?? this.surfaceContainerHigh,
+    nav: nav ?? this.nav,
+    iconButton: iconButton ?? this.iconButton,
+    primaryText: primaryText ?? this.primaryText,
+    secondaryText: secondaryText ?? this.secondaryText,
+    mutedText: mutedText ?? this.mutedText,
+    onSurface: onSurface ?? this.onSurface,
+    onSurfaceVariant: onSurfaceVariant ?? this.onSurfaceVariant,
+    outline: outline ?? this.outline,
+    disabled: disabled ?? this.disabled,
+    mediaChrome: mediaChrome ?? this.mediaChrome,
+    mediaChromeForeground: mediaChromeForeground ?? this.mediaChromeForeground,
+  );
+
+  @override
+  VineThemeColors lerp(covariant VineThemeColors? other, double t) {
+    if (other == null) return this;
+    return copyWith(
+      background: Color.lerp(background, other.background, t),
+      card: Color.lerp(card, other.card, t),
+      surface: Color.lerp(surface, other.surface, t),
+      surfaceContainer: Color.lerp(surfaceContainer, other.surfaceContainer, t),
+      surfaceContainerHigh: Color.lerp(
+        surfaceContainerHigh,
+        other.surfaceContainerHigh,
+        t,
+      ),
+      nav: Color.lerp(nav, other.nav, t),
+      iconButton: Color.lerp(iconButton, other.iconButton, t),
+      primaryText: Color.lerp(primaryText, other.primaryText, t),
+      secondaryText: Color.lerp(secondaryText, other.secondaryText, t),
+      mutedText: Color.lerp(mutedText, other.mutedText, t),
+      onSurface: Color.lerp(onSurface, other.onSurface, t),
+      onSurfaceVariant: Color.lerp(onSurfaceVariant, other.onSurfaceVariant, t),
+      outline: Color.lerp(outline, other.outline, t),
+      disabled: Color.lerp(disabled, other.disabled, t),
+      mediaChrome: Color.lerp(mediaChrome, other.mediaChrome, t),
+      mediaChromeForeground: Color.lerp(
+        mediaChromeForeground,
+        other.mediaChromeForeground,
+        t,
+      ),
+    );
+  }
+}
+
 /// Vine-inspired theme with characteristic green colors and clean design.
 ///
 /// This is a dark-mode only design system matching the classic Vine app
@@ -259,6 +399,13 @@ class VineTheme {
     statusBarColor: transparent,
     statusBarIconBrightness: Brightness.light, // Android
     statusBarBrightness: Brightness.dark, // iOS
+  );
+
+  /// Status bar style for light backgrounds: dark icons on both platforms.
+  static const SystemUiOverlayStyle lightStatusBarStyle = SystemUiOverlayStyle(
+    statusBarColor: transparent,
+    statusBarIconBrightness: Brightness.dark,
+    statusBarBrightness: Brightness.light,
   );
 
   // Classic Vine green color palette
@@ -582,6 +729,50 @@ class VineTheme {
   /// Fully transparent color sentinel.
   static const Color transparent = Color(0x00000000);
 
+  /// Semantic colors that change with the selected appearance mode.
+  ///
+  /// Existing static color constants remain available for compatibility while
+  /// screens migrate incrementally to [Theme.of].
+  static const VineThemeColors darkColors = VineThemeColors(
+    background: backgroundColor,
+    card: cardBackground,
+    surface: surfaceBackground,
+    surfaceContainer: surfaceContainer,
+    surfaceContainerHigh: surfaceContainerHigh,
+    nav: navGreen,
+    iconButton: iconButtonBackground,
+    primaryText: primaryText,
+    secondaryText: secondaryText,
+    mutedText: lightText,
+    onSurface: onSurface,
+    onSurfaceVariant: onSurfaceVariant,
+    outline: outlineVariant,
+    disabled: onSurfaceDisabled,
+    mediaChrome: Color(0xCC000000),
+    mediaChromeForeground: whiteText,
+  );
+
+  /// Warm off-white content surfaces with dark-green anchors, inspired by
+  /// Vine's original clean playback UI.
+  static const VineThemeColors lightColors = VineThemeColors(
+    background: Color(0xFFF9F7F6),
+    card: Color(0xFFFFFFFF),
+    surface: Color(0xFFFFFFFF),
+    surfaceContainer: Color(0xFFF0EEEC),
+    surfaceContainerHigh: Color(0xFFE7E4E1),
+    nav: Color(0xFF07241B),
+    iconButton: Color(0xFFE7F5EE),
+    primaryText: Color(0xFF07241B),
+    secondaryText: Color(0xFF385149),
+    mutedText: Color(0xFF6F817A),
+    onSurface: Color(0xFF17382D),
+    onSurfaceVariant: Color(0xFF526B61),
+    outline: Color(0xFFB7C9C1),
+    disabled: Color(0x6638584C),
+    mediaChrome: Color(0xF2F9F7F6),
+    mediaChromeForeground: Color(0xFF07241B),
+  );
+
   /// Scrim at 80% opacity (black 80%).
   static const Color scrim80 = Color(0xCC000000);
 
@@ -595,92 +786,108 @@ class VineTheme {
   /// equal — and triggers a full `ThemeData.lerp` (TextTheme/Typography
   /// lerp + `Theme` InheritedWidget rebuild cascade) on every rebuild
   /// above `MaterialApp`.
-  static final ThemeData theme = ThemeData(
-    brightness: Brightness.dark,
-    primarySwatch: _createMaterialColor(vineGreen),
-    primaryColor: vineGreen,
-    scaffoldBackgroundColor: backgroundColor,
-    appBarTheme: const AppBarTheme(
-      backgroundColor: navGreen,
-      foregroundColor: whiteText,
-      elevation: 1,
-      centerTitle: true,
-      systemOverlayStyle: statusBarStyle,
-      titleTextStyle: TextStyle(
-        color: whiteText,
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        fontFamily: 'System',
-      ),
-    ),
-    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-      backgroundColor: vineGreen,
-      selectedItemColor: whiteText,
-      unselectedItemColor: Color(0xAAFFFFFF),
-      type: BottomNavigationBarType.fixed,
-      elevation: 8,
-    ),
-    textTheme: const TextTheme(
-      displayLarge: TextStyle(
-        color: primaryText,
-        fontSize: 24,
-        fontWeight: FontWeight.w600,
-      ),
-      titleLarge: TextStyle(
-        color: primaryText,
-        fontSize: 18,
-        fontWeight: FontWeight.w600,
-      ),
-      bodyLarge: TextStyle(
-        color: primaryText,
-        fontSize: 16,
-        fontWeight: FontWeight.w400,
-      ),
-      bodyMedium: TextStyle(
-        color: secondaryText,
-        fontSize: 14,
-        fontWeight: FontWeight.w400,
-      ),
-      bodySmall: TextStyle(
-        color: lightText,
-        fontSize: 12,
-        fontWeight: FontWeight.w400,
-      ),
-    ),
-    textSelectionTheme: TextSelectionThemeData(
-      cursorColor: primary,
-      selectionColor: primary.withAlpha(80),
-      selectionHandleColor: primary,
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: vineGreen,
-        foregroundColor: whiteText,
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-    ),
-    cardTheme: const CardThemeData(
-      color: cardBackground,
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(8)),
-      ),
-    ),
-    switchTheme: SwitchThemeData(
-      thumbColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) return whiteText;
-        return onSurfaceDisabled;
-      }),
-      trackColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) return onPrimary;
-        return surfaceContainer;
-      }),
-      trackOutlineColor: WidgetStateProperty.resolveWith((states) {
-        return outlineVariant;
-      }),
-    ),
+  static final ThemeData theme = _buildTheme(Brightness.dark, darkColors);
+
+  /// Theme data for the experimental light appearance.
+  static final ThemeData lightTheme = _buildTheme(
+    Brightness.light,
+    lightColors,
   );
+
+  static ThemeData _buildTheme(Brightness brightness, VineThemeColors colors) {
+    final isLight = brightness == Brightness.light;
+    return ThemeData(
+      brightness: brightness,
+      primarySwatch: _createMaterialColor(vineGreen),
+      primaryColor: vineGreen,
+      scaffoldBackgroundColor: colors.background,
+      extensions: <ThemeExtension<dynamic>>[colors],
+      appBarTheme: AppBarTheme(
+        backgroundColor: colors.nav,
+        foregroundColor: colors.mediaChromeForeground,
+        elevation: 1,
+        centerTitle: true,
+        systemOverlayStyle: isLight ? lightStatusBarStyle : statusBarStyle,
+        titleTextStyle: TextStyle(
+          color: colors.mediaChromeForeground,
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          fontFamily: 'System',
+        ),
+      ),
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: isLight ? colors.nav : vineGreen,
+        selectedItemColor: colors.mediaChromeForeground,
+        unselectedItemColor: colors.onSurfaceVariant,
+        type: BottomNavigationBarType.fixed,
+        elevation: 8,
+      ),
+      textTheme: TextTheme(
+        displayLarge: TextStyle(
+          color: colors.primaryText,
+          fontSize: 24,
+          fontWeight: FontWeight.w600,
+        ),
+        titleLarge: TextStyle(
+          color: colors.primaryText,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+        ),
+        bodyLarge: TextStyle(
+          color: colors.primaryText,
+          fontSize: 16,
+          fontWeight: FontWeight.w400,
+        ),
+        bodyMedium: TextStyle(
+          color: colors.secondaryText,
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
+        ),
+        bodySmall: TextStyle(
+          color: colors.mutedText,
+          fontSize: 12,
+          fontWeight: FontWeight.w400,
+        ),
+      ),
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: primary,
+        selectionColor: primary.withAlpha(80),
+        selectionHandleColor: primary,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: vineGreen,
+          foregroundColor: whiteText,
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      ),
+      cardTheme: CardThemeData(
+        color: colors.card,
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(8)),
+        ),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return colors.mediaChromeForeground;
+          }
+          return colors.disabled;
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return vineGreen;
+          }
+          return colors.surfaceContainer;
+        }),
+        trackOutlineColor: WidgetStateProperty.resolveWith((states) {
+          return colors.outline;
+        }),
+      ),
+    );
+  }
 
   static MaterialColor _createMaterialColor(Color color) {
     final strengths = <double>[.05];

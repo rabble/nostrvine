@@ -250,6 +250,16 @@ void main() {
         expect(theme.brightness, Brightness.dark);
       });
 
+      test('provides a stable light theme with semantic colors', () {
+        final theme = VineTheme.lightTheme;
+        final colors = theme.extension<VineThemeColors>();
+
+        expect(theme.brightness, Brightness.light);
+        expect(theme.scaffoldBackgroundColor, VineTheme.lightColors.background);
+        expect(colors, VineTheme.lightColors);
+        expect(colors?.primaryText, const Color(0xFF07241B));
+      });
+
       test('returns ThemeData with correct primaryColor', () {
         final theme = VineTheme.theme;
 
