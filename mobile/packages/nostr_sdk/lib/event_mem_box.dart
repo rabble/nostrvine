@@ -183,7 +183,7 @@ class EventMemBox implements FindEventInterface {
   }
 
   List<Event> all() {
-    return _eventList;
+    return List<Event>.of(_eventList);
   }
 
   List<Event> listByPubkey(String pubkey) {
