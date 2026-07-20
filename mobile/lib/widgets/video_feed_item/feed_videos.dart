@@ -27,6 +27,7 @@ import 'package:openvine/screens/feed/feed_auto_advance_coordinator.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_error_listener.dart';
 import 'package:openvine/screens/feed/pooled_age_restricted_retry.dart';
+import 'package:openvine/services/community_content_label_service.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:openvine/services/view_event_publisher.dart'
@@ -557,6 +558,15 @@ class __OverlayState extends ConsumerState<_Overlay> {
     super.dispose();
   }
 
+  // Single definition of "what counts as warned" for this overlay: the
+  // video's own warn labels plus crossed-threshold community labels. Call
+  // sites pass the service via ref.watch (build) or ref.read (handlers).
+  List<String> _effectiveWarnLabels(CommunityContentLabelService service) =>
+      <String>{
+        ...widget.video.warnLabels,
+        ...service.warnLabelsFor(widget.video),
+      }.toList();
+
   void _handleDoubleTapLike(
     BuildContext context,
     TapDownDetails details, {
@@ -565,12 +575,9 @@ class __OverlayState extends ConsumerState<_Overlay> {
     final contentWarningBlocking =
         shouldShowContentWarningOverlay(
           contentWarningLabels: widget.video.contentWarningLabels,
-          warnLabels: <String>{
-            ...widget.video.warnLabels,
-            ...ref
-                .read(communityContentLabelServiceProvider)
-                .warnLabelsFor(widget.video),
-          }.toList(),
+          warnLabels: _effectiveWarnLabels(
+            ref.read(communityContentLabelServiceProvider),
+          ),
         ) &&
         !widget.contentWarningRevealed;
 
@@ -684,13 +691,9 @@ class __OverlayState extends ConsumerState<_Overlay> {
     // warn labels so a crossed-threshold community label drives the same
     // blur overlay. Advisory only; the service returns an empty set until
     // its background prefetch resolves.
-    final communityWarnLabels = ref
-        .watch(communityContentLabelServiceProvider)
-        .warnLabelsFor(video);
-    final effectiveWarnLabels = <String>{
-      ...video.warnLabels,
-      ...communityWarnLabels,
-    }.toList();
+    final effectiveWarnLabels = _effectiveWarnLabels(
+      ref.watch(communityContentLabelServiceProvider),
+    );
 
     final overlayLabels = contentWarningOverlayLabels(
       contentWarningLabels: video.contentWarningLabels,

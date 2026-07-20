@@ -67,14 +67,23 @@ class CommunityContentLabelRepository {
         (authorsByLabel[value] ??= <String>{}).add(event.pubkey);
       }
     }
-    if (authorsByLabel.isEmpty) return {};
+    // A label below the threshold on raw author count can never cross it
+    // after Divine-identity filtering, so skip those authors' name-server
+    // lookups entirely.
+    final candidateLabels = <String, Set<String>>{
+      for (final entry in authorsByLabel.entries)
+        if (entry.value.length >=
+            CommunityContentWarningConstants.displayThreshold)
+          entry.key: entry.value,
+    };
+    if (candidateLabels.isEmpty) return {};
 
     final divineByAuthor = await _resolveDivineAuthors(
-      authorsByLabel.values.expand((authors) => authors).toSet(),
+      candidateLabels.values.expand((authors) => authors).toSet(),
     );
 
     final surfaced = <String>{};
-    for (final entry in authorsByLabel.entries) {
+    for (final entry in candidateLabels.entries) {
       final divineCount = entry.value
           .where((author) => divineByAuthor[author] == true)
           .length;

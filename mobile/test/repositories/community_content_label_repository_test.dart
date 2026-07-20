@@ -124,6 +124,20 @@ void main() {
       });
 
       test(
+        'skips identity lookups for labels below the display threshold',
+        () async {
+          stubQuery([
+            _labelEvent(authorA, ['gambling'], videoId: videoId),
+            _labelEvent(authorB, ['gambling'], videoId: videoId),
+          ]);
+
+          await repository.communityLabelsForVideo(video);
+
+          verifyNever(() => profileRepository.hasDivineIdentity(any()));
+        },
+      );
+
+      test(
         'excludes authors without a Divine identity from the count',
         () async {
           when(

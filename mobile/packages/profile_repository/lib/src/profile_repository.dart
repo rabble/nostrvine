@@ -25,11 +25,6 @@ const _usernameByPubkeyUrl =
     'https://names.divine.video/api/username/by-pubkey';
 const _keycastNip05Url = 'https://login.divine.video/.well-known/nostr.json';
 
-// Public name-server reverse lookup: pubkey -> Divine identity
-// (name@divine.video). Returns {"ok": true, "found": true|false, ...}.
-// No auth, CORS-enabled.
-const _byPubkeyUrlBase = 'https://names.divine.video/api/username/by-pubkey';
-
 // How long a Divine-identity determination is trusted before re-querying.
 //
 // Kept equal to ModerationLabelService._resolvedPubkeyTtl (24h) so the app
@@ -1333,7 +1328,7 @@ class ProfileRepository {
     var found = false;
     try {
       final response = await _httpClient
-          .get(Uri.parse('$_byPubkeyUrlBase/$normalized'))
+          .get(Uri.parse('$_usernameByPubkeyUrl/$normalized'))
           .timeout(_nameServerHttpTimeout);
       if (response.statusCode == 200) {
         // Decode-then-check: a naive cast throws a TypeError (an Error, not
