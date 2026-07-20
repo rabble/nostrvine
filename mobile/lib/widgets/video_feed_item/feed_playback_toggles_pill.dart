@@ -29,7 +29,8 @@ class FeedPlaybackTogglesPill extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final colors = Theme.of(context).extension<VineThemeColors>()!;
+    final colors =
+        Theme.of(context).extension<VineThemeColors>() ?? VineTheme.darkColors;
     final adaptiveMediaChrome =
         ref.watch(
           isFeatureEnabledProvider(FeatureFlag.adaptiveMediaChrome),
