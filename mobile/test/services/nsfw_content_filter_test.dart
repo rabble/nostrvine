@@ -347,7 +347,7 @@ void main() {
     });
 
     group('ML moderation labels (video.moderationLabels)', () {
-      test('hides videos with unknown ML moderation labels', () {
+      test('keeps videos with only unknown ML moderation labels', () {
         final filter = createNsfwFilter(
           contentFilterService,
           moderationLabelService: moderationLabelService,
@@ -356,7 +356,7 @@ void main() {
           moderationLabels: const ['some-new-server-label'],
         );
 
-        expect(filter(video), isTrue);
+        expect(filter(video), isFalse);
       });
 
       test('still hides videos with known hide labels', () {
@@ -414,12 +414,11 @@ void main() {
         expect(filter(video), isTrue);
       });
 
-      test('unknown label hides the video even if the user preferenced the '
-          'known label as show', () async {
+      test('ignores unknown labels when the user preferenced recognized '
+          'labels as show', () async {
         // Simulate an age-verified user who has explicitly opted in to
-        // seeing alcohol content. Without the unknown-label short-circuit, a
-        // video labeled ['alcohol', 'unknown-x'] would pass through
-        // because the combined preference resolves to show.
+        // seeing alcohol content. Unknown ML labels should not override that
+        // recognized preference.
         await ageService.initialize();
         await ageService.setAdultContentVerified(true);
         await contentFilterService.setPreference(
@@ -435,8 +434,7 @@ void main() {
           moderationLabels: const ['alcohol', 'unknown-x'],
         );
 
-        // The unknown label must force-hide regardless of user preference.
-        expect(filter(video), isTrue);
+        expect(filter(video), isFalse);
       });
 
       test(

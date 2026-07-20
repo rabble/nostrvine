@@ -214,21 +214,21 @@ void main() {
     );
 
     test(
-      'filterVideoList hides videos with any other unknown moderation label',
+      'filterVideoList keeps videos with only unknown moderation labels',
       () {
         when(
           () => mockContentFilterService.getPreferenceForLabels(any()),
         ).thenReturn(ContentFilterPreference.show);
         videoEventService.setContentFilterService(mockContentFilterService);
 
-        final filtered = videoEventService.filterVideoList([
-          _buildVideo(
-            id: '6' * 64,
-            moderationLabels: const ['some-new-server-label'],
-          ),
-        ]);
+        final video = _buildVideo(
+          id: '6' * 64,
+          moderationLabels: const ['some-new-server-label'],
+        );
 
-        expect(filtered, isEmpty);
+        final filtered = videoEventService.filterVideoList([video]);
+
+        expect(filtered, [video]);
       },
     );
 
@@ -248,6 +248,30 @@ void main() {
         final filtered = videoEventService.filterVideoList([video]);
 
         expect(filtered, [video]);
+      },
+    );
+
+    test(
+      'filterVideoList hides videos with known hide labels alongside unknown labels',
+      () {
+        when(
+          () => mockContentFilterService.getPreferenceForLabels(any()),
+        ).thenReturn(ContentFilterPreference.hide);
+        videoEventService.setContentFilterService(mockContentFilterService);
+
+        final filtered = videoEventService.filterVideoList([
+          _buildVideo(
+            id: '8' * 64,
+            moderationLabels: const ['nudity', 'some-new-server-label'],
+          ),
+        ]);
+
+        expect(filtered, isEmpty);
+        verify(
+          () => mockContentFilterService.getPreferenceForLabels(
+            ['nudity', 'some-new-server-label'],
+          ),
+        ).called(greaterThanOrEqualTo(1));
       },
     );
   });
