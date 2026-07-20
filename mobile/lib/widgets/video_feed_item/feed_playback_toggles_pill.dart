@@ -55,7 +55,7 @@ class FeedPlaybackTogglesPill extends ConsumerWidget {
             ],
           ),
           child: Padding(
-            padding: EdgeInsets.all(12),
+            padding: const EdgeInsets.all(12),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               spacing: 8,

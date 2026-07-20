@@ -865,7 +865,7 @@ class VineTheme {
       cardTheme: CardThemeData(
         color: colors.card,
         elevation: 2,
-        shape: RoundedRectangleBorder(
+        shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(8)),
         ),
       ),
