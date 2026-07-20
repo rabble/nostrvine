@@ -16,6 +16,7 @@ import 'package:videos_repository/src/in_memory_feed_cache.dart';
 import 'package:videos_repository/src/popular_videos_page.dart';
 import 'package:videos_repository/src/profile_video_merge.dart';
 import 'package:videos_repository/src/recommendation_session_seed.dart';
+import 'package:videos_repository/src/seen_video_lookup.dart';
 import 'package:videos_repository/src/video_content_filter.dart';
 import 'package:videos_repository/src/video_event_filter.dart';
 import 'package:videos_repository/src/video_local_storage.dart';
@@ -151,13 +152,15 @@ class VideosRepository {
     VideoWarningLabelsResolver? warningLabelsResolver,
     FunnelcakeApiClient? funnelcakeApiClient,
     InMemoryFeedCache? inMemoryFeedCache,
+    SeenVideoLookup? seenVideoLookup,
   }) : _nostrClient = nostrClient,
        _localStorage = localStorage,
        _blockFilter = blockFilter,
        _contentFilter = contentFilter,
        _warningLabelsResolver = warningLabelsResolver,
        _funnelcakeApiClient = funnelcakeApiClient,
-       _inMemoryFeedCache = inMemoryFeedCache;
+       _inMemoryFeedCache = inMemoryFeedCache,
+       _seenVideoLookup = seenVideoLookup;
 
   final NostrClient _nostrClient;
   final VideoLocalStorage? _localStorage;
@@ -166,6 +169,7 @@ class VideosRepository {
   final VideoWarningLabelsResolver? _warningLabelsResolver;
   final FunnelcakeApiClient? _funnelcakeApiClient;
   final InMemoryFeedCache? _inMemoryFeedCache;
+  final SeenVideoLookup? _seenVideoLookup;
   String _recommendationSessionSeed = generateRecommendationSessionSeed();
 
   /// Clears the in-memory feed cache.
@@ -671,10 +675,7 @@ class VideosRepository {
           until: until,
         );
         final mergedVideos = skipCache && until == null
-            ? await _mergeRecentApiVideosWithRelayRefresh(
-                videos,
-                limit: limit,
-              )
+            ? await _mergeRecentApiVideosWithRelayRefresh(videos, limit: limit)
             : videos;
         // Hydrate views/loops — list endpoint omits them for some rows.
         final hydrated = await _hydrateVideosWithBulkStats(mergedVideos);
@@ -739,11 +740,7 @@ class VideosRepository {
       final candidates = [...relayVideos, ...apiVideos]
         ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
       final merged = <VideoEvent>[];
-      _appendUniqueVideos(
-        merged,
-        candidates,
-        seenVideoKeys: <String>{},
-      );
+      _appendUniqueVideos(merged, candidates, seenVideoKeys: <String>{});
       return merged.take(limit).toList();
     } on Object catch (e) {
       Log.warning(
@@ -2504,7 +2501,7 @@ class VideosRepository {
         '$preferenceCacheSuffix';
     if (!skipCache && until == null && cursor == null) {
       final cached = _inMemoryFeedCache?.get(cacheKey);
-      if (cached != null) return cached;
+      if (cached != null) return _withForYouFreshnessOrdering(cached);
     }
 
     final isFirstPage = until == null && cursor == null;
@@ -2516,12 +2513,15 @@ class VideosRepository {
         _funnelcakeApiClient == null ||
         !_funnelcakeApiClient.isAvailable) {
       return HomeFeedResult(
-        videos: await getPopularVideos(
-          limit: limit,
-          until: until,
-          skipCache: skipCache,
-          preferredLanguages: preferredLanguages,
-          viewerCountry: viewerCountry,
+        videos: prioritizeNotRecentlySeenVideos(
+          await getPopularVideos(
+            limit: limit,
+            until: until,
+            skipCache: skipCache,
+            preferredLanguages: preferredLanguages,
+            viewerCountry: viewerCountry,
+          ),
+          seenVideoLookup: _seenVideoLookup,
         ),
       );
     }
@@ -2548,12 +2548,15 @@ class VideosRepository {
     } on FunnelcakeException {
       if (recommendationCursor != null) rethrow;
       return HomeFeedResult(
-        videos: await getPopularVideos(
-          limit: limit,
-          until: until,
-          skipCache: skipCache,
-          preferredLanguages: preferredLanguages,
-          viewerCountry: viewerCountry,
+        videos: prioritizeNotRecentlySeenVideos(
+          await getPopularVideos(
+            limit: limit,
+            until: until,
+            skipCache: skipCache,
+            preferredLanguages: preferredLanguages,
+            viewerCountry: viewerCountry,
+          ),
+          seenVideoLookup: _seenVideoLookup,
         ),
       );
     }
@@ -2582,7 +2585,10 @@ class VideosRepository {
     }
 
     final result = HomeFeedResult(
-      videos: videos,
+      videos: prioritizeNotRecentlySeenVideos(
+        videos,
+        seenVideoLookup: _seenVideoLookup,
+      ),
       paginationCursor: response.nextCursor,
       hasMore: response.hasMore,
     );
@@ -2593,6 +2599,23 @@ class VideosRepository {
       _inMemoryFeedCache?.set(cacheKey, result);
     }
     return result;
+  }
+
+  HomeFeedResult _withForYouFreshnessOrdering(HomeFeedResult result) {
+    final orderedVideos = prioritizeNotRecentlySeenVideos(
+      result.videos,
+      seenVideoLookup: _seenVideoLookup,
+    );
+    if (identical(orderedVideos, result.videos)) return result;
+    return HomeFeedResult(
+      videos: orderedVideos,
+      videoListSources: result.videoListSources,
+      listOnlyVideoIds: result.listOnlyVideoIds,
+      consumedItemCount: result.consumedItemCount,
+      nextCursor: result.nextCursor,
+      paginationCursor: result.paginationCursor,
+      hasMore: result.hasMore,
+    );
   }
 
   /// Fetches personalized video recommendations.

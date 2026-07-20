@@ -162,9 +162,7 @@ void main() {
                 ),
               ],
             );
-            when(
-              () => mockNostrClient.queryEvents(any()),
-            ).thenAnswer(
+            when(() => mockNostrClient.queryEvents(any())).thenAnswer(
               (_) async => [
                 _createVideoEvent(
                   id: 'relay-video',
@@ -10575,6 +10573,178 @@ void main() {
           ),
         ).called(1);
       });
+
+      test(
+        'moves recently seen recommendations after unseen candidates',
+        () async {
+          final recentlySeen = _createVideoStats(
+            id: 'recently-seen-video',
+            pubkey: 'recently-seen-pubkey',
+            dTag: 'recently-seen-dtag',
+            videoUrl: 'https://example.com/recently-seen.mp4',
+          );
+          final unseen = _createVideoStats(
+            id: 'unseen-video',
+            pubkey: 'unseen-pubkey',
+            dTag: 'unseen-dtag',
+            videoUrl: 'https://example.com/unseen.mp4',
+          );
+          when(
+            () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              fallback: any(named: 'fallback'),
+              category: any(named: 'category'),
+              preferredLanguages: any(named: 'preferredLanguages'),
+              viewerCountry: any(named: 'viewerCountry'),
+            ),
+          ).thenAnswer(
+            (_) async => RecommendationsResponse(
+              videos: [recentlySeen, unseen],
+              source: 'personalized',
+            ),
+          );
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            seenVideoLookup: SeenVideoLookup(
+              wasSeenRecently:
+                  (videoId, {within = const Duration(hours: 24)}) =>
+                      videoId == 'recently-seen-video',
+            ),
+          );
+
+          final result = await repo.getRecommendedVideos(
+            userPubkey: 'user-pubkey',
+            limit: 10,
+          );
+
+          expect(result.videos.map((video) => video.id), [
+            'unseen-video',
+            'recently-seen-video',
+          ]);
+        },
+      );
+
+      test(
+        'keeps recently seen recommendations as fallback when all are seen',
+        () async {
+          final firstSeen = _createVideoStats(
+            id: 'first-seen-video',
+            pubkey: 'first-seen-pubkey',
+            dTag: 'first-seen-dtag',
+            videoUrl: 'https://example.com/first-seen.mp4',
+          );
+          final secondSeen = _createVideoStats(
+            id: 'second-seen-video',
+            pubkey: 'second-seen-pubkey',
+            dTag: 'second-seen-dtag',
+            videoUrl: 'https://example.com/second-seen.mp4',
+          );
+          when(
+            () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              fallback: any(named: 'fallback'),
+              category: any(named: 'category'),
+              preferredLanguages: any(named: 'preferredLanguages'),
+              viewerCountry: any(named: 'viewerCountry'),
+            ),
+          ).thenAnswer(
+            (_) async => RecommendationsResponse(
+              videos: [firstSeen, secondSeen],
+              source: 'personalized',
+            ),
+          );
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            seenVideoLookup: SeenVideoLookup(
+              wasSeenRecently: (_, {within = const Duration(hours: 24)}) =>
+                  true,
+            ),
+          );
+
+          final result = await repo.getRecommendedVideos(
+            userPubkey: 'user-pubkey',
+            limit: 10,
+          );
+
+          expect(result.videos.map((video) => video.id), [
+            'first-seen-video',
+            'second-seen-video',
+          ]);
+        },
+      );
+
+      test(
+        'orders cursor pages while preserving pagination metadata',
+        () async {
+          final requestedCursors = <String?>[];
+          when(
+            () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              cursor: any(named: 'cursor'),
+              fallback: any(named: 'fallback'),
+              category: any(named: 'category'),
+              preferredLanguages: any(named: 'preferredLanguages'),
+              viewerCountry: any(named: 'viewerCountry'),
+            ),
+          ).thenAnswer((invocation) async {
+            final cursor = invocation.namedArguments[#cursor] as String?;
+            requestedCursors.add(cursor);
+            return RecommendationsResponse(
+              videos: [
+                _createVideoStats(
+                  id: 'recently-seen-$cursor',
+                  pubkey: 'recently-seen-pubkey-$cursor',
+                  dTag: 'recently-seen-dtag-$cursor',
+                  videoUrl: 'https://example.com/recently-seen-$cursor.mp4',
+                ),
+                _createVideoStats(
+                  id: 'unseen-$cursor',
+                  pubkey: 'unseen-pubkey-$cursor',
+                  dTag: 'unseen-dtag-$cursor',
+                  videoUrl: 'https://example.com/unseen-$cursor.mp4',
+                ),
+              ],
+              source: 'personalized',
+              nextCursor: 'next-$cursor',
+              hasMore: true,
+            );
+          });
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            seenVideoLookup: SeenVideoLookup(
+              wasSeenRecently:
+                  (videoId, {within = const Duration(hours: 24)}) =>
+                      videoId.startsWith('recently-seen-'),
+            ),
+          );
+
+          final result = await repo.getRecommendedVideos(
+            userPubkey: 'user-pubkey',
+            cursor: 'cursor-1',
+            limit: 10,
+          );
+
+          expect(requestedCursors, ['cursor-1']);
+          expect(result.paginationCursor, 'next-cursor-1');
+          expect(result.hasMore, isTrue);
+          expect(result.videos.map((video) => video.id), [
+            'unseen-cursor-1',
+            'recently-seen-cursor-1',
+          ]);
+        },
+      );
 
       test(
         'deduplicates videos sharing an addressable identity in one page',

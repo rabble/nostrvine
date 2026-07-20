@@ -48,7 +48,7 @@ final class ForYouFeedProvider
   ForYouFeed create() => ForYouFeed();
 }
 
-String _$forYouFeedHash() => r'0a1d1bbd0ef8509befd8dcd3f4f30e20a6b172ae';
+String _$forYouFeedHash() => r'640655c60aa6d5de3ec6d1caf13229ccfeb3fdf6';
 
 /// For You recommendations feed provider - ML-powered personalized videos
 ///
