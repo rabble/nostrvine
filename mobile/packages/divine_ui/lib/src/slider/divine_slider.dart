@@ -76,21 +76,11 @@ class DivineSlider extends StatelessWidget {
   /// "Volume"). Screen readers otherwise announce only the value.
   final String? semanticLabel;
 
-  /// Minimum interactive target height (44pt iOS / 48dp Android floor).
-  static const double _minTouchHeight = 44;
-
   @override
   Widget build(BuildContext context) {
-    // Grow the vertical touch area to the 44pt minimum without moving the
-    // visually-centred track: the extra height is symmetric padding around the
-    // thumb, so the drag target is easier to grab on touch devices.
-    final verticalPadding = ((_minTouchHeight - thumbHeight) / 2).clamp(
-      0.0,
-      double.infinity,
-    );
     final slider = SliderTheme(
       data: SliderThemeData(
-        padding: EdgeInsets.symmetric(vertical: verticalPadding),
+        padding: EdgeInsets.zero,
         activeTrackColor: activeColor,
         inactiveTrackColor: inactiveColor,
         trackHeight: trackHeight,
