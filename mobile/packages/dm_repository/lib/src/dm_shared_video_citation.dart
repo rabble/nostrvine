@@ -53,12 +53,7 @@ class DmSharedVideoCitation {
       if (dTag == null || dTag.isEmpty) return null;
       final coordinate = '$videoKind:$authorPubkey:$dTag';
       final naddr = NIP19Tlv.encodeNaddr(
-        Naddr(
-          id: dTag,
-          author: authorPubkey,
-          kind: videoKind,
-          relays: [relay],
-        ),
+        Naddr(id: dTag, author: authorPubkey, kind: videoKind, relays: [relay]),
       );
       return DmSharedVideoCitation(
         qTag: ['q', coordinate, relay],
@@ -106,8 +101,12 @@ class DmSharedVideoCitation {
         );
       }
 
-      // Regular event id (64-hex).
-      if (_isHex64(value)) {
+      // Regular video event id (64-hex). Require the author slot used by our
+      // NIP-19 `nevent` share shape so ordinary note `q` tags do not masquerade
+      // as saveable Divine videos.
+      if (_isHex64(value) &&
+          explicitAuthor != null &&
+          _isHex64(explicitAuthor)) {
         return DmSharedVideoRef(
           coordinateOrId: value,
           videoKind: DmSharedVideoKind.shortVideo,

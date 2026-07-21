@@ -7,11 +7,15 @@ import 'dart:async';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/screens/inbox/conversation/widgets/message_actions_sheet.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/reaction_picker_overlay.dart';
 
 import '../../../../helpers/test_provider_overrides.dart';
 
 void main() {
+  final l10n = lookupAppLocalizations(const Locale('en'));
+
   Future<void> openOverlay(
     WidgetTester tester, {
     bool isSent = false,
@@ -57,7 +61,49 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Copy text'), findsOneWidget);
+      expect(find.text(l10n.dmMessageActionCopyVideoUrl), findsNothing);
+      expect(find.text(l10n.shareSheetSaveVideo), findsNothing);
       expect(find.text('Delete for everyone'), findsOneWidget);
+    });
+
+    testWidgets('shows copy and save actions for a shared video', (
+      tester,
+    ) async {
+      await openOverlay(tester, isVideoShare: true);
+
+      expect(find.text(l10n.dmMessageActionCopyVideoUrl), findsOneWidget);
+      expect(find.text(l10n.shareSheetSaveVideo), findsOneWidget);
+    });
+
+    testWidgets('returns saveVideo after selecting Save video', (tester) async {
+      ReactionPickerResult? result;
+      await tester.pumpWidget(
+        testMaterialApp(
+          home: Builder(
+            builder: (context) {
+              return Scaffold(
+                body: TextButton(
+                  onPressed: () async {
+                    result = await ReactionPickerOverlay.show(
+                      context: context,
+                      isSent: false,
+                      isVideoShare: true,
+                    );
+                  },
+                  child: const Text('open'),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.shareSheetSaveVideo));
+      await tester.pumpAndSettle();
+
+      expect(result?.action, MessageAction.saveVideo);
     });
 
     testWidgets('dismisses after selecting a quick reaction', (tester) async {

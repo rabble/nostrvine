@@ -137,6 +137,15 @@ void main() {
       expect(ref.isAddressable, isFalse);
     });
 
+    test('does not parse a bare note q tag as a shared video', () {
+      expect(
+        DmSharedVideoCitation.parse([
+          ['q', eventId, relay],
+        ]),
+        isNull,
+      );
+    });
+
     test('returns null when there is no q tag', () {
       expect(
         DmSharedVideoCitation.parse([

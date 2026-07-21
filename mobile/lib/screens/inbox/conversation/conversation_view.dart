@@ -11,23 +11,27 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation/conversation_bloc.dart';
 import 'package:openvine/blocs/dm/reactions/conversation_reactions_cubit.dart';
+import 'package:openvine/blocs/dm/shared_video_save/shared_video_save_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/feed/dm_reply_context.dart';
+import 'package:openvine/screens/inbox/conversation/dm_video_target.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/widgets.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/collaborator_invite_parser.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
-import 'package:openvine/utils/divine_video_url.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_content.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_result.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart'
     show truncateNpubForDisplay;
 import 'package:openvine/widgets/report_content_dialog.dart';
+import 'package:openvine/widgets/save_original_progress_sheet.dart';
+import 'package:openvine/widgets/watermark_download_progress_sheet.dart';
 
 /// View for a single DM conversation.
 ///
@@ -51,6 +55,17 @@ class ConversationView extends ConsumerStatefulWidget {
 enum _FailedMessageAction { resend, delete }
 
 class _ConversationViewState extends ConsumerState<ConversationView> {
+  void _showSnackbar(String message, {required bool error}) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(DivineSnackbarContainer.snackBar(message, error: error));
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      message,
+      Directionality.of(context),
+    );
+  }
+
   Future<void> _onOptions(String otherPubkey, String displayName) async {
     if (otherPubkey.isEmpty) return;
 
@@ -137,105 +152,152 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
               ? truncateNpubForDisplay(NostrKeyUtils.encodePubKey(otherPubkey))
               : '');
 
-    return Scaffold(
-      backgroundColor: VineTheme.surfaceBackground,
-      body: BlocListener<ConversationBloc, ConversationState>(
-        // A hard failure is shown on the bubble itself (tap → resend/delete),
-        // so this listener only handles the toasts that have no bubble —
-        // a policy block and a partial (self-wrap) delivery — plus a
-        // screen-reader announcement (no toast) for hard failures, since
-        // the red in-bubble row is silent to assistive tech until focused.
-        // Also fire on a sentPartial → sentPartial transition whose rumor-id
-        // set changed: with concurrent() sends, a second overlapping partial
-        // keeps the same sendStatus and would otherwise never surface its
-        // recovery snackbar.
-        listenWhen: (previous, current) =>
-            (previous.sendStatus != current.sendStatus ||
-                (current.sendStatus == SendStatus.sentPartial &&
-                    previous.lastPartialSend != current.lastPartialSend)) &&
-            (current.sendStatus == SendStatus.sentPartial ||
-                current.sendStatus == SendStatus.blocked ||
-                current.sendStatus == SendStatus.failed),
-        listener: _onSendOutcome,
-        child: Column(
-          children: [
-            // Wrap the AppBar + messages region in a Listener so any
-            // tap above the input bar — back button, title, options,
-            // dead space in the messages area, a MessageBubble —
-            // dismisses the keyboard before any navigation or sheet
-            // animation begins. The `_SendBar` is intentionally
-            // OUTSIDE this Listener: wrapping the input would
-            // `unfocus` on pointer-down and race with the TextField's
-            // own focus request, producing a re-focus flicker on
-            // every input tap.
-            //
-            // `Listener` catches pointer-downs without entering the
-            // gesture arena, so descendant tap/long-press recognizers
-            // (MessageBubble.onLongPress, ConversationAppBar's three
-            // buttons) still resolve normally afterwards. Matches the
-            // pattern shipped in `comments_list.dart`.
-            Expanded(
-              child: Listener(
-                behavior: HitTestBehavior.translucent,
-                onPointerDown: (_) =>
-                    FocusManager.instance.primaryFocus?.unfocus(),
-                child: Column(
-                  children: [
-                    ConversationAppBar(
-                      displayName: displayName,
-                      handle: handle,
-                      onBack: () => context.pop(),
-                      onTitleTap: otherPubkey.isNotEmpty
-                          ? () => context.push(
-                              '${OtherProfileScreen.path}/${NostrKeyUtils.encodePubKey(otherPubkey)}',
-                            )
-                          : null,
-                      onOptions: () => _onOptions(otherPubkey, displayName),
-                    ),
-                    Expanded(
-                      // Force the messages card to fill the available width
-                      // regardless of its content. Without this, the empty /
-                      // loading state's SingleChildScrollView shrink-wraps the
-                      // ClipRRect down to the EmptyConversation column's
-                      // intrinsic width and the surface card renders as a
-                      // narrow strip; the ListView (with messages) is fine on
-                      // its own.
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(32),
-                          child: ColoredBox(
-                            color: VineTheme.surfaceContainerHigh,
-                            child: _ConversationContent(
-                              currentPubkey: currentPubkey,
-                              otherPubkey: otherPubkey,
-                              participantPubkeys: widget.participantPubkeys,
-                              blockedPubkeys: blockedReactors,
-                              displayName: displayName,
-                              imageUrl: profile?.picture,
-                              nip05: profile?.shortDisplayNip05,
-                              onViewProfile: () {
-                                final npub = NostrKeyUtils.encodePubKey(
-                                  otherPubkey,
-                                );
-                                context.push(
-                                  '${OtherProfileScreen.path}/$npub',
-                                );
-                              },
+    return BlocProvider(
+      create: (_) => SharedVideoSaveCubit(
+        videosRepository: ref.read(videosRepositoryProvider),
+        profileRepository: ref.read(profileRepositoryProvider),
+        currentPubkey: currentPubkey,
+      ),
+      child: BlocListener<SharedVideoSaveCubit, SharedVideoSaveState>(
+        listener: _onSharedVideoSaveState,
+        child: Scaffold(
+          backgroundColor: VineTheme.surfaceBackground,
+          body: BlocListener<ConversationBloc, ConversationState>(
+            // A hard failure is shown on the bubble itself (tap → resend/delete),
+            // so this listener only handles the toasts that have no bubble —
+            // a policy block and a partial (self-wrap) delivery — plus a
+            // screen-reader announcement (no toast) for hard failures, since
+            // the red in-bubble row is silent to assistive tech until focused.
+            // Also fire on a sentPartial → sentPartial transition whose rumor-id
+            // set changed: with concurrent() sends, a second overlapping partial
+            // keeps the same sendStatus and would otherwise never surface its
+            // recovery snackbar.
+            listenWhen: (previous, current) =>
+                (previous.sendStatus != current.sendStatus ||
+                    (current.sendStatus == SendStatus.sentPartial &&
+                        previous.lastPartialSend != current.lastPartialSend)) &&
+                (current.sendStatus == SendStatus.sentPartial ||
+                    current.sendStatus == SendStatus.blocked ||
+                    current.sendStatus == SendStatus.failed),
+            listener: _onSendOutcome,
+            child: Column(
+              children: [
+                // Wrap the AppBar + messages region in a Listener so any
+                // tap above the input bar — back button, title, options,
+                // dead space in the messages area, a MessageBubble —
+                // dismisses the keyboard before any navigation or sheet
+                // animation begins. The `_SendBar` is intentionally
+                // OUTSIDE this Listener: wrapping the input would
+                // `unfocus` on pointer-down and race with the TextField's
+                // own focus request, producing a re-focus flicker on
+                // every input tap.
+                //
+                // `Listener` catches pointer-downs without entering the
+                // gesture arena, so descendant tap/long-press recognizers
+                // (MessageBubble.onLongPress, ConversationAppBar's three
+                // buttons) still resolve normally afterwards. Matches the
+                // pattern shipped in `comments_list.dart`.
+                Expanded(
+                  child: Listener(
+                    behavior: HitTestBehavior.translucent,
+                    onPointerDown: (_) =>
+                        FocusManager.instance.primaryFocus?.unfocus(),
+                    child: Column(
+                      children: [
+                        ConversationAppBar(
+                          displayName: displayName,
+                          handle: handle,
+                          onBack: () => context.pop(),
+                          onTitleTap: otherPubkey.isNotEmpty
+                              ? () => context.push(
+                                  '${OtherProfileScreen.path}/${NostrKeyUtils.encodePubKey(otherPubkey)}',
+                                )
+                              : null,
+                          onOptions: () => _onOptions(otherPubkey, displayName),
+                        ),
+                        Expanded(
+                          // Force the messages card to fill the available width
+                          // regardless of its content. Without this, the empty /
+                          // loading state's SingleChildScrollView shrink-wraps the
+                          // ClipRRect down to the EmptyConversation column's
+                          // intrinsic width and the surface card renders as a
+                          // narrow strip; the ListView (with messages) is fine on
+                          // its own.
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(32),
+                              child: ColoredBox(
+                                color: VineTheme.surfaceContainerHigh,
+                                child: _ConversationContent(
+                                  currentPubkey: currentPubkey,
+                                  otherPubkey: otherPubkey,
+                                  participantPubkeys: widget.participantPubkeys,
+                                  blockedPubkeys: blockedReactors,
+                                  displayName: displayName,
+                                  imageUrl: profile?.picture,
+                                  nip05: profile?.shortDisplayNip05,
+                                  onViewProfile: () {
+                                    final npub = NostrKeyUtils.encodePubKey(
+                                      otherPubkey,
+                                    );
+                                    context.push(
+                                      '${OtherProfileScreen.path}/$npub',
+                                    );
+                                  },
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
+                _SendBar(participantPubkeys: widget.participantPubkeys),
+              ],
             ),
-            _SendBar(participantPubkeys: widget.participantPubkeys),
-          ],
+          ),
         ),
       ),
     );
+  }
+
+  Future<void> _onSharedVideoSaveState(
+    BuildContext context,
+    SharedVideoSaveState state,
+  ) async {
+    switch (state.status) {
+      case SharedVideoSaveStatus.idle:
+        return;
+      case SharedVideoSaveStatus.resolving:
+        _showSnackbar(context.l10n.libraryPreparingVideo, error: false);
+        return;
+      case SharedVideoSaveStatus.unavailable:
+        _showSnackbar(context.l10n.notificationsVideoUnavailable, error: true);
+        context.read<SharedVideoSaveCubit>().reset();
+        return;
+      case SharedVideoSaveStatus.originalReady:
+        final video = state.video;
+        if (video == null) return;
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        await showSaveOriginalSheet(context: context, ref: ref, video: video);
+        if (context.mounted) context.read<SharedVideoSaveCubit>().reset();
+        return;
+      case SharedVideoSaveStatus.watermarkReady:
+        final video = state.video;
+        final watermarkText = state.watermarkText;
+        if (video == null || watermarkText == null) return;
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        await showWatermarkDownloadSheet(
+          context: context,
+          ref: ref,
+          video: video,
+          watermarkText: watermarkText,
+        );
+        if (context.mounted) context.read<SharedVideoSaveCubit>().reset();
+        return;
+    }
   }
 
   void _onSendOutcome(BuildContext context, ConversationState state) {
@@ -459,7 +521,10 @@ class _MessageList extends StatelessWidget {
     bool isSent,
     DmDeliveryStatus deliveryStatus,
   ) async {
-    final videoUrl = tryExtractDivineVideoUrl(message.content);
+    final videoTarget = resolveDmVideoTarget(
+      content: StringUtils.sanitizeUtf16(message.content),
+      sharedVideoRef: resolveOwnShareVideoRef(message),
+    );
     // Reaction picker hidden on failed-send own DMs — reacting to a
     // message the recipient never received is meaningless (#4633 round 25).
     // A failed bubble's resend/delete affordance lives on a single TAP
@@ -468,7 +533,7 @@ class _MessageList extends StatelessWidget {
     final result = await ReactionPickerOverlay.show(
       context: context,
       isSent: isSent,
-      isVideoShare: videoUrl != null,
+      isVideoShare: videoTarget != null,
       showPicker: showPicker,
     );
     if (result == null) return;
@@ -490,8 +555,11 @@ class _MessageList extends StatelessWidget {
       case MessageAction.copy:
         await ClipboardUtils.copy(context, message.content);
       case MessageAction.copyVideoUrl:
-        if (videoUrl == null) return;
-        await ClipboardUtils.copy(context, videoUrl);
+        if (videoTarget == null) return;
+        await ClipboardUtils.copy(context, videoTarget.canonicalUrl);
+      case MessageAction.saveVideo:
+        if (videoTarget == null) return;
+        context.read<SharedVideoSaveCubit>().save(videoTarget);
       case MessageAction.delete:
         context.read<ConversationBloc>().add(
           ConversationMessageDeleted(rumorId: message.id),
@@ -526,9 +594,7 @@ class _MessageList extends StatelessWidget {
     final bloc = context.read<ConversationBloc>();
     final failedIds = bloc.state.failedSiblingRumorIdsFor(message.id);
     final resendIds = failedIds.isEmpty ? [message.id] : failedIds;
-    final undeliveredIds = bloc.state.undeliveredSiblingRumorIdsFor(
-      message.id,
-    );
+    final undeliveredIds = bloc.state.undeliveredSiblingRumorIdsFor(message.id);
     final cancelIds = undeliveredIds.isEmpty ? [message.id] : undeliveredIds;
 
     // Per `accessibility.md`, async visible state changes must announce
