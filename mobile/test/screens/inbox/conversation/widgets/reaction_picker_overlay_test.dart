@@ -7,12 +7,15 @@ import 'dart:async';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/message_actions_sheet.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/reaction_picker_overlay.dart';
 
 import '../../../../helpers/test_provider_overrides.dart';
 
 void main() {
+  final l10n = lookupAppLocalizations(const Locale('en'));
+
   Future<void> openOverlay(
     WidgetTester tester, {
     bool isSent = false,
@@ -58,8 +61,8 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Copy text'), findsOneWidget);
-      expect(find.text('Copy video URL'), findsNothing);
-      expect(find.text('Save Video'), findsNothing);
+      expect(find.text(l10n.dmMessageActionCopyVideoUrl), findsNothing);
+      expect(find.text(l10n.shareSheetSaveVideo), findsNothing);
       expect(find.text('Delete for everyone'), findsOneWidget);
     });
 
@@ -68,8 +71,8 @@ void main() {
     ) async {
       await openOverlay(tester, isVideoShare: true);
 
-      expect(find.text('Copy video URL'), findsOneWidget);
-      expect(find.text('Save Video'), findsOneWidget);
+      expect(find.text(l10n.dmMessageActionCopyVideoUrl), findsOneWidget);
+      expect(find.text(l10n.shareSheetSaveVideo), findsOneWidget);
     });
 
     testWidgets('returns saveVideo after selecting Save video', (tester) async {
@@ -97,7 +100,7 @@ void main() {
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Save Video'));
+      await tester.tap(find.text(l10n.shareSheetSaveVideo));
       await tester.pumpAndSettle();
 
       expect(result?.action, MessageAction.saveVideo);

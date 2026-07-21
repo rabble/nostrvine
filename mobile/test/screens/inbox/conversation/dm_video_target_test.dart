@@ -1,3 +1,6 @@
+// ABOUTME: Unit tests for resolveDmVideoTarget and DmVideoTarget.
+// ABOUTME: Covers legacy Divine URL and structured NIP-18 q-reference resolution.
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/screens/inbox/conversation/dm_video_target.dart';
