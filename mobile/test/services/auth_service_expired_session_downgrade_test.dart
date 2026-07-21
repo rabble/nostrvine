@@ -14,7 +14,9 @@ import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/services/auth/nostr_identity.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
+import 'package:openvine/utils/divine_login_banner_dismissal.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
 
 import '../helpers/shared_channel_override.dart';
 
@@ -22,6 +24,26 @@ class _MockUserDataCleanupService extends Mock
     implements UserDataCleanupService {}
 
 class _MockKeycastOAuth extends Mock implements KeycastOAuth {}
+
+class _DelayingSharedPreferencesStore extends InMemorySharedPreferencesStore {
+  _DelayingSharedPreferencesStore.withData(
+    super.data, {
+    required this.delayedRemoveKey,
+  }) : super.withData();
+
+  final String delayedRemoveKey;
+  final removeStarted = Completer<void>();
+  final allowRemove = Completer<void>();
+
+  @override
+  Future<bool> remove(String key) async {
+    if (key == delayedRemoveKey && !removeStarted.isCompleted) {
+      removeStarted.complete();
+      await allowRemove.future;
+    }
+    return super.remove(key);
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -153,20 +175,24 @@ void main() {
       Object? unexpectedError;
       StackTrace? unexpectedStack;
 
-      await runZonedGuarded(
-        body,
-        (error, stack) {
-          if (error is UnsupportedError && error.message == 'Mocked response') {
-            return;
-          }
-          unexpectedError ??= error;
-          unexpectedStack ??= stack;
-        },
-      );
+      await runZonedGuarded(body, (error, stack) {
+        if (error is UnsupportedError && error.message == 'Mocked response') {
+          return;
+        }
+        unexpectedError ??= error;
+        unexpectedStack ??= stack;
+      });
 
       if (unexpectedError != null) {
         Error.throwWithStackTrace(unexpectedError!, unexpectedStack!);
       }
+    }
+
+    Map<String, Object> prefixedSharedPreferencesData(SharedPreferences prefs) {
+      return {
+        for (final key in prefs.getKeys())
+          if (prefs.get(key) case final Object value) 'flutter.$key': value,
+      };
     }
 
     test(
@@ -646,9 +672,7 @@ void main() {
           refreshToken: 'refresh_token_still_valid',
           userPubkey: pubkey,
         );
-        secureStorage['keycast_session'] = jsonEncode(
-          expiredSession.toJson(),
-        );
+        secureStorage['keycast_session'] = jsonEncode(expiredSession.toJson());
         secureStorage['keycast_refresh_token'] = 'refresh_token_still_valid';
 
         var refreshCalls = 0;
@@ -693,6 +717,137 @@ void main() {
         });
       },
     );
+
+    test(
+      'healthy OAuth resume keeps the stored RPC session without refreshing',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'divineOAuth',
+          'tos_accepted': true,
+        });
+
+        final privateKeyHex = generatePrivateKey();
+        final container = SecureKeyContainer.fromPrivateKeyHex(privateKeyHex);
+        final session = KeycastSession(
+          bunkerUrl: 'https://login.divine.video/api/nostr',
+          accessToken: 'fresh_token',
+          expiresAt: DateTime.now().add(const Duration(hours: 1)),
+          refreshToken: 'refresh_token_still_valid',
+          userPubkey: container.publicKeyHex,
+        );
+        secureStorage['keycast_session'] = jsonEncode(session.toJson());
+        secureStorage['keycast_refresh_token'] = 'refresh_token_still_valid';
+        secureStorage['nostr_primary_key'] =
+            'privateKeyHex:$privateKeyHex'
+            '|publicKeyHex:${container.publicKeyHex}'
+            '|npub:${container.npub}';
+
+        var refreshCalls = 0;
+        when(
+          () => mockOAuthClient.getSession(),
+        ).thenAnswer((_) async => session);
+        when(
+          () => mockOAuthClient.refreshSession(
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).thenAnswer((_) async {
+          refreshCalls++;
+          return null;
+        });
+
+        final authService = createAuthService();
+
+        await runIgnoringMockedHttpErrors(() async {
+          await authService.initialize();
+
+          expect(authService.authState, equals(AuthState.authenticated));
+          expect(authService.authRpcCapability, AuthRpcCapability.rpcReady);
+          expect(authService.currentIdentity, isA<KeycastNostrIdentity>());
+          expect(authService.hasExpiredOAuthSession, isFalse);
+
+          authService.onAppResumed();
+          await pumpEventQueue();
+
+          expect(refreshCalls, isZero);
+          expect(authService.authRpcCapability, AuthRpcCapability.rpcReady);
+          expect(authService.currentIdentity, isA<KeycastNostrIdentity>());
+          expect(authService.hasExpiredOAuthSession, isFalse);
+          expect(
+            secureStorage['keycast_refresh_token'],
+            'refresh_token_still_valid',
+            reason: 'Healthy resume must not risk rotating the refresh token.',
+          );
+        });
+      },
+    );
+
+    test('stale resume rebuild does not attach a signer after sign-out during '
+        'banner clear', () async {
+      SharedPreferences.setMockInitialValues({
+        'authentication_source': 'divineOAuth',
+        'tos_accepted': true,
+      });
+
+      final pubkey = 'ab' * 32;
+      final expiredSession = KeycastSession(
+        bunkerUrl: 'https://login.divine.video/api/nostr',
+        accessToken: 'expired_token',
+        expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
+        refreshToken: 'refresh_token_still_valid',
+        userPubkey: pubkey,
+      );
+      secureStorage['keycast_session'] = jsonEncode(expiredSession.toJson());
+      secureStorage['keycast_refresh_token'] = 'refresh_token_still_valid';
+
+      when(
+        () => mockOAuthClient.refreshSession(
+          userPubkey: any(named: 'userPubkey'),
+        ),
+      ).thenAnswer((_) {
+        throw OAuthNetworkException('offline');
+      });
+      when(() => mockOAuthClient.logout()).thenAnswer((_) async {});
+
+      final authService = createAuthService();
+
+      await runIgnoringMockedHttpErrors(() async {
+        await authService.initialize();
+        await waitForRpcUpgradeToSettle(authService);
+
+        expect(authService.currentPublicKeyHex, pubkey);
+        expect(authService.currentIdentity, isA<PubkeyOnlyNostrIdentity>());
+
+        final storedRpcSession = expiredSession.copyWith(
+          accessToken: 'fresh_token',
+          expiresAt: DateTime.now().add(const Duration(hours: 1)),
+        );
+        when(
+          () => mockOAuthClient.getSession(),
+        ).thenAnswer((_) async => storedRpcSession);
+
+        final prefs = await SharedPreferences.getInstance();
+        final delayedPrefs = _DelayingSharedPreferencesStore.withData(
+          prefixedSharedPreferencesData(prefs),
+          delayedRemoveKey: 'flutter.${divineLoginBannerDismissalKey(pubkey)}',
+        );
+        SharedPreferencesStorePlatform.instance = delayedPrefs;
+        SharedPreferences.resetStatic();
+
+        authService.onAppResumed();
+        await delayedPrefs.removeStarted.future;
+
+        await authService.signOut();
+        delayedPrefs.allowRemove.complete();
+        await pumpEventQueue();
+
+        expect(authService.authState, equals(AuthState.unauthenticated));
+        expect(authService.currentIdentity, isNull);
+        expect(
+          authService.authRpcCapability,
+          isNot(equals(AuthRpcCapability.rpcReady)),
+        );
+      });
+    });
 
     test('stale degraded resume refresh does not attach a signer after '
         'sign-out', () async {
@@ -766,9 +921,7 @@ void main() {
       final authService = createAuthService();
 
       await runIgnoringMockedHttpErrors(() async {
-        final imported = await authService.importFromHex(
-          generatePrivateKey(),
-        );
+        final imported = await authService.importFromHex(generatePrivateKey());
         expect(imported.success, isTrue);
         expect(
           authService.authenticationSource,

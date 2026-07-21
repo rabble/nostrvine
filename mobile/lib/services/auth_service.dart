@@ -693,7 +693,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       final storedSession = await KeycastSession.load(_flutterSecureStorage);
       final storedOwnerPubkey = storedSession?.userPubkey;
       if (upgradeOwnerPubkey != null &&
-          storedOwnerPubkey != null &&
+          storedSession != null &&
           storedOwnerPubkey != upgradeOwnerPubkey) {
         Log.warning(
           'OAuth RPC upgrade: refusing refresh for owner $upgradeOwnerPubkey '
@@ -729,6 +729,15 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           category: LogCategory.auth,
         );
         await _clearDismissedDivineLoginBannerForCurrentUser();
+        if (!upgradeContextStillCurrent()) {
+          Log.warning(
+            'OAuth RPC upgrade: discarding refreshed signer after banner clear '
+            'because the signed-in account changed',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+          return;
+        }
         _keycastSigner = KeycastRpc.fromSession(
           _oauthConfig,
           refreshed,
@@ -4259,25 +4268,27 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       final session = await _oauthClient.getSession();
       if (!resumeContextStillCurrent()) return;
 
-      if (_keycastSigner == null &&
-          session != null &&
+      if (session != null &&
           session.hasRpcAccess &&
           session.userPubkey == resumeOwnerPubkey) {
-        Log.info(
-          '📱 App resumed - rebuilding OAuth RPC signer from stored session',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        await _clearDismissedDivineLoginBannerForCurrentUser();
-        _keycastSigner = KeycastRpc.fromSession(
-          _oauthConfig,
-          session,
-          onTokenRefresh: _refreshAccessToken,
-        );
-        _currentIdentity = _buildIdentity();
-        _hasExpiredOAuthSession = false;
-        _setRpcCapability(AuthRpcCapability.rpcReady);
-        _authStateController.add(_authState);
+        if (_keycastSigner == null) {
+          Log.info(
+            '📱 App resumed - rebuilding OAuth RPC signer from stored session',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+          await _clearDismissedDivineLoginBannerForCurrentUser();
+          if (!resumeContextStillCurrent()) return;
+          _keycastSigner = KeycastRpc.fromSession(
+            _oauthConfig,
+            session,
+            onTokenRefresh: _refreshAccessToken,
+          );
+          _currentIdentity = _buildIdentity();
+          _hasExpiredOAuthSession = false;
+          _setRpcCapability(AuthRpcCapability.rpcReady);
+          _authStateController.add(_authState);
+        }
         return;
       }
 
