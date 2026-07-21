@@ -6,6 +6,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' as model;
 import 'package:openvine/constants/storage_cache_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/storage_management_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart' as editor;
@@ -63,6 +64,22 @@ void main() {
       targetAspectRatio: model.AspectRatio.square,
       originalAspectRatio: 1,
     );
+
+    DivineVideoClip stopMotionClip(String id, List<String> framePaths) =>
+        DivineVideoClip(
+          id: id,
+          stopMotionFrames: [
+            for (final path in framePaths)
+              StopMotionClipFrame(
+                path: path,
+                duration: const Duration(milliseconds: 167),
+              ),
+          ],
+          duration: const Duration(milliseconds: 167),
+          recordedAt: DateTime(2024),
+          targetAspectRatio: model.AspectRatio.vertical,
+          originalAspectRatio: 9 / 16,
+        );
 
     group('cacheSizeBytes', () {
       test('sums cache dirs, seams and temp renders, ignoring other '
@@ -161,6 +178,39 @@ void main() {
         final result = await service.findBrokenClips();
 
         expect(result.map((c) => c.id), equals(['broken']));
+      });
+
+      test(
+        'keeps a stop-motion set with at least one surviving still',
+        () async {
+          final present = writeFile('${docs.path}/frame_present.png', 10);
+          final salvageable = stopMotionClip('salvageable', [
+            present.path,
+            '${docs.path}/frame_gone.png',
+          ]);
+          final brokenVideo = clip('broken', '${docs.path}/gone.mp4');
+          when(
+            clipLibrary.getAllClips,
+          ).thenAnswer((_) async => [salvageable, brokenVideo]);
+
+          final result = await service.findBrokenClips();
+
+          // One still is missing but another survives, so the set is
+          // salvageable — only the video clip with a gone file is broken.
+          expect(result.map((c) => c.id), equals(['broken']));
+        },
+      );
+
+      test('flags a stop-motion set whose stills are all gone', () async {
+        final dead = stopMotionClip('dead', [
+          '${docs.path}/gone_a.png',
+          '${docs.path}/gone_b.png',
+        ]);
+        when(clipLibrary.getAllClips).thenAnswer((_) async => [dead]);
+
+        final result = await service.findBrokenClips();
+
+        expect(result.map((c) => c.id), equals(['dead']));
       });
     });
 
