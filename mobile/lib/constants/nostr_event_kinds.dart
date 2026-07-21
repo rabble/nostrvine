@@ -13,4 +13,7 @@ class NostrEventKinds {
 
   /// Kind 7: Reaction (NIP-25)
   static const int reaction = 7;
+
+  /// Kind 1985: Labeling (NIP-32)
+  static const int label = 1985;
 }
