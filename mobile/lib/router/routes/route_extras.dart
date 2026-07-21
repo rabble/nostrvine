@@ -17,23 +17,15 @@
 /// restoration); that migration is tracked separately.
 T? extraAs<T>(Object? extra) => extra is T ? extra : null;
 
-/// Reads a string value from a restored route-extra map.
+/// Reads a typed value from a restored route-extra map.
 ///
 /// GoRouter may restore `extra` as a dynamically typed map.  Read individual
 /// values with a runtime check rather than casting the whole map (generic Map
 /// types are invariant and a `Map<String, dynamic>` is not a
 /// `Map<String, String?>`).
-String? extraStringValue(Object? extra, String key) {
+T? extraValue<T>(Object? extra, String key) {
   if (extra is! Map) return null;
-  final value = extra[key];
-  return value is String ? value : null;
-}
-
-/// Reads a boolean value from a restored route-extra map.
-bool? extraBoolValue(Object? extra, String key) {
-  if (extra is! Map) return null;
-  final value = extra[key];
-  return value is bool ? value : null;
+  return extraAs<T>(extra[key]);
 }
 
 /// Extra data for curated list route (passed via GoRouter extra)
@@ -47,21 +39,4 @@ class CuratedListRouteExtra {
   final String listName;
   final List<String>? videoIds;
   final String? authorPubkey;
-}
-
-/// Extra data for video editor route (passed via GoRouter extra)
-class VideoEditorRouteExtra {
-  const VideoEditorRouteExtra({
-    required this.videoPath,
-    this.externalAudioEventId,
-    this.externalAudioUrl,
-    this.externalAudioIsBundled = false,
-    this.externalAudioAssetPath,
-  });
-
-  final String videoPath;
-  final String? externalAudioEventId;
-  final String? externalAudioUrl;
-  final bool externalAudioIsBundled;
-  final String? externalAudioAssetPath;
 }

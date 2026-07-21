@@ -47,24 +47,42 @@ void main() {
   });
 
   group('restored map values', () {
-    test('reads only string profile hints', () {
-      final restored = <String, dynamic>{'displayName': 'Ada', 'avatarUrl': 42};
+    test('reads typed values from restored dynamic maps', () {
+      final restored = <String, dynamic>{
+        'displayName': 'Ada',
+        'avatarUrl': 42,
+        'fromLibrary': true,
+      };
 
-      expect(extraStringValue(restored, 'displayName'), 'Ada');
-      expect(extraStringValue(restored, 'avatarUrl'), isNull);
-      expect(extraStringValue(null, 'displayName'), isNull);
+      expect(extraValue<String>(restored, 'displayName'), 'Ada');
+      expect(extraValue<String>(restored, 'avatarUrl'), isNull);
+      expect(extraValue<bool>(restored, 'fromLibrary'), isTrue);
+      expect(extraValue<String>(null, 'displayName'), isNull);
     });
 
-    test('reads only boolean editor options', () {
+    test('reads typed values from restored object maps', () {
+      final restored = <Object?, Object?>{
+        'displayName': 'Ada',
+        'avatarUrl': 42,
+        'fromLibrary': true,
+      };
+
+      expect(extraValue<String>(restored, 'displayName'), 'Ada');
+      expect(extraValue<String>(restored, 'avatarUrl'), isNull);
+      expect(extraValue<bool>(restored, 'fromLibrary'), isTrue);
+    });
+
+    test('ignores malformed or missing values', () {
       expect(
-        extraBoolValue(<String, dynamic>{'fromLibrary': true}, 'fromLibrary'),
-        isTrue,
-      );
-      expect(
-        extraBoolValue(<String, dynamic>{'fromLibrary': 'true'}, 'fromLibrary'),
+        extraValue<bool>(<String, dynamic>{
+          'fromLibrary': 'true',
+        }, 'fromLibrary'),
         isNull,
       );
-      expect(extraBoolValue(const <String, dynamic>{}, 'fromLibrary'), isNull);
+      expect(
+        extraValue<bool>(const <String, dynamic>{}, 'fromLibrary'),
+        isNull,
+      );
     });
   });
 }

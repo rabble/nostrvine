@@ -107,7 +107,7 @@ List<RouteBase> videoRoutes() {
       path: VideoEditorScreen.path,
       name: VideoEditorScreen.routeName,
       builder: (_, st) {
-        final fromLibrary = extraBoolValue(st.extra, 'fromLibrary') ?? false;
+        final fromLibrary = extraValue<bool>(st.extra, 'fromLibrary') ?? false;
 
         return VideoEditorScreen(fromLibrary: fromLibrary);
       },
@@ -119,7 +119,7 @@ List<RouteBase> videoRoutes() {
         // The draft ID is optional if the user wants to continue editing
         // the draft.
         final draftId = st.pathParameters['draftId'];
-        final fromLibrary = extraBoolValue(st.extra, 'fromLibrary') ?? false;
+        final fromLibrary = extraValue<bool>(st.extra, 'fromLibrary') ?? false;
 
         return VideoEditorScreen(
           draftId: draftId == null || draftId.isEmpty ? null : draftId,

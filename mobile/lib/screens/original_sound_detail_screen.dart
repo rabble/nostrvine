@@ -4,8 +4,8 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
@@ -62,7 +62,7 @@ class OriginalSoundDetailScreen extends ConsumerWidget {
       appBar: DiVineAppBar(
         title: context.l10n.soundTitle,
         showBackButton: true,
-        onBackPressed: context.pop,
+        onBackPressed: context.safePop,
         backgroundColor: VineTheme.cardBackground,
       ),
       body: Semantics(
