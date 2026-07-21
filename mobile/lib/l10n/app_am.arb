@@ -2588,6 +2588,12 @@
     "inboxRestoringMessages": "መልዕክቶችዎን ወደነበሩበት በመመለስ ላይ…",
     "inboxEmptyTitle": "እስካሁን ምንም መልዕክቶች የሉም",
     "inboxEmptySubtitle": "ያ + ቁልፍ አይነክሰውም።",
+    "inboxLoadErrorTitle": "መልዕክቶቹ አልተጫኑም",
+    "inboxLoadErrorSubtitle": "ግንኙነትህን አረጋግጠህ እንደገና ሞክር።",
+    "inboxFilterAll": "ሁሉም",
+    "inboxFilterUnread": "ያልተነበቡ",
+    "inboxUnreadEmptyTitle": "ሁሉንም አንብበሃል",
+    "inboxUnreadEmptySubtitle": "አሁን ያልተነበበ መልዕክት የለም።",
     "inboxActionMute": "ውይይት ድምጸ-ከል አድርግ",
     "inboxActionReport": "ሪፖርት {displayName}",
     "@inboxActionReport": {

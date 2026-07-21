@@ -9666,6 +9666,42 @@ abstract class AppLocalizations {
   /// **'That + button won\'t bite.'**
   String get inboxEmptySubtitle;
 
+  /// No description provided for @inboxLoadErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages didn\'t load'**
+  String get inboxLoadErrorTitle;
+
+  /// No description provided for @inboxLoadErrorSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your connection and give it another go.'**
+  String get inboxLoadErrorSubtitle;
+
+  /// Filter chip label showing all conversations in the Messages inbox.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get inboxFilterAll;
+
+  /// Filter chip label showing only unread conversations in the Messages inbox.
+  ///
+  /// In en, this message translates to:
+  /// **'Unread'**
+  String get inboxFilterUnread;
+
+  /// Shown in place of the conversation list when the Unread filter is on and every conversation has been read.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re all caught up'**
+  String get inboxUnreadEmptyTitle;
+
+  /// No description provided for @inboxUnreadEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No unread messages right now.'**
+  String get inboxUnreadEmptySubtitle;
+
   /// No description provided for @inboxActionMute.
   ///
   /// In en, this message translates to:

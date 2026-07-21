@@ -5651,6 +5651,25 @@ class AppLocalizationsRo extends AppLocalizations {
   String get inboxEmptySubtitle => 'Butonul + nu mușcă.';
 
   @override
+  String get inboxLoadErrorTitle => 'Mesajele nu s-au încărcat';
+
+  @override
+  String get inboxLoadErrorSubtitle =>
+      'Verifică conexiunea și încearcă din nou.';
+
+  @override
+  String get inboxFilterAll => 'Toate';
+
+  @override
+  String get inboxFilterUnread => 'Necitite';
+
+  @override
+  String get inboxUnreadEmptyTitle => 'Ești la zi';
+
+  @override
+  String get inboxUnreadEmptySubtitle => 'Niciun mesaj necitit momentan.';
+
+  @override
   String get inboxActionMute => 'Dezactivează sunetul conversației';
 
   @override

@@ -35,6 +35,7 @@ class ConversationListBloc
     on<ConversationListStarted>(_onStarted, transformer: restartable());
     on<ConversationListLoadMore>(_onLoadMore, transformer: droppable());
     on<ConversationListMarkRead>(_onMarkRead, transformer: droppable());
+    on<ConversationListUnreadFilterToggled>(_onUnreadFilterToggled);
     on<ConversationListNavigateToUser>(
       _onNavigateToUser,
       transformer: droppable(),
@@ -193,6 +194,10 @@ class ConversationListBloc
         return state.copyWith(
           status: ConversationListStatus.loaded,
           conversations: visibleInbox,
+          visibleConversations: _applyUnreadFilter(
+            visibleInbox,
+            unreadOnly: state.unreadOnly,
+          ),
           requestConversations: visibleRequests,
           potentialRequests: data.potentialRequests,
           hasMore: data.accepted.length == state.currentLimit,
@@ -229,6 +234,30 @@ class ConversationListBloc
     // Re-trigger the watched stream with the larger limit.
     // restartable() on ConversationListStarted cancels the previous watch.
     add(const ConversationListStarted());
+  }
+
+  void _onUnreadFilterToggled(
+    ConversationListUnreadFilterToggled event,
+    Emitter<ConversationListState> emit,
+  ) {
+    final unreadOnly = !state.unreadOnly;
+    emit(
+      state.copyWith(
+        unreadOnly: unreadOnly,
+        visibleConversations: _applyUnreadFilter(
+          state.conversations,
+          unreadOnly: unreadOnly,
+        ),
+      ),
+    );
+  }
+
+  static List<DmConversation> _applyUnreadFilter(
+    List<DmConversation> conversations, {
+    required bool unreadOnly,
+  }) {
+    if (!unreadOnly) return conversations;
+    return conversations.where((c) => !c.isRead).toList();
   }
 
   Future<void> _onMarkRead(

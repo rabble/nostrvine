@@ -2329,6 +2329,12 @@
     "inboxConversationUnmuted": "Unterhaltung nicht mehr stummgeschaltet",
     "inboxEmptySubtitle": "Der + Button beißt nicht.",
     "inboxEmptyTitle": "Noch keine Nachrichten",
+    "inboxLoadErrorTitle": "Nachrichten konnten nicht geladen werden",
+    "inboxLoadErrorSubtitle": "Prüf deine Verbindung und versuch es nochmal.",
+    "inboxFilterAll": "Alle",
+    "inboxFilterUnread": "Ungelesen",
+    "inboxUnreadEmptyTitle": "Du bist auf dem Laufenden",
+    "inboxUnreadEmptySubtitle": "Gerade keine ungelesenen Nachrichten.",
     "inboxRemoveConfirmBody": "Dadurch wird deine Unterhaltung mit {displayName} gelöscht. Dieser Vorgang kann nicht rückgängig gemacht werden.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {

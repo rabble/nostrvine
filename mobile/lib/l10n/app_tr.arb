@@ -2328,6 +2328,12 @@
     "inboxConversationUnmuted": "Sohbet sessizden çıkarıldı",
     "inboxEmptySubtitle": "+ tuşu ısırmaz.",
     "inboxEmptyTitle": "Henüz mesaj yok",
+    "inboxLoadErrorTitle": "Mesajlar yüklenemedi",
+    "inboxLoadErrorSubtitle": "Bağlantını kontrol edip tekrar dene.",
+    "inboxFilterAll": "Tümü",
+    "inboxFilterUnread": "Okunmamış",
+    "inboxUnreadEmptyTitle": "Her şeyi okudun",
+    "inboxUnreadEmptySubtitle": "Şu anda okunmamış mesaj yok.",
     "inboxRemoveConfirmBody": "Bu işlem, {displayName} ile olan sohbetini siler. Bu işlem geri alınamaz.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {

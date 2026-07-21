@@ -3063,6 +3063,21 @@
   },
   "inboxEmptyTitle": "No messages yet",
   "inboxEmptySubtitle": "That + button won't bite.",
+  "inboxLoadErrorTitle": "Messages didn't load",
+  "inboxLoadErrorSubtitle": "Check your connection and give it another go.",
+  "inboxFilterAll": "All",
+  "@inboxFilterAll": {
+    "description": "Filter chip label showing all conversations in the Messages inbox."
+  },
+  "inboxFilterUnread": "Unread",
+  "@inboxFilterUnread": {
+    "description": "Filter chip label showing only unread conversations in the Messages inbox."
+  },
+  "inboxUnreadEmptyTitle": "You're all caught up",
+  "@inboxUnreadEmptyTitle": {
+    "description": "Shown in place of the conversation list when the Unread filter is on and every conversation has been read."
+  },
+  "inboxUnreadEmptySubtitle": "No unread messages right now.",
   "inboxActionMute": "Mute conversation",
   "inboxActionReport": "Report {displayName}",
   "@inboxActionReport": {

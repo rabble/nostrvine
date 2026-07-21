@@ -2440,6 +2440,12 @@
     "inboxRestoringMessages": "Възстановяваме съобщенията ти…",
     "inboxEmptyTitle": "Все още няма съобщения",
     "inboxEmptySubtitle": "Този бутон + няма да ухапе.",
+    "inboxLoadErrorTitle": "Съобщенията не се заредиха",
+    "inboxLoadErrorSubtitle": "Провери връзката си и опитай отново.",
+    "inboxFilterAll": "Всички",
+    "inboxFilterUnread": "Непрочетени",
+    "inboxUnreadEmptyTitle": "В крак си с всичко",
+    "inboxUnreadEmptySubtitle": "Няма непрочетени съобщения в момента.",
     "inboxActionMute": "Заглушаване на разговора",
     "inboxActionReport": "Докладвай {displayName}",
     "@inboxActionReport": {

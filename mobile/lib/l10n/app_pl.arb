@@ -2329,6 +2329,12 @@
     "inboxConversationUnmuted": "Wyłączono wyciszenie rozmowy",
     "inboxEmptySubtitle": "Ten przycisk + nie gryzie.",
     "inboxEmptyTitle": "Brak wiadomości",
+    "inboxLoadErrorTitle": "Wiadomości się nie wczytały",
+    "inboxLoadErrorSubtitle": "Sprawdź połączenie i spróbuj ponownie.",
+    "inboxFilterAll": "Wszystkie",
+    "inboxFilterUnread": "Nieprzeczytane",
+    "inboxUnreadEmptyTitle": "Wszystko nadrobione",
+    "inboxUnreadEmptySubtitle": "Brak nieprzeczytanych wiadomości.",
     "inboxRemoveConfirmBody": "Spowoduje to usunięcie rozmowy z {displayName}. Tej operacji nie można cofnąć.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {

@@ -2328,6 +2328,12 @@
     "inboxConversationUnmuted": "Bisu percakapan dibatalkan",
     "inboxEmptySubtitle": "Tombol + tidak menggigit kok.",
     "inboxEmptyTitle": "Belum ada pesan",
+    "inboxLoadErrorTitle": "Pesan gagal dimuat",
+    "inboxLoadErrorSubtitle": "Periksa koneksimu dan coba lagi.",
+    "inboxFilterAll": "Semua",
+    "inboxFilterUnread": "Belum dibaca",
+    "inboxUnreadEmptyTitle": "Semua sudah kamu baca",
+    "inboxUnreadEmptySubtitle": "Tidak ada pesan yang belum dibaca.",
     "inboxRemoveConfirmBody": "Ini akan menghapus percakapanmu dengan {displayName}. Tindakan ini tidak bisa dibatalkan.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {

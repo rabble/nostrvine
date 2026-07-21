@@ -5270,6 +5270,24 @@ class AppLocalizationsJa extends AppLocalizations {
   String get inboxEmptySubtitle => 'この+ボタン、噛まないよ。';
 
   @override
+  String get inboxLoadErrorTitle => 'メッセージを読み込めませんでした';
+
+  @override
+  String get inboxLoadErrorSubtitle => '接続を確認してもう一度お試しください。';
+
+  @override
+  String get inboxFilterAll => 'すべて';
+
+  @override
+  String get inboxFilterUnread => '未読';
+
+  @override
+  String get inboxUnreadEmptyTitle => 'すべて既読です';
+
+  @override
+  String get inboxUnreadEmptySubtitle => '未読メッセージはありません。';
+
+  @override
   String get inboxActionMute => '会話をミュート';
 
   @override

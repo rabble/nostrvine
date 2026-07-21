@@ -24,6 +24,8 @@ class ConversationListState extends Equatable {
   const ConversationListState({
     this.status = ConversationListStatus.initial,
     this.conversations = const [],
+    this.visibleConversations = const [],
+    this.unreadOnly = false,
     this.requestConversations = const [],
     this.potentialRequests = const [],
     this.hasMore = true,
@@ -40,6 +42,15 @@ class ConversationListState extends Equatable {
 
   /// Conversations shown in the Messages tab (accepted + followed contacts).
   final List<DmConversation> conversations;
+
+  /// [conversations] with the unread filter applied when [unreadOnly] is on.
+  ///
+  /// Stored (not derived via a getter) so `context.select` sees a stable
+  /// list identity across unrelated state emits.
+  final List<DmConversation> visibleConversations;
+
+  /// Whether the Messages list is filtered to unread conversations only.
+  final bool unreadOnly;
 
   /// Conversations shown in the Requests tab (non-followed, never replied).
   final List<DmConversation> requestConversations;
@@ -74,6 +85,8 @@ class ConversationListState extends Equatable {
   ConversationListState copyWith({
     ConversationListStatus? status,
     List<DmConversation>? conversations,
+    List<DmConversation>? visibleConversations,
+    bool? unreadOnly,
     List<DmConversation>? requestConversations,
     List<DmConversation>? potentialRequests,
     bool? hasMore,
@@ -86,6 +99,8 @@ class ConversationListState extends Equatable {
     return ConversationListState(
       status: status ?? this.status,
       conversations: conversations ?? this.conversations,
+      visibleConversations: visibleConversations ?? this.visibleConversations,
+      unreadOnly: unreadOnly ?? this.unreadOnly,
       requestConversations: requestConversations ?? this.requestConversations,
       potentialRequests: potentialRequests ?? this.potentialRequests,
       hasMore: hasMore ?? this.hasMore,
@@ -102,6 +117,8 @@ class ConversationListState extends Equatable {
   List<Object?> get props => [
     status,
     conversations,
+    visibleConversations,
+    unreadOnly,
     requestConversations,
     potentialRequests,
     hasMore,

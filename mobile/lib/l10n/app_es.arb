@@ -2333,6 +2333,12 @@
     "inboxConversationUnmuted": "Conversación sin silenciar",
     "inboxEmptySubtitle": "El botón + no muerde.",
     "inboxEmptyTitle": "Aún no hay mensajes",
+    "inboxLoadErrorTitle": "Los mensajes no cargaron",
+    "inboxLoadErrorSubtitle": "Revisa tu conexión e inténtalo otra vez.",
+    "inboxFilterAll": "Todos",
+    "inboxFilterUnread": "No leídos",
+    "inboxUnreadEmptyTitle": "Estás al día",
+    "inboxUnreadEmptySubtitle": "No tienes mensajes sin leer ahora mismo.",
     "inboxRemoveConfirmBody": "Esto eliminará tu conversación con {displayName}. Esta acción no se puede deshacer.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {

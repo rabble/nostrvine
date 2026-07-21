@@ -2329,6 +2329,12 @@
     "inboxConversationUnmuted": "Conversazione riattivata",
     "inboxEmptySubtitle": "Il pulsante + non morde.",
     "inboxEmptyTitle": "Ancora nessun messaggio",
+    "inboxLoadErrorTitle": "I messaggi non si sono caricati",
+    "inboxLoadErrorSubtitle": "Controlla la connessione e riprova.",
+    "inboxFilterAll": "Tutti",
+    "inboxFilterUnread": "Non letti",
+    "inboxUnreadEmptyTitle": "Sei in pari",
+    "inboxUnreadEmptySubtitle": "Nessun messaggio non letto al momento.",
     "inboxRemoveConfirmBody": "Questo eliminerà la tua conversazione con {displayName}. Questa azione non può essere annullata.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {

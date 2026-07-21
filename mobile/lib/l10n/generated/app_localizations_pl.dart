@@ -5640,6 +5640,24 @@ class AppLocalizationsPl extends AppLocalizations {
   String get inboxEmptySubtitle => 'Ten przycisk + nie gryzie.';
 
   @override
+  String get inboxLoadErrorTitle => 'Wiadomości się nie wczytały';
+
+  @override
+  String get inboxLoadErrorSubtitle => 'Sprawdź połączenie i spróbuj ponownie.';
+
+  @override
+  String get inboxFilterAll => 'Wszystkie';
+
+  @override
+  String get inboxFilterUnread => 'Nieprzeczytane';
+
+  @override
+  String get inboxUnreadEmptyTitle => 'Wszystko nadrobione';
+
+  @override
+  String get inboxUnreadEmptySubtitle => 'Brak nieprzeczytanych wiadomości.';
+
+  @override
   String get inboxActionMute => 'Wycisz rozmowę';
 
   @override

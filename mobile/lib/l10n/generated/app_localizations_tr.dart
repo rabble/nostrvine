@@ -5482,6 +5482,24 @@ class AppLocalizationsTr extends AppLocalizations {
   String get inboxEmptySubtitle => '+ tuşu ısırmaz.';
 
   @override
+  String get inboxLoadErrorTitle => 'Mesajlar yüklenemedi';
+
+  @override
+  String get inboxLoadErrorSubtitle => 'Bağlantını kontrol edip tekrar dene.';
+
+  @override
+  String get inboxFilterAll => 'Tümü';
+
+  @override
+  String get inboxFilterUnread => 'Okunmamış';
+
+  @override
+  String get inboxUnreadEmptyTitle => 'Her şeyi okudun';
+
+  @override
+  String get inboxUnreadEmptySubtitle => 'Şu anda okunmamış mesaj yok.';
+
+  @override
   String get inboxActionMute => 'Sohbeti sessize al';
 
   @override

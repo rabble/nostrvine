@@ -144,6 +144,7 @@ class ConversationTile extends ConsumerWidget {
                             context,
                             conversation.lastMessageContent!,
                           ),
+                          emphasized: !conversation.isRead,
                         ),
                       ],
                     ],
@@ -201,13 +202,22 @@ _PreviewPayload _previewPayload(BuildContext context, String content) {
 /// Two-line preview text with an optional inline camera icon prefix when
 /// the last message in the conversation is a divine-video share.
 class _ConversationPreviewText extends StatelessWidget {
-  const _ConversationPreviewText({required this.payload});
+  const _ConversationPreviewText({
+    required this.payload,
+    required this.emphasized,
+  });
 
   final _PreviewPayload payload;
 
+  /// True for unread conversations: the preview renders white and semibold
+  /// so unread rows stand out beyond the small dot alone.
+  final bool emphasized;
+
   @override
   Widget build(BuildContext context) {
-    final style = VineTheme.bodyMediumFont(color: VineTheme.onSurfaceVariant);
+    final style = emphasized
+        ? VineTheme.labelLargeFont()
+        : VineTheme.bodyMediumFont(color: VineTheme.onSurfaceVariant);
     if (!payload.isDivineVideoShare) {
       return Text(
         payload.text,

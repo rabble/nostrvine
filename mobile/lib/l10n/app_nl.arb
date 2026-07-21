@@ -2329,6 +2329,12 @@
     "inboxConversationUnmuted": "Gesprek niet meer gedempt",
     "inboxEmptySubtitle": "Die +-knop bijt niet.",
     "inboxEmptyTitle": "Nog geen berichten",
+    "inboxLoadErrorTitle": "Berichten zijn niet geladen",
+    "inboxLoadErrorSubtitle": "Check je verbinding en probeer het opnieuw.",
+    "inboxFilterAll": "Alle",
+    "inboxFilterUnread": "Ongelezen",
+    "inboxUnreadEmptyTitle": "Je bent helemaal bij",
+    "inboxUnreadEmptySubtitle": "Geen ongelezen berichten op dit moment.",
     "inboxRemoveConfirmBody": "Dit verwijdert je gesprek met {displayName}. Deze actie kan niet ongedaan worden gemaakt.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {

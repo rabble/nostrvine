@@ -489,6 +489,10 @@ void main() {
               _createConversation(id: _testConversationId1),
               _createConversation(id: _testConversationId2),
             ],
+            visibleConversations: [
+              _createConversation(id: _testConversationId1),
+              _createConversation(id: _testConversationId2),
+            ],
             potentialRequests: [
               _createConversation(id: _testConversationId1),
               _createConversation(id: _testConversationId2),
@@ -648,11 +652,13 @@ void main() {
             ConversationListState(
               status: ConversationListStatus.loaded,
               conversations: [firstConversation],
+              visibleConversations: [firstConversation],
               hasMore: false,
             ),
             ConversationListState(
               status: ConversationListStatus.loaded,
               conversations: [firstConversation, secondConversation],
+              visibleConversations: [firstConversation, secondConversation],
               hasMore: false,
             ),
           ]);
@@ -949,6 +955,12 @@ void main() {
                   currentUserHasSent: true,
                 ),
               ],
+              visibleConversations: [
+                _createConversation(
+                  id: _testConversationId1,
+                  currentUserHasSent: true,
+                ),
+              ],
               hasMore: false,
             ),
             // Second ConversationListStarted: no loading emission
@@ -958,6 +970,12 @@ void main() {
             ConversationListState(
               status: ConversationListStatus.loaded,
               conversations: [
+                _createConversation(
+                  id: _testConversationId2,
+                  currentUserHasSent: true,
+                ),
+              ],
+              visibleConversations: [
                 _createConversation(
                   id: _testConversationId2,
                   currentUserHasSent: true,
@@ -1538,6 +1556,8 @@ void main() {
       expect(state.props, [
         ConversationListStatus.loaded,
         conversations,
+        const <DmConversation>[], // visibleConversations
+        false, // unreadOnly
         const <DmConversation>[],
         const <DmConversation>[],
         true,
@@ -1645,6 +1665,143 @@ void main() {
 
       expect(target1, isNot(equals(target2)));
     });
+  });
+
+  group('ConversationListUnreadFilterToggled', () {
+    late _MockDmRepository mockDmRepository;
+    late _MockFollowRepository mockFollowRepository;
+
+    setUp(() {
+      mockDmRepository = _MockDmRepository();
+      mockFollowRepository = _MockFollowRepository();
+
+      when(() => mockFollowRepository.isFollowing(any())).thenReturn(true);
+      when(
+        () => mockFollowRepository.followingStream,
+      ).thenAnswer((_) => const Stream<List<String>>.empty());
+      when(
+        () => mockDmRepository.backfillHistoryIfNeeded(),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockDmRepository.retryPendingDecryptions(),
+      ).thenAnswer((_) async {});
+    });
+
+    ConversationListBloc createBloc() => ConversationListBloc(
+      dmRepository: mockDmRepository,
+      followRepository: mockFollowRepository,
+      recomputeDebounce: Duration.zero,
+    );
+
+    Future<ConversationListState> loadMixedList(
+      ConversationListBloc bloc,
+    ) async {
+      bloc.add(const ConversationListStarted());
+      return bloc.stream.firstWhere(
+        (s) => s.status == ConversationListStatus.loaded,
+      );
+    }
+
+    List<DmConversation> mixedConversations() => [
+      _createConversation(id: 'unread-1', isRead: false),
+      _createConversation(id: 'read-1'),
+      _createConversation(id: 'unread-2', isRead: false),
+    ];
+
+    test(
+      'loaded state exposes the full list as visibleConversations',
+      () async {
+        _stubStreams(mockDmRepository, accepted: mixedConversations());
+        final bloc = createBloc();
+        addTearDown(bloc.close);
+
+        final state = await loadMixedList(bloc);
+
+        expect(state.unreadOnly, isFalse);
+        expect(
+          state.visibleConversations.map((c) => c.id).toList(),
+          equals(['unread-1', 'read-1', 'unread-2']),
+        );
+      },
+    );
+
+    test('toggling on narrows visibleConversations to unread only', () async {
+      _stubStreams(mockDmRepository, accepted: mixedConversations());
+      final bloc = createBloc();
+      addTearDown(bloc.close);
+      await loadMixedList(bloc);
+
+      bloc.add(const ConversationListUnreadFilterToggled());
+      final state = await bloc.stream.firstWhere((s) => s.unreadOnly);
+
+      expect(
+        state.visibleConversations.map((c) => c.id).toList(),
+        equals(['unread-1', 'unread-2']),
+      );
+      expect(
+        state.conversations,
+        hasLength(3),
+        reason: 'the full list must stay available for the All filter',
+      );
+    });
+
+    test('toggling off restores the full list', () async {
+      _stubStreams(mockDmRepository, accepted: mixedConversations());
+      final bloc = createBloc();
+      addTearDown(bloc.close);
+      await loadMixedList(bloc);
+
+      bloc.add(const ConversationListUnreadFilterToggled());
+      await bloc.stream.firstWhere((s) => s.unreadOnly);
+      bloc.add(const ConversationListUnreadFilterToggled());
+      final state = await bloc.stream.firstWhere((s) => !s.unreadOnly);
+
+      expect(
+        state.visibleConversations.map((c) => c.id).toList(),
+        equals(['unread-1', 'read-1', 'unread-2']),
+      );
+    });
+
+    test(
+      'new stream data arrives filtered while unread filter is on',
+      () async {
+        final acceptedController = StreamController<List<DmConversation>>();
+        _stubStreams(mockDmRepository);
+        when(
+          () => mockDmRepository.watchAcceptedConversations(
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) => acceptedController.stream);
+
+        final bloc = createBloc()..add(const ConversationListStarted());
+        addTearDown(() async {
+          await bloc.close();
+          await acceptedController.close();
+        });
+
+        acceptedController.add(mixedConversations());
+        await bloc.stream.firstWhere(
+          (s) => s.status == ConversationListStatus.loaded,
+        );
+
+        bloc.add(const ConversationListUnreadFilterToggled());
+        await bloc.stream.firstWhere((s) => s.unreadOnly);
+
+        acceptedController.add([
+          ...mixedConversations(),
+          _createConversation(id: 'unread-3', isRead: false),
+        ]);
+        final state = await bloc.stream.firstWhere(
+          (s) => s.visibleConversations.length == 3,
+        );
+
+        expect(
+          state.visibleConversations.map((c) => c.id).toList(),
+          equals(['unread-1', 'unread-2', 'unread-3']),
+        );
+        expect(state.conversations, hasLength(4));
+      },
+    );
   });
 
   // Subscription lifecycle (#2931)

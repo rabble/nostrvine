@@ -5290,6 +5290,24 @@ class AppLocalizationsKo extends AppLocalizations {
   String get inboxEmptySubtitle => '+ 버튼, 물지 않아요.';
 
   @override
+  String get inboxLoadErrorTitle => '메시지를 불러오지 못했어요';
+
+  @override
+  String get inboxLoadErrorSubtitle => '연결을 확인하고 다시 시도해 주세요.';
+
+  @override
+  String get inboxFilterAll => '전체';
+
+  @override
+  String get inboxFilterUnread => '안 읽음';
+
+  @override
+  String get inboxUnreadEmptyTitle => '모두 확인했어요';
+
+  @override
+  String get inboxUnreadEmptySubtitle => '읽지 않은 메시지가 없어요.';
+
+  @override
   String get inboxActionMute => '대화 알림 끄기';
 
   @override

@@ -37,6 +37,11 @@ class ConversationListNavigationConsumed extends ConversationListEvent {
   const ConversationListNavigationConsumed();
 }
 
+/// Toggle the unread-only filter on the Messages list.
+class ConversationListUnreadFilterToggled extends ConversationListEvent {
+  const ConversationListUnreadFilterToggled();
+}
+
 /// Mark a conversation as read.
 class ConversationListMarkRead extends ConversationListEvent {
   const ConversationListMarkRead(this.conversationId);

@@ -2321,6 +2321,12 @@
     "inboxConversationUnmuted": "تم إلغاء كتم المحادثة",
     "inboxEmptySubtitle": "زر + لن يعضّك.",
     "inboxEmptyTitle": "لا توجد رسائل بعد",
+    "inboxLoadErrorTitle": "تعذّر تحميل الرسائل",
+    "inboxLoadErrorSubtitle": "تحقّق من اتصالك وحاول مرة أخرى.",
+    "inboxFilterAll": "الكل",
+    "inboxFilterUnread": "غير المقروءة",
+    "inboxUnreadEmptyTitle": "أنت على اطلاع بكل شيء",
+    "inboxUnreadEmptySubtitle": "لا توجد رسائل غير مقروءة حاليًا.",
     "inboxRemoveConfirmBody": "سيؤدي هذا إلى حذف محادثتك مع {displayName}. لا يمكن التراجع عن هذا الإجراء.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {

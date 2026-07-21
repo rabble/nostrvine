@@ -5567,6 +5567,25 @@ class AppLocalizationsFil extends AppLocalizations {
   String get inboxEmptySubtitle => 'Hindi ka kakagatin ng + button na \'yan.';
 
   @override
+  String get inboxLoadErrorTitle => 'Hindi na-load ang mga mensahe';
+
+  @override
+  String get inboxLoadErrorSubtitle =>
+      'Suriin ang koneksyon mo at subukan ulit.';
+
+  @override
+  String get inboxFilterAll => 'Lahat';
+
+  @override
+  String get inboxFilterUnread => 'Hindi pa nababasa';
+
+  @override
+  String get inboxUnreadEmptyTitle => 'Nabasa mo na lahat';
+
+  @override
+  String get inboxUnreadEmptySubtitle => 'Walang hindi pa nababasang mensahe.';
+
+  @override
   String get inboxActionMute => 'I-mute ang conversation';
 
   @override

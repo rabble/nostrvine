@@ -5497,6 +5497,24 @@ class AppLocalizationsSv extends AppLocalizations {
   String get inboxEmptySubtitle => '+-knappen bits inte.';
 
   @override
+  String get inboxLoadErrorTitle => 'Meddelandena kunde inte laddas';
+
+  @override
+  String get inboxLoadErrorSubtitle => 'Kolla din anslutning och försök igen.';
+
+  @override
+  String get inboxFilterAll => 'Alla';
+
+  @override
+  String get inboxFilterUnread => 'Olästa';
+
+  @override
+  String get inboxUnreadEmptyTitle => 'Du är helt ikapp';
+
+  @override
+  String get inboxUnreadEmptySubtitle => 'Inga olästa meddelanden just nu.';
+
+  @override
   String get inboxActionMute => 'Tysta konversation';
 
   @override

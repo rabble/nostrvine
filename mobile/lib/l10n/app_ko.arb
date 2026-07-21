@@ -1652,6 +1652,12 @@
     "inboxConversationUnmuted": "대화 알림을 다시 켰어요",
     "inboxEmptySubtitle": "+ 버튼, 물지 않아요.",
     "inboxEmptyTitle": "아직 메시지가 없어요",
+    "inboxLoadErrorTitle": "메시지를 불러오지 못했어요",
+    "inboxLoadErrorSubtitle": "연결을 확인하고 다시 시도해 주세요.",
+    "inboxFilterAll": "전체",
+    "inboxFilterUnread": "안 읽음",
+    "inboxUnreadEmptyTitle": "모두 확인했어요",
+    "inboxUnreadEmptySubtitle": "읽지 않은 메시지가 없어요.",
     "inboxRemoveConfirmBody": "{displayName}와의 대화가 삭제돼요. 이 작업은 되돌릴 수 없어요.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {

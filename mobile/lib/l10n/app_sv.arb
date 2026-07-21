@@ -2329,6 +2329,12 @@
     "inboxConversationUnmuted": "Konversation inte tystad",
     "inboxEmptySubtitle": "+-knappen bits inte.",
     "inboxEmptyTitle": "Inga meddelanden än",
+    "inboxLoadErrorTitle": "Meddelandena kunde inte laddas",
+    "inboxLoadErrorSubtitle": "Kolla din anslutning och försök igen.",
+    "inboxFilterAll": "Alla",
+    "inboxFilterUnread": "Olästa",
+    "inboxUnreadEmptyTitle": "Du är helt ikapp",
+    "inboxUnreadEmptySubtitle": "Inga olästa meddelanden just nu.",
     "inboxRemoveConfirmBody": "Detta tar bort din konversation med {displayName}. Denna åtgärd kan inte ångras.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {

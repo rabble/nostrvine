@@ -2329,6 +2329,12 @@
     "inboxConversationUnmuted": "Conversație reactivată",
     "inboxEmptySubtitle": "Butonul + nu mușcă.",
     "inboxEmptyTitle": "Încă niciun mesaj",
+    "inboxLoadErrorTitle": "Mesajele nu s-au încărcat",
+    "inboxLoadErrorSubtitle": "Verifică conexiunea și încearcă din nou.",
+    "inboxFilterAll": "Toate",
+    "inboxFilterUnread": "Necitite",
+    "inboxUnreadEmptyTitle": "Ești la zi",
+    "inboxUnreadEmptySubtitle": "Niciun mesaj necitit momentan.",
     "inboxRemoveConfirmBody": "Astfel, conversația ta cu {displayName} va fi ștearsă. Această acțiune nu poate fi anulată.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {

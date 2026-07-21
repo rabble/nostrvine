@@ -5544,6 +5544,26 @@ class AppLocalizationsEs extends AppLocalizations {
   String get inboxEmptySubtitle => 'El botón + no muerde.';
 
   @override
+  String get inboxLoadErrorTitle => 'Los mensajes no cargaron';
+
+  @override
+  String get inboxLoadErrorSubtitle =>
+      'Revisa tu conexión e inténtalo otra vez.';
+
+  @override
+  String get inboxFilterAll => 'Todos';
+
+  @override
+  String get inboxFilterUnread => 'No leídos';
+
+  @override
+  String get inboxUnreadEmptyTitle => 'Estás al día';
+
+  @override
+  String get inboxUnreadEmptySubtitle =>
+      'No tienes mensajes sin leer ahora mismo.';
+
+  @override
   String get inboxActionMute => 'Silenciar conversación';
 
   @override

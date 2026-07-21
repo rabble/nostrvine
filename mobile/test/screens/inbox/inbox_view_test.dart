@@ -17,6 +17,7 @@ import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/blocs/notifications/badge/notification_badge_cubit.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
@@ -26,8 +27,10 @@ import 'package:openvine/screens/inbox/message_requests/widgets/message_requests
 import 'package:openvine/screens/inbox/widgets/conversation_tile.dart';
 import 'package:openvine/screens/inbox/widgets/following_bar.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_empty_state.dart';
+import 'package:openvine/screens/inbox/widgets/inbox_error_state.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_fab.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_segmented_toggle.dart';
+import 'package:openvine/screens/inbox/widgets/unread_filter_chips.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 
 import '../../helpers/go_router.dart';
@@ -228,7 +231,7 @@ void main() {
         );
       });
 
-      testWidgets('renders $InboxEmptyState when status is error', (
+      testWidgets('renders $InboxErrorState when status is error', (
         tester,
       ) async {
         await tester.pumpWidget(
@@ -245,7 +248,31 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        expect(find.byType(InboxEmptyState), findsOneWidget);
+        expect(find.byType(InboxErrorState), findsOneWidget);
+        expect(find.byType(InboxEmptyState), findsNothing);
+      });
+
+      testWidgets('retry on $InboxErrorState re-dispatches load', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(
+            state: const ConversationListState(
+              status: ConversationListStatus.error,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('Messages'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.commonRetry));
+        await tester.pump();
+
+        verify(() => mockBloc.add(const ConversationListStarted())).called(1);
       });
 
       testWidgets(
@@ -286,6 +313,7 @@ void main() {
             state: ConversationListState(
               status: ConversationListStatus.loaded,
               conversations: [conversation],
+              visibleConversations: [conversation],
               hasMore: false,
             ),
           ),
@@ -299,6 +327,193 @@ void main() {
 
         expect(find.byType(ConversationTile), findsOneWidget);
       });
+
+      testWidgets('renders $UnreadFilterChips when loaded with conversations', (
+        tester,
+      ) async {
+        final conversation = DmConversation(
+          id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+          participantPubkeys: const [currentPubkey, otherPubkey],
+          isGroup: false,
+          createdAt: nowUnix,
+          lastMessageContent: 'Hello',
+          lastMessageTimestamp: nowUnix,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: [conversation],
+              visibleConversations: [conversation],
+              hasMore: false,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('Messages'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+
+        expect(find.byType(UnreadFilterChips), findsOneWidget);
+      });
+
+      testWidgets(
+        'tapping the Unread chip dispatches '
+        '$ConversationListUnreadFilterToggled',
+        (tester) async {
+          final conversation = DmConversation(
+            id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+            participantPubkeys: const [currentPubkey, otherPubkey],
+            isGroup: false,
+            createdAt: nowUnix,
+            lastMessageContent: 'Hello',
+            lastMessageTimestamp: nowUnix,
+          );
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationListState(
+                status: ConversationListStatus.loaded,
+                conversations: [conversation],
+                visibleConversations: [conversation],
+                hasMore: false,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          await tester.tap(find.text('Messages'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
+
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          await tester.tap(find.text(l10n.inboxFilterUnread));
+          await tester.pump();
+
+          verify(
+            () => mockBloc.add(const ConversationListUnreadFilterToggled()),
+          ).called(1);
+        },
+      );
+
+      testWidgets(
+        'tapping the already-active All chip dispatches nothing',
+        (tester) async {
+          final conversation = DmConversation(
+            id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+            participantPubkeys: const [currentPubkey, otherPubkey],
+            isGroup: false,
+            createdAt: nowUnix,
+            lastMessageContent: 'Hello',
+            lastMessageTimestamp: nowUnix,
+          );
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationListState(
+                status: ConversationListStatus.loaded,
+                conversations: [conversation],
+                visibleConversations: [conversation],
+                hasMore: false,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          await tester.tap(find.text('Messages'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
+
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          await tester.tap(find.text(l10n.inboxFilterAll));
+          await tester.pump();
+
+          verifyNever(
+            () => mockBloc.add(const ConversationListUnreadFilterToggled()),
+          );
+        },
+      );
+
+      testWidgets(
+        'shows caught-up state when unread filter is on and everything '
+        'is read',
+        (tester) async {
+          final conversation = DmConversation(
+            id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+            participantPubkeys: const [currentPubkey, otherPubkey],
+            isGroup: false,
+            createdAt: nowUnix,
+            lastMessageContent: 'Hello',
+            lastMessageTimestamp: nowUnix,
+          );
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationListState(
+                status: ConversationListStatus.loaded,
+                conversations: [conversation],
+                unreadOnly: true,
+                hasMore: false,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          await tester.tap(find.text('Messages'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
+
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          expect(find.text(l10n.inboxUnreadEmptyTitle), findsOneWidget);
+          expect(find.byType(ConversationTile), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'renders only visibleConversations, not the full list',
+        (tester) async {
+          DmConversation conversationWith({
+            required String id,
+            required bool isRead,
+          }) => DmConversation(
+            id: id,
+            participantPubkeys: const [currentPubkey, otherPubkey],
+            isGroup: false,
+            createdAt: nowUnix,
+            lastMessageContent: 'Hello',
+            lastMessageTimestamp: nowUnix,
+            isRead: isRead,
+          );
+
+          final unread = conversationWith(id: 'unread-conv', isRead: false);
+          final read = conversationWith(id: 'read-conv', isRead: true);
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationListState(
+                status: ConversationListStatus.loaded,
+                conversations: [unread, read],
+                visibleConversations: [unread],
+                unreadOnly: true,
+                hasMore: false,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          await tester.tap(find.text('Messages'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
+
+          expect(find.byType(ConversationTile), findsOneWidget);
+          final tile = tester.widget<ConversationTile>(
+            find.byType(ConversationTile),
+          );
+          expect(tile.conversation.id, equals('unread-conv'));
+        },
+      );
 
       testWidgets(
         'keeps the last conversation tile clear of the FAB when scrolled '
@@ -321,6 +536,7 @@ void main() {
               state: ConversationListState(
                 status: ConversationListStatus.loaded,
                 conversations: conversations,
+                visibleConversations: conversations,
                 hasMore: false,
               ),
             ),
@@ -375,6 +591,7 @@ void main() {
                 state: ConversationListState(
                   status: ConversationListStatus.loaded,
                   conversations: [conversation],
+                  visibleConversations: [conversation],
                   hasMore: false,
                 ),
               ),
@@ -452,6 +669,7 @@ void main() {
               state: ConversationListState(
                 status: ConversationListStatus.loaded,
                 conversations: [conversation],
+                visibleConversations: [conversation],
                 hasMore: false,
               ),
               notificationStream: notificationController.stream,
@@ -538,6 +756,7 @@ void main() {
               state: ConversationListState(
                 status: ConversationListStatus.loaded,
                 conversations: [conversation],
+                visibleConversations: [conversation],
                 requestConversations: [request],
                 hasMore: false,
               ),
@@ -621,6 +840,7 @@ void main() {
             state: ConversationListState(
               status: ConversationListStatus.loaded,
               conversations: conversations,
+              visibleConversations: conversations,
             ),
           ),
         );
@@ -654,6 +874,7 @@ void main() {
             state: ConversationListState(
               status: ConversationListStatus.loaded,
               conversations: [conversation],
+              visibleConversations: [conversation],
               hasMore: false,
             ),
           ),

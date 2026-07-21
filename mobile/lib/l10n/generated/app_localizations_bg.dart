@@ -5552,6 +5552,25 @@ class AppLocalizationsBg extends AppLocalizations {
   String get inboxEmptySubtitle => 'Този бутон + няма да ухапе.';
 
   @override
+  String get inboxLoadErrorTitle => 'Съобщенията не се заредиха';
+
+  @override
+  String get inboxLoadErrorSubtitle => 'Провери връзката си и опитай отново.';
+
+  @override
+  String get inboxFilterAll => 'Всички';
+
+  @override
+  String get inboxFilterUnread => 'Непрочетени';
+
+  @override
+  String get inboxUnreadEmptyTitle => 'В крак си с всичко';
+
+  @override
+  String get inboxUnreadEmptySubtitle =>
+      'Няма непрочетени съобщения в момента.';
+
+  @override
   String get inboxActionMute => 'Заглушаване на разговора';
 
   @override

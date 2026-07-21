@@ -5571,6 +5571,24 @@ class AppLocalizationsFr extends AppLocalizations {
   String get inboxEmptySubtitle => 'Le bouton + ne mord pas.';
 
   @override
+  String get inboxLoadErrorTitle => 'Les messages n\'ont pas chargé';
+
+  @override
+  String get inboxLoadErrorSubtitle => 'Vérifie ta connexion et réessaie.';
+
+  @override
+  String get inboxFilterAll => 'Tous';
+
+  @override
+  String get inboxFilterUnread => 'Non lus';
+
+  @override
+  String get inboxUnreadEmptyTitle => 'Tu es à jour';
+
+  @override
+  String get inboxUnreadEmptySubtitle => 'Aucun message non lu pour le moment.';
+
+  @override
   String get inboxActionMute => 'Mettre la conversation en sourdine';
 
   @override

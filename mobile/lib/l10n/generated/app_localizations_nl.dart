@@ -5523,6 +5523,26 @@ class AppLocalizationsNl extends AppLocalizations {
   String get inboxEmptySubtitle => 'Die +-knop bijt niet.';
 
   @override
+  String get inboxLoadErrorTitle => 'Berichten zijn niet geladen';
+
+  @override
+  String get inboxLoadErrorSubtitle =>
+      'Check je verbinding en probeer het opnieuw.';
+
+  @override
+  String get inboxFilterAll => 'Alle';
+
+  @override
+  String get inboxFilterUnread => 'Ongelezen';
+
+  @override
+  String get inboxUnreadEmptyTitle => 'Je bent helemaal bij';
+
+  @override
+  String get inboxUnreadEmptySubtitle =>
+      'Geen ongelezen berichten op dit moment.';
+
+  @override
   String get inboxActionMute => 'Gesprek dempen';
 
   @override

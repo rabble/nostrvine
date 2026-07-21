@@ -5565,6 +5565,26 @@ class AppLocalizationsDe extends AppLocalizations {
   String get inboxEmptySubtitle => 'Der + Button beißt nicht.';
 
   @override
+  String get inboxLoadErrorTitle => 'Nachrichten konnten nicht geladen werden';
+
+  @override
+  String get inboxLoadErrorSubtitle =>
+      'Prüf deine Verbindung und versuch es nochmal.';
+
+  @override
+  String get inboxFilterAll => 'Alle';
+
+  @override
+  String get inboxFilterUnread => 'Ungelesen';
+
+  @override
+  String get inboxUnreadEmptyTitle => 'Du bist auf dem Laufenden';
+
+  @override
+  String get inboxUnreadEmptySubtitle =>
+      'Gerade keine ungelesenen Nachrichten.';
+
+  @override
   String get inboxActionMute => 'Unterhaltung stummschalten';
 
   @override

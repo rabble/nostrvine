@@ -2321,6 +2321,12 @@
     "inboxConversationUnmuted": "会話のミュートを解除したよ",
     "inboxEmptySubtitle": "この+ボタン、噛まないよ。",
     "inboxEmptyTitle": "まだメッセージはないよ",
+    "inboxLoadErrorTitle": "メッセージを読み込めませんでした",
+    "inboxLoadErrorSubtitle": "接続を確認してもう一度お試しください。",
+    "inboxFilterAll": "すべて",
+    "inboxFilterUnread": "未読",
+    "inboxUnreadEmptyTitle": "すべて既読です",
+    "inboxUnreadEmptySubtitle": "未読メッセージはありません。",
     "inboxRemoveConfirmBody": "{displayName}との会話が削除されます。この操作は取り消せません。",
     "@inboxRemoveConfirmBody": {
         "placeholders": {

@@ -2329,6 +2329,12 @@
     "inboxConversationUnmuted": "Conversa com som ativado",
     "inboxEmptySubtitle": "O botão + não morde.",
     "inboxEmptyTitle": "Ainda sem mensagens",
+    "inboxLoadErrorTitle": "As mensagens não carregaram",
+    "inboxLoadErrorSubtitle": "Verifica a tua ligação e tenta de novo.",
+    "inboxFilterAll": "Todas",
+    "inboxFilterUnread": "Não lidas",
+    "inboxUnreadEmptyTitle": "Estás em dia",
+    "inboxUnreadEmptySubtitle": "Nenhuma mensagem por ler neste momento.",
     "inboxRemoveConfirmBody": "Isso apagará sua conversa com {displayName}. Esta ação não pode ser desfeita.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {

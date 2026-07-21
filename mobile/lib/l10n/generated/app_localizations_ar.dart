@@ -5464,6 +5464,24 @@ class AppLocalizationsAr extends AppLocalizations {
   String get inboxEmptySubtitle => 'زر + لن يعضّك.';
 
   @override
+  String get inboxLoadErrorTitle => 'تعذّر تحميل الرسائل';
+
+  @override
+  String get inboxLoadErrorSubtitle => 'تحقّق من اتصالك وحاول مرة أخرى.';
+
+  @override
+  String get inboxFilterAll => 'الكل';
+
+  @override
+  String get inboxFilterUnread => 'غير المقروءة';
+
+  @override
+  String get inboxUnreadEmptyTitle => 'أنت على اطلاع بكل شيء';
+
+  @override
+  String get inboxUnreadEmptySubtitle => 'لا توجد رسائل غير مقروءة حاليًا.';
+
+  @override
   String get inboxActionMute => 'كتم المحادثة';
 
   @override

@@ -2329,6 +2329,12 @@
     "inboxConversationUnmuted": "Conversation réactivée",
     "inboxEmptySubtitle": "Le bouton + ne mord pas.",
     "inboxEmptyTitle": "Aucun message pour le moment",
+    "inboxLoadErrorTitle": "Les messages n'ont pas chargé",
+    "inboxLoadErrorSubtitle": "Vérifie ta connexion et réessaie.",
+    "inboxFilterAll": "Tous",
+    "inboxFilterUnread": "Non lus",
+    "inboxUnreadEmptyTitle": "Tu es à jour",
+    "inboxUnreadEmptySubtitle": "Aucun message non lu pour le moment.",
     "inboxRemoveConfirmBody": "Cela supprimera votre conversation avec {displayName}. Cette action est irréversible.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {
