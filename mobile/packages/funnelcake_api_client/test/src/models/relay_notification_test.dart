@@ -424,6 +424,49 @@ void main() {
         expect(notification.rootEventId, isNull);
         expect(notification.targetCommentId, isNull);
       });
+
+      test('parses root_event_pubkey (root video author)', () {
+        final json = {
+          'id': 'notif_123',
+          'source_pubkey': 'aabbccdd' * 8,
+          'source_event_id': '11223344' * 8,
+          'source_kind': 7,
+          'referenced_event_id': '55667788' * 8,
+          'notification_type': 'reaction',
+          'created_at': 1712345678,
+          'read': false,
+          'root_event_pubkey': 'deadbeef' * 8,
+        };
+
+        final notification = RelayNotification.fromJson(json);
+
+        expect(notification.rootEventPubkey, equals('deadbeef' * 8));
+      });
+
+      test('treats empty or absent root_event_pubkey as null', () {
+        final absent = RelayNotification.fromJson({
+          'id': 'notif_123',
+          'source_pubkey': 'aabbccdd' * 8,
+          'source_event_id': '11223344' * 8,
+          'source_kind': 7,
+          'notification_type': 'reaction',
+          'created_at': 1712345678,
+          'read': false,
+        });
+        final empty = RelayNotification.fromJson({
+          'id': 'notif_123',
+          'source_pubkey': 'aabbccdd' * 8,
+          'source_event_id': '11223344' * 8,
+          'source_kind': 7,
+          'notification_type': 'reaction',
+          'created_at': 1712345678,
+          'read': false,
+          'root_event_pubkey': '',
+        });
+
+        expect(absent.rootEventPubkey, isNull);
+        expect(empty.rootEventPubkey, isNull);
+      });
     });
 
     group('dedupeKey', () {

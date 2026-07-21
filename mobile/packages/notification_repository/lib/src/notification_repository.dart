@@ -1140,12 +1140,14 @@ class NotificationRepository {
       if (_hasKnownReferencedVideoOwnerMismatch(
         referencedVideoEventId: eventId,
         videosById: videosById,
+        rootEventPubkey: n.rootEventPubkey,
       )) {
         _logReclassifiedOwnerMismatch(
           notificationId: n.id,
           sourcePubkey: n.sourcePubkey,
           referencedVideoEventId: eventId,
-          referencedVideoOwnerPubkey: videosById[eventId]?.pubkey,
+          referencedVideoOwnerPubkey:
+              videosById[eventId]?.pubkey ?? n.rootEventPubkey,
         );
         misattributed?.add(n);
         continue;
@@ -1441,7 +1443,20 @@ class NotificationRepository {
   bool _hasKnownReferencedVideoOwnerMismatch({
     required String referencedVideoEventId,
     required Map<String, VideoStats> videosById,
+    String? rootEventPubkey,
   }) {
+    // Authoritative owner straight from the payload: the root video's author.
+    // For a reaction anchored to the user's comment on someone else's video
+    // this is the *other* creator, so a "liked your video" here is a mislabel
+    // and must be reclassified — even when the video metadata was never
+    // fetched (the anchor id is the comment, not a video, so [videosById]
+    // can't resolve it). A genuine like on the user's own video carries the
+    // user's own pubkey here, so the guard never fires for it.
+    if (rootEventPubkey != null &&
+        rootEventPubkey.isNotEmpty &&
+        rootEventPubkey != _userPubkey) {
+      return true;
+    }
     final ownerPubkey = videosById[referencedVideoEventId]?.pubkey;
     if (ownerPubkey == null || ownerPubkey.isEmpty) return false;
     return ownerPubkey != _userPubkey;

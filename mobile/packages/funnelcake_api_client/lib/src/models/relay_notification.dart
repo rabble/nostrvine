@@ -19,6 +19,7 @@ class RelayNotification {
     this.referencedVideoThumbnail,
     this.referencedDTag,
     this.rootEventId,
+    this.rootEventPubkey,
     this.targetCommentId,
   });
 
@@ -68,6 +69,7 @@ class RelayNotification {
           : null,
       referencedDTag: (rawDTag != null && rawDTag.isNotEmpty) ? rawDTag : null,
       rootEventId: _nonEmpty(json['root_event_id'] as String?),
+      rootEventPubkey: _nonEmpty(json['root_event_pubkey'] as String?),
       targetCommentId: _nonEmpty(json['target_comment_id'] as String?),
     );
   }
@@ -130,6 +132,15 @@ class RelayNotification {
   /// the notification directly to the video instead of resolving the comment
   /// event through a relay round-trip.
   final String? rootEventId;
+
+  /// Pubkey of the root video's author, when Funnelcake can resolve it.
+  ///
+  /// Authoritative ownership signal: for a reaction anchored to the user's
+  /// comment on someone else's video this is the *other* creator's pubkey,
+  /// while for a like on the user's own video it is the user's own pubkey.
+  /// Lets app layers detect a "liked your comment" that would otherwise be
+  /// mislabelled "liked your video" without a metadata round-trip.
+  final String? rootEventPubkey;
 
   /// Comment event ID included by Funnelcake for NIP-22 comment notifications.
   final String? targetCommentId;

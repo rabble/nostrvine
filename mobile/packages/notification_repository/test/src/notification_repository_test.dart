@@ -117,6 +117,7 @@ void main() {
     String? referencedEventId = 'video_default',
     String? referencedDTag,
     String? rootEventId,
+    String? rootEventPubkey,
     String? targetCommentId,
     String? content,
     bool isReferencedVideo = true,
@@ -134,6 +135,7 @@ void main() {
       referencedEventId: referencedEventId,
       referencedDTag: referencedDTag,
       rootEventId: rootEventId,
+      rootEventPubkey: rootEventPubkey,
       targetCommentId: targetCommentId,
       content: content,
       isReferencedVideo: isReferencedVideo,
@@ -1333,6 +1335,59 @@ void main() {
         final item = page.items.single as ActorNotification;
         expect(item.type, equals(NotificationKind.likeComment));
         expect(item.targetEventId, equals('foreign_video'));
+      });
+
+      test(
+        "reaction on the user's comment (non-owned root_event_pubkey) is "
+        'reclassified as likeComment without video metadata (#5634)',
+        () async {
+          // Residual edge of #5634/#5949: Funnelcake left target_comment_id
+          // empty but populated the root video (referenced_video +
+          // root_event_pubkey). The anchor id is the comment, so videosById
+          // cannot resolve ownership; the authoritative owner is the payload's
+          // root_event_pubkey. No video stats are stubbed on purpose.
+          stubNotifications([
+            makeNotification(
+              referencedEventId: 'my_comment',
+              rootEventPubkey: 'other_owner_pubkey',
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+
+          final item = page.items.single as ActorNotification;
+          expect(item.type, equals(NotificationKind.likeComment));
+        },
+      );
+
+      test("reaction on the user's own video (root_event_pubkey == user) "
+          'stays like', () async {
+        stubNotifications([
+          makeNotification(
+            referencedEventId: 'own_video',
+            rootEventPubkey: userPubkey,
+          ),
+        ]);
+        stubProfiles({});
+
+        final page = await repository.getNotifications();
+
+        final item = page.items.single as VideoNotification;
+        expect(item.type, equals(NotificationKind.like));
+      });
+
+      test('reaction with no root_event_pubkey and no video metadata stays '
+          'like (guard inert)', () async {
+        stubNotifications([
+          makeNotification(referencedEventId: 'unknown_video'),
+        ]);
+        stubProfiles({});
+
+        final page = await repository.getNotifications();
+
+        final item = page.items.single as VideoNotification;
+        expect(item.type, equals(NotificationKind.like));
       });
 
       test('comment on a non-owned video is reclassified as reply '
