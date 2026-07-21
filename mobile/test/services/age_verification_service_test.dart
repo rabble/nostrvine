@@ -40,6 +40,24 @@ void main() {
       expect(service.verificationDate, isNull);
     });
 
+    test(
+      'clears adult media caches when adult verification is revoked',
+      () async {
+        var clearCount = 0;
+        service = AgeVerificationService(
+          onAdultMediaAccessRevoked: () async {
+            clearCount++;
+          },
+        );
+        await service.initialize();
+        await service.setAdultContentVerified(true);
+
+        await service.setAdultContentVerified(false);
+
+        expect(clearCount, equals(1));
+      },
+    );
+
     test('should persist age verification status across instances', () async {
       // First instance sets verification
       await service.initialize();
@@ -68,6 +86,24 @@ void main() {
       expect(service.isAgeVerified, false);
       expect(service.verificationDate, isNull);
     });
+
+    test(
+      'clears adult media caches when verification status is cleared',
+      () async {
+        var clearCount = 0;
+        service = AgeVerificationService(
+          onAdultMediaAccessRevoked: () async {
+            clearCount++;
+          },
+        );
+        await service.initialize();
+        await service.setAdultContentVerified(true);
+
+        await service.clearVerificationStatus();
+
+        expect(clearCount, equals(1));
+      },
+    );
 
     test(
       'checkAgeVerification should load status if not initialized',

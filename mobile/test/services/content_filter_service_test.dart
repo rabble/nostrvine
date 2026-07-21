@@ -678,6 +678,64 @@ void main() {
       });
     });
 
+    group('adult media cache invalidation', () {
+      test(
+        'clears caches when passive adult thumbnail access is revoked',
+        () async {
+          var clearCount = 0;
+          ageService = AgeVerificationService();
+          service = ContentFilterService(
+            ageVerificationService: ageService,
+            onAdultMediaAccessRevoked: () async {
+              clearCount++;
+            },
+          );
+          await ageService.initialize();
+          await ageService.setAdultContentVerified(true);
+          await service.initialize();
+          await service.setPreference(
+            ContentLabel.nudity,
+            ContentFilterPreference.show,
+          );
+          await service.setPreference(
+            ContentLabel.sexual,
+            ContentFilterPreference.show,
+          );
+          expect(service.adultPlaybackPreference, ContentFilterPreference.show);
+
+          await service.setPreference(
+            ContentLabel.nudity,
+            ContentFilterPreference.warn,
+          );
+
+          expect(clearCount, equals(1));
+        },
+      );
+
+      test(
+        'does not clear caches for unrelated content-filter changes',
+        () async {
+          var clearCount = 0;
+          service = ContentFilterService(
+            ageVerificationService: ageService,
+            onAdultMediaAccessRevoked: () async {
+              clearCount++;
+            },
+          );
+          await ageService.initialize();
+          await ageService.setAdultContentVerified(true);
+          await service.initialize();
+
+          await service.setPreference(
+            ContentLabel.flashingLights,
+            ContentFilterPreference.show,
+          );
+
+          expect(clearCount, isZero);
+        },
+      );
+    });
+
     group('migration from old preferences', () {
       test(
         'overwrites stale stored preferences for always-filtered categories',

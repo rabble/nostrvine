@@ -15,6 +15,7 @@ import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/relay_providers.dart';
 import 'package:openvine/providers/repository_providers.dart';
@@ -40,6 +41,7 @@ import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/services/view_event_retry_service.dart';
+import 'package:openvine/utils/open_vine_image_cache.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -648,6 +650,18 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
           await ref.read(dmRepositoryProvider).stopListening();
         } catch (_) {
           // DmRepository may not exist yet (e.g., first launch).
+        }
+        try {
+          await clearOpenVineImageCache();
+          ref
+              .read(adultMediaAccessRevocationVersionProvider.notifier)
+              .increment();
+        } catch (e) {
+          Log.warning(
+            'Failed to clear image cache during user data cleanup: $e',
+            name: 'UserDataCleanup',
+            category: LogCategory.auth,
+          );
         }
         await db.directMessagesDao.clearAll();
         await db.conversationsDao.clearAll();

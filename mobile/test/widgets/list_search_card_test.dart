@@ -7,7 +7,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:openvine/widgets/list_search_card.dart';
-import 'package:openvine/widgets/vine_cached_image.dart';
+import 'package:openvine/widgets/video_thumbnail_widget.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 void main() {
@@ -158,11 +158,11 @@ void main() {
           await tester.pumpWidget(buildSubject(curatedList: createList()));
 
           expect(find.byType(DecoratedBox), findsNWidgets(6));
-          expect(find.byType(VineCachedImage), findsNothing);
+          expect(find.byType(PassiveAuthThumbnailImage), findsNothing);
         },
       );
 
-      testWidgets('renders $VineCachedImage for each thumbnail URL '
+      testWidgets('renders $PassiveAuthThumbnailImage for each thumbnail URL '
           'while keeping all 5 card slots', (tester) async {
         await tester.pumpWidget(
           buildSubject(
@@ -176,7 +176,12 @@ void main() {
           ),
         );
 
-        expect(find.byType(VineCachedImage), findsNWidgets(2));
+        expect(find.byType(PassiveAuthThumbnailImage), findsNWidgets(2));
+        for (final image in tester.widgetList<PassiveAuthThumbnailImage>(
+          find.byType(PassiveAuthThumbnailImage),
+        )) {
+          expect(image.alignment, equals(Alignment.center));
+        }
         // 5 card slots + 1 count badge remain regardless of how many
         // thumbnails are supplied.
         expect(find.byType(DecoratedBox), findsAtLeastNWidgets(6));

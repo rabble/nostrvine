@@ -1,5 +1,9 @@
 import 'package:flutter/widgets.dart';
 import 'package:media_cache/media_cache.dart';
+import 'package:openvine/utils/open_vine_image_cache.dart';
+
+export 'package:openvine/utils/open_vine_image_cache.dart'
+    show clearOpenVineImageCache, openVineImageCache;
 
 /// Signature used to build a loading placeholder.
 typedef PlaceholderWidgetBuilder =
@@ -10,11 +14,6 @@ typedef LoadingErrorWidgetBuilder =
     Widget Function(BuildContext context, String imageUrl, Object error);
 
 typedef ImageDimensionsResolved = void Function(int width, int height);
-
-/// Global image cache singleton backed by [MediaCacheManager].
-final openVineImageCache = MediaCacheManager(
-  config: const MediaCacheConfig.image(cacheKey: 'openvine_image_cache'),
-);
 
 /// Test-only override for the cache used by every [VineCachedImage].
 ///

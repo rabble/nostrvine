@@ -25,7 +25,6 @@ import 'package:openvine/widgets/profile/profile_tab_loading_more_sliver.dart';
 import 'package:openvine/widgets/profile/profile_tab_thumbnail.dart';
 import 'package:openvine/widgets/profile/profile_tab_thumbnail_placeholder.dart';
 import 'package:openvine/widgets/profile/profile_videos_grid_skeleton.dart';
-import 'package:openvine/widgets/vine_cached_image.dart';
 
 /// Internal class that represents a video entry in the grid
 /// It can be a video event or an uploading video
@@ -112,7 +111,6 @@ class ProfileVideosGrid extends ConsumerStatefulWidget {
 class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
     with GridPrefetchMixin, ScrollPaginationMixin {
   List<VideoEvent>? _lastPrefetchedVideos;
-  final _precachedThumbnailUrls = <String>{};
 
   /// Resolved from [PrimaryScrollController] provided by [NestedScrollView].
   ScrollController? _primaryScrollController;
@@ -261,24 +259,10 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
                 activeUploads.any((upload) => upload.title == video.title);
 
             // Step 3: Mark the title as matched so only the first duplicate
-            // per upload is filtered out. Pre-cache the network thumbnail
-            // so it's instantly available when the upload tile disappears.
-            //
-            // NOTE: The [downloadFile] call is intentionally placed here
-            // inside build(). It is a fire-and-forget cache warm-up that
-            // is guarded by [_precachedThumbnailUrls] so it executes at
-            // most once per URL across rebuilds. Moving it to
-            // didUpdateWidget would require duplicating the de-duplication
-            // logic. This is an acceptable trade-off.
+            // per upload is filtered out.
             if (isDuplicate) {
               if (video.title case final title?) {
                 matchedTitles.add(title);
-              }
-              final url = video.thumbnailUrl;
-              if (url != null &&
-                  url.isNotEmpty &&
-                  _precachedThumbnailUrls.add(url)) {
-                openVineImageCache.downloadFile(url);
               }
               return false;
             }
@@ -361,9 +345,6 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
                   videoEvent: eventEntry.videoEvent,
                   userIdHex: widget.userIdHex,
                   index: index,
-                  isPrecached: _precachedThumbnailUrls.contains(
-                    eventEntry.videoEvent.thumbnailUrl,
-                  ),
                   onTap: () {
                     // Adjust index to account for uploading videos at the top
                     final publishedIndex = index - uploadingCount;
@@ -442,14 +423,12 @@ class _VideoGridTile extends StatelessWidget {
     required this.userIdHex,
     required this.index,
     required this.onTap,
-    this.isPrecached = false,
   });
 
   final VideoEvent videoEvent;
   final String userIdHex;
   final int index;
   final VoidCallback onTap;
-  final bool isPrecached;
 
   @override
   Widget build(BuildContext context) => Semantics(
@@ -465,7 +444,6 @@ class _VideoGridTile extends StatelessWidget {
           child: ProfileTabThumbnail(
             thumbnailUrl: videoEvent.thumbnailUrl,
             blurhash: videoEvent.blurhash,
-            isPrecached: isPrecached,
           ),
         ),
       ),

@@ -18,6 +18,7 @@ import 'package:openvine/services/blocklist_content_filter.dart';
 import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/divine_host_filter_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
+import 'package:openvine/utils/open_vine_image_cache.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:videos_repository/videos_repository.dart';
@@ -60,19 +61,43 @@ final divineHostFilterServiceProvider = Provider<DivineHostFilterService>((
 
 /// Rebuild trigger for consumers that need to react to Divine-host filter
 /// preference changes.
-final divineHostFilterVersionProvider = Provider<int>((ref) {
-  final service = ref.watch(divineHostFilterServiceProvider);
-  var version = 0;
+final divineHostFilterVersionProvider =
+    NotifierProvider<DivineHostFilterVersion, int>(DivineHostFilterVersion.new);
 
-  void listener() {
-    version++;
-    ref.invalidateSelf();
+class DivineHostFilterVersion extends Notifier<int> {
+  @override
+  int build() {
+    final service = ref.watch(divineHostFilterServiceProvider);
+    service.addListener(increment);
+    ref.onDispose(() => service.removeListener(increment));
+    return 0;
   }
 
-  service.addListener(listener);
-  ref.onDispose(() => service.removeListener(listener));
-  return version;
-});
+  void increment() => state++;
+}
+
+/// Increments whenever passive adult-media image auth must be invalidated.
+final adultMediaAccessRevocationVersionProvider =
+    NotifierProvider<AdultMediaAccessRevocationVersion, int>(
+      AdultMediaAccessRevocationVersion.new,
+    );
+
+class AdultMediaAccessRevocationVersion extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void increment() => state++;
+}
+
+Future<void> _clearAdultMediaAccessCaches(Ref ref) async {
+  try {
+    await clearOpenVineImageCache();
+  } finally {
+    if (ref.mounted) {
+      ref.read(adultMediaAccessRevocationVersionProvider.notifier).increment();
+    }
+  }
+}
 
 /// Age verification service for content creation restrictions
 /// keepAlive ensures the service persists and maintains in-memory verification state
@@ -81,6 +106,7 @@ final divineHostFilterVersionProvider = Provider<int>((ref) {
 AgeVerificationService ageVerificationService(Ref ref) {
   final service = AgeVerificationService(
     isProtectedMinor: () => ref.read(isProtectedMinorProvider),
+    onAdultMediaAccessRevoked: () => _clearAdultMediaAccessCaches(ref),
   );
   service.initialize(); // Initialize asynchronously
   return service;
@@ -93,6 +119,7 @@ ContentFilterService contentFilterService(Ref ref) {
   final ageVerificationService = ref.watch(ageVerificationServiceProvider);
   final service = ContentFilterService(
     ageVerificationService: ageVerificationService,
+    onAdultMediaAccessRevoked: () => _clearAdultMediaAccessCaches(ref),
   );
   service.initialize(); // Initialize asynchronously
   ref.onDispose(service.dispose);
@@ -101,25 +128,26 @@ ContentFilterService contentFilterService(Ref ref) {
 
 /// Tracks content filter preference changes. Feed providers watch this
 /// to rebuild when the user changes a Show/Warn/Hide setting.
-@Riverpod(keepAlive: true)
-int contentFilterVersion(Ref ref) {
-  final service = ref.watch(contentFilterServiceProvider);
-  final aspectRatioPreference = ref.watch(
-    feedAspectRatioPreferenceServiceProvider,
-  );
-  var version = 0;
-  void listener() {
-    version++;
-    ref.invalidateSelf();
+final contentFilterVersionProvider =
+    NotifierProvider<ContentFilterVersion, int>(ContentFilterVersion.new);
+
+class ContentFilterVersion extends Notifier<int> {
+  @override
+  int build() {
+    final service = ref.watch(contentFilterServiceProvider);
+    final aspectRatioPreference = ref.watch(
+      feedAspectRatioPreferenceServiceProvider,
+    );
+    service.addListener(increment);
+    aspectRatioPreference.addListener(increment);
+    ref.onDispose(() {
+      service.removeListener(increment);
+      aspectRatioPreference.removeListener(increment);
+    });
+    return 0;
   }
 
-  service.addListener(listener);
-  aspectRatioPreference.addListener(listener);
-  ref.onDispose(() {
-    service.removeListener(listener);
-    aspectRatioPreference.removeListener(listener);
-  });
-  return version;
+  void increment() => state++;
 }
 
 /// Account label service for self-labeling content (NIP-32 Kind 1985).

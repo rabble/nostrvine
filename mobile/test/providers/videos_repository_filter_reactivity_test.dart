@@ -33,6 +33,30 @@ class _FakeVideoEvent extends Fake implements VideoEvent {}
 /// changing when the user changes a filter preference.
 final _filterVersionTrigger = StateProvider<int>((ref) => 0);
 
+class _ContentFilterVersionFromTrigger extends ContentFilterVersion {
+  @override
+  int build() => ref.watch(_filterVersionTrigger);
+}
+
+class _DivineHostFilterVersionFromTrigger extends DivineHostFilterVersion {
+  _DivineHostFilterVersionFromTrigger(this._trigger);
+
+  final StateProvider<int> _trigger;
+
+  @override
+  int build() => ref.watch(_trigger);
+}
+
+class _StaticContentFilterVersion extends ContentFilterVersion {
+  @override
+  int build() => 0;
+}
+
+class _StaticDivineHostFilterVersion extends DivineHostFilterVersion {
+  @override
+  int build() => 0;
+}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(_FakeVideoEvent());
@@ -47,17 +71,13 @@ void main() {
     setUp(() {
       mockPrefs = _MockSharedPreferences();
       when(() => mockPrefs.getBool(any())).thenReturn(null);
-      when(() => mockPrefs.setBool(any(), any())).thenAnswer(
-        (_) async => true,
-      );
+      when(() => mockPrefs.setBool(any(), any())).thenAnswer((_) async => true);
       when(() => mockPrefs.getString(any())).thenReturn(null);
-      when(() => mockPrefs.setString(any(), any())).thenAnswer(
-        (_) async => true,
-      );
+      when(
+        () => mockPrefs.setString(any(), any()),
+      ).thenAnswer((_) async => true);
       when(() => mockPrefs.getInt(any())).thenReturn(null);
-      when(() => mockPrefs.setInt(any(), any())).thenAnswer(
-        (_) async => true,
-      );
+      when(() => mockPrefs.setInt(any(), any())).thenAnswer((_) async => true);
       when(() => mockPrefs.getStringList(any())).thenReturn(null);
       when(
         () => mockPrefs.setStringList(any(), any()),
@@ -91,11 +111,13 @@ void main() {
               mockAspectRatio,
             ),
             divineHostFilterServiceProvider.overrideWithValue(mockDivineHost),
-            // Override the version providers with a state provider we control
-            contentFilterVersionProvider.overrideWith((ref) {
-              return ref.watch(_filterVersionTrigger);
-            }),
-            divineHostFilterVersionProvider.overrideWith((ref) => 0),
+            // Override the version providers with a state provider we control.
+            contentFilterVersionProvider.overrideWith(
+              _ContentFilterVersionFromTrigger.new,
+            ),
+            divineHostFilterVersionProvider.overrideWith(
+              _StaticDivineHostFilterVersion.new,
+            ),
           ],
         );
         addTearDown(container.dispose);
@@ -121,48 +143,47 @@ void main() {
       },
     );
 
-    test(
-      'rebuilds with fresh instance when divineHostFilterVersionProvider '
-      'changes',
-      () async {
-        final divineHostTrigger = StateProvider<int>((ref) => 0);
+    test('rebuilds with fresh instance when divineHostFilterVersionProvider '
+        'changes', () async {
+      final divineHostTrigger = StateProvider<int>((ref) => 0);
 
-        final container = ProviderContainer(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(mockPrefs),
-            nostrServiceProvider.overrideWithValue(mockNostrClient),
-            contentFilterServiceProvider.overrideWithValue(mockContentFilter),
-            feedAspectRatioPreferenceServiceProvider.overrideWithValue(
-              mockAspectRatio,
-            ),
-            divineHostFilterServiceProvider.overrideWithValue(mockDivineHost),
-            contentFilterVersionProvider.overrideWith((ref) => 0),
-            divineHostFilterVersionProvider.overrideWith((ref) {
-              return ref.watch(divineHostTrigger);
-            }),
-          ],
-        );
-        addTearDown(container.dispose);
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(mockPrefs),
+          nostrServiceProvider.overrideWithValue(mockNostrClient),
+          contentFilterServiceProvider.overrideWithValue(mockContentFilter),
+          feedAspectRatioPreferenceServiceProvider.overrideWithValue(
+            mockAspectRatio,
+          ),
+          divineHostFilterServiceProvider.overrideWithValue(mockDivineHost),
+          contentFilterVersionProvider.overrideWith(
+            _StaticContentFilterVersion.new,
+          ),
+          divineHostFilterVersionProvider.overrideWith(
+            () => _DivineHostFilterVersionFromTrigger(divineHostTrigger),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
 
-        final repo1 = container.read(videosRepositoryProvider);
+      final repo1 = container.read(videosRepositoryProvider);
 
-        // Simulate divine host filter toggle.
-        container.read(divineHostTrigger.notifier).state++;
+      // Simulate divine host filter toggle.
+      container.read(divineHostTrigger.notifier).state++;
 
-        // Allow provider rebuild to propagate.
-        await Future<void>.delayed(Duration.zero);
+      // Allow provider rebuild to propagate.
+      await Future<void>.delayed(Duration.zero);
 
-        final repo2 = container.read(videosRepositoryProvider);
+      final repo2 = container.read(videosRepositoryProvider);
 
-        expect(
-          identical(repo1, repo2),
-          isFalse,
-          reason:
-              'videosRepositoryProvider must yield a new instance '
-              '(with fresh InMemoryFeedCache) when divine host filter version '
-              'changes',
-        );
-      },
-    );
+      expect(
+        identical(repo1, repo2),
+        isFalse,
+        reason:
+            'videosRepositoryProvider must yield a new instance '
+            '(with fresh InMemoryFeedCache) when divine host filter version '
+            'changes',
+      );
+    });
   });
 }

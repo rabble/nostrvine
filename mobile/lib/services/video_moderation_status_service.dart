@@ -6,6 +6,7 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'package:openvine/utils/blossom_blob_hash.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Service provider for moderation status lookups.
@@ -236,11 +237,7 @@ class VideoModerationStatusService {
   }
 
   static String? normalizeSha256(String? sha256) {
-    if (sha256 == null) return null;
-    final trimmed = sha256.trim().toLowerCase();
-    if (trimmed.length != 64) return null;
-    final isHex = RegExp(r'^[0-9a-f]{64}$').hasMatch(trimmed);
-    return isHex ? trimmed : null;
+    return normalizeSha256Hash(sha256);
   }
 
   static bool shouldCheckModeration(String? videoUrl) {
@@ -255,23 +252,7 @@ class VideoModerationStatusService {
   }
 
   static String? extractSha256FromVideoUrl(String? videoUrl) {
-    if (videoUrl == null || videoUrl.isEmpty) return null;
-    try {
-      final uri = Uri.parse(videoUrl);
-      final pathSegments = uri.pathSegments;
-      if (pathSegments.isEmpty) return null;
-
-      for (final segment in pathSegments) {
-        final base = segment.split('.').first;
-        final normalized = normalizeSha256(base);
-        if (normalized != null) {
-          return normalized;
-        }
-      }
-    } catch (_) {
-      return null;
-    }
-    return null;
+    return extractSha256FromBlossomUrl(videoUrl);
   }
 
   static String? resolveSha256({String? explicitSha256, String? videoUrl}) {

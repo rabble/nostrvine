@@ -1,12 +1,18 @@
 // ABOUTME: Smart video thumbnail widget that displays thumbnails or blurhash placeholders
 // ABOUTME: Uses existing thumbnail URLs from video events and falls back to blurhash when missing
 
+import 'dart:async';
+
 import 'package:blurhash_service/blurhash_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart'
     show HttpExceptionWithStatus;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide AspectRatio, LogCategory;
+import 'package:openvine/models/viewer_auth_result.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/utils/blossom_blob_hash.dart';
 import 'package:openvine/widgets/blurhash_display.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -111,14 +117,12 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
         // Actual thumbnail image with error boundary, rendered on top of
         // the blurhash placeholder once it loads.
         if (_thumbnailUrl != null)
-          _SafeNetworkImage(
+          PassiveAuthThumbnailImage(
             url: _thumbnailUrl!,
             width: widget.width,
             height: widget.height,
             fit: fit,
             videoId: widget.video.id,
-            showPlayIcon: widget.showPlayIcon,
-            borderRadius: widget.borderRadius,
             onImageDimensionsResolved: _handleImageDimensionsResolved,
           ),
         if (widget.showPlayIcon)
@@ -174,33 +178,44 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
   }
 }
 
-/// Error-safe network image widget that prevents HTTP 404 and other network exceptions.
+/// Error-safe thumbnail image that retries Divine-hosted 401/403s once with
+/// passive, hash-bound BUD-01 auth when viewer settings allow it.
+///
 /// Uses [VineCachedImage] for shared cache-backed loading where appropriate.
-class _SafeNetworkImage extends StatelessWidget {
-  const _SafeNetworkImage({
+class PassiveAuthThumbnailImage extends StatefulWidget {
+  const PassiveAuthThumbnailImage({
     required this.url,
-    required this.videoId,
     this.width,
     this.height,
     this.fit = BoxFit.cover,
-    this.showPlayIcon = false,
-    this.borderRadius,
+    this.alignment = Alignment.topCenter,
+    this.videoId,
+    this.memCacheWidth,
+    this.fadeInDuration = const Duration(milliseconds: 500),
+    this.fadeOutDuration = const Duration(milliseconds: 1000),
+    this.placeholder,
+    this.errorWidget,
     this.onImageDimensionsResolved,
+    this.logName = 'VideoThumbnailWidget',
+    this.logPrefix = 'Thumbnail',
+    super.key,
   });
 
   final String url;
-  final String videoId;
+  final String? videoId;
   final double? width;
   final double? height;
   final BoxFit fit;
-  final bool showPlayIcon;
-  final BorderRadius? borderRadius;
+  final Alignment alignment;
+  final int? memCacheWidth;
+  final Duration fadeInDuration;
+  final Duration fadeOutDuration;
+  final PlaceholderWidgetBuilder? placeholder;
+  final LoadingErrorWidgetBuilder? errorWidget;
   final void Function(String url, int width, int height)?
   onImageDimensionsResolved;
-
-  // Toggle to test with plain Image.network instead of VineCachedImage.
-  // Set to true to debug cache-manager behavior.
-  static const bool _useSimpleImageNetwork = false;
+  final String logName;
+  final String logPrefix;
 
   static bool _shouldBypassCacheManager(String url) {
     final host = Uri.tryParse(url)?.host.toLowerCase();
@@ -208,9 +223,155 @@ class _SafeNetworkImage extends StatelessWidget {
 
     // Explore/grid thumbnails are predominantly served from Divine-owned,
     // immutable blob URLs. These load reliably with Image.network, while the
-    // The shared cache-manager path has been less reliable
-    // under concurrent grid loads on desktop.
+    // shared cache-manager path has been less reliable under concurrent grid
+    // loads on desktop.
     return host == 'divine.video' || host.endsWith('.divine.video');
+  }
+
+  @override
+  State<PassiveAuthThumbnailImage> createState() =>
+      _PassiveAuthThumbnailImageState();
+}
+
+class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
+  ProviderContainer? _providerContainer;
+  ProviderSubscription<Object?>? _authStateSubscription;
+  ProviderSubscription<int>? _contentFilterSubscription;
+  ProviderSubscription<int>? _adultMediaAccessSubscription;
+  Map<String, String>? _authHeaders;
+  bool _authRetryAttempted = false;
+  Future<void>? _authRetryInFlight;
+  int _imageGeneration = 0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncProviderSubscriptions();
+  }
+
+  @override
+  void didUpdateWidget(covariant PassiveAuthThumbnailImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.url != widget.url) {
+      _resetPassiveAuthState();
+    }
+  }
+
+  @override
+  void dispose() {
+    _clearProviderSubscriptions();
+    super.dispose();
+  }
+
+  void _syncProviderSubscriptions() {
+    ProviderContainer container;
+    try {
+      container = ProviderScope.containerOf(context, listen: false);
+    } on Object catch (error) {
+      if (error is! StateError) rethrow;
+      return;
+    }
+    if (identical(container, _providerContainer)) return;
+
+    _clearProviderSubscriptions();
+    _providerContainer = container;
+    _authStateSubscription = container.listen<Object?>(
+      currentAuthStateProvider,
+      (previous, next) => _resetPassiveAuthStateInFrame(),
+    );
+    _contentFilterSubscription = container.listen<int>(
+      contentFilterVersionProvider,
+      (previous, next) => _resetPassiveAuthStateInFrame(),
+    );
+    _adultMediaAccessSubscription = container.listen<int>(
+      adultMediaAccessRevocationVersionProvider,
+      (previous, next) => _resetPassiveAuthStateInFrame(),
+    );
+  }
+
+  void _clearProviderSubscriptions() {
+    _authStateSubscription?.close();
+    _contentFilterSubscription?.close();
+    _adultMediaAccessSubscription?.close();
+    _authStateSubscription = null;
+    _contentFilterSubscription = null;
+    _adultMediaAccessSubscription = null;
+    _providerContainer = null;
+  }
+
+  void _resetPassiveAuthStateInFrame() {
+    if (!mounted) return;
+    setState(_resetPassiveAuthState);
+  }
+
+  Future<void> _maybeRetryWithPassiveAuth(Object error) async {
+    if (_authRetryAttempted ||
+        _authRetryInFlight != null ||
+        !PassiveAuthThumbnailImage._shouldBypassCacheManager(widget.url) ||
+        !_isAuthChallenge(error)) {
+      return;
+    }
+
+    final retry = _retryWithPassiveAuth();
+    _authRetryInFlight = retry;
+    await retry;
+    if (identical(_authRetryInFlight, retry)) {
+      _authRetryInFlight = null;
+    }
+  }
+
+  Future<void> _retryWithPassiveAuth() async {
+    final retryUrl = widget.url;
+    final retryGeneration = _imageGeneration;
+    final sha256Hash = extractSha256FromBlossomUrl(retryUrl);
+    if (sha256Hash == null) {
+      _authRetryAttempted = true;
+      return;
+    }
+
+    final container = _providerContainer;
+    if (container == null) {
+      _authRetryAttempted = true;
+      return;
+    }
+
+    final authResult = await container
+        .read(mediaAuthInterceptorProvider)
+        .createPassiveAuthHeadersForAdultMedia(
+          sha256Hash: sha256Hash,
+          serverUrl: extractMediaServerUrl(retryUrl),
+        );
+    if (!mounted ||
+        widget.url != retryUrl ||
+        _imageGeneration != retryGeneration) {
+      return;
+    }
+
+    _authRetryAttempted = true;
+    switch (authResult) {
+      case ViewerAuthAuthorized(:final headers):
+        setState(() {
+          _authHeaders = headers;
+        });
+      case ViewerAuthSignerUnreachable():
+      case ViewerAuthBlockedByPreference():
+      case ViewerAuthUnavailable():
+        break;
+    }
+  }
+
+  void _resetPassiveAuthState() {
+    _authHeaders = null;
+    _authRetryAttempted = false;
+    _authRetryInFlight = null;
+    _imageGeneration++;
+  }
+
+  bool _isAuthChallenge(Object error) {
+    if (error is NetworkImageLoadException) {
+      return error.statusCode == 401 || error.statusCode == 403;
+    }
+    return false;
   }
 
   @override
@@ -223,63 +384,85 @@ class _SafeNetworkImage extends StatelessWidget {
         // thumbnails so they visibly reload on the way back. Capping the decode
         // width keeps far more thumbnails resident in the cache.
         final cacheWidth = _decodeWidth(context, constraints.maxWidth);
+        final resolvedUrl = widget.url;
 
-        // Debug mode: test with plain Image.network to isolate cache issues
-        if (_useSimpleImageNetwork || _shouldBypassCacheManager(url)) {
+        if (PassiveAuthThumbnailImage._shouldBypassCacheManager(resolvedUrl)) {
           final imageProvider = ResizeImage.resizeIfNeeded(
-            cacheWidth,
+            widget.memCacheWidth ?? cacheWidth,
             null,
-            NetworkImage(url),
+            NetworkImage(resolvedUrl, headers: _authHeaders),
           );
+          final image = Image(
+            key: ValueKey('network-image-${widget.url}-$_imageGeneration'),
+            image: imageProvider,
+            width: widget.width,
+            height: widget.height,
+            fit: widget.fit,
+            alignment: widget.alignment,
+            frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+              if (wasSynchronouslyLoaded) return child;
+              return _NetworkImageFrame(
+                imageUrl: resolvedUrl,
+                width: widget.width,
+                height: widget.height,
+                fadeInDuration: widget.fadeInDuration,
+                fadeOutDuration: widget.fadeOutDuration,
+                placeholder: widget.placeholder,
+                frame: frame,
+                child: child,
+              );
+            },
+            errorBuilder: (context, error, stackTrace) {
+              unawaited(_maybeRetryWithPassiveAuth(error));
+              _logNetworkImageError(error, stackTrace);
+              final errorWidget = widget.errorWidget;
+              if (errorWidget != null) {
+                return errorWidget(context, resolvedUrl, error);
+              }
+              return _TransparentImageBox(
+                width: widget.width,
+                height: widget.height,
+              );
+            },
+          );
+
           return ImageWithDimensionsListener(
+            key: ValueKey('network-${widget.url}-$_imageGeneration'),
             imageProvider: imageProvider,
-            onImageDimensionsResolved: onImageDimensionsResolved == null
+            onImageDimensionsResolved: widget.onImageDimensionsResolved == null
                 ? null
-                : (width, height) =>
-                      onImageDimensionsResolved!(url, width, height),
-            child: Image(
-              image: imageProvider,
-              width: width,
-              height: height,
-              fit: fit,
-              alignment: Alignment.topCenter,
-              errorBuilder: (context, error, stackTrace) {
-                Log.warning(
-                  '🖼️ [Image.network] Thumbnail load failed for video $videoId:\n'
-                  '  URL: $url\n'
-                  '  Error type: ${error.runtimeType}\n'
-                  '  Error: $error\n'
-                  '  Stack: ${stackTrace?.toString().split('\n').take(5).join('\n')}',
-                  name: 'VideoThumbnailWidget',
-                  category: LogCategory.video,
-                );
-                return Container(
-                  width: width,
-                  height: height,
-                  color: VineTheme.transparent,
-                );
-              },
-            ),
+                : (width, height) => widget.onImageDimensionsResolved!(
+                    resolvedUrl,
+                    width,
+                    height,
+                  ),
+            child: image,
           );
         }
 
         return VineCachedImage(
-          imageUrl: url,
-          width: width,
-          height: height,
-          fit: fit,
-          memCacheWidth: cacheWidth,
-          alignment: Alignment.topCenter,
-          onImageDimensionsResolved: onImageDimensionsResolved == null
+          key: ValueKey('cached-${widget.url}-$_imageGeneration'),
+          imageUrl: resolvedUrl,
+          width: widget.width,
+          height: widget.height,
+          fit: widget.fit,
+          memCacheWidth: widget.memCacheWidth ?? cacheWidth,
+          alignment: widget.alignment,
+          fadeInDuration: widget.fadeInDuration,
+          fadeOutDuration: widget.fadeOutDuration,
+          onImageDimensionsResolved: widget.onImageDimensionsResolved == null
               ? null
-              : (width, height) =>
-                    onImageDimensionsResolved!(url, width, height),
-          // Show transparent container so background surfaceContainer color shows through
-          placeholder: (context, url) => Container(
-            width: width,
-            height: height,
-            color: VineTheme.transparent,
-          ),
+              : (width, height) => widget.onImageDimensionsResolved!(
+                  resolvedUrl,
+                  width,
+                  height,
+                ),
+          placeholder:
+              widget.placeholder ??
+              (context, url) => _TransparentImageBox(
+                width: widget.width,
+                height: widget.height,
+              ),
           errorWidget: (context, url, error) {
             // 404s are expected — thumbnail may not exist yet.
             final is404 = error is HttpExceptionWithStatus
@@ -287,21 +470,27 @@ class _SafeNetworkImage extends StatelessWidget {
                 : error.toString().contains('404');
 
             if (!is404) {
+              final videoId = widget.videoId;
               Log.warning(
-                '🖼️ Thumbnail load failed for video $videoId:\n'
+                '🖼️ ${widget.logPrefix} load failed'
+                '${videoId == null ? '' : ' for video $videoId'}:\n'
                 '  URL: $url\n'
                 '  Error type: ${error.runtimeType}\n'
                 '  Error: $error',
-                name: 'VideoThumbnailWidget',
+                name: widget.logName,
                 category: LogCategory.video,
               );
             }
 
+            final errorWidget = widget.errorWidget;
+            if (errorWidget != null) {
+              return errorWidget(context, url, error);
+            }
+
             // Show transparent so background surfaceContainer color shows through
-            return Container(
-              width: width,
-              height: height,
-              color: VineTheme.transparent,
+            return _TransparentImageBox(
+              width: widget.width,
+              height: widget.height,
             );
           },
         );
@@ -315,9 +504,96 @@ class _SafeNetworkImage extends StatelessWidget {
   /// Returns `null` when no finite width is available, leaving the framework to
   /// decode at native resolution.
   int? _decodeWidth(BuildContext context, double maxWidth) {
-    final logicalWidth = maxWidth.isFinite && maxWidth > 0 ? maxWidth : width;
+    final logicalWidth = maxWidth.isFinite && maxWidth > 0
+        ? maxWidth
+        : widget.width;
     if (logicalWidth == null || logicalWidth <= 0) return null;
     return (logicalWidth * MediaQuery.devicePixelRatioOf(context)).ceil();
+  }
+
+  void _logNetworkImageError(Object error, StackTrace? stackTrace) {
+    final videoId = widget.videoId;
+    Log.warning(
+      '🖼️ [Image.network] ${widget.logPrefix} load failed'
+      '${videoId == null ? '' : ' for video $videoId'}:\n'
+      '  URL: ${widget.url}\n'
+      '  Error type: ${error.runtimeType}\n'
+      '  Error: $error\n'
+      '  Stack: ${stackTrace?.toString().split('\n').take(5).join('\n')}',
+      name: widget.logName,
+      category: LogCategory.video,
+    );
+  }
+}
+
+class _NetworkImageFrame extends StatelessWidget {
+  const _NetworkImageFrame({
+    required this.imageUrl,
+    required this.width,
+    required this.height,
+    required this.fadeInDuration,
+    required this.fadeOutDuration,
+    required this.placeholder,
+    required this.frame,
+    required this.child,
+  });
+
+  final String imageUrl;
+  final double? width;
+  final double? height;
+  final Duration fadeInDuration;
+  final Duration fadeOutDuration;
+  final PlaceholderWidgetBuilder? placeholder;
+  final int? frame;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasImage = frame != null;
+    final placeholderBuilder = placeholder;
+    if (placeholderBuilder == null) {
+      return AnimatedOpacity(
+        key: const ValueKey('image'),
+        opacity: hasImage ? 1 : 0,
+        duration: fadeInDuration,
+        child: child,
+      );
+    }
+
+    return Stack(
+      fit: StackFit.passthrough,
+      children: [
+        IgnorePointer(
+          child: AnimatedOpacity(
+            opacity: hasImage ? 0 : 1,
+            duration: fadeOutDuration,
+            child: placeholderBuilder(context, imageUrl),
+          ),
+        ),
+        AnimatedOpacity(
+          key: const ValueKey('image'),
+          opacity: hasImage ? 1 : 0,
+          duration: fadeInDuration,
+          child: child,
+        ),
+      ],
+    );
+  }
+}
+
+class _TransparentImageBox extends StatelessWidget {
+  const _TransparentImageBox({required this.width, required this.height});
+
+  final double? width;
+  final double? height;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      color: VineTheme.transparent,
+    );
   }
 }
 

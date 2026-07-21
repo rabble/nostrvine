@@ -31,15 +31,20 @@ enum ContentFilterPreference {
 ///
 /// Persists preferences in SharedPreferences as a JSON map.
 class ContentFilterService extends ChangeNotifier {
-  ContentFilterService({required this.ageVerificationService});
+  ContentFilterService({
+    required this.ageVerificationService,
+    Future<void> Function()? onAdultMediaAccessRevoked,
+  }) : _onAdultMediaAccessRevoked = onAdultMediaAccessRevoked;
 
   static const String _prefsKey = 'content_filter_prefs';
   static const String _migratedKey = 'content_filter_migrated';
 
   final AgeVerificationService ageVerificationService;
+  final Future<void> Function()? _onAdultMediaAccessRevoked;
 
   final Map<ContentLabel, ContentFilterPreference> _preferences = {};
   bool _initialized = false;
+  Future<void>? _initializeFuture;
 
   /// Categories considered "adult content" — locked to hide unless 18+ verified.
   static const Set<ContentLabel> adultCategories = {
@@ -111,8 +116,13 @@ class ContentFilterService extends ChangeNotifier {
   /// Whether the service has been initialized.
   bool get isInitialized => _initialized;
 
+  /// Completes when persisted content-filter preferences have loaded.
+  Future<void> get initialized => _initializeFuture ??= _initialize();
+
   /// Load preferences from SharedPreferences.
-  Future<void> initialize() async {
+  Future<void> initialize() => initialized;
+
+  Future<void> _initialize() async {
     if (_initialized) return;
 
     try {
@@ -217,8 +227,13 @@ class ContentFilterService extends ChangeNotifier {
       return;
     }
 
+    final previousAdultPreference = adultPlaybackPreference;
     _preferences[label] = preference;
     await _save();
+    await _notifyIfAdultPassiveAccessRevoked(
+      label: label,
+      previousAdultPreference: previousAdultPreference,
+    );
     notifyListeners();
 
     Log.debug(
@@ -283,10 +298,14 @@ class ContentFilterService extends ChangeNotifier {
   ///
   /// Called when the user un-checks age verification.
   Future<void> lockAdultCategories() async {
+    final previousAdultPreference = adultPlaybackPreference;
     for (final label in ageRestrictedCategories) {
       _preferences[label] = ContentFilterPreference.hide;
     }
     await _save();
+    await _notifyIfAdultPassiveAccessRevoked(
+      previousAdultPreference: previousAdultPreference,
+    );
     notifyListeners();
   }
 
@@ -408,6 +427,34 @@ class ContentFilterService extends ChangeNotifier {
       }
     }
     return changed;
+  }
+
+  Future<void> _notifyIfAdultPassiveAccessRevoked({
+    required ContentFilterPreference previousAdultPreference,
+    ContentLabel? label,
+  }) async {
+    if (label != null && !configurableAdultCategories.contains(label)) {
+      return;
+    }
+    if (previousAdultPreference != ContentFilterPreference.show ||
+        adultPlaybackPreference == ContentFilterPreference.show) {
+      return;
+    }
+    await _notifyAdultMediaAccessRevoked();
+  }
+
+  Future<void> _notifyAdultMediaAccessRevoked() async {
+    final callback = _onAdultMediaAccessRevoked;
+    if (callback == null) return;
+    try {
+      await callback();
+    } catch (e) {
+      Log.error(
+        'Error clearing adult media access caches: $e',
+        name: 'ContentFilterService',
+        category: LogCategory.system,
+      );
+    }
   }
 
   /// Parse a preference from its string name.

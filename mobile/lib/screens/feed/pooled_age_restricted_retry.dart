@@ -10,6 +10,7 @@ import 'package:openvine/blocs/video_playback_status/video_playback_status_state
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/utils/blossom_blob_hash.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 const _logName = 'PooledAgeRestrictedRetry';
@@ -207,22 +208,9 @@ _PooledRetryInput? _resolveRetryInput(
 
   return _PooledRetryInput(
     videoUrl: videoUrl,
-    sha256: resolveSha256(
-      explicitSha256: video.sha256,
-      videoUrl: videoUrl,
-    ),
-    serverUrl: _extractServerUrl(videoUrl),
+    sha256: resolveSha256(explicitSha256: video.sha256, videoUrl: videoUrl),
+    serverUrl: extractMediaServerUrl(videoUrl),
   );
-}
-
-String? _extractServerUrl(String videoUrl) {
-  try {
-    final uri = Uri.parse(videoUrl);
-    final portSuffix = uri.hasPort ? ':${uri.port}' : '';
-    return '${uri.scheme}://${uri.host}$portSuffix';
-  } catch (_) {
-    return null;
-  }
 }
 
 class _PooledRetryInput {
