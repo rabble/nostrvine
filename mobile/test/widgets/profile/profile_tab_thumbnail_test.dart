@@ -5,7 +5,7 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/blurhash_display.dart';
 import 'package:openvine/widgets/profile/profile_tab_thumbnail.dart';
 import 'package:openvine/widgets/profile/profile_tab_thumbnail_placeholder.dart';
-import 'package:openvine/widgets/vine_cached_image.dart';
+import 'package:openvine/widgets/video_thumbnail_widget.dart';
 
 void main() {
   group(ProfileTabThumbnail, () {
@@ -39,7 +39,7 @@ void main() {
         await tester.pumpWidget(buildSubject());
 
         expect(find.byType(ProfileTabThumbnailPlaceholder), findsOneWidget);
-        expect(find.byType(VineCachedImage), findsNothing);
+        expect(find.byType(PassiveAuthThumbnailImage), findsNothing);
       });
 
       testWidgets(
@@ -48,29 +48,29 @@ void main() {
           await tester.pumpWidget(buildSubject(thumbnailUrl: ''));
 
           expect(find.byType(ProfileTabThumbnailPlaceholder), findsOneWidget);
-          expect(find.byType(VineCachedImage), findsNothing);
+          expect(find.byType(PassiveAuthThumbnailImage), findsNothing);
         },
       );
 
-      testWidgets('$VineCachedImage when thumbnailUrl is non-empty', (
+      testWidgets('$PassiveAuthThumbnailImage when thumbnailUrl is non-empty', (
         tester,
       ) async {
         await tester.pumpWidget(
           buildSubject(thumbnailUrl: 'https://example.com/thumb.jpg'),
         );
 
-        expect(find.byType(VineCachedImage), findsOneWidget);
+        expect(find.byType(PassiveAuthThumbnailImage), findsOneWidget);
       });
 
       testWidgets(
-        '$VineCachedImage with default fade durations when not precached',
+        '$PassiveAuthThumbnailImage with default fade durations when not precached',
         (tester) async {
           await tester.pumpWidget(
             buildSubject(thumbnailUrl: 'https://example.com/thumb.jpg'),
           );
 
-          final image = tester.widget<VineCachedImage>(
-            find.byType(VineCachedImage),
+          final image = tester.widget<PassiveAuthThumbnailImage>(
+            find.byType(PassiveAuthThumbnailImage),
           );
           expect(
             image.fadeInDuration,
@@ -83,29 +83,29 @@ void main() {
         },
       );
 
-      testWidgets('$VineCachedImage with zero fade durations when precached', (
-        tester,
-      ) async {
-        await tester.pumpWidget(
-          buildSubject(
-            thumbnailUrl: 'https://example.com/thumb.jpg',
-            isPrecached: true,
-          ),
-        );
+      testWidgets(
+        '$PassiveAuthThumbnailImage with zero fade durations when precached',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              thumbnailUrl: 'https://example.com/thumb.jpg',
+              isPrecached: true,
+            ),
+          );
 
-        final image = tester.widget<VineCachedImage>(
-          find.byType(VineCachedImage),
-        );
-        expect(image.fadeInDuration, equals(Duration.zero));
-        expect(image.fadeOutDuration, equals(Duration.zero));
-      });
+          final image = tester.widget<PassiveAuthThumbnailImage>(
+            find.byType(PassiveAuthThumbnailImage),
+          );
+          expect(image.fadeInDuration, equals(Duration.zero));
+          expect(image.fadeOutDuration, equals(Duration.zero));
+        },
+      );
 
       // memCacheWidth = tile_width × DPR caps decoded size; memCacheHeight
       // stays null so portrait thumbnails decode proportionally and
       // BoxFit.cover crops without upscaling. See PR #4220 (#4190).
       testWidgets(
-        '$VineCachedImage memCacheWidth matches tile width × devicePixelRatio '
-        'and memCacheHeight is null',
+        '$PassiveAuthThumbnailImage memCacheWidth matches tile width × devicePixelRatio',
         (tester) async {
           tester.view.devicePixelRatio = 1;
           addTearDown(tester.view.resetDevicePixelRatio);
@@ -114,12 +114,11 @@ void main() {
             buildSubject(thumbnailUrl: 'https://example.com/thumb.jpg'),
           );
 
-          final image = tester.widget<VineCachedImage>(
-            find.byType(VineCachedImage),
+          final image = tester.widget<PassiveAuthThumbnailImage>(
+            find.byType(PassiveAuthThumbnailImage),
           );
           // SizedBox is 100×100 and DPR is pinned to 1, so width = 100.
           expect(image.memCacheWidth, equals(100));
-          expect(image.memCacheHeight, isNull);
         },
       );
     });

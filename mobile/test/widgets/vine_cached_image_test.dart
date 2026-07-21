@@ -50,23 +50,6 @@ void main() {
       expect(provider.cacheManager, same(openVineImageCache));
     });
 
-    testWidgets('passes authHeaders to MediaCacheImageProvider', (
-      tester,
-    ) async {
-      const headers = {'Authorization': 'Nostr token'};
-
-      await tester.pumpWidget(
-        const Directionality(
-          textDirection: TextDirection.ltr,
-          child: VineCachedImage(imageUrl: testUrl, authHeaders: headers),
-        ),
-      );
-
-      final image = tester.widget<Image>(find.byType(Image));
-      final provider = image.image as MediaCacheImageProvider;
-      expect(provider.authHeaders, equals(headers));
-    });
-
     testWidgets('uses ResizeImage when memCache sizing is provided', (
       tester,
     ) async {
@@ -86,26 +69,6 @@ void main() {
       expect(resized.width, 256);
       expect(resized.height, 512);
       expect(resized.imageProvider, isA<MediaCacheImageProvider>());
-    });
-
-    testWidgets('passes authHeaders through ResizeImage', (tester) async {
-      const headers = {'Authorization': 'Nostr resized-token'};
-
-      await tester.pumpWidget(
-        const Directionality(
-          textDirection: TextDirection.ltr,
-          child: VineCachedImage(
-            imageUrl: testUrl,
-            memCacheWidth: 256,
-            authHeaders: headers,
-          ),
-        ),
-      );
-
-      final image = tester.widget<Image>(find.byType(Image));
-      final resized = image.image as ResizeImage;
-      final provider = resized.imageProvider as MediaCacheImageProvider;
-      expect(provider.authHeaders, equals(headers));
     });
 
     testWidgets('defaults fit to BoxFit.cover', (tester) async {

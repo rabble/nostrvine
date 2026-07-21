@@ -15,6 +15,7 @@ import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/relay_providers.dart';
 import 'package:openvine/providers/repository_providers.dart';
@@ -119,7 +120,10 @@ Stream<void> dmMessageRetryTriggerWithRelayRepair({
 
 /// Whether two connectivity reports describe the same set of transports.
 /// Order-insensitive: `connectivity_plus` gives no ordering guarantee.
-bool _sameConnectivity(List<ConnectivityResult> a, List<ConnectivityResult> b) {
+bool _sameConnectivity(
+  List<ConnectivityResult> a,
+  List<ConnectivityResult> b,
+) {
   final aSet = a.toSet();
   final bSet = b.toSet();
   return aSet.length == bSet.length && aSet.containsAll(bSet);
@@ -649,6 +653,9 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
         }
         try {
           await clearOpenVineImageCache();
+          ref
+              .read(adultMediaAccessRevocationVersionProvider.notifier)
+              .increment();
         } catch (e) {
           Log.warning(
             'Failed to clear image cache during user data cleanup: $e',

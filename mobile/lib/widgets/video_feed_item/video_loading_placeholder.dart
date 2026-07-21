@@ -1,7 +1,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
-import 'package:openvine/widgets/vine_cached_image.dart';
+import 'package:openvine/widgets/video_thumbnail_widget.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Loading placeholder shown while a video player initializes.
@@ -101,8 +101,9 @@ class _VideoLoadingPlaceholderState extends State<VideoLoadingPlaceholder> {
         fit: StackFit.expand,
         children: [
           ExcludeSemantics(
-            child: VineCachedImage(
-              imageUrl: widget.thumbnailUrl!,
+            child: PassiveAuthThumbnailImage(
+              url: widget.thumbnailUrl!,
+              videoId: widget.videoId,
               fit: boxFit,
               fadeInDuration: Duration.zero,
               fadeOutDuration: Duration.zero,
@@ -114,6 +115,8 @@ class _VideoLoadingPlaceholderState extends State<VideoLoadingPlaceholder> {
                 _logErrorIfNeeded(error);
                 return const SizedBox.shrink();
               },
+              logName: 'VideoLoadingPlaceholder',
+              logPrefix: 'Feed thumbnail',
             ),
           ),
           // Always show the loading indicator on top of the thumbnail so

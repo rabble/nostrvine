@@ -137,54 +137,6 @@ void main() {
       },
     );
 
-    test('passes authHeaders to cancellable cache fetch', () async {
-      const url = 'https://example.com/image.jpg';
-      const headers = {'Authorization': 'Nostr token'};
-      final cacheManager = _MockMediaCacheManager();
-      final download = FakeCancellableDownload(
-        url: url,
-        targetFile: File('$testTempPath/auth.jpg'),
-        headers: headers,
-      );
-      final operation = CancellableCacheOperation.fromDownload(download);
-
-      when(
-        () => cacheManager.getFileFromCache(url),
-      ).thenAnswer((_) async => null);
-      when(
-        () => cacheManager.cacheFileCancellable(
-          url,
-          key: url,
-          authHeaders: headers,
-        ),
-      ).thenReturn(operation);
-
-      final provider = MediaCacheImageProvider(
-        url,
-        cacheManager: cacheManager,
-        authHeaders: headers,
-      );
-      final completer = provider.loadImage(
-        provider,
-        (buffer, {getTargetSize}) => Completer<ui.Codec>().future,
-      );
-      final listener = ImageStreamListener((image, synchronousCall) {
-        image.dispose();
-      });
-
-      completer.addListener(listener);
-      await Future<void>.delayed(Duration.zero);
-
-      verify(
-        () => cacheManager.cacheFileCancellable(
-          url,
-          key: url,
-          authHeaders: headers,
-        ),
-      ).called(1);
-      completer.removeListener(listener);
-    });
-
     test('cacheKey and scale still participate in equality', () {
       const url = 'https://example.com/image.jpg';
       final cacheManager = _MockMediaCacheManager();
@@ -431,9 +383,7 @@ void main() {
 
       completer.addListener(listener);
       await Future<void>.delayed(Duration.zero);
-      download.completeResult(
-        const CancellableDownloadResult(file: null, statusCode: 403),
-      );
+      download.completeNull();
       await Future<void>.delayed(Duration.zero);
       await Future<void>.delayed(Duration.zero);
 
@@ -441,9 +391,7 @@ void main() {
       final failure = errors.single;
       expect(failure, isA<MediaCacheImageLoadException>());
       expect((failure as MediaCacheImageLoadException).url, equals(url));
-      expect(failure.statusCode, equals(403));
       expect(failure.toString(), contains(url));
-      expect(failure.toString(), contains('HTTP 403'));
       expect(failure.toString(), contains('download completed without a file'));
       expect(
         PaintingBinding.instance.imageCache.containsKey(provider),

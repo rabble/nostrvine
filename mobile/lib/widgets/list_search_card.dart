@@ -7,7 +7,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart' hide AspectRatio;
 import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
-import 'package:openvine/widgets/vine_cached_image.dart';
+import 'package:openvine/widgets/video_thumbnail_widget.dart';
 
 /// Number of portrait card slots to display.
 const _thumbnailSlotCount = 5;
@@ -172,9 +172,11 @@ class _ThumbnailCard extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(_cardRadius),
         child: imageUrl != null
-            ? VineCachedImage(
-                imageUrl: imageUrl!,
+            ? PassiveAuthThumbnailImage(
+                url: imageUrl!,
                 errorWidget: (_, _, _) => const SizedBox(),
+                logName: 'CuratedListSearchCard',
+                logPrefix: 'List thumbnail',
               )
             : const SizedBox(),
       ),

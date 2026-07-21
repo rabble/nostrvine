@@ -51,12 +51,17 @@ class _SyncImageProvider extends ImageProvider<_SyncImageProvider> {
 
 class _MockMediaAuthInterceptor extends Mock implements MediaAuthInterceptor {}
 
+class _TestContentFilterVersion extends ContentFilterVersion {
+  @override
+  int build() => 0;
+}
+
 List<Override> _passiveAuthProviderOverrides(
   MediaAuthInterceptor mediaAuthInterceptor,
 ) => [
   mediaAuthInterceptorProvider.overrideWithValue(mediaAuthInterceptor),
   currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
-  contentFilterVersionProvider.overrideWithValue(0),
+  contentFilterVersionProvider.overrideWith(_TestContentFilterVersion.new),
 ];
 
 /// Creates a [ui.Image] of exactly [width] x [height] without an async decode.
@@ -400,7 +405,7 @@ void main() {
       cachedImage.errorWidget!(
         tester.element(find.byType(VineCachedImage)),
         url,
-        const MediaCacheImageLoadException(url, statusCode: 401),
+        const MediaCacheImageLoadException(url),
       );
 
       await tester.pump();
@@ -470,13 +475,105 @@ void main() {
         ProviderScope.containerOf(
           tester.element(find.byType(VideoThumbnailWidget)),
           listen: false,
-        ).read(adultMediaAccessRevocationVersionProvider.notifier).state++;
+        ).read(adultMediaAccessRevocationVersionProvider.notifier).increment();
         await tester.pump();
 
         image = tester.widget<Image>(find.byType(Image));
         resizedProvider = image.image as ResizeImage;
         networkProvider = resizedProvider.imageProvider as NetworkImage;
         expect(networkProvider.headers, isNull);
+      },
+    );
+
+    testWidgets(
+      'retries same mounted Divine thumbnail after content filter generation changes',
+      (tester) async {
+        final mediaAuthInterceptor = _MockMediaAuthInterceptor();
+        const hash =
+            '72d7eda61074b17e077fb9f4a8b48166cdeb65cb07e053aafa6e69d5fa165995';
+        const url = 'https://media.divine.video/$hash.jpg';
+        when(
+          () => mediaAuthInterceptor.createPassiveAuthHeadersForAdultMedia(
+            sha256Hash: any(named: 'sha256Hash'),
+            serverUrl: any(named: 'serverUrl'),
+          ),
+        ).thenAnswer((_) async => const ViewerAuthUnavailable());
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: _passiveAuthProviderOverrides(mediaAuthInterceptor),
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: VideoThumbnailWidget(
+                  video: createTestVideoEvent(
+                    id: 'test-content-filter-rearm-thumb',
+                    thumbnailUrl: url,
+                  ),
+                  width: 200,
+                  height: 200,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        var image = tester.widget<Image>(find.byType(Image));
+        image.errorBuilder!(
+          tester.element(find.byType(Image)),
+          NetworkImageLoadException(statusCode: 401, uri: Uri.parse(url)),
+          StackTrace.current,
+        );
+        await tester.pump();
+        await tester.pump();
+
+        verify(
+          () => mediaAuthInterceptor.createPassiveAuthHeadersForAdultMedia(
+            sha256Hash: hash,
+            serverUrl: 'https://media.divine.video',
+          ),
+        ).called(1);
+
+        when(
+          () => mediaAuthInterceptor.createPassiveAuthHeadersForAdultMedia(
+            sha256Hash: any(named: 'sha256Hash'),
+            serverUrl: any(named: 'serverUrl'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              const ViewerAuthAuthorized({'Authorization': 'Nostr token'}),
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(VideoThumbnailWidget)),
+          listen: false,
+        );
+        container.read(contentFilterVersionProvider.notifier).increment();
+        await tester.pump();
+
+        image = tester.widget<Image>(find.byType(Image));
+        image.errorBuilder!(
+          tester.element(find.byType(Image)),
+          NetworkImageLoadException(statusCode: 401, uri: Uri.parse(url)),
+          StackTrace.current,
+        );
+        await tester.pump();
+        await tester.pump();
+
+        final retriedImage = tester.widget<Image>(find.byType(Image));
+        final resizedProvider = retriedImage.image as ResizeImage;
+        final networkProvider = resizedProvider.imageProvider as NetworkImage;
+        expect(
+          networkProvider.headers,
+          equals({'Authorization': 'Nostr token'}),
+        );
+        verify(
+          () => mediaAuthInterceptor.createPassiveAuthHeadersForAdultMedia(
+            sha256Hash: hash,
+            serverUrl: 'https://media.divine.video',
+          ),
+        ).called(1);
       },
     );
 

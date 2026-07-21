@@ -302,56 +302,6 @@ final class ContentFilterServiceProvider
 String _$contentFilterServiceHash() =>
     r'5a65a3122d6eed3dfa908e99ec098562b6d33b82';
 
-/// Tracks content filter preference changes. Feed providers watch this
-/// to rebuild when the user changes a Show/Warn/Hide setting.
-
-@ProviderFor(contentFilterVersion)
-final contentFilterVersionProvider = ContentFilterVersionProvider._();
-
-/// Tracks content filter preference changes. Feed providers watch this
-/// to rebuild when the user changes a Show/Warn/Hide setting.
-
-final class ContentFilterVersionProvider
-    extends $FunctionalProvider<int, int, int>
-    with $Provider<int> {
-  /// Tracks content filter preference changes. Feed providers watch this
-  /// to rebuild when the user changes a Show/Warn/Hide setting.
-  ContentFilterVersionProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'contentFilterVersionProvider',
-        isAutoDispose: false,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$contentFilterVersionHash();
-
-  @$internal
-  @override
-  $ProviderElement<int> $createElement($ProviderPointer pointer) =>
-      $ProviderElement(pointer);
-
-  @override
-  int create(Ref ref) {
-    return contentFilterVersion(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(int value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<int>(value),
-    );
-  }
-}
-
-String _$contentFilterVersionHash() =>
-    r'56673804308df57936c83187968f318735b4869e';
-
 /// Account label service for self-labeling content (NIP-32 Kind 1985).
 
 @ProviderFor(accountLabelService)

@@ -4,7 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:openvine/widgets/blurhash_display.dart';
 import 'package:openvine/widgets/profile/profile_tab_thumbnail_placeholder.dart';
-import 'package:openvine/widgets/vine_cached_image.dart';
+import 'package:openvine/widgets/video_thumbnail_widget.dart';
 
 /// Cached thumbnail for profile grid tiles.
 ///
@@ -37,8 +37,8 @@ class ProfileTabThumbnail extends StatelessWidget {
           final memCacheWidth = rawWidth.isFinite && rawWidth > 0
               ? (rawWidth * MediaQuery.devicePixelRatioOf(context)).round()
               : null;
-          return VineCachedImage(
-            imageUrl: thumbnailUrl!,
+          return PassiveAuthThumbnailImage(
+            url: thumbnailUrl!,
             memCacheWidth: memCacheWidth,
             fadeInDuration: isPrecached
                 ? Duration.zero
@@ -48,6 +48,8 @@ class ProfileTabThumbnail extends StatelessWidget {
                 : const Duration(milliseconds: 1000),
             placeholder: (context, url) => _Fallback(blurhash: blurhash),
             errorWidget: (context, url, error) => _Fallback(blurhash: blurhash),
+            logName: 'ProfileTabThumbnail',
+            logPrefix: 'Profile thumbnail',
           );
         },
       );

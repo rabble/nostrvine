@@ -45,7 +45,6 @@ class VineCachedImage extends StatefulWidget {
     this.errorWidget,
     this.memCacheWidth,
     this.memCacheHeight,
-    this.authHeaders,
     this.fadeInDuration = const Duration(milliseconds: 500),
     this.fadeOutDuration = const Duration(milliseconds: 1000),
     this.onImageDimensionsResolved,
@@ -60,7 +59,6 @@ class VineCachedImage extends StatefulWidget {
   final LoadingErrorWidgetBuilder? errorWidget;
   final int? memCacheWidth;
   final int? memCacheHeight;
-  final Map<String, String>? authHeaders;
   final Duration fadeInDuration;
   final Duration fadeOutDuration;
   final ImageDimensionsResolved? onImageDimensionsResolved;
@@ -78,11 +76,7 @@ class _VineCachedImageState extends State<VineCachedImage> {
   ImageProvider<Object> get _imageProvider => ResizeImage.resizeIfNeeded(
     widget.memCacheWidth,
     widget.memCacheHeight,
-    MediaCacheImageProvider(
-      widget.imageUrl,
-      cacheManager: _activeImageCache,
-      authHeaders: widget.authHeaders,
-    ),
+    MediaCacheImageProvider(widget.imageUrl, cacheManager: _activeImageCache),
   );
 
   @override
@@ -96,8 +90,7 @@ class _VineCachedImageState extends State<VineCachedImage> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.imageUrl != widget.imageUrl ||
         oldWidget.memCacheWidth != widget.memCacheWidth ||
-        oldWidget.memCacheHeight != widget.memCacheHeight ||
-        !_mapEquals(oldWidget.authHeaders, widget.authHeaders)) {
+        oldWidget.memCacheHeight != widget.memCacheHeight) {
       _resolveImageStream();
     }
   }
@@ -224,15 +217,6 @@ class _VineCachedImageState extends State<VineCachedImage> {
       ],
     );
   }
-}
-
-bool _mapEquals(Map<String, String>? a, Map<String, String>? b) {
-  if (identical(a, b)) return true;
-  if (a == null || b == null || a.length != b.length) return false;
-  for (final entry in a.entries) {
-    if (b[entry.key] != entry.value) return false;
-  }
-  return true;
 }
 
 class _Placeholder extends StatelessWidget {

@@ -8,6 +8,8 @@ final openVineImageCache = MediaCacheManager(
 
 /// Clears Flutter's in-memory image caches and the shared thumbnail disk cache.
 Future<void> clearOpenVineImageCache() async {
+  // Clear all image entries, not only thumbnails, so revoked adult-media auth
+  // cannot survive in live ImageProviders or shared cache-manager files.
   final imageCache = PaintingBinding.instance.imageCache;
   imageCache.clear();
   imageCache.clearLiveImages();
