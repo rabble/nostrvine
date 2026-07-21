@@ -29,13 +29,12 @@ class VideoRecorderBottomBar extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.only(bottom: 4),
           child: Stack(
+            alignment: .center,
             children: [
-              Align(
-                child: VideoRecorderModeSelectorWheel(
-                  selectedMode: state.recorderMode,
-                  onModeChanged: (mode) => context
-                      .read<VideoRecorderBloc>()
-                      .add(VideoRecorderRecorderModeSet(mode)),
+              VideoRecorderModeSelectorWheel(
+                selectedMode: state.recorderMode,
+                onModeChanged: (mode) => context.read<VideoRecorderBloc>().add(
+                  VideoRecorderRecorderModeSet(mode),
                 ),
               ),
               const Align(

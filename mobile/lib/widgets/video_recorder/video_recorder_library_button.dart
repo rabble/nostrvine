@@ -75,7 +75,8 @@ class _VideoRecorderLibraryButtonState
             ? context.l10n.videoRecorderLibraryOpenLabel(clips.length)
             : context.l10n.videoRecorderLibraryEmptyLabel,
         enabled: hasClips,
-        child: InkWell(
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
           onTap: hasClips
               ? () async {
                   await openRecorderLibrary(context, ref);

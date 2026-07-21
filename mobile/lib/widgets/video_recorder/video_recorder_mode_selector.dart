@@ -122,7 +122,7 @@ class _VideoRecorderModeSelectorWheelState
       builder: (context, constraints) {
         final sidePadding = (constraints.maxWidth - _itemExtent) / 2;
         return SizedBox(
-          height: _pillHeight,
+          height: kMinInteractiveDimension,
           child: Stack(
             alignment: .center,
             children: [

@@ -225,7 +225,7 @@ void main() {
     });
 
     group('enabled/onTap consistency', () {
-      testWidgets('InkWell onTap is non-null when clips exist '
+      testWidgets('GestureDetector onTap is non-null when clips exist '
           'but thumbnailPath is null', (tester) async {
         // Session clips without thumbnails — button should still be enabled
         final clips = [
@@ -243,11 +243,18 @@ void main() {
         await tester.pumpWidget(buildWidget(clips: clips));
         await tester.pumpAndSettle();
 
-        final inkWell = tester.widget<InkWell>(find.byType(InkWell));
-        expect(inkWell.onTap, isNotNull);
+        final detector = tester
+            .widgetList<GestureDetector>(
+              find.descendant(
+                of: find.byType(VideoRecorderLibraryButton),
+                matching: find.byType(GestureDetector),
+              ),
+            )
+            .first;
+        expect(detector.onTap, isNotNull);
       });
 
-      testWidgets('InkWell onTap is non-null when no session clips '
+      testWidgets('GestureDetector onTap is non-null when no session clips '
           'but library has clips', (tester) async {
         // No session clips, but library service returns clips
         final libraryClip = DivineVideoClip(
@@ -267,11 +274,18 @@ void main() {
         await tester.pumpWidget(buildWidget());
         await tester.pumpAndSettle();
 
-        final inkWell = tester.widget<InkWell>(find.byType(InkWell));
-        expect(inkWell.onTap, isNotNull);
+        final detector = tester
+            .widgetList<GestureDetector>(
+              find.descendant(
+                of: find.byType(VideoRecorderLibraryButton),
+                matching: find.byType(GestureDetector),
+              ),
+            )
+            .first;
+        expect(detector.onTap, isNotNull);
       });
 
-      testWidgets('Semantics.enabled matches InkWell.onTap presence', (
+      testWidgets('Semantics.enabled matches GestureDetector.onTap presence', (
         tester,
       ) async {
         final clips = [
@@ -288,7 +302,14 @@ void main() {
         await tester.pumpWidget(buildWidget(clips: clips));
         await tester.pumpAndSettle();
 
-        final inkWell = tester.widget<InkWell>(find.byType(InkWell));
+        final detector = tester
+            .widgetList<GestureDetector>(
+              find.descendant(
+                of: find.byType(VideoRecorderLibraryButton),
+                matching: find.byType(GestureDetector),
+              ),
+            )
+            .first;
         final semantics = tester.widget<Semantics>(
           find
               .descendant(
@@ -299,7 +320,7 @@ void main() {
         );
 
         // Both should agree: button is enabled
-        expect(inkWell.onTap, isNotNull);
+        expect(detector.onTap, isNotNull);
         expect(semantics.properties.enabled, isTrue);
       });
     });

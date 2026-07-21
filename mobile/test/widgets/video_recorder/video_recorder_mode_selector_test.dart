@@ -105,13 +105,40 @@ void main() {
     });
 
     group('accessibility', () {
-      testWidgets('has Semantics for each mode', (tester) async {
+      testWidgets('each mode is exposed as a selectable Semantics button', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildWidget(mode: VideoRecorderMode.capture));
+        await tester.pumpAndSettle();
+
+        for (final mode in VideoRecorderMode.values) {
+          final semantics = tester
+              .widgetList<Semantics>(find.byType(Semantics))
+              .firstWhere((s) => s.properties.label == mode.label);
+          expect(semantics.properties.button, isTrue);
+          expect(
+            semantics.properties.selected,
+            mode == VideoRecorderMode.capture,
+          );
+        }
+      });
+
+      testWidgets('each mode tap target meets the 48dp minimum', (
+        tester,
+      ) async {
         await tester.pumpWidget(buildWidget());
         await tester.pumpAndSettle();
 
-        // Each mode should have a Text widget with the mode label
-        for (final mode in VideoRecorderMode.values) {
-          expect(find.text(mode.label), findsOneWidget);
+        final targets = find.descendant(
+          of: find.byType(ListView),
+          matching: find.byType(GestureDetector),
+        );
+        expect(targets, findsWidgets);
+        for (final target in targets.evaluate()) {
+          expect(
+            tester.getSize(find.byWidget(target.widget)).height,
+            greaterThanOrEqualTo(kMinInteractiveDimension),
+          );
         }
       });
     });
