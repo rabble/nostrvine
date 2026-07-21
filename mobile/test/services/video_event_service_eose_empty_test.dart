@@ -212,31 +212,46 @@ void main() {
         capturedOnEose!();
         await pumpEventQueue();
 
-        final capturedFilters =
-            verify(
-                  () => mockNostrService.queryEvents(captureAny()),
-                ).captured.single
-                as List<Filter>;
+        final capturedCalls = verify(
+          () => mockNostrService.queryEvents(captureAny()),
+        ).captured.cast<List<Filter>>();
 
-        expect(capturedFilters, hasLength(2));
         expect(
-          capturedFilters.every(
+          capturedCalls,
+          hasLength(2),
+          reason:
+              'Each subscription filter is probed separately so the local '
+              'cache is consulted (queryEvents only reads cache for '
+              'single-filter queries).',
+        );
+        expect(
+          capturedCalls.every((filters) => filters.length == 1),
+          isTrue,
+          reason: 'Probe must query one filter at a time to hit the cache',
+        );
+
+        final probeFilters = capturedCalls
+            .map((filters) => filters.single)
+            .toList();
+
+        expect(
+          probeFilters.every(
             (filter) => filter.authors != null && filter.authors!.isNotEmpty,
           ),
           isTrue,
           reason: 'Diagnostic probe must not fall back to a global video query',
         );
         expect(
-          capturedFilters.map((filter) => filter.authors).toList(),
+          probeFilters.map((filter) => filter.authors).toList(),
           everyElement(equals([_profileAuthor])),
         );
         expect(
-          capturedFilters.first.kinds,
+          probeFilters.first.kinds,
           equals(NIP71VideoKinds.getAllVideoKinds()),
         );
-        expect(capturedFilters.first.limit, 100);
-        expect(capturedFilters.last.kinds, equals([16]));
-        expect(capturedFilters.last.limit, 50);
+        expect(probeFilters.first.limit, 100);
+        expect(probeFilters.last.kinds, equals([16]));
+        expect(probeFilters.last.limit, 50);
       },
     );
 

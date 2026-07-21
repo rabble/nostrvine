@@ -5984,7 +5984,10 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       }
 
       // 3. Test direct query with the same filters to see if matching events
-      // exist in the database.
+      // exist in the database. queryEvents only consults the local cache for
+      // single-filter queries, so probe each filter separately — otherwise
+      // repost-enabled (multi-filter) feeds skip the cache entirely and the
+      // "subscription broken" branch below can never fire.
       final diagnosticFilters = _buildDiagnosticProbeFilters(filters);
       Log.warning(
         '🔍 Testing direct database query with subscription filters (bypassing subscription)...',
@@ -5992,9 +5995,12 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         category: LogCategory.video,
       );
 
-      final directQueryEvents = await _nostrService.queryEvents(
-        diagnosticFilters,
-      );
+      final directQueryEvents = <Event>[];
+      for (final diagnosticFilter in diagnosticFilters) {
+        directQueryEvents.addAll(
+          await _nostrService.queryEvents([diagnosticFilter]),
+        );
+      }
 
       Log.warning(
         '✅ Filtered direct query returned ${directQueryEvents.length} matching events',
@@ -6009,7 +6015,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           category: LogCategory.video,
         );
         Log.info(
-          '   This is an expected empty state for sparse/profile feeds when the author or filter has no videos.',
+          '   Expected when the requested authors or filters have no matching cached videos.',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
