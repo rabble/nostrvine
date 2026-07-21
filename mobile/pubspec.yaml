@@ -314,7 +314,7 @@ dependencies:
   firebase_performance: ^0.11.1+4
   firebase_messaging: ^16.1.1
   audio_session: ^0.2.2
-  pro_video_editor: ^2.6.0
+  pro_video_editor: ^2.7.1
   pro_image_editor: ^13.2.0
   flutter_colorpicker: ^1.1.0
   file_picker: ^10.3.7
