@@ -283,7 +283,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     // A new clip supersedes any pending undo from a previous tap.
     if (state.pendingDeletion != null) {
       _cancelPendingDeletionTimer();
-      unawaited(_commitPendingDeletion());
+      unawaited(commitPendingDeletion());
     }
 
     final clip = DivineVideoClip(
