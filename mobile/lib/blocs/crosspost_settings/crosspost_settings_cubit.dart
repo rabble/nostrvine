@@ -30,13 +30,13 @@ class CrosspostSettingsCubit extends Cubit<CrosspostSettingsState> {
     try {
       final result = await _apiClient.getStatus();
       emit(
-        state.copyWith(
+        CrosspostSettingsState(
           status: CrosspostSettingsStatus.loaded,
           enabled: result.crosspostEnabled,
           username: result.username,
           handle: result.handle,
           provisioningState: result.provisioningState,
-          clearError: true,
+          attempt: state.attempt,
         ),
       );
     } catch (e, stackTrace) {

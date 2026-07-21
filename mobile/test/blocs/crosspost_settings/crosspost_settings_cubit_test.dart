@@ -27,9 +27,7 @@ void main() {
 
     group('initial state', () {
       test('is CrosspostSettingsState with initial status', () {
-        when(
-          () => apiClient.getStatus(),
-        ).thenAnswer((_) async => loadedStatus);
+        when(() => apiClient.getStatus()).thenAnswer((_) async => loadedStatus);
         final cubit = CrosspostSettingsCubit(
           apiClient: apiClient,
           pubkey: testPubkey,
@@ -41,9 +39,7 @@ void main() {
 
     group('loadStatus', () {
       test('emits loaded state on successful status fetch', () async {
-        when(
-          () => apiClient.getStatus(),
-        ).thenAnswer((_) async => loadedStatus);
+        when(() => apiClient.getStatus()).thenAnswer((_) async => loadedStatus);
 
         final cubit = CrosspostSettingsCubit(
           apiClient: apiClient,
@@ -91,6 +87,37 @@ void main() {
         expect(cubit.state.status, CrosspostSettingsStatus.loaded);
         expect(cubit.state.enabled, isFalse);
       });
+
+      test(
+        'clears nullable status fields when latest status omits them',
+        () async {
+          var getStatusCallCount = 0;
+          when(() => apiClient.getStatus()).thenAnswer((_) async {
+            getStatusCallCount += 1;
+            if (getStatusCallCount == 1) return loadedStatus;
+            return const CrosspostStatus(crosspostEnabled: false);
+          });
+
+          final cubit = CrosspostSettingsCubit(
+            apiClient: apiClient,
+            pubkey: testPubkey,
+          );
+          addTearDown(cubit.close);
+          await Future<void>.delayed(Duration.zero);
+
+          expect(cubit.state.username, 'testuser');
+          expect(cubit.state.handle, 'testuser.divine.video');
+          expect(cubit.state.provisioningState, 'ready');
+
+          await cubit.loadStatus();
+
+          expect(cubit.state.status, CrosspostSettingsStatus.loaded);
+          expect(cubit.state.enabled, isFalse);
+          expect(cubit.state.username, isNull);
+          expect(cubit.state.handle, isNull);
+          expect(cubit.state.provisioningState, isNull);
+        },
+      );
     });
 
     group('toggleCrosspost', () {
@@ -320,9 +347,7 @@ void main() {
 
       test('emits toggling state optimistically before API call', () async {
         final completer = Completer<CrosspostStatus>();
-        when(
-          () => apiClient.getStatus(),
-        ).thenAnswer((_) async => loadedStatus);
+        when(() => apiClient.getStatus()).thenAnswer((_) async => loadedStatus);
         when(
           () => apiClient.setCrosspost(pubkey: testPubkey, enabled: false),
         ).thenAnswer((_) => completer.future);
