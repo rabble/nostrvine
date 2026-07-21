@@ -728,9 +728,9 @@ void main() {
   // from the drawn strip by a gap width near each boundary.
   //
   //   clips: c0 = 4 s, c1 = 4 s with a 500 ms dissolve loop wrap
-  //   → consumed = 1 s per side, display c0 = 3 s, c1 = 3 s, seam = 1.5 s
-  //   display layout @ pps 52, clipGap 1:
-  //     [0…156 px] gap [157…313 px]  seam [313…391 px]  (total 7.5 s → 390 px)
+  //   → consumed = 500 ms per side (the blend fills it), display c0 = 3500 ms,
+  //     c1 = 3500 ms, seam = 500 ms. Total is still 7.5 s → 390 px since only
+  //     the 500 ms blend shortens the export.
   group('loop-wrap-aware geometry', () {
     const dissolve = ClipTransition(type: ClipTransitionType.dissolve);
     final wrapClips = [
@@ -748,42 +748,45 @@ void main() {
     const clipGap = 1.0;
 
     test('LoopWrapDisplay carries the expected consumed span', () {
-      expect(wrap.consumedPerSide, equals(const Duration(seconds: 1)));
+      expect(
+        wrap.consumedPerSide,
+        equals(const Duration(milliseconds: 500)),
+      );
       expect(wrap.displayTotal(wrapClips), equals(displayTotal));
     });
 
     test('positionToOffset counts the gap on the display boundary', () {
-      // 3.5 s is 0.5 s into c1 on the display axis (c1 starts at display 3 s),
-      // so the gap after c0 is already crossed → +1 gap.
-      const pos = Duration(milliseconds: 3500);
+      // 3.6 s is past c1's display start (3500 ms), so the gap after c0 is
+      // already crossed → +1 gap.
+      const pos = Duration(milliseconds: 3600);
       expect(
         timelinePositionToScrollOffset(wrapClips, pos, pps, wrap: wrap),
-        equals(3.5 * pps + clipGap),
+        equals(3.6 * pps + clipGap),
       );
     });
 
     test('positionToOffset without the wrap misses the display gap', () {
-      // Without the wrap the raw c0 duration (4 s) still contains 3.5 s, so the
+      // Without the wrap the raw c0 duration (4 s) still contains 3.6 s, so the
       // gap is not counted — the drift the wrap parameter fixes.
-      const pos = Duration(milliseconds: 3500);
+      const pos = Duration(milliseconds: 3600);
       expect(
         timelinePositionToScrollOffset(wrapClips, pos, pps),
-        equals(3.5 * pps),
+        equals(3.6 * pps),
       );
     });
 
     test('positionToOffset maps the seam region past every clip gap', () {
-      // 6.5 s is 0.5 s into the seam (bodies end at display 6 s); one gap sits
-      // before it (between c0 and c1).
-      const pos = Duration(milliseconds: 6500);
+      // Bodies end at display 7000 ms (2×3500 ms), so 7.25 s is inside the seam
+      // region; one gap sits before it (between c0 and c1).
+      const pos = Duration(milliseconds: 7250);
       expect(
         timelinePositionToScrollOffset(wrapClips, pos, pps, wrap: wrap),
-        equals(6.5 * pps + clipGap),
+        equals(7.25 * pps + clipGap),
       );
     });
 
     test('offsetToPosition round-trips a display-axis position', () {
-      const pos = Duration(milliseconds: 3500);
+      const pos = Duration(milliseconds: 3600);
       final offset = timelinePositionToScrollOffset(
         wrapClips,
         pos,

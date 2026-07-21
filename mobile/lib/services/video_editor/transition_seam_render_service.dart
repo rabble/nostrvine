@@ -279,9 +279,9 @@ class TransitionSeamRenderService {
   /// `_render` converts [consumed] back into each clip's own source time for
   /// trimming.
   ///
-  /// For overlaps the blend is always half the consumed span, guaranteeing a
-  /// solo lead-in/out on each side (a segment equal to the blend degenerates
-  /// into a hard cut).
+  /// For overlaps the blend fills the consumed span (blend == consumed): the
+  /// two clips overlap for the whole consumed span, with no solo lead — the
+  /// native compositor renders the fully-consumed overlap.
   @visibleForTesting
   ({Duration consumed, Duration blend, ClipTransition seamTransition})
   computeSeamSpans(
@@ -295,11 +295,12 @@ class TransitionSeamRenderService {
       transition,
     );
     if (_isOverlap(transition.type)) {
-      final blend = _half(consumed);
       return (
         consumed: consumed,
-        blend: blend,
-        seamTransition: transition.copyWith(duration: blend),
+        blend: consumed,
+        seamTransition: transition.duration == consumed
+            ? transition
+            : transition.copyWith(duration: consumed),
       );
     }
     final dip = _min(transition.duration, consumed * 2);
@@ -370,8 +371,6 @@ class TransitionSeamRenderService {
   bool _isOverlap(ClipTransitionType type) =>
       type != ClipTransitionType.fadeToBlack &&
       type != ClipTransitionType.fadeToWhite;
-
-  Duration _half(Duration d) => Duration(microseconds: d.inMicroseconds ~/ 2);
 
   Duration _min(Duration a, Duration b) => a < b ? a : b;
 
