@@ -14,7 +14,9 @@ import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/services/auth/nostr_identity.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
+import 'package:openvine/utils/divine_login_banner_dismissal.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
 
 import '../helpers/shared_channel_override.dart';
 
@@ -22,6 +24,26 @@ class _MockUserDataCleanupService extends Mock
     implements UserDataCleanupService {}
 
 class _MockKeycastOAuth extends Mock implements KeycastOAuth {}
+
+class _DelayingSharedPreferencesStore extends InMemorySharedPreferencesStore {
+  _DelayingSharedPreferencesStore.withData(
+    super.data, {
+    required this.delayedRemoveKey,
+  }) : super.withData();
+
+  final String delayedRemoveKey;
+  final removeStarted = Completer<void>();
+  final allowRemove = Completer<void>();
+
+  @override
+  Future<bool> remove(String key) async {
+    if (key == delayedRemoveKey && !removeStarted.isCompleted) {
+      removeStarted.complete();
+      await allowRemove.future;
+    }
+    return super.remove(key);
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -108,15 +130,18 @@ void main() {
 
     /// Helper: stores an expired Keycast session and a valid local nsec
     void arrangeExpiredSessionWithLocalKeys() {
+      final privateKeyHex = generatePrivateKey();
+      final container = SecureKeyContainer.fromPrivateKeyHex(privateKeyHex);
       final expiredSession = KeycastSession(
         bunkerUrl: 'https://login.divine.video/api/nostr',
         accessToken: 'expired_token_abc123',
         expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
+        refreshToken: 'refresh_token_still_valid',
+        userPubkey: container.publicKeyHex,
       );
       secureStorage['keycast_session'] = jsonEncode(expiredSession.toJson());
+      secureStorage['keycast_refresh_token'] = 'refresh_token_still_valid';
 
-      final privateKeyHex = generatePrivateKey();
-      final container = SecureKeyContainer.fromPrivateKeyHex(privateKeyHex);
       secureStorage['nostr_primary_key'] =
           'privateKeyHex:$privateKeyHex'
           '|publicKeyHex:${container.publicKeyHex}'
@@ -128,13 +153,46 @@ void main() {
       final keyStorage = SecureKeyStorage(
         securityConfig: const SecurityConfig(requireHardwareBacked: false),
       );
-      return AuthService(
+      final authService = AuthService(
         userDataCleanupService: mockCleanupService,
         keyStorage: keyStorage,
         oauthClient: mockOAuthClient,
         oauthRefreshTimeout:
             oauthRefreshTimeout ?? AuthService.rpcRefreshTimeout,
       );
+      addTearDown(authService.dispose);
+      return authService;
+    }
+
+    Future<void> waitForRpcUpgradeToSettle(AuthService authService) async {
+      await pumpEventQueue();
+      expect(authService.isRpcUpgradeInProgress, isFalse);
+    }
+
+    Future<void> runIgnoringMockedHttpErrors(
+      Future<void> Function() body,
+    ) async {
+      Object? unexpectedError;
+      StackTrace? unexpectedStack;
+
+      await runZonedGuarded(body, (error, stack) {
+        if (error is UnsupportedError && error.message == 'Mocked response') {
+          return;
+        }
+        unexpectedError ??= error;
+        unexpectedStack ??= stack;
+      });
+
+      if (unexpectedError != null) {
+        Error.throwWithStackTrace(unexpectedError!, unexpectedStack!);
+      }
+    }
+
+    Map<String, Object> prefixedSharedPreferencesData(SharedPreferences prefs) {
+      return {
+        for (final key in prefs.getKeys())
+          if (prefs.get(key) case final Object value) 'flutter.$key': value,
+      };
     }
 
     test(
@@ -156,45 +214,41 @@ void main() {
 
         final authService = createAuthService();
 
-        await runZonedGuarded(
-          () async {
-            await authService.initialize();
+        await runIgnoringMockedHttpErrors(() async {
+          await authService.initialize();
 
-            // Auth source preserved as divineOAuth, not downgraded
-            expect(
-              authService.authenticationSource,
-              equals(AuthenticationSource.divineOAuth),
-              reason:
-                  'Auth source should stay divineOAuth when refresh fails '
-                  'but local keys exist',
-            );
-            expect(
-              authService.isAnonymous,
-              isFalse,
-              reason:
-                  'isAnonymous should be false — user registered via OAuth, '
-                  'session just expired',
-            );
-            expect(authService.isAuthenticated, isTrue);
-            expect(
-              authService.hasExpiredOAuthSession,
-              isTrue,
-              reason:
-                  'hasExpiredOAuthSession should be true so UI can show '
-                  '"session expired" instead of "Secure Your Account"',
-            );
+          // Auth source preserved as divineOAuth, not downgraded
+          expect(
+            authService.authenticationSource,
+            equals(AuthenticationSource.divineOAuth),
+            reason:
+                'Auth source should stay divineOAuth when refresh fails '
+                'but local keys exist',
+          );
+          expect(
+            authService.isAnonymous,
+            isFalse,
+            reason:
+                'isAnonymous should be false — user registered via OAuth, '
+                'session just expired',
+          );
+          expect(authService.isAuthenticated, isTrue);
+          expect(
+            authService.hasExpiredOAuthSession,
+            isTrue,
+            reason:
+                'hasExpiredOAuthSession should be true so UI can show '
+                '"session expired" instead of "Secure Your Account"',
+          );
 
-            // Verify refresh was attempted
-            verify(
-              () => mockOAuthClient.refreshSession(
-                userPubkey: any(named: 'userPubkey'),
-              ),
-            ).called(1);
-          },
-          (error, stack) {
-            // Ignore background relay discovery errors
-          },
-        );
+          // Verify refresh was attempted
+          await waitForRpcUpgradeToSettle(authService);
+          verify(
+            () => mockOAuthClient.refreshSession(
+              userPubkey: any(named: 'userPubkey'),
+            ),
+          ).called(1);
+        });
       },
     );
 
@@ -307,14 +361,14 @@ void main() {
             'refresh_token_still_valid',
             reason: 'Offline launch must not discard the retry token.',
           );
+          final retryDeadline = DateTime.now().add(const Duration(seconds: 3));
+          while (refreshCalls < 2 && DateTime.now().isBefore(retryDeadline)) {
+            await Future<void>.delayed(const Duration(milliseconds: 10));
+          }
           expect(refreshCalls, equals(2));
 
           backgroundRefresh.complete(refreshedSession);
-          final deadline = DateTime.now().add(const Duration(seconds: 3));
-          while (authService.isRpcUpgradeInProgress &&
-              DateTime.now().isBefore(deadline)) {
-            await Future<void>.delayed(const Duration(milliseconds: 10));
-          }
+          await waitForRpcUpgradeToSettle(authService);
 
           expect(
             authService.authRpcCapability,
@@ -332,6 +386,558 @@ void main() {
           // Ignore background errors
         },
       );
+    });
+
+    test('degraded OAuth restore retries on resume but stays authenticated '
+        'when the device is still offline', () async {
+      SharedPreferences.setMockInitialValues({
+        'authentication_source': 'divineOAuth',
+        'tos_accepted': true,
+      });
+
+      final pubkey = 'ab' * 32;
+      final expiredSession = KeycastSession(
+        bunkerUrl: 'https://login.divine.video/api/nostr',
+        accessToken: 'expired_token',
+        expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
+        refreshToken: 'refresh_token_still_valid',
+        userPubkey: pubkey,
+      );
+      secureStorage['keycast_session'] = jsonEncode(expiredSession.toJson());
+      secureStorage['keycast_refresh_token'] = 'refresh_token_still_valid';
+
+      var refreshCalls = 0;
+      when(() => mockOAuthClient.getSession()).thenAnswer((_) async => null);
+      when(
+        () => mockOAuthClient.refreshSession(
+          userPubkey: any(named: 'userPubkey'),
+        ),
+      ).thenAnswer((_) {
+        refreshCalls++;
+        throw OAuthNetworkException('offline');
+      });
+
+      final authService = createAuthService();
+
+      await runIgnoringMockedHttpErrors(() async {
+        await authService.initialize();
+        await waitForRpcUpgradeToSettle(authService);
+
+        final authEvents = <AuthState>[];
+        final authSubscription = authService.authStateStream.listen(
+          authEvents.add,
+        );
+        addTearDown(authSubscription.cancel);
+
+        refreshCalls = 0;
+        authService.onAppResumed();
+        await waitForRpcUpgradeToSettle(authService);
+
+        expect(refreshCalls, equals(1));
+        expect(authService.authState, equals(AuthState.authenticated));
+        expect(authService.isAuthenticated, isTrue);
+        expect(authService.currentPublicKeyHex, pubkey);
+        expect(authService.currentIdentity, isA<PubkeyOnlyNostrIdentity>());
+        expect(authService.canPublishNostrWritesNow, isFalse);
+        expect(authService.hasExpiredOAuthSession, isTrue);
+        expect(
+          authEvents,
+          isEmpty,
+          reason:
+              'Failed offline resume retries leave degraded state unchanged '
+              'and should not nudge profile UI to re-show the expired sheet.',
+        );
+        expect(
+          secureStorage['keycast_refresh_token'],
+          'refresh_token_still_valid',
+          reason: 'Offline resume must not discard the retry token.',
+        );
+      });
+    });
+
+    test('degraded OAuth resume does not refresh another account token when '
+        'getSession returns null', () async {
+      SharedPreferences.setMockInitialValues({
+        'authentication_source': 'divineOAuth',
+        'tos_accepted': true,
+      });
+
+      final activePubkey = 'ab' * 32;
+      final otherPubkey = 'cd' * 32;
+      final expiredActiveSession = KeycastSession(
+        bunkerUrl: 'https://login.divine.video/api/nostr',
+        accessToken: 'expired_active_token',
+        expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
+        refreshToken: 'refresh_token_account_a',
+        userPubkey: activePubkey,
+      );
+      secureStorage['keycast_session'] = jsonEncode(
+        expiredActiveSession.toJson(),
+      );
+      secureStorage['keycast_refresh_token'] = 'refresh_token_account_a';
+
+      var refreshCalls = 0;
+      when(() => mockOAuthClient.getSession()).thenAnswer((_) async => null);
+      when(
+        () => mockOAuthClient.refreshSession(
+          userPubkey: any(named: 'userPubkey'),
+        ),
+      ).thenAnswer((_) {
+        refreshCalls++;
+        throw OAuthNetworkException('offline');
+      });
+
+      final authService = createAuthService();
+
+      await runIgnoringMockedHttpErrors(() async {
+        await authService.initialize();
+        await waitForRpcUpgradeToSettle(authService);
+
+        final expiredOtherSession = KeycastSession(
+          bunkerUrl: 'https://login.divine.video/api/nostr',
+          accessToken: 'expired_other_token',
+          expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
+          refreshToken: 'refresh_token_account_b',
+          userPubkey: otherPubkey,
+        );
+        secureStorage['keycast_session'] = jsonEncode(
+          expiredOtherSession.toJson(),
+        );
+        secureStorage['keycast_refresh_token'] = 'refresh_token_account_b';
+
+        refreshCalls = 0;
+        authService.onAppResumed();
+        await waitForRpcUpgradeToSettle(authService);
+
+        expect(refreshCalls, isZero);
+        expect(authService.authState, equals(AuthState.authenticated));
+        expect(authService.currentPublicKeyHex, activePubkey);
+        expect(authService.currentIdentity, isA<PubkeyOnlyNostrIdentity>());
+        expect(authService.canPublishNostrWritesNow, isFalse);
+        expect(authService.hasExpiredOAuthSession, isTrue);
+        expect(
+          secureStorage['keycast_refresh_token'],
+          'refresh_token_account_b',
+          reason: 'Resume must not consume another account refresh token.',
+        );
+      });
+    });
+
+    test('degraded OAuth resume does not rebuild or refresh a mismatched '
+        'stored RPC session', () async {
+      SharedPreferences.setMockInitialValues({
+        'authentication_source': 'divineOAuth',
+        'tos_accepted': true,
+      });
+
+      final activePubkey = 'ab' * 32;
+      final otherPubkey = 'cd' * 32;
+      final expiredActiveSession = KeycastSession(
+        bunkerUrl: 'https://login.divine.video/api/nostr',
+        accessToken: 'expired_active_token',
+        expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
+        refreshToken: 'refresh_token_account_a',
+        userPubkey: activePubkey,
+      );
+      secureStorage['keycast_session'] = jsonEncode(
+        expiredActiveSession.toJson(),
+      );
+      secureStorage['keycast_refresh_token'] = 'refresh_token_account_a';
+
+      var returnMismatchedSession = false;
+      var refreshCalls = 0;
+      late final KeycastSession validOtherSession;
+      when(() => mockOAuthClient.getSession()).thenAnswer(
+        (_) async => returnMismatchedSession ? validOtherSession : null,
+      );
+      when(
+        () => mockOAuthClient.refreshSession(
+          userPubkey: any(named: 'userPubkey'),
+        ),
+      ).thenAnswer((_) {
+        refreshCalls++;
+        throw OAuthNetworkException('offline');
+      });
+
+      final authService = createAuthService();
+
+      await runIgnoringMockedHttpErrors(() async {
+        await authService.initialize();
+        await waitForRpcUpgradeToSettle(authService);
+
+        validOtherSession = KeycastSession(
+          bunkerUrl: 'https://login.divine.video/api/nostr',
+          accessToken: 'fresh_other_token',
+          expiresAt: DateTime.now().add(const Duration(hours: 1)),
+          refreshToken: 'refresh_token_account_b',
+          userPubkey: otherPubkey,
+        );
+        secureStorage['keycast_session'] = jsonEncode(
+          validOtherSession.toJson(),
+        );
+        secureStorage['keycast_refresh_token'] = 'refresh_token_account_b';
+
+        refreshCalls = 0;
+        returnMismatchedSession = true;
+        authService.onAppResumed();
+        await waitForRpcUpgradeToSettle(authService);
+
+        expect(refreshCalls, isZero);
+        expect(authService.authState, equals(AuthState.authenticated));
+        expect(authService.currentPublicKeyHex, activePubkey);
+        expect(authService.currentIdentity, isA<PubkeyOnlyNostrIdentity>());
+        expect(authService.authRpcCapability, AuthRpcCapability.unavailable);
+        expect(authService.canPublishNostrWritesNow, isFalse);
+        expect(authService.hasExpiredOAuthSession, isTrue);
+      });
+    });
+
+    test(
+      'degraded OAuth restore retries on resume when connectivity returns',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'divineOAuth',
+          'tos_accepted': true,
+        });
+
+        final pubkey = 'ab' * 32;
+        final expiredSession = KeycastSession(
+          bunkerUrl: 'https://login.divine.video/api/nostr',
+          accessToken: 'expired_token',
+          expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
+          refreshToken: 'refresh_token_still_valid',
+          userPubkey: pubkey,
+        );
+        secureStorage['keycast_session'] = jsonEncode(expiredSession.toJson());
+        secureStorage['keycast_refresh_token'] = 'refresh_token_still_valid';
+
+        final refreshedSession = KeycastSession(
+          bunkerUrl: 'https://login.divine.video/api/nostr',
+          accessToken: 'fresh_token',
+          expiresAt: DateTime.now().add(const Duration(hours: 1)),
+          refreshToken: 'next_refresh_token',
+          userPubkey: pubkey,
+        );
+        var resumeRefreshEnabled = false;
+        var refreshCalls = 0;
+        when(() => mockOAuthClient.getSession()).thenAnswer((_) async => null);
+        when(
+          () => mockOAuthClient.refreshSession(
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).thenAnswer((_) {
+          refreshCalls++;
+          if (!resumeRefreshEnabled) {
+            throw OAuthNetworkException('offline');
+          }
+          return Future<KeycastSession?>.value(refreshedSession);
+        });
+
+        final authService = createAuthService();
+
+        await runIgnoringMockedHttpErrors(() async {
+          await authService.initialize();
+          await waitForRpcUpgradeToSettle(authService);
+          refreshCalls = 0;
+          resumeRefreshEnabled = true;
+          authService.onAppResumed();
+          await waitForRpcUpgradeToSettle(authService);
+
+          expect(refreshCalls, equals(1));
+          expect(authService.authState, equals(AuthState.authenticated));
+          expect(
+            authService.authRpcCapability,
+            equals(AuthRpcCapability.rpcReady),
+          );
+          expect(authService.currentIdentity, isA<KeycastNostrIdentity>());
+          expect(authService.canPublishNostrWritesNow, isTrue);
+          expect(authService.hasExpiredOAuthSession, isFalse);
+        });
+      },
+    );
+
+    test(
+      'resume rebuilds a missing signer from a matching stored RPC session',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'divineOAuth',
+          'tos_accepted': true,
+        });
+
+        final pubkey = 'ab' * 32;
+        final expiredSession = KeycastSession(
+          bunkerUrl: 'https://login.divine.video/api/nostr',
+          accessToken: 'expired_token',
+          expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
+          refreshToken: 'refresh_token_still_valid',
+          userPubkey: pubkey,
+        );
+        secureStorage['keycast_session'] = jsonEncode(expiredSession.toJson());
+        secureStorage['keycast_refresh_token'] = 'refresh_token_still_valid';
+
+        var refreshCalls = 0;
+        when(
+          () => mockOAuthClient.refreshSession(
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).thenAnswer((_) {
+          refreshCalls++;
+          throw OAuthNetworkException('offline');
+        });
+
+        final authService = createAuthService();
+
+        await runIgnoringMockedHttpErrors(() async {
+          await authService.initialize();
+          await waitForRpcUpgradeToSettle(authService);
+
+          expect(authService.authState, equals(AuthState.authenticated));
+          expect(authService.currentPublicKeyHex, pubkey);
+          expect(authService.currentIdentity, isA<PubkeyOnlyNostrIdentity>());
+          expect(authService.hasExpiredOAuthSession, isTrue);
+          expect(authService.canPublishNostrWritesNow, isFalse);
+
+          final storedRpcSession = expiredSession.copyWith(
+            accessToken: 'fresh_token',
+            expiresAt: DateTime.now().add(const Duration(hours: 1)),
+          );
+          when(
+            () => mockOAuthClient.getSession(),
+          ).thenAnswer((_) async => storedRpcSession);
+
+          final refreshCallsBeforeResume = refreshCalls;
+          authService.onAppResumed();
+          await pumpEventQueue();
+
+          expect(refreshCalls, equals(refreshCallsBeforeResume));
+          expect(authService.authRpcCapability, AuthRpcCapability.rpcReady);
+          expect(authService.currentIdentity, isA<KeycastNostrIdentity>());
+          expect(authService.canPublishNostrWritesNow, isTrue);
+          expect(authService.hasExpiredOAuthSession, isFalse);
+        });
+      },
+    );
+
+    test(
+      'healthy OAuth resume keeps the stored RPC session without refreshing',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'divineOAuth',
+          'tos_accepted': true,
+        });
+
+        final privateKeyHex = generatePrivateKey();
+        final container = SecureKeyContainer.fromPrivateKeyHex(privateKeyHex);
+        final session = KeycastSession(
+          bunkerUrl: 'https://login.divine.video/api/nostr',
+          accessToken: 'fresh_token',
+          expiresAt: DateTime.now().add(const Duration(hours: 1)),
+          refreshToken: 'refresh_token_still_valid',
+          userPubkey: container.publicKeyHex,
+        );
+        secureStorage['keycast_session'] = jsonEncode(session.toJson());
+        secureStorage['keycast_refresh_token'] = 'refresh_token_still_valid';
+        secureStorage['nostr_primary_key'] =
+            'privateKeyHex:$privateKeyHex'
+            '|publicKeyHex:${container.publicKeyHex}'
+            '|npub:${container.npub}';
+
+        var refreshCalls = 0;
+        when(
+          () => mockOAuthClient.getSession(),
+        ).thenAnswer((_) async => session);
+        when(
+          () => mockOAuthClient.refreshSession(
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).thenAnswer((_) async {
+          refreshCalls++;
+          return null;
+        });
+
+        final authService = createAuthService();
+
+        await runIgnoringMockedHttpErrors(() async {
+          await authService.initialize();
+
+          expect(authService.authState, equals(AuthState.authenticated));
+          expect(authService.authRpcCapability, AuthRpcCapability.rpcReady);
+          expect(authService.currentIdentity, isA<KeycastNostrIdentity>());
+          expect(authService.hasExpiredOAuthSession, isFalse);
+
+          authService.onAppResumed();
+          await pumpEventQueue();
+
+          expect(refreshCalls, isZero);
+          expect(authService.authRpcCapability, AuthRpcCapability.rpcReady);
+          expect(authService.currentIdentity, isA<KeycastNostrIdentity>());
+          expect(authService.hasExpiredOAuthSession, isFalse);
+          expect(
+            secureStorage['keycast_refresh_token'],
+            'refresh_token_still_valid',
+            reason: 'Healthy resume must not risk rotating the refresh token.',
+          );
+        });
+      },
+    );
+
+    test('stale resume rebuild does not attach a signer after sign-out during '
+        'banner clear', () async {
+      SharedPreferences.setMockInitialValues({
+        'authentication_source': 'divineOAuth',
+        'tos_accepted': true,
+      });
+
+      final pubkey = 'ab' * 32;
+      final expiredSession = KeycastSession(
+        bunkerUrl: 'https://login.divine.video/api/nostr',
+        accessToken: 'expired_token',
+        expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
+        refreshToken: 'refresh_token_still_valid',
+        userPubkey: pubkey,
+      );
+      secureStorage['keycast_session'] = jsonEncode(expiredSession.toJson());
+      secureStorage['keycast_refresh_token'] = 'refresh_token_still_valid';
+
+      when(
+        () => mockOAuthClient.refreshSession(
+          userPubkey: any(named: 'userPubkey'),
+        ),
+      ).thenAnswer((_) {
+        throw OAuthNetworkException('offline');
+      });
+      when(() => mockOAuthClient.logout()).thenAnswer((_) async {});
+
+      final authService = createAuthService();
+
+      await runIgnoringMockedHttpErrors(() async {
+        await authService.initialize();
+        await waitForRpcUpgradeToSettle(authService);
+
+        expect(authService.currentPublicKeyHex, pubkey);
+        expect(authService.currentIdentity, isA<PubkeyOnlyNostrIdentity>());
+
+        final storedRpcSession = expiredSession.copyWith(
+          accessToken: 'fresh_token',
+          expiresAt: DateTime.now().add(const Duration(hours: 1)),
+        );
+        when(
+          () => mockOAuthClient.getSession(),
+        ).thenAnswer((_) async => storedRpcSession);
+
+        final prefs = await SharedPreferences.getInstance();
+        final delayedPrefs = _DelayingSharedPreferencesStore.withData(
+          prefixedSharedPreferencesData(prefs),
+          delayedRemoveKey: 'flutter.${divineLoginBannerDismissalKey(pubkey)}',
+        );
+        SharedPreferencesStorePlatform.instance = delayedPrefs;
+        SharedPreferences.resetStatic();
+
+        authService.onAppResumed();
+        await delayedPrefs.removeStarted.future;
+
+        await authService.signOut();
+        delayedPrefs.allowRemove.complete();
+        await pumpEventQueue();
+
+        expect(authService.authState, equals(AuthState.unauthenticated));
+        expect(authService.currentIdentity, isNull);
+        expect(
+          authService.authRpcCapability,
+          isNot(equals(AuthRpcCapability.rpcReady)),
+        );
+      });
+    });
+
+    test('stale degraded resume refresh does not attach a signer after '
+        'sign-out', () async {
+      SharedPreferences.setMockInitialValues({
+        'authentication_source': 'divineOAuth',
+        'tos_accepted': true,
+      });
+
+      final pubkey = 'ab' * 32;
+      final expiredSession = KeycastSession(
+        bunkerUrl: 'https://login.divine.video/api/nostr',
+        accessToken: 'expired_token',
+        expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
+        refreshToken: 'refresh_token_still_valid',
+        userPubkey: pubkey,
+      );
+      secureStorage['keycast_session'] = jsonEncode(expiredSession.toJson());
+      secureStorage['keycast_refresh_token'] = 'refresh_token_still_valid';
+
+      final resumeRefresh = Completer<KeycastSession?>();
+      var resumeRefreshStarted = false;
+      when(() => mockOAuthClient.getSession()).thenAnswer((_) async => null);
+      when(() => mockOAuthClient.logout()).thenAnswer((_) async {});
+      when(
+        () => mockOAuthClient.refreshSession(
+          userPubkey: any(named: 'userPubkey'),
+        ),
+      ).thenAnswer((_) {
+        if (!resumeRefreshStarted) {
+          throw OAuthNetworkException('offline');
+        }
+        return resumeRefresh.future;
+      });
+
+      final authService = createAuthService();
+
+      await runIgnoringMockedHttpErrors(() async {
+        await authService.initialize();
+        await waitForRpcUpgradeToSettle(authService);
+        expect(authService.currentIdentity, isA<PubkeyOnlyNostrIdentity>());
+
+        resumeRefreshStarted = true;
+        authService.onAppResumed();
+        await pumpEventQueue();
+        expect(authService.isRpcUpgradeInProgress, isTrue);
+
+        await authService.signOut();
+        resumeRefresh.complete(
+          KeycastSession(
+            bunkerUrl: 'https://login.divine.video/api/nostr',
+            accessToken: 'fresh_token',
+            expiresAt: DateTime.now().add(const Duration(hours: 1)),
+            refreshToken: 'next_refresh_token',
+            userPubkey: pubkey,
+          ),
+        );
+        await waitForRpcUpgradeToSettle(authService);
+
+        expect(authService.authState, equals(AuthState.unauthenticated));
+        expect(authService.currentIdentity, isNull);
+        expect(
+          authService.authRpcCapability,
+          isNot(equals(AuthRpcCapability.rpcReady)),
+        );
+      });
+    });
+
+    test('non-OAuth local identities do not refresh OAuth on resume', () async {
+      SharedPreferences.setMockInitialValues({'tos_accepted': true});
+
+      final authService = createAuthService();
+
+      await runIgnoringMockedHttpErrors(() async {
+        final imported = await authService.importFromHex(generatePrivateKey());
+        expect(imported.success, isTrue);
+        expect(
+          authService.authenticationSource,
+          AuthenticationSource.importedKeys,
+        );
+
+        authService.onAppResumed();
+        await pumpEventQueue();
+
+        verifyNever(() => mockOAuthClient.getSession());
+        verifyNever(
+          () => mockOAuthClient.refreshSession(
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        );
+      });
     });
 
     test(
