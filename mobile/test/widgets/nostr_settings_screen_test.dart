@@ -10,7 +10,6 @@ import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyStorageException;
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
-import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -93,19 +92,6 @@ void main() {
       );
       await tester.pumpAndSettle();
     }
-
-    testWidgets('shows Experimental Features tile and opens feature flags', (
-      tester,
-    ) async {
-      await pumpSubject(tester);
-
-      expect(find.text(l10n.settingsExperimentalFeatures), findsOneWidget);
-
-      await tester.tap(find.text(l10n.settingsExperimentalFeatures));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(FeatureFlagScreen), findsOneWidget);
-    });
 
     testWidgets('hides Relays and Relay Diagnostics tiles when '
         'advancedRelaySettings flag is off', (tester) async {

@@ -665,9 +665,9 @@ class VideoOverlayActionColumn extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Owners get an [EditActionButton] at the top of the column (above
     // Like) and the [ReportActionButton] is suppressed — you can't report
-    // your own video, so the slot is reused for Edit instead. Both gates
-    // resolve to false for non-owners and during preview / when the
-    // editor feature flag is off, leaving the column unchanged.
+    // your own video, so the slot is reused for Edit instead. The gate
+    // resolves to false for non-owners and during preview, leaving the
+    // column unchanged.
     final currentUserPubkey = ref
         .watch(authServiceProvider)
         .currentPublicKeyHex;
