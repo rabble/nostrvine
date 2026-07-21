@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -15,6 +17,7 @@ void main() {
   group(CommunitySuggestCubit, () {
     late _MockRepository repository;
     late _MockVideoEvent video;
+    late Completer<void> publishGate;
     const myPubkey =
         'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
 
@@ -26,6 +29,7 @@ void main() {
     setUp(() {
       repository = _MockRepository();
       video = _MockVideoEvent();
+      publishGate = Completer<void>();
     });
 
     CommunitySuggestCubit build() => CommunitySuggestCubit(
@@ -125,6 +129,49 @@ void main() {
             alreadySuggested: {'gambling'},
           ),
         ],
+      );
+
+      blocTest<CommunitySuggestCubit, CommunitySuggestState>(
+        'ignores a second submit while the first is in flight (droppable)',
+        setUp: () {
+          // Hold the first publish open across the second submit call so the
+          // two overlap in the same frame — the real double-tap race.
+          when(
+            () => repository.suggestLabels(
+              video: any(named: 'video'),
+              labels: any(named: 'labels'),
+            ),
+          ).thenAnswer((_) => publishGate.future);
+        },
+        build: build,
+        seed: () => const CommunitySuggestState(
+          status: CommunitySuggestStatus.ready,
+          selected: {ContentLabel.gambling},
+        ),
+        act: (cubit) {
+          cubit
+            ..submit()
+            ..submit();
+          publishGate.complete();
+        },
+        expect: () => const [
+          CommunitySuggestState(
+            status: CommunitySuggestStatus.submitting,
+            selected: {ContentLabel.gambling},
+          ),
+          CommunitySuggestState(
+            status: CommunitySuggestStatus.success,
+            alreadySuggested: {'gambling'},
+          ),
+        ],
+        verify: (_) {
+          verify(
+            () => repository.suggestLabels(
+              video: any(named: 'video'),
+              labels: any(named: 'labels'),
+            ),
+          ).called(1);
+        },
       );
 
       blocTest<CommunitySuggestCubit, CommunitySuggestState>(

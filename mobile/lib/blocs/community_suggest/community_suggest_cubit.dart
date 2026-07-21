@@ -65,6 +65,9 @@ class CommunitySuggestCubit extends Cubit<CommunitySuggestState> {
 
   /// Publishes the selected labels as a community suggestion.
   Future<void> submit() async {
+    // Droppable guard: a same-frame double-tap re-enters before [selected] is
+    // cleared on success, which would publish a duplicate kind 1985 event.
+    if (state.status == CommunitySuggestStatus.submitting) return;
     if (state.selected.isEmpty) return;
     emit(state.copyWith(status: CommunitySuggestStatus.submitting));
     try {
