@@ -656,7 +656,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     return localKey.publicKeyHex == targetPubkey;
   }
 
-  /// Background RPC refresh with bounded timeout.
+  /// Background RPC upgrade with bounded timeout.
   ///
   /// On success: rebuilds identity to [KeycastNostrIdentity] and sets
   /// [AuthRpcCapability.rpcReady]. On failure: preserves the local identity
@@ -664,9 +664,10 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   Future<void> _upgradeDivineRpcInBackground(
     KeycastSession? session, {
     String? expectedOwnerPubkey,
+    bool notifyAuthStateOnFailure = true,
   }) async {
     Log.info(
-      'initialize: starting background RPC refresh...',
+      'OAuth RPC upgrade: starting background refresh...',
       name: 'AuthService',
       category: LogCategory.auth,
     );
@@ -682,6 +683,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         currentPublicKeyHex == upgradeOwnerPubkey;
 
     _isRpcUpgradeInProgress = true;
+    var didUpgrade = false;
     try {
       if (_oauthClient == null) {
         _setRpcCapability(AuthRpcCapability.unavailable);
@@ -697,7 +699,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
       if (!upgradeContextStillCurrent()) {
         Log.warning(
-          'initialize: discarding stale background RPC refresh — '
+          'OAuth RPC upgrade: discarding stale background refresh — '
           'signed out or switched accounts while it was in flight',
           name: 'AuthService',
           category: LogCategory.auth,
@@ -707,7 +709,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
       if (refreshed != null) {
         Log.info(
-          'initialize: background RPC refresh succeeded',
+          'OAuth RPC upgrade: background refresh succeeded',
           name: 'AuthService',
           category: LogCategory.auth,
         );
@@ -719,25 +721,29 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         );
         _currentIdentity = _buildIdentity();
         _setRpcCapability(AuthRpcCapability.rpcReady);
+        didUpgrade = true;
         return;
       }
     } on OAuthNetworkException catch (e) {
       Log.warning(
-        'initialize: background RPC refresh failed due to network: $e',
+        'OAuth RPC upgrade: background refresh failed due to network: $e',
         name: 'AuthService',
         category: LogCategory.auth,
       );
     } catch (e) {
       Log.error(
-        'initialize: background RPC refresh failed: $e',
+        'OAuth RPC upgrade: background refresh failed: $e',
         name: 'AuthService',
         category: LogCategory.auth,
       );
     } finally {
       _isRpcUpgradeInProgress = false;
-      // Nudge the auth stream so widgets re-evaluate whether the
-      // session-expired sheet should be shown now that the upgrade has resolved.
-      _authStateController.add(_authState);
+      // Nudge the auth stream so widgets re-evaluate after successful upgrades
+      // and after startup failures. Resume failures leave degraded state
+      // unchanged and should not re-present the session-expired sheet.
+      if (didUpgrade || notifyAuthStateOnFailure) {
+        _authStateController.add(_authState);
+      }
     }
 
     // A late failure must not downgrade whichever account is active now.
@@ -4237,22 +4243,36 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
       final session = await _oauthClient.getSession();
       if (!resumeContextStillCurrent()) return;
-      if (session != null) return;
+
+      if (session != null &&
+          session.hasRpcAccess &&
+          session.userPubkey == resumeOwnerPubkey) {
+        Log.info(
+          '📱 App resumed - rebuilding OAuth RPC signer from stored session',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        _keycastSigner = KeycastRpc.fromSession(
+          _oauthConfig,
+          session,
+          onTokenRefresh: _refreshAccessToken,
+        );
+        _currentIdentity = _buildIdentity();
+        _hasExpiredOAuthSession = false;
+        _setRpcCapability(AuthRpcCapability.rpcReady);
+        _authStateController.add(_authState);
+        return;
+      }
 
       Log.info(
-        '📱 App resumed - OAuth token expired, refreshing',
+        '📱 App resumed - OAuth RPC session unavailable, refreshing',
         name: 'AuthService',
         category: LogCategory.auth,
       );
       await _upgradeDivineRpcInBackground(
         session,
         expectedOwnerPubkey: resumeOwnerPubkey,
-      );
-    } on OAuthNetworkException catch (e) {
-      Log.warning(
-        '📱 App resumed - OAuth refresh failed due to network: $e',
-        name: 'AuthService',
-        category: LogCategory.auth,
+        notifyAuthStateOnFailure: false,
       );
     } catch (e) {
       Log.error(

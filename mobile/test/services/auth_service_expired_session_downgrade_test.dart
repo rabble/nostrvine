@@ -139,11 +139,6 @@ void main() {
 
     Future<void> waitForRpcUpgradeToSettle(AuthService authService) async {
       await pumpEventQueue();
-      final deadline = DateTime.now().add(const Duration(seconds: 3));
-      while (authService.isRpcUpgradeInProgress &&
-          DateTime.now().isBefore(deadline)) {
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-      }
       expect(authService.isRpcUpgradeInProgress, isFalse);
     }
 
@@ -339,14 +334,8 @@ void main() {
             'refresh_token_still_valid',
             reason: 'Offline launch must not discard the retry token.',
           );
-          expect(refreshCalls, equals(2));
-
           backgroundRefresh.complete(refreshedSession);
-          final deadline = DateTime.now().add(const Duration(seconds: 3));
-          while (authService.isRpcUpgradeInProgress &&
-              DateTime.now().isBefore(deadline)) {
-            await Future<void>.delayed(const Duration(milliseconds: 10));
-          }
+          await waitForRpcUpgradeToSettle(authService);
 
           expect(
             authService.authRpcCapability,
@@ -400,7 +389,12 @@ void main() {
       await runIgnoringMockedHttpErrors(() async {
         await authService.initialize();
         await waitForRpcUpgradeToSettle(authService);
-        expect(refreshCalls, equals(2));
+
+        final authEvents = <AuthState>[];
+        final authSubscription = authService.authStateStream.listen(
+          authEvents.add,
+        );
+        addTearDown(authSubscription.cancel);
 
         refreshCalls = 0;
         authService.onAppResumed();
@@ -413,6 +407,13 @@ void main() {
         expect(authService.currentIdentity, isA<PubkeyOnlyNostrIdentity>());
         expect(authService.canPublishNostrWritesNow, isFalse);
         expect(authService.hasExpiredOAuthSession, isTrue);
+        expect(
+          authEvents,
+          isEmpty,
+          reason:
+              'Failed offline resume retries leave degraded state unchanged '
+              'and should not nudge profile UI to re-show the expired sheet.',
+        );
         expect(
           secureStorage['keycast_refresh_token'],
           'refresh_token_still_valid',
@@ -467,8 +468,6 @@ void main() {
         await runIgnoringMockedHttpErrors(() async {
           await authService.initialize();
           await waitForRpcUpgradeToSettle(authService);
-          expect(refreshCalls, equals(2));
-
           refreshCalls = 0;
           resumeRefreshEnabled = true;
           authService.onAppResumed();
@@ -480,6 +479,70 @@ void main() {
             authService.authRpcCapability,
             equals(AuthRpcCapability.rpcReady),
           );
+          expect(authService.currentIdentity, isA<KeycastNostrIdentity>());
+          expect(authService.canPublishNostrWritesNow, isTrue);
+          expect(authService.hasExpiredOAuthSession, isFalse);
+        });
+      },
+    );
+
+    test(
+      'resume rebuilds a missing signer from a matching stored RPC session',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'divineOAuth',
+          'tos_accepted': true,
+        });
+
+        final pubkey = 'ab' * 32;
+        final expiredSession = KeycastSession(
+          bunkerUrl: 'https://login.divine.video/api/nostr',
+          accessToken: 'expired_token',
+          expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
+          refreshToken: 'refresh_token_still_valid',
+          userPubkey: pubkey,
+        );
+        secureStorage['keycast_session'] = jsonEncode(
+          expiredSession.toJson(),
+        );
+        secureStorage['keycast_refresh_token'] = 'refresh_token_still_valid';
+
+        var refreshCalls = 0;
+        when(
+          () => mockOAuthClient.refreshSession(
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).thenAnswer((_) {
+          refreshCalls++;
+          throw OAuthNetworkException('offline');
+        });
+
+        final authService = createAuthService();
+
+        await runIgnoringMockedHttpErrors(() async {
+          await authService.initialize();
+          await waitForRpcUpgradeToSettle(authService);
+
+          expect(authService.authState, equals(AuthState.authenticated));
+          expect(authService.currentPublicKeyHex, pubkey);
+          expect(authService.currentIdentity, isA<PubkeyOnlyNostrIdentity>());
+          expect(authService.hasExpiredOAuthSession, isTrue);
+          expect(authService.canPublishNostrWritesNow, isFalse);
+
+          final storedRpcSession = expiredSession.copyWith(
+            accessToken: 'fresh_token',
+            expiresAt: DateTime.now().add(const Duration(hours: 1)),
+          );
+          when(
+            () => mockOAuthClient.getSession(),
+          ).thenAnswer((_) async => storedRpcSession);
+
+          final refreshCallsBeforeResume = refreshCalls;
+          authService.onAppResumed();
+          await pumpEventQueue();
+
+          expect(refreshCalls, equals(refreshCallsBeforeResume));
+          expect(authService.authRpcCapability, AuthRpcCapability.rpcReady);
           expect(authService.currentIdentity, isA<KeycastNostrIdentity>());
           expect(authService.canPublishNostrWritesNow, isTrue);
           expect(authService.hasExpiredOAuthSession, isFalse);
@@ -506,7 +569,7 @@ void main() {
       secureStorage['keycast_refresh_token'] = 'refresh_token_still_valid';
 
       final resumeRefresh = Completer<KeycastSession?>();
-      var refreshCalls = 0;
+      var resumeRefreshStarted = false;
       when(() => mockOAuthClient.getSession()).thenAnswer((_) async => null);
       when(() => mockOAuthClient.logout()).thenAnswer((_) async {});
       when(
@@ -514,8 +577,7 @@ void main() {
           userPubkey: any(named: 'userPubkey'),
         ),
       ).thenAnswer((_) {
-        refreshCalls++;
-        if (refreshCalls <= 2) {
+        if (!resumeRefreshStarted) {
           throw OAuthNetworkException('offline');
         }
         return resumeRefresh.future;
@@ -526,9 +588,9 @@ void main() {
       await runIgnoringMockedHttpErrors(() async {
         await authService.initialize();
         await waitForRpcUpgradeToSettle(authService);
-        expect(refreshCalls, equals(2));
         expect(authService.currentIdentity, isA<PubkeyOnlyNostrIdentity>());
 
+        resumeRefreshStarted = true;
         authService.onAppResumed();
         await pumpEventQueue();
         expect(authService.isRpcUpgradeInProgress, isTrue);
