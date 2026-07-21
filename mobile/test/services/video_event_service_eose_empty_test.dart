@@ -9,12 +9,17 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
 class _MockSubscriptionManager extends Mock implements SubscriptionManager {}
+
+const _profileAuthor =
+    '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
 void main() {
   setUpAll(() {
@@ -26,17 +31,33 @@ void main() {
     late _MockNostrClient mockNostrService;
     late _MockSubscriptionManager mockSubscriptionManager;
 
-    setUp(() {
+    setUp(() async {
       mockNostrService = _MockNostrClient();
       mockSubscriptionManager = _MockSubscriptionManager();
 
       when(() => mockNostrService.isInitialized).thenReturn(true);
       when(() => mockNostrService.connectedRelayCount).thenReturn(1);
+      when(
+        () => mockNostrService.configuredRelays,
+      ).thenReturn(['wss://relay.example.com']);
+      when(
+        () => mockNostrService.connectedRelays,
+      ).thenReturn(['wss://relay.example.com']);
+      when(
+        () => mockNostrService.queryEvents(any()),
+      ).thenAnswer((_) async => <Event>[]);
+      when(mockNostrService.getRelayStats).thenAnswer((_) async => null);
 
       videoEventService = VideoEventService(
         mockNostrService,
         subscriptionManager: mockSubscriptionManager,
       );
+
+      await LogCaptureService().clearAllLogs();
+    });
+
+    tearDown(() {
+      videoEventService.dispose();
     });
 
     test('should clear per-subscription loading state when EOSE arrives '
@@ -165,5 +186,152 @@ void main() {
         );
       });
     });
+
+    test(
+      'runs empty-feed diagnostic query with profile author filters',
+      () async {
+        void Function()? capturedOnEose;
+        final controller = StreamController<Event>();
+        addTearDown(controller.close);
+
+        when(
+          () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
+        ).thenAnswer((invocation) {
+          capturedOnEose =
+              invocation.namedArguments[#onEose] as void Function()?;
+          return controller.stream;
+        });
+
+        await videoEventService.subscribeToVideoFeed(
+          subscriptionType: SubscriptionType.profile,
+          authors: const [_profileAuthor],
+          includeReposts: true,
+          limit: 250,
+        );
+
+        capturedOnEose!();
+        await pumpEventQueue();
+
+        final capturedFilters =
+            verify(
+                  () => mockNostrService.queryEvents(captureAny()),
+                ).captured.single
+                as List<Filter>;
+
+        expect(capturedFilters, hasLength(2));
+        expect(
+          capturedFilters.every(
+            (filter) => filter.authors != null && filter.authors!.isNotEmpty,
+          ),
+          isTrue,
+          reason: 'Diagnostic probe must not fall back to a global video query',
+        );
+        expect(
+          capturedFilters.map((filter) => filter.authors).toList(),
+          everyElement(equals([_profileAuthor])),
+        );
+        expect(
+          capturedFilters.first.kinds,
+          equals(NIP71VideoKinds.getAllVideoKinds()),
+        );
+        expect(capturedFilters.first.limit, 100);
+        expect(capturedFilters.last.kinds, equals([16]));
+        expect(capturedFilters.last.limit, 50);
+      },
+    );
+
+    test('logs expected empty profile state without subscription error', () async {
+      void Function()? capturedOnEose;
+      final controller = StreamController<Event>();
+      addTearDown(controller.close);
+
+      when(
+        () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
+      ).thenAnswer((invocation) {
+        capturedOnEose = invocation.namedArguments[#onEose] as void Function()?;
+        return controller.stream;
+      });
+
+      await videoEventService.subscribeToVideoFeed(
+        subscriptionType: SubscriptionType.profile,
+        authors: const [_profileAuthor],
+      );
+
+      capturedOnEose!();
+      await pumpEventQueue();
+
+      final logs = LogCaptureService().getRecentLogs();
+      expect(
+        logs.where(
+          (entry) =>
+              entry.level == LogLevel.error &&
+              entry.message.contains(
+                'subscription filtering is too restrictive OR subscription stream is broken',
+              ),
+        ),
+        isEmpty,
+      );
+      expect(
+        logs.where(
+          (entry) =>
+              entry.level == LogLevel.info &&
+              entry.message.contains(
+                'No cached events match the empty SubscriptionType.profile subscription filters',
+              ),
+        ),
+        isNotEmpty,
+      );
+    });
+
+    test(
+      'keeps subscription error when filtered diagnostic query has events',
+      () async {
+        void Function()? capturedOnEose;
+        final controller = StreamController<Event>();
+        addTearDown(controller.close);
+
+        when(
+          () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
+        ).thenAnswer((invocation) {
+          capturedOnEose =
+              invocation.namedArguments[#onEose] as void Function()?;
+          return controller.stream;
+        });
+        when(() => mockNostrService.queryEvents(any())).thenAnswer(
+          (_) async => [
+            Event(
+              _profileAuthor,
+              NIP71VideoKinds.addressableShortVideo,
+              const [
+                ['d', 'diagnostic-video'],
+                ['url', 'https://example.com/video.mp4'],
+              ],
+              '',
+              createdAt: 1000,
+            )..id = 'diagnostic-video-event',
+          ],
+        );
+
+        await videoEventService.subscribeToVideoFeed(
+          subscriptionType: SubscriptionType.profile,
+          authors: const [_profileAuthor],
+        );
+
+        capturedOnEose!();
+        await pumpEventQueue();
+
+        final logs = LogCaptureService().getRecentLogs();
+        expect(
+          logs.where(
+            (entry) =>
+                entry.level == LogLevel.error &&
+                entry.message.contains(
+                  'subscription filtering is too restrictive OR subscription stream is broken',
+                ),
+          ),
+          isNotEmpty,
+        );
+      },
+    );
   });
 }

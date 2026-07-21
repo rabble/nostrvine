@@ -5874,6 +5874,17 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     SubscriptionType subscriptionType,
   ) => _applyLikeCountToVideo(videoId, likeCount, subscriptionType);
 
+  List<Filter> _buildDiagnosticProbeFilters(List<Filter> filters) {
+    return filters.map((filter) {
+      final diagnosticFilter = Filter.fromJson(filter.toJson());
+      final existingLimit = diagnosticFilter.limit;
+      diagnosticFilter.limit = existingLimit == null || existingLimit > 100
+          ? 100
+          : existingLimit;
+      return diagnosticFilter;
+    }).toList();
+  }
+
   /// Run automatic diagnostics when feed fails to load events
   /// This logs relay status, connection info, and tests direct queries to help debug
   Future<void> _runAutoDiagnostics(
@@ -5972,40 +5983,39 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         }
       }
 
-      // 3. Test direct query to see if events exist in database
+      // 3. Test direct query with the same filters to see if matching events
+      // exist in the database.
+      final diagnosticFilters = _buildDiagnosticProbeFilters(filters);
       Log.warning(
-        '🔍 Testing direct database query (bypassing subscription)...',
+        '🔍 Testing direct database query with subscription filters (bypassing subscription)...',
         name: 'VideoEventService',
         category: LogCategory.video,
       );
 
-      final directQueryEvents = await _nostrService.queryEvents([
-        Filter(
-          kinds: const [NIP71VideoKinds.addressableShortVideo],
-          limit: 100,
-        ),
-      ]);
+      final directQueryEvents = await _nostrService.queryEvents(
+        diagnosticFilters,
+      );
 
       Log.warning(
-        '✅ Direct query returned ${directQueryEvents.length} video events',
+        '✅ Filtered direct query returned ${directQueryEvents.length} matching events',
         name: 'VideoEventService',
         category: LogCategory.video,
       );
 
       if (directQueryEvents.isEmpty) {
-        Log.error(
-          '❌ DIAGNOSTIC: Relay cache has NO video events!',
+        Log.info(
+          '✅ DIAGNOSTIC: No cached events match the empty $subscriptionType subscription filters.',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
-        Log.error(
-          '   This means relay connection is not returning video events.',
+        Log.info(
+          '   This is an expected empty state for sparse/profile feeds when the author or filter has no videos.',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
       } else {
         Log.warning(
-          '✅ DIAGNOSTIC: Database HAS ${directQueryEvents.length} events, but subscription returned 0.',
+          '✅ DIAGNOSTIC: Database HAS ${directQueryEvents.length} events matching the subscription filters, but subscription returned 0.',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
@@ -6017,7 +6027,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
 
         // Log sample events to help compare with subscription filters
         Log.warning(
-          '📄 Sample events in database:',
+          '📄 Sample matching events in database:',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
