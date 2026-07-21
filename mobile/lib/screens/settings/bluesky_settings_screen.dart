@@ -1,6 +1,8 @@
 // ABOUTME: Bluesky crosspost settings screen with toggle switch
 // ABOUTME: Allows users to enable/disable publishing videos to Bluesky
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -105,7 +107,7 @@ class _BlueskySettingsView extends StatelessWidget {
               textColor: VineTheme.whiteText,
               onPressed: () {
                 context.read<CrosspostSettingsCubit>().acknowledgeError();
-                context.push(Nip05SettingsScreen.path);
+                unawaited(_openClaimFlowAndRefresh(context));
               },
             ),
           ),
@@ -152,7 +154,7 @@ class _UsernameRequiredNotice extends StatelessWidget {
         style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
       ),
       trailing: TextButton(
-        onPressed: () => context.push(Nip05SettingsScreen.path),
+        onPressed: () => unawaited(_openClaimFlowAndRefresh(context)),
         child: Text(
           context.l10n.blueskySetUpHandle,
           style: const TextStyle(color: VineTheme.vineGreen),
@@ -160,6 +162,13 @@ class _UsernameRequiredNotice extends StatelessWidget {
       ),
     );
   }
+}
+
+Future<void> _openClaimFlowAndRefresh(BuildContext context) async {
+  final cubit = context.read<CrosspostSettingsCubit>();
+  await context.push(Nip05SettingsScreen.path);
+  if (!context.mounted) return;
+  await cubit.loadStatus();
 }
 
 class _CrosspostToggle extends StatelessWidget {
