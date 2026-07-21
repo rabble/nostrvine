@@ -1358,6 +1358,29 @@ class AppLocalizationsId extends AppLocalizations {
       'Kami akan menyembunyikan postingan seperti ini mulai sekarang.';
 
   @override
+  String get communitySuggestTitle => 'Help classify this';
+
+  @override
+  String get communitySuggestSubtitle =>
+      'Missing a content warning? Your suggestion is public, signed, and can\'t be taken back.';
+
+  @override
+  String get communitySuggestSubmit => 'Suggest';
+
+  @override
+  String get communitySuggestSuccess => 'Thanks. Your suggestion was sent.';
+
+  @override
+  String get communitySuggestFailure =>
+      'Couldn\'t send your suggestion. Try again.';
+
+  @override
+  String get communitySuggestAlready => 'You suggested this';
+
+  @override
+  String get communitySuggestActionLabel => 'Classify';
+
+  @override
   String get videoErrorNotFound => 'Video tidak ditemukan';
 
   @override

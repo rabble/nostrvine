@@ -2464,6 +2464,48 @@ abstract class AppLocalizations {
   /// **'We\'ll hide posts like this from now on.'**
   String get contentWarningHiddenConfirmation;
 
+  /// Title of the sheet where a viewer suggests content-warning labels for someone else's video.
+  ///
+  /// In en, this message translates to:
+  /// **'Help classify this'**
+  String get communitySuggestTitle;
+
+  /// No description provided for @communitySuggestSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing a content warning? Your suggestion is public, signed, and can\'t be taken back.'**
+  String get communitySuggestSubtitle;
+
+  /// No description provided for @communitySuggestSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest'**
+  String get communitySuggestSubmit;
+
+  /// No description provided for @communitySuggestSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks. Your suggestion was sent.'**
+  String get communitySuggestSuccess;
+
+  /// No description provided for @communitySuggestFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t send your suggestion. Try again.'**
+  String get communitySuggestFailure;
+
+  /// Badge shown next to a label the current viewer has already suggested for this video.
+  ///
+  /// In en, this message translates to:
+  /// **'You suggested this'**
+  String get communitySuggestAlready;
+
+  /// Short caption under the video overlay action that opens the community content-warning suggestion sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Classify'**
+  String get communitySuggestActionLabel;
+
   /// No description provided for @videoErrorNotFound.
   ///
   /// In en, this message translates to:

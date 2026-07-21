@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
 // For isVideoActiveProvider (router-driven)
 import 'package:openvine/providers/app_providers.dart';
@@ -698,8 +700,17 @@ class VideoOverlayActionColumn extends ConsumerWidget {
           onInteracted: onInteracted,
         ),
         ShareActionButton(video: video, onInteracted: onInteracted),
-        if (!isOwnVideo)
+        if (!isOwnVideo) ...[
           ReportActionButton(video: video, onInteracted: onInteracted),
+          // Gate the slot itself so a default-off build inserts no child
+          // into Column(spacing: 20) — a hidden SizedBox.shrink would still
+          // add a permanent gap between Report and More. The button keeps its
+          // own defensive checks for the repository/pubkey readiness case.
+          if (ref.watch(
+            isFeatureEnabledProvider(FeatureFlag.communityContentWarnings),
+          ))
+            HelpClassifyActionButton(video: video, onInteracted: onInteracted),
+        ],
         MoreActionButton(video: video, onInteracted: onInteracted),
       ],
     );

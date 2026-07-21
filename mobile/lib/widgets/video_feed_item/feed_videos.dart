@@ -16,14 +16,18 @@ import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/community_content_label_provider.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_coordinator.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_error_listener.dart';
 import 'package:openvine/screens/feed/pooled_age_restricted_retry.dart';
+import 'package:openvine/services/community_content_label_service.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:openvine/services/view_event_publisher.dart'
@@ -130,12 +134,33 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
   /// playback — a warned video must stay paused until revealed.
   final Set<String> _revealedContentWarningVideoIds = <String>{};
 
+  /// Warn labels for [video] merging creator/trusted labels with any
+  /// crossed-threshold community labels (#4771), so the autoplay gate and
+  /// the blur overlay always agree on whether the video is warned.
+  ///
+  /// The community half is gated on the kill-switch: with the flag off, only
+  /// the creator/trusted labels apply, so already-cached community warnings
+  /// stop blurring and gating the moment the flag flips off (the read path is
+  /// gated, not just prefetch). `build` watches the same flag so a flip
+  /// re-evaluates the gate without a restart.
+  List<String> _effectiveWarnLabels(VideoEvent video) {
+    if (!ref.read(
+      isFeatureEnabledProvider(FeatureFlag.communityContentWarnings),
+    )) {
+      return video.warnLabels;
+    }
+    return <String>{
+      ...video.warnLabels,
+      ...ref.read(communityContentLabelServiceProvider).warnLabelsFor(video),
+    }.toList();
+  }
+
   /// Whether [video] may start playing: either it has no content-warning
   /// gate, or the user already chose "View Anyway" for it.
   bool _canAutoPlayVideo(VideoEvent video) =>
       !shouldShowContentWarningOverlay(
         contentWarningLabels: video.contentWarningLabels,
-        warnLabels: video.warnLabels,
+        warnLabels: _effectiveWarnLabels(video),
       ) ||
       _revealedContentWarningVideoIds.contains(video.id);
 
@@ -145,6 +170,23 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
       _revealedContentWarningVideoIds.add(videoId);
     });
     _feedKey.currentState?.resumeCurrentPlayback();
+  }
+
+  /// Pauses the current video if a community warning has newly gated it.
+  ///
+  /// Called when the community-label service notifies (a prefetch crossed the
+  /// threshold). The imperative resume in [_revealContentWarning] has no
+  /// symmetric pause in the package's gate-sync: `_syncCurrentAutoPlayGate`
+  /// early-returns because both its old/new predicates read the same live
+  /// service, so an already-playing item keeps playing behind the overlay
+  /// (#5720 M1). Pausing when the gate is closed is idempotent.
+  void _pauseCurrentIfCommunityWarned() {
+    final feedState = _feedKey.currentState;
+    if (feedState == null) return;
+    final index = feedState.currentIndex;
+    if (index < 0 || index >= widget.videos.length) return;
+    if (_canAutoPlayVideo(widget.videos[index])) return;
+    feedState.pauseCurrentPlayback();
   }
 
   /// Animates the underlying feed to [index].
@@ -251,6 +293,21 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
     final appForeground = ref.watch(appForegroundProvider);
     final isFeedActive =
         widget.isActive && _routeAllowsPlayback && appForeground;
+    // Rebuild when a community-label prefetch resolves so InfiniteVideoFeed
+    // re-syncs the autoplay gate (didUpdateWidget) and pauses a video whose
+    // community warning just crossed the threshold. The service only
+    // notifies for non-empty results, so this fires rarely.
+    ref.watch(communityContentLabelServiceProvider);
+    // Watch the kill-switch too: flipping it re-evaluates the autoplay gate
+    // (via InfiniteVideoFeed.didUpdateWidget) so cached community warnings
+    // stop/start gating without a restart.
+    ref.watch(isFeatureEnabledProvider(FeatureFlag.communityContentWarnings));
+    // Pause an already-playing current video whose community warning just
+    // crossed the threshold. The package's gate-sync can't catch this because
+    // both its old/new predicates read the same live service (#5720 M1).
+    ref.listen(communityContentLabelServiceProvider, (_, _) {
+      _pauseCurrentIfCommunityWarned();
+    });
     // While a codec-heavy surface (camera, video editor, exporter) is open, a
     // backgrounded feed must release even its warm current player so the editor
     // can claim the device's scarce hardware decoders/encoder. Selected so the
@@ -501,6 +558,34 @@ class __OverlayState extends ConsumerState<_Overlay> {
   ValueListenable<double>? _pagePositionListenable;
 
   @override
+  void initState() {
+    super.initState();
+    _prefetchCommunityLabels();
+  }
+
+  @override
+  void didUpdateWidget(covariant _Overlay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.video.id != widget.video.id) {
+      _prefetchCommunityLabels();
+    }
+  }
+
+  // Bounded to feed items that actually mount, so this only queries community
+  // labels for videos the viewer is near. Idempotent inside the service.
+  // Gated on the kill-switch: with the flag off nothing is fetched, so the
+  // cache stays empty and neither the overlay nor the autoplay gate react.
+  void _prefetchCommunityLabels() {
+    final flagEnabled = ref.read(
+      isFeatureEnabledProvider(FeatureFlag.communityContentWarnings),
+    );
+    if (!flagEnabled) return;
+    unawaited(
+      ref.read(communityContentLabelServiceProvider).prefetch(widget.video),
+    );
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _feedState = context.findAncestorStateOfType<InfiniteVideoFeedState>();
@@ -513,6 +598,23 @@ class __OverlayState extends ConsumerState<_Overlay> {
     super.dispose();
   }
 
+  // Single definition of "what counts as warned" for this overlay: the
+  // video's own warn labels plus crossed-threshold community labels. Call
+  // sites pass the service via ref.watch (build) or ref.read (handlers).
+  // The community half is gated on the kill-switch so a cached warning stops
+  // blurring the moment the flag flips off (build watches the same flag).
+  List<String> _effectiveWarnLabels(CommunityContentLabelService service) {
+    if (!ref.read(
+      isFeatureEnabledProvider(FeatureFlag.communityContentWarnings),
+    )) {
+      return widget.video.warnLabels;
+    }
+    return <String>{
+      ...widget.video.warnLabels,
+      ...service.warnLabelsFor(widget.video),
+    }.toList();
+  }
+
   void _handleDoubleTapLike(
     BuildContext context,
     TapDownDetails details, {
@@ -521,7 +623,9 @@ class __OverlayState extends ConsumerState<_Overlay> {
     final contentWarningBlocking =
         shouldShowContentWarningOverlay(
           contentWarningLabels: widget.video.contentWarningLabels,
-          warnLabels: widget.video.warnLabels,
+          warnLabels: _effectiveWarnLabels(
+            ref.read(communityContentLabelServiceProvider),
+          ),
         ) &&
         !widget.contentWarningRevealed;
 
@@ -631,13 +735,34 @@ class __OverlayState extends ConsumerState<_Overlay> {
     final autoAdvanceAvailable = !MediaQuery.disableAnimationsOf(context);
     final effectiveAutoEnabled = autoAdvanceAvailable && autoEnabled;
 
+    // Watch the kill-switch so the blur re-evaluates on a flip, and start
+    // prefetching if it flips on for an already-mounted overlay (initState's
+    // prefetch is a no-op while the flag is off). #5720 M3.
+    ref.watch(isFeatureEnabledProvider(FeatureFlag.communityContentWarnings));
+    ref.listen(
+      isFeatureEnabledProvider(FeatureFlag.communityContentWarnings),
+      (previous, next) {
+        if (next && previous != true) {
+          _prefetchCommunityLabels();
+        }
+      },
+    );
+
+    // Merge community-suggested warnings (#4771) into the creator/trusted
+    // warn labels so a crossed-threshold community label drives the same
+    // blur overlay. Advisory only; the service returns an empty set until
+    // its background prefetch resolves.
+    final effectiveWarnLabels = _effectiveWarnLabels(
+      ref.watch(communityContentLabelServiceProvider),
+    );
+
     final overlayLabels = contentWarningOverlayLabels(
       contentWarningLabels: video.contentWarningLabels,
-      warnLabels: video.warnLabels,
+      warnLabels: effectiveWarnLabels,
     );
     final showContentWarningOverlay = shouldShowContentWarningOverlay(
       contentWarningLabels: video.contentWarningLabels,
-      warnLabels: video.warnLabels,
+      warnLabels: effectiveWarnLabels,
     );
 
     final effectiveAutoActive = autoAdvanceAvailable && autoEffectivelyActive;
@@ -680,13 +805,20 @@ class __OverlayState extends ConsumerState<_Overlay> {
         );
       case _OverlayContentWarningMode(:final labels):
         return ContentWarningBlurOverlay(
+          // Display uses the merged (creator + community) labels so the blur
+          // names every warning. Hide-similar must persist ONLY the
+          // creator/trusted labels: an unverified community-only warning
+          // must never become a persisted global hide (#4771 warn-only v1).
           labels: labels,
           onReveal: widget.onContentWarningRevealed,
           onHideSimilar: () {
             hideContentWarningsLikeThese(
               context: context,
               ref: ref,
-              labels: labels,
+              labels: contentWarningOverlayLabels(
+                contentWarningLabels: video.contentWarningLabels,
+                warnLabels: video.warnLabels,
+              ),
             );
           },
         );

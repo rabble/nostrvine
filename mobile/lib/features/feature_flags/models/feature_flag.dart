@@ -57,6 +57,12 @@ enum FeatureFlag {
   adaptiveMediaChrome(
     'Adaptive Media Chrome',
     'Use light controls around fullscreen video when Light Mode is enabled.',
+  ),
+  communityContentWarnings(
+    'Community Content Warnings',
+    'Suggest content-warning labels on videos and blur videos whose labels '
+        'crossed the community threshold. Off by default pending T&S '
+        'rollout sign-off.',
   );
 
   const FeatureFlag(this.displayName, this.description);

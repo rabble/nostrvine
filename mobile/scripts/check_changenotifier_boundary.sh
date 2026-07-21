@@ -50,6 +50,7 @@ MOBILE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 ALLOWLIST=(
   "features/feature_flags/services/feature_flag_service.dart"
   "router/app_router.dart"
+  "services/community_content_label_service.dart"
   "services/connection_status_service.dart"
   "services/content_filter_service.dart"
   "services/curated_list_service.dart"

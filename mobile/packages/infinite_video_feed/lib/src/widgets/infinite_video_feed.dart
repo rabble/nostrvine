@@ -451,6 +451,19 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     _resumeCurrentPlaybackIfReady();
   }
 
+  /// Pauses the active video without changing the page or the feed's active
+  /// state.
+  ///
+  /// The imperative counterpart to [resumeCurrentPlayback]: use it when an
+  /// external [InfiniteVideoFeed.canAutoPlay] gate closes for the current
+  /// item (e.g. a community content warning just crossed the threshold) but
+  /// the gate-sync in [didUpdateWidget] can't detect the change because the
+  /// caller's predicate reads live external state. Unlike [pauseActive] this
+  /// leaves [_isActive] untouched, so a later reveal/reopen resumes cleanly.
+  void pauseCurrentPlayback() {
+    _pauseCurrentPlayback();
+  }
+
   /// Sets the playback volume (0.0 silent, 1.0 full).
   ///
   /// Only the active controller is updated immediately. Neighbour controllers

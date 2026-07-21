@@ -197,6 +197,15 @@ const _knownUntranslatedDebt = <String>{
   'deleteAccountConfirmUsernamePrompt',
   'deleteAccountConfirmationHintUsername',
   'deleteAccountWarningBody',
+  // Added by community content-warning tagging (#4771). Existing locales
+  // fall back to English until the next translation pass.
+  'communitySuggestTitle',
+  'communitySuggestSubtitle',
+  'communitySuggestSubmit',
+  'communitySuggestSuccess',
+  'communitySuggestFailure',
+  'communitySuggestAlready',
+  'communitySuggestActionLabel',
 };
 
 const _signatureVerificationKeys = <String>{

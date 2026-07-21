@@ -4,6 +4,7 @@
 export 'auto_action_button.dart';
 export 'comment_action_button.dart';
 export 'edit_action_button.dart';
+export 'help_classify_action_button.dart';
 export 'like_action_button.dart';
 export 'more_action_button.dart';
 export 'report_action_button.dart';

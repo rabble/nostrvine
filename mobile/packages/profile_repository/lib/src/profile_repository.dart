@@ -25,6 +25,20 @@ const _usernameByPubkeyUrl =
     'https://names.divine.video/api/username/by-pubkey';
 const _keycastNip05Url = 'https://login.divine.video/.well-known/nostr.json';
 
+// How long a Divine-identity determination is trusted before re-querying.
+//
+// Kept equal to ModerationLabelService._resolvedPubkeyTtl (24h) so the app
+// has one consistent "how long a NIP-05-derived identity is trusted" window.
+//
+// Trust posture note (#4948): this reverse lookup rides the same unpinned
+// name-server HTTPS surface as the moderation-identity NIP-05 resolution.
+// That issue owns the pin-vs-NIP-05 decision for that surface; this feature
+// aligns to whatever #4948 lands on rather than making an independent call.
+// Stakes here are lower (a compromise inflates community vote counts /
+// surfaces a false content warning, mitigated by "View Anyway"), not the
+// redirection of report DMs #4948 is primarily concerned with.
+const _divineIdentityCacheTtl = Duration(hours: 24);
+
 // Caps name-server HTTP calls so a slow or unreachable endpoint surfaces a
 // fast UsernameClaimError / UsernameCheckError instead of waiting on the
 // platform's TCP timeout (~20s on Android).
@@ -125,6 +139,16 @@ class ProfileRepository {
   /// Enables synchronous [hasProfile] checks for subscription
   /// manager filtering.
   final _knownCached = <String>{};
+
+  /// Cache of Divine-identity determinations keyed by lowercase pubkey,
+  /// with the timestamp of the lookup. Entries expire after
+  /// [_divineIdentityCacheTtl]. Bounded to [_divineIdentityCacheMax] entries
+  /// (oldest-inserted evicted first) so a long session can't grow it without
+  /// limit.
+  final _divineIdentityCache = <String, ({bool value, DateTime at})>{};
+
+  /// Maximum number of cached Divine-identity determinations.
+  static const _divineIdentityCacheMax = 500;
 
   /// Searches cached profiles from local storage only.
   ///
@@ -1277,6 +1301,66 @@ class ProfileRepository {
       );
       return null;
     }
+  }
+
+  /// Resolves whether [pubkey] is a Divine identity, distinguishing a genuine
+  /// verdict from an undetermined one.
+  ///
+  /// Used to bound "community" membership for viewer-suggested content
+  /// warnings (#4771): only suggestions from pubkeys with a Divine identity
+  /// count toward the display threshold. Anyone can still publish a label;
+  /// this only decides which authors the app counts.
+  ///
+  /// Returns `true`/`false` on a genuine `200` verdict (cached for
+  /// [_divineIdentityCacheTtl], 24h), and **`null`** when the lookup could
+  /// not be determined — a network/timeout error, a non-200 response, or an
+  /// unparseable/non-object body. `null` verdicts are never cached, so the
+  /// next lookup retries. See the `_divineIdentityCacheTtl` note for the
+  /// #4948 alignment.
+  Future<bool?> resolveDivineIdentity(String pubkey) async {
+    final normalized = pubkey.trim().toLowerCase();
+    // An empty pubkey is genuinely not a Divine identity, not "undetermined".
+    if (normalized.isEmpty) return false;
+
+    final cached = _divineIdentityCache[normalized];
+    if (cached != null &&
+        DateTime.now().difference(cached.at) < _divineIdentityCacheTtl) {
+      return cached.value;
+    }
+
+    bool? verdict;
+    try {
+      final response = await _httpClient
+          .get(Uri.parse('$_usernameByPubkeyUrl/$normalized'))
+          .timeout(_nameServerHttpTimeout);
+      if (response.statusCode == 200) {
+        // Decode-then-check: a naive cast throws a TypeError (an Error, not
+        // an Exception) for valid non-object JSON like `[]`, escaping the
+        // catch below instead of resolving to the documented sentinel.
+        final body = jsonDecode(response.body) as Object?;
+        if (body is Map<String, dynamic>) {
+          verdict = body['found'] == true;
+        }
+      }
+    } on Exception catch (e) {
+      Log.warning(
+        'by-pubkey lookup failed: $e',
+        name: 'ProfileRepository.resolveDivineIdentity',
+        category: LogCategory.api,
+      );
+    }
+
+    // Only a genuine 200 verdict is cached; undetermined lookups stay
+    // uncached so the next lookup retries (same posture as the backend
+    // identity cache).
+    if (verdict != null) {
+      if (_divineIdentityCache.length >= _divineIdentityCacheMax &&
+          !_divineIdentityCache.containsKey(normalized)) {
+        _divineIdentityCache.remove(_divineIdentityCache.keys.first);
+      }
+      _divineIdentityCache[normalized] = (value: verdict, at: DateTime.now());
+    }
+    return verdict;
   }
 
   /// Checks if a username is available for registration.
