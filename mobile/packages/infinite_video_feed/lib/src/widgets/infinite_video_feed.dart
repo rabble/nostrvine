@@ -1229,6 +1229,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
         stackTrace: stackTrace,
       );
       final errorType = classifyVideoError(
+        errorCode: nativePlayerErrorCodeFromError(e),
         errorMessage: e.toString(),
       );
       unawaited(_controllers.remove(index)?.dispose());
@@ -1373,6 +1374,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
         index,
         isTerminal: _isTerminalPlaybackFailure(e),
         errorType: classifyVideoError(
+          errorCode: nativePlayerErrorCodeFromError(e),
           errorMessage: e.toString(),
           source: nextSource,
         ),
@@ -1476,7 +1478,11 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       } else {
         _stopAndMarkError(
           index,
-          classifyVideoError(errorMessage: e.toString(), source: source),
+          classifyVideoError(
+            errorCode: nativePlayerErrorCodeFromError(e),
+            errorMessage: e.toString(),
+            source: source,
+          ),
         );
       }
     } finally {

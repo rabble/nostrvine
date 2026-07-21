@@ -1,4 +1,5 @@
 import 'package:divine_video_player/divine_video_player.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:infinite_video_feed/src/models/video_error_type.dart';
 import 'package:infinite_video_feed/src/utils/playback_sources.dart';
@@ -269,6 +270,30 @@ void main() {
       expect(
         isMediaProcessingError(Exception('Response completed in 2025 ms')),
         isFalse,
+      );
+    });
+  });
+
+  group('nativePlayerErrorCodeFromError', () {
+    test('parses errorCode from PlatformException details', () {
+      expect(
+        nativePlayerErrorCodeFromError(
+          PlatformException(
+            code: 'COMPOSITION_ERROR',
+            message: 'NSURLErrorDomain error -1013',
+            details: const <String, Object?>{'errorCode': 'auth_required'},
+          ),
+        ),
+        equals(NativePlayerErrorCode.authRequired),
+      );
+    });
+
+    test('ignores unknown PlatformException codes', () {
+      expect(
+        nativePlayerErrorCodeFromError(
+          PlatformException(code: 'COMPOSITION_ERROR'),
+        ),
+        isNull,
       );
     });
   });

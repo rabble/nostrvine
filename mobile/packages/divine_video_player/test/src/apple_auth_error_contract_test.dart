@@ -36,11 +36,33 @@ void main() {
         'NSURLErrorFailingURLResponseErrorKey',
       );
       final statusCheck = source.indexOf('httpResponse.statusCode == 401');
-      final statusMapping = source.indexOf('return "auth_required"');
+      final statusMapping = source.indexOf(
+        'return "auth_required"',
+        statusCheck,
+      );
 
       expect(responseBranch, greaterThanOrEqualTo(0));
       expect(statusCheck, greaterThan(responseBranch));
       expect(statusMapping, greaterThan(statusCheck));
+    });
+
+    test('returns typed auth details from composition-load failures', () {
+      final source = _appleSourceFile().readAsStringSync();
+
+      final catchBlock = source.indexOf('} catch {');
+      final derivedCode = source.indexOf(
+        'self.errorCode = self.errorCode(for: error as NSError)',
+        catchBlock,
+      );
+      final flutterError = source.indexOf('FlutterError(', derivedCode);
+      final details = source.indexOf(
+        r'details: self.errorCode.map { ["errorCode": $0] }',
+        flutterError,
+      );
+
+      expect(catchBlock, greaterThanOrEqualTo(0));
+      expect(derivedCode, greaterThan(catchBlock));
+      expect(details, greaterThan(flutterError));
     });
   });
 }

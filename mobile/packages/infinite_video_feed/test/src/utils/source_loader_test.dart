@@ -1,5 +1,5 @@
 import 'package:divine_video_player/divine_video_player.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:infinite_video_feed/src/utils/source_loader.dart';
 
@@ -188,6 +188,35 @@ void main() {
         expect(clips[1].httpHeaders, equals(headers));
       },
     );
+
+    test('does not fail over typed auth-required errors', () async {
+      final clips = <VideoClip>[];
+      final authError = PlatformException(
+        code: 'COMPOSITION_ERROR',
+        message: 'NSURLErrorDomain error -1013',
+        details: const <String, Object?>{'errorCode': 'auth_required'},
+      );
+      final controller = _RecordingControllerWithFailures(
+        clips.add,
+        failures: [authError],
+      );
+      addTearDown(controller.dispose);
+
+      await expectLater(
+        () => setSourceWithFallbacks(
+          index: 0,
+          controller: controller,
+          sources: ['optimizedUrl', 'hlsUrl'],
+          log: logs.add,
+        ),
+        throwsA(same(authError)),
+      );
+
+      expect(clips.map((clip) => clip.uri), equals(['optimizedUrl']));
+      expect(logs, hasLength(1));
+      expect(logs.single, contains('Source failed without failover'));
+      expect(logs.single, contains('code=NativePlayerErrorCode.authRequired'));
+    });
 
     test('uses headers returned for the successful failover source', () async {
       final clips = <VideoClip>[];

@@ -64,6 +64,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
     private var speed: Double = 1.0
     private var currentStatus: String = "idle"
     private var errorMessage: String?
+    private var errorCode: String?
     private var firstFrameRendered: Bool = false
     private var videoWidth: Int = 0
     private var videoHeight: Int = 0
@@ -271,6 +272,8 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                 self.safePreroll(at: startTime)
 
                 self.currentStatus = "ready"
+                self.errorMessage = nil
+                self.errorCode = nil
                 self.clearSetClipsTimeout()
                 DivineVideoPlayerLog.shared.info(
                     "Player \(self.playerId) ready: \(self.clipCount) clip(s), "
@@ -282,6 +285,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             } catch {
                 self.currentStatus = "error"
                 self.errorMessage = error.localizedDescription
+                self.errorCode = self.errorCode(for: error as NSError)
                 self.clearSetClipsTimeout()
                 self.clearBufferingWatchdog(resetReported: true)
                 DivineVideoPlayerLog.shared.error(
@@ -294,7 +298,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                     FlutterError(
                         code: "COMPOSITION_ERROR",
                         message: error.localizedDescription,
-                        details: nil
+                        details: self.errorCode.map { ["errorCode": $0] }
                     )
                 )
             }
@@ -617,6 +621,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         currentStatus = "idle"
         errorMessage = nil  // clear stale error so sendStateUpdate never emits
                             // status="error" after media has been released.
+        errorCode = nil
         sendStateUpdate()
         result(nil)
     }
@@ -839,12 +844,19 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                 case .readyToPlay:
                     self.clearSetClipsTimeout()
                     self.currentStatus = "ready"
+                    self.errorMessage = nil
+                    self.errorCode = nil
                     self.updateVideoSize(from: item)
                 case .failed:
                     self.clearSetClipsTimeout()
                     self.clearBufferingWatchdog(resetReported: true)
                     self.currentStatus = "error"
                     self.errorMessage = item.error?.localizedDescription
+                    if let itemError = item.error as NSError? {
+                        self.errorCode = self.errorCode(for: itemError)
+                    } else {
+                        self.errorCode = nil
+                    }
                     DivineVideoPlayerLog.shared.error(
                         "Player \(self.playerId) item failed: "
                             + "\(item.error?.localizedDescription ?? "unknown")",
@@ -1055,8 +1067,14 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             return nil
         }
 
-        guard let err = nsError else { return currentStatus == "error" ? "unknown" : nil }
+        guard let err = nsError else {
+            return currentStatus == "error" ? (errorCode ?? "unknown") : nil
+        }
 
+        return errorCode(for: err)
+    }
+
+    private func errorCode(for err: NSError) -> String {
         // HTTP errors carried inside AVFoundation errors.
         if let httpResponse = err.userInfo["NSURLErrorFailingURLResponseErrorKey"] as? HTTPURLResponse {
             if httpResponse.statusCode == 202 {

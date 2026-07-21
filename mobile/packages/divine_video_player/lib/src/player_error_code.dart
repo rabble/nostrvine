@@ -66,11 +66,13 @@ enum NativePlayerErrorCode {
   /// to the next source instead of retrying the current one.
   ///
   /// Network / timeout errors are transient and should stay on the same
-  /// source. HTTP 4xx/5xx and parse errors indicate the current source is not
-  /// usable right now, so the feed should skip to the next available source.
+  /// source. Auth errors apply to the whole media asset and should surface
+  /// immediately. Other HTTP 4xx/5xx and parse errors indicate the current
+  /// source is not usable right now, so the feed should skip to the next
+  /// available source.
   bool get shouldFailover => switch (this) {
     mediaProcessing => false,
-    authRequired => true,
+    authRequired => false,
     httpClientError => true,
     httpServerError => true,
     parseError => true,

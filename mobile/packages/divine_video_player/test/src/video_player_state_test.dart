@@ -8,8 +8,8 @@ void main() {
         expect(NativePlayerErrorCode.mediaProcessing.shouldFailover, isFalse);
       });
 
-      test('returns true for authRequired', () {
-        expect(NativePlayerErrorCode.authRequired.shouldFailover, isTrue);
+      test('returns false for authRequired', () {
+        expect(NativePlayerErrorCode.authRequired.shouldFailover, isFalse);
       });
 
       test('returns true for httpClientError', () {

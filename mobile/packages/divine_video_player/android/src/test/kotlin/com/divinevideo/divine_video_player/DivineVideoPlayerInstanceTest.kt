@@ -2,12 +2,15 @@ package com.divinevideo.divine_video_player
 
 import android.content.Context
 import android.graphics.SurfaceTexture
+import android.net.Uri
 import android.os.Handler
 import android.os.SystemClock
 import android.view.Surface
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
+import androidx.media3.datasource.DataSpec
+import androidx.media3.datasource.HttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
@@ -25,6 +28,7 @@ import io.mockk.unmockkConstructor
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import io.mockk.verifyOrder
+import java.io.IOException
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
@@ -442,7 +446,27 @@ class DivineVideoPlayerInstanceTest {
         every { error.message } returns "boom"
         listener.onPlayerError(error)
 
-        verify(exactly = 1) { result.error("PLAYER_ERROR", "boom", null) }
+        verify(exactly = 1) {
+            result.error("PLAYER_ERROR", "boom", mapOf("errorCode" to "unknown"))
+        }
+        verify(exactly = 0) { result.success(any()) }
+    }
+
+    @Test
+    fun `onPlayerError maps pending HTTP 401 setClips failure to auth_required`() {
+        val listener = capturePlayerListener()
+        val result = mockk<MethodChannel.Result>(relaxed = true)
+        instance.onMethodCall(setClipsCall("https://example.com/protected.mp4"), result)
+
+        listener.onPlayerError(httpStatusError(401))
+
+        verify(exactly = 1) {
+            result.error(
+                "PLAYER_ERROR",
+                "HTTP 401",
+                mapOf("errorCode" to "auth_required"),
+            )
+        }
         verify(exactly = 0) { result.success(any()) }
     }
 
@@ -461,6 +485,31 @@ class DivineVideoPlayerInstanceTest {
             null,
             PlaybackException.ERROR_CODE_DECODER_INIT_FAILED,
         ).also { unmockkStatic(SystemClock::class) }
+    }
+
+    private fun httpStatusError(status: Int): PlaybackException {
+        mockkStatic(SystemClock::class)
+        mockkStatic(Uri::class)
+        every { SystemClock.elapsedRealtime() } returns 0L
+        every { Uri.parse("https://example.com/protected.mp4") } returns mockk(relaxed = true)
+        try {
+            val cause = HttpDataSource.InvalidResponseCodeException(
+                status,
+                "HTTP $status",
+                IOException("HTTP $status"),
+                emptyMap(),
+                DataSpec(Uri.parse("https://example.com/protected.mp4")),
+                ByteArray(0),
+            )
+            return PlaybackException(
+                "HTTP $status",
+                cause,
+                PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS,
+            )
+        } finally {
+            unmockkStatic(Uri::class)
+            unmockkStatic(SystemClock::class)
+        }
     }
 
     @Test
@@ -499,7 +548,9 @@ class DivineVideoPlayerInstanceTest {
 
         // The third gives up and surfaces the error to Dart.
         listener.onPlayerError(decoderInitError("final boom"))
-        verify(exactly = 1) { result.error("PLAYER_ERROR", "final boom", null) }
+        verify(exactly = 1) {
+            result.error("PLAYER_ERROR", "final boom", mapOf("errorCode" to "decoder_error"))
+        }
     }
 
     @Test
@@ -512,7 +563,9 @@ class DivineVideoPlayerInstanceTest {
         listener.onPlayerError(decoderInitError())
         listener.onPlayerError(decoderInitError())
         listener.onPlayerError(decoderInitError("gave up"))
-        verify(exactly = 1) { result.error("PLAYER_ERROR", "gave up", null) }
+        verify(exactly = 1) {
+            result.error("PLAYER_ERROR", "gave up", mapOf("errorCode" to "decoder_error"))
+        }
 
         // A new clip load gets the full budget: the next decoder error is
         // retried instead of immediately failing the new pending result.
