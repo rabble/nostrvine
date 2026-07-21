@@ -18,6 +18,8 @@ import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart
 import 'package:openvine/widgets/vine_cached_image.dart';
 
 import '../builders/test_video_event_builder.dart';
+import '../helpers/test_provider_overrides.dart'
+    show createMockMediaCacheManager;
 
 Finder _findDivineIcon(DivineIconName name) =>
     find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
@@ -455,15 +457,24 @@ void main() {
     });
 
     group('dead media fallback', () {
+      // Route the thumbnail through a stubbed cache so its load fails
+      // deterministically (like an expired 401/404) and stays off the real
+      // on-disk cache in the merged test isolate.
+      setUp(() => debugImageCacheOverride = createMockMediaCacheManager());
+      tearDown(() => debugImageCacheOverride = null);
+
       testWidgets(
-        'renders a blurhash beneath the error card so expired media is '
-        'not a bare color',
+        'reveals the blurhash when a present thumbnail fails to load (#6242)',
         (tester) async {
           await tester.pumpWidget(
             buildWidget(errorType: VideoErrorType.notFound),
           );
           await tester.pumpAndSettle();
 
+          // The thumbnail collapsed into its (empty) errorWidget, so it no
+          // longer covers the blurhash beneath it...
+          expect(find.byKey(const ValueKey('error')), findsOneWidget);
+          // ...leaving the blurhash visible instead of a bare color.
           expect(find.byType(BlurhashDisplay), findsOneWidget);
         },
       );
