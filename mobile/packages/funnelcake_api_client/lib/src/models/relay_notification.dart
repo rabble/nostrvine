@@ -19,6 +19,8 @@ class RelayNotification {
     this.referencedVideoThumbnail,
     this.referencedDTag,
     this.rootEventId,
+    this.rootEventPubkey,
+    this.rootAddressableId,
     this.targetCommentId,
   });
 
@@ -68,6 +70,10 @@ class RelayNotification {
           : null,
       referencedDTag: (rawDTag != null && rawDTag.isNotEmpty) ? rawDTag : null,
       rootEventId: _nonEmpty(json['root_event_id'] as String?),
+      rootEventPubkey: _nonEmpty(
+        (json['root_event_pubkey'] as String?)?.toLowerCase(),
+      ),
+      rootAddressableId: _nonEmpty(json['root_addressable_id'] as String?),
       targetCommentId: _nonEmpty(json['target_comment_id'] as String?),
     );
   }
@@ -130,6 +136,29 @@ class RelayNotification {
   /// the notification directly to the video instead of resolving the comment
   /// event through a relay round-trip.
   final String? rootEventId;
+
+  /// Pubkey of the root video's author, when Funnelcake can resolve it
+  /// (from the reaction's NIP-22 root `P` tag / root coordinate).
+  ///
+  /// This is the *root* author, not necessarily the owner of the event the
+  /// notification anchors on: for a reaction on the user's comment on someone
+  /// else's video it is the *other* creator, and for a reaction on the user's
+  /// own video-reply it is again the other creator (the thread's root video
+  /// author), even though the user owns the replied-with video. It equals the
+  /// user's own pubkey only for a reaction on the user's own top-level video.
+  ///
+  /// Because of that, app layers use it as a *fallback* ownership signal —
+  /// consulted only when the anchor event's own metadata can't resolve the
+  /// owner — to detect a "liked your comment" that would otherwise be
+  /// mislabelled "liked your video" without a metadata round-trip.
+  final String? rootEventPubkey;
+
+  /// Full NIP-33 coordinate for the root video, when Funnelcake can resolve it.
+  ///
+  /// For actor-anchored comment/reply rows this lets taps route directly to the
+  /// stable root video (`34236:<root_event_pubkey>:<root_d_tag>`) instead of
+  /// resolving the comment event first.
+  final String? rootAddressableId;
 
   /// Comment event ID included by Funnelcake for NIP-22 comment notifications.
   final String? targetCommentId;
