@@ -41,11 +41,6 @@ class NostrAppSandboxScreen extends ConsumerStatefulWidget {
   static const path = '/apps/:appId/sandbox';
   static const bridgeChannelName = 'divineSandboxBridge';
 
-  /// Default [ImagePicker] backing the Android `<input type="file">` picker.
-  /// Exposed so tests can swap in a mock; production reads it as-is.
-  @visibleForTesting
-  static ImagePicker imagePicker = ImagePicker();
-
   const NostrAppSandboxScreen({
     required this.app,
     this.sandboxBuilder,
@@ -284,18 +279,18 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
     // Android, so image uploads inside sandboxed apps (e.g. badges) do nothing.
     final platformController = controller.platform;
     if (platformController is AndroidWebViewController) {
+      final imagePicker = ImagePicker();
       await platformController.setOnShowFileSelector(
-        (params) => sandboxAndroidFileSelector(
-          params,
-          NostrAppSandboxScreen.imagePicker,
-        ),
+        (params) => sandboxAndroidFileSelector(params, imagePicker),
       );
       // The picker hands back a file:// URI; the WebView can only read it with
       // file access enabled, which defaults to false on Android 11+. Without
       // this the file is chosen but never populates the <input> (0-byte read).
-      // Cross-origin reads from file:// stay disabled (their own settings
-      // default to false), so an allowed https app can't script-read local
-      // files — only the user-chosen upload is readable.
+      // The https sandbox document still can't script-read local file
+      // contents: same-origin policy blocks fetch/XHR to file://, and canvas
+      // tainting blocks reading back <img src="file://…"> pixels. (The
+      // setAllow*FileURLs knobs govern file://-origin documents, which we
+      // never load, so they stay at their safe defaults.)
       await platformController.setAllowFileAccess(true);
     }
 
@@ -800,10 +795,13 @@ Future<List<String>> sandboxAndroidFileSelector(
     }
     return <String>[Uri.file(file.path).toString()];
   } catch (error, stackTrace) {
-    Log.error(
+    // Expected, user-driven paths land here too (e.g. denying the camera
+    // permission throws PlatformException), so log at warning, not error.
+    Log.log(
       'Sandbox WebView file selection failed: $error',
       name: 'NostrAppSandboxScreen',
       category: LogCategory.ui,
+      level: LogLevel.warning,
       error: error,
       stackTrace: stackTrace,
     );
