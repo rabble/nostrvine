@@ -555,7 +555,9 @@ class DraftStorageService {
     final draft = await getDraftById(id);
     if (draft == null) return;
 
-    // Delete from DB first (clips cascade via FK), then delete files
+    // Delete the draft and its clip rows first, then delete files — so the
+    // reference scan in FileCleanupService no longer sees this draft's clips
+    // and can reclaim their media (DraftsDao.deleteDraft removes both rows).
     await _draftsDao.deleteDraft(id);
 
     // Ghost frames live only in the clip `data` blob, so — like draft-local
@@ -710,7 +712,9 @@ class DraftStorageService {
         .expand((draft) => draft.localAudioFilePaths)
         .toSet();
 
-    // Clear DB first (clips cascade via FK), then delete files
+    // Clear drafts and their clip rows first, then delete files — so the
+    // reference scan can reclaim the media (DraftsDao.clearAll removes both;
+    // library clips with a NULL draftId are preserved).
     await _draftsDao.clearAll();
 
     // Every draft and its clips are gone; the clips that survive are library

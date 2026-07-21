@@ -635,6 +635,62 @@ void main() {
         },
       );
 
+      test(
+        'deleting a draft removes its unreferenced frame files',
+        () async {
+          final frame0 = writeFrame('draft_only_frame0.jpg');
+          final frame1 = writeFrame('draft_only_frame1.jpg');
+          final clip = framesOnlyClip(frames: [frame0, frame1]);
+
+          await service.saveDraft(
+            DivineVideoDraft.create(
+              id: 'draft_only_stop_motion',
+              clips: [clip],
+              title: 'Stop motion',
+              description: '',
+              hashtags: const {},
+              selectedApproach: 'stop_motion',
+            ),
+          );
+
+          await service.deleteDraft('draft_only_stop_motion');
+
+          // No surviving row references the stills, so the frames are reaped.
+          // Before deleteDraft removed the draft's clip rows, they lingered
+          // (the FK cascade never fires) and kept the frames pinned on disk.
+          expect(frame0.existsSync(), isFalse);
+          expect(frame1.existsSync(), isFalse);
+        },
+      );
+
+      test(
+        'clearing all drafts removes unreferenced frame files',
+        () async {
+          final frame0 = writeFrame('clear_frame0.jpg');
+          final frame1 = writeFrame('clear_frame1.jpg');
+          final clip = framesOnlyClip(
+            frames: [frame0, frame1],
+            id: 'clear_clip',
+          );
+
+          await service.saveDraft(
+            DivineVideoDraft.create(
+              id: 'draft_clear_stop_motion',
+              clips: [clip],
+              title: 'Stop motion',
+              description: '',
+              hashtags: const {},
+              selectedApproach: 'stop_motion',
+            ),
+          );
+
+          await service.clearAllDrafts();
+
+          expect(frame0.existsSync(), isFalse);
+          expect(frame1.existsSync(), isFalse);
+        },
+      );
+
       test('validated autosave keeps frame-only stop-motion clips', () async {
         final frame0 = writeFrame('autosave_frame0.jpg');
         final frame1 = writeFrame('autosave_frame1.jpg');
