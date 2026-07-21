@@ -1146,8 +1146,8 @@ class NotificationRepository {
           notificationId: n.id,
           sourcePubkey: n.sourcePubkey,
           referencedVideoEventId: eventId,
-          referencedVideoOwnerPubkey:
-              videosById[eventId]?.pubkey ?? n.rootEventPubkey,
+          referencedVideoOwnerPubkey: videosById[eventId]?.pubkey,
+          rootEventPubkey: n.rootEventPubkey,
         );
         misattributed?.add(n);
         continue;
@@ -1433,10 +1433,13 @@ class NotificationRepository {
     NotificationKind mapped,
     RelayNotification notification,
   ) {
-    // The current payload does not include the owning pubkey for the parent
-    // video, so synthesizing a stable route here can point at the wrong
-    // creator's addressable video. Fall back to resolver-based navigation
-    // until the API includes an authoritative owner component.
+    // The payload now carries the root video's author (`root_event_pubkey`),
+    // but a stable owner-scoped route for these reclassified foreign-video
+    // rows also needs the root video's d-tag, and the recipient-scoped
+    // [_recipientScopedVideoAddressableId] pins the pubkey to [_userPubkey] —
+    // wrong for another creator's video. Synthesizing an owner-scoped route
+    // for these rows is a focused follow-up; until then, fall back to
+    // resolver-based navigation.
     return null;
   }
 
@@ -1445,21 +1448,29 @@ class NotificationRepository {
     required Map<String, VideoStats> videosById,
     String? rootEventPubkey,
   }) {
-    // Authoritative owner straight from the payload: the root video's author.
-    // For a reaction anchored to the user's comment on someone else's video
-    // this is the *other* creator, so a "liked your video" here is a mislabel
-    // and must be reclassified — even when the video metadata was never
-    // fetched (the anchor id is the comment, not a video, so [videosById]
-    // can't resolve it). A genuine like on the user's own video carries the
-    // user's own pubkey here, so the guard never fires for it.
+    // Authoritative owner of the event the notification actually anchors on.
+    // When metadata resolves it, it decides ownership outright: a like/repost
+    // on the user's own video — including a video-reply whose thread root
+    // belongs to another creator — is a genuine "…your video" and must NOT be
+    // reclassified. Trusting the payload's root author here instead would
+    // mislabel that like as "liked your comment" and silently drop the repost.
+    final ownerPubkey = videosById[referencedVideoEventId]?.pubkey;
+    if (ownerPubkey != null && ownerPubkey.isNotEmpty) {
+      return ownerPubkey != _userPubkey;
+    }
+    // Anchor metadata is unresolvable — the anchor id is the user's comment,
+    // not a video, so [videosById] can't own it. Fall back to the payload's
+    // root video author: for a reaction on the user's comment on someone
+    // else's video this is the *other* creator, so a "liked your video" here
+    // is a mislabel and must be reclassified without a metadata round-trip.
+    // A genuine like on the user's own top-level video carries the user's own
+    // pubkey here, so the fallback stays inert for it.
     if (rootEventPubkey != null &&
         rootEventPubkey.isNotEmpty &&
         rootEventPubkey != _userPubkey) {
       return true;
     }
-    final ownerPubkey = videosById[referencedVideoEventId]?.pubkey;
-    if (ownerPubkey == null || ownerPubkey.isEmpty) return false;
-    return ownerPubkey != _userPubkey;
+    return false;
   }
 
   void _logReclassifiedOwnerMismatch({
@@ -1467,6 +1478,7 @@ class NotificationRepository {
     required String sourcePubkey,
     required String referencedVideoEventId,
     required String? referencedVideoOwnerPubkey,
+    required String? rootEventPubkey,
   }) {
     Log.info(
       'Reclassifying misattributed video notification as actor-anchored: '
@@ -1474,6 +1486,7 @@ class NotificationRepository {
       'sourcePubkey=$sourcePubkey '
       'referencedVideoEventId=$referencedVideoEventId '
       'referencedVideoOwnerPubkey=${referencedVideoOwnerPubkey ?? 'unknown'} '
+      'rootEventPubkey=${rootEventPubkey ?? 'unknown'} '
       'currentUserPubkey=$_userPubkey',
       name: 'NotificationRepository',
       category: LogCategory.api,

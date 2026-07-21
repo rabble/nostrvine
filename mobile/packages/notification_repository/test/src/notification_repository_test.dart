@@ -1377,18 +1377,62 @@ void main() {
         expect(item.type, equals(NotificationKind.like));
       });
 
-      test('reaction with no root_event_pubkey and no video metadata stays '
-          'like (guard inert)', () async {
-        stubNotifications([
-          makeNotification(referencedEventId: 'unknown_video'),
-        ]);
-        stubProfiles({});
+      test(
+        'like on the user-owned referenced video stays like even when '
+        'root_event_pubkey is another creator (video-reply; metadata wins)',
+        () async {
+          // Reliability order: the anchor event's own metadata is authoritative
+          // over the payload's root author. A like on the user's own
+          // video-reply resolves to the user in videosById, while the thread's
+          // root video belongs to someone else. It must stay "liked your video"
+          // — trusting root_event_pubkey here would mislabel it as likeComment.
+          stubNotifications([
+            makeNotification(
+              referencedEventId: 'my_video_reply',
+              rootEventPubkey: 'other_owner_pubkey',
+            ),
+          ]);
+          stubProfiles({});
+          stubVideoStats(
+            'my_video_reply',
+            makeVideoStats(id: 'my_video_reply'),
+          );
 
-        final page = await repository.getNotifications();
+          final page = await repository.getNotifications();
 
-        final item = page.items.single as VideoNotification;
-        expect(item.type, equals(NotificationKind.like));
-      });
+          final item = page.items.single as VideoNotification;
+          expect(item.type, equals(NotificationKind.like));
+        },
+      );
+
+      test(
+        'repost on the user-owned referenced video stays repost even when '
+        'root_event_pubkey is another creator (not silently dropped)',
+        () async {
+          // The repost case is the sharper failure: a misattributed repost is
+          // dropped by _reclassifiedMisattributedKind. If the payload root
+          // author overrode the user-owned anchor metadata, a genuine
+          // "reposted your video" on the user's own video-reply would vanish.
+          stubNotifications([
+            makeNotification(
+              notificationType: 'repost',
+              sourceKind: 6,
+              referencedEventId: 'my_video_reply',
+              rootEventPubkey: 'other_owner_pubkey',
+            ),
+          ]);
+          stubProfiles({});
+          stubVideoStats(
+            'my_video_reply',
+            makeVideoStats(id: 'my_video_reply'),
+          );
+
+          final page = await repository.getNotifications();
+
+          final item = page.items.single as VideoNotification;
+          expect(item.type, equals(NotificationKind.repost));
+        },
+      );
 
       test('comment on a non-owned video is reclassified as reply '
           'instead of commented on your video (#4813)', () async {

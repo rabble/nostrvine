@@ -133,12 +133,19 @@ class RelayNotification {
   /// event through a relay round-trip.
   final String? rootEventId;
 
-  /// Pubkey of the root video's author, when Funnelcake can resolve it.
+  /// Pubkey of the root video's author, when Funnelcake can resolve it
+  /// (from the reaction's NIP-22 root `P` tag / root coordinate).
   ///
-  /// Authoritative ownership signal: for a reaction anchored to the user's
-  /// comment on someone else's video this is the *other* creator's pubkey,
-  /// while for a like on the user's own video it is the user's own pubkey.
-  /// Lets app layers detect a "liked your comment" that would otherwise be
+  /// This is the *root* author, not necessarily the owner of the event the
+  /// notification anchors on: for a reaction on the user's comment on someone
+  /// else's video it is the *other* creator, and for a reaction on the user's
+  /// own video-reply it is again the other creator (the thread's root video
+  /// author), even though the user owns the replied-with video. It equals the
+  /// user's own pubkey only for a reaction on the user's own top-level video.
+  ///
+  /// Because of that, app layers use it as a *fallback* ownership signal —
+  /// consulted only when the anchor event's own metadata can't resolve the
+  /// owner — to detect a "liked your comment" that would otherwise be
   /// mislabelled "liked your video" without a metadata round-trip.
   final String? rootEventPubkey;
 
