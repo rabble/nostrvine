@@ -319,18 +319,26 @@ class ClipLibraryService {
         ownerPubkey: ownerPubkey,
       );
       final documentsPath = await getDocumentsPath();
-      final clips = <DivineVideoClip>[];
+      // A set that went through the editor has both a library row and an
+      // autosave-draft row; softDelete(clearDraftId: true) nulls draft_id on
+      // both, so both match the trashed (draftId IS NULL) query and parse to
+      // the same clip.id. Keep one per clip id — mirroring getAllClips — so a
+      // trashed set shows (and counts) exactly once. Rows arrive newest-deleted
+      // first, so the retained (first) entry keeps that ordering.
+      final byClipId = <String, DivineVideoClip>{};
       for (final row in rows) {
         final clip = _tryParseClipRow(
           row,
           documentsPath,
           label: 'trashed clip',
         );
-        if (clip != null) {
-          clips.add(clip.copyWith(deletedAt: row.deletedAt));
-        }
+        if (clip == null) continue;
+        byClipId.putIfAbsent(
+          clip.id,
+          () => clip.copyWith(deletedAt: row.deletedAt),
+        );
       }
-      return clips;
+      return byClipId.values.toList();
     } catch (e) {
       Log.error(
         '❌ Failed to load trashed clips: $e',

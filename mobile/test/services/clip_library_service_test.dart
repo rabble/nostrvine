@@ -252,6 +252,50 @@ void main() {
       );
 
       test(
+        'trashing a dual-row set with clearDraftId shows once in trash',
+        () async {
+          final draftService = DraftStorageService(
+            draftsDao: database.draftsDao,
+            clipsDao: database.clipsDao,
+          );
+          final clip = DivineVideoClip(
+            id: 'sm_dup',
+            stopMotionFrames: const [
+              StopMotionClipFrame(
+                path: '/tmp/f0.jpg',
+                duration: Duration(milliseconds: 167),
+              ),
+            ],
+            thumbnailPath: '/tmp/f0.jpg',
+            duration: const Duration(milliseconds: 167),
+            recordedAt: DateTime(2026),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          );
+
+          // Library row (recorder) + autosave-draft row (editor).
+          await service.saveClip(clip);
+          await draftService.saveDraft(
+            DivineVideoDraft.create(
+              id: VideoEditorConstants.autoSaveId,
+              clips: [clip],
+              title: '',
+              description: '',
+              hashtags: const {},
+              selectedApproach: '',
+            ),
+          );
+
+          // The recorder path nulls draft_id on both rows, so both match the
+          // trashed (draftId IS NULL) query — the set must still surface once.
+          await service.softDelete('sm_dup', clearDraftId: true);
+
+          final trashed = await service.getTrashedClips();
+          expect(trashed.map((c) => c.id), ['sm_dup']);
+        },
+      );
+
+      test(
         'getTrashedClips skips a corrupt clip and returns valid ones',
         () async {
           final validClip = DivineVideoClip(
