@@ -966,18 +966,18 @@ class VideoEvent {
       shareKind == NIP71VideoKinds.addressableShortVideo ||
       shareKind == NIP71VideoKinds.addressableNormalVideo;
 
-  /// Zalgo-safe video content for display.
-  String get displayContent => stripZalgo(content);
+  /// Display-sanitized video content (zalgo caps, well-formed UTF-16).
+  String get displayContent => sanitizeForDisplay(content);
 
-  /// Zalgo-safe video title for display. Returns `null` when no title is set.
-  String? get displayTitle => title != null ? stripZalgo(title!) : null;
+  /// Display-sanitized video title. Returns `null` when no title is set.
+  String? get displayTitle => title != null ? sanitizeForDisplay(title!) : null;
 
   /// Zalgo-safe embedded author name for display.
   ///
   /// Returns `null` when no embedded author name is set. Profile display-name
   /// getters have their own sanitizer path.
   String? get displayAuthorName =>
-      authorName != null ? stripZalgo(authorName!) : null;
+      authorName != null ? sanitizeForDisplay(authorName!) : null;
 
   /// Root event id from an uppercase NIP-22 reply tag.
   ///

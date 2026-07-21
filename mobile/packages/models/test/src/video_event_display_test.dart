@@ -64,6 +64,20 @@ void main() {
 
       expect(build(content: malformed).displayContent, equals('\uFFFDa\uFFFD'));
     });
+
+    test('replaces unpaired surrogates from truncated emoji in content', () {
+      // Lone high surrogate (truncated emoji) crashes Flutter's
+      // paragraph builder if it reaches a Text widget (#6111).
+      final content = String.fromCharCodes([0x68, 0x69, 0xD83D]);
+      expect(build(content: content).displayContent, equals('hi\uFFFD'));
+    });
+
+    test('preserves valid emoji pairs in content', () {
+      expect(
+        build(content: 'fun \u{1F600}').displayContent,
+        equals('fun \u{1F600}'),
+      );
+    });
   });
 
   group('VideoEvent.displayAuthorName', () {

@@ -146,11 +146,12 @@ class ProfileSearchResult {
 
   /// Get the best display name available.
   ///
-  /// Sanitizes [displayName] and [name] against zalgo overflow; the [pubkey]
+  /// Sanitizes [displayName] and [name] for display (zalgo caps,
+  /// well-formed UTF-16); the [pubkey]
   /// hex fallback is returned as-is (hex contains no combining characters).
   String get bestDisplayName {
     final source = displayName ?? name;
-    return source != null ? stripZalgo(source) : pubkey;
+    return source != null ? sanitizeForDisplay(source) : pubkey;
   }
 
   /// Converts this [ProfileSearchResult] to a [UserProfile] for app use.

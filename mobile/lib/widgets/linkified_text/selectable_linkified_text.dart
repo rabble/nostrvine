@@ -8,6 +8,8 @@ import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_navigation.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_span_builder.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_support.dart';
+import 'package:text_sanitizer/text_sanitizer.dart';
+import 'package:text_sanitizer/text_sanitizer.dart';
 
 class SelectableLinkifiedText extends ConsumerStatefulWidget {
   const SelectableLinkifiedText({
@@ -38,7 +40,9 @@ class _SelectableLinkifiedTextState
 
   @override
   Widget build(BuildContext context) {
-    final text = widget.text;
+    // Unpaired surrogates in sender-controlled content crash the
+    // paragraph builder during layout (#6111).
+    final text = sanitizeUtf16(widget.text);
     if (text.isEmpty) {
       _replaceCurrentSpans(const []);
       return const SizedBox.shrink();

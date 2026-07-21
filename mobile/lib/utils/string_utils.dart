@@ -2,6 +2,7 @@
 // ABOUTME: Provides safe substring operations and string truncation for logging
 
 import 'package:count_formatter/count_formatter.dart';
+import 'package:text_sanitizer/text_sanitizer.dart' as text_sanitizer;
 
 /// Utility functions for safe string operations
 class StringUtils {
@@ -52,25 +53,6 @@ class StringUtils {
   /// this at render boundaries that display untrusted text.
   ///
   /// Returns [input] unchanged when it is already well-formed.
-  static String sanitizeUtf16(String input) {
-    final units = input.codeUnits;
-    final out = <int>[];
-    for (var i = 0; i < units.length; i++) {
-      final unit = units[i];
-      if (unit >= 0xD800 && unit <= 0xDBFF) {
-        final next = i + 1 < units.length ? units[i + 1] : 0;
-        if (next >= 0xDC00 && next <= 0xDFFF) {
-          out
-            ..add(unit)
-            ..add(next);
-          i++;
-        }
-      } else if (unit >= 0xDC00 && unit <= 0xDFFF) {
-        continue;
-      } else {
-        out.add(unit);
-      }
-    }
-    return out.length == units.length ? input : String.fromCharCodes(out);
-  }
+  static String sanitizeUtf16(String input) =>
+      text_sanitizer.sanitizeUtf16(input);
 }

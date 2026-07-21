@@ -328,6 +328,15 @@ void main() {
 
         expect(result.bestDisplayName, equals('B\u0300\u0301'));
       });
+
+      test('replaces unpaired surrogates in displayName', () {
+        final result = ProfileSearchResult(
+          pubkey: testPubkey,
+          displayName: String.fromCharCodes([0x68, 0x69, 0xD83D]),
+        );
+
+        expect(result.bestDisplayName, equals('hi\uFFFD'));
+      });
     });
 
     group('toUserProfile', () {
