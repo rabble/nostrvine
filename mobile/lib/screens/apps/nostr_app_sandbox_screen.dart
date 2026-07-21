@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -39,6 +40,11 @@ class NostrAppSandboxScreen extends ConsumerStatefulWidget {
   static const routeName = 'nostr-app-sandbox';
   static const path = '/apps/:appId/sandbox';
   static const bridgeChannelName = 'divineSandboxBridge';
+
+  /// Default [ImagePicker] backing the Android `<input type="file">` picker.
+  /// Exposed so tests can swap in a mock; production reads it as-is.
+  @visibleForTesting
+  static ImagePicker imagePicker = ImagePicker();
 
   const NostrAppSandboxScreen({
     required this.app,
@@ -273,6 +279,25 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
         }
       },
     );
+
+    // Without this, `webview_flutter` silently ignores HTML file inputs on
+    // Android, so image uploads inside sandboxed apps (e.g. badges) do nothing.
+    final platformController = controller.platform;
+    if (platformController is AndroidWebViewController) {
+      await platformController.setOnShowFileSelector(
+        (params) => sandboxAndroidFileSelector(
+          params,
+          NostrAppSandboxScreen.imagePicker,
+        ),
+      );
+      // The picker hands back a file:// URI; the WebView can only read it with
+      // file access enabled, which defaults to false on Android 11+. Without
+      // this the file is chosen but never populates the <input> (0-byte read).
+      // Cross-origin reads from file:// stay disabled (their own settings
+      // default to false), so an allowed https app can't script-read local
+      // files — only the user-chosen upload is readable.
+      await platformController.setAllowFileAccess(true);
+    }
 
     // Replace the pigeon message channel with the native frame-attesting one
     // (iOS: WKScriptMessageHandler reading frameInfo; Android: WebMessageListener
@@ -740,4 +765,56 @@ class _BootstrappedSandboxPage {
 
   final Uri baseUri;
   final String html;
+}
+
+/// Resolves an Android WebView file-chooser request into `file://` URIs the
+/// WebView can read back into the HTML `<input type="file">`.
+///
+/// Sandboxed apps only ever need images (e.g. badge artwork), so this offers
+/// the native image picker — camera when the input requests capture, gallery
+/// otherwise. Returns an empty list when the input wants a non-image type or
+/// the user cancels, which the WebView treats as "no file selected".
+@visibleForTesting
+Future<List<String>> sandboxAndroidFileSelector(
+  FileSelectorParams params,
+  ImagePicker picker,
+) async {
+  final acceptsImage =
+      params.acceptTypes.isEmpty || params.acceptTypes.any(_acceptsImageType);
+  if (!acceptsImage) {
+    return const <String>[];
+  }
+
+  try {
+    if (params.mode == FileSelectorMode.openMultiple) {
+      final files = await picker.pickMultiImage();
+      return files.map((file) => Uri.file(file.path).toString()).toList();
+    }
+
+    final source = params.isCaptureEnabled
+        ? ImageSource.camera
+        : ImageSource.gallery;
+    final file = await picker.pickImage(source: source);
+    if (file == null) {
+      return const <String>[];
+    }
+    return <String>[Uri.file(file.path).toString()];
+  } catch (error, stackTrace) {
+    Log.error(
+      'Sandbox WebView file selection failed: $error',
+      name: 'NostrAppSandboxScreen',
+      category: LogCategory.ui,
+      error: error,
+      stackTrace: stackTrace,
+    );
+    return const <String>[];
+  }
+}
+
+bool _acceptsImageType(String type) {
+  final normalized = type.trim().toLowerCase();
+  return normalized.startsWith('image/') ||
+      const {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic'}.contains(
+        normalized,
+      );
 }
