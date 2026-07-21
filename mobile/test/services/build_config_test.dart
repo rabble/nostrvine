@@ -22,11 +22,9 @@ void main() {
     test('should provide defaults when env vars not set', () {
       const config = BuildConfiguration();
 
-      // When FF_NEW_CAMERA_UI is not set, should default to false
-      expect(config.getDefault(FeatureFlag.newCameraUI), isFalse);
+      // When the env vars are not set, these flags default to false
       expect(config.getDefault(FeatureFlag.accountSwitching), isFalse);
       expect(config.getDefault(FeatureFlag.enhancedAnalytics), isFalse);
-      expect(config.getDefault(FeatureFlag.newProfileLayout), isFalse);
     });
 
     test('should have debug tools enabled by default in debug builds', () {
@@ -73,10 +71,6 @@ void main() {
     test('should provide environment variable key mapping', () {
       const config = BuildConfiguration();
 
-      expect(
-        config.getEnvironmentKey(FeatureFlag.newCameraUI),
-        equals('FF_NEW_CAMERA_UI'),
-      );
       expect(
         config.getEnvironmentKey(FeatureFlag.debugTools),
         equals('FF_DEBUG_TOOLS'),

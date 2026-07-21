@@ -36,8 +36,10 @@ void main() {
 
     testWidgets('should show child when flag enabled', (tester) async {
       // Set flag as enabled
-      when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
-      when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.getBool('ff_enhancedAnalytics')).thenReturn(true);
+      when(
+        () => mockPrefs.containsKey('ff_enhancedAnalytics'),
+      ).thenReturn(true);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -46,7 +48,7 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: FeatureFlagWidget(
-              flag: FeatureFlag.newCameraUI,
+              flag: FeatureFlag.enhancedAnalytics,
               child: Text('Enabled Content'),
             ),
           ),
@@ -73,7 +75,7 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: FeatureFlagWidget(
-              flag: FeatureFlag.newCameraUI,
+              flag: FeatureFlag.enhancedAnalytics,
               disabled: Text('Disabled Content'),
               child: Text('Enabled Content'),
             ),
@@ -100,7 +102,7 @@ void main() {
                 children: [
                   const Text('Before'),
                   FeatureFlagWidget(
-                    flag: FeatureFlag.newCameraUI,
+                    flag: FeatureFlag.enhancedAnalytics,
                     child: Container(
                       height: 100,
                       width: 100,
@@ -131,7 +133,7 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: FeatureFlagWidget(
-              flag: FeatureFlag.newCameraUI,
+              flag: FeatureFlag.enhancedAnalytics,
               disabled: Text('Disabled Content'),
               child: Text('Enabled Content'),
             ),
@@ -146,15 +148,17 @@ void main() {
       expect(find.text('Enabled Content'), findsNothing);
 
       // Enable the flag
-      when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
-      when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.getBool('ff_enhancedAnalytics')).thenReturn(true);
+      when(
+        () => mockPrefs.containsKey('ff_enhancedAnalytics'),
+      ).thenReturn(true);
 
       // Trigger a rebuild by getting the service and changing the flag
       final container = ProviderScope.containerOf(
         tester.element(find.byType(FeatureFlagWidget)),
       );
       final service = container.read(featureFlagServiceProvider);
-      await service.setFlag(FeatureFlag.newCameraUI, true);
+      await service.setFlag(FeatureFlag.enhancedAnalytics, true);
 
       await tester.pumpAndSettle();
 
@@ -165,8 +169,10 @@ void main() {
 
     testWidgets('should handle multiple flags independently', (tester) async {
       // Set up different states for different flags
-      when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
-      when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.getBool('ff_enhancedAnalytics')).thenReturn(true);
+      when(
+        () => mockPrefs.containsKey('ff_enhancedAnalytics'),
+      ).thenReturn(true);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -177,7 +183,7 @@ void main() {
             home: Column(
               children: [
                 FeatureFlagWidget(
-                  flag: FeatureFlag.newCameraUI,
+                  flag: FeatureFlag.enhancedAnalytics,
                   disabled: Text('Camera UI Disabled'),
                   child: Text('Camera UI Enabled'),
                 ),
@@ -216,7 +222,7 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: FeatureFlagWidget(
-              flag: FeatureFlag.newCameraUI,
+              flag: FeatureFlag.enhancedAnalytics,
               disabled: Text('Disabled Content'),
               loading: CircularProgressIndicator(),
               child: Text('Enabled Content'),

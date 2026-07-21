@@ -8,8 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
-import 'package:openvine/features/feature_flags/models/feature_flag.dart';
-import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
 // For isVideoActiveProvider (router-driven)
 import 'package:openvine/providers/app_providers.dart';
@@ -670,15 +668,12 @@ class VideoOverlayActionColumn extends ConsumerWidget {
     // your own video, so the slot is reused for Edit instead. Both gates
     // resolve to false for non-owners and during preview / when the
     // editor feature flag is off, leaving the column unchanged.
-    final editorEnabled = ref
-        .watch(featureFlagServiceProvider)
-        .isEnabled(FeatureFlag.enableVideoEditorV1);
     final currentUserPubkey = ref
         .watch(authServiceProvider)
         .currentPublicKeyHex;
     final isOwnVideo =
         currentUserPubkey != null && currentUserPubkey == video.pubkey;
-    final showEditButton = !isPreviewMode && editorEnabled && isOwnVideo;
+    final showEditButton = !isPreviewMode && isOwnVideo;
 
     return Column(
       spacing: 20,

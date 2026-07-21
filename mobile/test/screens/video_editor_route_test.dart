@@ -227,9 +227,6 @@ class _MockFeatureFlagService extends FeatureFlagService {
 
   @override
   bool isEnabled(FeatureFlag flag) {
-    if (flag == FeatureFlag.enableVideoEditorV1) {
-      return enableVideoEditor;
-    }
     return false;
   }
 }

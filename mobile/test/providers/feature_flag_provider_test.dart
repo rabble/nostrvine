@@ -83,8 +83,10 @@ void main() {
       }
 
       // Set up specific flag value
-      when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
-      when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.getBool('ff_enhancedAnalytics')).thenReturn(true);
+      when(
+        () => mockPrefs.containsKey('ff_enhancedAnalytics'),
+      ).thenReturn(true);
 
       final container = ProviderContainer(
         overrides: [sharedPreferencesProvider.overrideWithValue(mockPrefs)],
@@ -94,7 +96,7 @@ void main() {
       await service.initialize();
 
       final isEnabled = container.read(
-        isFeatureEnabledProvider(FeatureFlag.newCameraUI),
+        isFeatureEnabledProvider(FeatureFlag.enhancedAnalytics),
       );
       expect(isEnabled, isTrue);
 
@@ -124,16 +126,16 @@ void main() {
 
       // Initial state
       final initialEnabled = container.read(
-        isFeatureEnabledProvider(FeatureFlag.newCameraUI),
+        isFeatureEnabledProvider(FeatureFlag.enhancedAnalytics),
       );
       expect(initialEnabled, isFalse);
 
       // Change flag
-      await service.setFlag(FeatureFlag.newCameraUI, true);
+      await service.setFlag(FeatureFlag.enhancedAnalytics, true);
 
       // State should update
       final newEnabled = container.read(
-        isFeatureEnabledProvider(FeatureFlag.newCameraUI),
+        isFeatureEnabledProvider(FeatureFlag.enhancedAnalytics),
       );
       expect(newEnabled, isTrue);
 
