@@ -21,6 +21,9 @@ class StopMotionRenderService {
   StopMotionRenderService._();
 
   static const _logName = 'StopMotionRenderService';
+  static final RegExp _materializedOutputName = RegExp(
+    r'^stop_motion_\d+\.mp4$',
+  );
 
   /// Output frame rate of the assembled video.
   ///
@@ -158,6 +161,21 @@ class StopMotionRenderService {
     final outputPath = materializedClip.video?.file?.path;
     if (outputPath == null) return;
 
+    await _deleteOutputPath(outputPath);
+  }
+
+  /// True for mp4 files created by this service's on-demand materializer.
+  static bool isMaterializedOutputPath(String filePath) {
+    return _materializedOutputName.hasMatch(path.basename(filePath));
+  }
+
+  /// Deletes a materialized stop-motion mp4 by path.
+  static Future<void> cleanupMaterializedOutputPath(String outputPath) async {
+    if (!isMaterializedOutputPath(outputPath)) return;
+    await _deleteOutputPath(outputPath);
+  }
+
+  static Future<void> _deleteOutputPath(String outputPath) async {
     try {
       final file = File(outputPath);
       if (file.existsSync()) await file.delete();

@@ -112,6 +112,7 @@ class _VideoEditorStopMotionFrameStripState
   /// releasing without dragging would silently reorder. See
   /// [_onBlockDragStart].
   double _blockDragOffsetX = 0;
+  double _dragTargetOffsetX = 0;
 
   // Finger tracking (global X is the source of truth so auto-scroll and the
   // gesture callbacks never fight over the position).
@@ -231,6 +232,7 @@ class _VideoEditorStopMotionFrameStripState
       _dragStartScrollOffset = widget.scrollController?.offset ?? 0;
       _dragTileWidth = tileWidth;
       _dragFingerRatio = fingerRatio;
+      _dragTargetOffsetX = fingerX - (tileLeft + tileWidth / 2);
     });
   }
 
@@ -312,7 +314,7 @@ class _VideoEditorStopMotionFrameStripState
       }
       return;
     }
-    final target = _indexAtX(_effectiveLocalX, widths);
+    final target = _indexAtX(_effectiveLocalX - _dragTargetOffsetX, widths);
     if (target != _dragIndex) {
       HapticFeedback.selectionClick();
       final frame = _orderedFrames.removeAt(_dragIndex!);
@@ -375,13 +377,14 @@ class _VideoEditorStopMotionFrameStripState
 
     if (_isBlockDrag) {
       final slot = _blockSlot;
+      final moved = (_effectiveLocalX - _dragStartLocalX).abs() > 0.5;
       setState(() {
         _isReordering = false;
         _isBlockDrag = false;
         _blockFrames = const [];
         _orderedFrames = List.of(widget.frames);
       });
-      widget.onBlockMove?.call(slot);
+      if (moved) widget.onBlockMove?.call(slot);
       return;
     }
 
@@ -391,6 +394,7 @@ class _VideoEditorStopMotionFrameStripState
     setState(() {
       _isReordering = false;
       _dragIndex = null;
+      _dragTargetOffsetX = 0;
     });
 
     if (from != to) widget.onReorder(from, to);

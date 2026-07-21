@@ -41,6 +41,7 @@ void main() {
     int? selectedFrameIndex,
     bool isMultiSelectMode = false,
     Set<int> selectedFrameIndexes = const {},
+    void Function(int from, int to)? onReorder,
     ValueChanged<int>? onBlockMove,
   }) {
     return tester.pumpWidget(
@@ -58,7 +59,7 @@ void main() {
               selectedFrameIndexes: selectedFrameIndexes,
               onBlockMove: onBlockMove,
               onFrameTapped: onFrameTapped,
-              onReorder: (_, _) {},
+              onReorder: onReorder ?? (_, _) {},
             ),
           ),
         ),
@@ -202,21 +203,42 @@ void main() {
     expect(movedToSlot, 2);
   });
 
+  testWidgets('right-half block pickup released without dragging is a no-op', (
+    tester,
+  ) async {
+    int? movedToSlot;
+    await pump(
+      tester,
+      onFrameTapped: (_) {},
+      isMultiSelectMode: true,
+      selectedFrameIndexes: {1},
+      onBlockMove: (slot) => movedToSlot = slot,
+    );
+
+    // Long-press the RIGHT half of the selected middle tile (each 50px wide),
+    // then release without any drag. The block's home slot is 1 (its original
+    // position), so it must stay put — not phantom-shift to slot 2.
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byType(Image).at(1)) + const Offset(15, 0),
+    );
+    await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+    await tester.pump();
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    expect(movedToSlot, isNull);
+  });
+
   testWidgets(
-    'right-half block pickup released without dragging is a no-op',
+    'right-half single-frame pickup released without dragging is a no-op',
     (tester) async {
-      int? movedToSlot;
+      ({int from, int to})? reorder;
       await pump(
         tester,
         onFrameTapped: (_) {},
-        isMultiSelectMode: true,
-        selectedFrameIndexes: {1},
-        onBlockMove: (slot) => movedToSlot = slot,
+        onReorder: (from, to) => reorder = (from: from, to: to),
       );
 
-      // Long-press the RIGHT half of the selected middle tile (each 50px wide),
-      // then release without any drag. The block's home slot is 1 (its original
-      // position), so it must stay put — not phantom-shift to slot 2.
       final gesture = await tester.startGesture(
         tester.getCenter(find.byType(Image).at(1)) + const Offset(15, 0),
       );
@@ -225,7 +247,31 @@ void main() {
       await gesture.up();
       await tester.pumpAndSettle();
 
-      expect(movedToSlot, 1);
+      expect(reorder, isNull);
+    },
+  );
+
+  testWidgets(
+    'non-contiguous block pickup released without dragging is a no-op',
+    (tester) async {
+      int? movedToSlot;
+      await pump(
+        tester,
+        onFrameTapped: (_) {},
+        isMultiSelectMode: true,
+        selectedFrameIndexes: {0, 2},
+        onBlockMove: (slot) => movedToSlot = slot,
+      );
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(Image).at(0)),
+      );
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      await tester.pump();
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      expect(movedToSlot, isNull);
     },
   );
 

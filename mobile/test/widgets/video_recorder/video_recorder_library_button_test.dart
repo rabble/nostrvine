@@ -517,8 +517,10 @@ void main() {
           await tester.pumpAndSettle();
 
           expect(find.byType(Image), findsNothing);
-          final inkWell = tester.widget<InkWell>(find.byType(InkWell));
-          expect(inkWell.onTap, isNull);
+          final detector = tester.widget<GestureDetector>(
+            find.byType(GestureDetector),
+          );
+          expect(detector.onTap, isNull);
         },
       );
     });
@@ -539,8 +541,10 @@ void main() {
         await tester.pump();
 
         expect(find.text('2'), findsOneWidget);
-        final inkWell = tester.widget<InkWell>(find.byType(InkWell));
-        expect(inkWell.onTap, isNull);
+        final detector = tester.widget<GestureDetector>(
+          find.byType(GestureDetector),
+        );
+        expect(detector.onTap, isNull);
 
         final semantics = tester.widget<Semantics>(
           find

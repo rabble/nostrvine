@@ -299,9 +299,11 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     // reordered frame list; clamp the selection so it never points past the end.
     final selected = state.selectedFrameIndex;
     final frames = event.clip.stopMotionFrames;
-    final clampedSelection = selected != null && frames != null
-        ? selected.clamp(0, frames.length - 1)
-        : selected;
+    final clampedSelection = frames == null
+        ? selected
+        : frames.isEmpty
+        ? null
+        : selected?.clamp(0, frames.length - 1);
     final prunedMultiSelection = frames != null
         ? {
             for (final index in state.selectedFrameIndexes)
@@ -313,6 +315,10 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       state.copyWith(
         clips: List.unmodifiable(newClips),
         selectedFrameIndex: clampedSelection,
+        clearSelectedFrameIndex:
+            selected != null &&
+            event.clip.video == null &&
+            (frames == null || frames.isEmpty),
         selectedFrameIndexes: prunedMultiSelection,
       ),
     );
@@ -1130,10 +1136,9 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         );
       }
       final error = switch (e) {
-        StateError() || TypeError() || RangeError() => Reportable(
-          e,
-          context: '_onSaveClipToLibraryRequested',
-        ),
+        StateError() ||
+        TypeError() ||
+        RangeError() => Reportable(e, context: '_onSaveClipToLibraryRequested'),
         _ => e,
       };
       addError(error, stackTrace);

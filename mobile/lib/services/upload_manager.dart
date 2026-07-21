@@ -183,6 +183,7 @@ class UploadManager implements BackgroundAwareService {
   // Extracted concerns
   late final UploadRetryPolicy _retryPolicy;
   late final UploadProgressReporter _reporter;
+  final Map<String, Set<String>> _transientRenderPathsByUploadId = {};
 
   // Processing-completion polls keyed by upload id, so dispose() can
   // cancel them — an untracked periodic timer would keep firing against
@@ -481,15 +482,12 @@ class UploadManager implements BackgroundAwareService {
       thumbnailTimestamp: draft.thumbnailTimestamp,
     );
 
-    // _startUploadInternal awaits upload completion and throws on failure, so
-    // reaching here means the input was fully consumed. Delete the transient
-    // fallback renders; a failed upload throws above and keeps its render so a
-    // retry can reuse it.
-    for (final render in transientRenders) {
-      await StopMotionRenderService.cleanupMaterializedOutput(
-        sourceClip: render.source,
-        materializedClip: render.materialized,
-      );
+    if (transientRenders.isNotEmpty) {
+      _transientRenderPathsByUploadId[upload.id] = {
+        for (final render in transientRenders)
+          if (render.source.video == null && render.source.isStopMotion)
+            ?render.materialized.video?.file?.path,
+      };
     }
     return upload;
   }
@@ -1567,7 +1565,10 @@ class UploadManager implements BackgroundAwareService {
   }
 
   /// Remove completed, published, or unrecoverable failed uploads.
-  Future<void> cleanupCompletedUploads() => _store.cleanupCompletedUploads();
+  Future<void> cleanupCompletedUploads() async {
+    await _cleanupTransientRendersForDiscardedUploads();
+    await _store.cleanupCompletedUploads();
+  }
 
   /// Update upload status (public method for VideoEventPublisher)
   Future<void> updateUploadStatus(
@@ -1594,11 +1595,48 @@ class UploadManager implements BackgroundAwareService {
     );
 
     await _store.update(updatedUpload);
+    if (status == UploadStatus.published) {
+      await _cleanupTransientRendersForUpload(uploadId);
+    }
     Log.info(
       'Updated upload status: $uploadId -> $status',
       name: 'UploadManager',
       category: LogCategory.video,
     );
+  }
+
+  Future<void> _cleanupTransientRendersForUpload(String uploadId) async {
+    final paths = _transientRenderPathsByUploadId.remove(uploadId);
+    if (paths == null) {
+      final upload = getUpload(uploadId);
+      if (upload != null &&
+          StopMotionRenderService.isMaterializedOutputPath(
+            upload.localVideoPath,
+          )) {
+        await StopMotionRenderService.cleanupMaterializedOutputPath(
+          upload.localVideoPath,
+        );
+      }
+      return;
+    }
+    for (final path in paths) {
+      await StopMotionRenderService.cleanupMaterializedOutputPath(path);
+    }
+  }
+
+  Future<void> _cleanupTransientRendersForDiscardedUploads() async {
+    for (final upload in pendingUploads) {
+      if (upload.status != UploadStatus.failed ||
+          upload.resumableSession != null ||
+          !StopMotionRenderService.isMaterializedOutputPath(
+            upload.localVideoPath,
+          )) {
+        continue;
+      }
+      await StopMotionRenderService.cleanupMaterializedOutputPath(
+        upload.localVideoPath,
+      );
+    }
   }
 
   /// Get upload statistics

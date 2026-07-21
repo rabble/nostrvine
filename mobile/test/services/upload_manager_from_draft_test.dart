@@ -277,11 +277,11 @@ void main() {
     });
 
     test(
-      'deletes the transient stop-motion render after a successful upload',
+      'keeps transient stop-motion render until the upload is published',
       () async {
         // No finalRenderedClip, so startUploadFromDraft hits the fallback that
         // re-renders the frames-only clip into a documents-dir mp4.
-        final renderPath = '${tempDir.path}/documents/stop_motion_fallback.mp4';
+        final renderPath = '${tempDir.path}/documents/stop_motion_123.mp4';
         StopMotionRenderService.assembleOverride =
             ({
               required frames,
@@ -328,12 +328,107 @@ void main() {
           nostrPubkey: 'test-pubkey',
         );
 
-        // The fallback render was the upload input, and it is reaped once the
-        // upload has consumed it — no orphaned mp4 left in documents.
         expect(upload.localVideoPath, equals(renderPath));
+        expect(File(renderPath).existsSync(), isTrue);
+
+        await uploadManager.updateUploadStatus(
+          upload.id,
+          UploadStatus.published,
+          nostrEventId: 'event-id',
+        );
+
         expect(File(renderPath).existsSync(), isFalse);
       },
     );
+
+    test('cleans failed non-resumable transient stop-motion renders', () async {
+      final renderPath = '${tempDir.path}/documents/stop_motion_456.mp4';
+      StopMotionRenderService.assembleOverride =
+          ({
+            required frames,
+            required aspectRatio,
+            frameRate = StopMotionRenderService.defaultFrameRate,
+            taskId,
+          }) async {
+            File(renderPath)
+              ..parent.createSync(recursive: true)
+              ..writeAsBytesSync([0, 1, 2, 3]);
+            return renderPath;
+          };
+      StopMotionRenderService.probeDurationOverride = (_) async =>
+          const Duration(seconds: 2);
+      addTearDown(() {
+        StopMotionRenderService.assembleOverride = null;
+        StopMotionRenderService.probeDurationOverride = null;
+      });
+
+      when(
+        () => mockBlossomService.uploadVideoWithResume(
+          videoFile: any(named: 'videoFile'),
+          nostrPubkey: any(named: 'nostrPubkey'),
+          taskId: any(named: 'taskId'),
+          title: any(named: 'title'),
+          description: any(named: 'description'),
+          hashtags: any(named: 'hashtags'),
+          proofManifestJson: any(named: 'proofManifestJson'),
+          useBackgroundFirst: any(named: 'useBackgroundFirst'),
+          resumableTimeout: any(named: 'resumableTimeout'),
+          resumableSession: any(named: 'resumableSession'),
+          onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).thenAnswer(
+        (_) async => const BlossomUploadResult(
+          success: false,
+          errorMessage: 'upload failed',
+        ),
+      );
+
+      final draft = DivineVideoDraft.create(
+        clips: [
+          DivineVideoClip(
+            id: 'sm_clip',
+            stopMotionFrames: const [
+              StopMotionClipFrame(
+                path: '/tmp/f0.jpg',
+                duration: Duration(milliseconds: 167),
+              ),
+            ],
+            duration: const Duration(milliseconds: 167),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: AspectRatio.vertical,
+            originalAspectRatio: 9 / 16,
+          ),
+        ],
+        title: 'Stop Motion',
+        description: 'Fallback render',
+        hashtags: {'sm'},
+        selectedApproach: 'native',
+      );
+
+      await expectLater(
+        () => uploadManager.startUploadFromDraft(
+          draft: draft,
+          nostrPubkey: 'test-pubkey',
+        ),
+        throwsA(isA<Exception>()),
+      );
+      expect(File(renderPath).existsSync(), isTrue);
+      final failedUpload = uploadManager.pendingUploads.firstWhere(
+        (upload) => upload.localVideoPath == renderPath,
+      );
+      expect(failedUpload.status, UploadStatus.failed);
+
+      await uploadManager.cleanupCompletedUploads();
+
+      expect(File(renderPath).existsSync(), isFalse);
+      expect(
+        uploadManager.pendingUploads.where(
+          (upload) => upload.localVideoPath == renderPath,
+        ),
+        isEmpty,
+      );
+    });
 
     test(
       'throws when upload finishes in failed state instead of returning a completed upload',

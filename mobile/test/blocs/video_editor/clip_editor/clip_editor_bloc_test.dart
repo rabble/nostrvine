@@ -91,10 +91,7 @@ DivineVideoClip _createClipNoFile({String id = 'clip-no-file'}) {
   );
 }
 
-DivineVideoClip _createStopMotionClip({
-  String id = 'sm',
-  int frameCount = 3,
-}) {
+DivineVideoClip _createStopMotionClip({String id = 'sm', int frameCount = 3}) {
   final frames = [
     for (var i = 0; i < frameCount; i++)
       StopMotionClipFrame(
@@ -573,6 +570,35 @@ void main() {
           ),
         ],
       );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'clears the selection when a frame update leaves the clip empty',
+        build: buildBloc,
+        seed: () => ClipEditorState(
+          clips: [_createStopMotionClip()],
+          selectedFrameIndex: 0,
+          isEditing: true,
+        ),
+        act: (bloc) {
+          final clip = bloc.state.clips.first;
+          final empty = DivineVideoClip(
+            id: clip.id,
+            stopMotionFrames: const [],
+            duration: Duration.zero,
+            recordedAt: clip.recordedAt,
+            targetAspectRatio: clip.targetAspectRatio,
+            originalAspectRatio: clip.originalAspectRatio,
+          );
+          bloc.add(ClipEditorClipUpdated(clipId: clip.id, clip: empty));
+        },
+        expect: () => [
+          isA<ClipEditorState>().having(
+            (s) => s.selectedFrameIndex,
+            'selectedFrameIndex',
+            isNull,
+          ),
+        ],
+      );
     });
 
     group('frame multi-select', () {
@@ -589,11 +615,7 @@ void main() {
           isA<ClipEditorState>()
               .having((s) => s.isMultiSelectMode, 'isMultiSelectMode', isTrue)
               .having((s) => s.isEditing, 'isEditing', isFalse)
-              .having(
-                (s) => s.selectedFrameIndex,
-                'selectedFrameIndex',
-                isNull,
-              )
+              .having((s) => s.selectedFrameIndex, 'selectedFrameIndex', isNull)
               .having((s) => s.selectedFrameIndexes, 'selectedFrameIndexes', {
                 1,
               }),
@@ -972,10 +994,7 @@ void main() {
           expect(state.clips, hasLength(4));
           expect(state.clips.last.id, equals('c'));
           // The selection still points at 'c', not the clip now at index 2.
-          expect(
-            state.clips[state.currentClipIndex].id,
-            equals('c'),
-          );
+          expect(state.clips[state.currentClipIndex].id, equals('c'));
         },
       );
 
@@ -1874,11 +1893,7 @@ void main() {
                 'trimStart',
                 Duration.zero,
               )
-              .having(
-                (s) => s.clips.first.trimEnd,
-                'trimEnd',
-                Duration.zero,
-              )
+              .having((s) => s.clips.first.trimEnd, 'trimEnd', Duration.zero)
               .having(
                 (s) => s.clips.first.minTrimStart,
                 'minTrimStart',
@@ -2292,11 +2307,7 @@ void main() {
               ),
           isA<ClipEditorState>()
               .having((s) => s.isTransforming, 'isTransforming', isFalse)
-              .having(
-                (s) => s.transformingClipId,
-                'transformingClipId',
-                isNull,
-              )
+              .having((s) => s.transformingClipId, 'transformingClipId', isNull)
               .having(
                 (s) => s.clips.first.forwardVideoPath,
                 'forwardVideoPath',
@@ -2346,11 +2357,7 @@ void main() {
           ),
           isA<ClipEditorState>()
               .having((s) => s.isTransforming, 'isTransforming', isFalse)
-              .having(
-                (s) => s.transformingClipId,
-                'transformingClipId',
-                isNull,
-              )
+              .having((s) => s.transformingClipId, 'transformingClipId', isNull)
               .having(
                 (s) => s.lastTransformResult,
                 'lastTransformResult',
@@ -2360,11 +2367,7 @@ void main() {
         errors: () => [
           isA<Reportable<Object>>()
               .having((r) => r.unwrap(), 'unwrap', isA<StateError>())
-              .having(
-                (r) => r.context,
-                'context',
-                '_onClipTransformRequested',
-              ),
+              .having((r) => r.context, 'context', '_onClipTransformRequested'),
         ],
       );
 
@@ -2404,10 +2407,7 @@ void main() {
           expect(bloc.state.isTransforming, isFalse);
           expect(bloc.state.transformingClipId, isNull);
           expect(bloc.state.clips, isEmpty);
-          expect(
-            bloc.state.lastTransformResult,
-            isA<ClipTransformDiscarded>(),
-          );
+          expect(bloc.state.lastTransformResult, isA<ClipTransformDiscarded>());
 
           await bloc.close();
         },
@@ -3369,9 +3369,8 @@ void main() {
             saveClipToLibrary: recordSave,
           ),
           seed: () => ClipEditorState(clips: twoClips),
-          act: (bloc) => bloc.add(
-            const ClipEditorSaveClipToLibraryRequested(clipId: 'a'),
-          ),
+          act: (bloc) =>
+              bloc.add(const ClipEditorSaveClipToLibraryRequested(clipId: 'a')),
           verify: (bloc) {
             expect(forwardedOverlays, isNull);
           },
@@ -3385,9 +3384,8 @@ void main() {
           saveClipToLibrary: recordSave,
         ),
         seed: () => ClipEditorState(clips: twoClips),
-        act: (bloc) => bloc.add(
-          const ClipEditorSaveClipToLibraryRequested(clipId: 'a'),
-        ),
+        act: (bloc) =>
+            bloc.add(const ClipEditorSaveClipToLibraryRequested(clipId: 'a')),
         verify: (bloc) {
           expect(savedToLibrary.map((c) => c.id), equals(['flattened-a']));
           expect(bloc.state.lastClipLibrarySave, isA<ClipLibrarySaveSuccess>());
@@ -3403,9 +3401,8 @@ void main() {
           saveClipToLibrary: recordSave,
         ),
         seed: () => ClipEditorState(clips: twoClips, currentClipIndex: 1),
-        act: (bloc) => bloc.add(
-          const ClipEditorSaveClipToLibraryRequested(clipId: 'b'),
-        ),
+        act: (bloc) =>
+            bloc.add(const ClipEditorSaveClipToLibraryRequested(clipId: 'b')),
         verify: (bloc) {
           expect(bloc.state.clips.map((c) => c.id), equals(['a', 'b']));
           expect(bloc.state.currentClipIndex, equals(1));
@@ -3419,9 +3416,8 @@ void main() {
           saveClipToLibrary: recordSave,
         ),
         seed: () => ClipEditorState(clips: twoClips, currentClipIndex: 1),
-        act: (bloc) => bloc.add(
-          const ClipEditorSaveClipToLibraryRequested(clipId: 'a'),
-        ),
+        act: (bloc) =>
+            bloc.add(const ClipEditorSaveClipToLibraryRequested(clipId: 'a')),
         verify: (bloc) {
           expect(savedToLibrary.map((c) => c.id), equals(['flattened-a']));
         },
@@ -3451,9 +3447,8 @@ void main() {
           saveClipToLibrary: recordSave,
         ),
         seed: () => ClipEditorState(clips: twoClips),
-        act: (bloc) => bloc.add(
-          const ClipEditorSaveClipToLibraryRequested(clipId: 'a'),
-        ),
+        act: (bloc) =>
+            bloc.add(const ClipEditorSaveClipToLibraryRequested(clipId: 'a')),
         verify: (bloc) {
           expect(savedToLibrary, isEmpty);
           expect(bloc.state.lastClipLibrarySave, isA<ClipLibrarySaveFailure>());
@@ -3468,9 +3463,8 @@ void main() {
           saveClipToLibrary: ({required clip}) async => false,
         ),
         seed: () => ClipEditorState(clips: twoClips),
-        act: (bloc) => bloc.add(
-          const ClipEditorSaveClipToLibraryRequested(clipId: 'a'),
-        ),
+        act: (bloc) =>
+            bloc.add(const ClipEditorSaveClipToLibraryRequested(clipId: 'a')),
         verify: (bloc) {
           expect(bloc.state.lastClipLibrarySave, isA<ClipLibrarySaveFailure>());
         },
@@ -3483,9 +3477,8 @@ void main() {
           saveClipToLibrary: recordSave,
         ),
         seed: () => ClipEditorState(clips: twoClips),
-        act: (bloc) => bloc.add(
-          const ClipEditorSaveClipToLibraryRequested(clipId: 'a'),
-        ),
+        act: (bloc) =>
+            bloc.add(const ClipEditorSaveClipToLibraryRequested(clipId: 'a')),
         errors: () => [
           isA<Reportable<Object>>().having(
             (r) => r.unwrap(),
@@ -3516,9 +3509,7 @@ void main() {
           await Future<void>.delayed(Duration.zero);
           bloc.add(const ClipEditorClipRemoved('a'));
           await Future<void>.delayed(Duration.zero);
-          flattenCompleter.complete(
-            _createClip(id: 'flattened-a'),
-          );
+          flattenCompleter.complete(_createClip(id: 'flattened-a'));
         },
         verify: (bloc) {
           // The user deleted the clip they asked to save — storing it anyway
@@ -3548,9 +3539,7 @@ void main() {
           // A double-tap while the first render is still running.
           bloc.add(const ClipEditorSaveClipToLibraryRequested(clipId: 'a'));
           await Future<void>.delayed(Duration.zero);
-          flattenCompleter.complete(
-            _createClip(id: 'flattened-a'),
-          );
+          flattenCompleter.complete(_createClip(id: 'flattened-a'));
           await Future<void>.delayed(Duration.zero);
         },
         verify: (bloc) {

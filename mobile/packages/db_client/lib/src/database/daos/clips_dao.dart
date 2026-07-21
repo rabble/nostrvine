@@ -367,20 +367,11 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
     final unresolved = filenames.difference(referenced).toList();
     if (unresolved.isEmpty) return referenced;
 
-    // One scan for every remaining filename. The LIKE only narrows which rows
-    // are worth decoding — a match is not a reference on its own (the filename
-    // could sit in any string field), so every hit is confirmed against the
-    // decoded JSON below.
-    final likeClauses = List.filled(
-      unresolved.length,
-      r"data LIKE ? ESCAPE '\'",
-    ).join(' OR ');
+    // One full JSON scan for every remaining filename. The data column is
+    // unindexed, so an OR-chain of LIKE predicates still scans the table and
+    // can exceed SQLite's expression-depth limit for large stop-motion sets.
     final candidateRows = await customSelect(
-      'SELECT data FROM clips WHERE $likeClauses',
-      variables: [
-        for (final filename in unresolved)
-          Variable.withString('%${_escapeSqlLike(filename)}%'),
-      ],
+      'SELECT data FROM clips',
       readsFrom: {clips},
     ).get();
 
@@ -438,12 +429,5 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
     }
 
     return false;
-  }
-
-  static String _escapeSqlLike(String value) {
-    return value
-        .replaceAll(r'\', r'\\')
-        .replaceAll('%', r'\%')
-        .replaceAll('_', r'\_');
   }
 }

@@ -233,9 +233,7 @@ class VideoRecorderBloc
     on<VideoRecorderRecorderModeSet>(_onRecorderModeSet);
     on<VideoRecorderTimerCycled>(_onTimerCycled);
     on<VideoRecorderResetRequested>(_onResetRequested);
-    on<VideoRecorderShowLastClipOverlayToggled>(
-      _onShowLastClipOverlayToggled,
-    );
+    on<VideoRecorderShowLastClipOverlayToggled>(_onShowLastClipOverlayToggled);
     on<VideoRecorderGridLinesToggled>(_onGridLinesToggled);
     on<VideoRecorderStopMotionFrameCaptured>(
       _onStopMotionFrameCaptured,
@@ -267,6 +265,7 @@ class VideoRecorderBloc
   CountdownSoundService? _countdownSoundService;
   Timer? _focusPointTimer;
   Timer? _zoomIndicatorTimer;
+  Future<void> _stopMotionSessionWrite = Future.value();
   bool _remoteRecordControlEnabled = false;
 
   /// How long the zoom ruler stays visible after the last pinch activity
@@ -752,10 +751,7 @@ class VideoRecorderBloc
     }
 
     emit(
-      state.copyWith(
-        isStartingRecording: true,
-        baseZoomLevel: state.zoomLevel,
-      ),
+      state.copyWith(isStartingRecording: true, baseZoomLevel: state.zoomLevel),
     );
     unawaited(HapticService.recordingFeedback());
 
@@ -1718,7 +1714,11 @@ class VideoRecorderBloc
 
     // Fire-and-forget so shooting stays instant; the library row is upserted
     // by the stable session id, so an out-of-order write just re-writes it.
-    unawaited(_persistStopMotionSession(framePaths));
+    unawaited(
+      _enqueueStopMotionSessionWrite(
+        () => _persistStopMotionSession(framePaths),
+      ),
+    );
   }
 
   /// Removes the last captured stop-motion frame, deletes its file, and
@@ -1740,13 +1740,35 @@ class VideoRecorderBloc
       // Whole session undone — drop its library row. The frame file is deleted
       // above, so a row-only delete is correct here.
       unawaited(
-        _readClipManager().removeStopMotionSessionFromLibrary(
-          _stopMotionSessionId(frames.first),
+        _enqueueStopMotionSessionWrite(
+          () => _readClipManager().removeStopMotionSessionFromLibrary(
+            _stopMotionSessionId(frames.first),
+          ),
         ),
       );
     } else {
-      unawaited(_persistStopMotionSession(remaining));
+      unawaited(
+        _enqueueStopMotionSessionWrite(
+          () => _persistStopMotionSession(remaining),
+        ),
+      );
     }
+  }
+
+  Future<void> _enqueueStopMotionSessionWrite(
+    Future<void> Function() operation,
+  ) {
+    final run = _stopMotionSessionWrite
+        .catchError((Object e, StackTrace s) {
+          Log.warning(
+            '⚠️ Previous stop-motion session write failed: $e',
+            name: 'VideoRecorderBloc',
+            category: LogCategory.video,
+          );
+        })
+        .then((_) => operation());
+    _stopMotionSessionWrite = run;
+    return run;
   }
 
   /// Upserts the current capture session (the stills at [framePaths]) as a
@@ -1868,8 +1890,10 @@ class VideoRecorderBloc
   Future<void> _discardStopMotionSession(List<String> framePaths) async {
     if (framePaths.isEmpty) return;
     await _deleteFrameFiles(framePaths);
-    await _readClipManager().removeStopMotionSessionFromLibrary(
-      _stopMotionSessionId(framePaths.first),
+    await _enqueueStopMotionSessionWrite(
+      () => _readClipManager().removeStopMotionSessionFromLibrary(
+        _stopMotionSessionId(framePaths.first),
+      ),
     );
   }
 
@@ -2196,6 +2220,15 @@ class VideoRecorderBloc
     _focusPointTimer = null;
     _zoomIndicatorTimer?.cancel();
     _zoomIndicatorTimer = null;
+    try {
+      await _stopMotionSessionWrite;
+    } catch (e) {
+      Log.warning(
+        '🧹 Stop-motion session write cleanup failed: $e',
+        name: 'VideoRecorderBloc',
+        category: LogCategory.system,
+      );
+    }
     try {
       await _audioPlaybackService?.dispose();
       _audioPlaybackService = null;

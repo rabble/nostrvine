@@ -147,6 +147,30 @@ void main() {
       });
     });
 
+    group('referencedFilenames', () {
+      test(
+        'scans large unresolved filename sets without SQL expression blowup',
+        () async {
+          await dao.upsertClip(
+            id: 'clip_frames',
+            draftId: testDraftId,
+            orderIndex: 0,
+            durationMs: 3000,
+            recordedAt: DateTime(2023, 11, 14, 10),
+            filePath: null,
+            thumbnailPath: null,
+            data: '{"stopMotionFrames":[{"path":"frame_1001.jpg"}]}',
+          );
+
+          final filenames = {for (var i = 0; i < 1200; i++) 'frame_$i.jpg'};
+
+          final referenced = await dao.referencedFilenames(filenames);
+
+          expect(referenced, {'frame_1001.jpg'});
+        },
+      );
+    });
+
     group('getClipsByDraftId', () {
       test('returns clips sorted by orderIndex ascending', () async {
         await dao.upsertClip(
