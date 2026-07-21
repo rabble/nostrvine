@@ -1,6 +1,7 @@
 // ABOUTME: Riverpod notifier for tracking seen videos with reactive state
 // ABOUTME: Provides observable state that videoEventsProvider can watch for reordering
 
+import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/services/seen_videos_service.dart';
 import 'package:openvine/state/seen_videos_state.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -15,12 +16,12 @@ class SeenVideosNotifier extends _$SeenVideosNotifier {
 
   @override
   SeenVideosState build() {
+    _service = ref.watch(seenVideosServiceProvider);
     _initializeService();
     return SeenVideosState.initial;
   }
 
   void _initializeService() {
-    _service = SeenVideosService();
     _service!
         .initialize()
         .then((_) {

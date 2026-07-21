@@ -109,10 +109,13 @@ PersonalEventCacheService personalEventCacheService(Ref ref) {
   return service;
 }
 
-/// Seen videos service for tracking viewed content
-@riverpod
+/// Seen videos service for tracking viewed content.
+@Riverpod(keepAlive: true)
 SeenVideosService seenVideosService(Ref ref) {
-  return SeenVideosService();
+  final service = SeenVideosService();
+  unawaited(service.initialize());
+  ref.onDispose(service.dispose);
+  return service;
 }
 
 /// Subscription manager for centralized subscription management
@@ -454,6 +457,7 @@ VideosRepository videosRepository(Ref ref) {
   final contentFilterService = ref.watch(contentFilterServiceProvider);
   final moderationLabelService = ref.watch(moderationLabelServiceProvider);
   final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
+  final seenVideosService = ref.watch(seenVideosServiceProvider);
   final divineHostFilterService = ref.read(divineHostFilterServiceProvider);
   final feedAspectRatioPreference = ref.watch(
     feedAspectRatioPreferenceServiceProvider,
@@ -479,6 +483,10 @@ VideosRepository videosRepository(Ref ref) {
     ),
     funnelcakeApiClient: funnelcakeClient,
     inMemoryFeedCache: InMemoryFeedCache(),
+    seenVideoLookup: SeenVideoLookup(
+      wasSeenRecently: seenVideosService.wasSeenRecently,
+      initialize: seenVideosService.initialize,
+    ),
   );
 
   // Clear the in-memory feed cache (home + per-author) on logout/account

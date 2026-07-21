@@ -114,12 +114,12 @@ final class PersonalEventCacheServiceProvider
 String _$personalEventCacheServiceHash() =>
     r'f8fbeaaa8db79abff62ce85e3ca683320c5f0e50';
 
-/// Seen videos service for tracking viewed content
+/// Seen videos service for tracking viewed content.
 
 @ProviderFor(seenVideosService)
 final seenVideosServiceProvider = SeenVideosServiceProvider._();
 
-/// Seen videos service for tracking viewed content
+/// Seen videos service for tracking viewed content.
 
 final class SeenVideosServiceProvider
     extends
@@ -129,14 +129,14 @@ final class SeenVideosServiceProvider
           SeenVideosService
         >
     with $Provider<SeenVideosService> {
-  /// Seen videos service for tracking viewed content
+  /// Seen videos service for tracking viewed content.
   SeenVideosServiceProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
         name: r'seenVideosServiceProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -164,7 +164,7 @@ final class SeenVideosServiceProvider
   }
 }
 
-String _$seenVideosServiceHash() => r'74099bd4d859b446a3fc0cf1a7f416756a104e43';
+String _$seenVideosServiceHash() => r'933e55ea8a18eee2890da07089a3164a8ec424de';
 
 /// Subscription manager for centralized subscription management
 
@@ -905,7 +905,7 @@ final class VideosRepositoryProvider
   }
 }
 
-String _$videosRepositoryHash() => r'e4ef1b585f6dc5a957af569cd01f750e60ba5838';
+String _$videosRepositoryHash() => r'f98257a666f2fede19dd41cbc4e5dca57ae65328';
 
 /// Provider for LikesRepository instance
 ///

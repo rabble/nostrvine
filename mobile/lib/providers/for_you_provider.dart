@@ -150,13 +150,26 @@ class ForYouFeed extends _$ForYouFeed {
               .toList(),
         ),
       );
+      final seenVideosService = ref.read(seenVideosServiceProvider);
+      await seenVideosService.initialize();
+      if (!ref.mounted) {
+        return const VideoFeedState(videos: [], hasMoreContent: false);
+      }
+
+      final freshOrderedVideos = prioritizeNotRecentlySeenVideos(
+        filteredVideos,
+        seenVideoLookup: SeenVideoLookup(
+          wasSeenRecently: seenVideosService.wasSeenRecently,
+          initialize: seenVideosService.initialize,
+        ),
+      );
 
       _sessionSeed = requestSeed;
       _nextCursor = response.nextCursor;
       final hasMore = response.hasMore && _nextCursor != null;
 
       return VideoFeedState(
-        videos: filteredVideos,
+        videos: freshOrderedVideos,
         hasMoreContent: hasMore,
         lastUpdated: DateTime.now(),
       );
@@ -233,8 +246,18 @@ class ForYouFeed extends _$ForYouFeed {
             .where((v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey))
             .toList(),
       );
+      final seenVideosService = ref.read(seenVideosServiceProvider);
+      await seenVideosService.initialize();
+      if (!ref.mounted) return;
+
       final newVideos = dedupeByFeedKey(
-        filteredVideos,
+        prioritizeNotRecentlySeenVideos(
+          filteredVideos,
+          seenVideoLookup: SeenVideoLookup(
+            wasSeenRecently: seenVideosService.wasSeenRecently,
+            initialize: seenVideosService.initialize,
+          ),
+        ),
         alreadySeen: currentState.videos.map((video) => video.feedDedupKey),
       );
       final mergedVideos = [...currentState.videos, ...newVideos];
