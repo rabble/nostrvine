@@ -2,6 +2,8 @@
 // ABOUTME: Verifies loading, error, empty, and loaded message states,
 // ABOUTME: plus the app bar and input bar rendering.
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:db_client/db_client.dart';
@@ -1513,10 +1515,10 @@ void main() {
       // not. The earlier "renders MessageBubble" test only proves the
       // bubble renders — this test proves the full chain
       // Listener (conversation_view) → MessageBubble → onLongPress
-      // → MessageActionsSheet.show is intact after the swap.
+      // → ReactionPickerOverlay.show is intact after the swap.
       testWidgets(
         'long-pressing a $MessageBubble still surfaces '
-        '$MessageActionsSheet',
+        'message actions',
         (tester) async {
           await pumpWithMessage(tester);
 
@@ -1542,6 +1544,8 @@ void main() {
             find.text(l10n.dmMessageActionDeleteForEveryone),
             findsNothing,
           );
+          expect(find.text(l10n.dmMessageActionCopyVideoUrl), findsNothing);
+          expect(find.text(l10n.shareSheetSaveVideo), findsNothing);
         },
       );
 
@@ -1571,19 +1575,27 @@ void main() {
 
       DmMessage sharedVideoMessage({
         required String senderPubkey,
+        String content = 'watch this',
+        String? replyToId,
+        DmSharedVideoRef? sharedVideoRef,
+        bool includeSharedVideoRef = true,
       }) => DmMessage(
         id: 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
         conversationId:
             'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
         senderPubkey: senderPubkey,
-        content: 'watch this',
+        content: content,
         createdAt: now.millisecondsSinceEpoch ~/ 1000,
         giftWrapId:
             'aaaaaaaabbbbbbbbccccccccddddddddaaaaaaaabbbbbbbbccccccccdddddddd',
-        sharedVideoRef: DmSharedVideoRef(
-          coordinateOrId: '34236:$senderPubkey:$stableId',
-          videoKind: DmSharedVideoKind.addressableShortVideo,
-        ),
+        replyToId: replyToId,
+        sharedVideoRef: includeSharedVideoRef
+            ? sharedVideoRef ??
+                  DmSharedVideoRef(
+                    coordinateOrId: '34236:$senderPubkey:$stableId',
+                    videoKind: DmSharedVideoKind.addressableShortVideo,
+                  )
+            : null,
       );
 
       Future<void> openSaveAction(
@@ -1606,6 +1618,82 @@ void main() {
         expect(find.text(l10n.dmMessageActionCopyVideoUrl), findsOneWidget);
         expect(find.text(l10n.shareSheetSaveVideo), findsOneWidget);
       }
+
+      testWidgets('saves a legacy Divine URL share', (tester) async {
+        final message = sharedVideoMessage(
+          senderPubkey: currentPubkey,
+          content: 'watch this\nhttps://divine.video/video/$stableId',
+          includeSharedVideoRef: false,
+        );
+        final video = VideoEventBuilder(
+          id: stableId,
+          pubkey: currentPubkey,
+        ).build();
+        when(
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            stableId,
+            fallbackRouteIds: any(named: 'fallbackRouteIds'),
+          ),
+        ).thenAnswer((_) async => video);
+        when(
+          () => mockWatermarkDownloadService.downloadOriginal(
+            video: video,
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenAnswer((invocation) async {
+          final onProgress =
+              invocation.namedArguments[#onProgress]
+                  as void Function(OriginalSaveStage);
+          onProgress(OriginalSaveStage.downloading);
+          onProgress(OriginalSaveStage.saving);
+          return const WatermarkDownloadSuccess('/tmp/original.mp4');
+        });
+
+        await openSaveAction(tester, message: message);
+        clearInteractions(mockVideosRepository);
+        await tester.tap(find.text(l10n.shareSheetSaveVideo));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            stableId,
+            fallbackRouteIds: any(named: 'fallbackRouteIds'),
+          ),
+        ).called(1);
+        verify(
+          () => mockWatermarkDownloadService.downloadOriginal(
+            video: video,
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).called(1);
+      });
+
+      testWidgets('does not offer video actions for a reply citation', (
+        tester,
+      ) async {
+        final message = sharedVideoMessage(
+          senderPubkey: otherPubkey,
+          replyToId:
+              '1111111111111111111111111111111111111111111111111111111111111111',
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationState(
+              status: ConversationStatus.loaded,
+              messages: [message],
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.longPress(find.text('watch this'));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.dmMessageActionCopyText), findsOneWidget);
+        expect(find.text(l10n.dmMessageActionCopyVideoUrl), findsNothing);
+        expect(find.text(l10n.shareSheetSaveVideo), findsNothing);
+      });
 
       testWidgets(
         'saves the original for the current user structured share',
@@ -1708,6 +1796,22 @@ void main() {
       testWidgets('shows unavailable feedback when the video cannot resolve', (
         tester,
       ) async {
+        final announcements = <Map<Object?, Object?>>[];
+        tester.binding.defaultBinaryMessenger
+            .setMockDecodedMessageHandler<Object?>(
+              SystemChannels.accessibility,
+              (Object? message) async {
+                if (message is Map) announcements.add(message);
+                return null;
+              },
+            );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger
+              .setMockDecodedMessageHandler<Object?>(
+                SystemChannels.accessibility,
+                null,
+              ),
+        );
         final message = sharedVideoMessage(senderPubkey: otherPubkey);
 
         await openSaveAction(tester, message: message);
@@ -1721,6 +1825,10 @@ void main() {
           ),
           findsOneWidget,
         );
+        final announcedMessages = announcements
+            .where((m) => m['type'] == 'announce')
+            .map((m) => (m['data'] as Map?)?['message']);
+        expect(announcedMessages, contains(l10n.notificationsVideoUnavailable));
         verifyNever(
           () => mockWatermarkDownloadService.downloadOriginal(
             video: any(named: 'video'),
@@ -1734,6 +1842,75 @@ void main() {
             onProgress: any(named: 'onProgress'),
           ),
         );
+      });
+
+      testWidgets('drops a second save request while the first is resolving', (
+        tester,
+      ) async {
+        final message = sharedVideoMessage(senderPubkey: currentPubkey);
+        final video = VideoEventBuilder(
+          id: stableId,
+          pubkey: currentPubkey,
+        ).build();
+        final resolveCompleter = Completer<VideoEvent?>();
+        var resolveCalls = 0;
+        when(
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            stableId,
+            fallbackRouteIds: ['34236:$currentPubkey:$stableId'],
+          ),
+        ).thenAnswer((_) {
+          resolveCalls += 1;
+          if (resolveCalls == 1) return Future<VideoEvent?>.value();
+          return resolveCompleter.future;
+        });
+        when(
+          () => mockWatermarkDownloadService.downloadOriginal(
+            video: video,
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenAnswer((invocation) async {
+          final onProgress =
+              invocation.namedArguments[#onProgress]
+                  as void Function(OriginalSaveStage);
+          onProgress(OriginalSaveStage.downloading);
+          onProgress(OriginalSaveStage.saving);
+          return const WatermarkDownloadSuccess('/tmp/original.mp4');
+        });
+
+        await openSaveAction(tester, message: message);
+        clearInteractions(mockVideosRepository);
+        await tester.tap(find.text(l10n.shareSheetSaveVideo));
+        await tester.pump();
+        expect(
+          find.descendant(
+            of: find.byType(SnackBar),
+            matching: find.text(l10n.libraryPreparingVideo),
+          ),
+          findsOneWidget,
+        );
+
+        await tester.longPress(find.text('watch this'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.shareSheetSaveVideo));
+        await tester.pump();
+
+        verify(
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            stableId,
+            fallbackRouteIds: ['34236:$currentPubkey:$stableId'],
+          ),
+        ).called(1);
+
+        resolveCompleter.complete(video);
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockWatermarkDownloadService.downloadOriginal(
+            video: video,
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).called(1);
       });
     });
 

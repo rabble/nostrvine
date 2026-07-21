@@ -1,3 +1,6 @@
+// ABOUTME: Normalized identity for videos shared inside DM messages.
+// ABOUTME: Resolves legacy Divine URLs and structured q references consistently.
+
 import 'package:flutter/foundation.dart';
 import 'package:models/models.dart';
 import 'package:openvine/utils/divine_video_url.dart';
@@ -30,6 +33,17 @@ class DmVideoTarget {
     if (author == null || kind == null) return const [];
     return ['$kind:$author:$stableId'];
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DmVideoTarget &&
+          stableId == other.stableId &&
+          authorPubkey == other.authorPubkey &&
+          videoKind == other.videoKind;
+
+  @override
+  int get hashCode => Object.hash(stableId, authorPubkey, videoKind);
 }
 
 /// Resolves the video represented by a DM's plaintext and structured citation.

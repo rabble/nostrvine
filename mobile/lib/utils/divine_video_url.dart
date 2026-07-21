@@ -18,8 +18,3 @@ final divineVideoUrlLineRegex = RegExp(
   r'^https?://(?:www\.)?divine\.video/video/[\w-]+$',
   caseSensitive: false,
 );
-
-/// Returns the full divine.video URL contained in [content], or null if
-/// the message body doesn't include one.
-String? tryExtractDivineVideoUrl(String content) =>
-    divineVideoUrlRegex.firstMatch(content)?.group(0);
