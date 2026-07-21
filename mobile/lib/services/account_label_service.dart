@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:nostr_client/nostr_client.dart';
+import 'package:openvine/constants/nostr_event_kinds.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -131,7 +132,7 @@ class AccountLabelService {
       ];
 
       final event = await _authService.createAndSignEvent(
-        kind: 1985,
+        kind: NostrEventKinds.label,
         content: '',
         tags: tags,
       );

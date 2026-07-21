@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_sdk/nip05/nip05_validor.dart';
+import 'package:openvine/constants/nostr_event_kinds.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -100,6 +101,8 @@ class ModerationLabelService {
 
   /// SharedPreferences key for when the moderation pubkey was last resolved.
   static const String _resolvedAtKey = 'divine_moderation_resolved_at';
+
+  static const String _contentWarningNamespace = 'content-warning';
 
   /// NIP-05 address for the Divine moderation identity.
   static const String divineModerationNip05 = 'moderation@divine.video';
@@ -264,7 +267,7 @@ class ModerationLabelService {
     try {
       final filter = Filter(
         authors: [pubkey],
-        kinds: [1985], // NIP-32 label events
+        kinds: [NostrEventKinds.label], // NIP-32 label events
       );
 
       final events = await _nostrClient.queryEvents([filter]);
@@ -403,79 +406,87 @@ class ModerationLabelService {
       final tags = event.tags as List<dynamic>;
       final labelerPubkey = event.pubkey as String;
 
-      // Check if this is a content-warning label
-      bool isContentWarning = false;
-      String? labelValue;
-      String? targetEventId;
-      String? targetAddressableId;
-      String? targetPubkey;
-      String? contentHash;
-      double? confidence;
-      String? source;
-      bool isVerified = false;
+      final namespaces = <String>{};
+      final labels = <_PendingModerationLabel>[];
+      final eventIds = <String>[];
+      final addressableIds = <String>[];
+      final pubkeys = <String>[];
+      final hashes = <String>[];
 
       for (final tag in tags) {
         if (tag is! List || tag.length < 2) continue;
-        final tagName = tag[0] as String;
-        final tagValue = tag[1] as String;
+        final tagName = tag[0];
+        final tagValue = tag[1];
+        if (tagName is! String || tagValue is! String) continue;
 
         switch (tagName) {
           case 'L':
-            if (tagValue == 'content-warning') {
-              isContentWarning = true;
+            final namespace = _normalizeLabelNamespace(tagValue);
+            if (namespace != null) {
+              namespaces.add(namespace);
             }
           case 'l':
-            if (tag.length > 2 && tag[2] == 'content-warning') {
-              labelValue = tagValue;
-              isContentWarning = true;
-
-              // Parse optional 4th element as JSON metadata
-              if (tag.length > 3 && tag[3] is String) {
-                final parsed = _parseMetadata(tag[3] as String);
-                if (parsed != null) {
-                  confidence = parsed.confidence;
-                  source = parsed.source;
-                  isVerified = parsed.isVerified;
-                }
-              }
-            }
+            final metadata = tag.length > 3 && tag[3] is String
+                ? _parseMetadata(tag[3] as String)
+                : null;
+            labels.add(
+              _PendingModerationLabel(
+                value: tagValue,
+                namespace: tag.length > 2 && tag[2] is String
+                    ? _normalizeLabelNamespace(tag[2] as String)
+                    : null,
+                metadata: metadata,
+              ),
+            );
           case 'e':
-            targetEventId = tagValue;
+            eventIds.add(tagValue);
           case 'a':
-            targetAddressableId = tagValue;
+            addressableIds.add(tagValue);
           case 'p':
-            targetPubkey = tagValue;
+            pubkeys.add(tagValue);
           case 'x':
-            contentHash = tagValue;
+            hashes.add(tagValue);
         }
       }
 
-      if (!isContentWarning || labelValue == null) return;
+      for (final pending in labels) {
+        if (!_isContentWarningLabel(pending, namespaces)) continue;
 
-      final label = ModerationLabel(
-        labelerPubkey: labelerPubkey,
-        labelValue: labelValue,
-        targetEventId: targetEventId,
-        targetAddressableId: targetAddressableId,
-        targetPubkey: targetPubkey,
-        confidence: confidence,
-        source: source,
-        isVerified: isVerified,
-      );
-
-      if (targetEventId != null) {
-        _labelsByEventId.putIfAbsent(targetEventId, () => []).add(label);
-      }
-      if (targetAddressableId != null) {
-        _labelsByAddressableId
-            .putIfAbsent(targetAddressableId, () => [])
-            .add(label);
-      }
-      if (targetPubkey != null) {
-        _labelsByPubkey.putIfAbsent(targetPubkey, () => []).add(label);
-      }
-      if (contentHash != null) {
-        _labelsByHash.putIfAbsent(contentHash, () => []).add(label);
+        for (final eventId in eventIds) {
+          _labelsByEventId
+              .putIfAbsent(eventId, () => [])
+              .add(
+                pending.toModerationLabel(
+                  labelerPubkey: labelerPubkey,
+                  targetEventId: eventId,
+                ),
+              );
+        }
+        for (final addressableId in addressableIds) {
+          _labelsByAddressableId
+              .putIfAbsent(addressableId, () => [])
+              .add(
+                pending.toModerationLabel(
+                  labelerPubkey: labelerPubkey,
+                  targetAddressableId: addressableId,
+                ),
+              );
+        }
+        for (final pubkey in pubkeys) {
+          _labelsByPubkey
+              .putIfAbsent(pubkey, () => [])
+              .add(
+                pending.toModerationLabel(
+                  labelerPubkey: labelerPubkey,
+                  targetPubkey: pubkey,
+                ),
+              );
+        }
+        for (final hash in hashes) {
+          _labelsByHash
+              .putIfAbsent(hash, () => [])
+              .add(pending.toModerationLabel(labelerPubkey: labelerPubkey));
+        }
       }
     } catch (e) {
       Log.error(
@@ -484,6 +495,27 @@ class ModerationLabelService {
         category: LogCategory.system,
       );
     }
+  }
+
+  bool _isContentWarningLabel(
+    _PendingModerationLabel label,
+    Set<String> namespaces,
+  ) {
+    if (label.namespace == _contentWarningNamespace) return true;
+
+    // Leniency for non-conforming publishers: NIP-32 requires an `l` mark
+    // matching an `L` tag when `L` is present, but some events omit it. Accept
+    // that only when the event declares exactly one namespace and it is
+    // content-warning. With no `L`, unmarked `l` implies `ugc` and is ignored.
+    return label.namespace == null &&
+        namespaces.length == 1 &&
+        namespaces.single == _contentWarningNamespace;
+  }
+
+  static String? _normalizeLabelNamespace(String value) {
+    final normalized = value.trim().toLowerCase();
+    if (normalized.isEmpty) return null;
+    return normalized;
   }
 
   /// Parse JSON metadata from the 4th element of an `l` tag.
@@ -740,4 +772,32 @@ class _LabelMetadata {
   final double? confidence;
   final String? source;
   final bool isVerified;
+}
+
+class _PendingModerationLabel {
+  const _PendingModerationLabel({
+    required this.value,
+    required this.namespace,
+    required this.metadata,
+  });
+
+  final String value;
+  final String? namespace;
+  final _LabelMetadata? metadata;
+
+  ModerationLabel toModerationLabel({
+    required String labelerPubkey,
+    String? targetEventId,
+    String? targetAddressableId,
+    String? targetPubkey,
+  }) => ModerationLabel(
+    labelerPubkey: labelerPubkey,
+    labelValue: value,
+    targetEventId: targetEventId,
+    targetAddressableId: targetAddressableId,
+    targetPubkey: targetPubkey,
+    confidence: metadata?.confidence,
+    source: metadata?.source,
+    isVerified: metadata?.isVerified ?? false,
+  );
 }

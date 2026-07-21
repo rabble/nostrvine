@@ -434,6 +434,171 @@ void main() {
         expect(labels.first.labelValue, equals('spam'));
       });
 
+      test('keeps every content-warning label with its metadata', () async {
+        const aiMetadata =
+            '{"confidence": 0.91, "source": "hiveai", "verified": true}';
+        const violenceMetadata =
+            '{"confidence": 0.42, "source": "human-review"}';
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            _FakeLabelEvent(
+              pubkey: service.divineModerationPubkeyHex,
+              tags: [
+                ['L', 'content-warning'],
+                ['l', 'ai-generated', 'content-warning', aiMetadata],
+                ['l', 'violence', 'content-warning', violenceMetadata],
+                ['e', 'multi_label_event'],
+              ],
+            ),
+          ],
+        );
+
+        await service.subscribeToLabeler(service.divineModerationPubkeyHex);
+
+        final warnings = service.getContentWarnings('multi_label_event');
+        expect(warnings.map((label) => label.labelValue), [
+          'ai-generated',
+          'violence',
+        ]);
+        expect(warnings[0].confidence, equals(0.91));
+        expect(warnings[0].source, equals('hiveai'));
+        expect(warnings[0].isVerified, isTrue);
+        expect(warnings[1].confidence, equals(0.42));
+        expect(warnings[1].source, equals('human-review'));
+        expect(warnings[1].isVerified, isFalse);
+
+        final aiResult = service.getAIDetectionResult('multi_label_event');
+        expect(aiResult, isNotNull);
+        expect(aiResult!.score, equals(0.91));
+        expect(aiResult.source, equals('hiveai'));
+        expect(aiResult.isVerified, isTrue);
+      });
+
+      test(
+        'indexes each repeated event and pubkey target separately',
+        () async {
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+            (_) async => [
+              _FakeLabelEvent(
+                pubkey: service.divineModerationPubkeyHex,
+                tags: [
+                  ['L', 'content-warning'],
+                  ['l', 'nudity', 'content-warning'],
+                  ['e', 'target_event_1'],
+                  ['e', 'target_event_2'],
+                  ['p', 'target_pubkey_1'],
+                  ['p', 'target_pubkey_2'],
+                ],
+              ),
+            ],
+          );
+
+          await service.subscribeToLabeler(service.divineModerationPubkeyHex);
+
+          for (final eventId in ['target_event_1', 'target_event_2']) {
+            final labels = service.getContentWarnings(eventId);
+            expect(labels, hasLength(1));
+            expect(labels.single.labelValue, equals('nudity'));
+            expect(labels.single.targetEventId, equals(eventId));
+            expect(labels.single.targetPubkey, isNull);
+          }
+          for (final pubkey in ['target_pubkey_1', 'target_pubkey_2']) {
+            final labels = service.getLabelsForPubkey(pubkey);
+            expect(labels, hasLength(1));
+            expect(labels.single.labelValue, equals('nudity'));
+            expect(labels.single.targetPubkey, equals(pubkey));
+            expect(labels.single.targetEventId, isNull);
+          }
+        },
+      );
+
+      test(
+        'accepts unmarked labels only for a single content-warning L',
+        () async {
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+            (_) async => [
+              _FakeLabelEvent(
+                pubkey: service.divineModerationPubkeyHex,
+                tags: [
+                  ['L', 'content-warning'],
+                  ['l', 'nudity'],
+                  ['e', 'unmarked_single_namespace_event'],
+                ],
+              ),
+              _FakeLabelEvent(
+                pubkey: service.divineModerationPubkeyHex,
+                tags: [
+                  ['l', 'violence'],
+                  ['e', 'unmarked_no_namespace_event'],
+                ],
+              ),
+              _FakeLabelEvent(
+                pubkey: service.divineModerationPubkeyHex,
+                tags: [
+                  ['L', 'content-warning'],
+                  ['L', 'other-namespace'],
+                  ['l', 'graphic-media'],
+                  ['e', 'unmarked_ambiguous_namespace_event'],
+                ],
+              ),
+            ],
+          );
+
+          await service.subscribeToLabeler(service.divineModerationPubkeyHex);
+
+          expect(
+            service
+                .getContentWarnings('unmarked_single_namespace_event')
+                .map((label) => label.labelValue),
+            ['nudity'],
+          );
+          expect(
+            service.hasContentWarning('unmarked_no_namespace_event'),
+            isFalse,
+          );
+          expect(
+            service.hasContentWarning('unmarked_ambiguous_namespace_event'),
+            isFalse,
+          );
+        },
+      );
+
+      test('trims and case-folds content-warning namespace only', () async {
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            _FakeLabelEvent(
+              pubkey: service.divineModerationPubkeyHex,
+              tags: [
+                ['L', ' Content-Warning '],
+                ['l', 'nudity', ' CONTENT-WARNING '],
+                ['e', 'case_folded_namespace_event'],
+              ],
+            ),
+            _FakeLabelEvent(
+              pubkey: service.divineModerationPubkeyHex,
+              tags: [
+                ['L', 'content_warning'],
+                ['l', 'violence', 'content_warning'],
+                ['e', 'underscore_namespace_event'],
+              ],
+            ),
+          ],
+        );
+
+        await service.subscribeToLabeler(service.divineModerationPubkeyHex);
+
+        expect(
+          service
+              .getContentWarnings('case_folded_namespace_event')
+              .map((label) => label.labelValue),
+          ['nudity'],
+        );
+        expect(
+          service.hasContentWarning('underscore_namespace_event'),
+          isFalse,
+        );
+      });
+
       test('ignores events without content-warning namespace', () async {
         when(() => mockNostrClient.queryEvents(any())).thenAnswer(
           (_) async => [
@@ -543,61 +708,58 @@ void main() {
         expect(service.getContentWarnings('followed_event'), hasLength(1));
       });
 
-      test(
-        'retries followed labelers enabled before relay readiness',
-        () async {
-          const followedLabeler =
-              'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
-          var canQueryRelays = false;
-          final gatedService = ModerationLabelService(
-            nostrClient: mockNostrClient,
-            authService: mockAuthService,
-            sharedPreferences: mockPrefs,
-            canQueryRelays: () => canQueryRelays,
-          );
-          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-            (_) async => [
-              _FakeLabelEvent(
-                pubkey: followedLabeler,
-                tags: [
-                  ['L', 'content-warning'],
-                  ['l', 'nudity', 'content-warning'],
-                  ['e', 'deferred_followed_event'],
-                ],
-              ),
-            ],
-          );
+      test('retries followed labelers enabled before relay readiness', () async {
+        const followedLabeler =
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+        var canQueryRelays = false;
+        final gatedService = ModerationLabelService(
+          nostrClient: mockNostrClient,
+          authService: mockAuthService,
+          sharedPreferences: mockPrefs,
+          canQueryRelays: () => canQueryRelays,
+        );
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            _FakeLabelEvent(
+              pubkey: followedLabeler,
+              tags: [
+                ['L', 'content-warning'],
+                ['l', 'nudity', 'content-warning'],
+                ['e', 'deferred_followed_event'],
+              ],
+            ),
+          ],
+        );
 
-          await gatedService.setFollowingModerationEnabled(
-            true,
-            followedPubkeys: [followedLabeler],
-          );
+        await gatedService.setFollowingModerationEnabled(
+          true,
+          followedPubkeys: [followedLabeler],
+        );
 
-          expect(gatedService.isFollowingModerationEnabled, isTrue);
-          expect(
-            gatedService.getContentWarnings('deferred_followed_event'),
-            isEmpty,
-          );
-          verifyNever(() => mockNostrClient.queryEvents(any()));
+        expect(gatedService.isFollowingModerationEnabled, isTrue);
+        expect(
+          gatedService.getContentWarnings('deferred_followed_event'),
+          isEmpty,
+        );
+        verifyNever(() => mockNostrClient.queryEvents(any()));
 
-          canQueryRelays = true;
-          await gatedService.syncFollowedLabelers([followedLabeler]);
+        canQueryRelays = true;
+        await gatedService.syncFollowedLabelers([followedLabeler]);
 
-          expect(
-            gatedService.getContentWarnings('deferred_followed_event'),
-            hasLength(1),
-          );
-          verify(() => mockNostrClient.queryEvents(any())).called(1);
-        },
-      );
+        expect(
+          gatedService.getContentWarnings('deferred_followed_event'),
+          hasLength(1),
+        );
+        verify(() => mockNostrClient.queryEvents(any())).called(1);
+      });
 
       test('coalesces concurrent labeler subscriptions', () async {
         const labeler =
             'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
         final events = Completer<List<Event>>();
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) => events.future,
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) => events.future);
 
         final firstSubscribe = service.subscribeToLabeler(labeler);
         final secondSubscribe = service.subscribeToLabeler(labeler);
