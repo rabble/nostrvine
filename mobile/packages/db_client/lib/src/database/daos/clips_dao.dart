@@ -368,7 +368,7 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
     if (unresolved.isEmpty) return referenced;
 
     // One full JSON scan for every remaining filename. The data column is
-    // unindexed, so an OR-chain of LIKE predicates still scans the table and
+    // unindexed; an OR-chain of LIKE predicates still scans the table and
     // can exceed SQLite's expression-depth limit for large stop-motion sets.
     final candidateRows = await customSelect(
       'SELECT data FROM clips',
