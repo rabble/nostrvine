@@ -130,7 +130,7 @@ class NativeProofModeService {
               category: .video,
             );
 
-            metadata.putIfAbsent('c2paManifestId', () => activeManifestId);
+            metadata.putIfAbsent('c2pa_manifest_id', () => activeManifestId);
 
             // Create NativeProofData from metadata
             final proofData = NativeProofData.fromMetadata(metadata);
@@ -264,7 +264,7 @@ class NativeProofModeService {
 
       if (manifestInfo?.activeManifest != null) {
         final String activeManifestId = manifestInfo!.activeManifest!;
-        metadata.putIfAbsent('c2paManifestId', () => activeManifestId);
+        metadata.putIfAbsent('c2pa_manifest_id', () => activeManifestId);
       }
 
       // Create NativeProofData from metadata
