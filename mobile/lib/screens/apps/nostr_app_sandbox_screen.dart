@@ -774,9 +774,7 @@ Future<List<String>> sandboxAndroidFileSelector(
   FileSelectorParams params,
   ImagePicker picker,
 ) async {
-  final acceptsImage =
-      params.acceptTypes.isEmpty || params.acceptTypes.any(_acceptsImageType);
-  if (!acceptsImage) {
+  if (!_acceptsImages(params.acceptTypes)) {
     return const <String>[];
   }
 
@@ -807,6 +805,27 @@ Future<List<String>> sandboxAndroidFileSelector(
     );
     return const <String>[];
   }
+}
+
+/// Whether the `<input accept="…">` tokens permit an image.
+///
+/// An empty list and every "any file" spelling fall through to the image
+/// picker. Android delivers a plain `<input type="file">` (no accept attr) as
+/// `['']`, not `[]`, so `''` counts as accept-anything alongside `*` and
+/// `*/*`. Otherwise the input must explicitly allow an image MIME type
+/// (`image/*`, `image/png`, …) or a listed bare extension.
+bool _acceptsImages(List<String> acceptTypes) {
+  if (acceptTypes.isEmpty) {
+    return true;
+  }
+  return acceptTypes.any(
+    (type) => _isAnyFileToken(type) || _acceptsImageType(type),
+  );
+}
+
+bool _isAnyFileToken(String type) {
+  final normalized = type.trim().toLowerCase();
+  return normalized.isEmpty || normalized == '*' || normalized == '*/*';
 }
 
 bool _acceptsImageType(String type) {

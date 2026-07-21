@@ -967,6 +967,25 @@ void main() {
       expect(result, equals(['file:///tmp/any.webp']));
     });
 
+    // Android hands a plain `<input type="file">` (no accept attr) to the
+    // selector as `['']`, `['*']`, or `['*/*']` — not `[]`. All mean
+    // "accept anything" and must open the picker, not silently no-op.
+    for (final anyToken in const ['', '*', '*/*']) {
+      test('opens the gallery for the accept-anything token '
+          '"$anyToken"', () async {
+        when(
+          () => picker.pickImage(source: ImageSource.gallery),
+        ).thenAnswer((_) async => XFile('/tmp/any.png'));
+
+        final result = await sandboxAndroidFileSelector(
+          params(acceptTypes: [anyToken]),
+          picker,
+        );
+
+        expect(result, equals(['file:///tmp/any.png']));
+      });
+    }
+
     test('returns empty when picking throws', () async {
       when(
         () => picker.pickImage(source: ImageSource.gallery),
