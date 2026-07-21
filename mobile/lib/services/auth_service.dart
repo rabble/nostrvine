@@ -690,6 +690,21 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         return;
       }
 
+      final storedSession = await KeycastSession.load(_flutterSecureStorage);
+      final storedOwnerPubkey = storedSession?.userPubkey;
+      if (upgradeOwnerPubkey != null &&
+          storedOwnerPubkey != null &&
+          storedOwnerPubkey != upgradeOwnerPubkey) {
+        Log.warning(
+          'OAuth RPC upgrade: refusing refresh for owner $upgradeOwnerPubkey '
+          'because stored session belongs to $storedOwnerPubkey',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        _setRpcCapability(AuthRpcCapability.unavailable);
+        return;
+      }
+
       // The shared refresh future is internally bounded by
       // [_oauthRefreshTimeout] (see [OAuthSessionCoordinator]), so this await
       // cannot block startup indefinitely.
@@ -4244,7 +4259,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       final session = await _oauthClient.getSession();
       if (!resumeContextStillCurrent()) return;
 
-      if (session != null &&
+      if (_keycastSigner == null &&
+          session != null &&
           session.hasRpcAccess &&
           session.userPubkey == resumeOwnerPubkey) {
         Log.info(
@@ -4252,6 +4268,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           name: 'AuthService',
           category: LogCategory.auth,
         );
+        await _clearDismissedDivineLoginBannerForCurrentUser();
         _keycastSigner = KeycastRpc.fromSession(
           _oauthConfig,
           session,
