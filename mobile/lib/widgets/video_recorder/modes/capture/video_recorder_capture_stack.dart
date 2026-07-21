@@ -73,6 +73,11 @@ class VideoRecorderCaptureStack extends ConsumerWidget {
     final canUndo = recorderMode.capturesStills
         ? stopMotionFrameCount > 0
         : hasClips;
+    // Fades out (opacity 0) while recording or in the editor-hosted recorder.
+    // Opacity alone does not stop hit testing, so the button is also gated
+    // with IgnorePointer below — otherwise an invisible tap would silently
+    // delete the last still/clip.
+    final undoButtonVisible = canUndo && !isRecording && !fromEditor;
 
     return SafeArea(
       bottom: false,
@@ -125,18 +130,21 @@ class VideoRecorderCaptureStack extends ConsumerWidget {
                 children: [
                   AnimatedOpacity(
                     duration: const Duration(milliseconds: 220),
-                    opacity: canUndo && !isRecording && !fromEditor ? 1 : 0,
-                    child: DivineIconButton(
-                      icon: .trash,
-                      semanticLabel:
-                          context.l10n.videoRecorderDeleteLastClipLabel,
-                      type: .ghostSecondary,
-                      size: .small,
-                      onPressed: recorderMode.capturesStills
-                          ? () => context.read<VideoRecorderBloc>().add(
-                              const VideoRecorderStopMotionFrameUndone(),
-                            )
-                          : () => _deleteLastClip(context, ref),
+                    opacity: undoButtonVisible ? 1 : 0,
+                    child: IgnorePointer(
+                      ignoring: !undoButtonVisible,
+                      child: DivineIconButton(
+                        icon: .trash,
+                        semanticLabel:
+                            context.l10n.videoRecorderDeleteLastClipLabel,
+                        type: .ghostSecondary,
+                        size: .small,
+                        onPressed: recorderMode.capturesStills
+                            ? () => context.read<VideoRecorderBloc>().add(
+                                const VideoRecorderStopMotionFrameUndone(),
+                              )
+                            : () => _deleteLastClip(context, ref),
+                      ),
                     ),
                   ),
 
