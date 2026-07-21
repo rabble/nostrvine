@@ -75,7 +75,7 @@ List<RouteBase> videoRoutes() {
         VideoEvent? sourceVideo;
         if (extra is AudioEvent) {
           sound = extra;
-        } else if (extra is Map<String, dynamic>) {
+        } else if (extra is Map) {
           sound = extraAs<AudioEvent>(extra['sound']);
           sourceVideo = extraAs<VideoEvent>(extra['sourceVideo']);
         }
@@ -107,8 +107,7 @@ List<RouteBase> videoRoutes() {
       path: VideoEditorScreen.path,
       name: VideoEditorScreen.routeName,
       builder: (_, st) {
-        final extra = st.extra as Map<String, dynamic>?;
-        final fromLibrary = extra?['fromLibrary'] as bool? ?? false;
+        final fromLibrary = extraBoolValue(st.extra, 'fromLibrary') ?? false;
 
         return VideoEditorScreen(fromLibrary: fromLibrary);
       },
@@ -120,8 +119,7 @@ List<RouteBase> videoRoutes() {
         // The draft ID is optional if the user wants to continue editing
         // the draft.
         final draftId = st.pathParameters['draftId'];
-        final extra = st.extra as Map<String, dynamic>?;
-        final fromLibrary = extra?['fromLibrary'] as bool? ?? false;
+        final fromLibrary = extraBoolValue(st.extra, 'fromLibrary') ?? false;
 
         return VideoEditorScreen(
           draftId: draftId == null || draftId.isEmpty ? null : draftId,

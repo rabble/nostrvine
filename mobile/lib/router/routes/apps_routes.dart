@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/router/routes/route_extras.dart';
 import 'package:openvine/router/widgets/resolved_sandbox_route_screen.dart';
 import 'package:openvine/screens/apps/app_detail_screen.dart';
 import 'package:openvine/screens/apps/apps_directory_screen.dart';
@@ -36,9 +37,7 @@ List<RouteBase> appsRoutes(Ref ref) {
       path: NostrAppSandboxScreen.path,
       name: NostrAppSandboxScreen.routeName,
       builder: (_, state) {
-        final app = state.extra is NostrAppDirectoryEntry
-            ? state.extra! as NostrAppDirectoryEntry
-            : null;
+        final app = extraAs<NostrAppDirectoryEntry>(state.extra);
         final appId = state.pathParameters['appId'] ?? '';
         return ResolvedSandboxRouteScreen(appId: appId, initialApp: app);
       },
@@ -47,9 +46,7 @@ List<RouteBase> appsRoutes(Ref ref) {
       path: WebIframeSandboxScreen.path,
       name: WebIframeSandboxScreen.routeName,
       builder: (_, state) {
-        final app = state.extra is NostrAppDirectoryEntry
-            ? state.extra! as NostrAppDirectoryEntry
-            : null;
+        final app = extraAs<NostrAppDirectoryEntry>(state.extra);
         if (app == null) {
           // No NostrAppDirectoryEntry passed in — bounce to the apps
           // directory. The web iframe screen needs the entry's
@@ -65,9 +62,7 @@ List<RouteBase> appsRoutes(Ref ref) {
       name: AppDetailScreen.routeName,
       builder: (_, state) {
         final slug = state.pathParameters['slug'] ?? '';
-        final initialEntry = state.extra is NostrAppDirectoryEntry
-            ? state.extra! as NostrAppDirectoryEntry
-            : null;
+        final initialEntry = extraAs<NostrAppDirectoryEntry>(state.extra);
         return AppDetailScreen(slug: slug, initialEntry: initialEntry);
       },
     ),

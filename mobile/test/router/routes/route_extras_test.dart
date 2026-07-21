@@ -45,4 +45,26 @@ void main() {
       expect(extraAs<CuratedListRouteExtra>(null), isNull);
     });
   });
+
+  group('restored map values', () {
+    test('reads only string profile hints', () {
+      final restored = <String, dynamic>{'displayName': 'Ada', 'avatarUrl': 42};
+
+      expect(extraStringValue(restored, 'displayName'), 'Ada');
+      expect(extraStringValue(restored, 'avatarUrl'), isNull);
+      expect(extraStringValue(null, 'displayName'), isNull);
+    });
+
+    test('reads only boolean editor options', () {
+      expect(
+        extraBoolValue(<String, dynamic>{'fromLibrary': true}, 'fromLibrary'),
+        isTrue,
+      );
+      expect(
+        extraBoolValue(<String, dynamic>{'fromLibrary': 'true'}, 'fromLibrary'),
+        isNull,
+      );
+      expect(extraBoolValue(const <String, dynamic>{}, 'fromLibrary'), isNull);
+    });
+  });
 }

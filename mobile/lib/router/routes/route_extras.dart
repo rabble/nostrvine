@@ -17,6 +17,25 @@
 /// restoration); that migration is tracked separately.
 T? extraAs<T>(Object? extra) => extra is T ? extra : null;
 
+/// Reads a string value from a restored route-extra map.
+///
+/// GoRouter may restore `extra` as a dynamically typed map.  Read individual
+/// values with a runtime check rather than casting the whole map (generic Map
+/// types are invariant and a `Map<String, dynamic>` is not a
+/// `Map<String, String?>`).
+String? extraStringValue(Object? extra, String key) {
+  if (extra is! Map) return null;
+  final value = extra[key];
+  return value is String ? value : null;
+}
+
+/// Reads a boolean value from a restored route-extra map.
+bool? extraBoolValue(Object? extra, String key) {
+  if (extra is! Map) return null;
+  final value = extra[key];
+  return value is bool ? value : null;
+}
+
 /// Extra data for curated list route (passed via GoRouter extra)
 class CuratedListRouteExtra {
   const CuratedListRouteExtra({
