@@ -374,8 +374,6 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
                 ] else if (widget.state.generalError != null) ...[
                   const SizedBox(height: 16),
                   AuthErrorBox(message: widget.state.generalError!),
-                  const SizedBox(height: 8),
-                  const _SignInOptionsHint(),
                 ],
 
                 const SizedBox(height: 24),
@@ -496,7 +494,6 @@ class _SignInOptionsHint extends ConsumerWidget {
     final l10n = context.l10n;
     return Semantics(
       button: true,
-      label: l10n.authSignInOptionsHintPrefix + l10n.authSignInOptionsHintCta,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () => _showInfoSheet(
@@ -518,7 +515,6 @@ class _SignInOptionsHint extends ConsumerWidget {
                   ),
                 ],
               ),
-              textScaler: MediaQuery.textScalerOf(context),
             ),
           ),
         ),

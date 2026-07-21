@@ -564,7 +564,10 @@ class KeycastOAuth {
           verifier,
         );
       }
-      return (HeadlessLoginResult.error('Network error: $e'), verifier);
+      return (
+        HeadlessLoginResult.error('Network error: $e', code: 'network_error'),
+        verifier,
+      );
     }
   }
 

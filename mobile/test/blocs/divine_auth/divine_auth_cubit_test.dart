@@ -639,6 +639,61 @@ void main() {
         );
 
         blocTest<DivineAuthCubit, DivineAuthState>(
+          'emits network reason and logs description on transport failure',
+          setUp: () {
+            when(
+              () => mockOAuth.headlessLogin(
+                email: any(named: 'email'),
+                password: any(named: 'password'),
+                scope: any(named: 'scope'),
+              ),
+            ).thenAnswer(
+              (_) async => (
+                HeadlessLoginResult.error(
+                  'Network error: ClientException: XMLHttpRequest error.',
+                  code: 'network_error',
+                ),
+                testVerifier,
+              ),
+            );
+          },
+          build: buildCubit,
+          seed: () => const DivineAuthFormState(
+            email: testEmail,
+            password: testPassword,
+            isSignIn: true,
+          ),
+          act: (cubit) => cubit.submit(),
+          expect: () => [
+            const DivineAuthFormState(
+              email: testEmail,
+              password: testPassword,
+              isSignIn: true,
+              isSubmitting: true,
+            ),
+            const DivineAuthFormState(
+              email: testEmail,
+              password: testPassword,
+              isSignIn: true,
+              signInFailureReason: SignInFailureReason.network,
+            ),
+          ],
+          verify: (_) {
+            final logMessage = LogCaptureService()
+                .getRecentLogs()
+                .map((entry) => entry.message)
+                .lastWhere((message) => message.startsWith('Sign in failed:'));
+
+            expect(logMessage, contains('code=network_error'));
+            expect(logMessage, contains('reason=SignInFailureReason.network'));
+            expect(
+              logMessage,
+              contains('ClientException: XMLHttpRequest error.'),
+            );
+          },
+        );
+
+        blocTest<DivineAuthCubit, DivineAuthState>(
           'emits unknown reason when login returns success but no code',
           setUp: () {
             when(

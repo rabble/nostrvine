@@ -221,7 +221,8 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
     if (!result.success || result.code == null) {
       final reason = _signInFailureReasonFrom(result.failure);
       Log.warning(
-        'Sign in failed: code=${result.errorCode}, reason=$reason',
+        'Sign in failed: code=${result.errorCode}, reason=$reason, '
+        'description=${result.errorDescription}',
         name: 'DivineAuthCubit',
         category: LogCategory.auth,
       );
@@ -229,10 +230,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       final current = state;
       if (current is DivineAuthFormState) {
         emit(
-          current.copyWith(
-            isSubmitting: false,
-            signInFailureReason: reason,
-          ),
+          current.copyWith(isSubmitting: false, signInFailureReason: reason),
         );
       }
       return;

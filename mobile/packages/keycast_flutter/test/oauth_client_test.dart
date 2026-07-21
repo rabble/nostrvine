@@ -702,6 +702,8 @@ void main() {
         );
 
         expect(result.success, isFalse);
+        expect(result.errorCode, 'network_error');
+        expect(result.failure, KeycastLoginFailure.network);
         expect(result.errorDescription, contains('Network error'));
       });
     });

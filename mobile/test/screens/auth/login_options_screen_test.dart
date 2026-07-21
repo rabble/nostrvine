@@ -130,6 +130,12 @@ void main() {
           ),
           findsOneWidget,
         );
+        expect(
+          _optionsHint(
+            lookupAppLocalizations(const Locale('en')).authSignInOptionsHintCta,
+          ),
+          findsNothing,
+        );
       });
 
       testWidgets('displays email field', (tester) async {
