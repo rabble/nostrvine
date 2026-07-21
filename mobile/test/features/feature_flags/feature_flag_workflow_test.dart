@@ -89,25 +89,27 @@ void main() {
 
       // Verify settings screen loaded
       expect(find.text('Feature Flags'), findsOneWidget);
-      expect(find.text('New Camera UI'), findsOneWidget);
+      expect(find.text('Enhanced Analytics'), findsOneWidget);
 
-      // Enable the new camera UI feature
+      // Enable the feature flag
       // Update mock to return true when getBool is called after toggle
-      when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
-      when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.getBool('ff_enhancedAnalytics')).thenReturn(true);
+      when(
+        () => mockPrefs.containsKey('ff_enhancedAnalytics'),
+      ).thenReturn(true);
 
-      final newCameraSwitch = find.descendant(
+      final flagSwitch = find.descendant(
         of: find.ancestor(
-          of: find.text('New Camera UI'),
+          of: find.text('Enhanced Analytics'),
           matching: find.byType(Card),
         ),
         matching: find.byType(Switch),
       );
-      await tester.tap(newCameraSwitch);
+      await tester.tap(flagSwitch);
       await tester.pumpAndSettle();
 
       // Verify persistence call was made
-      verify(() => mockPrefs.setBool('ff_newCameraUI', true)).called(1);
+      verify(() => mockPrefs.setBool('ff_enhancedAnalytics', true)).called(1);
 
       // Navigate back to home
       await tester.tap(find.byType(DivineAppBarIconButton).first);
@@ -120,8 +122,10 @@ void main() {
 
     testWidgets('should handle multiple flags independently', (tester) async {
       // Set up mixed initial state
-      when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
-      when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.getBool('ff_enhancedAnalytics')).thenReturn(true);
+      when(
+        () => mockPrefs.containsKey('ff_enhancedAnalytics'),
+      ).thenReturn(true);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -133,7 +137,7 @@ void main() {
               body: Column(
                 children: [
                   const FeatureFlagWidget(
-                    flag: FeatureFlag.newCameraUI,
+                    flag: FeatureFlag.enhancedAnalytics,
                     disabled: Text('Standard Camera'),
                     child: Text('Enhanced Camera'),
                   ),
@@ -181,7 +185,7 @@ void main() {
       );
 
       // Verify the feature flag list items are present
-      expect(find.text('New Camera UI'), findsOneWidget);
+      expect(find.text('Enhanced Analytics'), findsOneWidget);
     });
 
     testWidgets('should persist flag changes across app restarts', (
@@ -207,26 +211,30 @@ void main() {
       await service1.initialize();
       await tester.pumpAndSettle();
 
-      // Change a flag - find the newCameraUI switch specifically
-      when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
-      when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
+      // Change a flag - find the enhancedAnalytics switch specifically
+      when(() => mockPrefs.getBool('ff_enhancedAnalytics')).thenReturn(true);
+      when(
+        () => mockPrefs.containsKey('ff_enhancedAnalytics'),
+      ).thenReturn(true);
 
-      final newCameraSwitch = find.descendant(
+      final flagSwitch = find.descendant(
         of: find.ancestor(
-          of: find.text('New Camera UI'),
+          of: find.text('Enhanced Analytics'),
           matching: find.byType(Card),
         ),
         matching: find.byType(Switch),
       );
-      await tester.tap(newCameraSwitch);
+      await tester.tap(flagSwitch);
       await tester.pumpAndSettle();
 
       // Verify persistence call
-      verify(() => mockPrefs.setBool('ff_newCameraUI', true)).called(1);
+      verify(() => mockPrefs.setBool('ff_enhancedAnalytics', true)).called(1);
 
       // Simulate app restart by setting up persistence response
-      when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
-      when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.getBool('ff_enhancedAnalytics')).thenReturn(true);
+      when(
+        () => mockPrefs.containsKey('ff_enhancedAnalytics'),
+      ).thenReturn(true);
 
       // Create new app instance (simulating restart)
       await tester.pumpWidget(
@@ -255,8 +263,10 @@ void main() {
 
     testWidgets('should handle flag reset functionality', (tester) async {
       // Set up flags with user overrides
-      when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
-      when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.getBool('ff_enhancedAnalytics')).thenReturn(true);
+      when(
+        () => mockPrefs.containsKey('ff_enhancedAnalytics'),
+      ).thenReturn(true);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -268,7 +278,7 @@ void main() {
               body: Column(
                 children: [
                   FeatureFlagWidget(
-                    flag: FeatureFlag.newCameraUI,
+                    flag: FeatureFlag.enhancedAnalytics,
                     disabled: Text('Standard Camera'),
                     child: Text('Enhanced Camera'),
                   ),
@@ -319,8 +329,10 @@ void main() {
 
     testWidgets('should show override indicators correctly', (tester) async {
       // Set up one flag with user override, one with default
-      when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
-      when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.getBool('ff_enhancedAnalytics')).thenReturn(true);
+      when(
+        () => mockPrefs.containsKey('ff_enhancedAnalytics'),
+      ).thenReturn(true);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -364,7 +376,7 @@ void main() {
               body: Column(
                 children: [
                   const FeatureFlagWidget(
-                    flag: FeatureFlag.newCameraUI,
+                    flag: FeatureFlag.enhancedAnalytics,
                     disabled: Text('Standard Camera'),
                     child: Text('Enhanced Camera'),
                   ),
@@ -414,14 +426,14 @@ void main() {
       await tester.pumpAndSettle();
 
       // Try to toggle a flag - should not crash the app but should update UI
-      final newCameraSwitch = find.descendant(
+      final flagSwitch = find.descendant(
         of: find.ancestor(
-          of: find.text('New Camera UI'),
+          of: find.text('Enhanced Analytics'),
           matching: find.byType(Card),
         ),
         matching: find.byType(Switch),
       );
-      await tester.tap(newCameraSwitch);
+      await tester.tap(flagSwitch);
       await tester.pumpAndSettle();
 
       // App should still be functional
@@ -450,7 +462,7 @@ class TestHomeScreen extends ConsumerWidget {
       body: Column(
         children: [
           const FeatureFlagWidget(
-            flag: FeatureFlag.newCameraUI,
+            flag: FeatureFlag.enhancedAnalytics,
             disabled: Text('Standard Camera UI'),
             child: Text('Enhanced Camera UI'),
           ),
@@ -472,7 +484,7 @@ class TestContentScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return const Scaffold(
       body: FeatureFlagWidget(
-        flag: FeatureFlag.newCameraUI,
+        flag: FeatureFlag.enhancedAnalytics,
         disabled: Text('Standard Camera'),
         child: Text('New Camera Feature Enabled'),
       ),

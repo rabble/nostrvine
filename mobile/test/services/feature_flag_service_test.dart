@@ -35,11 +35,11 @@ void main() {
 
     group('initialization', () {
       test('should load saved flags from preferences', () async {
-        when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
+        when(() => mockPrefs.getBool('ff_enhancedAnalytics')).thenReturn(true);
 
         await service.initialize();
 
-        expect(service.isEnabled(FeatureFlag.newCameraUI), isTrue);
+        expect(service.isEnabled(FeatureFlag.enhancedAnalytics), isTrue);
         expect(service.isEnabled(FeatureFlag.accountSwitching), isFalse);
       });
 
@@ -56,19 +56,19 @@ void main() {
 
       test('should prefer user settings over build defaults', () async {
         // Build default is false, user set to true
-        when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
+        when(() => mockPrefs.getBool('ff_enhancedAnalytics')).thenReturn(true);
 
         await service.initialize();
 
-        expect(service.isEnabled(FeatureFlag.newCameraUI), isTrue);
+        expect(service.isEnabled(FeatureFlag.enhancedAnalytics), isTrue);
       });
     });
 
     group('flag management', () {
       test('should save flag changes to preferences', () async {
-        await service.setFlag(FeatureFlag.newCameraUI, true);
+        await service.setFlag(FeatureFlag.enhancedAnalytics, true);
 
-        verify(() => mockPrefs.setBool('ff_newCameraUI', true)).called(1);
+        verify(() => mockPrefs.setBool('ff_enhancedAnalytics', true)).called(1);
       });
 
       test('should notify listeners on flag change', () async {
@@ -78,17 +78,19 @@ void main() {
 
       test('should reset flag to build default', () async {
         when(
-          () => mockPrefs.remove('ff_newCameraUI'),
+          () => mockPrefs.remove('ff_enhancedAnalytics'),
         ).thenAnswer((_) async => true);
 
-        await service.setFlag(FeatureFlag.newCameraUI, true);
-        await service.resetFlag(FeatureFlag.newCameraUI);
+        await service.setFlag(FeatureFlag.enhancedAnalytics, true);
+        await service.resetFlag(FeatureFlag.enhancedAnalytics);
 
-        verify(() => mockPrefs.remove('ff_newCameraUI')).called(1);
+        verify(() => mockPrefs.remove('ff_enhancedAnalytics')).called(1);
         expect(
-          service.isEnabled(FeatureFlag.newCameraUI),
+          service.isEnabled(FeatureFlag.enhancedAnalytics),
           equals(
-            const BuildConfiguration().getDefault(FeatureFlag.newCameraUI),
+            const BuildConfiguration().getDefault(
+              FeatureFlag.enhancedAnalytics,
+            ),
           ),
         );
       });
@@ -96,7 +98,7 @@ void main() {
       test('should reset all flags', () async {
         when(() => mockPrefs.remove(any())).thenAnswer((_) async => true);
 
-        await service.setFlag(FeatureFlag.newCameraUI, true);
+        await service.setFlag(FeatureFlag.enhancedAnalytics, true);
         await service.setFlag(FeatureFlag.accountSwitching, true);
 
         await service.resetAllFlags();
@@ -109,9 +111,11 @@ void main() {
 
     group('state queries', () {
       test('should identify user overrides', () async {
-        when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
+        when(
+          () => mockPrefs.containsKey('ff_enhancedAnalytics'),
+        ).thenReturn(true);
 
-        expect(service.hasUserOverride(FeatureFlag.newCameraUI), isTrue);
+        expect(service.hasUserOverride(FeatureFlag.enhancedAnalytics), isTrue);
         expect(
           service.hasUserOverride(FeatureFlag.accountSwitching),
           isFalse,
@@ -119,9 +123,9 @@ void main() {
       });
 
       test('should provide flag metadata', () {
-        final metadata = service.getFlagMetadata(FeatureFlag.newCameraUI);
+        final metadata = service.getFlagMetadata(FeatureFlag.enhancedAnalytics);
 
-        expect(metadata.flag, equals(FeatureFlag.newCameraUI));
+        expect(metadata.flag, equals(FeatureFlag.enhancedAnalytics));
         expect(metadata.isEnabled, isNotNull);
         expect(metadata.hasUserOverride, isNotNull);
         expect(metadata.buildDefault, isNotNull);
@@ -142,11 +146,11 @@ void main() {
       test('should update state when flags change', () async {
         final initialState = service.currentState;
 
-        await service.setFlag(FeatureFlag.newCameraUI, true);
+        await service.setFlag(FeatureFlag.enhancedAnalytics, true);
 
         final newState = service.currentState;
         expect(newState, isNot(equals(initialState)));
-        expect(newState.isEnabled(FeatureFlag.newCameraUI), isTrue);
+        expect(newState.isEnabled(FeatureFlag.enhancedAnalytics), isTrue);
       });
     });
   });

@@ -13,7 +13,6 @@ import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyStorageException;
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
-import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -91,16 +90,6 @@ class NostrSettingsScreen extends ConsumerWidget {
                 onTap: () => context.push(BlossomSettingsScreen.path),
               ),
               const _SignatureVerificationTile(),
-              _SettingsTile(
-                icon: Icons.science,
-                title: context.l10n.settingsExperimentalFeatures,
-                subtitle:
-                    context.l10n.nostrSettingsExperimentalFeaturesSubtitle,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const FeatureFlagScreen()),
-                ),
-              ),
 
               // Account section
               if (isAuthenticated) ...[

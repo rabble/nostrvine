@@ -9,24 +9,10 @@ class BuildConfiguration {
   /// Get the default value for a feature flag from environment variables
   bool getDefault(FeatureFlag flag) {
     switch (flag) {
-      case FeatureFlag.newCameraUI:
-        return const bool.fromEnvironment('FF_NEW_CAMERA_UI');
       case FeatureFlag.enhancedAnalytics:
         return const bool.fromEnvironment('FF_ENHANCED_ANALYTICS');
-      case FeatureFlag.newProfileLayout:
-        return const bool.fromEnvironment('FF_NEW_PROFILE_LAYOUT');
       case FeatureFlag.debugTools:
         return const bool.fromEnvironment('FF_DEBUG_TOOLS', defaultValue: true);
-      case FeatureFlag.routerDrivenHome:
-        return const bool.fromEnvironment('FF_ROUTER_DRIVEN_HOME');
-      case FeatureFlag.enableVideoEditorV1:
-        // Video editor now works on all platforms (uses dialog-based editor)
-        return const bool.fromEnvironment(
-          'FF_ENABLE_VIDEO_EDITOR_V1',
-          defaultValue: true,
-        );
-      case FeatureFlag.classicsHashtags:
-        return const bool.fromEnvironment('FF_CLASSICS_HASHTAGS');
       case FeatureFlag.curatedLists:
         return const bool.fromEnvironment(
           'FF_CURATED_LISTS',
@@ -67,20 +53,10 @@ class BuildConfiguration {
   /// Get the environment variable key for a flag
   String getEnvironmentKey(FeatureFlag flag) {
     switch (flag) {
-      case FeatureFlag.newCameraUI:
-        return 'FF_NEW_CAMERA_UI';
       case FeatureFlag.enhancedAnalytics:
         return 'FF_ENHANCED_ANALYTICS';
-      case FeatureFlag.newProfileLayout:
-        return 'FF_NEW_PROFILE_LAYOUT';
       case FeatureFlag.debugTools:
         return 'FF_DEBUG_TOOLS';
-      case FeatureFlag.routerDrivenHome:
-        return 'FF_ROUTER_DRIVEN_HOME';
-      case FeatureFlag.enableVideoEditorV1:
-        return 'FF_ENABLE_VIDEO_EDITOR_V1';
-      case FeatureFlag.classicsHashtags:
-        return 'FF_CLASSICS_HASHTAGS';
       case FeatureFlag.curatedLists:
         return 'FF_CURATED_LISTS';
       case FeatureFlag.blueskyPublishing:

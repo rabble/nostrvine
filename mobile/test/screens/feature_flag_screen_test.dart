@@ -147,8 +147,10 @@ void main() {
 
     testWidgets('should show override indicators', (tester) async {
       // Set up one flag as having user override
-      when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
-      when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.getBool('ff_enhancedAnalytics')).thenReturn(true);
+      when(
+        () => mockPrefs.containsKey('ff_enhancedAnalytics'),
+      ).thenReturn(true);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -169,18 +171,18 @@ void main() {
       await service.initialize();
       await tester.pumpAndSettle();
 
-      // Find the switch for newCameraUI specifically
-      final newCameraSwitch = find.descendant(
+      // Find the switch for enhancedAnalytics specifically
+      final flagSwitch = find.descendant(
         of: find.ancestor(
-          of: find.text('New Camera UI'),
+          of: find.text('Enhanced Analytics'),
           matching: find.byType(Card),
         ),
         matching: find.byType(Switch),
       );
-      expect(newCameraSwitch, findsOneWidget);
+      expect(flagSwitch, findsOneWidget);
 
       // Check if the override switch shows true
-      final switchWidget = tester.widget<Switch>(newCameraSwitch);
+      final switchWidget = tester.widget<Switch>(flagSwitch);
       expect(switchWidget.value, isTrue);
     });
 
@@ -222,8 +224,10 @@ void main() {
 
     testWidgets('should show flag states correctly', (tester) async {
       // Set up mixed flag states
-      when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
-      when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.getBool('ff_enhancedAnalytics')).thenReturn(true);
+      when(
+        () => mockPrefs.containsKey('ff_enhancedAnalytics'),
+      ).thenReturn(true);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -249,14 +253,16 @@ void main() {
       expect(switches, hasLength(FeatureFlag.values.length));
 
       // Find switches by looking for the flag display names
-      expect(find.text('New Camera UI'), findsOneWidget);
+      expect(find.text('Enhanced Analytics'), findsOneWidget);
       // TOOD(any): Fix and re-enable these tests
     }, skip: true);
 
     testWidgets('should handle individual flag reset', (tester) async {
       // Set up a flag with user override
-      when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
-      when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.getBool('ff_enhancedAnalytics')).thenReturn(true);
+      when(
+        () => mockPrefs.containsKey('ff_enhancedAnalytics'),
+      ).thenReturn(true);
 
       await tester.pumpWidget(
         ProviderScope(

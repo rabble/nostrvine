@@ -7,12 +7,10 @@ import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 void main() {
   group('FeatureFlag enum', () {
     test('should have display names', () {
-      expect(FeatureFlag.newCameraUI.displayName, equals('New Camera UI'));
       expect(FeatureFlag.debugTools.displayName, equals('Debug Tools'));
     });
 
     test('should have descriptions', () {
-      expect(FeatureFlag.newCameraUI.description, isNotEmpty);
       expect(FeatureFlag.debugTools.description, isNotEmpty);
     });
 
@@ -27,10 +25,8 @@ void main() {
     });
 
     test('should include expected flags for OpenVine', () {
-      expect(FeatureFlag.values, contains(FeatureFlag.newCameraUI));
       expect(FeatureFlag.values, contains(FeatureFlag.accountSwitching));
       expect(FeatureFlag.values, contains(FeatureFlag.enhancedAnalytics));
-      expect(FeatureFlag.values, contains(FeatureFlag.newProfileLayout));
       expect(FeatureFlag.values, contains(FeatureFlag.debugTools));
       expect(FeatureFlag.values, contains(FeatureFlag.integratedApps));
       expect(FeatureFlag.values, contains(FeatureFlag.videoReplies));

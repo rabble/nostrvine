@@ -16,10 +16,8 @@ The feature flag system follows clean architecture principles with clear separat
 
 ## Available Feature Flags
 
-- `newCameraUI` - Enhanced camera interface with new controls
 - `enhancedVideoPlayer` - Improved video playback engine with better performance
 - `enhancedAnalytics` - Detailed usage tracking and insights
-- `newProfileLayout` - Redesigned user profile screen
 - `debugTools` - Developer debugging utilities and diagnostics
 
 ## Quick Start
@@ -31,7 +29,7 @@ import 'package:openvine/features/feature_flags/widgets/feature_flag_widget.dart
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 
 FeatureFlagWidget(
-  flag: FeatureFlag.newCameraUI,
+  flag: FeatureFlag.enhancedAnalytics,
   disabled: const StandardCameraWidget(),
   child: const EnhancedCameraWidget(),
 )
@@ -47,7 +45,7 @@ class MyWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isNewCameraEnabled = ref.watch(
-      isFeatureEnabledProvider(FeatureFlag.newCameraUI)
+      isFeatureEnabledProvider(FeatureFlag.enhancedAnalytics)
     );
     
     if (isNewCameraEnabled) {
@@ -81,7 +79,7 @@ bool getDefault(FeatureFlag flag) {
   switch (flag) {
     case FeatureFlag.debugTools:
       return kDebugMode; // Only enabled in debug builds
-    case FeatureFlag.newCameraUI:
+    case FeatureFlag.enhancedAnalytics:
       return false; // Disabled by default
     // ... other flags
   }
@@ -122,7 +120,7 @@ Comprehensive test coverage with 47 tests across:
 ```dart
 testWidgets('should show enhanced feature when flag enabled', (tester) async {
   final mockPrefs = MockSharedPreferences();
-  when(mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
+  when(mockPrefs.getBool('ff_enhancedAnalytics')).thenReturn(true);
   
   await tester.pumpWidget(
     ProviderScope(
