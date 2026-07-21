@@ -4345,6 +4345,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get routeNoVideosToDisplay => '表示する動画がないよ';
 
   @override
+  String get routeGoHome => 'ホームに戻る';
+
+  @override
   String get routeInvalidProfileId => '無効なプロフィール ID';
 
   @override

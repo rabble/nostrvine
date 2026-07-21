@@ -4363,6 +4363,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get routeNoVideosToDisplay => '표시할 영상이 없어요';
 
   @override
+  String get routeGoHome => '홈으로 가기';
+
+  @override
   String get routeInvalidProfileId => '잘못된 프로필 ID예요';
 
   @override

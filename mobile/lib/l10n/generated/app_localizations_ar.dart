@@ -4523,6 +4523,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get routeNoVideosToDisplay => 'لا توجد مقاطع فيديو لعرضها';
 
   @override
+  String get routeGoHome => 'الذهاب إلى الرئيسية';
+
+  @override
   String get routeInvalidProfileId => 'مُعرِّف ملف شخصي غير صالح';
 
   @override

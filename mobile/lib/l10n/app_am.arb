@@ -2202,6 +2202,7 @@
     "routeInvalidSoundId": "ልክ ያልሆነ የድምጽ መታወቂያ",
     "routeInvalidCategory": "ልክ ያልሆነ ምድብ",
     "routeNoVideosToDisplay": "ምንም የሚታዩ ቪዲዮዎች የሉም",
+    "routeGoHome": "ወደ ቤት ሂድ",
     "routeInvalidProfileId": "ልክ ያልሆነ የመገለጫ መታወቂያ",
     "routeUnknownPath": "ያ ገጽ በመተግበሪያው ውስጥ የለም።",
     "routeDefaultListName": "ዝርዝር",

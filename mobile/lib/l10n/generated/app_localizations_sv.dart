@@ -4550,6 +4550,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get routeNoVideosToDisplay => 'Inga videor att visa';
 
   @override
+  String get routeGoHome => 'Till startsidan';
+
+  @override
   String get routeInvalidProfileId => 'Ogiltigt profil-ID';
 
   @override

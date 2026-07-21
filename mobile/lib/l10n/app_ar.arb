@@ -1874,6 +1874,7 @@
     "routeInvalidSoundId": "مُعرِّف صوت غير صالح",
     "routeInvalidCategory": "فئة غير صالحة",
     "routeNoVideosToDisplay": "لا توجد مقاطع فيديو لعرضها",
+    "routeGoHome": "الذهاب إلى الرئيسية",
     "routeInvalidProfileId": "مُعرِّف ملف شخصي غير صالح",
     "routeUnknownPath": "هذه الصفحة غير متوفرة في التطبيق.",
     "routeDefaultListName": "قائمة",

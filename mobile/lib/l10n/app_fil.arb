@@ -1204,6 +1204,7 @@
     "routeInvalidSoundId": "Invalid na sound ID",
     "routeInvalidCategory": "Invalid na category",
     "routeNoVideosToDisplay": "Walang video na maipapakita",
+    "routeGoHome": "Pumunta sa home",
     "routeInvalidProfileId": "Invalid na profile ID",
     "routeUnknownPath": "Wala ang page na iyon sa app.",
     "routeDefaultListName": "Listahan",

@@ -2081,6 +2081,7 @@
     "routeInvalidSoundId": "Невалиден идентификатор на звука",
     "routeInvalidCategory": "Невалидна категория",
     "routeNoVideosToDisplay": "Няма видеа за показване",
+    "routeGoHome": "Към началото",
     "routeInvalidProfileId": "Невалиден ID на потребителския профил",
     "routeUnknownPath": "Тази страница не е налична в приложението.",
     "routeDefaultListName": "Списък",

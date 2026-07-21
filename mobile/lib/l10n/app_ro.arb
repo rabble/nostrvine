@@ -1882,6 +1882,7 @@
     "routeInvalidSoundId": "ID de sunet invalid",
     "routeInvalidCategory": "Categorie invalidă",
     "routeNoVideosToDisplay": "Niciun videoclip de afișat",
+    "routeGoHome": "Mergi acasă",
     "routeInvalidProfileId": "ID de profil invalid",
     "routeUnknownPath": "Această pagină nu e în aplicație.",
     "routeDefaultListName": "Listă",

@@ -4572,6 +4572,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get routeNoVideosToDisplay => 'Geen video\'s om weer te geven';
 
   @override
+  String get routeGoHome => 'Naar home';
+
+  @override
   String get routeInvalidProfileId => 'Ongeldige profiel-ID';
 
   @override
