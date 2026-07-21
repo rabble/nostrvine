@@ -106,6 +106,13 @@ class _VideoEditorStopMotionFrameStripState
   /// (`0.._orderedFrames.length`).
   int _blockSlot = 0;
 
+  /// Maps the pickup finger x (measured in the full N-tile layout) into the
+  /// post-removal (N-1 tile) layout. Without it, a zero-distance block drag
+  /// resolves the finger against the shifted widths and jumps by one tile —
+  /// releasing without dragging would silently reorder. See
+  /// [_onBlockDragStart].
+  double _blockDragOffsetX = 0;
+
   // Finger tracking (global X is the source of truth so auto-scroll and the
   // gesture callbacks never fight over the position).
   double _dragGlobalX = 0;
@@ -255,6 +262,19 @@ class _VideoEditorStopMotionFrameStripState
       (selection.contains(i) ? blockFrames : remaining).add(widget.frames[i]);
     }
 
+    // Home slot = the block's leftmost original position among the remaining
+    // stills (all frames before it are unselected, so their count is exactly
+    // the smallest selected index). Anchoring the pickup here — instead of
+    // mapping the raw finger x against the shifted post-removal widths — keeps
+    // a no-drag release a no-op for a contiguous block and drives the offset
+    // that makes dragging land on the right slot.
+    final remainingWidths = [for (final frame in remaining) _tileWidth(frame)];
+    final homeSlot = selection.reduce((a, b) => a < b ? a : b);
+    var homeX = 0.0;
+    for (var i = 0; i < homeSlot; i++) {
+      homeX += remainingWidths[i];
+    }
+
     HapticFeedback.mediumImpact();
     widget.onReorderChanged?.call(true);
     setState(() {
@@ -262,10 +282,8 @@ class _VideoEditorStopMotionFrameStripState
       _isBlockDrag = true;
       _blockFrames = blockFrames;
       _orderedFrames = remaining;
-      _blockSlot = _slotAtX(
-        fingerX,
-        [for (final frame in remaining) _tileWidth(frame)],
-      );
+      _blockSlot = homeSlot;
+      _blockDragOffsetX = fingerX - homeX;
       _dragGlobalX = details.globalPosition.dx;
       _dragStartGlobalX = details.globalPosition.dx;
       _dragStartLocalX = fingerX;
@@ -287,7 +305,7 @@ class _VideoEditorStopMotionFrameStripState
   void _applyDragTarget() {
     final widths = _computeLayout().widths;
     if (_isBlockDrag) {
-      final slot = _slotAtX(_effectiveLocalX, widths);
+      final slot = _slotAtX(_effectiveLocalX - _blockDragOffsetX, widths);
       if (slot != _blockSlot) {
         HapticFeedback.selectionClick();
         _blockSlot = slot;
