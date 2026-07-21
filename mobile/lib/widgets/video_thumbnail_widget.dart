@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart'
     show HttpExceptionWithStatus;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:media_cache/media_cache.dart' show MediaCacheImageLoadException;
 import 'package:models/models.dart' hide AspectRatio, LogCategory;
 import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -42,11 +43,22 @@ class VideoThumbnailWidget extends StatefulWidget {
 class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
   String? _thumbnailUrl;
   double? _resolvedAspectRatio;
+  ProviderContainer? _providerContainer;
+  ProviderSubscription<Object?>? _authStateSubscription;
+  ProviderSubscription<int>? _contentFilterSubscription;
+  ProviderSubscription<int>? _adultMediaAccessSubscription;
+  int _passiveAuthInvalidationKey = 0;
 
   @override
   void initState() {
     super.initState();
     _loadThumbnail();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncProviderSubscriptions();
   }
 
   static VineContentType? _deriveContentType(VideoEvent video) =>
@@ -67,6 +79,55 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
       _resolvedAspectRatio = null;
       _loadThumbnail();
     }
+  }
+
+  @override
+  void dispose() {
+    _clearProviderSubscriptions();
+    super.dispose();
+  }
+
+  void _syncProviderSubscriptions() {
+    ProviderContainer container;
+    try {
+      container = ProviderScope.containerOf(context, listen: false);
+    } on Object catch (error) {
+      if (error is! StateError) rethrow;
+      return;
+    }
+    if (identical(container, _providerContainer)) return;
+
+    _clearProviderSubscriptions();
+    _providerContainer = container;
+    _authStateSubscription = container.listen<Object?>(
+      currentAuthStateProvider,
+      (previous, next) => _incrementPassiveAuthInvalidationKey(),
+    );
+    _contentFilterSubscription = container.listen<int>(
+      contentFilterVersionProvider,
+      (previous, next) => _incrementPassiveAuthInvalidationKey(),
+    );
+    _adultMediaAccessSubscription = container.listen<int>(
+      adultMediaAccessRevocationVersionProvider,
+      (previous, next) => _incrementPassiveAuthInvalidationKey(),
+    );
+  }
+
+  void _clearProviderSubscriptions() {
+    _authStateSubscription?.close();
+    _contentFilterSubscription?.close();
+    _adultMediaAccessSubscription?.close();
+    _authStateSubscription = null;
+    _contentFilterSubscription = null;
+    _adultMediaAccessSubscription = null;
+    _providerContainer = null;
+  }
+
+  void _incrementPassiveAuthInvalidationKey() {
+    if (!mounted) return;
+    setState(() {
+      _passiveAuthInvalidationKey++;
+    });
   }
 
   void _loadThumbnail() {
@@ -125,6 +186,7 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
             videoId: widget.video.id,
             showPlayIcon: widget.showPlayIcon,
             borderRadius: widget.borderRadius,
+            passiveAuthInvalidationKey: _passiveAuthInvalidationKey,
             onImageDimensionsResolved: _handleImageDimensionsResolved,
           ),
         if (widget.showPlayIcon)
@@ -186,6 +248,7 @@ class _SafeNetworkImage extends StatefulWidget {
   const _SafeNetworkImage({
     required this.url,
     required this.videoId,
+    required this.passiveAuthInvalidationKey,
     this.width,
     this.height,
     this.fit = BoxFit.cover,
@@ -201,6 +264,7 @@ class _SafeNetworkImage extends StatefulWidget {
   final BoxFit fit;
   final bool showPlayIcon;
   final BorderRadius? borderRadius;
+  final int passiveAuthInvalidationKey;
   final void Function(String url, int width, int height)?
   onImageDimensionsResolved;
 
@@ -226,22 +290,41 @@ class _SafeNetworkImage extends StatefulWidget {
 class _SafeNetworkImageState extends State<_SafeNetworkImage> {
   Map<String, String>? _authHeaders;
   bool _authRetryAttempted = false;
+  Future<void>? _authRetryInFlight;
+  int _imageGeneration = 0;
 
   @override
   void didUpdateWidget(covariant _SafeNetworkImage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.url != widget.url) {
-      _authHeaders = null;
-      _authRetryAttempted = false;
+    if (oldWidget.url != widget.url ||
+        oldWidget.passiveAuthInvalidationKey !=
+            widget.passiveAuthInvalidationKey) {
+      _resetPassiveAuthState();
     }
   }
 
   Future<void> _maybeRetryWithPassiveAuth(Object error) async {
-    if (_authRetryAttempted || !_isAuthChallenge(error)) return;
-    _authRetryAttempted = true;
+    if (_authRetryAttempted ||
+        _authRetryInFlight != null ||
+        !_SafeNetworkImage._shouldBypassCacheManager(widget.url) ||
+        !_isAuthChallenge(error)) {
+      return;
+    }
 
+    final retry = _retryWithPassiveAuth();
+    _authRetryInFlight = retry;
+    await retry;
+    if (identical(_authRetryInFlight, retry)) {
+      _authRetryInFlight = null;
+    }
+  }
+
+  Future<void> _retryWithPassiveAuth() async {
     final sha256Hash = extractSha256FromBlossomUrl(widget.url);
-    if (sha256Hash == null) return;
+    if (sha256Hash == null) {
+      _authRetryAttempted = true;
+      return;
+    }
 
     final authResult = await ProviderScope.containerOf(context, listen: false)
         .read(mediaAuthInterceptorProvider)
@@ -251,6 +334,7 @@ class _SafeNetworkImageState extends State<_SafeNetworkImage> {
         );
     if (!mounted) return;
 
+    _authRetryAttempted = true;
     switch (authResult) {
       case ViewerAuthAuthorized(:final headers):
         setState(() {
@@ -263,6 +347,13 @@ class _SafeNetworkImageState extends State<_SafeNetworkImage> {
     }
   }
 
+  void _resetPassiveAuthState() {
+    _authHeaders = null;
+    _authRetryAttempted = false;
+    _authRetryInFlight = null;
+    _imageGeneration++;
+  }
+
   bool _isAuthChallenge(Object error) {
     if (error is NetworkImageLoadException) {
       return error.statusCode == 401 || error.statusCode == 403;
@@ -270,11 +361,10 @@ class _SafeNetworkImageState extends State<_SafeNetworkImage> {
     if (error is HttpExceptionWithStatus) {
       return error.statusCode == 401 || error.statusCode == 403;
     }
-    final message = error.toString();
-    return message.contains(' 401 ') ||
-        message.contains(' 403 ') ||
-        message.contains('statusCode: 401') ||
-        message.contains('statusCode: 403');
+    if (error is MediaCacheImageLoadException) {
+      return error.statusCode == 401 || error.statusCode == 403;
+    }
+    return false;
   }
 
   String? _extractServerUrl(String url) {
@@ -308,6 +398,7 @@ class _SafeNetworkImageState extends State<_SafeNetworkImage> {
             NetworkImage(resolvedUrl, headers: _authHeaders),
           );
           return ImageWithDimensionsListener(
+            key: ValueKey('network-${widget.url}-$_imageGeneration'),
             imageProvider: imageProvider,
             onImageDimensionsResolved: widget.onImageDimensionsResolved == null
                 ? null
@@ -317,6 +408,7 @@ class _SafeNetworkImageState extends State<_SafeNetworkImage> {
                     height,
                   ),
             child: Image(
+              key: ValueKey('network-image-${widget.url}-$_imageGeneration'),
               image: imageProvider,
               width: widget.width,
               height: widget.height,
@@ -344,6 +436,7 @@ class _SafeNetworkImageState extends State<_SafeNetworkImage> {
         }
 
         return VineCachedImage(
+          key: ValueKey('cached-${widget.url}-$_imageGeneration'),
           imageUrl: resolvedUrl,
           width: widget.width,
           height: widget.height,

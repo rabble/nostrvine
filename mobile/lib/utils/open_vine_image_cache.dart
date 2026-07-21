@@ -6,6 +6,7 @@ final openVineImageCache = MediaCacheManager(
   config: const MediaCacheConfig.image(cacheKey: 'openvine_image_cache'),
 );
 
+/// Clears Flutter's in-memory image caches and the shared thumbnail disk cache.
 Future<void> clearOpenVineImageCache() async {
   final imageCache = PaintingBinding.instance.imageCache;
   imageCache.clear();

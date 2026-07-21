@@ -46,7 +46,12 @@ class MediaAuthInterceptor {
     String? serverUrl,
   }) async {
     try {
-      if (!_mediaViewerAuthService.canCreateHeaders ||
+      await Future.wait([
+        _ageVerificationService.initialized,
+        _contentFilterService.initialized,
+      ]);
+
+      if (!_mediaViewerAuthService.canCreatePassiveHeaders ||
           !_ageVerificationService.isAdultContentVerified ||
           _contentFilterService.adultPlaybackPreference !=
               ContentFilterPreference.show ||

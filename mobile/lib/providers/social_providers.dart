@@ -642,11 +642,19 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
   // those rows are already scoped by ownerPubkey.
   service.onDatabaseCleanup =
       ({String? userPubkey, bool deleteUserData = false}) async {
-        await clearOpenVineImageCache();
         try {
           await ref.read(dmRepositoryProvider).stopListening();
         } catch (_) {
           // DmRepository may not exist yet (e.g., first launch).
+        }
+        try {
+          await clearOpenVineImageCache();
+        } catch (e) {
+          Log.warning(
+            'Failed to clear image cache during user data cleanup: $e',
+            name: 'UserDataCleanup',
+            category: LogCategory.auth,
+          );
         }
         await db.directMessagesDao.clearAll();
         await db.conversationsDao.clearAll();

@@ -1,6 +1,8 @@
 // ABOUTME: Tests for media authentication interceptor handling 401 errors
 // ABOUTME: Validates privacy-first auth flow for age-restricted Blossom content
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -48,6 +50,8 @@ void main() {
     when(
       () => mockContentFilterService.adultPlaybackPreference,
     ).thenReturn(ContentFilterPreference.warn);
+    when(() => mockAgeVerificationService.initialized).thenAnswer((_) async {});
+    when(() => mockContentFilterService.initialized).thenAnswer((_) async {});
   });
 
   group('MediaAuthInterceptor - 401 handling', () {
@@ -335,7 +339,7 @@ void main() {
       'creates hash-bound headers only for verified users with show preference',
       () async {
         when(
-          () => mockMediaViewerAuthService.canCreateHeaders,
+          () => mockMediaViewerAuthService.canCreatePassiveHeaders,
         ).thenReturn(true);
         when(
           () => mockAgeVerificationService.isAdultContentVerified,
@@ -372,7 +376,9 @@ void main() {
     );
 
     test('does not create passive headers for warn preference', () async {
-      when(() => mockMediaViewerAuthService.canCreateHeaders).thenReturn(true);
+      when(
+        () => mockMediaViewerAuthService.canCreatePassiveHeaders,
+      ).thenReturn(true);
       when(
         () => mockAgeVerificationService.isAdultContentVerified,
       ).thenReturn(true);
@@ -397,7 +403,9 @@ void main() {
     });
 
     test('does not create passive headers for unverified users', () async {
-      when(() => mockMediaViewerAuthService.canCreateHeaders).thenReturn(true);
+      when(
+        () => mockMediaViewerAuthService.canCreatePassiveHeaders,
+      ).thenReturn(true);
       when(
         () => mockAgeVerificationService.isAdultContentVerified,
       ).thenReturn(false);
@@ -418,7 +426,9 @@ void main() {
     });
 
     test('does not fall back to URL-bound auth when hash is empty', () async {
-      when(() => mockMediaViewerAuthService.canCreateHeaders).thenReturn(true);
+      when(
+        () => mockMediaViewerAuthService.canCreatePassiveHeaders,
+      ).thenReturn(true);
       when(
         () => mockAgeVerificationService.isAdultContentVerified,
       ).thenReturn(true);
@@ -439,6 +449,91 @@ void main() {
           serverUrl: any(named: 'serverUrl'),
         ),
       );
+    });
+
+    test('does not create passive headers for interactive signers', () async {
+      when(
+        () => mockMediaViewerAuthService.canCreatePassiveHeaders,
+      ).thenReturn(false);
+      when(
+        () => mockAgeVerificationService.isAdultContentVerified,
+      ).thenReturn(true);
+      when(
+        () => mockContentFilterService.adultPlaybackPreference,
+      ).thenReturn(ContentFilterPreference.show);
+
+      final result = await interceptor.createPassiveAuthHeadersForAdultMedia(
+        sha256Hash:
+            '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+        serverUrl: 'https://media.divine.video',
+      );
+
+      expect(result, isA<ViewerAuthUnavailable>());
+      verifyNever(
+        () => mockMediaViewerAuthService.createAuthHeaders(
+          sha256Hash: any(named: 'sha256Hash'),
+          url: any(named: 'url'),
+          serverUrl: any(named: 'serverUrl'),
+        ),
+      );
+    });
+
+    test('waits for moderation readiness before passive gate checks', () async {
+      final ageReady = Completer<void>();
+      final filterReady = Completer<void>();
+      when(
+        () => mockAgeVerificationService.initialized,
+      ).thenAnswer((_) => ageReady.future);
+      when(
+        () => mockContentFilterService.initialized,
+      ).thenAnswer((_) => filterReady.future);
+      when(
+        () => mockMediaViewerAuthService.canCreatePassiveHeaders,
+      ).thenReturn(true);
+      when(
+        () => mockAgeVerificationService.isAdultContentVerified,
+      ).thenReturn(true);
+      when(
+        () => mockContentFilterService.adultPlaybackPreference,
+      ).thenReturn(ContentFilterPreference.show);
+      when(
+        () => mockMediaViewerAuthService.createAuthHeaders(
+          sha256Hash: any(named: 'sha256Hash'),
+          url: any(named: 'url'),
+          serverUrl: any(named: 'serverUrl'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            const ViewerAuthAuthorized({'Authorization': 'Nostr token'}),
+      );
+
+      final resultFuture = interceptor.createPassiveAuthHeadersForAdultMedia(
+        sha256Hash:
+            '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+        serverUrl: 'https://media.divine.video',
+      );
+      await Future<void>.value();
+
+      verifyNever(
+        () => mockMediaViewerAuthService.createAuthHeaders(
+          sha256Hash: any(named: 'sha256Hash'),
+          url: any(named: 'url'),
+          serverUrl: any(named: 'serverUrl'),
+        ),
+      );
+
+      ageReady.complete();
+      filterReady.complete();
+      final result = await resultFuture;
+
+      expect(result, isA<ViewerAuthAuthorized>());
+      verify(
+        () => mockMediaViewerAuthService.createAuthHeaders(
+          sha256Hash:
+              '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+          serverUrl: 'https://media.divine.video',
+        ),
+      ).called(1);
     });
   });
 }

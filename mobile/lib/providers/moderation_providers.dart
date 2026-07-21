@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:content_policy/content_policy.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/preferences_providers.dart';
@@ -75,6 +76,21 @@ final divineHostFilterVersionProvider = Provider<int>((ref) {
   return version;
 });
 
+/// Increments whenever passive adult-media image auth must be invalidated.
+final adultMediaAccessRevocationVersionProvider = StateProvider<int>(
+  (ref) => 0,
+);
+
+Future<void> _clearAdultMediaAccessCaches(Ref ref) async {
+  try {
+    await clearOpenVineImageCache();
+  } finally {
+    if (ref.mounted) {
+      ref.read(adultMediaAccessRevocationVersionProvider.notifier).state++;
+    }
+  }
+}
+
 /// Age verification service for content creation restrictions
 /// keepAlive ensures the service persists and maintains in-memory verification state
 /// even when widgets that watch it dispose and rebuild
@@ -82,7 +98,7 @@ final divineHostFilterVersionProvider = Provider<int>((ref) {
 AgeVerificationService ageVerificationService(Ref ref) {
   final service = AgeVerificationService(
     isProtectedMinor: () => ref.read(isProtectedMinorProvider),
-    onAdultMediaAccessRevoked: clearOpenVineImageCache,
+    onAdultMediaAccessRevoked: () => _clearAdultMediaAccessCaches(ref),
   );
   service.initialize(); // Initialize asynchronously
   return service;
@@ -95,7 +111,7 @@ ContentFilterService contentFilterService(Ref ref) {
   final ageVerificationService = ref.watch(ageVerificationServiceProvider);
   final service = ContentFilterService(
     ageVerificationService: ageVerificationService,
-    onAdultMediaAccessRevoked: clearOpenVineImageCache,
+    onAdultMediaAccessRevoked: () => _clearAdultMediaAccessCaches(ref),
   );
   service.initialize(); // Initialize asynchronously
   ref.onDispose(service.dispose);

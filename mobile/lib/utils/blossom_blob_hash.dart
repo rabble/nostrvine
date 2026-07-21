@@ -1,3 +1,4 @@
+/// Returns a normalized lowercase SHA-256 hex hash, or `null` if invalid.
 String? normalizeSha256Hash(String? sha256) {
   if (sha256 == null) return null;
   final trimmed = sha256.trim().toLowerCase();
@@ -6,6 +7,7 @@ String? normalizeSha256Hash(String? sha256) {
   return isHex ? trimmed : null;
 }
 
+/// Extracts a SHA-256 blob hash from any path segment in a Blossom-style URL.
 String? extractSha256FromBlossomUrl(String? url) {
   if (url == null || url.isEmpty) return null;
   try {

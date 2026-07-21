@@ -33,6 +33,18 @@ class MediaViewerAuthService {
   /// timeout is the de-facto reachability proxy for remote signers.
   bool get canCreateHeaders => _authService.isAuthenticated;
 
+  /// Whether headers can be created without surfacing an interactive signer UI.
+  ///
+  /// Passive image loads are triggered by scrolling, not by a tap, so they may
+  /// use local signing or non-interactive Keycast RPC signing but must not wake
+  /// human-approved signers like Amber, NIP-46, or NIP-07.
+  bool get canCreatePassiveHeaders {
+    final identity = _authService.currentIdentity;
+    return _authService.isAuthenticated &&
+        identity != null &&
+        (identity.signsWithLocalKey || identity.signsRemotelyNonInteractive);
+  }
+
   /// Creates viewer-auth headers for a media GET.
   ///
   /// For the Keycast OAuth-only remote signer, the signing round-trip is

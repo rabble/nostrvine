@@ -30,6 +30,7 @@ class AgeVerificationService {
   DateTime? _verificationDate;
   bool? _isAdultContentVerified;
   DateTime? _adultContentVerificationDate;
+  Future<void>? _initializeFuture;
 
   bool get isAgeVerified => _isAgeVerified ?? false;
   DateTime? get verificationDate => _verificationDate;
@@ -37,8 +38,12 @@ class AgeVerificationService {
       !_isProtectedMinor() && (_isAdultContentVerified ?? false);
   DateTime? get adultContentVerificationDate => _adultContentVerificationDate;
 
+  /// Completes when persisted age-verification state has loaded.
+  Future<void> get initialized =>
+      _initializeFuture ??= _loadVerificationStatus();
+
   Future<void> initialize() async {
-    await _loadVerificationStatus();
+    await initialized;
   }
 
   Future<void> _loadVerificationStatus() async {

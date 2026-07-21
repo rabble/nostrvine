@@ -4,6 +4,7 @@ import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/services/auth/nostr_identity.dart';
@@ -18,6 +19,8 @@ class MockBlossomAuthService extends Mock implements BlossomAuthService {}
 class MockNip98AuthService extends Mock implements Nip98AuthService {}
 
 class MockNostrSigner extends Mock implements NostrSigner {}
+
+class MockSecureKeyContainer extends Mock implements SecureKeyContainer {}
 
 const _testPublicKey =
     'aabbccdd0123456789abcdef0123456789abcdef0123456789abcdef01234567';
@@ -55,6 +58,41 @@ void main() {
   });
 
   group('MediaViewerAuthService', () {
+    test('canCreatePassiveHeaders allows local signing', () {
+      final keyContainer = MockSecureKeyContainer();
+      when(() => keyContainer.publicKeyHex).thenReturn(_testPublicKey);
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(
+        () => mockAuthService.currentIdentity,
+      ).thenReturn(LocalNostrIdentity(keyContainer: keyContainer));
+
+      expect(service.canCreatePassiveHeaders, isTrue);
+    });
+
+    test('canCreatePassiveHeaders allows non-interactive remote signing', () {
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.currentIdentity).thenReturn(
+        KeycastNostrIdentity(
+          pubkey: _testPublicKey,
+          rpcSigner: mockNostrSigner,
+        ),
+      );
+
+      expect(service.canCreatePassiveHeaders, isTrue);
+    });
+
+    test('canCreatePassiveHeaders blocks interactive signing', () {
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.currentIdentity).thenReturn(
+        BunkerNostrIdentity(
+          pubkey: _testPublicKey,
+          remoteSigner: mockNostrSigner,
+        ),
+      );
+
+      expect(service.canCreatePassiveHeaders, isFalse);
+    });
+
     test('prefers Blossom auth when a SHA-256 hash is known', () async {
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(

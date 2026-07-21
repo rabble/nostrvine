@@ -44,6 +44,7 @@ class ContentFilterService extends ChangeNotifier {
 
   final Map<ContentLabel, ContentFilterPreference> _preferences = {};
   bool _initialized = false;
+  Future<void>? _initializeFuture;
 
   /// Categories considered "adult content" — locked to hide unless 18+ verified.
   static const Set<ContentLabel> adultCategories = {
@@ -115,8 +116,13 @@ class ContentFilterService extends ChangeNotifier {
   /// Whether the service has been initialized.
   bool get isInitialized => _initialized;
 
+  /// Completes when persisted content-filter preferences have loaded.
+  Future<void> get initialized => _initializeFuture ??= _initialize();
+
   /// Load preferences from SharedPreferences.
-  Future<void> initialize() async {
+  Future<void> initialize() => initialized;
+
+  Future<void> _initialize() async {
     if (_initialized) return;
 
     try {
@@ -224,11 +230,11 @@ class ContentFilterService extends ChangeNotifier {
     final previousAdultPreference = adultPlaybackPreference;
     _preferences[label] = preference;
     await _save();
-    notifyListeners();
     await _notifyIfAdultPassiveAccessRevoked(
       label: label,
       previousAdultPreference: previousAdultPreference,
     );
+    notifyListeners();
 
     Log.debug(
       'Content filter updated: ${label.displayName} → ${preference.name}',
@@ -297,10 +303,10 @@ class ContentFilterService extends ChangeNotifier {
       _preferences[label] = ContentFilterPreference.hide;
     }
     await _save();
-    notifyListeners();
     await _notifyIfAdultPassiveAccessRevoked(
       previousAdultPreference: previousAdultPreference,
     );
+    notifyListeners();
   }
 
   /// Unlock age-restricted categories when the user enables age verification.

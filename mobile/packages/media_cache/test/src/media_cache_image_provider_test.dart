@@ -431,7 +431,9 @@ void main() {
 
       completer.addListener(listener);
       await Future<void>.delayed(Duration.zero);
-      download.completeNull();
+      download.completeResult(
+        const CancellableDownloadResult(file: null, statusCode: 403),
+      );
       await Future<void>.delayed(Duration.zero);
       await Future<void>.delayed(Duration.zero);
 
@@ -439,7 +441,9 @@ void main() {
       final failure = errors.single;
       expect(failure, isA<MediaCacheImageLoadException>());
       expect((failure as MediaCacheImageLoadException).url, equals(url));
+      expect(failure.statusCode, equals(403));
       expect(failure.toString(), contains(url));
+      expect(failure.toString(), contains('HTTP 403'));
       expect(failure.toString(), contains('download completed without a file'));
       expect(
         PaintingBinding.instance.imageCache.containsKey(provider),
