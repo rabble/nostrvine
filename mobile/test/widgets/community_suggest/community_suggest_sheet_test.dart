@@ -65,6 +65,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.communitySuggestTitle), findsOneWidget);
+      expect(find.text(l10n.communitySuggestSubtitle), findsOneWidget);
       expect(
         find.text(localizedContentLabelName(l10n, ContentLabel.nudity)),
         findsOneWidget,

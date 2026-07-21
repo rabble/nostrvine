@@ -1303,16 +1303,6 @@ class ProfileRepository {
     }
   }
 
-  /// Whether [pubkey] resolves to a Divine identity (a `name@divine.video`
-  /// NIP-05 registered with the name server).
-  ///
-  /// Convenience wrapper over [resolveDivineIdentity] that collapses an
-  /// unknown (transient-failure) verdict to `false`. Callers that need to
-  /// distinguish "not a Divine identity" from "couldn't determine" — e.g. to
-  /// avoid caching a degraded result — should use [resolveDivineIdentity].
-  Future<bool> hasDivineIdentity(String pubkey) async =>
-      await resolveDivineIdentity(pubkey) ?? false;
-
   /// Resolves whether [pubkey] is a Divine identity, distinguishing a genuine
   /// verdict from an undetermined one.
   ///

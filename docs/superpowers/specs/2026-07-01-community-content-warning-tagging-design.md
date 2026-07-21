@@ -32,7 +32,7 @@ and trivially forged.
    counting distinct **Divine-identity** authors per label, and
    surfacing labels that cross a display threshold.
 4. Folding community-crossed-threshold labels into the existing
-   `ContentWarning` overlay, tagged as community-sourced.
+   `ContentWarning` overlay.
 
 **Out of scope (separate backend issue, to be filed under #5177 and
 assigned to @mbradley):**
@@ -61,9 +61,9 @@ the client can defer to it.
   once **>= 3 distinct Divine-identity authors** have suggested that
   label. Named constant `CommunityContentWarningConstants.displayThreshold`.
 - **Display:** community-crossed-threshold labels feed the existing
-  `ContentWarning` blur overlay + "View Anyway" flow, but carry a
-  `community` provenance so the UI can label them honestly as
-  community-suggested (vs creator self-label / trusted labeler).
+  `ContentWarning` blur overlay + "View Anyway" flow. Mobile v1 does
+  not display separate provenance; the warnings remain advisory and
+  never hard-hide content.
 - **Entry point:** a distinct "Help classify this" action, separate
   from the existing Report action.
 
@@ -73,8 +73,8 @@ the client can defer to it.
 
 - **Divine identity check.** Extend `ProfileRepository` (already the
   name-server client, hosts `claimUsername`) with
-  `Future<bool> hasDivineIdentity(String pubkey)` backed by
-  `GET /api/username/by-pubkey/<hex>`. Results are cached with the **same 24h TTL**
+  `Future<bool?> resolveDivineIdentity(String pubkey)` backed by
+  `GET /api/username/by-pubkey/<hex>`. Genuine 200 verdicts are cached with the **same 24h TTL**
   the existing moderation NIP-05 resolution uses
   (`ModerationLabelService._resolvedPubkeyTtl = Duration(hours: 24)`) —
   reuse that constant / value rather than inventing a new window, so the
@@ -97,10 +97,11 @@ the client can defer to it.
   whatever trust posture #4948 lands on (mismatch logging, pinning,
   etc.) applies uniformly here without a second migration.
 - **Kind 1985 querying.** Reuse `NostrClient.queryEvents` with
-  `Filter(kinds: [1985], e: [videoId])` and
-  `Filter(kinds: [1985], a: [addressableId])` to fetch all-author
-  content-warning labels for a video. (Existing `moderation_label_service`
-  only filters by *author*; community aggregation filters by *target*.)
+  `Filter(kinds: [1985], e: [videoId])` and, for addressable NIP-71
+  video kinds only, `Filter(kinds: [1985], a: [kind:pubkey:dTag])` to
+  fetch all-author content-warning labels for a video. (Existing
+  `moderation_label_service` only filters by *author*; community
+  aggregation filters by *target*.)
 - **Publishing.** Reuse `NostrClient` event publishing to emit the
   kind 1985 suggestion.
 
@@ -113,13 +114,15 @@ New `CommunityContentLabelRepository` (pure Dart, in
   queries kind 1985 events targeting the video, parses
   `['L','content-warning']` + `['l', <label>, 'content-warning']`,
   groups by normalized label value, counts **distinct author pubkeys
-  that pass `hasDivineIdentity`**, and returns the set of labels whose
+  that pass `resolveDivineIdentity`**, and returns the set of labels whose
   distinct-Divine-author count `>= displayThreshold`.
 - `Future<void> suggestLabels({required VideoEvent video, required Set<ContentLabel> labels})`
   — publishes a kind 1985 event with tags:
   `["L","content-warning"]`, one `["l", value, "content-warning"]` per
-  label, `["e", video.id, <relayHint>]`, `["a", video.addressableId]`
-  (when addressable), `["p", video.pubkey]`.
+  label, `["e", video.id]`, and `["a", kind:pubkey:dTag]` only when
+  the video is an addressable NIP-71 kind. It deliberately emits no
+  `p` target because a `p` label targets the creator account, not the
+  video.
 - `Future<Set<String>> myExistingSuggestions(VideoEvent video, String myPubkey)`
   — labels the current user already suggested, so the UI can show an
   "already suggested" state (NIP-32 has no un-vote; suggestions are
@@ -136,12 +139,12 @@ pure-Dart package).
   flow: holds selected labels, a `status` enum
   (`initial | submitting | success | failure`), and the
   already-suggested set. No error strings in state; uses `addError`.
-- Community-derived labels for **display** are surfaced by extending
-  `resolveEffectiveContentLabels` to accept community labels and tag
-  their provenance. Aggregation is async (network), so the caller
-  (feed item's existing content-warning resolution path) fetches the
-  community set via the repository and passes it in — the resolver
-  stays synchronous and pure.
+- Community-derived labels for **display** are surfaced through
+  `CommunityContentLabelService`, which prefetches and caches
+  crossed-threshold labels per video for a short window. Feed warning
+  code synchronously merges those cached labels with `video.warnLabels`
+  behind the feature flag, so the blur overlay, autoplay gate, and
+  double-tap-like gate agree.
 
 ### Presentation layer
 
@@ -151,9 +154,7 @@ pure-Dart package).
   `content_warning_selector` multi-select pattern (dark-mode,
   `VineTheme`, `DivineIcon`, l10n copy). Wrapped in `Semantics`.
 - **Display:** the existing `ContentWarning` / `VideoContentWarning`
-  widgets render the merged label set. Add a provenance line/chip
-  ("Suggested by the community") when the surfaced label is
-  community-sourced.
+  widgets render the merged label set.
 
 ## Data flow
 
@@ -166,20 +167,22 @@ Viewer taps "Help classify this"
 Feed renders a video
   -> CommunityContentLabelRepository.communityLabelsForVideo(video)
        - queryEvents kind 1985 by #e / #a
-       - group by label, count distinct authors where hasDivineIdentity
+       - group by label, count distinct authors where resolveDivineIdentity
        - keep labels with count >= displayThreshold
-  -> resolveEffectiveContentLabels(video, community: <set>, ...)
-  -> ContentWarning overlay (blur + View Anyway), tagged community
+  -> CommunityContentLabelService cache
+  -> feed warning merge
+  -> ContentWarning overlay (blur + View Anyway)
 ```
 
 ## Error handling
 
 - Identity/label network failures are **expected** (flaky network) and
   are NOT reportable to Crashlytics (per the decision matrix in
-  `error_handling.md`). A failed community-label fetch resolves to "no
-  community labels" (video shows without the community warning) rather
-  than surfacing an error — graceful degradation; the authoritative
-  creator/trusted-labeler warnings are unaffected.
+  `error_handling.md`). A failed or undetermined community-label fetch
+  throws a typed `CommunityLabelUnavailableException` when it could
+  change the display outcome; the service leaves that result uncached so
+  the next prefetch retries. The authoritative creator/trusted-labeler
+  warnings are unaffected.
 - Suggestion publish failure surfaces via the cubit `failure` status ->
   UI snackbar (l10n), with `addError` for logging (not Crashlytics
   unless it's a programming invariant).
@@ -191,15 +194,15 @@ Feed renders a video
   authors excluded, duplicate author counted once, label
   normalization), publish tag construction, and network-failure
   degradation. Mock `NostrClient` + `ProfileRepository`.
-- `hasDivineIdentity`: found / not-found / network-error / cache-hit.
+- `resolveDivineIdentity`: found / not-found / network-error / cache-hit.
 - `CommunitySuggestCubit`: `blocTest` per event — select, submit
   success, submit failure (asserts `addError`), already-suggested.
 - Widget tests: selector renders labels, submit dispatches, disabled
-  state when nothing selected; `ContentWarning` shows the community
-  provenance chip when community-sourced. l10n delegates on all pumped
-  `MaterialApp`s.
-- Goldens for the selector + the community-tagged warning where the
-  existing suite has goldens for these widgets.
+  state when nothing selected; feed tests assert community labels drive
+  the existing warning overlay and pause/autoplay gates. l10n delegates
+  on all pumped `MaterialApp`s.
+- Goldens for the selector where the existing suite has goldens for
+  these widgets.
 
 ## Anti-abuse notes (documented limits of the mobile slice)
 

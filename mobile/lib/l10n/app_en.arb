@@ -676,7 +676,7 @@
   "@communitySuggestTitle": {
     "description": "Title of the sheet where a viewer suggests content-warning labels for someone else's video."
   },
-  "communitySuggestSubtitle": "Missing a content warning? Suggest one so other viewers know what to expect.",
+  "communitySuggestSubtitle": "Missing a content warning? Your suggestion is public, signed, and can't be taken back.",
   "communitySuggestSubmit": "Suggest",
   "communitySuggestSuccess": "Thanks. Your suggestion was sent.",
   "communitySuggestFailure": "Couldn't send your suggestion. Try again.",

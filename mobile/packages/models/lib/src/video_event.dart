@@ -1205,7 +1205,7 @@ class VideoEvent {
 
   String? get addressableId => vineId != null
       ? AId(
-          kind: shareKind,
+          kind: EventKind.videoVertical,
           pubkey: pubkey,
           dTag: vineId!,
         ).toAString()

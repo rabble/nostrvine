@@ -28,18 +28,22 @@ class CommunityContentLabelService extends ChangeNotifier {
   CommunityContentLabelService({
     required CommunityContentLabelRepository? repository,
     required ContentFilterService contentFilterService,
+    DateTime Function()? now,
   }) : _repository = repository,
+       _now = now ?? DateTime.now,
        _contentFilterService = contentFilterService;
 
   final CommunityContentLabelRepository? _repository;
+  final DateTime Function() _now;
   final ContentFilterService _contentFilterService;
 
-  final Map<String, Set<String>> _cache = {};
+  final Map<String, _CommunityLabelCacheEntry> _cache = {};
   final Set<String> _inFlight = {};
 
   /// Maximum cached videos; oldest-inserted evicted first so a long session
   /// can't grow the map without bound.
   static const _cacheMax = 500;
+  static const _cacheTtl = Duration(minutes: 5);
 
   /// Fetches and caches the community-surfaced labels for [video], once.
   ///
@@ -49,14 +53,17 @@ class CommunityContentLabelService extends ChangeNotifier {
     final repository = _repository;
     if (repository == null) return;
     final id = video.id;
-    if (_cache.containsKey(id) || _inFlight.contains(id)) return;
+    final cached = _cache[id];
+    if ((cached != null && !_isExpired(cached)) || _inFlight.contains(id)) {
+      return;
+    }
     _inFlight.add(id);
     try {
       final labels = await repository.communityLabelsForVideo(video);
       if (_cache.length >= _cacheMax) {
         _cache.remove(_cache.keys.first);
       }
-      _cache[id] = labels;
+      _cache[id] = _CommunityLabelCacheEntry(labels: labels, cachedAt: _now());
       // Only notify when something visible changed. Empty is the common
       // case while scrolling; notifying then would rebuild every mounted
       // feed item for nothing.
@@ -78,13 +85,28 @@ class CommunityContentLabelService extends ChangeNotifier {
   /// Returns the cached crossed-threshold labels minus any the viewer set to
   /// [ContentFilterPreference.show]. Empty until [prefetch] completes.
   Set<String> warnLabelsFor(VideoEvent video) {
-    final labels = _cache[video.id];
-    if (labels == null || labels.isEmpty) return const {};
-    return labels.where((value) {
+    final cached = _cache[video.id];
+    if (cached == null || _isExpired(cached) || cached.labels.isEmpty) {
+      return const {};
+    }
+    return cached.labels.where((value) {
       final label = ContentLabel.fromValue(value);
       if (label == null) return true;
       return _contentFilterService.getPreference(label) !=
           ContentFilterPreference.show;
     }).toSet();
   }
+
+  bool _isExpired(_CommunityLabelCacheEntry entry) =>
+      _now().difference(entry.cachedAt) >= _cacheTtl;
+}
+
+class _CommunityLabelCacheEntry {
+  const _CommunityLabelCacheEntry({
+    required this.labels,
+    required this.cachedAt,
+  });
+
+  final Set<String> labels;
+  final DateTime cachedAt;
 }

@@ -1,5 +1,5 @@
-// ABOUTME: Tests VideoEvent.addressableId derives its kind from the event's
-// ABOUTME: actual NIP-71 kind (34235 vs 34236), not a hardcoded value.
+// ABOUTME: Tests VideoEvent.addressableId preserves the legacy app-wide
+// ABOUTME: 34236 coordinate key while scoped callers can derive richer targets.
 
 import 'package:models/models.dart';
 import 'package:test/test.dart';
@@ -26,9 +26,14 @@ void main() {
       expect(video.addressableId, equals('34236:$pubkey:vine123'));
     });
 
-    test('uses kind 34235 for an addressable normal video', () {
+    test('keeps legacy 34236 coordinates for app-wide compatibility', () {
       final video = build(eventKind: 34235, vineId: 'reel456');
-      expect(video.addressableId, equals('34235:$pubkey:reel456'));
+      expect(video.addressableId, equals('34236:$pubkey:reel456'));
+    });
+
+    test('keeps non-addressable video coordinates on the legacy key', () {
+      final video = build(eventKind: 22, vineId: eventId);
+      expect(video.addressableId, equals('34236:$pubkey:$eventId'));
     });
 
     test('falls back to 34236 when the event kind is unknown', () {

@@ -1350,7 +1350,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get communitySuggestSubtitle =>
-      'Missing a content warning? Suggest one so other viewers know what to expect.';
+      'Missing a content warning? Your suggestion is public, signed, and can\'t be taken back.';
 
   @override
   String get communitySuggestSubmit => 'Suggest';

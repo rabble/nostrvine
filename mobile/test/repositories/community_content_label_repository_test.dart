@@ -30,16 +30,11 @@ Event _labelEvent(
   required String videoId,
   String namespace = 'content-warning',
 }) {
-  return Event(
-    author,
-    EventKind.label,
-    [
-      ['L', namespace],
-      for (final value in labelValues) ['l', value, namespace],
-      ['e', videoId],
-    ],
-    '',
-  );
+  return Event(author, EventKind.label, [
+    ['L', namespace],
+    for (final value in labelValues) ['l', value, namespace],
+    ['e', videoId],
+  ], '');
 }
 
 void main() {
@@ -77,6 +72,9 @@ void main() {
       when(() => video.id).thenReturn(videoId);
       when(() => video.pubkey).thenReturn(creatorPubkey);
       when(() => video.addressableId).thenReturn(addressableId);
+      when(() => video.vineId).thenReturn('vine123');
+      when(() => video.shareKind).thenReturn(34236);
+      when(() => video.isAddressableShareKind).thenReturn(true);
       // Default: every author resolves to a Divine identity unless overridden.
       when(
         () => profileRepository.resolveDivineIdentity(any()),
@@ -90,6 +88,42 @@ void main() {
     }
 
     group('communityLabelsForVideo', () {
+      test('queries e and a targets for addressable videos', () async {
+        final captured = <List<Filter>>[];
+        when(() => nostrClient.queryEvents(captureAny())).thenAnswer((
+          invocation,
+        ) async {
+          captured.add(invocation.positionalArguments.first as List<Filter>);
+          return const <Event>[];
+        });
+
+        await repository.communityLabelsForVideo(video);
+
+        expect(captured, hasLength(1));
+        expect(captured.single, hasLength(2));
+        expect(captured.single[0].e, equals([videoId]));
+        expect(captured.single[1].a, equals([addressableId]));
+      });
+
+      test('does not query an a target for non-addressable videos', () async {
+        when(() => video.vineId).thenReturn(videoId);
+        when(() => video.shareKind).thenReturn(22);
+        when(() => video.isAddressableShareKind).thenReturn(false);
+        final captured = <List<Filter>>[];
+        when(() => nostrClient.queryEvents(captureAny())).thenAnswer((
+          invocation,
+        ) async {
+          captured.add(invocation.positionalArguments.first as List<Filter>);
+          return const <Event>[];
+        });
+
+        await repository.communityLabelsForVideo(video);
+
+        expect(captured, hasLength(1));
+        expect(captured.single, hasLength(1));
+        expect(captured.single.single.e, equals([videoId]));
+      });
+
       test(
         'surfaces a label once 3 distinct Divine authors suggest it',
         () async {
@@ -226,77 +260,68 @@ void main() {
         },
       );
 
-      test(
-        'throws CommunityLabelUnavailable when an undetermined identity '
-        'could have crossed the threshold',
-        () async {
-          // 3 raw authors, one lookup undetermined (null): confirmed 2 < 3
-          // but 2 + 1 >= 3, so the failure could have been the deciding vote.
-          when(
-            () => profileRepository.resolveDivineIdentity(authorC),
-          ).thenAnswer((_) async => null);
-          stubQuery([
-            _labelEvent(authorA, ['gambling'], videoId: videoId),
-            _labelEvent(authorB, ['gambling'], videoId: videoId),
-            _labelEvent(authorC, ['gambling'], videoId: videoId),
-          ]);
+      test('throws CommunityLabelUnavailable when an undetermined identity '
+          'could have crossed the threshold', () async {
+        // 3 raw authors, one lookup undetermined (null): confirmed 2 < 3
+        // but 2 + 1 >= 3, so the failure could have been the deciding vote.
+        when(
+          () => profileRepository.resolveDivineIdentity(authorC),
+        ).thenAnswer((_) async => null);
+        stubQuery([
+          _labelEvent(authorA, ['gambling'], videoId: videoId),
+          _labelEvent(authorB, ['gambling'], videoId: videoId),
+          _labelEvent(authorC, ['gambling'], videoId: videoId),
+        ]);
 
-          expect(
-            () => repository.communityLabelsForVideo(video),
-            throwsA(isA<CommunityLabelUnavailableException>()),
-          );
-        },
-      );
+        expect(
+          () => repository.communityLabelsForVideo(video),
+          throwsA(isA<CommunityLabelUnavailableException>()),
+        );
+      });
 
-      test(
-        'does not throw when confirmed authors already cross, despite an '
-        'undetermined lookup',
-        () async {
-          // 4 raw authors, 3 confirmed Divine + 1 undetermined: the label
-          // crosses regardless, so the uncertainty is irrelevant.
-          final authorD = _hex('e');
-          when(
-            () => profileRepository.resolveDivineIdentity(authorD),
-          ).thenAnswer((_) async => null);
-          stubQuery([
-            _labelEvent(authorA, ['gambling'], videoId: videoId),
-            _labelEvent(authorB, ['gambling'], videoId: videoId),
-            _labelEvent(authorC, ['gambling'], videoId: videoId),
-            _labelEvent(authorD, ['gambling'], videoId: videoId),
-          ]);
+      test('does not throw when confirmed authors already cross, despite an '
+          'undetermined lookup', () async {
+        // 4 raw authors, 3 confirmed Divine + 1 undetermined: the label
+        // crosses regardless, so the uncertainty is irrelevant.
+        final authorD = _hex('e');
+        when(
+          () => profileRepository.resolveDivineIdentity(authorD),
+        ).thenAnswer((_) async => null);
+        stubQuery([
+          _labelEvent(authorA, ['gambling'], videoId: videoId),
+          _labelEvent(authorB, ['gambling'], videoId: videoId),
+          _labelEvent(authorC, ['gambling'], videoId: videoId),
+          _labelEvent(authorD, ['gambling'], videoId: videoId),
+        ]);
 
-          final result = await repository.communityLabelsForVideo(video);
+        final result = await repository.communityLabelsForVideo(video);
 
-          expect(result, equals({'gambling'}));
-        },
-      );
+        expect(result, equals({'gambling'}));
+      });
 
-      test(
-        'returns empty (not degraded) when an undetermined lookup cannot '
-        'reach the threshold',
-        () async {
-          // 3 raw authors, 2 confirmed NOT Divine + 1 undetermined: even if
-          // the undetermined one is Divine, 1 < 3, so it cannot cross.
-          when(
-            () => profileRepository.resolveDivineIdentity(authorA),
-          ).thenAnswer((_) async => false);
-          when(
-            () => profileRepository.resolveDivineIdentity(authorB),
-          ).thenAnswer((_) async => false);
-          when(
-            () => profileRepository.resolveDivineIdentity(authorC),
-          ).thenAnswer((_) async => null);
-          stubQuery([
-            _labelEvent(authorA, ['gambling'], videoId: videoId),
-            _labelEvent(authorB, ['gambling'], videoId: videoId),
-            _labelEvent(authorC, ['gambling'], videoId: videoId),
-          ]);
+      test('returns empty (not degraded) when an undetermined lookup cannot '
+          'reach the threshold', () async {
+        // 3 raw authors, 2 confirmed NOT Divine + 1 undetermined: even if
+        // the undetermined one is Divine, 1 < 3, so it cannot cross.
+        when(
+          () => profileRepository.resolveDivineIdentity(authorA),
+        ).thenAnswer((_) async => false);
+        when(
+          () => profileRepository.resolveDivineIdentity(authorB),
+        ).thenAnswer((_) async => false);
+        when(
+          () => profileRepository.resolveDivineIdentity(authorC),
+        ).thenAnswer((_) async => null);
+        stubQuery([
+          _labelEvent(authorA, ['gambling'], videoId: videoId),
+          _labelEvent(authorB, ['gambling'], videoId: videoId),
+          _labelEvent(authorC, ['gambling'], videoId: videoId),
+        ]);
 
-          final result = await repository.communityLabelsForVideo(video);
+        final result = await repository.communityLabelsForVideo(video);
 
-          expect(result, isEmpty);
-        },
-      );
+        expect(result, isEmpty);
+      });
 
       test(
         'bounds concurrent identity lookups when many authors label a video',
@@ -317,9 +342,7 @@ void main() {
           var inFlight = 0;
           var peakInFlight = 0;
           when(() => profileRepository.resolveDivineIdentity(any())).thenAnswer(
-            (
-              _,
-            ) async {
+            (_) async {
               inFlight++;
               peakInFlight = max(peakInFlight, inFlight);
               await Future<void>.delayed(Duration.zero);
@@ -417,6 +440,60 @@ void main() {
         },
       );
 
+      test(
+        'uses the video share kind for addressable normal-video a tags',
+        () async {
+          when(() => video.shareKind).thenReturn(34235);
+          const normalVideoAddressableId = '34235:$creatorPubkey:vine123';
+          when(() => nostrClient.publicKey).thenReturn(authorA);
+          final captured = <Event>[];
+          when(() => nostrClient.publishEvent(captureAny())).thenAnswer((
+            invocation,
+          ) async {
+            captured.add(invocation.positionalArguments.first as Event);
+            return PublishSuccess(
+              event: Event(_placeholderPubkey, EventKind.label, const [], ''),
+            );
+          });
+
+          await repository.suggestLabels(
+            video: video,
+            labels: {ContentLabel.gambling},
+          );
+
+          expect(
+            captured.single.tags,
+            contains(equals(['a', normalVideoAddressableId])),
+          );
+        },
+      );
+
+      test('does not publish an a tag for non-addressable videos', () async {
+        when(() => video.vineId).thenReturn(videoId);
+        when(() => video.shareKind).thenReturn(22);
+        when(() => video.isAddressableShareKind).thenReturn(false);
+        when(() => nostrClient.publicKey).thenReturn(authorA);
+        final captured = <Event>[];
+        when(() => nostrClient.publishEvent(captureAny())).thenAnswer((
+          invocation,
+        ) async {
+          captured.add(invocation.positionalArguments.first as Event);
+          return PublishSuccess(
+            event: Event(_placeholderPubkey, EventKind.label, const [], ''),
+          );
+        });
+
+        await repository.suggestLabels(
+          video: video,
+          labels: {ContentLabel.gambling},
+        );
+
+        expect(
+          captured.single.tags.any((tag) => tag.isNotEmpty && tag[0] == 'a'),
+          isFalse,
+        );
+      });
+
       test('throws ArgumentError when no labels are provided', () async {
         expect(
           () => repository.suggestLabels(video: video, labels: const {}),
@@ -455,30 +532,27 @@ void main() {
         expect(result, equals({'gambling'}));
       });
 
-      test(
-        'includes a just-published suggestion before the relay echoes it '
-        '(read-after-write gap)',
-        () async {
-          // The relay read model lags writes by a few seconds; the relay
-          // query returns nothing yet.
-          stubQuery(const []);
-          when(() => nostrClient.publicKey).thenReturn(authorA);
-          when(() => nostrClient.publishEvent(any())).thenAnswer(
-            (_) async => PublishSuccess(
-              event: Event(_placeholderPubkey, EventKind.label, const [], ''),
-            ),
-          );
+      test('includes a just-published suggestion before the relay echoes it '
+          '(read-after-write gap)', () async {
+        // The relay read model lags writes by a few seconds; the relay
+        // query returns nothing yet.
+        stubQuery(const []);
+        when(() => nostrClient.publicKey).thenReturn(authorA);
+        when(() => nostrClient.publishEvent(any())).thenAnswer(
+          (_) async => PublishSuccess(
+            event: Event(_placeholderPubkey, EventKind.label, const [], ''),
+          ),
+        );
 
-          await repository.suggestLabels(
-            video: video,
-            labels: {ContentLabel.gambling},
-          );
+        await repository.suggestLabels(
+          video: video,
+          labels: {ContentLabel.gambling},
+        );
 
-          final result = await repository.mySuggestedLabels(video, authorA);
+        final result = await repository.mySuggestedLabels(video, authorA);
 
-          expect(result, equals({'gambling'}));
-        },
-      );
+        expect(result, equals({'gambling'}));
+      });
 
       test('does not remember a suggestion whose publish failed', () async {
         stubQuery(const []);

@@ -2473,7 +2473,7 @@ abstract class AppLocalizations {
   /// No description provided for @communitySuggestSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Missing a content warning? Suggest one so other viewers know what to expect.'**
+  /// **'Missing a content warning? Your suggestion is public, signed, and can\'t be taken back.'**
   String get communitySuggestSubtitle;
 
   /// No description provided for @communitySuggestSubmit.

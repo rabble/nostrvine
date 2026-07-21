@@ -18,6 +18,7 @@ void main() {
     late _MockContentFilterService contentFilter;
     late CommunityContentLabelService service;
     late _MockVideoEvent video;
+    late DateTime now;
 
     const videoId =
         'f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2';
@@ -30,9 +31,11 @@ void main() {
     setUp(() {
       repository = _MockRepository();
       contentFilter = _MockContentFilterService();
+      now = DateTime.utc(2026);
       service = CommunityContentLabelService(
         repository: repository,
         contentFilterService: contentFilter,
+        now: () => now,
       );
       video = _MockVideoEvent();
       when(() => video.id).thenReturn(videoId);
@@ -72,16 +75,19 @@ void main() {
       expect(service.warnLabelsFor(video), equals({'violence'}));
     });
 
-    test('prefetch queries the repository only once per video', () async {
-      when(
-        () => repository.communityLabelsForVideo(any()),
-      ).thenAnswer((_) async => {'gambling'});
+    test(
+      'prefetch queries the repository once per video within the TTL',
+      () async {
+        when(
+          () => repository.communityLabelsForVideo(any()),
+        ).thenAnswer((_) async => {'gambling'});
 
-      await service.prefetch(video);
-      await service.prefetch(video);
+        await service.prefetch(video);
+        await service.prefetch(video);
 
-      verify(() => repository.communityLabelsForVideo(any())).called(1);
-    });
+        verify(() => repository.communityLabelsForVideo(any())).called(1);
+      },
+    );
 
     test('prefetch notifies listeners when results arrive', () async {
       when(
@@ -123,7 +129,7 @@ void main() {
       expect(gatedService.warnLabelsFor(video), isEmpty);
     });
 
-    test('prefetch caches empty results without re-querying', () async {
+    test('prefetch caches empty results until the TTL expires', () async {
       when(
         () => repository.communityLabelsForVideo(any()),
       ).thenAnswer((_) async => <String>{});
@@ -133,6 +139,34 @@ void main() {
 
       expect(service.warnLabelsFor(video), isEmpty);
       verify(() => repository.communityLabelsForVideo(any())).called(1);
+    });
+
+    test('prefetch refreshes empty results after the TTL expires', () async {
+      var calls = 0;
+      when(() => repository.communityLabelsForVideo(any())).thenAnswer((
+        _,
+      ) async {
+        calls++;
+        return calls == 1 ? <String>{} : {'gambling'};
+      });
+
+      await service.prefetch(video);
+      now = now.add(const Duration(minutes: 5));
+      await service.prefetch(video);
+
+      expect(service.warnLabelsFor(video), equals({'gambling'}));
+      verify(() => repository.communityLabelsForVideo(any())).called(2);
+    });
+
+    test('warnLabelsFor hides expired cached labels until refreshed', () async {
+      when(
+        () => repository.communityLabelsForVideo(any()),
+      ).thenAnswer((_) async => {'gambling'});
+
+      await service.prefetch(video);
+      now = now.add(const Duration(minutes: 5));
+
+      expect(service.warnLabelsFor(video), isEmpty);
     });
 
     test(

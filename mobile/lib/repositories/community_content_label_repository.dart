@@ -3,7 +3,7 @@
 
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
-import 'package:nostr_sdk/nostr_sdk.dart' show Event, EventKind, Filter;
+import 'package:nostr_sdk/nostr_sdk.dart' show AId, Event, EventKind, Filter;
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/services/community_content_warning_constants.dart';
 import 'package:profile_repository/profile_repository.dart';
@@ -151,7 +151,7 @@ class CommunityContentLabelRepository {
     // publish a signed, account-level content-warning claim about the creator
     // derived from a single video (a reputation-affecting assertion other
     // labelers ingest). The video-scoped targets carry all the intent needed.
-    final addressableId = video.addressableId;
+    final addressableId = _addressableTargetFor(video);
     final tags = <List<String>>[
       ['L', CommunityContentWarningConstants.namespace],
       for (final label in labels)
@@ -161,12 +161,7 @@ class CommunityContentLabelRepository {
         ['a', addressableId],
     ];
 
-    final event = Event(
-      _nostrClient.publicKey,
-      EventKind.label,
-      tags,
-      '',
-    );
+    final event = Event(_nostrClient.publicKey, EventKind.label, tags, '');
     final result = await _nostrClient.publishEvent(event);
     if (result is! PublishSuccess) {
       throw CommunityLabelPublishException(result.runtimeType.toString());
@@ -198,7 +193,7 @@ class CommunityContentLabelRepository {
   /// when the relay query fails (distinct from a successful empty result).
   Future<List<Event>?> _queryLabelEvents(VideoEvent video) async {
     try {
-      final addressableId = video.addressableId;
+      final addressableId = _addressableTargetFor(video);
       final filters = <Filter>[
         Filter(kinds: [EventKind.label], e: [video.id]),
         if (addressableId != null && addressableId.isNotEmpty)
@@ -255,6 +250,18 @@ class CommunityContentLabelRepository {
       result.addEntries(entries);
     }
     return result;
+  }
+
+  String? _addressableTargetFor(VideoEvent video) {
+    final dTag = video.vineId;
+    if (!video.isAddressableShareKind || dTag == null || dTag.isEmpty) {
+      return null;
+    }
+    return AId(
+      kind: video.shareKind,
+      pubkey: video.pubkey,
+      dTag: dTag,
+    ).toAString();
   }
 
   Iterable<String> _contentWarningValues(Event event) sync* {

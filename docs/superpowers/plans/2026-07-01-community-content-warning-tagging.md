@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Let viewers suggest content-warning labels for a video (NIP-32 kind 1985); the app counts distinct Divine-NIP-05 authors per label and folds any label crossing a threshold of 3 into the existing content-warning overlay, tagged as community-sourced.
+**Goal:** Let viewers suggest content-warning labels for a video (NIP-32 kind 1985); the app counts distinct Divine-NIP-05 authors per label and folds any label crossing a threshold of 3 into the existing content-warning overlay.
 
-**Architecture:** UI (`Help classify` selector + provenance chip) → `CommunitySuggestCubit` → `CommunityContentLabelRepository` → `NostrClient` (kind 1985 query/publish) + `ProfileRepository.hasDivineIdentity` (name-server `/by-pubkey`). Community-derived labels are passed into the existing synchronous `resolveEffectiveContentLabels` resolver as a new tagged source.
+**Architecture:** UI (`Help classify` selector) → `CommunitySuggestCubit` → `CommunityContentLabelRepository` → `NostrClient` (kind 1985 query/publish) + `ProfileRepository.resolveDivineIdentity` (name-server `/by-pubkey`). Community-derived labels are cached by `CommunityContentLabelService` and merged into the feed's existing warning path.
 
 **Tech Stack:** Flutter, flutter_bloc (Cubit), Riverpod (legacy bridge for provider wiring), nostr_sdk `Filter`/`NostrClient`, models `VideoEvent`, existing `ContentLabel` enum + `ContentWarning` widgets.
 
@@ -26,17 +26,17 @@
 
 **Files:**
 - Create: `mobile/lib/services/community_content_warning_constants.dart`
-- Modify: `mobile/packages/profile_repository/lib/src/profile_repository.dart` (add `hasDivineIdentity`)
+- Modify: `mobile/packages/profile_repository/lib/src/profile_repository.dart` (add `resolveDivineIdentity`)
 - Test: `mobile/packages/profile_repository/test/src/profile_repository_test.dart` (append group)
 
 **Interfaces:**
 - Produces:
-  - `abstract class CommunityContentWarningConstants { static const int displayThreshold = 3; static const String namespace = 'content-warning'; static const Duration identityCacheTtl = Duration(hours: 24); }`
-  - `Future<bool> ProfileRepository.hasDivineIdentity(String pubkey)` — GET `<apiBase>/by-pubkey/<hex>`, returns `true` when JSON `found == true`; caches per-pubkey with 24h TTL; returns `false` on any network/parse error (documented sentinel, not reportable).
+  - `abstract class CommunityContentWarningConstants { static const int displayThreshold = 3; static const String namespace = 'content-warning'; }`
+  - `Future<bool?> ProfileRepository.resolveDivineIdentity(String pubkey)` — GET `<apiBase>/by-pubkey/<hex>`, returns `true`/`false` on a 200 JSON verdict; caches genuine verdicts per-pubkey with 24h TTL; returns `null` on network/parse/non-200 failures so callers can avoid caching degraded "no warnings" results.
 
-- [ ] Write failing tests: `hasDivineIdentity` returns true when `/by-pubkey/<hex>` → `{"ok":true,"found":true,...}`; false on `found:false`; false on HTTP error; second call within TTL does not hit the network (mock http client call count == 1).
+- [ ] Write failing tests: `resolveDivineIdentity` returns true when `/by-pubkey/<hex>` → `{"ok":true,"found":true,...}`; false on `found:false`; null on HTTP/network/parse errors; second genuine verdict within TTL does not hit the network (mock http client call count == 1).
 - [ ] Run tests → fail.
-- [ ] Add constants file + `hasDivineIdentity` using the repo's existing http client + `_divineApiBaseUrl`/config base, mirroring `claimUsername`'s request style. In-memory `Map<String, ({bool value, DateTime at})>` cache gated on `identityCacheTtl`.
+- [ ] Add constants file + `resolveDivineIdentity` using the repo's existing http client + `_divineApiBaseUrl`/config base, mirroring `claimUsername`'s request style. In-memory `Map<String, ({bool value, DateTime at})>` cache gated on the repository's 24h identity TTL.
 - [ ] Run tests → pass. Analyze. Commit.
 
 ### Task 2: CommunityContentLabelRepository — aggregation
@@ -46,12 +46,12 @@
 - Test: `mobile/test/repositories/community_content_label_repository_test.dart`
 
 **Interfaces:**
-- Consumes: `NostrClient.queryEvents(List<Filter>)`; `ProfileRepository.hasDivineIdentity`; `CommunityContentWarningConstants`.
+- Consumes: `NostrClient.queryEvents(List<Filter>)`; `ProfileRepository.resolveDivineIdentity`; `CommunityContentWarningConstants`.
 - Produces:
   - `class CommunityContentLabelRepository({required NostrClient nostrClient, required ProfileRepository profileRepository})`
-  - `Future<Set<String>> communityLabelsForVideo(VideoEvent video)` — queries `Filter(kinds:[1985], e:[video.id])` and (when `video.addressableId != null`) `Filter(kinds:[1985], a:[video.addressableId!])`; parse `content-warning` `l` tags; group normalized label → set of distinct author pubkeys; keep authors where `hasDivineIdentity` is true; return labels whose distinct-Divine-author count `>= displayThreshold`. Returns `{}` on query error (graceful degradation, documented).
+  - `Future<Set<String>> communityLabelsForVideo(VideoEvent video)` — queries `Filter(kinds:[1985], e:[video.id])` and, for addressable NIP-71 kinds only, `Filter(kinds:[1985], a:[kind:pubkey:dTag])`; parse `content-warning` `l` tags; group normalized label → set of distinct author pubkeys; keep authors where `resolveDivineIdentity` is true; return labels whose distinct-Divine-author count `>= displayThreshold`. Throws `CommunityLabelUnavailableException` when a relay or identity failure could change the outcome.
 
-- [ ] Write failing tests: 3 distinct Divine authors on `gambling` → `{gambling}`; 2 distinct → `{}`; same author twice + 1 other (2 distinct) → `{}`; non-Divine authors excluded from count; label normalization (`NSFW`→`nudity`) via `normalizeModerationLabelValue`; dedupes `e` and `a` results by event id; query throw → `{}`. Mock `NostrClient` + `ProfileRepository`.
+- [ ] Write failing tests: 3 distinct Divine authors on `gambling` → `{gambling}`; 2 distinct → `{}`; same author twice + 1 other (2 distinct) → `{}`; non-Divine authors excluded from count; unknown labels ignored; dedupes `e` and `a` results by event id; degraded query/identity paths throw the typed exception when uncertainty could hide a warning. Mock `NostrClient` + `ProfileRepository`.
 - [ ] Run → fail. Implement. Run → pass. Analyze. Commit.
 
 ### Task 3: CommunityContentLabelRepository — publish + my-suggestions
@@ -63,24 +63,24 @@
 **Interfaces:**
 - Consumes: `NostrClient` publish API (match signature used elsewhere, e.g. broadcast of a signed kind event).
 - Produces:
-  - `Future<void> suggestLabels({required VideoEvent video, required Set<ContentLabel> labels})` — builds kind 1985 event tags: `['L','content-warning']`, one `['l', label.value, 'content-warning']` per label, `['e', video.id, <relayHint>]`, `['a', video.addressableId]` when present, `['p', video.pubkey]`; publishes via `NostrClient`. Throws typed on publish failure.
+  - `Future<void> suggestLabels({required VideoEvent video, required Set<ContentLabel> labels})` — builds kind 1985 event tags: `['L','content-warning']`, one `['l', label.value, 'content-warning']` per label, `['e', video.id]`, and `['a', kind:pubkey:dTag]` only for addressable NIP-71 video kinds. Deliberately emits no `p` target because that labels the creator account, not the video. Publishes via `NostrClient`. Throws typed on publish failure.
   - `Future<Set<String>> mySuggestedLabels(VideoEvent video, String myPubkey)` — labels `myPubkey` already published for this video.
 
-- [ ] Write failing tests: `suggestLabels` builds exactly the expected tag list (assert L/l/e/a/p, no truncation, empty labels → no publish or throws ArgumentError); `mySuggestedLabels` returns only the caller's labels.
+- [ ] Write failing tests: `suggestLabels` builds exactly the expected tag list (assert L/l/e/scoped-a/no-p, no truncation, empty labels → no publish or throws ArgumentError); `mySuggestedLabels` returns only the caller's labels.
 - [ ] Run → fail. Implement. Run → pass. Analyze. Commit.
 
-### Task 4: Community labels into effective-content-labels resolver
+### Task 4: Community labels into feed warning path
 
 **Files:**
-- Modify: `mobile/lib/services/effective_content_labels.dart`
-- Test: `mobile/test/services/effective_content_labels_test.dart`
+- Modify: `mobile/lib/widgets/video_feed_item/feed_videos.dart`
+- Test: `mobile/test/widgets/video_feed_item/feed_videos_test.dart`
 
 **Interfaces:**
 - Produces:
-  - Add optional `Set<String>? communityLabels` param to `resolveEffectiveContentLabels`; merged via `addLabel` after trusted-labeler sources, before hashtag fallback.
-  - `enum ContentLabelProvenance { creator, trustedLabeler, community }` + `List<({String value, ContentLabelProvenance provenance})> resolveEffectiveContentLabelsWithProvenance(...)` used by UI to tag the community chip. (Keep the existing `List<String>` function delegating to the provenance one for back-compat.)
+  - `CommunityContentLabelService` caches per-video crossed-threshold labels with a short TTL and exposes synchronous `warnLabelsFor(video)`.
+  - Feed overlay code merges `video.warnLabels` with `warnLabelsFor(video)` behind the feature flag so the overlay, autoplay gate, and double-tap-like gate agree.
 
-- [ ] Write failing tests: community label absent from creator/trusted sources is added; a community label already present as a creator self-label keeps `creator` provenance (creator wins); provenance list marks community-only labels as `community`.
+- [ ] Write failing tests: community label absent from creator/trusted sources is added to the overlay; flag-off ignores cached community labels; a newly crossed warning pauses already-playing video.
 - [ ] Run → fail. Implement. Run → pass. Analyze. Commit.
 
 ### Task 5: CommunitySuggestCubit
@@ -111,24 +111,23 @@
 
 **Interfaces:**
 - Consumes: `CommunitySuggestCubit`, `ContentLabel`, `context.l10n`.
-- l10n keys: `communitySuggestTitle` ("Help classify this"), `communitySuggestSubtitle`, `communitySuggestSubmit`, `communitySuggestSuccess`, `communitySuggestFailure`, `communitySuggestAlready`, `contentWarningCommunitySource` ("Suggested by the community").
+- l10n keys: `communitySuggestTitle` ("Help classify this"), `communitySuggestSubtitle`, `communitySuggestSubmit`, `communitySuggestSuccess`, `communitySuggestFailure`, `communitySuggestAlready`, `communitySuggestActionLabel`.
 
 - [ ] Write failing widget tests: sheet renders label chips from `ContentLabel.values`; submit disabled until a label selected; tapping submit dispatches; already-suggested labels shown as selected/locked; `MaterialApp` has l10n delegates; assert copy via `AppLocalizations` lookup, not hardcoded.
 - [ ] Run → fail. Implement selector (reuse creator selector pattern, `VineTheme`, `DivineIcon`, `Semantics(button:true)`), entry-point button, ARB keys, gen-l10n. Run → pass. Analyze. Commit.
 
-### Task 7: Display provenance chip + wiring/providers
+### Task 7: Wiring/providers
 
 **Files:**
-- Modify: `mobile/lib/widgets/content_warning.dart` (+ `content_warning_helpers.dart`) to show `contentWarningCommunitySource` when provenance == community
-- Modify: `mobile/lib/providers/moderation_providers.dart` (+ `social_providers.dart`) to expose `communityContentLabelRepositoryProvider`
-- Modify: feed content-warning resolution path to fetch community labels and pass into resolver
-- Test: golden/widget test for community-tagged warning; provider smoke test
+- Create: `mobile/lib/providers/community_content_label_provider.dart`
+- Modify: feed content-warning path to prefetch community labels and merge cached warning labels.
+- Test: provider smoke test and feed behavior tests
 
 **Interfaces:**
 - Consumes: everything above.
 
-- [ ] Write failing test: `ContentWarning` renders the community-source line when given a community-provenance label; not shown for creator-only labels.
-- [ ] Run → fail. Implement chip + provider wiring + feed fetch (repository call cached; degradation on error). Run → pass. Update goldens if applicable. Analyze. Commit.
+- [ ] Write failing tests for provider readiness, flag-off no-prefetch, runtime flag flip, and feed warning behavior.
+- [ ] Run → fail. Implement providers + feed fetch (service cached; degraded results are not cached). Run → pass. Analyze. Commit.
 
 ### Task 8: Analyze/format/test sweep + PR polish
 
@@ -138,6 +137,6 @@
 
 ## Self-Review notes
 
-- Spec coverage: suggest (T3/T6), aggregate+threshold+Divine-identity (T1/T2), display fold-in + provenance (T4/T7), entry point (T6), 24h TTL alignment (T1), graceful degradation (T2/T7). Backend items intentionally excluded (separate issue).
-- Provenance: `creator` beats `community` for the same label value (T4) — consistent across resolver and chip (T7).
-- Types consistent: `communityLabelsForVideo`/`suggestLabels`/`mySuggestedLabels`/`hasDivineIdentity`/`displayThreshold` used verbatim downstream.
+- Spec coverage: suggest (T3/T6), aggregate+threshold+Divine-identity (T1/T2), display fold-in (T4/T7), entry point (T6), 24h identity TTL alignment (T1), short-lived label cache (T4/T7), graceful degradation (T2/T7). Backend items intentionally excluded (separate issue).
+- Provenance: v1 does not display a separate community provenance line; community warnings are advisory and use the existing blur + View Anyway flow.
+- Types consistent: `communityLabelsForVideo`/`suggestLabels`/`mySuggestedLabels`/`resolveDivineIdentity`/`displayThreshold` used verbatim downstream.
