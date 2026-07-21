@@ -14,16 +14,25 @@ Dio? _dio;
 var cookieJar = CookieJar();
 
 class DioUtil {
+  static HttpClient createHttpClient() {
+    final client = HttpClient();
+    client.badCertificateCallback = (cert, host, port) =>
+        allowsLocalBadCertificateHost(host);
+    return client;
+  }
+
+  static void resetForTesting() {
+    _dio?.close(force: true);
+    _dio = null;
+    cookieJar = CookieJar();
+  }
+
   static Dio getDio() {
     if (_dio == null) {
       _dio = Dio();
       if (_dio!.httpClientAdapter is IOHttpClientAdapter) {
-        (_dio!.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
-          final client = HttpClient();
-          client.badCertificateCallback = (cert, host, port) =>
-              isLoopbackHost(host);
-          return client;
-        };
+        (_dio!.httpClientAdapter as IOHttpClientAdapter).createHttpClient =
+            createHttpClient;
       }
 
       // _dio!.options.connectTimeout = Duration(minutes: 1);

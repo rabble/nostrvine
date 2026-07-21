@@ -9,13 +9,21 @@ import 'package:web_socket_channel/io.dart';
 /// Creates a WebSocket channel for non-web platforms.
 ///
 /// Remote hosts go through platform certificate validation; self-signed
-/// certificates are tolerated only for local-stack loopback hosts.
-WebSocketChannel createSecureWebSocketChannel(Uri wsUrl) {
+/// certificates are tolerated only for local-stack loopback hosts in debug
+/// builds.
+HttpClient createSecureWebSocketHttpClient() {
   final httpClient = HttpClient();
   httpClient.badCertificateCallback = (cert, host, port) =>
-      isLoopbackHost(host);
+      allowsLocalBadCertificateHost(host);
+  return httpClient;
+}
 
-  return IOWebSocketChannel.connect(wsUrl, customClient: httpClient);
+/// Creates a WebSocket channel for non-web platforms.
+WebSocketChannel createSecureWebSocketChannel(Uri wsUrl) {
+  return IOWebSocketChannel.connect(
+    wsUrl,
+    customClient: createSecureWebSocketHttpClient(),
+  );
 }
 
 /// Creates a standard WebSocket channel for non-web platforms

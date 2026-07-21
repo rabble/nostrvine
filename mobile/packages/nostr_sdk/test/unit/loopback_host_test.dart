@@ -1,8 +1,14 @@
 // ABOUTME: Tests for the loopback-host TLS allowance predicate.
 // ABOUTME: Pins that bad certificates are only tolerated for local-stack hosts.
 
+import 'dart:io';
+
+import 'package:dio/io.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nostr_sdk/utils/loopback_host.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:nostr_sdk/relay/relay_base_io.dart';
+import 'package:nostr_sdk/utils/dio_util.dart';
 
 void main() {
   group('isLoopbackHost', () {
@@ -47,4 +53,85 @@ void main() {
       expect(isLoopbackHost('192.168.1.10'), isFalse);
     });
   });
+
+  group('allowsLocalBadCertificateHost', () {
+    test('allows loopback hosts only in debug builds', () {
+      expect(allowsLocalBadCertificateHost('localhost'), kDebugMode);
+      expect(allowsLocalBadCertificateHost('10.0.2.2'), kDebugMode);
+    });
+
+    test('always rejects remote hosts', () {
+      expect(allowsLocalBadCertificateHost('relay.divine.video'), isFalse);
+      expect(allowsLocalBadCertificateHost('api.divine.video'), isFalse);
+    });
+  });
+
+  group('call-site certificate callbacks', () {
+    late _FakeCertificate cert;
+
+    setUp(() {
+      cert = _FakeCertificate();
+    });
+
+    test('relay websocket HttpClient rejects bad remote certificates', () {
+      final client = _RecordingHttpClient();
+
+      HttpOverrides.runZoned(
+        createSecureWebSocketHttpClient,
+        createHttpClient: (_) => client,
+      );
+
+      final callback = client.recordedBadCertificateCallback;
+      expect(callback, isNotNull);
+      expect(callback!(cert, 'relay.divine.video', 443), isFalse);
+      expect(callback(cert, 'localhost', 443), kDebugMode);
+    });
+
+    test('DioUtil wires the same bad certificate policy into Dio', () {
+      DioUtil.resetForTesting();
+      addTearDown(DioUtil.resetForTesting);
+      final client = _RecordingHttpClient();
+
+      HttpOverrides.runZoned(() {
+        final dio = DioUtil.getDio();
+        final adapter = dio.httpClientAdapter;
+
+        expect(adapter, isA<IOHttpClientAdapter>());
+        final createHttpClient =
+            (adapter as IOHttpClientAdapter).createHttpClient;
+        expect(createHttpClient, isNotNull);
+        expect(createHttpClient!(), same(client));
+      }, createHttpClient: (_) => client);
+
+      final callback = client.recordedBadCertificateCallback;
+      expect(callback, isNotNull);
+      expect(callback!(cert, 'api.divine.video', 443), isFalse);
+      expect(callback(cert, '10.0.2.2', 443), kDebugMode);
+    });
+
+    test('loopback predicate is exported from the package barrel', () {
+      expect(isLoopbackHost('127.0.0.1'), isTrue);
+      expect(allowsLocalBadCertificateHost('relay.divine.video'), isFalse);
+    });
+  });
+}
+
+class _FakeCertificate implements X509Certificate {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _RecordingHttpClient implements HttpClient {
+  bool Function(X509Certificate cert, String host, int port)?
+  recordedBadCertificateCallback;
+
+  @override
+  set badCertificateCallback(
+    bool Function(X509Certificate cert, String host, int port)? callback,
+  ) {
+    recordedBadCertificateCallback = callback;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

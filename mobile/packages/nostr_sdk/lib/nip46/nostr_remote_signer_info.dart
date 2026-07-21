@@ -1,21 +1,7 @@
 import '../client_utils/keys.dart';
 import '../nip19/nip19.dart';
+import '../utils/loopback_host.dart';
 import '../utils/string_util.dart';
-
-/// Hosts allowed to use cleartext (`ws://`) bunker / nostrconnect relays.
-///
-/// Mirrors [`isLoopbackHost` in
-/// `mobile/lib/utils/relay_url_utils.dart`](../../../../../lib/utils/relay_url_utils.dart).
-/// Any change here must be reflected there and in `network_security_config.xml`.
-const _bunkerLoopbackHosts = <String>{
-  'localhost',
-  '127.0.0.1',
-  '10.0.2.2',
-  '::1',
-};
-
-bool _isLoopbackHost(String host) =>
-    _bunkerLoopbackHosts.contains(host.toLowerCase());
 
 /// True if [url] is a relay URL acceptable for a NIP-46 bunker / nostrconnect
 /// connection. Allows `wss://` for any host, and `ws://` only for loopback
@@ -29,7 +15,7 @@ bool _isAllowedBunkerRelayUrl(String url) {
   if (uri.path.startsWith('//')) return false;
   final scheme = uri.scheme.toLowerCase();
   if (scheme == 'wss') return true;
-  if (scheme == 'ws') return _isLoopbackHost(uri.host);
+  if (scheme == 'ws') return isLoopbackHost(uri.host);
   return false;
 }
 

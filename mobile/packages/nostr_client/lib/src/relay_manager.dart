@@ -10,20 +10,6 @@ import 'package:nostr_client/src/models/relay_manager_config.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:nostr_sdk/relay/client_connected.dart';
 
-/// Hosts allowed to use cleartext (`ws://`) relay schemes.
-///
-/// Mirrors `isLoopbackHost` in `mobile/lib/utils/relay_url_utils.dart`. Any
-/// change here must be reflected there and in `network_security_config.xml`.
-const _relayLoopbackHosts = <String>{
-  'localhost',
-  '127.0.0.1',
-  '10.0.2.2',
-  '::1',
-};
-
-bool _isLoopbackHost(String host) =>
-    _relayLoopbackHosts.contains(host.toLowerCase());
-
 /// {@template relay_manager}
 /// Manages relay configuration and connection status.
 ///
@@ -720,7 +706,7 @@ class RelayManager {
     // valid port).
     final uri = Uri.tryParse(normalized);
     if (uri == null || uri.host.isEmpty) return null;
-    if (uri.scheme == 'ws' && !_isLoopbackHost(uri.host)) return null;
+    if (uri.scheme == 'ws' && !isLoopbackHost(uri.host)) return null;
     return normalized;
   }
 
