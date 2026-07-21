@@ -3,6 +3,9 @@
 
 // Installs native MethodChannel handlers for the pooled video player, so this
 // file runs isolated from the merged VGV suite.
+// Permanent: needs a real pooled-video-player harness (non-shared native
+// MethodChannels) to observe the imperative pause; that harness cannot
+// isolate inside the merged VGV optimizer bundle.
 @Tags(['skip_very_good_optimization'])
 library;
 
