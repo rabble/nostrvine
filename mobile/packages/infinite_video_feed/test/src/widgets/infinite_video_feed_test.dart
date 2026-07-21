@@ -887,6 +887,44 @@ void main() {
         },
       );
 
+      testWidgets(
+        'pauseCurrentPlayback pauses the active controller imperatively',
+        (tester) async {
+          DivineVideoPlayerController.resetIdCounterForTesting();
+          final harness = _NativePlayerHarness(tester);
+          await harness.install(playerIds: const <int>[0]);
+          final key = GlobalKey<InfiniteVideoFeedState>();
+
+          try {
+            await tester.pumpWidget(
+              _wrapFeed(
+                InfiniteVideoFeed(
+                  key: key,
+                  videos: [_makeVideo('imperative_pause')],
+                  cache: cache,
+                  prefetchCount: 0,
+                  preloadGracePeriod: Duration.zero,
+                  canAutoPlay: (_) => true,
+                ),
+              ),
+            );
+            await tester.pump();
+            await tester.pump();
+
+            expect(harness.countCalls('play'), equals(1));
+
+            key.currentState!.pauseCurrentPlayback();
+            await tester.pump();
+
+            expect(harness.countCalls('pause'), equals(1));
+          } finally {
+            await tester.pumpWidget(const SizedBox.shrink());
+            await tester.pump();
+            await harness.dispose();
+          }
+        },
+      );
+
       testWidgets('pauses active playback when canAutoPlay gate closes', (
         tester,
       ) async {

@@ -21,6 +21,7 @@ import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag_state.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/features/feature_flags/services/build_configuration.dart';
 import 'package:openvine/features/feature_flags/services/feature_flag_service.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/content_label.dart';
@@ -42,12 +43,14 @@ import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:openvine/services/view_event_publisher.dart'
     show ViewTrafficSource;
 import 'package:openvine/widgets/divine_video_metrics_tracker.dart';
+import 'package:openvine/widgets/video_feed_item/actions/help_classify_action_button.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_loading_placeholder.dart';
 import 'package:reposts_repository/reposts_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../helpers/test_provider_overrides.dart';
 
@@ -369,6 +372,8 @@ void main() {
   setUpAll(() {
     registerFallbackValue(const VideoInteractionsSubscriptionRequested());
     registerFallbackValue(FeatureFlag.communityContentWarnings);
+    registerFallbackValue(ContentLabel.gambling);
+    registerFallbackValue(ContentFilterPreference.warn);
   });
 
   setUp(() {
@@ -840,6 +845,315 @@ void main() {
         semantics.dispose();
       }
     });
+  });
+
+  // -------------------------------------------------------------------------
+  // Kill-switch gates the read path and is reactive (#5720 M3/M8)
+  // -------------------------------------------------------------------------
+  group('community kill-switch', () {
+    testWidgets(
+      'ignores cached crossed-threshold community labels when flag is off',
+      (tester) async {
+        final video = _makeVideo(); // no creator warn labels
+        final repository = _MockCommunityContentLabelRepository();
+        when(
+          () => repository.communityLabelsForVideo(video),
+        ).thenAnswer((_) async => {'gambling'});
+        final filter = _MockContentFilterService();
+        when(
+          () => filter.getPreference(ContentLabel.gambling),
+        ).thenReturn(ContentFilterPreference.warn);
+        final service = CommunityContentLabelService(
+          repository: repository,
+          contentFilterService: filter,
+        );
+        // Populate the cache so the crossed label is present regardless of the
+        // (off) flag — this is the "already cached at flip time" scenario.
+        await service.prefetch(video);
+        final cubit = _MockVideoPlaybackStatusCubit()
+          ..stub(PlaybackStatus.ready, video.id);
+
+        await _pumpFeedVideos(
+          tester,
+          videos: [video],
+          videoPlaybackStatusCubit: cubit,
+          additionalOverrides: [
+            communityContentLabelServiceProvider.overrideWith((ref) => service),
+            isFeatureEnabledProvider(
+              FeatureFlag.communityContentWarnings,
+            ).overrideWithValue(false),
+          ],
+        );
+        await tester.pump();
+        await tester.pump();
+
+        // Kill-switch off: the cached community label must neither blur the
+        // video nor gate its autoplay. Deleting the read-path gate turns this
+        // red.
+        expect(find.byType(ContentWarningBlurOverlay), findsNothing);
+        final feed = tester.widget<InfiniteVideoFeed>(
+          find.byType(InfiniteVideoFeed),
+        );
+        expect(feed.canAutoPlay!(video), isTrue);
+      },
+    );
+
+    testWidgets(
+      'drops the community blur and reopens the gate when flag flips off '
+      'at runtime',
+      (tester) async {
+        SharedPreferences.setMockInitialValues(<String, Object>{
+          'ff_communityContentWarnings': true,
+        });
+        final prefs = await SharedPreferences.getInstance();
+        final flags = FeatureFlagService(prefs, const BuildConfiguration());
+        await flags.initialize();
+        addTearDown(flags.dispose);
+
+        final video = _makeVideo();
+        final repository = _MockCommunityContentLabelRepository();
+        when(
+          () => repository.communityLabelsForVideo(video),
+        ).thenAnswer((_) async => {'gambling'});
+        final filter = _MockContentFilterService();
+        when(
+          () => filter.getPreference(ContentLabel.gambling),
+        ).thenReturn(ContentFilterPreference.warn);
+        final service = CommunityContentLabelService(
+          repository: repository,
+          contentFilterService: filter,
+        );
+        final cubit = _MockVideoPlaybackStatusCubit()
+          ..stub(PlaybackStatus.ready, video.id);
+
+        await _pumpFeedVideos(
+          tester,
+          videos: [video],
+          videoPlaybackStatusCubit: cubit,
+          additionalOverrides: [
+            communityContentLabelServiceProvider.overrideWith((ref) => service),
+            featureFlagServiceProvider.overrideWithValue(flags),
+          ],
+        );
+        // Let the prefetch resolve and the notifier rebuild.
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byType(ContentWarningBlurOverlay), findsOneWidget);
+        expect(
+          tester
+              .widget<InfiniteVideoFeed>(find.byType(InfiniteVideoFeed))
+              .canAutoPlay!(video),
+          isFalse,
+        );
+
+        await flags.setFlag(FeatureFlag.communityContentWarnings, false);
+        await tester.pump();
+        await tester.pump();
+
+        // No restart required: the blur clears and the gate reopens.
+        expect(find.byType(ContentWarningBlurOverlay), findsNothing);
+        expect(
+          tester
+              .widget<InfiniteVideoFeed>(find.byType(InfiniteVideoFeed))
+              .canAutoPlay!(video),
+          isTrue,
+        );
+      },
+    );
+
+    testWidgets(
+      'starts prefetch on a mounted overlay when the flag flips on',
+      (tester) async {
+        SharedPreferences.setMockInitialValues(<String, Object>{
+          'ff_communityContentWarnings': false,
+        });
+        final prefs = await SharedPreferences.getInstance();
+        final flags = FeatureFlagService(prefs, const BuildConfiguration());
+        await flags.initialize();
+        addTearDown(flags.dispose);
+
+        final video = _makeVideo();
+        final repository = _MockCommunityContentLabelRepository();
+        when(
+          () => repository.communityLabelsForVideo(video),
+        ).thenAnswer((_) async => const <String>{});
+        final filter = _MockContentFilterService();
+        final service = CommunityContentLabelService(
+          repository: repository,
+          contentFilterService: filter,
+        );
+        final cubit = _MockVideoPlaybackStatusCubit()
+          ..stub(PlaybackStatus.ready, video.id);
+
+        await _pumpFeedVideos(
+          tester,
+          videos: [video],
+          videoPlaybackStatusCubit: cubit,
+          additionalOverrides: [
+            communityContentLabelServiceProvider.overrideWith((ref) => service),
+            featureFlagServiceProvider.overrideWithValue(flags),
+          ],
+        );
+        await tester.pump();
+
+        // Flag off at mount: initState's prefetch is a no-op.
+        verifyNever(() => repository.communityLabelsForVideo(video));
+
+        await flags.setFlag(FeatureFlag.communityContentWarnings, true);
+        await tester.pump();
+        await tester.pump();
+
+        verify(() => repository.communityLabelsForVideo(video)).called(1);
+      },
+    );
+  });
+
+  // -------------------------------------------------------------------------
+  // Help-classify action slot gating (#5720 M5)
+  // -------------------------------------------------------------------------
+  group('help-classify action slot', () {
+    testWidgets(
+      'is not inserted into the action column when the flag is off',
+      (tester) async {
+        final video = _makeVideo();
+        final cubit = _MockVideoPlaybackStatusCubit()
+          ..stub(PlaybackStatus.ready, video.id);
+
+        await _pumpFeedVideos(
+          tester,
+          videos: [video],
+          videoPlaybackStatusCubit: cubit,
+          additionalOverrides: [
+            isFeatureEnabledProvider(
+              FeatureFlag.communityContentWarnings,
+            ).overrideWithValue(false),
+          ],
+        );
+        await tester.pump();
+
+        // With the flag off the slot must be absent entirely — leaving a
+        // zero-size SizedBox child in the Column(spacing: 20) adds a
+        // permanent gap between Report and More.
+        expect(find.byType(HelpClassifyActionButton), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'is inserted into the action column when the flag is on',
+      (tester) async {
+        final video = _makeVideo();
+        final cubit = _MockVideoPlaybackStatusCubit()
+          ..stub(PlaybackStatus.ready, video.id);
+
+        await _pumpFeedVideos(
+          tester,
+          videos: [video],
+          videoPlaybackStatusCubit: cubit,
+          additionalOverrides: [
+            isFeatureEnabledProvider(
+              FeatureFlag.communityContentWarnings,
+            ).overrideWithValue(true),
+          ],
+        );
+        await tester.pump();
+
+        expect(find.byType(HelpClassifyActionButton), findsOneWidget);
+      },
+    );
+  });
+
+  // -------------------------------------------------------------------------
+  // Hide-similar must not persist community-only labels (#5720 M2)
+  // -------------------------------------------------------------------------
+  group('community hide-similar', () {
+    testWidgets(
+      'does not persist a hide preference for a community-only warning',
+      (tester) async {
+        final video = _makeVideo(); // no creator warn labels
+        final repository = _MockCommunityContentLabelRepository();
+        when(
+          () => repository.communityLabelsForVideo(video),
+        ).thenAnswer((_) async => {'gambling'});
+        final communityFilter = _MockContentFilterService();
+        when(
+          () => communityFilter.getPreference(ContentLabel.gambling),
+        ).thenReturn(ContentFilterPreference.warn);
+        final service = CommunityContentLabelService(
+          repository: repository,
+          contentFilterService: communityFilter,
+        );
+        // The provider-backed filter service that hide-similar writes to.
+        final hideFilter = _MockContentFilterService();
+        when(hideFilter.initialize).thenAnswer((_) async {});
+        when(
+          () => hideFilter.setPreference(any(), any()),
+        ).thenAnswer((_) async {});
+        final cubit = _MockVideoPlaybackStatusCubit()
+          ..stub(PlaybackStatus.ready, video.id);
+
+        await _pumpFeedVideos(
+          tester,
+          videos: [video],
+          videoPlaybackStatusCubit: cubit,
+          additionalOverrides: [
+            communityContentLabelServiceProvider.overrideWith((ref) => service),
+            featureFlagServiceProvider.overrideWithValue(_communityFlagsOn()),
+            contentFilterServiceProvider.overrideWith((ref) => hideFilter),
+          ],
+        );
+        await tester.pump();
+        await tester.pump();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.contentWarningHideAllLikeThis));
+        await tester.pump();
+        await tester.pump();
+
+        // An unverified community-only warning must never become a persisted
+        // global hide preference for the category (warn-only v1 posture).
+        verifyNever(() => hideFilter.setPreference(any(), any()));
+      },
+    );
+
+    testWidgets(
+      'still persists a hide preference for a creator warning',
+      (tester) async {
+        final video = _makeVideo(warnLabels: ['gambling']);
+        final hideFilter = _MockContentFilterService();
+        when(hideFilter.initialize).thenAnswer((_) async {});
+        when(
+          () => hideFilter.getPreference(any()),
+        ).thenReturn(ContentFilterPreference.warn);
+        when(
+          () => hideFilter.setPreference(any(), any()),
+        ).thenAnswer((_) async {});
+        final cubit = _MockVideoPlaybackStatusCubit()
+          ..stub(PlaybackStatus.ready, video.id);
+
+        await _pumpFeedVideos(
+          tester,
+          videos: [video],
+          videoPlaybackStatusCubit: cubit,
+          additionalOverrides: [
+            contentFilterServiceProvider.overrideWith((ref) => hideFilter),
+          ],
+        );
+        await tester.pump();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.contentWarningHideAllLikeThis));
+        await tester.pump();
+        await tester.pump();
+
+        verify(
+          () => hideFilter.setPreference(
+            ContentLabel.gambling,
+            ContentFilterPreference.hide,
+          ),
+        ).called(1);
+      },
+    );
   });
 
   group('activity wiring', () {

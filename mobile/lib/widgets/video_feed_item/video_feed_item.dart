@@ -700,7 +700,14 @@ class VideoOverlayActionColumn extends ConsumerWidget {
         ShareActionButton(video: video, onInteracted: onInteracted),
         if (!isOwnVideo) ...[
           ReportActionButton(video: video, onInteracted: onInteracted),
-          HelpClassifyActionButton(video: video, onInteracted: onInteracted),
+          // Gate the slot itself so a default-off build inserts no child
+          // into Column(spacing: 20) — a hidden SizedBox.shrink would still
+          // add a permanent gap between Report and More. The button keeps its
+          // own defensive checks for the repository/pubkey readiness case.
+          if (ref.watch(
+            isFeatureEnabledProvider(FeatureFlag.communityContentWarnings),
+          ))
+            HelpClassifyActionButton(video: video, onInteracted: onInteracted),
         ],
         MoreActionButton(video: video, onInteracted: onInteracted),
       ],
