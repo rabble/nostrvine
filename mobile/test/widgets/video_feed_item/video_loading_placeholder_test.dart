@@ -31,6 +31,10 @@ void main() {
         );
 
         expect(find.byType(PassiveAuthThumbnailImage), findsOneWidget);
+        final image = tester.widget<PassiveAuthThumbnailImage>(
+          find.byType(PassiveAuthThumbnailImage),
+        );
+        expect(image.alignment, equals(Alignment.center));
         expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
       },
     );

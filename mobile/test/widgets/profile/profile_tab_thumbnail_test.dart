@@ -80,6 +80,7 @@ void main() {
             image.fadeOutDuration,
             equals(const Duration(milliseconds: 1000)),
           );
+          expect(image.alignment, equals(Alignment.center));
         },
       );
 
@@ -101,9 +102,9 @@ void main() {
         },
       );
 
-      // memCacheWidth = tile_width × DPR caps decoded size; memCacheHeight
-      // stays null so portrait thumbnails decode proportionally and
-      // BoxFit.cover crops without upscaling. See PR #4220 (#4190).
+      // memCacheWidth = tile_width × DPR caps decoded size while leaving height
+      // unconstrained so portrait thumbnails decode proportionally and BoxFit.cover
+      // crops without upscaling. See PR #4220 (#4190).
       testWidgets(
         '$PassiveAuthThumbnailImage memCacheWidth matches tile width × devicePixelRatio',
         (tester) async {

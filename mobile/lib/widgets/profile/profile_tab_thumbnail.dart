@@ -40,6 +40,7 @@ class ProfileTabThumbnail extends StatelessWidget {
           return PassiveAuthThumbnailImage(
             url: thumbnailUrl!,
             memCacheWidth: memCacheWidth,
+            alignment: Alignment.center,
             fadeInDuration: isPrecached
                 ? Duration.zero
                 : const Duration(milliseconds: 500),

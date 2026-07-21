@@ -105,6 +105,7 @@ class _VideoLoadingPlaceholderState extends State<VideoLoadingPlaceholder> {
               url: widget.thumbnailUrl!,
               videoId: widget.videoId,
               fit: boxFit,
+              alignment: Alignment.center,
               fadeInDuration: Duration.zero,
               fadeOutDuration: Duration.zero,
               placeholder: (context, url) {

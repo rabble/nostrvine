@@ -177,6 +177,11 @@ void main() {
         );
 
         expect(find.byType(PassiveAuthThumbnailImage), findsNWidgets(2));
+        for (final image in tester.widgetList<PassiveAuthThumbnailImage>(
+          find.byType(PassiveAuthThumbnailImage),
+        )) {
+          expect(image.alignment, equals(Alignment.center));
+        }
         // 5 card slots + 1 count badge remain regardless of how many
         // thumbnails are supplied.
         expect(find.byType(DecoratedBox), findsAtLeastNWidgets(6));

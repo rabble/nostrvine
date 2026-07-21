@@ -174,6 +174,7 @@ class _ThumbnailCard extends StatelessWidget {
         child: imageUrl != null
             ? PassiveAuthThumbnailImage(
                 url: imageUrl!,
+                alignment: Alignment.center,
                 errorWidget: (_, _, _) => const SizedBox(),
                 logName: 'CuratedListSearchCard',
                 logPrefix: 'List thumbnail',

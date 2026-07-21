@@ -217,10 +217,6 @@ class PassiveAuthThumbnailImage extends StatefulWidget {
   final String logName;
   final String logPrefix;
 
-  // Toggle to test with plain Image.network instead of VineCachedImage.
-  // Set to true to debug cache-manager behavior.
-  static const bool _useSimpleImageNetwork = false;
-
   static bool _shouldBypassCacheManager(String url) {
     final host = Uri.tryParse(url)?.host.toLowerCase();
     if (host == null || host.isEmpty) return false;
@@ -325,7 +321,9 @@ class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
   }
 
   Future<void> _retryWithPassiveAuth() async {
-    final sha256Hash = extractSha256FromBlossomUrl(widget.url);
+    final retryUrl = widget.url;
+    final retryGeneration = _imageGeneration;
+    final sha256Hash = extractSha256FromBlossomUrl(retryUrl);
     if (sha256Hash == null) {
       _authRetryAttempted = true;
       return;
@@ -341,9 +339,13 @@ class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
         .read(mediaAuthInterceptorProvider)
         .createPassiveAuthHeadersForAdultMedia(
           sha256Hash: sha256Hash,
-          serverUrl: extractMediaServerUrl(widget.url),
+          serverUrl: extractMediaServerUrl(retryUrl),
         );
-    if (!mounted) return;
+    if (!mounted ||
+        widget.url != retryUrl ||
+        _imageGeneration != retryGeneration) {
+      return;
+    }
 
     _authRetryAttempted = true;
     switch (authResult) {
@@ -369,9 +371,6 @@ class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
     if (error is NetworkImageLoadException) {
       return error.statusCode == 401 || error.statusCode == 403;
     }
-    if (error is HttpExceptionWithStatus) {
-      return error.statusCode == 401 || error.statusCode == 403;
-    }
     return false;
   }
 
@@ -387,11 +386,9 @@ class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
         final cacheWidth = _decodeWidth(context, constraints.maxWidth);
         final resolvedUrl = widget.url;
 
-        // Debug mode: test with plain Image.network to isolate cache issues
-        if (PassiveAuthThumbnailImage._useSimpleImageNetwork ||
-            PassiveAuthThumbnailImage._shouldBypassCacheManager(resolvedUrl)) {
+        if (PassiveAuthThumbnailImage._shouldBypassCacheManager(resolvedUrl)) {
           final imageProvider = ResizeImage.resizeIfNeeded(
-            cacheWidth,
+            widget.memCacheWidth ?? cacheWidth,
             null,
             NetworkImage(resolvedUrl, headers: _authHeaders),
           );
