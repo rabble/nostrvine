@@ -40,7 +40,6 @@ video_cache_service
 video_event_service # defer: #4338 Track D demolition
 video_format_preference # defer: #4338 C2 singleton-to-DI
 visibility_tracker
-watermark_image_generator
 web_auth_service
 web_iframe_nostr_bridge_binding # noise: web shim
 web_iframe_nostr_bridge_binding_factory # noise: web shim
