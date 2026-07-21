@@ -15,6 +15,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/screens/settings/app_language_screen.dart';
+import 'package:openvine/screens/settings/appearance_settings_screen.dart';
 import 'package:openvine/screens/settings/bluesky_settings_screen.dart';
 import 'package:openvine/screens/settings/storage/storage_management_page.dart';
 import 'package:openvine/services/feed_aspect_ratio_preference_service.dart';
@@ -30,6 +31,9 @@ class GeneralSettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final showBluesky = ref.watch(
       isFeatureEnabledProvider(FeatureFlag.blueskyPublishing),
+    );
+    final showAppearance = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.lightMode),
     );
 
     return Scaffold(
@@ -75,6 +79,26 @@ class GeneralSettingsScreen extends ConsumerWidget {
               const _LongPressRecordingToggle(),
               _SectionHeader(context.l10n.generalSettingsSectionApp),
               const _AppLanguageTile(),
+              if (showAppearance)
+                ListTile(
+                  leading: const DivineIcon(
+                    icon: DivineIconName.sun,
+                    color: VineTheme.vineGreen,
+                  ),
+                  title: Text(
+                    context.l10n.appearanceSettingsTitle,
+                    style: _titleStyle,
+                  ),
+                  subtitle: Text(
+                    context.l10n.appearanceSettingsSubtitle,
+                    style: _subtitleStyle,
+                  ),
+                  trailing: const DivineIcon(
+                    icon: DivineIconName.caretRight,
+                    color: VineTheme.lightText,
+                  ),
+                  onTap: () => context.push(AppearanceSettingsScreen.path),
+                ),
               ListTile(
                 leading: const DivineIcon(
                   icon: DivineIconName.stackSimple,

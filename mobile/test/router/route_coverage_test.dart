@@ -25,6 +25,7 @@ import 'package:openvine/screens/profile_setup/profile_setup.dart';
 import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
+import 'package:openvine/screens/settings/appearance_settings_screen.dart';
 import 'package:openvine/screens/settings/invites_screen.dart';
 import 'package:openvine/screens/settings/monetization_links_settings_screen.dart';
 import 'package:openvine/screens/settings/nip05_settings_screen.dart';
@@ -169,6 +170,24 @@ void main() {
         final context = parseRoute(Nip05SettingsScreen.path);
         expect(context.type, RouteType.nip05Settings);
       });
+
+      test(
+        '${AppearanceSettingsScreen.path} parses to RouteType.appearanceSettings',
+        () {
+          final context = parseRoute(AppearanceSettingsScreen.path);
+          expect(context.type, RouteType.appearanceSettings);
+        },
+      );
+
+      test(
+        '${AppearanceSettingsScreen.path} round-trips through buildRoute(parseRoute())',
+        () {
+          final canonical = buildRoute(
+            parseRoute(AppearanceSettingsScreen.path),
+          );
+          expect(canonical, AppearanceSettingsScreen.path);
+        },
+      );
 
       test(
         '${Nip05SettingsScreen.path} round-trips through buildRoute(parseRoute())',

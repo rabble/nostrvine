@@ -144,6 +144,7 @@ final activeVideoIdProvider = Provider<String?>((ref) {
     case RouteType.messageRequests:
     case RouteType.requestPreview:
     case RouteType.appLanguage:
+    case RouteType.appearanceSettings:
       // Non-video routes - return null
       Log.debug(
         '[ACTIVE] ❌ Non-video route: ${ctx.type}',

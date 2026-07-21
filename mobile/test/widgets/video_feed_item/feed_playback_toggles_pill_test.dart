@@ -1,10 +1,13 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
@@ -39,6 +42,8 @@ void main() {
     Widget buildSubject({
       bool reducedMotion = false,
       bool provideAutoAdvance = true,
+      bool adaptiveMediaChrome = false,
+      ThemeData? theme,
     }) {
       Widget pill = const Scaffold(body: FeedPlaybackTogglesPill());
 
@@ -58,10 +63,16 @@ void main() {
             );
 
       return ProviderScope(
-        overrides: [sharedPreferencesProvider.overrideWithValue(mockPrefs)],
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(mockPrefs),
+          isFeatureEnabledProvider(
+            FeatureFlag.adaptiveMediaChrome,
+          ).overrideWithValue(adaptiveMediaChrome),
+        ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
+          theme: theme,
           home: MediaQuery(
             data: MediaQueryData(disableAnimations: reducedMotion),
             child: pill,
@@ -99,6 +110,38 @@ void main() {
       );
       expect(find.bySemanticsLabel(l10n.videoPlayerMute), findsOneWidget);
     });
+
+    testWidgets(
+      'uses light media chrome when adaptive chrome flag is enabled',
+      (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(
+            adaptiveMediaChrome: true,
+            theme: VineTheme.lightTheme,
+          ),
+        );
+
+        final chromeBox = tester
+            .widgetList<DecoratedBox>(
+              find.byType(DecoratedBox),
+            )
+            .firstWhere(
+              (box) =>
+                  box.decoration is BoxDecoration &&
+                  (box.decoration as BoxDecoration).color ==
+                      VineTheme.lightColors.mediaChrome,
+            );
+
+        expect(chromeBox, isNotNull);
+        final icons = tester.widgetList<DivineIcon>(find.byType(DivineIcon));
+        expect(
+          icons.map((icon) => icon.color),
+          everyElement(equals(VineTheme.lightColors.mediaChromeForeground)),
+        );
+      },
+    );
 
     testWidgets('tapping the captions toggle flips subtitle visibility', (
       tester,

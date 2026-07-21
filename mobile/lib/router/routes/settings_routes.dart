@@ -16,6 +16,7 @@ import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings/app_language_screen.dart';
+import 'package:openvine/screens/settings/appearance_settings_screen.dart';
 import 'package:openvine/screens/settings/bluesky_settings_screen.dart';
 import 'package:openvine/screens/settings/content_preferences_screen.dart';
 import 'package:openvine/screens/settings/general_settings_screen.dart';
@@ -64,6 +65,11 @@ List<RouteBase> settingsRoutes(Ref ref) {
       path: GeneralSettingsScreen.path,
       name: GeneralSettingsScreen.routeName,
       builder: (_, _) => const GeneralSettingsScreen(),
+    ),
+    GoRoute(
+      path: AppearanceSettingsScreen.path,
+      name: AppearanceSettingsScreen.routeName,
+      builder: (_, _) => const AppearanceSettingsScreen(),
     ),
     GoRoute(
       path: StorageManagementPage.path,

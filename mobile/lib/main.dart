@@ -43,6 +43,9 @@ import 'package:openvine/config/zendesk_config.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/features/app/startup/startup_coordinator.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
+import 'package:openvine/features/appearance/bloc/appearance_cubit.dart';
+import 'package:openvine/features/appearance/models/appearance_mode.dart';
+import 'package:openvine/features/appearance/providers/appearance_providers.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/people_lists/people_lists.dart';
@@ -1743,6 +1746,14 @@ class _DivineAppState extends ConsumerState<DivineApp>
   }
 
   @override
+  void didChangePlatformBrightness() {
+    super.didChangePlatformBrightness();
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  @override
   void didHaveMemoryPressure() {
     _memoryPressureHandler.onMemoryPressure();
   }
@@ -2481,17 +2492,34 @@ class _DivineAppState extends ConsumerState<DivineApp>
     // Build MaterialApp with locale from LocaleCubit.
     // The BlocBuilder is used because the cubit is provided further down
     // in the widget tree by MultiBlocProvider.
-    Widget buildApp(Locale? locale) {
+    Widget buildApp(Locale? locale, AppearanceMode appearanceMode) {
       if (locale != null) {
         Intl.defaultLocale = locale.toLanguageTag();
       }
+      final lightModeEnabled = ref.watch(
+        isFeatureEnabledProvider(FeatureFlag.lightMode),
+      );
+      final themeMode = resolveThemeMode(
+        mode: appearanceMode,
+        lightModeEnabled: lightModeEnabled,
+      );
+      final effectiveBrightness = themeMode == ThemeMode.system
+          ? WidgetsBinding.instance.platformDispatcher.platformBrightness
+          : themeMode == ThemeMode.light
+          ? Brightness.light
+          : Brightness.dark;
+      final statusBarStyle = effectiveBrightness == Brightness.light
+          ? VineTheme.lightStatusBarStyle
+          : VineTheme.statusBarStyle;
       if (!kIsWeb && io.Platform.isAndroid) {
         return AnnotatedRegion<SystemUiOverlayStyle>(
-          value: VineTheme.statusBarStyle,
+          value: statusBarStyle,
           child: MaterialApp.router(
             title: 'Divine',
             debugShowCheckedModeBanner: false,
-            theme: VineTheme.theme,
+            theme: VineTheme.lightTheme,
+            darkTheme: VineTheme.theme,
+            themeMode: themeMode,
             routerConfig: router,
             locale: locale,
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -2512,11 +2540,13 @@ class _DivineAppState extends ConsumerState<DivineApp>
           await handleBackNavigation(router, ref);
         },
         child: AnnotatedRegion<SystemUiOverlayStyle>(
-          value: VineTheme.statusBarStyle,
+          value: statusBarStyle,
           child: MaterialApp.router(
             title: 'Divine',
             debugShowCheckedModeBanner: false,
-            theme: VineTheme.theme,
+            theme: VineTheme.lightTheme,
+            darkTheme: VineTheme.theme,
+            themeMode: themeMode,
             routerConfig: router,
             locale: locale,
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -2658,6 +2688,7 @@ class _DivineAppState extends ConsumerState<DivineApp>
                 ),
               ),
             ),
+            BlocProvider.value(value: ref.read(appearanceCubitProvider)),
             BlocProvider(
               create: (_) => BackgroundPublishBloc(
                 videoPublishServiceFactory: createPublishService,
@@ -2742,7 +2773,10 @@ class _DivineAppState extends ConsumerState<DivineApp>
                   child: AppLifecycleHandler(
                     child: BlocBuilder<LocaleCubit, LocaleState>(
                       builder: (context, localeState) =>
-                          buildApp(localeState.locale),
+                          BlocBuilder<AppearanceCubit, AppearanceMode>(
+                            builder: (context, appearanceMode) =>
+                                buildApp(localeState.locale, appearanceMode),
+                          ),
                     ),
                   ),
                 ),

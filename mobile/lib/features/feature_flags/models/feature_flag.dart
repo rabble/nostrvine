@@ -49,6 +49,14 @@ enum FeatureFlag {
   profileMonetizationLinks(
     'Profile Monetization Links',
     'Enable outbound tip and subscription links on profiles.',
+  ),
+  lightMode(
+    'Light Mode',
+    'Enable the experimental System, Light, and Dark appearance settings.',
+  ),
+  adaptiveMediaChrome(
+    'Adaptive Media Chrome',
+    'Use light controls around fullscreen video when Light Mode is enabled.',
   );
 
   const FeatureFlag(this.displayName, this.description);

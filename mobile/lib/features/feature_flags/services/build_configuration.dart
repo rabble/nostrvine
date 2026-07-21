@@ -41,6 +41,10 @@ class BuildConfiguration {
         return const bool.fromEnvironment('FF_FEED_TUNING');
       case FeatureFlag.profileMonetizationLinks:
         return const bool.fromEnvironment('FF_PROFILE_MONETIZATION_LINKS');
+      case FeatureFlag.lightMode:
+        return const bool.fromEnvironment('FF_LIGHT_MODE');
+      case FeatureFlag.adaptiveMediaChrome:
+        return const bool.fromEnvironment('FF_ADAPTIVE_MEDIA_CHROME');
     }
   }
 
@@ -77,6 +81,10 @@ class BuildConfiguration {
         return 'FF_FEED_TUNING';
       case FeatureFlag.profileMonetizationLinks:
         return 'FF_PROFILE_MONETIZATION_LINKS';
+      case FeatureFlag.lightMode:
+        return 'FF_LIGHT_MODE';
+      case FeatureFlag.adaptiveMediaChrome:
+        return 'FF_ADAPTIVE_MEDIA_CHROME';
     }
   }
 }

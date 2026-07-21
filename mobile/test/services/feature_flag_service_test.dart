@@ -110,6 +110,18 @@ void main() {
     });
 
     group('state queries', () {
+      test('exposes light mode experiment metadata', () {
+        final lightMode = service.getFlagMetadata(FeatureFlag.lightMode);
+        final adaptiveMedia = service.getFlagMetadata(
+          FeatureFlag.adaptiveMediaChrome,
+        );
+
+        expect(lightMode.flag.displayName, equals('Light Mode'));
+        expect(adaptiveMedia.flag.displayName, equals('Adaptive Media Chrome'));
+        expect(lightMode.isEnabled, isFalse);
+        expect(adaptiveMedia.isEnabled, isFalse);
+      });
+
       test('should identify user overrides', () async {
         when(
           () => mockPrefs.containsKey('ff_enhancedAnalytics'),
