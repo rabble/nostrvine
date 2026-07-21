@@ -759,9 +759,16 @@ class BugReportService {
   ///
   /// On success, [LogExportResult.filePath] is populated when the caller
   /// can show the user where the file landed (currently desktop only).
+  ///
+  /// [sharePositionOrigin] anchors the iOS share sheet popover. It is
+  /// required on iPad idiom (real iPads and iOS builds running on
+  /// Apple Silicon Macs) — share_plus rejects the share with
+  /// "sharePositionOrigin: argument must be set" when it is missing
+  /// there.
   Future<LogExportResult> exportLogsToFile({
     String? currentScreen,
     String? userPubkey,
+    ui.Rect? sharePositionOrigin,
   }) async {
     try {
       Log.info(
@@ -831,7 +838,12 @@ class BugReportService {
       if (_isDesktop) {
         return _exportLogsDesktop(content, fileName, allLogLines.length);
       }
-      return _exportLogsNative(content, fileName, allLogLines.length);
+      return _exportLogsNative(
+        content,
+        fileName,
+        allLogLines.length,
+        sharePositionOrigin: sharePositionOrigin,
+      );
     } catch (e, stackTrace) {
       Log.error(
         'Failed to export logs: $e',
@@ -1119,8 +1131,9 @@ class BugReportService {
   Future<LogExportResult> _exportLogsNative(
     String content,
     String fileName,
-    int lineCount,
-  ) async {
+    int lineCount, {
+    ui.Rect? sharePositionOrigin,
+  }) async {
     try {
       // Get temporary directory
       final tempDir = await getTemporaryDirectory();
@@ -1146,6 +1159,7 @@ class BugReportService {
           files: [XFile(filePath)],
           subject: 'OpenVine Full Logs',
           text: 'OpenVine Full Logs',
+          sharePositionOrigin: sharePositionOrigin,
         ),
       );
 

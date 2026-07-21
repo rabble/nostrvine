@@ -9,6 +9,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
+import 'package:openvine/utils/share_position_origin.dart';
 import 'package:openvine/widgets/bug_report_dialog.dart';
 import 'package:openvine/widgets/feature_request_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -128,6 +129,9 @@ class SupportCenterScreen extends ConsumerWidget {
     BugReportService bugReportService,
     String? userPubkey,
   ) async {
+    // Resolve the popover anchor before any await — iPad idiom (including
+    // iOS builds on Apple Silicon Macs) rejects the share sheet without it.
+    final sharePositionOrigin = sharePositionOriginForContext(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(context.l10n.supportExportingLogs),
@@ -138,6 +142,7 @@ class SupportCenterScreen extends ConsumerWidget {
     final result = await bugReportService.exportLogsToFile(
       currentScreen: 'SupportCenterScreen',
       userPubkey: userPubkey,
+      sharePositionOrigin: sharePositionOrigin,
     );
     if (!context.mounted) return;
 
