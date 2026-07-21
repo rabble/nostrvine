@@ -480,8 +480,9 @@ void main() {
         'small button stretches to fill a tight/Expanded slot',
         (tester) async {
           // The 48dp tap-target wrapper must not shrink-wrap a small button to
-          // its label: inside an Expanded (tight width) both the button and
-          // its visible chip fill the slot.
+          // its label: inside an Expanded (tight width) the button fills the
+          // slot, and the visible chip keeps its original 4px-each-side halo
+          // (rowWidth - 8) rather than touching the slot's edges.
           const rowWidth = 300.0;
           await tester.pumpWidget(
             const MaterialApp(
@@ -508,7 +509,10 @@ void main() {
             tester.getSize(find.byType(DivineButton)).width,
             equals(rowWidth),
           );
-          expect(tester.getSize(find.byType(Ink)).width, equals(rowWidth));
+          expect(
+            tester.getSize(find.byType(Ink)).width,
+            equals(rowWidth - 8),
+          );
         },
       );
     });
@@ -1188,6 +1192,15 @@ void main() {
         expect(find.byType(DivineButton), findsOneWidget);
         expect(find.byType(DivineIcon), findsOneWidget);
         expect(find.text(''), findsNothing);
+
+        // Geometry parity with `DivineIconButton.small`: a 40x40 visible
+        // chip inside a 48x48 tap target (DivineIconButton achieves the
+        // same numbers via a fixed `SizedBox(48, 48)` wrapper — see
+        // divine_icon_button.dart).
+        final chipSize = tester.getSize(find.byType(Ink));
+        final tapTarget = tester.getSize(find.byType(DivineButton));
+        expect(chipSize, equals(const Size(40, 40)));
+        expect(tapTarget, equals(const Size(48, 48)));
       });
 
       testWidgets('base size uses DivineIconButton padding', (tester) async {

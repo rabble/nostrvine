@@ -397,15 +397,25 @@ class _DivineButtonContent extends StatelessWidget {
 
     // small (40px) is below the 48dp minimum tap target. Grow the tap target
     // — the InkWell's child, which is what the accessibility guideline
-    // measures — to at least 48dp while keeping the 40px visible chip.
+    // measures — to 48dp on both axes with a uniform 4px halo
+    // (40 + 4 + 4 = 48), preserving the exact outer footprint the button
+    // always had: the pre-existing design already wrapped small in 4px of
+    // outer padding (see the [DivineButtonSize.small] doc above), it just
+    // did so *outside* `InkWell`/`Material`, where it was a purely visual
+    // margin that never counted as tappable. Moving that same 4px `Padding`
+    // to be the InkWell's child instead — with no other change — makes the
+    // margin part of the real tap target without touching the rendered
+    // chip size or the layout space the button occupies anywhere in the
+    // app.
     //
-    // The height gap is closed by 4px of transparent vertical padding
-    // (40 + 4 + 4 = 48). Padding (unlike Center/Align, which always loosens
-    // its child) passes the width constraint straight through, so a small
-    // button still stretches to fill a tight/`Expanded` slot and
+    // `Padding` (unlike `Center`/`Align`, which always loosen their child)
+    // deflates a tight constraint but keeps it tight, so a small button
+    // inside a tight/`Expanded` slot still stretches — to slot-width minus
+    // the 4px halo on each side, exactly as before — and
     // `_AdaptiveButtonPadding` still sees `hasTightWidth` and collapses its
-    // inset. `minWidth` guards the content-hugging case (icon-only / very
-    // short label) that would otherwise render under 48 wide. base is 48+.
+    // inset. `minWidth`/`minHeight` guard the content-hugging case
+    // (icon-only / very short label), which is already exactly 48 by
+    // design and so unaffected. base is already 48+.
     //
     // tiny (32px) deliberately keeps a 32px tap target — it sits flush next
     // to a 32px avatar / type icon, and expanding the tap target would bleed
@@ -418,7 +428,7 @@ class _DivineButtonContent extends StatelessWidget {
           minHeight: kMinInteractiveDimension,
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
+          padding: const EdgeInsets.all(4),
           child: inkChild,
         ),
       );

@@ -36,7 +36,7 @@ print_help() {
     echo ""
     echo "Examples:"
     echo "  $0 update                              # Update all golden images"
-    echo "  $0 update test/goldens/widgets/user_avatar_golden_test.dart"
+    echo "  $0 update test/goldens/widgets/notification_rows_golden_test.dart"
     echo "  $0 verify                              # Verify all golden tests"
     echo "  $0 diff                                # Show changes to golden images"
 }

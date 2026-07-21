@@ -225,12 +225,37 @@ void main() {
 
           expect(focusNode.hasFocus, isFalse);
 
-          // Tap the top of the Container (padding area above
-          // the TextField) to trigger _handleContainerTap and
-          // exercise the requestFocus path.
+          // The input fills the whole 76px container (see
+          // _AuthTextFieldContent's Positioned.fill), so tapping the padding
+          // area above the visible text row still hits the TextFormField
+          // itself and exercises its built-in requestFocus path.
           final containerFinder = find.byType(Container).first;
           final topLeft = tester.getTopLeft(containerFinder);
           await tester.tapAt(topLeft + const Offset(30, 5));
+          await tester.pump();
+
+          expect(focusNode.hasFocus, isTrue);
+
+          focusNode.dispose();
+        },
+      );
+
+      testWidgets(
+        'requests focus when a read-only field is tapped',
+        (tester) async {
+          // TextFormField's own tap handling runs unconditionally regardless
+          // of readOnly — readOnly only gates the input connection (so no
+          // soft keyboard appears) and the cut/paste toolbar, not focus. Pin
+          // this contract explicitly since it's easy to assume read-only
+          // means non-focusable.
+          final focusNode = FocusNode();
+          await tester.pumpWidget(
+            buildTestWidget(focusNode: focusNode, readOnly: true),
+          );
+
+          expect(focusNode.hasFocus, isFalse);
+
+          await tester.tap(find.byType(DivineAuthTextField));
           await tester.pump();
 
           expect(focusNode.hasFocus, isTrue);
