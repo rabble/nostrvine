@@ -237,7 +237,7 @@ void main() {
           );
 
           expect(tester.takeException(), isNull);
-          expect(find.text('beforeafter'), findsOneWidget);
+          expect(find.text('before\uFFFDafter'), findsOneWidget);
         },
       );
     });

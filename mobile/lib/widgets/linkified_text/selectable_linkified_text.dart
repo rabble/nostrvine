@@ -9,7 +9,6 @@ import 'package:openvine/widgets/linkified_text/linkified_text_navigation.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_span_builder.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_support.dart';
 import 'package:text_sanitizer/text_sanitizer.dart';
-import 'package:text_sanitizer/text_sanitizer.dart';
 
 class SelectableLinkifiedText extends ConsumerStatefulWidget {
   const SelectableLinkifiedText({
