@@ -456,6 +456,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       null => false,
       LocalNostrIdentity() => true,
       KeycastNostrIdentity() => true,
+      PubkeyOnlyNostrIdentity() => false,
       AmberNostrIdentity() => true,
       BunkerNostrIdentity() => true,
       Nip07NostrIdentity() => true,
@@ -791,19 +792,30 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       final KeycastSession? refreshed;
       try {
         refreshed = await _oauthCoordinator
-            .refreshSession(
-              expectedOwnerPubkey: session?.userPubkey,
-            )
+            .refreshSession(expectedOwnerPubkey: session?.userPubkey)
             .timeout(_startupNetworkOperationTimeout);
-      } on TimeoutException {
+      } on OAuthNetworkException catch (e) {
         Log.warning(
-          'initialize: synchronous refresh timed out '
-          '(${_startupNetworkOperationTimeout.inSeconds}s)',
+          'initialize: synchronous refresh failed due to network: $e',
           name: 'AuthService',
           category: LogCategory.auth,
         );
-        _hasExpiredOAuthSession = true;
-        _setAuthState(AuthState.unauthenticated);
+        await _restoreDegradedDivineOAuthSession(
+          session,
+          anchorNpub: anchorNpub,
+        );
+        return;
+      } on TimeoutException catch (e) {
+        Log.warning(
+          'initialize: synchronous refresh timed out '
+          '(${_startupNetworkOperationTimeout.inSeconds}s): $e',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        await _restoreDegradedDivineOAuthSession(
+          session,
+          anchorNpub: anchorNpub,
+        );
         return;
       }
 
@@ -845,6 +857,46 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       category: LogCategory.auth,
     );
     _setAuthState(AuthState.unauthenticated);
+  }
+
+  Future<void> _restoreDegradedDivineOAuthSession(
+    KeycastSession? session, {
+    required String? anchorNpub,
+  }) async {
+    final hasOwnerPubkey = session?.userPubkey?.isNotEmpty ?? false;
+    final hasRefreshToken = session?.refreshToken?.isNotEmpty ?? false;
+    if (session == null || !hasOwnerPubkey || !hasRefreshToken) {
+      _hasExpiredOAuthSession = true;
+      _setAuthState(AuthState.unauthenticated);
+      return;
+    }
+
+    if (_isCrossAccountRestore(
+      candidatePubkey: session.userPubkey,
+      anchorNpub: anchorNpub,
+    )) {
+      _setAuthState(AuthState.unauthenticated);
+      return;
+    }
+
+    Log.info(
+      'initialize: keeping Divine OAuth session authenticated while RPC '
+      'refresh waits for connectivity',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
+    await signInWithDivineOAuth(
+      session,
+      rpcCapability: AuthRpcCapability.upgrading,
+      allowPubkeyOnlyIdentity: true,
+    );
+    _hasExpiredOAuthSession = true;
+    unawaited(
+      _upgradeDivineRpcInBackground(
+        session,
+        expectedOwnerPubkey: session.userPubkey,
+      ),
+    );
   }
 
   /// Returns true when [candidatePubkey] belongs to a different account than
@@ -914,9 +966,19 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     required String caller,
     String? expectedOwnerPubkey,
   }) async {
-    final refreshed = await _oauthCoordinator.refreshSession(
-      expectedOwnerPubkey: expectedOwnerPubkey,
-    );
+    final KeycastSession? refreshed;
+    try {
+      refreshed = await _oauthCoordinator.refreshSession(
+        expectedOwnerPubkey: expectedOwnerPubkey,
+      );
+    } on OAuthNetworkException catch (e) {
+      Log.warning(
+        '$caller: refresh failed due to network: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      return false;
+    }
     if (refreshed != null) {
       Log.info(
         '$caller: refresh succeeded',
@@ -2564,7 +2626,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       _nostrConnect.onSignerCallbackReceived(relayUrl: relayUrl);
 
   /// Sign in using OAuth 2.0 flow
-  Future<void> signInWithDivineOAuth(KeycastSession session) async {
+  Future<void> signInWithDivineOAuth(
+    KeycastSession session, {
+    AuthRpcCapability? rpcCapability,
+    bool allowPubkeyOnlyIdentity = false,
+  }) async {
     Log.debug(
       'Signing in with Divine OAuth session',
       name: 'AuthService',
@@ -2576,11 +2642,15 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     _hasExpiredOAuthSession = false;
 
     try {
-      _keycastSigner = KeycastRpc.fromSession(
-        _oauthConfig,
-        session,
-        onTokenRefresh: _refreshAccessToken,
-      );
+      if (session.hasRpcAccess) {
+        _keycastSigner = KeycastRpc.fromSession(
+          _oauthConfig,
+          session,
+          onTokenRefresh: _refreshAccessToken,
+        );
+      } else {
+        _keycastSigner = null;
+      }
 
       // Prefer the pubkey stored in the session over an RPC call.
       // session.userPubkey is ground truth once populated — it is
@@ -2666,15 +2736,33 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         );
       } else {
         keyContainer = SecureKeyContainer.fromPublicKey(publicKeyHex);
-        Log.info(
-          'signInWithDivineOAuth: no matching local nsec — '
-          'signing via RPC (pubkey=$publicKeyHex)',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
+        if (_keycastSigner != null) {
+          Log.info(
+            'signInWithDivineOAuth: no matching local nsec — '
+            'signing via RPC (pubkey=$publicKeyHex)',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+        } else {
+          Log.info(
+            'signInWithDivineOAuth: no matching local nsec and RPC is not '
+            'ready — restored pubkey-only identity (pubkey=$publicKeyHex)',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+        }
       }
-      await _setupUserSession(keyContainer, AuthenticationSource.divineOAuth);
-      _setRpcCapability(AuthRpcCapability.rpcReady);
+      await _setupUserSession(
+        keyContainer,
+        AuthenticationSource.divineOAuth,
+        allowPubkeyOnlyIdentity: allowPubkeyOnlyIdentity,
+      );
+      _setRpcCapability(
+        rpcCapability ??
+            (session.hasRpcAccess
+                ? AuthRpcCapability.rpcReady
+                : AuthRpcCapability.upgrading),
+      );
 
       Log.info(
         '✅ Divine oauth session successfully integrated for $publicKeyHex',
@@ -3707,7 +3795,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// Throws [StateError] if no valid identity can be constructed — this
   /// indicates a programming error in the auth flow, not a user-facing
   /// condition.
-  NostrIdentity _buildIdentity() {
+  NostrIdentity _buildIdentity({bool allowPubkeyOnlyIdentity = false}) {
     return _signerFactory.buildIdentity(
       keyContainer: _currentKeyContainer,
       authSource: _authSource,
@@ -3715,14 +3803,16 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       nip07Service: _nip07Service,
       bunkerSigner: _bunkerSigner,
       keycastSigner: _keycastSigner,
+      allowPubkeyOnlyIdentity: allowPubkeyOnlyIdentity,
     );
   }
 
   /// Set up user session after successful authentication
   Future<void> _setupUserSession(
     SecureKeyContainer keyContainer,
-    AuthenticationSource source,
-  ) async {
+    AuthenticationSource source, {
+    bool allowPubkeyOnlyIdentity = false,
+  }) async {
     Log.info(
       '_setupUserSession: starting — '
       'pubkey=${keyContainer.publicKeyHex}, source=${source.name}',
@@ -3779,7 +3869,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     }
 
     // Build atomic identity AFTER stale signers are cleared.
-    _currentIdentity = _buildIdentity();
+    _currentIdentity = _buildIdentity(
+      allowPubkeyOnlyIdentity: allowPubkeyOnlyIdentity,
+    );
 
     // Create user profile
     _currentProfile = UserProfile(

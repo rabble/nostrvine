@@ -1126,46 +1126,43 @@ void main() {
       },
     );
 
-    test(
-      'throws AccountRestoreFailedException when identity keys not found '
-      'and no primary keys can authenticate',
-      () async {
-        final pubkeyHex = testKeyContainer.publicKeyHex;
+    test('throws AccountRestoreFailedException when identity keys not found '
+        'and no primary keys can authenticate', () async {
+      final pubkeyHex = testKeyContainer.publicKeyHex;
 
-        // Return null for identity key lookup, and ensure no same-account
-        // PRIMARY fallback exists so the service resolves to unauthenticated
-        // rather than silently succeeding.
-        when(
-          () => mockKeyStorage.getIdentityKeyContainer(
-            any(),
-            biometricPrompt: any(named: 'biometricPrompt'),
-          ),
-        ).thenAnswer((_) async => null);
-        when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
+      // Return null for identity key lookup, and ensure no same-account
+      // PRIMARY fallback exists so the service resolves to unauthenticated
+      // rather than silently succeeding.
+      when(
+        () => mockKeyStorage.getIdentityKeyContainer(
+          any(),
+          biometricPrompt: any(named: 'biometricPrompt'),
+        ),
+      ).thenAnswer((_) async => null);
+      when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
 
-        await expectLater(
-          _ignoringDiscoveryErrors(
-            () => authService.signInForAccount(
-              pubkeyHex,
-              AuthenticationSource.automatic,
-            ),
+      await expectLater(
+        _ignoringDiscoveryErrors(
+          () => authService.signInForAccount(
+            pubkeyHex,
+            AuthenticationSource.automatic,
           ),
-          throwsA(
-            isA<AccountRestoreFailedException>()
-                .having((e) => e.pubkeyHex, 'pubkeyHex', pubkeyHex)
-                .having(
-                  (e) => e.resolvedState,
-                  'resolvedState',
-                  AuthState.unauthenticated,
-                ),
-          ),
-        );
+        ),
+        throwsA(
+          isA<AccountRestoreFailedException>()
+              .having((e) => e.pubkeyHex, 'pubkeyHex', pubkeyHex)
+              .having(
+                (e) => e.resolvedState,
+                'resolvedState',
+                AuthState.unauthenticated,
+              ),
+        ),
+      );
 
-        // The same-account fallback path was exercised before the guard threw.
-        verify(() => mockKeyStorage.hasKeys()).called(1);
-        expect(authService.authState, equals(AuthState.unauthenticated));
-      },
-    );
+      // The same-account fallback path was exercised before the guard threw.
+      verify(() => mockKeyStorage.hasKeys()).called(1);
+      expect(authService.authState, equals(AuthState.unauthenticated));
+    });
 
     test(
       'throws AccountRestoreFailedException when missing identity keys would '
@@ -1976,19 +1973,19 @@ void main() {
         await _ignoringDiscoveryErrors(authService.createNewIdentity);
 
         final deletedKeys = <String>[];
-        when(
-          () => mockSecureStorage.delete(key: any(named: 'key')),
-        ).thenAnswer((invocation) async {
-          final key = invocation.namedArguments[#key] as String;
-          deletedKeys.add(key);
+        when(() => mockSecureStorage.delete(key: any(named: 'key'))).thenAnswer(
+          (invocation) async {
+            final key = invocation.namedArguments[#key] as String;
+            deletedKeys.add(key);
 
-          final keycastSessionAttempts = deletedKeys
-              .where((deletedKey) => deletedKey == 'keycast_session')
-              .length;
-          if (key == 'keycast_session' && keycastSessionAttempts == 1) {
-            throw StateError('transient secure storage delete failure');
-          }
-        });
+            final keycastSessionAttempts = deletedKeys
+                .where((deletedKey) => deletedKey == 'keycast_session')
+                .length;
+            if (key == 'keycast_session' && keycastSessionAttempts == 1) {
+              throw StateError('transient secure storage delete failure');
+            }
+          },
+        );
 
         await authService.signOut(deleteKeys: true);
 
@@ -2016,16 +2013,16 @@ void main() {
         await _ignoringDiscoveryErrors(authService.createNewIdentity);
 
         final deletedKeys = <String>[];
-        when(
-          () => mockSecureStorage.delete(key: any(named: 'key')),
-        ).thenAnswer((invocation) async {
-          final key = invocation.namedArguments[#key] as String;
-          deletedKeys.add(key);
+        when(() => mockSecureStorage.delete(key: any(named: 'key'))).thenAnswer(
+          (invocation) async {
+            final key = invocation.namedArguments[#key] as String;
+            deletedKeys.add(key);
 
-          if (key == 'keycast_session') {
-            throw StateError('persistent secure storage delete failure');
-          }
-        });
+            if (key == 'keycast_session') {
+              throw StateError('persistent secure storage delete failure');
+            }
+          },
+        );
 
         await authService.signOut(deleteKeys: true);
 
@@ -2063,11 +2060,11 @@ void main() {
         await _ignoringDiscoveryErrors(authService.createNewIdentity);
 
         final deletedKeys = <String>[];
-        when(
-          () => mockSecureStorage.delete(key: any(named: 'key')),
-        ).thenAnswer((invocation) async {
-          deletedKeys.add(invocation.namedArguments[#key] as String);
-        });
+        when(() => mockSecureStorage.delete(key: any(named: 'key'))).thenAnswer(
+          (invocation) async {
+            deletedKeys.add(invocation.namedArguments[#key] as String);
+          },
+        );
 
         await authService.signOut(deleteKeys: true);
 
@@ -2825,6 +2822,99 @@ void main() {
                 'user must confirm explicitly via the welcome screen',
           );
           expect(localAuthService.currentPublicKeyHex, isNull);
+        } finally {
+          await localAuthService.dispose();
+        }
+      },
+    );
+
+    test(
+      'blocks cross-account restore when expired session refresh fails due to '
+      'network and would otherwise degrade into authenticated state',
+      () async {
+        final mockOAuthClient = _MockKeycastOAuth();
+        final expiredSessionData = {
+          'bunker_url': 'wss://keycast.example.com',
+          'access_token': 'expired_b_token',
+          'scope': 'policy:full',
+          'expires_at': DateTime.now()
+              .subtract(const Duration(seconds: 1))
+              .toIso8601String(),
+          'user_pubkey': accountB.publicKeyHex,
+          'refresh_token': 'b_refresh_token',
+        };
+        final storage = <String, String>{
+          'keycast_session': jsonEncode(expiredSessionData),
+          'keycast_refresh_token': 'b_refresh_token',
+        };
+
+        when(() => mockSecureStorage.read(key: any(named: 'key'))).thenAnswer((
+          invocation,
+        ) async {
+          final key = invocation.namedArguments[#key] as String;
+          return storage[key];
+        });
+        when(
+          () => mockSecureStorage.write(
+            key: any(named: 'key'),
+            value: any(named: 'value'),
+          ),
+        ).thenAnswer((invocation) async {
+          final key = invocation.namedArguments[#key] as String;
+          final value = invocation.namedArguments[#value] as String;
+          storage[key] = value;
+        });
+        when(() => mockSecureStorage.delete(key: any(named: 'key'))).thenAnswer(
+          (invocation) async {
+            final key = invocation.namedArguments[#key] as String;
+            storage.remove(key);
+          },
+        );
+
+        when(
+          () => mockOAuthClient.refreshSession(
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).thenThrow(OAuthNetworkException('offline'));
+        when(mockOAuthClient.close).thenReturn(null);
+        when(mockOAuthClient.logout).thenAnswer((_) async {});
+
+        when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
+
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'divineOAuth',
+          'last_used_npub': accountB.npub,
+          'session_recovery_anchor_npub': accountA.npub,
+          kKnownAccountsKey: '[]',
+        });
+
+        final localAuthService = AuthService(
+          userDataCleanupService: mockCleanupService,
+          keyStorage: mockKeyStorage,
+          flutterSecureStorage: mockSecureStorage,
+          oauthClient: mockOAuthClient,
+        );
+
+        try {
+          await localAuthService.initialize();
+
+          expect(
+            localAuthService.authState,
+            equals(AuthState.unauthenticated),
+            reason:
+                'The degraded offline restore path must honor the same '
+                'cross-account anchor as the direct and refresh-success paths.',
+          );
+          expect(localAuthService.currentPublicKeyHex, isNull);
+          expect(
+            (await SharedPreferences.getInstance()).getString(
+              'session_recovery_anchor_npub',
+            ),
+            equals(accountA.npub),
+            reason:
+                'Blocked degraded restore must not clear the anchor before '
+                'the welcome screen can ask for confirmation.',
+          );
         } finally {
           await localAuthService.dispose();
         }

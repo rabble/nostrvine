@@ -8,6 +8,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:keycast_flutter/src/models/exceptions.dart';
 import 'package:keycast_flutter/src/models/keycast_session.dart';
 import 'package:keycast_flutter/src/oauth/callback_result.dart';
 import 'package:keycast_flutter/src/oauth/headless_models.dart';
@@ -1200,7 +1201,7 @@ void main() {
       });
 
       test(
-        'returns null but preserves refresh token on network error',
+        'throws network exception and preserves refresh token on network error',
         () async {
           final storage = MemoryKeycastStorage();
           await storage.write('keycast_refresh_token', 'my_refresh_token');
@@ -1214,9 +1215,11 @@ void main() {
             httpClient: mockClient,
             storage: storage,
           );
-          final result = await oauth.refreshSession();
 
-          expect(result, isNull);
+          await expectLater(
+            oauth.refreshSession(),
+            throwsA(isA<OAuthNetworkException>()),
+          );
           // Refresh token should be preserved (server didn't consume it)
           expect(
             await storage.read('keycast_refresh_token'),
@@ -1420,9 +1423,10 @@ void main() {
           requestTimeout: shortTimeout,
         );
 
-        final result = await oauth.refreshSession();
-
-        expect(result, isNull);
+        await expectLater(
+          oauth.refreshSession(),
+          throwsA(isA<OAuthNetworkException>()),
+        );
         // CRITICAL: a timeout is a network failure, not an auth
         // rejection — the refresh token must survive so the next
         // attempt can retry.

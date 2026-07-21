@@ -114,7 +114,9 @@ class SignerFactory {
   ///
   /// Throws [StateError] if no valid identity can be constructed — this
   /// indicates a programming error in the auth flow, not a user-facing
-  /// condition.
+  /// condition. Set [allowPubkeyOnlyIdentity] only for the deliberate degraded
+  /// Divine OAuth restore path, where the account pubkey is known but signing
+  /// RPC is temporarily unavailable.
   NostrIdentity buildIdentity({
     required SecureKeyContainer? keyContainer,
     required AuthenticationSource authSource,
@@ -122,6 +124,7 @@ class SignerFactory {
     Nip07Service? nip07Service,
     NostrRemoteSigner? bunkerSigner,
     KeycastRpc? keycastSigner,
+    bool allowPubkeyOnlyIdentity = false,
   }) {
     if (keyContainer == null) {
       throw StateError(
@@ -169,7 +172,16 @@ class SignerFactory {
       }
       return LocalNostrIdentity(keyContainer: keyContainer);
     }
-    // Pub-key-only container with no remote signer — cannot sign.
+    if (allowPubkeyOnlyIdentity &&
+        authSource == AuthenticationSource.divineOAuth) {
+      Log.warning(
+        '_buildIdentity: using pubkey-only Divine OAuth identity with no '
+        'signing capability. pubkey=$pubkey',
+        name: 'SignerFactory',
+        category: LogCategory.auth,
+      );
+      return PubkeyOnlyNostrIdentity(pubkey: pubkey);
+    }
     throw StateError(
       '_buildIdentity: pub-key-only container with no remote signer. '
       'source=${authSource.name}, pubkey=$pubkey',

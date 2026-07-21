@@ -106,7 +106,11 @@ class OAuthSessionCoordinator {
   /// mid-session callers (401 retry, app resume) may omit it — the method
   /// falls back to [currentPubkeyFallback].
   ///
-  /// Returns the refreshed session on success, or `null` on failure.
+  /// Returns the refreshed session on success, or `null` when refresh is not
+  /// possible or the server rejects the token.
+  ///
+  /// Throws [OAuthNetworkException] when the refresh cannot reach Keycast or
+  /// times out. The refresh token is preserved for a later retry in that case.
   Future<KeycastSession?> refreshSession({String? expectedOwnerPubkey}) {
     final pending = _pendingOAuthRefresh;
     if (pending != null) return pending;
@@ -119,11 +123,11 @@ class OAuthSessionCoordinator {
             Log.warning(
               '_refreshOAuthSession: timed out after '
               '${_oauthRefreshTimeout.inMilliseconds}ms — '
-              'treating as failed',
+              'treating as network failure',
               name: 'OAuthSessionCoordinator',
               category: LogCategory.auth,
             );
-            return null;
+            throw OAuthNetworkException('OAuth refresh timed out');
           },
         )
         .whenComplete(() {
@@ -155,6 +159,8 @@ class OAuthSessionCoordinator {
         category: LogCategory.auth,
       );
       return refreshed;
+    } on OAuthNetworkException {
+      rethrow;
     } catch (e) {
       Log.error(
         '_refreshOAuthSession: failed: $e',
@@ -172,7 +178,12 @@ class OAuthSessionCoordinator {
   /// multiple in-flight RPC 401s and app-resume refresh all share a single
   /// refresh token exchange.
   Future<String?> refreshAccessToken() async {
-    final refreshed = await refreshSession();
+    final KeycastSession? refreshed;
+    try {
+      refreshed = await refreshSession();
+    } on OAuthNetworkException {
+      return null;
+    }
     return refreshed?.accessToken;
   }
 
