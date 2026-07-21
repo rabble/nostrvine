@@ -4554,5 +4554,12 @@
   "settingsStorageError": "Er ging iets mis",
   "settingsStorageMaxSizeLabel": "Maximale cachegrootte",
   "settingsStorageApproxVideos": "≈ {count} video's",
-  "settingsStorageRemoveBrokenConfirmTitle": "Kapotte clips verwijderen?"
+  "settingsStorageRemoveBrokenConfirmTitle": "Kapotte clips verwijderen?",
+  "authSignInErrorInvalidCredentials": "Verkeerd e-mailadres of wachtwoord. Probeer het opnieuw.",
+  "authSignInErrorEmailNotVerified": "Verifieer je e-mail voordat je inlogt — check je inbox voor de link.",
+  "authSignInErrorInvalidEmail": "Dat lijkt geen geldig e-mailadres.",
+  "authSignInErrorNetwork": "Kan de server niet bereiken. Controleer je verbinding en probeer het opnieuw.",
+  "authSignInErrorGeneric": "Er ging iets mis. Probeer het opnieuw.",
+  "authSignInOptionsHintPrefix": "Weet je niet meer hoe je de vorige keer inlogde? ",
+  "authSignInOptionsHintCta": "Bekijk alle inlogopties"
 }

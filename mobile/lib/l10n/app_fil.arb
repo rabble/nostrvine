@@ -3137,5 +3137,12 @@
   "settingsStorageError": "May nangyaring mali",
   "settingsStorageMaxSizeLabel": "Pinakamataas na laki ng cache",
   "settingsStorageApproxVideos": "≈ {count} video",
-  "settingsStorageRemoveBrokenConfirmTitle": "Alisin ang mga sirang clip?"
+  "settingsStorageRemoveBrokenConfirmTitle": "Alisin ang mga sirang clip?",
+  "authSignInErrorInvalidCredentials": "Mali ang email o password. Subukan ulit.",
+  "authSignInErrorEmailNotVerified": "I-verify ang iyong email bago mag-sign in — tingnan ang inbox mo para sa link.",
+  "authSignInErrorInvalidEmail": "Mukhang hindi iyon wastong email address.",
+  "authSignInErrorNetwork": "Hindi maabot ang server. Tingnan ang iyong koneksyon at subukan ulit.",
+  "authSignInErrorGeneric": "May nangyaring mali. Subukan ulit.",
+  "authSignInOptionsHintPrefix": "Hindi sigurado kung paano ka nakapasok noong huli? ",
+  "authSignInOptionsHintCta": "Tingnan ang lahat ng opsyon sa pag-sign in"
 }

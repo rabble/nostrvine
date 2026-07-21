@@ -4554,5 +4554,12 @@
   "settingsStorageError": "Något gick fel",
   "settingsStorageMaxSizeLabel": "Maximal cachestorlek",
   "settingsStorageApproxVideos": "≈ {count} videor",
-  "settingsStorageRemoveBrokenConfirmTitle": "Ta bort trasiga klipp?"
+  "settingsStorageRemoveBrokenConfirmTitle": "Ta bort trasiga klipp?",
+  "authSignInErrorInvalidCredentials": "Fel e-post eller lösenord. Försök igen.",
+  "authSignInErrorEmailNotVerified": "Verifiera din e-post innan du loggar in – kolla din inkorg efter länken.",
+  "authSignInErrorInvalidEmail": "Det där ser inte ut som en giltig e-postadress.",
+  "authSignInErrorNetwork": "Kan inte nå servern. Kontrollera din anslutning och försök igen.",
+  "authSignInErrorGeneric": "Något gick fel. Försök igen.",
+  "authSignInOptionsHintPrefix": "Osäker på hur du loggade in förra gången? ",
+  "authSignInOptionsHintCta": "Se alla inloggningsalternativ"
 }

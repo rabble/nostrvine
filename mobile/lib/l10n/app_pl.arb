@@ -4554,5 +4554,12 @@
   "settingsStorageError": "Coś poszło nie tak",
   "settingsStorageMaxSizeLabel": "Maksymalny rozmiar pamięci podręcznej",
   "settingsStorageApproxVideos": "≈ {count} filmów",
-  "settingsStorageRemoveBrokenConfirmTitle": "Usunąć uszkodzone klipy?"
+  "settingsStorageRemoveBrokenConfirmTitle": "Usunąć uszkodzone klipy?",
+  "authSignInErrorInvalidCredentials": "Nieprawidłowy e-mail lub hasło. Spróbuj ponownie.",
+  "authSignInErrorEmailNotVerified": "Zweryfikuj swój e-mail przed zalogowaniem — sprawdź link w skrzynce odbiorczej.",
+  "authSignInErrorInvalidEmail": "To nie wygląda na prawidłowy adres e-mail.",
+  "authSignInErrorNetwork": "Nie można połączyć się z serwerem. Sprawdź połączenie i spróbuj ponownie.",
+  "authSignInErrorGeneric": "Coś poszło nie tak. Spróbuj ponownie.",
+  "authSignInOptionsHintPrefix": "Nie wiesz, jak zalogowałeś się ostatnim razem? ",
+  "authSignInOptionsHintCta": "Zobacz wszystkie opcje logowania"
 }

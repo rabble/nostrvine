@@ -4554,5 +4554,12 @@
   "settingsStorageError": "حدث خطأ ما",
   "settingsStorageMaxSizeLabel": "الحد الأقصى لحجم ذاكرة التخزين المؤقت",
   "settingsStorageApproxVideos": "≈ {count} مقطع فيديو",
-  "settingsStorageRemoveBrokenConfirmTitle": "إزالة المقاطع التالفة؟"
+  "settingsStorageRemoveBrokenConfirmTitle": "إزالة المقاطع التالفة؟",
+  "authSignInErrorInvalidCredentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة. حاول مرة أخرى.",
+  "authSignInErrorEmailNotVerified": "تحقق من بريدك الإلكتروني قبل تسجيل الدخول — راجع صندوق الوارد للحصول على الرابط.",
+  "authSignInErrorInvalidEmail": "لا يبدو هذا عنوان بريد إلكتروني صالحًا.",
+  "authSignInErrorNetwork": "تعذّر الوصول إلى الخادم. تحقق من اتصالك وحاول مرة أخرى.",
+  "authSignInErrorGeneric": "حدث خطأ ما. حاول مرة أخرى.",
+  "authSignInOptionsHintPrefix": "لست متأكدًا كيف سجّلت الدخول آخر مرة؟ ",
+  "authSignInOptionsHintCta": "عرض جميع خيارات تسجيل الدخول"
 }

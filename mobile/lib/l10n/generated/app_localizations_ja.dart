@@ -2744,6 +2744,29 @@ class AppLocalizationsJa extends AppLocalizations {
       'Alby や nos2x のような NIP-07 ブラウザ拡張機能でサインインします。鍵は拡張機能内に保持され、Divine からは見えません。';
 
   @override
+  String get authSignInErrorInvalidCredentials =>
+      'メールアドレスまたはパスワードが違います。もう一度お試しください。';
+
+  @override
+  String get authSignInErrorEmailNotVerified =>
+      'サインインする前にメールを認証してください。受信トレイのリンクを確認してください。';
+
+  @override
+  String get authSignInErrorInvalidEmail => '有効なメールアドレスではないようです。';
+
+  @override
+  String get authSignInErrorNetwork => 'サーバーに接続できません。接続を確認してもう一度お試しください。';
+
+  @override
+  String get authSignInErrorGeneric => '問題が発生しました。もう一度お試しください。';
+
+  @override
+  String get authSignInOptionsHintPrefix => '前回どうやってログインしたか分かりませんか? ';
+
+  @override
+  String get authSignInOptionsHintCta => 'すべてのサインイン方法を見る';
+
+  @override
   String get authCreateAccountTitle => 'アカウントを作ろう';
 
   @override

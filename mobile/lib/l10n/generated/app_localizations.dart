@@ -5022,6 +5022,48 @@ abstract class AppLocalizations {
   /// **'Sign in with a NIP-07 browser extension like Alby or nos2x. Your keys stay in the extension — Divine never sees them.'**
   String get authInfoBrowserExtensionDescription;
 
+  /// Shown when email/password sign-in fails. Must stay neutral about whether the account exists — the server returns the same error for a wrong password and an unknown account.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong email or password. Give it another try.'**
+  String get authSignInErrorInvalidCredentials;
+
+  /// Shown when the account exists but its email is not yet verified (HTTP 403 on sign-in).
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your email before signing in — check your inbox for the link.'**
+  String get authSignInErrorEmailNotVerified;
+
+  /// Shown when the submitted email is malformed on sign-in.
+  ///
+  /// In en, this message translates to:
+  /// **'That doesn\'t look like a valid email address.'**
+  String get authSignInErrorInvalidEmail;
+
+  /// Shown when a network/transport problem prevents a sign-in verdict.
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t reach the server. Check your connection and try again.'**
+  String get authSignInErrorNetwork;
+
+  /// Fallback shown for any other sign-in failure.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Please try again.'**
+  String get authSignInErrorGeneric;
+
+  /// Leading prose of the tappable hint under a failed sign-in, before the call-to-action span. Trailing space is intentional.
+  ///
+  /// In en, this message translates to:
+  /// **'Not sure how you got in last time? '**
+  String get authSignInOptionsHintPrefix;
+
+  /// Tappable call-to-action span of the failed-sign-in hint. Opens the sheet listing all sign-in methods.
+  ///
+  /// In en, this message translates to:
+  /// **'See every sign-in option'**
+  String get authSignInOptionsHintCta;
+
   /// No description provided for @authCreateAccountTitle.
   ///
   /// In en, this message translates to:

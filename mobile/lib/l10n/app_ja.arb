@@ -4554,5 +4554,12 @@
   "settingsStorageError": "問題が発生しました",
   "settingsStorageMaxSizeLabel": "最大キャッシュサイズ",
   "settingsStorageApproxVideos": "≈ {count} 本の動画",
-  "settingsStorageRemoveBrokenConfirmTitle": "壊れたクリップを削除しますか？"
+  "settingsStorageRemoveBrokenConfirmTitle": "壊れたクリップを削除しますか？",
+  "authSignInErrorInvalidCredentials": "メールアドレスまたはパスワードが違います。もう一度お試しください。",
+  "authSignInErrorEmailNotVerified": "サインインする前にメールを認証してください。受信トレイのリンクを確認してください。",
+  "authSignInErrorInvalidEmail": "有効なメールアドレスではないようです。",
+  "authSignInErrorNetwork": "サーバーに接続できません。接続を確認してもう一度お試しください。",
+  "authSignInErrorGeneric": "問題が発生しました。もう一度お試しください。",
+  "authSignInOptionsHintPrefix": "前回どうやってログインしたか分かりませんか? ",
+  "authSignInOptionsHintCta": "すべてのサインイン方法を見る"
 }

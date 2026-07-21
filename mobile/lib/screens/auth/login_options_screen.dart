@@ -5,6 +5,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -72,8 +73,22 @@ class _LoginOptionsView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocListener<DivineAuthCubit, DivineAuthState>(
       listenWhen: (prev, next) =>
-          next is DivineAuthEmailVerification || next is DivineAuthSuccess,
+          next is DivineAuthEmailVerification ||
+          next is DivineAuthSuccess ||
+          (prev is DivineAuthFormState &&
+              next is DivineAuthFormState &&
+              next.signInFailureReason != null &&
+              prev.signInFailureReason != next.signInFailureReason),
       listener: (context, state) {
+        if (state is DivineAuthFormState && state.signInFailureReason != null) {
+          // Announce the failure to screen readers as it appears.
+          SemanticsService.sendAnnouncement(
+            View.of(context),
+            _signInErrorMessage(context, state.signInFailureReason!),
+            Directionality.of(context),
+          );
+          return;
+        }
         if (state is DivineAuthSuccess) {
           // Signal password managers to save credentials.
           TextInput.finishAutofillContext();
@@ -345,8 +360,18 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
                   ),
                 ),
 
-                // General error
-                if (widget.state.generalError != null) ...[
+                // Sign-in error, with a nudge toward every sign-in option.
+                if (widget.state.signInFailureReason != null) ...[
+                  const SizedBox(height: 16),
+                  AuthErrorBox(
+                    message: _signInErrorMessage(
+                      context,
+                      widget.state.signInFailureReason!,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const _SignInOptionsHint(),
+                ] else if (widget.state.generalError != null) ...[
                   const SizedBox(height: 16),
                   AuthErrorBox(message: widget.state.generalError!),
                 ],
@@ -435,6 +460,65 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Localized copy for a failed sign-in. Kept neutral about account existence
+/// for [SignInFailureReason.invalidCredentials] — see the enum doc.
+String _signInErrorMessage(BuildContext context, SignInFailureReason reason) {
+  final l10n = context.l10n;
+  switch (reason) {
+    case SignInFailureReason.invalidCredentials:
+      return l10n.authSignInErrorInvalidCredentials;
+    case SignInFailureReason.emailNotVerified:
+      return l10n.authSignInErrorEmailNotVerified;
+    case SignInFailureReason.invalidEmail:
+      return l10n.authSignInErrorInvalidEmail;
+    case SignInFailureReason.network:
+      return l10n.authSignInErrorNetwork;
+    case SignInFailureReason.unknown:
+      return l10n.authSignInErrorGeneric;
+  }
+}
+
+/// Tappable hint under a failed sign-in that opens the full sign-in options
+/// sheet. Safe for every user: it never claims an account exists, so it works
+/// whether the failure was a typo, an unverified email, or a Nostr-native user
+/// on the wrong screen. The whole line is one 48dp tap target.
+class _SignInOptionsHint extends ConsumerWidget {
+  const _SignInOptionsHint();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    return Semantics(
+      button: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _showInfoSheet(
+          context,
+          showNip07: ref.read(authServiceProvider).isNip07Available,
+        ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text.rich(
+              TextSpan(
+                style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+                children: [
+                  TextSpan(text: l10n.authSignInOptionsHintPrefix),
+                  TextSpan(
+                    text: l10n.authSignInOptionsHintCta,
+                    style: VineTheme.bodyMediumFont(color: VineTheme.vineGreen),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

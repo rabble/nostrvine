@@ -2960,6 +2960,32 @@ class AppLocalizationsPl extends AppLocalizations {
       'Zaloguj się przez rozszerzenie przeglądarki NIP-07, takie jak Alby lub nos2x. Twoje klucze pozostają w rozszerzeniu — Divine nigdy ich nie widzi.';
 
   @override
+  String get authSignInErrorInvalidCredentials =>
+      'Nieprawidłowy e-mail lub hasło. Spróbuj ponownie.';
+
+  @override
+  String get authSignInErrorEmailNotVerified =>
+      'Zweryfikuj swój e-mail przed zalogowaniem — sprawdź link w skrzynce odbiorczej.';
+
+  @override
+  String get authSignInErrorInvalidEmail =>
+      'To nie wygląda na prawidłowy adres e-mail.';
+
+  @override
+  String get authSignInErrorNetwork =>
+      'Nie można połączyć się z serwerem. Sprawdź połączenie i spróbuj ponownie.';
+
+  @override
+  String get authSignInErrorGeneric => 'Coś poszło nie tak. Spróbuj ponownie.';
+
+  @override
+  String get authSignInOptionsHintPrefix =>
+      'Nie wiesz, jak zalogowałeś się ostatnim razem? ';
+
+  @override
+  String get authSignInOptionsHintCta => 'Zobacz wszystkie opcje logowania';
+
+  @override
   String get authCreateAccountTitle => 'Utwórz konto';
 
   @override

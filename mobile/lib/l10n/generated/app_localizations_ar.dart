@@ -2860,6 +2860,32 @@ class AppLocalizationsAr extends AppLocalizations {
       'سجّل الدخول باستخدام إضافة متصفح NIP-07 مثل Alby أو nos2x. تبقى مفاتيحك داخل الإضافة — Divine لا يراها أبدًا.';
 
   @override
+  String get authSignInErrorInvalidCredentials =>
+      'البريد الإلكتروني أو كلمة المرور غير صحيحة. حاول مرة أخرى.';
+
+  @override
+  String get authSignInErrorEmailNotVerified =>
+      'تحقق من بريدك الإلكتروني قبل تسجيل الدخول — راجع صندوق الوارد للحصول على الرابط.';
+
+  @override
+  String get authSignInErrorInvalidEmail =>
+      'لا يبدو هذا عنوان بريد إلكتروني صالحًا.';
+
+  @override
+  String get authSignInErrorNetwork =>
+      'تعذّر الوصول إلى الخادم. تحقق من اتصالك وحاول مرة أخرى.';
+
+  @override
+  String get authSignInErrorGeneric => 'حدث خطأ ما. حاول مرة أخرى.';
+
+  @override
+  String get authSignInOptionsHintPrefix =>
+      'لست متأكدًا كيف سجّلت الدخول آخر مرة؟ ';
+
+  @override
+  String get authSignInOptionsHintCta => 'عرض جميع خيارات تسجيل الدخول';
+
+  @override
   String get authCreateAccountTitle => 'إنشاء حساب';
 
   @override

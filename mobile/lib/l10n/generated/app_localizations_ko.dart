@@ -2755,6 +2755,29 @@ class AppLocalizationsKo extends AppLocalizations {
       'Alby 또는 nos2x와 같은 NIP-07 브라우저 확장 프로그램으로 로그인하세요. 키는 확장 프로그램에 그대로 유지되며 Divine은 절대 볼 수 없습니다.';
 
   @override
+  String get authSignInErrorInvalidCredentials =>
+      '이메일 또는 비밀번호가 잘못되었습니다. 다시 시도해 주세요.';
+
+  @override
+  String get authSignInErrorEmailNotVerified =>
+      '로그인하기 전에 이메일을 인증하세요 — 받은 편지함에서 링크를 확인하세요.';
+
+  @override
+  String get authSignInErrorInvalidEmail => '유효한 이메일 주소가 아닌 것 같습니다.';
+
+  @override
+  String get authSignInErrorNetwork => '서버에 연결할 수 없습니다. 연결을 확인하고 다시 시도해 주세요.';
+
+  @override
+  String get authSignInErrorGeneric => '문제가 발생했습니다. 다시 시도해 주세요.';
+
+  @override
+  String get authSignInOptionsHintPrefix => '지난번에 어떻게 로그인했는지 기억나지 않나요? ';
+
+  @override
+  String get authSignInOptionsHintCta => '모든 로그인 옵션 보기';
+
+  @override
   String get authCreateAccountTitle => '계정 만들기';
 
   @override

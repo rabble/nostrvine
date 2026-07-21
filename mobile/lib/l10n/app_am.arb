@@ -4679,5 +4679,12 @@
   "settingsStorageError": "የሆነ ችግር ተፈጥሯል",
   "settingsStorageMaxSizeLabel": "ከፍተኛ የመሸጎጫ መጠን",
   "settingsStorageApproxVideos": "≈ {count} ቪዲዮዎች",
-  "settingsStorageRemoveBrokenConfirmTitle": "የተበላሹ ክሊፖችን ማስወገድ?"
+  "settingsStorageRemoveBrokenConfirmTitle": "የተበላሹ ክሊፖችን ማስወገድ?",
+  "authSignInErrorInvalidCredentials": "የተሳሳተ ኢሜይል ወይም የይለፍ ቃል። እንደገና ይሞክሩ።",
+  "authSignInErrorEmailNotVerified": "ከመግባትዎ በፊት ኢሜይልዎን ያረጋግጡ — ለአገናኙ የገቢ መልእክት ሳጥንዎን ይመልከቱ።",
+  "authSignInErrorInvalidEmail": "ይህ ትክክለኛ የኢሜይል አድራሻ አይመስልም።",
+  "authSignInErrorNetwork": "አገልጋዩ ጋር መድረስ አልተቻለም። ግንኙነትዎን አረጋግጠው እንደገና ይሞክሩ።",
+  "authSignInErrorGeneric": "የሆነ ችግር ተፈጥሯል። እባክዎ እንደገና ይሞክሩ።",
+  "authSignInOptionsHintPrefix": "ባለፈው ጊዜ እንዴት እንደገቡ እርግጠኛ አይደሉም? ",
+  "authSignInOptionsHintCta": "ሁሉንም የመግቢያ አማራጮች ይመልከቱ"
 }

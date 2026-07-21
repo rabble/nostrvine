@@ -2854,6 +2854,32 @@ class AppLocalizationsId extends AppLocalizations {
       'Masuk dengan ekstensi peramban NIP-07 seperti Alby atau nos2x. Kunci Anda tetap di ekstensi — Divine tidak pernah melihatnya.';
 
   @override
+  String get authSignInErrorInvalidCredentials =>
+      'Email atau kata sandi salah. Coba lagi.';
+
+  @override
+  String get authSignInErrorEmailNotVerified =>
+      'Verifikasi emailmu sebelum masuk — cek kotak masuk untuk tautannya.';
+
+  @override
+  String get authSignInErrorInvalidEmail =>
+      'Itu sepertinya bukan alamat email yang valid.';
+
+  @override
+  String get authSignInErrorNetwork =>
+      'Tidak dapat menjangkau server. Periksa koneksimu dan coba lagi.';
+
+  @override
+  String get authSignInErrorGeneric => 'Ada yang salah. Coba lagi.';
+
+  @override
+  String get authSignInOptionsHintPrefix =>
+      'Tidak yakin bagaimana kamu masuk terakhir kali? ';
+
+  @override
+  String get authSignInOptionsHintCta => 'Lihat semua opsi masuk';
+
+  @override
   String get authCreateAccountTitle => 'Buat akun';
 
   @override

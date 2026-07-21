@@ -4554,5 +4554,12 @@
   "settingsStorageError": "Terjadi kesalahan",
   "settingsStorageMaxSizeLabel": "Ukuran cache maksimum",
   "settingsStorageApproxVideos": "≈ {count} video",
-  "settingsStorageRemoveBrokenConfirmTitle": "Hapus klip rusak?"
+  "settingsStorageRemoveBrokenConfirmTitle": "Hapus klip rusak?",
+  "authSignInErrorInvalidCredentials": "Email atau kata sandi salah. Coba lagi.",
+  "authSignInErrorEmailNotVerified": "Verifikasi emailmu sebelum masuk — cek kotak masuk untuk tautannya.",
+  "authSignInErrorInvalidEmail": "Itu sepertinya bukan alamat email yang valid.",
+  "authSignInErrorNetwork": "Tidak dapat menjangkau server. Periksa koneksimu dan coba lagi.",
+  "authSignInErrorGeneric": "Ada yang salah. Coba lagi.",
+  "authSignInOptionsHintPrefix": "Tidak yakin bagaimana kamu masuk terakhir kali? ",
+  "authSignInOptionsHintCta": "Lihat semua opsi masuk"
 }

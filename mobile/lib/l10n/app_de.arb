@@ -4554,5 +4554,12 @@
   "settingsStorageError": "Etwas ist schiefgelaufen",
   "settingsStorageMaxSizeLabel": "Maximale Cache-Größe",
   "settingsStorageApproxVideos": "≈ {count} Videos",
-  "settingsStorageRemoveBrokenConfirmTitle": "Defekte Clips entfernen?"
+  "settingsStorageRemoveBrokenConfirmTitle": "Defekte Clips entfernen?",
+  "authSignInErrorInvalidCredentials": "Falsche E-Mail oder falsches Passwort. Versuch es noch mal.",
+  "authSignInErrorEmailNotVerified": "Bestätige deine E-Mail, bevor du dich anmeldest – schau in deinem Posteingang nach dem Link.",
+  "authSignInErrorInvalidEmail": "Das sieht nicht nach einer gültigen E-Mail-Adresse aus.",
+  "authSignInErrorNetwork": "Server nicht erreichbar. Prüf deine Verbindung und versuch es noch mal.",
+  "authSignInErrorGeneric": "Etwas ist schiefgelaufen. Bitte versuch es noch mal.",
+  "authSignInOptionsHintPrefix": "Nicht sicher, wie du letztes Mal reingekommen bist? ",
+  "authSignInOptionsHintCta": "Alle Anmeldeoptionen ansehen"
 }

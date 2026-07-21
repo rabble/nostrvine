@@ -1656,6 +1656,34 @@
   "authInfoAmberDescription": "Use the Amber signer app on Android to manage your Nostr keys securely.",
   "authInfoBrowserExtensionTitle": "Browser Extension",
   "authInfoBrowserExtensionDescription": "Sign in with a NIP-07 browser extension like Alby or nos2x. Your keys stay in the extension — Divine never sees them.",
+  "authSignInErrorInvalidCredentials": "Wrong email or password. Give it another try.",
+  "@authSignInErrorInvalidCredentials": {
+    "description": "Shown when email/password sign-in fails. Must stay neutral about whether the account exists — the server returns the same error for a wrong password and an unknown account."
+  },
+  "authSignInErrorEmailNotVerified": "Verify your email before signing in — check your inbox for the link.",
+  "@authSignInErrorEmailNotVerified": {
+    "description": "Shown when the account exists but its email is not yet verified (HTTP 403 on sign-in)."
+  },
+  "authSignInErrorInvalidEmail": "That doesn't look like a valid email address.",
+  "@authSignInErrorInvalidEmail": {
+    "description": "Shown when the submitted email is malformed on sign-in."
+  },
+  "authSignInErrorNetwork": "Can't reach the server. Check your connection and try again.",
+  "@authSignInErrorNetwork": {
+    "description": "Shown when a network/transport problem prevents a sign-in verdict."
+  },
+  "authSignInErrorGeneric": "Something went wrong. Please try again.",
+  "@authSignInErrorGeneric": {
+    "description": "Fallback shown for any other sign-in failure."
+  },
+  "authSignInOptionsHintPrefix": "Not sure how you got in last time? ",
+  "@authSignInOptionsHintPrefix": {
+    "description": "Leading prose of the tappable hint under a failed sign-in, before the call-to-action span. Trailing space is intentional."
+  },
+  "authSignInOptionsHintCta": "See every sign-in option",
+  "@authSignInOptionsHintCta": {
+    "description": "Tappable call-to-action span of the failed-sign-in hint. Opens the sheet listing all sign-in methods."
+  },
   "authCreateAccountTitle": "Create account",
   "authBackToInviteCode": "Back to invite code",
   "authUseDivineNoBackup": "Use Divine with no backup",

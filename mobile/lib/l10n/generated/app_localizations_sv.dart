@@ -2876,6 +2876,32 @@ class AppLocalizationsSv extends AppLocalizations {
       'Logga in med ett NIP-07-webbläsartillägg som Alby eller nos2x. Dina nycklar stannar i tillägget — Divine ser dem aldrig.';
 
   @override
+  String get authSignInErrorInvalidCredentials =>
+      'Fel e-post eller lösenord. Försök igen.';
+
+  @override
+  String get authSignInErrorEmailNotVerified =>
+      'Verifiera din e-post innan du loggar in – kolla din inkorg efter länken.';
+
+  @override
+  String get authSignInErrorInvalidEmail =>
+      'Det där ser inte ut som en giltig e-postadress.';
+
+  @override
+  String get authSignInErrorNetwork =>
+      'Kan inte nå servern. Kontrollera din anslutning och försök igen.';
+
+  @override
+  String get authSignInErrorGeneric => 'Något gick fel. Försök igen.';
+
+  @override
+  String get authSignInOptionsHintPrefix =>
+      'Osäker på hur du loggade in förra gången? ';
+
+  @override
+  String get authSignInOptionsHintCta => 'Se alla inloggningsalternativ';
+
+  @override
   String get authCreateAccountTitle => 'Skapa konto';
 
   @override

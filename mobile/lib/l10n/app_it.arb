@@ -4554,5 +4554,12 @@
   "settingsStorageError": "Qualcosa è andato storto",
   "settingsStorageMaxSizeLabel": "Dimensione massima cache",
   "settingsStorageApproxVideos": "≈ {count} video",
-  "settingsStorageRemoveBrokenConfirmTitle": "Rimuovere le clip danneggiate?"
+  "settingsStorageRemoveBrokenConfirmTitle": "Rimuovere le clip danneggiate?",
+  "authSignInErrorInvalidCredentials": "Email o password errati. Riprova.",
+  "authSignInErrorEmailNotVerified": "Verifica la tua email prima di accedere: controlla la posta in arrivo per il link.",
+  "authSignInErrorInvalidEmail": "Non sembra un indirizzo email valido.",
+  "authSignInErrorNetwork": "Impossibile raggiungere il server. Controlla la connessione e riprova.",
+  "authSignInErrorGeneric": "Qualcosa è andato storto. Riprova.",
+  "authSignInOptionsHintPrefix": "Non sai come hai effettuato l'accesso l'ultima volta? ",
+  "authSignInOptionsHintCta": "Vedi tutte le opzioni di accesso"
 }

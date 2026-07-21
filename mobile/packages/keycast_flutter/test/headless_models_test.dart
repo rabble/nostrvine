@@ -106,7 +106,7 @@ void main() {
         expect(result.code, isNull);
         expect(result.pubkey, isNull);
         expect(result.state, isNull);
-        expect(result.error, isNull);
+        expect(result.errorCode, isNull);
         expect(result.errorDescription, isNull);
       });
 
@@ -125,14 +125,12 @@ void main() {
     });
 
     group('fromJson', () {
-      test('parses complete JSON response', () {
+      test('parses a success response (code is the OAuth code)', () {
         final json = {
           'success': true,
           'code': 'auth_code_xyz',
           'pubkey': 'user_pk',
           'state': 'my_state',
-          'error': null,
-          'error_description': null,
         };
 
         final result = HeadlessLoginResult.fromJson(json);
@@ -141,7 +139,7 @@ void main() {
         expect(result.code, 'auth_code_xyz');
         expect(result.pubkey, 'user_pk');
         expect(result.state, 'my_state');
-        expect(result.error, isNull);
+        expect(result.errorCode, isNull);
         expect(result.errorDescription, isNull);
       });
 
@@ -154,23 +152,29 @@ void main() {
         expect(result.code, isNull);
         expect(result.pubkey, isNull);
         expect(result.state, isNull);
-        expect(result.error, isNull);
+        expect(result.errorCode, isNull);
         expect(result.errorDescription, isNull);
       });
 
-      test('parses error fields', () {
-        final json = {
-          'success': false,
-          'error': 'invalid_credentials',
-          'error_description': 'Wrong password',
-        };
+      test(
+        'on a failure body, code is the machine code, not the OAuth code',
+        () {
+          // Real keycast 401: {"code":"INVALID_CREDENTIALS","error":"..."}.
+          final json = {
+            'success': false,
+            'code': 'INVALID_CREDENTIALS',
+            'error': 'Invalid email or password',
+          };
 
-        final result = HeadlessLoginResult.fromJson(json);
+          final result = HeadlessLoginResult.fromJson(json);
 
-        expect(result.success, isFalse);
-        expect(result.error, 'invalid_credentials');
-        expect(result.errorDescription, 'Wrong password');
-      });
+          expect(result.success, isFalse);
+          expect(result.code, isNull, reason: 'no OAuth code on failure');
+          expect(result.errorCode, 'INVALID_CREDENTIALS');
+          expect(result.errorDescription, 'Invalid email or password');
+          expect(result.failure, KeycastLoginFailure.invalidCredentials);
+        },
+      );
     });
 
     group('error factory', () {
@@ -178,7 +182,7 @@ void main() {
         final result = HeadlessLoginResult.error('Login failed');
 
         expect(result.success, isFalse);
-        expect(result.error, 'client_error');
+        expect(result.errorCode, 'client_error');
         expect(result.errorDescription, 'Login failed');
       });
 
@@ -189,8 +193,30 @@ void main() {
         );
 
         expect(result.success, isFalse);
-        expect(result.error, 'connection_error');
+        expect(result.errorCode, 'connection_error');
         expect(result.errorDescription, 'Network error');
+        expect(result.failure, KeycastLoginFailure.network);
+      });
+    });
+
+    group('failure classification', () {
+      test('maps each server code and defaults unknown', () {
+        HeadlessLoginResult err(String code) =>
+            HeadlessLoginResult.error('msg', code: code);
+
+        expect(
+          err('INVALID_CREDENTIALS').failure,
+          KeycastLoginFailure.invalidCredentials,
+        );
+        expect(
+          err('EMAIL_NOT_VERIFIED').failure,
+          KeycastLoginFailure.emailNotVerified,
+        );
+        expect(err('INVALID_EMAIL').failure, KeycastLoginFailure.invalidEmail);
+        expect(err('timeout').failure, KeycastLoginFailure.network);
+        expect(err('connection_error').failure, KeycastLoginFailure.network);
+        expect(err('INTERNAL_ERROR').failure, KeycastLoginFailure.unknown);
+        expect(err('anything_else').failure, KeycastLoginFailure.unknown);
       });
     });
   });

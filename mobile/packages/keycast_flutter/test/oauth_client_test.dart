@@ -571,7 +571,7 @@ void main() {
         );
 
         expect(result.success, isFalse);
-        expect(result.error, 'endpoint_not_found');
+        expect(result.errorCode, 'endpoint_not_found');
       });
 
       test('returns error on 500+ server error', () async {
@@ -586,7 +586,7 @@ void main() {
         );
 
         expect(result.success, isFalse);
-        expect(result.error, 'server_error');
+        expect(result.errorCode, 'server_error');
         expect(result.errorDescription, contains('503'));
       });
 
@@ -602,15 +602,19 @@ void main() {
         );
 
         expect(result.success, isFalse);
-        expect(result.error, 'invalid_response');
+        expect(result.errorCode, 'invalid_response');
       });
 
-      test('returns error with error fields from response', () async {
+      test('reads keycast INVALID_CREDENTIALS 401 (machine code + '
+          'human message, no error_description)', () async {
+        // Byte-for-byte the body keycast returns on a failed login (observed
+        // via a cargo test + live e2e against keycast @5cda156):
+        // {"error":"Invalid email or password","code":"INVALID_CREDENTIALS"}
         final mockClient = MockClient((request) async {
           return http.Response(
             jsonEncode({
-              'error': 'invalid_credentials',
-              'error_description': 'Wrong password',
+              'code': 'INVALID_CREDENTIALS',
+              'error': 'Invalid email or password',
             }),
             401,
           );
@@ -623,8 +627,52 @@ void main() {
         );
 
         expect(result.success, isFalse);
-        expect(result.error, 'invalid_credentials');
-        expect(result.errorDescription, 'Wrong password');
+        expect(result.errorCode, 'INVALID_CREDENTIALS');
+        expect(result.failure, KeycastLoginFailure.invalidCredentials);
+        // The human message keycast actually sends, not a client fallback.
+        expect(result.errorDescription, 'Invalid email or password');
+      });
+
+      test('classifies EMAIL_NOT_VERIFIED 403', () async {
+        final mockClient = MockClient((request) async {
+          return http.Response(
+            jsonEncode({
+              'code': 'EMAIL_NOT_VERIFIED',
+              'error': 'Please verify your email address before signing in',
+            }),
+            403,
+          );
+        });
+
+        final oauth = KeycastOAuth(config: config, httpClient: mockClient);
+        final (result, _) = await oauth.headlessLogin(
+          email: 'test@example.com',
+          password: 'password123',
+        );
+
+        expect(result.errorCode, 'EMAIL_NOT_VERIFIED');
+        expect(result.failure, KeycastLoginFailure.emailNotVerified);
+      });
+
+      test('classifies INVALID_EMAIL 400', () async {
+        final mockClient = MockClient((request) async {
+          return http.Response(
+            jsonEncode({
+              'code': 'INVALID_EMAIL',
+              'error': 'Please enter a valid email address.',
+            }),
+            400,
+          );
+        });
+
+        final oauth = KeycastOAuth(config: config, httpClient: mockClient);
+        final (result, _) = await oauth.headlessLogin(
+          email: 'bad',
+          password: 'password123',
+        );
+
+        expect(result.errorCode, 'INVALID_EMAIL');
+        expect(result.failure, KeycastLoginFailure.invalidEmail);
       });
 
       test('returns error on SocketException', () async {
@@ -639,7 +687,8 @@ void main() {
         );
 
         expect(result.success, isFalse);
-        expect(result.error, 'connection_error');
+        expect(result.errorCode, 'connection_error');
+        expect(result.failure, KeycastLoginFailure.network);
       });
 
       test('returns error on other network errors', () async {
@@ -654,6 +703,8 @@ void main() {
         );
 
         expect(result.success, isFalse);
+        expect(result.errorCode, 'network_error');
+        expect(result.failure, KeycastLoginFailure.network);
         expect(result.errorDescription, contains('Network error'));
       });
     });
@@ -1461,7 +1512,8 @@ void main() {
           );
 
           expect(result.success, isFalse);
-          expect(result.error, 'timeout');
+          expect(result.errorCode, 'timeout');
+          expect(result.failure, KeycastLoginFailure.network);
           expect(verifier, isNotEmpty);
         },
       );

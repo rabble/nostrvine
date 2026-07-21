@@ -4554,5 +4554,12 @@
   "settingsStorageError": "Ceva n-a mers bine",
   "settingsStorageMaxSizeLabel": "Dimensiune maximă cache",
   "settingsStorageApproxVideos": "≈ {count} videoclipuri",
-  "settingsStorageRemoveBrokenConfirmTitle": "Elimini clipurile deteriorate?"
+  "settingsStorageRemoveBrokenConfirmTitle": "Elimini clipurile deteriorate?",
+  "authSignInErrorInvalidCredentials": "E-mail sau parolă greșite. Mai încearcă o dată.",
+  "authSignInErrorEmailNotVerified": "Verifică-ți e-mailul înainte de a te conecta — caută linkul în inbox.",
+  "authSignInErrorInvalidEmail": "Nu pare o adresă de e-mail validă.",
+  "authSignInErrorNetwork": "Serverul nu poate fi contactat. Verifică-ți conexiunea și încearcă din nou.",
+  "authSignInErrorGeneric": "Ceva n-a mers bine. Încearcă din nou.",
+  "authSignInOptionsHintPrefix": "Nu știi sigur cum te-ai conectat data trecută? ",
+  "authSignInOptionsHintCta": "Vezi toate opțiunile de conectare"
 }

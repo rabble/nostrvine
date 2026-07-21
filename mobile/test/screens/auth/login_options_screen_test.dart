@@ -28,6 +28,12 @@ class _MockPendingVerificationService extends Mock
 Finder _divineIcon(DivineIconName name) =>
     find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
 
+/// The options hint renders its two-color copy in a [RichText] (via
+/// `Text.rich`), which `find.text` cannot match — match on the plain text.
+Finder _optionsHint(String cta) => find.byWidgetPredicate(
+  (w) => w is RichText && w.text.toPlainText().contains(cta),
+);
+
 void main() {
   late _MockKeycastOAuth mockOAuth;
   late _MockAuthService mockAuthService;
@@ -123,6 +129,12 @@ void main() {
             'This email is already registered. Please sign in instead.',
           ),
           findsOneWidget,
+        );
+        expect(
+          _optionsHint(
+            lookupAppLocalizations(const Locale('en')).authSignInOptionsHintCta,
+          ),
+          findsNothing,
         );
       });
 
@@ -349,7 +361,7 @@ void main() {
           (_) async => (
             HeadlessLoginResult(
               success: false,
-              error: 'test',
+              errorCode: 'test',
               errorDescription: 'test error',
             ),
             'test-verifier',
@@ -389,50 +401,117 @@ void main() {
         ).called(1);
       });
 
-      testWidgets('displays general error on failed sign in', (tester) async {
-        when(
-          () => mockOAuth.headlessLogin(
-            email: any(named: 'email'),
-            password: any(named: 'password'),
-            scope: any(named: 'scope'),
-          ),
-        ).thenAnswer(
-          (_) async => (
-            HeadlessLoginResult(
-              success: false,
-              error: 'invalid_credentials',
-              errorDescription: 'Invalid email or password',
+      testWidgets(
+        'shows localized error + options hint on a failed sign in',
+        (tester) async {
+          when(
+            () => mockOAuth.headlessLogin(
+              email: any(named: 'email'),
+              password: any(named: 'password'),
+              scope: any(named: 'scope'),
             ),
-            'test-verifier',
-          ),
-        );
+          ).thenAnswer(
+            (_) async => (
+              HeadlessLoginResult(
+                success: false,
+                errorCode: 'INVALID_CREDENTIALS',
+                errorDescription: 'Invalid email or password',
+              ),
+              'test-verifier',
+            ),
+          );
 
-        await tester.pumpWidget(createTestWidget());
-        await tester.pumpAndSettle();
+          final l10n = lookupAppLocalizations(const Locale('en'));
 
-        // Enter email and password
-        await tester.enterText(
-          find.descendant(
-            of: find.widgetWithText(DivineAuthTextField, 'Email'),
-            matching: find.byType(TextField),
-          ),
-          'user@example.com',
-        );
-        await tester.enterText(
-          find.descendant(
-            of: find.widgetWithText(DivineAuthTextField, 'Password'),
-            matching: find.byType(TextField),
-          ),
-          'Password123!',
-        );
+          await tester.pumpWidget(createTestWidget());
+          await tester.pumpAndSettle();
 
-        // Tap sign in
-        await tester.tap(find.widgetWithText(DivineButton, 'Sign in'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
+          // Hint is absent before any failure.
+          expect(_optionsHint(l10n.authSignInOptionsHintCta), findsNothing);
 
-        expect(find.text('Invalid email or password'), findsOneWidget);
-      });
+          await tester.enterText(
+            find.descendant(
+              of: find.widgetWithText(DivineAuthTextField, 'Email'),
+              matching: find.byType(TextField),
+            ),
+            'user@example.com',
+          );
+          await tester.enterText(
+            find.descendant(
+              of: find.widgetWithText(DivineAuthTextField, 'Password'),
+              matching: find.byType(TextField),
+            ),
+            'Password123!',
+          );
+
+          await tester.tap(find.widgetWithText(DivineButton, 'Sign in'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+
+          // Localized copy, not the raw server message, and not the old
+          // hardcoded "Login failed" literal.
+          expect(
+            find.text(l10n.authSignInErrorInvalidCredentials),
+            findsOneWidget,
+          );
+          expect(find.text('Invalid email or password'), findsNothing);
+          expect(find.text('Login failed'), findsNothing);
+          // The nudge toward every sign-in option appears.
+          expect(_optionsHint(l10n.authSignInOptionsHintCta), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'tapping the options hint opens the sign-in options sheet',
+        (tester) async {
+          when(
+            () => mockOAuth.headlessLogin(
+              email: any(named: 'email'),
+              password: any(named: 'password'),
+              scope: any(named: 'scope'),
+            ),
+          ).thenAnswer(
+            (_) async => (
+              HeadlessLoginResult(
+                success: false,
+                errorCode: 'INVALID_CREDENTIALS',
+                errorDescription: 'Invalid email or password',
+              ),
+              'test-verifier',
+            ),
+          );
+
+          final l10n = lookupAppLocalizations(const Locale('en'));
+
+          await tester.pumpWidget(createTestWidget());
+          await tester.pumpAndSettle();
+
+          await tester.enterText(
+            find.descendant(
+              of: find.widgetWithText(DivineAuthTextField, 'Email'),
+              matching: find.byType(TextField),
+            ),
+            'user@example.com',
+          );
+          await tester.enterText(
+            find.descendant(
+              of: find.widgetWithText(DivineAuthTextField, 'Password'),
+              matching: find.byType(TextField),
+            ),
+            'Password123!',
+          );
+
+          await tester.tap(find.widgetWithText(DivineButton, 'Sign in'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+
+          await tester.tap(_optionsHint(l10n.authSignInOptionsHintCta));
+          await tester.pumpAndSettle();
+
+          expect(find.text(l10n.authSignInOptionsTitle), findsOneWidget);
+          expect(find.text(l10n.authInfoEmailPasswordTitle), findsOneWidget);
+        },
+      );
 
       testWidgets('shows email validation error for empty form', (
         tester,

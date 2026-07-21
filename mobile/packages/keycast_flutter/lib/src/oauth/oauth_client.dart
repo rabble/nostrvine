@@ -538,14 +538,19 @@ class KeycastOAuth {
         return (HeadlessLoginResult.fromJson(json), verifier);
       }
 
-      // Handle specific error codes
-      final error = json['error'] as String? ?? 'login_failed';
+      // Keycast sends the machine code in `code` and the human message in
+      // `error`; earlier code read them swapped, dropping the code entirely.
+      final errorCode = json['code'] as String? ?? 'login_failed';
       final description =
+          json['error'] as String? ??
           json['error_description'] as String? ??
           json['message'] as String? ??
           'Login failed';
 
-      return (HeadlessLoginResult.error(description, code: error), verifier);
+      return (
+        HeadlessLoginResult.error(description, code: errorCode),
+        verifier,
+      );
     } on TimeoutException {
       return (
         HeadlessLoginResult.error(
@@ -565,7 +570,10 @@ class KeycastOAuth {
           verifier,
         );
       }
-      return (HeadlessLoginResult.error('Network error: $e'), verifier);
+      return (
+        HeadlessLoginResult.error('Network error: $e', code: 'network_error'),
+        verifier,
+      );
     }
   }
 

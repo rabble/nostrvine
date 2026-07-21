@@ -2893,6 +2893,32 @@ class AppLocalizationsNl extends AppLocalizations {
       'Meld je aan met een NIP-07-browserextensie zoals Alby of nos2x. Je sleutels blijven in de extensie — Divine ziet ze nooit.';
 
   @override
+  String get authSignInErrorInvalidCredentials =>
+      'Verkeerd e-mailadres of wachtwoord. Probeer het opnieuw.';
+
+  @override
+  String get authSignInErrorEmailNotVerified =>
+      'Verifieer je e-mail voordat je inlogt — check je inbox voor de link.';
+
+  @override
+  String get authSignInErrorInvalidEmail =>
+      'Dat lijkt geen geldig e-mailadres.';
+
+  @override
+  String get authSignInErrorNetwork =>
+      'Kan de server niet bereiken. Controleer je verbinding en probeer het opnieuw.';
+
+  @override
+  String get authSignInErrorGeneric => 'Er ging iets mis. Probeer het opnieuw.';
+
+  @override
+  String get authSignInOptionsHintPrefix =>
+      'Weet je niet meer hoe je de vorige keer inlogde? ';
+
+  @override
+  String get authSignInOptionsHintCta => 'Bekijk alle inlogopties';
+
+  @override
   String get authCreateAccountTitle => 'Account aanmaken';
 
   @override

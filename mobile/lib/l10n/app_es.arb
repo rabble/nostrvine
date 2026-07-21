@@ -4554,5 +4554,12 @@
   "settingsStorageError": "Algo salió mal",
   "settingsStorageMaxSizeLabel": "Tamaño máximo de caché",
   "settingsStorageApproxVideos": "≈ {count} videos",
-  "settingsStorageRemoveBrokenConfirmTitle": "¿Eliminar clips dañados?"
+  "settingsStorageRemoveBrokenConfirmTitle": "¿Eliminar clips dañados?",
+  "authSignInErrorInvalidCredentials": "Correo o contraseña incorrectos. Inténtalo de nuevo.",
+  "authSignInErrorEmailNotVerified": "Verifica tu correo antes de iniciar sesión: revisa tu bandeja de entrada para ver el enlace.",
+  "authSignInErrorInvalidEmail": "Eso no parece una dirección de correo válida.",
+  "authSignInErrorNetwork": "No se puede conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.",
+  "authSignInErrorGeneric": "Algo salió mal. Inténtalo de nuevo.",
+  "authSignInOptionsHintPrefix": "¿No sabes cómo entraste la última vez? ",
+  "authSignInOptionsHintCta": "Ver todas las opciones de inicio de sesión"
 }
