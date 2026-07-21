@@ -721,6 +721,12 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         _setRpcCapability(AuthRpcCapability.rpcReady);
         return;
       }
+    } on OAuthNetworkException catch (e) {
+      Log.warning(
+        'initialize: background RPC refresh failed due to network: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
     } catch (e) {
       Log.error(
         'initialize: background RPC refresh failed: $e',
@@ -4217,7 +4223,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
   Future<void> _refreshOAuthTokenOnResume() async {
     try {
-      if (_oauthClient == null || _keycastSigner == null) return;
+      if (_oauthClient == null) return;
+      final isDegradedOAuth =
+          _authSource == AuthenticationSource.divineOAuth &&
+          _hasExpiredOAuthSession;
+      if (_keycastSigner == null && !isDegradedOAuth) return;
 
       final resumeOwnerPubkey = currentPublicKeyHex;
       if (resumeOwnerPubkey == null) return;
@@ -4234,26 +4244,16 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         name: 'AuthService',
         category: LogCategory.auth,
       );
-      final refreshed = await _oauthCoordinator.refreshSession(
+      await _upgradeDivineRpcInBackground(
+        session,
         expectedOwnerPubkey: resumeOwnerPubkey,
       );
-      if (!resumeContextStillCurrent()) {
-        Log.warning(
-          '📱 App resumed - discarding stale OAuth refresh result',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        return;
-      }
-      if (refreshed != null) {
-        _keycastSigner = KeycastRpc.fromSession(
-          _oauthConfig,
-          refreshed,
-          onTokenRefresh: _refreshAccessToken,
-        );
-        _currentIdentity = _buildIdentity();
-        _setRpcCapability(AuthRpcCapability.rpcReady);
-      }
+    } on OAuthNetworkException catch (e) {
+      Log.warning(
+        '📱 App resumed - OAuth refresh failed due to network: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
     } catch (e) {
       Log.error(
         '📱 App resumed - OAuth refresh failed: $e',
