@@ -118,6 +118,7 @@ void main() {
     String? referencedDTag,
     String? rootEventId,
     String? rootEventPubkey,
+    String? rootAddressableId,
     String? targetCommentId,
     String? content,
     bool isReferencedVideo = true,
@@ -136,6 +137,7 @@ void main() {
       referencedDTag: referencedDTag,
       rootEventId: rootEventId,
       rootEventPubkey: rootEventPubkey,
+      rootAddressableId: rootAddressableId,
       targetCommentId: targetCommentId,
       content: content,
       isReferencedVideo: isReferencedVideo,
@@ -183,6 +185,13 @@ void main() {
     when(
       () => funnelcakeApiClient.getVideoStats(eventId),
     ).thenAnswer((_) async => stats);
+  }
+
+  /// Stubs `getVideoStats(eventId)` to return a confirmed 404/not-found.
+  void stubVideoStatsNotFound(String eventId) {
+    when(
+      () => funnelcakeApiClient.getVideoStats(eventId),
+    ).thenAnswer((_) async => null);
   }
 
   UserProfile makeProfile(
@@ -1339,13 +1348,13 @@ void main() {
 
       test(
         "reaction on the user's comment (non-owned root_event_pubkey) is "
-        'reclassified as likeComment without video metadata (#5634)',
+        'reclassified as likeComment after a confirmed metadata 404 (#5634)',
         () async {
           // Residual edge of #5634/#5949: Funnelcake left target_comment_id
           // empty but populated the root video (referenced_video +
           // root_event_pubkey). The anchor id is the comment, so videosById
-          // cannot resolve ownership; the authoritative owner is the payload's
-          // root_event_pubkey. No video stats are stubbed on purpose.
+          // gets a confirmed not-found and cannot resolve ownership; the
+          // fallback owner is the payload's root_event_pubkey.
           stubNotifications([
             makeNotification(
               referencedEventId: 'my_comment',
@@ -1353,6 +1362,7 @@ void main() {
             ),
           ]);
           stubProfiles({});
+          stubVideoStatsNotFound('my_comment');
 
           final page = await repository.getNotifications();
 
@@ -1376,6 +1386,47 @@ void main() {
         final item = page.items.single as VideoNotification;
         expect(item.type, equals(NotificationKind.like));
       });
+
+      test('repost on the user-owned referenced video survives when metadata '
+          'throws and root_event_pubkey is another creator', () async {
+        stubNotifications([
+          makeNotification(
+            notificationType: 'repost',
+            sourceKind: 6,
+            referencedEventId: 'my_video_reply',
+            rootEventPubkey: 'other_owner_pubkey',
+          ),
+        ]);
+        stubProfiles({});
+
+        final page = await repository.getNotifications();
+
+        final item = page.items.single as VideoNotification;
+        expect(item.type, equals(NotificationKind.repost));
+        expect(item.videoEventId, equals('my_video_reply'));
+      });
+
+      test(
+        'repost does not get dropped from the root_event_pubkey fallback alone',
+        () async {
+          stubNotifications([
+            makeNotification(
+              notificationType: 'repost',
+              sourceKind: 6,
+              referencedEventId: 'unknown_anchor',
+              rootEventPubkey: 'other_owner_pubkey',
+            ),
+          ]);
+          stubProfiles({});
+          stubVideoStatsNotFound('unknown_anchor');
+
+          final page = await repository.getNotifications();
+
+          final item = page.items.single as VideoNotification;
+          expect(item.type, equals(NotificationKind.repost));
+          expect(item.videoEventId, equals('unknown_anchor'));
+        },
+      );
 
       test(
         'like on the user-owned referenced video stays like even when '
@@ -1502,6 +1553,27 @@ void main() {
         expect(item.type, equals(NotificationKind.likeComment));
         expect(item.targetEventId, equals('comment_event_xyz'));
       });
+
+      test(
+        'likeComment carries root addressable id for direct video routing',
+        () async {
+          const rootAddressableId =
+              '${NIP71VideoKinds.addressableShortVideo}:other_owner:root-d-tag';
+          stubNotifications([
+            makeNotification(
+              isReferencedVideo: false,
+              referencedEventId: 'comment_event_xyz',
+              rootAddressableId: rootAddressableId,
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.single as ActorNotification;
+          expect(item.type, equals(NotificationKind.likeComment));
+          expect(item.videoAddressableId, equals(rootAddressableId));
+        },
+      );
 
       test(
         'likeComment leaves videoAddressableId null even when referencedDTag '

@@ -20,6 +20,7 @@ class RelayNotification {
     this.referencedDTag,
     this.rootEventId,
     this.rootEventPubkey,
+    this.rootAddressableId,
     this.targetCommentId,
   });
 
@@ -69,7 +70,10 @@ class RelayNotification {
           : null,
       referencedDTag: (rawDTag != null && rawDTag.isNotEmpty) ? rawDTag : null,
       rootEventId: _nonEmpty(json['root_event_id'] as String?),
-      rootEventPubkey: _nonEmpty(json['root_event_pubkey'] as String?),
+      rootEventPubkey: _nonEmpty(
+        (json['root_event_pubkey'] as String?)?.toLowerCase(),
+      ),
+      rootAddressableId: _nonEmpty(json['root_addressable_id'] as String?),
       targetCommentId: _nonEmpty(json['target_comment_id'] as String?),
     );
   }
@@ -148,6 +152,13 @@ class RelayNotification {
   /// owner — to detect a "liked your comment" that would otherwise be
   /// mislabelled "liked your video" without a metadata round-trip.
   final String? rootEventPubkey;
+
+  /// Full NIP-33 coordinate for the root video, when Funnelcake can resolve it.
+  ///
+  /// For actor-anchored comment/reply rows this lets taps route directly to the
+  /// stable root video (`34236:<root_event_pubkey>:<root_d_tag>`) instead of
+  /// resolving the comment event first.
+  final String? rootAddressableId;
 
   /// Comment event ID included by Funnelcake for NIP-22 comment notifications.
   final String? targetCommentId;

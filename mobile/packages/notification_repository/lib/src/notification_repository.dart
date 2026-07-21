@@ -63,6 +63,32 @@ abstract class _NotificationRetryConfig {
   static const maxBackoff = Duration(milliseconds: 1500);
 }
 
+class _VideoMetadataLookup {
+  const _VideoMetadataLookup({
+    required this.videosById,
+    required this.notFoundIds,
+  });
+
+  const _VideoMetadataLookup.empty()
+    : videosById = const <String, VideoStats>{},
+      notFoundIds = const <String>{};
+
+  final Map<String, VideoStats> videosById;
+  final Set<String> notFoundIds;
+}
+
+class _VideoMetadataResult {
+  const _VideoMetadataResult({
+    required this.id,
+    this.stats,
+    this.notFound = false,
+  });
+
+  final String id;
+  final VideoStats? stats;
+  final bool notFound;
+}
+
 /// Number of notifications loaded per page.
 ///
 /// Bounds both the cold-start cache hydration and the first-page REST
@@ -469,7 +495,10 @@ class NotificationRepository {
           ? Future.value(<String, UserProfile>{})
           : _profileRepository.fetchBatchProfiles(pubkeys: pubkeys);
       final videosFuture = _fetchVideoMetadata(eventIds);
-      final (profiles, videosById) = await (profilesFuture, videosFuture).wait;
+      final (profiles, videoMetadata) = await (
+        profilesFuture,
+        videosFuture,
+      ).wait;
 
       if (generation != _fetchGeneration) return;
 
@@ -480,7 +509,7 @@ class NotificationRepository {
         return switch (item) {
           VideoNotification(:final actors, :final videoEventId) => () {
             final actor = actors.first;
-            final video = videosById[videoEventId];
+            final video = videoMetadata.videosById[videoEventId];
             return item.copyWith(
               actors: _isCachedVideoPlaceholder(item)
                   ? [_buildActor(actor.pubkey, profiles)]
@@ -1039,14 +1068,15 @@ class NotificationRepository {
       pubkeys: pubkeys,
     );
     final videosFuture = _fetchVideoMetadata(eventIds);
-    final (profiles, videosById) = await (profilesFuture, videosFuture).wait;
+    final (profiles, videoMetadata) = await (profilesFuture, videosFuture).wait;
 
     final consolidated = _consolidateFollows(raw);
     final misattributed = <RelayNotification>[];
     final videos = _groupVideoAnchored(
       consolidated,
       profiles,
-      videosById,
+      videoMetadata.videosById,
+      videoNotFoundIds: videoMetadata.notFoundIds,
       misattributed: misattributed,
     );
     final actors = _mapActorAnchored(consolidated, profiles);
@@ -1086,26 +1116,38 @@ class NotificationRepository {
 
   /// Fetches [VideoStats] for each id in parallel.
   ///
-  /// Per-id failures are tolerated — a single failed lookup yields no
-  /// entry in the result map.
-  Future<Map<String, VideoStats>> _fetchVideoMetadata(
+  /// Per-id failures are tolerated for display metadata, but only a `null`
+  /// return from [FunnelcakeApiClient.getVideoStats] is treated as a confirmed
+  /// not-found. Thrown errors are transient/unknown misses and must not drive
+  /// ownership reclassification.
+  Future<_VideoMetadataLookup> _fetchVideoMetadata(
     List<String> eventIds,
   ) async {
-    if (eventIds.isEmpty) return const <String, VideoStats>{};
+    if (eventIds.isEmpty) return const _VideoMetadataLookup.empty();
     final futures = eventIds.map((id) async {
       try {
-        return await _funnelcakeApiClient.getVideoStats(id);
+        final stats = await _funnelcakeApiClient.getVideoStats(id);
+        return _VideoMetadataResult(
+          id: id,
+          stats: stats,
+          notFound: stats == null,
+        );
       } on Object {
-        return null;
+        return _VideoMetadataResult(id: id);
       }
     });
     final results = await Future.wait(futures);
     final map = <String, VideoStats>{};
-    for (var i = 0; i < eventIds.length; i++) {
-      final stats = results[i];
-      if (stats != null) map[eventIds[i]] = stats;
+    final notFoundIds = <String>{};
+    for (final result in results) {
+      final stats = result.stats;
+      if (stats != null) {
+        map[result.id] = stats;
+      } else if (result.notFound) {
+        notFoundIds.add(result.id);
+      }
     }
-    return map;
+    return _VideoMetadataLookup(videosById: map, notFoundIds: notFoundIds);
   }
 
   /// Builds [VideoNotification]s by grouping like/comment/repost
@@ -1124,6 +1166,7 @@ class NotificationRepository {
     List<RelayNotification> raw,
     Map<String, UserProfile> profiles,
     Map<String, VideoStats> videosById, {
+    required Set<String> videoNotFoundIds,
     List<RelayNotification>? misattributed,
   }) {
     bool isVideoAnchored(NotificationKind k) =>
@@ -1138,8 +1181,10 @@ class NotificationRepository {
       final eventId = _videoAnchorEventId(kind, n);
       if (eventId == null || eventId.isEmpty) continue;
       if (_hasKnownReferencedVideoOwnerMismatch(
+        kind: kind,
         referencedVideoEventId: eventId,
         videosById: videosById,
+        videoNotFoundIds: videoNotFoundIds,
         rootEventPubkey: n.rootEventPubkey,
       )) {
         _logReclassifiedOwnerMismatch(
@@ -1423,7 +1468,7 @@ class NotificationRepository {
   }
 
   /// Returns the stable NIP-33 addressable ID for an actor-anchored
-  /// notification, when the server provided the video's `d_tag`.
+  /// notification, when the server provided the root video's full coordinate.
   ///
   /// Only populated for `likeComment` and `reply` — the tap handler uses
   /// it to navigate directly to the video without a relay round-trip.
@@ -1433,19 +1478,18 @@ class NotificationRepository {
     NotificationKind mapped,
     RelayNotification notification,
   ) {
-    // The payload now carries the root video's author (`root_event_pubkey`),
-    // but a stable owner-scoped route for these reclassified foreign-video
-    // rows also needs the root video's d-tag, and the recipient-scoped
-    // [_recipientScopedVideoAddressableId] pins the pubkey to [_userPubkey] —
-    // wrong for another creator's video. Synthesizing an owner-scoped route
-    // for these rows is a focused follow-up; until then, fall back to
-    // resolver-based navigation.
-    return null;
+    if (mapped != NotificationKind.likeComment &&
+        mapped != NotificationKind.reply) {
+      return null;
+    }
+    return _nonEmpty(notification.rootAddressableId);
   }
 
   bool _hasKnownReferencedVideoOwnerMismatch({
+    required NotificationKind kind,
     required String referencedVideoEventId,
     required Map<String, VideoStats> videosById,
+    required Set<String> videoNotFoundIds,
     String? rootEventPubkey,
   }) {
     // Authoritative owner of the event the notification actually anchors on.
@@ -1458,13 +1502,19 @@ class NotificationRepository {
     if (ownerPubkey != null && ownerPubkey.isNotEmpty) {
       return ownerPubkey != _userPubkey;
     }
-    // Anchor metadata is unresolvable — the anchor id is the user's comment,
-    // not a video, so [videosById] can't own it. Fall back to the payload's
-    // root video author: for a reaction on the user's comment on someone
-    // else's video this is the *other* creator, so a "liked your video" here
-    // is a mislabel and must be reclassified without a metadata round-trip.
-    // A genuine like on the user's own top-level video carries the user's own
-    // pubkey here, so the fallback stays inert for it.
+    // Only a confirmed not-found is precise enough for the weaker root-author
+    // fallback. A thrown metadata fetch may be a timeout or API failure for a
+    // real user-owned video, so it must leave the row video-anchored.
+    if (!videoNotFoundIds.contains(referencedVideoEventId)) return false;
+
+    // Repost reclassification is destructive: foreign-video reposts are
+    // intentionally dropped later. Do not let root author alone delete a row.
+    if (kind == NotificationKind.repost) return false;
+
+    // The anchor may be a comment id rather than a video id. In that confirmed
+    // not-found case, fall back to the payload's root video author: for a
+    // reaction on the user's comment on someone else's video this is the other
+    // creator, so a "liked your video" row should be actor-anchored instead.
     if (rootEventPubkey != null &&
         rootEventPubkey.isNotEmpty &&
         rootEventPubkey != _userPubkey) {

@@ -443,6 +443,45 @@ void main() {
         expect(notification.rootEventPubkey, equals('deadbeef' * 8));
       });
 
+      test('lowercases root_event_pubkey', () {
+        final json = {
+          'id': 'notif_123',
+          'source_pubkey': 'aabbccdd' * 8,
+          'source_event_id': '11223344' * 8,
+          'source_kind': 7,
+          'referenced_event_id': '55667788' * 8,
+          'notification_type': 'reaction',
+          'created_at': 1712345678,
+          'read': false,
+          'root_event_pubkey': 'DEADBEEF' * 8,
+        };
+
+        final notification = RelayNotification.fromJson(json);
+
+        expect(notification.rootEventPubkey, equals('deadbeef' * 8));
+      });
+
+      test('parses root_addressable_id', () {
+        final json = {
+          'id': 'notif_123',
+          'source_pubkey': 'aabbccdd' * 8,
+          'source_event_id': '11223344' * 8,
+          'source_kind': 7,
+          'referenced_event_id': '55667788' * 8,
+          'notification_type': 'reaction',
+          'created_at': 1712345678,
+          'read': false,
+          'root_addressable_id': '34236:${'deadbeef' * 8}:root-d-tag',
+        };
+
+        final notification = RelayNotification.fromJson(json);
+
+        expect(
+          notification.rootAddressableId,
+          equals('34236:${'deadbeef' * 8}:root-d-tag'),
+        );
+      });
+
       test('treats empty or absent root_event_pubkey as null', () {
         final absent = RelayNotification.fromJson({
           'id': 'notif_123',
@@ -466,6 +505,31 @@ void main() {
 
         expect(absent.rootEventPubkey, isNull);
         expect(empty.rootEventPubkey, isNull);
+      });
+
+      test('treats empty or absent root_addressable_id as null', () {
+        final absent = RelayNotification.fromJson({
+          'id': 'notif_123',
+          'source_pubkey': 'aabbccdd' * 8,
+          'source_event_id': '11223344' * 8,
+          'source_kind': 7,
+          'notification_type': 'reaction',
+          'created_at': 1712345678,
+          'read': false,
+        });
+        final empty = RelayNotification.fromJson({
+          'id': 'notif_123',
+          'source_pubkey': 'aabbccdd' * 8,
+          'source_event_id': '11223344' * 8,
+          'source_kind': 7,
+          'notification_type': 'reaction',
+          'created_at': 1712345678,
+          'read': false,
+          'root_addressable_id': '',
+        });
+
+        expect(absent.rootAddressableId, isNull);
+        expect(empty.rootAddressableId, isNull);
       });
     });
 
