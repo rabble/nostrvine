@@ -79,5 +79,6 @@ android/play-store-service-account.json
 
 # Tests
 test*.mp4
-test/goldens/screens/failures/
+test/goldens/**/failures/
+packages/*/test/**/failures/
 integration_test/test_bundle.dart

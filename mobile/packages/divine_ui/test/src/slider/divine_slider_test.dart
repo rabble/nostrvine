@@ -46,6 +46,40 @@ void main() {
       );
     }
 
+    group('accessibility', () {
+      testWidgets('labels the slider node itself, with the slider role/value', (
+        tester,
+      ) async {
+        // A Slider marks its own semantics node a boundary, so the label must
+        // land on that node — not on a wrapping Semantics that reads as a
+        // separate node. Resolving the label finder to the slider's own node
+        // and asserting isSlider on it proves both: were the label on a
+        // wrapper, that node would not carry the slider role.
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: DivineSlider(
+                value: 0.5,
+                onChanged: (_) {},
+                semanticLabel: 'Volume',
+              ),
+            ),
+          ),
+        );
+
+        expect(
+          tester.getSemantics(find.bySemanticsLabel('Volume')),
+          isSemantics(
+            label: 'Volume',
+            isSlider: true,
+            value: '50%',
+          ),
+        );
+        handle.dispose();
+      });
+    });
+
     group('renders', () {
       testWidgets('$DivineSlider with default properties', (tester) async {
         await tester.pumpWidget(buildSlider());

@@ -24,6 +24,7 @@ class DivineSlider extends StatelessWidget {
     this.activeColor = VineTheme.primary,
     this.inactiveColor = VineTheme.onSurfaceDisabled,
     this.thumbColor = VineTheme.onSurface,
+    this.semanticLabel,
     super.key,
   }) : assert(min <= max, 'min must be <= max'),
        assert(divisions == null || divisions > 0, 'divisions must be > 0'),
@@ -71,6 +72,14 @@ class DivineSlider extends StatelessWidget {
   /// Color of the thumb indicator.
   final Color thumbColor;
 
+  /// Optional accessibility label describing what the slider controls (e.g.
+  /// "Volume"). Passed to the Material [Slider.label] so it lands on the
+  /// slider's own semantics node (a [Slider] marks itself a semantics
+  /// boundary, so a wrapping `Semantics(label:)` would not label that node).
+  /// Screen readers announce it alongside the value. It renders no visible
+  /// value bubble because the theme sets [ShowValueIndicator.never].
+  final String? semanticLabel;
+
   @override
   Widget build(BuildContext context) {
     return SliderTheme(
@@ -93,6 +102,9 @@ class DivineSlider extends StatelessWidget {
         min: min,
         max: max,
         divisions: divisions,
+        // Lands on the slider's own semantics boundary node; renders no
+        // visible bubble under ShowValueIndicator.never.
+        label: semanticLabel,
         onChanged: onChanged,
         onChangeEnd: onChangeEnd,
       ),

@@ -41,6 +41,32 @@ void main() {
       );
     }
 
+    group('accessibility', () {
+      testWidgets('password field meets 48dp / 44pt tap-target guidelines', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildTestWidget(label: 'Password', obscureText: true),
+        );
+        await tester.pump();
+        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        handle.dispose();
+      });
+
+      testWidgets('text field meets 48dp / 44pt tap-target guidelines', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(buildTestWidget(label: 'Email'));
+        await tester.pump();
+        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        handle.dispose();
+      });
+    });
+
     group('renders', () {
       testWidgets('renders with label text', (tester) async {
         await tester.pumpWidget(
@@ -125,6 +151,60 @@ void main() {
 
         expect(find.text('Test Label'), findsOneWidget);
       });
+
+      testWidgets('positions text row below the floating label', (
+        tester,
+      ) async {
+        final focusNode = FocusNode();
+        await tester.pumpWidget(
+          buildTestWidget(label: 'Email', focusNode: focusNode),
+        );
+
+        final containerFinder = find
+            .ancestor(
+              of: find.byType(TextField),
+              matching: find.byType(Container),
+            )
+            .first;
+
+        double textRowTop() {
+          return tester.getTopLeft(find.byType(EditableText)).dy -
+              tester.getTopLeft(containerFinder).dy;
+        }
+
+        expect(textRowTop(), equals(26));
+
+        focusNode.requestFocus();
+        await tester.pumpAndSettle();
+
+        expect(textRowTop(), equals(36));
+
+        focusNode.dispose();
+      });
+
+      testWidgets('positions prefilled text below the floating label', (
+        tester,
+      ) async {
+        final controller = TextEditingController(text: 'liz@example.com');
+        await tester.pumpWidget(
+          buildTestWidget(label: 'Email', controller: controller),
+        );
+        await tester.pumpAndSettle();
+
+        final containerFinder = find
+            .ancestor(
+              of: find.byType(TextField),
+              matching: find.byType(Container),
+            )
+            .first;
+        final textTop =
+            tester.getTopLeft(find.byType(EditableText)).dy -
+            tester.getTopLeft(containerFinder).dy;
+
+        expect(textTop, equals(36));
+
+        controller.dispose();
+      });
     });
 
     group('interactions', () {
@@ -199,12 +279,32 @@ void main() {
 
           expect(focusNode.hasFocus, isFalse);
 
-          // Tap the top of the Container (padding area above
-          // the TextField) to trigger _handleContainerTap and
-          // exercise the requestFocus path.
+          // The TextField fills the 76px container for tap coverage, while
+          // content padding keeps the visible text row lower in the field.
           final containerFinder = find.byType(Container).first;
           final topLeft = tester.getTopLeft(containerFinder);
           await tester.tapAt(topLeft + const Offset(30, 5));
+          await tester.pump();
+
+          expect(focusNode.hasFocus, isTrue);
+
+          focusNode.dispose();
+        },
+      );
+
+      testWidgets(
+        'requests focus when a read-only field is tapped',
+        (tester) async {
+          // readOnly only gates the input connection (no soft keyboard) and
+          // the cut/paste toolbar — TextFormField still grants focus on tap.
+          final focusNode = FocusNode();
+          await tester.pumpWidget(
+            buildTestWidget(focusNode: focusNode, readOnly: true),
+          );
+
+          expect(focusNode.hasFocus, isFalse);
+
+          await tester.tap(find.byType(DivineAuthTextField));
           await tester.pump();
 
           expect(focusNode.hasFocus, isTrue);

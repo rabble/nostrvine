@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+void _noop() {}
+
 void main() {
   group('DivineButton', () {
     Widget buildTestWidget({
@@ -383,7 +385,7 @@ void main() {
       );
 
       testWidgets(
-        'tiny outer == inner == 32px (no tap-padding inflation)',
+        'tiny footprint and tap target both stay 32px tall',
         (tester) async {
           await tester.pumpWidget(
             buildTestWidget(
@@ -392,16 +394,17 @@ void main() {
             ),
           );
 
-          // Tiny intentionally skips the outer tap-padding wrap so its
-          // painted bounds match the 32px module of the avatar / type
-          // icon it usually sits next to. A row that swaps the button in
-          // and out (e.g. a Follow back affordance) keeps the same
-          // intrinsic height because the button never adds height
-          // beyond what the avatar already contributes.
+          // Tiny keeps a 32px painted/layout height AND a 32px tap target so
+          // it sits flush with the 32px module of the avatar / type icon it
+          // usually sits next to, with no invisible hit area bleeding into
+          // that neighbor. A row that swaps the button in and out (e.g. a
+          // Follow back affordance) keeps the same intrinsic height.
           final outerSize = tester.getSize(find.byType(DivineButton));
-          final innerSize = tester.getSize(find.byType(AnimatedOpacity));
+          final chipSize = tester.getSize(find.byType(Ink));
+          final tapTarget = tester.getSize(find.byType(InkWell));
           expect(outerSize.height, equals(32));
-          expect(innerSize.height, equals(32));
+          expect(chipSize.height, equals(32));
+          expect(tapTarget.height, equals(32));
         },
       );
 
@@ -454,7 +457,7 @@ void main() {
       );
 
       testWidgets(
-        'small visible chip is 40px tall (4px outer × 2 + 40 = 48 tap target)',
+        'small visible chip is 40px tall with a 48dp tap target',
         (tester) async {
           await tester.pumpWidget(
             buildTestWidget(
@@ -463,10 +466,187 @@ void main() {
             ),
           );
 
-          final outerSize = tester.getSize(find.byType(DivineButton));
-          final innerSize = tester.getSize(find.byType(AnimatedOpacity));
-          expect(outerSize.height - innerSize.height, equals(8));
-          expect(innerSize.height, equals(40));
+          // The visible chip stays 40px; the InkWell tap target is padded out
+          // to the 48dp minimum inside, so the footprint is 48 with no dead
+          // (non-tappable) outer margin.
+          final tapTarget = tester.getSize(find.byType(DivineButton));
+          final chipSize = tester.getSize(find.byType(Ink));
+          final inkWellSize = tester.getSize(find.byType(InkWell));
+          expect(tapTarget.height, equals(48));
+          expect(chipSize.height, equals(40));
+          expect(inkWellSize.height, equals(40));
+        },
+      );
+
+      testWidgets(
+        'small outer halo is tappable without expanding pressed ink',
+        (tester) async {
+          var taps = 0;
+          await tester.pumpWidget(
+            buildTestWidget(
+              size: DivineButtonSize.small,
+              onPressed: () => taps += 1,
+            ),
+          );
+
+          final buttonTopLeft = tester.getTopLeft(find.byType(DivineButton));
+          await tester.tapAt(buttonTopLeft + const Offset(2, 24));
+          await tester.pump();
+
+          expect(taps, equals(1));
+          expect(tester.getSize(find.byType(DivineButton)).height, equals(48));
+          expect(tester.getSize(find.byType(InkWell)).height, equals(40));
+        },
+      );
+
+      testWidgets(
+        'small button stretches to fill a tight/Expanded slot',
+        (tester) async {
+          // The 48dp tap-target wrapper must not shrink-wrap a small button to
+          // its label: inside an Expanded (tight width) the button fills the
+          // slot, and the visible chip keeps its original 4px-each-side halo
+          // (rowWidth - 8) rather than touching the slot's edges.
+          const rowWidth = 300.0;
+          await tester.pumpWidget(
+            const MaterialApp(
+              home: Scaffold(
+                body: SizedBox(
+                  width: rowWidth,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: DivineButton(
+                          label: 'Save',
+                          size: DivineButtonSize.small,
+                          onPressed: _noop,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          expect(
+            tester.getSize(find.byType(DivineButton)).width,
+            equals(rowWidth),
+          );
+          expect(
+            tester.getSize(find.byType(Ink)).width,
+            equals(rowWidth - 8),
+          );
+        },
+      );
+    });
+
+    group('accessibility', () {
+      testWidgets('small meets the 48dp / 44pt tap-target guidelines', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildTestWidget(size: DivineButtonSize.small, onPressed: () {}),
+        );
+        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        handle.dispose();
+      });
+
+      testWidgets('base meets the 48dp tap-target guideline', (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(buildTestWidget(onPressed: () {}));
+        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+        handle.dispose();
+      });
+
+      testWidgets(
+        'icon-only with semanticLabel meets the labeled-tap-target guideline',
+        (tester) async {
+          final handle = tester.ensureSemantics();
+          await tester.pumpWidget(
+            const MaterialApp(
+              home: Scaffold(
+                body: Center(
+                  child: DivineButton(
+                    label: '',
+                    leadingIcon: DivineIconName.heart,
+                    semanticLabel: 'Like',
+                    onPressed: _noop,
+                  ),
+                ),
+              ),
+            ),
+          );
+          await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+          handle.dispose();
+        },
+      );
+
+      testWidgets(
+        'icon-only disabled button with semanticLabel is not actionable',
+        (tester) async {
+          // A disabled labelled button must announce hasEnabledState +
+          // isEnabled:false, so assistive tech doesn't present it as tappable
+          // (matches DivineIconButton).
+          final handle = tester.ensureSemantics();
+          await tester.pumpWidget(
+            const MaterialApp(
+              home: Scaffold(
+                body: Center(
+                  child: DivineButton(
+                    label: '',
+                    leadingIcon: DivineIconName.heart,
+                    semanticLabel: 'Like',
+                    onPressed: null,
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          expect(
+            tester.getSemantics(find.byType(DivineButton)),
+            isSemantics(
+              label: 'Like',
+              isButton: true,
+              hasEnabledState: true,
+              isEnabled: false,
+            ),
+          );
+          handle.dispose();
+        },
+      );
+
+      testWidgets(
+        'icon-only enabled button with semanticLabel is actionable',
+        (tester) async {
+          final handle = tester.ensureSemantics();
+          await tester.pumpWidget(
+            const MaterialApp(
+              home: Scaffold(
+                body: Center(
+                  child: DivineButton(
+                    label: '',
+                    leadingIcon: DivineIconName.heart,
+                    semanticLabel: 'Like',
+                    onPressed: _noop,
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          expect(
+            tester.getSemantics(find.byType(DivineButton)),
+            isSemantics(
+              label: 'Like',
+              isButton: true,
+              hasEnabledState: true,
+              isEnabled: true,
+            ),
+          );
+          handle.dispose();
         },
       );
     });
@@ -641,6 +821,34 @@ void main() {
           );
 
           expect(resolvedInnerPadding(tester), const EdgeInsets.all(12));
+        },
+      );
+
+      testWidgets(
+        'small parent-forced tight width still collapses to symmetric padding',
+        (tester) async {
+          // The small 48dp tap-target wrapper must keep passing the tight
+          // width through to _AdaptiveButtonPadding: an Expanded small button
+          // drops the wider horizontal inset just like base does.
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: Row(
+                  children: [
+                    Expanded(
+                      child: DivineButton(
+                        label: 'Save',
+                        size: DivineButtonSize.small,
+                        onPressed: () {},
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+
+          expect(resolvedInnerPadding(tester), const EdgeInsets.all(8));
         },
       );
 
@@ -985,9 +1193,13 @@ void main() {
         expect(find.byType(DivineIcon), findsOneWidget);
         expect(find.text(''), findsNothing);
 
-        // Tiny icon-only is 6 + 20 + 6 = 32 visible.
-        final innerSize = tester.getSize(find.byType(AnimatedOpacity));
-        expect(innerSize.height, equals(32));
+        // Tiny icon-only chip is 6 + 20 + 6 = 32 visible; tiny keeps a 32px
+        // tap target (no padding) so it stays flush with neighboring 32px
+        // elements.
+        final chipSize = tester.getSize(find.byType(Ink));
+        final tapTarget = tester.getSize(find.byType(InkWell));
+        expect(chipSize.height, equals(32));
+        expect(tapTarget.height, equals(32));
       });
 
       testWidgets('small size uses DivineIconButton padding', (tester) async {
@@ -1003,6 +1215,17 @@ void main() {
         expect(find.byType(DivineButton), findsOneWidget);
         expect(find.byType(DivineIcon), findsOneWidget);
         expect(find.text(''), findsNothing);
+
+        // Geometry parity with `DivineIconButton.small`: a 40x40 visible
+        // chip inside a 48x48 tap target (DivineIconButton achieves the
+        // same numbers via a fixed `SizedBox(48, 48)` wrapper — see
+        // divine_icon_button.dart).
+        final chipSize = tester.getSize(find.byType(Ink));
+        final tapTarget = tester.getSize(find.byType(DivineButton));
+        final inkWellSize = tester.getSize(find.byType(InkWell));
+        expect(chipSize, equals(const Size(40, 40)));
+        expect(tapTarget, equals(const Size(48, 48)));
+        expect(inkWellSize, equals(const Size(40, 40)));
       });
 
       testWidgets('base size uses DivineIconButton padding', (tester) async {

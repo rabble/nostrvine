@@ -234,6 +234,35 @@ void main() {
       );
     });
 
+    group('accessibility', () {
+      testWidgets('with semanticLabel meets the labeled-tap-target guideline', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildTestWidget(semanticLabel: 'Search', onPressed: () {}),
+        );
+        await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+        handle.dispose();
+      });
+
+      testWidgets('small meets the 48dp / 44pt tap-target guidelines', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildTestWidget(
+            size: DivineIconButtonSize.small,
+            semanticLabel: 'Search',
+            onPressed: () {},
+          ),
+        );
+        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        handle.dispose();
+      });
+    });
+
     group('icon colors', () {
       testWidgets('foregroundColor override takes precedence', (tester) async {
         await tester.pumpWidget(

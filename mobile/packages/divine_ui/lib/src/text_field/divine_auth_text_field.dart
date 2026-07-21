@@ -2,6 +2,9 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+/// Duration for the floating-label / input-position transition animation.
+const Duration _fieldAnimationDuration = Duration(milliseconds: 200);
+
 /// A styled text field for the authentication flow.
 ///
 /// Designed specifically for sign-in and sign-up screens with a fixed-height
@@ -211,15 +214,6 @@ class _DivineAuthTextFieldState extends State<DivineAuthTextField> {
     return error;
   }
 
-  void _handleContainerTap() {
-    if (!widget.enabled) return;
-
-    if (!widget.readOnly) {
-      _focusNode.requestFocus();
-    }
-    widget.onTap?.call();
-  }
-
   void _toggleObscured() {
     setState(() => _isObscured = !_isObscured);
   }
@@ -259,35 +253,32 @@ class _DivineAuthTextFieldState extends State<DivineAuthTextField> {
               child: Row(
                 children: [
                   Expanded(
-                    child: GestureDetector(
-                      onTap: _handleContainerTap,
-                      behavior: HitTestBehavior.opaque,
-                      child: _AuthTextFieldContent(
-                        label: label,
-                        hasLabel: hasLabel,
+                    child: _AuthTextFieldContent(
+                      label: label,
+                      hasLabel: hasLabel,
+                      isFloating: _isFloating,
+                      hasError: _hasError,
+                      child: _AuthTextFieldInput(
+                        controller: _controller,
+                        focusNode: _focusNode,
                         isFloating: _isFloating,
+                        obscureText: widget.obscureText && _isObscured,
+                        enabled: widget.enabled,
+                        readOnly: widget.readOnly,
+                        autocorrect: widget.autocorrect,
+                        keyboardType: widget.keyboardType,
+                        textInputAction: widget.textInputAction,
+                        textCapitalization: widget.textCapitalization,
+                        inputFormatters: widget.inputFormatters,
+                        validator: _wrappedValidator,
+                        onTap: widget.onTap,
+                        onChanged: widget.onChanged,
+                        onSubmitted: widget.onSubmitted,
+                        onEditingComplete: widget.onEditingComplete,
+                        maxLength: widget.maxLength,
+                        contentPadding: widget.contentPadding,
                         hasError: _hasError,
-                        child: _AuthTextFieldInput(
-                          controller: _controller,
-                          focusNode: _focusNode,
-                          obscureText: widget.obscureText && _isObscured,
-                          enabled: widget.enabled,
-                          readOnly: widget.readOnly,
-                          autocorrect: widget.autocorrect,
-                          keyboardType: widget.keyboardType,
-                          textInputAction: widget.textInputAction,
-                          textCapitalization: widget.textCapitalization,
-                          inputFormatters: widget.inputFormatters,
-                          validator: _wrappedValidator,
-                          onTap: widget.onTap,
-                          onChanged: widget.onChanged,
-                          onSubmitted: widget.onSubmitted,
-                          onEditingComplete: widget.onEditingComplete,
-                          maxLength: widget.maxLength,
-                          contentPadding: widget.contentPadding,
-                          hasError: _hasError,
-                          autofillHints: widget.autofillHints,
-                        ),
+                        autofillHints: widget.autofillHints,
                       ),
                     ),
                   ),
@@ -327,26 +318,14 @@ class _AuthTextFieldContent extends StatelessWidget {
   final Widget child;
 
   static const double _verticalPadding = 16;
-  static const double _labelLineHeight = 16;
-  static const double _labelGap = 4;
   static const double _inputLineHeight = 24;
   static const double _totalHeight = 76;
-
-  /// Duration for the floating label transition animation.
-  static const Duration _animationDuration = Duration(milliseconds: 200);
 
   /// Label top offset when floating above the input (16px).
   static const double _labelTopFloating = _verticalPadding;
 
   /// Label top offset when centered with the input (26px).
   static const double _labelTopCentered = (_totalHeight - _inputLineHeight) / 2;
-
-  /// Input top offset when the label is floating (36px).
-  static const double _inputTopFloating =
-      _verticalPadding + _labelLineHeight + _labelGap;
-
-  /// Input top offset when centered, no floating label (26px).
-  static const double _inputTopCentered = (_totalHeight - _inputLineHeight) / 2;
 
   @override
   Widget build(BuildContext context) {
@@ -355,13 +334,13 @@ class _AuthTextFieldContent extends StatelessWidget {
       children: [
         if (hasLabel)
           AnimatedPositioned(
-            duration: _animationDuration,
+            duration: _fieldAnimationDuration,
             curve: Curves.easeOut,
             top: isFloating ? _labelTopFloating : _labelTopCentered,
             left: 0,
             right: 0,
             child: AnimatedDefaultTextStyle(
-              duration: _animationDuration,
+              duration: _fieldAnimationDuration,
               curve: Curves.easeOut,
               style: isFloating
                   ? VineTheme.labelSmallFont(
@@ -373,15 +352,7 @@ class _AuthTextFieldContent extends StatelessWidget {
               child: Text(label!),
             ),
           ),
-        AnimatedPositioned(
-          duration: _animationDuration,
-          curve: Curves.easeOut,
-          top: isFloating ? _inputTopFloating : _inputTopCentered,
-          left: 0,
-          right: 0,
-          height: _inputLineHeight,
-          child: child,
-        ),
+        Positioned.fill(child: child),
       ],
     );
   }
@@ -392,6 +363,7 @@ class _AuthTextFieldInput extends StatelessWidget {
   const _AuthTextFieldInput({
     required this.controller,
     required this.focusNode,
+    required this.isFloating,
     required this.obscureText,
     required this.enabled,
     required this.readOnly,
@@ -413,6 +385,7 @@ class _AuthTextFieldInput extends StatelessWidget {
 
   final TextEditingController controller;
   final FocusNode focusNode;
+  final bool isFloating;
   final bool obscureText;
   final bool enabled;
   final bool readOnly;
@@ -431,42 +404,55 @@ class _AuthTextFieldInput extends StatelessWidget {
   final EdgeInsetsGeometry? contentPadding;
   final Iterable<String>? autofillHints;
 
+  /// Input top offset when the label is floating (36px).
+  static const double _inputTopFloating = 36;
+
+  /// Input top offset when centered, no floating label (26px).
+  static const double _inputTopCentered = 26;
+
   @override
   Widget build(BuildContext context) {
-    return TextFormField(
-      controller: controller,
-      focusNode: focusNode,
-      obscureText: obscureText,
-      obscuringCharacter: '✱',
-      enabled: enabled,
-      readOnly: readOnly,
-      autocorrect: autocorrect,
-      keyboardType: keyboardType,
-      textInputAction: textInputAction,
-      textCapitalization: textCapitalization,
-      inputFormatters: inputFormatters,
-      validator: validator,
-      onTap: onTap,
-      onChanged: onChanged,
-      onFieldSubmitted: onSubmitted,
-      onEditingComplete: onEditingComplete,
-      maxLength: maxLength,
-      autofillHints: autofillHints,
-      style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
-      cursorColor: hasError ? VineTheme.error : VineTheme.primary,
-      decoration: InputDecoration(
-        isDense: true,
-        contentPadding: contentPadding ?? EdgeInsets.zero,
-        border: InputBorder.none,
-        enabledBorder: InputBorder.none,
-        focusedBorder: InputBorder.none,
-        errorBorder: InputBorder.none,
-        focusedErrorBorder: InputBorder.none,
-        disabledBorder: InputBorder.none,
-        filled: false,
-        // Hide the built-in error text from TextFormField.
-        // Error display is handled by _ErrorSupportingText via errorText.
-        errorStyle: const TextStyle(fontSize: 0, height: 0),
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(
+        end: isFloating ? _inputTopFloating : _inputTopCentered,
+      ),
+      duration: _fieldAnimationDuration,
+      curve: Curves.easeOut,
+      builder: (context, inputTop, _) => TextFormField(
+        controller: controller,
+        focusNode: focusNode,
+        obscureText: obscureText,
+        obscuringCharacter: '✱',
+        enabled: enabled,
+        readOnly: readOnly,
+        autocorrect: autocorrect,
+        keyboardType: keyboardType,
+        textInputAction: textInputAction,
+        textCapitalization: textCapitalization,
+        inputFormatters: inputFormatters,
+        validator: validator,
+        onTap: onTap,
+        onChanged: onChanged,
+        onFieldSubmitted: onSubmitted,
+        onEditingComplete: onEditingComplete,
+        maxLength: maxLength,
+        autofillHints: autofillHints,
+        style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
+        cursorColor: hasError ? VineTheme.error : VineTheme.primary,
+        decoration: InputDecoration(
+          isDense: true,
+          contentPadding: contentPadding ?? EdgeInsets.only(top: inputTop),
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          errorBorder: InputBorder.none,
+          focusedErrorBorder: InputBorder.none,
+          disabledBorder: InputBorder.none,
+          filled: false,
+          // Hide the built-in error text from TextFormField.
+          // Error display is handled by _ErrorSupportingText via errorText.
+          errorStyle: const TextStyle(fontSize: 0, height: 0),
+        ),
       ),
     );
   }
@@ -549,8 +535,14 @@ class _VisibilityToggle extends StatelessWidget {
   /// right = 18 + parent padding 8 = 26px.
   static const double _iconRightPadding = 18;
 
-  /// Left, top, and bottom padding for the visibility toggle.
+  /// Left padding for the visibility toggle.
   static const double _iconOtherPadding = 8;
+
+  /// Top and bottom padding for the visibility toggle. 12 (not 8) so the
+  /// tappable area is 24 (icon) + 12 + 12 = 48px tall, meeting the 48dp
+  /// Android / 44pt iOS minimum tap-target guideline. The icon stays
+  /// vertically centred, so its painted position is unchanged.
+  static const double _iconVerticalPadding = 12;
 
   @override
   Widget build(BuildContext context) {
@@ -563,8 +555,8 @@ class _VisibilityToggle extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.only(
             left: _iconOtherPadding,
-            top: _iconOtherPadding,
-            bottom: _iconOtherPadding,
+            top: _iconVerticalPadding,
+            bottom: _iconVerticalPadding,
             right: _iconRightPadding,
           ),
           child: DivineIcon(

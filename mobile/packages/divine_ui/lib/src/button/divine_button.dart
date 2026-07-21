@@ -107,11 +107,19 @@ class DivineButton extends StatelessWidget {
     this.trailingIcon,
     this.expanded = false,
     this.isLoading = false,
+    this.semanticLabel,
     super.key,
   });
 
   /// The text label displayed on the button.
   final String label;
+
+  /// Optional accessibility label announced by screen readers.
+  ///
+  /// Needed for icon-only buttons (empty [label]), which otherwise present an
+  /// unlabeled tappable node. A labelled button already derives its accessible
+  /// name from [label] and doesn't need this.
+  final String? semanticLabel;
 
   /// Called when the button is tapped.
   /// If null, the button is displayed in its disabled state.
@@ -161,6 +169,7 @@ class DivineButton extends StatelessWidget {
       trailingIcon: trailingIcon,
       expanded: expanded,
       isLoading: isLoading,
+      semanticLabel: semanticLabel,
     );
   }
 }
@@ -175,6 +184,7 @@ class _DivineButtonContent extends StatelessWidget {
     required this.isLoading,
     this.leadingIcon,
     this.trailingIcon,
+    this.semanticLabel,
   });
 
   final String label;
@@ -185,6 +195,7 @@ class _DivineButtonContent extends StatelessWidget {
   final DivineIconName? trailingIcon;
   final bool expanded;
   final bool isLoading;
+  final String? semanticLabel;
 
   /// Thickness of the visible border on bordered [type]s (e.g. secondary).
   static const double _kBorderWidth = 2;
@@ -374,6 +385,16 @@ class _DivineButtonContent extends StatelessWidget {
       boxShadow: _isEnabled ? _boxShadow : null,
     );
 
+    final inkChild = Ink(
+      decoration: decoration,
+      child: _AdaptiveButtonPadding(
+        vertical: _verticalPadding,
+        looseHorizontal: _looseHorizontalPadding,
+        forceTight: _forceTightPadding,
+        child: content,
+      ),
+    );
+
     Widget button = AnimatedOpacity(
       duration: const Duration(milliseconds: 150),
       opacity: _isEnabled ? 1.0 : _disabledOpacity,
@@ -384,25 +405,46 @@ class _DivineButtonContent extends StatelessWidget {
           borderRadius: BorderRadius.circular(_borderRadius),
           splashColor: _foregroundColor.withValues(alpha: 0.1),
           highlightColor: _foregroundColor.withValues(alpha: 0.05),
-          child: Ink(
-            decoration: decoration,
-            child: _AdaptiveButtonPadding(
-              vertical: _verticalPadding,
-              looseHorizontal: _looseHorizontalPadding,
-              forceTight: _forceTightPadding,
-              child: content,
-            ),
-          ),
+          excludeFromSemantics: size == DivineButtonSize.small,
+          child: inkChild,
         ),
       ),
     );
 
-    // Small variant only: wrap in extra outer padding so the visible
-    // chip is 40px while the tap target stays at 48px. Tiny deliberately
-    // skips this — its outer == inner == 32px so it can sit flush with a
-    // 32px avatar / type icon without inflating the row's height.
+    // small (40px) is below the 48dp minimum tap target. Keep the InkWell on
+    // the painted 40px chip so pressed ink is clipped to the visible button,
+    // then make the pre-existing 4px outer halo tappable with an opaque
+    // wrapper. Full rationale: PR #6236.
+    //
+    // tiny (32px) deliberately keeps a 32px tap target — it sits flush next
+    // to a 32px avatar / type icon, and expanding the tap target would bleed
+    // into that neighbor's hit area. Tracked as a known a11y gap in #6235
+    // pending design input.
     if (size == DivineButtonSize.small) {
-      button = Padding(padding: const EdgeInsets.all(4), child: button);
+      button = ConstrainedBox(
+        constraints: const BoxConstraints(
+          minWidth: kMinInteractiveDimension,
+          minHeight: kMinInteractiveDimension,
+        ),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _isEnabled ? onPressed : null,
+          child: Padding(padding: const EdgeInsets.all(4), child: button),
+        ),
+      );
+    }
+
+    // Give an icon-only button an accessible name. A labelled button already
+    // exposes one via its Text child, so this is only wired when provided.
+    // Expose the enabled state too, so assistive tech doesn't announce a
+    // disabled labelled button as actionable (matches DivineIconButton).
+    if (semanticLabel != null) {
+      button = Semantics(
+        button: true,
+        enabled: _isEnabled,
+        label: semanticLabel,
+        child: button,
+      );
     }
 
     return button;

@@ -6,12 +6,9 @@ import 'dart:typed_data';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
-
-import '../helpers/golden_test_devices.dart';
 
 const _transparentImageBytes = <int>[
   0x89,
@@ -593,129 +590,5 @@ void main() {
         expect(find.byType(VineCachedImage), findsOneWidget);
       });
     });
-
-    // Golden Tests Section - kept skipped as they require golden file generation
-    group(
-      'Golden Tests',
-      skip:
-          'Golden tests require golden file generation '
-          'and are maintained separately',
-      () {
-        testGoldens('UserAvatar - different states visual test', (
-          tester,
-        ) async {
-          final builder = GoldenBuilder.grid(columns: 3, widthToHeightRatio: 1)
-            ..addScenario(
-              'With Name',
-              const UserAvatar(name: 'John Doe', size: 60),
-            )
-            ..addScenario('Empty Name', const UserAvatar(name: '', size: 60))
-            ..addScenario('No Name', const UserAvatar(size: 60))
-            ..addScenario(
-              'Single Letter',
-              const UserAvatar(name: 'A', size: 60),
-            )
-            ..addScenario(
-              'Special Chars',
-              const UserAvatar(name: '@user!', size: 60),
-            )
-            ..addScenario(
-              'Long Name',
-              const UserAvatar(name: 'Alexander Hamilton', size: 60),
-            );
-
-          await tester.pumpWidgetBuilder(
-            builder.build(),
-            wrapper: materialAppWrapper(),
-          );
-          await screenMatchesGolden(tester, 'user_avatar_states_integrated');
-        });
-
-        testGoldens('UserAvatar - size variations visual test', (tester) async {
-          final builder = GoldenBuilder.grid(columns: 4, widthToHeightRatio: 1)
-            ..addScenario('XS (16px)', const UserAvatar(name: 'User', size: 16))
-            ..addScenario('S (24px)', const UserAvatar(name: 'User', size: 24))
-            ..addScenario('M (40px)', const UserAvatar(name: 'User', size: 40))
-            ..addScenario('L (60px)', const UserAvatar(name: 'User', size: 60))
-            ..addScenario('XL (80px)', const UserAvatar(name: 'User', size: 80))
-            ..addScenario(
-              'XXL (100px)',
-              const UserAvatar(name: 'User', size: 100),
-            );
-
-          await tester.pumpWidgetBuilder(
-            builder.build(),
-            wrapper: materialAppWrapper(),
-          );
-          await screenMatchesGolden(tester, 'user_avatar_sizes_integrated');
-        });
-
-        testGoldens('UserAvatar - themes visual test', (tester) async {
-          await tester.pumpWidgetBuilder(
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Theme(
-                  data: ThemeData.dark(),
-                  child: Container(
-                    color: Colors.grey[900],
-                    padding: const EdgeInsets.all(20),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        UserAvatar(name: 'Dark Theme', size: 60),
-                        SizedBox(width: 20),
-                        UserAvatar(name: '', size: 60),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            wrapper: materialAppWrapper(),
-          );
-          await screenMatchesGolden(tester, 'user_avatar_themes_integrated');
-        });
-
-        testGoldens('UserAvatar - across devices', (tester) async {
-          final widget = Scaffold(
-            appBar: AppBar(title: const Text('User Avatars')),
-            body: const Padding(
-              padding: EdgeInsets.all(16),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      UserAvatar(name: 'Alice', size: 50),
-                      UserAvatar(name: 'Bob', size: 50),
-                      UserAvatar(name: 'Charlie', size: 50),
-                    ],
-                  ),
-                  SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      UserAvatar(name: '', size: 50),
-                      UserAvatar(size: 50),
-                      UserAvatar(name: 'Z', size: 50),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          );
-
-          await tester.pumpWidgetBuilder(widget, wrapper: materialAppWrapper());
-
-          await multiScreenGolden(
-            tester,
-            'user_avatar_devices_integrated',
-            devices: GoldenTestDevices.minimalDevices,
-          );
-        });
-      },
-    );
   });
 }

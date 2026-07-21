@@ -149,24 +149,37 @@ class DivineRowCheckbox extends StatelessWidget {
     final isSelected =
         state == DivineCheckboxState.selected ||
         state == DivineCheckboxState.intermediate;
+    final isDisabled = state == DivineCheckboxState.disabled;
+    final isIntermediate = state == DivineCheckboxState.intermediate;
 
-    return GestureDetector(
-      onTap: () => onChanged(!isSelected),
-      child: AnimatedContainer(
-        duration: animationDuration,
-        curve: Curves.easeInOut,
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: isSelected ? VineTheme.primary : VineTheme.outlineMuted,
+    // Expose a proper checkbox semantics node: role (via checked/mixed),
+    // checked state, and enabled state — merged with the label and tap action
+    // into a single node so screen readers announce e.g. "Agree, checkbox,
+    // checked". A disabled checkbox is non-interactive (no onChanged, no tap).
+    return MergeSemantics(
+      child: Semantics(
+        enabled: !isDisabled,
+        checked: isIntermediate ? null : state == DivineCheckboxState.selected,
+        mixed: isIntermediate ? true : null,
+        child: GestureDetector(
+          onTap: isDisabled ? null : () => onChanged(!isSelected),
+          child: AnimatedContainer(
+            duration: animationDuration,
+            curve: Curves.easeInOut,
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: isSelected ? VineTheme.primary : VineTheme.outlineMuted,
+              ),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            padding: const EdgeInsets.all(16),
+            child: DivineCheckbox(
+              state: state,
+              label: label,
+              crossAxisAlignment: crossAxisAlignment,
+              animationDuration: animationDuration,
+            ),
           ),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        padding: const EdgeInsets.all(16),
-        child: DivineCheckbox(
-          state: state,
-          label: label,
-          crossAxisAlignment: crossAxisAlignment,
-          animationDuration: animationDuration,
         ),
       ),
     );

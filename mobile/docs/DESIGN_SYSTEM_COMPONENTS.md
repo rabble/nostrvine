@@ -138,3 +138,32 @@ DivineRowCheckbox(
   label: Text('I agree to the terms'),
 )
 ```
+
+## Accessibility & Visual Contract
+
+`divine_ui` is the canonical accessibility + visual contract for the core
+reusable controls. App-layer reviewers can point at the package tests instead
+of re-checking these guarantees per screen.
+
+### Guaranteed accessibility (enforced by `meetsGuideline` / semantics tests)
+
+| Component | Guarantee |
+|-----------|-----------|
+| `DivineButton` | `base` (48px) and `small` (40px visible / 48dp tap target) meet the 48dp Android / 44pt iOS tap-target minimum — `small` keeps pressed ink clipped to the 40px chip while its pre-existing 4px outer halo is tappable. `tiny` (32px) deliberately keeps a 32px tap target (it sits flush next to 32px avatars / type icons; expanding it would bleed into that neighbor's hit area) — tracked as a known gap in #6235 pending design input. Optional `semanticLabel` for icon-only buttons (a disabled labelled button announces `enabled: false`). Error-button label/icon contrast against the red background is tracked as a known gap in #6235 pending design sign-off on the tone. |
+| `DivineIconButton` | Tap target ≥ 48dp (small pill centred in a 48px InkWell). Pass `semanticLabel` (or `tooltip`) for an accessible name. |
+| `DivineRowCheckbox` | Exposes a checkbox semantics node with checked / mixed / enabled state. A `disabled` checkbox is non-interactive (no tap, no `onChanged`). |
+| `DivineSlider` | Optional `semanticLabel` describing what it controls. Touch-target height is unchanged (32px) — growing it shifts adjacent widgets in real screens (storage settings, video editor sheets); tracked as a known gap in #6235 pending Figma-fit confirmation. |
+| `DivineAuthTextField` | Password toggle and the editable field both meet the 48dp / 44pt tap-target minimum. The editable field fills the 76px control, while animated content padding places the input text row at 26px when centered and 36px below a floating label. |
+
+**Icon-only interactive controls need an accessible name.** Enforcing this at
+every call site (and labelling the app's unlabeled `DivineIconButton`
+usages) is tracked as a fast-follow; the components already accept the label.
+
+### Visual (golden) coverage
+
+Component gallery goldens for `divine_ui` are tracked as a fast-follow
+(**#6235**): alchemist obscured-text goldens are non-deterministic under the
+package's `very_good test --optimization` merged isolate (google_fonts loads
+asynchronously, so the block-text metrics vary), and would need a CI-side
+generation workflow. Behaviour and accessibility are already covered by the
+widget + `meetsGuideline` tests above.
