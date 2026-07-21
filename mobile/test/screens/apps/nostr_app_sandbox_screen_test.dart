@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
@@ -895,14 +896,39 @@ void main() {
       );
     }
 
+    Future<File> passthroughStripper(File imageFile) async => imageFile;
+
     test('returns a file:// URI picked from the gallery', () async {
       when(
         () => picker.pickImage(source: ImageSource.gallery),
       ).thenAnswer((_) async => XFile('/tmp/badge.png'));
 
-      final result = await sandboxAndroidFileSelector(params(), picker);
+      final result = await sandboxAndroidFileSelector(
+        params(),
+        picker,
+        metadataStripper: passthroughStripper,
+      );
 
       expect(result, equals(['file:///tmp/badge.png']));
+    });
+
+    test('strips image metadata before returning the file URI', () async {
+      final strippedPaths = <String>[];
+      when(
+        () => picker.pickImage(source: ImageSource.gallery),
+      ).thenAnswer((_) async => XFile('/tmp/badge.png'));
+
+      final result = await sandboxAndroidFileSelector(
+        params(),
+        picker,
+        metadataStripper: (imageFile) async {
+          strippedPaths.add(imageFile.path);
+          return File('/tmp/badge-stripped.jpg');
+        },
+      );
+
+      expect(strippedPaths, equals(['/tmp/badge.png']));
+      expect(result, equals(['file:///tmp/badge-stripped.jpg']));
     });
 
     test('uses the camera when the input requests capture', () async {
@@ -913,6 +939,7 @@ void main() {
       final result = await sandboxAndroidFileSelector(
         params(isCaptureEnabled: true),
         picker,
+        metadataStripper: passthroughStripper,
       );
 
       expect(result, equals(['file:///tmp/shot.jpg']));
@@ -924,7 +951,11 @@ void main() {
         () => picker.pickImage(source: ImageSource.gallery),
       ).thenAnswer((_) async => null);
 
-      final result = await sandboxAndroidFileSelector(params(), picker);
+      final result = await sandboxAndroidFileSelector(
+        params(),
+        picker,
+        metadataStripper: passthroughStripper,
+      );
 
       expect(result, isEmpty);
     });
@@ -937,9 +968,42 @@ void main() {
       final result = await sandboxAndroidFileSelector(
         params(mode: FileSelectorMode.openMultiple),
         picker,
+        metadataStripper: passthroughStripper,
       );
 
       expect(result, equals(['file:///tmp/a.png', 'file:///tmp/b.png']));
+    });
+
+    test(
+      'uses the camera for openMultiple when capture is requested',
+      () async {
+        when(
+          () => picker.pickImage(source: ImageSource.camera),
+        ).thenAnswer((_) async => XFile('/tmp/capture.jpg'));
+
+        final result = await sandboxAndroidFileSelector(
+          params(mode: FileSelectorMode.openMultiple, isCaptureEnabled: true),
+          picker,
+          metadataStripper: passthroughStripper,
+        );
+
+        expect(result, equals(['file:///tmp/capture.jpg']));
+        verifyNever(() => picker.pickMultiImage());
+        verifyNever(() => picker.pickImage(source: ImageSource.gallery));
+      },
+    );
+
+    test('does not open the picker for save mode', () async {
+      final result = await sandboxAndroidFileSelector(
+        params(mode: FileSelectorMode.save),
+        picker,
+        metadataStripper: passthroughStripper,
+      );
+
+      expect(result, isEmpty);
+      verifyNever(() => picker.pickImage(source: ImageSource.gallery));
+      verifyNever(() => picker.pickImage(source: ImageSource.camera));
+      verifyNever(() => picker.pickMultiImage());
     });
 
     test('does not open the picker for a non-image accept type', () async {
@@ -962,6 +1026,7 @@ void main() {
       final result = await sandboxAndroidFileSelector(
         params(acceptTypes: const []),
         picker,
+        metadataStripper: passthroughStripper,
       );
 
       expect(result, equals(['file:///tmp/any.webp']));
@@ -980,10 +1045,30 @@ void main() {
         final result = await sandboxAndroidFileSelector(
           params(acceptTypes: [anyToken]),
           picker,
+          metadataStripper: passthroughStripper,
         );
 
         expect(result, equals(['file:///tmp/any.png']));
       });
+    }
+
+    for (final extension in const ['.avif', '.bmp', '.heif', '.tif']) {
+      test(
+        'opens the gallery for image extension token "$extension"',
+        () async {
+          when(
+            () => picker.pickImage(source: ImageSource.gallery),
+          ).thenAnswer((_) async => XFile('/tmp/extension-image'));
+
+          final result = await sandboxAndroidFileSelector(
+            params(acceptTypes: [extension]),
+            picker,
+            metadataStripper: passthroughStripper,
+          );
+
+          expect(result, equals(['file:///tmp/extension-image']));
+        },
+      );
     }
 
     test('returns empty when picking throws', () async {
@@ -991,7 +1076,11 @@ void main() {
         () => picker.pickImage(source: ImageSource.gallery),
       ).thenThrow(Exception('picker exploded'));
 
-      final result = await sandboxAndroidFileSelector(params(), picker);
+      final result = await sandboxAndroidFileSelector(
+        params(),
+        picker,
+        metadataStripper: passthroughStripper,
+      );
 
       expect(result, isEmpty);
     });

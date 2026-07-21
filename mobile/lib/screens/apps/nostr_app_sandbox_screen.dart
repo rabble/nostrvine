@@ -3,6 +3,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:divine_ui/divine_ui.dart';
@@ -12,6 +13,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_metadata_stripper/image_metadata_stripper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -26,6 +28,7 @@ import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 typedef SandboxViewBuilder =
     Widget Function(void Function(Uri uri) onNavigationAttempt);
 typedef SandboxJavaScriptRunner = Future<void> Function(String script);
+typedef SandboxImageMetadataStripper = Future<File> Function(File imageFile);
 
 const _bridgePayloadObjectMessage = 'Bridge payload must be a JSON object';
 const _bridgeMethodRequiredMessage = 'Bridge method is required';
@@ -765,23 +768,40 @@ class _BootstrappedSandboxPage {
 /// Resolves an Android WebView file-chooser request into `file://` URIs the
 /// WebView can read back into the HTML `<input type="file">`.
 ///
-/// Sandboxed apps only ever need images (e.g. badge artwork), so this offers
-/// the native image picker — camera when the input requests capture, gallery
-/// otherwise. Returns an empty list when the input wants a non-image type or
-/// the user cancels, which the WebView treats as "no file selected".
+/// This intentionally narrows Android sandbox uploads to images for now:
+/// camera when the input requests capture, gallery otherwise. Picked files are
+/// stripped of metadata before being exposed to the sandbox so third-party apps
+/// do not receive GPS or device EXIF. Returns an empty list when the input wants
+/// a non-image type, save mode, or the user cancels, which the WebView treats as
+/// "no file selected".
 @visibleForTesting
 Future<List<String>> sandboxAndroidFileSelector(
   FileSelectorParams params,
-  ImagePicker picker,
-) async {
+  ImagePicker picker, {
+  SandboxImageMetadataStripper? metadataStripper,
+}) async {
   if (!_acceptsImages(params.acceptTypes)) {
     return const <String>[];
   }
 
+  if (params.mode == FileSelectorMode.save) {
+    return const <String>[];
+  }
+
+  final stripMetadata =
+      metadataStripper ?? ImageMetadataStripper.stripMetadataInPlace;
+
   try {
     if (params.mode == FileSelectorMode.openMultiple) {
+      if (params.isCaptureEnabled) {
+        final file = await picker.pickImage(source: ImageSource.camera);
+        if (file == null) {
+          return const <String>[];
+        }
+        return _strippedFileUris([file], stripMetadata);
+      }
       final files = await picker.pickMultiImage();
-      return files.map((file) => Uri.file(file.path).toString()).toList();
+      return _strippedFileUris(files, stripMetadata);
     }
 
     final source = params.isCaptureEnabled
@@ -791,7 +811,7 @@ Future<List<String>> sandboxAndroidFileSelector(
     if (file == null) {
       return const <String>[];
     }
-    return <String>[Uri.file(file.path).toString()];
+    return _strippedFileUris([file], stripMetadata);
   } catch (error, stackTrace) {
     // Expected, user-driven paths land here too (e.g. denying the camera
     // permission throws PlatformException), so log at warning, not error.
@@ -805,6 +825,18 @@ Future<List<String>> sandboxAndroidFileSelector(
     );
     return const <String>[];
   }
+}
+
+Future<List<String>> _strippedFileUris(
+  List<XFile> files,
+  SandboxImageMetadataStripper stripMetadata,
+) async {
+  final strippedFiles = <String>[];
+  for (final file in files) {
+    final strippedFile = await stripMetadata(File(file.path));
+    strippedFiles.add(Uri.file(strippedFile.path).toString());
+  }
+  return strippedFiles;
 }
 
 /// Whether the `<input accept="…">` tokens permit an image.
@@ -831,7 +863,17 @@ bool _isAnyFileToken(String type) {
 bool _acceptsImageType(String type) {
   final normalized = type.trim().toLowerCase();
   return normalized.startsWith('image/') ||
-      const {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic'}.contains(
-        normalized,
-      );
+      const {
+        '.avif',
+        '.bmp',
+        '.gif',
+        '.heic',
+        '.heif',
+        '.jpg',
+        '.jpeg',
+        '.png',
+        '.tif',
+        '.tiff',
+        '.webp',
+      }.contains(normalized);
 }
