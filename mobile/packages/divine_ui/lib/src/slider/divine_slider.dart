@@ -73,12 +73,16 @@ class DivineSlider extends StatelessWidget {
   final Color thumbColor;
 
   /// Optional accessibility label describing what the slider controls (e.g.
-  /// "Volume"). Screen readers otherwise announce only the value.
+  /// "Volume"). Passed to the Material [Slider.label] so it lands on the
+  /// slider's own semantics node (a [Slider] marks itself a semantics
+  /// boundary, so a wrapping `Semantics(label:)` would not label that node).
+  /// Screen readers announce it alongside the value. It renders no visible
+  /// value bubble because the theme sets [ShowValueIndicator.never].
   final String? semanticLabel;
 
   @override
   Widget build(BuildContext context) {
-    final slider = SliderTheme(
+    return SliderTheme(
       data: SliderThemeData(
         padding: EdgeInsets.zero,
         activeTrackColor: activeColor,
@@ -98,13 +102,13 @@ class DivineSlider extends StatelessWidget {
         min: min,
         max: max,
         divisions: divisions,
+        // Lands on the slider's own semantics boundary node; renders no
+        // visible bubble under ShowValueIndicator.never.
+        label: semanticLabel,
         onChanged: onChanged,
         onChangeEnd: onChangeEnd,
       ),
     );
-
-    if (semanticLabel == null) return slider;
-    return Semantics(label: semanticLabel, child: slider);
   }
 }
 

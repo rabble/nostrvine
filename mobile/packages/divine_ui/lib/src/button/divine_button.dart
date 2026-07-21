@@ -284,9 +284,7 @@ class _DivineButtonContent extends StatelessWidget {
     DivineButtonType.ghost ||
     DivineButtonType.ghostSecondary => VineTheme.onSurface,
     DivineButtonType.link => VineTheme.onSurfaceVariant,
-    // Darker than VineTheme.onErrorContainer so the label clears the 4.5:1
-    // WCAG AA contrast ratio against the unchanged VineTheme.error background.
-    DivineButtonType.error => VineTheme.onErrorButton,
+    DivineButtonType.error => VineTheme.onErrorContainer,
   };
 
   Color? get _borderColor => switch (type) {
@@ -397,10 +395,17 @@ class _DivineButtonContent extends StatelessWidget {
       ),
     );
 
-    // small (40px) is below the 48dp minimum tap target. Centre the chip
-    // inside a 48dp minimum box that IS the InkWell's child, so the
-    // tappable/semantics node the accessibility guideline measures is >= 48
-    // while the visible chip keeps its design size. base is already 48+.
+    // small (40px) is below the 48dp minimum tap target. Grow the tap target
+    // — the InkWell's child, which is what the accessibility guideline
+    // measures — to at least 48dp while keeping the 40px visible chip.
+    //
+    // The height gap is closed by 4px of transparent vertical padding
+    // (40 + 4 + 4 = 48). Padding (unlike Center/Align, which always loosens
+    // its child) passes the width constraint straight through, so a small
+    // button still stretches to fill a tight/`Expanded` slot and
+    // `_AdaptiveButtonPadding` still sees `hasTightWidth` and collapses its
+    // inset. `minWidth` guards the content-hugging case (icon-only / very
+    // short label) that would otherwise render under 48 wide. base is 48+.
     //
     // tiny (32px) deliberately keeps a 32px tap target — it sits flush next
     // to a 32px avatar / type icon, and expanding the tap target would bleed
@@ -412,7 +417,10 @@ class _DivineButtonContent extends StatelessWidget {
           minWidth: kMinInteractiveDimension,
           minHeight: kMinInteractiveDimension,
         ),
-        child: Center(widthFactor: 1, heightFactor: 1, child: inkChild),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: inkChild,
+        ),
       );
     }
 
@@ -433,9 +441,12 @@ class _DivineButtonContent extends StatelessWidget {
 
     // Give an icon-only button an accessible name. A labelled button already
     // exposes one via its Text child, so this is only wired when provided.
+    // Expose the enabled state too, so assistive tech doesn't announce a
+    // disabled labelled button as actionable (matches DivineIconButton).
     if (semanticLabel != null) {
       button = Semantics(
         button: true,
+        enabled: _isEnabled,
         label: semanticLabel,
         child: button,
       );

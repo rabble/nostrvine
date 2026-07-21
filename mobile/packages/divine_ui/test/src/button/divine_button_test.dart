@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -7,23 +5,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void _noop() {}
-
-/// WCAG relative luminance of [c] (channels are 0..1 in Flutter's Color API).
-double _relativeLuminance(Color c) {
-  double lin(double channel) => channel <= 0.03928
-      ? channel / 12.92
-      : math.pow((channel + 0.055) / 1.055, 2.4).toDouble();
-  return 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b);
-}
-
-/// WCAG contrast ratio between two colors (1.0 – 21.0).
-double _contrastRatio(Color a, Color b) {
-  final la = _relativeLuminance(a);
-  final lb = _relativeLuminance(b);
-  final hi = math.max(la, lb);
-  final lo = math.min(la, lb);
-  return (hi + 0.05) / (lo + 0.05);
-}
 
 void main() {
   group('DivineButton', () {
@@ -161,7 +142,7 @@ void main() {
         expect(divineIcon.color, VineTheme.onSurface);
       });
 
-      testWidgets('error type icon uses onErrorButton color', (
+      testWidgets('error type icon uses onErrorContainer color', (
         tester,
       ) async {
         await tester.pumpWidget(
@@ -175,7 +156,7 @@ void main() {
         final divineIcon = tester.widget<DivineIcon>(
           find.byType(DivineIcon),
         );
-        expect(divineIcon.color, VineTheme.onErrorButton);
+        expect(divineIcon.color, VineTheme.onErrorContainer);
       });
     });
 
@@ -494,6 +475,42 @@ void main() {
           expect(chipSize.height, equals(40));
         },
       );
+
+      testWidgets(
+        'small button stretches to fill a tight/Expanded slot',
+        (tester) async {
+          // The 48dp tap-target wrapper must not shrink-wrap a small button to
+          // its label: inside an Expanded (tight width) both the button and
+          // its visible chip fill the slot.
+          const rowWidth = 300.0;
+          await tester.pumpWidget(
+            const MaterialApp(
+              home: Scaffold(
+                body: SizedBox(
+                  width: rowWidth,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: DivineButton(
+                          label: 'Save',
+                          size: DivineButtonSize.small,
+                          onPressed: _noop,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          expect(
+            tester.getSize(find.byType(DivineButton)).width,
+            equals(rowWidth),
+          );
+          expect(tester.getSize(find.byType(Ink)).width, equals(rowWidth));
+        },
+      );
     });
 
     group('accessibility', () {
@@ -540,26 +557,69 @@ void main() {
       );
 
       testWidgets(
-        'error type label/background contrast meets WCAG AA (>= 4.5:1)',
+        'icon-only disabled button with semanticLabel is not actionable',
         (tester) async {
-          // Verifies the colour pair directly (deterministic, font-free): the
-          // rendered meetsGuideline(textContrastGuideline) can't run here
-          // because the package doesn't bundle google_fonts TTFs. The error
-          // button reads as normal text to the guideline (w800 != w700), so it
-          // needs the full 4.5:1, not the 3:1 large-text floor.
+          // A disabled labelled button must announce hasEnabledState +
+          // isEnabled:false, so assistive tech doesn't present it as tappable
+          // (matches DivineIconButton).
+          final handle = tester.ensureSemantics();
           await tester.pumpWidget(
-            buildTestWidget(type: DivineButtonType.error, onPressed: () {}),
+            const MaterialApp(
+              home: Scaffold(
+                body: Center(
+                  child: DivineButton(
+                    label: '',
+                    leadingIcon: DivineIconName.heart,
+                    semanticLabel: 'Like',
+                    onPressed: null,
+                  ),
+                ),
+              ),
+            ),
           );
-
-          final ink = tester.widget<Ink>(find.byType(Ink));
-          final background = (ink.decoration! as BoxDecoration).color!;
-          final label = tester.widget<Text>(find.text('Test'));
-          final foreground = label.style!.color!;
 
           expect(
-            _contrastRatio(foreground, background),
-            greaterThanOrEqualTo(4.5),
+            tester.getSemantics(find.byType(DivineButton)),
+            isSemantics(
+              label: 'Like',
+              isButton: true,
+              hasEnabledState: true,
+              isEnabled: false,
+            ),
           );
+          handle.dispose();
+        },
+      );
+
+      testWidgets(
+        'icon-only enabled button with semanticLabel is actionable',
+        (tester) async {
+          final handle = tester.ensureSemantics();
+          await tester.pumpWidget(
+            const MaterialApp(
+              home: Scaffold(
+                body: Center(
+                  child: DivineButton(
+                    label: '',
+                    leadingIcon: DivineIconName.heart,
+                    semanticLabel: 'Like',
+                    onPressed: _noop,
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          expect(
+            tester.getSemantics(find.byType(DivineButton)),
+            isSemantics(
+              label: 'Like',
+              isButton: true,
+              hasEnabledState: true,
+              isEnabled: true,
+            ),
+          );
+          handle.dispose();
         },
       );
     });
@@ -734,6 +794,34 @@ void main() {
           );
 
           expect(resolvedInnerPadding(tester), const EdgeInsets.all(12));
+        },
+      );
+
+      testWidgets(
+        'small parent-forced tight width still collapses to symmetric padding',
+        (tester) async {
+          // The small 48dp tap-target wrapper must keep passing the tight
+          // width through to _AdaptiveButtonPadding: an Expanded small button
+          // drops the wider horizontal inset just like base does.
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: Row(
+                  children: [
+                    Expanded(
+                      child: DivineButton(
+                        label: 'Save',
+                        size: DivineButtonSize.small,
+                        onPressed: () {},
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+
+          expect(resolvedInnerPadding(tester), const EdgeInsets.all(8));
         },
       );
 

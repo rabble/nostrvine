@@ -347,7 +347,7 @@ void main() {
         expect(divineIcon.color, VineTheme.onSurface);
       });
 
-      testWidgets('error type uses onErrorButton color', (tester) async {
+      testWidgets('error type uses onErrorContainer color', (tester) async {
         await tester.pumpWidget(
           buildTestWidget(
             type: DivineIconButtonType.error,
@@ -358,7 +358,7 @@ void main() {
         final divineIcon = tester.widget<DivineIcon>(
           find.byType(DivineIcon),
         );
-        expect(divineIcon.color, VineTheme.onErrorButton);
+        expect(divineIcon.color, VineTheme.onErrorContainer);
       });
     });
 
