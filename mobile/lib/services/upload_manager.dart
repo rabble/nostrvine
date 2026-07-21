@@ -366,6 +366,13 @@ class UploadManager implements BackgroundAwareService {
     // hands the upload the rendered clip; this fallback path only runs when
     // that render has gone missing, so it has to re-render rather than
     // dereference a video that was never there.
+    //
+    // Each fallback render is a transient mp4 in the app documents dir that no
+    // draft row references. Track the (source, materialized) pairs so they can
+    // be reaped once the upload has consumed them — otherwise every fallback
+    // leaks a full-resolution mp4 that reference cleanup can never discover.
+    final transientRenders =
+        <({DivineVideoClip source, DivineVideoClip materialized})>[];
     Future<DivineVideoClip> materializedSource(DivineVideoClip clip) async {
       if (!clip.isStopMotion) return clip;
       final materialized = await StopMotionRenderService.materialize(clip);
@@ -374,6 +381,7 @@ class UploadManager implements BackgroundAwareService {
           'Stop-motion assembly failed for clip ${clip.id} — nothing to upload',
         );
       }
+      transientRenders.add((source: clip, materialized: materialized));
       return materialized;
     }
 
@@ -459,7 +467,7 @@ class UploadManager implements BackgroundAwareService {
       );
     }
 
-    return _startUploadInternal(
+    final upload = await _startUploadInternal(
       videoFile: File(videoFilePath),
       nostrPubkey: nostrPubkey,
       title: draft.title,
@@ -472,6 +480,18 @@ class UploadManager implements BackgroundAwareService {
       onProgress: onProgress,
       thumbnailTimestamp: draft.thumbnailTimestamp,
     );
+
+    // _startUploadInternal awaits upload completion and throws on failure, so
+    // reaching here means the input was fully consumed. Delete the transient
+    // fallback renders; a failed upload throws above and keeps its render so a
+    // retry can reuse it.
+    for (final render in transientRenders) {
+      await StopMotionRenderService.cleanupMaterializedOutput(
+        sourceClip: render.source,
+        materializedClip: render.materialized,
+      );
+    }
+    return upload;
   }
 
   /// Start a new video upload (legacy method - prefer startUploadFromDraft)

@@ -10,7 +10,9 @@ import 'package:models/models.dart' show AspectRatio;
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/pending_upload.dart' show UploadStatus;
+import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/services/upload_manager.dart';
+import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
@@ -273,6 +275,65 @@ void main() {
       expect(upload.hasProofMode, isFalse);
       expect(upload.proofManifestJson, isNull);
     });
+
+    test(
+      'deletes the transient stop-motion render after a successful upload',
+      () async {
+        // No finalRenderedClip, so startUploadFromDraft hits the fallback that
+        // re-renders the frames-only clip into a documents-dir mp4.
+        final renderPath = '${tempDir.path}/documents/stop_motion_fallback.mp4';
+        StopMotionRenderService.assembleOverride =
+            ({
+              required frames,
+              required aspectRatio,
+              frameRate = StopMotionRenderService.defaultFrameRate,
+              taskId,
+            }) async {
+              File(renderPath)
+                ..parent.createSync(recursive: true)
+                ..writeAsBytesSync([0, 1, 2, 3]);
+              return renderPath;
+            };
+        StopMotionRenderService.probeDurationOverride = (_) async =>
+            const Duration(seconds: 2);
+        addTearDown(() {
+          StopMotionRenderService.assembleOverride = null;
+          StopMotionRenderService.probeDurationOverride = null;
+        });
+
+        final draft = DivineVideoDraft.create(
+          clips: [
+            DivineVideoClip(
+              id: 'sm_clip',
+              stopMotionFrames: const [
+                StopMotionClipFrame(
+                  path: '/tmp/f0.jpg',
+                  duration: Duration(milliseconds: 167),
+                ),
+              ],
+              duration: const Duration(milliseconds: 167),
+              recordedAt: DateTime.now(),
+              targetAspectRatio: AspectRatio.vertical,
+              originalAspectRatio: 9 / 16,
+            ),
+          ],
+          title: 'Stop Motion',
+          description: 'Fallback render',
+          hashtags: {'sm'},
+          selectedApproach: 'native',
+        );
+
+        final upload = await uploadManager.startUploadFromDraft(
+          draft: draft,
+          nostrPubkey: 'test-pubkey',
+        );
+
+        // The fallback render was the upload input, and it is reaped once the
+        // upload has consumed it — no orphaned mp4 left in documents.
+        expect(upload.localVideoPath, equals(renderPath));
+        expect(File(renderPath).existsSync(), isFalse);
+      },
+    );
 
     test(
       'throws when upload finishes in failed state instead of returning a completed upload',
