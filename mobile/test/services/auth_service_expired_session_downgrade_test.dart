@@ -259,13 +259,26 @@ void main() {
       secureStorage['keycast_session'] = jsonEncode(expiredSession.toJson());
       secureStorage['keycast_refresh_token'] = 'refresh_token_still_valid';
 
+      final refreshedSession = KeycastSession(
+        bunkerUrl: 'https://login.divine.video/api/nostr',
+        accessToken: 'fresh_token',
+        expiresAt: DateTime.now().add(const Duration(hours: 1)),
+        refreshToken: 'next_refresh_token',
+        userPubkey: pubkey,
+      );
+      final backgroundRefresh = Completer<KeycastSession?>();
+      var refreshCalls = 0;
       when(
         () => mockOAuthClient.refreshSession(
           userPubkey: any(named: 'userPubkey'),
         ),
-      ).thenAnswer(
-        (_) => Future<KeycastSession?>.error(OAuthNetworkException('offline')),
-      );
+      ).thenAnswer((_) {
+        refreshCalls++;
+        if (refreshCalls == 1) {
+          throw OAuthNetworkException('offline');
+        }
+        return backgroundRefresh.future;
+      });
 
       final authService = createAuthService();
 
@@ -280,21 +293,40 @@ void main() {
             equals(AuthRpcCapability.upgrading),
           );
           expect(authService.currentPublicKeyHex, pubkey);
-          expect(
-            authService.currentIdentity,
-            isA<PubkeyOnlyNostrIdentity>(),
-          );
+          expect(authService.currentIdentity, isA<PubkeyOnlyNostrIdentity>());
           expect(authService.canPublishNostrWritesNow, isFalse);
+          expect(
+            authService.hasExpiredOAuthSession,
+            isTrue,
+            reason:
+                'The degraded session stays retryable while RPC upgrade is '
+                'pending so manual re-login affordances remain available.',
+          );
           expect(
             secureStorage['keycast_refresh_token'],
             'refresh_token_still_valid',
             reason: 'Offline launch must not discard the retry token.',
           );
-          verify(
-            () => mockOAuthClient.refreshSession(
-              userPubkey: any(named: 'userPubkey'),
-            ),
-          ).called(1);
+          expect(refreshCalls, equals(2));
+
+          backgroundRefresh.complete(refreshedSession);
+          final deadline = DateTime.now().add(const Duration(seconds: 3));
+          while (authService.isRpcUpgradeInProgress &&
+              DateTime.now().isBefore(deadline)) {
+            await Future<void>.delayed(const Duration(milliseconds: 10));
+          }
+
+          expect(
+            authService.authRpcCapability,
+            equals(AuthRpcCapability.rpcReady),
+          );
+          expect(authService.currentIdentity, isA<KeycastNostrIdentity>());
+          expect(authService.canPublishNostrWritesNow, isTrue);
+          expect(
+            authService.hasExpiredOAuthSession,
+            isFalse,
+            reason: 'A successful background upgrade clears the retry flag.',
+          );
         },
         (error, stack) {
           // Ignore background errors

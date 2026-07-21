@@ -200,7 +200,11 @@ class KeycastOAuth {
   ///
   /// Tries [getSession] first. If that returns `null` (no session stored or
   /// token expired), falls back to [refreshSession] to obtain a fresh token.
-  /// Returns `null` only when no session can be recovered at all.
+  /// Returns `null` only when no session can be recovered at all because no
+  /// refresh token is available or the server rejects the token.
+  ///
+  /// Throws [OAuthNetworkException] when the refresh cannot reach Keycast or
+  /// times out. The refresh token is preserved for a later retry in that case.
   ///
   /// [userPubkey] is forwarded to [refreshSession] so the saved session
   /// is owner-bound when a refresh is needed.

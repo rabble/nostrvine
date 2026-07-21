@@ -4,7 +4,6 @@
 // with secure storage
 
 import 'dart:async';
-import 'dart:io';
 
 import 'package:cache_sync/cache_sync.dart';
 import 'package:flutter/foundation.dart';
@@ -801,9 +800,10 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           name: 'AuthService',
           category: LogCategory.auth,
         );
-        if (await _restoreDegradedDivineOAuthSession(session)) {
-          return;
-        }
+        await _restoreDegradedDivineOAuthSession(
+          session,
+          anchorNpub: anchorNpub,
+        );
         return;
       } on TimeoutException catch (e) {
         Log.warning(
@@ -812,19 +812,10 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           name: 'AuthService',
           category: LogCategory.auth,
         );
-        if (await _restoreDegradedDivineOAuthSession(session)) {
-          return;
-        }
-        return;
-      } on SocketException catch (e) {
-        Log.warning(
-          'initialize: synchronous refresh failed due to socket error: $e',
-          name: 'AuthService',
-          category: LogCategory.auth,
+        await _restoreDegradedDivineOAuthSession(
+          session,
+          anchorNpub: anchorNpub,
         );
-        if (await _restoreDegradedDivineOAuthSession(session)) {
-          return;
-        }
         return;
       }
 
@@ -868,15 +859,24 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     _setAuthState(AuthState.unauthenticated);
   }
 
-  Future<bool> _restoreDegradedDivineOAuthSession(
-    KeycastSession? session,
-  ) async {
+  Future<void> _restoreDegradedDivineOAuthSession(
+    KeycastSession? session, {
+    required String? anchorNpub,
+  }) async {
     final hasOwnerPubkey = session?.userPubkey?.isNotEmpty ?? false;
     final hasRefreshToken = session?.refreshToken?.isNotEmpty ?? false;
     if (session == null || !hasOwnerPubkey || !hasRefreshToken) {
       _hasExpiredOAuthSession = true;
       _setAuthState(AuthState.unauthenticated);
-      return false;
+      return;
+    }
+
+    if (_isCrossAccountRestore(
+      candidatePubkey: session.userPubkey,
+      anchorNpub: anchorNpub,
+    )) {
+      _setAuthState(AuthState.unauthenticated);
+      return;
     }
 
     Log.info(
@@ -888,8 +888,15 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     await signInWithDivineOAuth(
       session,
       rpcCapability: AuthRpcCapability.upgrading,
+      allowPubkeyOnlyIdentity: true,
     );
-    return true;
+    _hasExpiredOAuthSession = true;
+    unawaited(
+      _upgradeDivineRpcInBackground(
+        session,
+        expectedOwnerPubkey: session.userPubkey,
+      ),
+    );
   }
 
   /// Returns true when [candidatePubkey] belongs to a different account than
@@ -2621,7 +2628,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// Sign in using OAuth 2.0 flow
   Future<void> signInWithDivineOAuth(
     KeycastSession session, {
-    AuthRpcCapability rpcCapability = AuthRpcCapability.rpcReady,
+    AuthRpcCapability? rpcCapability,
+    bool allowPubkeyOnlyIdentity = false,
   }) async {
     Log.debug(
       'Signing in with Divine OAuth session',
@@ -2744,8 +2752,17 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           );
         }
       }
-      await _setupUserSession(keyContainer, AuthenticationSource.divineOAuth);
-      _setRpcCapability(rpcCapability);
+      await _setupUserSession(
+        keyContainer,
+        AuthenticationSource.divineOAuth,
+        allowPubkeyOnlyIdentity: allowPubkeyOnlyIdentity,
+      );
+      _setRpcCapability(
+        rpcCapability ??
+            (session.hasRpcAccess
+                ? AuthRpcCapability.rpcReady
+                : AuthRpcCapability.upgrading),
+      );
 
       Log.info(
         '✅ Divine oauth session successfully integrated for $publicKeyHex',
@@ -3778,7 +3795,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// Throws [StateError] if no valid identity can be constructed — this
   /// indicates a programming error in the auth flow, not a user-facing
   /// condition.
-  NostrIdentity _buildIdentity() {
+  NostrIdentity _buildIdentity({bool allowPubkeyOnlyIdentity = false}) {
     return _signerFactory.buildIdentity(
       keyContainer: _currentKeyContainer,
       authSource: _authSource,
@@ -3786,14 +3803,16 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       nip07Service: _nip07Service,
       bunkerSigner: _bunkerSigner,
       keycastSigner: _keycastSigner,
+      allowPubkeyOnlyIdentity: allowPubkeyOnlyIdentity,
     );
   }
 
   /// Set up user session after successful authentication
   Future<void> _setupUserSession(
     SecureKeyContainer keyContainer,
-    AuthenticationSource source,
-  ) async {
+    AuthenticationSource source, {
+    bool allowPubkeyOnlyIdentity = false,
+  }) async {
     Log.info(
       '_setupUserSession: starting — '
       'pubkey=${keyContainer.publicKeyHex}, source=${source.name}',
@@ -3850,7 +3869,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     }
 
     // Build atomic identity AFTER stale signers are cleared.
-    _currentIdentity = _buildIdentity();
+    _currentIdentity = _buildIdentity(
+      allowPubkeyOnlyIdentity: allowPubkeyOnlyIdentity,
+    );
 
     // Create user profile
     _currentProfile = UserProfile(

@@ -106,7 +106,11 @@ class OAuthSessionCoordinator {
   /// mid-session callers (401 retry, app resume) may omit it — the method
   /// falls back to [currentPubkeyFallback].
   ///
-  /// Returns the refreshed session on success, or `null` on failure.
+  /// Returns the refreshed session on success, or `null` when refresh is not
+  /// possible or the server rejects the token.
+  ///
+  /// Throws [OAuthNetworkException] when the refresh cannot reach Keycast or
+  /// times out. The refresh token is preserved for a later retry in that case.
   Future<KeycastSession?> refreshSession({String? expectedOwnerPubkey}) {
     final pending = _pendingOAuthRefresh;
     if (pending != null) return pending;

@@ -24,6 +24,8 @@ class OAuthException extends KeycastException {
       : 'OAuthException: $message';
 }
 
+/// OAuth request failed before Keycast could authoritatively accept or reject
+/// the token, such as a network transport error or timeout.
 class OAuthNetworkException extends OAuthException {
   OAuthNetworkException([String? message])
     : super(message ?? 'OAuth request failed due to a network error');
