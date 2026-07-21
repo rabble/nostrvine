@@ -471,7 +471,7 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
     );
     final watermarkText = resolveWatermarkText(
       profile: profile,
-      fallbackAuthorName: widget.video.authorName,
+      fallbackAuthorName: widget.video.displayAuthorName,
     );
 
     await _presentAfterDismiss<void>((hostContext) {

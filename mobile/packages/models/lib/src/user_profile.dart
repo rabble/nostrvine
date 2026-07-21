@@ -231,6 +231,9 @@ class UserProfile {
     return defaultDisplayName;
   }
 
+  /// Normalizes user-controlled display names before passing them to UI text.
+  static String sanitizeDisplayName(String value) => stripZalgo(value);
+
   /// A display handle for the user, prefixed with `@`.
   ///
   /// Prefers NIP-05 identifier, falls back to [name]. Returns an empty

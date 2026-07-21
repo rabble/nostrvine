@@ -143,13 +143,15 @@ class VideoOverlayActions extends ConsumerWidget {
     final video = this.video;
     final previewData = this.previewData;
     final authorPubkey = previewData?.pubkey ?? video!.pubkey;
-    final trimmedTitle =
-        previewData?.title.trim() ?? video?.displayTitle?.trim();
+    final trimmedTitle = previewData != null
+        ? UserProfile.sanitizeDisplayName(previewData.title).trim()
+        : video?.displayTitle?.trim();
     final titleText = trimmedTitle == null || trimmedTitle.isEmpty
         ? null
         : trimmedTitle;
-    final descriptionText =
-        previewData?.description.trim() ?? video!.displayContent.trim();
+    final descriptionText = previewData != null
+        ? UserProfile.sanitizeDisplayName(previewData.description).trim()
+        : video!.displayContent.trim();
 
     // Check if there's meaningful text content to display
     final hasTextContent =
@@ -301,7 +303,7 @@ class VideoOverlayActions extends ConsumerWidget {
                       final avatarUrl = profile?.picture ?? video?.authorAvatar;
                       final displayName =
                           profile?.bestDisplayName ??
-                          video?.authorName ??
+                          video?.displayAuthorName ??
                           UserProfile.generatedNameFor(authorPubkey);
                       final isOgViner = ref.watch(
                         ogVinerCacheServiceProvider.select(
@@ -760,7 +762,7 @@ class VideoAuthorRow extends ConsumerWidget {
                 const SizedBox(width: 6),
                 UserName.fromPubKey(
                   video.pubkey,
-                  embeddedName: video.authorName,
+                  embeddedName: video.displayAuthorName,
                   style: const TextStyle(
                     color: VineTheme.whiteText,
                     fontSize: 12,

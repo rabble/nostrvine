@@ -14,6 +14,12 @@ void main() {
 
       expect(sanitizeUtf16(emoji), equals('😀'));
     });
+
+    test('preserves valid surrogate pairs after malformed code units', () {
+      final mixed = String.fromCharCodes([0xD800, 0xD83D, 0xDE00, 0x61]);
+
+      expect(sanitizeUtf16(mixed), equals('\uFFFD😀a'));
+    });
   });
 
   group(stripZalgo, () {

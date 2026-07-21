@@ -388,7 +388,7 @@ class _ClassicVideoItem extends StatelessWidget {
                 ),
                 child: UserName.fromPubKey(
                   video.pubkey,
-                  embeddedName: video.authorName,
+                  embeddedName: video.displayAuthorName,
                   maxLines: 1,
                   style: const TextStyle(
                     color: VineTheme.whiteText,

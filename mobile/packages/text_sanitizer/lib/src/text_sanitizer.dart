@@ -41,8 +41,8 @@ String sanitizeUtf16(String text) {
   return result?.toString() ?? text;
 }
 
-/// Caps combining diacritical characters per grapheme cluster to prevent Zalgo
-/// text from overflowing layout bounds.
+/// Normalizes malformed UTF-16 and caps combining diacritical characters per
+/// grapheme cluster to prevent Zalgo text from overflowing layout bounds.
 ///
 /// Allows up to [maxCombining] combining chars per base character (default 2),
 /// which covers all legitimate accented scripts including Vietnamese
@@ -51,6 +51,9 @@ String sanitizeUtf16(String text) {
 ///
 /// Safe for both NFC and NFD-encoded text: NFC precomposed characters (e.g.
 /// U+00E9 é) contain no combining chars and pass through unchanged.
+///
+/// Unpaired UTF-16 surrogates are replaced with U+FFFD before grapheme
+/// processing so Flutter text layout receives well-formed display text.
 String stripZalgo(String text, {int maxCombining = 2}) {
   final sanitizedText = sanitizeUtf16(text);
   final result = StringBuffer();
