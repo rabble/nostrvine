@@ -204,7 +204,15 @@ class CommunityContentLabelRepository {
         if (addressableId != null && addressableId.isNotEmpty)
           Filter(kinds: [EventKind.label], a: [addressableId]),
       ];
-      final events = await _nostrClient.queryEvents(filters);
+      // Outer timeout shorter than the SDK's internal one: the SDK swallows
+      // its own TimeoutException and resolves with a (usually empty) partial
+      // list, so a hang would be cached as a genuine "no warnings". A shorter
+      // outer timeout surfaces the hang as our own TimeoutException (caught
+      // below → null → degraded → retried). See queryTimeout doc for the
+      // residual fast-empty limitation.
+      final events = await _nostrClient
+          .queryEvents(filters)
+          .timeout(CommunityContentWarningConstants.queryTimeout);
       final seen = <String>{};
       return events.where((event) => seen.add(event.id)).toList();
     } on Exception catch (e) {
@@ -220,16 +228,33 @@ class CommunityContentLabelRepository {
   /// Resolves each author to `true` (Divine), `false` (not), or `null`
   /// (undetermined — a transient lookup failure). The `null` verdicts let the
   /// caller decide whether the uncertainty changes the outcome.
+  ///
+  /// Lookups run in bounded chunks
+  /// ([CommunityContentWarningConstants.identityLookupConcurrency]) so a video
+  /// farmed with many throwaway-key labels can't burst one simultaneous
+  /// name-server request per distinct author.
   Future<Map<String, bool?>> _resolveDivineAuthors(Set<String> authors) async {
-    final entries = await Future.wait(
-      authors.map(
-        (author) async => MapEntry(
-          author,
-          await _profileRepository.resolveDivineIdentity(author),
-        ),
-      ),
-    );
-    return Map.fromEntries(entries);
+    const chunkSize =
+        CommunityContentWarningConstants.identityLookupConcurrency;
+    final authorList = authors.toList();
+    final result = <String, bool?>{};
+    for (var start = 0; start < authorList.length; start += chunkSize) {
+      final end = start + chunkSize < authorList.length
+          ? start + chunkSize
+          : authorList.length;
+      final entries = await Future.wait(
+        authorList
+            .getRange(start, end)
+            .map(
+              (author) async => MapEntry(
+                author,
+                await _profileRepository.resolveDivineIdentity(author),
+              ),
+            ),
+      );
+      result.addEntries(entries);
+    }
+    return result;
   }
 
   Iterable<String> _contentWarningValues(Event event) sync* {

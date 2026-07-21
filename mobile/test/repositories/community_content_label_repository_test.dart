@@ -1,3 +1,7 @@
+import 'dart:async';
+import 'dart:math';
+
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -5,6 +9,7 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' show Event, EventKind, Filter;
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/repositories/community_content_label_repository.dart';
+import 'package:openvine/services/community_content_warning_constants.dart';
 import 'package:profile_repository/profile_repository.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
@@ -191,6 +196,37 @@ void main() {
       });
 
       test(
+        'treats a hanging relay query as degraded (not a genuine empty)',
+        () {
+          // The SDK swallows its own timeout and resolves with an empty list,
+          // so a hang would otherwise be cached as "no warnings". Our shorter
+          // outer timeout must surface it as a degraded result instead.
+          fakeAsync((async) {
+            when(
+              () => nostrClient.queryEvents(any()),
+            ).thenAnswer((_) => Completer<List<Event>>().future);
+
+            Object? caught;
+            repository
+                .communityLabelsForVideo(video)
+                .then<void>((_) {})
+                .catchError((Object e) {
+                  caught = e;
+                });
+
+            async
+              ..elapse(
+                CommunityContentWarningConstants.queryTimeout +
+                    const Duration(seconds: 1),
+              )
+              ..flushMicrotasks();
+
+            expect(caught, isA<CommunityLabelUnavailableException>());
+          });
+        },
+      );
+
+      test(
         'throws CommunityLabelUnavailable when an undetermined identity '
         'could have crossed the threshold',
         () async {
@@ -259,6 +295,55 @@ void main() {
           final result = await repository.communityLabelsForVideo(video);
 
           expect(result, isEmpty);
+        },
+      );
+
+      test(
+        'bounds concurrent identity lookups when many authors label a video',
+        () async {
+          // 12 distinct authors all suggest the same label, so every author
+          // must be resolved — but not all at once (a video farmed with many
+          // throwaway-key labels would otherwise burst that many name-server
+          // requests simultaneously).
+          final authors = List.generate(
+            12,
+            (i) => i.toString().padLeft(64, '0'),
+          );
+          stubQuery([
+            for (final author in authors)
+              _labelEvent(author, ['gambling'], videoId: videoId),
+          ]);
+
+          var inFlight = 0;
+          var peakInFlight = 0;
+          when(() => profileRepository.resolveDivineIdentity(any())).thenAnswer(
+            (
+              _,
+            ) async {
+              inFlight++;
+              peakInFlight = max(peakInFlight, inFlight);
+              await Future<void>.delayed(Duration.zero);
+              inFlight--;
+              return true;
+            },
+          );
+
+          final result = await repository.communityLabelsForVideo(video);
+
+          // Correctness under chunking: every author is still counted.
+          expect(result, equals({'gambling'}));
+          verify(
+            () => profileRepository.resolveDivineIdentity(any()),
+          ).called(12);
+          // Concurrency is capped by the configured bound, and the lookups
+          // do run concurrently within a chunk (not serialized to 1).
+          expect(
+            peakInFlight,
+            lessThanOrEqualTo(
+              CommunityContentWarningConstants.identityLookupConcurrency,
+            ),
+          );
+          expect(peakInFlight, greaterThan(1));
         },
       );
 
