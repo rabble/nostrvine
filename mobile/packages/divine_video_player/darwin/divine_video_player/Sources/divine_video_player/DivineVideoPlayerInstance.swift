@@ -1062,6 +1062,9 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             if httpResponse.statusCode == 202 {
                 return "media_processing"
             }
+            if httpResponse.statusCode == 401 {
+                return "auth_required"
+            }
             return httpResponse.statusCode >= 500 ? "http_server_error" : "http_client_error"
         }
 
@@ -1076,6 +1079,8 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             return "network_error"
         case (NSURLErrorDomain, NSURLErrorTimedOut):
             return "timeout"
+        case (NSURLErrorDomain, NSURLErrorUserAuthenticationRequired):
+            return "auth_required"
         default:
             // AVFoundation format / decoder errors.
             if err.domain == AVFoundationErrorDomain {

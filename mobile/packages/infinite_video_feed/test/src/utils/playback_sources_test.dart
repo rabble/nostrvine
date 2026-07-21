@@ -1,3 +1,4 @@
+import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:infinite_video_feed/src/models/video_error_type.dart';
 import 'package:infinite_video_feed/src/utils/playback_sources.dart';
@@ -120,6 +121,25 @@ void main() {
   });
 
   group('classifyVideoError', () {
+    test('returns ageRestricted for typed authRequired without 401 text', () {
+      expect(
+        classifyVideoError(
+          errorCode: NativePlayerErrorCode.authRequired,
+          errorMessage: 'NSURLErrorDomain error -1013',
+        ),
+        equals(VideoErrorType.ageRestricted),
+      );
+    });
+
+    test('keeps null typed code on the existing generic path', () {
+      expect(
+        classifyVideoError(
+          errorMessage: 'NSURLErrorDomain error -1013',
+        ),
+        equals(VideoErrorType.generic),
+      );
+    });
+
     test('returns ageRestricted for 401', () {
       expect(
         classifyVideoError(errorMessage: 'HTTP 401 Unauthorized'),

@@ -1679,6 +1679,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
           }
 
           final errorType = classifyVideoError(
+            errorCode: errorCode,
             errorMessage: errorMessage,
           );
           if (_isTerminalPlaybackFailure(errorMessage)) {

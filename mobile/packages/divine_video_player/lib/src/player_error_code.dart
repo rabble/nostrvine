@@ -13,10 +13,16 @@ enum NativePlayerErrorCode {
   /// iOS: CoreMedia / AVFoundation errors whose message includes HTTP 202.
   mediaProcessing,
 
+  /// Authentication is required to load the media.
+  ///
+  /// Android: `ERROR_CODE_IO_BAD_HTTP_STATUS` with response code 401.
+  /// iOS: HTTP 401 in `userInfo` or `NSURLErrorUserAuthenticationRequired`.
+  authRequired,
+
   /// HTTP 4xx response from the media server.
   ///
-  /// Android: `ERROR_CODE_IO_BAD_HTTP_STATUS` when 400–499.
-  /// iOS: `NSError` with HTTP status in `userInfo`.
+  /// Android: `ERROR_CODE_IO_BAD_HTTP_STATUS` when 400–499, except 401.
+  /// iOS: `NSError` with HTTP status in `userInfo`, except 401.
   httpClientError,
 
   /// HTTP 5xx response from the media server.
@@ -64,6 +70,7 @@ enum NativePlayerErrorCode {
   /// usable right now, so the feed should skip to the next available source.
   bool get shouldFailover => switch (this) {
     mediaProcessing => false,
+    authRequired => true,
     httpClientError => true,
     httpServerError => true,
     parseError => true,
@@ -83,6 +90,7 @@ enum NativePlayerErrorCode {
     mediaProcessing => true,
     networkError => true,
     timeout => true,
+    authRequired => false,
     httpServerError => false,
     httpClientError => false,
     parseError => false,
@@ -93,6 +101,7 @@ enum NativePlayerErrorCode {
   /// Parses the string value sent over the platform channel.
   static NativePlayerErrorCode fromString(String value) => switch (value) {
     'media_processing' => mediaProcessing,
+    'auth_required' => authRequired,
     'http_client_error' => httpClientError,
     'http_server_error' => httpServerError,
     'network_error' => networkError,

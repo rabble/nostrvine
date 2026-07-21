@@ -1,3 +1,4 @@
+import 'package:divine_video_player/divine_video_player.dart';
 import 'package:infinite_video_feed/src/models/video_error_type.dart';
 import 'package:infinite_video_feed/src/utils/canonical_divine_url.dart';
 import 'package:models/models.dart';
@@ -65,9 +66,19 @@ List<String> resolvePlaybackSources(
   return orderedUniqueSources([resolvedSource, originalUrl]);
 }
 
-/// Classifies a playback failure into a [VideoErrorType] using the error
-/// message and (optionally) the source that produced it.
-VideoErrorType classifyVideoError({String? errorMessage, String? source}) {
+/// Classifies a playback failure into a [VideoErrorType] using the typed native
+/// error code, error message, and optionally the source that produced it.
+VideoErrorType classifyVideoError({
+  NativePlayerErrorCode? errorCode,
+  String? errorMessage,
+  String? source,
+}) {
+  final typedErrorType = switch (errorCode) {
+    NativePlayerErrorCode.authRequired => VideoErrorType.ageRestricted,
+    _ => null,
+  };
+  if (typedErrorType != null) return typedErrorType;
+
   final lower = (errorMessage ?? '').toLowerCase();
   // Divine derivative URLs can legitimately return HTTP 202 while MP4/HLS
   // processing catches up after upload. Treat that as transient playback

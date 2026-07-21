@@ -761,6 +761,7 @@ internal class DivineVideoPlayerInstance(
                     val status = (error.cause as? androidx.media3.datasource.HttpDataSource.InvalidResponseCodeException)?.responseCode ?: 0
                     when {
                         status == 202 -> "media_processing"
+                        status == 401 -> "auth_required"
                         status in 400..499 -> "http_client_error"
                         else -> "http_server_error"
                     }

@@ -2969,6 +2969,53 @@ void main() {
       }
 
       testWidgets(
+        'classifies typed auth-required runtime failures as age restricted',
+        (tester) async {
+          DivineVideoPlayerController.resetIdCounterForTesting();
+          final harness = _NativePlayerHarness(tester);
+          await harness.install(playerIds: const <int>[0, 1, 2, 3]);
+
+          try {
+            await tester.pumpWidget(
+              _wrapFeed(
+                InfiniteVideoFeed(
+                  videos: [_makeVideo('auth_required')],
+                  cache: cache,
+                  prefetchCount: 0,
+                  preloadGracePeriod: Duration.zero,
+                  autoRetryBaseDelay: const Duration(milliseconds: 200),
+                  errorBuilder: (_, _, _, errorType) =>
+                      Text('VIDEO_ERROR:${errorType.name}'),
+                ),
+              ),
+            );
+            await tester.pump();
+            await tester.pump();
+
+            await harness.sendEvent(0, const <Object?, Object?>{
+              'status': 'error',
+              'errorCode': 'auth_required',
+              'errorMessage': 'NSURLErrorDomain error -1013',
+            });
+            await tester.pump();
+            await tester.pump();
+
+            expect(find.text('VIDEO_ERROR:ageRestricted'), findsOneWidget);
+            final setClipsAfterError = harness.countCalls('setClips');
+
+            await tester.pump(const Duration(milliseconds: 400));
+            await tester.pump();
+
+            expect(harness.countCalls('setClips'), equals(setClipsAfterError));
+          } finally {
+            await tester.pumpWidget(const SizedBox.shrink());
+            await tester.pump();
+            await harness.dispose();
+          }
+        },
+      );
+
+      testWidgets(
         'does not auto-retry terminal no-video-track failover failures',
         (tester) async {
           DivineVideoPlayerController.resetIdCounterForTesting();
