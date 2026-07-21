@@ -30,6 +30,17 @@ void main() {
     );
 
     blocTest<AppearanceCubit, AppearanceMode>(
+      'keeps System mode when load fails',
+      setUp: () {
+        when(repository.load).thenThrow(StateError('read failed'));
+      },
+      build: () => AppearanceCubit(repository),
+      act: (cubit) => cubit.load(),
+      expect: () => <AppearanceMode>[],
+      verify: (_) => verify(repository.load).called(1),
+    );
+
+    blocTest<AppearanceCubit, AppearanceMode>(
       'emits the selected mode before saving it',
       setUp: () {
         when(
@@ -60,26 +71,33 @@ void main() {
         resolveThemeMode(
           mode: AppearanceMode.light,
           lightModeEnabled: false,
-          systemBrightness: Brightness.light,
         ),
         ThemeMode.dark,
       );
     });
 
-    test('resolves System from platform brightness', () {
+    test('resolves System to the platform-reactive ThemeMode', () {
       expect(
         resolveThemeMode(
           mode: AppearanceMode.system,
           lightModeEnabled: true,
-          systemBrightness: Brightness.light,
+        ),
+        ThemeMode.system,
+      );
+    });
+
+    test('resolves enabled explicit modes', () {
+      expect(
+        resolveThemeMode(
+          mode: AppearanceMode.light,
+          lightModeEnabled: true,
         ),
         ThemeMode.light,
       );
       expect(
         resolveThemeMode(
-          mode: AppearanceMode.system,
+          mode: AppearanceMode.dark,
           lightModeEnabled: true,
-          systemBrightness: Brightness.dark,
         ),
         ThemeMode.dark,
       );

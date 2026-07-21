@@ -292,6 +292,7 @@ void main() {
     expect(find.text('Closed Captions'), findsOneWidget);
     expect(find.text('Video Shape'), findsOneWidget);
     expect(find.text('App Language'), findsOneWidget);
+    expect(find.text('Appearance'), findsNothing);
     await tester.scrollUntilVisible(
       find.text('Make my audio available for reuse'),
       120,
@@ -328,6 +329,35 @@ void main() {
         tester.element(find.byType(GeneralSettingsScreen)),
       ).read(subtitleVisibilityProvider),
       isFalse,
+    );
+  });
+
+  testWidgets('General Settings shows Appearance when Light Mode is enabled', (
+    tester,
+  ) async {
+    await setStandardSurface(tester);
+    await tester.pumpWidget(
+      wrap(
+        const GeneralSettingsScreen(),
+        overrides: [
+          isFeatureEnabledProvider(
+            FeatureFlag.lightMode,
+          ).overrideWithValue(true),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('Appearance'),
+      120,
+      scrollable: find.byType(Scrollable),
+    );
+
+    expect(find.text('Appearance'), findsOneWidget);
+    expect(
+      find.text('Choose how Divine looks on this device'),
+      findsOneWidget,
     );
   });
 

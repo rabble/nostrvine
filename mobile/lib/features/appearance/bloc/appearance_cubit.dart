@@ -11,7 +11,15 @@ class AppearanceCubit extends Cubit<AppearanceMode> {
   final AppearanceRepository _repository;
 
   Future<void> load() async {
-    emit(await _repository.load());
+    try {
+      emit(await _repository.load());
+    } catch (error) {
+      Log.warning(
+        'Failed to load appearance preference: $error',
+        name: 'AppearanceCubit',
+        category: LogCategory.system,
+      );
+    }
   }
 
   Future<void> setMode(AppearanceMode mode) async {
@@ -31,13 +39,11 @@ class AppearanceCubit extends Cubit<AppearanceMode> {
 ThemeMode resolveThemeMode({
   required AppearanceMode mode,
   required bool lightModeEnabled,
-  required Brightness systemBrightness,
 }) {
   if (!lightModeEnabled) return ThemeMode.dark;
 
   return switch (mode) {
-    AppearanceMode.system =>
-      systemBrightness == Brightness.light ? ThemeMode.light : ThemeMode.dark,
+    AppearanceMode.system => ThemeMode.system,
     AppearanceMode.light => ThemeMode.light,
     AppearanceMode.dark => ThemeMode.dark,
   };

@@ -180,7 +180,7 @@ void main() {
 // Every key in app_en.arb is currently translated in all non-English locales.
 // Add keys here only when a translation pass is intentionally deferred.
 const _knownUntranslatedDebt = <String>{
-  // Light-mode experiment copy will be translated before flag rollout.
+  // #6217: light-mode experiment copy; translation deferred until rollout.
   'appearanceSettingsTitle',
   'appearanceSettingsSubtitle',
   'appearanceSettingsSystem',

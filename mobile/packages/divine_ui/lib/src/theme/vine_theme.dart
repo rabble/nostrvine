@@ -143,6 +143,47 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
       ),
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is VineThemeColors &&
+          background == other.background &&
+          card == other.card &&
+          surface == other.surface &&
+          surfaceContainer == other.surfaceContainer &&
+          surfaceContainerHigh == other.surfaceContainerHigh &&
+          nav == other.nav &&
+          iconButton == other.iconButton &&
+          primaryText == other.primaryText &&
+          secondaryText == other.secondaryText &&
+          mutedText == other.mutedText &&
+          onSurface == other.onSurface &&
+          onSurfaceVariant == other.onSurfaceVariant &&
+          outline == other.outline &&
+          disabled == other.disabled &&
+          mediaChrome == other.mediaChrome &&
+          mediaChromeForeground == other.mediaChromeForeground;
+
+  @override
+  int get hashCode => Object.hash(
+    background,
+    card,
+    surface,
+    surfaceContainer,
+    surfaceContainerHigh,
+    nav,
+    iconButton,
+    primaryText,
+    secondaryText,
+    mutedText,
+    onSurface,
+    onSurfaceVariant,
+    outline,
+    disabled,
+    mediaChrome,
+    mediaChromeForeground,
+  );
 }
 
 /// Vine-inspired theme with characteristic green colors and clean design.
@@ -748,7 +789,7 @@ class VineTheme {
     onSurfaceVariant: onSurfaceVariant,
     outline: outlineVariant,
     disabled: onSurfaceDisabled,
-    mediaChrome: Color(0xCC000000),
+    mediaChrome: scrim80,
     mediaChromeForeground: whiteText,
   );
 
@@ -804,12 +845,12 @@ class VineTheme {
       extensions: <ThemeExtension<dynamic>>[colors],
       appBarTheme: AppBarTheme(
         backgroundColor: colors.nav,
-        foregroundColor: colors.mediaChromeForeground,
+        foregroundColor: whiteText,
         elevation: 1,
         centerTitle: true,
         systemOverlayStyle: isLight ? lightStatusBarStyle : statusBarStyle,
-        titleTextStyle: TextStyle(
-          color: colors.mediaChromeForeground,
+        titleTextStyle: const TextStyle(
+          color: whiteText,
           fontSize: 20,
           fontWeight: FontWeight.w600,
           fontFamily: 'System',
@@ -817,8 +858,10 @@ class VineTheme {
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: isLight ? colors.nav : vineGreen,
-        selectedItemColor: colors.mediaChromeForeground,
-        unselectedItemColor: colors.onSurfaceVariant,
+        selectedItemColor: whiteText,
+        unselectedItemColor: isLight
+            ? whiteText.withAlpha(0xAA)
+            : const Color(0xAAFFFFFF),
         type: BottomNavigationBarType.fixed,
         elevation: 8,
       ),
@@ -878,7 +921,7 @@ class VineTheme {
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return vineGreen;
+            return isLight ? vineGreen : onPrimary;
           }
           return colors.surfaceContainer;
         }),

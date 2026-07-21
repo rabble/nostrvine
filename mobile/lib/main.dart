@@ -1746,6 +1746,14 @@ class _DivineAppState extends ConsumerState<DivineApp>
   }
 
   @override
+  void didChangePlatformBrightness() {
+    super.didChangePlatformBrightness();
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  @override
   void didHaveMemoryPressure() {
     _memoryPressureHandler.onMemoryPressure();
   }
@@ -2488,16 +2496,19 @@ class _DivineAppState extends ConsumerState<DivineApp>
       if (locale != null) {
         Intl.defaultLocale = locale.toLanguageTag();
       }
-      final lightModeEnabled = ref.read(
+      final lightModeEnabled = ref.watch(
         isFeatureEnabledProvider(FeatureFlag.lightMode),
       );
       final themeMode = resolveThemeMode(
         mode: appearanceMode,
         lightModeEnabled: lightModeEnabled,
-        systemBrightness:
-            WidgetsBinding.instance.platformDispatcher.platformBrightness,
       );
-      final statusBarStyle = themeMode == ThemeMode.light
+      final effectiveBrightness = themeMode == ThemeMode.system
+          ? WidgetsBinding.instance.platformDispatcher.platformBrightness
+          : themeMode == ThemeMode.light
+          ? Brightness.light
+          : Brightness.dark;
+      final statusBarStyle = effectiveBrightness == Brightness.light
           ? VineTheme.lightStatusBarStyle
           : VineTheme.statusBarStyle;
       if (!kIsWeb && io.Platform.isAndroid) {
@@ -2677,10 +2688,7 @@ class _DivineAppState extends ConsumerState<DivineApp>
                 ),
               ),
             ),
-            BlocProvider(
-              lazy: false,
-              create: (_) => ref.read(appearanceCubitProvider),
-            ),
+            BlocProvider.value(value: ref.read(appearanceCubitProvider)),
             BlocProvider(
               create: (_) => BackgroundPublishBloc(
                 videoPublishServiceFactory: createPublishService,

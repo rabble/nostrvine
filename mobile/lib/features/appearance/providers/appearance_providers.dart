@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/features/appearance/bloc/appearance_cubit.dart';
 import 'package:openvine/features/appearance/repositories/appearance_repository.dart';
@@ -10,6 +12,6 @@ final appearanceRepositoryProvider = Provider<AppearanceRepository>((ref) {
 final appearanceCubitProvider = Provider<AppearanceCubit>((ref) {
   final cubit = AppearanceCubit(ref.watch(appearanceRepositoryProvider));
   ref.onDispose(cubit.close);
-  cubit.load();
+  unawaited(cubit.load());
   return cubit;
 });

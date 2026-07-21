@@ -16,6 +16,13 @@ void main() {
         expect(color, equals(VineTheme.onSurfaceDisabled));
       });
 
+      test('thumbColor resolves to whiteText when selected', () {
+        final color = switchTheme.thumbColor!.resolve(<WidgetState>{
+          WidgetState.selected,
+        });
+        expect(color, equals(VineTheme.whiteText));
+      });
+
       test('trackColor resolves to surfaceContainer when not selected', () {
         final color = switchTheme.trackColor!.resolve(<WidgetState>{});
         expect(color, equals(VineTheme.surfaceContainer));

@@ -33,26 +33,24 @@ class AppearanceSettingsScreen extends StatelessWidget {
                 child: Text(
                   context.l10n.appearanceSettingsSubtitle,
                   style: VineTheme.bodyMediumFont(
-                    color: Theme.of(
-                      context,
-                    ).extension<VineThemeColors>()!.secondaryText,
+                    color:
+                        (Theme.of(context).extension<VineThemeColors>() ??
+                                VineTheme.darkColors)
+                            .secondaryText,
                   ),
                 ),
               ),
               _ModeTile(
                 title: context.l10n.appearanceSettingsSystem,
                 value: AppearanceMode.system,
-                selected: mode,
               ),
               _ModeTile(
                 title: context.l10n.appearanceSettingsLight,
                 value: AppearanceMode.light,
-                selected: mode,
               ),
               _ModeTile(
                 title: context.l10n.appearanceSettingsDark,
                 value: AppearanceMode.dark,
-                selected: mode,
               ),
             ],
           ),
@@ -66,16 +64,15 @@ class _ModeTile extends StatelessWidget {
   const _ModeTile({
     required this.title,
     required this.value,
-    required this.selected,
   });
 
   final String title;
   final AppearanceMode value;
-  final AppearanceMode selected;
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).extension<VineThemeColors>()!;
+    final colors =
+        Theme.of(context).extension<VineThemeColors>() ?? VineTheme.darkColors;
     return RadioListTile<AppearanceMode>(
       value: value,
       title: Text(

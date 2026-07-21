@@ -73,6 +73,150 @@ void main() {
       });
     });
 
+    group('VineThemeColors', () {
+      test('copyWith replaces each semantic color', () {
+        final copied = VineTheme.darkColors.copyWith(
+          background: const Color(0xFF000001),
+          card: const Color(0xFF000002),
+          surface: const Color(0xFF000003),
+          surfaceContainer: const Color(0xFF000004),
+          surfaceContainerHigh: const Color(0xFF000005),
+          nav: const Color(0xFF000006),
+          iconButton: const Color(0xFF000007),
+          primaryText: const Color(0xFF000008),
+          secondaryText: const Color(0xFF000009),
+          mutedText: const Color(0xFF00000A),
+          onSurface: const Color(0xFF00000B),
+          onSurfaceVariant: const Color(0xFF00000C),
+          outline: const Color(0xFF00000D),
+          disabled: const Color(0xFF00000E),
+          mediaChrome: const Color(0xFF00000F),
+          mediaChromeForeground: const Color(0xFF000010),
+        );
+
+        expect(copied.background, const Color(0xFF000001));
+        expect(copied.card, const Color(0xFF000002));
+        expect(copied.surface, const Color(0xFF000003));
+        expect(copied.surfaceContainer, const Color(0xFF000004));
+        expect(copied.surfaceContainerHigh, const Color(0xFF000005));
+        expect(copied.nav, const Color(0xFF000006));
+        expect(copied.iconButton, const Color(0xFF000007));
+        expect(copied.primaryText, const Color(0xFF000008));
+        expect(copied.secondaryText, const Color(0xFF000009));
+        expect(copied.mutedText, const Color(0xFF00000A));
+        expect(copied.onSurface, const Color(0xFF00000B));
+        expect(copied.onSurfaceVariant, const Color(0xFF00000C));
+        expect(copied.outline, const Color(0xFF00000D));
+        expect(copied.disabled, const Color(0xFF00000E));
+        expect(copied.mediaChrome, const Color(0xFF00000F));
+        expect(copied.mediaChromeForeground, const Color(0xFF000010));
+      });
+
+      test(
+        'copyWith keeps existing colors when no replacements are supplied',
+        () {
+          expect(VineTheme.darkColors.copyWith(), VineTheme.darkColors);
+        },
+      );
+
+      test('lerp interpolates each semantic color', () {
+        final start = VineTheme.darkColors.copyWith(
+          background: Colors.black,
+          card: Colors.black,
+          surface: Colors.black,
+          surfaceContainer: Colors.black,
+          surfaceContainerHigh: Colors.black,
+          nav: Colors.black,
+          iconButton: Colors.black,
+          primaryText: Colors.black,
+          secondaryText: Colors.black,
+          mutedText: Colors.black,
+          onSurface: Colors.black,
+          onSurfaceVariant: Colors.black,
+          outline: Colors.black,
+          disabled: Colors.black,
+          mediaChrome: Colors.black,
+          mediaChromeForeground: Colors.black,
+        );
+        final end = VineTheme.darkColors.copyWith(
+          background: Colors.white,
+          card: Colors.white,
+          surface: Colors.white,
+          surfaceContainer: Colors.white,
+          surfaceContainerHigh: Colors.white,
+          nav: Colors.white,
+          iconButton: Colors.white,
+          primaryText: Colors.white,
+          secondaryText: Colors.white,
+          mutedText: Colors.white,
+          onSurface: Colors.white,
+          onSurfaceVariant: Colors.white,
+          outline: Colors.white,
+          disabled: Colors.white,
+          mediaChrome: Colors.white,
+          mediaChromeForeground: Colors.white,
+        );
+
+        final midpoint = start.lerp(end, 0.5);
+
+        expect(
+          midpoint.background,
+          Color.lerp(Colors.black, Colors.white, 0.5),
+        );
+        expect(midpoint.card, Color.lerp(Colors.black, Colors.white, 0.5));
+        expect(midpoint.surface, Color.lerp(Colors.black, Colors.white, 0.5));
+        expect(
+          midpoint.surfaceContainer,
+          Color.lerp(Colors.black, Colors.white, 0.5),
+        );
+        expect(
+          midpoint.surfaceContainerHigh,
+          Color.lerp(Colors.black, Colors.white, 0.5),
+        );
+        expect(midpoint.nav, Color.lerp(Colors.black, Colors.white, 0.5));
+        expect(
+          midpoint.iconButton,
+          Color.lerp(Colors.black, Colors.white, 0.5),
+        );
+        expect(
+          midpoint.primaryText,
+          Color.lerp(Colors.black, Colors.white, 0.5),
+        );
+        expect(
+          midpoint.secondaryText,
+          Color.lerp(Colors.black, Colors.white, 0.5),
+        );
+        expect(midpoint.mutedText, Color.lerp(Colors.black, Colors.white, 0.5));
+        expect(midpoint.onSurface, Color.lerp(Colors.black, Colors.white, 0.5));
+        expect(
+          midpoint.onSurfaceVariant,
+          Color.lerp(Colors.black, Colors.white, 0.5),
+        );
+        expect(midpoint.outline, Color.lerp(Colors.black, Colors.white, 0.5));
+        expect(midpoint.disabled, Color.lerp(Colors.black, Colors.white, 0.5));
+        expect(
+          midpoint.mediaChrome,
+          Color.lerp(Colors.black, Colors.white, 0.5),
+        );
+        expect(
+          midpoint.mediaChromeForeground,
+          Color.lerp(Colors.black, Colors.white, 0.5),
+        );
+      });
+
+      test('lerp returns this when the other palette is null', () {
+        expect(VineTheme.darkColors.lerp(null, 0.5), VineTheme.darkColors);
+      });
+
+      test('uses value equality and hashCode', () {
+        final copy = VineTheme.darkColors.copyWith();
+
+        expect(copy, VineTheme.darkColors);
+        expect(copy.hashCode, VineTheme.darkColors.hashCode);
+        expect(copy, isNot(VineTheme.lightColors));
+      });
+    });
+
     group('typography - display fonts', () {
       testWidgets('displayLargeFont returns correct style', (tester) async {
         final style = VineTheme.displayLargeFont();

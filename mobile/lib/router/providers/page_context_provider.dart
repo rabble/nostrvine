@@ -38,6 +38,7 @@ import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings/app_language_screen.dart';
+import 'package:openvine/screens/settings/appearance_settings_screen.dart';
 import 'package:openvine/screens/settings/bluesky_settings_screen.dart';
 import 'package:openvine/screens/settings/content_preferences_screen.dart';
 import 'package:openvine/screens/settings/general_settings_screen.dart';
@@ -108,6 +109,7 @@ enum RouteType {
   storageManagement, // Storage screen (clear caches, audit clip library)
   monetizationLinksSettings, // Creator monetization link settings
   appLanguage, // App language picker (UI locale override)
+  appearanceSettings, // Appearance picker (system/light/dark)
   supportCenter, // Support center (bug reports, logs, FAQ, legal links)
   legal, // Legal screen (ToS, Privacy, Safety, DMCA, Licenses)
   nostrSettings, // Nostr settings (relays, media servers, keys, account)
@@ -355,6 +357,9 @@ RouteContext parseRoute(String path) {
 
     case 'app-language':
       return const RouteContext(type: RouteType.appLanguage);
+
+    case 'appearance-settings':
+      return const RouteContext(type: RouteType.appearanceSettings);
 
     case 'support-center':
       return const RouteContext(type: RouteType.supportCenter);
@@ -634,6 +639,9 @@ String buildRoute(RouteContext context) {
 
     case RouteType.appLanguage:
       return AppLanguageScreen.path;
+
+    case RouteType.appearanceSettings:
+      return AppearanceSettingsScreen.path;
 
     case RouteType.supportCenter:
       return SupportCenterScreen.path;
