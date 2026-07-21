@@ -111,13 +111,16 @@ void main() {
         await tester.pumpWidget(buildWidget(mode: VideoRecorderMode.capture));
         await tester.pumpAndSettle();
 
-        final selected = tester
-            .widgetList<Semantics>(find.byType(Semantics))
-            .firstWhere(
-              (s) => s.properties.label == VideoRecorderMode.capture.label,
-            );
-        expect(selected.properties.button, isTrue);
-        expect(selected.properties.selected, isTrue);
+        for (final mode in VideoRecorderMode.values) {
+          final semantics = tester
+              .widgetList<Semantics>(find.byType(Semantics))
+              .firstWhere((s) => s.properties.label == mode.label);
+          expect(semantics.properties.button, isTrue);
+          expect(
+            semantics.properties.selected,
+            mode == VideoRecorderMode.capture,
+          );
+        }
       });
 
       testWidgets('each mode tap target meets the 48dp minimum', (
