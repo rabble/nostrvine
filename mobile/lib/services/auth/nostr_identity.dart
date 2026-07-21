@@ -120,6 +120,51 @@ class LocalNostrIdentity extends NostrIdentity implements IsolateDecryptSigner {
   }
 }
 
+/// Identity with only a public key available.
+///
+/// Used for restored OAuth sessions while offline: the app can keep account
+/// context for read-only/recording flows, but Nostr writes must wait until a
+/// local key or remote signer is available.
+class PubkeyOnlyNostrIdentity extends NostrIdentity {
+  PubkeyOnlyNostrIdentity({required this.pubkey});
+
+  @override
+  final String pubkey;
+
+  @override
+  Future<String?> getPublicKey() async => pubkey;
+
+  @override
+  Future<Event?> signEvent(Event event) async => null;
+
+  @override
+  Future<String?> signCanonicalPayload(Uint8List payload) async => null;
+
+  @override
+  bool get signsRemotelyNonInteractive => false;
+
+  @override
+  bool get signsWithLocalKey => false;
+
+  @override
+  Future<Map?> getRelays() async => null;
+
+  @override
+  Future<String?> encrypt(String pubkey, String plaintext) async => null;
+
+  @override
+  Future<String?> decrypt(String pubkey, String ciphertext) async => null;
+
+  @override
+  Future<String?> nip44Encrypt(String pubkey, String plaintext) async => null;
+
+  @override
+  Future<String?> nip44Decrypt(String pubkey, String ciphertext) async => null;
+
+  @override
+  void close() {}
+}
+
 /// Identity backed by a Keycast OAuth session.
 ///
 /// When a matching local private key is available, signs locally for speed.

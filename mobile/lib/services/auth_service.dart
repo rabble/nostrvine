@@ -4,6 +4,7 @@
 // with secure storage
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:cache_sync/cache_sync.dart';
 import 'package:flutter/foundation.dart';
@@ -456,6 +457,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       null => false,
       LocalNostrIdentity() => true,
       KeycastNostrIdentity() => true,
+      PubkeyOnlyNostrIdentity() => false,
       AmberNostrIdentity() => true,
       BunkerNostrIdentity() => true,
       Nip07NostrIdentity() => true,
@@ -791,19 +793,38 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       final KeycastSession? refreshed;
       try {
         refreshed = await _oauthCoordinator
-            .refreshSession(
-              expectedOwnerPubkey: session?.userPubkey,
-            )
+            .refreshSession(expectedOwnerPubkey: session?.userPubkey)
             .timeout(_startupNetworkOperationTimeout);
-      } on TimeoutException {
+      } on OAuthNetworkException catch (e) {
         Log.warning(
-          'initialize: synchronous refresh timed out '
-          '(${_startupNetworkOperationTimeout.inSeconds}s)',
+          'initialize: synchronous refresh failed due to network: $e',
           name: 'AuthService',
           category: LogCategory.auth,
         );
-        _hasExpiredOAuthSession = true;
-        _setAuthState(AuthState.unauthenticated);
+        if (await _restoreDegradedDivineOAuthSession(session)) {
+          return;
+        }
+        return;
+      } on TimeoutException catch (e) {
+        Log.warning(
+          'initialize: synchronous refresh timed out '
+          '(${_startupNetworkOperationTimeout.inSeconds}s): $e',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        if (await _restoreDegradedDivineOAuthSession(session)) {
+          return;
+        }
+        return;
+      } on SocketException catch (e) {
+        Log.warning(
+          'initialize: synchronous refresh failed due to socket error: $e',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        if (await _restoreDegradedDivineOAuthSession(session)) {
+          return;
+        }
         return;
       }
 
@@ -845,6 +866,30 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       category: LogCategory.auth,
     );
     _setAuthState(AuthState.unauthenticated);
+  }
+
+  Future<bool> _restoreDegradedDivineOAuthSession(
+    KeycastSession? session,
+  ) async {
+    final hasOwnerPubkey = session?.userPubkey?.isNotEmpty ?? false;
+    final hasRefreshToken = session?.refreshToken?.isNotEmpty ?? false;
+    if (session == null || !hasOwnerPubkey || !hasRefreshToken) {
+      _hasExpiredOAuthSession = true;
+      _setAuthState(AuthState.unauthenticated);
+      return false;
+    }
+
+    Log.info(
+      'initialize: keeping Divine OAuth session authenticated while RPC '
+      'refresh waits for connectivity',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
+    await signInWithDivineOAuth(
+      session,
+      rpcCapability: AuthRpcCapability.upgrading,
+    );
+    return true;
   }
 
   /// Returns true when [candidatePubkey] belongs to a different account than
@@ -914,9 +959,19 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     required String caller,
     String? expectedOwnerPubkey,
   }) async {
-    final refreshed = await _oauthCoordinator.refreshSession(
-      expectedOwnerPubkey: expectedOwnerPubkey,
-    );
+    final KeycastSession? refreshed;
+    try {
+      refreshed = await _oauthCoordinator.refreshSession(
+        expectedOwnerPubkey: expectedOwnerPubkey,
+      );
+    } on OAuthNetworkException catch (e) {
+      Log.warning(
+        '$caller: refresh failed due to network: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      return false;
+    }
     if (refreshed != null) {
       Log.info(
         '$caller: refresh succeeded',
@@ -2564,7 +2619,10 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       _nostrConnect.onSignerCallbackReceived(relayUrl: relayUrl);
 
   /// Sign in using OAuth 2.0 flow
-  Future<void> signInWithDivineOAuth(KeycastSession session) async {
+  Future<void> signInWithDivineOAuth(
+    KeycastSession session, {
+    AuthRpcCapability rpcCapability = AuthRpcCapability.rpcReady,
+  }) async {
     Log.debug(
       'Signing in with Divine OAuth session',
       name: 'AuthService',
@@ -2576,11 +2634,15 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     _hasExpiredOAuthSession = false;
 
     try {
-      _keycastSigner = KeycastRpc.fromSession(
-        _oauthConfig,
-        session,
-        onTokenRefresh: _refreshAccessToken,
-      );
+      if (session.hasRpcAccess) {
+        _keycastSigner = KeycastRpc.fromSession(
+          _oauthConfig,
+          session,
+          onTokenRefresh: _refreshAccessToken,
+        );
+      } else {
+        _keycastSigner = null;
+      }
 
       // Prefer the pubkey stored in the session over an RPC call.
       // session.userPubkey is ground truth once populated — it is
@@ -2666,15 +2728,24 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         );
       } else {
         keyContainer = SecureKeyContainer.fromPublicKey(publicKeyHex);
-        Log.info(
-          'signInWithDivineOAuth: no matching local nsec — '
-          'signing via RPC (pubkey=$publicKeyHex)',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
+        if (_keycastSigner != null) {
+          Log.info(
+            'signInWithDivineOAuth: no matching local nsec — '
+            'signing via RPC (pubkey=$publicKeyHex)',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+        } else {
+          Log.info(
+            'signInWithDivineOAuth: no matching local nsec and RPC is not '
+            'ready — restored pubkey-only identity (pubkey=$publicKeyHex)',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+        }
       }
       await _setupUserSession(keyContainer, AuthenticationSource.divineOAuth);
-      _setRpcCapability(AuthRpcCapability.rpcReady);
+      _setRpcCapability(rpcCapability);
 
       Log.info(
         '✅ Divine oauth session successfully integrated for $publicKeyHex',

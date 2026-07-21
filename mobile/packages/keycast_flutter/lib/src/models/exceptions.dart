@@ -24,6 +24,11 @@ class OAuthException extends KeycastException {
       : 'OAuthException: $message';
 }
 
+class OAuthNetworkException extends OAuthException {
+  OAuthNetworkException([String? message])
+    : super(message ?? 'OAuth request failed due to a network error');
+}
+
 class RpcException extends KeycastException {
   RpcException(super.message, {this.method});
   final String? method;

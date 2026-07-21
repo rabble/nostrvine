@@ -10,6 +10,8 @@ import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' show generatePrivateKey;
+import 'package:openvine/models/auth_rpc_capability.dart';
+import 'package:openvine/services/auth/nostr_identity.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -239,6 +241,112 @@ void main() {
       );
     });
 
+    test('network refresh failure + no local keys keeps owner-bound session '
+        'authenticated in upgrading state', () async {
+      SharedPreferences.setMockInitialValues({
+        'authentication_source': 'divineOAuth',
+        'tos_accepted': true,
+      });
+
+      final pubkey = 'ab' * 32;
+      final expiredSession = KeycastSession(
+        bunkerUrl: 'https://login.divine.video/api/nostr',
+        accessToken: 'expired_token',
+        expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
+        refreshToken: 'refresh_token_still_valid',
+        userPubkey: pubkey,
+      );
+      secureStorage['keycast_session'] = jsonEncode(expiredSession.toJson());
+      secureStorage['keycast_refresh_token'] = 'refresh_token_still_valid';
+
+      when(
+        () => mockOAuthClient.refreshSession(
+          userPubkey: any(named: 'userPubkey'),
+        ),
+      ).thenAnswer(
+        (_) => Future<KeycastSession?>.error(OAuthNetworkException('offline')),
+      );
+
+      final authService = createAuthService();
+
+      await runZonedGuarded(
+        () async {
+          await authService.initialize();
+
+          expect(authService.authState, equals(AuthState.authenticated));
+          expect(authService.isAuthenticated, isTrue);
+          expect(
+            authService.authRpcCapability,
+            equals(AuthRpcCapability.upgrading),
+          );
+          expect(authService.currentPublicKeyHex, pubkey);
+          expect(
+            authService.currentIdentity,
+            isA<PubkeyOnlyNostrIdentity>(),
+          );
+          expect(authService.canPublishNostrWritesNow, isFalse);
+          expect(
+            secureStorage['keycast_refresh_token'],
+            'refresh_token_still_valid',
+            reason: 'Offline launch must not discard the retry token.',
+          );
+          verify(
+            () => mockOAuthClient.refreshSession(
+              userPubkey: any(named: 'userPubkey'),
+            ),
+          ).called(1);
+        },
+        (error, stack) {
+          // Ignore background errors
+        },
+      );
+    });
+
+    test(
+      'rejected refresh + no local keys still falls to unauthenticated',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'divineOAuth',
+          'tos_accepted': true,
+        });
+
+        final pubkey = 'ab' * 32;
+        final expiredSession = KeycastSession(
+          bunkerUrl: 'https://login.divine.video/api/nostr',
+          accessToken: 'expired_token',
+          expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
+          refreshToken: 'rejected_refresh_token',
+          userPubkey: pubkey,
+        );
+        secureStorage['keycast_session'] = jsonEncode(expiredSession.toJson());
+
+        when(
+          () => mockOAuthClient.refreshSession(
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        final authService = createAuthService();
+
+        await runZonedGuarded(
+          () async {
+            await authService.initialize();
+
+            expect(authService.authState, equals(AuthState.unauthenticated));
+            expect(authService.isAuthenticated, isFalse);
+            verify(
+              () => mockOAuthClient.refreshSession(
+                userPubkey: any(named: 'userPubkey'),
+              ),
+            ).called(1);
+          },
+          (error, stack) {
+            // Ignore background errors
+          },
+        );
+      },
+    );
+
     test(
       'refresh succeeds → saves new session and attempts signInWithDivineOAuth',
       () async {
@@ -308,126 +416,120 @@ void main() {
       },
     );
 
-    test(
-      'isRpcUpgradeInProgress is false after upgrade completes',
-      () async {
-        // Regression for #4626: isRpcUpgradeInProgress must be false after
-        // _upgradeDivineRpcInBackground finishes so the session-expired sheet
-        // is no longer suppressed once the silent refresh has definitively
-        // resolved.
-        SharedPreferences.setMockInitialValues({
-          'authentication_source': 'divineOAuth',
-          'tos_accepted': true,
-        });
+    test('isRpcUpgradeInProgress is false after upgrade completes', () async {
+      // Regression for #4626: isRpcUpgradeInProgress must be false after
+      // _upgradeDivineRpcInBackground finishes so the session-expired sheet
+      // is no longer suppressed once the silent refresh has definitively
+      // resolved.
+      SharedPreferences.setMockInitialValues({
+        'authentication_source': 'divineOAuth',
+        'tos_accepted': true,
+      });
 
-        arrangeExpiredSessionWithLocalKeys();
+      arrangeExpiredSessionWithLocalKeys();
 
-        // Refresh fails immediately.
-        when(
-          () => mockOAuthClient.refreshSession(
-            userPubkey: any(named: 'userPubkey'),
-          ),
-        ).thenAnswer((_) async => null);
+      // Refresh fails immediately.
+      when(
+        () => mockOAuthClient.refreshSession(
+          userPubkey: any(named: 'userPubkey'),
+        ),
+      ).thenAnswer((_) async => null);
 
-        final authService = createAuthService();
+      final authService = createAuthService();
 
-        await runZonedGuarded(
-          () async {
-            await authService.initialize();
+      await runZonedGuarded(
+        () async {
+          await authService.initialize();
 
-            // The background upgrade is unawaited but resolves quickly since
-            // refreshSession returns immediately. Pump the event queue until
-            // the upgrade finishes — it should complete well within 1 second.
-            final deadline = DateTime.now().add(const Duration(seconds: 3));
-            while (authService.isRpcUpgradeInProgress &&
-                DateTime.now().isBefore(deadline)) {
-              await Future<void>.delayed(const Duration(milliseconds: 10));
-            }
+          // The background upgrade is unawaited but resolves quickly since
+          // refreshSession returns immediately. Pump the event queue until
+          // the upgrade finishes — it should complete well within 1 second.
+          final deadline = DateTime.now().add(const Duration(seconds: 3));
+          while (authService.isRpcUpgradeInProgress &&
+              DateTime.now().isBefore(deadline)) {
+            await Future<void>.delayed(const Duration(milliseconds: 10));
+          }
 
-            expect(
-              authService.isRpcUpgradeInProgress,
-              isFalse,
-              reason:
-                  'isRpcUpgradeInProgress must be false after the upgrade '
-                  'completes (failure path)',
-            );
+          expect(
+            authService.isRpcUpgradeInProgress,
+            isFalse,
+            reason:
+                'isRpcUpgradeInProgress must be false after the upgrade '
+                'completes (failure path)',
+          );
 
-            // Session is still flagged as expired (refresh failed).
-            expect(authService.hasExpiredOAuthSession, isTrue);
-          },
-          (error, stack) {
-            // Ignore background relay/RPC errors
-          },
-        );
-      },
-    );
+          // Session is still flagged as expired (refresh failed).
+          expect(authService.hasExpiredOAuthSession, isTrue);
+        },
+        (error, stack) {
+          // Ignore background relay/RPC errors
+        },
+      );
+    });
 
-    test(
-      'concurrent tryRefreshExpiredSession calls share one in-flight future '
-      '(single-flight guard)',
-      () async {
-        // Regression for #4626: if multiple UI surfaces call
-        // tryRefreshExpiredSession concurrently (e.g. profile header + settings
-        // tile both visible), only one token refresh should be attempted.
-        SharedPreferences.setMockInitialValues({
-          'authentication_source': 'divineOAuth',
-          'tos_accepted': true,
-        });
+    test('concurrent tryRefreshExpiredSession calls share one in-flight future '
+        '(single-flight guard)', () async {
+      // Regression for #4626: if multiple UI surfaces call
+      // tryRefreshExpiredSession concurrently (e.g. profile header + settings
+      // tile both visible), only one token refresh should be attempted.
+      SharedPreferences.setMockInitialValues({
+        'authentication_source': 'divineOAuth',
+        'tos_accepted': true,
+      });
 
-        arrangeExpiredSessionWithLocalKeys();
+      arrangeExpiredSessionWithLocalKeys();
 
-        // Refresh always returns null (failure).
-        when(
-          () => mockOAuthClient.refreshSession(
-            userPubkey: any(named: 'userPubkey'),
-          ),
-        ).thenAnswer((_) async => null);
+      // Refresh always returns null (failure).
+      when(
+        () => mockOAuthClient.refreshSession(
+          userPubkey: any(named: 'userPubkey'),
+        ),
+      ).thenAnswer((_) async => null);
 
-        final authService = createAuthService();
+      final authService = createAuthService();
 
-        await runZonedGuarded(
-          () async {
-            await authService.initialize();
+      await runZonedGuarded(
+        () async {
+          await authService.initialize();
 
-            // Wait for the background upgrade to finish before testing
-            // tryRefreshExpiredSession in isolation. This avoids the
-            // _pendingOAuthRefresh single-flight slot being held by the
-            // background upgrade, which would conflate call counts.
-            final deadline = DateTime.now().add(const Duration(seconds: 5));
-            while (authService.isRpcUpgradeInProgress &&
-                DateTime.now().isBefore(deadline)) {
-              await Future<void>.delayed(const Duration(milliseconds: 10));
-            }
+          // Wait for the background upgrade to finish before testing
+          // tryRefreshExpiredSession in isolation. This avoids the
+          // _pendingOAuthRefresh single-flight slot being held by the
+          // background upgrade, which would conflate call counts.
+          final deadline = DateTime.now().add(const Duration(seconds: 5));
+          while (authService.isRpcUpgradeInProgress &&
+              DateTime.now().isBefore(deadline)) {
+            await Future<void>.delayed(const Duration(milliseconds: 10));
+          }
 
-            // Session should be expired after init with failed refresh.
-            expect(authService.hasExpiredOAuthSession, isTrue);
+          // Session should be expired after init with failed refresh.
+          expect(authService.hasExpiredOAuthSession, isTrue);
 
-            // Reset interaction tracking after init's refresh calls.
-            clearInteractions(mockOAuthClient);
+          // Reset interaction tracking after init's refresh calls.
+          clearInteractions(mockOAuthClient);
 
-            // Two concurrent callers.
-            final results = await Future.wait([
-              authService.tryRefreshExpiredSession(),
-              authService.tryRefreshExpiredSession(),
-            ]);
+          // Two concurrent callers.
+          final results = await Future.wait([
+            authService.tryRefreshExpiredSession(),
+            authService.tryRefreshExpiredSession(),
+          ]);
 
-            // Both callers receive the same result (false — refresh failed).
-            expect(results, equals([false, false]));
+          // Both callers receive the same result (false — refresh failed).
+          expect(results, equals([false, false]));
 
-            // refreshSession was only called ONCE despite two concurrent
-            // tryRefreshExpiredSession calls (single-flight _pendingRefresh).
-            verify(
-              () => mockOAuthClient.refreshSession(
-                userPubkey: any(named: 'userPubkey'),
-              ),
-            ).called(1);
-          },
-          (error, stack) {
-            // Ignore background errors
-          },
-        );
-      },
-    );
+          // refreshSession was only called ONCE despite two concurrent
+          // tryRefreshExpiredSession calls (single-flight _pendingRefresh).
+          verify(
+            () => mockOAuthClient.refreshSession(
+              userPubkey: any(named: 'userPubkey'),
+            ),
+          ).called(1);
+        },
+        (error, stack) {
+          // Ignore background errors
+        },
+      );
+    });
 
     test(
       'hung refresh fails within the bounded time and clears the pending '

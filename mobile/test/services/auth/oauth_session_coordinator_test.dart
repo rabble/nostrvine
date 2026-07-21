@@ -114,6 +114,19 @@ void main() {
         expect(refreshSucceededCalls, isZero);
       });
 
+      test('rethrows OAuthNetworkException from the client', () async {
+        when(
+          () =>
+              oauthClient.refreshSession(userPubkey: any(named: 'userPubkey')),
+        ).thenThrow(OAuthNetworkException('offline'));
+
+        await expectLater(
+          build().refreshSession(),
+          throwsA(isA<OAuthNetworkException>()),
+        );
+        expect(refreshSucceededCalls, isZero);
+      });
+
       test('returns null when no OAuth client is configured', () async {
         final result = await build(nullClient: true).refreshSession();
 
@@ -160,16 +173,21 @@ void main() {
 
           final coordinator = build();
 
-          KeycastSession? firstResult;
+          Object? firstError;
           var firstDone = false;
-          coordinator.refreshSession().then((r) {
-            firstResult = r;
-            firstDone = true;
-          });
+          coordinator.refreshSession().then(
+            (_) {
+              firstDone = true;
+            },
+            onError: (Object error) {
+              firstError = error;
+              firstDone = true;
+            },
+          );
 
           async.elapse(oauthTimeout + const Duration(milliseconds: 1));
           expect(firstDone, isTrue);
-          expect(firstResult, isNull);
+          expect(firstError, isA<OAuthNetworkException>());
           expect(calls, equals(1));
 
           // Slot released: a fresh call issues a new client request.
@@ -323,41 +341,37 @@ void main() {
         },
       );
 
-      test(
-        "a detached future's late completion does not clobber a newer "
-        'in-flight slot',
-        () async {
-          final gates = [
-            Completer<KeycastSession?>(),
-            Completer<KeycastSession?>(),
-          ];
-          var calls = 0;
-          when(
-            () => oauthClient.refreshSession(
-              userPubkey: any(named: 'userPubkey'),
-            ),
-          ).thenAnswer((_) => gates[calls++].future);
+      test("a detached future's late completion does not clobber a newer "
+          'in-flight slot', () async {
+        final gates = [
+          Completer<KeycastSession?>(),
+          Completer<KeycastSession?>(),
+        ];
+        var calls = 0;
+        when(
+          () =>
+              oauthClient.refreshSession(userPubkey: any(named: 'userPubkey')),
+        ).thenAnswer((_) => gates[calls++].future);
 
-          final coordinator = build();
-          final first = coordinator.refreshSession(); // slot = refresh1
-          coordinator.detach(); // slot = null
-          final second = coordinator.refreshSession(); // slot = refresh2 (hung)
-          expect(calls, equals(2));
+        final coordinator = build();
+        final first = coordinator.refreshSession(); // slot = refresh1
+        coordinator.detach(); // slot = null
+        final second = coordinator.refreshSession(); // slot = refresh2 (hung)
+        expect(calls, equals(2));
 
-          // The detached refresh1 completes AFTER refresh2 took the slot.
-          gates[0].complete(null);
-          await first;
+        // The detached refresh1 completes AFTER refresh2 took the slot.
+        gates[0].complete(null);
+        await first;
 
-          // refresh1's whenComplete must NOT null refresh2's slot (identical
-          // guard is false), so a third call JOINS refresh2 instead of
-          // issuing a new client request.
-          final third = coordinator.refreshSession();
-          expect(calls, equals(2));
+        // refresh1's whenComplete must NOT null refresh2's slot (identical
+        // guard is false), so a third call JOINS refresh2 instead of
+        // issuing a new client request.
+        final third = coordinator.refreshSession();
+        expect(calls, equals(2));
 
-          gates[1].complete(_session());
-          await Future.wait([second, third]);
-        },
-      );
+        gates[1].complete(_session());
+        await Future.wait([second, third]);
+      });
 
       test('clears the in-flight expired-session refresh', () async {
         final coordinator = build();

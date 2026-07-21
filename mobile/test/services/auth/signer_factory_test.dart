@@ -162,6 +162,17 @@ void main() {
         expect(identity, isA<LocalNostrIdentity>());
       });
 
+      test('divineOAuth with pub-key-only container and no remote signer '
+          'builds PubkeyOnlyNostrIdentity', () {
+        final identity = factory.buildIdentity(
+          keyContainer: pubOnlyContainer(),
+          authSource: AuthenticationSource.divineOAuth,
+        );
+
+        expect(identity, isA<PubkeyOnlyNostrIdentity>());
+        expect(identity.signsWithLocalKey, isFalse);
+      });
+
       test('throws StateError for pub-key-only container with no remote '
           'signer', () {
         expect(

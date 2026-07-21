@@ -144,21 +144,23 @@ class KeycastOAuth {
   /// Attempt to refresh the session using a stored refresh token.
   ///
   /// Returns the new [KeycastSession] on success, or `null` if refresh
-  /// is not possible (no refresh token) or fails.
+  /// is not possible (no refresh token) or the server rejects the token.
   ///
   /// [userPubkey] is attached to the session before it is persisted so
   /// the saved session is always owner-bound.
   ///
   /// On HTTP error the consumed refresh token is cleared (server may have
-  /// rotated it). On network error or timeout the token is preserved since
-  /// the server may not have consumed it.
+  /// rotated it). On network error or timeout an [OAuthNetworkException] is
+  /// thrown and the token is preserved since the server may not have consumed
+  /// it.
   Future<KeycastSession?> refreshSession({String? userPubkey}) async {
     final refreshEpoch = _storageEpoch;
     final refreshToken = await _storage.read(_storageKeyRefreshToken);
     if (refreshToken == null) return null;
 
+    late final http.Response response;
     try {
-      final response = await _client
+      response = await _client
           .post(
             Uri.parse(config.tokenUrl),
             headers: {'Content-Type': 'application/json'},
@@ -169,29 +171,29 @@ class KeycastOAuth {
             }),
           )
           .timeout(requestTimeout);
-
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body) as Map<String, dynamic>;
-        final tokenResponse = TokenResponse.fromJson(json);
-        var session = KeycastSession.fromTokenResponse(tokenResponse);
-        if (userPubkey != null && userPubkey.isNotEmpty) {
-          session = session.copyWith(userPubkey: userPubkey);
-        }
-        if (refreshEpoch != _storageEpoch) {
-          return null;
-        }
-        await _saveSession(session);
-        return session;
-      }
-
-      // HTTP error — server consumed the token, clear it
-      await _storage.delete(_storageKeyRefreshToken);
-      return null;
-    } catch (_) {
+    } catch (error) {
       // Network error or timeout — server may not have consumed the
-      // token, keep it so the next attempt can retry the refresh
-      return null;
+      // token, keep it so the next attempt can retry the refresh.
+      throw OAuthNetworkException('Refresh request failed: $error');
     }
+
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      final tokenResponse = TokenResponse.fromJson(json);
+      var session = KeycastSession.fromTokenResponse(tokenResponse);
+      if (userPubkey != null && userPubkey.isNotEmpty) {
+        session = session.copyWith(userPubkey: userPubkey);
+      }
+      if (refreshEpoch != _storageEpoch) {
+        return null;
+      }
+      await _saveSession(session);
+      return session;
+    }
+
+    // HTTP error — server consumed the token, clear it
+    await _storage.delete(_storageKeyRefreshToken);
+    return null;
   }
 
   /// Get an active session, refreshing if the current one is expired.

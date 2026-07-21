@@ -169,7 +169,15 @@ class SignerFactory {
       }
       return LocalNostrIdentity(keyContainer: keyContainer);
     }
-    // Pub-key-only container with no remote signer — cannot sign.
+    if (authSource == AuthenticationSource.divineOAuth) {
+      Log.warning(
+        '_buildIdentity: using pubkey-only Divine OAuth identity with no '
+        'signing capability. pubkey=$pubkey',
+        name: 'SignerFactory',
+        category: LogCategory.auth,
+      );
+      return PubkeyOnlyNostrIdentity(pubkey: pubkey);
+    }
     throw StateError(
       '_buildIdentity: pub-key-only container with no remote signer. '
       'source=${authSource.name}, pubkey=$pubkey',

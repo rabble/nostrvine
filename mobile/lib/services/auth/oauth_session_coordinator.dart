@@ -119,11 +119,11 @@ class OAuthSessionCoordinator {
             Log.warning(
               '_refreshOAuthSession: timed out after '
               '${_oauthRefreshTimeout.inMilliseconds}ms — '
-              'treating as failed',
+              'treating as network failure',
               name: 'OAuthSessionCoordinator',
               category: LogCategory.auth,
             );
-            return null;
+            throw OAuthNetworkException('OAuth refresh timed out');
           },
         )
         .whenComplete(() {
@@ -155,6 +155,8 @@ class OAuthSessionCoordinator {
         category: LogCategory.auth,
       );
       return refreshed;
+    } on OAuthNetworkException {
+      rethrow;
     } catch (e) {
       Log.error(
         '_refreshOAuthSession: failed: $e',
@@ -172,7 +174,12 @@ class OAuthSessionCoordinator {
   /// multiple in-flight RPC 401s and app-resume refresh all share a single
   /// refresh token exchange.
   Future<String?> refreshAccessToken() async {
-    final refreshed = await refreshSession();
+    final KeycastSession? refreshed;
+    try {
+      refreshed = await refreshSession();
+    } on OAuthNetworkException {
+      return null;
+    }
     return refreshed?.accessToken;
   }
 
