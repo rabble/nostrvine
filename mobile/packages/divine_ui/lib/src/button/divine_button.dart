@@ -385,7 +385,7 @@ class _DivineButtonContent extends StatelessWidget {
       boxShadow: _isEnabled ? _boxShadow : null,
     );
 
-    Widget inkChild = Ink(
+    final inkChild = Ink(
       decoration: decoration,
       child: _AdaptiveButtonPadding(
         vertical: _verticalPadding,
@@ -394,32 +394,6 @@ class _DivineButtonContent extends StatelessWidget {
         child: content,
       ),
     );
-
-    // small (40px) is below the 48dp minimum tap target. The pre-existing
-    // 4px outer halo (see the DivineButtonSize.small doc above) now lives
-    // inside InkWell instead of outside Material, so it counts as real tap
-    // area rather than a cosmetic margin — the rendered footprint is
-    // unchanged. `Padding` (unlike `Center`/`Align`) keeps a tight
-    // constraint tight, so a small button in `Expanded` still stretches
-    // minus the halo, same as before. `minWidth`/`minHeight` guard the
-    // content-hugging case. Full rationale: PR #6236.
-    //
-    // tiny (32px) deliberately keeps a 32px tap target — it sits flush next
-    // to a 32px avatar / type icon, and expanding the tap target would bleed
-    // into that neighbor's hit area. Tracked as a known a11y gap in #6235
-    // pending design input.
-    if (size == DivineButtonSize.small) {
-      inkChild = ConstrainedBox(
-        constraints: const BoxConstraints(
-          minWidth: kMinInteractiveDimension,
-          minHeight: kMinInteractiveDimension,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(4),
-          child: inkChild,
-        ),
-      );
-    }
 
     Widget button = AnimatedOpacity(
       duration: const Duration(milliseconds: 150),
@@ -431,10 +405,34 @@ class _DivineButtonContent extends StatelessWidget {
           borderRadius: BorderRadius.circular(_borderRadius),
           splashColor: _foregroundColor.withValues(alpha: 0.1),
           highlightColor: _foregroundColor.withValues(alpha: 0.05),
+          excludeFromSemantics: size == DivineButtonSize.small,
           child: inkChild,
         ),
       ),
     );
+
+    // small (40px) is below the 48dp minimum tap target. Keep the InkWell on
+    // the painted 40px chip so pressed ink is clipped to the visible button,
+    // then make the pre-existing 4px outer halo tappable with an opaque
+    // wrapper. Full rationale: PR #6236.
+    //
+    // tiny (32px) deliberately keeps a 32px tap target — it sits flush next
+    // to a 32px avatar / type icon, and expanding the tap target would bleed
+    // into that neighbor's hit area. Tracked as a known a11y gap in #6235
+    // pending design input.
+    if (size == DivineButtonSize.small) {
+      button = ConstrainedBox(
+        constraints: const BoxConstraints(
+          minWidth: kMinInteractiveDimension,
+          minHeight: kMinInteractiveDimension,
+        ),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _isEnabled ? onPressed : null,
+          child: Padding(padding: const EdgeInsets.all(4), child: button),
+        ),
+      );
+    }
 
     // Give an icon-only button an accessible name. A labelled button already
     // exposes one via its Text child, so this is only wired when provided.

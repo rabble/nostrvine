@@ -151,6 +151,60 @@ void main() {
 
         expect(find.text('Test Label'), findsOneWidget);
       });
+
+      testWidgets('positions text row below the floating label', (
+        tester,
+      ) async {
+        final focusNode = FocusNode();
+        await tester.pumpWidget(
+          buildTestWidget(label: 'Email', focusNode: focusNode),
+        );
+
+        final containerFinder = find
+            .ancestor(
+              of: find.byType(TextField),
+              matching: find.byType(Container),
+            )
+            .first;
+
+        double textRowTop() {
+          return tester.getTopLeft(find.byType(EditableText)).dy -
+              tester.getTopLeft(containerFinder).dy;
+        }
+
+        expect(textRowTop(), equals(26));
+
+        focusNode.requestFocus();
+        await tester.pumpAndSettle();
+
+        expect(textRowTop(), equals(36));
+
+        focusNode.dispose();
+      });
+
+      testWidgets('positions prefilled text below the floating label', (
+        tester,
+      ) async {
+        final controller = TextEditingController(text: 'liz@example.com');
+        await tester.pumpWidget(
+          buildTestWidget(label: 'Email', controller: controller),
+        );
+        await tester.pumpAndSettle();
+
+        final containerFinder = find
+            .ancestor(
+              of: find.byType(TextField),
+              matching: find.byType(Container),
+            )
+            .first;
+        final textTop =
+            tester.getTopLeft(find.byType(EditableText)).dy -
+            tester.getTopLeft(containerFinder).dy;
+
+        expect(textTop, equals(36));
+
+        controller.dispose();
+      });
     });
 
     group('interactions', () {
@@ -225,10 +279,8 @@ void main() {
 
           expect(focusNode.hasFocus, isFalse);
 
-          // The input fills the whole 76px container (see
-          // _AuthTextFieldContent's Positioned.fill), so tapping the padding
-          // area above the visible text row still hits the TextFormField
-          // itself and exercises its built-in requestFocus path.
+          // The TextField fills the 76px container for tap coverage, while
+          // content padding keeps the visible text row lower in the field.
           final containerFinder = find.byType(Container).first;
           final topLeft = tester.getTopLeft(containerFinder);
           await tester.tapAt(topLeft + const Offset(30, 5));

@@ -471,8 +471,31 @@ void main() {
           // (non-tappable) outer margin.
           final tapTarget = tester.getSize(find.byType(DivineButton));
           final chipSize = tester.getSize(find.byType(Ink));
+          final inkWellSize = tester.getSize(find.byType(InkWell));
           expect(tapTarget.height, equals(48));
           expect(chipSize.height, equals(40));
+          expect(inkWellSize.height, equals(40));
+        },
+      );
+
+      testWidgets(
+        'small outer halo is tappable without expanding pressed ink',
+        (tester) async {
+          var taps = 0;
+          await tester.pumpWidget(
+            buildTestWidget(
+              size: DivineButtonSize.small,
+              onPressed: () => taps += 1,
+            ),
+          );
+
+          final buttonTopLeft = tester.getTopLeft(find.byType(DivineButton));
+          await tester.tapAt(buttonTopLeft + const Offset(2, 24));
+          await tester.pump();
+
+          expect(taps, equals(1));
+          expect(tester.getSize(find.byType(DivineButton)).height, equals(48));
+          expect(tester.getSize(find.byType(InkWell)).height, equals(40));
         },
       );
 
@@ -1199,8 +1222,10 @@ void main() {
         // divine_icon_button.dart).
         final chipSize = tester.getSize(find.byType(Ink));
         final tapTarget = tester.getSize(find.byType(DivineButton));
+        final inkWellSize = tester.getSize(find.byType(InkWell));
         expect(chipSize, equals(const Size(40, 40)));
         expect(tapTarget, equals(const Size(48, 48)));
+        expect(inkWellSize, equals(const Size(40, 40)));
       });
 
       testWidgets('base size uses DivineIconButton padding', (tester) async {
