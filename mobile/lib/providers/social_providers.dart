@@ -40,6 +40,7 @@ import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/services/view_event_retry_service.dart';
+import 'package:openvine/utils/open_vine_image_cache.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -118,10 +119,7 @@ Stream<void> dmMessageRetryTriggerWithRelayRepair({
 
 /// Whether two connectivity reports describe the same set of transports.
 /// Order-insensitive: `connectivity_plus` gives no ordering guarantee.
-bool _sameConnectivity(
-  List<ConnectivityResult> a,
-  List<ConnectivityResult> b,
-) {
+bool _sameConnectivity(List<ConnectivityResult> a, List<ConnectivityResult> b) {
   final aSet = a.toSet();
   final bSet = b.toSet();
   return aSet.length == bSet.length && aSet.containsAll(bSet);
@@ -644,6 +642,7 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
   // those rows are already scoped by ownerPubkey.
   service.onDatabaseCleanup =
       ({String? userPubkey, bool deleteUserData = false}) async {
+        await clearOpenVineImageCache();
         try {
           await ref.read(dmRepositoryProvider).stopListening();
         } catch (_) {

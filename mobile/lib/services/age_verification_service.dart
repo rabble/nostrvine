@@ -7,14 +7,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 class AgeVerificationService {
-  AgeVerificationService({bool Function()? isProtectedMinor})
-    : _isProtectedMinor = isProtectedMinor ?? _notProtected;
+  AgeVerificationService({
+    bool Function()? isProtectedMinor,
+    Future<void> Function()? onAdultMediaAccessRevoked,
+  }) : _isProtectedMinor = isProtectedMinor ?? _notProtected,
+       _onAdultMediaAccessRevoked = onAdultMediaAccessRevoked;
 
   static bool _notProtected() => false;
 
   /// Whether the current account is a protected minor. When true, adult content
   /// is force-locked off and the self-attestation bypass is unavailable (#175).
   final bool Function() _isProtectedMinor;
+  final Future<void> Function()? _onAdultMediaAccessRevoked;
 
   static const String _ageVerifiedKey = 'age_verified';
   static const String _verificationDateKey = 'age_verification_date';
@@ -129,6 +133,9 @@ class AgeVerificationService {
       }
 
       _isAdultContentVerified = verified;
+      if (!verified) {
+        await _notifyAdultMediaAccessRevoked();
+      }
 
       Log.debug(
         'Adult content verification status updated: $verified',
@@ -189,6 +196,7 @@ class AgeVerificationService {
       _verificationDate = null;
       _isAdultContentVerified = null;
       _adultContentVerificationDate = null;
+      await _notifyAdultMediaAccessRevoked();
 
       Log.debug(
         'Age verification status cleared',
@@ -198,6 +206,20 @@ class AgeVerificationService {
     } catch (e) {
       Log.error(
         'Error clearing age verification status: $e',
+        name: 'AgeVerificationService',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  Future<void> _notifyAdultMediaAccessRevoked() async {
+    final callback = _onAdultMediaAccessRevoked;
+    if (callback == null) return;
+    try {
+      await callback();
+    } catch (e) {
+      Log.error(
+        'Error clearing adult media access caches: $e',
         name: 'AgeVerificationService',
         category: LogCategory.system,
       );

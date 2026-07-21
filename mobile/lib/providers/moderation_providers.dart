@@ -18,6 +18,7 @@ import 'package:openvine/services/blocklist_content_filter.dart';
 import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/divine_host_filter_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
+import 'package:openvine/utils/open_vine_image_cache.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:videos_repository/videos_repository.dart';
@@ -81,6 +82,7 @@ final divineHostFilterVersionProvider = Provider<int>((ref) {
 AgeVerificationService ageVerificationService(Ref ref) {
   final service = AgeVerificationService(
     isProtectedMinor: () => ref.read(isProtectedMinorProvider),
+    onAdultMediaAccessRevoked: clearOpenVineImageCache,
   );
   service.initialize(); // Initialize asynchronously
   return service;
@@ -93,6 +95,7 @@ ContentFilterService contentFilterService(Ref ref) {
   final ageVerificationService = ref.watch(ageVerificationServiceProvider);
   final service = ContentFilterService(
     ageVerificationService: ageVerificationService,
+    onAdultMediaAccessRevoked: clearOpenVineImageCache,
   );
   service.initialize(); // Initialize asynchronously
   ref.onDispose(service.dispose);
@@ -174,9 +177,7 @@ ModerationLabelService moderationLabelService(Ref ref) {
   unawaited(startRelaySync(ref.read(nostrSessionProvider)));
 
   ref.listen<NostrSessionReadiness>(nostrSessionProvider, (_, next) {
-    unawaited(
-      startRelaySync(next),
-    );
+    unawaited(startRelaySync(next));
   });
 
   ref.onDispose(() {

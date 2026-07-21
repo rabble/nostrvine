@@ -329,4 +329,116 @@ void main() {
       verify(() => mockMediaViewerAuthService.canCreateHeaders).called(1);
     });
   });
+
+  group('MediaAuthInterceptor - passive media auth', () {
+    test(
+      'creates hash-bound headers only for verified users with show preference',
+      () async {
+        when(
+          () => mockMediaViewerAuthService.canCreateHeaders,
+        ).thenReturn(true);
+        when(
+          () => mockAgeVerificationService.isAdultContentVerified,
+        ).thenReturn(true);
+        when(
+          () => mockContentFilterService.adultPlaybackPreference,
+        ).thenReturn(ContentFilterPreference.show);
+        when(
+          () => mockMediaViewerAuthService.createAuthHeaders(
+            sha256Hash: any(named: 'sha256Hash'),
+            url: any(named: 'url'),
+            serverUrl: any(named: 'serverUrl'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              const ViewerAuthAuthorized({'Authorization': 'Nostr token'}),
+        );
+
+        final result = await interceptor.createPassiveAuthHeadersForAdultMedia(
+          sha256Hash:
+              '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+          serverUrl: 'https://media.divine.video',
+        );
+
+        expect(result.headersOrNull, equals({'Authorization': 'Nostr token'}));
+        verify(
+          () => mockMediaViewerAuthService.createAuthHeaders(
+            sha256Hash:
+                '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+            serverUrl: 'https://media.divine.video',
+          ),
+        ).called(1);
+      },
+    );
+
+    test('does not create passive headers for warn preference', () async {
+      when(() => mockMediaViewerAuthService.canCreateHeaders).thenReturn(true);
+      when(
+        () => mockAgeVerificationService.isAdultContentVerified,
+      ).thenReturn(true);
+      when(
+        () => mockContentFilterService.adultPlaybackPreference,
+      ).thenReturn(ContentFilterPreference.warn);
+
+      final result = await interceptor.createPassiveAuthHeadersForAdultMedia(
+        sha256Hash:
+            '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+        serverUrl: 'https://media.divine.video',
+      );
+
+      expect(result, isA<ViewerAuthUnavailable>());
+      verifyNever(
+        () => mockMediaViewerAuthService.createAuthHeaders(
+          sha256Hash: any(named: 'sha256Hash'),
+          url: any(named: 'url'),
+          serverUrl: any(named: 'serverUrl'),
+        ),
+      );
+    });
+
+    test('does not create passive headers for unverified users', () async {
+      when(() => mockMediaViewerAuthService.canCreateHeaders).thenReturn(true);
+      when(
+        () => mockAgeVerificationService.isAdultContentVerified,
+      ).thenReturn(false);
+
+      final result = await interceptor.createPassiveAuthHeadersForAdultMedia(
+        sha256Hash:
+            '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+      );
+
+      expect(result, isA<ViewerAuthUnavailable>());
+      verifyNever(
+        () => mockMediaViewerAuthService.createAuthHeaders(
+          sha256Hash: any(named: 'sha256Hash'),
+          url: any(named: 'url'),
+          serverUrl: any(named: 'serverUrl'),
+        ),
+      );
+    });
+
+    test('does not fall back to URL-bound auth when hash is empty', () async {
+      when(() => mockMediaViewerAuthService.canCreateHeaders).thenReturn(true);
+      when(
+        () => mockAgeVerificationService.isAdultContentVerified,
+      ).thenReturn(true);
+      when(
+        () => mockContentFilterService.adultPlaybackPreference,
+      ).thenReturn(ContentFilterPreference.show);
+
+      final result = await interceptor.createPassiveAuthHeadersForAdultMedia(
+        sha256Hash: '',
+        serverUrl: 'https://media.divine.video',
+      );
+
+      expect(result, isA<ViewerAuthUnavailable>());
+      verifyNever(
+        () => mockMediaViewerAuthService.createAuthHeaders(
+          sha256Hash: any(named: 'sha256Hash'),
+          url: any(named: 'url'),
+          serverUrl: any(named: 'serverUrl'),
+        ),
+      );
+    });
+  });
 }

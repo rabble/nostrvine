@@ -35,6 +35,44 @@ class MediaAuthInterceptor {
 
   bool get canAutoAuthorizeAdultMedia => shouldAutoAuthorizeAgeRestrictedMedia;
 
+  /// Creates viewer-auth headers for passive thumbnail/background image loads.
+  ///
+  /// This is intentionally stricter than playback auto-auth: thumbnails reveal
+  /// content without a tap, so only verified viewers who opted every configurable
+  /// adult category into `show` get a silent retry. The request must also be
+  /// hash-bound so this never falls back to URL-bound NIP-98 for Blossom blobs.
+  Future<ViewerAuthResult> createPassiveAuthHeadersForAdultMedia({
+    required String sha256Hash,
+    String? serverUrl,
+  }) async {
+    try {
+      if (!_mediaViewerAuthService.canCreateHeaders ||
+          !_ageVerificationService.isAdultContentVerified ||
+          _contentFilterService.adultPlaybackPreference !=
+              ContentFilterPreference.show ||
+          sha256Hash.isEmpty) {
+        return const ViewerAuthUnavailable();
+      }
+
+      Log.debug(
+        '✅ Passive-authorizing adult media thumbnail',
+        name: 'MediaAuthInterceptor',
+        category: LogCategory.system,
+      );
+      return await _mediaViewerAuthService.createAuthHeaders(
+        sha256Hash: sha256Hash,
+        serverUrl: serverUrl,
+      );
+    } catch (e) {
+      Log.error(
+        'Failed to passive-authorize adult media: $e',
+        name: 'MediaAuthInterceptor',
+        category: LogCategory.system,
+      );
+      return const ViewerAuthUnavailable();
+    }
+  }
+
   /// Creates viewer-auth headers only when the user's existing adult-content
   /// preferences allow automatic playback.
   ///

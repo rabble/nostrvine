@@ -4,9 +4,14 @@ import 'package:blurhash_service/blurhash_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart' show SynchronousFuture;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' hide AspectRatio;
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/viewer_auth_result.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/widgets/blurhash_display.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
@@ -40,6 +45,8 @@ class _SyncImageProvider extends ImageProvider<_SyncImageProvider> {
     SynchronousFuture<ImageInfo>(ImageInfo(image: image)),
   );
 }
+
+class _MockMediaAuthInterceptor extends Mock implements MediaAuthInterceptor {}
 
 /// Creates a [ui.Image] of exactly [width] x [height] without an async decode.
 ui.Image _syncImage(int width, int height) {
@@ -286,10 +293,123 @@ void main() {
     );
 
     testWidgets(
+      'retries Divine-hosted thumbnails with passive BUD-01 auth after 401',
+      (tester) async {
+        final mediaAuthInterceptor = _MockMediaAuthInterceptor();
+        const hash =
+            '72d7eda61074b17e077fb9f4a8b48166cdeb65cb07e053aafa6e69d5fa165995';
+        const url = 'https://media.divine.video/$hash.jpg';
+        when(
+          () => mediaAuthInterceptor.createPassiveAuthHeadersForAdultMedia(
+            sha256Hash: any(named: 'sha256Hash'),
+            serverUrl: any(named: 'serverUrl'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              const ViewerAuthAuthorized({'Authorization': 'Nostr token'}),
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              mediaAuthInterceptorProvider.overrideWithValue(
+                mediaAuthInterceptor,
+              ),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: VideoThumbnailWidget(
+                  video: createTestVideoEvent(
+                    id: 'test-auth-thumb',
+                    thumbnailUrl: url,
+                  ),
+                  width: 200,
+                  height: 200,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final image = tester.widget<Image>(find.byType(Image));
+        image.errorBuilder!(
+          tester.element(find.byType(Image)),
+          NetworkImageLoadException(statusCode: 401, uri: Uri.parse(url)),
+          StackTrace.current,
+        );
+
+        await tester.pump();
+        await tester.pump();
+
+        final retriedImage = tester.widget<Image>(find.byType(Image));
+        final resizedProvider = retriedImage.image as ResizeImage;
+        final networkProvider = resizedProvider.imageProvider as NetworkImage;
+        expect(
+          networkProvider.headers,
+          equals({'Authorization': 'Nostr token'}),
+        );
+        verify(
+          () => mediaAuthInterceptor.createPassiveAuthHeadersForAdultMedia(
+            sha256Hash: hash,
+            serverUrl: 'https://media.divine.video',
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'does not retry non-content-addressed Divine thumbnail URLs with auth',
+      (tester) async {
+        final mediaAuthInterceptor = _MockMediaAuthInterceptor();
+        const url = 'https://media.divine.video/not-a-hash.jpg';
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              mediaAuthInterceptorProvider.overrideWithValue(
+                mediaAuthInterceptor,
+              ),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: VideoThumbnailWidget(
+                  video: createTestVideoEvent(
+                    id: 'test-no-hash-thumb',
+                    thumbnailUrl: url,
+                  ),
+                  width: 200,
+                  height: 200,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final image = tester.widget<Image>(find.byType(Image));
+        image.errorBuilder!(
+          tester.element(find.byType(Image)),
+          NetworkImageLoadException(statusCode: 401, uri: Uri.parse(url)),
+          StackTrace.current,
+        );
+
+        await tester.pump();
+
+        verifyNever(
+          () => mediaAuthInterceptor.createPassiveAuthHeadersForAdultMedia(
+            sha256Hash: any(named: 'sha256Hash'),
+            serverUrl: any(named: 'serverUrl'),
+          ),
+        );
+      },
+    );
+
+    testWidgets(
       'ImageWithDimensionsListener reports decoded image dimensions',
-      (
-        tester,
-      ) async {
+      (tester) async {
         final image = _syncImage(640, 360);
         addTearDown(image.dispose);
 

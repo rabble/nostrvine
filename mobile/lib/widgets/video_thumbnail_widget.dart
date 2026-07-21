@@ -1,12 +1,18 @@
 // ABOUTME: Smart video thumbnail widget that displays thumbnails or blurhash placeholders
 // ABOUTME: Uses existing thumbnail URLs from video events and falls back to blurhash when missing
 
+import 'dart:async';
+
 import 'package:blurhash_service/blurhash_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart'
     show HttpExceptionWithStatus;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide AspectRatio, LogCategory;
+import 'package:openvine/models/viewer_auth_result.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/utils/blossom_blob_hash.dart';
 import 'package:openvine/widgets/blurhash_display.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -176,7 +182,7 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
 
 /// Error-safe network image widget that prevents HTTP 404 and other network exceptions.
 /// Uses [VineCachedImage] for shared cache-backed loading where appropriate.
-class _SafeNetworkImage extends StatelessWidget {
+class _SafeNetworkImage extends StatefulWidget {
   const _SafeNetworkImage({
     required this.url,
     required this.videoId,
@@ -214,6 +220,74 @@ class _SafeNetworkImage extends StatelessWidget {
   }
 
   @override
+  State<_SafeNetworkImage> createState() => _SafeNetworkImageState();
+}
+
+class _SafeNetworkImageState extends State<_SafeNetworkImage> {
+  Map<String, String>? _authHeaders;
+  bool _authRetryAttempted = false;
+
+  @override
+  void didUpdateWidget(covariant _SafeNetworkImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.url != widget.url) {
+      _authHeaders = null;
+      _authRetryAttempted = false;
+    }
+  }
+
+  Future<void> _maybeRetryWithPassiveAuth(Object error) async {
+    if (_authRetryAttempted || !_isAuthChallenge(error)) return;
+    _authRetryAttempted = true;
+
+    final sha256Hash = extractSha256FromBlossomUrl(widget.url);
+    if (sha256Hash == null) return;
+
+    final authResult = await ProviderScope.containerOf(context, listen: false)
+        .read(mediaAuthInterceptorProvider)
+        .createPassiveAuthHeadersForAdultMedia(
+          sha256Hash: sha256Hash,
+          serverUrl: _extractServerUrl(widget.url),
+        );
+    if (!mounted) return;
+
+    switch (authResult) {
+      case ViewerAuthAuthorized(:final headers):
+        setState(() {
+          _authHeaders = headers;
+        });
+      case ViewerAuthSignerUnreachable():
+      case ViewerAuthBlockedByPreference():
+      case ViewerAuthUnavailable():
+        break;
+    }
+  }
+
+  bool _isAuthChallenge(Object error) {
+    if (error is NetworkImageLoadException) {
+      return error.statusCode == 401 || error.statusCode == 403;
+    }
+    if (error is HttpExceptionWithStatus) {
+      return error.statusCode == 401 || error.statusCode == 403;
+    }
+    final message = error.toString();
+    return message.contains(' 401 ') ||
+        message.contains(' 403 ') ||
+        message.contains('statusCode: 401') ||
+        message.contains('statusCode: 403');
+  }
+
+  String? _extractServerUrl(String url) {
+    try {
+      final uri = Uri.parse(url);
+      final portSuffix = uri.hasPort ? ':${uri.port}' : '';
+      return '${uri.scheme}://${uri.host}$portSuffix';
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -223,30 +297,36 @@ class _SafeNetworkImage extends StatelessWidget {
         // thumbnails so they visibly reload on the way back. Capping the decode
         // width keeps far more thumbnails resident in the cache.
         final cacheWidth = _decodeWidth(context, constraints.maxWidth);
+        final resolvedUrl = widget.url;
 
         // Debug mode: test with plain Image.network to isolate cache issues
-        if (_useSimpleImageNetwork || _shouldBypassCacheManager(url)) {
+        if (_SafeNetworkImage._useSimpleImageNetwork ||
+            _SafeNetworkImage._shouldBypassCacheManager(resolvedUrl)) {
           final imageProvider = ResizeImage.resizeIfNeeded(
             cacheWidth,
             null,
-            NetworkImage(url),
+            NetworkImage(resolvedUrl, headers: _authHeaders),
           );
           return ImageWithDimensionsListener(
             imageProvider: imageProvider,
-            onImageDimensionsResolved: onImageDimensionsResolved == null
+            onImageDimensionsResolved: widget.onImageDimensionsResolved == null
                 ? null
-                : (width, height) =>
-                      onImageDimensionsResolved!(url, width, height),
+                : (width, height) => widget.onImageDimensionsResolved!(
+                    resolvedUrl,
+                    width,
+                    height,
+                  ),
             child: Image(
               image: imageProvider,
-              width: width,
-              height: height,
-              fit: fit,
+              width: widget.width,
+              height: widget.height,
+              fit: widget.fit,
               alignment: Alignment.topCenter,
               errorBuilder: (context, error, stackTrace) {
+                unawaited(_maybeRetryWithPassiveAuth(error));
                 Log.warning(
-                  '🖼️ [Image.network] Thumbnail load failed for video $videoId:\n'
-                  '  URL: $url\n'
+                  '🖼️ [Image.network] Thumbnail load failed for video ${widget.videoId}:\n'
+                  '  URL: ${widget.url}\n'
                   '  Error type: ${error.runtimeType}\n'
                   '  Error: $error\n'
                   '  Stack: ${stackTrace?.toString().split('\n').take(5).join('\n')}',
@@ -254,8 +334,8 @@ class _SafeNetworkImage extends StatelessWidget {
                   category: LogCategory.video,
                 );
                 return Container(
-                  width: width,
-                  height: height,
+                  width: widget.width,
+                  height: widget.height,
                   color: VineTheme.transparent,
                 );
               },
@@ -264,23 +344,28 @@ class _SafeNetworkImage extends StatelessWidget {
         }
 
         return VineCachedImage(
-          imageUrl: url,
-          width: width,
-          height: height,
-          fit: fit,
+          imageUrl: resolvedUrl,
+          width: widget.width,
+          height: widget.height,
+          fit: widget.fit,
           memCacheWidth: cacheWidth,
+          authHeaders: _authHeaders,
           alignment: Alignment.topCenter,
-          onImageDimensionsResolved: onImageDimensionsResolved == null
+          onImageDimensionsResolved: widget.onImageDimensionsResolved == null
               ? null
-              : (width, height) =>
-                    onImageDimensionsResolved!(url, width, height),
+              : (width, height) => widget.onImageDimensionsResolved!(
+                  resolvedUrl,
+                  width,
+                  height,
+                ),
           // Show transparent container so background surfaceContainer color shows through
           placeholder: (context, url) => Container(
-            width: width,
-            height: height,
+            width: widget.width,
+            height: widget.height,
             color: VineTheme.transparent,
           ),
           errorWidget: (context, url, error) {
+            unawaited(_maybeRetryWithPassiveAuth(error));
             // 404s are expected — thumbnail may not exist yet.
             final is404 = error is HttpExceptionWithStatus
                 ? error.statusCode == 404
@@ -288,7 +373,7 @@ class _SafeNetworkImage extends StatelessWidget {
 
             if (!is404) {
               Log.warning(
-                '🖼️ Thumbnail load failed for video $videoId:\n'
+                '🖼️ Thumbnail load failed for video ${widget.videoId}:\n'
                 '  URL: $url\n'
                 '  Error type: ${error.runtimeType}\n'
                 '  Error: $error',
@@ -299,8 +384,8 @@ class _SafeNetworkImage extends StatelessWidget {
 
             // Show transparent so background surfaceContainer color shows through
             return Container(
-              width: width,
-              height: height,
+              width: widget.width,
+              height: widget.height,
               color: VineTheme.transparent,
             );
           },
@@ -315,7 +400,9 @@ class _SafeNetworkImage extends StatelessWidget {
   /// Returns `null` when no finite width is available, leaving the framework to
   /// decode at native resolution.
   int? _decodeWidth(BuildContext context, double maxWidth) {
-    final logicalWidth = maxWidth.isFinite && maxWidth > 0 ? maxWidth : width;
+    final logicalWidth = maxWidth.isFinite && maxWidth > 0
+        ? maxWidth
+        : widget.width;
     if (logicalWidth == null || logicalWidth <= 0) return null;
     return (logicalWidth * MediaQuery.devicePixelRatioOf(context)).ceil();
   }

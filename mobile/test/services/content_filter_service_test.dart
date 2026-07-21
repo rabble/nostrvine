@@ -602,33 +602,30 @@ void main() {
         },
       );
 
-      test(
-        'returns warn when opted-in adult categories have mixed non-hide '
-        'preferences',
-        () async {
-          await ageService.initialize();
-          await ageService.setAdultContentVerified(true);
-          await service.initialize();
+      test('returns warn when opted-in adult categories have mixed non-hide '
+          'preferences', () async {
+        await ageService.initialize();
+        await ageService.setAdultContentVerified(true);
+        await service.initialize();
 
-          await service.setPreference(
-            ContentLabel.nudity,
-            ContentFilterPreference.show,
-          );
-          await service.setPreference(
-            ContentLabel.sexual,
-            ContentFilterPreference.warn,
-          );
-          await service.setPreference(
-            ContentLabel.porn,
-            ContentFilterPreference.hide,
-          );
+        await service.setPreference(
+          ContentLabel.nudity,
+          ContentFilterPreference.show,
+        );
+        await service.setPreference(
+          ContentLabel.sexual,
+          ContentFilterPreference.warn,
+        );
+        await service.setPreference(
+          ContentLabel.porn,
+          ContentFilterPreference.hide,
+        );
 
-          expect(
-            service.adultPlaybackPreference,
-            equals(ContentFilterPreference.warn),
-          );
-        },
-      );
+        expect(
+          service.adultPlaybackPreference,
+          equals(ContentFilterPreference.warn),
+        );
+      });
 
       test(
         'returns hide when any configurable adult category remains hidden',
@@ -676,6 +673,64 @@ void main() {
           );
         }
       });
+    });
+
+    group('adult media cache invalidation', () {
+      test(
+        'clears caches when passive adult thumbnail access is revoked',
+        () async {
+          var clearCount = 0;
+          ageService = AgeVerificationService();
+          service = ContentFilterService(
+            ageVerificationService: ageService,
+            onAdultMediaAccessRevoked: () async {
+              clearCount++;
+            },
+          );
+          await ageService.initialize();
+          await ageService.setAdultContentVerified(true);
+          await service.initialize();
+          await service.setPreference(
+            ContentLabel.nudity,
+            ContentFilterPreference.show,
+          );
+          await service.setPreference(
+            ContentLabel.sexual,
+            ContentFilterPreference.show,
+          );
+          expect(service.adultPlaybackPreference, ContentFilterPreference.show);
+
+          await service.setPreference(
+            ContentLabel.nudity,
+            ContentFilterPreference.warn,
+          );
+
+          expect(clearCount, equals(1));
+        },
+      );
+
+      test(
+        'does not clear caches for unrelated content-filter changes',
+        () async {
+          var clearCount = 0;
+          service = ContentFilterService(
+            ageVerificationService: ageService,
+            onAdultMediaAccessRevoked: () async {
+              clearCount++;
+            },
+          );
+          await ageService.initialize();
+          await ageService.setAdultContentVerified(true);
+          await service.initialize();
+
+          await service.setPreference(
+            ContentLabel.flashingLights,
+            ContentFilterPreference.show,
+          );
+
+          expect(clearCount, isZero);
+        },
+      );
     });
 
     group('migration from old preferences', () {

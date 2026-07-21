@@ -1,5 +1,9 @@
 import 'package:flutter/widgets.dart';
 import 'package:media_cache/media_cache.dart';
+import 'package:openvine/utils/open_vine_image_cache.dart';
+
+export 'package:openvine/utils/open_vine_image_cache.dart'
+    show clearOpenVineImageCache, openVineImageCache;
 
 /// Signature used to build a loading placeholder.
 typedef PlaceholderWidgetBuilder =
@@ -10,11 +14,6 @@ typedef LoadingErrorWidgetBuilder =
     Widget Function(BuildContext context, String imageUrl, Object error);
 
 typedef ImageDimensionsResolved = void Function(int width, int height);
-
-/// Global image cache singleton backed by [MediaCacheManager].
-final openVineImageCache = MediaCacheManager(
-  config: const MediaCacheConfig.image(cacheKey: 'openvine_image_cache'),
-);
 
 /// Test-only override for the cache used by every [VineCachedImage].
 ///
@@ -46,6 +45,7 @@ class VineCachedImage extends StatefulWidget {
     this.errorWidget,
     this.memCacheWidth,
     this.memCacheHeight,
+    this.authHeaders,
     this.fadeInDuration = const Duration(milliseconds: 500),
     this.fadeOutDuration = const Duration(milliseconds: 1000),
     this.onImageDimensionsResolved,
@@ -60,6 +60,7 @@ class VineCachedImage extends StatefulWidget {
   final LoadingErrorWidgetBuilder? errorWidget;
   final int? memCacheWidth;
   final int? memCacheHeight;
+  final Map<String, String>? authHeaders;
   final Duration fadeInDuration;
   final Duration fadeOutDuration;
   final ImageDimensionsResolved? onImageDimensionsResolved;
@@ -77,7 +78,11 @@ class _VineCachedImageState extends State<VineCachedImage> {
   ImageProvider<Object> get _imageProvider => ResizeImage.resizeIfNeeded(
     widget.memCacheWidth,
     widget.memCacheHeight,
-    MediaCacheImageProvider(widget.imageUrl, cacheManager: _activeImageCache),
+    MediaCacheImageProvider(
+      widget.imageUrl,
+      cacheManager: _activeImageCache,
+      authHeaders: widget.authHeaders,
+    ),
   );
 
   @override
@@ -91,7 +96,8 @@ class _VineCachedImageState extends State<VineCachedImage> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.imageUrl != widget.imageUrl ||
         oldWidget.memCacheWidth != widget.memCacheWidth ||
-        oldWidget.memCacheHeight != widget.memCacheHeight) {
+        oldWidget.memCacheHeight != widget.memCacheHeight ||
+        !_mapEquals(oldWidget.authHeaders, widget.authHeaders)) {
       _resolveImageStream();
     }
   }
@@ -218,6 +224,15 @@ class _VineCachedImageState extends State<VineCachedImage> {
       ],
     );
   }
+}
+
+bool _mapEquals(Map<String, String>? a, Map<String, String>? b) {
+  if (identical(a, b)) return true;
+  if (a == null || b == null || a.length != b.length) return false;
+  for (final entry in a.entries) {
+    if (b[entry.key] != entry.value) return false;
+  }
+  return true;
 }
 
 class _Placeholder extends StatelessWidget {

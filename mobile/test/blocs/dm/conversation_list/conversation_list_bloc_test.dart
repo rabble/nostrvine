@@ -1069,6 +1069,9 @@ void main() {
       );
 
       group('recovery-aware request gate (#5304)', () {
+        late StreamController<bool> recoveryController;
+        late Completer<void> recoveryStreamRequested;
+
         blocTest<ConversationListBloc, ConversationListState>(
           'holds back would-be requests (neither inbox nor requests) while '
           'DM history recovery is running, but keeps accepted chats visible',
@@ -1112,7 +1115,9 @@ void main() {
         blocTest<ConversationListBloc, ConversationListState>(
           'applies the request split once history recovery completes',
           setUp: () {
-            final recoveryController = StreamController<bool>();
+            recoveryController = StreamController<bool>();
+            recoveryStreamRequested = Completer<void>();
+            addTearDown(recoveryController.close);
             when(
               () => mockFollowRepository.isFollowing(any()),
             ).thenReturn(false);
@@ -1128,17 +1133,25 @@ void main() {
               isRecovering: true,
               recoveryStream: recoveryController.stream,
             );
-            // Recovery completes: flip the flag, then signal via the recovery
-            // stream so the combined stream re-fires and re-classifies.
-            Future<void>.delayed(const Duration(milliseconds: 50)).then((_) {
-              when(
-                () => mockDmRepository.isHistoryRecoveryComplete,
-              ).thenReturn(true);
-              recoveryController.add(false);
+            when(() => mockDmRepository.historyRecoveryStream).thenAnswer((_) {
+              if (!recoveryStreamRequested.isCompleted) {
+                recoveryStreamRequested.complete();
+              }
+              return recoveryController.stream;
             });
           },
           build: createBloc,
-          act: (bloc) => bloc.add(const ConversationListStarted()),
+          act: (bloc) async {
+            bloc.add(const ConversationListStarted());
+            await recoveryStreamRequested.future;
+            await Future<void>.value();
+            // Recovery completes: flip the flag, then signal via the recovery
+            // stream so the combined stream re-fires and re-classifies.
+            when(
+              () => mockDmRepository.isHistoryRecoveryComplete,
+            ).thenReturn(true);
+            recoveryController.add(false);
+          },
           wait: const Duration(milliseconds: 200),
           verify: (bloc) {
             // After recovery completes, the unfollowed/never-replied chat is
