@@ -40,8 +40,8 @@ class VideoDescriptionOverlay extends StatelessWidget {
               label: context.l10n.videoFeedDescriptionSemanticLabel,
               child: LinkifiedText(
                 text: video.content.isNotEmpty
-                    ? video.content
-                    : video.title ?? '',
+                    ? video.displayContent
+                    : video.displayTitle ?? '',
                 style: const TextStyle(
                   color: VineTheme.whiteText,
                   fontSize: 16,

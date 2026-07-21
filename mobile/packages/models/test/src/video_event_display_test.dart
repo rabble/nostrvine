@@ -30,6 +30,12 @@ void main() {
         equals('o\u0300\u0301'),
       );
     });
+
+    test('replaces malformed UTF-16 in title', () {
+      final malformed = String.fromCharCodes([0xD800, 0x61, 0xDC00]);
+
+      expect(build(title: malformed).displayTitle, equals('\uFFFDa\uFFFD'));
+    });
   });
 
   group('VideoEvent.displayContent', () {
@@ -46,6 +52,12 @@ void main() {
         build(content: 'a\u0300\u0301\u0302\u0303').displayContent,
         equals('a\u0300\u0301'),
       );
+    });
+
+    test('replaces malformed UTF-16 in content', () {
+      final malformed = String.fromCharCodes([0xD800, 0x61, 0xDC00]);
+
+      expect(build(content: malformed).displayContent, equals('\uFFFDa\uFFFD'));
     });
   });
 }

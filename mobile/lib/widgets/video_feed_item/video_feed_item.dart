@@ -143,7 +143,8 @@ class VideoOverlayActions extends ConsumerWidget {
     final video = this.video;
     final previewData = this.previewData;
     final authorPubkey = previewData?.pubkey ?? video!.pubkey;
-    final trimmedTitle = previewData?.title.trim() ?? video?.title?.trim();
+    final trimmedTitle =
+        previewData?.title.trim() ?? video?.displayTitle?.trim();
     final titleText = trimmedTitle == null || trimmedTitle.isEmpty
         ? null
         : trimmedTitle;
