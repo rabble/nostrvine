@@ -2923,6 +2923,33 @@ class AppLocalizationsFil extends AppLocalizations {
       'Mag-sign in gamit ang NIP-07 browser extension tulad ng Alby o nos2x. Nananatili sa extension ang iyong mga key — hindi ito nakikita ng Divine.';
 
   @override
+  String get authSignInErrorInvalidCredentials =>
+      'Mali ang email o password. Subukan ulit.';
+
+  @override
+  String get authSignInErrorEmailNotVerified =>
+      'I-verify ang iyong email bago mag-sign in — tingnan ang inbox mo para sa link.';
+
+  @override
+  String get authSignInErrorInvalidEmail =>
+      'Mukhang hindi iyon wastong email address.';
+
+  @override
+  String get authSignInErrorNetwork =>
+      'Hindi maabot ang server. Tingnan ang iyong koneksyon at subukan ulit.';
+
+  @override
+  String get authSignInErrorGeneric => 'May nangyaring mali. Subukan ulit.';
+
+  @override
+  String get authSignInOptionsHintPrefix =>
+      'Hindi sigurado kung paano ka nakapasok noong huli? ';
+
+  @override
+  String get authSignInOptionsHintCta =>
+      'Tingnan ang lahat ng opsyon sa pag-sign in';
+
+  @override
   String get authCreateAccountTitle => 'Gumawa ng account';
 
   @override

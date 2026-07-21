@@ -551,7 +551,8 @@ void main() {
         );
 
         blocTest<DivineAuthCubit, DivineAuthState>(
-          'emits general error when login returns unsuccessful result',
+          'emits invalidCredentials reason on a keycast 401 '
+          '(INVALID_CREDENTIALS), no error string in state',
           setUp: () {
             when(
               () => mockOAuth.headlessLogin(
@@ -563,7 +564,8 @@ void main() {
               (_) async => (
                 HeadlessLoginResult(
                   success: false,
-                  errorDescription: 'Invalid credentials',
+                  errorCode: 'INVALID_CREDENTIALS',
+                  errorDescription: 'Invalid email or password',
                 ),
                 testVerifier,
               ),
@@ -587,13 +589,57 @@ void main() {
               email: testEmail,
               password: testPassword,
               isSignIn: true,
-              generalError: 'Invalid credentials',
+              signInFailureReason: SignInFailureReason.invalidCredentials,
             ),
           ],
         );
 
         blocTest<DivineAuthCubit, DivineAuthState>(
-          'emits general error when login returns success but no code',
+          'emits emailNotVerified reason on a keycast 403',
+          setUp: () {
+            when(
+              () => mockOAuth.headlessLogin(
+                email: any(named: 'email'),
+                password: any(named: 'password'),
+                scope: any(named: 'scope'),
+              ),
+            ).thenAnswer(
+              (_) async => (
+                HeadlessLoginResult(
+                  success: false,
+                  errorCode: 'EMAIL_NOT_VERIFIED',
+                  errorDescription:
+                      'Please verify your email address before signing in',
+                ),
+                testVerifier,
+              ),
+            );
+          },
+          build: buildCubit,
+          seed: () => const DivineAuthFormState(
+            email: testEmail,
+            password: testPassword,
+            isSignIn: true,
+          ),
+          act: (cubit) => cubit.submit(),
+          expect: () => [
+            const DivineAuthFormState(
+              email: testEmail,
+              password: testPassword,
+              isSignIn: true,
+              isSubmitting: true,
+            ),
+            const DivineAuthFormState(
+              email: testEmail,
+              password: testPassword,
+              isSignIn: true,
+              signInFailureReason: SignInFailureReason.emailNotVerified,
+            ),
+          ],
+        );
+
+        blocTest<DivineAuthCubit, DivineAuthState>(
+          'emits unknown reason when login returns success but no code',
           setUp: () {
             when(
               () => mockOAuth.headlessLogin(
@@ -623,49 +669,7 @@ void main() {
               email: testEmail,
               password: testPassword,
               isSignIn: true,
-              generalError: 'Sign in failed',
-            ),
-          ],
-        );
-
-        blocTest<DivineAuthCubit, DivineAuthState>(
-          'uses error field as fallback when errorDescription is null',
-          setUp: () {
-            when(
-              () => mockOAuth.headlessLogin(
-                email: any(named: 'email'),
-                password: any(named: 'password'),
-                scope: any(named: 'scope'),
-              ),
-            ).thenAnswer(
-              (_) async => (
-                HeadlessLoginResult(
-                  success: false,
-                  error: 'invalid_credentials',
-                ),
-                testVerifier,
-              ),
-            );
-          },
-          build: buildCubit,
-          seed: () => const DivineAuthFormState(
-            email: testEmail,
-            password: testPassword,
-            isSignIn: true,
-          ),
-          act: (cubit) => cubit.submit(),
-          expect: () => [
-            const DivineAuthFormState(
-              email: testEmail,
-              password: testPassword,
-              isSignIn: true,
-              isSubmitting: true,
-            ),
-            const DivineAuthFormState(
-              email: testEmail,
-              password: testPassword,
-              isSignIn: true,
-              generalError: 'invalid_credentials',
+              signInFailureReason: SignInFailureReason.unknown,
             ),
           ],
         );
@@ -1667,13 +1671,14 @@ void main() {
           emailError: 'e',
           passwordError: 'p',
           generalError: 'g',
+          signInFailureReason: SignInFailureReason.invalidCredentials,
           showInviteGateRecovery: true,
           inviteRecoveryCode: 'AB12-EF34',
           inviteRecoverySourceSlug: 'lele-pons',
           obscurePassword: false,
           isSubmitting: true,
         );
-        expect(state.props, hasLength(16));
+        expect(state.props, hasLength(17));
       });
     });
 

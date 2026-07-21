@@ -4685,5 +4685,12 @@
   "settingsStorageError": "Нещо се обърка",
   "settingsStorageMaxSizeLabel": "Максимален размер на кеша",
   "settingsStorageApproxVideos": "≈ {count} видеа",
-  "settingsStorageRemoveBrokenConfirmTitle": "Премахване на повредените клипове?"
+  "settingsStorageRemoveBrokenConfirmTitle": "Премахване на повредените клипове?",
+  "authSignInErrorInvalidCredentials": "Грешен имейл или парола. Опитай отново.",
+  "authSignInErrorEmailNotVerified": "Потвърди имейла си, преди да влезеш — провери входящата си поща за връзката.",
+  "authSignInErrorInvalidEmail": "Това не изглежда като валиден имейл адрес.",
+  "authSignInErrorNetwork": "Сървърът е недостъпен. Провери връзката си и опитай отново.",
+  "authSignInErrorGeneric": "Нещо се обърка. Опитай отново.",
+  "authSignInOptionsHintPrefix": "Не си сигурен как влезе последния път? ",
+  "authSignInOptionsHintCta": "Виж всички опции за вход"
 }

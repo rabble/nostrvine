@@ -79,6 +79,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
         email: email,
         clearEmailError: true,
         clearGeneralError: true,
+        clearSignInFailureReason: true,
         clearInviteGateRecovery: true,
       ),
     );
@@ -95,6 +96,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
         clearPasswordError: true,
         clearConfirmPasswordError: true,
         clearGeneralError: true,
+        clearSignInFailureReason: true,
         clearInviteGateRecovery: true,
       ),
     );
@@ -110,6 +112,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
         confirmPassword: confirmPassword,
         clearConfirmPasswordError: true,
         clearGeneralError: true,
+        clearSignInFailureReason: true,
         clearInviteGateRecovery: true,
       ),
     );
@@ -168,6 +171,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       current.copyWith(
         isSubmitting: true,
         clearGeneralError: true,
+        clearSignInFailureReason: true,
         clearInviteGateRecovery: true,
       ),
     );
@@ -215,23 +219,44 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
     );
 
     if (!result.success || result.code == null) {
-      final errorMsg =
-          result.errorDescription ?? result.error ?? 'Sign in failed';
+      final reason = _signInFailureReasonFrom(result.failure);
       Log.warning(
-        'Sign in failed: $errorMsg',
+        'Sign in failed: code=${result.errorCode}, reason=$reason',
         name: 'DivineAuthCubit',
         category: LogCategory.auth,
       );
 
       final current = state;
       if (current is DivineAuthFormState) {
-        emit(current.copyWith(isSubmitting: false, generalError: errorMsg));
+        emit(
+          current.copyWith(
+            isSubmitting: false,
+            signInFailureReason: reason,
+          ),
+        );
       }
       return;
     }
 
     // Exchange code for tokens
     await _exchangeCodeAndLogin(result.code!, verifier);
+  }
+
+  /// Translates the client-layer [KeycastLoginFailure] into the UI-facing
+  /// [SignInFailureReason]. Keeps the client taxonomy out of the state layer.
+  SignInFailureReason _signInFailureReasonFrom(KeycastLoginFailure failure) {
+    switch (failure) {
+      case KeycastLoginFailure.invalidCredentials:
+        return SignInFailureReason.invalidCredentials;
+      case KeycastLoginFailure.emailNotVerified:
+        return SignInFailureReason.emailNotVerified;
+      case KeycastLoginFailure.invalidEmail:
+        return SignInFailureReason.invalidEmail;
+      case KeycastLoginFailure.network:
+        return SignInFailureReason.network;
+      case KeycastLoginFailure.unknown:
+        return SignInFailureReason.unknown;
+    }
   }
 
   Future<void> _handleSignUp(String email, String password) async {

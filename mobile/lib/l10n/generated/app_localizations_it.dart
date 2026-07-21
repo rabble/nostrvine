@@ -2912,6 +2912,32 @@ class AppLocalizationsIt extends AppLocalizations {
       'Accedi con un\'estensione del browser NIP-07 come Alby o nos2x. Le tue chiavi restano nell\'estensione — Divine non le vede mai.';
 
   @override
+  String get authSignInErrorInvalidCredentials =>
+      'Email o password errati. Riprova.';
+
+  @override
+  String get authSignInErrorEmailNotVerified =>
+      'Verifica la tua email prima di accedere: controlla la posta in arrivo per il link.';
+
+  @override
+  String get authSignInErrorInvalidEmail =>
+      'Non sembra un indirizzo email valido.';
+
+  @override
+  String get authSignInErrorNetwork =>
+      'Impossibile raggiungere il server. Controlla la connessione e riprova.';
+
+  @override
+  String get authSignInErrorGeneric => 'Qualcosa è andato storto. Riprova.';
+
+  @override
+  String get authSignInOptionsHintPrefix =>
+      'Non sai come hai effettuato l\'accesso l\'ultima volta? ';
+
+  @override
+  String get authSignInOptionsHintCta => 'Vedi tutte le opzioni di accesso';
+
+  @override
   String get authCreateAccountTitle => 'Crea account';
 
   @override

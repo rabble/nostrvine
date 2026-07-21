@@ -2925,6 +2925,32 @@ class AppLocalizationsBg extends AppLocalizations {
       'Влезте чрез NIP-07 разширение за браузър като Alby или nos2x. Ключовете ви остават в разширението — Divine никога не ги вижда.';
 
   @override
+  String get authSignInErrorInvalidCredentials =>
+      'Грешен имейл или парола. Опитай отново.';
+
+  @override
+  String get authSignInErrorEmailNotVerified =>
+      'Потвърди имейла си, преди да влезеш — провери входящата си поща за връзката.';
+
+  @override
+  String get authSignInErrorInvalidEmail =>
+      'Това не изглежда като валиден имейл адрес.';
+
+  @override
+  String get authSignInErrorNetwork =>
+      'Сървърът е недостъпен. Провери връзката си и опитай отново.';
+
+  @override
+  String get authSignInErrorGeneric => 'Нещо се обърка. Опитай отново.';
+
+  @override
+  String get authSignInOptionsHintPrefix =>
+      'Не си сигурен как влезе последния път? ';
+
+  @override
+  String get authSignInOptionsHintCta => 'Виж всички опции за вход';
+
+  @override
   String get authCreateAccountTitle => 'Създаване на акаунт';
 
   @override

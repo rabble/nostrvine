@@ -2862,6 +2862,33 @@ class AppLocalizationsTr extends AppLocalizations {
       'Alby veya nos2x gibi bir NIP-07 tarayıcı uzantısıyla giriş yapın. Anahtarlarınız uzantıda kalır — Divine bunları asla görmez.';
 
   @override
+  String get authSignInErrorInvalidCredentials =>
+      'E-posta veya şifre yanlış. Tekrar dene.';
+
+  @override
+  String get authSignInErrorEmailNotVerified =>
+      'Giriş yapmadan önce e-postanı doğrula — bağlantı için gelen kutunu kontrol et.';
+
+  @override
+  String get authSignInErrorInvalidEmail =>
+      'Bu geçerli bir e-posta adresi gibi görünmüyor.';
+
+  @override
+  String get authSignInErrorNetwork =>
+      'Sunucuya ulaşılamıyor. Bağlantını kontrol edip tekrar dene.';
+
+  @override
+  String get authSignInErrorGeneric =>
+      'Bir şeyler ters gitti. Lütfen tekrar dene.';
+
+  @override
+  String get authSignInOptionsHintPrefix =>
+      'Geçen sefer nasıl giriş yaptığını hatırlamıyor musun? ';
+
+  @override
+  String get authSignInOptionsHintCta => 'Tüm giriş seçeneklerini gör';
+
+  @override
   String get authCreateAccountTitle => 'Hesap oluştur';
 
   @override

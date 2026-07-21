@@ -2974,6 +2974,32 @@ class AppLocalizationsRo extends AppLocalizations {
       'Conectează-te cu o extensie de browser NIP-07 precum Alby sau nos2x. Cheile tale rămân în extensie — Divine nu le vede niciodată.';
 
   @override
+  String get authSignInErrorInvalidCredentials =>
+      'E-mail sau parolă greșite. Mai încearcă o dată.';
+
+  @override
+  String get authSignInErrorEmailNotVerified =>
+      'Verifică-ți e-mailul înainte de a te conecta — caută linkul în inbox.';
+
+  @override
+  String get authSignInErrorInvalidEmail =>
+      'Nu pare o adresă de e-mail validă.';
+
+  @override
+  String get authSignInErrorNetwork =>
+      'Serverul nu poate fi contactat. Verifică-ți conexiunea și încearcă din nou.';
+
+  @override
+  String get authSignInErrorGeneric => 'Ceva n-a mers bine. Încearcă din nou.';
+
+  @override
+  String get authSignInOptionsHintPrefix =>
+      'Nu știi sigur cum te-ai conectat data trecută? ';
+
+  @override
+  String get authSignInOptionsHintCta => 'Vezi toate opțiunile de conectare';
+
+  @override
   String get authCreateAccountTitle => 'Creează cont';
 
   @override

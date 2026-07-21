@@ -3,6 +3,29 @@
 
 part of 'divine_auth_cubit.dart';
 
+/// Why an email/password sign-in failed, mapped to localized copy by the UI.
+///
+/// Kept out of [KeycastLoginFailure] so the presentation layer never imports
+/// the client package's taxonomy. Never carries a message string — the rule in
+/// `state_management.md` (no error strings in state) is why this is an enum.
+enum SignInFailureReason {
+  /// Wrong credentials or no such account. Copy must not imply the account
+  /// exists (keycast returns an identical 401 for both).
+  invalidCredentials,
+
+  /// The account's email is not yet verified.
+  emailNotVerified,
+
+  /// The submitted email was malformed.
+  invalidEmail,
+
+  /// A network/transport problem prevented a verdict.
+  network,
+
+  /// Any other unexpected failure.
+  unknown,
+}
+
 /// State for Divine authentication cubit
 sealed class DivineAuthState extends Equatable {
   const DivineAuthState();
@@ -28,6 +51,7 @@ class DivineAuthFormState extends DivineAuthState {
     this.passwordError,
     this.confirmPasswordError,
     this.generalError,
+    this.signInFailureReason,
     this.showInviteGateRecovery = false,
     this.inviteRecoveryCode,
     this.inviteRecoverySourceSlug,
@@ -63,6 +87,12 @@ class DivineAuthFormState extends DivineAuthState {
 
   /// General error message (e.g., network error, auth failure)
   final String? generalError;
+
+  /// Typed reason the last email/password sign-in failed, or null.
+  ///
+  /// Sign-in failures use this instead of [generalError] so the UI can map to
+  /// localized copy; other auth flows still use [generalError] pending #4336.
+  final SignInFailureReason? signInFailureReason;
 
   /// Whether the user should be sent back through the invite gate.
   final bool showInviteGateRecovery;
@@ -106,6 +136,7 @@ class DivineAuthFormState extends DivineAuthState {
     String? passwordError,
     String? confirmPasswordError,
     String? generalError,
+    SignInFailureReason? signInFailureReason,
     bool? showInviteGateRecovery,
     String? inviteRecoveryCode,
     String? inviteRecoverySourceSlug,
@@ -117,6 +148,7 @@ class DivineAuthFormState extends DivineAuthState {
     bool clearPasswordError = false,
     bool clearConfirmPasswordError = false,
     bool clearGeneralError = false,
+    bool clearSignInFailureReason = false,
     bool clearInviteGateRecovery = false,
   }) {
     return DivineAuthFormState(
@@ -136,6 +168,9 @@ class DivineAuthFormState extends DivineAuthState {
       generalError: clearGeneralError
           ? null
           : (generalError ?? this.generalError),
+      signInFailureReason: clearSignInFailureReason
+          ? null
+          : (signInFailureReason ?? this.signInFailureReason),
       showInviteGateRecovery:
           !clearInviteGateRecovery &&
           (showInviteGateRecovery ?? this.showInviteGateRecovery),
@@ -164,6 +199,7 @@ class DivineAuthFormState extends DivineAuthState {
     passwordError,
     confirmPasswordError,
     generalError,
+    signInFailureReason,
     showInviteGateRecovery,
     inviteRecoveryCode,
     inviteRecoverySourceSlug,

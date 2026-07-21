@@ -2827,6 +2827,30 @@ class AppLocalizationsAm extends AppLocalizations {
       'እንደ Alby ወይም nos2x ያሉ የ NIP-07 አሳሽ ቅጥያ በመጠቀም ይግቡ። ቁልፎችዎ በቅጥያው ውስጥ ይቀራሉ — Divine በፍፁም አያያቸውም።';
 
   @override
+  String get authSignInErrorInvalidCredentials =>
+      'የተሳሳተ ኢሜይል ወይም የይለፍ ቃል። እንደገና ይሞክሩ።';
+
+  @override
+  String get authSignInErrorEmailNotVerified =>
+      'ከመግባትዎ በፊት ኢሜይልዎን ያረጋግጡ — ለአገናኙ የገቢ መልእክት ሳጥንዎን ይመልከቱ።';
+
+  @override
+  String get authSignInErrorInvalidEmail => 'ይህ ትክክለኛ የኢሜይል አድራሻ አይመስልም።';
+
+  @override
+  String get authSignInErrorNetwork =>
+      'አገልጋዩ ጋር መድረስ አልተቻለም። ግንኙነትዎን አረጋግጠው እንደገና ይሞክሩ።';
+
+  @override
+  String get authSignInErrorGeneric => 'የሆነ ችግር ተፈጥሯል። እባክዎ እንደገና ይሞክሩ።';
+
+  @override
+  String get authSignInOptionsHintPrefix => 'ባለፈው ጊዜ እንዴት እንደገቡ እርግጠኛ አይደሉም? ';
+
+  @override
+  String get authSignInOptionsHintCta => 'ሁሉንም የመግቢያ አማራጮች ይመልከቱ';
+
+  @override
   String get authCreateAccountTitle => 'መለያ ይፍጠሩ';
 
   @override

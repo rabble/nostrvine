@@ -48,6 +48,29 @@ class HeadlessRegisterResult {
   final String? errorDescription;
 }
 
+/// Typed classification of a failed `POST /api/headless/login`.
+///
+/// Maps the server's machine-readable `code` (and the client-synthesized
+/// transport codes) to a small set the UI can localize. Deliberately login-
+/// specific; [KeycastAuthFailure] models the register/poll taxonomy instead.
+enum KeycastLoginFailure {
+  /// Wrong email/password OR no such account — the server returns an identical
+  /// 401 for both, so this value must never imply the account exists.
+  invalidCredentials,
+
+  /// Account exists but its email has not been verified (HTTP 403).
+  emailNotVerified,
+
+  /// The submitted email was malformed (HTTP 400).
+  invalidEmail,
+
+  /// Transport failure (timeout / no connection) before a server verdict.
+  network,
+
+  /// Any other server or client error.
+  unknown,
+}
+
 /// Result from POST /api/headless/login
 class HeadlessLoginResult {
   HeadlessLoginResult({
@@ -55,34 +78,66 @@ class HeadlessLoginResult {
     this.code,
     this.pubkey,
     this.state,
-    this.error,
+    this.errorCode,
     this.errorDescription,
   });
 
   factory HeadlessLoginResult.fromJson(Map<String, dynamic> json) {
+    final success = json['success'] as bool? ?? false;
+    // `json['code']` is the OAuth authorization code on success and the
+    // machine failure code on error — disambiguate on `success`.
+    final rawCode = json['code'] as String?;
     return HeadlessLoginResult(
-      success: json['success'] as bool? ?? false,
-      code: json['code'] as String?,
+      success: success,
+      code: success ? rawCode : null,
       pubkey: json['pubkey'] as String?,
       state: json['state'] as String?,
-      error: json['error'] as String?,
-      errorDescription: json['error_description'] as String?,
+      errorCode: success ? null : rawCode,
+      errorDescription:
+          json['error'] as String? ?? json['error_description'] as String?,
     );
   }
 
   factory HeadlessLoginResult.error(String message, {String? code}) {
     return HeadlessLoginResult(
       success: false,
-      error: code ?? 'client_error',
+      errorCode: code ?? 'client_error',
       errorDescription: message,
     );
   }
   final bool success;
+
+  /// OAuth authorization code — present only on success (`json['code']`).
   final String? code;
   final String? pubkey;
   final String? state;
-  final String? error;
+
+  /// Machine-readable failure code (e.g. `INVALID_CREDENTIALS`), failure only.
+  ///
+  /// Keycast sends this in `json['code']` on the error path and the human
+  /// message in `json['error']` — the two must not be conflated.
+  final String? errorCode;
+
+  /// Human-readable error message from the server (`json['error']`).
   final String? errorDescription;
+
+  /// Typed classification of the failure, for localization in the UI layer.
+  KeycastLoginFailure get failure {
+    switch (errorCode) {
+      case 'INVALID_CREDENTIALS':
+        return KeycastLoginFailure.invalidCredentials;
+      case 'EMAIL_NOT_VERIFIED':
+        return KeycastLoginFailure.emailNotVerified;
+      case 'INVALID_EMAIL':
+        return KeycastLoginFailure.invalidEmail;
+      case 'timeout':
+      case 'connection_error':
+      case 'network_error':
+        return KeycastLoginFailure.network;
+      default:
+        return KeycastLoginFailure.unknown;
+    }
+  }
 }
 
 /// Result from GET /api/oauth/poll

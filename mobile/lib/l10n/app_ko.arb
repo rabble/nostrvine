@@ -3878,5 +3878,12 @@
   "settingsStorageError": "문제가 발생했습니다",
   "settingsStorageMaxSizeLabel": "최대 캐시 크기",
   "settingsStorageApproxVideos": "≈ 동영상 {count}개",
-  "settingsStorageRemoveBrokenConfirmTitle": "손상된 클립을 제거할까요?"
+  "settingsStorageRemoveBrokenConfirmTitle": "손상된 클립을 제거할까요?",
+  "authSignInErrorInvalidCredentials": "이메일 또는 비밀번호가 잘못되었습니다. 다시 시도해 주세요.",
+  "authSignInErrorEmailNotVerified": "로그인하기 전에 이메일을 인증하세요 — 받은 편지함에서 링크를 확인하세요.",
+  "authSignInErrorInvalidEmail": "유효한 이메일 주소가 아닌 것 같습니다.",
+  "authSignInErrorNetwork": "서버에 연결할 수 없습니다. 연결을 확인하고 다시 시도해 주세요.",
+  "authSignInErrorGeneric": "문제가 발생했습니다. 다시 시도해 주세요.",
+  "authSignInOptionsHintPrefix": "지난번에 어떻게 로그인했는지 기억나지 않나요? ",
+  "authSignInOptionsHintCta": "모든 로그인 옵션 보기"
 }

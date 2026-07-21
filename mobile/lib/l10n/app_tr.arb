@@ -4554,5 +4554,12 @@
   "settingsStorageError": "Bir şeyler ters gitti",
   "settingsStorageMaxSizeLabel": "Maksimum önbellek boyutu",
   "settingsStorageApproxVideos": "≈ {count} video",
-  "settingsStorageRemoveBrokenConfirmTitle": "Bozuk klipler kaldırılsın mı?"
+  "settingsStorageRemoveBrokenConfirmTitle": "Bozuk klipler kaldırılsın mı?",
+  "authSignInErrorInvalidCredentials": "E-posta veya şifre yanlış. Tekrar dene.",
+  "authSignInErrorEmailNotVerified": "Giriş yapmadan önce e-postanı doğrula — bağlantı için gelen kutunu kontrol et.",
+  "authSignInErrorInvalidEmail": "Bu geçerli bir e-posta adresi gibi görünmüyor.",
+  "authSignInErrorNetwork": "Sunucuya ulaşılamıyor. Bağlantını kontrol edip tekrar dene.",
+  "authSignInErrorGeneric": "Bir şeyler ters gitti. Lütfen tekrar dene.",
+  "authSignInOptionsHintPrefix": "Geçen sefer nasıl giriş yaptığını hatırlamıyor musun? ",
+  "authSignInOptionsHintCta": "Tüm giriş seçeneklerini gör"
 }
