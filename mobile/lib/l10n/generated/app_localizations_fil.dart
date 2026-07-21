@@ -4612,6 +4612,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get routeNoVideosToDisplay => 'Walang video na maipapakita';
 
   @override
+  String get routeGoHome => 'Pumunta sa home';
+
+  @override
   String get routeInvalidProfileId => 'Invalid na profile ID';
 
   @override

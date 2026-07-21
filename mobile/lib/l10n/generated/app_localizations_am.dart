@@ -4460,6 +4460,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get routeNoVideosToDisplay => 'ምንም የሚታዩ ቪዲዮዎች የሉም';
 
   @override
+  String get routeGoHome => 'ወደ ቤት ሂድ';
+
+  @override
   String get routeInvalidProfileId => 'ልክ ያልሆነ የመገለጫ መታወቂያ';
 
   @override

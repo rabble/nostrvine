@@ -1886,6 +1886,7 @@
     "routeInvalidSoundId": "ID de sonido inválido",
     "routeInvalidCategory": "Categoría inválida",
     "routeNoVideosToDisplay": "No hay videos para mostrar",
+    "routeGoHome": "Ir al inicio",
     "routeInvalidProfileId": "ID de perfil inválido",
     "routeUnknownPath": "Esa página no está en la app.",
     "routeDefaultListName": "Lista",

@@ -4580,6 +4580,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get routeNoVideosToDisplay => 'Nenhum vídeo para exibir';
 
   @override
+  String get routeGoHome => 'Ir para o início';
+
+  @override
   String get routeInvalidProfileId => 'ID de perfil inválido';
 
   @override

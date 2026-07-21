@@ -1881,6 +1881,7 @@
     "routeInvalidSoundId": "Geçersiz ses kimliği",
     "routeInvalidCategory": "Geçersiz kategori",
     "routeNoVideosToDisplay": "Gösterilecek video yok",
+    "routeGoHome": "Ana sayfaya git",
     "routeInvalidProfileId": "Geçersiz profil kimliği",
     "routeUnknownPath": "Bu sayfa uygulamada yok.",
     "routeDefaultListName": "Liste",

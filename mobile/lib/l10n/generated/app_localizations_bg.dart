@@ -4600,6 +4600,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get routeNoVideosToDisplay => 'Няма видеа за показване';
 
   @override
+  String get routeGoHome => 'Към началото';
+
+  @override
   String get routeInvalidProfileId => 'Невалиден ID на потребителския профил';
 
   @override

@@ -1881,6 +1881,7 @@
     "routeInvalidSoundId": "ID suara tidak valid",
     "routeInvalidCategory": "Kategori tidak valid",
     "routeNoVideosToDisplay": "Tidak ada video untuk ditampilkan",
+    "routeGoHome": "Ke beranda",
     "routeInvalidProfileId": "ID profil tidak valid",
     "routeUnknownPath": "Halaman itu tidak ada di aplikasi.",
     "routeDefaultListName": "Daftar",

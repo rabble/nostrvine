@@ -4683,6 +4683,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get routeNoVideosToDisplay => 'Niciun videoclip de afișat';
 
   @override
+  String get routeGoHome => 'Mergi acasă';
+
+  @override
   String get routeInvalidProfileId => 'ID de profil invalid';
 
   @override

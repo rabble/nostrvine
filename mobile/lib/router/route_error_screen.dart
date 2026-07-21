@@ -4,18 +4,29 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 
-/// Full-screen error state for bad route parameters and (later) unmatched paths.
+/// Full-screen error state for bad route parameters and unmatched paths.
 ///
-/// Matches the previous inline pattern in [GoRoute] builders: [DiVineAppBar] with
-/// [AppLocalizations.routeErrorTitle] and a short [message] in the body.
+/// Matches the previous inline pattern in [GoRoute] builders: [DiVineAppBar]
+/// with [AppLocalizations.routeErrorTitle] and a short [message] in the body.
+///
+/// Every instance is escapable, even when reached via `go` / a deep link that
+/// leaves nothing to pop back to:
+/// - the app-bar back control degrades to [BuildContext.safePop] (home when the
+///   back stack is empty) instead of throwing `GoError: There is nothing to
+///   pop`, and
+/// - a [showHomeButton] action under [message] always routes to the home feed,
+///   so a screen with [showBackButton] `false` still has a way out.
 class RouteErrorScreen extends StatelessWidget {
   const RouteErrorScreen({
     required this.message,
     this.title,
     this.showBackButton = false,
     this.onBackPressed,
+    this.showHomeButton = true,
     super.key,
   });
 
@@ -25,17 +36,22 @@ class RouteErrorScreen extends StatelessWidget {
   /// App bar title; defaults to [AppLocalizations.routeErrorTitle].
   final String? title;
 
-  /// When true, shows the leading back control (defaults to [GoRouter.pop] if
-  /// [onBackPressed] is omitted).
+  /// When true, shows the leading back control. When [onBackPressed] is
+  /// omitted it degrades to [BuildContext.safePop], so the control never
+  /// throws on a `go`-navigated route with an empty back stack.
   final bool showBackButton;
 
   final VoidCallback? onBackPressed;
+
+  /// When true (the default), renders a home action under [message] so the
+  /// screen is always escapable regardless of [showBackButton].
+  final bool showHomeButton;
 
   @override
   Widget build(BuildContext context) {
     final VoidCallback? backHandler = !showBackButton
         ? null
-        : (onBackPressed ?? () => context.pop<void>());
+        : (onBackPressed ?? () => context.safePop());
 
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
@@ -44,7 +60,21 @@ class RouteErrorScreen extends StatelessWidget {
         showBackButton: showBackButton,
         onBackPressed: backHandler,
       ),
-      body: Center(child: Text(message)),
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(message),
+            if (showHomeButton) ...[
+              const SizedBox(height: 24),
+              DivineButton(
+                label: context.l10n.routeGoHome,
+                onPressed: () => context.go(VideoFeedPage.pathForIndex(0)),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

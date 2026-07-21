@@ -4525,6 +4525,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get routeNoVideosToDisplay => 'Tidak ada video untuk ditampilkan';
 
   @override
+  String get routeGoHome => 'Ke beranda';
+
+  @override
   String get routeInvalidProfileId => 'ID profil tidak valid';
 
   @override

@@ -7932,6 +7932,12 @@ abstract class AppLocalizations {
   /// **'No videos to display'**
   String get routeNoVideosToDisplay;
 
+  /// Button on a full-screen route error page that navigates back to the home feed. Always shown so the user is never stranded on a dead-end error screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Go home'**
+  String get routeGoHome;
+
   /// No description provided for @routeInvalidProfileId.
   ///
   /// In en, this message translates to:

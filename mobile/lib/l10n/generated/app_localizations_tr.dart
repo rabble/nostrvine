@@ -4537,6 +4537,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get routeNoVideosToDisplay => 'Gösterilecek video yok';
 
   @override
+  String get routeGoHome => 'Ana sayfaya git';
+
+  @override
   String get routeInvalidProfileId => 'Geçersiz profil kimliği';
 
   @override
