@@ -243,11 +243,8 @@ void main() {
       testWidgets(
         'requests focus when a read-only field is tapped',
         (tester) async {
-          // TextFormField's own tap handling runs unconditionally regardless
-          // of readOnly — readOnly only gates the input connection (so no
-          // soft keyboard appears) and the cut/paste toolbar, not focus. Pin
-          // this contract explicitly since it's easy to assume read-only
-          // means non-focusable.
+          // readOnly only gates the input connection (no soft keyboard) and
+          // the cut/paste toolbar — TextFormField still grants focus on tap.
           final focusNode = FocusNode();
           await tester.pumpWidget(
             buildTestWidget(focusNode: focusNode, readOnly: true),

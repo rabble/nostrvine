@@ -395,27 +395,14 @@ class _DivineButtonContent extends StatelessWidget {
       ),
     );
 
-    // small (40px) is below the 48dp minimum tap target. Grow the tap target
-    // — the InkWell's child, which is what the accessibility guideline
-    // measures — to 48dp on both axes with a uniform 4px halo
-    // (40 + 4 + 4 = 48), preserving the exact outer footprint the button
-    // always had: the pre-existing design already wrapped small in 4px of
-    // outer padding (see the [DivineButtonSize.small] doc above), it just
-    // did so *outside* `InkWell`/`Material`, where it was a purely visual
-    // margin that never counted as tappable. Moving that same 4px `Padding`
-    // to be the InkWell's child instead — with no other change — makes the
-    // margin part of the real tap target without touching the rendered
-    // chip size or the layout space the button occupies anywhere in the
-    // app.
-    //
-    // `Padding` (unlike `Center`/`Align`, which always loosen their child)
-    // deflates a tight constraint but keeps it tight, so a small button
-    // inside a tight/`Expanded` slot still stretches — to slot-width minus
-    // the 4px halo on each side, exactly as before — and
-    // `_AdaptiveButtonPadding` still sees `hasTightWidth` and collapses its
-    // inset. `minWidth`/`minHeight` guard the content-hugging case
-    // (icon-only / very short label), which is already exactly 48 by
-    // design and so unaffected. base is already 48+.
+    // small (40px) is below the 48dp minimum tap target. The pre-existing
+    // 4px outer halo (see the DivineButtonSize.small doc above) now lives
+    // inside InkWell instead of outside Material, so it counts as real tap
+    // area rather than a cosmetic margin — the rendered footprint is
+    // unchanged. `Padding` (unlike `Center`/`Align`) keeps a tight
+    // constraint tight, so a small button in `Expanded` still stretches
+    // minus the halo, same as before. `minWidth`/`minHeight` guard the
+    // content-hugging case. Full rationale: PR #6236.
     //
     // tiny (32px) deliberately keeps a 32px tap target — it sits flush next
     // to a 32px avatar / type icon, and expanding the tap target would bleed
