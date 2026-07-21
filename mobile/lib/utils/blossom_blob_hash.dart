@@ -22,3 +22,16 @@ String? extractSha256FromBlossomUrl(String? url) {
   }
   return null;
 }
+
+/// Extracts the scheme, host, and optional port from a media URL.
+String? extractMediaServerUrl(String? url) {
+  if (url == null || url.isEmpty) return null;
+  try {
+    final uri = Uri.parse(url);
+    if (!uri.hasScheme || uri.host.isEmpty) return null;
+    final portSuffix = uri.hasPort ? ':${uri.port}' : '';
+    return '${uri.scheme}://${uri.host}$portSuffix';
+  } catch (_) {
+    return null;
+  }
+}

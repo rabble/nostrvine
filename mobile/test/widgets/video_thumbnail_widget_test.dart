@@ -10,14 +10,18 @@ import 'package:media_cache/media_cache.dart' show MediaCacheImageLoadException;
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' hide AspectRatio;
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/auth_service.dart' show AuthState;
+import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/widgets/blurhash_display.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/test_provider_overrides.dart'
     show createMockMediaCacheManager;
@@ -64,6 +68,15 @@ List<Override> _passiveAuthProviderOverrides(
   contentFilterVersionProvider.overrideWith(_TestContentFilterVersion.new),
 ];
 
+List<Override> _passiveAuthProviderOverridesWithRealContentFilterVersion({
+  required MediaAuthInterceptor mediaAuthInterceptor,
+  required SharedPreferences sharedPreferences,
+}) => [
+  mediaAuthInterceptorProvider.overrideWithValue(mediaAuthInterceptor),
+  currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
+  sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+];
+
 /// Creates a [ui.Image] of exactly [width] x [height] without an async decode.
 ui.Image _syncImage(int width, int height) {
   final recorder = ui.PictureRecorder();
@@ -79,6 +92,7 @@ void main() {
     late VideoEvent videoWithNeither;
 
     setUp(() {
+      SharedPreferences.setMockInitialValues({});
       // Video with only thumbnail URL
       videoWithThumbnail = createTestVideoEvent(
         id: 'test1',
@@ -309,6 +323,49 @@ void main() {
     );
 
     testWidgets(
+      'Divine Image.network path honors caller placeholder and error widget',
+      (tester) async {
+        final mediaAuthInterceptor = _MockMediaAuthInterceptor();
+        const hash =
+            '72d7eda61074b17e077fb9f4a8b48166cdeb65cb07e053aafa6e69d5fa165995';
+        const url = 'https://media.divine.video/$hash.jpg';
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: _passiveAuthProviderOverrides(mediaAuthInterceptor),
+            child: MaterialApp(
+              home: PassiveAuthThumbnailImage(
+                url: url,
+                placeholder: (_, _) =>
+                    const Text('caller thumbnail placeholder'),
+                errorWidget: (_, _, _) => const Text('caller thumbnail error'),
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('caller thumbnail placeholder'), findsOneWidget);
+
+        final image = tester.widget<Image>(find.byType(Image));
+        final errorResult = image.errorBuilder!(
+          tester.element(find.byType(Image)),
+          NetworkImageLoadException(statusCode: 500, uri: Uri.parse(url)),
+          StackTrace.current,
+        );
+
+        await tester.pumpWidget(MaterialApp(home: errorResult));
+
+        expect(find.text('caller thumbnail error'), findsOneWidget);
+        verifyNever(
+          () => mediaAuthInterceptor.createPassiveAuthHeadersForAdultMedia(
+            sha256Hash: any(named: 'sha256Hash'),
+            serverUrl: any(named: 'serverUrl'),
+          ),
+        );
+      },
+    );
+
+    testWidgets(
       'retries Divine-hosted thumbnails with passive BUD-01 auth after 401',
       (tester) async {
         final mediaAuthInterceptor = _MockMediaAuthInterceptor();
@@ -488,6 +545,7 @@ void main() {
     testWidgets(
       'retries same mounted Divine thumbnail after content filter generation changes',
       (tester) async {
+        final sharedPreferences = await SharedPreferences.getInstance();
         final mediaAuthInterceptor = _MockMediaAuthInterceptor();
         const hash =
             '72d7eda61074b17e077fb9f4a8b48166cdeb65cb07e053aafa6e69d5fa165995';
@@ -501,7 +559,11 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: _passiveAuthProviderOverrides(mediaAuthInterceptor),
+            overrides:
+                _passiveAuthProviderOverridesWithRealContentFilterVersion(
+                  mediaAuthInterceptor: mediaAuthInterceptor,
+                  sharedPreferences: sharedPreferences,
+                ),
             child: MaterialApp(
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
@@ -549,7 +611,12 @@ void main() {
           tester.element(find.byType(VideoThumbnailWidget)),
           listen: false,
         );
-        container.read(contentFilterVersionProvider.notifier).increment();
+        final filterService = container.read(contentFilterServiceProvider);
+        await filterService.initialized;
+        await filterService.setPreference(
+          ContentLabel.flashingLights,
+          ContentFilterPreference.hide,
+        );
         await tester.pump();
 
         image = tester.widget<Image>(find.byType(Image));

@@ -227,8 +227,8 @@ class PassiveAuthThumbnailImage extends StatefulWidget {
 
     // Explore/grid thumbnails are predominantly served from Divine-owned,
     // immutable blob URLs. These load reliably with Image.network, while the
-    // The shared cache-manager path has been less reliable
-    // under concurrent grid loads on desktop.
+    // shared cache-manager path has been less reliable under concurrent grid
+    // loads on desktop.
     return host == 'divine.video' || host.endsWith('.divine.video');
   }
 
@@ -341,7 +341,7 @@ class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
         .read(mediaAuthInterceptorProvider)
         .createPassiveAuthHeadersForAdultMedia(
           sha256Hash: sha256Hash,
-          serverUrl: _extractServerUrl(widget.url),
+          serverUrl: extractMediaServerUrl(widget.url),
         );
     if (!mounted) return;
 
@@ -375,16 +375,6 @@ class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
     return false;
   }
 
-  String? _extractServerUrl(String url) {
-    try {
-      final uri = Uri.parse(url);
-      final portSuffix = uri.hasPort ? ':${uri.port}' : '';
-      return '${uri.scheme}://${uri.host}$portSuffix';
-    } catch (_) {
-      return null;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -405,6 +395,40 @@ class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
             null,
             NetworkImage(resolvedUrl, headers: _authHeaders),
           );
+          final image = Image(
+            key: ValueKey('network-image-${widget.url}-$_imageGeneration'),
+            image: imageProvider,
+            width: widget.width,
+            height: widget.height,
+            fit: widget.fit,
+            alignment: widget.alignment,
+            frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+              if (wasSynchronouslyLoaded) return child;
+              return _NetworkImageFrame(
+                imageUrl: resolvedUrl,
+                width: widget.width,
+                height: widget.height,
+                fadeInDuration: widget.fadeInDuration,
+                fadeOutDuration: widget.fadeOutDuration,
+                placeholder: widget.placeholder,
+                frame: frame,
+                child: child,
+              );
+            },
+            errorBuilder: (context, error, stackTrace) {
+              unawaited(_maybeRetryWithPassiveAuth(error));
+              _logNetworkImageError(error, stackTrace);
+              final errorWidget = widget.errorWidget;
+              if (errorWidget != null) {
+                return errorWidget(context, resolvedUrl, error);
+              }
+              return _TransparentImageBox(
+                width: widget.width,
+                height: widget.height,
+              );
+            },
+          );
+
           return ImageWithDimensionsListener(
             key: ValueKey('network-${widget.url}-$_imageGeneration'),
             imageProvider: imageProvider,
@@ -415,33 +439,7 @@ class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
                     width,
                     height,
                   ),
-            child: Image(
-              key: ValueKey('network-image-${widget.url}-$_imageGeneration'),
-              image: imageProvider,
-              width: widget.width,
-              height: widget.height,
-              fit: widget.fit,
-              alignment: widget.alignment,
-              errorBuilder: (context, error, stackTrace) {
-                unawaited(_maybeRetryWithPassiveAuth(error));
-                final videoId = widget.videoId;
-                Log.warning(
-                  '🖼️ [Image.network] ${widget.logPrefix} load failed'
-                  '${videoId == null ? '' : ' for video $videoId'}:\n'
-                  '  URL: ${widget.url}\n'
-                  '  Error type: ${error.runtimeType}\n'
-                  '  Error: $error\n'
-                  '  Stack: ${stackTrace?.toString().split('\n').take(5).join('\n')}',
-                  name: widget.logName,
-                  category: LogCategory.video,
-                );
-                return Container(
-                  width: widget.width,
-                  height: widget.height,
-                  color: VineTheme.transparent,
-                );
-              },
-            ),
+            child: image,
           );
         }
 
@@ -464,13 +462,11 @@ class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
                 ),
           placeholder:
               widget.placeholder ??
-              (context, url) => Container(
+              (context, url) => _TransparentImageBox(
                 width: widget.width,
                 height: widget.height,
-                color: VineTheme.transparent,
               ),
           errorWidget: (context, url, error) {
-            unawaited(_maybeRetryWithPassiveAuth(error));
             // 404s are expected — thumbnail may not exist yet.
             final is404 = error is HttpExceptionWithStatus
                 ? error.statusCode == 404
@@ -495,10 +491,9 @@ class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
             }
 
             // Show transparent so background surfaceContainer color shows through
-            return Container(
+            return _TransparentImageBox(
               width: widget.width,
               height: widget.height,
-              color: VineTheme.transparent,
             );
           },
         );
@@ -517,6 +512,91 @@ class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
         : widget.width;
     if (logicalWidth == null || logicalWidth <= 0) return null;
     return (logicalWidth * MediaQuery.devicePixelRatioOf(context)).ceil();
+  }
+
+  void _logNetworkImageError(Object error, StackTrace? stackTrace) {
+    final videoId = widget.videoId;
+    Log.warning(
+      '🖼️ [Image.network] ${widget.logPrefix} load failed'
+      '${videoId == null ? '' : ' for video $videoId'}:\n'
+      '  URL: ${widget.url}\n'
+      '  Error type: ${error.runtimeType}\n'
+      '  Error: $error\n'
+      '  Stack: ${stackTrace?.toString().split('\n').take(5).join('\n')}',
+      name: widget.logName,
+      category: LogCategory.video,
+    );
+  }
+}
+
+class _NetworkImageFrame extends StatelessWidget {
+  const _NetworkImageFrame({
+    required this.imageUrl,
+    required this.width,
+    required this.height,
+    required this.fadeInDuration,
+    required this.fadeOutDuration,
+    required this.placeholder,
+    required this.frame,
+    required this.child,
+  });
+
+  final String imageUrl;
+  final double? width;
+  final double? height;
+  final Duration fadeInDuration;
+  final Duration fadeOutDuration;
+  final PlaceholderWidgetBuilder? placeholder;
+  final int? frame;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasImage = frame != null;
+    final placeholderBuilder = placeholder;
+    if (placeholderBuilder == null) {
+      return AnimatedOpacity(
+        key: const ValueKey('image'),
+        opacity: hasImage ? 1 : 0,
+        duration: fadeInDuration,
+        child: child,
+      );
+    }
+
+    return Stack(
+      fit: StackFit.passthrough,
+      children: [
+        IgnorePointer(
+          child: AnimatedOpacity(
+            opacity: hasImage ? 0 : 1,
+            duration: fadeOutDuration,
+            child: placeholderBuilder(context, imageUrl),
+          ),
+        ),
+        AnimatedOpacity(
+          key: const ValueKey('image'),
+          opacity: hasImage ? 1 : 0,
+          duration: fadeInDuration,
+          child: child,
+        ),
+      ],
+    );
+  }
+}
+
+class _TransparentImageBox extends StatelessWidget {
+  const _TransparentImageBox({required this.width, required this.height});
+
+  final double? width;
+  final double? height;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      color: VineTheme.transparent,
+    );
   }
 }
 

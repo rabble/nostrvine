@@ -46,4 +46,21 @@ void main() {
       );
     });
   });
+
+  group('extractMediaServerUrl', () {
+    test('extracts scheme, host, and port only', () {
+      expect(
+        extractMediaServerUrl(
+          'https://media.divine.video:8443/path/to/blob.jpg?size=large',
+        ),
+        equals('https://media.divine.video:8443'),
+      );
+    });
+
+    test('returns null for missing or invalid URLs', () {
+      expect(extractMediaServerUrl(null), isNull);
+      expect(extractMediaServerUrl(''), isNull);
+      expect(extractMediaServerUrl('/relative/path.jpg'), isNull);
+    });
+  });
 }

@@ -1,5 +1,5 @@
-// ABOUTME: Shared cached thumbnail widget for profile tab grids
-// ABOUTME: Wraps VineCachedImage with blurhash and placeholder fallbacks
+// ABOUTME: Shared thumbnail widget for profile tab grids
+// ABOUTME: Wraps PassiveAuthThumbnailImage with blurhash and placeholder fallbacks
 
 import 'package:flutter/material.dart';
 import 'package:openvine/widgets/blurhash_display.dart';
@@ -8,8 +8,8 @@ import 'package:openvine/widgets/video_thumbnail_widget.dart';
 
 /// Cached thumbnail for profile grid tiles.
 ///
-/// Shows a [VineCachedImage] when [thumbnailUrl] is non-empty, falling back
-/// to a [BlurhashDisplay] (when [blurhash] is provided) or
+/// Shows a [PassiveAuthThumbnailImage] when [thumbnailUrl] is non-empty,
+/// falling back to a [BlurhashDisplay] (when [blurhash] is provided) or
 /// [ProfileTabThumbnailPlaceholder] for loading, error, and null states.
 ///
 /// Set [isPrecached] to `true` to skip fade animations (used when the image
