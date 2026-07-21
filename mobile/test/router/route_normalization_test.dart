@@ -2,15 +2,25 @@
 // ABOUTME: Prevents universal links from being rewritten by internal canonicalization
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/router/providers/route_normalization_provider.dart';
+import 'package:openvine/features/people_lists/view/create_people_list_page.dart';
+import 'package:openvine/router/router.dart';
+import 'package:openvine/screens/auth/email_verification_screen.dart';
+import 'package:openvine/screens/auth/reset_password.dart';
+import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/minor_account_review_parent_consent_screen.dart';
 import 'package:openvine/screens/minor_account_review_parent_contact_screen.dart';
 import 'package:openvine/screens/minor_account_review_screen.dart';
 import 'package:openvine/screens/minor_account_review_under13_screen.dart';
 import 'package:openvine/screens/minor_account_review_under13_support_screen.dart';
+import 'package:openvine/screens/search_results/view/search_results_page.dart';
 
 void main() {
+  const videoId =
+      '672c4eb9fc29adb6b505713bc6da94af2244c1de55dc6f034e2bcdaba133ebbe';
+  const pubkey =
+      '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+
   group('shouldSkipRouteNormalization', () {
     test('skips divine video universal links', () {
       expect(
@@ -30,9 +40,7 @@ void main() {
 
     test('skips divine invite universal links', () {
       expect(
-        shouldSkipRouteNormalization(
-          'https://divine.video/invite/ABCD-EFGH',
-        ),
+        shouldSkipRouteNormalization('https://divine.video/invite/ABCD-EFGH'),
         isTrue,
       );
     });
@@ -53,166 +61,125 @@ void main() {
       );
     });
 
-    test('does not skip canonical internal routes', () {
-      expect(shouldSkipRouteNormalization('/video/abc123'), isFalse);
-      expect(shouldSkipRouteNormalization('/home/0'), isFalse);
-    });
+    test('does not skip modeled internal routes without query or fragment', () {
+      final routes = {
+        '/video/$videoId': 'video detail is fully modeled',
+        '/home/0': 'canonical home path is fully modeled',
+        '/home/-3': 'negative index can be normalized losslessly',
+      };
 
-    test('skips pooled feed routes carrying a selected video identity', () {
-      const videoId =
-          '672c4eb9fc29adb6b505713bc6da94af2244c1de55dc6f034e2bcdaba133ebbe';
-
-      expect(
-        shouldSkipRouteNormalization(
-          PooledFullscreenVideoFeedScreen.pathForVideoId(videoId),
-        ),
-        isTrue,
-      );
-    });
-
-    test('skips minor account review route family', () {
-      for (final route in [
-        MinorAccountReviewScreen.path,
-        MinorAccountReviewScreen.welcomePath,
-        MinorAccountReviewLoadingScreen.path,
-        MinorAccountReviewParentConsentScreen.path,
-        MinorAccountReviewParentContactScreen.path,
-        MinorAccountReviewUnder13Screen.path,
-        MinorAccountReviewUnder13SupportScreen.path,
-      ]) {
-        expect(shouldSkipRouteNormalization(route), isTrue, reason: route);
+      for (final entry in routes.entries) {
+        expect(
+          shouldSkipRouteNormalization(entry.key),
+          isFalse,
+          reason: entry.value,
+        );
       }
     });
 
-    test('skips video engagement list routes', () {
-      // parseRoute/buildRoute don't know about /likers and /reposters
-      // sub-routes, so without skipping the normalizer would rewrite them
-      // back to /video/<id> and the engagement screen would never render.
+    test(
+      'skips all query or fragment routes because canonicalization is lossy',
+      () {
+        final routes = {
+          PooledFullscreenVideoFeedScreen.pathForVideoId(videoId):
+              'pooled feed carries selected video identity in query',
+          CreatePeopleListPage.pathWithInitialPubkey(pubkey):
+              'create people list seeds a full pubkey in query',
+          SearchResultsPage.pathForQuery('nostr', requestFocusOnMount: true):
+              'search focus state lives in query',
+          '${EmailVerificationScreen.path}?deviceCode=abc123':
+              'email verification polling state lives in query',
+          '${ResetPasswordScreen.path}?token=abc123':
+              'password reset token lives in query',
+          '/home/0#top': 'fragments cannot be rebuilt from RouteContext',
+          '/video/$videoId/likers?a=34236%3A$pubkey%3Adtag':
+              'engagement list filter state lives in query',
+        };
+
+        for (final entry in routes.entries) {
+          expect(
+            shouldSkipRouteNormalization(entry.key),
+            isTrue,
+            reason: entry.value,
+          );
+        }
+      },
+    );
+
+    test('skips parse-but-build-shorter route families', () {
+      final routes = {
+        WelcomeScreen.path:
+            'welcome subtree is GoRouter-owned and normalization-sensitive',
+        WelcomeScreen.loginOptionsPath:
+            'welcome subtree is GoRouter-owned and normalization-sensitive',
+        '/apps/primal/sandbox':
+            'app sandbox is not represented in RouteContext',
+        '/video/$videoId/likers':
+            'video engagement list suffix is not represented in RouteContext',
+        '/video/$videoId/reposters':
+            'video engagement list suffix is not represented in RouteContext',
+        MinorAccountReviewScreen.path:
+            'minor account review flow is GoRouter-owned',
+        MinorAccountReviewScreen.welcomePath:
+            'minor account review flow is GoRouter-owned',
+        MinorAccountReviewLoadingScreen.path:
+            'minor account review flow is GoRouter-owned',
+        MinorAccountReviewParentConsentScreen.path:
+            'minor account review flow is GoRouter-owned',
+        MinorAccountReviewParentContactScreen.path:
+            'minor account review flow is GoRouter-owned',
+        MinorAccountReviewUnder13Screen.path:
+            'minor account review flow is GoRouter-owned',
+        MinorAccountReviewUnder13SupportScreen.path:
+            'minor account review flow is GoRouter-owned',
+      };
+
+      for (final entry in routes.entries) {
+        expect(
+          shouldSkipRouteNormalization(entry.key),
+          isTrue,
+          reason: entry.value,
+        );
+      }
+    });
+  });
+
+  group('normalization classification', () {
+    test('normalizes modeled routes only', () {
+      final routes = {
+        '/home/-3': '/home/0',
+        '/profile/$pubkey/-1': '/profile/$pubkey/0',
+        '/hashtag/nostr%20video': '/hashtag/nostr%20video',
+      };
+
+      for (final entry in routes.entries) {
+        final parsed = parseKnownRoute(entry.key);
+        expect(parsed, isNotNull, reason: entry.key);
+        expect(buildRoute(parsed!), entry.value, reason: entry.key);
+      }
+    });
+
+    test('leaves unknown and incomplete routes to GoRouter', () {
       expect(
-        shouldSkipRouteNormalization('/video/abc123/likers'),
-        isTrue,
+        parseKnownRoute('/search-results/nostr'),
+        isNull,
+        reason: 'search results are GoRouter-owned, not RouteContext modeled',
       );
       expect(
-        shouldSkipRouteNormalization('/video/abc123/reposters'),
-        isTrue,
+        parseKnownRoute('/verify-email'),
+        isNull,
+        reason: 'auth deep links are GoRouter-owned',
       );
       expect(
-        shouldSkipRouteNormalization(
-          '/video/abc123/likers?a=34236%3Apubkey%3Adtag',
-        ),
-        isTrue,
+        parseKnownRoute('/wat/xyz'),
+        isNull,
+        reason: 'unknown routes should not be rewritten to home',
       );
       expect(
-        shouldSkipRouteNormalization(
-          '/video/abc123/reposters?a=34236%3Apubkey%3Adtag',
-        ),
-        isTrue,
+        parseKnownRoute('/following'),
+        isNull,
+        reason: 'incomplete dynamic routes should not throw or normalize',
       );
     });
   });
 }
-
-//import 'package:flutter/material.dart';
-//import 'package:flutter_test/flutter_test.dart';
-//import 'package:flutter_riverpod/flutter_riverpod.dart';
-//import 'package:openvine/router/app_router.dart';
-//import 'package:openvine/router/route_normalization_provider.dart';
-//import 'package:openvine/providers/home_feed_provider.dart';
-//
-//void main() {
-//  // Disable HomeFeed timer in tests by setting poll interval to 1 year
-//  final testOverrides = [
-//    homeFeedPollIntervalProvider.overrideWithValue(const Duration(days: 365)),
-//  ];
-//
-//  Widget shell(ProviderContainer c) => UncontrolledProviderScope(
-//    container: c,
-//    child: MaterialApp.router(localizationsDelegates: AppLocalizations.localizationsDelegates, supportedLocales: AppLocalizations.supportedLocales, routerConfig: c.read(goRouterProvider)),
-//  );
-//
-//  String currentLocation(ProviderContainer c) {
-//    final router = c.read(goRouterProvider);
-//    return router.routeInformationProvider.value.uri.toString();
-//  }
-//
-//  testWidgets('normalizes negative indices: /home/-3 -> /home/0', (
-//    tester,
-//  ) async {
-//    final c = ProviderContainer(overrides: testOverrides);
-//    addTearDown(c.dispose);
-//
-//    await tester.pumpWidget(shell(c));
-//
-//    // Activate normalization provider
-//    c.read(routeNormalizationProvider);
-//
-//    c.read(goRouterProvider).go('/home/-3');
-//    await tester.pump(); // Process the navigation
-//    await tester.pump(); // Process the post-frame callback redirect
-//
-//    // After normalization, router location should be canonical
-//    expect(currentLocation(c), '/home/0');
-//  });
-//
-//  testWidgets('normalizes unknown path -> /home/0', (tester) async {
-//    final c = ProviderContainer(overrides: testOverrides);
-//    addTearDown(c.dispose);
-//
-//    await tester.pumpWidget(shell(c));
-//
-//    c.read(routeNormalizationProvider);
-//
-//    c.read(goRouterProvider).go('/wat/xyz');
-//    await tester.pump(); // Process the navigation
-//    await tester.pump(); // Process the post-frame callback redirect
-//
-//    expect(currentLocation(c), '/home/0');
-//  });
-//
-//  testWidgets('encodes hashtag param consistently', (tester) async {
-//    final c = ProviderContainer(overrides: testOverrides);
-//    addTearDown(c.dispose);
-//
-//    await tester.pumpWidget(shell(c));
-//
-//    c.read(routeNormalizationProvider);
-//
-//    c.read(goRouterProvider).go('/hashtag/rust lang/1'); // space in tag
-//    await tester.pump(); // Process the navigation
-//    await tester.pump(); // Process the post-frame callback redirect
-//
-//    // Should be URL-encoded
-//    expect(currentLocation(c), contains('rust%20lang'));
-//  });
-//
-//  testWidgets('normalizes profile with negative index', (tester) async {
-//    final c = ProviderContainer(overrides: testOverrides);
-//    addTearDown(c.dispose);
-//
-//    await tester.pumpWidget(shell(c));
-//
-//    c.read(routeNormalizationProvider);
-//
-//    c.read(goRouterProvider).go('/profile/npubXYZ/-5');
-//    await tester.pump(); // Process the navigation
-//    await tester.pump(); // Process the post-frame callback redirect
-//
-//    expect(currentLocation(c), '/profile/npubXYZ/0');
-//  });
-//
-//  testWidgets('preserves valid canonical URLs unchanged', (tester) async {
-//    final c = ProviderContainer(overrides: testOverrides);
-//    addTearDown(c.dispose);
-//
-//    await tester.pumpWidget(shell(c));
-//
-//    c.read(routeNormalizationProvider);
-//
-//    c.read(goRouterProvider).go('/home/5');
-//    await tester.pump(); // Process the navigation
-//    await tester.pump(); // Process the post-frame callback redirect
-//
-//    expect(currentLocation(c), '/home/5');
-//  });
-//}
-//
