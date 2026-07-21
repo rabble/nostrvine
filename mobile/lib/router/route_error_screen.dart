@@ -63,15 +63,14 @@ class RouteErrorScreen extends StatelessWidget {
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          spacing: 24,
           children: [
             Text(message),
-            if (showHomeButton) ...[
-              const SizedBox(height: 24),
+            if (showHomeButton)
               DivineButton(
                 label: context.l10n.routeGoHome,
                 onPressed: () => context.go(VideoFeedPage.pathForIndex(0)),
               ),
-            ],
           ],
         ),
       ),
