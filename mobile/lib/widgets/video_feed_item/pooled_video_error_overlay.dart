@@ -70,12 +70,12 @@ class _PooledVideoErrorOverlayState
     return widget.isSquare ? BoxFit.contain : BoxFit.cover;
   }
 
-  VineContentType? get _blurhashContentType =>
+  static VineContentType? _deriveContentType(VideoEvent video) =>
       BlurhashService.deriveContentType(
-        hashtags: widget.video.hashtags,
-        group: widget.video.group,
-        title: widget.video.title,
-        content: widget.video.content,
+        hashtags: video.hashtags,
+        group: video.group,
+        title: video.title,
+        content: video.content,
       );
 
   void _maybeAutoRetryAgeRestricted({required bool showVerifyAge}) {
@@ -179,7 +179,7 @@ class _PooledVideoErrorOverlayState
               // matching the feed grid's fallback. #6242
               BlurhashDisplay(
                 blurhash: widget.video.blurhash,
-                contentType: _blurhashContentType,
+                contentType: _deriveContentType(widget.video),
                 fit: _resolveBoxFit(),
               ),
               if (widget.video.thumbnailUrl != null &&
