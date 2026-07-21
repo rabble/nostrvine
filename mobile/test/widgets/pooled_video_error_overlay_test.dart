@@ -13,7 +13,9 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
+import 'package:openvine/widgets/blurhash_display.dart';
 import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 
 import '../builders/test_video_event_builder.dart';
 
@@ -450,6 +452,39 @@ void main() {
           expect(find.text(l10n.videoErrorRetry), findsNothing);
         },
       );
+    });
+
+    group('dead media fallback', () {
+      testWidgets(
+        'renders a blurhash beneath the error card so expired media is '
+        'not a bare color',
+        (tester) async {
+          await tester.pumpWidget(
+            buildWidget(errorType: VideoErrorType.notFound),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.byType(BlurhashDisplay), findsOneWidget);
+        },
+      );
+
+      testWidgets('renders a blurhash when the thumbnail URL is missing', (
+        tester,
+      ) async {
+        final noThumbnail = TestVideoEventBuilder.create(
+          id: 'no-thumbnail-video',
+          videoUrl: 'https://blossom.divine.video/$testSha256.mp4',
+          thumbnailUrl: '',
+        );
+
+        await tester.pumpWidget(
+          buildWidget(errorType: VideoErrorType.notFound, video: noThumbnail),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(BlurhashDisplay), findsOneWidget);
+        expect(find.byType(VineCachedImage), findsNothing);
+      });
     });
 
     group('retry', () {

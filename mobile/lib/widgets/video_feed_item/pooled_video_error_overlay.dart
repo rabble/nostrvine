@@ -2,6 +2,7 @@
 // ABOUTME: Differentiates moderation-restricted (403), age-gated (401),
 // ABOUTME: missing (404), and generic playback errors.
 
+import 'package:blurhash_service/blurhash_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -12,6 +13,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
+import 'package:openvine/widgets/blurhash_display.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
 /// Error overlay for videos playing through the pooled video player.
@@ -67,6 +69,14 @@ class _PooledVideoErrorOverlayState
     if (!widget.shouldPortraitExpand) return BoxFit.contain;
     return widget.isSquare ? BoxFit.contain : BoxFit.cover;
   }
+
+  VineContentType? get _blurhashContentType =>
+      BlurhashService.deriveContentType(
+        hashtags: widget.video.hashtags,
+        group: widget.video.group,
+        title: widget.video.title,
+        content: widget.video.content,
+      );
 
   void _maybeAutoRetryAgeRestricted({required bool showVerifyAge}) {
     if (!showVerifyAge || widget.isVerifying || widget.onVerifyAge == null) {
@@ -161,19 +171,30 @@ class _PooledVideoErrorOverlayState
       children: [
         ColoredBox(
           color: VineTheme.backgroundColor,
-          child:
-              widget.video.thumbnailUrl != null &&
-                  widget.video.thumbnailUrl!.isNotEmpty
-              ? SizedBox.expand(
-                  child: VineCachedImage(
-                    imageUrl: widget.video.thumbnailUrl!,
-                    fit: _resolveBoxFit(),
-                    fadeInDuration: Duration.zero,
-                    fadeOutDuration: Duration.zero,
-                    errorWidget: (_, _, _) => const SizedBox.shrink(),
-                  ),
-                )
-              : const SizedBox.expand(),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Blurhash preview beneath the thumbnail so expired or missing
+              // media degrades to a soft placeholder instead of a bare color,
+              // matching the feed grid's fallback. #6242
+              BlurhashDisplay(
+                blurhash: widget.video.blurhash,
+                contentType: _blurhashContentType,
+                fit: _resolveBoxFit(),
+              ),
+              if (widget.video.thumbnailUrl != null &&
+                  widget.video.thumbnailUrl!.isNotEmpty)
+                VineCachedImage(
+                  imageUrl: widget.video.thumbnailUrl!,
+                  fit: _resolveBoxFit(),
+                  fadeInDuration: Duration.zero,
+                  fadeOutDuration: Duration.zero,
+                  // On a failed/expired thumbnail, reveal the blurhash beneath
+                  // rather than collapsing to a bare color.
+                  errorWidget: (_, _, _) => const SizedBox.shrink(),
+                ),
+            ],
+          ),
         ),
         ColoredBox(
           color: VineTheme.scrim50,
