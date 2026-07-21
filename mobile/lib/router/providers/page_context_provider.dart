@@ -168,6 +168,100 @@ String _safeDecode(String segment) {
   }
 }
 
+/// Returns whether [segments] matches one of the route shapes modeled below.
+///
+/// GoRouter rejects paths with extra or unknown segments. Keep the parser's
+/// normalizer contract aligned with that behavior so malformed paths are left
+/// to GoRouter instead of being shortened into a different valid route.
+bool _isKnownRouteShape(List<String> segments) {
+  final firstSegment = segments.first;
+  final length = segments.length;
+
+  switch (firstSegment) {
+    case 'home':
+    case 'explore':
+    case 'notifications':
+    case 'liked-videos':
+      return length <= 2;
+    case 'profile':
+      return length == 2 || length == 3;
+    case 'inbox':
+      return length == 1 ||
+          (length == 3 &&
+              (segments[1] == 'conversation' ||
+                  segments[1] == 'message-requests')) ||
+          (length == 2 && segments[1] == 'message-requests');
+    case 'hashtag':
+      return length == 2 || length == 3;
+    case 'categories':
+      return length == 2;
+    case 'video-editor':
+    case 'video-edit':
+    case 'subtitle-edit':
+      return length == 1 || length == 2;
+    case 'settings':
+      return length == 1 ||
+          (length == 2 &&
+              segments[1] == MonetizationLinksSettingsScreen.subpath);
+    case 'apps':
+      return length == 1 || length == 2;
+    case 'following':
+    case 'followers':
+    case 'sound':
+    case 'original-sound':
+    case 'profile-view':
+      return length == 2;
+    case 'list':
+      return length == 2 || length == 3;
+    case 'people-lists':
+      return (length == 2 && segments[1] == 'new') ||
+          length == 2 ||
+          (length == 3 && segments[2] == 'add-people');
+    case 'nostr-settings':
+      return length == 1 ||
+          (length == 2 && segments[1] == Nip05SettingsScreen.subpath);
+    case 'welcome':
+      return length == 1 || (length == 2 && segments[1] == 'login-options');
+    case 'video':
+      return length == 2;
+    case 'video-recorder':
+    case 'video-metadata':
+    case 'badges':
+    case 'creator-analytics':
+    case 'relay-settings':
+    case 'relay-diagnostic':
+    case 'blossom-settings':
+    case 'notification-settings':
+    case 'key-management':
+    case 'safety-settings':
+    case 'content-filters':
+    case 'content-preferences':
+    case 'general-settings':
+    case 'storage-management':
+    case 'invites':
+    case 'app-language':
+    case 'appearance-settings':
+    case 'support-center':
+    case 'legal':
+    case 'bluesky-settings':
+    case 'edit-profile':
+    case 'setup-profile':
+    case 'clips':
+    case 'clips-no-sound':
+    case 'clips-only':
+    case 'drafts':
+    case 'import-key':
+    case 'developer-options':
+    case 'video-feed':
+    case 'discover-lists':
+    case 'secure-account':
+    case 'pooled-video-feed':
+      return length == 1;
+    default:
+      return false;
+  }
+}
+
 /// Parse a URL path into a structured RouteContext
 /// Normalizes negative indices to 0 and decodes URL-encoded parameters
 RouteContext parseRoute(String path) {
@@ -186,6 +280,10 @@ RouteContext? parseKnownRoute(String path) {
 
   if (segments.isEmpty) {
     return const RouteContext(type: RouteType.home, videoIndex: 0);
+  }
+
+  if (!_isKnownRouteShape(segments)) {
+    return null;
   }
 
   final firstSegment = segments[0];

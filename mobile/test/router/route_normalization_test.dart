@@ -181,5 +181,19 @@ void main() {
         reason: 'incomplete dynamic routes should not throw or normalize',
       );
     });
+
+    test('leaves routes with unmodeled trailing segments to GoRouter', () {
+      for (final route in [
+        '/people-lists/new/extra',
+        '/video/$videoId/bogus',
+        '/profile/$pubkey/0/extra',
+      ]) {
+        expect(
+          parseKnownRoute(route),
+          isNull,
+          reason: 'unmodeled suffix must not be normalized away: $route',
+        );
+      }
+    });
   });
 }
