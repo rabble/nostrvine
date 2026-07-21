@@ -10,6 +10,7 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.HttpDataSource
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.SeekParameters
@@ -756,29 +757,35 @@ internal class DivineVideoPlayerInstance(
             map["errorMessage"] = error.localizedMessage
                 ?: error.cause?.localizedMessage
                 ?: error.errorCodeName
-            map["errorCode"] = when (error.errorCode) {
-                PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS -> {
-                    val status = (error.cause as? androidx.media3.datasource.HttpDataSource.InvalidResponseCodeException)?.responseCode ?: 0
-                    when {
-                        status == 202 -> "media_processing"
-                        status in 400..499 -> "http_client_error"
-                        else -> "http_server_error"
-                    }
-                }
-                PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND,
-                PlaybackException.ERROR_CODE_IO_INVALID_HTTP_CONTENT_TYPE,
-                PlaybackException.ERROR_CODE_IO_NO_PERMISSION -> "http_client_error"
-                PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED -> "network_error"
-                PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT -> "timeout"
-                in 2000..2999 -> "decoder_error"
-                in 3000..3999 -> "parse_error"
-                in 4000..4999 -> "decoder_error"
-                in 6000..6999 -> "decoder_error"
-                else -> "unknown"
-            }
+            map["errorCode"] = errorCodeFor(error)
         }
         sink.success(map)
     }
+
+    private fun errorCodeFor(error: PlaybackException): String =
+        when (error.errorCode) {
+            PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS -> {
+                val status =
+                    (error.cause as? HttpDataSource.InvalidResponseCodeException)
+                        ?.responseCode ?: 0
+                when {
+                    status == 202 -> "media_processing"
+                    status == 401 -> "auth_required"
+                    status in 400..499 -> "http_client_error"
+                    else -> "http_server_error"
+                }
+            }
+            PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND,
+            PlaybackException.ERROR_CODE_IO_INVALID_HTTP_CONTENT_TYPE,
+            PlaybackException.ERROR_CODE_IO_NO_PERMISSION -> "http_client_error"
+            PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED -> "network_error"
+            PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT -> "timeout"
+            in 2000..2999 -> "decoder_error"
+            in 3000..3999 -> "parse_error"
+            in 4000..4999 -> "decoder_error"
+            in 6000..6999 -> "decoder_error"
+            else -> "unknown"
+        }
 
     private fun computeTotalDuration(exoPlayer: ExoPlayer): Long {
         var total = 0L
@@ -1012,7 +1019,7 @@ internal class DivineVideoPlayerInstance(
             pendingSetClipsResult?.error(
                 "PLAYER_ERROR",
                 error.message ?: "Unknown playback error",
-                null,
+                mapOf("errorCode" to errorCodeFor(error)),
             )
             pendingSetClipsResult = null
             sendStateUpdate()

@@ -70,6 +70,17 @@ Future<(String, int)> setSourceWithFallbacks({
       abortIfStale(source);
       lastError = error;
       lastStackTrace = stackTrace;
+      final nativeErrorCode = nativePlayerErrorCodeFromError(error);
+      if (nativeErrorCode == NativePlayerErrorCode.authRequired) {
+        log(
+          'Source failed without failover index $index: '
+          'failedSource=$source '
+          'attempt=$attemptIndex '
+          'code=$nativeErrorCode '
+          'error=$lastError',
+        );
+        Error.throwWithStackTrace(error, stackTrace);
+      }
       // Only wait-and-retry a processing (HTTP 202) source when it is the last
       // resort. While a fallback is still queued — for Divine that is always
       // the guaranteed raw blob — prefer it immediately instead of stalling up

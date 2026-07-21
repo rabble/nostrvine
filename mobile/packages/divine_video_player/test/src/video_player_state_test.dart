@@ -8,6 +8,10 @@ void main() {
         expect(NativePlayerErrorCode.mediaProcessing.shouldFailover, isFalse);
       });
 
+      test('returns false for authRequired', () {
+        expect(NativePlayerErrorCode.authRequired.shouldFailover, isFalse);
+      });
+
       test('returns true for httpClientError', () {
         expect(NativePlayerErrorCode.httpClientError.shouldFailover, isTrue);
       });
@@ -50,6 +54,10 @@ void main() {
         expect(NativePlayerErrorCode.timeout.isTransient, isTrue);
       });
 
+      test('returns false for authRequired', () {
+        expect(NativePlayerErrorCode.authRequired.isTransient, isFalse);
+      });
+
       test('returns false for httpServerError', () {
         expect(NativePlayerErrorCode.httpServerError.isTransient, isFalse);
       });
@@ -76,6 +84,13 @@ void main() {
         expect(
           NativePlayerErrorCode.fromString('media_processing'),
           equals(NativePlayerErrorCode.mediaProcessing),
+        );
+      });
+
+      test('parses auth_required', () {
+        expect(
+          NativePlayerErrorCode.fromString('auth_required'),
+          equals(NativePlayerErrorCode.authRequired),
         );
       });
 

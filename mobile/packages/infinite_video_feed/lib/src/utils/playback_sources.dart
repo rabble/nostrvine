@@ -1,3 +1,5 @@
+import 'package:divine_video_player/divine_video_player.dart';
+import 'package:flutter/services.dart';
 import 'package:infinite_video_feed/src/models/video_error_type.dart';
 import 'package:infinite_video_feed/src/utils/canonical_divine_url.dart';
 import 'package:models/models.dart';
@@ -65,9 +67,19 @@ List<String> resolvePlaybackSources(
   return orderedUniqueSources([resolvedSource, originalUrl]);
 }
 
-/// Classifies a playback failure into a [VideoErrorType] using the error
-/// message and (optionally) the source that produced it.
-VideoErrorType classifyVideoError({String? errorMessage, String? source}) {
+/// Classifies a playback failure into a [VideoErrorType] using the typed native
+/// error code, error message, and optionally the source that produced it.
+VideoErrorType classifyVideoError({
+  NativePlayerErrorCode? errorCode,
+  String? errorMessage,
+  String? source,
+}) {
+  final typedErrorType = switch (errorCode) {
+    NativePlayerErrorCode.authRequired => VideoErrorType.ageRestricted,
+    _ => null,
+  };
+  if (typedErrorType != null) return typedErrorType;
+
   final lower = (errorMessage ?? '').toLowerCase();
   // Divine derivative URLs can legitimately return HTTP 202 while MP4/HLS
   // processing catches up after upload. Treat that as transient playback
@@ -103,6 +115,23 @@ VideoErrorType classifyVideoError({String? errorMessage, String? source}) {
 bool isMediaProcessingError(Object? error, {String? errorMessage}) {
   final lower = '${errorMessage ?? ''} ${error ?? ''}'.toLowerCase();
   return _mentionsHttpStatus(lower, 202);
+}
+
+/// Extracts a canonical native player error code from method-channel failures.
+NativePlayerErrorCode? nativePlayerErrorCodeFromError(Object? error) {
+  if (error is! PlatformException) return null;
+
+  final details = error.details;
+  if (details is Map) {
+    final rawCode = details['errorCode'];
+    if (rawCode is String) {
+      final parsed = NativePlayerErrorCode.fromString(rawCode);
+      if (parsed != NativePlayerErrorCode.unknown) return parsed;
+    }
+  }
+
+  final parsed = NativePlayerErrorCode.fromString(error.code);
+  return parsed == NativePlayerErrorCode.unknown ? null : parsed;
 }
 
 bool _mentionsHttpStatus(String lower, int status) {
