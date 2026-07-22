@@ -31,6 +31,7 @@ workspace:
   - packages/blossom_upload_service
   - packages/blurhash_service
   - packages/cache_sync
+  - packages/caption_generator
   - packages/categories_repository
   - packages/collaborator_repository
   - packages/comments_repository

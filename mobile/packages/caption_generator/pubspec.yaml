@@ -1,0 +1,33 @@
+name: caption_generator
+description: "On-device speech-to-text closed caption generation for Android and Apple platforms."
+version: 0.0.1
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.11.0
+  flutter: ^3.41.1
+
+dependencies:
+  equatable: ^2.0.8
+  flutter:
+    sdk: flutter
+  plugin_platform_interface: ^2.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  very_good_analysis: ^10.2.0
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: co.openvine.caption_generator
+        pluginClass: CaptionGeneratorPlugin
+      ios:
+        pluginClass: CaptionGeneratorPlugin
+        sharedDarwinSource: true
+      macos:
+        pluginClass: CaptionGeneratorPlugin
+        sharedDarwinSource: true
