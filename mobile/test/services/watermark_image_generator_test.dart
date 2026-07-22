@@ -62,6 +62,21 @@ Future<({int width, int height, Uint8List rgba})> _decodeRgba(
 int _alphaAt(Uint8List rgba, int width, int x, int y) =>
     rgba[(y * width + x) * 4 + 3];
 
+({int r, int g, int b, int a}) _rgbaAt(
+  Uint8List rgba,
+  int width,
+  int x,
+  int y,
+) {
+  final offset = (y * width + x) * 4;
+  return (
+    r: rgba[offset],
+    g: rgba[offset + 1],
+    b: rgba[offset + 2],
+    a: rgba[offset + 3],
+  );
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -151,18 +166,53 @@ void main() {
           }
         }
 
-        // The bottom-right region must contain rendered (non-transparent)
-        // pixels from the wordmark / identity text.
-        var drawn = 0;
-        for (var y = height - 90; y < height; y++) {
-          for (var x = width ~/ 2; x < width; x++) {
-            if (_alphaAt(decoded.rgba, decoded.width, x, y) > 0) drawn++;
+        const wordmarkAspectRatio = 320 / 105;
+        const wordmarkDrawWidth = width * 0.15;
+        const wordmarkDrawHeight = wordmarkDrawWidth / wordmarkAspectRatio;
+        const fontSize = wordmarkDrawWidth * 0.14;
+        const gap = fontSize * 0.3;
+        final paragraph =
+            ui.ParagraphBuilder(
+                ui.ParagraphStyle(textAlign: ui.TextAlign.right, maxLines: 1),
+              )
+              ..pushStyle(
+                ui.TextStyle(
+                  color: const ui.Color.fromRGBO(255, 255, 255, 0.6),
+                  fontSize: fontSize,
+                  fontWeight: ui.FontWeight.w600,
+                ),
+              )
+              ..addText('@divine.video')
+              ..pop();
+        final textParagraph = paragraph.build()
+          ..layout(const ui.ParagraphConstraints(width: width - 32));
+        final blockTop =
+            height - 16 - wordmarkDrawHeight - gap - textParagraph.height;
+        const wordmarkLeft = width - 16 - wordmarkDrawWidth;
+
+        // Sample only the computed wordmark band, not the identity text below.
+        // Fully opaque source pixels render as premultiplied white at 60% alpha,
+        // so the RGB channels should stay close to the output alpha.
+        var whiteMarkPixels = 0;
+        for (
+          var y = blockTop.ceil();
+          y < (blockTop + wordmarkDrawHeight).floor();
+          y++
+        ) {
+          for (var x = wordmarkLeft.ceil(); x < width - 16; x++) {
+            final pixel = _rgbaAt(decoded.rgba, decoded.width, x, y);
+            if (pixel.a > 120 &&
+                pixel.r >= pixel.a - 2 &&
+                pixel.g >= pixel.a - 2 &&
+                pixel.b >= pixel.a - 2) {
+              whiteMarkPixels++;
+            }
           }
         }
         expect(
-          drawn,
-          greaterThan(0),
-          reason: 'wordmark + identity should render in the bottom-right',
+          whiteMarkPixels,
+          greaterThan(20),
+          reason: 'refreshed white wordmark should render in the bottom-right',
         );
       },
     );
