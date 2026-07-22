@@ -459,10 +459,24 @@ flutter_launcher_icons:
   macos:
     generate: true
     image_path: "assets/icon/app_icon.png"
+  # Covers the PWA / home-screen icons under web/icons. This block also
+  # rewrites web/favicon.png from image_path and emits maskable icons without
+  # safe-zone padding, so follow every run with
+  # `dart run scripts/generate_web_favicon.dart` to put the plate-free tab mark
+  # and padded maskable icons back. It rewrites web/manifest.json in place too,
+  # stripping the trailing newline — re-add it before committing.
+  web:
+    generate: true
+    image_path: "assets/icon/app_icon.png"
+    background_color: "#000000"
+    # Brand Green, matching VineTheme.vineGreen and divine.video's theme-color.
+    theme_color: "#27C58B"
   image_path: "assets/icon/app_icon.png"
   min_sdk_android: 21
   remove_alpha_ios: true
-  adaptive_icon_background: "#00B488"
+  # Fills the adaptive icon's reserved border behind the inset app icon, so it
+  # has to be the same Brand Green the icon's plate is drawn in.
+  adaptive_icon_background: "#27C58B"
   adaptive_icon_foreground: "assets/icon/app_icon.png"
 
 patrol:
