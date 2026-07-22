@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 class WatermarkImageGenerator {
   WatermarkImageGenerator._();
 
+  /// White raster derivative of `assets/icon/logo.svg`, the brand source.
   static const _wordmarkAssetPath = 'assets/icon/divine_wordmark.png';
   static const _watermarkOpacity = 0.6;
   static const _margin = 16.0;

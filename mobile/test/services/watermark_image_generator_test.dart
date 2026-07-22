@@ -99,43 +99,49 @@ void main() {
       _clearAssetMock();
     });
 
-    test(
-      'bundled wordmark asset is a pure-white mark (not the retired cream)',
-      () async {
-        final decoded = await _decodeRgba(wordmarkBytes);
+    test('bundled wordmark asset matches the refreshed logo mark', () async {
+      final decoded = await _decodeRgba(wordmarkBytes);
+      const expectedLogoAspectRatio = 125 / 33;
 
-        // Only fully-opaque pixels: rawRgba bytes are premultiplied, so
-        // anti-aliased edge pixels carry attenuated colour and would skew the
-        // average. Interior stroke pixels are the mark's true colour.
-        var solid = 0;
-        var sumR = 0;
-        var sumG = 0;
-        var sumB = 0;
-        for (var i = 0; i < decoded.rgba.length; i += 4) {
-          if (decoded.rgba[i + 3] == 255) {
-            solid++;
-            sumR += decoded.rgba[i];
-            sumG += decoded.rgba[i + 1];
-            sumB += decoded.rgba[i + 2];
-          }
+      // `assets/icon/logo.svg` is the source of truth for this raster
+      // derivative. This catches accidental swaps back to the retired cursive
+      // assets, whose aspect ratios differ from the geometric heart-V mark.
+      expect(
+        decoded.width / decoded.height,
+        closeTo(expectedLogoAspectRatio, expectedLogoAspectRatio * 0.02),
+      );
+
+      // Only fully-opaque pixels: rawRgba bytes are premultiplied, so
+      // anti-aliased edge pixels carry attenuated colour and would skew the
+      // average. Interior stroke pixels are the mark's true colour.
+      var solid = 0;
+      var sumR = 0;
+      var sumG = 0;
+      var sumB = 0;
+      for (var i = 0; i < decoded.rgba.length; i += 4) {
+        if (decoded.rgba[i + 3] == 255) {
+          solid++;
+          sumR += decoded.rgba[i];
+          sumG += decoded.rgba[i + 1];
+          sumB += decoded.rgba[i + 2];
         }
+      }
 
-        expect(
-          solid,
-          greaterThan(500),
-          reason: 'mark should have opaque body pixels',
-        );
-        // Retired mark averaged (245,246,234) — a warm cream (blue ≈ 234).
-        // The refreshed mark is pure white; every channel average is ~255.
-        expect(sumR / solid, greaterThan(250));
-        expect(sumG / solid, greaterThan(250));
-        expect(
-          sumB / solid,
-          greaterThan(250),
-          reason: 'blue channel distinguishes white (255) from cream (234)',
-        );
-      },
-    );
+      expect(
+        solid,
+        greaterThan(500),
+        reason: 'mark should have opaque body pixels',
+      );
+      // Retired mark averaged (245,246,234) — a warm cream (blue ≈ 234).
+      // The refreshed mark is pure white; every channel average is ~255.
+      expect(sumR / solid, greaterThan(250));
+      expect(sumG / solid, greaterThan(250));
+      expect(
+        sumB / solid,
+        greaterThan(250),
+        reason: 'blue channel distinguishes white (255) from cream (234)',
+      );
+    });
 
     test(
       'generates a full-frame overlay with the mark drawn bottom-right only',
