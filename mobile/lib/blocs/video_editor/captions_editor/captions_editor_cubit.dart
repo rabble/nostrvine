@@ -16,16 +16,18 @@ part 'captions_editor_state.dart';
 /// A fresh session (no [initialCues]) starts with on-device generation; an
 /// existing session starts ready with its cues.
 class CaptionsEditorCubit extends Cubit<CaptionsEditorState> {
-  /// Creates the cubit.
+  /// Creates the cubit. Omitting [generationService] uses the production
+  /// on-device recognition pipeline.
   CaptionsEditorCubit({
-    required CaptionGenerationService generationService,
     required List<DivineVideoClip> clips,
     required Duration totalDuration,
     required CaptionRenderMode mode,
     required String presetId,
     required String languageTag,
     List<CaptionCue>? initialCues,
-  }) : _generationService = generationService,
+    CaptionGenerationService? generationService,
+  }) : _generationService =
+           generationService ?? CaptionGenerationService.production(),
        _clips = clips,
        _totalDuration = totalDuration,
        super(

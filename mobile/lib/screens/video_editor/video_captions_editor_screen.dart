@@ -9,8 +9,8 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/video_editor/captions_editor/captions_editor_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/video_editor/caption_generation_outcome.dart';
 import 'package:openvine/models/video_editor/caption_track.dart';
-import 'package:openvine/services/video_editor/caption_generation_service.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_caption_preset_sheet.dart';
 import 'package:openvine/widgets/video_editor/video_editor_toolbar.dart';
 
@@ -54,7 +54,7 @@ class VideoCaptionsEditorScreen extends StatefulWidget {
     required this.totalDuration,
     this.initialCues,
     this.canDeleteTrack = false,
-    @visibleForTesting this.generationService,
+    @visibleForTesting this.cubit,
     super.key,
   });
 
@@ -79,9 +79,10 @@ class VideoCaptionsEditorScreen extends StatefulWidget {
   /// Whether the toolbar offers deleting the whole caption track.
   final bool canDeleteTrack;
 
-  /// Test override for the generation service.
+  /// Test override for the session cubit (e.g. one built on a mocked
+  /// generation service).
   @visibleForTesting
-  final CaptionGenerationService? generationService;
+  final CaptionsEditorCubit? cubit;
 
   @override
   State<VideoCaptionsEditorScreen> createState() =>
@@ -94,16 +95,16 @@ class _VideoCaptionsEditorScreenState extends State<VideoCaptionsEditorScreen> {
   @override
   void initState() {
     super.initState();
-    _cubit = CaptionsEditorCubit(
-      generationService:
-          widget.generationService ?? CaptionGenerationService.production(),
-      clips: widget.clips,
-      totalDuration: widget.totalDuration,
-      mode: widget.mode,
-      presetId: widget.presetId,
-      languageTag: widget.languageTag,
-      initialCues: widget.initialCues,
-    );
+    _cubit =
+        widget.cubit ??
+        CaptionsEditorCubit(
+          clips: widget.clips,
+          totalDuration: widget.totalDuration,
+          mode: widget.mode,
+          presetId: widget.presetId,
+          languageTag: widget.languageTag,
+          initialCues: widget.initialCues,
+        );
     _cubit.initialize();
   }
 

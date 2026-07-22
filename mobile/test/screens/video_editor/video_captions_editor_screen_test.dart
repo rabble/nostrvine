@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/video_editor/captions_editor/captions_editor_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/video_editor/caption_track.dart';
 import 'package:openvine/screens/video_editor/video_captions_editor_screen.dart';
@@ -60,7 +61,15 @@ void main() {
                               clips: const [],
                               totalDuration: const Duration(seconds: 6),
                               initialCues: initialCues,
-                              generationService: service,
+                              cubit: CaptionsEditorCubit(
+                                clips: const [],
+                                totalDuration: const Duration(seconds: 6),
+                                mode: mode,
+                                presetId: 'classic',
+                                languageTag: 'en-US',
+                                initialCues: initialCues,
+                                generationService: service,
+                              ),
                             ),
                           ),
                         );
