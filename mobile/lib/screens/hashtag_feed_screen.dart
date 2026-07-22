@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/feed_repository_provider.dart';
@@ -342,7 +343,7 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
       appBar: DiVineAppBar(
         title: '#${widget.hashtag}',
         showBackButton: true,
-        onBackPressed: context.pop,
+        onBackPressed: context.safePop,
       ),
       body: body,
     );

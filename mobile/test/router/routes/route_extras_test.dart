@@ -45,4 +45,44 @@ void main() {
       expect(extraAs<CuratedListRouteExtra>(null), isNull);
     });
   });
+
+  group('restored map values', () {
+    test('reads typed values from restored dynamic maps', () {
+      final restored = <String, dynamic>{
+        'displayName': 'Ada',
+        'avatarUrl': 42,
+        'fromLibrary': true,
+      };
+
+      expect(extraValue<String>(restored, 'displayName'), 'Ada');
+      expect(extraValue<String>(restored, 'avatarUrl'), isNull);
+      expect(extraValue<bool>(restored, 'fromLibrary'), isTrue);
+      expect(extraValue<String>(null, 'displayName'), isNull);
+    });
+
+    test('reads typed values from restored object maps', () {
+      final restored = <Object?, Object?>{
+        'displayName': 'Ada',
+        'avatarUrl': 42,
+        'fromLibrary': true,
+      };
+
+      expect(extraValue<String>(restored, 'displayName'), 'Ada');
+      expect(extraValue<String>(restored, 'avatarUrl'), isNull);
+      expect(extraValue<bool>(restored, 'fromLibrary'), isTrue);
+    });
+
+    test('ignores malformed or missing values', () {
+      expect(
+        extraValue<bool>(<String, dynamic>{
+          'fromLibrary': 'true',
+        }, 'fromLibrary'),
+        isNull,
+      );
+      expect(
+        extraValue<bool>(const <String, dynamic>{}, 'fromLibrary'),
+        isNull,
+      );
+    });
+  });
 }

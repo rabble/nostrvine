@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/subtitle_editor/subtitle_editor_cubit.dart';
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/subtitle_repository_provider.dart';
 import 'package:openvine/providers/video_providers.dart';
@@ -117,7 +118,7 @@ class SubtitleEditorView extends StatelessWidget {
         title: l10n.subtitleEditorTitle,
         backgroundColor: VineTheme.surfaceBackground,
         showBackButton: true,
-        onBackPressed: context.pop,
+        onBackPressed: context.safePop,
       ),
       body: BlocConsumer<SubtitleEditorCubit, SubtitleEditorState>(
         listenWhen: (previous, current) => previous.status != current.status,

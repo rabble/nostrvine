@@ -23,7 +23,6 @@ test/router/app_shell_integration_test.dart
 test/router/consolidated_routes_test.dart
 test/router/explore_tab_navigation_test.dart
 test/router/explore_tab_tap_navigation_test.dart
-test/router/hashtag_navigation_crash_test.dart
 test/router/navigation_scenarios_test.dart
 test/router/page_context_provider_test.dart
 test/router/profile_me_redirect_integration_test.dart

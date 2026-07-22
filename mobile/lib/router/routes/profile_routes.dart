@@ -105,9 +105,8 @@ List<RouteBase> profileRoutes() {
           return RouteErrorScreen(message: ctx.l10n.routeInvalidProfileId);
         }
         // Extract profile hints from extra (for users without Kind 0 profiles)
-        final extra = extraAs<Map<String, dynamic>>(st.extra);
-        final displayNameHint = extra?['displayName'] as String?;
-        final avatarUrlHint = extra?['avatarUrl'] as String?;
+        final displayNameHint = extraValue<String>(st.extra, 'displayName');
+        final avatarUrlHint = extraValue<String>(st.extra, 'avatarUrl');
         return OtherProfileScreenRouter(
           npub: npub,
           displayNameHint: displayNameHint,
