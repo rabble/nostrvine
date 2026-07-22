@@ -36,6 +36,7 @@ VideoEvent _createVideo({
       '1111111111111111111111111111111111111111111111111111111111111111',
   String? sha256,
   String? vineId,
+  List<String> contentWarningLabels = const [],
 }) {
   return VideoEvent(
     id: id,
@@ -45,6 +46,7 @@ VideoEvent _createVideo({
     timestamp: DateTime(2025),
     sha256: sha256,
     vineId: vineId,
+    contentWarningLabels: contentWarningLabels,
   );
 }
 
@@ -156,6 +158,74 @@ void main() {
       expect(result, hasLength(1));
       expect(result.single.contentWarningLabels, isEmpty);
       expect(result.single.warnLabels, equals(['flashing-lights']));
+    });
+  });
+
+  group('creator self-labels (#5062)', () {
+    final nonAdultAgeRestrictedLabels = ContentFilterService
+        .ageRestrictedCategories
+        .where((label) => !ContentFilterService.adultCategories.contains(label))
+        .toList();
+
+    test('a self-labeled warn-category video stays visible behind the overlay '
+        'for a non-age-verified viewer', () async {
+      expect(ageVerificationService.isAdultContentVerified, isFalse);
+
+      // flashing-lights is a warn category, not age-gated: the creator's
+      // self-label must keep the video visible (behind the overlay), not
+      // make it disappear. This is the reported behaviour in #5062.
+      final result = videoEventService.filterVideoList([
+        _createVideo(
+          id: 'video-flashing',
+          contentWarningLabels: const ['flashing-lights'],
+        ),
+      ]);
+
+      expect(result, hasLength(1));
+      expect(result.single.warnLabels, equals(['flashing-lights']));
+    });
+
+    test('self-labeled non-adult age-restricted videos are hidden for '
+        'non-age-verified viewers', () async {
+      expect(ageVerificationService.isAdultContentVerified, isFalse);
+
+      for (final label in nonAdultAgeRestrictedLabels) {
+        final result = videoEventService.filterVideoList([
+          _createVideo(
+            id: 'video-${label.value}',
+            contentWarningLabels: [label.value],
+          ),
+        ]);
+
+        expect(
+          result,
+          isEmpty,
+          reason:
+              '${label.value} should stay hidden for non-age-verified '
+              'viewers even when applied as a creator self-label.',
+        );
+      }
+    });
+
+    test('self-labeled non-adult age-restricted videos become visible behind '
+        'the overlay once the viewer is age-verified', () async {
+      await ageVerificationService.setAdultContentVerified(true);
+
+      for (final label in nonAdultAgeRestrictedLabels) {
+        final result = videoEventService.filterVideoList([
+          _createVideo(
+            id: 'video-${label.value}-verified',
+            contentWarningLabels: [label.value],
+          ),
+        ]);
+
+        expect(
+          result,
+          hasLength(1),
+          reason: '${label.value} should be visible after age verification.',
+        );
+        expect(result.single.warnLabels, equals([label.value]));
+      }
     });
   });
 }

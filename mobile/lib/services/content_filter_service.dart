@@ -61,7 +61,12 @@ class ContentFilterService extends ChangeNotifier {
     ContentLabel.sexual,
   };
 
-  /// Visible categories locked to hide unless the user is age-verified.
+  /// Categories age-gated to [ContentFilterPreference.hide] until the viewer is
+  /// age-verified. PR #5303 locked these labels behind age verification; do not
+  /// add a "self-labeled content warns instead of hides" bypass without
+  /// confirming the category policy first. The `warn` defaults for alcohol,
+  /// tobacco, profanity, and gambling only take effect once the viewer is
+  /// age-verified. See #5062 for the reported visibility symptom.
   static const Set<ContentLabel> ageRestrictedCategories = {
     ...adultCategories,
     ContentLabel.alcohol,
@@ -181,7 +186,8 @@ class ContentFilterService extends ChangeNotifier {
     if (alwaysFilteredCategories.contains(label)) {
       return ContentFilterPreference.hide;
     }
-    // Age-restricted categories are locked to hide if not age-verified.
+    // Enforce the #5303 age gate for both creator self-labels and moderation
+    // labels.
     if (ageRestrictedCategories.contains(label) &&
         !ageVerificationService.isAdultContentVerified) {
       return ContentFilterPreference.hide;
