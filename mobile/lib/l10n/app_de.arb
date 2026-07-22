@@ -3770,7 +3770,7 @@
     "videoMetadataC2paMissingBody": "Wir konnten keine Content Credentials hinzufügen – dieses Video wird daher nicht als von Menschen gemacht bestätigt. Neu generieren, um es erneut zu versuchen, oder so posten.",
     "videoMetadataC2paMissingNote": "Content Credentials brauchen eine Internetverbindung.",
     "videoMetadataC2paMissingRegenerate": "Neu generieren",
-    "videoMetadataC2paMissingPostAnyway": "Trotzdem posten",
+    "videoMetadataC2paMissingSkip": "Überspringen",
     "videoMetadataGenerationFailed": "Generierung fehlgeschlagen",
     "videoMetadataTagsPickerSearchHint": "Tags suchen oder hinzufügen",
     "videoMetadataTagsPickerEmptyHint": "Tags hinzufügen, damit andere dein Video entdecken",

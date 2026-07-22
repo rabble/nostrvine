@@ -5701,7 +5701,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoMetadataC2paMissingRegenerate => '재생성';
 
   @override
-  String get videoMetadataC2paMissingPostAnyway => '그래도 게시';
+  String get videoMetadataC2paMissingSkip => '건너뛰기';
 
   @override
   String get videoMetadataGenerationFailed => '생성 실패';

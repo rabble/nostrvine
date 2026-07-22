@@ -5988,7 +5988,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoMetadataC2paMissingRegenerate => 'I-regenerate';
 
   @override
-  String get videoMetadataC2paMissingPostAnyway => 'I-post pa rin';
+  String get videoMetadataC2paMissingSkip => 'Laktawan';
 
   @override
   String get videoMetadataGenerationFailed => 'Nabigo ang paggawa';

@@ -5944,7 +5944,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoMetadataC2paMissingRegenerate => 'Opnieuw genereren';
 
   @override
-  String get videoMetadataC2paMissingPostAnyway => 'Toch plaatsen';
+  String get videoMetadataC2paMissingSkip => 'Overslaan';
 
   @override
   String get videoMetadataGenerationFailed => 'Genereren mislukt';

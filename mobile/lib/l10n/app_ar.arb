@@ -3770,7 +3770,7 @@
     "videoMetadataC2paMissingBody": "تعذّر علينا إضافة بيانات اعتماد المحتوى، لذا لن يتم تأكيد هذا الفيديو على أنه من صنع إنسان. أعد الإنشاء للمحاولة مرة أخرى، أو انشره كما هو.",
     "videoMetadataC2paMissingNote": "تتطلب بيانات اعتماد المحتوى اتصالاً بالإنترنت.",
     "videoMetadataC2paMissingRegenerate": "إعادة الإنشاء",
-    "videoMetadataC2paMissingPostAnyway": "النشر على أي حال",
+    "videoMetadataC2paMissingSkip": "تخطّي",
     "videoMetadataGenerationFailed": "فشل الإنشاء",
     "videoMetadataTagsPickerSearchHint": "ابحث أو أضف وسوماً",
     "videoMetadataTagsPickerEmptyHint": "أضف وسوماً ليكتشف الآخرون فيديوك",

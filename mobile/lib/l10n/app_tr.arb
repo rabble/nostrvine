@@ -3770,7 +3770,7 @@
     "videoMetadataC2paMissingBody": "İçerik kimlik bilgilerini ekleyemedik, bu nedenle bu video insan yapımı olarak doğrulanmayacak. Yeniden denemek için yeniden oluştur ya da olduğu gibi paylaş.",
     "videoMetadataC2paMissingNote": "İçerik kimlik bilgileri internet bağlantısı gerektirir.",
     "videoMetadataC2paMissingRegenerate": "Yeniden oluştur",
-    "videoMetadataC2paMissingPostAnyway": "Yine de paylaş",
+    "videoMetadataC2paMissingSkip": "Atla",
     "videoMetadataGenerationFailed": "Oluşturma başarısız",
     "videoMetadataTagsPickerSearchHint": "Etiket ara veya ekle",
     "videoMetadataTagsPickerEmptyHint": "İnsanların videonu keşfetmesi için etiket ekle",

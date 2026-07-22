@@ -10380,11 +10380,11 @@ abstract class AppLocalizations {
   /// **'Regenerate'**
   String get videoMetadataC2paMissingRegenerate;
 
-  /// Secondary button on the missing-content-credential bottom sheet. Publishes the video without a C2PA content credential.
+  /// Secondary button on the missing-content-credential bottom sheet. Dismisses the prompt and continues without a C2PA content credential, so the user can post the video without provenance.
   ///
   /// In en, this message translates to:
-  /// **'Post anyway'**
-  String get videoMetadataC2paMissingPostAnyway;
+  /// **'Skip'**
+  String get videoMetadataC2paMissingSkip;
 
   /// Warning shown over the metadata screen preview when rendering (generating) the final video failed and no clip was produced. Sits above a retry icon button.
   ///

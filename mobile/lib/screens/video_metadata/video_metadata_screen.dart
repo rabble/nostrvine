@@ -15,7 +15,7 @@ import 'package:openvine/widgets/video_metadata/modes/capture/video_metadata_cap
 import 'package:openvine/widgets/video_metadata/modes/classic/video_metadata_classic_stack.dart';
 
 /// The user's choice on the "C2PA signing failed" prompt.
-enum _C2paMissingChoice { regenerate, postAnyway }
+enum _C2paMissingChoice { regenerate, skip }
 
 /// Screen for editing video metadata including title, description, tags, and
 /// expiration settings.
@@ -81,9 +81,9 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
       primaryButtonText: l10n.videoMetadataC2paMissingRegenerate,
       onPrimaryPressed: () =>
           Navigator.of(context).pop(_C2paMissingChoice.regenerate),
-      secondaryButtonText: l10n.videoMetadataC2paMissingPostAnyway,
+      secondaryButtonText: l10n.videoMetadataC2paMissingSkip,
       onSecondaryPressed: () =>
-          Navigator.of(context).pop(_C2paMissingChoice.postAnyway),
+          Navigator.of(context).pop(_C2paMissingChoice.skip),
       isDismissible: false,
       enableDrag: false,
     );
@@ -95,10 +95,10 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
       case null:
         // Regenerate, or a system-back with no choice: re-sign the existing
         // render (no re-encode) rather than silently forfeiting provenance.
-        // Only an explicit "Post anyway" publishes without the credential
+        // Only an explicit "Skip" publishes without the credential
         // (#6058).
         unawaited(notifier.retryC2paSigning());
-      case _C2paMissingChoice.postAnyway:
+      case _C2paMissingChoice.skip:
         // Explicit consent to publish without a content credential.
         notifier.acknowledgeC2paSigningFailure();
     }

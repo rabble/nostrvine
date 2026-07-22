@@ -5893,7 +5893,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoMetadataC2paMissingRegenerate => 'Buat ulang';
 
   @override
-  String get videoMetadataC2paMissingPostAnyway => 'Tetap posting';
+  String get videoMetadataC2paMissingSkip => 'Lewati';
 
   @override
   String get videoMetadataGenerationFailed => 'Pembuatan gagal';

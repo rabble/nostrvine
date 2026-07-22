@@ -180,8 +180,8 @@ void main() {
 
     group('C2PA signing prompt (#6058)', () {
       testWidgets(
-        'prompts to regenerate or post anyway when signing fails, and '
-        '"Post anyway" clears the flag',
+        'prompts to regenerate or skip when signing fails, and '
+        '"Skip" clears the flag',
         (tester) async {
           final container = ProviderContainer(
             overrides: [
@@ -226,14 +226,14 @@ void main() {
           );
 
           await tester.tap(
-            find.text(l10n.videoMetadataC2paMissingPostAnyway),
+            find.text(l10n.videoMetadataC2paMissingSkip),
           );
           await tester.pumpAndSettle();
 
           expect(
             container.read(videoEditorProvider).c2paSigningFailed,
             isFalse,
-            reason: 'posting anyway clears the pending prompt',
+            reason: 'skipping clears the pending prompt',
           );
           expect(find.text(l10n.videoMetadataC2paMissingTitle), findsNothing);
         },

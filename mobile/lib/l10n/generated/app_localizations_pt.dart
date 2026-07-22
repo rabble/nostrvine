@@ -5954,7 +5954,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoMetadataC2paMissingRegenerate => 'Gerar novamente';
 
   @override
-  String get videoMetadataC2paMissingPostAnyway => 'Publicar mesmo assim';
+  String get videoMetadataC2paMissingSkip => 'Ignorar';
 
   @override
   String get videoMetadataGenerationFailed => 'Falha na geração';

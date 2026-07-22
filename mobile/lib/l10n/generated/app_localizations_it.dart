@@ -5970,7 +5970,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get videoMetadataC2paMissingRegenerate => 'Rigenera';
 
   @override
-  String get videoMetadataC2paMissingPostAnyway => 'Pubblica comunque';
+  String get videoMetadataC2paMissingSkip => 'Salta';
 
   @override
   String get videoMetadataGenerationFailed => 'Generazione non riuscita';

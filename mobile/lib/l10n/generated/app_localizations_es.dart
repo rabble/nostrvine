@@ -5963,7 +5963,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoMetadataC2paMissingRegenerate => 'Volver a generar';
 
   @override
-  String get videoMetadataC2paMissingPostAnyway => 'Publicar igualmente';
+  String get videoMetadataC2paMissingSkip => 'Omitir';
 
   @override
   String get videoMetadataGenerationFailed => 'Generación fallida';

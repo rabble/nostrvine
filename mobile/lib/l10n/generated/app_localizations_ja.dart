@@ -5680,7 +5680,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoMetadataC2paMissingRegenerate => '再生成';
 
   @override
-  String get videoMetadataC2paMissingPostAnyway => 'そのまま投稿';
+  String get videoMetadataC2paMissingSkip => 'スキップ';
 
   @override
   String get videoMetadataGenerationFailed => '生成に失敗しました';

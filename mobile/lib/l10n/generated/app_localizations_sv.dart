@@ -5915,7 +5915,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoMetadataC2paMissingRegenerate => 'Generera om';
 
   @override
-  String get videoMetadataC2paMissingPostAnyway => 'Publicera ändå';
+  String get videoMetadataC2paMissingSkip => 'Hoppa över';
 
   @override
   String get videoMetadataGenerationFailed => 'Genereringen misslyckades';

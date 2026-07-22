@@ -6071,7 +6071,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoMetadataC2paMissingRegenerate => 'Regenerează';
 
   @override
-  String get videoMetadataC2paMissingPostAnyway => 'Publică oricum';
+  String get videoMetadataC2paMissingSkip => 'Omite';
 
   @override
   String get videoMetadataGenerationFailed => 'Generarea a eșuat';

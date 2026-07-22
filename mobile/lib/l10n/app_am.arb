@@ -3895,7 +3895,7 @@
     "videoMetadataC2paMissingBody": "የይዘት መታወቂያዎችን መጨመር አልቻልንም፣ ስለዚህ ይህ ቪዲዮ በሰው እንደተሰራ አይረጋገጥም። እንደገና ለመሞከር እንደገና ይፍጠሩ ወይም እንዳለ ይለጥፉ።",
     "videoMetadataC2paMissingNote": "የይዘት መታወቂያዎች የበይነመረብ ግንኙነት ያስፈልጋቸዋል።",
     "videoMetadataC2paMissingRegenerate": "እንደገና ፍጠር",
-    "videoMetadataC2paMissingPostAnyway": "ለማንኛውም ለጥፍ",
+    "videoMetadataC2paMissingSkip": "ዝለል",
     "videoMetadataGenerationFailed": "ማመንጨት አልተሳካም",
     "@videoMetadataEditCoverSuccessAnnouncement": {
         "description": "Screen-reader announcement spoken after the user confirms a new cover thumbnail and the screen is about to close. Visual users get the screen pop as feedback; this is the audio equivalent."

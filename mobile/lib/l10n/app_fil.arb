@@ -2017,7 +2017,7 @@
     "videoMetadataC2paMissingBody": "Hindi kami nakapaglagay ng content credentials, kaya hindi makukumpirma na gawa ng tao ang video na ito. I-regenerate para subukan ulit, o i-post na lang ito.",
     "videoMetadataC2paMissingNote": "Kailangan ng internet connection ang content credentials.",
     "videoMetadataC2paMissingRegenerate": "I-regenerate",
-    "videoMetadataC2paMissingPostAnyway": "I-post pa rin",
+    "videoMetadataC2paMissingSkip": "Laktawan",
     "videoMetadataGenerationFailed": "Nabigo ang paggawa",
     "videoMetadataEditCoverTitle": "Edit cover",
     "videoMetadataEditCoverCloseSemanticLabel": "Close cover editor",
