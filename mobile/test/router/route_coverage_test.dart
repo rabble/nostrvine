@@ -14,6 +14,7 @@ import 'package:openvine/screens/category_gallery_screen.dart';
 import 'package:openvine/screens/curated_list_by_author_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/explore/explore_screen.dart';
+import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/key_import_screen.dart';
@@ -278,6 +279,15 @@ void main() {
       });
 
       test(
+        '${ExploreScreen.pathForTab('popular')} parses to RouteType.explore',
+        () {
+          final context = parseRoute(ExploreScreen.pathForTab('popular'));
+          expect(context.type, RouteType.explore);
+          expect(context.videoIndex, isNull);
+        },
+      );
+
+      test(
         '${ExploreScreen.pathForIndex(3)} parses to RouteType.explore with index 3',
         () {
           final context = parseRoute(ExploreScreen.pathForIndex(3));
@@ -433,9 +443,7 @@ void main() {
         expect(context.type, RouteType.subtitleEdit);
       });
       test('/subtitle-edit/:videoId parses videoId', () {
-        final context = parseRoute(
-          SubtitleEditorScreen.pathFor('test-id-abc'),
-        );
+        final context = parseRoute(SubtitleEditorScreen.pathFor('test-id-abc'));
         expect(context.type, RouteType.subtitleEdit);
         expect(context.videoId, 'test-id-abc');
       });
@@ -460,10 +468,28 @@ void main() {
         expect(context.videoIndex, 0);
       });
 
+      test('Unknown route is not a known normalizable route', () {
+        expect(parseKnownRoute('/unknown-route'), isNull);
+      });
+
       test('Negative index is normalized to 0', () {
         final context = parseRoute(VideoFeedPage.pathForIndex(-5));
         expect(context.type, RouteType.home);
         expect(context.videoIndex, 0);
+      });
+
+      test('Incomplete following route defaults to home without throwing', () {
+        expect(() => parseRoute('/following'), returnsNormally);
+        final context = parseRoute('/following');
+        expect(context.type, RouteType.home);
+        expect(parseKnownRoute('/following'), isNull);
+      });
+
+      test('Incomplete followers route defaults to home without throwing', () {
+        expect(() => parseRoute('/followers'), returnsNormally);
+        final context = parseRoute('/followers');
+        expect(context.type, RouteType.home);
+        expect(parseKnownRoute('/followers'), isNull);
       });
     });
 
@@ -478,6 +504,39 @@ void main() {
         final encoded = Uri.encodeComponent('nostr+bitcoin');
         final context = parseRoute('${HashtagScreenRouter.basePath}/$encoded');
         expect(context.hashtag, 'nostr+bitcoin');
+      });
+    });
+
+    group('Query and fragment handling', () {
+      const videoId =
+          '672c4eb9fc29adb6b505713bc6da94af2244c1de55dc6f034e2bcdaba133ebbe';
+      const pubkey =
+          '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+
+      test('pooled feed query route parses as pooled feed', () {
+        final context = parseRoute(
+          PooledFullscreenVideoFeedScreen.pathForVideoId(videoId),
+        );
+        expect(context.type, RouteType.pooledVideoFeed);
+      });
+
+      test('people list create query route parses as create route', () {
+        final context = parseRoute(
+          CreatePeopleListPage.pathWithInitialPubkey(pubkey),
+        );
+        expect(context.type, RouteType.peopleListCreate);
+      });
+
+      test('people list create fragment route parses as create route', () {
+        final context = parseRoute('${CreatePeopleListPage.path}#$pubkey');
+        expect(context.type, RouteType.peopleListCreate);
+      });
+
+      test('people list IDs with malformed encoding do not throw', () {
+        expect(() => parseRoute('/people-lists/foo%'), returnsNormally);
+        final context = parseRoute('/people-lists/foo%');
+        expect(context.type, RouteType.peopleListMembers);
+        expect(context.listId, 'foo%');
       });
     });
   });
@@ -658,16 +717,13 @@ void main() {
         },
       );
 
-      test(
-        '/list/:pubkey/:listId with an encoded list id round-trips',
-        () {
-          final path = CuratedListByAuthorScreen.pathFor(
-            pubkey: authorPubkey,
-            listId: 'my favorite vines',
-          );
-          expect(buildRoute(parseRoute(path)), path);
-        },
-      );
+      test('/list/:pubkey/:listId with an encoded list id round-trips', () {
+        final path = CuratedListByAuthorScreen.pathFor(
+          pubkey: authorPubkey,
+          listId: 'my favorite vines',
+        );
+        expect(buildRoute(parseRoute(path)), path);
+      });
     });
   });
 }

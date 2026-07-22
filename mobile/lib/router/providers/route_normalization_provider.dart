@@ -1,36 +1,33 @@
 // ABOUTME: Route normalization provider - ensures canonical URL format
-// ABOUTME: Redirects to canonical URLs for negative indices, encoding, unknown paths
+// ABOUTME: Redirects to canonical URLs for negative indices and encoding
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/router/router.dart';
-import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/screens/auth/nostr_connect_screen.dart';
-import 'package:openvine/screens/auth/reset_password.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
-import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/minor_account_review_screen.dart';
-import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/services/deep_link_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 @visibleForTesting
 bool shouldSkipRouteNormalization(String loc) {
-  // Skip normalization for auth-related routes.
-  // EmailVerificationScreen supports both token mode (?token=) and polling
-  // mode (?deviceCode=). Use contains() to handle both path-only and full URL
-  // formats (deep links include host).
+  // buildRoute cannot emit query strings or fragments for any RouteContext.
+  // Normalizing these locations would drop route-owned state by construction.
+  if (loc.contains('?') || loc.contains('#')) {
+    return true;
+  }
+
+  // Skip GoRouter-owned flows before canonicalization. Some entries also fail
+  // closed in parseKnownRoute; keeping them here documents route families that
+  // must stay unnormalized if the modeled parser grows later.
   if (loc.startsWith(WelcomeScreen.path) ||
       loc.startsWith(NostrConnectScreen.path) ||
       loc == MinorAccountReviewScreen.path ||
       loc.startsWith('${MinorAccountReviewScreen.path}/') ||
       RegExp(r'^/apps/[^/]+/sandbox$').hasMatch(loc) ||
-      loc.contains('${ResetPasswordScreen.path}?token=') ||
-      loc.contains('${EmailVerificationScreen.path}?') ||
-      loc.startsWith('${PooledFullscreenVideoFeedScreen.path}?') ||
-      loc.startsWith(SearchResultsPage.pathPrefix) ||
-      RegExp(r'^/video/[^/]+/(likers|reposters)(\?.*)?$').hasMatch(loc)) {
+      RegExp(r'^/video/[^/]+/(likers|reposters)$').hasMatch(loc)) {
     return true;
   }
 
@@ -78,8 +75,12 @@ final routeNormalizationProvider = Provider<void>((ref) {
       return;
     }
 
-    // Parse and rebuild to get canonical form
-    final parsed = parseRoute(loc);
+    // Parse and rebuild to get canonical form. Unknown or incomplete routes
+    // are left to GoRouter instead of being rewritten to home.
+    final parsed = parseKnownRoute(loc);
+    if (parsed == null) {
+      return;
+    }
     final canonical = buildRoute(parsed);
 
     // If not canonical, schedule post-frame redirect

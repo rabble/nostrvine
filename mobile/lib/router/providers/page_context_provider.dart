@@ -168,13 +168,123 @@ String _safeDecode(String segment) {
   }
 }
 
+/// Returns whether [segments] matches one of the route shapes modeled below.
+///
+/// GoRouter rejects paths with extra or unknown segments. Keep the parser's
+/// normalizer contract aligned with that behavior so malformed paths are left
+/// to GoRouter instead of being shortened into a different valid route.
+bool _isKnownRouteShape(List<String> segments) {
+  final firstSegment = segments.first;
+  final length = segments.length;
+
+  switch (firstSegment) {
+    case 'home':
+    case 'explore':
+    case 'notifications':
+    case 'liked-videos':
+      return length <= 2;
+    case 'profile':
+      return length == 2 || length == 3;
+    case 'inbox':
+      return length == 1 ||
+          (length == 3 &&
+              (segments[1] == 'conversation' ||
+                  segments[1] == 'message-requests')) ||
+          (length == 2 && segments[1] == 'message-requests');
+    case 'hashtag':
+      return length == 2;
+    case 'categories':
+      return length == 2;
+    case 'video-editor':
+    case 'video-edit':
+    case 'subtitle-edit':
+      return length == 1 || length == 2;
+    case 'settings':
+      return length == 1 ||
+          (length == 2 &&
+              segments[1] == MonetizationLinksSettingsScreen.subpath);
+    case 'apps':
+      return length == 1 || length == 2;
+    case 'following':
+    case 'followers':
+    case 'sound':
+    case 'original-sound':
+    case 'profile-view':
+      return length == 2;
+    case 'list':
+      return length == 2 || length == 3;
+    case 'people-lists':
+      return length == 2 || (length == 3 && segments[2] == 'add-people');
+    case 'nostr-settings':
+      return length == 1 ||
+          (length == 2 && segments[1] == Nip05SettingsScreen.subpath);
+    case 'welcome':
+      return length == 1 || (length == 2 && segments[1] == 'login-options');
+    case 'video':
+      return length == 2;
+    case 'video-recorder':
+    case 'video-metadata':
+    case 'badges':
+    case 'creator-analytics':
+    case 'relay-settings':
+    case 'relay-diagnostic':
+    case 'blossom-settings':
+    case 'notification-settings':
+    case 'key-management':
+    case 'safety-settings':
+    case 'content-filters':
+    case 'content-preferences':
+    case 'general-settings':
+    case 'storage-management':
+    case 'invites':
+    case 'app-language':
+    case 'appearance-settings':
+    case 'support-center':
+    case 'legal':
+    case 'bluesky-settings':
+    case 'edit-profile':
+    case 'clips':
+    case 'clips-no-sound':
+    case 'clips-only':
+    case 'drafts':
+    case 'import-key':
+    case 'developer-options':
+    case 'video-feed':
+    case 'discover-lists':
+    case 'secure-account':
+    case 'pooled-video-feed':
+      return length == 1;
+    default:
+      return false;
+  }
+}
+
 /// Parse a URL path into a structured RouteContext
 /// Normalizes negative indices to 0 and decodes URL-encoded parameters
 RouteContext parseRoute(String path) {
-  final segments = path.split('/').where((s) => s.isNotEmpty).toList();
+  return _parseRoute(path, knownOnly: false) ??
+      const RouteContext(type: RouteType.home, videoIndex: 0);
+}
+
+/// Parse a URL path only when its route family is explicitly modeled.
+///
+/// This is the route normalizer's fail-closed entry point: unknown or
+/// incomplete paths return null so GoRouter can handle them instead of being
+/// rewritten to home.
+RouteContext? parseKnownRoute(String path) {
+  return _parseRoute(path, knownOnly: true);
+}
+
+RouteContext? _parseRoute(String path, {required bool knownOnly}) {
+  final pathOnly = path.split('#').first.split('?').first;
+  final segments = pathOnly.split('/').where((s) => s.isNotEmpty).toList();
 
   if (segments.isEmpty) {
     return const RouteContext(type: RouteType.home, videoIndex: 0);
+  }
+
+  if (knownOnly && !_isKnownRouteShape(segments)) {
+    return null;
   }
 
   final firstSegment = segments[0];
@@ -195,7 +305,7 @@ RouteContext parseRoute(String path) {
 
     case 'profile':
       if (segments.length < 2) {
-        return const RouteContext(type: RouteType.home);
+        return knownOnly ? null : const RouteContext(type: RouteType.home);
       }
       final npub = _safeDecode(segments[1]); // Decode URL encoding
       // Grid mode (no index) vs feed mode (with index)
@@ -252,7 +362,7 @@ RouteContext parseRoute(String path) {
 
     case 'hashtag':
       if (segments.length < 2) {
-        return const RouteContext(type: RouteType.home);
+        return knownOnly ? null : const RouteContext(type: RouteType.home);
       }
       final tag = _safeDecode(segments[1]); // Decode URL encoding
       final rawIndex = segments.length > 2 ? int.tryParse(segments[2]) : null;
@@ -265,7 +375,7 @@ RouteContext parseRoute(String path) {
 
     case 'categories':
       if (segments.length < 2) {
-        return const RouteContext(type: RouteType.home);
+        return knownOnly ? null : const RouteContext(type: RouteType.home);
       }
       final categoryName = _safeDecode(segments[1]);
       return RouteContext(
@@ -407,10 +517,16 @@ RouteContext parseRoute(String path) {
     case 'developer-options':
       return const RouteContext(type: RouteType.developerOptions);
     case 'following':
+      if (segments.length < 2) {
+        return knownOnly ? null : const RouteContext(type: RouteType.home);
+      }
       final followingPubkey = _safeDecode(segments[1]);
       return RouteContext(type: RouteType.following, npub: followingPubkey);
 
     case 'followers':
+      if (segments.length < 2) {
+        return knownOnly ? null : const RouteContext(type: RouteType.home);
+      }
       final followersPubkey = _safeDecode(segments[1]);
       return RouteContext(type: RouteType.followers, npub: followersPubkey);
 
@@ -418,7 +534,7 @@ RouteContext parseRoute(String path) {
       return const RouteContext(type: RouteType.videoFeed);
     case 'list':
       if (segments.length < 2) {
-        return const RouteContext(type: RouteType.explore);
+        return knownOnly ? null : const RouteContext(type: RouteType.explore);
       }
       // Web-canonical deep-link shape /list/:pubkey/:listId — the author
       // key rides in [RouteContext.npub] so buildRoute can reconstruct the
@@ -441,9 +557,9 @@ RouteContext parseRoute(String path) {
         return const RouteContext(type: RouteType.peopleListCreate);
       }
       if (segments.length < 2) {
-        return const RouteContext(type: RouteType.home);
+        return knownOnly ? null : const RouteContext(type: RouteType.home);
       }
-      final peopleListId = Uri.decodeComponent(segments[1]);
+      final peopleListId = _safeDecode(segments[1]);
       if (segments.length > 2 && segments[2] == 'add-people') {
         return RouteContext(
           type: RouteType.peopleListAddPeople,
@@ -457,14 +573,14 @@ RouteContext parseRoute(String path) {
 
     case 'sound':
       if (segments.length < 2) {
-        return const RouteContext(type: RouteType.home);
+        return knownOnly ? null : const RouteContext(type: RouteType.home);
       }
       final soundId = _safeDecode(segments[1]);
       return RouteContext(type: RouteType.sound, soundId: soundId);
 
     case 'original-sound':
       if (segments.length < 2) {
-        return const RouteContext(type: RouteType.home);
+        return knownOnly ? null : const RouteContext(type: RouteType.home);
       }
       final originalSoundPubkey = _safeDecode(segments[1]);
       return RouteContext(
@@ -474,7 +590,7 @@ RouteContext parseRoute(String path) {
 
     case 'profile-view':
       if (segments.length < 2) {
-        return const RouteContext(type: RouteType.home);
+        return knownOnly ? null : const RouteContext(type: RouteType.home);
       }
       final profileViewNpub = _safeDecode(segments[1]);
       return RouteContext(type: RouteType.profileView, npub: profileViewNpub);
@@ -487,13 +603,13 @@ RouteContext parseRoute(String path) {
 
     case 'video':
       if (segments.length < 2) {
-        return const RouteContext(type: RouteType.home);
+        return knownOnly ? null : const RouteContext(type: RouteType.home);
       }
       final videoId = _safeDecode(segments[1]);
       return RouteContext(type: RouteType.videoDetail, videoId: videoId);
 
     default:
-      return const RouteContext(type: RouteType.home, videoIndex: 0);
+      return null;
   }
 }
 
