@@ -42,18 +42,20 @@ class NativeProofData {
   /// Create from raw proof metadata map (from NativeProofModeService)
   factory NativeProofData.fromMetadata(Map<String, String> metadata) =>
       NativeProofData(
-        videoHash: metadata['hash']!,
-        sensorDataCsv: metadata['csv'],
-        pgpSignature: metadata['signature'],
-        publicKey: metadata['publicKey'],
-        c2paManifestId: metadata['c2pa_manifest_id'],
-        deviceAttestation: metadata['deviceAttestation'],
-        creatorBindingAssertionLabel:
-            metadata['creator_binding_assertion_label'],
-        cawgIdentityAssertionLabel: metadata['cawg_identity_assertion_label'],
-        creatorBindingPayloadJson: metadata['creator_binding_payload_json'],
-        verifiedIdentityBundleJson: metadata['verified_identity_bundle_json'],
+        videoHash: metadata[metadataHashKey]!,
+        sensorDataCsv: metadata[metadataSensorDataCsvKey],
+        pgpSignature: metadata[metadataPgpSignatureKey],
+        publicKey: metadata[metadataPublicKeyKey],
+        c2paManifestId: metadata[metadataC2paManifestIdKey],
+        deviceAttestation: metadata[metadataDeviceAttestationKey],
       );
+
+  static const metadataHashKey = 'hash';
+  static const metadataSensorDataCsvKey = 'csv';
+  static const metadataPgpSignatureKey = 'signature';
+  static const metadataPublicKeyKey = 'publicKey';
+  static const metadataDeviceAttestationKey = 'deviceAttestation';
+  static const metadataC2paManifestIdKey = 'c2pa_manifest_id';
 
   /// SHA256 hash of the video file (used as proof identifier)
   final String videoHash;

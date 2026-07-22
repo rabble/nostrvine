@@ -262,6 +262,7 @@ void main() {
       expect(proofData, isNotNull);
       expect(proofData!.videoHash, videoHash);
       expect(proofData.c2paManifestId, _SigningC2paSigningService.manifestId);
+      expect(c2paService.signVideoCallCount, 0);
     });
   });
 }
@@ -313,6 +314,7 @@ class _SigningC2paSigningService extends C2paSigningService {
 
   final String videoPath;
   final bool allowSign;
+  int signVideoCallCount = 0;
 
   @override
   Future<C2paSigningResult> signVideo({
@@ -321,6 +323,7 @@ class _SigningC2paSigningService extends C2paSigningService {
     Map<String, dynamic>? cawgIdentityAssertion,
     bool enableAdvancedCawgEmbedding = false,
   }) async {
+    signVideoCallCount += 1;
     if (!allowSign) {
       fail('signVideo should not be called when proof metadata exists');
     }

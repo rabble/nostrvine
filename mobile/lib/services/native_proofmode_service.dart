@@ -130,7 +130,10 @@ class NativeProofModeService {
               category: .video,
             );
 
-            metadata.putIfAbsent('c2pa_manifest_id', () => activeManifestId);
+            metadata.putIfAbsent(
+              NativeProofData.metadataC2paManifestIdKey,
+              () => activeManifestId,
+            );
 
             // Create NativeProofData from metadata
             final proofData = NativeProofData.fromMetadata(metadata);
@@ -264,7 +267,10 @@ class NativeProofModeService {
 
       if (manifestInfo?.activeManifest != null) {
         final String activeManifestId = manifestInfo!.activeManifest!;
-        metadata.putIfAbsent('c2pa_manifest_id', () => activeManifestId);
+        metadata.putIfAbsent(
+          NativeProofData.metadataC2paManifestIdKey,
+          () => activeManifestId,
+        );
       }
 
       // Create NativeProofData from metadata
@@ -399,10 +405,11 @@ class NativeProofModeService {
   /// Read proof metadata from the native proof directory
   ///
   /// Returns a map containing:
-  /// - 'csv': Sensor data CSV content
-  /// - 'signature': OpenPGP signature
-  /// - 'hash': SHA256 hash of media file
-  /// - 'timestamp': Timestamp data
+  /// - [NativeProofData.metadataSensorDataCsvKey]: Sensor data CSV content
+  /// - [NativeProofData.metadataPgpSignatureKey]: OpenPGP signature
+  /// - [NativeProofData.metadataPublicKeyKey]: Proof public key
+  /// - [NativeProofData.metadataDeviceAttestationKey]: Device attestation
+  /// - [NativeProofData.metadataHashKey]: SHA256 hash of media file
   static Future<Map<String, String>?> readProofMetadata(
     String proofHash, {
     bool warnIfMissing = true,
@@ -431,9 +438,10 @@ class NativeProofModeService {
       // Read CSV sensor data
       final csvFile = File('$proofDir/$proofHash.csv');
       if (csvFile.existsSync()) {
-        metadata['csv'] = await csvFile.readAsString();
+        metadata[NativeProofData.metadataSensorDataCsvKey] = await csvFile
+            .readAsString();
         Log.debug(
-          '🔐 Read CSV metadata (${metadata['csv']!.length} bytes)',
+          '🔐 Read CSV metadata (${metadata[NativeProofData.metadataSensorDataCsvKey]!.length} bytes)',
           name: 'NativeProofMode',
           category: LogCategory.system,
         );
@@ -442,9 +450,10 @@ class NativeProofModeService {
       // Read OpenPGP signature
       final sigFile = File('$proofDir/$proofHash.asc');
       if (sigFile.existsSync()) {
-        metadata['signature'] = await sigFile.readAsString();
+        metadata[NativeProofData.metadataPgpSignatureKey] = await sigFile
+            .readAsString();
         Log.debug(
-          '🔐 Read signature (${metadata['signature']!.length} bytes)',
+          '🔐 Read signature (${metadata[NativeProofData.metadataPgpSignatureKey]!.length} bytes)',
           name: 'NativeProofMode',
           category: LogCategory.system,
         );
@@ -453,9 +462,10 @@ class NativeProofModeService {
       // Read proof public key
       final pubkeyFile = File('$proofDir/$proofHash-pubkey.asc');
       if (pubkeyFile.existsSync()) {
-        metadata['publicKey'] = await pubkeyFile.readAsString();
+        metadata[NativeProofData.metadataPublicKeyKey] = await pubkeyFile
+            .readAsString();
         Log.debug(
-          '🔐 Read public key (${metadata['publicKey']!.length} bytes)',
+          '🔐 Read public key (${metadata[NativeProofData.metadataPublicKeyKey]!.length} bytes)',
           name: 'NativeProofMode',
           category: LogCategory.system,
         );
@@ -464,15 +474,16 @@ class NativeProofModeService {
       // Read local device attestation info
       final deviceAttestation = File('$proofDir/$proofHash.attest');
       if (deviceAttestation.existsSync()) {
-        metadata['deviceAttestation'] = await deviceAttestation.readAsString();
+        metadata[NativeProofData.metadataDeviceAttestationKey] =
+            await deviceAttestation.readAsString();
         Log.debug(
-          '🔐 Read device attestation (${metadata['deviceAttestation']!.length} bytes)',
+          '🔐 Read device attestation (${metadata[NativeProofData.metadataDeviceAttestationKey]!.length} bytes)',
           name: 'NativeProofMode',
           category: LogCategory.system,
         );
       }
 
-      metadata['hash'] = proofHash;
+      metadata[NativeProofData.metadataHashKey] = proofHash;
 
       Log.info(
         '🔐 Read native ProofMode metadata (${metadata.length} fields)',
