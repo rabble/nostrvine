@@ -31,6 +31,7 @@ workspace:
   - packages/blossom_upload_service
   - packages/blurhash_service
   - packages/cache_sync
+  - packages/caption_generator
   - packages/categories_repository
   - packages/collaborator_repository
   - packages/comments_repository
@@ -189,6 +190,9 @@ dependencies:
   blurhash_service:
 
   cache_sync:
+
+  # Caption Generator - On-device speech-to-text CC generation (last resort)
+  caption_generator:
 
   # Categories Repository - Video categories from Funnelcake API
   categories_repository:

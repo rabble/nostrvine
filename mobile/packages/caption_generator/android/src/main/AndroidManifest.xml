@@ -1,0 +1,9 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- Package visibility (Android 11+): allow resolving the on-device
+       speech recognition service used for file transcription. -->
+  <queries>
+    <intent>
+      <action android:name="android.speech.RecognitionService" />
+    </intent>
+  </queries>
+</manifest>
