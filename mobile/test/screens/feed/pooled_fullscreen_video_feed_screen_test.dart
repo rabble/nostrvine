@@ -26,6 +26,7 @@ import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/screens/feed/feed_settings_menu.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
@@ -344,6 +345,52 @@ void main() {
         expect(find.byType(FeedVideos), findsNothing);
         expect(find.byType(InfiniteVideoFeed), findsNothing);
       });
+
+      testWidgets(
+        'renders malformed UTF-16 feed display text without a Flutter exception',
+        (tester) async {
+          final nativePlayer = _NativePlayerHarness(tester)..install();
+          addTearDown(nativePlayer.dispose);
+
+          final malformedTitle = String.fromCharCodes([0xD800, 0x61]);
+          final malformedContent = String.fromCharCodes([0x62, 0xDC00]);
+          final malformedAuthorName = String.fromCharCodes([
+            0xD800,
+            0xD83D,
+            0xDE00,
+          ]);
+          final video = VideoEvent(
+            id: testVideoId1,
+            pubkey: testPubkey,
+            createdAt: 1757385263,
+            content: malformedContent,
+            timestamp: DateTime.fromMillisecondsSinceEpoch(1757385263 * 1000),
+            title: malformedTitle,
+            videoUrl: 'https://example.com/video.mp4',
+            authorName: malformedAuthorName,
+          );
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: [video],
+              ),
+              additionalOverrides: [
+                userProfileReactiveProvider(testPubkey).overrideWith(
+                  (ref) => Stream<UserProfile?>.value(null),
+                ),
+              ],
+            ),
+          );
+          await tester.pump();
+
+          expect(tester.takeException(), isNull);
+          expect(find.text('\uFFFDa'), findsOneWidget);
+          expect(find.text('b\uFFFD'), findsOneWidget);
+          expect(find.text('\uFFFD😀'), findsOneWidget);
+        },
+      );
 
       testWidgets(
         'renders empty-state when status is emptyAfterRemoval and pop is a '

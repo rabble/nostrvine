@@ -48,7 +48,7 @@ class VideoAuthorInfoSection extends ConsumerWidget {
     final avatarUrl = profile?.picture ?? video.authorAvatar;
     final displayName =
         profile?.bestDisplayName ??
-        video.authorName ??
+        video.displayAuthorName ??
         UserProfile.generatedNameFor(video.pubkey);
 
     return Column(
@@ -99,7 +99,7 @@ class VideoAuthorInfoSection extends ConsumerWidget {
                       label: context.l10n.videoAuthorSemanticLabel(displayName),
                       child: UserName.fromPubKey(
                         video.pubkey,
-                        embeddedName: video.authorName,
+                        embeddedName: video.displayAuthorName,
                         style: VineTheme.titleSmallFont(),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,

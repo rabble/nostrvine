@@ -972,6 +972,13 @@ class VideoEvent {
   /// Zalgo-safe video title for display. Returns `null` when no title is set.
   String? get displayTitle => title != null ? stripZalgo(title!) : null;
 
+  /// Zalgo-safe embedded author name for display.
+  ///
+  /// Returns `null` when no embedded author name is set. Profile display-name
+  /// getters have their own sanitizer path.
+  String? get displayAuthorName =>
+      authorName != null ? stripZalgo(authorName!) : null;
+
   /// Root event id from an uppercase NIP-22 reply tag.
   ///
   /// Lowercase reply tags describe nearest-parent threading and mentions.

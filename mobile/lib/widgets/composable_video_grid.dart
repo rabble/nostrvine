@@ -598,11 +598,11 @@ class _VideoInfoSection extends StatelessWidget {
             container: true,
             explicitChildNodes: true,
             label: context.l10n.videoGridAuthorSemanticLabel(
-              video.authorName ?? '',
+              video.displayAuthorName ?? '',
             ),
             child: UserName.fromPubKey(
               video.pubkey,
-              embeddedName: video.authorName,
+              embeddedName: video.displayAuthorName,
               maxLines: 1,
               style: VineTheme.titleTinyFont().copyWith(
                 decoration: TextDecoration.none,

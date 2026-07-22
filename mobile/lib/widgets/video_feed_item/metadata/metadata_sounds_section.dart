@@ -114,7 +114,8 @@ class _OriginalSoundSection extends ConsumerWidget {
         creatorProfile?.bestDisplayName ??
         (reusedCreatorPubkey != null
             ? UserProfile.defaultDisplayNameFor(creatorPubkey)
-            : video.authorName ?? UserProfile.generatedNameFor(video.pubkey));
+            : video.displayAuthorName ??
+                  UserProfile.generatedNameFor(video.pubkey));
 
     return MetadataSection(
       label: context.l10n.metadataSoundsLabel,

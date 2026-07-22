@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/widgets/user_name.dart';
 
@@ -96,5 +97,36 @@ void main() {
 
     expect(find.text('Alice'), findsOneWidget);
     expect(_specialCheckmark(), findsOneWidget);
+  });
+
+  testWidgets('sanitizes embedded display name fallback while profile loads', (
+    tester,
+  ) async {
+    final malformedName = String.fromCharCodes([0xD800, 0xD83D, 0xDE00]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          userProfileReactiveProvider(defaultPubkey).overrideWith(
+            (ref) => const Stream<UserProfile?>.empty(),
+          ),
+          nip05VerificationProvider.overrideWith(
+            (ref, pubkey) async => Nip05VerificationStatus.none,
+          ),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: UserName.fromPubKey(
+              defaultPubkey,
+              embeddedName: malformedName,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('\uFFFD😀'), findsOneWidget);
   });
 }

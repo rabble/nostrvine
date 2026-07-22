@@ -32,9 +32,9 @@ class _ShareSheetHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(userProfileReactiveProvider(video.pubkey));
 
-    final videoTitle = video.title?.isNotEmpty == true
-        ? video.title!
-        : video.content;
+    final videoTitle = video.displayTitle?.isNotEmpty == true
+        ? video.displayTitle!
+        : video.displayContent;
 
     return Padding(
       padding: const EdgeInsets.all(16),

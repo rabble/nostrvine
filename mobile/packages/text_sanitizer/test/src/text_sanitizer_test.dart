@@ -2,6 +2,26 @@ import 'package:test/test.dart';
 import 'package:text_sanitizer/text_sanitizer.dart';
 
 void main() {
+  group(sanitizeUtf16, () {
+    test('replaces unpaired UTF-16 surrogates', () {
+      final malformed = String.fromCharCodes([0xD800, 0x61, 0xDC00]);
+
+      expect(sanitizeUtf16(malformed), equals('\uFFFDa\uFFFD'));
+    });
+
+    test('preserves valid surrogate pairs', () {
+      final emoji = String.fromCharCodes([0xD83D, 0xDE00]);
+
+      expect(sanitizeUtf16(emoji), equals('😀'));
+    });
+
+    test('preserves valid surrogate pairs after malformed code units', () {
+      final mixed = String.fromCharCodes([0xD800, 0xD83D, 0xDE00, 0x61]);
+
+      expect(sanitizeUtf16(mixed), equals('\uFFFD😀a'));
+    });
+  });
+
   group(stripZalgo, () {
     test('returns empty string unchanged', () {
       expect(stripZalgo(''), equals(''));
