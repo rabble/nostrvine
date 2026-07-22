@@ -113,6 +113,11 @@ bool _isPublicRecorderLocation(String location) =>
 /// The slice of [MinorAccountReviewStatus] (plus its async loading shape)
 /// that [appRouterRedirect] actually branches on. Two emissions with an
 /// equal signature always produce the same redirect decision.
+///
+/// Keep this in sync with the review-status reads in [appRouterRedirect]: if
+/// the redirect starts branching on another field, add it here or the refresh
+/// gate will swallow genuine changes to it. The coupling is guarded by
+/// `test/router/router_refresh_gate_coupling_test.dart`.
 typedef _MinorReviewRoutingSignature = ({
   bool loadingWithoutValue,
   bool isRestricted,
