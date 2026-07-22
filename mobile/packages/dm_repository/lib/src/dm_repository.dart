@@ -4862,16 +4862,17 @@ class DmRepository {
   /// Classifies potential request conversations by follow state.
   ///
   /// Conversations where `currentUserHasSent == false` are "potential
-  /// requests". A 1:1 conversation from a followed contact goes to the
-  /// followed list (Messages tab); everything else is a true request.
+  /// requests". A conversation goes to the followed list (Messages tab)
+  /// when EVERY deduplicated non-self participant is followed — a 1:1
+  /// from a followed contact, or a group made up entirely of followed
+  /// contacts. Any unfollowed participant makes it a true request, so a
+  /// stranger added to a group still lands under Message requests.
   ///
-  /// 1:1-ness is derived from the deduplicated non-self participant count,
-  /// NOT the denormalized `DmConversation.isGroup` flag. That column is
-  /// written from `participants.length > 2` and overwritten on every
-  /// upsert, so it can drift from a row's real participants — which was
-  /// stranding followed 1:1 peers under "Message requests" (#5374). Groups
-  /// (2+ non-self participants) are always requests here, independent of
-  /// follow state.
+  /// Participant counting uses the deduplicated non-self set, NOT the
+  /// denormalized `DmConversation.isGroup` flag. That column is written
+  /// from `participants.length > 2` and overwritten on every upsert, so
+  /// it can drift from a row's real participants — which was stranding
+  /// followed 1:1 peers under "Message requests" (#5374).
   static ({List<DmConversation> followed, List<DmConversation> requests})
   classifyPotentialRequests(
     List<DmConversation> potentialRequests, {
@@ -4886,15 +4887,15 @@ class DmRepository {
           .where((pk) => pk != userPubkey)
           .toSet();
 
-      // A 1:1 conversation from a followed contact is not a request even
-      // if the user hasn't replied yet. Derive 1:1-ness from the actual
-      // (deduplicated) non-self participant count rather than the stored
-      // `isGroup` flag, which can drift from the row's real participants and
-      // mis-route followed 1:1 peers to requests (#5374).
-      final isOneToOne = otherPubkeys.length == 1;
-      final isFollowedContact = isOneToOne && otherPubkeys.any(isFollowing);
+      // A conversation whose every (deduplicated) non-self participant is
+      // followed is not a request even if the user hasn't replied yet —
+      // 1:1 or group alike. Derived from actual participants rather than
+      // the stored `isGroup` flag, which can drift from the row's real
+      // participants and mis-route followed 1:1 peers to requests (#5374).
+      final allFollowed =
+          otherPubkeys.isNotEmpty && otherPubkeys.every(isFollowing);
 
-      if (otherPubkeys.isEmpty || isFollowedContact) {
+      if (otherPubkeys.isEmpty || allFollowed) {
         followed.add(conversation);
       } else {
         if (_classifyDiagnostics) {
