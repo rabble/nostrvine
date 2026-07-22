@@ -20,6 +20,7 @@ const _defaultVineId = 'vine-123';
 
 models.VideoEvent _video({
   String id = 'classic-vine-event-id',
+  String pubkey = 'classic-vine-author-pubkey',
   String? videoUrl = 'https://cdn.example.com/classic.mp4',
   int? duration = 6,
   String? dimensions = '480x480',
@@ -28,10 +29,11 @@ models.VideoEvent _video({
   String? title,
   String content = 'classic vine',
   String? textTrackContent,
+  String? sourceRelay = 'wss://relay.divine.video',
 }) {
   return models.VideoEvent(
     id: id,
-    pubkey: 'classic-vine-author-pubkey',
+    pubkey: pubkey,
     createdAt: 1451606400,
     content: content,
     timestamp: DateTime.fromMillisecondsSinceEpoch(
@@ -45,6 +47,7 @@ models.VideoEvent _video({
     rawTags: rawTags,
     vineId: vineId,
     textTrackContent: textTrackContent,
+    sourceRelay: sourceRelay,
   );
 }
 
@@ -76,10 +79,7 @@ void main() {
   });
 
   VideoClipImportService buildService({
-    Future<File?> Function({
-      required String url,
-      required String cacheKey,
-    })?
+    Future<File?> Function({required String url, required String cacheKey})?
     downloadVideo,
     Future<VideoClipThumbnail?> Function({
       required String videoPath,
@@ -151,17 +151,26 @@ void main() {
     expect(success.clip.ghostFramePath, endsWith('ghost.jpg'));
     expect(success.clip.requireVideo.file!.path, startsWith(docsDir.path));
     expect(success.clip.libraryTitle, 'classic vine');
+    expect(success.clip.sourceAuthorPubkey, 'classic-vine-author-pubkey');
+    expect(success.clip.sourceEventId, 'classic-vine-event-id');
+    expect(
+      success.clip.sourceAddressableId,
+      '34236:classic-vine-author-pubkey:vine-123',
+    );
+    expect(success.clip.sourceRelayHint, 'wss://relay.divine.video');
     expect(
       File(success.clip.requireVideo.file!.path).readAsBytesSync(),
       sourceVideo.readAsBytesSync(),
     );
 
     final captured =
-        verify(
-              () => clipLibraryService.saveClip(captureAny()),
-            ).captured.single
+        verify(() => clipLibraryService.saveClip(captureAny())).captured.single
             as DivineVideoClip;
     expect(captured.id, success.clip.id);
+    expect(captured.sourceAuthorPubkey, success.clip.sourceAuthorPubkey);
+    expect(captured.sourceEventId, success.clip.sourceEventId);
+    expect(captured.sourceAddressableId, success.clip.sourceAddressableId);
+    expect(captured.sourceRelayHint, success.clip.sourceRelayHint);
   });
 
   test('uses an explicit user title when importing to the library', () async {
@@ -252,6 +261,7 @@ First useful caption
     final result = await service.importToLibrary(
       _video(
         id: 'own-video-event-id',
+        pubkey: 'own-video-author-pubkey',
         rawTags: const {'platform': 'divine'},
         vineId: null,
       ),
@@ -260,6 +270,10 @@ First useful caption
     expect(result, isA<VideoClipImportSuccess>());
     final success = result as VideoClipImportSuccess;
     expect(success.clip.id, startsWith('own_video_own-video-event-id_'));
+    expect(success.clip.sourceAuthorPubkey, 'own-video-author-pubkey');
+    expect(success.clip.sourceEventId, 'own-video-event-id');
+    expect(success.clip.sourceAddressableId, isNull);
+    expect(success.clip.sourceRelayHint, 'wss://relay.divine.video');
     verify(() => clipLibraryService.saveClip(any())).called(1);
   });
 
@@ -293,69 +307,60 @@ First useful caption
     },
   );
 
-  test(
-    'falls back to ProVideoEditor metadata for square own videos without '
-    'dimensions',
-    () async {
-      final service = buildService(
-        readVideoMetadata: (video) async => VideoMetadata(
-          duration: const Duration(seconds: 6),
-          extension: 'mp4',
-          fileSize: 1024,
-          resolution: const Size(720, 720),
-          rotation: 0,
-          bitrate: 1000,
-        ),
-      );
+  test('falls back to ProVideoEditor metadata for square own videos without '
+      'dimensions', () async {
+    final service = buildService(
+      readVideoMetadata: (video) async => VideoMetadata(
+        duration: const Duration(seconds: 6),
+        extension: 'mp4',
+        fileSize: 1024,
+        resolution: const Size(720, 720),
+        rotation: 0,
+        bitrate: 1000,
+      ),
+    );
 
-      final result = await service.importToLibrary(
-        _video(
-          id: 'own-square',
-          rawTags: const {'platform': 'divine'},
-          vineId: null,
-          dimensions: null,
-        ),
-      );
+    final result = await service.importToLibrary(
+      _video(
+        id: 'own-square',
+        rawTags: const {'platform': 'divine'},
+        vineId: null,
+        dimensions: null,
+      ),
+    );
 
-      final success = result as VideoClipImportSuccess;
-      expect(success.clip.targetAspectRatio, models.AspectRatio.square);
-      expect(success.clip.originalAspectRatio, 1);
-    },
-  );
+    final success = result as VideoClipImportSuccess;
+    expect(success.clip.targetAspectRatio, models.AspectRatio.square);
+    expect(success.clip.originalAspectRatio, 1);
+  });
 
-  test(
-    'maps landscape own video to square target ratio',
-    () async {
-      final service = buildService(
-        readVideoMetadata: (video) async => VideoMetadata(
-          duration: const Duration(seconds: 6),
-          extension: 'mp4',
-          fileSize: 1024,
-          resolution: const Size(1920, 1080),
-          rotation: 0,
-          bitrate: 1000,
-        ),
-      );
+  test('maps landscape own video to square target ratio', () async {
+    final service = buildService(
+      readVideoMetadata: (video) async => VideoMetadata(
+        duration: const Duration(seconds: 6),
+        extension: 'mp4',
+        fileSize: 1024,
+        resolution: const Size(1920, 1080),
+        rotation: 0,
+        bitrate: 1000,
+      ),
+    );
 
-      final result = await service.importToLibrary(
-        _video(
-          id: 'own-landscape',
-          rawTags: const {'platform': 'divine'},
-          vineId: null,
-          dimensions: null,
-        ),
-      );
+    final result = await service.importToLibrary(
+      _video(
+        id: 'own-landscape',
+        rawTags: const {'platform': 'divine'},
+        vineId: null,
+        dimensions: null,
+      ),
+    );
 
-      final success = result as VideoClipImportSuccess;
-      // Landscape videos (ratio > 1.0) satisfy _squareishMinAspectRatio and
-      // intentionally map to square to match the clip library's crop policy.
-      expect(success.clip.targetAspectRatio, models.AspectRatio.square);
-      expect(
-        success.clip.originalAspectRatio,
-        closeTo(1920 / 1080, 0.001),
-      );
-    },
-  );
+    final success = result as VideoClipImportSuccess;
+    // Landscape videos (ratio > 1.0) satisfy _squareishMinAspectRatio and
+    // intentionally map to square to match the clip library's crop policy.
+    expect(success.clip.targetAspectRatio, models.AspectRatio.square);
+    expect(success.clip.originalAspectRatio, closeTo(1920 / 1080, 0.001));
+  });
 
   test(
     'swaps width and height when metadata reports a 90 degree rotation',
