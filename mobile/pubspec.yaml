@@ -252,6 +252,9 @@ dependencies:
   # Models - Shared Nostr/data model definitions
   models:
 
+  # Text Sanitizer - display-safe user text (zalgo caps, UTF-16 well-formed)
+  text_sanitizer:
+
   # Videos Repository - Video feed data layer
   videos_repository:
 

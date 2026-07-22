@@ -74,6 +74,15 @@ String stripZalgo(String text, {int maxCombining = 2}) {
   return result.toString();
 }
 
+/// Sanitizes user-generated text for display: replaces unpaired UTF-16
+/// surrogates with U+FFFD ([sanitizeUtf16]) and caps combining chars
+/// ([stripZalgo]).
+///
+/// Use this at the boundary where untrusted event content becomes
+/// display text (titles, captions, display names, comments).
+String sanitizeForDisplay(String text, {int maxCombining = 2}) =>
+    stripZalgo(text, maxCombining: maxCombining);
+
 bool _isCombining(int cp) =>
     (cp >= 0x0300 && cp <= 0x036F) ||
     cp == 0x0489 ||

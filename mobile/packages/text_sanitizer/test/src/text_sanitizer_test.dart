@@ -80,4 +80,71 @@ void main() {
       expect(stripZalgo(input), equals('\u00E9S\u0300\u0301i'));
     });
   });
+
+  group('$sanitizeUtf16 edge cases', () {
+    test('returns empty string unchanged', () {
+      expect(sanitizeUtf16(''), equals(''));
+    });
+
+    test('returns plain ASCII unchanged', () {
+      expect(sanitizeUtf16('hello'), equals('hello'));
+    });
+
+    test('preserves a valid surrogate pair (emoji)', () {
+      // U+1F600 grinning face = D83D DE00
+      const emoji = '\u{1F600}';
+      expect(sanitizeUtf16(emoji), equals(emoji));
+    });
+
+    test('replaces a lone high surrogate', () {
+      final input = String.fromCharCodes([0x61, 0xD83D, 0x62]);
+      expect(sanitizeUtf16(input), equals('a\uFFFDb'));
+    });
+
+    test('replaces a lone low surrogate', () {
+      final input = String.fromCharCodes([0x61, 0xDE00, 0x62]);
+      expect(sanitizeUtf16(input), equals('a\uFFFDb'));
+    });
+
+    test('replaces a trailing high surrogate from a truncated emoji', () {
+      final input = String.fromCharCodes([0x68, 0x69, 0xD83D]);
+      expect(sanitizeUtf16(input), equals('hi\uFFFD'));
+    });
+
+    test('keeps valid pairs while replacing adjacent lone surrogates', () {
+      // lone low surrogate + valid pair + lone high surrogate
+      final input = String.fromCharCodes([0xDE00, 0xD83D, 0xDE00, 0xD83D]);
+      expect(sanitizeUtf16(input), equals('\uFFFD\u{1F600}\uFFFD'));
+    });
+
+    test('returns the identical instance when already well-formed', () {
+      const input = 'well formed \u{1F600} text';
+      expect(sanitizeUtf16(input), same(input));
+    });
+  });
+
+  group(sanitizeForDisplay, () {
+    test('replaces lone surrogates and caps combining chars', () {
+      // lone high surrogate, then o + 4 combining chars
+      final input = String.fromCharCodes([
+        0xD83D,
+        0x6F,
+        0x0300,
+        0x0301,
+        0x0302,
+        0x0303,
+      ]);
+      expect(sanitizeForDisplay(input), equals('\uFFFDo\u0300\u0301'));
+    });
+
+    test('returns well-formed clean text unchanged', () {
+      const input = 'clean \u{1F600} text';
+      expect(sanitizeForDisplay(input), equals(input));
+    });
+
+    test('forwards maxCombining to stripZalgo', () {
+      const input = 'a\u0300\u0301\u0302';
+      expect(sanitizeForDisplay(input, maxCombining: 1), equals('a\u0300'));
+    });
+  });
 }

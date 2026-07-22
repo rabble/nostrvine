@@ -537,6 +537,20 @@ void main() {
 
         expect(profile.bestDisplayName, equals('B\u0300\u0301'));
       });
+
+      test('replaces unpaired surrogates in displayName', () {
+        // A lone surrogate in a display name crashes Flutter's
+        // paragraph builder if it reaches a Text widget (#6111).
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          displayName: String.fromCharCodes([0x68, 0x69, 0xD83D]),
+        );
+
+        expect(profile.bestDisplayName, equals('hi\uFFFD'));
+      });
     });
 
     group('betterDisplayName', () {

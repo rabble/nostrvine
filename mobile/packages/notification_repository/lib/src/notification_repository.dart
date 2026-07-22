@@ -1625,11 +1625,13 @@ class NotificationRepository {
 
     final displayName = profile.displayName;
     if (_isUsableActorName(displayName, pubkey)) {
-      return stripZalgo(displayName!).trim();
+      return sanitizeForDisplay(displayName!).trim();
     }
 
     final name = profile.name;
-    if (_isUsableActorName(name, pubkey)) return stripZalgo(name!).trim();
+    if (_isUsableActorName(name, pubkey)) {
+      return sanitizeForDisplay(name!).trim();
+    }
 
     return null;
   }

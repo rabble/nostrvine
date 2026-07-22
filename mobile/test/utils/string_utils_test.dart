@@ -22,30 +22,30 @@ void main() {
         expect(result.runes.last, equals(0x1F600));
       });
 
-      test('drops an unpaired high surrogate', () {
+      test('replaces an unpaired high surrogate', () {
         final input = 'a${String.fromCharCode(0xD83D)}b';
-        expect(StringUtils.sanitizeUtf16(input), equals('ab'));
+        expect(StringUtils.sanitizeUtf16(input), equals('a\uFFFDb'));
       });
 
-      test('drops an unpaired low surrogate', () {
+      test('replaces an unpaired low surrogate', () {
         final input = 'a${String.fromCharCode(0xDE00)}b';
-        expect(StringUtils.sanitizeUtf16(input), equals('ab'));
+        expect(StringUtils.sanitizeUtf16(input), equals('a\uFFFDb'));
       });
 
-      test('drops a trailing unpaired high surrogate', () {
+      test('replaces a trailing unpaired high surrogate', () {
         final input = 'trail${String.fromCharCode(0xD83D)}';
-        expect(StringUtils.sanitizeUtf16(input), equals('trail'));
+        expect(StringUtils.sanitizeUtf16(input), equals('trail\uFFFD'));
       });
 
-      test('drops a high surrogate followed by a non-surrogate', () {
+      test('replaces a high surrogate followed by a non-surrogate', () {
         final input = '${String.fromCharCode(0xD83D)}x';
-        expect(StringUtils.sanitizeUtf16(input), equals('x'));
+        expect(StringUtils.sanitizeUtf16(input), equals('\uFFFDx'));
       });
 
       test('preserves adjacent valid pairs separated by an unpaired one', () {
         final input = '😀${String.fromCharCode(0xD83D)}😀';
         final result = StringUtils.sanitizeUtf16(input);
-        expect(result, equals('😀😀'));
+        expect(result, equals('😀\uFFFD😀'));
       });
     });
   });

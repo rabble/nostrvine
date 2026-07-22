@@ -435,6 +435,21 @@ void main() {
         expect(item.actors.first.displayName, equals('A\u0300\u0301'));
       });
 
+      test('replaces unpaired surrogates in explicit display names', () async {
+        stubNotifications([makeNotification(sourcePubkey: 'surrogate_pub')]);
+        stubProfiles({
+          'surrogate_pub': makeProfile(
+            'surrogate_pub',
+            displayName: String.fromCharCodes([0x68, 0x69, 0xD83D]),
+          ),
+        });
+
+        final page = await repository.getNotifications();
+
+        final item = page.items.single as VideoNotification;
+        expect(item.actors.first.displayName, equals('hi\uFFFD'));
+      });
+
       test('rethrows on API error after logging', () async {
         when(
           () => funnelcakeApiClient.getNotifications(

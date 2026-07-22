@@ -225,14 +225,16 @@ class UserProfile {
   /// If [anonymousPlaceholder] is provided, it takes priority over the
   /// generated name when no display name or name is set.
   String betterDisplayName(String? anonymousPlaceholder) {
-    if (displayName?.isNotEmpty ?? false) return stripZalgo(displayName!);
-    if (name?.isNotEmpty ?? false) return stripZalgo(name!);
+    if (displayName?.isNotEmpty ?? false) {
+      return sanitizeForDisplay(displayName!);
+    }
+    if (name?.isNotEmpty ?? false) return sanitizeForDisplay(name!);
     if (anonymousPlaceholder != null) return anonymousPlaceholder;
     return defaultDisplayName;
   }
 
   /// Normalizes user-controlled display names before passing them to UI text.
-  static String sanitizeDisplayName(String value) => stripZalgo(value);
+  static String sanitizeDisplayName(String value) => sanitizeForDisplay(value);
 
   /// A display handle for the user, prefixed with `@`.
   ///
@@ -298,8 +300,10 @@ class UserProfile {
   ///
   /// Falls back to [defaultDisplayName] when no display name or name is set.
   String get bestDisplayName {
-    if (displayName?.isNotEmpty ?? false) return stripZalgo(displayName!);
-    if (name?.isNotEmpty ?? false) return stripZalgo(name!);
+    if (displayName?.isNotEmpty ?? false) {
+      return sanitizeForDisplay(displayName!);
+    }
+    if (name?.isNotEmpty ?? false) return sanitizeForDisplay(name!);
     return defaultDisplayName;
   }
 
