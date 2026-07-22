@@ -26,11 +26,14 @@ Use the repository's preferred layered flow:
 `CrosspostingSettingsScreen -> CrosspostingSettingsCubit -> CrosspostingRepository -> CrosspostingApiClient`
 
 The API client owns HTTP, bearer-token retrieval, JSON parsing, timeouts, and
-the crossposter error envelope. The repository fetches platforms,
-connections, and preferences and joins them into enabled per-platform entries.
+the crossposter error envelope. The repository fetches platforms, connections,
+and preferences sequentially and joins them into enabled per-platform entries.
+Sequential reads avoid racing Keycast's rotating refresh token across
+concurrent authenticated calls.
 The Cubit owns loading state, action state, optimistic mode updates, refreshes,
-and UI-safe error categories. The screen owns rendering, localized copy,
-navigation, browser launch wiring, and lifecycle observation.
+OAuth callback validation, and UI-safe outcomes/errors. The screen owns
+rendering, localized copy, navigation, the native OAuth launcher wiring, and
+lifecycle observation.
 
 Dependencies are constructor-injected. Riverpod may wire existing auth-sensitive
 dependencies at the Page boundary, but it does not own feature UI state.
@@ -51,22 +54,31 @@ uses a compact, scannable row for each enabled platform:
 Disconnected and `needs_reauth` platforms do not expose mode controls because
 the service rejects enabled modes without a connected account.
 
+If the API returns no enabled platforms, the screen shows a short localized
+empty state instead of a blank page.
+
 ## OAuth and Refresh Flow
 
 1. The Cubit asks the repository to start a connection with
    `https://divine.video/app/callback` as the return URL.
-2. The server returns an authorization URL, which the app opens externally.
-   `url_launcher` uses the native system-browser surface (Custom Tabs on
-   Android and the appropriate external browser/authentication surface on iOS).
+2. The server returns an HTTPS authorization URL. The app passes it to
+   `flutter_web_auth_2` with callback scheme `https`, host `divine.video`, and
+   path `/app/callback`. This uses `ASWebAuthenticationSession` on iOS and a
+   Custom Tab on Android.
 3. The provider and crossposter complete OAuth server-side.
-4. The app refreshes connections and preferences whenever it resumes.
-5. If the claimed universal link returns to the app with
-   `connection=connected|failed`, the app routes to Crossposting settings,
-   refreshes, and shows localized success/denial/failure feedback.
+4. The native OAuth session returns the callback URL to the existing
+   Crossposting screen. The Cubit validates the exact HTTPS host/path and the
+   `connection=connected|failed` discriminator, then refreshes connections and
+   preferences and emits localized success/denial/failure feedback.
+5. The app also refreshes when it resumes, covering a canceled browser session
+   and the server-supported fallback where the user closes the browser.
 
-The callback parser only recognizes the expected Divine HTTPS host/path and
-the `connection` discriminator, so the existing Keycast callback using the same
-path is not intercepted.
+Android registers an exported, auto-verified
+`com.linusu.flutter_web_auth_2.CallbackActivity` for only the exact
+`https://divine.video/app/callback` shape. iOS uses the existing
+`applinks:divine.video` entitlement. Because the callback is captured by the
+feature's native OAuth session rather than the global deep-link parser, it does
+not intercept or modify Keycast's separate callback handling.
 
 ## Errors and State Consistency
 
@@ -91,7 +103,13 @@ path is not intercepted.
   optimistic rollback, and action errors.
 - Widget tests: signed-out state, compact enabled-platform rows, account and
   reauth states, mode copy/capabilities, actions, and callback feedback.
-- Deep-link/router tests: callback recognition without stealing Keycast OAuth.
+- OAuth launcher tests: HTTPS callback options and cancellation behavior.
+- Cubit callback tests: accept only the exact HTTPS host/path and supported
+  callback values, then refresh server state.
+- Native configuration guard: Android callback activity declares only
+  `https://divine.video/app/callback`.
+- Route-context tests: `/crossposting-settings` is modeled as its own settings
+  route rather than falling back to home.
 - Run localization consistency, targeted Flutter tests, formatting, generated
   code checks, `flutter analyze`, and relevant golden verification if the final
   UI changes a covered golden.
