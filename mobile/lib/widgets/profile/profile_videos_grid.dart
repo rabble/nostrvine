@@ -12,13 +12,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
+import 'package:openvine/blocs/owner_video_actions/owner_video_actions_cubit.dart';
 import 'package:openvine/blocs/profile_feed/profile_feed_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
+import 'package:openvine/screens/video_metadata/video_metadata_edit_screen.dart';
+import 'package:openvine/utils/delete_failure_localization.dart';
 import 'package:openvine/utils/video_identity.dart';
+import 'package:openvine/widgets/owner_video_delete_confirmation_dialog.dart';
 import 'package:openvine/widgets/profile/pending_collaborator_invite_banner_cubit.dart';
 import 'package:openvine/widgets/profile/profile_tab_empty_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_loading_more_sliver.dart';
@@ -112,6 +116,9 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
     with GridPrefetchMixin, ScrollPaginationMixin {
   List<VideoEvent>? _lastPrefetchedVideos;
 
+  /// Created lazily on the first own-video delete; closed in [dispose].
+  OwnerVideoActionsCubit? _ownerVideoActionsCubit;
+
   /// Resolved from [PrimaryScrollController] provided by [NestedScrollView].
   ScrollController? _primaryScrollController;
 
@@ -151,6 +158,7 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
 
   @override
   void dispose() {
+    _ownerVideoActionsCubit?.close();
     disposePagination();
     super.dispose();
   }
@@ -173,6 +181,63 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
 
   void _triggerLoadMore() {
     context.read<ProfileFeedCubit>().add(const ProfileFeedLoadMoreRequested());
+  }
+
+  Future<void> _showOwnVideoActions(VideoEvent video) async {
+    await VineBottomSheet.show<void>(
+      context: context,
+      scrollable: false,
+      expanded: false,
+      title: Text(
+        context.l10n.videoGridOptionsTitle,
+        style: VineTheme.titleMediumFont(),
+      ),
+      body: _OwnVideoActionsSheetBody(
+        onEditVideo: () => _editVideo(video),
+        onDeleteVideo: () => _confirmDeleteVideo(video),
+      ),
+    );
+  }
+
+  void _editVideo(VideoEvent video) {
+    context.push(VideoMetadataEditScreen.pathFor(video.id), extra: video);
+  }
+
+  Future<void> _confirmDeleteVideo(VideoEvent video) async {
+    final confirmed = await showOwnerVideoDeleteConfirmationDialog(context);
+    if (!confirmed || !mounted) return;
+
+    final cubit = _ownerVideoActionsCubit ??= OwnerVideoActionsCubit(
+      contentDeletionServiceFuture: ref.read(
+        contentDeletionServiceProvider.future,
+      ),
+      videoEventService: ref.read(videoEventServiceProvider),
+    );
+    await cubit.deleteVideo(video);
+
+    if (!mounted) return;
+
+    final state = cubit.state;
+    final messenger = ScaffoldMessenger.of(context);
+    if (state.deleteStatus == OwnerVideoDeleteStatus.success) {
+      // The service marks the video locally deleted; a refresh drops the
+      // tile from the grid without waiting for relay propagation.
+      context.read<ProfileFeedCubit>().add(const ProfileFeedRefreshRequested());
+      messenger.showSnackBar(
+        DivineSnackbarContainer.snackBar(
+          context.l10n.shareMenuVideoDeletionRequested,
+        ),
+      );
+    } else {
+      messenger.showSnackBar(
+        DivineSnackbarContainer.snackBar(
+          state.deleteResult == null
+              ? context.l10n.shareMenuDeleteFailedGeneric
+              : localizedDeleteFailureMessage(context, state.deleteResult!),
+          error: true,
+        ),
+      );
+    }
   }
 
   void _onVideoTapped(
@@ -345,6 +410,9 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
                   videoEvent: eventEntry.videoEvent,
                   userIdHex: widget.userIdHex,
                   index: index,
+                  onLongPress: isOwnProfile
+                      ? () => _showOwnVideoActions(eventEntry.videoEvent)
+                      : null,
                   onTap: () {
                     // Adjust index to account for uploading videos at the top
                     final publishedIndex = index - uploadingCount;
@@ -423,12 +491,16 @@ class _VideoGridTile extends StatelessWidget {
     required this.userIdHex,
     required this.index,
     required this.onTap,
+    this.onLongPress,
   });
 
   final VideoEvent videoEvent;
   final String userIdHex;
   final int index;
   final VoidCallback onTap;
+
+  /// Opens the own-video actions sheet; null on other users' profiles.
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) => Semantics(
@@ -437,6 +509,7 @@ class _VideoGridTile extends StatelessWidget {
     button: true,
     child: GestureDetector(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(4),
         child: DecoratedBox(
@@ -449,6 +522,87 @@ class _VideoGridTile extends StatelessWidget {
       ),
     ),
   );
+}
+
+/// Edit/Delete actions shown when long-pressing an own video tile.
+class _OwnVideoActionsSheetBody extends StatelessWidget {
+  const _OwnVideoActionsSheetBody({
+    required this.onEditVideo,
+    required this.onDeleteVideo,
+  });
+
+  final VoidCallback onEditVideo;
+  final VoidCallback onDeleteVideo;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _OwnVideoActionTile(
+          icon: DivineIconName.pencilSimple,
+          iconColor: VineTheme.vineGreen,
+          title: context.l10n.videoGridEditVideo,
+          subtitle: context.l10n.videoGridEditVideoSubtitle,
+          onTap: onEditVideo,
+        ),
+        _OwnVideoActionTile(
+          icon: DivineIconName.trash,
+          iconColor: VineTheme.error,
+          title: context.l10n.videoGridDeleteVideo,
+          subtitle: context.l10n.videoGridDeleteVideoSubtitle,
+          onTap: onDeleteVideo,
+        ),
+        SizedBox(height: MediaQuery.viewPaddingOf(context).bottom + 16),
+      ],
+    );
+  }
+}
+
+class _OwnVideoActionTile extends StatelessWidget {
+  const _OwnVideoActionTile({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final DivineIconName icon;
+  final Color iconColor;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    // The sheet paints its own background; a transparent Material keeps
+    // ListTile's ink effects visible without double-painting a surface.
+    return Material(
+      type: MaterialType.transparency,
+      child: ListTile(
+        leading: Container(
+          width: 40,
+          height: 40,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: VineTheme.cardBackground,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: DivineIcon(icon: icon, color: iconColor, size: 20),
+        ),
+        title: Text(title, style: VineTheme.titleMediumFont()),
+        subtitle: Text(
+          subtitle,
+          style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
+        ),
+        onTap: () {
+          Navigator.of(context).pop();
+          onTap();
+        },
+      ),
+    );
+  }
 }
 
 class _PendingCollaboratorInviteBanner extends ConsumerWidget {

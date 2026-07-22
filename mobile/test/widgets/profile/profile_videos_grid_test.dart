@@ -17,6 +17,7 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
+import 'package:openvine/screens/video_metadata/video_metadata_edit_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/widgets/profile/profile_videos_grid.dart';
@@ -313,6 +314,157 @@ void main() {
           expect(args.initialVideoId, videos[1].id);
           expect(args.initialStableId, videos[1].stableId);
           expect(args.seedVideos, videos);
+        },
+      );
+
+      testWidgets(
+        'long-pressing an own video tile shows edit and delete actions',
+        (tester) async {
+          when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+          final videos = _createTestVideos(pubkey: _ownPubkey);
+          final l10n = lookupAppLocalizations(const Locale('en'));
+
+          await tester.pumpWidget(
+            buildSubject(userIdHex: _ownPubkey, videos: videos),
+          );
+
+          await tester.longPress(find.bySemanticsLabel('Video thumbnail 1'));
+          await tester.pumpAndSettle();
+
+          expect(find.text(l10n.videoGridEditVideo), findsOneWidget);
+          expect(find.text(l10n.videoGridDeleteVideo), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        "long-pressing a tile on another user's profile shows no actions",
+        (tester) async {
+          when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+          final videos = _createTestVideos(pubkey: _otherPubkey);
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          final profileFeedCubit = _stubbedProfileFeedCubit();
+          // Without a long-press handler the gesture falls through to the
+          // tap navigation, so the harness needs the fullscreen route.
+          final router = GoRouter(
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (context, state) => testProviderScope(
+                  mockAuthService: mockAuth,
+                  child: BlocProvider<BackgroundPublishBloc>.value(
+                    value: mockBloc,
+                    child: Scaffold(
+                      body: BlocProvider<ProfileFeedCubit>.value(
+                        value: profileFeedCubit,
+                        child: ProfileVideosGrid(
+                          videos: videos,
+                          userIdHex: _otherPubkey,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              GoRoute(
+                path: PooledFullscreenVideoFeedScreen.path,
+                builder: (context, state) => const SizedBox.shrink(),
+              ),
+            ],
+          );
+
+          await tester.pumpWidget(
+            MaterialApp.router(
+              routerConfig: router,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+            ),
+          );
+
+          await tester.longPress(find.bySemanticsLabel('Video thumbnail 1'));
+          await tester.pumpAndSettle();
+
+          expect(find.text(l10n.videoGridEditVideo), findsNothing);
+          expect(find.text(l10n.videoGridDeleteVideo), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'tapping Edit Video in the actions sheet opens the metadata editor',
+        (tester) async {
+          when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+          final videos = _createTestVideos(pubkey: _ownPubkey);
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          String? capturedVideoId;
+          final profileFeedCubit = _stubbedProfileFeedCubit();
+          final router = GoRouter(
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (context, state) => testProviderScope(
+                  mockAuthService: mockAuth,
+                  child: BlocProvider<BackgroundPublishBloc>.value(
+                    value: mockBloc,
+                    child: Scaffold(
+                      body: BlocProvider<ProfileFeedCubit>.value(
+                        value: profileFeedCubit,
+                        child: ProfileVideosGrid(
+                          videos: videos,
+                          userIdHex: _ownPubkey,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              GoRoute(
+                path: '${VideoMetadataEditScreen.path}/:videoId',
+                builder: (context, state) {
+                  capturedVideoId = state.pathParameters['videoId'];
+                  return const SizedBox.shrink();
+                },
+              ),
+            ],
+          );
+
+          await tester.pumpWidget(
+            MaterialApp.router(
+              routerConfig: router,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+            ),
+          );
+
+          await tester.longPress(find.bySemanticsLabel('Video thumbnail 1'));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text(l10n.videoGridEditVideo));
+          await tester.pumpAndSettle();
+
+          expect(capturedVideoId, videos[0].id);
+        },
+      );
+
+      testWidgets(
+        'tapping Delete Video in the actions sheet asks for confirmation',
+        (tester) async {
+          when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+          final videos = _createTestVideos(pubkey: _ownPubkey);
+          final l10n = lookupAppLocalizations(const Locale('en'));
+
+          await tester.pumpWidget(
+            buildSubject(userIdHex: _ownPubkey, videos: videos),
+          );
+
+          await tester.longPress(find.bySemanticsLabel('Video thumbnail 1'));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text(l10n.videoGridDeleteVideo));
+          await tester.pumpAndSettle();
+
+          expect(find.text(l10n.shareMenuDeleteConfirmation), findsOneWidget);
+
+          await tester.tap(find.text(l10n.shareMenuCancel));
+          await tester.pumpAndSettle();
+
+          expect(find.text(l10n.shareMenuDeleteConfirmation), findsNothing);
         },
       );
 
