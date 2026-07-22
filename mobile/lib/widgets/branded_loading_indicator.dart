@@ -43,7 +43,6 @@ class _BrandedLoadingIndicatorState extends State<BrandedLoadingIndicator>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
-  static const int _frameCount = BrandedLoadingIndicator.frameCount;
   static const Duration _animationDuration = Duration(milliseconds: 1800);
 
   @override
@@ -65,8 +64,12 @@ class _BrandedLoadingIndicatorState extends State<BrandedLoadingIndicator>
       animation: _controller,
       builder: (context, child) {
         // Calculate current frame based on animation value
-        final frameIndex = (_controller.value * _frameCount).floor();
-        final clampedFrame = frameIndex.clamp(0, _frameCount - 1);
+        final frameIndex =
+            (_controller.value * BrandedLoadingIndicator.frameCount).floor();
+        final clampedFrame = frameIndex.clamp(
+          0,
+          BrandedLoadingIndicator.frameCount - 1,
+        );
 
         // Calculate the vertical offset to show the correct frame
         final yOffset = -clampedFrame * widget.size;
@@ -77,7 +80,7 @@ class _BrandedLoadingIndicatorState extends State<BrandedLoadingIndicator>
           child: ClipRect(
             child: OverflowBox(
               maxWidth: widget.size,
-              maxHeight: widget.size * _frameCount,
+              maxHeight: widget.size * BrandedLoadingIndicator.frameCount,
               alignment: Alignment.topCenter,
               child: Transform.translate(
                 offset: Offset(0, yOffset),
@@ -90,7 +93,7 @@ class _BrandedLoadingIndicatorState extends State<BrandedLoadingIndicator>
       child: Image.asset(
         BrandedLoadingIndicator.spriteAsset,
         width: widget.size,
-        height: widget.size * _frameCount,
+        height: widget.size * BrandedLoadingIndicator.frameCount,
         fit: BoxFit.fitWidth,
         errorBuilder: (context, error, stackTrace) {
           Log.warning(
