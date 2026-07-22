@@ -179,6 +179,29 @@ void main() {
 
 // Add keys here only when a translation pass is intentionally deferred.
 const _knownUntranslatedDebt = <String>{
+  // Manual crossposting from the share sheet; translation deferred to
+  // the next l10n pass.
+  'shareSheetCrosspost',
+  'crosspostSheetTitle',
+  'crosspostSheetSubtitle',
+  'crosspostSubmit',
+  'crosspostStatusQueued',
+  'crosspostStatusUploading',
+  'crosspostStatusProcessing',
+  'crosspostStatusPosted',
+  'crosspostStatusFailed',
+  'crosspostStatusSkipped',
+  'crosspostStatusNeedsReauth',
+  'crosspostViewPost',
+  'crosspostReconnectPrompt',
+  'crosspostReconnect',
+  'crosspostErrorNotOwner',
+  'crosspostErrorNotEligible',
+  'crosspostErrorNotConnected',
+  'crosspostErrorNetwork',
+  'crosspostFailedGeneric',
+  'crosspostStillWorking',
+  'crosspostDone',
   // #6217: light-mode experiment copy; translation deferred until rollout.
   'appearanceSettingsTitle',
   'appearanceSettingsSubtitle',

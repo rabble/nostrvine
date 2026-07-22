@@ -5958,6 +5958,132 @@ abstract class AppLocalizations {
   /// **'More actions'**
   String get shareSheetMoreActions;
 
+  /// No description provided for @shareSheetCrosspost.
+  ///
+  /// In en, this message translates to:
+  /// **'Crosspost'**
+  String get shareSheetCrosspost;
+
+  /// No description provided for @crosspostSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Crosspost this video'**
+  String get crosspostSheetTitle;
+
+  /// No description provided for @crosspostSheetSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send it to your connected platforms. Posting can take a few minutes.'**
+  String get crosspostSheetSubtitle;
+
+  /// No description provided for @crosspostSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Crosspost'**
+  String get crosspostSubmit;
+
+  /// No description provided for @crosspostStatusQueued.
+  ///
+  /// In en, this message translates to:
+  /// **'Queued'**
+  String get crosspostStatusQueued;
+
+  /// No description provided for @crosspostStatusUploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading'**
+  String get crosspostStatusUploading;
+
+  /// No description provided for @crosspostStatusProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing'**
+  String get crosspostStatusProcessing;
+
+  /// No description provided for @crosspostStatusPosted.
+  ///
+  /// In en, this message translates to:
+  /// **'Posted'**
+  String get crosspostStatusPosted;
+
+  /// No description provided for @crosspostStatusFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get crosspostStatusFailed;
+
+  /// No description provided for @crosspostStatusSkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped'**
+  String get crosspostStatusSkipped;
+
+  /// No description provided for @crosspostStatusNeedsReauth.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs reconnecting'**
+  String get crosspostStatusNeedsReauth;
+
+  /// No description provided for @crosspostViewPost.
+  ///
+  /// In en, this message translates to:
+  /// **'View post'**
+  String get crosspostViewPost;
+
+  /// No description provided for @crosspostReconnectPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnect {platform} in crossposting settings to keep posting.'**
+  String crosspostReconnectPrompt(String platform);
+
+  /// No description provided for @crosspostReconnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnect'**
+  String get crosspostReconnect;
+
+  /// No description provided for @crosspostErrorNotOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'Only your own videos can be crossposted.'**
+  String get crosspostErrorNotOwner;
+
+  /// No description provided for @crosspostErrorNotEligible.
+  ///
+  /// In en, this message translates to:
+  /// **'This video isn\'t eligible for crossposting.'**
+  String get crosspostErrorNotEligible;
+
+  /// No description provided for @crosspostErrorNotConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'That platform isn\'t connected.'**
+  String get crosspostErrorNotConnected;
+
+  /// No description provided for @crosspostErrorNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach the crossposter. Try again in a moment.'**
+  String get crosspostErrorNetwork;
+
+  /// No description provided for @crosspostFailedGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Crosspost failed.'**
+  String get crosspostFailedGeneric;
+
+  /// No description provided for @crosspostStillWorking.
+  ///
+  /// In en, this message translates to:
+  /// **'Still working. You can close this — posting continues in the background.'**
+  String get crosspostStillWorking;
+
+  /// No description provided for @crosspostDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get crosspostDone;
+
   /// No description provided for @watermarkDownloadSavedToCameraRoll.
   ///
   /// In en, this message translates to:

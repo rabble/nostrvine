@@ -19,6 +19,7 @@ import 'package:openvine/providers/shell_obscured_provider.dart';
 import 'package:openvine/services/api_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/crosspost_api_client.dart';
+import 'package:openvine/services/crossposter_api_client.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/media_viewer_auth_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
@@ -307,6 +308,13 @@ CrosspostApiClient crosspostApiClient(Ref ref) {
     oauthClient: oauthClient,
     serverUrl: config.serverUrl,
   );
+}
+
+/// Crossposter service client for manual per-video crossposting
+@riverpod
+CrossposterApiClient crossposterApiClient(Ref ref) {
+  final oauthClient = ref.watch(oauthClientProvider);
+  return CrossposterApiClient(oauthClient: oauthClient);
 }
 
 /// Audio playback service for sound playback during recording and preview

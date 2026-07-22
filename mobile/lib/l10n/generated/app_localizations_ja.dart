@@ -3248,6 +3248,76 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareSheetMoreActions => 'その他のアクション';
 
   @override
+  String get shareSheetCrosspost => 'Crosspost';
+
+  @override
+  String get crosspostSheetTitle => 'Crosspost this video';
+
+  @override
+  String get crosspostSheetSubtitle =>
+      'Send it to your connected platforms. Posting can take a few minutes.';
+
+  @override
+  String get crosspostSubmit => 'Crosspost';
+
+  @override
+  String get crosspostStatusQueued => 'Queued';
+
+  @override
+  String get crosspostStatusUploading => 'Uploading';
+
+  @override
+  String get crosspostStatusProcessing => 'Processing';
+
+  @override
+  String get crosspostStatusPosted => 'Posted';
+
+  @override
+  String get crosspostStatusFailed => 'Failed';
+
+  @override
+  String get crosspostStatusSkipped => 'Skipped';
+
+  @override
+  String get crosspostStatusNeedsReauth => 'Needs reconnecting';
+
+  @override
+  String get crosspostViewPost => 'View post';
+
+  @override
+  String crosspostReconnectPrompt(String platform) {
+    return 'Reconnect $platform in crossposting settings to keep posting.';
+  }
+
+  @override
+  String get crosspostReconnect => 'Reconnect';
+
+  @override
+  String get crosspostErrorNotOwner =>
+      'Only your own videos can be crossposted.';
+
+  @override
+  String get crosspostErrorNotEligible =>
+      'This video isn\'t eligible for crossposting.';
+
+  @override
+  String get crosspostErrorNotConnected => 'That platform isn\'t connected.';
+
+  @override
+  String get crosspostErrorNetwork =>
+      'Couldn\'t reach the crossposter. Try again in a moment.';
+
+  @override
+  String get crosspostFailedGeneric => 'Crosspost failed.';
+
+  @override
+  String get crosspostStillWorking =>
+      'Still working. You can close this — posting continues in the background.';
+
+  @override
+  String get crosspostDone => 'Done';
+
+  @override
   String get watermarkDownloadSavedToCameraRoll => 'カメラロールに保存したよ';
 
   @override
