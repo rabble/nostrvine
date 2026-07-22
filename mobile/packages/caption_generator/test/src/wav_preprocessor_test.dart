@@ -1,5 +1,5 @@
 // ABOUTME: Tests for the WAV-to-16kHz-mono-PCM recognition preprocessor.
-// ABOUTME: Covers conversion, passthrough, malformed input, and edge chunks.
+// ABOUTME: Covers conversion, passthrough, bounds, isolation, and I/O failures.
 
 import 'dart:io';
 
@@ -15,6 +15,7 @@ void main() {
 
     setUp(() {
       tempDir = Directory.systemTemp.createTempSync('wav_preprocessor_test');
+      WavPreprocessor.debugConversionRanInCallerIsolate = false;
     });
 
     tearDown(() {
@@ -27,7 +28,8 @@ void main() {
       return path;
     }
 
-    String outputPathFor(String inputPath) => '$inputPath.out.wav';
+    Future<PreparedRecognitionAudio> prepare(String inputPath) =>
+        WavPreprocessor.prepareForRecognition(inputPath: inputPath);
 
     test('converts 44.1 kHz stereo PCM16 to 16 kHz mono', () async {
       final inputPath = writeWav(
@@ -40,15 +42,12 @@ void main() {
         ),
       );
 
-      final resultPath = await WavPreprocessor.prepareForRecognition(
-        inputPath: inputPath,
-        outputPath: outputPathFor(inputPath),
-      );
+      final prepared = await prepare(inputPath);
+      addTearDown(prepared.dispose);
 
-      expect(resultPath, equals(outputPathFor(inputPath)));
-      final decoded = DecodedWav.parse(
-        File(resultPath).readAsBytesSync(),
-      );
+      expect(prepared.isTemporary, isTrue);
+      expect(prepared.path, isNot(equals(inputPath)));
+      final decoded = DecodedWav.parse(File(prepared.path).readAsBytesSync());
       expect(decoded.formatCode, equals(1));
       expect(decoded.channels, equals(1));
       expect(decoded.sampleRate, equals(16000));
@@ -59,6 +58,8 @@ void main() {
       for (final sample in decoded.samples) {
         expect(sample, closeTo(expected, 2));
       }
+      // The original input is never modified.
+      expect(File(inputPath).existsSync(), isTrue);
     });
 
     test(
@@ -77,18 +78,13 @@ void main() {
           ),
         );
 
-        final convertedPath = await WavPreprocessor.prepareForRecognition(
-          inputPath: inputPath,
-          outputPath: outputPathFor(inputPath),
-        );
+        final converted = await prepare(inputPath);
+        addTearDown(converted.dispose);
 
-        final secondPass = await WavPreprocessor.prepareForRecognition(
-          inputPath: convertedPath,
-          outputPath: '$convertedPath.again.wav',
-        );
+        final secondPass = await prepare(converted.path);
 
-        expect(secondPass, equals(convertedPath));
-        expect(File('$convertedPath.again.wav').existsSync(), isFalse);
+        expect(secondPass.isTemporary, isFalse);
+        expect(secondPass.path, equals(converted.path));
       },
     );
 
@@ -98,13 +94,13 @@ void main() {
         buildWav(channels: [List.filled(1600, 0.25)], sampleRate: 16000),
       );
 
-      final resultPath = await WavPreprocessor.prepareForRecognition(
-        inputPath: inputPath,
-        outputPath: outputPathFor(inputPath),
-      );
+      final prepared = await prepare(inputPath);
 
-      expect(resultPath, equals(inputPath));
-      expect(File(outputPathFor(inputPath)).existsSync(), isFalse);
+      expect(prepared.isTemporary, isFalse);
+      expect(prepared.path, equals(inputPath));
+      // dispose on a passthrough result is a safe no-op.
+      await prepared.dispose();
+      expect(File(inputPath).existsSync(), isTrue);
     });
 
     test(
@@ -123,13 +119,11 @@ void main() {
           ),
         );
 
-        final resultPath = await WavPreprocessor.prepareForRecognition(
-          inputPath: inputPath,
-          outputPath: outputPathFor(inputPath),
-        );
+        final prepared = await prepare(inputPath);
+        addTearDown(prepared.dispose);
 
-        expect(resultPath, equals(outputPathFor(inputPath)));
-        final decoded = DecodedWav.parse(File(resultPath).readAsBytesSync());
+        expect(prepared.isTemporary, isTrue);
+        final decoded = DecodedWav.parse(File(prepared.path).readAsBytesSync());
         expect(decoded.formatCode, equals(1));
         expect(decoded.channels, equals(1));
         expect(decoded.sampleRate, equals(16000));
@@ -146,13 +140,11 @@ void main() {
         ),
       );
 
-      final resultPath = await WavPreprocessor.prepareForRecognition(
-        inputPath: inputPath,
-        outputPath: outputPathFor(inputPath),
-      );
+      final prepared = await prepare(inputPath);
+      addTearDown(prepared.dispose);
 
-      expect(resultPath, equals(outputPathFor(inputPath)));
-      final decoded = DecodedWav.parse(File(resultPath).readAsBytesSync());
+      expect(prepared.isTemporary, isTrue);
+      final decoded = DecodedWav.parse(File(prepared.path).readAsBytesSync());
       expect(decoded.sampleRate, equals(16000));
       expect(decoded.samples, hasLength(1600));
       final expected = (0.5 * 32767).round();
@@ -169,12 +161,10 @@ void main() {
         buildWav(channels: [ramp], sampleRate: 8000),
       );
 
-      final resultPath = await WavPreprocessor.prepareForRecognition(
-        inputPath: inputPath,
-        outputPath: outputPathFor(inputPath),
-      );
+      final prepared = await prepare(inputPath);
+      addTearDown(prepared.dispose);
 
-      final decoded = DecodedWav.parse(File(resultPath).readAsBytesSync());
+      final decoded = DecodedWav.parse(File(prepared.path).readAsBytesSync());
       expect(decoded.samples, hasLength(1600));
       // Output index 800 maps to source index 400, i.e. ramp value 400/800.
       expect(decoded.samples[800], closeTo((0.5 * 32767).round(), 50));
@@ -190,12 +180,10 @@ void main() {
         ),
       );
 
-      final resultPath = await WavPreprocessor.prepareForRecognition(
-        inputPath: inputPath,
-        outputPath: outputPathFor(inputPath),
-      );
+      final prepared = await prepare(inputPath);
+      addTearDown(prepared.dispose);
 
-      final decoded = DecodedWav.parse(File(resultPath).readAsBytesSync());
+      final decoded = DecodedWav.parse(File(prepared.path).readAsBytesSync());
       expect(decoded.sampleRate, equals(16000));
       expect(decoded.samples, isNotEmpty);
     });
@@ -212,112 +200,242 @@ void main() {
         ),
       );
 
-      final resultPath = await WavPreprocessor.prepareForRecognition(
-        inputPath: inputPath,
-        outputPath: outputPathFor(inputPath),
-      );
+      final prepared = await prepare(inputPath);
+      addTearDown(prepared.dispose);
 
-      final decoded = DecodedWav.parse(File(resultPath).readAsBytesSync());
+      final decoded = DecodedWav.parse(File(prepared.path).readAsBytesSync());
       expect(decoded.channels, equals(1));
       expect(decoded.sampleRate, equals(16000));
     });
 
-    test('throws $UnsupportedAudioFormatException for a non-RIFF file', () {
-      final inputPath = writeWav('not_a_wav.wav', 'hello world'.codeUnits);
+    group('cleanup and isolation', () {
+      test('dispose removes the converted temp file', () async {
+        final inputPath = writeWav(
+          'cleanup.wav',
+          buildWav(
+            channels: [List.filled(4410, 0.5), List.filled(4410, -0.25)],
+          ),
+        );
 
-      expect(
-        () => WavPreprocessor.prepareForRecognition(
-          inputPath: inputPath,
-          outputPath: outputPathFor(inputPath),
-        ),
-        throwsA(isA<UnsupportedAudioFormatException>()),
+        final prepared = await prepare(inputPath);
+        expect(File(prepared.path).existsSync(), isTrue);
+
+        await prepared.dispose();
+        expect(File(prepared.path).existsSync(), isFalse);
+        // dispose is idempotent.
+        await prepared.dispose();
+      });
+
+      test(
+        'runs the conversion in a worker isolate, not the caller',
+        () async {
+          final inputPath = writeWav(
+            'isolated.wav',
+            buildWav(
+              channels: [List.filled(4410, 0.5), List.filled(4410, -0.25)],
+            ),
+          );
+
+          final prepared = await prepare(inputPath);
+          addTearDown(prepared.dispose);
+
+          expect(prepared.isTemporary, isTrue);
+          // The flag the conversion sets in the worker isolate is invisible
+          // here, so it stays false — proving the heavy work left the caller
+          // isolate. If conversion ever moves back on-caller this flips true.
+          expect(WavPreprocessor.debugConversionRanInCallerIsolate, isFalse);
+
+          // Control: invoked directly, the same routine sets the flag in the
+          // current isolate, so the assertion above fails loudly on regression.
+          WavPreprocessor.debugConversionRanInCallerIsolate = false;
+          await WavPreprocessor.runPreparation(
+            inputPath,
+            '${tempDir.path}/direct.wav',
+          );
+          expect(WavPreprocessor.debugConversionRanInCallerIsolate, isTrue);
+        },
+      );
+
+      test(
+        'gives concurrent conversions of one source distinct temp files',
+        () async {
+          final inputPath = writeWav(
+            'shared.wav',
+            buildWav(
+              channels: [List.filled(4410, 0.5), List.filled(4410, -0.25)],
+            ),
+          );
+
+          final results = await Future.wait([
+            prepare(inputPath),
+            prepare(inputPath),
+          ]);
+          addTearDown(() => Future.wait(results.map((r) => r.dispose())));
+
+          expect(results[0].path, isNot(equals(results[1].path)));
+          expect(File(results[0].path).existsSync(), isTrue);
+          expect(File(results[1].path).existsSync(), isTrue);
+          expect(File(inputPath).existsSync(), isTrue);
+        },
       );
     });
 
-    test('throws $UnsupportedAudioFormatException for 8-bit PCM', () {
-      final inputPath = writeWav(
-        'pcm8.wav',
-        buildWav(channels: [List.filled(441, 0.5)], bitsPerSample: 8),
-      );
+    group('rejects out-of-bounds input', () {
+      test('throws for a sample rate below the supported floor', () {
+        final inputPath = writeWav(
+          'low_rate.wav',
+          buildWav(channels: [List.filled(441, 0.5)], sampleRate: 2000),
+        );
 
-      expect(
-        () => WavPreprocessor.prepareForRecognition(
-          inputPath: inputPath,
-          outputPath: outputPathFor(inputPath),
-        ),
-        throwsA(isA<UnsupportedAudioFormatException>()),
-      );
+        expect(
+          () => prepare(inputPath),
+          throwsA(isA<UnsupportedAudioFormatException>()),
+        );
+      });
+
+      test('throws for a sample rate above the supported ceiling', () {
+        final inputPath = writeWav(
+          'high_rate.wav',
+          buildWav(channels: [List.filled(441, 0.5)], sampleRate: 200000),
+        );
+
+        expect(
+          () => prepare(inputPath),
+          throwsA(isA<UnsupportedAudioFormatException>()),
+        );
+      });
+
+      test('rejects a clip that converts beyond the frame limit', () {
+        final inputPath = writeWav(
+          'long.wav',
+          buildWav(
+            channels: [List.filled(4410, 0.5), List.filled(4410, -0.25)],
+          ),
+        );
+
+        // 4410 frames at 44.1 kHz convert to 1600 frames at 16 kHz; a 100-frame
+        // cap forces the too-long rejection with a small fixture.
+        expect(
+          () => WavPreprocessor.runPreparation(
+            inputPath,
+            '${tempDir.path}/out.wav',
+            maxConvertedFrames: 100,
+          ),
+          throwsA(isA<UnsupportedAudioFormatException>()),
+        );
+      });
     });
 
-    test('throws $UnsupportedAudioFormatException for unsupported codes', () {
-      final inputPath = writeWav(
-        'alaw.wav',
-        buildWav(channels: [List.filled(441, 0.5)], formatCode: 6),
-      );
+    group('maps I/O failures to typed exceptions', () {
+      test('read failure throws $TranscriptionFailedException', () {
+        // A directory exists but cannot be read as a file.
+        final directory = Directory('${tempDir.path}/a_directory')
+          ..createSync();
 
-      expect(
-        () => WavPreprocessor.prepareForRecognition(
-          inputPath: inputPath,
-          outputPath: outputPathFor(inputPath),
-        ),
-        throwsA(isA<UnsupportedAudioFormatException>()),
-      );
+        expect(
+          () => WavPreprocessor.runPreparation(
+            directory.path,
+            '${tempDir.path}/out.wav',
+          ),
+          throwsA(isA<TranscriptionFailedException>()),
+        );
+      });
+
+      test('write failure throws $TranscriptionFailedException', () {
+        final inputPath = writeWav(
+          'src.wav',
+          buildWav(
+            channels: [List.filled(441, 0.5), List.filled(441, -0.25)],
+          ),
+        );
+
+        expect(
+          () => WavPreprocessor.runPreparation(
+            inputPath,
+            '${tempDir.path}/missing_dir/out.wav',
+          ),
+          throwsA(isA<TranscriptionFailedException>()),
+        );
+      });
     });
 
-    test('throws for a zero-channel fmt chunk', () {
-      final bytes = buildWav(channels: [List.filled(441, 0.5)]);
-      // Channel count lives at bytes 22-23 (fmt body offset 2); zero it out.
-      bytes[22] = 0;
-      bytes[23] = 0;
-      final inputPath = writeWav('zero_channels.wav', bytes);
+    group('rejects malformed WAV headers', () {
+      test('throws $UnsupportedAudioFormatException for a non-RIFF file', () {
+        final inputPath = writeWav('not_a_wav.wav', 'hello world'.codeUnits);
 
-      expect(
-        () => WavPreprocessor.prepareForRecognition(
-          inputPath: inputPath,
-          outputPath: outputPathFor(inputPath),
-        ),
-        throwsA(isA<UnsupportedAudioFormatException>()),
-      );
-    });
+        expect(
+          () => prepare(inputPath),
+          throwsA(isA<UnsupportedAudioFormatException>()),
+        );
+      });
 
-    test('throws when the data chunk is missing', () {
-      final inputPath = writeWav(
-        'no_data.wav',
-        buildWav(channels: [List.filled(441, 0.5)], omitDataChunk: true),
-      );
+      test('throws $UnsupportedAudioFormatException for 8-bit PCM', () {
+        final inputPath = writeWav(
+          'pcm8.wav',
+          buildWav(channels: [List.filled(441, 0.5)], bitsPerSample: 8),
+        );
 
-      expect(
-        () => WavPreprocessor.prepareForRecognition(
-          inputPath: inputPath,
-          outputPath: outputPathFor(inputPath),
-        ),
-        throwsA(isA<UnsupportedAudioFormatException>()),
-      );
-    });
+        expect(
+          () => prepare(inputPath),
+          throwsA(isA<UnsupportedAudioFormatException>()),
+        );
+      });
 
-    test('throws when the fmt chunk is missing', () {
-      final inputPath = writeWav(
-        'no_fmt.wav',
-        buildWav(channels: [List.filled(441, 0.5)], omitFmtChunk: true),
-      );
+      test('throws $UnsupportedAudioFormatException for unsupported codes', () {
+        final inputPath = writeWav(
+          'alaw.wav',
+          buildWav(channels: [List.filled(441, 0.5)], formatCode: 6),
+        );
 
-      expect(
-        () => WavPreprocessor.prepareForRecognition(
-          inputPath: inputPath,
-          outputPath: outputPathFor(inputPath),
-        ),
-        throwsA(isA<UnsupportedAudioFormatException>()),
-      );
-    });
+        expect(
+          () => prepare(inputPath),
+          throwsA(isA<UnsupportedAudioFormatException>()),
+        );
+      });
 
-    test('throws $AudioFileNotFoundException for a missing input', () {
-      expect(
-        () => WavPreprocessor.prepareForRecognition(
-          inputPath: '${tempDir.path}/missing.wav',
-          outputPath: '${tempDir.path}/out.wav',
-        ),
-        throwsA(isA<AudioFileNotFoundException>()),
-      );
+      test('throws for a zero-channel fmt chunk', () {
+        final bytes = buildWav(channels: [List.filled(441, 0.5)]);
+        // Channel count lives at bytes 22-23 (fmt body offset 2); zero it out.
+        bytes[22] = 0;
+        bytes[23] = 0;
+        final inputPath = writeWav('zero_channels.wav', bytes);
+
+        expect(
+          () => prepare(inputPath),
+          throwsA(isA<UnsupportedAudioFormatException>()),
+        );
+      });
+
+      test('throws when the data chunk is missing', () {
+        final inputPath = writeWav(
+          'no_data.wav',
+          buildWav(channels: [List.filled(441, 0.5)], omitDataChunk: true),
+        );
+
+        expect(
+          () => prepare(inputPath),
+          throwsA(isA<UnsupportedAudioFormatException>()),
+        );
+      });
+
+      test('throws when the fmt chunk is missing', () {
+        final inputPath = writeWav(
+          'no_fmt.wav',
+          buildWav(channels: [List.filled(441, 0.5)], omitFmtChunk: true),
+        );
+
+        expect(
+          () => prepare(inputPath),
+          throwsA(isA<UnsupportedAudioFormatException>()),
+        );
+      });
+
+      test('throws $AudioFileNotFoundException for a missing input', () {
+        expect(
+          () => prepare('${tempDir.path}/missing.wav'),
+          throwsA(isA<AudioFileNotFoundException>()),
+        );
+      });
     });
   });
 }

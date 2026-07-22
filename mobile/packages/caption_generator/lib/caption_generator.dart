@@ -32,8 +32,6 @@ class CaptionGenerator {
   /// Creates a caption generator.
   CaptionGenerator();
 
-  static const String _preparedWavSuffix = '.cc16k.wav';
-
   CaptionGeneratorPlatform get _platform => CaptionGeneratorPlatform.instance;
 
   /// Transcribes the audio file at [audioPath] into word-level
@@ -62,7 +60,8 @@ class CaptionGenerator {
   /// * [SpeechRecognizerUnavailableException] if the device or locale has no
   ///   recognizer — on Android also below Android 14 or without Google's
   ///   on-device recognition service.
-  /// * [TranscriptionFailedException] for any other recognizer failure.
+  /// * [TranscriptionFailedException] for any other recognizer failure, or if
+  ///   reading or writing the audio during Android WAV preparation fails.
   /// * [UnsupportedError] on platforms other than Android, iOS, and macOS.
   Future<List<CaptionSegment>> generateCaptions({
     required String audioPath,
@@ -92,36 +91,16 @@ class CaptionGenerator {
     required String audioPath,
     required String? localeIdentifier,
   }) async {
-    final preparedPath = await WavPreprocessor.prepareForRecognition(
+    final prepared = await WavPreprocessor.prepareForRecognition(
       inputPath: audioPath,
-      outputPath: '$audioPath$_preparedWavSuffix',
     );
     try {
       return await _platform.transcribe(
-        audioPath: preparedPath,
+        audioPath: prepared.path,
         localeIdentifier: localeIdentifier,
       );
     } finally {
-      if (preparedPath != audioPath) {
-        _deleteQuietly(preparedPath);
-      }
+      await prepared.dispose();
     }
-  }
-
-  /// Best-effort cleanup of the converted temp WAV; a leftover file in the
-  /// app temp directory is harmless and must not mask the transcribe result.
-  void _deleteQuietly(String path) {
-    try {
-      final file = File(path);
-      if (file.existsSync()) {
-        file.deleteSync();
-      }
-      // A failing delete needs an OS-level race or permission flip that a
-      // unit test cannot portably produce, hence the coverage exclusion.
-      // coverage:ignore-start
-    } on FileSystemException {
-      // Intentionally ignored — see doc comment.
-    }
-    // coverage:ignore-end
   }
 }

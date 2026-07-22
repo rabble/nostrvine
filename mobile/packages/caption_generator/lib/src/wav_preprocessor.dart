@@ -2,9 +2,39 @@
 // ABOUTME: Android recognizer wants. Pure-Dart RIFF parse, downmix, resample.
 
 import 'dart:io';
-import 'dart:typed_data';
+import 'dart:isolate';
 
 import 'package:caption_generator/src/exceptions.dart';
+import 'package:flutter/foundation.dart';
+
+/// The audio a caller should hand to the platform recognizer, plus ownership
+/// of any temporary artifact created while preparing it.
+///
+/// [WavPreprocessor.prepareForRecognition] returns one of these instead of a
+/// bare path so the caller knows whether it now owns a package-created temp
+/// file. Always [dispose] the result once transcription is done.
+class PreparedRecognitionAudio {
+  PreparedRecognitionAudio._(this.path, this._workDirectory);
+
+  /// The audio file the recognizer should read.
+  final String path;
+
+  /// Package-owned temp directory holding the converted file, or `null` when
+  /// [path] is the untouched input (canonical passthrough).
+  final Directory? _workDirectory;
+
+  /// Whether [path] is a package-created temporary file the caller owns.
+  bool get isTemporary => _workDirectory != null;
+
+  /// Deletes the temporary artifact, if any.
+  ///
+  /// Safe on a passthrough result and safe to call more than once. Best
+  /// effort: a leftover temp file is harmless and must never surface as an
+  /// error over the transcription result.
+  Future<void> dispose() => WavPreprocessor._deleteWorkDirQuietly(
+    _workDirectory,
+  );
+}
 
 /// Rewrites WAV audio into the canonical format the Android platform
 /// `SpeechRecognizer` consumes: 16 kHz, mono, 16-bit integer PCM.
@@ -20,12 +50,44 @@ abstract final class WavPreprocessor {
   static const int _floatFormat = 3;
   static const int _extensibleFormat = 0xFFFE;
 
+  static const String _convertedFileName = 'recognition_input.cc16k.wav';
+
+  /// Lowest input sample rate we will resample. Below this a header is treated
+  /// as malformed: linear upsampling to 16 kHz would inflate the sample count
+  /// by more than 4x, so a low-rate header is the classic
+  /// allocation-amplification vector.
+  static const int _minInputSampleRate = 4000;
+
+  /// Highest input sample rate we will resample; nothing real records above
+  /// this, so a larger value signals a corrupt header.
+  static const int _maxInputSampleRate = 192000;
+
+  /// Longest clip we will resample, expressed as 16 kHz mono output frames
+  /// (30 minutes). Guards against a large — but structurally valid — header
+  /// driving an unbounded allocation. Short-form video never approaches this.
+  static const int _maxConvertedFrames = targetSampleRate * 60 * 30;
+
+  /// Set true whenever the conversion routine executes, in whichever isolate
+  /// runs it. Because statics are per-isolate, a value observed in the caller
+  /// isolate after [prepareForRecognition] proves whether the heavy work ran
+  /// on-caller (true) or in the worker isolate (still false). Test probe only.
+  @visibleForTesting
+  static bool debugConversionRanInCallerIsolate = false;
+
   /// Prepares the WAV at [inputPath] for speech recognition.
   ///
-  /// Returns [inputPath] unchanged when the audio is already 16 kHz mono
-  /// 16-bit integer PCM in a plain `fmt ` chunk; otherwise writes the
-  /// converted audio to [outputPath] and returns that. Callers own deleting
-  /// [outputPath] afterwards.
+  /// Decode, downmix, resample, and encode run in a worker isolate (via
+  /// [Isolate.run]) so a long clip never stalls the caller. The output size is
+  /// bounded before any buffer is allocated, so a malformed header cannot
+  /// drive a runaway allocation.
+  ///
+  /// Returns a [PreparedRecognitionAudio] whose `path` is [inputPath] itself
+  /// when the audio is already 16 kHz mono 16-bit integer PCM in a plain
+  /// `fmt ` chunk (`isTemporary == false`); otherwise `path` is a unique
+  /// package-owned temporary file the caller must
+  /// [PreparedRecognitionAudio.dispose] after use. The original input is
+  /// never modified. Each call uses its own temp directory, so overlapping
+  /// conversions of the same source never collide.
   ///
   /// A `WAVE_FORMAT_EXTENSIBLE` wrapper is never passed through even when its
   /// subformat is already the target format: the minimal native Android reader
@@ -36,28 +98,93 @@ abstract final class WavPreprocessor {
   ///
   /// * [AudioFileNotFoundException] if [inputPath] does not exist.
   /// * [UnsupportedAudioFormatException] if the file is not a readable
-  ///   RIFF/WAVE file in a supported PCM encoding.
-  static Future<String> prepareForRecognition({
+  ///   RIFF/WAVE file in a supported PCM encoding, its sample rate is out of
+  ///   range, or the clip is too long to prepare.
+  /// * [TranscriptionFailedException] if reading the input or writing the
+  ///   converted output fails.
+  static Future<PreparedRecognitionAudio> prepareForRecognition({
     required String inputPath,
-    required String outputPath,
   }) async {
-    final file = File(inputPath);
-    if (!file.existsSync()) {
+    if (!File(inputPath).existsSync()) {
       throw AudioFileNotFoundException(inputPath);
     }
-    final wav = _ParsedWav.parse(await file.readAsBytes());
-    if (wav.sampleRate == targetSampleRate &&
-        wav.channels == 1 &&
-        !wav.isFloat32 &&
-        !wav.wasExtensible) {
-      return inputPath;
+    final workDirectory = await Directory.systemTemp.createTemp(
+      'caption_generator',
+    );
+    final outputPath = '${workDirectory.path}/$_convertedFileName';
+    try {
+      final didConvert = await Isolate.run(
+        () => _runPreparation(inputPath, outputPath, _maxConvertedFrames),
+      );
+      if (!didConvert) {
+        await _deleteWorkDirQuietly(workDirectory);
+        return PreparedRecognitionAudio._(inputPath, null);
+      }
+      return PreparedRecognitionAudio._(outputPath, workDirectory);
+    } catch (_) {
+      await _deleteWorkDirQuietly(workDirectory);
+      rethrow;
     }
+  }
+
+  /// Reads, validates, and converts the WAV, writing the canonical output to
+  /// [outputPath]. Returns `true` when it wrote a converted file, `false` when
+  /// the input was already canonical and no output was written.
+  ///
+  /// Exposed for tests to drive the read/write-failure and size-limit paths
+  /// directly; production always reaches it through [Isolate.run].
+  @visibleForTesting
+  static Future<bool> runPreparation(
+    String inputPath,
+    String outputPath, {
+    int maxConvertedFrames = _maxConvertedFrames,
+  }) => _runPreparation(inputPath, outputPath, maxConvertedFrames);
+
+  static Future<bool> _runPreparation(
+    String inputPath,
+    String outputPath,
+    int maxConvertedFrames,
+  ) async {
+    debugConversionRanInCallerIsolate = true;
+    final Uint8List bytes;
+    try {
+      bytes = await File(inputPath).readAsBytes();
+    } on FileSystemException catch (error) {
+      throw TranscriptionFailedException(
+        'Could not read audio during preparation: ${error.message}',
+      );
+    }
+    final wav = _ParsedWav.parse(bytes);
+    if (wav.isCanonical) {
+      return false;
+    }
+    wav.assertConvertible(maxConvertedFrames);
     final mono = wav.decodeMonoSamples();
     final resampled = _resampleLinear(mono, wav.sampleRate, targetSampleRate);
-    await File(outputPath).writeAsBytes(
-      _encodePcm16Wav(resampled, targetSampleRate),
-    );
-    return outputPath;
+    final encoded = _encodePcm16Wav(resampled, targetSampleRate);
+    try {
+      await File(outputPath).writeAsBytes(encoded, flush: true);
+    } on FileSystemException catch (error) {
+      throw TranscriptionFailedException(
+        'Could not write converted audio during preparation: ${error.message}',
+      );
+    }
+    return true;
+  }
+
+  static Future<void> _deleteWorkDirQuietly(Directory? directory) async {
+    if (directory == null) return;
+    try {
+      if (directory.existsSync()) {
+        await directory.delete(recursive: true);
+      }
+      // A failing delete needs an OS-level race or permission flip that a
+      // unit test cannot portably produce, hence the coverage exclusion.
+      // coverage:ignore-start
+    } on FileSystemException {
+      // Intentionally ignored — a leftover temp dir is harmless.
+    }
+    // coverage:ignore-end
   }
 
   /// Linear-interpolation resampler; quality is sufficient for speech
@@ -211,6 +338,38 @@ class _ParsedWav {
   final Uint8List _bytes;
   final int _dataOffset;
   final int _dataLength;
+
+  /// Whether the audio is already exactly what the recognizer wants and can be
+  /// passed through untouched.
+  bool get isCanonical =>
+      sampleRate == WavPreprocessor.targetSampleRate &&
+      channels == 1 &&
+      !isFloat32 &&
+      !wasExtensible;
+
+  /// Rejects inputs whose conversion would allocate unbounded or amplified
+  /// buffers, before any output buffer is sized. Called only after
+  /// [isCanonical] is `false`, i.e. a conversion is actually required.
+  void assertConvertible(int maxConvertedFrames) {
+    if (sampleRate < WavPreprocessor._minInputSampleRate ||
+        sampleRate > WavPreprocessor._maxInputSampleRate) {
+      throw UnsupportedAudioFormatException(
+        'Unsupported sample rate ${sampleRate}Hz '
+        '(accepts ${WavPreprocessor._minInputSampleRate}'
+        '-${WavPreprocessor._maxInputSampleRate}Hz)',
+      );
+    }
+    final frameSize = (isFloat32 ? 4 : 2) * channels;
+    final frameCount = _dataLength ~/ frameSize;
+    final convertedFrames =
+        frameCount * WavPreprocessor.targetSampleRate ~/ sampleRate;
+    if (convertedFrames > maxConvertedFrames) {
+      throw UnsupportedAudioFormatException(
+        'Audio is too long to prepare for recognition: '
+        '$convertedFrames frames exceeds the $maxConvertedFrames-frame limit',
+      );
+    }
+  }
 
   /// Decodes the PCM payload to doubles in [-1, 1], averaging all channels
   /// down to mono.

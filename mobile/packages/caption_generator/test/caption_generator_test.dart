@@ -126,7 +126,9 @@ void main() {
 
         expect(result, equals(segments));
         final call = fakePlatform.calls.single;
-        expect(call.audioPath, equals('$audioPath.cc16k.wav'));
+        // The recognizer reads a converted temp WAV, not the original input.
+        expect(call.audioPath, isNot(equals(audioPath)));
+        expect(call.audioPath, endsWith('recognition_input.cc16k.wav'));
         expect(call.localeIdentifier, equals('en-US'));
         expect(call.audioFileExistedAtCall, isTrue);
         // The converted temp WAV is removed; the input is untouched.
@@ -153,7 +155,28 @@ void main() {
           generator.generateCaptions(audioPath: audioPath),
           throwsA(isA<TranscriptionFailedException>()),
         );
-        expect(File('$audioPath.cc16k.wav').existsSync(), isFalse);
+        final convertedPath = fakePlatform.calls.single.audioPath;
+        expect(File(convertedPath).existsSync(), isFalse);
+        expect(File(audioPath).existsSync(), isTrue);
+      });
+
+      test('gives concurrent calls on one file distinct temp WAVs', () async {
+        // Regression: a hard-coded sibling output path meant two overlapping
+        // conversions of the same source shared — and deleted — one temp file.
+        fakePlatform.response = segments;
+        final audioPath = writeStereoWav('shared.wav');
+
+        final results = await Future.wait([
+          generator.generateCaptions(audioPath: audioPath),
+          generator.generateCaptions(audioPath: audioPath),
+        ]);
+
+        expect(results, everyElement(equals(segments)));
+        final paths = fakePlatform.calls.map((c) => c.audioPath).toSet();
+        expect(paths, hasLength(2));
+        for (final path in paths) {
+          expect(File(path).existsSync(), isFalse);
+        }
         expect(File(audioPath).existsSync(), isTrue);
       });
     });
@@ -172,10 +195,11 @@ void main() {
 
         expect(result, equals(segments));
         final call = fakePlatform.calls.single;
+        // Apple platforms hand the file straight to the recognizer, with no
+        // WAV preprocessing and therefore no temp file.
         expect(call.audioPath, equals(audioPath));
         expect(call.localeIdentifier, equals('de-CH'));
         expect(call.preferOnDeviceRecognition, isFalse);
-        expect(File('$audioPath.cc16k.wav').existsSync(), isFalse);
       });
     }
   });
