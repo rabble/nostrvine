@@ -7,12 +7,14 @@ import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/screens/auth/reset_password.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
+import 'package:openvine/screens/explore/explore_screen.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/minor_account_review_parent_consent_screen.dart';
 import 'package:openvine/screens/minor_account_review_parent_contact_screen.dart';
 import 'package:openvine/screens/minor_account_review_screen.dart';
 import 'package:openvine/screens/minor_account_review_under13_screen.dart';
 import 'package:openvine/screens/minor_account_review_under13_support_screen.dart';
+import 'package:openvine/screens/profile_setup/profile_setup.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
 
 void main() {
@@ -180,11 +182,18 @@ void main() {
         isNull,
         reason: 'incomplete dynamic routes should not throw or normalize',
       );
+      expect(
+        parseKnownRoute(ProfileSetupScreen.setupPath),
+        isNull,
+        reason: 'setup profile must not normalize to edit profile',
+      );
     });
 
     test('leaves routes with unmodeled trailing segments to GoRouter', () {
       for (final route in [
+        ExploreScreen.pathForTab('popular'),
         '/people-lists/new/extra',
+        '/hashtag/dogs/3',
         '/video/$videoId/bogus',
         '/profile/$pubkey/0/extra',
       ]) {

@@ -279,6 +279,15 @@ void main() {
       });
 
       test(
+        '${ExploreScreen.pathForTab('popular')} parses to RouteType.explore',
+        () {
+          final context = parseRoute(ExploreScreen.pathForTab('popular'));
+          expect(context.type, RouteType.explore);
+          expect(context.videoIndex, isNull);
+        },
+      );
+
+      test(
         '${ExploreScreen.pathForIndex(3)} parses to RouteType.explore with index 3',
         () {
           final context = parseRoute(ExploreScreen.pathForIndex(3));

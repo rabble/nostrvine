@@ -19,8 +19,9 @@ bool shouldSkipRouteNormalization(String loc) {
     return true;
   }
 
-  // These route families are valid GoRouter paths, but parseRoute/buildRoute
-  // model only their parent routes and would rebuild them shorter.
+  // Skip GoRouter-owned flows before canonicalization. Some entries also fail
+  // closed in parseKnownRoute; keeping them here documents route families that
+  // must stay unnormalized if the modeled parser grows later.
   if (loc.startsWith(WelcomeScreen.path) ||
       loc.startsWith(NostrConnectScreen.path) ||
       loc == MinorAccountReviewScreen.path ||

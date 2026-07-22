@@ -192,7 +192,7 @@ bool _isKnownRouteShape(List<String> segments) {
                   segments[1] == 'message-requests')) ||
           (length == 2 && segments[1] == 'message-requests');
     case 'hashtag':
-      return length == 2 || length == 3;
+      return length == 2;
     case 'categories':
       return length == 2;
     case 'video-editor':
@@ -214,9 +214,7 @@ bool _isKnownRouteShape(List<String> segments) {
     case 'list':
       return length == 2 || length == 3;
     case 'people-lists':
-      return (length == 2 && segments[1] == 'new') ||
-          length == 2 ||
-          (length == 3 && segments[2] == 'add-people');
+      return length == 2 || (length == 3 && segments[2] == 'add-people');
     case 'nostr-settings':
       return length == 1 ||
           (length == 2 && segments[1] == Nip05SettingsScreen.subpath);
@@ -245,7 +243,6 @@ bool _isKnownRouteShape(List<String> segments) {
     case 'legal':
     case 'bluesky-settings':
     case 'edit-profile':
-    case 'setup-profile':
     case 'clips':
     case 'clips-no-sound':
     case 'clips-only':
@@ -265,7 +262,7 @@ bool _isKnownRouteShape(List<String> segments) {
 /// Parse a URL path into a structured RouteContext
 /// Normalizes negative indices to 0 and decodes URL-encoded parameters
 RouteContext parseRoute(String path) {
-  return parseKnownRoute(path) ??
+  return _parseRoute(path, knownOnly: false) ??
       const RouteContext(type: RouteType.home, videoIndex: 0);
 }
 
@@ -275,6 +272,10 @@ RouteContext parseRoute(String path) {
 /// incomplete paths return null so GoRouter can handle them instead of being
 /// rewritten to home.
 RouteContext? parseKnownRoute(String path) {
+  return _parseRoute(path, knownOnly: true);
+}
+
+RouteContext? _parseRoute(String path, {required bool knownOnly}) {
   final pathOnly = path.split('#').first.split('?').first;
   final segments = pathOnly.split('/').where((s) => s.isNotEmpty).toList();
 
@@ -282,7 +283,7 @@ RouteContext? parseKnownRoute(String path) {
     return const RouteContext(type: RouteType.home, videoIndex: 0);
   }
 
-  if (!_isKnownRouteShape(segments)) {
+  if (knownOnly && !_isKnownRouteShape(segments)) {
     return null;
   }
 
@@ -304,7 +305,7 @@ RouteContext? parseKnownRoute(String path) {
 
     case 'profile':
       if (segments.length < 2) {
-        return null;
+        return knownOnly ? null : const RouteContext(type: RouteType.home);
       }
       final npub = _safeDecode(segments[1]); // Decode URL encoding
       // Grid mode (no index) vs feed mode (with index)
@@ -361,7 +362,7 @@ RouteContext? parseKnownRoute(String path) {
 
     case 'hashtag':
       if (segments.length < 2) {
-        return null;
+        return knownOnly ? null : const RouteContext(type: RouteType.home);
       }
       final tag = _safeDecode(segments[1]); // Decode URL encoding
       final rawIndex = segments.length > 2 ? int.tryParse(segments[2]) : null;
@@ -374,7 +375,7 @@ RouteContext? parseKnownRoute(String path) {
 
     case 'categories':
       if (segments.length < 2) {
-        return null;
+        return knownOnly ? null : const RouteContext(type: RouteType.home);
       }
       final categoryName = _safeDecode(segments[1]);
       return RouteContext(
@@ -517,14 +518,14 @@ RouteContext? parseKnownRoute(String path) {
       return const RouteContext(type: RouteType.developerOptions);
     case 'following':
       if (segments.length < 2) {
-        return null;
+        return knownOnly ? null : const RouteContext(type: RouteType.home);
       }
       final followingPubkey = _safeDecode(segments[1]);
       return RouteContext(type: RouteType.following, npub: followingPubkey);
 
     case 'followers':
       if (segments.length < 2) {
-        return null;
+        return knownOnly ? null : const RouteContext(type: RouteType.home);
       }
       final followersPubkey = _safeDecode(segments[1]);
       return RouteContext(type: RouteType.followers, npub: followersPubkey);
@@ -533,7 +534,7 @@ RouteContext? parseKnownRoute(String path) {
       return const RouteContext(type: RouteType.videoFeed);
     case 'list':
       if (segments.length < 2) {
-        return null;
+        return knownOnly ? null : const RouteContext(type: RouteType.explore);
       }
       // Web-canonical deep-link shape /list/:pubkey/:listId — the author
       // key rides in [RouteContext.npub] so buildRoute can reconstruct the
@@ -556,7 +557,7 @@ RouteContext? parseKnownRoute(String path) {
         return const RouteContext(type: RouteType.peopleListCreate);
       }
       if (segments.length < 2) {
-        return null;
+        return knownOnly ? null : const RouteContext(type: RouteType.home);
       }
       final peopleListId = _safeDecode(segments[1]);
       if (segments.length > 2 && segments[2] == 'add-people') {
@@ -572,14 +573,14 @@ RouteContext? parseKnownRoute(String path) {
 
     case 'sound':
       if (segments.length < 2) {
-        return null;
+        return knownOnly ? null : const RouteContext(type: RouteType.home);
       }
       final soundId = _safeDecode(segments[1]);
       return RouteContext(type: RouteType.sound, soundId: soundId);
 
     case 'original-sound':
       if (segments.length < 2) {
-        return null;
+        return knownOnly ? null : const RouteContext(type: RouteType.home);
       }
       final originalSoundPubkey = _safeDecode(segments[1]);
       return RouteContext(
@@ -589,7 +590,7 @@ RouteContext? parseKnownRoute(String path) {
 
     case 'profile-view':
       if (segments.length < 2) {
-        return null;
+        return knownOnly ? null : const RouteContext(type: RouteType.home);
       }
       final profileViewNpub = _safeDecode(segments[1]);
       return RouteContext(type: RouteType.profileView, npub: profileViewNpub);
@@ -602,7 +603,7 @@ RouteContext? parseKnownRoute(String path) {
 
     case 'video':
       if (segments.length < 2) {
-        return null;
+        return knownOnly ? null : const RouteContext(type: RouteType.home);
       }
       final videoId = _safeDecode(segments[1]);
       return RouteContext(type: RouteType.videoDetail, videoId: videoId);
