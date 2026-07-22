@@ -12,6 +12,7 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
+import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/widgets/video_recorder/modes/capture/video_recorder_capture_actions.dart';
@@ -35,6 +36,7 @@ void main() {
 
     Widget buildWidget({
       VideoRecorderState recordingState = VideoRecorderState.idle,
+      VideoRecorderMode recorderMode = VideoRecorderMode.capture,
       DivineFlashMode flashMode = DivineFlashMode.auto,
       bool canSwitchCamera = true,
       bool hasFlash = true,
@@ -48,6 +50,7 @@ void main() {
       when(() => recorderBloc.state).thenReturn(
         VideoRecorderBlocState(
           recordingState: recordingState,
+          recorderMode: recorderMode,
           flashMode: flashMode,
           canSwitchCamera: canSwitchCamera,
           hasFlash: hasFlash,
@@ -327,6 +330,46 @@ void main() {
             ),
           ),
         );
+      });
+    });
+
+    group('grid lines button', () {
+      testWidgets('is hidden in capture mode', (tester) async {
+        await tester.pumpWidget(buildWidget());
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byTooltip(l10n.videoRecorderToggleGridLabel),
+          findsNothing,
+        );
+      });
+
+      testWidgets('is shown in stop-motion mode', (tester) async {
+        await tester.pumpWidget(
+          buildWidget(recorderMode: VideoRecorderMode.stopMotion),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byTooltip(l10n.videoRecorderToggleGridLabel),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('tap dispatches $VideoRecorderGridLinesToggled', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(recorderMode: VideoRecorderMode.stopMotion),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byTooltip(l10n.videoRecorderToggleGridLabel));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => recorderBloc.add(const VideoRecorderGridLinesToggled()),
+        ).called(1);
       });
     });
 

@@ -4,7 +4,9 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show AudioEvent;
+import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/models/video_editor/transition_geometry.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_geometry.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -1230,6 +1232,43 @@ void main() {
       expect(
         identical(rebaseAnchoredAudioForClipState(baseClips(), tracks), tracks),
         isTrue,
+      );
+    });
+  });
+
+  group(stopMotionInitialPixelsPerSecond, () {
+    List<StopMotionClipFrame> framesOf(int count, Duration hold) => [
+      for (var i = 0; i < count; i++)
+        StopMotionClipFrame(path: 'f$i.jpg', duration: hold),
+    ];
+
+    test('scales so the average still gets the target tile width', () {
+      // 100ms stills → pps = targetTileWidth / 0.1s.
+      final pps = stopMotionInitialPixelsPerSecond(
+        framesOf(10, const Duration(milliseconds: 100)),
+      );
+      expect(pps, TimelineConstants.stopMotionTargetTileWidth / 0.1);
+    });
+
+    test('clamps to the stop-motion zoom ceiling for tiny holds', () {
+      // 1ms stills would need an absurd zoom; the ceiling caps it.
+      final pps = stopMotionInitialPixelsPerSecond(
+        framesOf(5, const Duration(milliseconds: 1)),
+      );
+      expect(pps, TimelineConstants.stopMotionMaxPixelsPerSecond);
+    });
+
+    test('never zooms below the video default for long holds', () {
+      final pps = stopMotionInitialPixelsPerSecond(
+        framesOf(3, const Duration(seconds: 5)),
+      );
+      expect(pps, TimelineConstants.pixelsPerSecond);
+    });
+
+    test('falls back to the video default for an empty frame list', () {
+      expect(
+        stopMotionInitialPixelsPerSecond(const []),
+        TimelineConstants.pixelsPerSecond,
       );
     });
   });

@@ -89,7 +89,10 @@ void main() {
         expect(forwardedTaskId, equals('merge-1'));
         expect(forwardedPersistent, isTrue);
         expect(result, isNotNull);
-        expect(result!.video.file?.path, equals('/documents/merged.mp4'));
+        expect(
+          result!.requireVideo.file?.path,
+          equals('/documents/merged.mp4'),
+        );
         expect(result.duration, equals(const Duration(seconds: 5)));
         expect(result.trimStart, equals(Duration.zero));
         expect(result.trimEnd, equals(Duration.zero));

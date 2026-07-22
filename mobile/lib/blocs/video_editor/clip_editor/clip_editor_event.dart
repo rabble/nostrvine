@@ -87,6 +87,18 @@ class ClipEditorClipSelected extends ClipEditorEvent {
   List<Object?> get props => [index];
 }
 
+/// Selects the still at [frameIndex] in a frames-only stop-motion clip, opening
+/// the per-frame action bar. Enters editing mode on the (single) stop-motion
+/// clip. Ignored when the composition is not stop-motion.
+class ClipEditorFrameSelected extends ClipEditorEvent {
+  const ClipEditorFrameSelected(this.frameIndex);
+
+  final int frameIndex;
+
+  @override
+  List<Object?> get props => [frameIndex];
+}
+
 // === MULTI-SELECT ===
 
 /// Enter multi-select mode, optionally pre-selecting [initialClipId].
@@ -115,6 +127,43 @@ class ClipEditorMultiSelectClipToggled extends ClipEditorEvent {
 /// Exit multi-select mode and clear the selection.
 class ClipEditorMultiSelectCancelled extends ClipEditorEvent {
   const ClipEditorMultiSelectCancelled();
+}
+
+/// Enter frame multi-select mode on a stop-motion composition, optionally
+/// pre-selecting the still at [initialFrameIndex].
+///
+/// Exits single-frame editing mode. While active, tapping a still toggles its
+/// membership in the selection.
+class ClipEditorFrameMultiSelectStarted extends ClipEditorEvent {
+  const ClipEditorFrameMultiSelectStarted([this.initialFrameIndex]);
+
+  final int? initialFrameIndex;
+
+  @override
+  List<Object?> get props => [initialFrameIndex];
+}
+
+/// Toggle a still's membership in the frame multi-select selection.
+class ClipEditorFrameMultiSelectToggled extends ClipEditorEvent {
+  const ClipEditorFrameMultiSelectToggled(this.frameIndex);
+
+  final int frameIndex;
+
+  @override
+  List<Object?> get props => [frameIndex];
+}
+
+/// Replace the frame multi-select selection wholesale.
+///
+/// Dispatched after a block move so the selection follows the stills to their
+/// new contiguous position.
+class ClipEditorFrameMultiSelectionSet extends ClipEditorEvent {
+  const ClipEditorFrameMultiSelectionSet(this.frameIndexes);
+
+  final Set<int> frameIndexes;
+
+  @override
+  List<Object?> get props => [frameIndexes];
 }
 
 /// Remove every clip currently in the multi-select selection.

@@ -26,6 +26,8 @@ import 'package:openvine/extensions/tune_adjustment_matrix_extensions.dart';
 import 'package:openvine/extensions/video_editor_extensions.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:openvine/models/video_editor/transition_geometry.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
@@ -33,6 +35,7 @@ import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/services/haptic_service.dart';
 import 'package:openvine/services/video_editor/clip_speed_render_service.dart';
+import 'package:openvine/services/video_editor/stop_motion_audio_preview.dart';
 import 'package:openvine/services/video_editor/transition_seam_render_service.dart';
 import 'package:openvine/utils/await_push_transition.dart';
 import 'package:openvine/utils/mounted_post_frame.dart';
@@ -48,6 +51,7 @@ import 'package:openvine/widgets/video_editor/tune_editor/tune_set_timeline_ops.
 import 'package:pro_image_editor/pro_image_editor.dart'
     hide AudioTrack, VideoClip;
 import 'package:pro_video_editor/pro_video_editor.dart' show ClipTransition;
+import 'package:sound_service/sound_service.dart' show AudioSourceConfig;
 import 'package:unified_logger/unified_logger.dart';
 
 /// Direction an undo/redo navigation moved, used to bias which way
@@ -319,6 +323,35 @@ class VideoEditorCanvas extends StatelessWidget {
     );
   }
 
+  /// Compares two clip lists by their editable properties, deciding whether a
+  /// history snapshot needs mirroring back into the app clip state.
+  @visibleForTesting
+  static bool clipsChanged(
+    List<DivineVideoClip> current,
+    List<DivineVideoClip> next,
+  ) {
+    if (current.length != next.length) return true;
+    for (var i = 0; i < current.length; i++) {
+      final a = current[i];
+      final b = next[i];
+      if (a.id != b.id ||
+          a.video != b.video ||
+          a.trimStart != b.trimStart ||
+          a.trimEnd != b.trimEnd ||
+          a.volume != b.volume ||
+          a.playbackSpeed != b.playbackSpeed ||
+          a.transition != b.transition ||
+          // Frame edits (hold changes, delete, reorder) are the whole edit
+          // surface of a stop-motion clip — without this the clip manager
+          // (publish render, autosave, metadata preview) and undo/redo never
+          // see them.
+          !listEquals(a.stopMotionFrames, b.stopMotionFrames)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isSubEditorOpen = context.select(
@@ -369,7 +402,7 @@ class _VideoEditor extends ConsumerStatefulWidget {
 }
 
 class _VideoEditorState extends ConsumerState<_VideoEditor>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final ProVideoController _proVideoController;
   final _isPlayerReadyNotifier = ValueNotifier<bool>(false);
   DivineVideoPlayerController? _videoPlayer;
@@ -418,6 +451,28 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
 
   /// Composite (player-space) duration, kept fresh to clamp interpolation.
   Duration _lastPlayerDuration = Duration.zero;
+
+  /// Drives playback of a frames-only stop-motion clip, which has no native
+  /// player (`_videoPlayer` stays null). Advances the bloc's currentPosition —
+  /// and, through it, the timeline playhead — while playing, so the same
+  /// play/pause + scrub controls that drive video also drive stop-motion.
+  Ticker? _stopMotionTicker;
+
+  /// Position the stop-motion clock resumes from; re-anchored on play / seek.
+  Duration _stopMotionAnchor = Duration.zero;
+
+  /// Wall-clock elapsed since [_stopMotionAnchor] was captured.
+  final _stopMotionStopwatch = Stopwatch();
+
+  /// Last position the stop-motion clock pushed to the bloc, used to throttle
+  /// emits to [VideoEditorConstants.stopMotionPlayheadEmitInterval].
+  Duration _lastStopMotionEmit = Duration.zero;
+
+  /// Plays timeline sounds against the stop-motion clock. A frames-only
+  /// composition has no native video player, so `setAudioTracks` (the normal
+  /// audio path) has nothing to attach to — this engine follows
+  /// [_stopMotionTicker] instead. Created lazily by [_syncStopMotionAudio].
+  StopMotionAudioPreview? _stopMotionAudio;
 
   /// Last position dispatched to BLoC — avoids flooding with duplicates.
   Duration _lastReportedPosition = Duration.zero;
@@ -516,6 +571,14 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     if (_clipPaths.isNotEmpty) {
       _initializePlayer(_clipPaths);
     }
+
+    // A stop-motion composition never runs _initializePlayer (no mp4), so its
+    // audio engine needs its own initial sync for sounds restored from a
+    // draft. Post-frame: _isStopMotionComposition reads providers/blocs.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_isStopMotionComposition) return;
+      unawaited(_syncAudioTracks());
+    });
   }
 
   /// Renders and caches transition seams so the preview can splice them in
@@ -548,6 +611,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
       category: LogCategory.video,
     );
     _playheadTicker?.dispose();
+    _stopMotionTicker?.dispose();
+    _stopMotionAudio?.dispose();
+    _stopMotionAudio = null;
     _videoPlayerSubscription?.cancel();
     _videoPlayer?.dispose();
     // Null it so a release/init still awaiting bails instead of double-disposing
@@ -786,12 +852,16 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
   List<String> get _clipPaths => ref
       .read(clipManagerProvider)
       .clips
-      .map((c) => c.video.file?.path)
+      .map((c) => c.video?.file?.path)
       .whereType<String>()
       .toList();
 
   /// Handles playback restart requests from BLoC.
   void _onPlaybackRestartRequested() {
+    if (_isStopMotionComposition) {
+      _playStopMotion(from: Duration.zero);
+      return;
+    }
     if (!_isPlayerReadyNotifier.value || !_isPlayerInitialized) return;
 
     // Stop the interpolator on the user action so it can't advance the play
@@ -809,6 +879,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
 
   /// Handles playback toggle requests from BLoC.
   void _onPlaybackToggleRequested() {
+    if (_isStopMotionComposition) {
+      _toggleStopMotionPlayback();
+      return;
+    }
     if (!_isPlayerReadyNotifier.value || !_isPlayerInitialized) return;
 
     final isPlaying = _videoPlayer?.state.isPlaying ?? false;
@@ -828,6 +902,16 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
 
   /// Handles external pause requests from BLoC.
   void _onExternalPauseChanged({required bool isPaused}) {
+    if (_isStopMotionComposition) {
+      if (isPaused) {
+        _pauseStopMotion();
+      } else {
+        _playStopMotion(
+          from: context.read<VideoEditorMainBloc>().state.currentPosition,
+        );
+      }
+      return;
+    }
     if (!_isPlayerReadyNotifier.value || !_isPlayerInitialized) return;
 
     if (isPaused) {
@@ -841,6 +925,141 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
       // delayed-reset-report window.
       _videoPlayer?.play();
     }
+  }
+
+  // -- Frames-only stop-motion playhead --------------------------------------
+
+  /// Whether the current composition is a frames-only stop-motion clip. Such a
+  /// clip has no mp4, so [_clipPaths] is empty and the native [_videoPlayer] is
+  /// never created — playback is driven by [_stopMotionTicker] against the bloc
+  /// instead.
+  bool get _isStopMotionComposition =>
+      isStopMotionComposition(ref.read(clipManagerProvider).clips);
+
+  /// Wall-clock length of the stop-motion loop (sum of clip playback
+  /// durations), read from the [ClipEditorBloc] the timeline also scales to.
+  Duration get _stopMotionTotalDuration =>
+      context.read<ClipEditorBloc>().state.totalDuration;
+
+  void _toggleStopMotionPlayback() {
+    if (context.read<VideoEditorMainBloc>().state.isPlaying) {
+      _pauseStopMotion();
+    } else {
+      _playStopMotion(
+        from: context.read<VideoEditorMainBloc>().state.currentPosition,
+      );
+    }
+  }
+
+  void _playStopMotion({required Duration from}) {
+    final total = _stopMotionTotalDuration;
+    if (total <= Duration.zero) return;
+
+    _stopMotionAnchor = from >= total ? Duration.zero : from;
+    _lastStopMotionEmit = _stopMotionAnchor;
+    _stopMotionStopwatch
+      ..reset()
+      ..start();
+    // Ticker.start() asserts the ticker is idle; re-anchoring while already
+    // playing (e.g. external unpause) must not double-start it.
+    final ticker = _stopMotionTicker ??= createTicker(_onStopMotionTick);
+    if (!ticker.isActive) ticker.start();
+
+    // Timed layers follow the overlay play time, not the bloc position.
+    _proVideoController.setPlayTime(_stopMotionAnchor);
+    final audio = _stopMotionAudio;
+    if (audio != null) {
+      // Re-anchoring is a clock set, not a tick: a resume that lands mid-window
+      // must re-seek even when it re-anchors only slightly ahead.
+      unawaited(
+        audio.syncTo(_stopMotionAnchor, isPlaying: true, isSeek: true),
+      );
+    }
+
+    context.read<VideoEditorMainBloc>()
+      ..add(VideoEditorPositionChanged(_stopMotionAnchor))
+      ..add(const VideoEditorPlaybackChanged(isPlaying: true));
+  }
+
+  void _pauseStopMotion() {
+    _stopMotionStopwatch.stop();
+    if (_stopMotionTicker?.isActive ?? false) _stopMotionTicker!.stop();
+    final audio = _stopMotionAudio;
+    if (audio != null) unawaited(audio.pauseAll());
+    if (!context.read<VideoEditorMainBloc>().state.isPlaying) return;
+    context.read<VideoEditorMainBloc>().add(
+      const VideoEditorPlaybackChanged(isPlaying: false),
+    );
+  }
+
+  /// Jumps the stop-motion playhead to [position] (timeline scrubbing),
+  /// re-anchoring the clock so playback continues from there if it was running.
+  void _seekStopMotion(Duration position) {
+    final total = _stopMotionTotalDuration;
+    final clamped = total <= Duration.zero
+        ? Duration.zero
+        : Duration(
+            microseconds: position.inMicroseconds.clamp(
+              0,
+              total.inMicroseconds,
+            ),
+          );
+
+    _stopMotionAnchor = clamped;
+    _lastStopMotionEmit = clamped;
+    if (_stopMotionStopwatch.isRunning) {
+      _stopMotionStopwatch
+        ..reset()
+        ..start();
+    }
+    _proVideoController.setPlayTime(clamped);
+    final audio = _stopMotionAudio;
+    if (audio != null) {
+      unawaited(
+        audio.syncTo(
+          clamped,
+          isPlaying: _stopMotionStopwatch.isRunning,
+          isSeek: true,
+        ),
+      );
+    }
+    context.read<VideoEditorMainBloc>().add(
+      VideoEditorPositionChanged(clamped),
+    );
+  }
+
+  void _onStopMotionTick(Duration _) {
+    if (!mounted) return;
+    final total = _stopMotionTotalDuration;
+    if (total <= Duration.zero) {
+      _pauseStopMotion();
+      return;
+    }
+
+    final looped = stopMotionLoopPosition(
+      anchor: _stopMotionAnchor,
+      elapsed: _stopMotionStopwatch.elapsed,
+      total: total,
+    );
+
+    // Frame-rate consumers first: timed layers follow the overlay play time
+    // (the normal path drives it per frame from the playhead interpolator),
+    // and the audio engine needs the wrap/window transitions the throttled
+    // bloc emit below would swallow.
+    _proVideoController.setPlayTime(looped);
+    final audio = _stopMotionAudio;
+    if (audio != null) unawaited(audio.syncTo(looped, isPlaying: true));
+
+    // Throttle emits: the timeline animates between updates, so a frame-rate
+    // stream would only flood the bloc. A wrap back to the start (looped <
+    // last) always passes so the loop reset isn't swallowed.
+    final advanced = looped - _lastStopMotionEmit;
+    if (advanced >= Duration.zero &&
+        advanced < VideoEditorConstants.stopMotionPlayheadEmitInterval) {
+      return;
+    }
+    _lastStopMotionEmit = looped;
+    context.read<VideoEditorMainBloc>().add(VideoEditorPositionChanged(looped));
   }
 
   /// Coalesces volume-history writes from clip and audio revision changes.
@@ -900,6 +1119,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     Duration position, {
     Duration? playTimePosition,
   }) async {
+    if (_isStopMotionComposition) {
+      _seekStopMotion(position);
+      return;
+    }
     if (!_isPlayerReadyNotifier.value || !_isPlayerInitialized) return;
 
     // A scrub owns the play time now; stop the playback interpolator so it
@@ -1100,10 +1323,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
                   return Stack(
                     fit: StackFit.passthrough,
                     children: [
-                      VideoEditorPlayer(
+                      _ClipPreview(
+                        clip: clip,
                         controller: _videoPlayer,
-                        targetAspectRatio: clip.targetAspectRatio,
-                        originalAspectRatio: clip.originalAspectRatio,
                         bodySize: widget.bodySize,
                         renderSize: widget.renderSize,
                       ),
@@ -1253,7 +1475,72 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
   /// Reads timeline positions (`startTime` / `endTime`) from the BLoC
   /// state and combines them with the source [AudioEvent] from the
   /// Riverpod provider (URL, asset path, start offset).
+  /// Schedules the timeline sounds on the stop-motion audio engine, mirroring
+  /// the native `setAudioTracks` mapping: each sound's window comes from its
+  /// timeline item, and the source is clipped to the sound's own start offset
+  /// plus the window length.
+  Future<void> _syncStopMotionAudio() async {
+    final overlayState = context.read<TimelineOverlayBloc>().state;
+    final audioById = {for (final e in overlayState.audioTracks) e.id: e};
+
+    final tracks = <StopMotionAudioPreviewTrack>[];
+    for (final item in overlayState.items) {
+      if (item.type != TimelineOverlayType.sound) continue;
+      final sound = audioById[item.id];
+      if (sound == null) continue;
+
+      final trackStart = sound.startOffset;
+      final trackEnd = trackStart + (item.endTime - item.startTime);
+      final AudioSourceConfig source;
+      if (sound.isBundled && sound.assetPath != null) {
+        source = AudioSourceConfig.asset(
+          sound.assetPath!,
+          start: trackStart,
+          end: trackEnd,
+        );
+      } else if (sound.isLocalImport && sound.localFilePath != null) {
+        source = AudioSourceConfig.file(
+          sound.localFilePath!,
+          start: trackStart,
+          end: trackEnd,
+        );
+      } else if (sound.url != null) {
+        source = AudioSourceConfig.network(
+          sound.url!,
+          start: trackStart,
+          end: trackEnd,
+        );
+      } else {
+        continue;
+      }
+
+      tracks.add(
+        StopMotionAudioPreviewTrack(
+          id: item.id,
+          source: source,
+          volume: sound.volume,
+          windowStart: item.startTime,
+          windowEnd: item.endTime,
+        ),
+      );
+    }
+
+    final preview = _stopMotionAudio ??= StopMotionAudioPreview();
+    await preview.setTracks(tracks);
+    Log.info(
+      '🎵 Stop-motion audio synced: ${tracks.length} track(s)',
+      name: 'VideoEditorCanvas',
+      category: LogCategory.video,
+    );
+  }
+
   Future<void> _syncAudioTracks() async {
+    // Frames-only composition: no native player exists to carry the tracks —
+    // schedule them on the stop-motion audio engine instead.
+    if (_isStopMotionComposition) {
+      await _syncStopMotionAudio();
+      return;
+    }
     if (!_isPlayerInitialized) return;
 
     final overlayState = context.read<TimelineOverlayBloc>().state;
@@ -1474,35 +1761,16 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
       // and autosave triggers. DivineVideoClip uses reference equality, so
       // we compare the editable properties explicitly.
       final currentClips = ref.read(clipManagerProvider).clips;
-      if (_clipsChanged(currentClips, clips)) {
+      if (VideoEditorCanvas.clipsChanged(currentClips, clips)) {
         ref.read(clipManagerProvider.notifier).replaceClips(clips);
       }
-      if (_clipsChanged(context.read<ClipEditorBloc>().state.clips, clips)) {
+      if (VideoEditorCanvas.clipsChanged(
+        context.read<ClipEditorBloc>().state.clips,
+        clips,
+      )) {
         context.read<ClipEditorBloc>().add(ClipEditorInitialized(clips));
       }
     });
-  }
-
-  /// Compares two clip lists by their editable properties.
-  bool _clipsChanged(
-    List<DivineVideoClip> current,
-    List<DivineVideoClip> next,
-  ) {
-    if (current.length != next.length) return true;
-    for (var i = 0; i < current.length; i++) {
-      final a = current[i];
-      final b = next[i];
-      if (a.id != b.id ||
-          a.video != b.video ||
-          a.trimStart != b.trimStart ||
-          a.trimEnd != b.trimEnd ||
-          a.volume != b.volume ||
-          a.playbackSpeed != b.playbackSpeed ||
-          a.transition != b.transition) {
-        return true;
-      }
-    }
-    return false;
   }
 
   /// Syncs the draw capabilities from the paint editor to the bloc.
@@ -1607,11 +1875,20 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
       name: 'VideoEditorCanvas',
       category: LogCategory.video,
     );
-    final wasPlaying = _videoPlayer?.state.isPlaying ?? false;
+    // A stop-motion composition has no native player — its playback is the
+    // widget-driven ticker, whose playing state lives in the bloc. Read before
+    // _pauseStopMotion() below clears it.
+    final wasPlaying = _isStopMotionComposition
+        ? context.read<VideoEditorMainBloc>().state.isPlaying
+        : (_videoPlayer?.state.isPlaying ?? false);
     final resumePosition = context
         .read<VideoEditorMainBloc>()
         .state
         .currentPosition;
+    // The stop-motion clock (and its audio engine) is widget-driven, not part
+    // of the native player teardown below — without this the sounds keep
+    // playing under the metadata screen.
+    if (_isStopMotionComposition) _pauseStopMotion();
     ref.read(videoEditorProvider.notifier).setProcessing(true);
 
     // Delegate the cover-transition wait to the screen: its context sits above
@@ -1641,7 +1918,15 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     } finally {
       _isMetadataRouteActive = false;
     }
-    if (!mounted || _clipPaths.isEmpty) return;
+    if (!mounted) return;
+    // Stop-motion has no player to rebuild (_clipPaths is empty, which the
+    // guard below would take as "nothing to resume"); restarting its ticker is
+    // the whole resume.
+    if (_isStopMotionComposition) {
+      if (wasPlaying) _playStopMotion(from: resumePosition);
+      return;
+    }
+    if (_clipPaths.isEmpty) return;
     await ref.read(videoEditorProvider.notifier).waitForRenderIdle();
     if (!mounted || _clipPaths.isEmpty) return;
     await _initializePlayer(_clipPaths, startPosition: resumePosition);
@@ -1675,8 +1960,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     // rebuild even when the paths haven't actually changed.
     ref.listen<List<String>>(
       clipManagerProvider.select(
-        (s) =>
-            s.clips.map((c) => c.video.file?.path).whereType<String>().toList(),
+        (s) => s.clips
+            .map((c) => c.video?.file?.path)
+            .whereType<String>()
+            .toList(),
       ),
       (previous, clipPaths) {
         if (listEquals(previous, clipPaths)) return;
@@ -1850,7 +2137,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
             final clip = state.clips.firstWhere(
               (c) => c.id == state.trimmingClipId,
             );
-            final path = clip.video.file?.path;
+            final path = clip.video?.file?.path;
             if (path == null) return;
             // Composition swap: invalidate in-flight seeks and release _isSeeking.
             _seekEpoch++;
@@ -2891,6 +3178,76 @@ class _RenderHitTestExpander extends RenderProxyBox {
   }
 }
 
+/// The preview surface for the current clip: a [DivineVideoPlayer] for a normal
+/// clip, or a controlled [StopMotionPlayer] for a frames-only stop-motion clip.
+///
+/// The stop-motion branch subscribes to the editor's `currentPosition` so the
+/// shown frame follows play/pause and timeline scrubbing. That subscription is
+/// scoped here — a normal clip never rebuilds on position ticks.
+class _ClipPreview extends StatelessWidget {
+  const _ClipPreview({
+    required this.clip,
+    required this.controller,
+    required this.bodySize,
+    required this.renderSize,
+  });
+
+  final DivineVideoClip clip;
+  final DivineVideoPlayerController? controller;
+  final Size bodySize;
+  final Size renderSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final clipManagerFrames = clip.stopMotionFrames;
+    if (clipManagerFrames == null) {
+      return VideoEditorPlayer(
+        controller: controller,
+        targetAspectRatio: clip.targetAspectRatio,
+        originalAspectRatio: clip.originalAspectRatio,
+        bodySize: bodySize,
+        renderSize: renderSize,
+      );
+    }
+
+    // Read the live frame list from the clip editor, not the clip-manager copy:
+    // frame edits (delete / reorder / frames-per-image) land in ClipEditorBloc
+    // immediately, whereas the clip-manager copy syncs one post-frame later
+    // through the history path.
+    return BlocSelector<
+      ClipEditorBloc,
+      ClipEditorState,
+      List<StopMotionClipFrame>?
+    >(
+      selector: (state) {
+        for (final c in state.clips) {
+          if (c.id == clip.id) return c.stopMotionFrames;
+        }
+        return null;
+      },
+      builder: (context, liveFrames) {
+        final frames = liveFrames ?? clipManagerFrames;
+        return BlocSelector<
+          VideoEditorMainBloc,
+          VideoEditorMainState,
+          Duration
+        >(
+          selector: (state) => state.currentPosition,
+          builder: (context, position) => VideoEditorPlayer(
+            controller: controller,
+            targetAspectRatio: clip.targetAspectRatio,
+            originalAspectRatio: clip.originalAspectRatio,
+            bodySize: bodySize,
+            renderSize: renderSize,
+            stopMotionFrames: frames,
+            stopMotionPosition: position,
+          ),
+        );
+      },
+    );
+  }
+}
+
 /// Interpolates a composite playback position forward from [anchor] by the
 /// wall-clock [elapsed] since the anchor was captured, scaled by playback
 /// [speed], and clamped to `[Duration.zero, maxDuration]`.
@@ -2909,4 +3266,22 @@ Duration interpolatePlayheadPosition({
   if (raw < Duration.zero) return Duration.zero;
   if (raw > maxDuration) return maxDuration;
   return raw;
+}
+
+/// Advances the frames-only stop-motion playhead forward from [anchor] by the
+/// wall-clock [elapsed], wrapping around [total] so playback loops seamlessly.
+///
+/// A frames-only stop-motion clip has no native player to report position, so
+/// this drives the editor timeline directly (see
+/// `_VideoEditorState._onStopMotionTick`). Returns [Duration.zero] when [total]
+/// is non-positive.
+@visibleForTesting
+Duration stopMotionLoopPosition({
+  required Duration anchor,
+  required Duration elapsed,
+  required Duration total,
+}) {
+  if (total <= Duration.zero) return Duration.zero;
+  final raw = (anchor + elapsed).inMicroseconds;
+  return Duration(microseconds: raw % total.inMicroseconds);
 }

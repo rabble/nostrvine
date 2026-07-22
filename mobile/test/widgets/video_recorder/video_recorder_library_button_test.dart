@@ -1,10 +1,15 @@
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
+import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/services/clip_library_service.dart';
@@ -13,21 +18,36 @@ import 'package:pro_video_editor/core/models/video/editor_video_model.dart';
 
 class _MockClipLibraryService extends Mock implements ClipLibraryService {}
 
+class _MockVideoRecorderBloc
+    extends MockBloc<VideoRecorderEvent, VideoRecorderBlocState>
+    implements VideoRecorderBloc {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group(VideoRecorderLibraryButton, () {
     late _MockClipLibraryService mockClipLibraryService;
+    late _MockVideoRecorderBloc recorderBloc;
 
     setUp(() {
       mockClipLibraryService = _MockClipLibraryService();
+      recorderBloc = _MockVideoRecorderBloc();
 
       when(
         () => mockClipLibraryService.getAllClips(),
       ).thenAnswer((_) async => []);
     });
 
-    Widget buildWidget({List<DivineVideoClip>? clips}) {
+    Widget buildWidget({
+      List<DivineVideoClip>? clips,
+      VideoRecorderBlocState recorderState = const VideoRecorderBlocState(),
+      bool interactive = true,
+    }) {
+      whenListen(
+        recorderBloc,
+        const Stream<VideoRecorderBlocState>.empty(),
+        initialState: recorderState,
+      );
       return ProviderScope(
         overrides: [
           clipManagerProvider.overrideWith(
@@ -35,10 +55,15 @@ void main() {
           ),
           clipLibraryServiceProvider.overrideWithValue(mockClipLibraryService),
         ],
-        child: const MaterialApp(
+        child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: VideoRecorderLibraryButton()),
+          home: Scaffold(
+            body: BlocProvider<VideoRecorderBloc>.value(
+              value: recorderBloc,
+              child: VideoRecorderLibraryButton(interactive: interactive),
+            ),
+          ),
         ),
       );
     }
@@ -341,6 +366,196 @@ void main() {
         await tester.pumpAndSettle();
 
         verify(() => mockClipLibraryService.getAllClips()).called(1);
+      });
+    });
+
+    group('stop-motion capture', () {
+      const stopMotionState = VideoRecorderBlocState(
+        recorderMode: VideoRecorderMode.stopMotion,
+        stopMotionFrames: ['/frames/a.jpg', '/frames/b.jpg', '/frames/c.jpg'],
+      );
+
+      testWidgets('badge shows the captured-frame count, not clip count', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildWidget(recorderState: stopMotionState));
+        await tester.pump();
+
+        expect(find.text('3'), findsOneWidget);
+      });
+
+      testWidgets('thumbnail is the last captured frame', (tester) async {
+        await tester.pumpWidget(buildWidget(recorderState: stopMotionState));
+        await tester.pump();
+
+        expect(find.byKey(const ValueKey('/frames/c.jpg')), findsOneWidget);
+      });
+
+      testWidgets('semantic label counts captured frames, not clips', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildWidget(recorderState: stopMotionState));
+        await tester.pump();
+
+        final semantics = tester.widget<Semantics>(
+          find
+              .descendant(
+                of: find.byType(VideoRecorderLibraryButton),
+                matching: find.byType(Semantics),
+              )
+              .first,
+        );
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          semantics.properties.label,
+          equals(l10n.videoRecorderLibraryOpenStopMotionLabel(3)),
+        );
+        // The stills must not be announced as clips.
+        expect(
+          semantics.properties.label,
+          isNot(equals(l10n.videoRecorderLibraryOpenLabel(3))),
+        );
+      });
+
+      testWidgets('no badge before the first frame is captured', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(
+            recorderState: const VideoRecorderBlocState(
+              recorderMode: VideoRecorderMode.stopMotion,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('0'), findsNothing);
+      });
+    });
+
+    group('library fallback per mode', () {
+      final videoClip = DivineVideoClip(
+        id: 'lib-video',
+        video: EditorVideo.file('/lib/video.mp4'),
+        duration: const Duration(seconds: 5),
+        recordedAt: DateTime(2024),
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
+        thumbnailPath: '/lib/video_thumb.jpg',
+      );
+      final stopMotionClip = DivineVideoClip(
+        id: 'lib-sm',
+        stopMotionFrames: const [
+          StopMotionClipFrame(
+            path: '/lib/sm_thumb.jpg',
+            duration: Duration(milliseconds: 42),
+          ),
+        ],
+        duration: const Duration(milliseconds: 42),
+        recordedAt: DateTime(2024),
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
+        thumbnailPath: '/lib/sm_thumb.jpg',
+      );
+
+      testWidgets(
+        'stop-motion mode previews the newest stop-motion set, not the '
+        'newest video clip',
+        (tester) async {
+          when(
+            () => mockClipLibraryService.getAllClips(),
+          ).thenAnswer((_) async => [videoClip, stopMotionClip]);
+
+          await tester.pumpWidget(
+            buildWidget(
+              recorderState: const VideoRecorderBlocState(
+                recorderMode: VideoRecorderMode.stopMotion,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.byKey(const ValueKey('/lib/sm_thumb.jpg')), findsOne);
+          expect(
+            find.byKey(const ValueKey('/lib/video_thumb.jpg')),
+            findsNothing,
+          );
+        },
+      );
+
+      testWidgets(
+        'capture mode previews the newest video clip, not the newest '
+        'stop-motion set',
+        (tester) async {
+          when(
+            () => mockClipLibraryService.getAllClips(),
+          ).thenAnswer((_) async => [stopMotionClip, videoClip]);
+
+          await tester.pumpWidget(buildWidget());
+          await tester.pumpAndSettle();
+
+          expect(find.byKey(const ValueKey('/lib/video_thumb.jpg')), findsOne);
+          expect(find.byKey(const ValueKey('/lib/sm_thumb.jpg')), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'stop-motion mode stays empty when the library only holds video '
+        'clips',
+        (tester) async {
+          when(
+            () => mockClipLibraryService.getAllClips(),
+          ).thenAnswer((_) async => [videoClip]);
+
+          await tester.pumpWidget(
+            buildWidget(
+              recorderState: const VideoRecorderBlocState(
+                recorderMode: VideoRecorderMode.stopMotion,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.byType(Image), findsNothing);
+          final detector = tester.widget<GestureDetector>(
+            find.byType(GestureDetector),
+          );
+          expect(detector.onTap, isNull);
+        },
+      );
+    });
+
+    group('non-interactive (editor-hosted recorder)', () {
+      testWidgets('still shows the capture count but cannot be pressed', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(
+            interactive: false,
+            recorderState: const VideoRecorderBlocState(
+              recorderMode: VideoRecorderMode.stopMotion,
+              stopMotionFrames: ['/frames/a.jpg', '/frames/b.jpg'],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('2'), findsOneWidget);
+        final detector = tester.widget<GestureDetector>(
+          find.byType(GestureDetector),
+        );
+        expect(detector.onTap, isNull);
+
+        final semantics = tester.widget<Semantics>(
+          find
+              .descendant(
+                of: find.byType(VideoRecorderLibraryButton),
+                matching: find.byType(Semantics),
+              )
+              .first,
+        );
+        expect(semantics.properties.enabled, isFalse);
+        expect(semantics.properties.button, isFalse);
       });
     });
   });

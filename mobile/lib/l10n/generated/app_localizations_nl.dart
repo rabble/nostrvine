@@ -8068,6 +8068,13 @@ class AppLocalizationsNl extends AppLocalizations {
       'Voeg audio toe vóór de opname';
 
   @override
+  String get videoRecorderStopMotionAssembling => 'Je video wordt gemaakt…';
+
+  @override
+  String get videoRecorderStopMotionAssembleFailed =>
+      'Kan de video niet maken. Probeer het opnieuw.';
+
+  @override
   String get videoRecorderToggleFlashLabel => 'Flitser in-/uitschakelen';
 
   @override
@@ -8112,6 +8119,18 @@ class AppLocalizationsNl extends AppLocalizations {
       locale: localeName,
       other: 'Clipbibliotheek openen, $clipCount clips',
       one: 'Clipbibliotheek openen, 1 clip',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String videoRecorderLibraryOpenStopMotionLabel(int frameCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      frameCount,
+      locale: localeName,
+      other: 'Stop-motion-bibliotheek openen, $frameCount frames',
+      one: 'Stop-motion-bibliotheek openen, 1 frame',
+      zero: 'Stop-motion-bibliotheek openen',
     );
     return '$_temp0';
   }
@@ -8382,6 +8401,44 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get videoEditorDeleteSelectedItemSemanticLabel =>
       'Geselecteerd item verwijderen';
+
+  @override
+  String get videoEditorStopMotionFramesPerImageLabel => 'Frames per beeld';
+
+  @override
+  String videoEditorStopMotionFramesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count frames',
+      one: '1 frame',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorStopMotionFramesPerImageButtonLabel => 'Frames';
+
+  @override
+  String get libraryStopMotionClipLabel => 'Stop-motion-clip';
+
+  @override
+  String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
+    return '$count frames per beeld';
+  }
+
+  @override
+  String get videoEditorStopMotionIncreaseFramesPerImageSemanticLabel =>
+      'Frames per beeld verhogen';
+
+  @override
+  String get videoEditorStopMotionDecreaseFramesPerImageSemanticLabel =>
+      'Frames per beeld verlagen';
+
+  @override
+  String videoEditorStopMotionFrameSemanticLabel(int position, int total) {
+    return 'Stop-motion-beeld $position van $total';
+  }
 
   @override
   String get videoEditorEditLabel => 'Bewerken';
@@ -8787,6 +8844,19 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get videoEditorDeleteSelectedClipsSemanticLabel =>
       'Geselecteerde clips verwijderen';
+
+  @override
+  String get videoEditorDeleteSelectedFramesSemanticLabel =>
+      'Geselecteerde frames verwijderen';
+
+  @override
+  String get videoEditorReverseSelectedFramesSemanticLabel =>
+      'Geselecteerde frames omkeren';
+
+  @override
+  String videoEditorStopMotionTooShortSnackbar(int seconds) {
+    return 'Je video moet minstens ${seconds}s duren – leg nog een paar frames vast.';
+  }
 
   @override
   String get videoEditorMergeProgressLabel =>

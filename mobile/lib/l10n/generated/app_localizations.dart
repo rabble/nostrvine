@@ -13896,6 +13896,18 @@ abstract class AppLocalizations {
   /// **'Add audio before recording'**
   String get videoRecorderLipSyncAddAudioFirst;
 
+  /// Loading label shown while captured stop-motion frames are being encoded into one video.
+  ///
+  /// In en, this message translates to:
+  /// **'Creating your video…'**
+  String get videoRecorderStopMotionAssembling;
+
+  /// Snackbar shown when assembling captured stop-motion frames into a video failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t create the video. Try again.'**
+  String get videoRecorderStopMotionAssembleFailed;
+
   /// No description provided for @videoRecorderToggleFlashLabel.
   ///
   /// In en, this message translates to:
@@ -13973,6 +13985,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{clipCount, plural, one{Open clip library, 1 clip} other{Open clip library, {clipCount} clips}}'**
   String videoRecorderLibraryOpenLabel(int clipCount);
+
+  /// Screen-reader label for the recorder's library button during a stop-motion session. The count is captured stills (frames), not clips. The zero case covers opening a previous session's library before the first still of this one is shot.
+  ///
+  /// In en, this message translates to:
+  /// **'{frameCount, plural, =0{Open stop-motion library} one{Open stop-motion library, 1 frame} other{Open stop-motion library, {frameCount} frames}}'**
+  String videoRecorderLibraryOpenStopMotionLabel(int frameCount);
 
   /// No description provided for @videoEditorCameraLabel.
   ///
@@ -14459,6 +14477,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete selected item'**
   String get videoEditorDeleteSelectedItemSemanticLabel;
+
+  /// Label for the stop-motion control that sets how many output frames each captured still is held for.
+  ///
+  /// In en, this message translates to:
+  /// **'Frames per image'**
+  String get videoEditorStopMotionFramesPerImageLabel;
+
+  /// Short frames-per-image value shown on the stop-motion preview badge and action button (e.g. '2 frames').
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 frame} other{{count} frames}}'**
+  String videoEditorStopMotionFramesCount(int count);
+
+  /// Short label under the stop-motion frames-per-image action button in the timeline edit bar.
+  ///
+  /// In en, this message translates to:
+  /// **'Frames'**
+  String get videoEditorStopMotionFramesPerImageButtonLabel;
+
+  /// Accessibility label for the badge that marks a clip in the library as a stop-motion recording.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop-motion clip'**
+  String get libraryStopMotionClipLabel;
+
+  /// Accessibility value announcing the current stop-motion hold length, in output frames per still.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} frames per image'**
+  String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count);
+
+  /// Accessibility label for the button that lengthens each stop-motion still's hold.
+  ///
+  /// In en, this message translates to:
+  /// **'Increase frames per image'**
+  String get videoEditorStopMotionIncreaseFramesPerImageSemanticLabel;
+
+  /// Accessibility label for the button that shortens each stop-motion still's hold.
+  ///
+  /// In en, this message translates to:
+  /// **'Decrease frames per image'**
+  String get videoEditorStopMotionDecreaseFramesPerImageSemanticLabel;
+
+  /// Accessibility label for a single still tile in the stop-motion timeline strip.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop-motion frame {position} of {total}'**
+  String videoEditorStopMotionFrameSemanticLabel(int position, int total);
 
   /// No description provided for @videoEditorEditLabel.
   ///
@@ -15135,6 +15201,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete selected clips'**
   String get videoEditorDeleteSelectedClipsSemanticLabel;
+
+  /// Semantic label for the delete button while stop-motion stills are multi-selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete selected frames'**
+  String get videoEditorDeleteSelectedFramesSemanticLabel;
+
+  /// Semantic label for the reverse button while stop-motion stills are multi-selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Reverse selected frames'**
+  String get videoEditorReverseSelectedFramesSemanticLabel;
+
+  /// Snackbar shown when Done is pressed on a stop-motion composition shorter than the minimum output duration.
+  ///
+  /// In en, this message translates to:
+  /// **'Your video needs at least {seconds}s — capture a few more frames.'**
+  String videoEditorStopMotionTooShortSnackbar(int seconds);
 
   /// Status text shown while the selected clips are being concatenated into a single clip.
   ///

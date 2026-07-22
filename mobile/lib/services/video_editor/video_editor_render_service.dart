@@ -15,6 +15,8 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/transition_geometry.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
+import 'package:openvine/services/video_editor/native_render_task_registry.dart';
+import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
 import 'package:openvine/services/video_editor/video_editor_audio_render.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -169,20 +171,34 @@ class _CropParameters {
 }
 
 class _RenderProgressTracker {
-  _RenderProgressTracker({required this.taskId, required int clipCount})
-    : _proofBudget =
-          VideoEditorRenderService.proofModeProgressBudgetForClipCount(
-            clipCount,
-          ),
-      _proofSteps = clipCount + 1;
+  _RenderProgressTracker({
+    required this.taskId,
+    required int clipCount,
+    bool hasAssemblyPhase = false,
+  }) : _proofBudget =
+           VideoEditorRenderService.proofModeProgressBudgetForClipCount(
+             clipCount,
+           ),
+       _proofSteps = clipCount + 1,
+       _hasAssemblyPhase = hasAssemblyPhase;
+
+  /// Share of the non-proof budget reserved for the stop-motion assembly
+  /// pass. Assembly (stills → base mp4) and the composite render are both
+  /// full encode passes over the same output duration, so they get equal
+  /// halves.
+  static const double _assemblyShare = 0.5;
 
   final String taskId;
   final double _proofBudget;
   final int _proofSteps;
+  final bool _hasAssemblyPhase;
   StreamSubscription<ProgressModel>? _renderSubscription;
+  StreamSubscription<ProgressModel>? _assemblySubscription;
   double _lastProgress = 0;
 
-  double get _renderBudget => 1 - _proofBudget;
+  double get _assemblyBudget =>
+      _hasAssemblyPhase ? (1 - _proofBudget) * _assemblyShare : 0;
+  double get _renderBudget => 1 - _proofBudget - _assemblyBudget;
 
   void start() {
     // Emit an explicit reset so a reused broadcast stream does not keep showing
@@ -195,8 +211,32 @@ class _RenderProgressTracker {
     _renderSubscription = ProVideoEditor.instance
         .progressStreamById(taskId)
         .listen((progressModel) {
-          _emit(progressModel.progress * _renderBudget);
+          _emit(_assemblyBudget + progressModel.progress * _renderBudget);
         });
+  }
+
+  /// Routes the native progress of the stop-motion assembly running under
+  /// [assemblyTaskId] (step [step] of [stepCount]) into the assembly slice
+  /// of the composite progress.
+  void startAssemblyStep({
+    required String assemblyTaskId,
+    required int step,
+    required int stepCount,
+  }) {
+    _assemblySubscription?.cancel();
+    _assemblySubscription = ProVideoEditor.instance
+        .progressStreamById(assemblyTaskId)
+        .listen((progressModel) {
+          _emit(_assemblyBudget * (step + progressModel.progress) / stepCount);
+        });
+  }
+
+  Future<void> markAssemblyComplete() async {
+    // Stop listening so late assembly events cannot regress the composite
+    // progress during the render phase.
+    await _assemblySubscription?.cancel();
+    _assemblySubscription = null;
+    _emit(_assemblyBudget);
   }
 
   Future<void> markRenderComplete() async {
@@ -204,17 +244,19 @@ class _RenderProgressTracker {
     // cannot regress the composite progress during the proof phase.
     await _renderSubscription?.cancel();
     _renderSubscription = null;
-    _emit(_renderBudget);
+    _emit(1 - _proofBudget);
   }
 
   void markProofStepComplete(int completedSteps) {
     final normalizedSteps = completedSteps.clamp(0, _proofSteps);
-    _emit(_renderBudget + (_proofBudget * normalizedSteps / _proofSteps));
+    _emit(1 - _proofBudget + (_proofBudget * normalizedSteps / _proofSteps));
   }
 
   Future<void> dispose() async {
     await _renderSubscription?.cancel();
     _renderSubscription = null;
+    await _assemblySubscription?.cancel();
+    _assemblySubscription = null;
   }
 
   /// Emits a monotonically increasing composite progress value, guarding
@@ -240,8 +282,6 @@ class VideoEditorRenderService {
 
   static final _compositeProgressController =
       StreamController<ProgressModel>.broadcast();
-  static final Map<String, Object> _activeNativeRenderTokens =
-      <String, Object>{};
 
   @visibleForTesting
   static double proofModeProgressBudgetForClipCount(int clipCount) {
@@ -266,11 +306,11 @@ class VideoEditorRenderService {
 
   @visibleForTesting
   static Set<String> get activeNativeTaskIdsForTesting =>
-      Set.unmodifiable(_activeNativeRenderTokens.keys);
+      NativeRenderTaskRegistry.activeTaskIds;
 
   @visibleForTesting
   static void resetActiveNativeTaskIdsForTesting() {
-    _activeNativeRenderTokens.clear();
+    NativeRenderTaskRegistry.reset();
   }
 
   @visibleForTesting
@@ -342,12 +382,54 @@ class VideoEditorRenderService {
     if (clips.isEmpty) return null;
 
     final effectiveTaskId = taskId ?? clips.first.id;
+    // Frames-only stop-motion clips need an assembly pass (stills → base mp4)
+    // before the composite render. That pass gets its own slice of the
+    // progress budget — without it the bar sits at 0% for the whole (slow)
+    // assembly and then jumps once the (fast) composite render starts.
+    final assemblyStepCount = clips
+        .where((clip) => clip.video == null && clip.isStopMotion)
+        .length;
     final progressTracker = _RenderProgressTracker(
       taskId: effectiveTaskId,
       clipCount: clips.length,
+      hasAssemblyPhase: assemblyStepCount > 0,
     )..start();
 
+    // Base mp4s assembled from stop-motion stills for this render only. They
+    // are muxed into the composite output below, then deleted in `finally` so
+    // they don't accumulate in the documents directory (each is a full extra
+    // video per export).
+    final intermediateStopMotionPaths = <String>[];
+
     try {
+      final renderClips = <DivineVideoClip>[];
+      var assemblyStep = 0;
+      for (final clip in clips) {
+        if (clip.video == null && clip.isStopMotion) {
+          final assemblyTaskId = '$effectiveTaskId-stop-motion-$assemblyStep';
+          progressTracker.startAssemblyStep(
+            assemblyTaskId: assemblyTaskId,
+            step: assemblyStep,
+            stepCount: assemblyStepCount,
+          );
+          assemblyStep++;
+          final materialized = await StopMotionRenderService.materialize(
+            clip,
+            taskId: assemblyTaskId,
+          );
+          if (materialized == null) return null;
+          final intermediatePath = materialized.video?.file?.path;
+          if (intermediatePath != null) {
+            intermediateStopMotionPaths.add(intermediatePath);
+          }
+          renderClips.add(materialized);
+        } else {
+          renderClips.add(clip);
+        }
+      }
+      await progressTracker.markAssemblyComplete();
+      clips = renderClips;
+
       Log.debug(
         '🎬 renderVideoToClip: clips=${clips.length}, '
         'parameters=${parameters?.toLogString()}',
@@ -427,6 +509,7 @@ class VideoEditorRenderService {
       return (clip, proofManifestJson);
     } finally {
       await progressTracker.dispose();
+      await _cleanupTempFiles(intermediateStopMotionPaths);
     }
   }
 
@@ -442,7 +525,7 @@ class VideoEditorRenderService {
     required List<DivineVideoClip> clips,
     required Map<String, dynamic> editorStateHistory,
   }) async {
-    final path = clip.video.file?.path;
+    final path = clip.video?.file?.path;
     if (path == null) return null;
 
     final attestedClips = await _ensureClipProofs(clips);
@@ -471,7 +554,7 @@ class VideoEditorRenderService {
         continue;
       }
 
-      final videoFile = clip.video.file;
+      final videoFile = clip.video?.file;
       if (videoFile == null) {
         result.add(clip);
         onClipProcessed?.call();
@@ -603,9 +686,19 @@ class VideoEditorRenderService {
       );
       unawaited(_cleanupTempFiles(tempFilePaths));
       return null;
-    } catch (e) {
+    } catch (e, stack) {
       Log.error('❌ Video render failed: $e', name: _logName, category: .video);
       unawaited(_cleanupTempFiles(tempFilePaths));
+      // Native/IO render failures are expected; only programming-invariant
+      // violations (StateError/TypeError/RangeError — all `Error` subtypes)
+      // are worth surfacing to Crashlytics.
+      if (e is Error) {
+        CrashReportingService.instance.recordError(
+          e,
+          stack,
+          reason: 'renderVideo failed',
+        );
+      }
       return null;
     }
   }
@@ -617,7 +710,7 @@ class VideoEditorRenderService {
     required ValueChanged<bool> onComplete,
   }) async {
     try {
-      final inputPath = await clip.video.safeFilePath();
+      final inputPath = await clip.requireVideo.safeFilePath();
 
       // Write to a new temporary file to avoid file locking issues
       final tempDir = await getTemporaryDirectory();
@@ -631,7 +724,7 @@ class VideoEditorRenderService {
         outputPath,
         VideoRenderData(
           id: taskId,
-          videoSegments: [VideoSegment(video: clip.video)],
+          videoSegments: [VideoSegment(video: clip.requireVideo)],
           endTime: duration,
         ),
       );
@@ -767,7 +860,7 @@ class VideoEditorRenderService {
         segments: clips
             .map(
               (c) => VideoSegment(
-                video: c.video,
+                video: c.requireVideo,
                 startTime: c.trimStart == .zero ? null : c.trimStart,
                 endTime: c.trimStart + c.trimmedDuration,
                 volume: c.volume,
@@ -810,7 +903,7 @@ class VideoEditorRenderService {
       if (!needsCrop) {
         segments.add(
           VideoSegment(
-            video: entry.clip.video,
+            video: entry.clip.requireVideo,
             startTime: entry.clip.trimStart == .zero
                 ? null
                 : entry.clip.trimStart,
@@ -852,7 +945,9 @@ class VideoEditorRenderService {
     final entries = <_ClipAnalysisEntry>[];
 
     for (final clip in clips) {
-      final metaData = await ProVideoEditor.instance.getMetadata(clip.video);
+      final metaData = await ProVideoEditor.instance.getMetadata(
+        clip.requireVideo,
+      );
       final resolution = metaData.resolution;
       final cropParams = _CropParameters.forAspectRatio(
         resolution: resolution,
@@ -887,7 +982,7 @@ class VideoEditorRenderService {
       id: '${clip.id}_normalized',
       videoSegments: [
         VideoSegment(
-          video: clip.video,
+          video: clip.requireVideo,
           startTime: clip.trimStart == .zero ? null : clip.trimStart,
           endTime: clip.trimStart + clip.trimmedDuration,
           volume: clip.volume,
@@ -941,10 +1036,23 @@ class VideoEditorRenderService {
       'divine_${DateTime.now().microsecondsSinceEpoch}.mp4',
     );
 
+    // Overlap transitions shorten the rendered output, so the true video
+    // length is the transition-mapped output duration, capped by
+    // [maxOutputDuration]. Audio windows are clamped to it below so a short
+    // stop-motion export muxed with a full-length song can't produce an mp4
+    // whose audio outlives its video (which freezes the last frame on iOS).
+    final timelineMap = TransitionTimelineMap.fromClips(clips);
+    final videoContentDuration =
+        maxOutputDuration != null &&
+            maxOutputDuration < timelineMap.outputDuration
+        ? maxOutputDuration
+        : timelineMap.outputDuration;
+
     final customTracks = parameters?.audioTracks ?? const <AudioTrack>[];
     final audioTracks = await resolveRenderAudioTracks(
       customTracks,
       logName: _logName,
+      videoDuration: videoContentDuration,
     );
 
     final volumeSegments = segments
@@ -962,11 +1070,11 @@ class VideoEditorRenderService {
 
     // Overlay/effect time windows are authored on the editor timeline (clips at
     // full length). Overlap transitions (dissolve/slide/push/wipe) shorten the
-    // rendered output, so every time anchor is mapped onto the output axis;
-    // otherwise anything near the end — a layer's leave animation especially —
-    // lands past the real video end and is clipped ("animation missing at the
-    // end"). Identity when no overlap transition is present.
-    final timelineMap = TransitionTimelineMap.fromClips(clips);
+    // rendered output, so every time anchor is mapped onto the output axis via
+    // [timelineMap] (computed above); otherwise anything near the end — a
+    // layer's leave animation especially — lands past the real video end and is
+    // clipped ("animation missing at the end"). Identity when no overlap
+    // transition is present.
     final videoSize =
         renderResolution ??
         VideoEditorConstants.quality.resolutionForAspectRatio(aspectRatio);
@@ -1158,19 +1266,13 @@ class VideoEditorRenderService {
     NativeLogLevel? nativeLogLevel = NativeLogLevel.warning,
   }) async {
     await cancelTask(task.id);
-    final token = Object();
-    _activeNativeRenderTokens[task.id] = token;
-    try {
-      return await ProVideoEditor.instance.renderVideoToFile(
+    return NativeRenderTaskRegistry.track(task.id, () {
+      return ProVideoEditor.instance.renderVideoToFile(
         outputPath,
         task,
         nativeLogLevel: nativeLogLevel,
       );
-    } finally {
-      if (identical(_activeNativeRenderTokens[task.id], token)) {
-        _activeNativeRenderTokens.remove(task.id);
-      }
-    }
+    });
   }
 
   /// Cancels native `pro_video_editor` render tasks started by this app.
@@ -1179,7 +1281,7 @@ class VideoEditorRenderService {
   /// Transient background states must not call this: exports may legitimately
   /// continue while the user briefly switches apps or locks the device.
   static Future<void> cancelActiveNativeTasks() async {
-    final taskIds = List<String>.of(_activeNativeRenderTokens.keys);
+    final taskIds = List<String>.of(NativeRenderTaskRegistry.activeTaskIds);
     if (taskIds.isEmpty) return;
 
     Log.info(

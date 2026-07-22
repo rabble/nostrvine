@@ -143,9 +143,19 @@ class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
     return rowsAffected > 0;
   }
 
-  /// Delete a draft by ID
+  /// Delete a draft by ID, along with its clip rows.
+  ///
+  /// The clips table declares an `ON DELETE CASCADE` FK on `draft_id`, but
+  /// `foreign_keys` enforcement is not enabled on this connection, so the
+  /// cascade never fires. Deleting the clip rows explicitly (mirroring
+  /// [saveDraftWithClips]) keeps orphaned clip rows from surviving and keeping
+  /// the draft's media referenced — which blocks file cleanup and leaks the
+  /// clip/frame files. Returns the number of draft rows deleted.
   Future<int> deleteDraft(String id) {
-    return (delete(drafts)..where((t) => t.id.equals(id))).go();
+    return transaction(() async {
+      await (delete(clips)..where((t) => t.draftId.equals(id))).go();
+      return (delete(drafts)..where((t) => t.id.equals(id))).go();
+    });
   }
 
   /// Delete drafts older than a given date
@@ -225,9 +235,16 @@ class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
     return result.read(drafts.id.count()) ?? 0;
   }
 
-  /// Clear all drafts
+  /// Clear all drafts, along with every draft-owned clip row.
+  ///
+  /// Deletes clip rows with a non-null `draft_id` too (the FK cascade does not
+  /// fire — see [deleteDraft]); library clips have a NULL `draft_id` and are
+  /// preserved. Returns the number of draft rows deleted.
   Future<int> clearAll() {
-    return delete(drafts).go();
+    return transaction(() async {
+      await (delete(clips)..where((t) => t.draftId.isNotNull())).go();
+      return delete(drafts).go();
+    });
   }
 
   /// Delete all drafts owned by [userPubkey].

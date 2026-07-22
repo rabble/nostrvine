@@ -11,7 +11,7 @@ extension DivineVideoClipPlayerMapping on DivineVideoClip {
   /// Returns the preview-player clip for this editor clip, or `null` when the
   /// clip has no resolvable file path (skipped by the timeline).
   player.VideoClip? toPlayerVideoClip({Duration? start, Duration? end}) {
-    final path = video.file?.path;
+    final path = video?.file?.path;
     if (path == null) return null;
     return player.VideoClip(
       uri: path,

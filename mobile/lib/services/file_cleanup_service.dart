@@ -72,13 +72,30 @@ class FileCleanupService {
         .where((path) => path != null && path.isNotEmpty)
         .cast<String>()
         .toList();
+    if (validPaths.isEmpty) return;
+
+    // Resolved as one set: a stop-motion clip hands every one of its stills to
+    // this call, and the clip references that hold them are in an unindexed
+    // JSON blob — asking per file would scan the table once per still.
+    final referencedByClips = await clipsDao.referencedFilenames(
+      validPaths.map(p.basename).toSet(),
+    );
 
     for (final path in validPaths) {
-      await deleteFileIfUnreferenced(
-        path,
-        draftsDao: draftsDao,
-        clipsDao: clipsDao,
-      );
+      if (!File(path).existsSync()) continue;
+
+      final filename = p.basename(path);
+      if (referencedByClips.contains(filename) ||
+          await draftsDao.isDraftFileReferenced(filename)) {
+        Log.info(
+          '🔗 File still referenced, skipping delete: $path',
+          name: 'FileCleanupService',
+          category: LogCategory.video,
+        );
+        continue;
+      }
+
+      await _deleteFile(path);
     }
   }
 
@@ -173,7 +190,11 @@ class FileCleanupService {
     Set<String> referencedGhostFrameFilenames = const {},
   }) async {
     await deleteFilesIfUnreferenced(
-      [clip.video.file?.path, clip.thumbnailPath],
+      [
+        clip.video?.file?.path,
+        ...?clip.stopMotionFrames?.map((frame) => frame.path),
+        clip.thumbnailPath,
+      ],
       draftsDao: draftsDao,
       clipsDao: clipsDao,
     );
@@ -197,7 +218,13 @@ class FileCleanupService {
     Set<String> referencedGhostFrameFilenames = const {},
   }) async {
     final indexedPaths = clips
-        .expand((clip) => [clip.video.file?.path, clip.thumbnailPath])
+        .expand(
+          (clip) => [
+            clip.video?.file?.path,
+            ...?clip.stopMotionFrames?.map((frame) => frame.path),
+            clip.thumbnailPath,
+          ],
+        )
         .toList();
 
     await deleteFilesIfUnreferenced(
@@ -221,7 +248,8 @@ class FileCleanupService {
   }) async {
     final paths = <String?>[
       for (final clip in clips) ...[
-        await clip.video.safeFilePath(),
+        if (clip.video != null) await clip.video!.safeFilePath(),
+        ...?clip.stopMotionFrames?.map((frame) => frame.path),
         clip.thumbnailPath,
         clip.ghostFramePath,
       ],

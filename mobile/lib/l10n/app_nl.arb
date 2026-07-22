@@ -2771,6 +2771,8 @@
     "videoRecorderCaptureCloseLabel": "Sluiten",
     "videoRecorderCaptureNextLabel": "Volgende",
     "videoRecorderLipSyncAddAudioFirst": "Voeg audio toe vóór de opname",
+    "videoRecorderStopMotionAssembling": "Je video wordt gemaakt…",
+    "videoRecorderStopMotionAssembleFailed": "Kan de video niet maken. Probeer het opnieuw.",
     "videoRecorderToggleFlashLabel": "Flitser in-/uitschakelen",
     "videoRecorderCycleTimerLabel": "Timer wisselen",
     "videoRecorderToggleAspectRatioLabel": "Beeldverhouding wisselen",
@@ -2787,6 +2789,14 @@
     "@videoRecorderLibraryOpenLabel": {
         "placeholders": {
             "clipCount": {
+                "type": "int"
+            }
+        }
+    },
+    "videoRecorderLibraryOpenStopMotionLabel": "{frameCount, plural, =0{Stop-motion-bibliotheek openen} one{Stop-motion-bibliotheek openen, 1 frame} other{Stop-motion-bibliotheek openen, {frameCount} frames}}",
+    "@videoRecorderLibraryOpenStopMotionLabel": {
+        "placeholders": {
+            "frameCount": {
                 "type": "int"
             }
         }
@@ -4084,6 +4094,9 @@
     "videoEditorMergeLabel": "Samenvoegen",
     "videoEditorMergeSelectedClipsSemanticLabel": "Geselecteerde clips samenvoegen",
     "videoEditorDeleteSelectedClipsSemanticLabel": "Geselecteerde clips verwijderen",
+    "videoEditorDeleteSelectedFramesSemanticLabel": "Geselecteerde frames verwijderen",
+    "videoEditorReverseSelectedFramesSemanticLabel": "Geselecteerde frames omkeren",
+    "videoEditorStopMotionTooShortSnackbar": "Je video moet minstens {seconds}s duren – leg nog een paar frames vast.",
     "videoEditorMergeProgressLabel": "Een moment, we voegen je clips samen",
     "videoEditorMergeFailed": "Kan clips niet samenvoegen. Probeer het opnieuw.",
     "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device.",
@@ -4562,5 +4575,13 @@
   "authSignInErrorNetwork": "Kan de server niet bereiken. Controleer je verbinding en probeer het opnieuw.",
   "authSignInErrorGeneric": "Er ging iets mis. Probeer het opnieuw.",
   "authSignInOptionsHintPrefix": "Weet je niet meer hoe je de vorige keer inlogde? ",
-  "authSignInOptionsHintCta": "Bekijk alle inlogopties"
+  "authSignInOptionsHintCta": "Bekijk alle inlogopties",
+    "videoEditorStopMotionFramesPerImageLabel": "Frames per beeld",
+    "videoEditorStopMotionFramesPerImageValueSemanticLabel": "{count} frames per beeld",
+    "videoEditorStopMotionIncreaseFramesPerImageSemanticLabel": "Frames per beeld verhogen",
+    "videoEditorStopMotionDecreaseFramesPerImageSemanticLabel": "Frames per beeld verlagen",
+    "videoEditorStopMotionFrameSemanticLabel": "Stop-motion-beeld {position} van {total}",
+    "videoEditorStopMotionFramesCount": "{count, plural, =1{1 frame} other{{count} frames}}",
+    "videoEditorStopMotionFramesPerImageButtonLabel": "Frames",
+    "libraryStopMotionClipLabel": "Stop-motion-clip"
 }

@@ -8,6 +8,7 @@ import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/tune_editor/video_editor_tune_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/tune_editor/open_tune_editor.dart';
 
@@ -61,6 +62,9 @@ class VideoEditorMainActionsSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final totalDuration = context.select(
       (ClipEditorBloc b) => b.state.totalDuration,
+    );
+    final isStopMotion = context.select(
+      (ClipEditorBloc b) => isStopMotionComposition(b.state.clips),
     );
     return Padding(
       padding: const .all(16),
@@ -161,23 +165,27 @@ class VideoEditorMainActionsSheet extends StatelessWidget {
                   scope.onAddStickers();
                 },
               ),
-              _ItemButton(
-                icon: .bookmarkPlus,
-                label: context.l10n.videoEditorMarkerLabel,
-                semanticLabel:
-                    context.l10n.videoEditorAddTimelineMarkerSemanticLabel,
-                onTap: () {
-                  Navigator.pop(context);
-                  if (totalDuration <= Duration.zero) return;
+              // Timeline markers anchor to video playback positions; on a
+              // frames-first stop-motion composition the stills themselves
+              // are the granularity, so the option is hidden.
+              if (!isStopMotion)
+                _ItemButton(
+                  icon: .bookmarkPlus,
+                  label: context.l10n.videoEditorMarkerLabel,
+                  semanticLabel:
+                      context.l10n.videoEditorAddTimelineMarkerSemanticLabel,
+                  onTap: () {
+                    Navigator.pop(context);
+                    if (totalDuration <= Duration.zero) return;
 
-                  // Enter marker mode instead of dropping a single marker, so
-                  // the bottom bar exposes add/delete-marker controls and the
-                  // user can keep marking beats while playback runs.
-                  context.read<VideoEditorMainBloc>().add(
-                    const VideoEditorMarkerModeChanged(isActive: true),
-                  );
-                },
-              ),
+                    // Enter marker mode instead of dropping a single marker, so
+                    // the bottom bar exposes add/delete-marker controls and the
+                    // user can keep marking beats while playback runs.
+                    context.read<VideoEditorMainBloc>().add(
+                      const VideoEditorMarkerModeChanged(isActive: true),
+                    );
+                  },
+                ),
             ],
           ),
         ],

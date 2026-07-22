@@ -112,5 +112,101 @@ void main() {
 
       expect(result, isEmpty);
     });
+
+    test(
+      'clamps a track window that outlasts the video to the video duration',
+      () async {
+        // A full-length song (endTime 4s) muxed onto a ~1s stop-motion video
+        // must not outlast the video track, or iOS freezes the last frame.
+        final result = await resolveRenderAudioTracks(
+          [
+            _fileTrack(
+              id: 'song',
+              path: '/tmp/song.mp3',
+              startTime: Duration.zero,
+            ),
+          ],
+          logName: 'test',
+          videoDuration: const Duration(seconds: 1),
+        );
+
+        expect(result.single.startTime, equals(Duration.zero));
+        expect(result.single.endTime, equals(const Duration(seconds: 1)));
+      },
+    );
+
+    test('leaves a track shorter than the video untouched', () async {
+      final result = await resolveRenderAudioTracks(
+        [
+          _fileTrack(
+            id: 'short',
+            path: '/tmp/short.mp3',
+            endTime: const Duration(seconds: 2),
+          ),
+        ],
+        logName: 'test',
+        videoDuration: const Duration(seconds: 6),
+      );
+
+      expect(result.single.startTime, equals(const Duration(seconds: 1)));
+      expect(result.single.endTime, equals(const Duration(seconds: 2)));
+    });
+  });
+
+  group('clampAudioWindowToVideo', () {
+    test('returns the window unchanged when videoDuration is null', () {
+      final result = clampAudioWindowToVideo(
+        startTime: const Duration(seconds: 1),
+        endTime: const Duration(seconds: 9),
+        videoDuration: null,
+      );
+
+      expect(result?.startTime, equals(const Duration(seconds: 1)));
+      expect(result?.endTime, equals(const Duration(seconds: 9)));
+    });
+
+    test('leaves a null endTime null (means "play to end of video")', () {
+      final result = clampAudioWindowToVideo(
+        startTime: Duration.zero,
+        endTime: null,
+        videoDuration: const Duration(seconds: 1),
+      );
+
+      expect(result, isNotNull);
+      expect(result?.endTime, isNull);
+    });
+
+    test('drops a track whose whole window starts past the video', () {
+      // Clamping both ends would collapse this to a zero-length
+      // [1s, 1s] window, which VideoAudioTrack asserts against.
+      final result = clampAudioWindowToVideo(
+        startTime: const Duration(seconds: 5),
+        endTime: const Duration(seconds: 9),
+        videoDuration: const Duration(seconds: 1),
+      );
+
+      expect(result, isNull);
+    });
+
+    test('drops a track starting exactly at the video end', () {
+      final result = clampAudioWindowToVideo(
+        startTime: const Duration(seconds: 1),
+        endTime: const Duration(seconds: 9),
+        videoDuration: const Duration(seconds: 1),
+      );
+
+      expect(result, isNull);
+    });
+
+    test('keeps a window that still has video left to play over', () {
+      final result = clampAudioWindowToVideo(
+        startTime: const Duration(milliseconds: 500),
+        endTime: const Duration(seconds: 9),
+        videoDuration: const Duration(seconds: 1),
+      );
+
+      expect(result?.startTime, equals(const Duration(milliseconds: 500)));
+      expect(result?.endTime, equals(const Duration(seconds: 1)));
+    });
   });
 }

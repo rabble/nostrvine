@@ -8030,6 +8030,13 @@ class AppLocalizationsSv extends AppLocalizations {
       'Lägg till ljud innan inspelning';
 
   @override
+  String get videoRecorderStopMotionAssembling => 'Skapar din video…';
+
+  @override
+  String get videoRecorderStopMotionAssembleFailed =>
+      'Det gick inte att skapa videon. Försök igen.';
+
+  @override
   String get videoRecorderToggleFlashLabel => 'Växla blixt';
 
   @override
@@ -8074,6 +8081,18 @@ class AppLocalizationsSv extends AppLocalizations {
       locale: localeName,
       other: 'Öppna klippbibliotek, $clipCount klipp',
       one: 'Öppna klippbibliotek, 1 klipp',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String videoRecorderLibraryOpenStopMotionLabel(int frameCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      frameCount,
+      locale: localeName,
+      other: 'Öppna stop motion-bibliotek, $frameCount bildrutor',
+      one: 'Öppna stop motion-bibliotek, 1 bildruta',
+      zero: 'Öppna stop motion-bibliotek',
     );
     return '$_temp0';
   }
@@ -8345,6 +8364,44 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get videoEditorDeleteSelectedItemSemanticLabel =>
       'Ta bort valt objekt';
+
+  @override
+  String get videoEditorStopMotionFramesPerImageLabel => 'Bildrutor per bild';
+
+  @override
+  String videoEditorStopMotionFramesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count bildrutor',
+      one: '1 bildruta',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorStopMotionFramesPerImageButtonLabel => 'Bildrutor';
+
+  @override
+  String get libraryStopMotionClipLabel => 'Stop motion-klipp';
+
+  @override
+  String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
+    return '$count bildrutor per bild';
+  }
+
+  @override
+  String get videoEditorStopMotionIncreaseFramesPerImageSemanticLabel =>
+      'Öka bildrutor per bild';
+
+  @override
+  String get videoEditorStopMotionDecreaseFramesPerImageSemanticLabel =>
+      'Minska bildrutor per bild';
+
+  @override
+  String videoEditorStopMotionFrameSemanticLabel(int position, int total) {
+    return 'Stop motion-bild $position av $total';
+  }
 
   @override
   String get videoEditorEditLabel => 'Redigera';
@@ -8747,6 +8804,19 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get videoEditorDeleteSelectedClipsSemanticLabel =>
       'Ta bort markerade klipp';
+
+  @override
+  String get videoEditorDeleteSelectedFramesSemanticLabel =>
+      'Ta bort markerade bildrutor';
+
+  @override
+  String get videoEditorReverseSelectedFramesSemanticLabel =>
+      'Vänd markerade bildrutor';
+
+  @override
+  String videoEditorStopMotionTooShortSnackbar(int seconds) {
+    return 'Din video måste vara minst ${seconds}s – ta några bildrutor till.';
+  }
 
   @override
   String get videoEditorMergeProgressLabel =>

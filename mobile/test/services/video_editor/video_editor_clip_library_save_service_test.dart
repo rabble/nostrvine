@@ -83,7 +83,7 @@ void main() {
         );
         expect(forwardedTaskId, equals('save-1'));
         expect(result, isNotNull);
-        expect(result!.video.file?.path, equals('/documents/divine_1.mp4'));
+        expect(result!.video?.file?.path, equals('/documents/divine_1.mp4'));
         expect(result.id, isNot(equals(clip.id)));
         expect(result.targetAspectRatio, equals(model.AspectRatio.vertical));
         expect(

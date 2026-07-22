@@ -18,6 +18,7 @@ import 'package:models/models.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
@@ -32,10 +33,13 @@ import 'package:openvine/services/video_editor/video_editor_audio_render.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:pro_image_editor/pro_image_editor.dart'
     show CompleteParameters, WidgetLayer, WidgetLayerExportConfigs;
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../mocks/mock_path_provider_platform.dart';
 
 class _MockDraftStorageService extends Mock implements DraftStorageService {}
 
@@ -1039,6 +1043,66 @@ void main() {
       });
 
       test(
+        're-signs rendered stop-motion output without requiring a source mp4',
+        () async {
+          final notifier = container.read(videoEditorProvider.notifier);
+          container
+              .read(clipManagerProvider.notifier)
+              .addStopMotionClip(
+                id: 'frames-only',
+                frames: [
+                  const StopMotionClipFrame(
+                    path: '/docs/frame.jpg',
+                    duration: Duration(milliseconds: 83),
+                  ),
+                ],
+                duration: const Duration(milliseconds: 83),
+                targetAspectRatio: .vertical,
+                originalAspectRatio: 9 / 16,
+              );
+          final rendered = DivineVideoClip(
+            id: 'rendered',
+            video: EditorVideo.file('/docs/rendered.mp4'),
+            duration: const Duration(seconds: 3),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          );
+          notifier.state = notifier.state.copyWith(
+            finalRenderedClip: rendered,
+            c2paSigningFailed: true,
+          );
+
+          String? proofedPath;
+          NativeProofModeService.proofFileOverride =
+              (
+                file, {
+                required enableAdvancedCawgEmbedding,
+                creatorBindingAssertion,
+                cawgIdentityAssertion,
+                verifiedIdentityBundle,
+                clips,
+                editorStateHistory,
+              }) async {
+                proofedPath = file.path;
+                return const NativeProofData(
+                  videoHash: 'h',
+                  c2paManifestId: 'urn:c2pa:stop-motion',
+                );
+              };
+
+          await notifier.retryC2paSigning();
+
+          final state = container.read(videoEditorProvider);
+          expect(proofedPath, '/docs/rendered.mp4');
+          expect(state.c2paSigningFailed, isFalse);
+          expect(state.proofManifestJson, contains('urn:c2pa:stop-motion'));
+          expect(state.finalRenderedClip, equals(rendered));
+          expect(state.isProcessing, isFalse);
+        },
+      );
+
+      test(
         're-raises the prompt when the re-sign fails again (#6058)',
         () async {
           final notifier = container.read(videoEditorProvider.notifier);
@@ -1976,6 +2040,51 @@ void main() {
         },
       );
 
+      test(
+        'repairs a frames-only stop-motion clip thumbnail from its first still',
+        () async {
+          // A frames-only stop-motion draft with no rendered video and a
+          // missing thumbnail must repair from its first still, not reach for
+          // requireVideo (which throws on a video-less clip) and abort restore.
+          final framePath = '${tempDir.path}/frame_a.jpg';
+          await File(framePath).writeAsBytes(const [0]);
+          final draft = DivineVideoDraft.create(
+            id: 'sm-draft',
+            clips: [
+              DivineVideoClip(
+                id: 'sm',
+                stopMotionFrames: [
+                  StopMotionClipFrame(
+                    path: framePath,
+                    duration: const Duration(milliseconds: 83),
+                  ),
+                ],
+                duration: const Duration(milliseconds: 83),
+                recordedAt: DateTime.now(),
+                targetAspectRatio: .vertical,
+                originalAspectRatio: 9 / 16,
+              ),
+            ],
+            title: 'Title',
+            description: '',
+            hashtags: const {},
+            selectedApproach: 'video',
+          );
+          when(
+            () => mockDraftStorage.getDraftById('sm-draft'),
+          ).thenAnswer((_) async => draft);
+
+          final result = await container
+              .read(videoEditorProvider.notifier)
+              .restoreDraft('sm-draft');
+
+          expect(result, isTrue);
+          final clips = container.read(clipManagerProvider).clips;
+          expect(clips, hasLength(1));
+          expect(clips.single.thumbnailPath, framePath);
+        },
+      );
+
       test('returns false when every clip has a missing source file', () async {
         final draft = DivineVideoDraft.create(
           id: 'draft-1',
@@ -2897,24 +3006,24 @@ void main() {
     });
 
     test('container teardown reaps a replaced final rendered file', () async {
-      final suffix = DateTime.now().microsecondsSinceEpoch;
-      final documentsDir = Directory('/tmp/documents')
-        ..createSync(recursive: true);
-      final source = File(p.join(documentsDir.path, 'source-$suffix.mp4'))
+      // Point the documents dir at this group's unique per-test temp dir
+      // instead of the shared global `/tmp/documents`: the draft_storage suite
+      // recursively wipes that path, and races these files away when
+      // `flutter test` runs the suites concurrently.
+      final documentsDir = tempDir;
+      final originalPathProvider = PathProviderPlatform.instance;
+      PathProviderPlatform.instance = MockPathProviderPlatform()
+        ..setApplicationDocumentsPath(documentsDir.path);
+      addTearDown(() => PathProviderPlatform.instance = originalPathProvider);
+
+      final source = File(p.join(documentsDir.path, 'source.mp4'))
         ..writeAsBytesSync(const [1, 2, 3]);
       final oldRendered = File(
-        p.join(documentsDir.path, 'old-rendered-$suffix.mp4'),
+        p.join(documentsDir.path, 'old-rendered.mp4'),
       )..writeAsBytesSync(const [4, 5, 6]);
       final newRendered = File(
-        p.join(documentsDir.path, 'new-rendered-$suffix.mp4'),
+        p.join(documentsDir.path, 'new-rendered.mp4'),
       )..writeAsBytesSync(const [7, 8, 9]);
-      addTearDown(() async {
-        for (final file in [source, oldRendered, newRendered]) {
-          if (file.existsSync()) {
-            await file.delete();
-          }
-        }
-      });
       final realDraftStorage = DraftStorageService(
         draftsDao: database.draftsDao,
         clipsDao: database.clipsDao,

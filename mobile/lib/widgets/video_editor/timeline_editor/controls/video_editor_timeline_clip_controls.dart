@@ -5,9 +5,12 @@ import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/extensions/video_editor_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/screens/video_editor/video_clip_transform_screen.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
+import 'package:openvine/widgets/video_editor/stop_motion/stop_motion_frame_commands.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_clip_speed_sheet.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_controls.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_geometry.dart';
@@ -28,6 +31,19 @@ class TimelineClipControls extends StatefulWidget {
 class _TimelineClipControlsState extends State<TimelineClipControls> {
   @override
   Widget build(BuildContext context) {
+    // Frames-only stop-motion clips get a frame-first action set: delete /
+    // duplicate / multi-select stills and adjust their hold. Clip-only
+    // actions (split, speed, reverse, extract audio, transform) don't apply
+    // to a still sequence and are hidden.
+    final isStopMotion = context.select((ClipEditorBloc b) {
+      final state = b.state;
+      final index = state.currentClipIndex;
+      return index >= 0 &&
+          index < state.clips.length &&
+          state.clips[index].isStopMotion;
+    });
+    if (isStopMotion) return const _StopMotionClipControls();
+
     final (
       clipCount,
       isExtractingAudioCurrentClip,
@@ -384,5 +400,110 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
           splitPosition: localPosition,
         ),
       );
+  }
+}
+
+/// Action bar for a selected still in a frames-only stop-motion clip: delete or
+/// duplicate the still and set how many output frames it is held for. Falls back
+/// to just Done when no still is selected.
+class _StopMotionClipControls extends StatelessWidget {
+  const _StopMotionClipControls();
+
+  @override
+  Widget build(BuildContext context) {
+    final ({
+      String clipId,
+      List<StopMotionClipFrame> frames,
+      int? selected,
+    })?
+    data = context.select((ClipEditorBloc b) {
+      final state = b.state;
+      final index = state.currentClipIndex;
+      if (index < 0 || index >= state.clips.length) return null;
+      final clip = state.clips[index];
+      final frames = clip.stopMotionFrames;
+      if (frames == null) return null;
+      return (
+        clipId: clip.id,
+        frames: frames,
+        selected: state.selectedFrameIndex,
+      );
+    });
+
+    if (data == null) return const SizedBox.shrink();
+
+    final frames = data.frames;
+    final selected = data.selected;
+    final hasSelection =
+        selected != null && selected >= 0 && selected < frames.length;
+
+    return VideoEditorTimelineControls(
+      onDelete: hasSelection && frames.length > 1
+          ? () => commitStopMotionFrames(
+              context,
+              clipId: data.clipId,
+              frames: StopMotionFrameOps.removeFrame(frames, selected),
+            )
+          : null,
+      onDuplicated: hasSelection
+          ? () => commitStopMotionFrames(
+              context,
+              clipId: data.clipId,
+              frames: [
+                ...frames.sublist(0, selected + 1),
+                frames[selected],
+                ...frames.sublist(selected + 1),
+              ],
+            )
+          : null,
+      // Frame multi-select: batch delete / hold on several stills. Needs a
+      // second still to be meaningful.
+      onMultiSelect: frames.length > 1
+          ? () => context.read<ClipEditorBloc>().add(
+              ClipEditorFrameMultiSelectStarted(selected),
+            )
+          : null,
+      onDone: () =>
+          context.read<ClipEditorBloc>().add(const ClipEditorEditingStopped()),
+      extraControls: hasSelection
+          ? [
+              _StopMotionFramesButton(
+                onPressed: () => editStopMotionFrameHold(
+                  context,
+                  clipId: data.clipId,
+                  frameIndex: selected,
+                ),
+              ),
+            ]
+          : const [],
+    );
+  }
+}
+
+/// Action-bar button (icon + label, matching the other controls) that opens the
+/// frames-per-image wheel sheet for the selected still.
+class _StopMotionFramesButton extends StatelessWidget {
+  const _StopMotionFramesButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      spacing: 8,
+      children: [
+        DivineIconButton(
+          icon: .imagesSquare,
+          semanticLabel: context.l10n.videoEditorStopMotionFramesPerImageLabel,
+          onPressed: onPressed,
+          type: .secondary,
+          size: .small,
+        ),
+        Text(
+          context.l10n.videoEditorStopMotionFramesPerImageButtonLabel,
+          style: VineTheme.bodySmallFont(),
+        ),
+      ],
+    );
   }
 }

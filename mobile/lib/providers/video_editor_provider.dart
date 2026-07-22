@@ -16,6 +16,7 @@ import 'package:openvine/extensions/complete_parameters_extensions.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
+import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/models/video_metadata/video_metadata_expiration.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
@@ -910,9 +911,15 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     // carry it. Restoring such a clip hands a dead path to the native player,
     // which fails the whole composition (COMPOSITION_ERROR) and freezes the
     // editor — so an orphaned clip must never re-enter the timeline.
-    final restorableClips = draft.clips
-        .where((clip) => clip.hasResolvableVideoFile)
-        .toList();
+    // Stop-motion clips are salvaged per still instead: unreadable frames
+    // are dropped and the clip survives while one readable still remains.
+    final restorableClips = [
+      for (final clip in draft.clips)
+        if (clip.isStopMotion)
+          ?StopMotionFrameOps.sanitizedClip(clip)
+        else if (clip.hasResolvableVideoFile)
+          clip,
+    ];
     if (restorableClips.length != draft.clips.length) {
       Log.warning(
         '⚠️ Dropped ${draft.clips.length - restorableClips.length} clip(s) '
@@ -934,13 +941,29 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         continue;
       }
 
+      // Stop-motion clips have no video to extract from; their first still is
+      // already a usable thumbnail image. Repair from it instead of reaching
+      // for requireVideo, which throws on a frames-only clip.
+      if (clip.isStopMotion) {
+        final frames = clip.stopMotionFrames;
+        final firstFramePath = frames != null && frames.isNotEmpty
+            ? frames.first.path
+            : null;
+        clipsWithThumbnails.add(
+          firstFramePath != null
+              ? clip.copyWith(thumbnailPath: firstFramePath)
+              : clip,
+        );
+        continue;
+      }
+
       Log.info(
         '🖼️ Regenerating thumbnail for clip ${clip.id}',
         name: 'VideoEditorNotifier',
         category: LogCategory.video,
       );
 
-      final videoPath = clip.video.file!.path;
+      final videoPath = clip.requireVideo.file!.path;
       final result = await VideoThumbnailService.extractThumbnail(
         videoPath: videoPath,
         targetTimestamp: clip.thumbnailTimestamp,

@@ -3054,6 +3054,8 @@
     "videoRecorderCaptureCloseLabel": "Kapat",
     "videoRecorderCaptureNextLabel": "İleri",
     "videoRecorderLipSyncAddAudioFirst": "Kayıttan önce ses ekleyin",
+    "videoRecorderStopMotionAssembling": "Videon oluşturuluyor…",
+    "videoRecorderStopMotionAssembleFailed": "Video oluşturulamadı. Tekrar deneyin.",
     "videoRecorderClipDeletedMessage": "Klip çöp kutusuna taşındı",
     "videoRecorderClipUndoLabel": "Geri al",
     "libraryTrashTitle": "Son silinenler",
@@ -3078,6 +3080,14 @@
     "@videoRecorderLibraryOpenLabel": {
         "placeholders": {
             "clipCount": {
+                "type": "int"
+            }
+        }
+    },
+    "videoRecorderLibraryOpenStopMotionLabel": "{frameCount, plural, =0{Stop motion kütüphanesini aç} one{Stop motion kütüphanesini aç, 1 kare} other{Stop motion kütüphanesini aç, {frameCount} kare}}",
+    "@videoRecorderLibraryOpenStopMotionLabel": {
+        "placeholders": {
+            "frameCount": {
                 "type": "int"
             }
         }
@@ -4084,6 +4094,9 @@
     "videoEditorMergeLabel": "Birleştir",
     "videoEditorMergeSelectedClipsSemanticLabel": "Seçili klipleri birleştir",
     "videoEditorDeleteSelectedClipsSemanticLabel": "Seçili klipleri sil",
+    "videoEditorDeleteSelectedFramesSemanticLabel": "Seçili kareleri sil",
+    "videoEditorReverseSelectedFramesSemanticLabel": "Seçili kareleri ters çevir",
+    "videoEditorStopMotionTooShortSnackbar": "Videon en az {seconds}sn olmalı — birkaç kare daha çek.",
     "videoEditorMergeProgressLabel": "Bir saniye, kliplerini birleştiriyoruz",
     "videoEditorMergeFailed": "Klipler birleştirilemedi. Lütfen tekrar dene.",
     "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device.",
@@ -4562,5 +4575,13 @@
   "authSignInErrorNetwork": "Sunucuya ulaşılamıyor. Bağlantını kontrol edip tekrar dene.",
   "authSignInErrorGeneric": "Bir şeyler ters gitti. Lütfen tekrar dene.",
   "authSignInOptionsHintPrefix": "Geçen sefer nasıl giriş yaptığını hatırlamıyor musun? ",
-  "authSignInOptionsHintCta": "Tüm giriş seçeneklerini gör"
+  "authSignInOptionsHintCta": "Tüm giriş seçeneklerini gör",
+    "videoEditorStopMotionFramesPerImageLabel": "Görüntü başına kare",
+    "videoEditorStopMotionFramesPerImageValueSemanticLabel": "Görüntü başına {count} kare",
+    "videoEditorStopMotionIncreaseFramesPerImageSemanticLabel": "Görüntü başına kareyi artır",
+    "videoEditorStopMotionDecreaseFramesPerImageSemanticLabel": "Görüntü başına kareyi azalt",
+    "videoEditorStopMotionFrameSemanticLabel": "Stop motion karesi {position}/{total}",
+    "videoEditorStopMotionFramesCount": "{count, plural, other{{count} kare}}",
+    "videoEditorStopMotionFramesPerImageButtonLabel": "Kare",
+    "libraryStopMotionClipLabel": "Stop motion klibi"
 }

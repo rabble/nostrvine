@@ -149,10 +149,10 @@ void main() {
     expect(success.clip.originalAspectRatio, 1);
     expect(success.clip.thumbnailPath, endsWith('thumb.jpg'));
     expect(success.clip.ghostFramePath, endsWith('ghost.jpg'));
-    expect(success.clip.video.file!.path, startsWith(docsDir.path));
+    expect(success.clip.requireVideo.file!.path, startsWith(docsDir.path));
     expect(success.clip.libraryTitle, 'classic vine');
     expect(
-      File(success.clip.video.file!.path).readAsBytesSync(),
+      File(success.clip.requireVideo.file!.path).readAsBytesSync(),
       sourceVideo.readAsBytesSync(),
     );
 

@@ -108,6 +108,11 @@ class AudioClipPlayer {
     await _audioPlayer.seek(position);
   }
 
+  /// Sets the playback volume, clamped to `0.0..1.0`.
+  Future<void> setVolume(double volume) async {
+    await _audioPlayer.setVolume(volume.clamp(0.0, 1.0));
+  }
+
   /// Releases all resources held by the underlying player.
   Future<void> dispose() async {
     try {

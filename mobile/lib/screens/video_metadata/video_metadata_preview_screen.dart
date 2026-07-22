@@ -13,6 +13,7 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
+import 'package:openvine/widgets/stop_motion/stop_motion_player.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/video_metadata/modes/capture/video_metadata_capture_bottom_bar.dart';
 import 'package:openvine/widgets/video_metadata/modes/capture/video_metadata_capture_preview_thumbnail.dart';
@@ -79,11 +80,18 @@ class _VideoMetadataPreviewScreenState
   /// Creates a [DivineVideoPlayerController], initializes it, enables
   /// looping, and starts playback automatically.
   Future<void> _initializePlayer() async {
+    // Stop-motion clips play their frames via [StopMotionPlayer]; there is no
+    // video to load into the native player.
+    if (widget.clip.isStopMotion) return;
+
+    final video = widget.clip.video;
+    if (video == null) return;
+
     _controller = DivineVideoPlayerController(useTexture: true);
     if (mounted) await _controller!.initialize();
     if (mounted) {
       await _controller!.setSource(
-        VideoClip.file(await widget.clip.video.safeFilePath()),
+        VideoClip.file(await video.safeFilePath()),
       );
     }
     if (mounted) await _controller!.setLooping(looping: true);
@@ -150,6 +158,7 @@ class _VideoPreviewContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final aspectRatio = clip.targetAspectRatio.value;
+    final stopMotionFrames = clip.stopMotionFrames;
 
     // Hero animation from metadata screen
     return Hero(
@@ -161,10 +170,20 @@ class _VideoPreviewContent extends ConsumerWidget {
           aspectRatio: aspectRatio,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
-            child: DivineVideoPlayer(
-              controller: controller,
-              placeholder: VideoMetadataCapturePreviewThumbnail(clip: clip),
-            ),
+            child: stopMotionFrames != null
+                ? StopMotionPlayer(
+                    frames: stopMotionFrames,
+                    cacheHeight:
+                        (MediaQuery.sizeOf(context).height *
+                                MediaQuery.devicePixelRatioOf(context))
+                            .round(),
+                  )
+                : DivineVideoPlayer(
+                    controller: controller,
+                    placeholder: VideoMetadataCapturePreviewThumbnail(
+                      clip: clip,
+                    ),
+                  ),
           ),
         ),
       ),

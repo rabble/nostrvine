@@ -2,13 +2,12 @@
 // ABOUTME: Handles save, load, delete, clear, and migration from SharedPreferences
 
 import 'dart:convert';
-import 'dart:io';
-
 import 'package:db_client/db_client.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/draft_local_audio_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
+import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/utils/path_resolver.dart';
@@ -81,8 +80,8 @@ class DraftStorageService {
               durationMs: clip.duration.inMilliseconds,
               recordedAt: clip.recordedAt,
               data: json.encode(clip.toJson()),
-              filePath: clip.video.file?.path != null
-                  ? p.basename(clip.video.file!.path)
+              filePath: clip.video?.file?.path != null
+                  ? p.basename(clip.video!.file!.path)
                   : null,
               thumbnailPath: clip.thumbnailPath != null
                   ? p.basename(clip.thumbnailPath!)
@@ -101,8 +100,8 @@ class DraftStorageService {
           publishAttempts: draft.publishAttempts,
           publishError: draft.publishError,
           data: json.encode(draftJson),
-          renderedFilePath: draft.finalRenderedClip?.video.file?.path != null
-              ? p.basename(draft.finalRenderedClip!.video.file!.path)
+          renderedFilePath: draft.finalRenderedClip?.video?.file?.path != null
+              ? p.basename(draft.finalRenderedClip!.video!.file!.path)
               : null,
           renderedThumbnailPath: draft.finalRenderedClip?.thumbnailPath != null
               ? p.basename(draft.finalRenderedClip!.thumbnailPath!)
@@ -178,25 +177,34 @@ class DraftStorageService {
     if (existingDraft != null) {
       final newFilePaths = <String?>{
         for (final clip in draft.clips) ...[
-          clip.video.file?.path,
+          clip.video?.file?.path,
+          // Stop-motion stills are clip-owned source files just like the video;
+          // include them so a still that survives the edit isn't queued for
+          // deletion below.
+          ...?clip.stopMotionFrames?.map((frame) => frame.path),
           clip.thumbnailPath,
         ],
-        draft.finalRenderedClip?.video.file?.path,
+        draft.finalRenderedClip?.video?.file?.path,
         draft.finalRenderedClip?.thumbnailPath,
         draft.customThumbnailPath,
       };
 
       orphanedFiles = <String?>[
         for (final clip in existingDraft.clips) ...[
-          if (!newFilePaths.contains(clip.video.file?.path))
-            clip.video.file?.path,
+          if (!newFilePaths.contains(clip.video?.file?.path))
+            clip.video?.file?.path,
+          // A still captured into this session and then removed no longer
+          // appears in the new frame list, so queue it for deferred cleanup.
+          ...?clip.stopMotionFrames
+              ?.map((frame) => frame.path)
+              .where((path) => !newFilePaths.contains(path)),
           if (!newFilePaths.contains(clip.thumbnailPath)) clip.thumbnailPath,
         ],
         if (existingDraft.finalRenderedClip != null) ...[
           if (!newFilePaths.contains(
-            existingDraft.finalRenderedClip?.video.file?.path,
+            existingDraft.finalRenderedClip?.video?.file?.path,
           ))
-            existingDraft.finalRenderedClip?.video.file?.path,
+            existingDraft.finalRenderedClip?.video?.file?.path,
           if (!newFilePaths.contains(
             existingDraft.finalRenderedClip?.thumbnailPath,
           ))
@@ -222,8 +230,8 @@ class DraftStorageService {
           durationMs: clip.duration.inMilliseconds,
           recordedAt: clip.recordedAt,
           data: json.encode(clip.toJson()),
-          filePath: clip.video.file?.path != null
-              ? p.basename(clip.video.file!.path)
+          filePath: clip.video?.file?.path != null
+              ? p.basename(clip.video!.file!.path)
               : null,
           thumbnailPath: clip.thumbnailPath != null
               ? p.basename(clip.thumbnailPath!)
@@ -242,8 +250,8 @@ class DraftStorageService {
       publishAttempts: draft.publishAttempts,
       publishError: draft.publishError,
       data: json.encode(draftJson),
-      renderedFilePath: draft.finalRenderedClip?.video.file?.path != null
-          ? p.basename(draft.finalRenderedClip!.video.file!.path)
+      renderedFilePath: draft.finalRenderedClip?.video?.file?.path != null
+          ? p.basename(draft.finalRenderedClip!.video!.file!.path)
           : null,
       renderedThumbnailPath: draft.finalRenderedClip?.thumbnailPath != null
           ? p.basename(draft.finalRenderedClip!.thumbnailPath!)
@@ -447,21 +455,29 @@ class DraftStorageService {
     return _clearMissingFinalRenderedClip(draft.copyWith(clips: validClips));
   }
 
-  /// Filter clips to only include those with existing video files.
+  /// Filter clips to only those whose source media still exists.
+  ///
+  /// Normal video clips are kept only when their file resolves. Frames-only
+  /// stop-motion clips are *sanitized* rather than dropped wholesale: unreadable
+  /// stills are removed and the clip survives while at least one readable still
+  /// remains (it drops out only when none do). This mirrors the per-frame
+  /// salvage in `VideoEditorNotifier.restoreDraft`, so list/autosave validation
+  /// can't hide a stop-motion draft before restore gets a chance to recover it.
   List<DivineVideoClip> _filterValidClips(List<DivineVideoClip> clips) {
-    return clips.where((clip) {
-      final videoPath = clip.video.file?.path;
-      if (videoPath == null) return false;
-      return File(videoPath).existsSync();
-    }).toList();
+    return [
+      for (final clip in clips)
+        if (clip.isStopMotion)
+          ?StopMotionFrameOps.sanitizedClip(clip)
+        else if (clip.hasResolvableVideoFile)
+          clip,
+    ];
   }
 
   DivineVideoDraft _clearMissingFinalRenderedClip(DivineVideoDraft draft) {
     final finalClip = draft.finalRenderedClip;
     if (finalClip == null) return draft;
 
-    final videoPath = finalClip.video.file?.path;
-    if (videoPath != null && File(videoPath).existsSync()) return draft;
+    if (finalClip.hasResolvableVideoFile) return draft;
 
     Log.info(
       '📝 Draft ${draft.id}: final rendered clip missing, clearing reference',
@@ -539,7 +555,9 @@ class DraftStorageService {
     final draft = await getDraftById(id);
     if (draft == null) return;
 
-    // Delete from DB first (clips cascade via FK), then delete files
+    // Delete the draft and its clip rows first, then delete files — so the
+    // reference scan in FileCleanupService no longer sees this draft's clips
+    // and can reclaim their media (DraftsDao.deleteDraft removes both rows).
     await _draftsDao.deleteDraft(id);
 
     // Ghost frames live only in the clip `data` blob, so — like draft-local
@@ -694,7 +712,9 @@ class DraftStorageService {
         .expand((draft) => draft.localAudioFilePaths)
         .toSet();
 
-    // Clear DB first (clips cascade via FK), then delete files
+    // Clear drafts and their clip rows first, then delete files — so the
+    // reference scan can reclaim the media (DraftsDao.clearAll removes both;
+    // library clips with a NULL draftId are preserved).
     await _draftsDao.clearAll();
 
     // Every draft and its clips are gone; the clips that survive are library

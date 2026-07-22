@@ -38,7 +38,7 @@ class _VideoMetadataClassicPreviewThumbnailState
       clip,
     ) {
       if (clip != null && _controller == null) {
-        clip.video.safeFilePath().then((path) {
+        clip.requireVideo.safeFilePath().then((path) {
           if (mounted) _initPlayer(path);
         });
       }

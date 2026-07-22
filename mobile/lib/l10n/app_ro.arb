@@ -2771,6 +2771,8 @@
     "videoRecorderCaptureCloseLabel": "Închide",
     "videoRecorderCaptureNextLabel": "Următorul",
     "videoRecorderLipSyncAddAudioFirst": "Adaugă audio înainte de înregistrare",
+    "videoRecorderStopMotionAssembling": "Se creează videoclipul…",
+    "videoRecorderStopMotionAssembleFailed": "Videoclipul nu a putut fi creat. Încearcă din nou.",
     "videoRecorderToggleFlashLabel": "Activează/dezactivează blițul",
     "videoRecorderCycleTimerLabel": "Schimbă temporizatorul",
     "videoRecorderToggleAspectRatioLabel": "Schimbă raportul de aspect",
@@ -2787,6 +2789,14 @@
     "@videoRecorderLibraryOpenLabel": {
         "placeholders": {
             "clipCount": {
+                "type": "int"
+            }
+        }
+    },
+    "videoRecorderLibraryOpenStopMotionLabel": "{frameCount, plural, =0{Deschide biblioteca stop-motion} one{Deschide biblioteca stop-motion, 1 cadru} few{Deschide biblioteca stop-motion, {frameCount} cadre} other{Deschide biblioteca stop-motion, {frameCount} de cadre}}",
+    "@videoRecorderLibraryOpenStopMotionLabel": {
+        "placeholders": {
+            "frameCount": {
                 "type": "int"
             }
         }
@@ -4084,6 +4094,9 @@
     "videoEditorMergeLabel": "Îmbină",
     "videoEditorMergeSelectedClipsSemanticLabel": "Îmbină clipurile selectate",
     "videoEditorDeleteSelectedClipsSemanticLabel": "Șterge clipurile selectate",
+    "videoEditorDeleteSelectedFramesSemanticLabel": "Șterge cadrele selectate",
+    "videoEditorReverseSelectedFramesSemanticLabel": "Inversează cadrele selectate",
+    "videoEditorStopMotionTooShortSnackbar": "Videoclipul tău trebuie să dureze cel puțin {seconds}s — capturează încă câteva cadre.",
     "videoEditorMergeProgressLabel": "Un moment, îți îmbinăm clipurile",
     "videoEditorMergeFailed": "Clipurile nu au putut fi îmbinate. Încearcă din nou.",
     "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device.",
@@ -4562,5 +4575,13 @@
   "authSignInErrorNetwork": "Serverul nu poate fi contactat. Verifică-ți conexiunea și încearcă din nou.",
   "authSignInErrorGeneric": "Ceva n-a mers bine. Încearcă din nou.",
   "authSignInOptionsHintPrefix": "Nu știi sigur cum te-ai conectat data trecută? ",
-  "authSignInOptionsHintCta": "Vezi toate opțiunile de conectare"
+  "authSignInOptionsHintCta": "Vezi toate opțiunile de conectare",
+    "videoEditorStopMotionFramesPerImageLabel": "Cadre pe imagine",
+    "videoEditorStopMotionFramesPerImageValueSemanticLabel": "{count} cadre pe imagine",
+    "videoEditorStopMotionIncreaseFramesPerImageSemanticLabel": "Mărește cadrele pe imagine",
+    "videoEditorStopMotionDecreaseFramesPerImageSemanticLabel": "Micșorează cadrele pe imagine",
+    "videoEditorStopMotionFrameSemanticLabel": "Cadru stop-motion {position} din {total}",
+    "videoEditorStopMotionFramesCount": "{count, plural, =1{1 cadru} other{{count} cadre}}",
+    "videoEditorStopMotionFramesPerImageButtonLabel": "Cadre",
+    "libraryStopMotionClipLabel": "Clip stop-motion"
 }

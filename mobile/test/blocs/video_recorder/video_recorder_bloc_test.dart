@@ -12,6 +12,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' as model show AspectRatio, AudioEvent;
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
@@ -82,6 +83,8 @@ class _MockVideoEditor extends Mock implements VideoEditorNotifier {}
 class _MockSharedPreferences extends Mock implements SharedPreferences {}
 
 class _MockEditorVideo extends Mock implements EditorVideo {}
+
+class _MockFile extends Mock implements File {}
 
 /// A fake wakelock platform —
 /// production code calls `WakelockPlus.enable/disable` around every
@@ -171,6 +174,8 @@ void main() {
         originalAspectRatio: 1,
       ),
     );
+    registerFallbackValue(<StopMotionClipFrame>[]);
+    registerFallbackValue(Duration.zero);
   });
 
   setUp(() {
@@ -200,9 +205,7 @@ void main() {
     when(
       () => cameraService.availableVideoStabilizationModes,
     ).thenReturn(const [DivineVideoStabilizationMode.off]);
-    when(
-      () => cameraService.isVideoStabilizationSupported,
-    ).thenReturn(false);
+    when(() => cameraService.isVideoStabilizationSupported).thenReturn(false);
     when(() => cameraService.initializationError).thenReturn(null);
     when(() => cameraService.dispose()).thenAnswer((_) async {});
     when(
@@ -210,9 +213,9 @@ void main() {
     ).thenAnswer((_) async {});
 
     when(() => clipManager.clips).thenReturn(const []);
-    when(() => clipManager.remainingDuration).thenReturn(
-      const Duration(seconds: 6),
-    );
+    when(
+      () => clipManager.remainingDuration,
+    ).thenReturn(const Duration(seconds: 6));
     when(() => clipManager.totalDuration).thenReturn(Duration.zero);
     when(
       () => clipManager.clearAll(
@@ -229,6 +232,8 @@ void main() {
 
     when(() => prefs.getString(any())).thenReturn(null);
     when(() => prefs.setString(any(), any())).thenAnswer((_) async => true);
+    when(() => prefs.getBool(any())).thenReturn(null);
+    when(() => prefs.setBool(any(), any())).thenAnswer((_) async => true);
   });
 
   /// Builds a bloc with all dependencies wired to the mocks.
@@ -594,9 +599,7 @@ void main() {
           ).thenAnswer((_) async => true);
         },
         build: () => buildBloc()
-          ..emit(
-            const VideoRecorderBlocState(flashMode: DivineFlashMode.off),
-          ),
+          ..emit(const VideoRecorderBlocState(flashMode: DivineFlashMode.off)),
         act: (bloc) async {
           bloc.add(const VideoRecorderFlashToggled());
           await Future<void>.delayed(Duration.zero);
@@ -765,10 +768,8 @@ void main() {
             ),
           ).called(1);
           verify(
-            () => prefs.setString(
-              'camera_last_used_stabilization',
-              'cinematic',
-            ),
+            () =>
+                prefs.setString('camera_last_used_stabilization', 'cinematic'),
           ).called(1);
         },
       );
@@ -799,9 +800,7 @@ void main() {
         ),
         expect: () => const <VideoRecorderBlocState>[],
         verify: (_) {
-          verifyNever(
-            () => cameraService.setVideoStabilizationMode(any()),
-          );
+          verifyNever(() => cameraService.setVideoStabilizationMode(any()));
         },
       );
 
@@ -820,9 +819,7 @@ void main() {
         ),
         expect: () => const <VideoRecorderBlocState>[],
         verify: (_) {
-          verifyNever(
-            () => cameraService.setVideoStabilizationMode(any()),
-          );
+          verifyNever(() => cameraService.setVideoStabilizationMode(any()));
           verifyNever(
             () => prefs.setString('camera_last_used_stabilization', any()),
           );
@@ -893,18 +890,50 @@ void main() {
           const VideoRecorderBlocState(),
         ],
       );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'persists each choice',
+        build: buildBloc,
+        act: (bloc) async {
+          bloc.add(const VideoRecorderGridLinesToggled());
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(const VideoRecorderGridLinesToggled());
+        },
+        verify: (_) {
+          verify(
+            () => prefs.setBool('camera_grid_lines_enabled', true),
+          ).called(1);
+          verify(
+            () => prefs.setBool('camera_grid_lines_enabled', false),
+          ).called(1);
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'a persisted off choice keeps the grid hidden on mode switch',
+        setUp: () {
+          when(
+            () => prefs.getBool('camera_grid_lines_enabled'),
+          ).thenReturn(false);
+        },
+        build: buildBloc,
+        act: (bloc) => bloc.add(
+          const VideoRecorderRecorderModeSet(VideoRecorderMode.classic),
+        ),
+        verify: (bloc) {
+          expect(bloc.state.recorderMode, VideoRecorderMode.classic);
+          expect(bloc.state.showGridLines, isFalse);
+        },
+      );
     });
 
     group('VideoRecorderShowLastClipOverlayToggled', () {
       blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
         'toggles showLastClipOverlay',
         build: buildBloc,
-        act: (bloc) => bloc.add(
-          const VideoRecorderShowLastClipOverlayToggled(),
-        ),
-        expect: () => const [
-          VideoRecorderBlocState(showLastClipOverlay: true),
-        ],
+        act: (bloc) =>
+            bloc.add(const VideoRecorderShowLastClipOverlayToggled()),
+        expect: () => const [VideoRecorderBlocState(showLastClipOverlay: true)],
       );
     });
 
@@ -914,9 +943,7 @@ void main() {
         setUp: () {
           when(
             () => cameraService.setZoomLevel(any()),
-          ).thenAnswer(
-            (inv) async => inv.positionalArguments.first as double,
-          );
+          ).thenAnswer((inv) async => inv.positionalArguments.first as double);
         },
         build: buildBloc,
         act: (bloc) => bloc.add(const VideoRecorderZoomLevelSet(2)),
@@ -940,9 +967,7 @@ void main() {
           // until the first set refreshes them to the live range (2.5) —
           // mirroring how the real service learns of the restriction.
           var restricted = false;
-          when(() => cameraService.setZoomLevel(any())).thenAnswer((
-            inv,
-          ) async {
+          when(() => cameraService.setZoomLevel(any())).thenAnswer((inv) async {
             final requested = inv.positionalArguments.first as double;
             if (requested <= 2.5) return requested;
             restricted = true;
@@ -964,44 +989,39 @@ void main() {
         ],
       );
 
-      test(
-        'heals a stale shrunk ceiling on pinch-out even when the clamp '
-        'pins the zoom to the current level',
-        () async {
-          // The live max was restricted to 2.5 and the user is pinned there.
-          // The restriction has since lifted (live max back to 5.0) but the
-          // service still advertises the stale 2.5 until the next set's
-          // read-back refreshes it. A pinch-out clamps back to 2.5 (== the
-          // current zoom), so the applied zoom doesn't move — the dispatch
-          // must still fire so the ceiling heals on this gesture rather than
-          // staying capped until the user first pinches back in.
-          var healed = false;
-          when(() => cameraService.setZoomLevel(any())).thenAnswer((inv) async {
-            healed = true;
-            return inv.positionalArguments.first as double;
-          });
-          when(
-            () => cameraService.maxZoomLevel,
-          ).thenAnswer((_) => healed ? 5.0 : 2.5);
+      test('heals a stale shrunk ceiling on pinch-out even when the clamp '
+          'pins the zoom to the current level', () async {
+        // The live max was restricted to 2.5 and the user is pinned there.
+        // The restriction has since lifted (live max back to 5.0) but the
+        // service still advertises the stale 2.5 until the next set's
+        // read-back refreshes it. A pinch-out clamps back to 2.5 (== the
+        // current zoom), so the applied zoom doesn't move — the dispatch
+        // must still fire so the ceiling heals on this gesture rather than
+        // staying capped until the user first pinches back in.
+        var healed = false;
+        when(() => cameraService.setZoomLevel(any())).thenAnswer((inv) async {
+          healed = true;
+          return inv.positionalArguments.first as double;
+        });
+        when(
+          () => cameraService.maxZoomLevel,
+        ).thenAnswer((_) => healed ? 5.0 : 2.5);
 
-          final bloc = buildBloc()
-            ..emit(
-              const VideoRecorderBlocState(zoomLevel: 2.5, maxZoomLevel: 2.5),
-            );
-          addTearDown(bloc.close);
-
-          bloc.add(
-            VideoRecorderScaleStarted(ScaleStartDetails(pointerCount: 2)),
+        final bloc = buildBloc()
+          ..emit(
+            const VideoRecorderBlocState(zoomLevel: 2.5, maxZoomLevel: 2.5),
           );
-          await pumpEventQueue();
-          // 2.5 × 1.6 = 4.0 > stale max 2.5, so clampedZoom pins back to 2.5.
-          bloc.add(VideoRecorderScaleUpdated(ScaleUpdateDetails(scale: 1.6)));
-          await pumpEventQueue();
+        addTearDown(bloc.close);
 
-          verify(() => cameraService.setZoomLevel(2.5)).called(1);
-          expect(bloc.state.maxZoomLevel, 5.0);
-        },
-      );
+        bloc.add(VideoRecorderScaleStarted(ScaleStartDetails(pointerCount: 2)));
+        await pumpEventQueue();
+        // 2.5 × 1.6 = 4.0 > stale max 2.5, so clampedZoom pins back to 2.5.
+        bloc.add(VideoRecorderScaleUpdated(ScaleUpdateDetails(scale: 1.6)));
+        await pumpEventQueue();
+
+        verify(() => cameraService.setZoomLevel(2.5)).called(1);
+        expect(bloc.state.maxZoomLevel, 5.0);
+      });
 
       blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
         'no-op when zoom value out of bounds',
@@ -1058,9 +1078,7 @@ void main() {
           ).thenAnswer((_) async => true);
         },
         build: buildBloc,
-        act: (bloc) => bloc.add(
-          const VideoRecorderRecordingToggleRequested(),
-        ),
+        act: (bloc) => bloc.add(const VideoRecorderRecordingToggleRequested()),
         // start emits: isStartingRecording=true → recording → isStartingRecording=false
         verify: (bloc) {
           expect(bloc.state.isStartingRecording, isFalse);
@@ -1073,9 +1091,7 @@ void main() {
           when(() => cameraService.isSwitchingCamera).thenReturn(true);
         },
         build: buildBloc,
-        act: (bloc) => bloc.add(
-          const VideoRecorderRecordingToggleRequested(),
-        ),
+        act: (bloc) => bloc.add(const VideoRecorderRecordingToggleRequested()),
         expect: () => const <VideoRecorderBlocState>[],
         verify: (_) {
           verifyNever(
@@ -1162,143 +1178,137 @@ void main() {
       );
     });
 
-    group(
-      'RecordingStartRequested → flags-in-state migration',
-      () {
-        blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
-          'sets isStartingRecording true before the camera call and false '
-          'after, with recordingState transitioning to recording',
-          setUp: () {
-            when(
-              () => cameraService.startRecording(
-                maxDuration: any(named: 'maxDuration'),
-              ),
-            ).thenAnswer((_) async => true);
-          },
-          build: buildBloc,
-          act: (bloc) => bloc.add(const VideoRecorderRecordingStartRequested()),
-          // Expected sequence:
-          //   1. isStartingRecording=true, baseZoomLevel=1.0
-          //   2. recordingState=recording (no countdown path)
-          //   3. isStartingRecording=false (success)
-          verify: (bloc) {
-            expect(bloc.state.recordingState, VideoRecorderState.recording);
-            expect(bloc.state.isStartingRecording, isFalse);
-          },
-        );
-
-        blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
-          'on camera-rejected start, recordingState returns to idle and '
-          'isStartingRecording resets to false',
-          setUp: () {
-            when(
-              () => cameraService.startRecording(
-                maxDuration: any(named: 'maxDuration'),
-              ),
-            ).thenAnswer((_) async => false);
-          },
-          build: buildBloc,
-          act: (bloc) => bloc.add(const VideoRecorderRecordingStartRequested()),
-          verify: (bloc) {
-            expect(bloc.state.recordingState, VideoRecorderState.idle);
-            expect(bloc.state.isStartingRecording, isFalse);
-          },
-        );
-
-        blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
-          'guards against re-entry when isStartingRecording is already true',
-          build: () => buildBloc()
-            ..emit(
-              const VideoRecorderBlocState(isStartingRecording: true),
+    group('RecordingStartRequested → flags-in-state migration', () {
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'sets isStartingRecording true before the camera call and false '
+        'after, with recordingState transitioning to recording',
+        setUp: () {
+          when(
+            () => cameraService.startRecording(
+              maxDuration: any(named: 'maxDuration'),
             ),
-          act: (bloc) => bloc.add(const VideoRecorderRecordingStartRequested()),
-          expect: () => const <VideoRecorderBlocState>[],
-          verify: (_) {
-            verifyNever(
-              () => cameraService.startRecording(
-                maxDuration: any(named: 'maxDuration'),
-              ),
-            );
-          },
-        );
+          ).thenAnswer((_) async => true);
+        },
+        build: buildBloc,
+        act: (bloc) => bloc.add(const VideoRecorderRecordingStartRequested()),
+        // Expected sequence:
+        //   1. isStartingRecording=true, baseZoomLevel=1.0
+        //   2. recordingState=recording (no countdown path)
+        //   3. isStartingRecording=false (success)
+        verify: (bloc) {
+          expect(bloc.state.recordingState, VideoRecorderState.recording);
+          expect(bloc.state.isStartingRecording, isFalse);
+        },
+      );
 
-        blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
-          'guards against start when isStoppingRecording is true',
-          build: () => buildBloc()
-            ..emit(
-              const VideoRecorderBlocState(isStoppingRecording: true),
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'on camera-rejected start, recordingState returns to idle and '
+        'isStartingRecording resets to false',
+        setUp: () {
+          when(
+            () => cameraService.startRecording(
+              maxDuration: any(named: 'maxDuration'),
             ),
-          act: (bloc) => bloc.add(const VideoRecorderRecordingStartRequested()),
-          expect: () => const <VideoRecorderBlocState>[],
-        );
+          ).thenAnswer((_) async => false);
+        },
+        build: buildBloc,
+        act: (bloc) => bloc.add(const VideoRecorderRecordingStartRequested()),
+        verify: (bloc) {
+          expect(bloc.state.recordingState, VideoRecorderState.idle);
+          expect(bloc.state.isStartingRecording, isFalse);
+        },
+      );
 
-        blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
-          'starts classic recording immediately when capture timer was set',
-          setUp: () {
-            when(
-              () => cameraService.startRecording(
-                maxDuration: any(named: 'maxDuration'),
-              ),
-            ).thenAnswer((_) async => true);
-          },
-          build: () => buildBloc()
-            ..emit(
-              const VideoRecorderBlocState(
-                recorderMode: VideoRecorderMode.classic,
-                aspectRatio: model.AspectRatio.square,
-                showGridLines: true,
-                timerDuration: TimerDuration.three,
-              ),
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'guards against re-entry when isStartingRecording is already true',
+        build: () =>
+            buildBloc()
+              ..emit(const VideoRecorderBlocState(isStartingRecording: true)),
+        act: (bloc) => bloc.add(const VideoRecorderRecordingStartRequested()),
+        expect: () => const <VideoRecorderBlocState>[],
+        verify: (_) {
+          verifyNever(
+            () => cameraService.startRecording(
+              maxDuration: any(named: 'maxDuration'),
             ),
-          act: (bloc) => bloc.add(const VideoRecorderRecordingStartRequested()),
-          expect: () => const [
-            VideoRecorderBlocState(
+          );
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'guards against start when isStoppingRecording is true',
+        build: () =>
+            buildBloc()
+              ..emit(const VideoRecorderBlocState(isStoppingRecording: true)),
+        act: (bloc) => bloc.add(const VideoRecorderRecordingStartRequested()),
+        expect: () => const <VideoRecorderBlocState>[],
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'starts classic recording immediately when capture timer was set',
+        setUp: () {
+          when(
+            () => cameraService.startRecording(
+              maxDuration: any(named: 'maxDuration'),
+            ),
+          ).thenAnswer((_) async => true);
+        },
+        build: () => buildBloc()
+          ..emit(
+            const VideoRecorderBlocState(
               recorderMode: VideoRecorderMode.classic,
               aspectRatio: model.AspectRatio.square,
               showGridLines: true,
               timerDuration: TimerDuration.three,
-              isStartingRecording: true,
             ),
-            VideoRecorderBlocState(
-              recorderMode: VideoRecorderMode.classic,
-              recordingState: VideoRecorderState.recording,
-              aspectRatio: model.AspectRatio.square,
-              showGridLines: true,
-              timerDuration: TimerDuration.three,
-              isStartingRecording: true,
+          ),
+        act: (bloc) => bloc.add(const VideoRecorderRecordingStartRequested()),
+        expect: () => const [
+          VideoRecorderBlocState(
+            recorderMode: VideoRecorderMode.classic,
+            aspectRatio: model.AspectRatio.square,
+            showGridLines: true,
+            timerDuration: TimerDuration.three,
+            isStartingRecording: true,
+          ),
+          VideoRecorderBlocState(
+            recorderMode: VideoRecorderMode.classic,
+            recordingState: VideoRecorderState.recording,
+            aspectRatio: model.AspectRatio.square,
+            showGridLines: true,
+            timerDuration: TimerDuration.three,
+            isStartingRecording: true,
+          ),
+          VideoRecorderBlocState(
+            recorderMode: VideoRecorderMode.classic,
+            recordingState: VideoRecorderState.recording,
+            aspectRatio: model.AspectRatio.square,
+            showGridLines: true,
+            timerDuration: TimerDuration.three,
+          ),
+        ],
+        verify: (_) {
+          verifyNever(
+            () => cameraService.setVolumeKeysEnabled(
+              enabled: any(named: 'enabled'),
             ),
-            VideoRecorderBlocState(
-              recorderMode: VideoRecorderMode.classic,
-              recordingState: VideoRecorderState.recording,
-              aspectRatio: model.AspectRatio.square,
-              showGridLines: true,
-              timerDuration: TimerDuration.three,
+          );
+          verify(
+            () => cameraService.startRecording(
+              maxDuration: const Duration(seconds: 6),
             ),
-          ],
-          verify: (_) {
-            verifyNever(
-              () => cameraService.setVolumeKeysEnabled(
-                enabled: any(named: 'enabled'),
-              ),
-            );
-            verify(
-              () => cameraService.startRecording(
-                maxDuration: const Duration(seconds: 6),
-              ),
-            ).called(1);
-          },
-        );
-      },
-    );
+          ).called(1);
+        },
+      );
+    });
 
     group('RecordingStopRequested → start-cancel fast path', () {
       blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
         'when called during startRecording, sets pendingStopAfterStart '
         'without touching the camera service',
-        build: () => buildBloc()
-          ..emit(
-            const VideoRecorderBlocState(isStartingRecording: true),
-          ),
+        build: () =>
+            buildBloc()
+              ..emit(const VideoRecorderBlocState(isStartingRecording: true)),
         act: (bloc) => bloc.add(const VideoRecorderRecordingStopRequested()),
         expect: () => const [
           VideoRecorderBlocState(
@@ -1315,10 +1325,9 @@ void main() {
 
       blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
         'when isStoppingRecording is already true, is fully ignored',
-        build: () => buildBloc()
-          ..emit(
-            const VideoRecorderBlocState(isStoppingRecording: true),
-          ),
+        build: () =>
+            buildBloc()
+              ..emit(const VideoRecorderBlocState(isStoppingRecording: true)),
         act: (bloc) => bloc.add(const VideoRecorderRecordingStopRequested()),
         expect: () => const <VideoRecorderBlocState>[],
         verify: (_) {
@@ -1493,14 +1502,12 @@ void main() {
             () => cameraService.startRecording(
               maxDuration: any(named: 'maxDuration'),
             ),
-          ).thenAnswer(
-            (_) async {
-              // Simulate a slow native start so the second event would
-              // otherwise overlap if the transformer were concurrent.
-              await Future<void>.delayed(const Duration(milliseconds: 50));
-              return true;
-            },
-          );
+          ).thenAnswer((_) async {
+            // Simulate a slow native start so the second event would
+            // otherwise overlap if the transformer were concurrent.
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+            return true;
+          });
         },
         build: buildBloc,
         act: (bloc) async {
@@ -1610,9 +1617,7 @@ void main() {
           when(() => editor.getMetadata(any())).thenAnswer(
             (_) async => VideoMetadata.fromMap(const {'duration': 2000}, 'mp4'),
           );
-          when(
-            () => editor.getThumbnails(any()),
-          ).thenAnswer(
+          when(() => editor.getThumbnails(any())).thenAnswer(
             (_) async => [
               Uint8List.fromList(const [1, 2, 3]),
             ],
@@ -2151,9 +2156,7 @@ void main() {
         'failed camera return must not leave the recorder permanently locked',
         setUp: () {
           when(() => cameraService.isInitialized).thenReturn(false);
-          when(
-            () => cameraService.initializationError,
-          ).thenReturn('boom');
+          when(() => cameraService.initializationError).thenReturn('boom');
         },
         build: () => buildBloc()
           ..emit(
@@ -2187,6 +2190,41 @@ void main() {
           );
           verifyNever(
             () => videoEditor.reset(
+              keepAutosavedDraft: any(named: 'keepAutosavedDraft'),
+            ),
+          );
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'switches to stop-motion mode when opened from a stop-motion editor',
+        setUp: () {
+          when(() => clipManager.clips).thenReturn([
+            DivineVideoClip(
+              id: 'clip_sm_1',
+              stopMotionFrames: const [
+                StopMotionClipFrame(
+                  path: '/f0.jpg',
+                  duration: Duration(milliseconds: 42),
+                ),
+              ],
+              duration: const Duration(milliseconds: 42),
+              recordedAt: DateTime(2024),
+              targetAspectRatio: model.AspectRatio.vertical,
+              originalAspectRatio: 9 / 16,
+            ),
+          ]);
+        },
+        build: buildBloc,
+        act: (bloc) =>
+            bloc.add(const VideoRecorderInitializeRequested(fromEditor: true)),
+        verify: (bloc) {
+          expect(bloc.state.recorderMode, VideoRecorderMode.stopMotion);
+          // The mode's grid default applies even on this direct switch.
+          expect(bloc.state.showGridLines, isTrue);
+          // Setting the mode directly must not clear the composition.
+          verifyNever(
+            () => clipManager.clearAll(
               keepAutosavedDraft: any(named: 'keepAutosavedDraft'),
             ),
           );
@@ -2254,9 +2292,7 @@ void main() {
         build: buildBloc,
         act: (bloc) => bloc.add(const VideoRecorderInitializeRequested()),
         verify: (_) {
-          verifyNever(
-            () => cameraService.setVideoStabilizationMode(any()),
-          );
+          verifyNever(() => cameraService.setVideoStabilizationMode(any()));
         },
       );
 
@@ -2266,9 +2302,7 @@ void main() {
         build: buildBloc,
         act: (bloc) => bloc.add(const VideoRecorderInitializeRequested()),
         verify: (_) {
-          verifyNever(
-            () => cameraService.setVideoStabilizationMode(any()),
-          );
+          verifyNever(() => cameraService.setVideoStabilizationMode(any()));
         },
       );
 
@@ -2282,9 +2316,7 @@ void main() {
         build: buildBloc,
         act: (bloc) => bloc.add(const VideoRecorderInitializeRequested()),
         verify: (_) {
-          verifyNever(
-            () => cameraService.setVideoStabilizationMode(any()),
-          );
+          verifyNever(() => cameraService.setVideoStabilizationMode(any()));
         },
       );
 
@@ -2326,6 +2358,656 @@ void main() {
         await bloc.close();
         verify(() => cameraService.dispose()).called(1);
       });
+    });
+
+    group('stop-motion', () {
+      // Ingest and eager-persist filter unreadable stills via existsSync, so
+      // the frame paths used here must be real, non-empty files.
+      late Directory frameDir;
+      late String framePath;
+      late String frameAPath;
+      late String frameBPath;
+      // Releases a gated capturePhoto() in the tests that force a still to
+      // land after a session-claiming event.
+      late Completer<void> captureGate;
+
+      DivineVideoClip fakeClip() => DivineVideoClip(
+        id: 'clip_sm_1',
+        video: EditorVideo.file('/out.mp4'),
+        duration: const Duration(milliseconds: 250),
+        recordedAt: DateTime(2024),
+        targetAspectRatio: model.AspectRatio.vertical,
+        originalAspectRatio: 9 / 16,
+      );
+
+      void stubClipIngest() {
+        when(
+          () => clipManager.addStopMotionClip(
+            id: any(named: 'id'),
+            frames: any(named: 'frames'),
+            originalAspectRatio: any(named: 'originalAspectRatio'),
+            targetAspectRatio: any(named: 'targetAspectRatio'),
+            duration: any(named: 'duration'),
+            thumbnailPath: any(named: 'thumbnailPath'),
+            lensMetadata: any(named: 'lensMetadata'),
+          ),
+        ).thenReturn(fakeClip());
+        when(() => clipManager.clips).thenReturn([fakeClip()]);
+        when(
+          () => clipManager.saveClipToLibrary(any()),
+        ).thenAnswer((_) async => true);
+      }
+
+      setUp(() {
+        frameDir = Directory.systemTemp.createTempSync('sm_frames');
+        framePath = '${frameDir.path}/frame.jpg';
+        frameAPath = '${frameDir.path}/a.jpg';
+        frameBPath = '${frameDir.path}/b.jpg';
+        for (final path in [framePath, frameAPath, frameBPath]) {
+          File(path).writeAsBytesSync(const [0]);
+        }
+
+        when(
+          () => cameraService.capturePhoto(),
+        ).thenAnswer((_) async => PhotoCaptureResult(filePath: framePath));
+        // Capture and undo eagerly mirror the session into the library.
+        when(
+          () => clipManager.saveStopMotionSessionToLibrary(
+            id: any(named: 'id'),
+            frames: any(named: 'frames'),
+            originalAspectRatio: any(named: 'originalAspectRatio'),
+            targetAspectRatio: any(named: 'targetAspectRatio'),
+            duration: any(named: 'duration'),
+            thumbnailPath: any(named: 'thumbnailPath'),
+            lensMetadata: any(named: 'lensMetadata'),
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => clipManager.removeStopMotionSessionFromLibrary(any()),
+        ).thenAnswer((_) async {});
+      });
+
+      tearDown(() {
+        if (frameDir.existsSync()) frameDir.deleteSync(recursive: true);
+      });
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'a camera re-sync keeps the captured frames (session not split)',
+        setUp: () {
+          when(
+            () => cameraService.switchCamera(),
+          ).thenAnswer((_) async => true);
+        },
+        build: buildBloc,
+        seed: () => VideoRecorderBlocState(
+          recorderMode: VideoRecorderMode.stopMotion,
+          stopMotionFrames: [frameAPath, frameBPath],
+        ),
+        act: (bloc) => bloc.add(const VideoRecorderCameraSwitched()),
+        verify: (bloc) =>
+            expect(bloc.state.stopMotionFrames, [frameAPath, frameBPath]),
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'a captured frame is appended without rendering a clip',
+        build: buildBloc,
+        seed: () => const VideoRecorderBlocState(
+          recorderMode: VideoRecorderMode.stopMotion,
+        ),
+        act: (bloc) => bloc.add(const VideoRecorderStopMotionFrameCaptured()),
+        wait: const Duration(milliseconds: 20),
+        verify: (bloc) {
+          verify(() => cameraService.capturePhoto()).called(1);
+          expect(bloc.state.stopMotionFrames, [framePath]);
+          verifyNever(
+            () => clipManager.addClip(
+              video: any(named: 'video'),
+              originalAspectRatio: any(named: 'originalAspectRatio'),
+              targetAspectRatio: any(named: 'targetAspectRatio'),
+              limitClipDuration: any(named: 'limitClipDuration'),
+              duration: any(named: 'duration'),
+              thumbnailPath: any(named: 'thumbnailPath'),
+              lensMetadata: any(named: 'lensMetadata'),
+            ),
+          );
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'a frame captured while assembling is dropped',
+        build: buildBloc,
+        seed: () => const VideoRecorderBlocState(
+          recorderMode: VideoRecorderMode.stopMotion,
+          stopMotionStatus: StopMotionStatus.assembling,
+        ),
+        act: (bloc) => bloc.add(const VideoRecorderStopMotionFrameCaptured()),
+        wait: const Duration(milliseconds: 20),
+        verify: (bloc) {
+          // The assemble owns the session: it reads the frame list, saves it,
+          // then clears it. A still appended here races that save.
+          verifyNever(() => cameraService.capturePhoto());
+          expect(bloc.state.stopMotionFrames, isEmpty);
+          expect(bloc.state.stopMotionStatus, StopMotionStatus.assembling);
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'a frame captured while ready (assemble done, navigation pending) '
+        'skips the wasted native capture',
+        build: buildBloc,
+        seed: () => const VideoRecorderBlocState(
+          recorderMode: VideoRecorderMode.stopMotion,
+          stopMotionStatus: StopMotionStatus.ready,
+        ),
+        act: (bloc) => bloc.add(const VideoRecorderStopMotionFrameCaptured()),
+        wait: const Duration(milliseconds: 20),
+        verify: (bloc) {
+          // The after-await guard deletes such a still anyway; the top guard
+          // short-circuits the native capture in the ~1-frame ready window.
+          verifyNever(() => cameraService.capturePhoto());
+          expect(bloc.state.stopMotionStatus, StopMotionStatus.ready);
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'clears a leftover ready on re-init so the shutter works after '
+        'backing out of the editor',
+        setUp: () {
+          when(
+            () => cameraService.initialize(
+              videoQuality: any(named: 'videoQuality'),
+              initialLens: any(named: 'initialLens'),
+              enableAutoLensSwitch: any(named: 'enableAutoLensSwitch'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => cameraService.setRemoteRecordControlEnabled(
+              enabled: any(named: 'enabled'),
+            ),
+          ).thenAnswer((_) async => true);
+          // Same mode persisted, so init's mode branch is skipped and nothing
+          // else would move a leftover `ready` back to `idle`.
+          when(
+            () => prefs.getString(VideoRecorderMode.persistenceKey),
+          ).thenReturn(VideoRecorderMode.stopMotion.name);
+        },
+        build: buildBloc,
+        seed: () => const VideoRecorderBlocState(
+          recorderMode: VideoRecorderMode.stopMotion,
+          stopMotionStatus: StopMotionStatus.ready,
+        ),
+        act: (bloc) async {
+          bloc.add(const VideoRecorderInitializeRequested());
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          bloc.add(const VideoRecorderStopMotionFrameCaptured());
+        },
+        wait: const Duration(milliseconds: 40),
+        verify: (bloc) {
+          // Without the reset the top guard would swallow this tap (leftover
+          // `ready`): no capture, empty frames. With it, a fresh session
+          // starts.
+          verify(() => cameraService.capturePhoto()).called(1);
+          expect(bloc.state.stopMotionFrames, [framePath]);
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'a frame that lands after an assemble started is dropped, not '
+        're-persisted as a new session',
+        setUp: () {
+          stubClipIngest();
+          // "Next" stays tappable across the slow native capture, so the
+          // assemble claims the session while this still is in flight. The
+          // gate holds the capture open until the act has run the assemble,
+          // so the interleave is forced rather than timed.
+          captureGate = Completer<void>();
+          when(() => cameraService.capturePhoto()).thenAnswer((_) async {
+            await captureGate.future;
+            return PhotoCaptureResult(filePath: framePath);
+          });
+        },
+        build: buildBloc,
+        seed: () => VideoRecorderBlocState(
+          recorderMode: VideoRecorderMode.stopMotion,
+          stopMotionFrames: [frameAPath],
+        ),
+        act: (bloc) async {
+          bloc.add(const VideoRecorderStopMotionFrameCaptured());
+          // Let the handler reach the gated capturePhoto().
+          await pumpEventQueue();
+          // Tap "Next" while the capture is still in flight.
+          bloc.add(const VideoRecorderStopMotionAssembleRequested());
+          await pumpEventQueue();
+          // Only now does the still land — strictly after the assemble.
+          captureGate.complete();
+          await pumpEventQueue();
+        },
+        verify: (bloc) {
+          // A late still must not reopen the session the assemble just closed,
+          // nor clobber the terminal status back to `idle` — that reopens the
+          // mode wheel mid-save and re-writes a phantom one-frame library row.
+          expect(bloc.state.stopMotionFrames, isEmpty);
+          expect(bloc.state.stopMotionStatus, StopMotionStatus.ready);
+          verifyNever(
+            () => clipManager.saveStopMotionSessionToLibrary(
+              id: any(named: 'id'),
+              frames: any(named: 'frames'),
+              originalAspectRatio: any(named: 'originalAspectRatio'),
+              targetAspectRatio: any(named: 'targetAspectRatio'),
+              duration: any(named: 'duration'),
+              thumbnailPath: any(named: 'thumbnailPath'),
+              lensMetadata: any(named: 'lensMetadata'),
+            ),
+          );
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'a frame that lands after a mode switch is dropped, not re-persisted '
+        'on the new mode',
+        setUp: () {
+          stubClipIngest();
+          // The mode wheel stays live during an idle capture, so a swipe can
+          // land the switch while this still is in flight. The gate holds the
+          // capture open until the act has run the switch, so the interleave
+          // is forced rather than timed.
+          captureGate = Completer<void>();
+          when(() => cameraService.capturePhoto()).thenAnswer((_) async {
+            await captureGate.future;
+            return PhotoCaptureResult(filePath: framePath);
+          });
+        },
+        build: buildBloc,
+        seed: () => VideoRecorderBlocState(
+          recorderMode: VideoRecorderMode.stopMotion,
+          stopMotionFrames: [frameAPath],
+        ),
+        act: (bloc) async {
+          bloc.add(const VideoRecorderStopMotionFrameCaptured());
+          // Let the handler reach the gated capturePhoto().
+          await pumpEventQueue();
+          // Swipe the wheel off stop-motion while the capture is in flight.
+          bloc.add(
+            const VideoRecorderRecorderModeSet(VideoRecorderMode.upload),
+          );
+          await pumpEventQueue();
+          // Only now does the still land — strictly after the switch.
+          captureGate.complete();
+          await pumpEventQueue();
+        },
+        verify: (bloc) {
+          // The switch discarded the session and moved the recorder off
+          // stop-motion; appending the resumed still would write a phantom
+          // one-frame library row on the new mode, so it is dropped with its
+          // file.
+          expect(bloc.state.recorderMode, VideoRecorderMode.upload);
+          expect(bloc.state.stopMotionFrames, isEmpty);
+          expect(File(framePath).existsSync(), isFalse);
+          verifyNever(
+            () => clipManager.saveStopMotionSessionToLibrary(
+              id: any(named: 'id'),
+              frames: any(named: 'frames'),
+              originalAspectRatio: any(named: 'originalAspectRatio'),
+              targetAspectRatio: any(named: 'targetAspectRatio'),
+              duration: any(named: 'duration'),
+              thumbnailPath: any(named: 'thumbnailPath'),
+              lensMetadata: any(named: 'lensMetadata'),
+            ),
+          );
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'the shutter tick fires before the captured frame lands',
+        setUp: () {
+          // Simulate the slow native capture: the blink must not wait for it.
+          when(() => cameraService.capturePhoto()).thenAnswer((_) async {
+            await Future<void>.delayed(const Duration(milliseconds: 10));
+            return PhotoCaptureResult(filePath: framePath);
+          });
+        },
+        build: buildBloc,
+        seed: () => const VideoRecorderBlocState(
+          recorderMode: VideoRecorderMode.stopMotion,
+        ),
+        act: (bloc) => bloc.add(const VideoRecorderStopMotionFrameCaptured()),
+        wait: const Duration(milliseconds: 50),
+        expect: () => [
+          isA<VideoRecorderBlocState>()
+              .having(
+                (s) => s.stopMotionShutterTick,
+                'stopMotionShutterTick',
+                1,
+              )
+              .having((s) => s.stopMotionFrames, 'stopMotionFrames', isEmpty),
+          isA<VideoRecorderBlocState>().having(
+            (s) => s.stopMotionFrames,
+            'stopMotionFrames',
+            hasLength(1),
+          ),
+        ],
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'a captured frame is persisted to the library immediately',
+        build: buildBloc,
+        seed: () => const VideoRecorderBlocState(
+          recorderMode: VideoRecorderMode.stopMotion,
+        ),
+        act: (bloc) => bloc.add(const VideoRecorderStopMotionFrameCaptured()),
+        wait: const Duration(milliseconds: 20),
+        verify: (bloc) {
+          final captured = verify(
+            () => clipManager.saveStopMotionSessionToLibrary(
+              id: captureAny(named: 'id'),
+              frames: captureAny(named: 'frames'),
+              originalAspectRatio: any(named: 'originalAspectRatio'),
+              targetAspectRatio: any(named: 'targetAspectRatio'),
+              duration: any(named: 'duration'),
+              thumbnailPath: any(named: 'thumbnailPath'),
+              lensMetadata: any(named: 'lensMetadata'),
+            ),
+          )..called(1);
+          // Session id is derived from the first frame's filename so it stays
+          // stable as the session grows.
+          expect(captured.captured[0], 'clip_sm_frame');
+          final frames = captured.captured[1] as List<StopMotionClipFrame>;
+          expect(frames.map((f) => f.path), [framePath]);
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'the shutter toggle captures a frame in stop-motion mode',
+        build: buildBloc,
+        seed: () => const VideoRecorderBlocState(
+          recorderMode: VideoRecorderMode.stopMotion,
+        ),
+        act: (bloc) => bloc.add(const VideoRecorderRecordingToggleRequested()),
+        wait: const Duration(milliseconds: 20),
+        verify: (bloc) {
+          verify(() => cameraService.capturePhoto()).called(1);
+          expect(bloc.state.stopMotionFrames, hasLength(1));
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'no frame is appended when the camera returns no photo',
+        setUp: () {
+          when(
+            () => cameraService.capturePhoto(),
+          ).thenAnswer((_) async => null);
+        },
+        build: buildBloc,
+        seed: () => const VideoRecorderBlocState(
+          recorderMode: VideoRecorderMode.stopMotion,
+        ),
+        act: (bloc) => bloc.add(const VideoRecorderStopMotionFrameCaptured()),
+        verify: (bloc) => expect(bloc.state.stopMotionFrames, isEmpty),
+      );
+
+      test(
+        'waits for unreadable frame deletion before accepting another capture',
+        () {
+          fakeAsync((async) {
+            const unreadablePath = '/unreadable.jpg';
+            final unreadableFile = _MockFile();
+            final deleteGate = Completer<File>();
+            when(unreadableFile.existsSync).thenReturn(true);
+            when(unreadableFile.lengthSync).thenReturn(0);
+            when(unreadableFile.delete).thenAnswer((_) => deleteGate.future);
+            when(() => cameraService.capturePhoto()).thenAnswer(
+              (_) async => const PhotoCaptureResult(filePath: unreadablePath),
+            );
+
+            IOOverrides.runZoned(() {
+              final bloc = buildBloc();
+              bloc.emit(
+                const VideoRecorderBlocState(
+                  recorderMode: VideoRecorderMode.stopMotion,
+                ),
+              );
+
+              bloc.add(const VideoRecorderStopMotionFrameCaptured());
+              async.flushMicrotasks();
+              verify(() => cameraService.capturePhoto()).called(1);
+
+              // The droppable handler must still own the invalid capture
+              // until its file is deleted, so a second shutter event cannot
+              // start another native capture in the cleanup window.
+              bloc.add(const VideoRecorderStopMotionFrameCaptured());
+              async.flushMicrotasks();
+              verifyNever(() => cameraService.capturePhoto());
+
+              deleteGate.complete(unreadableFile);
+              async.flushMicrotasks();
+              unawaited(bloc.close());
+              async.flushMicrotasks();
+
+              verifyNever(
+                () => clipManager.saveStopMotionSessionToLibrary(
+                  id: any(named: 'id'),
+                  frames: any(named: 'frames'),
+                  originalAspectRatio: any(named: 'originalAspectRatio'),
+                  targetAspectRatio: any(named: 'targetAspectRatio'),
+                  duration: any(named: 'duration'),
+                  thumbnailPath: any(named: 'thumbnailPath'),
+                  lensMetadata: any(named: 'lensMetadata'),
+                ),
+              );
+            }, createFile: (_) => unreadableFile);
+          });
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'undo removes the last captured frame and re-syncs the library',
+        build: buildBloc,
+        seed: () => VideoRecorderBlocState(
+          recorderMode: VideoRecorderMode.stopMotion,
+          stopMotionFrames: [frameAPath, frameBPath],
+        ),
+        act: (bloc) => bloc.add(const VideoRecorderStopMotionFrameUndone()),
+        wait: const Duration(milliseconds: 20),
+        verify: (bloc) {
+          expect(bloc.state.stopMotionFrames, [frameAPath]);
+          final captured = verify(
+            () => clipManager.saveStopMotionSessionToLibrary(
+              id: captureAny(named: 'id'),
+              frames: captureAny(named: 'frames'),
+              originalAspectRatio: any(named: 'originalAspectRatio'),
+              targetAspectRatio: any(named: 'targetAspectRatio'),
+              duration: any(named: 'duration'),
+              thumbnailPath: any(named: 'thumbnailPath'),
+              lensMetadata: any(named: 'lensMetadata'),
+            ),
+          )..called(1);
+          // Same session id — the first frame is unchanged.
+          expect(captured.captured[0], 'clip_sm_a');
+          final frames = captured.captured[1] as List<StopMotionClipFrame>;
+          expect(frames.map((f) => f.path), [frameAPath]);
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'undoing the final frame drops the session library row',
+        build: buildBloc,
+        seed: () => VideoRecorderBlocState(
+          recorderMode: VideoRecorderMode.stopMotion,
+          stopMotionFrames: [frameAPath],
+        ),
+        act: (bloc) => bloc.add(const VideoRecorderStopMotionFrameUndone()),
+        wait: const Duration(milliseconds: 20),
+        verify: (bloc) {
+          expect(bloc.state.stopMotionFrames, isEmpty);
+          verify(
+            () => clipManager.removeStopMotionSessionFromLibrary('clip_sm_a'),
+          ).called(1);
+          verifyNever(
+            () => clipManager.saveStopMotionSessionToLibrary(
+              id: any(named: 'id'),
+              frames: any(named: 'frames'),
+              originalAspectRatio: any(named: 'originalAspectRatio'),
+              targetAspectRatio: any(named: 'targetAspectRatio'),
+              duration: any(named: 'duration'),
+              thumbnailPath: any(named: 'thumbnailPath'),
+              lensMetadata: any(named: 'lensMetadata'),
+            ),
+          );
+        },
+      );
+
+      test('undo removal waits for the in-flight eager save', () async {
+        final calls = <String>[];
+        when(
+          () => clipManager.saveStopMotionSessionToLibrary(
+            id: any(named: 'id'),
+            frames: any(named: 'frames'),
+            originalAspectRatio: any(named: 'originalAspectRatio'),
+            targetAspectRatio: any(named: 'targetAspectRatio'),
+            duration: any(named: 'duration'),
+            thumbnailPath: any(named: 'thumbnailPath'),
+            lensMetadata: any(named: 'lensMetadata'),
+          ),
+        ).thenAnswer((_) async {
+          calls.add('save-start');
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+          calls.add('save-end');
+          return true;
+        });
+        when(
+          () => clipManager.removeStopMotionSessionFromLibrary(any()),
+        ).thenAnswer((_) async {
+          calls.add('remove');
+        });
+
+        final bloc = buildBloc();
+        final stopMotionMode = bloc.stream.firstWhere(
+          (state) => state.recorderMode == VideoRecorderMode.stopMotion,
+        );
+        bloc.add(
+          const VideoRecorderRecorderModeSet(VideoRecorderMode.stopMotion),
+        );
+        await stopMotionMode;
+
+        final captured = bloc.stream.firstWhere(
+          (state) => state.stopMotionFrames.isNotEmpty,
+        );
+        bloc.add(const VideoRecorderStopMotionFrameCaptured());
+        await captured;
+        await Future<void>.delayed(Duration.zero);
+        expect(calls, ['save-start']);
+
+        bloc.add(const VideoRecorderStopMotionFrameUndone());
+        await Future<void>.delayed(Duration.zero);
+
+        expect(calls, ['save-start']);
+
+        await Future<void>.delayed(const Duration(milliseconds: 40));
+        await bloc.close();
+
+        expect(calls, ['save-start', 'save-end', 'remove']);
+      });
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'switching modes discards the session and drops its library row',
+        build: buildBloc,
+        seed: () => VideoRecorderBlocState(
+          recorderMode: VideoRecorderMode.stopMotion,
+          stopMotionFrames: [frameAPath, frameBPath],
+        ),
+        act: (bloc) => bloc.add(
+          const VideoRecorderRecorderModeSet(VideoRecorderMode.classic),
+        ),
+        wait: const Duration(milliseconds: 20),
+        verify: (bloc) {
+          expect(bloc.state.stopMotionFrames, isEmpty);
+          // Files deleted AND the eager-saved row removed — no orphan.
+          verify(
+            () => clipManager.removeStopMotionSessionFromLibrary('clip_sm_a'),
+          ).called(1);
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'reset discards the session and drops its library row',
+        build: buildBloc,
+        seed: () => VideoRecorderBlocState(
+          recorderMode: VideoRecorderMode.stopMotion,
+          stopMotionFrames: [frameAPath, frameBPath],
+        ),
+        act: (bloc) => bloc.add(const VideoRecorderResetRequested()),
+        wait: const Duration(milliseconds: 20),
+        verify: (bloc) {
+          expect(bloc.state.stopMotionFrames, isEmpty);
+          verify(
+            () => clipManager.removeStopMotionSessionFromLibrary('clip_sm_a'),
+          ).called(1);
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'ingest saves the captured frames as a clip and signals ready',
+        setUp: stubClipIngest,
+        build: buildBloc,
+        seed: () => VideoRecorderBlocState(
+          recorderMode: VideoRecorderMode.stopMotion,
+          stopMotionFrames: [frameAPath, frameBPath],
+        ),
+        act: (bloc) =>
+            bloc.add(const VideoRecorderStopMotionAssembleRequested()),
+        verify: (bloc) {
+          final captured = verify(
+            () => clipManager.addStopMotionClip(
+              id: captureAny(named: 'id'),
+              frames: captureAny(named: 'frames'),
+              originalAspectRatio: any(named: 'originalAspectRatio'),
+              targetAspectRatio: any(named: 'targetAspectRatio'),
+              duration: any(named: 'duration'),
+              thumbnailPath: any(named: 'thumbnailPath'),
+              lensMetadata: any(named: 'lensMetadata'),
+            ),
+          )..called(1);
+          // Captured values follow the method's parameter declaration order:
+          // frames is declared before id.
+          final frames = captured.captured[0] as List<StopMotionClipFrame>;
+          expect(frames.map((f) => f.path), [frameAPath, frameBPath]);
+          // Assemble reuses the capture session's library id so the row
+          // written during capture is updated, not duplicated.
+          expect(captured.captured[1], 'clip_sm_a');
+          verify(() => clipManager.saveClipToLibrary(any())).called(1);
+          expect(bloc.state.stopMotionStatus, StopMotionStatus.ready);
+          expect(bloc.state.stopMotionFrames, isEmpty);
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'emits failure when ingest throws',
+        setUp: () {
+          when(
+            () => clipManager.addStopMotionClip(
+              id: any(named: 'id'),
+              frames: any(named: 'frames'),
+              originalAspectRatio: any(named: 'originalAspectRatio'),
+              targetAspectRatio: any(named: 'targetAspectRatio'),
+              duration: any(named: 'duration'),
+              thumbnailPath: any(named: 'thumbnailPath'),
+              lensMetadata: any(named: 'lensMetadata'),
+            ),
+          ).thenThrow(Exception('ingest failed'));
+        },
+        build: buildBloc,
+        seed: () => VideoRecorderBlocState(
+          recorderMode: VideoRecorderMode.stopMotion,
+          stopMotionFrames: [frameAPath],
+        ),
+        act: (bloc) =>
+            bloc.add(const VideoRecorderStopMotionAssembleRequested()),
+        errors: () => [isA<Exception>()],
+        verify: (bloc) {
+          expect(bloc.state.stopMotionStatus, StopMotionStatus.failure);
+          verifyNever(() => clipManager.saveClipToLibrary(any()));
+        },
+      );
     });
   });
 }

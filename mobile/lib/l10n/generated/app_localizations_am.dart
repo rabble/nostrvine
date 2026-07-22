@@ -7868,6 +7868,13 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoRecorderLipSyncAddAudioFirst => 'ከመቅረጽ በፊት ኦዲዮ ያክሉ';
 
   @override
+  String get videoRecorderStopMotionAssembling => 'ቪዲዮዎን በመፍጠር ላይ…';
+
+  @override
+  String get videoRecorderStopMotionAssembleFailed =>
+      'ቪዲዮውን መፍጠር አልተቻለም። እንደገና ይሞክሩ።';
+
+  @override
   String get videoRecorderToggleFlashLabel => 'ብልጭታ ቀያይር';
 
   @override
@@ -7910,6 +7917,18 @@ class AppLocalizationsAm extends AppLocalizations {
       locale: localeName,
       other: 'የክሊፕ ቤተ-መዝገብ ክፈት፣ $clipCount ክሊፖች',
       one: 'የክሊፕ ቤተ-መዝገብ ክፈት፣ 1 ክሊፕ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String videoRecorderLibraryOpenStopMotionLabel(int frameCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      frameCount,
+      locale: localeName,
+      other: 'የስቶፕ-ሞሽን ቤተ-መዝገብ ክፈት፣ $frameCount ፍሬሞች',
+      one: 'የስቶፕ-ሞሽን ቤተ-መዝገብ ክፈት፣ 1 ፍሬም',
+      zero: 'የስቶፕ-ሞሽን ቤተ-መዝገብ ክፈት',
     );
     return '$_temp0';
   }
@@ -8176,6 +8195,43 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoEditorDeleteSelectedItemSemanticLabel => 'የተመረጠውን ንጥል ሰርዝ';
+
+  @override
+  String get videoEditorStopMotionFramesPerImageLabel => 'በአንድ ምስል ፍሬሞች';
+
+  @override
+  String videoEditorStopMotionFramesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ፍሬሞች',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorStopMotionFramesPerImageButtonLabel => 'ፍሬሞች';
+
+  @override
+  String get libraryStopMotionClipLabel => 'የስቶፕ-ሞሽን ክሊፕ';
+
+  @override
+  String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
+    return 'በአንድ ምስል $count ፍሬሞች';
+  }
+
+  @override
+  String get videoEditorStopMotionIncreaseFramesPerImageSemanticLabel =>
+      'በአንድ ምስል ፍሬሞችን ጨምር';
+
+  @override
+  String get videoEditorStopMotionDecreaseFramesPerImageSemanticLabel =>
+      'በአንድ ምስል ፍሬሞችን ቀንስ';
+
+  @override
+  String videoEditorStopMotionFrameSemanticLabel(int position, int total) {
+    return 'የስቶፕ-ሞሽን ፍሬም $position ከ$total';
+  }
 
   @override
   String get videoEditorEditLabel => 'አርትዕ';
@@ -8560,6 +8616,18 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoEditorDeleteSelectedClipsSemanticLabel => 'የተመረጡ ቅንጥቦችን ሰርዝ';
+
+  @override
+  String get videoEditorDeleteSelectedFramesSemanticLabel => 'የተመረጡ ፍሬሞችን ሰርዝ';
+
+  @override
+  String get videoEditorReverseSelectedFramesSemanticLabel =>
+      'የተመረጡ ፍሬሞችን አገላብጥ';
+
+  @override
+  String videoEditorStopMotionTooShortSnackbar(int seconds) {
+    return 'ቪዲዮው ቢያንስ $seconds ሰከንድ መሆን አለበት — ጥቂት ተጨማሪ ፍሬሞችን ያንሱ።';
+  }
 
   @override
   String get videoEditorMergeProgressLabel => 'ትንሽ ይቆዩ፣ ቅንጥቦችዎን እያዋሃድን ነው';

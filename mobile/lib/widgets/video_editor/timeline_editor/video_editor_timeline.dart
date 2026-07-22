@@ -9,6 +9,7 @@ import 'package:openvine/extensions/video_editor_extensions.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:openvine/models/video_editor/transition_geometry.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
@@ -48,6 +49,12 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
   bool _isUserScrolling = false;
 
   double _pixelsPerSecond = TimelineConstants.pixelsPerSecond;
+
+  /// One-shot: the first time a stop-motion composition lands, the zoom is
+  /// bumped so its tens-of-ms stills are actually visible (the video default
+  /// renders them a couple of pixels wide). Never re-fires, so a user pinch
+  /// is not overridden.
+  bool _didAutoZoomStopMotion = false;
 
   /// Cached total duration from clip editor — used by scroll listeners
   /// that fire outside the build phase.
@@ -126,7 +133,18 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
         selectedClipIds: b.state.selectedClipIds,
       ),
     );
-    if (clips.isEmpty) return const SizedBox.shrink();
+    // Kept mounted even while [clips] is empty so it catches the transition
+    // into the first (async-loaded) stop-motion composition — see
+    // [_autoZoomForFirstStopMotion]. The root of both the empty and non-empty
+    // branches is this same [BlocListener] type, so its subscription survives
+    // the empty→populated rebuild.
+    if (clips.isEmpty) {
+      return BlocListener<ClipEditorBloc, ClipEditorState>(
+        listenWhen: _shouldAutoZoomForStopMotion,
+        listener: _autoZoomForFirstStopMotion,
+        child: const SizedBox.shrink(),
+      );
+    }
 
     final trimmingClipId =
         isEditing && currentClipIndex >= 0 && currentClipIndex < clips.length
@@ -159,7 +177,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
     );
     // Sync layers from main editor to timeline overlay bloc, and
     // sync scroll to playback position while not user-scrolling.
-    return MultiBlocListener(
+    final Widget body = MultiBlocListener(
       listeners: [
         BlocListener<ClipEditorBloc, ClipEditorState>(
           listenWhen: (prev, curr) => prev.totalDuration != curr.totalDuration,
@@ -371,6 +389,37 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
         ),
       ),
     );
+
+    return BlocListener<ClipEditorBloc, ClipEditorState>(
+      listenWhen: _shouldAutoZoomForStopMotion,
+      listener: _autoZoomForFirstStopMotion,
+      child: body,
+    );
+  }
+
+  /// One-shot: the first time a stop-motion composition lands, the zoom is
+  /// bumped so its tens-of-ms stills are actually visible (the video default
+  /// renders them a couple of pixels wide). Guarded by
+  /// [_didAutoZoomStopMotion] so it never re-fires — a user pinch is not
+  /// overridden.
+  bool _shouldAutoZoomForStopMotion(
+    ClipEditorState prev,
+    ClipEditorState curr,
+  ) =>
+      !_didAutoZoomStopMotion &&
+      !isStopMotionComposition(prev.clips) &&
+      isStopMotionComposition(curr.clips);
+
+  void _autoZoomForFirstStopMotion(
+    BuildContext context,
+    ClipEditorState state,
+  ) {
+    setState(() {
+      _didAutoZoomStopMotion = true;
+      _pixelsPerSecond = stopMotionInitialPixelsPerSecond(
+        state.clips.first.stopMotionFrames ?? const [],
+      );
+    });
   }
 
   bool _handleScrollNotification(ScrollNotification notification) {
@@ -930,9 +979,17 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
     final currentDistance = _currentPointerDistance();
     final scale = currentDistance / _pinchBaseDistance;
 
+    // Stop-motion stills need a far higher ceiling than second-long video
+    // clips to be workable.
+    final maxPps =
+        isStopMotionComposition(
+          context.read<ClipEditorBloc>().state.clips,
+        )
+        ? TimelineConstants.stopMotionMaxPixelsPerSecond
+        : TimelineConstants.maxPixelsPerSecond;
     final newPps = (_pinchBasePps * scale).clamp(
       TimelineConstants.minPixelsPerSecond,
-      TimelineConstants.maxPixelsPerSecond,
+      maxPps,
     );
     if (newPps == _pixelsPerSecond) return;
 

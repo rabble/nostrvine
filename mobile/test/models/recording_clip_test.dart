@@ -20,7 +20,10 @@ void main() {
       );
 
       expect(clip.id, equals('clip_001'));
-      expect(await clip.video.safeFilePath(), equals('/path/to/video.mp4'));
+      expect(
+        await clip.requireVideo.safeFilePath(),
+        equals('/path/to/video.mp4'),
+      );
       expect(clip.duration.inSeconds, equals(2));
       expect(clip.thumbnailPath, isNull);
       expect(clip.targetAspectRatio, equals(model.AspectRatio.vertical));
@@ -288,7 +291,10 @@ void main() {
 
       expect(updated.duration, equals(const Duration(seconds: 3)));
       expect(updated.id, equals(clip.id));
-      expect(await updated.video.safeFilePath(), equals('/path/to/video.mp4'));
+      expect(
+        await updated.requireVideo.safeFilePath(),
+        equals('/path/to/video.mp4'),
+      );
     });
 
     test('copyWith creates new instance with updated thumbnailPath', () {
@@ -381,7 +387,7 @@ void main() {
 
       expect(clip.id, equals('clip_001'));
       // Path resolution uses platform separator, so check it ends with the filename
-      final filePath = await clip.video.safeFilePath();
+      final filePath = await clip.requireVideo.safeFilePath();
       expect(filePath, endsWith('video.mp4'));
       expect(filePath, contains('path'));
       expect(clip.duration, equals(const Duration(milliseconds: 2500)));
@@ -421,8 +427,8 @@ void main() {
 
       expect(restored.id, equals(clip.id));
       // Both should end with same filename
-      final originalPath = await clip.video.safeFilePath();
-      final restoredPath = await restored.video.safeFilePath();
+      final originalPath = await clip.requireVideo.safeFilePath();
+      final restoredPath = await restored.requireVideo.safeFilePath();
       expect(restoredPath, endsWith('video.mp4'));
       expect(originalPath, endsWith('video.mp4'));
       expect(restored.duration, equals(clip.duration));
@@ -764,8 +770,8 @@ void main() {
         final json = clip.toJson();
         final restored = DivineVideoClip.fromJson(json, documentsPath);
 
-        final originalPath = await clip.video.safeFilePath();
-        final restoredPath = await restored.video.safeFilePath();
+        final originalPath = await clip.requireVideo.safeFilePath();
+        final restoredPath = await restored.requireVideo.safeFilePath();
         expect(restoredPath, equals(originalPath));
         expect(restored.thumbnailPath, equals(clip.thumbnailPath));
       });
@@ -790,8 +796,8 @@ void main() {
         // fromJson resolves against documentsPath, not tempPath
         final restored = DivineVideoClip.fromJson(json, documentsPath);
 
-        final originalPath = await clip.video.safeFilePath();
-        final restoredPath = await restored.video.safeFilePath();
+        final originalPath = await clip.requireVideo.safeFilePath();
+        final restoredPath = await restored.requireVideo.safeFilePath();
         // The paths will differ because the file was in /tmp
         // but fromJson resolves to /var/mobile/Documents
         expect(restoredPath, isNot(equals(originalPath)));

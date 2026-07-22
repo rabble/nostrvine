@@ -4685,6 +4685,14 @@
   "@videoRecorderLipSyncAddAudioFirst": {
     "description": "Snackbar shown when the user taps the record button in lip-sync mode without first selecting a sound."
   },
+  "videoRecorderStopMotionAssembling": "Creating your video…",
+  "@videoRecorderStopMotionAssembling": {
+    "description": "Loading label shown while captured stop-motion frames are being encoded into one video."
+  },
+  "videoRecorderStopMotionAssembleFailed": "Couldn't create the video. Try again.",
+  "@videoRecorderStopMotionAssembleFailed": {
+    "description": "Snackbar shown when assembling captured stop-motion frames into a video failed."
+  },
   "videoRecorderToggleFlashLabel": "Toggle flash",
   "videoRecorderCycleTimerLabel": "Cycle timer",
   "videoRecorderToggleAspectRatioLabel": "Toggle aspect ratio",
@@ -4701,6 +4709,15 @@
   "@videoRecorderLibraryOpenLabel": {
     "placeholders": {
       "clipCount": {
+        "type": "int"
+      }
+    }
+  },
+  "videoRecorderLibraryOpenStopMotionLabel": "{frameCount, plural, =0{Open stop-motion library} one{Open stop-motion library, 1 frame} other{Open stop-motion library, {frameCount} frames}}",
+  "@videoRecorderLibraryOpenStopMotionLabel": {
+    "description": "Screen-reader label for the recorder's library button during a stop-motion session. The count is captured stills (frames), not clips. The zero case covers opening a previous session's library before the first still of this one is shot.",
+    "placeholders": {
+      "frameCount": {
         "type": "int"
       }
     }
@@ -4822,6 +4839,48 @@
   },
   "videoEditorDeleteLabel": "Delete",
   "videoEditorDeleteSelectedItemSemanticLabel": "Delete selected item",
+  "videoEditorStopMotionFramesPerImageLabel": "Frames per image",
+  "@videoEditorStopMotionFramesPerImageLabel": {
+    "description": "Label for the stop-motion control that sets how many output frames each captured still is held for."
+  },
+  "videoEditorStopMotionFramesCount": "{count, plural, =1{1 frame} other{{count} frames}}",
+  "@videoEditorStopMotionFramesCount": {
+    "description": "Short frames-per-image value shown on the stop-motion preview badge and action button (e.g. '2 frames').",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "videoEditorStopMotionFramesPerImageButtonLabel": "Frames",
+  "@videoEditorStopMotionFramesPerImageButtonLabel": {
+    "description": "Short label under the stop-motion frames-per-image action button in the timeline edit bar."
+  },
+  "libraryStopMotionClipLabel": "Stop-motion clip",
+  "@libraryStopMotionClipLabel": {
+    "description": "Accessibility label for the badge that marks a clip in the library as a stop-motion recording."
+  },
+  "videoEditorStopMotionFramesPerImageValueSemanticLabel": "{count} frames per image",
+  "@videoEditorStopMotionFramesPerImageValueSemanticLabel": {
+    "description": "Accessibility value announcing the current stop-motion hold length, in output frames per still.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "videoEditorStopMotionIncreaseFramesPerImageSemanticLabel": "Increase frames per image",
+  "@videoEditorStopMotionIncreaseFramesPerImageSemanticLabel": {
+    "description": "Accessibility label for the button that lengthens each stop-motion still's hold."
+  },
+  "videoEditorStopMotionDecreaseFramesPerImageSemanticLabel": "Decrease frames per image",
+  "@videoEditorStopMotionDecreaseFramesPerImageSemanticLabel": {
+    "description": "Accessibility label for the button that shortens each stop-motion still's hold."
+  },
+  "videoEditorStopMotionFrameSemanticLabel": "Stop-motion frame {position} of {total}",
+  "@videoEditorStopMotionFrameSemanticLabel": {
+    "description": "Accessibility label for a single still tile in the stop-motion timeline strip.",
+    "placeholders": {
+      "position": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
   "videoEditorEditLabel": "Edit",
   "videoEditorEditSelectedItemSemanticLabel": "Edit selected item",
   "videoEditorDuplicateLabel": "Duplicate",
@@ -5165,6 +5224,23 @@
   "videoEditorDeleteSelectedClipsSemanticLabel": "Delete selected clips",
   "@videoEditorDeleteSelectedClipsSemanticLabel": {
     "description": "Accessibility label for the button that deletes the selected clips."
+  },
+  "videoEditorDeleteSelectedFramesSemanticLabel": "Delete selected frames",
+  "@videoEditorDeleteSelectedFramesSemanticLabel": {
+    "description": "Semantic label for the delete button while stop-motion stills are multi-selected."
+  },
+  "videoEditorReverseSelectedFramesSemanticLabel": "Reverse selected frames",
+  "@videoEditorReverseSelectedFramesSemanticLabel": {
+    "description": "Semantic label for the reverse button while stop-motion stills are multi-selected."
+  },
+  "videoEditorStopMotionTooShortSnackbar": "Your video needs at least {seconds}s — capture a few more frames.",
+  "@videoEditorStopMotionTooShortSnackbar": {
+    "description": "Snackbar shown when Done is pressed on a stop-motion composition shorter than the minimum output duration.",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
   },
   "videoEditorMergeProgressLabel": "One moment, we're merging your clips",
   "@videoEditorMergeProgressLabel": {

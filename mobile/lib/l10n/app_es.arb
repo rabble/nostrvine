@@ -2779,6 +2779,8 @@
     "videoRecorderCaptureCloseLabel": "Cerrar",
     "videoRecorderCaptureNextLabel": "Siguiente",
     "videoRecorderLipSyncAddAudioFirst": "Agrega audio antes de grabar",
+    "videoRecorderStopMotionAssembling": "Creando tu vídeo…",
+    "videoRecorderStopMotionAssembleFailed": "No se pudo crear el vídeo. Inténtalo de nuevo.",
     "videoRecorderToggleFlashLabel": "Activar o desactivar flash",
     "videoRecorderCycleTimerLabel": "Cambiar temporizador",
     "videoRecorderToggleAspectRatioLabel": "Cambiar relación de aspecto",
@@ -2795,6 +2797,14 @@
     "@videoRecorderLibraryOpenLabel": {
         "placeholders": {
             "clipCount": {
+                "type": "int"
+            }
+        }
+    },
+    "videoRecorderLibraryOpenStopMotionLabel": "{frameCount, plural, =0{Abrir biblioteca de stop motion} one{Abrir biblioteca de stop motion, 1 fotograma} other{Abrir biblioteca de stop motion, {frameCount} fotogramas}}",
+    "@videoRecorderLibraryOpenStopMotionLabel": {
+        "placeholders": {
+            "frameCount": {
                 "type": "int"
             }
         }
@@ -4084,6 +4094,9 @@
     "videoEditorMergeLabel": "Combinar",
     "videoEditorMergeSelectedClipsSemanticLabel": "Combinar clips seleccionados",
     "videoEditorDeleteSelectedClipsSemanticLabel": "Eliminar clips seleccionados",
+    "videoEditorDeleteSelectedFramesSemanticLabel": "Eliminar fotogramas seleccionados",
+    "videoEditorReverseSelectedFramesSemanticLabel": "Invertir fotogramas seleccionados",
+    "videoEditorStopMotionTooShortSnackbar": "Tu video necesita al menos {seconds}s: captura algunos fotogramas más.",
     "videoEditorMergeProgressLabel": "Un momento, estamos combinando tus clips",
     "videoEditorMergeFailed": "No se pudieron combinar los clips. Inténtalo de nuevo.",
     "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device.",
@@ -4562,5 +4575,13 @@
   "authSignInErrorNetwork": "No se puede conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.",
   "authSignInErrorGeneric": "Algo salió mal. Inténtalo de nuevo.",
   "authSignInOptionsHintPrefix": "¿No sabes cómo entraste la última vez? ",
-  "authSignInOptionsHintCta": "Ver todas las opciones de inicio de sesión"
+  "authSignInOptionsHintCta": "Ver todas las opciones de inicio de sesión",
+    "videoEditorStopMotionFramesPerImageLabel": "Fotogramas por imagen",
+    "videoEditorStopMotionFramesPerImageValueSemanticLabel": "{count} fotogramas por imagen",
+    "videoEditorStopMotionIncreaseFramesPerImageSemanticLabel": "Aumentar fotogramas por imagen",
+    "videoEditorStopMotionDecreaseFramesPerImageSemanticLabel": "Reducir fotogramas por imagen",
+    "videoEditorStopMotionFrameSemanticLabel": "Fotograma de stop motion {position} de {total}",
+    "videoEditorStopMotionFramesCount": "{count, plural, =1{1 fotograma} other{{count} fotogramas}}",
+    "videoEditorStopMotionFramesPerImageButtonLabel": "Fotogramas",
+    "libraryStopMotionClipLabel": "Clip de stop motion"
 }

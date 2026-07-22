@@ -2771,6 +2771,8 @@
     "videoRecorderCaptureCloseLabel": "Zamknij",
     "videoRecorderCaptureNextLabel": "Dalej",
     "videoRecorderLipSyncAddAudioFirst": "Dodaj audio przed nagraniem",
+    "videoRecorderStopMotionAssembling": "Tworzenie filmu…",
+    "videoRecorderStopMotionAssembleFailed": "Nie udało się utworzyć filmu. Spróbuj ponownie.",
     "videoRecorderToggleFlashLabel": "Przełącz lampę błyskową",
     "videoRecorderCycleTimerLabel": "Zmień timer",
     "videoRecorderToggleAspectRatioLabel": "Przełącz proporcje",
@@ -2787,6 +2789,14 @@
     "@videoRecorderLibraryOpenLabel": {
         "placeholders": {
             "clipCount": {
+                "type": "int"
+            }
+        }
+    },
+    "videoRecorderLibraryOpenStopMotionLabel": "{frameCount, plural, =0{Otwórz bibliotekę poklatkową} one{Otwórz bibliotekę poklatkową, 1 klatka} few{Otwórz bibliotekę poklatkową, {frameCount} klatki} many{Otwórz bibliotekę poklatkową, {frameCount} klatek} other{Otwórz bibliotekę poklatkową, {frameCount} klatki}}",
+    "@videoRecorderLibraryOpenStopMotionLabel": {
+        "placeholders": {
+            "frameCount": {
                 "type": "int"
             }
         }
@@ -4084,6 +4094,9 @@
     "videoEditorMergeLabel": "Scal",
     "videoEditorMergeSelectedClipsSemanticLabel": "Scal zaznaczone klipy",
     "videoEditorDeleteSelectedClipsSemanticLabel": "Usuń zaznaczone klipy",
+    "videoEditorDeleteSelectedFramesSemanticLabel": "Usuń zaznaczone klatki",
+    "videoEditorReverseSelectedFramesSemanticLabel": "Odwróć zaznaczone klatki",
+    "videoEditorStopMotionTooShortSnackbar": "Twój film musi trwać co najmniej {seconds}s – dodaj jeszcze kilka klatek.",
     "videoEditorMergeProgressLabel": "Chwila, scalamy Twoje klipy",
     "videoEditorMergeFailed": "Nie udało się scalić klipów. Spróbuj ponownie.",
     "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device.",
@@ -4562,5 +4575,13 @@
   "authSignInErrorNetwork": "Nie można połączyć się z serwerem. Sprawdź połączenie i spróbuj ponownie.",
   "authSignInErrorGeneric": "Coś poszło nie tak. Spróbuj ponownie.",
   "authSignInOptionsHintPrefix": "Nie wiesz, jak zalogowałeś się ostatnim razem? ",
-  "authSignInOptionsHintCta": "Zobacz wszystkie opcje logowania"
+  "authSignInOptionsHintCta": "Zobacz wszystkie opcje logowania",
+    "videoEditorStopMotionFramesPerImageLabel": "Klatki na obraz",
+    "videoEditorStopMotionFramesPerImageValueSemanticLabel": "{count} klatek na obraz",
+    "videoEditorStopMotionIncreaseFramesPerImageSemanticLabel": "Zwiększ liczbę klatek na obraz",
+    "videoEditorStopMotionDecreaseFramesPerImageSemanticLabel": "Zmniejsz liczbę klatek na obraz",
+    "videoEditorStopMotionFrameSemanticLabel": "Klatka poklatkowa {position} z {total}",
+    "videoEditorStopMotionFramesCount": "{count, plural, =1{1 klatka} few{{count} klatki} many{{count} klatek} other{{count} klatki}}",
+    "videoEditorStopMotionFramesPerImageButtonLabel": "Klatki",
+    "libraryStopMotionClipLabel": "Klip poklatkowy"
 }

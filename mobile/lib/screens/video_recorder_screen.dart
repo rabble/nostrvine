@@ -29,6 +29,7 @@ import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_cla
 import 'package:openvine/widgets/video_recorder/modes/lip_sync/video_recorder_lip_sync_stack.dart';
 import 'package:openvine/widgets/video_recorder/modes/upload/video_recorder_upload_stack.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_bottom_bar.dart';
+import 'package:openvine/widgets/video_recorder/video_recorder_library_button.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_navigation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -419,7 +420,11 @@ class _VideoRecorderViewState extends ConsumerState<VideoRecorderView>
                         (VideoRecorderBloc b) => b.state.recorderMode,
                       )) {
                         .upload => const VideoRecorderUploadStack(),
-                        .capture => VideoRecorderCaptureStack(
+                        // Stop-motion reuses the capture stack — each shutter
+                        // tap captures a still that becomes a 1-frame video
+                        // clip, so the capture flow (clips, library, editor,
+                        // ghost) applies unchanged.
+                        .capture || .stopMotion => VideoRecorderCaptureStack(
                           fromEditor: widget.fromEditor,
                         ),
                         .lipSync => const VideoRecorderLipSyncStack(),
@@ -434,7 +439,20 @@ class _VideoRecorderViewState extends ConsumerState<VideoRecorderView>
                       child: VideoRecorderBottomBar(),
                     )
                   else
-                    SizedBox(height: MediaQuery.viewPaddingOf(context).bottom),
+                    // Editor-hosted recorder: no mode wheel and no library
+                    // navigation, but the library button still renders as a
+                    // read-only capture counter (last still + count badge).
+                    const Padding(
+                      padding: .symmetric(vertical: 22),
+                      child: SafeArea(
+                        top: false,
+                        child: Row(
+                          children: [
+                            VideoRecorderLibraryButton(interactive: false),
+                          ],
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),

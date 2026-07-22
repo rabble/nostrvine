@@ -4,12 +4,16 @@ import 'dart:typed_data';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
+import 'package:openvine/widgets/video_editor/stop_motion/stop_motion_frame_commands.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_stop_motion_frame_strip.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_clip_strip.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_overlay_strip.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_overlay_strips.dart';
@@ -140,23 +144,30 @@ class VideoEditorTimelineBody extends StatelessWidget {
               ),
               const SizedBox(height: TimelineConstants.rulerToBodyGap),
 
-              /// Video-Clips
+              /// Video clips, or per-frame stills for a stop-motion clip.
               RepaintBoundary(
-                child: VideoEditorTimelineClipStrip(
-                  clips: clips,
-                  totalWidth: totalWidth,
-                  pixelsPerSecond: pixelsPerSecond,
-                  scrollController: scrollController,
-                  isInteracting: isInteracting,
-                  onReorder: onReorder,
-                  onReorderChanged: onReorderChanged,
-                  trimmingClipId: trimmingClipId,
-                  onTrimChanged: onTrimChanged,
-                  onTrimDragChanged: onTrimDragChanged,
-                  onClipTapped: onClipTapped,
-                  isMultiSelectMode: isMultiSelectMode,
-                  selectedClipIds: selectedClipIds,
-                ),
+                child: isStopMotionComposition(clips)
+                    ? _StopMotionFrameStrip(
+                        clip: clips.first,
+                        pixelsPerSecond: pixelsPerSecond,
+                        scrollController: scrollController,
+                        onReorderChanged: onReorderChanged,
+                      )
+                    : VideoEditorTimelineClipStrip(
+                        clips: clips,
+                        totalWidth: totalWidth,
+                        pixelsPerSecond: pixelsPerSecond,
+                        scrollController: scrollController,
+                        isInteracting: isInteracting,
+                        onReorder: onReorder,
+                        onReorderChanged: onReorderChanged,
+                        trimmingClipId: trimmingClipId,
+                        onTrimChanged: onTrimChanged,
+                        onTrimDragChanged: onTrimDragChanged,
+                        onClipTapped: onClipTapped,
+                        isMultiSelectMode: isMultiSelectMode,
+                        selectedClipIds: selectedClipIds,
+                      ),
               ),
 
               /// Layers, Filters and Audio-Tracks
@@ -210,6 +221,74 @@ class VideoEditorTimelineBody extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Bridges the presentational [VideoEditorStopMotionFrameStrip] to the clip
+/// editor: reads the selected frame from the bloc and commits frame selection
+/// and drag reorders (via [commitStopMotionFrames]).
+class _StopMotionFrameStrip extends StatelessWidget {
+  const _StopMotionFrameStrip({
+    required this.clip,
+    required this.pixelsPerSecond,
+    required this.scrollController,
+    this.onReorderChanged,
+  });
+
+  final DivineVideoClip clip;
+  final double pixelsPerSecond;
+  final ScrollController scrollController;
+  final ValueChanged<bool>? onReorderChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final frames = clip.stopMotionFrames ?? const [];
+    final (
+      selectedFrameIndex,
+      isMultiSelectMode,
+      selectedFrameIndexes,
+    ) = context.select(
+      (ClipEditorBloc b) => (
+        b.state.selectedFrameIndex,
+        b.state.isMultiSelectMode,
+        b.state.selectedFrameIndexes,
+      ),
+    );
+
+    return VideoEditorStopMotionFrameStrip(
+      frames: frames,
+      pixelsPerSecond: pixelsPerSecond,
+      selectedFrameIndex: selectedFrameIndex,
+      isMultiSelectMode: isMultiSelectMode,
+      selectedFrameIndexes: selectedFrameIndexes,
+      scrollController: scrollController,
+      onReorderChanged: onReorderChanged,
+      onFrameTapped: (index) => context.read<ClipEditorBloc>().add(
+        isMultiSelectMode
+            ? ClipEditorFrameMultiSelectToggled(index)
+            : ClipEditorFrameSelected(index),
+      ),
+      onReorder: (from, to) => commitStopMotionFrames(
+        context,
+        clipId: clip.id,
+        frames: StopMotionFrameOps.reorderFrame(frames, from, to),
+      ),
+      onBlockMove: (slot) {
+        final bloc = context.read<ClipEditorBloc>();
+        final selection = bloc.state.selectedFrameIndexes;
+        final moved = StopMotionFrameOps.moveFrames(frames, selection, slot);
+        // No-op moves return the same instance; skip commit and selection
+        // shuffle so the history stays clean.
+        if (identical(moved, frames)) return;
+        commitStopMotionFrames(context, clipId: clip.id, frames: moved);
+        // The block now occupies slot..slot+n-1 — keep it selected.
+        bloc.add(
+          ClipEditorFrameMultiSelectionSet({
+            for (var i = 0; i < selection.length; i++) slot + i,
+          }),
+        );
+      },
     );
   }
 }

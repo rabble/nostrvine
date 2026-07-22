@@ -36,10 +36,17 @@ class VideoRecorderCaptureTopBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isRecording = context.select(
-      (VideoRecorderBloc b) => b.state.isRecording,
+    final (isRecording, capturesStills, stopMotionFrameCount) = context.select(
+      (VideoRecorderBloc b) => (
+        b.state.isRecording,
+        b.state.recorderMode.capturesStills,
+        b.state.stopMotionFrameCount,
+      ),
     );
     final hasClips = ref.watch(clipManagerProvider.select((p) => p.hasClips));
+    // Stop-motion assembles its frames into a clip on "next" rather than
+    // navigating straight to the editor.
+    final showNext = capturesStills ? stopMotionFrameCount > 0 : hasClips;
 
     return SafeArea(
       left: false,
@@ -68,16 +75,20 @@ class VideoRecorderCaptureTopBar extends ConsumerWidget {
                     ?center,
                     AnimatedOpacity(
                       duration: _animationDuration,
-                      opacity: hasClips ? 1 : 0,
+                      opacity: showNext ? 1 : 0,
                       child: DivineIconButton(
                         icon: .caretRight,
                         semanticLabel:
                             context.l10n.videoRecorderCaptureNextLabel,
                         size: .small,
                         type: .ghostSecondary,
-                        onPressed: () => fromEditor
-                            ? context.pop(true)
-                            : openVideoEditorFromRecorder(context, ref),
+                        onPressed: capturesStills
+                            ? () => context.read<VideoRecorderBloc>().add(
+                                const VideoRecorderStopMotionAssembleRequested(),
+                              )
+                            : () => fromEditor
+                                  ? context.pop(true)
+                                  : openVideoEditorFromRecorder(context, ref),
                       ),
                     ),
                   ],

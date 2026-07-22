@@ -8137,6 +8137,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Ajoutez de l\'audio avant d\'enregistrer';
 
   @override
+  String get videoRecorderStopMotionAssembling => 'Création de la vidéo…';
+
+  @override
+  String get videoRecorderStopMotionAssembleFailed =>
+      'Impossible de créer la vidéo. Réessayez.';
+
+  @override
   String get videoRecorderToggleFlashLabel => 'Activer/désactiver le flash';
 
   @override
@@ -8183,6 +8190,18 @@ class AppLocalizationsFr extends AppLocalizations {
       locale: localeName,
       other: 'Ouvrir la bibliothèque de clips, $clipCount clips',
       one: 'Ouvrir la bibliothèque de clips, 1 clip',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String videoRecorderLibraryOpenStopMotionLabel(int frameCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      frameCount,
+      locale: localeName,
+      other: 'Ouvrir la bibliothèque stop-motion, $frameCount images',
+      one: 'Ouvrir la bibliothèque stop-motion, 1 image',
+      zero: 'Ouvrir la bibliothèque stop-motion',
     );
     return '$_temp0';
   }
@@ -8463,6 +8482,44 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get videoEditorDeleteSelectedItemSemanticLabel =>
       'Supprimer l\'élément sélectionné';
+
+  @override
+  String get videoEditorStopMotionFramesPerImageLabel => 'Images par photo';
+
+  @override
+  String videoEditorStopMotionFramesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count images',
+      one: '1 image',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorStopMotionFramesPerImageButtonLabel => 'Images';
+
+  @override
+  String get libraryStopMotionClipLabel => 'Clip stop-motion';
+
+  @override
+  String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
+    return '$count images par photo';
+  }
+
+  @override
+  String get videoEditorStopMotionIncreaseFramesPerImageSemanticLabel =>
+      'Augmenter les images par photo';
+
+  @override
+  String get videoEditorStopMotionDecreaseFramesPerImageSemanticLabel =>
+      'Réduire les images par photo';
+
+  @override
+  String videoEditorStopMotionFrameSemanticLabel(int position, int total) {
+    return 'Image stop-motion $position sur $total';
+  }
 
   @override
   String get videoEditorEditLabel => 'Modifier';
@@ -8870,6 +8927,19 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get videoEditorDeleteSelectedClipsSemanticLabel =>
       'Supprimer les clips sélectionnés';
+
+  @override
+  String get videoEditorDeleteSelectedFramesSemanticLabel =>
+      'Supprimer les images sélectionnées';
+
+  @override
+  String get videoEditorReverseSelectedFramesSemanticLabel =>
+      'Inverser les images sélectionnées';
+
+  @override
+  String videoEditorStopMotionTooShortSnackbar(int seconds) {
+    return 'Ta vidéo doit durer au moins ${seconds}s — capture encore quelques images.';
+  }
 
   @override
   String get videoEditorMergeProgressLabel =>

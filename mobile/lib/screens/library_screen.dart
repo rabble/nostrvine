@@ -11,6 +11,7 @@ import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
 import 'package:openvine/blocs/drafts_library/drafts_library_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/models/video_publish/video_publish_state.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
@@ -55,6 +56,7 @@ class LibraryScreen extends ConsumerWidget {
     this.initialTabIndex = 0,
     this.selectionMode = false,
     this.tabsMode = LibraryTabsMode.allTabs,
+    this.clipTypeFilter = LibraryClipTypeFilter.all,
     this.editorClips = const [],
     this.scrollController,
   });
@@ -76,6 +78,11 @@ class LibraryScreen extends ConsumerWidget {
   /// Controls whether all tabs are shown or only the clips content.
   final LibraryTabsMode tabsMode;
 
+  /// Restricts which clip types the clips tab shows. Set by the recorder
+  /// entry-point to the current mode's type (stop-motion vs normal video);
+  /// [LibraryClipTypeFilter.all] for the standalone library.
+  final LibraryClipTypeFilter clipTypeFilter;
+
   /// Current editor clips, used to calculate remaining duration and
   /// target aspect ratio in selection mode.
   final List<DivineVideoClip> editorClips;
@@ -96,7 +103,11 @@ class LibraryScreen extends ConsumerWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider<ClipsLibraryBloc>(
-          key: ValueKey((clipLibraryService, gallerySaveService)),
+          key: ValueKey((
+            clipLibraryService,
+            gallerySaveService,
+            clipTypeFilter,
+          )),
           create: (_) {
             final editorClipIds = selectionMode
                 ? editorClips.map((c) => c.id).toSet()
@@ -105,6 +116,7 @@ class LibraryScreen extends ConsumerWidget {
               clipLibraryService: clipLibraryService,
               gallerySaveService: gallerySaveService,
               sharedPreferences: ref.read(sharedPreferencesProvider),
+              clipTypeFilter: clipTypeFilter,
             )..add(
               ClipsLibraryLoadRequested(
                 preSelectedIds: editorClipIds,
@@ -313,7 +325,16 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
       await ref.read(videoPublishProvider.notifier).clearAll();
 
       final clipManagerNotifier = ref.read(clipManagerProvider.notifier);
-      for (final clip in selectedClips) {
+      // Drop unreadable stills (deleted / zero-byte captures), then collapse
+      // multiple stop-motion sets into one frames clip: the frame-first
+      // editor edits a single frames list (the shape a recorder session
+      // produces), so each set's stills line up on one timeline.
+      final usableClips = [
+        for (final clip in selectedClips)
+          ?StopMotionFrameOps.sanitizedClip(clip),
+      ];
+      final merged = StopMotionFrameOps.mergeClips(usableClips);
+      for (final clip in merged != null ? [merged] : usableClips) {
         clipManagerNotifier.insertClip(clipManagerNotifier.clips.length, clip);
       }
     }

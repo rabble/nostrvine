@@ -4,6 +4,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 void main() {
@@ -155,6 +156,49 @@ void main() {
       });
     });
 
+    group('selectedIsStopMotion', () {
+      final smClip = DivineVideoClip(
+        id: 'sm1',
+        stopMotionFrames: const [
+          StopMotionClipFrame(
+            path: '/frames/f0.jpg',
+            duration: Duration(milliseconds: 83),
+          ),
+        ],
+        thumbnailPath: '/frames/f0.jpg',
+        duration: const Duration(seconds: 1),
+        recordedAt: DateTime(2026),
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
+      );
+
+      test('is null when nothing is selected', () {
+        final state = ClipsLibraryState(
+          status: ClipsLibraryStatus.loaded,
+          clips: [clip1, smClip],
+        );
+        expect(state.selectedIsStopMotion, isNull);
+      });
+
+      test('is false when a normal video clip is selected', () {
+        final state = ClipsLibraryState(
+          status: ClipsLibraryStatus.loaded,
+          clips: [clip1, smClip],
+          selectedClipIds: const {'clip1'},
+        );
+        expect(state.selectedIsStopMotion, isFalse);
+      });
+
+      test('is true when a stop-motion clip is selected', () {
+        final state = ClipsLibraryState(
+          status: ClipsLibraryStatus.loaded,
+          clips: [clip1, smClip],
+          selectedClipIds: const {'sm1'},
+        );
+        expect(state.selectedIsStopMotion, isTrue);
+      });
+    });
+
     test('props are correct', () {
       final state = ClipsLibraryState(
         status: ClipsLibraryStatus.loaded,
@@ -254,6 +298,64 @@ void main() {
           ClipsLibraryStatus.error,
         ]),
       );
+    });
+  });
+
+  group(LibraryClipTypeFilter, () {
+    final videoClip = DivineVideoClip(
+      id: 'v',
+      video: EditorVideo.file('/v.mp4'),
+      duration: const Duration(seconds: 2),
+      recordedAt: DateTime(2026),
+      targetAspectRatio: .vertical,
+      originalAspectRatio: 9 / 16,
+    );
+    final stopMotionClip = DivineVideoClip(
+      id: 'sm',
+      stopMotionFrames: const [
+        StopMotionClipFrame(
+          path: '/frames/f0.jpg',
+          duration: Duration(milliseconds: 83),
+        ),
+      ],
+      duration: const Duration(seconds: 1),
+      recordedAt: DateTime(2026),
+      targetAspectRatio: .vertical,
+      originalAspectRatio: 9 / 16,
+    );
+
+    test('fromQuery round-trips the non-default values', () {
+      expect(
+        LibraryClipTypeFilter.fromQuery(
+          LibraryClipTypeFilter.stopMotion.queryValue,
+        ),
+        LibraryClipTypeFilter.stopMotion,
+      );
+      expect(
+        LibraryClipTypeFilter.fromQuery(LibraryClipTypeFilter.video.queryValue),
+        LibraryClipTypeFilter.video,
+      );
+    });
+
+    test('fromQuery defaults to all for null or unknown', () {
+      expect(LibraryClipTypeFilter.fromQuery(null), LibraryClipTypeFilter.all);
+      expect(
+        LibraryClipTypeFilter.fromQuery('bogus'),
+        LibraryClipTypeFilter.all,
+      );
+    });
+
+    test('all has no query value', () {
+      expect(LibraryClipTypeFilter.all.queryValue, isNull);
+    });
+
+    test('matches respects clip type', () {
+      expect(LibraryClipTypeFilter.all.matches(videoClip), isTrue);
+      expect(LibraryClipTypeFilter.all.matches(stopMotionClip), isTrue);
+      expect(LibraryClipTypeFilter.stopMotion.matches(stopMotionClip), isTrue);
+      expect(LibraryClipTypeFilter.stopMotion.matches(videoClip), isFalse);
+      expect(LibraryClipTypeFilter.video.matches(videoClip), isTrue);
+      expect(LibraryClipTypeFilter.video.matches(stopMotionClip), isFalse);
     });
   });
 }

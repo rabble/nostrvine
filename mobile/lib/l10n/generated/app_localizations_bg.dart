@@ -8105,6 +8105,13 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoRecorderLipSyncAddAudioFirst => 'Добавете аудио преди запис';
 
   @override
+  String get videoRecorderStopMotionAssembling => 'Създаване на видеото…';
+
+  @override
+  String get videoRecorderStopMotionAssembleFailed =>
+      'Видеото не можа да се създаде. Опитайте отново.';
+
+  @override
   String get videoRecorderToggleFlashLabel => 'Превключване на светкавицата';
 
   @override
@@ -8151,6 +8158,18 @@ class AppLocalizationsBg extends AppLocalizations {
       locale: localeName,
       other: 'Отвори библиотеката с клипове, $clipCount клипа',
       one: 'Отвори библиотеката с клипове, 1 клип',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String videoRecorderLibraryOpenStopMotionLabel(int frameCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      frameCount,
+      locale: localeName,
+      other: 'Отвори стоп-моушън библиотеката, $frameCount кадъра',
+      one: 'Отвори стоп-моушън библиотеката, 1 кадър',
+      zero: 'Отвори стоп-моушън библиотеката',
     );
     return '$_temp0';
   }
@@ -8425,6 +8444,44 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get videoEditorDeleteSelectedItemSemanticLabel =>
       'Изтриване на избрания елемент';
+
+  @override
+  String get videoEditorStopMotionFramesPerImageLabel => 'Кадри на изображение';
+
+  @override
+  String videoEditorStopMotionFramesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count кадъра',
+      one: '1 кадър',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorStopMotionFramesPerImageButtonLabel => 'Кадри';
+
+  @override
+  String get libraryStopMotionClipLabel => 'Стоп-моушън клип';
+
+  @override
+  String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
+    return '$count кадъра на изображение';
+  }
+
+  @override
+  String get videoEditorStopMotionIncreaseFramesPerImageSemanticLabel =>
+      'Увеличаване на кадрите на изображение';
+
+  @override
+  String get videoEditorStopMotionDecreaseFramesPerImageSemanticLabel =>
+      'Намаляване на кадрите на изображение';
+
+  @override
+  String videoEditorStopMotionFrameSemanticLabel(int position, int total) {
+    return 'Стоп-моушън кадър $position от $total';
+  }
 
   @override
   String get videoEditorEditLabel => 'Редактиране';
@@ -8835,6 +8892,19 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get videoEditorDeleteSelectedClipsSemanticLabel =>
       'Изтриване на избраните клипове';
+
+  @override
+  String get videoEditorDeleteSelectedFramesSemanticLabel =>
+      'Изтриване на избраните кадри';
+
+  @override
+  String get videoEditorReverseSelectedFramesSemanticLabel =>
+      'Обръщане на избраните кадри';
+
+  @override
+  String videoEditorStopMotionTooShortSnackbar(int seconds) {
+    return 'Видеото трябва да е поне $secondsс — заснеми още няколко кадъра.';
+  }
 
   @override
   String get videoEditorMergeProgressLabel =>

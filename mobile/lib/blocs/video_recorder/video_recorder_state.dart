@@ -1,5 +1,20 @@
 part of 'video_recorder_bloc.dart';
 
+/// Lifecycle of the stop-motion "assemble captured frames into one video" step.
+enum StopMotionStatus {
+  /// No assembly in progress.
+  idle,
+
+  /// Captured frames are being encoded into a single video.
+  assembling,
+
+  /// Assembly finished; the clip is in the manager and the editor can open.
+  ready,
+
+  /// Assembly failed.
+  failure,
+}
+
 /// State for [VideoRecorderBloc].
 ///
 /// Ports the legacy `VideoRecorderProviderState` verbatim and adds the mutable
@@ -18,6 +33,7 @@ class VideoRecorderBlocState extends Equatable {
     this.canRecord = false,
     this.isCameraInitialized = false,
     this.canSwitchCamera = true,
+    this.isFrontCamera = false,
     this.isSwitchingCamera = false,
     this.previewTextureId,
     this.hasFlash = true,
@@ -47,6 +63,9 @@ class VideoRecorderBlocState extends Equatable {
     this.snapTime,
     this.showZoomIndicator = false,
     this.isPinchActive = false,
+    this.stopMotionFrames = const [],
+    this.stopMotionStatus = StopMotionStatus.idle,
+    this.stopMotionShutterTick = 0,
   });
 
   /// Recorder mode from the camera.
@@ -63,6 +82,13 @@ class VideoRecorderBlocState extends Equatable {
 
   /// Whether camera switching is available.
   final bool canSwitchCamera;
+
+  /// Whether the active lens is front-facing.
+  ///
+  /// Drives the stop-motion onion-skin overlay: the live preview is mirrored
+  /// for the front camera, so the ghost of the last still is flipped to match
+  /// it (see [VideoRecorderGhostFrame]).
+  final bool isFrontCamera;
 
   /// Whether a front/back lens switch is currently in progress.
   ///
@@ -197,6 +223,27 @@ class VideoRecorderBlocState extends Equatable {
   /// by the ruler's drag scrubber.
   final bool isPinchActive;
 
+  /// Captured stop-motion frame file paths, in capture order.
+  ///
+  /// Each shutter tap in stop-motion mode appends one still here; they are
+  /// encoded into a single video only on finish (assemble-at-end), so capture
+  /// stays instant.
+  final List<String> stopMotionFrames;
+
+  /// Lifecycle of the stop-motion assemble step.
+  final StopMotionStatus stopMotionStatus;
+
+  /// Number of captured stop-motion frames.
+  int get stopMotionFrameCount => stopMotionFrames.length;
+
+  /// Incremented the instant a stop-motion shutter fires — before the native
+  /// photo capture resolves — so shutter feedback (blink) is immediate rather
+  /// than delayed by the capture write (~400ms).
+  final int stopMotionShutterTick;
+
+  /// Path of the most recently captured stop-motion frame, if any.
+  String? get stopMotionLastFrame => stopMotionFrames.lastOrNull;
+
   /// Whether currently recording.
   bool get isRecording => recordingState == VideoRecorderState.recording;
 
@@ -224,6 +271,7 @@ class VideoRecorderBlocState extends Equatable {
     bool? canRecord,
     bool? isCameraInitialized,
     bool? canSwitchCamera,
+    bool? isFrontCamera,
     bool? isSwitchingCamera,
     int? previewTextureId,
     bool? hasFlash,
@@ -248,6 +296,9 @@ class VideoRecorderBlocState extends Equatable {
     DateTime? snapTime,
     bool? showZoomIndicator,
     bool? isPinchActive,
+    List<String>? stopMotionFrames,
+    StopMotionStatus? stopMotionStatus,
+    int? stopMotionShutterTick,
   }) {
     return VideoRecorderBlocState(
       recorderMode: recorderMode ?? this.recorderMode,
@@ -261,6 +312,7 @@ class VideoRecorderBlocState extends Equatable {
       canRecord: canRecord ?? this.canRecord,
       isCameraInitialized: isCameraInitialized ?? this.isCameraInitialized,
       canSwitchCamera: canSwitchCamera ?? this.canSwitchCamera,
+      isFrontCamera: isFrontCamera ?? this.isFrontCamera,
       isSwitchingCamera: isSwitchingCamera ?? this.isSwitchingCamera,
       previewTextureId: previewTextureId ?? this.previewTextureId,
       hasFlash: hasFlash ?? this.hasFlash,
@@ -292,6 +344,10 @@ class VideoRecorderBlocState extends Equatable {
       snapTime: snapTime ?? this.snapTime,
       showZoomIndicator: showZoomIndicator ?? this.showZoomIndicator,
       isPinchActive: isPinchActive ?? this.isPinchActive,
+      stopMotionFrames: stopMotionFrames ?? this.stopMotionFrames,
+      stopMotionStatus: stopMotionStatus ?? this.stopMotionStatus,
+      stopMotionShutterTick:
+          stopMotionShutterTick ?? this.stopMotionShutterTick,
     );
   }
 
@@ -307,6 +363,7 @@ class VideoRecorderBlocState extends Equatable {
     canRecord,
     isCameraInitialized,
     canSwitchCamera,
+    isFrontCamera,
     isSwitchingCamera,
     previewTextureId,
     hasFlash,
@@ -331,5 +388,8 @@ class VideoRecorderBlocState extends Equatable {
     snapTime,
     showZoomIndicator,
     isPinchActive,
+    stopMotionFrames,
+    stopMotionStatus,
+    stopMotionShutterTick,
   ];
 }

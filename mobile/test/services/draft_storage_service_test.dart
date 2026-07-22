@@ -11,6 +11,8 @@ import 'package:models/models.dart' show AspectRatio, AudioEvent;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
+import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
@@ -557,6 +559,235 @@ void main() {
         final drafts = await service.getAllDrafts();
         expect(drafts.length, 1);
       });
+    });
+
+    group('stop-motion frame-only drafts', () {
+      late Directory docsDir;
+
+      setUp(() {
+        docsDir = Directory(documentsPath)..createSync(recursive: true);
+      });
+
+      tearDown(() {
+        if (docsDir.existsSync()) docsDir.deleteSync(recursive: true);
+      });
+
+      File writeFrame(String name) {
+        final file = File(p.join(documentsPath, name));
+        file.writeAsBytesSync(const [0, 1, 2, 3]);
+        return file;
+      }
+
+      DivineVideoClip framesOnlyClip({
+        required List<File> frames,
+        String id = 'stop_motion_clip',
+      }) {
+        return DivineVideoClip(
+          id: id,
+          stopMotionFrames: [
+            for (final frame in frames)
+              StopMotionClipFrame(
+                path: frame.path,
+                duration: const Duration(milliseconds: 167),
+              ),
+          ],
+          thumbnailPath: frames.first.path,
+          duration: Duration(milliseconds: frames.length * 167),
+          recordedAt: DateTime(2026),
+          targetAspectRatio: AspectRatio.vertical,
+          originalAspectRatio: 9 / 16,
+        );
+      }
+
+      test(
+        'deleting a draft keeps frame files referenced by a library clip',
+        () async {
+          final frame0 = writeFrame('draft_shared_frame0.jpg');
+          final frame1 = writeFrame('draft_shared_frame1.jpg');
+          final clip = framesOnlyClip(frames: [frame0, frame1]);
+          final libraryService = ClipLibraryService(
+            clipsDao: database.clipsDao,
+            draftsDao: database.draftsDao,
+          );
+
+          await libraryService.saveClip(clip);
+          await service.saveDraft(
+            DivineVideoDraft.create(
+              id: 'draft_stop_motion',
+              clips: [clip],
+              title: 'Stop motion',
+              description: '',
+              hashtags: const {},
+              selectedApproach: 'stop_motion',
+            ),
+          );
+
+          await service.deleteDraft('draft_stop_motion');
+
+          expect(frame0.existsSync(), isTrue);
+          expect(
+            frame1.existsSync(),
+            isTrue,
+            reason:
+                'all library stop-motion frame paths live in JSON, not only '
+                'indexed thumbnail/file columns',
+          );
+        },
+      );
+
+      test(
+        'deleting a draft removes its unreferenced frame files',
+        () async {
+          final frame0 = writeFrame('draft_only_frame0.jpg');
+          final frame1 = writeFrame('draft_only_frame1.jpg');
+          final clip = framesOnlyClip(frames: [frame0, frame1]);
+
+          await service.saveDraft(
+            DivineVideoDraft.create(
+              id: 'draft_only_stop_motion',
+              clips: [clip],
+              title: 'Stop motion',
+              description: '',
+              hashtags: const {},
+              selectedApproach: 'stop_motion',
+            ),
+          );
+
+          await service.deleteDraft('draft_only_stop_motion');
+
+          // No surviving row references the stills, so the frames are reaped.
+          // Before deleteDraft removed the draft's clip rows, they lingered
+          // (the FK cascade never fires) and kept the frames pinned on disk.
+          expect(frame0.existsSync(), isFalse);
+          expect(frame1.existsSync(), isFalse);
+        },
+      );
+
+      test(
+        'clearing all drafts removes unreferenced frame files',
+        () async {
+          final frame0 = writeFrame('clear_frame0.jpg');
+          final frame1 = writeFrame('clear_frame1.jpg');
+          final clip = framesOnlyClip(
+            frames: [frame0, frame1],
+            id: 'clear_clip',
+          );
+
+          await service.saveDraft(
+            DivineVideoDraft.create(
+              id: 'draft_clear_stop_motion',
+              clips: [clip],
+              title: 'Stop motion',
+              description: '',
+              hashtags: const {},
+              selectedApproach: 'stop_motion',
+            ),
+          );
+
+          await service.clearAllDrafts();
+
+          expect(frame0.existsSync(), isFalse);
+          expect(frame1.existsSync(), isFalse);
+        },
+      );
+
+      test('validated autosave keeps frame-only stop-motion clips', () async {
+        final frame0 = writeFrame('autosave_frame0.jpg');
+        final frame1 = writeFrame('autosave_frame1.jpg');
+        final clip = framesOnlyClip(frames: [frame0, frame1]);
+
+        await service.saveDraft(
+          DivineVideoDraft.create(
+            id: VideoEditorConstants.autoSaveId,
+            clips: [clip],
+            title: 'Autosave',
+            description: '',
+            hashtags: const {},
+            selectedApproach: 'stop_motion',
+          ),
+        );
+
+        final autosave = await service.getAutosaveDraft();
+
+        expect(autosave, isNotNull);
+        expect(autosave!.clips, hasLength(1));
+        expect(autosave.clips.single.isStopMotion, isTrue);
+        expect(await service.hasValidAutosave(), isTrue);
+      });
+
+      test(
+        'keeps a stop-motion draft, dropping only the unreadable still',
+        () async {
+          final frame0 = writeFrame('salvage_frame0.jpg');
+          final frame1 = writeFrame('salvage_frame1.jpg');
+          final clip = framesOnlyClip(
+            frames: [frame0, frame1],
+            id: 'sm_salvage',
+          );
+
+          await service.saveDraft(
+            DivineVideoDraft.create(
+              id: 'draft_salvage',
+              clips: [clip],
+              title: 'Stop motion',
+              description: '',
+              hashtags: const {},
+              selectedApproach: 'stop_motion',
+            ),
+          );
+
+          // One still goes missing after the draft was persisted (file cleanup
+          // reaped it). getAllDrafts validation must salvage the clip per-frame
+          // instead of hiding the whole draft before restore can recover it.
+          frame1.deleteSync();
+
+          final drafts = await service.getAllDrafts();
+          expect(drafts.map((draft) => draft.id), ['draft_salvage']);
+          final restored = drafts.single.clips.single;
+          expect(restored.isStopMotion, isTrue);
+          expect(restored.stopMotionFrames, hasLength(1));
+          expect(
+            restored.stopMotionFrames!.single.path,
+            endsWith('salvage_frame0.jpg'),
+          );
+        },
+      );
+
+      test(
+        'reaps a still removed from an existing session on the next save',
+        () async {
+          final frame0 = writeFrame('resave_frame0.jpg');
+          final frame1 = writeFrame('resave_frame1.jpg');
+          final frame2 = writeFrame('resave_frame2.jpg');
+
+          DivineVideoDraft draftWithFrames(List<File> frames) =>
+              DivineVideoDraft.create(
+                id: 'draft_resave',
+                clips: [framesOnlyClip(frames: frames, id: 'sm_resave')],
+                title: 'Stop motion',
+                description: '',
+                hashtags: const {},
+                selectedApproach: 'stop_motion',
+              );
+
+          await service.saveDraft(draftWithFrames([frame0, frame1, frame2]));
+
+          // The user deletes the middle still in the editor; the session
+          // autosaves. The removed still is no longer referenced by the draft
+          // and must be queued for cleanup (and reaped when no sink defers it).
+          await service.saveDraft(draftWithFrames([frame0, frame2]));
+
+          expect(
+            frame1.existsSync(),
+            isFalse,
+            reason:
+                'a still removed from the clip is orphaned and must be cleaned '
+                'up on the next save',
+          );
+          expect(frame0.existsSync(), isTrue);
+          expect(frame2.existsSync(), isTrue);
+        },
+      );
     });
 
     group('clearAllDrafts', () {

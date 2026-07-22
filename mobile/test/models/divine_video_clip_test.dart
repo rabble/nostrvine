@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as model;
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:pro_video_editor/pro_video_editor.dart' as editor;
 
 void main() {
@@ -13,6 +14,21 @@ void main() {
     recordedAt: DateTime(2024),
     targetAspectRatio: model.AspectRatio.square,
     originalAspectRatio: 1,
+  );
+
+  DivineVideoClip stopMotionClip(List<String> framePaths) => DivineVideoClip(
+    id: 'sm1',
+    stopMotionFrames: [
+      for (final path in framePaths)
+        StopMotionClipFrame(
+          path: path,
+          duration: const Duration(milliseconds: 83),
+        ),
+    ],
+    duration: Duration(milliseconds: 83 * framePaths.length),
+    recordedAt: DateTime(2024),
+    targetAspectRatio: model.AspectRatio.vertical,
+    originalAspectRatio: 9 / 16,
   );
 
   group('DivineVideoClip.hasResolvableVideoFile', () {
@@ -38,6 +54,80 @@ void main() {
         clip('${tempDir.path}/deleted.mp4').hasResolvableVideoFile,
         isFalse,
       );
+    });
+
+    test('is true for a stop-motion clip whose stills all exist', () async {
+      final a = '${tempDir.path}/f0.jpg';
+      final b = '${tempDir.path}/f1.jpg';
+      await File(a).writeAsBytes(const [0]);
+      await File(b).writeAsBytes(const [0]);
+
+      expect(stopMotionClip([a, b]).hasResolvableVideoFile, isTrue);
+    });
+
+    test('is false for a stop-motion clip with a missing still', () async {
+      final a = '${tempDir.path}/f0.jpg';
+      await File(a).writeAsBytes(const [0]);
+
+      expect(
+        stopMotionClip([a, '${tempDir.path}/gone.jpg']).hasResolvableVideoFile,
+        isFalse,
+      );
+    });
+
+    test(
+      'resolves a materialized clip against its mp4, not its cleaned stills',
+      () async {
+        final path = '${tempDir.path}/rendered.mp4';
+        await File(path).writeAsBytes(const [0]);
+
+        // A materialized clip carries a rendered mp4 and may still carry its
+        // now-deleted stills. It must resolve against the mp4 that exists, not
+        // be dropped as orphaned for the missing stills.
+        final materialized = stopMotionClip([
+          '${tempDir.path}/gone.jpg',
+        ]).copyWith(video: editor.EditorVideo.file(File(path)));
+
+        expect(materialized.hasResolvableVideoFile, isTrue);
+      },
+    );
+  });
+
+  group('DivineVideoClip.isStopMotion (video-first)', () {
+    test('is true for a frames-only clip', () {
+      expect(stopMotionClip(['/a.jpg']).isStopMotion, isTrue);
+    });
+
+    test('is false once a video is present, even if stills remain', () {
+      final materialized = stopMotionClip([
+        '/a.jpg',
+      ]).copyWith(video: editor.EditorVideo.file(File('/rendered.mp4')));
+
+      expect(materialized.isStopMotion, isFalse);
+    });
+
+    test('is false for a normal video clip', () {
+      expect(clip('/v.mp4').isStopMotion, isFalse);
+    });
+  });
+
+  group('DivineVideoClip.copyWith clearStopMotionFrames', () {
+    test('drops the stills so the result is a plain video clip', () {
+      final materialized = stopMotionClip(['/a.jpg', '/b.jpg']).copyWith(
+        video: editor.EditorVideo.file(File('/rendered.mp4')),
+        clearStopMotionFrames: true,
+      );
+
+      expect(materialized.stopMotionFrames, isNull);
+      expect(materialized.isStopMotion, isFalse);
+    });
+
+    test('keeps the stills when the flag is not set', () {
+      final copy = stopMotionClip(['/a.jpg']).copyWith(
+        video: editor.EditorVideo.file(File('/rendered.mp4')),
+      );
+
+      expect(copy.stopMotionFrames, hasLength(1));
     });
   });
 

@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +11,7 @@ import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -44,12 +48,17 @@ void main() {
     Widget buildWidget({
       VideoRecorderState recordingState = VideoRecorderState.idle,
       List<DivineVideoClip>? clips,
+      bool fromEditor = false,
+      VideoRecorderMode recorderMode = VideoRecorderMode.capture,
+      List<String> stopMotionFrames = const [],
     }) {
       when(() => recorderBloc.state).thenReturn(
         VideoRecorderBlocState(
           recordingState: recordingState,
           isCameraInitialized: true,
           canRecord: true,
+          recorderMode: recorderMode,
+          stopMotionFrames: stopMotionFrames,
         ),
       );
 
@@ -62,14 +71,25 @@ void main() {
         ],
         child: BlocProvider<VideoRecorderBloc>.value(
           value: recorderBloc,
-          child: const MaterialApp(
+          child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: VideoRecorderCaptureStack(fromEditor: false)),
+            home: Scaffold(
+              body: VideoRecorderCaptureStack(fromEditor: fromEditor),
+            ),
           ),
         ),
       );
     }
+
+    // The real (non-dummy) undo button is the trash icon button with a live
+    // onPressed; the sibling placeholder passes onPressed: null.
+    final undoButtonFinder = find.byWidgetPredicate(
+      (w) =>
+          w is DivineIconButton &&
+          w.icon == DivineIconName.trash &&
+          w.onPressed != null,
+    );
 
     group('renders', () {
       testWidgets('renders $VideoRecorderCaptureStack', (tester) async {
@@ -165,6 +185,48 @@ void main() {
             .toList();
         expect(opacities.any((o) => o.opacity == 0), isTrue);
       });
+
+      testWidgets(
+        'invisible undo button ignores taps in editor-hosted recorder',
+        (tester) async {
+          await tester.pumpWidget(
+            buildWidget(
+              fromEditor: true,
+              recorderMode: VideoRecorderMode.stopMotion,
+              stopMotionFrames: const ['/test/frame1.jpg'],
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          // Hidden (opacity 0) but present; tap must not reach onPressed.
+          await tester.tap(undoButtonFinder, warnIfMissed: false);
+          await tester.pump();
+
+          verifyNever(
+            () => recorderBloc.add(const VideoRecorderStopMotionFrameUndone()),
+          );
+        },
+      );
+
+      testWidgets(
+        'visible undo button deletes the last still when tapped',
+        (tester) async {
+          await tester.pumpWidget(
+            buildWidget(
+              recorderMode: VideoRecorderMode.stopMotion,
+              stopMotionFrames: const ['/test/frame1.jpg'],
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          await tester.tap(undoButtonFinder);
+          await tester.pump();
+
+          verify(
+            () => recorderBloc.add(const VideoRecorderStopMotionFrameUndone()),
+          ).called(1);
+        },
+      );
     });
 
     group('layout', () {
@@ -193,6 +255,53 @@ void main() {
 
         expect(recordButtonRect.center.dx, closeTo(stackRect.center.dx, 2.0));
       });
+    });
+
+    group('stop-motion assemble', () {
+      testWidgets(
+        'shows a DivineSnackbarContainer error when assembly fails',
+        (tester) async {
+          final states = StreamController<VideoRecorderBlocState>.broadcast();
+          addTearDown(states.close);
+
+          final widget = buildWidget();
+          // whenListen overrides the state stub from buildWidget so the
+          // BlocConsumer reacts to the emitted status transition.
+          whenListen(
+            recorderBloc,
+            states.stream,
+            initialState: const VideoRecorderBlocState(
+              isCameraInitialized: true,
+              canRecord: true,
+            ),
+          );
+          await tester.pumpWidget(widget);
+          await tester.pump();
+
+          states.add(
+            const VideoRecorderBlocState(
+              isCameraInitialized: true,
+              canRecord: true,
+              stopMotionStatus: StopMotionStatus.failure,
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          expect(
+            find.widgetWithText(
+              DivineSnackbarContainer,
+              l10n.videoRecorderStopMotionAssembleFailed,
+            ),
+            findsOneWidget,
+          );
+          final container = tester.widget<DivineSnackbarContainer>(
+            find.byType(DivineSnackbarContainer),
+          );
+          expect(container.error, isTrue);
+        },
+      );
     });
   });
 }

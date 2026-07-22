@@ -8207,6 +8207,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Adaugă audio înainte de înregistrare';
 
   @override
+  String get videoRecorderStopMotionAssembling => 'Se creează videoclipul…';
+
+  @override
+  String get videoRecorderStopMotionAssembleFailed =>
+      'Videoclipul nu a putut fi creat. Încearcă din nou.';
+
+  @override
   String get videoRecorderToggleFlashLabel => 'Activează/dezactivează blițul';
 
   @override
@@ -8253,6 +8260,19 @@ class AppLocalizationsRo extends AppLocalizations {
       locale: localeName,
       other: 'Deschide biblioteca de clipuri, $clipCount clipuri',
       one: 'Deschide biblioteca de clipuri, 1 clip',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String videoRecorderLibraryOpenStopMotionLabel(int frameCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      frameCount,
+      locale: localeName,
+      other: 'Deschide biblioteca stop-motion, $frameCount de cadre',
+      few: 'Deschide biblioteca stop-motion, $frameCount cadre',
+      one: 'Deschide biblioteca stop-motion, 1 cadru',
+      zero: 'Deschide biblioteca stop-motion',
     );
     return '$_temp0';
   }
@@ -8532,6 +8552,44 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get videoEditorDeleteSelectedItemSemanticLabel =>
       'Șterge elementul selectat';
+
+  @override
+  String get videoEditorStopMotionFramesPerImageLabel => 'Cadre pe imagine';
+
+  @override
+  String videoEditorStopMotionFramesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count cadre',
+      one: '1 cadru',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorStopMotionFramesPerImageButtonLabel => 'Cadre';
+
+  @override
+  String get libraryStopMotionClipLabel => 'Clip stop-motion';
+
+  @override
+  String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
+    return '$count cadre pe imagine';
+  }
+
+  @override
+  String get videoEditorStopMotionIncreaseFramesPerImageSemanticLabel =>
+      'Mărește cadrele pe imagine';
+
+  @override
+  String get videoEditorStopMotionDecreaseFramesPerImageSemanticLabel =>
+      'Micșorează cadrele pe imagine';
+
+  @override
+  String videoEditorStopMotionFrameSemanticLabel(int position, int total) {
+    return 'Cadru stop-motion $position din $total';
+  }
 
   @override
   String get videoEditorEditLabel => 'Editează';
@@ -8938,6 +8996,19 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get videoEditorDeleteSelectedClipsSemanticLabel =>
       'Șterge clipurile selectate';
+
+  @override
+  String get videoEditorDeleteSelectedFramesSemanticLabel =>
+      'Șterge cadrele selectate';
+
+  @override
+  String get videoEditorReverseSelectedFramesSemanticLabel =>
+      'Inversează cadrele selectate';
+
+  @override
+  String videoEditorStopMotionTooShortSnackbar(int seconds) {
+    return 'Videoclipul tău trebuie să dureze cel puțin ${seconds}s — capturează încă câteva cadre.';
+  }
 
   @override
   String get videoEditorMergeProgressLabel =>

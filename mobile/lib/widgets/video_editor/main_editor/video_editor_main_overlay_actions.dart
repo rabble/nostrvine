@@ -6,11 +6,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
+import 'package:openvine/widgets/video_editor/stop_motion/stop_motion_frame_commands.dart';
 import 'package:openvine/widgets/video_editor/video_editor_toolbar.dart';
 
 /// Top action bar for the video editor.
@@ -56,6 +60,23 @@ class _TopActions extends ConsumerWidget {
       videoEditorProvider.select((s) => s.isAutosavedDraft),
     );
 
+    // Frames-per-image control lives in the toolbar's center slot — top
+    // centre, inline between the back and done buttons — only for a
+    // stop-motion composition.
+    final ({String clipId, int value})? stopMotionData = context.select((
+      ClipEditorBloc b,
+    ) {
+      final clips = b.state.clips;
+      if (!isStopMotionComposition(clips)) return null;
+      final clip = clips.first;
+      final frames = clip.stopMotionFrames ?? const [];
+      if (frames.isEmpty) return null;
+      return (
+        clipId: clip.id,
+        value: StopMotionFrameOps.globalDefaultFramesPerImage(frames),
+      );
+    });
+
     return PopScope(
       canPop: !isAutosavedDraft,
       onPopInvokedWithResult: (didPop, result) {
@@ -70,6 +91,12 @@ class _TopActions extends ConsumerWidget {
       child: VideoEditorToolbar(
         closeIcon: .caretLeft,
         doneIcon: .arrowRight,
+        center: stopMotionData == null
+            ? null
+            : _StopMotionFramesChip(
+                clipId: stopMotionData.clipId,
+                value: stopMotionData.value,
+              ),
         onClose: () {
           if (isAutosavedDraft) {
             _onClosePressed(
@@ -81,9 +108,31 @@ class _TopActions extends ConsumerWidget {
             context.pop();
           }
         },
-        onDone: () => scope.editor?.doneEditing(),
+        onDone: () => _onDonePressed(context, scope),
       ),
     );
+  }
+
+  /// Gates Done on the stop-motion minimum length: a composition shorter
+  /// than [VideoEditorConstants.stopMotionMinOutputDuration] would only reach
+  /// that length by silently looping at render, so instead the tap surfaces a
+  /// "capture more frames" snackbar and stays in the editor.
+  void _onDonePressed(BuildContext context, VideoEditorScope scope) {
+    final clipState = context.read<ClipEditorBloc>().state;
+    const minDuration = VideoEditorConstants.stopMotionMinOutputDuration;
+    if (isStopMotionComposition(clipState.clips) &&
+        clipState.totalDuration < minDuration) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        DivineSnackbarContainer.snackBar(
+          context.l10n.videoEditorStopMotionTooShortSnackbar(
+            minDuration.inSeconds,
+          ),
+          error: true,
+        ),
+      );
+      return;
+    }
+    scope.editor?.doneEditing();
   }
 
   void _onClosePressed({
@@ -188,6 +237,73 @@ class _BottomActions extends StatelessWidget {
           ),
           size: .small,
           type: .ghostSecondary,
+        ),
+      ),
+    );
+  }
+}
+
+/// A tappable "N frames" chip shown in the editor toolbar's centre slot (top
+/// centre, between the back and done buttons) while editing a frames-only
+/// stop-motion clip. Opens the frames-per-image wheel sheet and applies the
+/// chosen hold as the global default (per-frame overrides are preserved).
+class _StopMotionFramesChip extends StatelessWidget {
+  const _StopMotionFramesChip({required this.clipId, required this.value});
+
+  final String clipId;
+
+  /// The global-default frames-per-image (see
+  /// [StopMotionFrameOps.globalDefaultFramesPerImage]).
+  final int value;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = context.l10n.videoEditorStopMotionFramesCount(value);
+
+    return Semantics(
+      button: true,
+      value: context.l10n.videoEditorStopMotionFramesPerImageValueSemanticLabel(
+        value,
+      ),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => editStopMotionGlobalHold(context, clipId: clipId),
+        // Expand the hit area to the 48dp minimum touch target while the
+        // visible pill keeps its natural size, centred inside it. The
+        // width/height factors are essential: the toolbar row is laid out with
+        // loose (near-full-height) constraints, so a plain Center would grow to
+        // fill them and stretch the whole toolbar down the editor. Sizing to
+        // the child means the ConstrainedBox only enforces the 48dp minimum.
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          child: Center(
+            widthFactor: 1,
+            heightFactor: 1,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: VineTheme.surfaceBackground.withValues(alpha: 0.85),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  spacing: 6,
+                  children: [
+                    const DivineIcon(
+                      icon: .imagesSquare,
+                      color: VineTheme.lightText,
+                      size: 16,
+                    ),
+                    Text(label, style: VineTheme.labelLargeFont()),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

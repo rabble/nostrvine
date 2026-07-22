@@ -133,7 +133,7 @@ void main() {
           }
 
           final clip = clips.first;
-          final filePath = await clip.video.safeFilePath();
+          final filePath = await clip.requireVideo.safeFilePath();
           Log.debug('📹 Clip created: $filePath');
           Log.debug('📦 File size: ${File(filePath).lengthSync()} bytes');
 

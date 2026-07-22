@@ -3054,6 +3054,8 @@
     "videoRecorderCaptureCloseLabel": "Tutup",
     "videoRecorderCaptureNextLabel": "Berikutnya",
     "videoRecorderLipSyncAddAudioFirst": "Tambahkan audio sebelum merekam",
+    "videoRecorderStopMotionAssembling": "Membuat video Anda…",
+    "videoRecorderStopMotionAssembleFailed": "Tidak dapat membuat video. Coba lagi.",
     "videoRecorderClipDeletedMessage": "Klip dipindahkan ke sampah",
     "videoRecorderClipUndoLabel": "Urungkan",
     "libraryTrashTitle": "Baru-baru ini dihapus",
@@ -3078,6 +3080,14 @@
     "@videoRecorderLibraryOpenLabel": {
         "placeholders": {
             "clipCount": {
+                "type": "int"
+            }
+        }
+    },
+    "videoRecorderLibraryOpenStopMotionLabel": "{frameCount, plural, =0{Buka perpustakaan stop-motion} other{Buka perpustakaan stop-motion, {frameCount} bingkai}}",
+    "@videoRecorderLibraryOpenStopMotionLabel": {
+        "placeholders": {
+            "frameCount": {
                 "type": "int"
             }
         }
@@ -4084,6 +4094,9 @@
     "videoEditorMergeLabel": "Gabungkan",
     "videoEditorMergeSelectedClipsSemanticLabel": "Gabungkan klip yang dipilih",
     "videoEditorDeleteSelectedClipsSemanticLabel": "Hapus klip yang dipilih",
+    "videoEditorDeleteSelectedFramesSemanticLabel": "Hapus bingkai yang dipilih",
+    "videoEditorReverseSelectedFramesSemanticLabel": "Balikkan bingkai yang dipilih",
+    "videoEditorStopMotionTooShortSnackbar": "Videomu harus minimal {seconds} detik — ambil beberapa bingkai lagi.",
     "videoEditorMergeProgressLabel": "Sebentar, kami sedang menggabungkan klipmu",
     "videoEditorMergeFailed": "Tidak dapat menggabungkan klip. Silakan coba lagi.",
     "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device.",
@@ -4562,5 +4575,13 @@
   "authSignInErrorNetwork": "Tidak dapat menjangkau server. Periksa koneksimu dan coba lagi.",
   "authSignInErrorGeneric": "Ada yang salah. Coba lagi.",
   "authSignInOptionsHintPrefix": "Tidak yakin bagaimana kamu masuk terakhir kali? ",
-  "authSignInOptionsHintCta": "Lihat semua opsi masuk"
+  "authSignInOptionsHintCta": "Lihat semua opsi masuk",
+    "videoEditorStopMotionFramesPerImageLabel": "Bingkai per gambar",
+    "videoEditorStopMotionFramesPerImageValueSemanticLabel": "{count} bingkai per gambar",
+    "videoEditorStopMotionIncreaseFramesPerImageSemanticLabel": "Tambah bingkai per gambar",
+    "videoEditorStopMotionDecreaseFramesPerImageSemanticLabel": "Kurangi bingkai per gambar",
+    "videoEditorStopMotionFrameSemanticLabel": "Bingkai stop-motion {position} dari {total}",
+    "videoEditorStopMotionFramesCount": "{count, plural, other{{count} bingkai}}",
+    "videoEditorStopMotionFramesPerImageButtonLabel": "Bingkai",
+    "libraryStopMotionClipLabel": "Klip stop-motion"
 }

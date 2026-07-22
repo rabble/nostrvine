@@ -147,6 +147,30 @@ void main() {
       });
     });
 
+    group('referencedFilenames', () {
+      test(
+        'scans large unresolved filename sets without SQL expression blowup',
+        () async {
+          await dao.upsertClip(
+            id: 'clip_frames',
+            draftId: testDraftId,
+            orderIndex: 0,
+            durationMs: 3000,
+            recordedAt: DateTime(2023, 11, 14, 10),
+            filePath: null,
+            thumbnailPath: null,
+            data: '{"stopMotionFrames":[{"path":"frame_1001.jpg"}]}',
+          );
+
+          final filenames = {for (var i = 0; i < 1200; i++) 'frame_$i.jpg'};
+
+          final referenced = await dao.referencedFilenames(filenames);
+
+          expect(referenced, {'frame_1001.jpg'});
+        },
+      );
+    });
+
     group('getClipsByDraftId', () {
       test('returns clips sorted by orderIndex ascending', () async {
         await dao.upsertClip(
@@ -736,6 +760,57 @@ void main() {
         expect(libraryClips[1].id, equals('lib_clip_1'));
       });
 
+      test(
+        'getLibraryClips includes the autosave draft when requested',
+        () async {
+          await dao.upsertClip(
+            id: 'lib_clip',
+            orderIndex: 0,
+            durationMs: 3000,
+            recordedAt: DateTime(2023, 11, 14, 10),
+            filePath: 'test.mp4',
+            thumbnailPath: 'thumbnail.jpeg',
+            data: '{}',
+          );
+          await dao.upsertClip(
+            id: 'autosave_clip',
+            draftId: 'draft_autosave',
+            orderIndex: 0,
+            durationMs: 4000,
+            recordedAt: DateTime(2023, 11, 14, 12),
+            filePath: 'test.mp4',
+            thumbnailPath: 'thumbnail.jpeg',
+            data: '{}',
+          );
+          await dao.upsertClip(
+            id: 'named_draft_clip',
+            draftId: 'draft_real',
+            orderIndex: 0,
+            durationMs: 5000,
+            recordedAt: DateTime(2023, 11, 14, 11),
+            filePath: 'test.mp4',
+            thumbnailPath: 'thumbnail.jpeg',
+            data: '{}',
+          );
+
+          // Default: only draftId IS NULL.
+          expect(
+            (await dao.getLibraryClips()).map((c) => c.id),
+            equals(['lib_clip']),
+          );
+
+          // With the autosave draft included: loose + autosave clips, but
+          // not the named-project clip.
+          final withAutosave = await dao.getLibraryClips(
+            includeAutosaveDraftId: 'draft_autosave',
+          );
+          expect(
+            withAutosave.map((c) => c.id),
+            equals(['autosave_clip', 'lib_clip']),
+          );
+        },
+      );
+
       test('getLibraryClips respects limit', () async {
         await dao.upsertClip(
           id: 'lib_1',
@@ -953,6 +1028,73 @@ void main() {
 
         final result = await dao.isFileReferenced('something.mp4');
         expect(result, isFalse);
+      });
+
+      test(
+        'returns true for a stop-motion still referenced only inside data',
+        () async {
+          // A stop-motion clip keeps its stills in the `data` JSON blob; only
+          // the first frame is mirrored into thumbnail_path. Every other still
+          // must still count as referenced, or file cleanup would delete it.
+          await dao.upsertClip(
+            id: 'sm_clip',
+            orderIndex: 0,
+            durationMs: 2000,
+            recordedAt: DateTime(2023, 11, 14, 10),
+            filePath: null,
+            thumbnailPath: 'sm_frame_0.jpg',
+            data:
+                '{"id":"sm_clip","stopMotionFrames":['
+                '{"path":"sm_frame_0.jpg","durationUs":41667},'
+                '{"path":"sm_frame_1.jpg","durationUs":41667},'
+                '{"path":"sm_frame_2.jpg","durationUs":41667}]}',
+          );
+
+          // The thumbnail (indexed) and a non-thumbnail still (data-only) are
+          // both referenced; an unrelated basename is not.
+          expect(await dao.isFileReferenced('sm_frame_0.jpg'), isTrue);
+          expect(await dao.isFileReferenced('sm_frame_1.jpg'), isTrue);
+          expect(await dao.isFileReferenced('sm_frame_9.jpg'), isFalse);
+        },
+      );
+
+      test(
+        'returns true for a still stored as a legacy absolute path in data',
+        () async {
+          // A legacy row can store the full path rather than a basename. The
+          // quoted-basename phase-1 LIKE misses it, so the JSON matcher
+          // (decode + basename compare) is the branch that catches it.
+          await dao.upsertClip(
+            id: 'sm_legacy',
+            orderIndex: 0,
+            durationMs: 1000,
+            recordedAt: DateTime(2023, 11, 14, 10),
+            filePath: null,
+            thumbnailPath: null,
+            data:
+                '{"id":"sm_legacy","stopMotionFrames":['
+                '{"path":"/docs/clips/keyframe99.jpg","durationUs":41667}]}',
+          );
+
+          expect(await dao.isFileReferenced('keyframe99.jpg'), isTrue);
+          expect(await dao.isFileReferenced('keyframe98.jpg'), isFalse);
+        },
+      );
+
+      test('tolerates a malformed data blob without throwing', () async {
+        // A corrupt row whose data mentions the name but is not valid JSON must
+        // be skipped by the FormatException guard, not crash the cleanup query.
+        await dao.upsertClip(
+          id: 'corrupt',
+          orderIndex: 0,
+          durationMs: 1000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: null,
+          thumbnailPath: null,
+          data: 'not-json-but-mentions badfile.jpg here',
+        );
+
+        expect(await dao.isFileReferenced('badfile.jpg'), isFalse);
       });
     });
 

@@ -276,7 +276,13 @@ RouteContext? parseKnownRoute(String path) {
 }
 
 RouteContext? _parseRoute(String path, {required bool knownOnly}) {
-  final pathOnly = path.split('#').first.split('?').first;
+  // Callers pass full router locations, which may carry query parameters
+  // (e.g. /clips-only?type=video). Segment matching below must only ever see
+  // the path portion — otherwise the last segment becomes
+  // "clips-only?type=video", matches nothing, and the route falls through to
+  // the RouteType.home fallback (which the normalizer then "corrects" by
+  // yanking the user to /home/0).
+  final pathOnly = Uri.tryParse(path)?.path ?? path;
   final segments = pathOnly.split('/').where((s) => s.isNotEmpty).toList();
 
   if (segments.isEmpty) {

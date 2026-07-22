@@ -2,6 +2,7 @@
 // ABOUTME: Tests loading, selection, deletion, and gallery export
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -9,8 +10,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/gallery_save_service.dart';
+import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -64,17 +67,49 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       sharedPreferences = await SharedPreferences.getInstance();
 
-      // Stub recoverMissingAssets so the unawaited background recovery
-      // triggered by clips with null ghostFramePath doesn't throw.
-      when(
-        () => mockClipLibraryService.recoverMissingAssets(any()),
-      ).thenAnswer((_) async => []);
+      // Stub recoverMissingAssets to mirror the real no-op: return the SAME
+      // list instance when nothing is recovered. Returning a fresh list would
+      // fail the `identical` check in `_recoverAndReload` and re-dispatch load
+      // forever for clips with a null ghostFramePath (e.g. stop-motion stills).
+      when(() => mockClipLibraryService.recoverMissingAssets(any())).thenAnswer(
+        (inv) async => inv.positionalArguments.first as List<DivineVideoClip>,
+      );
     });
 
-    ClipsLibraryBloc createBloc() => ClipsLibraryBloc(
+    tearDown(() {
+      StopMotionRenderService.assembleOverride = null;
+      StopMotionRenderService.probeDurationOverride = null;
+    });
+
+    DivineVideoClip createStopMotionClip({
+      String? id,
+      Duration duration = const Duration(seconds: 1),
+      DateTime? deletedAt,
+    }) {
+      return DivineVideoClip(
+        id: id ?? 'sm-${DateTime.now().millisecondsSinceEpoch}',
+        stopMotionFrames: const [
+          StopMotionClipFrame(
+            path: '/frames/f0.jpg',
+            duration: Duration(milliseconds: 83),
+          ),
+        ],
+        thumbnailPath: '/frames/f0.jpg',
+        duration: duration,
+        recordedAt: DateTime.now(),
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
+        deletedAt: deletedAt,
+      );
+    }
+
+    ClipsLibraryBloc createBloc({
+      LibraryClipTypeFilter clipTypeFilter = LibraryClipTypeFilter.all,
+    }) => ClipsLibraryBloc(
       clipLibraryService: mockClipLibraryService,
       gallerySaveService: mockGallerySaveService,
       sharedPreferences: sharedPreferences,
+      clipTypeFilter: clipTypeFilter,
     );
 
     test('initial state is correct', () {
@@ -312,6 +347,120 @@ void main() {
             clips: [clip1, clip2],
             selectedClipIds: const {'clip1', 'clip2'},
             selectedDuration: const Duration(seconds: 8),
+          ),
+        ],
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'ignores a clip of a different type than the current selection',
+        seed: () => ClipsLibraryState(
+          status: ClipsLibraryStatus.loaded,
+          clips: [
+            clip1,
+            createStopMotionClip(id: 'sm1'),
+          ],
+          selectedClipIds: const {'clip1'},
+          selectedDuration: const Duration(seconds: 5),
+        ),
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          ClipsLibraryToggleSelection(createStopMotionClip(id: 'sm1')),
+        ),
+        expect: () => <ClipsLibraryState>[],
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'allows selecting a second clip of the same type',
+        seed: () => ClipsLibraryState(
+          status: ClipsLibraryStatus.loaded,
+          clips: [
+            createStopMotionClip(id: 'sm1'),
+            createStopMotionClip(id: 'sm2'),
+          ],
+          selectedClipIds: const {'sm1'},
+          selectedDuration: const Duration(seconds: 1),
+        ),
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          ClipsLibraryToggleSelection(createStopMotionClip(id: 'sm2')),
+        ),
+        expect: () => [
+          isA<ClipsLibraryState>().having(
+            (s) => s.selectedClipIds,
+            'selectedClipIds',
+            equals({'sm1', 'sm2'}),
+          ),
+        ],
+      );
+    });
+
+    group('clipTypeFilter', () {
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'stopMotion filter loads only stop-motion clips',
+        setUp: () {
+          when(() => mockClipLibraryService.getAllClips()).thenAnswer(
+            (_) async => [
+              createClip(id: 'video1'),
+              createStopMotionClip(id: 'sm1'),
+              createClip(id: 'video2'),
+            ],
+          );
+        },
+        build: () =>
+            createBloc(clipTypeFilter: LibraryClipTypeFilter.stopMotion),
+        act: (bloc) => bloc.add(const ClipsLibraryLoadRequested()),
+        expect: () => [
+          const ClipsLibraryState(status: ClipsLibraryStatus.loading),
+          isA<ClipsLibraryState>()
+              .having((s) => s.status, 'status', ClipsLibraryStatus.loaded)
+              .having(
+                (s) => s.clips.map((c) => c.id).toList(),
+                'clip ids',
+                ['sm1'],
+              ),
+        ],
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'video filter loads only normal video clips',
+        setUp: () {
+          when(() => mockClipLibraryService.getAllClips()).thenAnswer(
+            (_) async => [
+              createClip(id: 'video1'),
+              createStopMotionClip(id: 'sm1'),
+            ],
+          );
+        },
+        build: () => createBloc(clipTypeFilter: LibraryClipTypeFilter.video),
+        act: (bloc) => bloc.add(const ClipsLibraryLoadRequested()),
+        expect: () => [
+          const ClipsLibraryState(status: ClipsLibraryStatus.loading),
+          isA<ClipsLibraryState>().having(
+            (s) => s.clips.map((c) => c.id).toList(),
+            'clip ids',
+            ['video1'],
+          ),
+        ],
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'all filter loads both types',
+        setUp: () {
+          when(() => mockClipLibraryService.getAllClips()).thenAnswer(
+            (_) async => [
+              createClip(id: 'video1'),
+              createStopMotionClip(id: 'sm1'),
+            ],
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ClipsLibraryLoadRequested()),
+        expect: () => [
+          const ClipsLibraryState(status: ClipsLibraryStatus.loading),
+          isA<ClipsLibraryState>().having(
+            (s) => s.clips.length,
+            'clips.length',
+            2,
           ),
         ],
       );
@@ -570,6 +719,11 @@ void main() {
         deletedAt: DateTime(2026, 5),
       );
 
+      final trashedStopMotionClip = createStopMotionClip(
+        id: 'trashed-sm',
+        deletedAt: DateTime(2026, 5),
+      );
+
       blocTest<ClipsLibraryBloc, ClipsLibraryState>(
         'loads trashed clips',
         setUp: () {
@@ -584,6 +738,28 @@ void main() {
           isA<ClipsLibraryState>()
               .having((s) => s.status, 'status', ClipsLibraryStatus.trashLoaded)
               .having((s) => s.trashedClips, 'trashedClips', [trashedClip]),
+        ],
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'applies the type filter when loading trashed clips',
+        setUp: () {
+          when(() => mockClipLibraryService.getTrashedClips()).thenAnswer(
+            (_) async => [trashedClip, trashedStopMotionClip],
+          );
+        },
+        build: () =>
+            createBloc(clipTypeFilter: LibraryClipTypeFilter.stopMotion),
+        act: (bloc) => bloc.add(const ClipsLibraryTrashLoadRequested()),
+        expect: () => [
+          const ClipsLibraryState(status: ClipsLibraryStatus.trashLoading),
+          isA<ClipsLibraryState>()
+              .having((s) => s.status, 'status', ClipsLibraryStatus.trashLoaded)
+              .having(
+                (s) => s.trashedClips.map((c) => c.id).toList(),
+                'trashed clip ids',
+                ['trashed-sm'],
+              ),
         ],
       );
 
@@ -643,6 +819,41 @@ void main() {
           verify(() => mockClipLibraryService.getAllClips()).called(1);
           verify(() => mockClipLibraryService.getTrashedClips()).called(1);
         },
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'applies the type filter after restoring from trash',
+        setUp: () {
+          when(
+            () => mockClipLibraryService.restore('trashed-sm'),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockClipLibraryService.getAllClips(),
+          ).thenAnswer((_) async => [activeClip, trashedStopMotionClip]);
+          when(() => mockClipLibraryService.getTrashedClips()).thenAnswer(
+            (_) async => [trashedClip, trashedStopMotionClip],
+          );
+        },
+        seed: () => ClipsLibraryState(
+          status: ClipsLibraryStatus.trashLoaded,
+          trashedClips: [trashedStopMotionClip],
+        ),
+        build: () =>
+            createBloc(clipTypeFilter: LibraryClipTypeFilter.stopMotion),
+        act: (bloc) => bloc.add(const ClipsLibraryRestoreClips({'trashed-sm'})),
+        expect: () => [
+          isA<ClipsLibraryState>()
+              .having(
+                (s) => s.clips.map((c) => c.id).toList(),
+                'active clip ids',
+                ['trashed-sm'],
+              )
+              .having(
+                (s) => s.trashedClips.map((c) => c.id).toList(),
+                'trashed clip ids',
+                ['trashed-sm'],
+              ),
+        ],
       );
 
       blocTest<ClipsLibraryBloc, ClipsLibraryState>(
@@ -746,6 +957,36 @@ void main() {
       );
 
       blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'empty trash only purges clips matching the type filter',
+        setUp: () {
+          when(() => mockClipLibraryService.getTrashedClips()).thenAnswer(
+            (_) async => [trashedClip, trashedStopMotionClip],
+          );
+          when(
+            () => mockClipLibraryService.hardDelete('trashed-sm'),
+          ).thenAnswer((_) async {});
+        },
+        seed: () => ClipsLibraryState(
+          status: ClipsLibraryStatus.trashLoaded,
+          trashedClips: [trashedStopMotionClip],
+        ),
+        build: () =>
+            createBloc(clipTypeFilter: LibraryClipTypeFilter.stopMotion),
+        act: (bloc) => bloc.add(const ClipsLibraryEmptyTrash()),
+        expect: () => [
+          isA<ClipsLibraryState>()
+              .having((s) => s.status, 'status', ClipsLibraryStatus.trashLoaded)
+              .having((s) => s.trashedClips, 'trashedClips', isEmpty),
+        ],
+        verify: (_) {
+          verifyNever(() => mockClipLibraryService.hardDelete('trashed'));
+          verify(
+            () => mockClipLibraryService.hardDelete('trashed-sm'),
+          ).called(1);
+        },
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
         'emits error when empty trash fails',
         setUp: () {
           when(
@@ -823,6 +1064,48 @@ void main() {
                     .having((r) => r.failureCount, 'failureCount', 0),
               ),
         ],
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'cleans up the transient mp4 after saving a stop-motion clip',
+        setUp: () {
+          final tempDir = Directory.systemTemp.createTempSync(
+            'clips_library_stop_motion_gallery_test',
+          );
+          addTearDown(() async {
+            if (tempDir.existsSync()) await tempDir.delete(recursive: true);
+          });
+          final output = File('${tempDir.path}/rendered.mp4')
+            ..writeAsStringSync('rendered');
+          StopMotionRenderService.assembleOverride =
+              ({
+                required frames,
+                required aspectRatio,
+                frameRate = StopMotionRenderService.defaultFrameRate,
+                String? taskId,
+              }) async => output.path;
+          StopMotionRenderService.probeDurationOverride = (_) async => null;
+          when(
+            () => mockGallerySaveService.saveVideoToGallery(any()),
+          ).thenAnswer((_) async => const GallerySaveSuccess());
+        },
+        seed: () => ClipsLibraryState(
+          status: ClipsLibraryStatus.loaded,
+          clips: [createStopMotionClip(id: 'sm1')],
+          selectedClipIds: const {'sm1'},
+          selectedDuration: const Duration(seconds: 1),
+        ),
+        build: createBloc,
+        act: (bloc) => bloc.add(const ClipsLibrarySaveToGallery()),
+        verify: (_) {
+          final captured =
+              verify(
+                    () =>
+                        mockGallerySaveService.saveVideoToGallery(captureAny()),
+                  ).captured.single
+                  as EditorVideo;
+          expect(File(captured.file!.path).existsSync(), isFalse);
+        },
       );
 
       blocTest<ClipsLibraryBloc, ClipsLibraryState>(

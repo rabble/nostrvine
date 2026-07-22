@@ -8,7 +8,9 @@ import 'dart:ui';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as model;
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
+import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -176,12 +178,18 @@ void main() {
       originalProVideoEditor = ProVideoEditor.instance;
       proVideoEditor = _ProgressProVideoEditor();
       ProVideoEditor.instance = proVideoEditor;
+      // materialize probes the assembled mp4's real duration; the assembled
+      // path here is a stub, so force the frame-hold estimate fallback for a
+      // deterministic materialized duration.
+      StopMotionRenderService.probeDurationOverride = (_) async => null;
       VideoEditorRenderService.resetActiveNativeTaskIdsForTesting();
     });
 
     tearDown(() async {
       VideoEditorRenderService.renderVideoOverride = null;
       NativeProofModeService.proofFileOverride = null;
+      StopMotionRenderService.assembleOverride = null;
+      StopMotionRenderService.probeDurationOverride = null;
       VideoEditorRenderService.resetActiveNativeTaskIdsForTesting();
       await proVideoEditor.dispose();
       ProVideoEditor.instance = originalProVideoEditor;
@@ -287,6 +295,105 @@ void main() {
           );
         }
         expect(progressValues.last, equals(1.0));
+      },
+    );
+
+    test(
+      'gives the stop-motion assembly its own progress slice before the '
+      'composite render',
+      () async {
+        const taskId = 'stop-motion-progress-test';
+        final progressValues = <double>[];
+
+        final progressSubscription =
+            VideoEditorRenderService.compositeProgressStreamById(
+              taskId,
+            ).listen((progress) => progressValues.add(progress.progress));
+        addTearDown(progressSubscription.cancel);
+
+        StopMotionRenderService.assembleOverride =
+            ({
+              required frames,
+              required aspectRatio,
+              frameRate = StopMotionRenderService.defaultFrameRate,
+              String? taskId,
+            }) async {
+              expect(taskId, equals('stop-motion-progress-test-stop-motion-0'));
+              proVideoEditor.emitProgress(taskId!, 0.5);
+              await _flushStreamEvents();
+              return '${Directory.systemTemp.path}/assembled.mp4';
+            };
+
+        VideoEditorRenderService.renderVideoOverride =
+            ({
+              required clips,
+              required usePersistentStorage,
+              aspectRatio,
+              parameters,
+              taskId,
+              maxOutputDuration,
+            }) async {
+              // The composite render receives the materialized (video-backed)
+              // clip, not the frames-only one.
+              expect(clips.single.video, isNotNull);
+              proVideoEditor.emitProgress(taskId!, 0.5);
+              await _flushStreamEvents();
+              return '${Directory.systemTemp.path}/rendered-sm.mp4';
+            };
+
+        NativeProofModeService.proofFileOverride =
+            (
+              File videoFile, {
+              required bool enableAdvancedCawgEmbedding,
+              creatorBindingAssertion,
+              cawgIdentityAssertion,
+              verifiedIdentityBundle,
+              clips,
+              editorStateHistory,
+            }) async => const model.NativeProofData(videoHash: 'proof');
+
+        final stopMotionClip = DivineVideoClip(
+          id: 'sm-clip',
+          stopMotionFrames: const [
+            StopMotionClipFrame(
+              path: '/frames/f0.jpg',
+              duration: Duration(milliseconds: 83),
+            ),
+          ],
+          duration: const Duration(milliseconds: 83),
+          recordedAt: DateTime(2026),
+          targetAspectRatio: model.AspectRatio.vertical,
+          originalAspectRatio: 9 / 16,
+        );
+
+        final result = await VideoEditorRenderService.renderVideoToClip(
+          clips: [stopMotionClip],
+          editorStateHistory: const {},
+          taskId: taskId,
+        );
+        await _flushStreamEvents();
+
+        expect(result, isNotNull);
+
+        // One clip → 5% proof budget; the remaining 95% splits evenly
+        // between the assembly pass and the composite render.
+        const proofBudget = 0.05;
+        const assemblyBudget = (1 - proofBudget) * 0.5;
+        const renderBudget = 1 - proofBudget - assemblyBudget;
+        final expectedProgressValues = [
+          0.0,
+          assemblyBudget * 0.5,
+          assemblyBudget,
+          assemblyBudget + renderBudget * 0.5,
+          1 - proofBudget,
+          1 - proofBudget + proofBudget / 2,
+          1.0,
+        ];
+
+        expect(progressValues, hasLength(expectedProgressValues.length));
+        for (var i = 0; i < expectedProgressValues.length; i++) {
+          expect(progressValues[i], closeTo(expectedProgressValues[i], 1e-9));
+        }
       },
     );
 

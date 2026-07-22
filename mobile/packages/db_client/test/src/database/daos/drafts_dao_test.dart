@@ -346,6 +346,67 @@ void main() {
       });
     });
 
+    group('deleteDraft / clearAll remove draft clip rows', () {
+      Future<void> saveDraftWithOneClip(String draftId) {
+        return dao.saveDraftWithClips(
+          id: draftId,
+          title: 'D',
+          description: '',
+          publishStatus: 'draft',
+          createdAt: DateTime(2026),
+          lastModified: DateTime(2026),
+          renderedFilePath: null,
+          renderedThumbnailPath: null,
+          customThumbnailPath: null,
+          data: '{}',
+          clipDataList: [
+            DraftClipData(
+              id: 'c0',
+              orderIndex: 0,
+              durationMs: 1000,
+              recordedAt: DateTime(2026),
+              data: '{}',
+              filePath: 'clip.mp4',
+            ),
+          ],
+        );
+      }
+
+      test('deleteDraft also deletes the draft clip rows', () async {
+        await saveDraftWithOneClip('d1');
+        expect(await database.clipsDao.getClipsByDraftId('d1'), isNotEmpty);
+
+        await dao.deleteDraft('d1');
+
+        // The FK cascade never fires (foreign_keys is off), so the rows must be
+        // deleted explicitly — otherwise they keep the media referenced.
+        expect(await database.clipsDao.getClipsByDraftId('d1'), isEmpty);
+        expect(await dao.getDraftById('d1'), isNull);
+      });
+
+      test(
+        'clearAll deletes draft clip rows but keeps library clips',
+        () async {
+          await saveDraftWithOneClip('d2');
+          // A library clip has a NULL draftId and must survive clearAll.
+          await database.clipsDao.upsertClip(
+            id: 'lib_clip',
+            orderIndex: 0,
+            durationMs: 1000,
+            recordedAt: DateTime(2026),
+            data: '{}',
+            filePath: 'lib.mp4',
+            thumbnailPath: null,
+          );
+
+          await dao.clearAll();
+
+          expect(await database.clipsDao.getClipsByDraftId('d2'), isEmpty);
+          expect(await database.clipsDao.getClipById('lib_clip'), isNotNull);
+        },
+      );
+    });
+
     group('deleteAllForUser', () {
       const pubkeyA =
           'aaaa1111aaaa1111aaaa1111aaaa1111'

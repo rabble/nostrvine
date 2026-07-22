@@ -4,6 +4,7 @@
 import 'dart:convert';
 
 import 'package:db_client/db_client.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
@@ -61,8 +62,8 @@ class ClipLibraryService {
           durationMs: clip.duration.inMilliseconds,
           recordedAt: clip.recordedAt,
           data: json.encode(clip.toJson()),
-          filePath: clip.video.file?.path != null
-              ? p.basename(clip.video.file!.path)
+          filePath: clip.video?.file?.path != null
+              ? p.basename(clip.video!.file!.path)
               : null,
           thumbnailPath: clip.thumbnailPath != null
               ? p.basename(clip.thumbnailPath!)
@@ -112,8 +113,8 @@ class ClipLibraryService {
       durationMs: clip.duration.inMilliseconds,
       recordedAt: clip.recordedAt,
       data: json.encode(clip.toJson()),
-      filePath: clip.video.file?.path != null
-          ? p.basename(clip.video.file!.path)
+      filePath: clip.video?.file?.path != null
+          ? p.basename(clip.video!.file!.path)
           : null,
       thumbnailPath: clip.thumbnailPath != null
           ? p.basename(clip.thumbnailPath!)
@@ -129,12 +130,34 @@ class ClipLibraryService {
   /// row must never hide every other clip.
   Future<List<DivineVideoClip>> getAllClips() async {
     try {
-      final rows = await _clipsDao.getLibraryClips(ownerPubkey: ownerPubkey);
+      // Include the autosave draft so a just-recorded clip (which the editor
+      // immediately holds in its autosave draft) stays visible in the library.
+      // Clips saved into a named project keep their own draftId and stay hidden.
+      final rows = await _clipsDao.getLibraryClips(
+        ownerPubkey: ownerPubkey,
+        includeAutosaveDraftId: VideoEditorConstants.autoSaveId,
+      );
+
       final documentsPath = await getDocumentsPath();
-      return rows
-          .map((row) => _tryParseClipRow(row, documentsPath, label: 'clip'))
-          .whereType<DivineVideoClip>()
-          .toList();
+
+      // The clips table keys draft clips by `<draftId>:<clipId>` (composite row
+      // id) but library clips by the plain clip id, so the same clip can have a
+      // library row (draftId == null) and an autosave-draft row. Both parse to
+      // the same `clip.id`; keep one per clip id — preferring the library row —
+      // so a just-recorded clip shows exactly once.
+      final byClipId = <String, ({String? draftId, DivineVideoClip clip})>{};
+      for (final row in rows) {
+        final clip = _tryParseClipRow(row, documentsPath, label: 'clip');
+        if (clip == null) continue;
+        final existing = byClipId[clip.id];
+        if (existing == null ||
+            (existing.draftId != null && row.draftId == null)) {
+          byClipId[clip.id] = (draftId: row.draftId, clip: clip);
+        }
+      }
+
+      return byClipId.values.map((e) => e.clip).toList()
+        ..sort((a, b) => b.recordedAt.compareTo(a.recordedAt));
     } catch (e) {
       Log.error(
         '❌ Failed to load clips: $e',
@@ -190,11 +213,22 @@ class ClipLibraryService {
   ///
   /// Returns true if the clip was found and trashed.
   Future<bool> softDelete(String id, {bool clearDraftId = false}) async {
-    final ok = await _clipsDao.softDeleteClip(
+    final now = DateTime.now();
+    final deletedLibraryRow = await _clipsDao.softDeleteClip(
       id: id,
-      deletedAt: DateTime.now(),
+      deletedAt: now,
       clearDraftId: clearDraftId,
     );
+    // A set that has been through the editor also has an autosave-draft copy
+    // (row id `<autoSaveId>:<clipId>`) which the library surfaces via
+    // getLibraryClips(includeAutosaveDraftId:). Trash that row too, or the clip
+    // reappears from it the moment the library reloads after deletion.
+    final deletedAutosaveRow = await _clipsDao.softDeleteClip(
+      id: _autosaveDraftRowId(id),
+      deletedAt: now,
+      clearDraftId: clearDraftId,
+    );
+    final ok = deletedLibraryRow || deletedAutosaveRow;
     if (ok) {
       Log.debug(
         '🗑️ Soft-deleted clip: $id',
@@ -205,12 +239,23 @@ class ClipLibraryService {
     return ok;
   }
 
+  /// Row id of the autosave-draft copy of the clip [clipId], mirroring the
+  /// `<draftId>:<clipId>` scheme [DraftsDao.saveDraftWithClips] writes.
+  String _autosaveDraftRowId(String clipId) =>
+      '${VideoEditorConstants.autoSaveId}:$clipId';
+
   /// Restore a trashed clip. The clip becomes visible to active queries
   /// again with its previous `draft_id` (library if `draft_id` is NULL).
   ///
   /// Returns true if a trashed clip with [id] was restored.
   Future<bool> restore(String id) async {
-    final ok = await _clipsDao.restoreClip(id);
+    final restoredLibraryRow = await _clipsDao.restoreClip(id);
+    // Mirror softDelete: restore the autosave-draft copy too, so an undo brings
+    // the set back exactly as it was.
+    final restoredAutosaveRow = await _clipsDao.restoreClip(
+      _autosaveDraftRowId(id),
+    );
+    final ok = restoredLibraryRow || restoredAutosaveRow;
     if (ok) {
       Log.debug(
         '♻️ Restored clip: $id',
@@ -221,6 +266,14 @@ class ClipLibraryService {
     return ok;
   }
 
+  /// Permanently removes a single clip's library row, leaving its on-disk
+  /// files untouched.
+  ///
+  /// Used to drop an abandoned in-progress stop-motion session (all frames
+  /// undone): the recorder owns and cleans up the frame files, so — unlike
+  /// [hardDelete] — this must not delete them.
+  Future<void> deleteClipRow(String id) => _clipsDao.deleteClip(id);
+
   /// Permanently delete a clip and its files. Skips the trash; use
   /// [softDelete] for the standard delete flow.
   Future<void> hardDelete(String id) async {
@@ -230,8 +283,15 @@ class ClipLibraryService {
       category: LogCategory.video,
     );
 
+    // A set that went through the editor also has an autosave-draft copy
+    // (row id `<autoSaveId>:<clipId>`) which the library surfaces via
+    // getLibraryClips(includeAutosaveDraftId:). Remove it alongside the plain
+    // library row, or the DB row (and, since it still references the media, its
+    // source files) survives "empty trash" and reappears on the next reload.
+    final autosaveRowId = _autosaveDraftRowId(id);
     final clip = await getClipById(id);
-    if (clip == null) {
+    final autosaveClip = await getClipById(autosaveRowId);
+    if (clip == null && autosaveClip == null) {
       Log.info(
         '🗑️ Clip already deleted, skipping: $id',
         name: 'ClipLibraryService',
@@ -241,9 +301,12 @@ class ClipLibraryService {
     }
 
     await _clipsDao.deleteClip(id);
+    await _clipsDao.deleteClip(autosaveRowId);
 
-    await FileCleanupService.deleteRecordingClipFiles(
-      clip,
+    // Reap files only after both rows are gone, so a leftover row can't keep
+    // the media referenced.
+    await FileCleanupService.deleteRecordingClipsFiles(
+      [?clip, ?autosaveClip],
       draftsDao: _draftsDao,
       clipsDao: _clipsDao,
     );
@@ -256,18 +319,26 @@ class ClipLibraryService {
         ownerPubkey: ownerPubkey,
       );
       final documentsPath = await getDocumentsPath();
-      final clips = <DivineVideoClip>[];
+      // A set that went through the editor has both a library row and an
+      // autosave-draft row; softDelete(clearDraftId: true) nulls draft_id on
+      // both, so both match the trashed (draftId IS NULL) query and parse to
+      // the same clip.id. Keep one per clip id — mirroring getAllClips — so a
+      // trashed set shows (and counts) exactly once. Rows arrive newest-deleted
+      // first, so the retained (first) entry keeps that ordering.
+      final byClipId = <String, DivineVideoClip>{};
       for (final row in rows) {
         final clip = _tryParseClipRow(
           row,
           documentsPath,
           label: 'trashed clip',
         );
-        if (clip != null) {
-          clips.add(clip.copyWith(deletedAt: row.deletedAt));
-        }
+        if (clip == null) continue;
+        byClipId.putIfAbsent(
+          clip.id,
+          () => clip.copyWith(deletedAt: row.deletedAt),
+        );
       }
-      return clips;
+      return byClipId.values.toList();
     } catch (e) {
       Log.error(
         '❌ Failed to load trashed clips: $e',
@@ -334,7 +405,12 @@ class ClipLibraryService {
     final clips = [...activeClips, ...trashedClips];
 
     // Clear active + trashed library rows first, then delete files.
+    // clearLibraryClips only removes `draft_id IS NULL` rows, so the
+    // autosave-draft copies a set picks up in the editor (row id
+    // `<autoSaveId>:<clipId>`) — which getAllClips surfaces as library clips —
+    // would otherwise survive with their media. Drop those rows too.
     await _clipsDao.clearLibraryClips();
+    await _clipsDao.deleteClipsByDraftId(VideoEditorConstants.autoSaveId);
 
     // Delete files only if not referenced by drafts
     await FileCleanupService.deleteSavedClipsFiles(
@@ -368,7 +444,10 @@ class ClipLibraryService {
 
     for (final clip in incomplete) {
       try {
-        final videoPath = await clip.video.safeFilePath();
+        // Stop-motion clips have no rendered video to recover assets from;
+        // their thumbnail is the first captured frame.
+        if (clip.isStopMotion) continue;
+        final videoPath = await clip.video!.safeFilePath();
         var updatedClip = clip;
 
         if (clip.thumbnailPath == null) {

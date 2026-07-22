@@ -45,7 +45,10 @@ class RecordButton extends ConsumerWidget {
       ),
     );
 
-    final isLongPressSupported = state.timerDuration == .off;
+    // Stop-motion captures a still per tap; long-press / hold-to-record would
+    // (wrongly) try to start a video recording, so it is disabled.
+    final isLongPressSupported =
+        state.timerDuration == .off && !state.recorderMode.capturesStills;
     final canStartRecordingOnPressDown =
         isLongPressSupported && startsRecordingOnPressDown;
     final isEnabled =

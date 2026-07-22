@@ -7732,6 +7732,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoRecorderLipSyncAddAudioFirst => '녹화하기 전에 오디오를 추가하세요';
 
   @override
+  String get videoRecorderStopMotionAssembling => '동영상을 만드는 중…';
+
+  @override
+  String get videoRecorderStopMotionAssembleFailed =>
+      '동영상을 만들지 못했습니다. 다시 시도해 주세요.';
+
+  @override
   String get videoRecorderToggleFlashLabel => '플래시 전환';
 
   @override
@@ -7773,6 +7780,17 @@ class AppLocalizationsKo extends AppLocalizations {
       clipCount,
       locale: localeName,
       other: '클립 보관함 열기, $clipCount개 클립',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String videoRecorderLibraryOpenStopMotionLabel(int frameCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      frameCount,
+      locale: localeName,
+      other: '스톱모션 보관함 열기, $frameCount개 프레임',
+      zero: '스톱모션 보관함 열기',
     );
     return '$_temp0';
   }
@@ -8037,6 +8055,43 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoEditorDeleteSelectedItemSemanticLabel => '선택한 항목 삭제';
+
+  @override
+  String get videoEditorStopMotionFramesPerImageLabel => '이미지당 프레임';
+
+  @override
+  String videoEditorStopMotionFramesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count프레임',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorStopMotionFramesPerImageButtonLabel => '프레임';
+
+  @override
+  String get libraryStopMotionClipLabel => '스톱모션 클립';
+
+  @override
+  String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
+    return '이미지당 $count프레임';
+  }
+
+  @override
+  String get videoEditorStopMotionIncreaseFramesPerImageSemanticLabel =>
+      '이미지당 프레임 늘리기';
+
+  @override
+  String get videoEditorStopMotionDecreaseFramesPerImageSemanticLabel =>
+      '이미지당 프레임 줄이기';
+
+  @override
+  String videoEditorStopMotionFrameSemanticLabel(int position, int total) {
+    return '스톱모션 프레임 $total개 중 $position개';
+  }
 
   @override
   String get videoEditorEditLabel => '편집';
@@ -8416,6 +8471,17 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoEditorDeleteSelectedClipsSemanticLabel => '선택한 클립 삭제';
+
+  @override
+  String get videoEditorDeleteSelectedFramesSemanticLabel => '선택한 프레임 삭제';
+
+  @override
+  String get videoEditorReverseSelectedFramesSemanticLabel => '선택한 프레임 순서 뒤집기';
+
+  @override
+  String videoEditorStopMotionTooShortSnackbar(int seconds) {
+    return '영상은 최소 $seconds초여야 해요. 프레임을 몇 장 더 찍어 주세요.';
+  }
 
   @override
   String get videoEditorMergeProgressLabel => '잠시만요, 클립을 병합하고 있어요';

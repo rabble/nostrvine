@@ -8205,6 +8205,13 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoRecorderLipSyncAddAudioFirst => 'Dodaj audio przed nagraniem';
 
   @override
+  String get videoRecorderStopMotionAssembling => 'Tworzenie filmu…';
+
+  @override
+  String get videoRecorderStopMotionAssembleFailed =>
+      'Nie udało się utworzyć filmu. Spróbuj ponownie.';
+
+  @override
   String get videoRecorderToggleFlashLabel => 'Przełącz lampę błyskową';
 
   @override
@@ -8249,6 +8256,20 @@ class AppLocalizationsPl extends AppLocalizations {
       locale: localeName,
       other: 'Otwórz bibliotekę klipów, $clipCount klipów',
       one: 'Otwórz bibliotekę klipów, 1 klip',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String videoRecorderLibraryOpenStopMotionLabel(int frameCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      frameCount,
+      locale: localeName,
+      other: 'Otwórz bibliotekę poklatkową, $frameCount klatki',
+      many: 'Otwórz bibliotekę poklatkową, $frameCount klatek',
+      few: 'Otwórz bibliotekę poklatkową, $frameCount klatki',
+      one: 'Otwórz bibliotekę poklatkową, 1 klatka',
+      zero: 'Otwórz bibliotekę poklatkową',
     );
     return '$_temp0';
   }
@@ -8520,6 +8541,46 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get videoEditorDeleteSelectedItemSemanticLabel =>
       'Usuń wybrany element';
+
+  @override
+  String get videoEditorStopMotionFramesPerImageLabel => 'Klatki na obraz';
+
+  @override
+  String videoEditorStopMotionFramesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count klatki',
+      many: '$count klatek',
+      few: '$count klatki',
+      one: '1 klatka',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorStopMotionFramesPerImageButtonLabel => 'Klatki';
+
+  @override
+  String get libraryStopMotionClipLabel => 'Klip poklatkowy';
+
+  @override
+  String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
+    return '$count klatek na obraz';
+  }
+
+  @override
+  String get videoEditorStopMotionIncreaseFramesPerImageSemanticLabel =>
+      'Zwiększ liczbę klatek na obraz';
+
+  @override
+  String get videoEditorStopMotionDecreaseFramesPerImageSemanticLabel =>
+      'Zmniejsz liczbę klatek na obraz';
+
+  @override
+  String videoEditorStopMotionFrameSemanticLabel(int position, int total) {
+    return 'Klatka poklatkowa $position z $total';
+  }
 
   @override
   String get videoEditorEditLabel => 'Edytuj';
@@ -8925,6 +8986,19 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get videoEditorDeleteSelectedClipsSemanticLabel =>
       'Usuń zaznaczone klipy';
+
+  @override
+  String get videoEditorDeleteSelectedFramesSemanticLabel =>
+      'Usuń zaznaczone klatki';
+
+  @override
+  String get videoEditorReverseSelectedFramesSemanticLabel =>
+      'Odwróć zaznaczone klatki';
+
+  @override
+  String videoEditorStopMotionTooShortSnackbar(int seconds) {
+    return 'Twój film musi trwać co najmniej ${seconds}s – dodaj jeszcze kilka klatek.';
+  }
 
   @override
   String get videoEditorMergeProgressLabel => 'Chwila, scalamy Twoje klipy';

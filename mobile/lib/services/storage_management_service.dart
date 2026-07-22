@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:openvine/constants/storage_cache_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -102,11 +103,26 @@ class StorageManagementService {
     await _deleteDirContents(Directory(p.join(docs.path, _seamDir)));
   }
 
-  /// Library clips whose backing video file is gone — broken entries that can
+  /// Library clips whose backing media is gone — broken entries that can
   /// no longer play and should be cleaned up.
   Future<List<DivineVideoClip>> findBrokenClips() async {
     final clips = await _clipLibrary.getAllClips();
-    return clips.where((clip) => !clip.hasResolvableVideoFile).toList();
+    return clips.where(_isUnrecoverable).toList();
+  }
+
+  /// Whether nothing playable remains for [clip]: a video clip whose file is
+  /// gone, or a frames-only stop-motion set with no readable still left.
+  ///
+  /// A stop-motion set that still has at least one readable still is
+  /// salvageable (see [StopMotionFrameOps.sanitizedClip], the same per-still
+  /// policy the restore/editor paths use). Treating it as broken here would let
+  /// [removeBrokenClips] hard-delete the row and destroy the surviving frames
+  /// just because one still went missing.
+  bool _isUnrecoverable(DivineVideoClip clip) {
+    if (clip.isStopMotion) {
+      return StopMotionFrameOps.sanitizedClip(clip) == null;
+    }
+    return !clip.hasResolvableVideoFile;
   }
 
   /// Permanently removes the given broken [clips] from the library.

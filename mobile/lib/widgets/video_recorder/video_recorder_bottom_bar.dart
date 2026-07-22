@@ -18,30 +18,39 @@ class VideoRecorderBottomBar extends StatelessWidget {
       (VideoRecorderBloc b) => (
         isRecording: b.state.isRecording,
         recorderMode: b.state.recorderMode,
+        isAssembling: b.state.stopMotionStatus == StopMotionStatus.assembling,
       ),
     );
+    // The bar fades out while recording, and an assemble is mid-flight over the
+    // captured stills — a mode switch during either would discard work the user
+    // can't get back. Opacity alone still hit-tests, so the gate has to ignore
+    // pointers rather than just fade.
+    final isLocked = state.isRecording || state.isAssembling;
 
     return SafeArea(
       top: false,
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 220),
-        opacity: state.isRecording ? 0 : 1,
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: 4),
-          child: Stack(
-            alignment: .center,
-            children: [
-              VideoRecorderModeSelectorWheel(
-                selectedMode: state.recorderMode,
-                onModeChanged: (mode) => context.read<VideoRecorderBloc>().add(
-                  VideoRecorderRecorderModeSet(mode),
+      child: IgnorePointer(
+        ignoring: isLocked,
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 220),
+          opacity: state.isRecording ? 0 : 1,
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Stack(
+              alignment: .center,
+              children: [
+                VideoRecorderModeSelectorWheel(
+                  selectedMode: state.recorderMode,
+                  onModeChanged: (mode) => context
+                      .read<VideoRecorderBloc>()
+                      .add(VideoRecorderRecorderModeSet(mode)),
                 ),
-              ),
-              const Align(
-                alignment: .centerLeft,
-                child: VideoRecorderLibraryButton(),
-              ),
-            ],
+                const Align(
+                  alignment: .centerLeft,
+                  child: VideoRecorderLibraryButton(),
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -358,7 +358,7 @@ class TransitionSeamRenderService {
     // included because `_tailClip`/`_headClip` read it and it can be trimmed
     // independently of the file (clip_manager caps a clip on add).
     String clipKey(DivineVideoClip c) =>
-        '${c.id}:${c.video.file?.path}:${c.duration.inMicroseconds}:'
+        '${c.id}:${c.requireVideo.file?.path}:${c.duration.inMicroseconds}:'
         '${c.trimStart.inMicroseconds}:${c.trimEnd.inMicroseconds}:'
         '${c.playbackSpeed ?? 1.0}:${c.volume}:${c.targetAspectRatio.name}';
     final t =

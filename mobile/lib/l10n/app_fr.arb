@@ -2771,6 +2771,8 @@
     "videoRecorderCaptureCloseLabel": "Fermer",
     "videoRecorderCaptureNextLabel": "Suivant",
     "videoRecorderLipSyncAddAudioFirst": "Ajoutez de l'audio avant d'enregistrer",
+    "videoRecorderStopMotionAssembling": "Création de la vidéo…",
+    "videoRecorderStopMotionAssembleFailed": "Impossible de créer la vidéo. Réessayez.",
     "videoRecorderToggleFlashLabel": "Activer/désactiver le flash",
     "videoRecorderCycleTimerLabel": "Changer le minuteur",
     "videoRecorderToggleAspectRatioLabel": "Changer le format d'image",
@@ -2787,6 +2789,14 @@
     "@videoRecorderLibraryOpenLabel": {
         "placeholders": {
             "clipCount": {
+                "type": "int"
+            }
+        }
+    },
+    "videoRecorderLibraryOpenStopMotionLabel": "{frameCount, plural, =0{Ouvrir la bibliothèque stop-motion} one{Ouvrir la bibliothèque stop-motion, 1 image} other{Ouvrir la bibliothèque stop-motion, {frameCount} images}}",
+    "@videoRecorderLibraryOpenStopMotionLabel": {
+        "placeholders": {
+            "frameCount": {
                 "type": "int"
             }
         }
@@ -4084,6 +4094,9 @@
     "videoEditorMergeLabel": "Fusionner",
     "videoEditorMergeSelectedClipsSemanticLabel": "Fusionner les clips sélectionnés",
     "videoEditorDeleteSelectedClipsSemanticLabel": "Supprimer les clips sélectionnés",
+    "videoEditorDeleteSelectedFramesSemanticLabel": "Supprimer les images sélectionnées",
+    "videoEditorReverseSelectedFramesSemanticLabel": "Inverser les images sélectionnées",
+    "videoEditorStopMotionTooShortSnackbar": "Ta vidéo doit durer au moins {seconds}s — capture encore quelques images.",
     "videoEditorMergeProgressLabel": "Un instant, nous fusionnons vos clips",
     "videoEditorMergeFailed": "Impossible de fusionner les clips. Veuillez réessayer.",
     "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device.",
@@ -4562,5 +4575,13 @@
   "authSignInErrorNetwork": "Impossible de joindre le serveur. Vérifie ta connexion et réessaie.",
   "authSignInErrorGeneric": "Une erreur s'est produite. Réessaie.",
   "authSignInOptionsHintPrefix": "Tu ne sais plus comment tu t'es connecté la dernière fois ? ",
-  "authSignInOptionsHintCta": "Voir toutes les options de connexion"
+  "authSignInOptionsHintCta": "Voir toutes les options de connexion",
+    "videoEditorStopMotionFramesPerImageLabel": "Images par photo",
+    "videoEditorStopMotionFramesPerImageValueSemanticLabel": "{count} images par photo",
+    "videoEditorStopMotionIncreaseFramesPerImageSemanticLabel": "Augmenter les images par photo",
+    "videoEditorStopMotionDecreaseFramesPerImageSemanticLabel": "Réduire les images par photo",
+    "videoEditorStopMotionFrameSemanticLabel": "Image stop-motion {position} sur {total}",
+    "videoEditorStopMotionFramesCount": "{count, plural, =1{1 image} other{{count} images}}",
+    "videoEditorStopMotionFramesPerImageButtonLabel": "Images",
+    "libraryStopMotionClipLabel": "Clip stop-motion"
 }

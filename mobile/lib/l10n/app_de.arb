@@ -2771,6 +2771,8 @@
     "videoRecorderCaptureCloseLabel": "Schließen",
     "videoRecorderCaptureNextLabel": "Weiter",
     "videoRecorderLipSyncAddAudioFirst": "Audio vor der Aufnahme hinzufügen",
+    "videoRecorderStopMotionAssembling": "Video wird erstellt…",
+    "videoRecorderStopMotionAssembleFailed": "Video konnte nicht erstellt werden. Bitte erneut versuchen.",
     "videoRecorderToggleFlashLabel": "Blitz ein-/ausschalten",
     "videoRecorderCycleTimerLabel": "Timer wechseln",
     "videoRecorderToggleAspectRatioLabel": "Seitenverhältnis wechseln",
@@ -2787,6 +2789,14 @@
     "@videoRecorderLibraryOpenLabel": {
         "placeholders": {
             "clipCount": {
+                "type": "int"
+            }
+        }
+    },
+    "videoRecorderLibraryOpenStopMotionLabel": "{frameCount, plural, =0{Stop-Motion-Mediathek öffnen} one{Stop-Motion-Mediathek öffnen, 1 Frame} other{Stop-Motion-Mediathek öffnen, {frameCount} Frames}}",
+    "@videoRecorderLibraryOpenStopMotionLabel": {
+        "placeholders": {
+            "frameCount": {
                 "type": "int"
             }
         }
@@ -4084,6 +4094,9 @@
     "videoEditorMergeLabel": "Zusammenführen",
     "videoEditorMergeSelectedClipsSemanticLabel": "Ausgewählte Clips zusammenführen",
     "videoEditorDeleteSelectedClipsSemanticLabel": "Ausgewählte Clips löschen",
+    "videoEditorDeleteSelectedFramesSemanticLabel": "Ausgewählte Frames löschen",
+    "videoEditorReverseSelectedFramesSemanticLabel": "Ausgewählte Frames umkehren",
+    "videoEditorStopMotionTooShortSnackbar": "Dein Video braucht mindestens {seconds}s – nimm noch ein paar Frames auf.",
     "videoEditorMergeProgressLabel": "Einen Moment, wir führen deine Clips zusammen",
     "videoEditorMergeFailed": "Clips konnten nicht zusammengeführt werden. Bitte versuche es erneut.",
     "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device.",
@@ -4562,5 +4575,13 @@
   "authSignInErrorNetwork": "Server nicht erreichbar. Prüf deine Verbindung und versuch es noch mal.",
   "authSignInErrorGeneric": "Etwas ist schiefgelaufen. Bitte versuch es noch mal.",
   "authSignInOptionsHintPrefix": "Nicht sicher, wie du letztes Mal reingekommen bist? ",
-  "authSignInOptionsHintCta": "Alle Anmeldeoptionen ansehen"
+  "authSignInOptionsHintCta": "Alle Anmeldeoptionen ansehen",
+    "videoEditorStopMotionFramesPerImageLabel": "Frames pro Bild",
+    "videoEditorStopMotionFramesPerImageValueSemanticLabel": "{count} Frames pro Bild",
+    "videoEditorStopMotionIncreaseFramesPerImageSemanticLabel": "Frames pro Bild erhöhen",
+    "videoEditorStopMotionDecreaseFramesPerImageSemanticLabel": "Frames pro Bild verringern",
+    "videoEditorStopMotionFrameSemanticLabel": "Stop-Motion-Bild {position} von {total}",
+    "videoEditorStopMotionFramesCount": "{count, plural, =1{1 Frame} other{{count} Frames}}",
+    "videoEditorStopMotionFramesPerImageButtonLabel": "Frames",
+    "libraryStopMotionClipLabel": "Stop-Motion-Clip"
 }

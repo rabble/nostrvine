@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
+import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_clip_controls.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_layer_multi_select_controls.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_marker_controls.dart';
@@ -27,8 +28,11 @@ class TimelineControlsBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isMultiSelectMode = context.select(
-      (ClipEditorBloc b) => b.state.isMultiSelectMode,
+    final (isMultiSelectMode, isStopMotion) = context.select(
+      (ClipEditorBloc b) => (
+        b.state.isMultiSelectMode,
+        isStopMotionComposition(b.state.clips),
+      ),
     );
     final isLayerMultiSelectMode = context.select(
       (TimelineOverlayBloc b) => b.state.isLayerMultiSelectMode,
@@ -57,6 +61,12 @@ class TimelineControlsBar extends StatelessWidget {
         key: const ValueKey('timeline_controls_marker'),
         playheadPosition: playheadPosition,
       ),
+      // Frame multi-select on a stop-motion composition; clip multi-select
+      // everywhere else.
+      (false, true, _, _, _) when isStopMotion =>
+        const TimelineFrameMultiSelectControls(
+          key: ValueKey('timeline_controls_frame_multi_select'),
+        ),
       (false, true, _, _, _) => const TimelineMultiSelectControls(
         key: ValueKey('timeline_controls_multi_select'),
       ),

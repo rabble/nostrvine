@@ -196,8 +196,14 @@ class VideoPublishService {
       final publishing = draft.copyWith(publishStatus: .publishing);
       await draftService.saveDraft(publishing);
 
-      final videoPath = await draft.clips.first.video.safeFilePath();
-      Log.info('📝 Publishing video: $videoPath', category: .video);
+      // Log-only: prefer the rendered clip (a stop-motion draft's clips.first
+      // is a frames-only clip whose mp4 lives in finalRenderedClip). The real
+      // upload-path resolution happens in _getOrCreateUpload.
+      final videoPath = await _resolveVideoPath(draft);
+      Log.info(
+        '📝 Publishing video: ${videoPath ?? '<pending>'}',
+        category: .video,
+      );
 
       // Verify user is fully authenticated
       if (!authService.isAuthenticated) {
@@ -471,11 +477,11 @@ class VideoPublishService {
     try {
       final rendered = draft.finalRenderedClip;
       if (rendered != null) {
-        final path = await rendered.video.safeFilePath();
+        final path = await rendered.requireVideo.safeFilePath();
         if (File(path).existsSync()) return path;
       }
       if (draft.clips.isNotEmpty) {
-        return draft.clips.first.video.safeFilePath();
+        return draft.clips.first.requireVideo.safeFilePath();
       }
     } catch (e) {
       Log.warning('⚠️ Could not resolve video path: $e', category: .video);

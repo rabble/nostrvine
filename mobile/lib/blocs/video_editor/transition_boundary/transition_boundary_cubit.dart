@@ -84,7 +84,7 @@ class TransitionBoundaryCubit extends Cubit<TransitionBoundaryState> {
     required bool tail,
   }) async {
     try {
-      final videoPath = await clip.video.safeFilePath();
+      final videoPath = await clip.requireVideo.safeFilePath();
       if (videoPath.isEmpty) return null;
 
       final side = tail ? 'tail' : 'head';

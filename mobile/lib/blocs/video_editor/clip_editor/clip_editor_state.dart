@@ -40,6 +40,8 @@ class ClipEditorState extends Equatable {
     this.isSavingClipToLibrary = false,
     this.savingClipToLibraryClipId,
     this.lastClipLibrarySave,
+    this.selectedFrameIndex,
+    this.selectedFrameIndexes = const {},
   });
 
   /// Local copy of clips managed by this editor session.
@@ -200,6 +202,16 @@ class ClipEditorState extends Equatable {
   /// Consumed by the widget layer to surface a success/failure snackbar.
   final ClipLibrarySaveResult? lastClipLibrarySave;
 
+  /// Index of the currently selected still in a frames-only stop-motion clip,
+  /// or `null` when no frame is selected (or the composition is not
+  /// stop-motion). Drives the per-frame action bar and tile highlight.
+  final int? selectedFrameIndex;
+
+  /// Indexes of the stills selected while [isMultiSelectMode] is active on a
+  /// stop-motion composition — the frame counterpart of [selectedClipIds].
+  /// Always empty outside frame multi-select.
+  final Set<int> selectedFrameIndexes;
+
   /// Total wall-clock duration of all clips (respecting trim and playback speed).
   Duration get totalDuration =>
       clips.fold(Duration.zero, (sum, clip) => sum + clip.playbackDuration);
@@ -246,6 +258,9 @@ class ClipEditorState extends Equatable {
     String? savingClipToLibraryClipId,
     bool clearSavingClipToLibraryClipId = false,
     ClipLibrarySaveResult? lastClipLibrarySave,
+    int? selectedFrameIndex,
+    bool clearSelectedFrameIndex = false,
+    Set<int>? selectedFrameIndexes,
   }) {
     return ClipEditorState(
       clips: clips ?? this.clips,
@@ -298,6 +313,10 @@ class ClipEditorState extends Equatable {
           ? null
           : (savingClipToLibraryClipId ?? this.savingClipToLibraryClipId),
       lastClipLibrarySave: lastClipLibrarySave ?? this.lastClipLibrarySave,
+      selectedFrameIndex: clearSelectedFrameIndex
+          ? null
+          : (selectedFrameIndex ?? this.selectedFrameIndex),
+      selectedFrameIndexes: selectedFrameIndexes ?? this.selectedFrameIndexes,
     );
   }
 
@@ -340,6 +359,8 @@ class ClipEditorState extends Equatable {
     savingClipToLibraryClipId,
     // Identity-only: each ClipLibrarySaveResult is a fresh instance per save.
     identityHashCode(lastClipLibrarySave),
+    selectedFrameIndex,
+    selectedFrameIndexes,
   ];
 }
 

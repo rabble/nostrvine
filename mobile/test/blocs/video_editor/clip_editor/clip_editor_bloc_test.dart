@@ -10,6 +10,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/models/video_editor/editor_overlay_snapshot.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/audio_extraction_service.dart';
@@ -83,6 +85,24 @@ DivineVideoClip _createClipNoFile({String id = 'clip-no-file'}) {
     id: id,
     video: EditorVideo.network('https://example.com/vid.mp4'),
     duration: const Duration(seconds: 3),
+    recordedAt: DateTime(2025),
+    targetAspectRatio: .vertical,
+    originalAspectRatio: 9 / 16,
+  );
+}
+
+DivineVideoClip _createStopMotionClip({String id = 'sm', int frameCount = 3}) {
+  final frames = [
+    for (var i = 0; i < frameCount; i++)
+      StopMotionClipFrame(
+        path: '$id-$i.jpg',
+        duration: StopMotionFrameOps.framesPerImageToDuration(1),
+      ),
+  ];
+  return DivineVideoClip(
+    id: id,
+    stopMotionFrames: frames,
+    duration: StopMotionFrameOps.totalDuration(frames),
     recordedAt: DateTime(2025),
     targetAspectRatio: .vertical,
     originalAspectRatio: 9 / 16,
@@ -477,6 +497,249 @@ void main() {
         act: (bloc) => bloc.add(const ClipEditorClipSelected(5)),
         expect: () => <ClipEditorState>[],
       );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'clears a stop-motion frame selection',
+        build: buildBloc,
+        seed: () => ClipEditorState(
+          clips: [_createStopMotionClip()],
+          selectedFrameIndex: 2,
+        ),
+        act: (bloc) => bloc.add(const ClipEditorClipSelected(0)),
+        expect: () => [
+          isA<ClipEditorState>().having(
+            (s) => s.selectedFrameIndex,
+            'selectedFrameIndex',
+            isNull,
+          ),
+        ],
+      );
+    });
+
+    group('ClipEditorFrameSelected', () {
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'selects the frame and enters editing on a stop-motion clip',
+        build: buildBloc,
+        seed: () => ClipEditorState(clips: [_createStopMotionClip()]),
+        act: (bloc) => bloc.add(const ClipEditorFrameSelected(1)),
+        expect: () => [
+          isA<ClipEditorState>()
+              .having((s) => s.selectedFrameIndex, 'selectedFrameIndex', 1)
+              .having((s) => s.isEditing, 'isEditing', isTrue)
+              .having((s) => s.currentClipIndex, 'currentClipIndex', 0),
+        ],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'is a no-op for a normal video composition',
+        build: buildBloc,
+        seed: () => ClipEditorState(clips: twoClips),
+        act: (bloc) => bloc.add(const ClipEditorFrameSelected(0)),
+        expect: () => <ClipEditorState>[],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'is a no-op for an out-of-range frame index',
+        build: buildBloc,
+        seed: () => ClipEditorState(clips: [_createStopMotionClip()]),
+        act: (bloc) => bloc.add(const ClipEditorFrameSelected(9)),
+        expect: () => <ClipEditorState>[],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'clamps the selection when a frame delete shrinks the clip',
+        build: buildBloc,
+        seed: () => ClipEditorState(
+          clips: [_createStopMotionClip()],
+          selectedFrameIndex: 2,
+          isEditing: true,
+        ),
+        act: (bloc) {
+          final clip = bloc.state.clips.first;
+          final shorter = StopMotionFrameOps.clipWithFrames(
+            clip,
+            StopMotionFrameOps.removeFrame(clip.stopMotionFrames!, 2),
+          );
+          bloc.add(ClipEditorClipUpdated(clipId: clip.id, clip: shorter));
+        },
+        expect: () => [
+          isA<ClipEditorState>().having(
+            (s) => s.selectedFrameIndex,
+            'selectedFrameIndex',
+            1,
+          ),
+        ],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'clears the selection when a frame update leaves the clip empty',
+        build: buildBloc,
+        seed: () => ClipEditorState(
+          clips: [_createStopMotionClip()],
+          selectedFrameIndex: 0,
+          isEditing: true,
+        ),
+        act: (bloc) {
+          final clip = bloc.state.clips.first;
+          final empty = DivineVideoClip(
+            id: clip.id,
+            stopMotionFrames: const [],
+            duration: Duration.zero,
+            recordedAt: clip.recordedAt,
+            targetAspectRatio: clip.targetAspectRatio,
+            originalAspectRatio: clip.originalAspectRatio,
+          );
+          bloc.add(ClipEditorClipUpdated(clipId: clip.id, clip: empty));
+        },
+        expect: () => [
+          isA<ClipEditorState>().having(
+            (s) => s.selectedFrameIndex,
+            'selectedFrameIndex',
+            isNull,
+          ),
+        ],
+      );
+    });
+
+    group('frame multi-select', () {
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'starts with the current frame pre-selected and exits editing',
+        build: buildBloc,
+        seed: () => ClipEditorState(
+          clips: [_createStopMotionClip()],
+          selectedFrameIndex: 1,
+          isEditing: true,
+        ),
+        act: (bloc) => bloc.add(const ClipEditorFrameMultiSelectStarted(1)),
+        expect: () => [
+          isA<ClipEditorState>()
+              .having((s) => s.isMultiSelectMode, 'isMultiSelectMode', isTrue)
+              .having((s) => s.isEditing, 'isEditing', isFalse)
+              .having((s) => s.selectedFrameIndex, 'selectedFrameIndex', isNull)
+              .having((s) => s.selectedFrameIndexes, 'selectedFrameIndexes', {
+                1,
+              }),
+        ],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'is a no-op for a normal video composition',
+        build: buildBloc,
+        seed: () => ClipEditorState(clips: twoClips),
+        act: (bloc) => bloc.add(const ClipEditorFrameMultiSelectStarted(0)),
+        expect: () => <ClipEditorState>[],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'toggling adds and removes stills from the selection',
+        build: buildBloc,
+        seed: () => ClipEditorState(
+          clips: [_createStopMotionClip()],
+          isMultiSelectMode: true,
+          selectedFrameIndexes: const {0},
+        ),
+        act: (bloc) => bloc
+          ..add(const ClipEditorFrameMultiSelectToggled(2))
+          ..add(const ClipEditorFrameMultiSelectToggled(0)),
+        expect: () => [
+          isA<ClipEditorState>().having(
+            (s) => s.selectedFrameIndexes,
+            'selectedFrameIndexes',
+            {0, 2},
+          ),
+          isA<ClipEditorState>().having(
+            (s) => s.selectedFrameIndexes,
+            'selectedFrameIndexes',
+            {2},
+          ),
+        ],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'ignores an out-of-range toggle',
+        build: buildBloc,
+        seed: () => ClipEditorState(
+          clips: [_createStopMotionClip()],
+          isMultiSelectMode: true,
+        ),
+        act: (bloc) => bloc.add(const ClipEditorFrameMultiSelectToggled(9)),
+        expect: () => <ClipEditorState>[],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'cancelling clears the frame selection and exits the mode',
+        build: buildBloc,
+        seed: () => ClipEditorState(
+          clips: [_createStopMotionClip()],
+          isMultiSelectMode: true,
+          selectedFrameIndexes: const {0, 1},
+        ),
+        act: (bloc) => bloc.add(const ClipEditorMultiSelectCancelled()),
+        expect: () => [
+          isA<ClipEditorState>()
+              .having((s) => s.isMultiSelectMode, 'isMultiSelectMode', isFalse)
+              .having(
+                (s) => s.selectedFrameIndexes,
+                'selectedFrameIndexes',
+                isEmpty,
+              ),
+        ],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'replaces the selection wholesale after a block move',
+        build: buildBloc,
+        seed: () => ClipEditorState(
+          clips: [_createStopMotionClip()],
+          isMultiSelectMode: true,
+          selectedFrameIndexes: const {0, 1},
+        ),
+        act: (bloc) => bloc.add(const ClipEditorFrameMultiSelectionSet({1, 2})),
+        expect: () => [
+          isA<ClipEditorState>().having(
+            (s) => s.selectedFrameIndexes,
+            'selectedFrameIndexes',
+            {1, 2},
+          ),
+        ],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'ignores a selection-set with out-of-range indexes',
+        build: buildBloc,
+        seed: () => ClipEditorState(
+          clips: [_createStopMotionClip()],
+          isMultiSelectMode: true,
+          selectedFrameIndexes: const {0},
+        ),
+        act: (bloc) => bloc.add(const ClipEditorFrameMultiSelectionSet({0, 9})),
+        expect: () => <ClipEditorState>[],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'prunes out-of-range indexes when a frame delete shrinks the clip',
+        build: buildBloc,
+        seed: () => ClipEditorState(
+          clips: [_createStopMotionClip()],
+          isMultiSelectMode: true,
+          selectedFrameIndexes: const {0, 2},
+        ),
+        act: (bloc) {
+          final clip = bloc.state.clips.first;
+          final shorter = StopMotionFrameOps.clipWithFrames(
+            clip,
+            StopMotionFrameOps.removeFrame(clip.stopMotionFrames!, 2),
+          );
+          bloc.add(ClipEditorClipUpdated(clipId: clip.id, clip: shorter));
+        },
+        expect: () => [
+          isA<ClipEditorState>().having(
+            (s) => s.selectedFrameIndexes,
+            'selectedFrameIndexes',
+            {0},
+          ),
+        ],
+      );
     });
 
     // =========================================================
@@ -731,10 +994,7 @@ void main() {
           expect(state.clips, hasLength(4));
           expect(state.clips.last.id, equals('c'));
           // The selection still points at 'c', not the clip now at index 2.
-          expect(
-            state.clips[state.currentClipIndex].id,
-            equals('c'),
-          );
+          expect(state.clips[state.currentClipIndex].id, equals('c'));
         },
       );
 
@@ -1633,11 +1893,7 @@ void main() {
                 'trimStart',
                 Duration.zero,
               )
-              .having(
-                (s) => s.clips.first.trimEnd,
-                'trimEnd',
-                Duration.zero,
-              )
+              .having((s) => s.clips.first.trimEnd, 'trimEnd', Duration.zero)
               .having(
                 (s) => s.clips.first.minTrimStart,
                 'minTrimStart',
@@ -1666,7 +1922,7 @@ void main() {
         ],
         verify: (bloc) {
           expect(
-            bloc.state.clips.first.video.file?.path,
+            bloc.state.clips.first.requireVideo.file?.path,
             equals('/reversed/clip-local_clip-local.mp4'),
           );
         },
@@ -1748,7 +2004,7 @@ void main() {
           isA<ClipEditorState>()
               .having((s) => s.clips.first.reversed, 'reversed', isFalse)
               .having(
-                (s) => s.clips.first.video.file?.path,
+                (s) => s.clips.first.requireVideo.file?.path,
                 'videoPath',
                 '/path/clip-local.mp4',
               )
@@ -1787,7 +2043,7 @@ void main() {
           isA<ClipEditorState>()
               .having((s) => s.clips.first.reversed, 'reversed', isTrue)
               .having(
-                (s) => s.clips.first.video.file?.path,
+                (s) => s.clips.first.requireVideo.file?.path,
                 'videoPath',
                 '/reversed/clip-local_clip-local.mp4',
               )
@@ -1860,7 +2116,7 @@ void main() {
         ],
         verify: (bloc) {
           expect(
-            bloc.state.clips.first.video.file?.path,
+            bloc.state.clips.first.requireVideo.file?.path,
             equals('/reversed/clip-local_clip-local.mp4'),
           );
         },
@@ -2051,11 +2307,7 @@ void main() {
               ),
           isA<ClipEditorState>()
               .having((s) => s.isTransforming, 'isTransforming', isFalse)
-              .having(
-                (s) => s.transformingClipId,
-                'transformingClipId',
-                isNull,
-              )
+              .having((s) => s.transformingClipId, 'transformingClipId', isNull)
               .having(
                 (s) => s.clips.first.forwardVideoPath,
                 'forwardVideoPath',
@@ -2074,7 +2326,7 @@ void main() {
         ],
         verify: (bloc) {
           expect(
-            bloc.state.clips.first.video.file?.path,
+            bloc.state.clips.first.requireVideo.file?.path,
             equals('/transformed/clip-local_clip-local_transform.mp4'),
           );
         },
@@ -2105,11 +2357,7 @@ void main() {
           ),
           isA<ClipEditorState>()
               .having((s) => s.isTransforming, 'isTransforming', isFalse)
-              .having(
-                (s) => s.transformingClipId,
-                'transformingClipId',
-                isNull,
-              )
+              .having((s) => s.transformingClipId, 'transformingClipId', isNull)
               .having(
                 (s) => s.lastTransformResult,
                 'lastTransformResult',
@@ -2119,11 +2367,7 @@ void main() {
         errors: () => [
           isA<Reportable<Object>>()
               .having((r) => r.unwrap(), 'unwrap', isA<StateError>())
-              .having(
-                (r) => r.context,
-                'context',
-                '_onClipTransformRequested',
-              ),
+              .having((r) => r.context, 'context', '_onClipTransformRequested'),
         ],
       );
 
@@ -2163,10 +2407,7 @@ void main() {
           expect(bloc.state.isTransforming, isFalse);
           expect(bloc.state.transformingClipId, isNull);
           expect(bloc.state.clips, isEmpty);
-          expect(
-            bloc.state.lastTransformResult,
-            isA<ClipTransformDiscarded>(),
-          );
+          expect(bloc.state.lastTransformResult, isA<ClipTransformDiscarded>());
 
           await bloc.close();
         },
@@ -3128,9 +3369,8 @@ void main() {
             saveClipToLibrary: recordSave,
           ),
           seed: () => ClipEditorState(clips: twoClips),
-          act: (bloc) => bloc.add(
-            const ClipEditorSaveClipToLibraryRequested(clipId: 'a'),
-          ),
+          act: (bloc) =>
+              bloc.add(const ClipEditorSaveClipToLibraryRequested(clipId: 'a')),
           verify: (bloc) {
             expect(forwardedOverlays, isNull);
           },
@@ -3144,9 +3384,8 @@ void main() {
           saveClipToLibrary: recordSave,
         ),
         seed: () => ClipEditorState(clips: twoClips),
-        act: (bloc) => bloc.add(
-          const ClipEditorSaveClipToLibraryRequested(clipId: 'a'),
-        ),
+        act: (bloc) =>
+            bloc.add(const ClipEditorSaveClipToLibraryRequested(clipId: 'a')),
         verify: (bloc) {
           expect(savedToLibrary.map((c) => c.id), equals(['flattened-a']));
           expect(bloc.state.lastClipLibrarySave, isA<ClipLibrarySaveSuccess>());
@@ -3162,9 +3401,8 @@ void main() {
           saveClipToLibrary: recordSave,
         ),
         seed: () => ClipEditorState(clips: twoClips, currentClipIndex: 1),
-        act: (bloc) => bloc.add(
-          const ClipEditorSaveClipToLibraryRequested(clipId: 'b'),
-        ),
+        act: (bloc) =>
+            bloc.add(const ClipEditorSaveClipToLibraryRequested(clipId: 'b')),
         verify: (bloc) {
           expect(bloc.state.clips.map((c) => c.id), equals(['a', 'b']));
           expect(bloc.state.currentClipIndex, equals(1));
@@ -3178,9 +3416,8 @@ void main() {
           saveClipToLibrary: recordSave,
         ),
         seed: () => ClipEditorState(clips: twoClips, currentClipIndex: 1),
-        act: (bloc) => bloc.add(
-          const ClipEditorSaveClipToLibraryRequested(clipId: 'a'),
-        ),
+        act: (bloc) =>
+            bloc.add(const ClipEditorSaveClipToLibraryRequested(clipId: 'a')),
         verify: (bloc) {
           expect(savedToLibrary.map((c) => c.id), equals(['flattened-a']));
         },
@@ -3210,9 +3447,8 @@ void main() {
           saveClipToLibrary: recordSave,
         ),
         seed: () => ClipEditorState(clips: twoClips),
-        act: (bloc) => bloc.add(
-          const ClipEditorSaveClipToLibraryRequested(clipId: 'a'),
-        ),
+        act: (bloc) =>
+            bloc.add(const ClipEditorSaveClipToLibraryRequested(clipId: 'a')),
         verify: (bloc) {
           expect(savedToLibrary, isEmpty);
           expect(bloc.state.lastClipLibrarySave, isA<ClipLibrarySaveFailure>());
@@ -3227,9 +3463,8 @@ void main() {
           saveClipToLibrary: ({required clip}) async => false,
         ),
         seed: () => ClipEditorState(clips: twoClips),
-        act: (bloc) => bloc.add(
-          const ClipEditorSaveClipToLibraryRequested(clipId: 'a'),
-        ),
+        act: (bloc) =>
+            bloc.add(const ClipEditorSaveClipToLibraryRequested(clipId: 'a')),
         verify: (bloc) {
           expect(bloc.state.lastClipLibrarySave, isA<ClipLibrarySaveFailure>());
         },
@@ -3242,9 +3477,8 @@ void main() {
           saveClipToLibrary: recordSave,
         ),
         seed: () => ClipEditorState(clips: twoClips),
-        act: (bloc) => bloc.add(
-          const ClipEditorSaveClipToLibraryRequested(clipId: 'a'),
-        ),
+        act: (bloc) =>
+            bloc.add(const ClipEditorSaveClipToLibraryRequested(clipId: 'a')),
         errors: () => [
           isA<Reportable<Object>>().having(
             (r) => r.unwrap(),
@@ -3275,9 +3509,7 @@ void main() {
           await Future<void>.delayed(Duration.zero);
           bloc.add(const ClipEditorClipRemoved('a'));
           await Future<void>.delayed(Duration.zero);
-          flattenCompleter.complete(
-            _createClip(id: 'flattened-a'),
-          );
+          flattenCompleter.complete(_createClip(id: 'flattened-a'));
         },
         verify: (bloc) {
           // The user deleted the clip they asked to save — storing it anyway
@@ -3307,9 +3539,7 @@ void main() {
           // A double-tap while the first render is still running.
           bloc.add(const ClipEditorSaveClipToLibraryRequested(clipId: 'a'));
           await Future<void>.delayed(Duration.zero);
-          flattenCompleter.complete(
-            _createClip(id: 'flattened-a'),
-          );
+          flattenCompleter.complete(_createClip(id: 'flattened-a'));
           await Future<void>.delayed(Duration.zero);
         },
         verify: (bloc) {

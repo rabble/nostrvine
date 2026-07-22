@@ -5,6 +5,7 @@
 import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/models/video_editor/transition_geometry.dart';
 
 /// Converts a [sourcePosition] inside one untrimmed clip to the matching
@@ -431,4 +432,26 @@ int timelineOverlayOffsetToMs(
   }
   final ms = ((offset - gapPixels) / pixelsPerSecond * 1000).round();
   return ms.clamp(0, totalDurationMs);
+}
+
+/// Initial timeline zoom for a frames-first stop-motion session.
+///
+/// Stop-motion stills are held for a handful of output frames (tens of ms),
+/// so the video default of [TimelineConstants.pixelsPerSecond] renders them a
+/// couple of pixels wide. This scales the zoom so the *average* still gets
+/// [TimelineConstants.stopMotionTargetTileWidth] of tappable width, clamped
+/// between the video default and the stop-motion zoom ceiling.
+double stopMotionInitialPixelsPerSecond(List<StopMotionClipFrame> frames) {
+  if (frames.isEmpty) return TimelineConstants.pixelsPerSecond;
+  final total = frames.fold(
+    Duration.zero,
+    (sum, frame) => sum + frame.duration,
+  );
+  if (total <= Duration.zero) return TimelineConstants.pixelsPerSecond;
+  final averageSeconds =
+      total.inMicroseconds / frames.length / Duration.microsecondsPerSecond;
+  return (TimelineConstants.stopMotionTargetTileWidth / averageSeconds).clamp(
+    TimelineConstants.pixelsPerSecond,
+    TimelineConstants.stopMotionMaxPixelsPerSecond,
+  );
 }

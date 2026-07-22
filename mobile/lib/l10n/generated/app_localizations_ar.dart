@@ -7983,6 +7983,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoRecorderLipSyncAddAudioFirst => 'أضف صوتًا قبل التسجيل';
 
   @override
+  String get videoRecorderStopMotionAssembling => 'جارٍ إنشاء الفيديو…';
+
+  @override
+  String get videoRecorderStopMotionAssembleFailed =>
+      'تعذّر إنشاء الفيديو. حاول مرة أخرى.';
+
+  @override
   String get videoRecorderToggleFlashLabel => 'تبديل الفلاش';
 
   @override
@@ -8026,6 +8033,21 @@ class AppLocalizationsAr extends AppLocalizations {
       locale: localeName,
       other: 'فتح مكتبة المقاطع، $clipCount مقاطع',
       one: 'فتح مكتبة المقاطع، مقطع واحد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String videoRecorderLibraryOpenStopMotionLabel(int frameCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      frameCount,
+      locale: localeName,
+      other: 'فتح مكتبة الحركة الإيقافية، $frameCount إطار',
+      many: 'فتح مكتبة الحركة الإيقافية، $frameCount إطارًا',
+      few: 'فتح مكتبة الحركة الإيقافية، $frameCount إطارات',
+      two: 'فتح مكتبة الحركة الإيقافية، إطاران',
+      one: 'فتح مكتبة الحركة الإيقافية، إطار واحد',
+      zero: 'فتح مكتبة الحركة الإيقافية',
     );
     return '$_temp0';
   }
@@ -8295,6 +8317,46 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get videoEditorDeleteSelectedItemSemanticLabel => 'حذف العنصر المحدد';
+
+  @override
+  String get videoEditorStopMotionFramesPerImageLabel => 'الإطارات لكل صورة';
+
+  @override
+  String videoEditorStopMotionFramesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count إطار',
+      few: '$count إطارات',
+      two: 'إطاران',
+      one: 'إطار واحد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorStopMotionFramesPerImageButtonLabel => 'إطارات';
+
+  @override
+  String get libraryStopMotionClipLabel => 'مقطع الحركة الإيقافية';
+
+  @override
+  String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
+    return '$count إطارات لكل صورة';
+  }
+
+  @override
+  String get videoEditorStopMotionIncreaseFramesPerImageSemanticLabel =>
+      'زيادة الإطارات لكل صورة';
+
+  @override
+  String get videoEditorStopMotionDecreaseFramesPerImageSemanticLabel =>
+      'تقليل الإطارات لكل صورة';
+
+  @override
+  String videoEditorStopMotionFrameSemanticLabel(int position, int total) {
+    return 'إطار الحركة الإيقافية $position من $total';
+  }
 
   @override
   String get videoEditorEditLabel => 'تحرير';
@@ -8690,6 +8752,19 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get videoEditorDeleteSelectedClipsSemanticLabel =>
       'حذف المقاطع المحددة';
+
+  @override
+  String get videoEditorDeleteSelectedFramesSemanticLabel =>
+      'حذف الإطارات المحددة';
+
+  @override
+  String get videoEditorReverseSelectedFramesSemanticLabel =>
+      'عكس الإطارات المحددة';
+
+  @override
+  String videoEditorStopMotionTooShortSnackbar(int seconds) {
+    return 'يجب أن يكون الفيديو $seconds ثانية على الأقل — التقط بضعة إطارات إضافية.';
+  }
 
   @override
   String get videoEditorMergeProgressLabel => 'لحظة من فضلك، نقوم بدمج مقاطعك';

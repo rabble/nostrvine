@@ -2,14 +2,21 @@ import 'dart:io';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_navigation.dart';
 
 class VideoRecorderLibraryButton extends ConsumerStatefulWidget {
-  const VideoRecorderLibraryButton({super.key});
+  const VideoRecorderLibraryButton({this.interactive = true, super.key});
+
+  /// Whether tapping opens the library. The editor-hosted recorder shows the
+  /// button purely as a capture-count indicator — navigating to the library
+  /// mid editor session is not supported there.
+  final bool interactive;
 
   @override
   ConsumerState<VideoRecorderLibraryButton> createState() =>
@@ -22,8 +29,15 @@ class _VideoRecorderLibraryButtonState
   /// thumbnail is still being generated (~1 s delay).
   String? _lastKnownThumbnailPath;
 
-  /// Thumbnail path from the persisted clip library, loaded on demand.
-  String? _libraryThumbnailPath;
+  /// Newest video-clip thumbnail from the persisted clip library.
+  ///
+  /// Kept separate from [_libraryStopMotionThumbnailPath] because each
+  /// recorder mode opens a type-filtered library — the button must preview
+  /// the newest entry of the current mode's type, not of the whole library.
+  String? _libraryVideoThumbnailPath;
+
+  /// Newest stop-motion-set thumbnail from the persisted clip library.
+  String? _libraryStopMotionThumbnailPath;
 
   @override
   void initState() {
@@ -36,15 +50,30 @@ class _VideoRecorderLibraryButtonState
     final libraryClips = await service.getAllClips();
     if (!mounted) return;
     setState(() {
-      _libraryThumbnailPath = libraryClips.isNotEmpty
-          ? libraryClips.first.thumbnailPath
-          : null;
+      _libraryVideoThumbnailPath = libraryClips
+          .where((clip) => !clip.isStopMotion)
+          .firstOrNull
+          ?.thumbnailPath;
+      _libraryStopMotionThumbnailPath = libraryClips
+          .where((clip) => clip.isStopMotion)
+          .firstOrNull
+          ?.thumbnailPath;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final clips = ref.watch(clipManagerProvider.select((p) => p.clips));
+
+    // Stop-motion captures accumulate frames in the recorder bloc (not the
+    // clip manager) until assembled, so mirror the latest still and the
+    // captured-frame count directly for a live preview during capture.
+    final (capturesStills, stopMotionFrames) = context.select(
+      (VideoRecorderBloc b) => (
+        b.state.recorderMode.capturesStills,
+        b.state.stopMotionFrames,
+      ),
+    );
 
     // Re-query library thumbnail whenever session clips change to empty
     // (e.g. user reset or deleted clips).
@@ -64,20 +93,41 @@ class _VideoRecorderLibraryButtonState
       _lastKnownThumbnailPath = null;
     }
 
-    final thumbnailPath = _lastKnownThumbnailPath ?? _libraryThumbnailPath;
-    final hasClips = clips.isNotEmpty || _libraryThumbnailPath != null;
+    final String? thumbnailPath;
+    final int count;
+    final bool hasClips;
+    if (capturesStills) {
+      // Newest still first, falling back to a prior library stop-motion set
+      // so the button still opens the library before the first frame is shot.
+      thumbnailPath =
+          stopMotionFrames.lastOrNull ?? _libraryStopMotionThumbnailPath;
+      count = stopMotionFrames.length;
+      hasClips =
+          stopMotionFrames.isNotEmpty ||
+          _libraryStopMotionThumbnailPath != null;
+    } else {
+      thumbnailPath = _lastKnownThumbnailPath ?? _libraryVideoThumbnailPath;
+      count = clips.length;
+      hasClips = clips.isNotEmpty || _libraryVideoThumbnailPath != null;
+    }
 
     return Padding(
       padding: const .only(left: 16),
       child: Semantics(
-        button: true,
+        button: widget.interactive,
+        // A stop-motion session counts captured stills, not clips — the clip
+        // label would announce 12 stills as "12 clips". Its own label also
+        // covers the zero case, which is reachable here: the button opens a
+        // previous session's library before this one's first still is shot.
         label: hasClips
-            ? context.l10n.videoRecorderLibraryOpenLabel(clips.length)
+            ? (capturesStills
+                  ? context.l10n.videoRecorderLibraryOpenStopMotionLabel(count)
+                  : context.l10n.videoRecorderLibraryOpenLabel(count))
             : context.l10n.videoRecorderLibraryEmptyLabel,
-        enabled: hasClips,
+        enabled: hasClips && widget.interactive,
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTap: hasClips
+          onTap: hasClips && widget.interactive
               ? () async {
                   await openRecorderLibrary(context, ref);
 
@@ -116,11 +166,16 @@ class _VideoRecorderLibraryButtonState
                             File(thumbnailPath),
                             key: ValueKey(thumbnailPath),
                             fit: BoxFit.cover,
+                            // Stop-motion stills are full-resolution photos;
+                            // bound the decode to the 40px button.
+                            cacheHeight:
+                                (40 * MediaQuery.devicePixelRatioOf(context))
+                                    .round(),
                           )
                         : const SizedBox.shrink(),
                   ),
                 ),
-                _SelectionCountBadge(count: clips.length),
+                _SelectionCountBadge(count: count),
               ],
             ),
           ),
