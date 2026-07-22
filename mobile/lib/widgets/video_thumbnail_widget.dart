@@ -3,13 +3,13 @@
 
 import 'dart:async';
 
-import 'package:blurhash_service/blurhash_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart'
     show HttpExceptionWithStatus;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide AspectRatio, LogCategory;
+import 'package:openvine/extensions/video_event_content_type_extension.dart';
 import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/utils/blossom_blob_hash.dart';
@@ -48,14 +48,6 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
     super.initState();
     _loadThumbnail();
   }
-
-  static VineContentType? _deriveContentType(VideoEvent video) =>
-      BlurhashService.deriveContentType(
-        hashtags: video.hashtags,
-        group: video.group,
-        title: video.title,
-        content: video.content,
-      );
 
   @override
   void didUpdateWidget(VideoThumbnailWidget oldWidget) {
@@ -108,7 +100,7 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
         // Show blurhash or flat color as background while image loads
         BlurhashDisplay(
           blurhash: widget.video.blurhash,
-          contentType: _deriveContentType(widget.video),
+          contentType: widget.video.blurhashContentType,
           width: widget.width,
           height: widget.height,
           fit: fit,

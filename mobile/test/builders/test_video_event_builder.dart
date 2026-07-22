@@ -13,6 +13,7 @@ class TestVideoEventBuilder {
     String? title,
     String? videoUrl,
     String? thumbnailUrl,
+    String? blurhash,
     List<String>? hashtags,
     DateTime? timestamp,
     int? createdAt,
@@ -28,6 +29,7 @@ class TestVideoEventBuilder {
       title: title ?? 'Test Video',
       videoUrl: videoUrl ?? 'https://example.com/test_video.mp4',
       thumbnailUrl: thumbnailUrl ?? 'https://example.com/test_thumbnail.jpg',
+      blurhash: blurhash,
       hashtags: hashtags ?? ['test'],
       rawTags: rawTags ?? {},
     );

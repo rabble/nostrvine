@@ -24,6 +24,14 @@ import '../helpers/test_provider_overrides.dart'
 Finder _findDivineIcon(DivineIconName name) =>
     find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
 
+/// The single blurhash layer rendered beneath the error scrim.
+BlurhashDisplay _blurhashOf(WidgetTester tester) =>
+    tester.widget<BlurhashDisplay>(find.byType(BlurhashDisplay));
+
+/// A valid event-level blurhash used to distinguish the frame-derived preview
+/// from the generic content-type fallback.
+const _eventBlurhash = 'LEHV6nWB2yk8pyo0adR*.7kCMdnj';
+
 void main() {
   group(PooledVideoErrorOverlay, () {
     late VideoEvent divineVideo;
@@ -496,6 +504,98 @@ void main() {
         expect(find.byType(BlurhashDisplay), findsOneWidget);
         expect(find.byType(VineCachedImage), findsNothing);
       });
+
+      testWidgets('keeps the event blurhash for not-found dead media', (
+        tester,
+      ) async {
+        final withBlurhash = TestVideoEventBuilder.create(
+          id: 'blurhash-video',
+          videoUrl: 'https://blossom.divine.video/$testSha256.mp4',
+          thumbnailUrl: '',
+          blurhash: _eventBlurhash,
+        );
+
+        await tester.pumpWidget(
+          buildWidget(errorType: VideoErrorType.notFound, video: withBlurhash),
+        );
+        await tester.pumpAndSettle();
+
+        // The event's own blurhash is passed through, not the generic
+        // content-type fallback, so broken/expired media still degrades to
+        // the real frame impression.
+        expect(_blurhashOf(tester).blurhash, equals(_eventBlurhash));
+      });
+    });
+
+    group('restricted media suppression', () {
+      // Keep the stubbed thumbnail off the real on-disk cache, matching the
+      // dead-media group, so the pre-suppression frame never hits the network.
+      setUp(() => debugImageCacheOverride = createMockMediaCacheManager());
+      tearDown(() => debugImageCacheOverride = null);
+
+      // Carries both a thumbnail and its own event blurhash, so a failure to
+      // suppress would surface a frame-derived preview.
+      VideoEvent restrictedVideo() => TestVideoEventBuilder.create(
+        id: 'restricted-video',
+        videoUrl: 'https://blossom.divine.video/$testSha256.mp4',
+        thumbnailUrl: 'https://blossom.divine.video/$testSha256.jpg',
+        blurhash: _eventBlurhash,
+      );
+
+      testWidgets('suppresses event blurhash and thumbnail for forbidden', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(
+            errorType: VideoErrorType.forbidden,
+            video: restrictedVideo(),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(_blurhashOf(tester).blurhash, isNull);
+        expect(find.byType(VineCachedImage), findsNothing);
+      });
+
+      testWidgets(
+        'suppresses event blurhash and thumbnail for age-restricted',
+        (tester) async {
+          await tester.pumpWidget(
+            buildWidget(
+              errorType: VideoErrorType.ageRestricted,
+              video: restrictedVideo(),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(_blurhashOf(tester).blurhash, isNull);
+          expect(find.byType(VineCachedImage), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'suppresses event blurhash and thumbnail for moderation-blocked media',
+        (tester) async {
+          await tester.pumpWidget(
+            buildWidgetWithModeration(
+              errorType: VideoErrorType.notFound,
+              video: restrictedVideo(),
+              moderationStatus: const VideoModerationStatus(
+                moderated: true,
+                blocked: true,
+                quarantined: false,
+                ageRestricted: false,
+                needsReview: false,
+                aiGenerated: false,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(_blurhashOf(tester).blurhash, isNull);
+          expect(find.byType(VineCachedImage), findsNothing);
+        },
+      );
     });
 
     group('retry', () {

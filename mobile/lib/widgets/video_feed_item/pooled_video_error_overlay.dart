@@ -2,7 +2,6 @@
 // ABOUTME: Differentiates moderation-restricted (403), age-gated (401),
 // ABOUTME: missing (404), and generic playback errors.
 
-import 'package:blurhash_service/blurhash_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,6 +10,7 @@ import 'package:infinite_video_feed/infinite_video_feed.dart'
     show VideoErrorType;
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
+import 'package:openvine/extensions/video_event_content_type_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:openvine/widgets/blurhash_display.dart';
@@ -69,14 +69,6 @@ class _PooledVideoErrorOverlayState
     if (!widget.shouldPortraitExpand) return BoxFit.contain;
     return widget.isSquare ? BoxFit.contain : BoxFit.cover;
   }
-
-  static VineContentType? _deriveContentType(VideoEvent video) =>
-      BlurhashService.deriveContentType(
-        hashtags: video.hashtags,
-        group: video.group,
-        title: video.title,
-        content: video.content,
-      );
 
   void _maybeAutoRetryAgeRestricted({required bool showVerifyAge}) {
     if (!showVerifyAge || widget.isVerifying || widget.onVerifyAge == null) {
@@ -166,6 +158,13 @@ class _PooledVideoErrorOverlayState
     final showRetry = !isModerationRestricted && !showVerifyAge;
     _maybeAutoRetryAgeRestricted(showVerifyAge: showVerifyAge);
 
+    // Hard-walled states (forbidden / moderation-blocked / age-restricted)
+    // withhold the frame entirely: suppress both the event blurhash and the
+    // thumbnail so no frame-derived preview leaks, degrading to the generic
+    // content-type gradient only. notFound / generic keep the event blurhash
+    // and thumbnail fallback. #6242
+    final suppressPreviewMedia = isModerationRestricted || isAgeRestricted;
+
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -178,11 +177,11 @@ class _PooledVideoErrorOverlayState
               // media degrades to a soft placeholder instead of a bare color,
               // matching the feed grid's fallback. #6242
               BlurhashDisplay(
-                blurhash: widget.video.blurhash,
-                contentType: _deriveContentType(widget.video),
-                fit: _resolveBoxFit(),
+                blurhash: suppressPreviewMedia ? null : widget.video.blurhash,
+                contentType: widget.video.blurhashContentType,
               ),
-              if (widget.video.thumbnailUrl != null &&
+              if (!suppressPreviewMedia &&
+                  widget.video.thumbnailUrl != null &&
                   widget.video.thumbnailUrl!.isNotEmpty)
                 VineCachedImage(
                   imageUrl: widget.video.thumbnailUrl!,
