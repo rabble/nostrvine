@@ -8052,6 +8052,106 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorOpenAudioSemanticLabel => '오디오 편집기 열기';
 
   @override
+  String get videoEditorCaptionsLabel => '자막';
+
+  @override
+  String get videoEditorOpenCaptionsSemanticLabel => '자막 편집기 열기';
+
+  @override
+  String get videoEditorCaptionsModeTitle => '자막 추가';
+
+  @override
+  String get videoEditorCaptionsModeSubtitle =>
+      '스타일과 함께 영상에 입히거나, 시청자가 켜고 끌 수 있는 폐쇄자막(CC)으로 첨부할 수 있어요.';
+
+  @override
+  String get videoEditorCaptionsModeBurnIn => '영상에 입히기';
+
+  @override
+  String get videoEditorCaptionsModeOverlay => '폐쇄자막(CC)';
+
+  @override
+  String get videoEditorCaptionsEditTitle => '자막';
+
+  @override
+  String get videoEditorCaptionsGeneratingTitle => '음성을 듣고 있어요…';
+
+  @override
+  String get videoEditorCaptionsGeneratingSubtitle =>
+      '오디오는 이 기기에서 바로 텍스트로 변환돼요. 아무것도 휴대폰 밖으로 나가지 않아요.';
+
+  @override
+  String get videoEditorCaptionsNoSpeechMessage =>
+      '음성이 들리지 않았어요. 자막을 직접 작성할 수도 있어요.';
+
+  @override
+  String get videoEditorCaptionsUnavailableMessage =>
+      '이 기기에서는 음성 인식을 사용할 수 없어요. 자막을 직접 작성할 수 있어요.';
+
+  @override
+  String get videoEditorCaptionsNotAuthorizedMessage =>
+      '음성 인식이 허용되지 않았어요. 설정에서 켜거나 자막을 직접 작성하세요.';
+
+  @override
+  String get videoEditorCaptionsFailedMessage =>
+      '이번에는 변환이 되지 않았어요. 자막을 직접 작성할 수 있어요.';
+
+  @override
+  String get videoEditorCaptionsStartEmptyButton => '자막 직접 쓰기';
+
+  @override
+  String get videoEditorCaptionsAddCue => '자막 추가';
+
+  @override
+  String get videoEditorCaptionsCueTextHint => '자막 텍스트';
+
+  @override
+  String get videoEditorCaptionsCueDeleteSemanticLabel => '자막 삭제';
+
+  @override
+  String get videoEditorCaptionsDeleteTrack => '모든 자막 제거';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmTitle => '자막을 제거할까요?';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmSubtitle =>
+      '모든 텍스트와 타이밍이 사라져요.';
+
+  @override
+  String get videoEditorCaptionsCloseSemanticLabel => '자막 편집기 닫기';
+
+  @override
+  String get videoEditorCaptionsDoneSemanticLabel => '자막 확정';
+
+  @override
+  String get videoEditorCaptionsPresetTitle => '자막 스타일';
+
+  @override
+  String get videoEditorCaptionsPresetClassic => '클래식';
+
+  @override
+  String get videoEditorCaptionsPresetPop => '팝';
+
+  @override
+  String get videoEditorCaptionsPresetSlideUp => '슬라이드';
+
+  @override
+  String get videoEditorCaptionsPresetSpring => '스프링';
+
+  @override
+  String get videoEditorCaptionsPresetMono => '모노';
+
+  @override
+  String get videoEditorCaptionsPresetHeadline => '헤드라인';
+
+  @override
+  String get videoEditorCaptionsSwitchToOverlay => '폐쇄자막(CC)으로 전환';
+
+  @override
+  String get videoEditorCaptionsSwitchToBurnIn => '입힌 자막으로 전환';
+
+  @override
   String get videoEditorOpenTextSemanticLabel => '텍스트 편집기 열기';
 
   @override

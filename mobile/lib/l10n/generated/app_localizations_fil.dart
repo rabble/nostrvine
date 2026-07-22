@@ -8452,6 +8452,114 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoEditorOpenAudioSemanticLabel => 'Buksan ang audio editor';
 
   @override
+  String get videoEditorCaptionsLabel => 'Mga subtitle';
+
+  @override
+  String get videoEditorOpenCaptionsSemanticLabel =>
+      'Buksan ang subtitle editor';
+
+  @override
+  String get videoEditorCaptionsModeTitle => 'Magdagdag ng mga subtitle';
+
+  @override
+  String get videoEditorCaptionsModeSubtitle =>
+      'I-burn ang mga ito sa video gamit ang isang istilo, o ikabit bilang mga subtitle (CC) na puwedeng i-on at i-off ng manonood.';
+
+  @override
+  String get videoEditorCaptionsModeBurnIn => 'I-burn sa video';
+
+  @override
+  String get videoEditorCaptionsModeOverlay => 'Mga subtitle (CC)';
+
+  @override
+  String get videoEditorCaptionsEditTitle => 'Mga subtitle';
+
+  @override
+  String get videoEditorCaptionsGeneratingTitle => 'Nakikinig…';
+
+  @override
+  String get videoEditorCaptionsGeneratingSubtitle =>
+      'Tina-transcribe ang audio mismo sa device na ito. Walang lumalabas sa telepono mo.';
+
+  @override
+  String get videoEditorCaptionsNoSpeechMessage =>
+      'Wala kaming narinig na boses. Puwede mo pa ring isulat ang mga subtitle.';
+
+  @override
+  String get videoEditorCaptionsUnavailableMessage =>
+      'Hindi available ang speech recognition sa device na ito. Puwede mong isulat ang mga subtitle.';
+
+  @override
+  String get videoEditorCaptionsNotAuthorizedMessage =>
+      'Hindi pinapayagan ang speech recognition. I-enable ito sa Settings o isulat ang mga subtitle.';
+
+  @override
+  String get videoEditorCaptionsFailedMessage =>
+      'Hindi gumana ang transcription ngayon. Puwede mong isulat ang mga subtitle.';
+
+  @override
+  String get videoEditorCaptionsStartEmptyButton =>
+      'Ako na ang magsusulat ng mga subtitle';
+
+  @override
+  String get videoEditorCaptionsAddCue => 'Magdagdag ng subtitle';
+
+  @override
+  String get videoEditorCaptionsCueTextHint => 'Teksto ng subtitle';
+
+  @override
+  String get videoEditorCaptionsCueDeleteSemanticLabel =>
+      'Burahin ang subtitle';
+
+  @override
+  String get videoEditorCaptionsDeleteTrack => 'Alisin ang lahat ng subtitle';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmTitle =>
+      'Alisin ang mga subtitle?';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmSubtitle =>
+      'Mawawala ang lahat ng teksto at timing.';
+
+  @override
+  String get videoEditorCaptionsCloseSemanticLabel =>
+      'Isara ang subtitle editor';
+
+  @override
+  String get videoEditorCaptionsDoneSemanticLabel =>
+      'Kumpirmahin ang mga subtitle';
+
+  @override
+  String get videoEditorCaptionsPresetTitle => 'Istilo ng subtitle';
+
+  @override
+  String get videoEditorCaptionsPresetClassic => 'Klasiko';
+
+  @override
+  String get videoEditorCaptionsPresetPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsPresetSlideUp => 'Slide';
+
+  @override
+  String get videoEditorCaptionsPresetSpring => 'Spring';
+
+  @override
+  String get videoEditorCaptionsPresetMono => 'Mono';
+
+  @override
+  String get videoEditorCaptionsPresetHeadline => 'Headline';
+
+  @override
+  String get videoEditorCaptionsSwitchToOverlay =>
+      'Lumipat sa mga subtitle (CC)';
+
+  @override
+  String get videoEditorCaptionsSwitchToBurnIn =>
+      'Lumipat sa mga naka-burn na subtitle';
+
+  @override
   String get videoEditorOpenTextSemanticLabel => 'Buksan ang text editor';
 
   @override

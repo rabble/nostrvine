@@ -8535,6 +8535,107 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoEditorOpenAudioSemanticLabel => 'Otwórz edytor audio';
 
   @override
+  String get videoEditorCaptionsLabel => 'Napisy';
+
+  @override
+  String get videoEditorOpenCaptionsSemanticLabel => 'Otwórz edytor napisów';
+
+  @override
+  String get videoEditorCaptionsModeTitle => 'Dodaj napisy';
+
+  @override
+  String get videoEditorCaptionsModeSubtitle =>
+      'Wypal je w wideo z wybranym stylem albo dołącz jako napisy (CC), które widzowie mogą włączać i wyłączać.';
+
+  @override
+  String get videoEditorCaptionsModeBurnIn => 'Wypal w wideo';
+
+  @override
+  String get videoEditorCaptionsModeOverlay => 'Napisy (CC)';
+
+  @override
+  String get videoEditorCaptionsEditTitle => 'Napisy';
+
+  @override
+  String get videoEditorCaptionsGeneratingTitle => 'Słuchamy…';
+
+  @override
+  String get videoEditorCaptionsGeneratingSubtitle =>
+      'Transkrypcja dźwięku odbywa się bezpośrednio na tym urządzeniu. Nic nie opuszcza Twojego telefonu.';
+
+  @override
+  String get videoEditorCaptionsNoSpeechMessage =>
+      'Nie usłyszeliśmy żadnej mowy. Nadal możesz napisać napisy samodzielnie.';
+
+  @override
+  String get videoEditorCaptionsUnavailableMessage =>
+      'Rozpoznawanie mowy nie jest dostępne na tym urządzeniu. Możesz napisać napisy samodzielnie.';
+
+  @override
+  String get videoEditorCaptionsNotAuthorizedMessage =>
+      'Rozpoznawanie mowy nie jest dozwolone. Włącz je w Ustawieniach albo napisz napisy samodzielnie.';
+
+  @override
+  String get videoEditorCaptionsFailedMessage =>
+      'Transkrypcja tym razem się nie udała. Możesz napisać napisy samodzielnie.';
+
+  @override
+  String get videoEditorCaptionsStartEmptyButton =>
+      'Napiszę napisy samodzielnie';
+
+  @override
+  String get videoEditorCaptionsAddCue => 'Dodaj napis';
+
+  @override
+  String get videoEditorCaptionsCueTextHint => 'Tekst napisu';
+
+  @override
+  String get videoEditorCaptionsCueDeleteSemanticLabel => 'Usuń napis';
+
+  @override
+  String get videoEditorCaptionsDeleteTrack => 'Usuń wszystkie napisy';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmTitle => 'Usunąć napisy?';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmSubtitle =>
+      'Cały tekst i czasy zostaną utracone.';
+
+  @override
+  String get videoEditorCaptionsCloseSemanticLabel => 'Zamknij edytor napisów';
+
+  @override
+  String get videoEditorCaptionsDoneSemanticLabel => 'Zatwierdź napisy';
+
+  @override
+  String get videoEditorCaptionsPresetTitle => 'Styl napisów';
+
+  @override
+  String get videoEditorCaptionsPresetClassic => 'Klasyczny';
+
+  @override
+  String get videoEditorCaptionsPresetPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsPresetSlideUp => 'Slide';
+
+  @override
+  String get videoEditorCaptionsPresetSpring => 'Spring';
+
+  @override
+  String get videoEditorCaptionsPresetMono => 'Mono';
+
+  @override
+  String get videoEditorCaptionsPresetHeadline => 'Nagłówek';
+
+  @override
+  String get videoEditorCaptionsSwitchToOverlay => 'Przełącz na napisy (CC)';
+
+  @override
+  String get videoEditorCaptionsSwitchToBurnIn => 'Przełącz na wypalone napisy';
+
+  @override
   String get videoEditorOpenTextSemanticLabel => 'Otwórz edytor tekstu';
 
   @override

@@ -8346,6 +8346,108 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditorOpenAudioSemanticLabel => 'Open audio editor';
 
   @override
+  String get videoEditorCaptionsLabel => 'Captions';
+
+  @override
+  String get videoEditorOpenCaptionsSemanticLabel => 'Open captions editor';
+
+  @override
+  String get videoEditorCaptionsModeTitle => 'Add captions';
+
+  @override
+  String get videoEditorCaptionsModeSubtitle =>
+      'Burn them into the video with a style, or attach them as closed captions viewers can turn on and off.';
+
+  @override
+  String get videoEditorCaptionsModeBurnIn => 'Burn into video';
+
+  @override
+  String get videoEditorCaptionsModeOverlay => 'Closed captions (CC)';
+
+  @override
+  String get videoEditorCaptionsEditTitle => 'Captions';
+
+  @override
+  String get videoEditorCaptionsGeneratingTitle => 'Listening for speech…';
+
+  @override
+  String get videoEditorCaptionsGeneratingSubtitle =>
+      'Transcribing your audio right on this device. Nothing leaves your phone.';
+
+  @override
+  String get videoEditorCaptionsNoSpeechMessage =>
+      'We couldn\'t hear any speech. You can still write captions yourself.';
+
+  @override
+  String get videoEditorCaptionsUnavailableMessage =>
+      'Speech recognition isn\'t available on this device. You can write captions yourself.';
+
+  @override
+  String get videoEditorCaptionsNotAuthorizedMessage =>
+      'Speech recognition isn\'t allowed. Enable it in Settings or write captions yourself.';
+
+  @override
+  String get videoEditorCaptionsFailedMessage =>
+      'Transcription didn\'t work this time. You can write captions yourself.';
+
+  @override
+  String get videoEditorCaptionsStartEmptyButton => 'Write captions myself';
+
+  @override
+  String get videoEditorCaptionsAddCue => 'Add caption';
+
+  @override
+  String get videoEditorCaptionsCueTextHint => 'Caption text';
+
+  @override
+  String get videoEditorCaptionsCueDeleteSemanticLabel => 'Delete caption';
+
+  @override
+  String get videoEditorCaptionsDeleteTrack => 'Remove all captions';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmTitle => 'Remove captions?';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmSubtitle =>
+      'All caption text and timing will be gone.';
+
+  @override
+  String get videoEditorCaptionsCloseSemanticLabel => 'Close captions editor';
+
+  @override
+  String get videoEditorCaptionsDoneSemanticLabel => 'Confirm captions';
+
+  @override
+  String get videoEditorCaptionsPresetTitle => 'Caption style';
+
+  @override
+  String get videoEditorCaptionsPresetClassic => 'Classic';
+
+  @override
+  String get videoEditorCaptionsPresetPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsPresetSlideUp => 'Slide';
+
+  @override
+  String get videoEditorCaptionsPresetSpring => 'Spring';
+
+  @override
+  String get videoEditorCaptionsPresetMono => 'Mono';
+
+  @override
+  String get videoEditorCaptionsPresetHeadline => 'Headline';
+
+  @override
+  String get videoEditorCaptionsSwitchToOverlay =>
+      'Switch to closed captions (CC)';
+
+  @override
+  String get videoEditorCaptionsSwitchToBurnIn =>
+      'Switch to burned-in captions';
+
+  @override
   String get videoEditorOpenTextSemanticLabel => 'Open text editor';
 
   @override

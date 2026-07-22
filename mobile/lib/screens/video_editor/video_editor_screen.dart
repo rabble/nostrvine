@@ -27,11 +27,15 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/codec_heavy_surface_guard.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
+import 'package:openvine/models/video_editor/caption_layer_mapping.dart';
+import 'package:openvine/models/video_editor/caption_style_preset.dart';
+import 'package:openvine/models/video_editor/caption_track.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/repositories/sticker_repository.dart';
 import 'package:openvine/screens/library_screen.dart';
+import 'package:openvine/screens/video_editor/video_captions_editor_screen.dart';
 import 'package:openvine/screens/video_editor/video_text_editor_screen.dart';
 import 'package:openvine/screens/video_editor/voice_over_recorder_screen.dart';
 import 'package:openvine/screens/video_editor/voice_over_take_commit.dart';
@@ -43,6 +47,7 @@ import 'package:openvine/widgets/video_editor/audio_editor/audio_selection_botto
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker_sheet.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_caption_preset_sheet.dart';
 import 'package:openvine/widgets/video_editor/video_editor_scaffold.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -576,6 +581,117 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
     return result.copyWith(scale: 1 / _fittedBoxScale);
   }
 
+  /// Opens the captions flow: burn-in/CC prompt (plus preset pick) on first
+  /// use, straight to the captions editor when a session already exists.
+  Future<void> _openCaptions({
+    required VideoEditorMainBloc mainBloc,
+    required ClipEditorBloc clipEditorBloc,
+  }) async {
+    final editor = _editor;
+    if (editor == null) return;
+
+    final existingTrack = editor.stateManager.captionTrack;
+    final captionLayers = editor.activeLayers.where(isCaptionCueLayer).toList();
+    final hasSession = existingTrack != null || captionLayers.isNotEmpty;
+
+    var mode =
+        existingTrack?.mode ??
+        (captionLayers.isNotEmpty
+            ? CaptionRenderMode.burnIn
+            : CaptionRenderMode.overlay);
+    var presetId =
+        existingTrack?.presetId ?? CaptionStylePreset.presets.first.id;
+    List<CaptionCue>? initialCues;
+
+    if (hasSession) {
+      initialCues = mode == CaptionRenderMode.burnIn
+          ? captionCuesFromLayers(captionLayers)
+          : existingTrack!.cues;
+    } else {
+      final choice = await VineBottomSheetPrompt.show<CaptionRenderMode>(
+        context: context,
+        sticker: .vintageTvTestPattern,
+        title: context.l10n.videoEditorCaptionsModeTitle,
+        subtitle: context.l10n.videoEditorCaptionsModeSubtitle,
+        primaryButtonText: context.l10n.videoEditorCaptionsModeBurnIn,
+        secondaryButtonText: context.l10n.videoEditorCaptionsModeOverlay,
+        onPrimaryPressed: () =>
+            Navigator.of(context).pop(CaptionRenderMode.burnIn),
+        onSecondaryPressed: () =>
+            Navigator.of(context).pop(CaptionRenderMode.overlay),
+      );
+      if (choice == null || !mounted) return;
+      mode = choice;
+      if (mode == CaptionRenderMode.burnIn) {
+        final picked = await showCaptionPresetSheet(
+          context,
+          selectedId: presetId,
+        );
+        if (picked == null || !mounted) return;
+        presetId = picked;
+      }
+    }
+
+    // The app language drives recognition; a stored track keeps the language
+    // it was transcribed with.
+    final languageTag =
+        existingTrack?.languageTag ??
+        Localizations.localeOf(context).toLanguageTag();
+
+    mainBloc.add(const VideoEditorMainOpenSubEditor(.captions));
+
+    final result = await Navigator.push<CaptionsEditorResult>(
+      context,
+      PageRouteBuilder<CaptionsEditorResult>(
+        opaque: false,
+        barrierColor: VineTheme.transparent,
+        pageBuilder: (_, _, _) => VideoCaptionsEditorScreen(
+          mode: mode,
+          presetId: presetId,
+          languageTag: languageTag,
+          clips: clipEditorBloc.state.clips,
+          totalDuration: clipEditorBloc.state.totalDuration,
+          initialCues: initialCues,
+          canDeleteTrack: hasSession,
+        ),
+        transitionsBuilder: (_, animation, _, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
+
+    mainBloc.add(const VideoEditorMainSubEditorClosed());
+    if (result == null) return;
+    _commitCaptionsResult(result);
+  }
+
+  /// Commits a captions-editor result as one history entry (one undo step):
+  /// overlay cues go into the `captions` meta key, burn-in cues are
+  /// materialized as marked caption layers, delete removes both.
+  void _commitCaptionsResult(CaptionsEditorResult result) {
+    final editor = _editor;
+    if (editor == null) return;
+
+    switch (result) {
+      case CaptionsDeleted():
+        editor.commitCaptionState(track: null);
+      case CaptionsConfirmed(:final track)
+          when track.mode == CaptionRenderMode.overlay:
+        editor.commitCaptionState(track: track);
+      case CaptionsConfirmed(:final track, :final cues):
+        final preset = CaptionStylePreset.byId(track.presetId);
+        final bodySize = _bodySizeNotifier.value;
+        final scale = _fittedBoxScale;
+        editor.commitCaptionState(
+          track: track,
+          captionLayers: [
+            for (final cue in cues)
+              preset.buildLayer(cue, fittedBoxScale: scale, bodySize: bodySize),
+          ],
+        );
+    }
+  }
+
   Future<void> _openMusicLibrary() async {
     var result = await AudioSelectionBottomSheet.show(context);
     if (!mounted || result == null) return;
@@ -924,6 +1040,14 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
               onOpenVoiceOver: () {
                 final mainBloc = context.read<VideoEditorMainBloc>();
                 _openVoiceOver(mainBloc: mainBloc);
+              },
+              onOpenCaptions: () {
+                final mainBloc = context.read<VideoEditorMainBloc>();
+                final clipEditorBloc = context.read<ClipEditorBloc>();
+                _openCaptions(
+                  mainBloc: mainBloc,
+                  clipEditorBloc: clipEditorBloc,
+                );
               },
               awaitPushCoverTransition: _awaitMetadataCoverTransition,
               child: ValueListenableBuilder<bool>(

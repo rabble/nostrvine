@@ -72,6 +72,7 @@ void main() {
                 onAddEditTextLayer: ([layer]) async => null,
                 onOpenMusicLibrary: () {},
                 onOpenVoiceOver: () {},
+                onOpenCaptions: () {},
                 editorOverride: editor,
                 child: const TimelineLayerMultiSelectControls(),
               ),

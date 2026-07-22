@@ -8358,6 +8358,110 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoEditorOpenAudioSemanticLabel => 'Öppna ljudredigerare';
 
   @override
+  String get videoEditorCaptionsLabel => 'Undertexter';
+
+  @override
+  String get videoEditorOpenCaptionsSemanticLabel =>
+      'Öppna undertextredigeraren';
+
+  @override
+  String get videoEditorCaptionsModeTitle => 'Lägg till undertexter';
+
+  @override
+  String get videoEditorCaptionsModeSubtitle =>
+      'Bränn in dem i videon med en stil, eller bifoga dem som undertexter (CC) som tittare kan slå på och av.';
+
+  @override
+  String get videoEditorCaptionsModeBurnIn => 'Bränn in i videon';
+
+  @override
+  String get videoEditorCaptionsModeOverlay => 'Undertexter (CC)';
+
+  @override
+  String get videoEditorCaptionsEditTitle => 'Undertexter';
+
+  @override
+  String get videoEditorCaptionsGeneratingTitle => 'Lyssnar…';
+
+  @override
+  String get videoEditorCaptionsGeneratingSubtitle =>
+      'Ljudet transkriberas direkt på den här enheten. Inget lämnar din telefon.';
+
+  @override
+  String get videoEditorCaptionsNoSpeechMessage =>
+      'Vi hörde inget tal. Du kan ändå skriva undertexterna själv.';
+
+  @override
+  String get videoEditorCaptionsUnavailableMessage =>
+      'Taligenkänning är inte tillgängligt på den här enheten. Du kan skriva undertexterna själv.';
+
+  @override
+  String get videoEditorCaptionsNotAuthorizedMessage =>
+      'Taligenkänning är inte tillåtet. Aktivera det i Inställningar eller skriv undertexterna själv.';
+
+  @override
+  String get videoEditorCaptionsFailedMessage =>
+      'Transkriberingen fungerade inte den här gången. Du kan skriva undertexterna själv.';
+
+  @override
+  String get videoEditorCaptionsStartEmptyButton => 'Skriv undertexterna själv';
+
+  @override
+  String get videoEditorCaptionsAddCue => 'Lägg till undertext';
+
+  @override
+  String get videoEditorCaptionsCueTextHint => 'Undertextens text';
+
+  @override
+  String get videoEditorCaptionsCueDeleteSemanticLabel => 'Ta bort undertext';
+
+  @override
+  String get videoEditorCaptionsDeleteTrack => 'Ta bort alla undertexter';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmTitle =>
+      'Ta bort undertexterna?';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmSubtitle =>
+      'All text och timing försvinner.';
+
+  @override
+  String get videoEditorCaptionsCloseSemanticLabel =>
+      'Stäng undertextredigeraren';
+
+  @override
+  String get videoEditorCaptionsDoneSemanticLabel => 'Bekräfta undertexter';
+
+  @override
+  String get videoEditorCaptionsPresetTitle => 'Undertextstil';
+
+  @override
+  String get videoEditorCaptionsPresetClassic => 'Klassisk';
+
+  @override
+  String get videoEditorCaptionsPresetPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsPresetSlideUp => 'Slide';
+
+  @override
+  String get videoEditorCaptionsPresetSpring => 'Spring';
+
+  @override
+  String get videoEditorCaptionsPresetMono => 'Mono';
+
+  @override
+  String get videoEditorCaptionsPresetHeadline => 'Rubrik';
+
+  @override
+  String get videoEditorCaptionsSwitchToOverlay => 'Byt till undertexter (CC)';
+
+  @override
+  String get videoEditorCaptionsSwitchToBurnIn =>
+      'Byt till inbrända undertexter';
+
+  @override
   String get videoEditorOpenTextSemanticLabel => 'Öppna textredigerare';
 
   @override

@@ -8540,6 +8540,110 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorOpenAudioSemanticLabel => 'Deschide editorul audio';
 
   @override
+  String get videoEditorCaptionsLabel => 'Subtitrări';
+
+  @override
+  String get videoEditorOpenCaptionsSemanticLabel =>
+      'Deschide editorul de subtitrări';
+
+  @override
+  String get videoEditorCaptionsModeTitle => 'Adaugă subtitrări';
+
+  @override
+  String get videoEditorCaptionsModeSubtitle =>
+      'Imprimă-le în videoclip cu un stil sau atașează-le ca subtitrări (CC) pe care spectatorii le pot activa și dezactiva.';
+
+  @override
+  String get videoEditorCaptionsModeBurnIn => 'Imprimă în videoclip';
+
+  @override
+  String get videoEditorCaptionsModeOverlay => 'Subtitrări (CC)';
+
+  @override
+  String get videoEditorCaptionsEditTitle => 'Subtitrări';
+
+  @override
+  String get videoEditorCaptionsGeneratingTitle => 'Ascultăm…';
+
+  @override
+  String get videoEditorCaptionsGeneratingSubtitle =>
+      'Audio-ul este transcris direct pe acest dispozitiv. Nimic nu părăsește telefonul tău.';
+
+  @override
+  String get videoEditorCaptionsNoSpeechMessage =>
+      'Nu am auzit nicio voce. Poți totuși să scrii subtitrările singur.';
+
+  @override
+  String get videoEditorCaptionsUnavailableMessage =>
+      'Recunoașterea vocală nu este disponibilă pe acest dispozitiv. Poți scrie subtitrările singur.';
+
+  @override
+  String get videoEditorCaptionsNotAuthorizedMessage =>
+      'Recunoașterea vocală nu este permisă. Activeaz-o din Setări sau scrie subtitrările singur.';
+
+  @override
+  String get videoEditorCaptionsFailedMessage =>
+      'Transcrierea nu a funcționat de data asta. Poți scrie subtitrările singur.';
+
+  @override
+  String get videoEditorCaptionsStartEmptyButton => 'Scriu subtitrările singur';
+
+  @override
+  String get videoEditorCaptionsAddCue => 'Adaugă subtitrare';
+
+  @override
+  String get videoEditorCaptionsCueTextHint => 'Textul subtitrării';
+
+  @override
+  String get videoEditorCaptionsCueDeleteSemanticLabel => 'Șterge subtitrarea';
+
+  @override
+  String get videoEditorCaptionsDeleteTrack => 'Elimină toate subtitrările';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmTitle =>
+      'Elimini subtitrările?';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmSubtitle =>
+      'Tot textul și timpii se vor pierde.';
+
+  @override
+  String get videoEditorCaptionsCloseSemanticLabel =>
+      'Închide editorul de subtitrări';
+
+  @override
+  String get videoEditorCaptionsDoneSemanticLabel => 'Confirmă subtitrările';
+
+  @override
+  String get videoEditorCaptionsPresetTitle => 'Stilul subtitrărilor';
+
+  @override
+  String get videoEditorCaptionsPresetClassic => 'Clasic';
+
+  @override
+  String get videoEditorCaptionsPresetPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsPresetSlideUp => 'Slide';
+
+  @override
+  String get videoEditorCaptionsPresetSpring => 'Spring';
+
+  @override
+  String get videoEditorCaptionsPresetMono => 'Mono';
+
+  @override
+  String get videoEditorCaptionsPresetHeadline => 'Titlu';
+
+  @override
+  String get videoEditorCaptionsSwitchToOverlay => 'Treci la subtitrări (CC)';
+
+  @override
+  String get videoEditorCaptionsSwitchToBurnIn =>
+      'Treci la subtitrări imprimate';
+
+  @override
   String get videoEditorOpenTextSemanticLabel => 'Deschide editorul de text';
 
   @override

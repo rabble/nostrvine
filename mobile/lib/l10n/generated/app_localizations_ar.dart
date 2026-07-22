@@ -8311,6 +8311,107 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorOpenAudioSemanticLabel => 'فتح محرر الصوت';
 
   @override
+  String get videoEditorCaptionsLabel => 'الترجمات';
+
+  @override
+  String get videoEditorOpenCaptionsSemanticLabel => 'فتح محرر الترجمات';
+
+  @override
+  String get videoEditorCaptionsModeTitle => 'إضافة ترجمات';
+
+  @override
+  String get videoEditorCaptionsModeSubtitle =>
+      'اطبعها داخل الفيديو بأسلوب مميز، أو أرفقها كترجمات (CC) يمكن للمشاهدين تشغيلها وإيقافها.';
+
+  @override
+  String get videoEditorCaptionsModeBurnIn => 'طباعة داخل الفيديو';
+
+  @override
+  String get videoEditorCaptionsModeOverlay => 'ترجمات (CC)';
+
+  @override
+  String get videoEditorCaptionsEditTitle => 'الترجمات';
+
+  @override
+  String get videoEditorCaptionsGeneratingTitle => 'نستمع الآن…';
+
+  @override
+  String get videoEditorCaptionsGeneratingSubtitle =>
+      'يتم تفريغ الصوت مباشرة على هذا الجهاز. لا شيء يغادر هاتفك.';
+
+  @override
+  String get videoEditorCaptionsNoSpeechMessage =>
+      'لم نسمع أي كلام. لا يزال بإمكانك كتابة الترجمات بنفسك.';
+
+  @override
+  String get videoEditorCaptionsUnavailableMessage =>
+      'التعرف على الكلام غير متاح على هذا الجهاز. يمكنك كتابة الترجمات بنفسك.';
+
+  @override
+  String get videoEditorCaptionsNotAuthorizedMessage =>
+      'التعرف على الكلام غير مسموح به. فعّله من الإعدادات أو اكتب الترجمات بنفسك.';
+
+  @override
+  String get videoEditorCaptionsFailedMessage =>
+      'لم ينجح التفريغ هذه المرة. يمكنك كتابة الترجمات بنفسك.';
+
+  @override
+  String get videoEditorCaptionsStartEmptyButton => 'سأكتب الترجمات بنفسي';
+
+  @override
+  String get videoEditorCaptionsAddCue => 'إضافة ترجمة';
+
+  @override
+  String get videoEditorCaptionsCueTextHint => 'نص الترجمة';
+
+  @override
+  String get videoEditorCaptionsCueDeleteSemanticLabel => 'حذف الترجمة';
+
+  @override
+  String get videoEditorCaptionsDeleteTrack => 'إزالة كل الترجمات';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmTitle => 'إزالة الترجمات؟';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmSubtitle =>
+      'سيُفقد كل النص والتوقيتات.';
+
+  @override
+  String get videoEditorCaptionsCloseSemanticLabel => 'إغلاق محرر الترجمات';
+
+  @override
+  String get videoEditorCaptionsDoneSemanticLabel => 'تأكيد الترجمات';
+
+  @override
+  String get videoEditorCaptionsPresetTitle => 'أسلوب الترجمات';
+
+  @override
+  String get videoEditorCaptionsPresetClassic => 'كلاسيكي';
+
+  @override
+  String get videoEditorCaptionsPresetPop => 'بوب';
+
+  @override
+  String get videoEditorCaptionsPresetSlideUp => 'انزلاق';
+
+  @override
+  String get videoEditorCaptionsPresetSpring => 'نابض';
+
+  @override
+  String get videoEditorCaptionsPresetMono => 'أحادي';
+
+  @override
+  String get videoEditorCaptionsPresetHeadline => 'عنوان';
+
+  @override
+  String get videoEditorCaptionsSwitchToOverlay => 'التبديل إلى الترجمات (CC)';
+
+  @override
+  String get videoEditorCaptionsSwitchToBurnIn =>
+      'التبديل إلى الترجمات المطبوعة';
+
+  @override
   String get videoEditorOpenTextSemanticLabel => 'فتح محرر النص';
 
   @override

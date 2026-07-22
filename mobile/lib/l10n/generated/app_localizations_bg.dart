@@ -8437,6 +8437,111 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoEditorOpenAudioSemanticLabel => 'Отвори аудио редактора';
 
   @override
+  String get videoEditorCaptionsLabel => 'Субтитри';
+
+  @override
+  String get videoEditorOpenCaptionsSemanticLabel =>
+      'Отвори редактора на субтитри';
+
+  @override
+  String get videoEditorCaptionsModeTitle => 'Добави субтитри';
+
+  @override
+  String get videoEditorCaptionsModeSubtitle =>
+      'Вгради ги във видеото със стил или ги прикачи като субтитри (CC), които зрителите могат да включват и изключват.';
+
+  @override
+  String get videoEditorCaptionsModeBurnIn => 'Вгради във видеото';
+
+  @override
+  String get videoEditorCaptionsModeOverlay => 'Субтитри (CC)';
+
+  @override
+  String get videoEditorCaptionsEditTitle => 'Субтитри';
+
+  @override
+  String get videoEditorCaptionsGeneratingTitle => 'Слушаме…';
+
+  @override
+  String get videoEditorCaptionsGeneratingSubtitle =>
+      'Аудиото се транскрибира директно на това устройство. Нищо не напуска телефона ти.';
+
+  @override
+  String get videoEditorCaptionsNoSpeechMessage =>
+      'Не чухме реч. Все пак можеш да напишеш субтитрите сам.';
+
+  @override
+  String get videoEditorCaptionsUnavailableMessage =>
+      'Разпознаването на реч не е налично на това устройство. Можеш да напишеш субтитрите сам.';
+
+  @override
+  String get videoEditorCaptionsNotAuthorizedMessage =>
+      'Разпознаването на реч не е разрешено. Включи го в Настройки или напиши субтитрите сам.';
+
+  @override
+  String get videoEditorCaptionsFailedMessage =>
+      'Транскрипцията не се получи този път. Можеш да напишеш субтитрите сам.';
+
+  @override
+  String get videoEditorCaptionsStartEmptyButton => 'Ще напиша субтитрите сам';
+
+  @override
+  String get videoEditorCaptionsAddCue => 'Добави субтитър';
+
+  @override
+  String get videoEditorCaptionsCueTextHint => 'Текст на субтитъра';
+
+  @override
+  String get videoEditorCaptionsCueDeleteSemanticLabel => 'Изтрий субтитъра';
+
+  @override
+  String get videoEditorCaptionsDeleteTrack => 'Премахни всички субтитри';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmTitle =>
+      'Да премахнем ли субтитрите?';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmSubtitle =>
+      'Целият текст и времената ще бъдат загубени.';
+
+  @override
+  String get videoEditorCaptionsCloseSemanticLabel =>
+      'Затвори редактора на субтитри';
+
+  @override
+  String get videoEditorCaptionsDoneSemanticLabel => 'Потвърди субтитрите';
+
+  @override
+  String get videoEditorCaptionsPresetTitle => 'Стил на субтитрите';
+
+  @override
+  String get videoEditorCaptionsPresetClassic => 'Класически';
+
+  @override
+  String get videoEditorCaptionsPresetPop => 'Поп';
+
+  @override
+  String get videoEditorCaptionsPresetSlideUp => 'Слайд';
+
+  @override
+  String get videoEditorCaptionsPresetSpring => 'Спринг';
+
+  @override
+  String get videoEditorCaptionsPresetMono => 'Моно';
+
+  @override
+  String get videoEditorCaptionsPresetHeadline => 'Заглавие';
+
+  @override
+  String get videoEditorCaptionsSwitchToOverlay =>
+      'Превключи към субтитри (CC)';
+
+  @override
+  String get videoEditorCaptionsSwitchToBurnIn =>
+      'Превключи към вградени субтитри';
+
+  @override
   String get videoEditorOpenTextSemanticLabel => 'Отвори текстовия редактор';
 
   @override

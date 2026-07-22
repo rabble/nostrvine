@@ -64,6 +64,7 @@ void main() {
             onAddStickers: () {},
             onOpenMusicLibrary: () {},
             onOpenVoiceOver: () {},
+            onOpenCaptions: () {},
             onAddEditTextLayer: ([layer]) async => null,
             child: MultiBlocProvider(
               providers: [

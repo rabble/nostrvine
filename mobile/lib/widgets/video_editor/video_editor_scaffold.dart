@@ -17,6 +17,7 @@ import 'package:openvine/widgets/video_editor/draw_editor/video_editor_draw_over
 import 'package:openvine/widgets/video_editor/filter_editor/video_editor_filter_bottom_bar.dart';
 import 'package:openvine/widgets/video_editor/filter_editor/video_editor_filter_overlay_controls.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_canvas.dart';
+import 'package:openvine/widgets/video_editor/main_editor/video_editor_caption_preview_overlay.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_main_actions_sheet.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_main_overlay_actions.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
@@ -91,6 +92,8 @@ class _ScaffoldBody extends StatelessWidget {
                     const BrandedLoadingScaffold()
                   else
                     const VideoEditorCanvas(),
+
+                  const VideoEditorCaptionPreviewOverlay(),
 
                   const _OverlayControls(),
                 ],

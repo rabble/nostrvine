@@ -477,6 +477,7 @@ void main() {
             onAddEditTextLayer: ([layer]) async => null,
             onOpenMusicLibrary: () {},
             onOpenVoiceOver: () {},
+            onOpenCaptions: () {},
             editorOverride: mockEditor,
             child: Scaffold(
               body: Builder(

@@ -8415,6 +8415,111 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditorOpenAudioSemanticLabel => 'Abrir editor de áudio';
 
   @override
+  String get videoEditorCaptionsLabel => 'Legendas';
+
+  @override
+  String get videoEditorOpenCaptionsSemanticLabel =>
+      'Abrir o editor de legendas';
+
+  @override
+  String get videoEditorCaptionsModeTitle => 'Adicionar legendas';
+
+  @override
+  String get videoEditorCaptionsModeSubtitle =>
+      'Grave-as no vídeo com um estilo, ou anexe-as como legendas (CC) que podem ser ativadas e desativadas.';
+
+  @override
+  String get videoEditorCaptionsModeBurnIn => 'Gravar no vídeo';
+
+  @override
+  String get videoEditorCaptionsModeOverlay => 'Legendas (CC)';
+
+  @override
+  String get videoEditorCaptionsEditTitle => 'Legendas';
+
+  @override
+  String get videoEditorCaptionsGeneratingTitle => 'Ouvindo…';
+
+  @override
+  String get videoEditorCaptionsGeneratingSubtitle =>
+      'Transcrevemos o áudio direto neste aparelho. Nada sai do seu telefone.';
+
+  @override
+  String get videoEditorCaptionsNoSpeechMessage =>
+      'Não ouvimos nenhuma fala. Você ainda pode escrever as legendas.';
+
+  @override
+  String get videoEditorCaptionsUnavailableMessage =>
+      'O reconhecimento de voz não está disponível neste aparelho. Você pode escrever as legendas.';
+
+  @override
+  String get videoEditorCaptionsNotAuthorizedMessage =>
+      'O reconhecimento de voz não está permitido. Ative-o nos Ajustes ou escreva as legendas.';
+
+  @override
+  String get videoEditorCaptionsFailedMessage =>
+      'A transcrição não funcionou desta vez. Você pode escrever as legendas.';
+
+  @override
+  String get videoEditorCaptionsStartEmptyButton =>
+      'Escrever as legendas eu mesmo';
+
+  @override
+  String get videoEditorCaptionsAddCue => 'Adicionar legenda';
+
+  @override
+  String get videoEditorCaptionsCueTextHint => 'Texto da legenda';
+
+  @override
+  String get videoEditorCaptionsCueDeleteSemanticLabel => 'Excluir legenda';
+
+  @override
+  String get videoEditorCaptionsDeleteTrack => 'Remover todas as legendas';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmTitle =>
+      'Remover as legendas?';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmSubtitle =>
+      'Todo o texto e os tempos serão perdidos.';
+
+  @override
+  String get videoEditorCaptionsCloseSemanticLabel =>
+      'Fechar o editor de legendas';
+
+  @override
+  String get videoEditorCaptionsDoneSemanticLabel => 'Confirmar legendas';
+
+  @override
+  String get videoEditorCaptionsPresetTitle => 'Estilo das legendas';
+
+  @override
+  String get videoEditorCaptionsPresetClassic => 'Clássico';
+
+  @override
+  String get videoEditorCaptionsPresetPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsPresetSlideUp => 'Slide';
+
+  @override
+  String get videoEditorCaptionsPresetSpring => 'Spring';
+
+  @override
+  String get videoEditorCaptionsPresetMono => 'Mono';
+
+  @override
+  String get videoEditorCaptionsPresetHeadline => 'Manchete';
+
+  @override
+  String get videoEditorCaptionsSwitchToOverlay => 'Mudar para legendas (CC)';
+
+  @override
+  String get videoEditorCaptionsSwitchToBurnIn =>
+      'Mudar para legendas gravadas';
+
+  @override
   String get videoEditorOpenTextSemanticLabel => 'Abrir editor de texto';
 
   @override

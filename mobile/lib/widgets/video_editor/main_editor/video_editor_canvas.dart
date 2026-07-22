@@ -1695,6 +1695,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
           totalVideoDuration: videoDuration,
           audioTracks: editor.stateManager.audioTracks,
           timelineMarkers: editor.stateManager.timelineMarkers,
+          captionTrack: editor.stateManager.captionTrack,
         ),
       );
 

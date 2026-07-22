@@ -25,6 +25,23 @@ class VideoEditorConstants {
   /// Unique history key for timeline marker positions.
   static const String timelineMarkersStateHistoryKey = 'timelineMarkers';
 
+  /// Unique history key for the caption track (mode, preset, overlay cues).
+  static const String captionsStateHistoryKey = 'captions';
+
+  /// `Layer.meta` key marking a layer as a burned-in caption cue.
+  ///
+  /// Caption cue layers are real editor layers (so preview, export, undo and
+  /// drafts work unchanged) but are bucketed into the timeline's captions
+  /// strip instead of the layer strip, and edited through the captions editor
+  /// rather than the generic text editor.
+  static const String captionCueMetaKey = 'divineCaptionCue';
+
+  /// `Layer.meta` key carrying the caption cue's stable id.
+  static const String captionCueIdMetaKey = 'divineCaptionCueId';
+
+  /// Shortest a caption cue may be trimmed; below this reading is impossible.
+  static const Duration minCaptionCueDuration = Duration(milliseconds: 200);
+
   /// `TuneAdjustmentMatrix.meta` key grouping the adjustments produced by one
   /// tune-editor session into a single timeline "set" (one bar per set, sharing
   /// a time window).

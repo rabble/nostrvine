@@ -783,8 +783,8 @@ void main() {
   });
 
   group(SubEditorType, () {
-    test('has 7 values', () {
-      expect(SubEditorType.values, hasLength(7));
+    test('has 8 values', () {
+      expect(SubEditorType.values, hasLength(8));
     });
 
     test('contains expected types', () {
@@ -798,6 +798,7 @@ void main() {
           SubEditorType.stickers,
           SubEditorType.music,
           SubEditorType.clips,
+          SubEditorType.captions,
         ]),
       );
     });

@@ -8191,6 +8191,106 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorOpenAudioSemanticLabel => 'የድምጽ አርታዒን ክፈት';
 
   @override
+  String get videoEditorCaptionsLabel => 'የግርጌ ጽሑፎች';
+
+  @override
+  String get videoEditorOpenCaptionsSemanticLabel => 'የግርጌ ጽሑፍ አርታዒን ክፈት';
+
+  @override
+  String get videoEditorCaptionsModeTitle => 'የግርጌ ጽሑፎችን ጨምር';
+
+  @override
+  String get videoEditorCaptionsModeSubtitle =>
+      'በቅጥ ወደ ቪዲዮው አትማቸው፣ ወይም ተመልካቾች ማብራት እና ማጥፋት የሚችሉት የግርጌ ጽሑፎች (CC) አድርገህ አያይዛቸው።';
+
+  @override
+  String get videoEditorCaptionsModeBurnIn => 'ወደ ቪዲዮው አትም';
+
+  @override
+  String get videoEditorCaptionsModeOverlay => 'የግርጌ ጽሑፎች (CC)';
+
+  @override
+  String get videoEditorCaptionsEditTitle => 'የግርጌ ጽሑፎች';
+
+  @override
+  String get videoEditorCaptionsGeneratingTitle => 'እያዳመጥን ነው…';
+
+  @override
+  String get videoEditorCaptionsGeneratingSubtitle =>
+      'ድምጽህ በዚህ መሣሪያ ላይ በቀጥታ ወደ ጽሑፍ ይቀየራል። ምንም ከስልክህ አይወጣም።';
+
+  @override
+  String get videoEditorCaptionsNoSpeechMessage =>
+      'ምንም ንግግር አልሰማንም። አሁንም የግርጌ ጽሑፎቹን ራስህ መጻፍ ትችላለህ።';
+
+  @override
+  String get videoEditorCaptionsUnavailableMessage =>
+      'በዚህ መሣሪያ ላይ የንግግር ማወቂያ አይገኝም። የግርጌ ጽሑፎቹን ራስህ መጻፍ ትችላለህ።';
+
+  @override
+  String get videoEditorCaptionsNotAuthorizedMessage =>
+      'የንግግር ማወቂያ አልተፈቀደም። በቅንብሮች ውስጥ አብራው ወይም የግርጌ ጽሑፎቹን ራስህ ጻፍ።';
+
+  @override
+  String get videoEditorCaptionsFailedMessage =>
+      'ወደ ጽሑፍ መቀየሩ በዚህ ጊዜ አልሰራም። የግርጌ ጽሑፎቹን ራስህ መጻፍ ትችላለህ።';
+
+  @override
+  String get videoEditorCaptionsStartEmptyButton => 'የግርጌ ጽሑፎቹን ራሴ እጽፋለሁ';
+
+  @override
+  String get videoEditorCaptionsAddCue => 'የግርጌ ጽሑፍ ጨምር';
+
+  @override
+  String get videoEditorCaptionsCueTextHint => 'የግርጌ ጽሑፍ';
+
+  @override
+  String get videoEditorCaptionsCueDeleteSemanticLabel => 'የግርጌ ጽሑፉን ሰርዝ';
+
+  @override
+  String get videoEditorCaptionsDeleteTrack => 'ሁሉንም የግርጌ ጽሑፎች አስወግድ';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmTitle => 'የግርጌ ጽሑፎቹ ይወገዱ?';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmSubtitle =>
+      'ሁሉም ጽሑፍ እና ጊዜዎች ይጠፋሉ።';
+
+  @override
+  String get videoEditorCaptionsCloseSemanticLabel => 'የግርጌ ጽሑፍ አርታዒን ዝጋ';
+
+  @override
+  String get videoEditorCaptionsDoneSemanticLabel => 'የግርጌ ጽሑፎችን አረጋግጥ';
+
+  @override
+  String get videoEditorCaptionsPresetTitle => 'የግርጌ ጽሑፍ ቅጥ';
+
+  @override
+  String get videoEditorCaptionsPresetClassic => 'ክላሲክ';
+
+  @override
+  String get videoEditorCaptionsPresetPop => 'ፖፕ';
+
+  @override
+  String get videoEditorCaptionsPresetSlideUp => 'ስላይድ';
+
+  @override
+  String get videoEditorCaptionsPresetSpring => 'ስፕሪንግ';
+
+  @override
+  String get videoEditorCaptionsPresetMono => 'ሞኖ';
+
+  @override
+  String get videoEditorCaptionsPresetHeadline => 'አርዕስት';
+
+  @override
+  String get videoEditorCaptionsSwitchToOverlay => 'ወደ የግርጌ ጽሑፎች (CC) ቀይር';
+
+  @override
+  String get videoEditorCaptionsSwitchToBurnIn => 'ወደ ታተሙ የግርጌ ጽሑፎች ቀይር';
+
+  @override
   String get videoEditorOpenTextSemanticLabel => 'የጽሑፍ አርታዒን ክፈት';
 
   @override

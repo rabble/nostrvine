@@ -2,6 +2,8 @@ import 'package:models/models.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/video_editor/caption_layer_mapping.dart';
+import 'package:openvine/models/video_editor/caption_track.dart';
 import 'package:openvine/models/video_editor/composition_duration.dart';
 import 'package:openvine/models/video_editor/editor_overlay_snapshot.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_geometry.dart';
@@ -96,6 +98,97 @@ extension VideoEditorExtensions on ProImageEditorState {
       // in-place when skipUpdateHistory is true.
       stateManager.activeMeta[VideoEditorConstants.audioStateHistoryKey] =
           audioTracks.map((e) => e.toJson()).toList();
+    }
+    setState(() {});
+  }
+
+  /// Persists the caption track in the editor's history metadata.
+  ///
+  /// Creates a new undo point. Passing `null` removes the track (the user
+  /// deleted their captions).
+  void setCaptionState(CaptionTrack? track) {
+    final meta = {...stateManager.activeMeta};
+    if (track == null) {
+      meta.remove(VideoEditorConstants.captionsStateHistoryKey);
+    } else {
+      meta[VideoEditorConstants.captionsStateHistoryKey] = track.toJson();
+    }
+    addHistory(meta: meta);
+    setState(() {});
+  }
+
+  /// Commits a whole captions session as one history entry (one undo step):
+  /// replaces all existing caption layers with [captionLayers] and stores
+  /// [track] in the `captions` meta key (`null` removes the track).
+  ///
+  /// Overlay sessions pass no layers; burn-in sessions pass one layer per
+  /// cue; delete passes neither.
+  void commitCaptionState({
+    required CaptionTrack? track,
+    List<Layer> captionLayers = const [],
+  }) {
+    final meta = {...stateManager.activeMeta};
+    if (track == null) {
+      meta.remove(VideoEditorConstants.captionsStateHistoryKey);
+    } else {
+      meta[VideoEditorConstants.captionsStateHistoryKey] = track.toJson();
+    }
+    addHistory(
+      layers: [
+        ...activeLayers.where((layer) => !isCaptionCueLayer(layer)),
+        ...captionLayers,
+      ],
+      meta: meta,
+    );
+    setState(() {});
+  }
+
+  /// Updates one overlay-mode caption cue's timing.
+  ///
+  /// Mirrors [setSoundTimeline]: with [skipUpdateHistory] the current meta is
+  /// mutated in-place (ongoing trim drag), otherwise a new undo point is
+  /// created. Cues shorter than [VideoEditorConstants.minCaptionCueDuration] are clamped by moving
+  /// the changed edge. No-op when the session has no overlay caption track or
+  /// [cueId] is unknown.
+  void setCaptionCueTimeline({
+    required String cueId,
+    Duration? startTime,
+    Duration? endTime,
+    bool skipUpdateHistory = false,
+  }) {
+    final track = stateManager.captionTrack;
+    if (track == null) return;
+    final index = track.cues.indexWhere((cue) => cue.id == cueId);
+    if (index < 0) return;
+
+    final cue = track.cues[index];
+    var newStart = startTime ?? cue.start;
+    var newEnd = endTime ?? cue.end;
+    if (newEnd - newStart < VideoEditorConstants.minCaptionCueDuration) {
+      if (startTime != null && endTime == null) {
+        newStart = newEnd - VideoEditorConstants.minCaptionCueDuration;
+        if (newStart < Duration.zero) newStart = Duration.zero;
+      } else {
+        newEnd = newStart + VideoEditorConstants.minCaptionCueDuration;
+      }
+    }
+
+    final cues = List<CaptionCue>.from(track.cues);
+    cues[index] = cue.copyWith(start: newStart, end: newEnd);
+    final updated = track.copyWith(cues: cues).toJson();
+
+    if (!skipUpdateHistory) {
+      addHistory(
+        meta: {
+          ...stateManager.activeMeta,
+          VideoEditorConstants.captionsStateHistoryKey: updated,
+        },
+      );
+    } else {
+      // Mutate the meta map in-place so the current history entry is updated
+      // directly — matching setSoundTimeline's drag behavior.
+      stateManager.activeMeta[VideoEditorConstants.captionsStateHistoryKey] =
+          updated;
     }
     setState(() {});
   }

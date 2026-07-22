@@ -8457,6 +8457,111 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoEditorOpenAudioSemanticLabel => 'Audio-Editor öffnen';
 
   @override
+  String get videoEditorCaptionsLabel => 'Untertitel';
+
+  @override
+  String get videoEditorOpenCaptionsSemanticLabel => 'Untertitel-Editor öffnen';
+
+  @override
+  String get videoEditorCaptionsModeTitle => 'Untertitel hinzufügen';
+
+  @override
+  String get videoEditorCaptionsModeSubtitle =>
+      'Brenne sie mit einem Style ins Video, oder häng sie als Untertitel (CC) an, die Zuschauer ein- und ausschalten können.';
+
+  @override
+  String get videoEditorCaptionsModeBurnIn => 'Ins Video brennen';
+
+  @override
+  String get videoEditorCaptionsModeOverlay => 'Untertitel (CC)';
+
+  @override
+  String get videoEditorCaptionsEditTitle => 'Untertitel';
+
+  @override
+  String get videoEditorCaptionsGeneratingTitle => 'Wir hören zu…';
+
+  @override
+  String get videoEditorCaptionsGeneratingSubtitle =>
+      'Dein Audio wird direkt auf dem Gerät transkribiert. Nichts verlässt dein Handy.';
+
+  @override
+  String get videoEditorCaptionsNoSpeechMessage =>
+      'Wir konnten keine Sprache hören. Du kannst die Untertitel trotzdem selbst schreiben.';
+
+  @override
+  String get videoEditorCaptionsUnavailableMessage =>
+      'Spracherkennung ist auf diesem Gerät nicht verfügbar. Du kannst die Untertitel selbst schreiben.';
+
+  @override
+  String get videoEditorCaptionsNotAuthorizedMessage =>
+      'Spracherkennung ist nicht erlaubt. Aktiviere sie in den Einstellungen oder schreib die Untertitel selbst.';
+
+  @override
+  String get videoEditorCaptionsFailedMessage =>
+      'Die Transkription hat diesmal nicht geklappt. Du kannst die Untertitel selbst schreiben.';
+
+  @override
+  String get videoEditorCaptionsStartEmptyButton =>
+      'Untertitel selbst schreiben';
+
+  @override
+  String get videoEditorCaptionsAddCue => 'Untertitel hinzufügen';
+
+  @override
+  String get videoEditorCaptionsCueTextHint => 'Untertiteltext';
+
+  @override
+  String get videoEditorCaptionsCueDeleteSemanticLabel => 'Untertitel löschen';
+
+  @override
+  String get videoEditorCaptionsDeleteTrack => 'Alle Untertitel entfernen';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmTitle =>
+      'Untertitel entfernen?';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmSubtitle =>
+      'Alle Texte und Zeiten gehen verloren.';
+
+  @override
+  String get videoEditorCaptionsCloseSemanticLabel =>
+      'Untertitel-Editor schließen';
+
+  @override
+  String get videoEditorCaptionsDoneSemanticLabel => 'Untertitel bestätigen';
+
+  @override
+  String get videoEditorCaptionsPresetTitle => 'Untertitel-Style';
+
+  @override
+  String get videoEditorCaptionsPresetClassic => 'Klassisch';
+
+  @override
+  String get videoEditorCaptionsPresetPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsPresetSlideUp => 'Slide';
+
+  @override
+  String get videoEditorCaptionsPresetSpring => 'Spring';
+
+  @override
+  String get videoEditorCaptionsPresetMono => 'Mono';
+
+  @override
+  String get videoEditorCaptionsPresetHeadline => 'Schlagzeile';
+
+  @override
+  String get videoEditorCaptionsSwitchToOverlay =>
+      'Zu Untertiteln (CC) wechseln';
+
+  @override
+  String get videoEditorCaptionsSwitchToBurnIn =>
+      'Zu eingebrannten Untertiteln wechseln';
+
+  @override
   String get videoEditorOpenTextSemanticLabel => 'Text-Editor öffnen';
 
   @override

@@ -706,5 +706,57 @@ void main() {
 
       expect(ref, isNull);
     });
+
+    test(
+      'publishSubtitleTrack publishes a 39307 without a published video',
+      () async {
+        when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPubkey);
+
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((invocation) async {
+          final tags = invocation.namedArguments[#tags] as List<List<String>>;
+          return createSignedEvent(tags);
+        });
+
+        when(
+          () => mockNostrClient.publishEventAwaitOk(
+            any(),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer(
+          (invocation) async => PublishOutcome(
+            eventId: (invocation.positionalArguments.first as Event).id,
+            acceptedBy: const ['wss://relay.divine.video'],
+            rejectedBy: const {},
+            noResponseFrom: const [],
+          ),
+        );
+
+        final ref = await publisher.publishSubtitleTrack(
+          vineId: 'fresh-vine-id',
+          vttContent: 'WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nhi\n',
+          blossomUrl: 'https://media.divine.video/def456',
+          lang: 'de',
+        );
+
+        expect(ref, '39307:$testPubkey:subtitles:fresh-vine-id');
+
+        final captured = verify(
+          () => mockAuthService.createAndSignEvent(
+            kind: captureAny(named: 'kind'),
+            content: captureAny(named: 'content'),
+            tags: captureAny(named: 'tags'),
+          ),
+        ).captured;
+        final tags = (captured[2] as List).cast<List<String>>();
+        expect(_containsTag(tags, ['d', 'subtitles:fresh-vine-id']), isTrue);
+        expect(_containsTag(tags, ['l', 'de']), isTrue);
+      },
+    );
   });
 }

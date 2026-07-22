@@ -57,10 +57,12 @@ class _TimelineOverlayStripsState extends State<TimelineOverlayStrips> {
   var _filterItems = const <TimelineOverlayItem>[];
   var _tuneItems = const <TimelineOverlayItem>[];
   var _layerItems = const <TimelineOverlayItem>[];
+  var _captionItems = const <TimelineOverlayItem>[];
   var _soundRowCount = 0;
   var _filterRowCount = 0;
   var _tuneRowCount = 0;
   var _layerRowCount = 0;
+  var _captionRowCount = 0;
 
   // -- cached snap-point list -----------------------------------------------
   var _snapPointsMs = const <int>[];
@@ -70,10 +72,12 @@ class _TimelineOverlayStripsState extends State<TimelineOverlayStrips> {
     final filterItems = <TimelineOverlayItem>[];
     final tuneItems = <TimelineOverlayItem>[];
     final layerItems = <TimelineOverlayItem>[];
+    final captionItems = <TimelineOverlayItem>[];
     var maxSoundRow = -1;
     var maxFilterRow = -1;
     var maxTuneRow = -1;
     var maxLayerRow = -1;
+    var maxCaptionRow = -1;
 
     for (final item in items) {
       switch (item.type) {
@@ -89,6 +93,9 @@ class _TimelineOverlayStripsState extends State<TimelineOverlayStrips> {
         case TimelineOverlayType.layer:
           layerItems.add(item);
           if (item.row > maxLayerRow) maxLayerRow = item.row;
+        case TimelineOverlayType.captions:
+          captionItems.add(item);
+          if (item.row > maxCaptionRow) maxCaptionRow = item.row;
       }
     }
 
@@ -96,10 +103,12 @@ class _TimelineOverlayStripsState extends State<TimelineOverlayStrips> {
     _filterItems = filterItems;
     _tuneItems = tuneItems;
     _layerItems = layerItems;
+    _captionItems = captionItems;
     _soundRowCount = maxSoundRow + 1;
     _filterRowCount = maxFilterRow + 1;
     _tuneRowCount = maxTuneRow + 1;
     _layerRowCount = maxLayerRow + 1;
+    _captionRowCount = maxCaptionRow + 1;
   }
 
   void _rebuildSnapPoints(
@@ -213,6 +222,14 @@ class _TimelineOverlayStripsState extends State<TimelineOverlayStrips> {
         isCollapsed: collapsedTypes.contains(TimelineOverlayType.layer),
         type: TimelineOverlayType.layer,
         color: VineTheme.accentVioletBackground,
+        rowHeight: TimelineConstants.overlayRowHeight,
+      ),
+      (
+        items: _captionItems,
+        rowCount: _captionRowCount,
+        isCollapsed: collapsedTypes.contains(TimelineOverlayType.captions),
+        type: TimelineOverlayType.captions,
+        color: VineTheme.accentPinkBackground,
         rowHeight: TimelineConstants.overlayRowHeight,
       ),
     ];

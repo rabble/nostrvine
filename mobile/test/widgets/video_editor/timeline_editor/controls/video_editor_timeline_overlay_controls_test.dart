@@ -89,6 +89,7 @@ void main() {
                 onAddEditTextLayer: ([layer]) async => null,
                 onOpenMusicLibrary: () {},
                 onOpenVoiceOver: () {},
+                onOpenCaptions: () {},
                 editorOverride: mockEditor,
                 child: TimelineOverlayControls(item: item),
               ),
@@ -117,6 +118,7 @@ void main() {
               onAddEditTextLayer: ([layer]) async => null,
               onOpenMusicLibrary: () {},
               onOpenVoiceOver: () {},
+              onOpenCaptions: () {},
               child: BlocProvider<TimelineOverlayBloc>.value(
                 value: overlayBloc,
                 child: TimelineOverlayControls(item: item),
@@ -923,6 +925,7 @@ void main() {
                       onAddEditTextLayer: ([layer]) async => null,
                       onOpenMusicLibrary: () {},
                       onOpenVoiceOver: () {},
+                      onOpenCaptions: () {},
                       editorOverride: mockEditor,
                       child: const TimelineOverlayControls(item: item),
                     ),

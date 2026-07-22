@@ -11,6 +11,8 @@ import 'package:models/models.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/tune_adjustment_matrix_extensions.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
+import 'package:openvine/models/video_editor/caption_layer_mapping.dart';
+import 'package:openvine/models/video_editor/caption_track.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
 part 'timeline_overlay_event.dart';
@@ -160,15 +162,40 @@ class TimelineOverlayBloc
         ),
     ];
 
+    // Burned-in caption cues are real layers but live in their own captions
+    // strip, so they are partitioned out of the layer strip here.
     final layers = <TimelineOverlayItem>[
       for (final layer in event.layers)
+        if (!isCaptionCueLayer(layer))
+          TimelineOverlayItem(
+            id: layer.id,
+            type: .layer,
+            startTime: layer.startTime ?? .zero,
+            endTime: _clampEnd(layer.endTime ?? total, total),
+            label: _labelForLayer(layer),
+            layer: layer,
+          ),
+    ];
+
+    final captions = <TimelineOverlayItem>[
+      for (final layer in event.layers)
+        if (isCaptionCueLayer(layer))
+          TimelineOverlayItem(
+            id: layer.id,
+            type: .captions,
+            startTime: layer.startTime ?? .zero,
+            endTime: _clampEnd(layer.endTime ?? total, total),
+            label: _labelForLayer(layer),
+            layer: layer,
+          ),
+      // Overlay-mode cues are not layers; they are addressed by cue id.
+      for (final cue in event.captionTrack?.cues ?? const <CaptionCue>[])
         TimelineOverlayItem(
-          id: layer.id,
-          type: .layer,
-          startTime: layer.startTime ?? .zero,
-          endTime: _clampEnd(layer.endTime ?? total, total),
-          label: _labelForLayer(layer),
-          layer: layer,
+          id: cue.id,
+          type: .captions,
+          startTime: cue.start,
+          endTime: _clampEnd(cue.end, total),
+          label: cue.text,
         ),
     ];
 
@@ -177,6 +204,7 @@ class TimelineOverlayBloc
       ..._assignRows(filters),
       ..._assignRows(tunes),
       ..._assignRows(layers),
+      ..._assignRows(captions),
     ];
 
     // Only clear selection if the selected item no longer exists.

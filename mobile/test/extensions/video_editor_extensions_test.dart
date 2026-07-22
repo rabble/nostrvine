@@ -4,7 +4,9 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/video_editor_extensions.dart';
+import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/video_editor/caption_track.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
@@ -262,6 +264,151 @@ void main() {
         meta[VideoEditorConstants.audioStateHistoryKey],
         equals([existing.toJson()]),
       );
+    });
+  });
+
+  group('captions', () {
+    const cue = CaptionCue(
+      id: 'cue-1',
+      text: 'Hello.',
+      start: Duration(milliseconds: 500),
+      end: Duration(milliseconds: 2000),
+    );
+    const track = CaptionTrack(
+      mode: CaptionRenderMode.overlay,
+      presetId: 'classic',
+      languageTag: 'en-US',
+      cues: [cue],
+    );
+
+    Map<String, dynamic> capturedHistoryMeta() =>
+        verify(
+              () => editor.addHistory(meta: captureAny(named: 'meta')),
+            ).captured.single
+            as Map<String, dynamic>;
+
+    test('setCaptionState writes the track as one history entry', () {
+      when(() => stateManager.activeMeta).thenReturn({'other': 1});
+
+      editor.setCaptionState(track);
+
+      final meta = capturedHistoryMeta();
+      expect(
+        meta[VideoEditorConstants.captionsStateHistoryKey],
+        equals(track.toJson()),
+      );
+      expect(meta['other'], equals(1));
+    });
+
+    test('setCaptionState with null removes the track', () {
+      when(() => stateManager.activeMeta).thenReturn({
+        VideoEditorConstants.captionsStateHistoryKey: track.toJson(),
+      });
+
+      editor.setCaptionState(null);
+
+      final meta = capturedHistoryMeta();
+      expect(
+        meta.containsKey(VideoEditorConstants.captionsStateHistoryKey),
+        isFalse,
+      );
+    });
+
+    test('captionTrack getter restores the track and null on malformed', () {
+      when(() => stateManager.activeMeta).thenReturn({
+        VideoEditorConstants.captionsStateHistoryKey: track.toJson(),
+      });
+      expect(stateManager.captionTrack, equals(track));
+
+      when(() => stateManager.activeMeta).thenReturn({
+        VideoEditorConstants.captionsStateHistoryKey: {'presetId': 42},
+      });
+      expect(stateManager.captionTrack, isNull);
+
+      when(() => stateManager.activeMeta).thenReturn({});
+      expect(stateManager.captionTrack, isNull);
+    });
+
+    test('setCaptionCueTimeline retimes the cue as a history entry', () {
+      when(() => stateManager.activeMeta).thenReturn({
+        VideoEditorConstants.captionsStateHistoryKey: track.toJson(),
+      });
+
+      editor.setCaptionCueTimeline(
+        cueId: 'cue-1',
+        startTime: const Duration(milliseconds: 800),
+      );
+
+      final meta = capturedHistoryMeta();
+      final updated = CaptionTrack.fromJson(
+        meta[VideoEditorConstants.captionsStateHistoryKey]
+            as Map<Object?, Object?>,
+      );
+      expect(
+        updated.cues.single.start,
+        equals(const Duration(milliseconds: 800)),
+      );
+      expect(
+        updated.cues.single.end,
+        equals(const Duration(milliseconds: 2000)),
+      );
+    });
+
+    test('setCaptionCueTimeline mutates meta in-place during drags', () {
+      final activeMeta = <String, dynamic>{
+        VideoEditorConstants.captionsStateHistoryKey: track.toJson(),
+      };
+      when(() => stateManager.activeMeta).thenReturn(activeMeta);
+
+      editor.setCaptionCueTimeline(
+        cueId: 'cue-1',
+        endTime: const Duration(milliseconds: 1500),
+        skipUpdateHistory: true,
+      );
+
+      verifyNever(() => editor.addHistory(meta: any(named: 'meta')));
+      final updated = CaptionTrack.fromJson(
+        activeMeta[VideoEditorConstants.captionsStateHistoryKey]
+            as Map<Object?, Object?>,
+      );
+      expect(
+        updated.cues.single.end,
+        equals(const Duration(milliseconds: 1500)),
+      );
+    });
+
+    test('setCaptionCueTimeline clamps below the minimum cue duration', () {
+      when(() => stateManager.activeMeta).thenReturn({
+        VideoEditorConstants.captionsStateHistoryKey: track.toJson(),
+      });
+
+      // Right-trim towards the start: end is clamped to start + minimum.
+      editor.setCaptionCueTimeline(
+        cueId: 'cue-1',
+        endTime: const Duration(milliseconds: 510),
+      );
+
+      final meta = capturedHistoryMeta();
+      final updated = CaptionTrack.fromJson(
+        meta[VideoEditorConstants.captionsStateHistoryKey]
+            as Map<Object?, Object?>,
+      );
+      expect(
+        updated.cues.single.end - updated.cues.single.start,
+        equals(VideoEditorConstants.minCaptionCueDuration),
+      );
+    });
+
+    test('setCaptionCueTimeline ignores unknown cues and missing tracks', () {
+      when(() => stateManager.activeMeta).thenReturn({
+        VideoEditorConstants.captionsStateHistoryKey: track.toJson(),
+      });
+      editor.setCaptionCueTimeline(cueId: 'nope', startTime: Duration.zero);
+
+      when(() => stateManager.activeMeta).thenReturn({});
+      editor.setCaptionCueTimeline(cueId: 'cue-1', startTime: Duration.zero);
+
+      verifyNever(() => editor.addHistory(meta: any(named: 'meta')));
     });
   });
 }

@@ -28,6 +28,7 @@ void main() {
       onAddEditTextLayer: ([_]) async => null,
       onOpenMusicLibrary: () {},
       onOpenVoiceOver: () {},
+      onOpenCaptions: () {},
       originalClipAspectRatio: 9 / 16,
       bodySizeNotifier: bodySize,
       zoomMatrixNotifier: zoom,

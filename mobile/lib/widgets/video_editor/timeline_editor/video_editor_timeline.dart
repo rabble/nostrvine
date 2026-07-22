@@ -693,6 +693,28 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
         );
 
         _reorderEditorList(audioTracks, audioIdx, targetIdx);
+
+      case .captions:
+        // Burned-in cues are layers; overlay cues live in the caption track
+        // meta and have no editor list to reorder.
+        final layer = item.layer;
+        if (layer != null) {
+          final layers = editor.activeLayers;
+          final layerIdx = layers.indexWhere((l) => l.id == item.id);
+          editor.setLayerTimeline(
+            index: layerIdx,
+            startTime: startTime,
+            endTime: startTime + duration,
+            skipUpdateHistory: true,
+          );
+        } else {
+          editor.setCaptionCueTimeline(
+            cueId: item.id,
+            startTime: startTime,
+            endTime: startTime + duration,
+            skipUpdateHistory: true,
+          );
+        }
     }
 
     context.read<TimelineOverlayBloc>().add(
@@ -812,6 +834,26 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
           clearAnchor: trimResult?.anchorStillValid == false,
           skipUpdateHistory: true,
         );
+
+      case .captions:
+        final layer = item.layer;
+        if (layer != null) {
+          final layers = editor.activeLayers;
+          final layerIdx = layers.indexWhere((l) => l.id == item.id);
+          editor.setLayerTimeline(
+            index: layerIdx,
+            startTime: startTime,
+            endTime: endTime,
+            skipUpdateHistory: true,
+          );
+        } else {
+          editor.setCaptionCueTimeline(
+            cueId: item.id,
+            startTime: startTime,
+            endTime: endTime,
+            skipUpdateHistory: true,
+          );
+        }
     }
 
     context.read<TimelineOverlayBloc>().add(
@@ -932,6 +974,26 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
           endTime: startTime + item.duration,
           skipUpdateHistory: true,
         );
+
+      case .captions:
+        final layer = item.layer;
+        if (layer != null) {
+          final layers = editor.activeLayers;
+          final layerIdx = layers.indexWhere((l) => l.id == item.id);
+          editor.setLayerTimeline(
+            index: layerIdx,
+            startTime: startTime,
+            endTime: startTime + item.duration,
+            skipUpdateHistory: true,
+          );
+        } else {
+          editor.setCaptionCueTimeline(
+            cueId: item.id,
+            startTime: startTime,
+            endTime: startTime + item.duration,
+            skipUpdateHistory: true,
+          );
+        }
     }
   }
 

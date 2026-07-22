@@ -8439,6 +8439,111 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoEditorOpenAudioSemanticLabel => 'Abrir editor de audio';
 
   @override
+  String get videoEditorCaptionsLabel => 'Subtítulos';
+
+  @override
+  String get videoEditorOpenCaptionsSemanticLabel =>
+      'Abrir el editor de subtítulos';
+
+  @override
+  String get videoEditorCaptionsModeTitle => 'Añadir subtítulos';
+
+  @override
+  String get videoEditorCaptionsModeSubtitle =>
+      'Grábalos en el vídeo con un estilo, o añádelos como subtítulos (CC) que se pueden activar y desactivar.';
+
+  @override
+  String get videoEditorCaptionsModeBurnIn => 'Grabar en el vídeo';
+
+  @override
+  String get videoEditorCaptionsModeOverlay => 'Subtítulos (CC)';
+
+  @override
+  String get videoEditorCaptionsEditTitle => 'Subtítulos';
+
+  @override
+  String get videoEditorCaptionsGeneratingTitle => 'Escuchando…';
+
+  @override
+  String get videoEditorCaptionsGeneratingSubtitle =>
+      'Transcribimos tu audio directamente en este dispositivo. Nada sale de tu teléfono.';
+
+  @override
+  String get videoEditorCaptionsNoSpeechMessage =>
+      'No hemos oído ninguna voz. Aun así puedes escribir los subtítulos tú mismo.';
+
+  @override
+  String get videoEditorCaptionsUnavailableMessage =>
+      'El reconocimiento de voz no está disponible en este dispositivo. Puedes escribir los subtítulos tú mismo.';
+
+  @override
+  String get videoEditorCaptionsNotAuthorizedMessage =>
+      'El reconocimiento de voz no está permitido. Actívalo en Ajustes o escribe los subtítulos tú mismo.';
+
+  @override
+  String get videoEditorCaptionsFailedMessage =>
+      'La transcripción no ha funcionado esta vez. Puedes escribir los subtítulos tú mismo.';
+
+  @override
+  String get videoEditorCaptionsStartEmptyButton =>
+      'Escribir los subtítulos yo mismo';
+
+  @override
+  String get videoEditorCaptionsAddCue => 'Añadir subtítulo';
+
+  @override
+  String get videoEditorCaptionsCueTextHint => 'Texto del subtítulo';
+
+  @override
+  String get videoEditorCaptionsCueDeleteSemanticLabel => 'Eliminar subtítulo';
+
+  @override
+  String get videoEditorCaptionsDeleteTrack => 'Eliminar todos los subtítulos';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmTitle =>
+      '¿Eliminar los subtítulos?';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmSubtitle =>
+      'Se perderán todo el texto y los tiempos.';
+
+  @override
+  String get videoEditorCaptionsCloseSemanticLabel =>
+      'Cerrar el editor de subtítulos';
+
+  @override
+  String get videoEditorCaptionsDoneSemanticLabel => 'Confirmar subtítulos';
+
+  @override
+  String get videoEditorCaptionsPresetTitle => 'Estilo de subtítulos';
+
+  @override
+  String get videoEditorCaptionsPresetClassic => 'Clásico';
+
+  @override
+  String get videoEditorCaptionsPresetPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsPresetSlideUp => 'Slide';
+
+  @override
+  String get videoEditorCaptionsPresetSpring => 'Spring';
+
+  @override
+  String get videoEditorCaptionsPresetMono => 'Mono';
+
+  @override
+  String get videoEditorCaptionsPresetHeadline => 'Titular';
+
+  @override
+  String get videoEditorCaptionsSwitchToOverlay => 'Cambiar a subtítulos (CC)';
+
+  @override
+  String get videoEditorCaptionsSwitchToBurnIn =>
+      'Cambiar a subtítulos grabados';
+
+  @override
   String get videoEditorOpenTextSemanticLabel => 'Abrir editor de texto';
 
   @override

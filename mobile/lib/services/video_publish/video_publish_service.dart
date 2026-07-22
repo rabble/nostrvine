@@ -2,20 +2,25 @@
 // ABOUTME: Handles video upload to Blossom servers, retry logic, and Nostr event creation
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 import 'package:openvine/constants/nip71_migration.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/pending_upload.dart';
+import 'package:openvine/models/video_editor/caption_track.dart';
 import 'package:openvine/models/video_publish/video_publish_state.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/language_preference_service.dart';
 import 'package:openvine/services/mention_resolution_service.dart';
+import 'package:openvine/services/subtitle_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/services/video_publish/publish_error_kind.dart';
@@ -263,6 +268,11 @@ class VideoPublishService {
         currentUserPubkey: pubkey,
       );
 
+      final captionTrack = _overlayCaptionTrack(draft);
+      final textTrackRefs = captionTrack != null
+          ? await _publishSubtitleAssets(captionTrack, pendingUpload)
+          : const <String>[];
+
       final published = await videoEventPublisher.publishVideoEvent(
         upload: pendingUpload,
         title: draft.title,
@@ -286,6 +296,10 @@ class VideoPublishService {
         thumbnailTimestamp: draft.thumbnailTimestamp,
         replyContext: draft.videoReplyContext,
         addReplyToFeed: draft.shareReplyToFeed,
+        textTrackRefs: textTrackRefs,
+        textTrackLang: captionTrack != null
+            ? _languageCode(captionTrack.languageTag)
+            : 'en',
       );
 
       if (!published) {
@@ -313,6 +327,81 @@ class VideoPublishService {
       return _handleUploadError(e, stackTrace, draft);
     }
   }
+
+  /// The draft's CC-overlay caption track, or `null` when the session has no
+  /// captions, they are burned in, or the stored value is malformed.
+  CaptionTrack? _overlayCaptionTrack(DivineVideoDraft draft) {
+    try {
+      final meta = draft.editorEditingParameters['meta'];
+      if (meta is! Map) return null;
+      final raw = meta[VideoEditorConstants.captionsStateHistoryKey];
+      if (raw is! Map<Object?, Object?>) return null;
+      final track = CaptionTrack.fromJson(raw);
+      if (track.mode != CaptionRenderMode.overlay || track.cues.isEmpty) {
+        return null;
+      }
+      return track;
+    } catch (e, stackTrace) {
+      Log.error(
+        'Failed to parse caption track from draft',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
+  }
+
+  /// Uploads the VTT to Blossom and publishes the Kind 39307 subtitle event
+  /// for [track], returning the `text-track` refs for the video event.
+  ///
+  /// Captions are best-effort: any failure logs a warning and returns the
+  /// refs collected so far (possibly empty) so the video publish proceeds
+  /// without captions rather than failing.
+  Future<List<String>> _publishSubtitleAssets(
+    CaptionTrack track,
+    PendingUpload upload,
+  ) async {
+    try {
+      final vineId = upload.videoId;
+      if (vineId == null || vineId.isEmpty) return const [];
+
+      final vtt = SubtitleService.generateVtt(
+        [for (final cue in track.cues) cue.toSubtitleCue()],
+      );
+      final result = await blossomService.uploadSubtitleVtt(
+        bytes: Uint8List.fromList(utf8.encode(vtt)),
+      );
+      final blossomUrl = result.url;
+      if (!result.success || blossomUrl == null) {
+        Log.warning(
+          '⚠️ Caption VTT upload failed - publishing without captions: '
+          '${result.errorMessage}',
+          category: LogCategory.video,
+        );
+        return const [];
+      }
+
+      final coordsRef = await videoEventPublisher.publishSubtitleTrack(
+        vineId: vineId,
+        vttContent: vtt,
+        blossomUrl: blossomUrl,
+        lang: _languageCode(track.languageTag),
+      );
+      return [blossomUrl, ?coordsRef];
+    } catch (e, stackTrace) {
+      Log.error(
+        'Caption asset publish failed - publishing without captions',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return const [];
+    }
+  }
+
+  /// `de-CH` -> `de`; text-track lang tags carry the bare language code.
+  String _languageCode(String languageTag) => languageTag.split('-').first;
 
   Future<List<String>> _resolveMentionedPubkeys(
     DivineVideoDraft draft, {

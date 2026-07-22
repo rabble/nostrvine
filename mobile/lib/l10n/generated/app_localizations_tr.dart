@@ -8332,6 +8332,111 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorOpenAudioSemanticLabel => 'Ses düzenleyiciyi aç';
 
   @override
+  String get videoEditorCaptionsLabel => 'Altyazılar';
+
+  @override
+  String get videoEditorOpenCaptionsSemanticLabel =>
+      'Altyazı düzenleyicisini aç';
+
+  @override
+  String get videoEditorCaptionsModeTitle => 'Altyazı ekle';
+
+  @override
+  String get videoEditorCaptionsModeSubtitle =>
+      'Bir stille videoya işle ya da izleyicilerin açıp kapatabildiği altyazılar (CC) olarak ekle.';
+
+  @override
+  String get videoEditorCaptionsModeBurnIn => 'Videoya işle';
+
+  @override
+  String get videoEditorCaptionsModeOverlay => 'Altyazılar (CC)';
+
+  @override
+  String get videoEditorCaptionsEditTitle => 'Altyazılar';
+
+  @override
+  String get videoEditorCaptionsGeneratingTitle => 'Dinliyoruz…';
+
+  @override
+  String get videoEditorCaptionsGeneratingSubtitle =>
+      'Sesin doğrudan bu cihazda yazıya dökülüyor. Hiçbir şey telefonundan çıkmıyor.';
+
+  @override
+  String get videoEditorCaptionsNoSpeechMessage =>
+      'Hiç konuşma duyamadık. Altyazıları yine de kendin yazabilirsin.';
+
+  @override
+  String get videoEditorCaptionsUnavailableMessage =>
+      'Konuşma tanıma bu cihazda kullanılamıyor. Altyazıları kendin yazabilirsin.';
+
+  @override
+  String get videoEditorCaptionsNotAuthorizedMessage =>
+      'Konuşma tanımaya izin verilmiyor. Ayarlar\'dan aç ya da altyazıları kendin yaz.';
+
+  @override
+  String get videoEditorCaptionsFailedMessage =>
+      'Yazıya dökme bu sefer işe yaramadı. Altyazıları kendin yazabilirsin.';
+
+  @override
+  String get videoEditorCaptionsStartEmptyButton =>
+      'Altyazıları kendim yazacağım';
+
+  @override
+  String get videoEditorCaptionsAddCue => 'Altyazı ekle';
+
+  @override
+  String get videoEditorCaptionsCueTextHint => 'Altyazı metni';
+
+  @override
+  String get videoEditorCaptionsCueDeleteSemanticLabel => 'Altyazıyı sil';
+
+  @override
+  String get videoEditorCaptionsDeleteTrack => 'Tüm altyazıları kaldır';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmTitle =>
+      'Altyazılar kaldırılsın mı?';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmSubtitle =>
+      'Tüm metin ve zamanlamalar silinecek.';
+
+  @override
+  String get videoEditorCaptionsCloseSemanticLabel =>
+      'Altyazı düzenleyicisini kapat';
+
+  @override
+  String get videoEditorCaptionsDoneSemanticLabel => 'Altyazıları onayla';
+
+  @override
+  String get videoEditorCaptionsPresetTitle => 'Altyazı stili';
+
+  @override
+  String get videoEditorCaptionsPresetClassic => 'Klasik';
+
+  @override
+  String get videoEditorCaptionsPresetPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsPresetSlideUp => 'Slide';
+
+  @override
+  String get videoEditorCaptionsPresetSpring => 'Spring';
+
+  @override
+  String get videoEditorCaptionsPresetMono => 'Mono';
+
+  @override
+  String get videoEditorCaptionsPresetHeadline => 'Manşet';
+
+  @override
+  String get videoEditorCaptionsSwitchToOverlay => 'Altyazılara (CC) geç';
+
+  @override
+  String get videoEditorCaptionsSwitchToBurnIn =>
+      'Videoya işlenmiş altyazılara geç';
+
+  @override
   String get videoEditorOpenTextSemanticLabel => 'Metin düzenleyiciyi aç';
 
   @override

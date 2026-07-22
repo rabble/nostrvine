@@ -8331,6 +8331,107 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoEditorOpenAudioSemanticLabel => 'Buka editor audio';
 
   @override
+  String get videoEditorCaptionsLabel => 'Subtitel';
+
+  @override
+  String get videoEditorOpenCaptionsSemanticLabel => 'Buka editor subtitel';
+
+  @override
+  String get videoEditorCaptionsModeTitle => 'Tambahkan subtitel';
+
+  @override
+  String get videoEditorCaptionsModeSubtitle =>
+      'Bakar ke dalam video dengan gaya, atau lampirkan sebagai subtitel (CC) yang bisa diaktifkan dan dinonaktifkan penonton.';
+
+  @override
+  String get videoEditorCaptionsModeBurnIn => 'Bakar ke video';
+
+  @override
+  String get videoEditorCaptionsModeOverlay => 'Subtitel (CC)';
+
+  @override
+  String get videoEditorCaptionsEditTitle => 'Subtitel';
+
+  @override
+  String get videoEditorCaptionsGeneratingTitle => 'Mendengarkan…';
+
+  @override
+  String get videoEditorCaptionsGeneratingSubtitle =>
+      'Audio ditranskripsikan langsung di perangkat ini. Tidak ada yang keluar dari ponselmu.';
+
+  @override
+  String get videoEditorCaptionsNoSpeechMessage =>
+      'Kami tidak mendengar suara apa pun. Kamu tetap bisa menulis subtitel sendiri.';
+
+  @override
+  String get videoEditorCaptionsUnavailableMessage =>
+      'Pengenalan suara tidak tersedia di perangkat ini. Kamu bisa menulis subtitel sendiri.';
+
+  @override
+  String get videoEditorCaptionsNotAuthorizedMessage =>
+      'Pengenalan suara tidak diizinkan. Aktifkan di Pengaturan atau tulis subtitel sendiri.';
+
+  @override
+  String get videoEditorCaptionsFailedMessage =>
+      'Transkripsi kali ini gagal. Kamu bisa menulis subtitel sendiri.';
+
+  @override
+  String get videoEditorCaptionsStartEmptyButton => 'Tulis subtitel sendiri';
+
+  @override
+  String get videoEditorCaptionsAddCue => 'Tambahkan subtitel';
+
+  @override
+  String get videoEditorCaptionsCueTextHint => 'Teks subtitel';
+
+  @override
+  String get videoEditorCaptionsCueDeleteSemanticLabel => 'Hapus subtitel';
+
+  @override
+  String get videoEditorCaptionsDeleteTrack => 'Hapus semua subtitel';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmTitle => 'Hapus subtitel?';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmSubtitle =>
+      'Semua teks dan pengaturan waktu akan hilang.';
+
+  @override
+  String get videoEditorCaptionsCloseSemanticLabel => 'Tutup editor subtitel';
+
+  @override
+  String get videoEditorCaptionsDoneSemanticLabel => 'Konfirmasi subtitel';
+
+  @override
+  String get videoEditorCaptionsPresetTitle => 'Gaya subtitel';
+
+  @override
+  String get videoEditorCaptionsPresetClassic => 'Klasik';
+
+  @override
+  String get videoEditorCaptionsPresetPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsPresetSlideUp => 'Slide';
+
+  @override
+  String get videoEditorCaptionsPresetSpring => 'Spring';
+
+  @override
+  String get videoEditorCaptionsPresetMono => 'Mono';
+
+  @override
+  String get videoEditorCaptionsPresetHeadline => 'Judul';
+
+  @override
+  String get videoEditorCaptionsSwitchToOverlay => 'Beralih ke subtitel (CC)';
+
+  @override
+  String get videoEditorCaptionsSwitchToBurnIn =>
+      'Beralih ke subtitel yang dibakar';
+
+  @override
   String get videoEditorOpenTextSemanticLabel => 'Buka editor teks';
 
   @override

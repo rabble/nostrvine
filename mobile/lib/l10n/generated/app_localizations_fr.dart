@@ -8467,6 +8467,114 @@ class AppLocalizationsFr extends AppLocalizations {
   String get videoEditorOpenAudioSemanticLabel => 'Ouvrir l\'éditeur audio';
 
   @override
+  String get videoEditorCaptionsLabel => 'Sous-titres';
+
+  @override
+  String get videoEditorOpenCaptionsSemanticLabel =>
+      'Ouvrir l\'éditeur de sous-titres';
+
+  @override
+  String get videoEditorCaptionsModeTitle => 'Ajouter des sous-titres';
+
+  @override
+  String get videoEditorCaptionsModeSubtitle =>
+      'Incrustez-les dans la vidéo avec un style, ou ajoutez-les en sous-titres (CC) que les spectateurs peuvent activer ou désactiver.';
+
+  @override
+  String get videoEditorCaptionsModeBurnIn => 'Incruster dans la vidéo';
+
+  @override
+  String get videoEditorCaptionsModeOverlay => 'Sous-titres (CC)';
+
+  @override
+  String get videoEditorCaptionsEditTitle => 'Sous-titres';
+
+  @override
+  String get videoEditorCaptionsGeneratingTitle => 'Écoute en cours…';
+
+  @override
+  String get videoEditorCaptionsGeneratingSubtitle =>
+      'Votre audio est transcrit directement sur cet appareil. Rien ne quitte votre téléphone.';
+
+  @override
+  String get videoEditorCaptionsNoSpeechMessage =>
+      'Nous n\'avons entendu aucune voix. Vous pouvez quand même écrire les sous-titres vous-même.';
+
+  @override
+  String get videoEditorCaptionsUnavailableMessage =>
+      'La reconnaissance vocale n\'est pas disponible sur cet appareil. Vous pouvez écrire les sous-titres vous-même.';
+
+  @override
+  String get videoEditorCaptionsNotAuthorizedMessage =>
+      'La reconnaissance vocale n\'est pas autorisée. Activez-la dans les Réglages ou écrivez les sous-titres vous-même.';
+
+  @override
+  String get videoEditorCaptionsFailedMessage =>
+      'La transcription n\'a pas fonctionné cette fois. Vous pouvez écrire les sous-titres vous-même.';
+
+  @override
+  String get videoEditorCaptionsStartEmptyButton =>
+      'Écrire les sous-titres moi-même';
+
+  @override
+  String get videoEditorCaptionsAddCue => 'Ajouter un sous-titre';
+
+  @override
+  String get videoEditorCaptionsCueTextHint => 'Texte du sous-titre';
+
+  @override
+  String get videoEditorCaptionsCueDeleteSemanticLabel =>
+      'Supprimer le sous-titre';
+
+  @override
+  String get videoEditorCaptionsDeleteTrack => 'Supprimer tous les sous-titres';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmTitle =>
+      'Supprimer les sous-titres ?';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmSubtitle =>
+      'Tout le texte et les réglages de temps seront perdus.';
+
+  @override
+  String get videoEditorCaptionsCloseSemanticLabel =>
+      'Fermer l\'éditeur de sous-titres';
+
+  @override
+  String get videoEditorCaptionsDoneSemanticLabel =>
+      'Confirmer les sous-titres';
+
+  @override
+  String get videoEditorCaptionsPresetTitle => 'Style des sous-titres';
+
+  @override
+  String get videoEditorCaptionsPresetClassic => 'Classique';
+
+  @override
+  String get videoEditorCaptionsPresetPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsPresetSlideUp => 'Slide';
+
+  @override
+  String get videoEditorCaptionsPresetSpring => 'Spring';
+
+  @override
+  String get videoEditorCaptionsPresetMono => 'Mono';
+
+  @override
+  String get videoEditorCaptionsPresetHeadline => 'Gros titre';
+
+  @override
+  String get videoEditorCaptionsSwitchToOverlay =>
+      'Passer aux sous-titres (CC)';
+
+  @override
+  String get videoEditorCaptionsSwitchToBurnIn =>
+      'Passer aux sous-titres incrustés';
+
+  @override
   String get videoEditorOpenTextSemanticLabel => 'Ouvrir l\'éditeur de texte';
 
   @override
