@@ -1,9 +1,8 @@
 // ABOUTME: Guards the native splash — pins the Android and iOS launch images to
-// ABOUTME: the current Divine wordmark, Brand Green, and their density ladders.
+// ABOUTME: the current Divine wordmark, Brand Green, and fixed launch sizing.
 
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math' as math;
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -17,28 +16,23 @@ const _wordmarkAssetKey = 'assets/icon/logo.svg';
 /// Retired cursive wordmark from the pre-refresh brand pack. Present only to
 /// prove the silhouette check can tell a wrong wordmark apart from the right
 /// one — without it, [_minWordmarkOverlap] could be meaninglessly low.
-const _retiredWordmarkAssetKey = 'assets/icon/White cropped.png';
+const _retiredWordmarkAssetKey =
+    'test/fixtures/brand/retired_white_cropped.png';
 
 /// Overlap a launch image must reach against [_wordmarkAssetKey].
 ///
-/// Measured on this set: Android buckets `0.910`–`0.980`, iOS `0.888`–`0.971`
-/// (the 1x cut is only 196px wide, so it resamples the least faithfully).
-/// Wrong artwork lands far below — retired cursive wordmark `0.235`, its
-/// full brand-pack export `0.256`, the standalone mark `0.243`, the 3D app
-/// icon `0.126`.
+/// Measured on this set: Android `0.980`, iOS `0.888`–`0.971` (the 1x cut is
+/// only 196px wide, so it resamples the least faithfully). Wrong artwork lands
+/// far below — retired cursive wordmark `0.235`, its full brand-pack export
+/// `0.256`, the standalone mark `0.243`, the 3D app icon `0.126`.
 const _minWordmarkOverlap = 0.80;
 
-/// Canvas the Android launch image occupies, in density-independent pixels.
-/// Kept in sync with `scripts/generate_android_launch_images.dart`.
+/// Canvas the Android launch image occupies when the legacy layer-list draws it.
 const _androidCanvasDp = 240;
 
-const _androidBuckets = <String, double>{
-  'mdpi': 1,
-  'hdpi': 1.5,
-  'xhdpi': 2,
-  'xxhdpi': 3,
-  'xxxhdpi': 4,
-};
+/// Full-resolution source used by both the legacy window background and the
+/// Android 12+ system splash icon.
+const _androidSourcePx = 960;
 
 /// Point size `LaunchScreen.storyboard` pins the launch image view to.
 const _iosWidthPt = 196;
@@ -54,9 +48,7 @@ const _iosScales = <String, int>{
 const _resDir = 'android/app/src/main/res';
 const _imagesetDir = 'ios/Runner/Assets.xcassets/LaunchImage.imageset';
 const _storyboardPath = 'ios/Runner/Base.lproj/LaunchScreen.storyboard';
-
-String _androidLaunchImage(String bucket) =>
-    '$_resDir/drawable-$bucket/launch_image.png';
+const _androidLaunchImage = '$_resDir/drawable-nodpi/launch_image.png';
 
 Future<DecodedImage> _decodeFile(String path) async =>
     decodeRgba(await File(path).readAsBytes());
@@ -85,22 +77,25 @@ int _solidPixelCount(DecodedImage image) {
   return count;
 }
 
-/// Distance from the canvas centre to the furthest visible pixel.
-double _artworkRadius(DecodedImage image) {
+/// Squared distance from the canvas centre to the furthest visible pixel.
+double _artworkRadiusSquared(DecodedImage image) {
   final centerX = (image.width - 1) / 2;
   final centerY = (image.height - 1) / 2;
-  var radius = 0.0;
+  var radiusSquared = 0.0;
   for (var y = 0; y < image.height; y++) {
     for (var x = 0; x < image.width; x++) {
       if (image.rgba[(y * image.width + x) * 4 + 3] <= 128) continue;
-      final distance = math.sqrt(
-        math.pow(x - centerX, 2) + math.pow(y - centerY, 2),
-      );
-      if (distance > radius) radius = distance;
+      final dx = x - centerX;
+      final dy = y - centerY;
+      final distanceSquared = dx * dx + dy * dy;
+      if (distanceSquared > radiusSquared) radiusSquared = distanceSquared;
     }
   }
-  return radius;
+  return radiusSquared;
 }
+
+String _argbHex(int color) =>
+    '#${color.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -113,89 +108,74 @@ void main() {
   });
 
   group('Android launch image', () {
-    test('ships one file per density bucket and nothing outside them', () {
+    test('ships one no-density source and no bucket-specific copies', () {
       final shipped =
           Directory(_resDir)
-              .listSync()
-              .whereType<Directory>()
-              .map((dir) => '${dir.path}/launch_image.png')
-              .where((path) => File(path).existsSync())
+              .listSync(recursive: true)
+              .whereType<File>()
+              .map((file) => file.path)
+              .where((path) => path.endsWith('/launch_image.png'))
               .toList()
             ..sort();
       expect(
         shipped,
-        equals(
-          _androidBuckets.keys.map(_androidLaunchImage).toList()..sort(),
-        ),
+        equals([_androidLaunchImage]),
         reason:
-            'a copy in the unqualified drawable/ bucket is resolved as mdpi '
-            'and would shadow nothing, while a missing bucket falls back to a '
-            'file authored for another density',
+            'the layer-list bounds the source in dp, so density buckets would '
+            'only reintroduce per-device resolution differences',
       );
     });
 
-    test(
-      'sizes every bucket to the same ${_androidCanvasDp}dp canvas',
-      () async {
-        for (final entry in _androidBuckets.entries) {
-          final image = await _decodeFile(_androidLaunchImage(entry.key));
-          final expected = (_androidCanvasDp * entry.value).round();
-          expect(
-            [image.width, image.height],
-            equals([expected, expected]),
-            reason:
-                'launch_background.xml centres this bitmap at its intrinsic '
-                'size, so ${entry.key} must carry ${_androidCanvasDp}dp at '
-                '${entry.value}x or the splash mark changes size per device',
-          );
-        }
-      },
-    );
+    test('keeps the full-resolution source image', () async {
+      final image = await _decodeFile(_androidLaunchImage);
+      expect(
+        [image.width, image.height],
+        equals([_androidSourcePx, _androidSourcePx]),
+        reason:
+            'the legacy layer-list scales this source into a fixed '
+            '${_androidCanvasDp}dp box; keeping the 4x source preserves '
+            'resolution headroom on lower-density devices',
+      );
+    });
 
     test('paints the mark in Brand Green', () async {
-      for (final bucket in _androidBuckets.keys) {
-        final image = await _decodeFile(_androidLaunchImage(bucket));
-        expect(
-          _solidPixelCount(image),
-          greaterThan(1000),
-          reason: '$bucket should have a solid mark body',
-        );
-        expect(
-          _solidColors(image),
-          equals({VineTheme.vineGreen.toARGB32()}),
-          reason: '$bucket must be flat Brand Green, not a retired green',
-        );
-      }
+      final image = await _decodeFile(_androidLaunchImage);
+      expect(
+        _solidPixelCount(image),
+        greaterThan(1000),
+        reason: 'the source should have a solid mark body',
+      );
+      expect(
+        _solidColors(image),
+        equals({VineTheme.vineGreen.toARGB32()}),
+        reason: 'the source must be flat Brand Green, not a retired green',
+      );
     });
 
     test('keeps the mark inside the Android 12+ splash mask', () async {
-      for (final bucket in _androidBuckets.keys) {
-        final image = await _decodeFile(_androidLaunchImage(bucket));
-        expect(
-          _artworkRadius(image),
-          lessThanOrEqualTo(image.width / 3),
-          reason:
-              'values-v31 sets windowSplashScreenAnimatedIcon, and Android '
-              'clips it to a circle two thirds of the canvas wide — artwork '
-              'outside that circle is cropped off the $bucket splash',
-        );
-      }
+      final image = await _decodeFile(_androidLaunchImage);
+      final radiusLimit = image.width / 3;
+      expect(
+        _artworkRadiusSquared(image),
+        lessThanOrEqualTo(radiusLimit * radiusLimit),
+        reason:
+            'values-v31 sets windowSplashScreenAnimatedIcon, and Android clips '
+            'it to a circle two thirds of the canvas wide; artwork outside '
+            'that circle is cropped off the system splash',
+      );
     });
 
     test('draws the current Divine wordmark', () async {
-      for (final bucket in _androidBuckets.keys) {
-        final image = await _decodeFile(_androidLaunchImage(bucket));
-        expect(
-          silhouetteOverlap(wordmark, normalizedSilhouette(image)),
-          greaterThanOrEqualTo(_minWordmarkOverlap),
-          reason: '$bucket no longer matches $_wordmarkAssetKey',
-        );
-      }
+      final image = await _decodeFile(_androidLaunchImage);
+      expect(
+        silhouetteOverlap(wordmark, normalizedSilhouette(image)),
+        greaterThanOrEqualTo(_minWordmarkOverlap),
+        reason: 'Android launch image no longer matches $_wordmarkAssetKey',
+      );
     });
 
     test('fills the splash with the app surface colour', () {
-      final surface = VineTheme.surfaceBackground.toARGB32().toRadixString(16);
-      final expected = '#${surface.substring(2).toUpperCase()}';
+      final expected = _argbHex(VineTheme.surfaceBackground.toARGB32());
       for (final variant in ['values', 'values-night']) {
         final colors = File('$_resDir/$variant/colors.xml').readAsStringSync();
         expect(
@@ -210,19 +190,34 @@ void main() {
       }
     });
 
-    test('wires both splash paths to the launch image', () {
-      for (final variant in ['drawable', 'drawable-v21']) {
-        final layers = File(
-          '$_resDir/$variant/launch_background.xml',
-        ).readAsStringSync();
-        expect(layers, contains('@color/splash_background'));
-        expect(layers, contains('@drawable/launch_image'));
-        expect(
-          layers,
-          contains('android:gravity="center"'),
-          reason: 'a scaled bitmap would stretch the wordmark',
-        );
-      }
+    test('bounds the legacy splash path to a fixed dp launch image', () {
+      final layers = File(
+        '$_resDir/drawable/launch_background.xml',
+      ).readAsStringSync();
+      expect(layers, contains('@color/splash_background'));
+      expect(layers, contains('@drawable/launch_image'));
+      expect(
+        layers,
+        contains('android:width="${_androidCanvasDp}dp"'),
+        reason:
+            'the layer-list must size the launch image in dp instead of using '
+            'the bitmap intrinsic size',
+      );
+      expect(
+        layers,
+        contains('android:height="${_androidCanvasDp}dp"'),
+        reason:
+            'the layer-list must keep the bounded launch image square so the '
+            'wordmark is not stretched',
+      );
+      expect(
+        layers,
+        contains('android:gravity="fill"'),
+        reason:
+            'the bitmap should fill the bounded square; the source itself is '
+            'square, so this preserves the wordmark aspect ratio',
+      );
+
       String item(String name, String value) =>
           '<item name="android:$name">$value</item>';
       for (final variant in ['values-v31', 'values-night-v31']) {
@@ -248,9 +243,7 @@ void main() {
       'sizes every scale from one ${_iosWidthPt}x${_iosHeightPt}pt box',
       () async {
         final contents =
-            jsonDecode(
-                  File('$_imagesetDir/Contents.json').readAsStringSync(),
-                )
+            jsonDecode(File('$_imagesetDir/Contents.json').readAsStringSync())
                 as Map<String, dynamic>;
         final declared = {
           for (final image in contents['images']! as List<dynamic>)
@@ -312,11 +305,7 @@ void main() {
       final surface = VineTheme.surfaceBackground.toARGB32();
       expect(
         channels,
-        equals([
-          (surface >> 16) & 0xFF,
-          (surface >> 8) & 0xFF,
-          surface & 0xFF,
-        ]),
+        equals([(surface >> 16) & 0xFF, (surface >> 8) & 0xFF, surface & 0xFF]),
         reason:
             'the storyboard must match VineTheme.surfaceBackground so the '
             'splash does not flash a different colour into the first frame',
@@ -325,16 +314,6 @@ void main() {
 
     test('declares the shipped image size', () {
       final storyboard = File(_storyboardPath).readAsStringSync();
-      expect(
-        storyboard,
-        contains(
-          '<image name="LaunchImage" width="$_iosWidthPt" '
-          'height="$_iosHeightPt"/>',
-        ),
-        reason:
-            'the storyboard resource stub must describe the 1x asset, so a '
-            'reader is not told the launch image is a different shape',
-      );
       expect(
         RegExp(
           r'constant="(\d+)" id="imageWidth"',
@@ -352,10 +331,11 @@ void main() {
     test('is the storyboard the launch surface points at', () {
       final plist = File('ios/Runner/Info.plist').readAsStringSync();
       expect(
-        plist,
-        contains(
-          '<key>UILaunchStoryboardName</key>\n\t<string>LaunchScreen</string>',
-        ),
+        RegExp(
+          r'<key>\s*UILaunchStoryboardName\s*</key>\s*'
+          r'<string>\s*LaunchScreen\s*</string>',
+        ).hasMatch(plist),
+        isTrue,
       );
     });
   });

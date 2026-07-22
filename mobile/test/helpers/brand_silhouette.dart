@@ -26,7 +26,7 @@ Future<DecodedImage> decodeRgba(Uint8List bytes) async {
   final result = (
     width: image.width,
     height: image.height,
-    rgba: data!.buffer.asUint8List(),
+    rgba: data!.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
   );
   image.dispose();
   codec.dispose();
@@ -42,14 +42,16 @@ Future<DecodedImage> rasterizeSvg(String svg, {int width = 512}) async {
   ui.Canvas(recorder)
     ..scale(scale)
     ..drawPicture(picture.picture);
-  final image = await recorder.endRecording().toImage(width, height);
+  final recordedPicture = recorder.endRecording();
+  final image = await recordedPicture.toImage(width, height);
   final data = await image.toByteData();
   final result = (
     width: width,
     height: height,
-    rgba: data!.buffer.asUint8List(),
+    rgba: data!.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
   );
   image.dispose();
+  recordedPicture.dispose();
   picture.picture.dispose();
   return result;
 }
