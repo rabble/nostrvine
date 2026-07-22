@@ -5900,7 +5900,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoMetadataC2paMissingRegenerate => 'Yeniden oluştur';
 
   @override
-  String get videoMetadataC2paMissingPostAnyway => 'Yine de paylaş';
+  String get videoMetadataC2paMissingSkip => 'Atla';
 
   @override
   String get videoMetadataGenerationFailed => 'Oluşturma başarısız';

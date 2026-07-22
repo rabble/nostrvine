@@ -6064,7 +6064,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoMetadataC2paMissingRegenerate => 'Wygeneruj ponownie';
 
   @override
-  String get videoMetadataC2paMissingPostAnyway => 'Opublikuj mimo to';
+  String get videoMetadataC2paMissingSkip => 'Pomiń';
 
   @override
   String get videoMetadataGenerationFailed => 'Generowanie nie powiodło się';

@@ -5884,7 +5884,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoMetadataC2paMissingRegenerate => 'إعادة الإنشاء';
 
   @override
-  String get videoMetadataC2paMissingPostAnyway => 'النشر على أي حال';
+  String get videoMetadataC2paMissingSkip => 'تخطّي';
 
   @override
   String get videoMetadataGenerationFailed => 'فشل الإنشاء';

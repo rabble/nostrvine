@@ -5800,7 +5800,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoMetadataC2paMissingRegenerate => 'እንደገና ፍጠር';
 
   @override
-  String get videoMetadataC2paMissingPostAnyway => 'ለማንኛውም ለጥፍ';
+  String get videoMetadataC2paMissingSkip => 'ዝለል';
 
   @override
   String get videoMetadataGenerationFailed => 'ማመንጨት አልተሳካም';

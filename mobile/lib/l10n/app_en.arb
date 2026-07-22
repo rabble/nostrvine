@@ -3518,9 +3518,9 @@
   "@videoMetadataC2paMissingRegenerate": {
     "description": "Primary button on the missing-content-credential bottom sheet. Re-renders the video to attempt the C2PA signature again."
   },
-  "videoMetadataC2paMissingPostAnyway": "Post anyway",
-  "@videoMetadataC2paMissingPostAnyway": {
-    "description": "Secondary button on the missing-content-credential bottom sheet. Publishes the video without a C2PA content credential."
+  "videoMetadataC2paMissingSkip": "Skip",
+  "@videoMetadataC2paMissingSkip": {
+    "description": "Secondary button on the missing-content-credential bottom sheet. Dismisses the prompt and continues without a C2PA content credential, so the user can post the video without provenance."
   },
   "videoMetadataGenerationFailed": "Generation failed",
   "@videoMetadataGenerationFailed": {

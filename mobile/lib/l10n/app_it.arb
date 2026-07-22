@@ -3770,7 +3770,7 @@
     "videoMetadataC2paMissingBody": "Non è stato possibile aggiungere le credenziali di contenuto, quindi questo video non sarà confermato come fatto da un umano. Rigenera per riprovare oppure pubblicalo così com’è.",
     "videoMetadataC2paMissingNote": "Le credenziali di contenuto richiedono una connessione a internet.",
     "videoMetadataC2paMissingRegenerate": "Rigenera",
-    "videoMetadataC2paMissingPostAnyway": "Pubblica comunque",
+    "videoMetadataC2paMissingSkip": "Salta",
     "videoMetadataGenerationFailed": "Generazione non riuscita",
     "videoMetadataTagsPickerSearchHint": "Cerca o aggiungi tag",
     "videoMetadataTagsPickerEmptyHint": "Aggiungi tag per far scoprire il tuo video",

@@ -3770,7 +3770,7 @@
     "videoMetadataC2paMissingBody": "コンテンツ認証情報を追加できなかったため、この動画は人間が作成したものとして確認されません。もう一度試すには再生成するか、このまま投稿してください。",
     "videoMetadataC2paMissingNote": "コンテンツ認証情報にはインターネット接続が必要です。",
     "videoMetadataC2paMissingRegenerate": "再生成",
-    "videoMetadataC2paMissingPostAnyway": "そのまま投稿",
+    "videoMetadataC2paMissingSkip": "スキップ",
     "videoMetadataGenerationFailed": "生成に失敗しました",
     "videoMetadataTagsPickerSearchHint": "タグを検索または追加",
     "videoMetadataTagsPickerEmptyHint": "タグを追加して動画を見つけてもらおう",

@@ -3770,7 +3770,7 @@
     "videoMetadataC2paMissingBody": "Nu am putut adăuga acreditările de conținut, așa că acest videoclip nu va fi confirmat ca fiind făcut de om. Regenerează pentru a încerca din nou sau publică-l așa cum este.",
     "videoMetadataC2paMissingNote": "Acreditările de conținut necesită o conexiune la internet.",
     "videoMetadataC2paMissingRegenerate": "Regenerează",
-    "videoMetadataC2paMissingPostAnyway": "Publică oricum",
+    "videoMetadataC2paMissingSkip": "Omite",
     "videoMetadataGenerationFailed": "Generarea a eșuat",
     "videoMetadataTagsPickerSearchHint": "Caută sau adaugă etichete",
     "videoMetadataTagsPickerEmptyHint": "Adaugă etichete pentru ca alții să-ți descopere videoclipul",

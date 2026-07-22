@@ -3770,7 +3770,7 @@
     "videoMetadataC2paMissingBody": "Nie udało się dodać poświadczeń treści, więc ten film nie zostanie potwierdzony jako stworzony przez człowieka. Wygeneruj ponownie, aby spróbować jeszcze raz, lub opublikuj bez zmian.",
     "videoMetadataC2paMissingNote": "Poświadczenia treści wymagają połączenia z internetem.",
     "videoMetadataC2paMissingRegenerate": "Wygeneruj ponownie",
-    "videoMetadataC2paMissingPostAnyway": "Opublikuj mimo to",
+    "videoMetadataC2paMissingSkip": "Pomiń",
     "videoMetadataGenerationFailed": "Generowanie nie powiodło się",
     "videoMetadataTagsPickerSearchHint": "Szukaj lub dodaj tagi",
     "videoMetadataTagsPickerEmptyHint": "Dodaj tagi, aby inni odkryli Twój film",
