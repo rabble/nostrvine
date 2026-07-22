@@ -4892,10 +4892,9 @@ class DmRepository {
       // 1:1 or group alike. Derived from actual participants rather than
       // the stored `isGroup` flag, which can drift from the row's real
       // participants and mis-route followed 1:1 peers to requests (#5374).
-      final allFollowed =
-          otherPubkeys.isNotEmpty && otherPubkeys.every(isFollowing);
+      final allFollowed = otherPubkeys.every(isFollowing);
 
-      if (otherPubkeys.isEmpty || allFollowed) {
+      if (allFollowed) {
         followed.add(conversation);
       } else {
         if (_classifyDiagnostics) {
