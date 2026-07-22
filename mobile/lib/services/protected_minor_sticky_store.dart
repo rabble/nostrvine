@@ -16,6 +16,8 @@ class ProtectedMinorStickyStore {
   final SharedPreferences _prefs;
 
   static String _key(String pubkey) => 'protected_minor_sticky_$pubkey';
+  static String _keycastAccountKey(String pubkey) =>
+      'protected_minor_keycast_account_$pubkey';
 
   /// Last-known protected status for [pubkey]. Null/unconfirmed -> false.
   bool isProtectedMinorFor(String? pubkey) =>
@@ -27,6 +29,23 @@ class ProtectedMinorStickyStore {
   /// closed, while a persisted positive not-protected relaxes it.
   bool? lastKnownFor(String? pubkey) =>
       pubkey == null ? null : _prefs.getBool(_key(pubkey));
+
+  /// Whether [pubkey] has ever authenticated through Keycast/Divine OAuth on
+  /// this device. The #176 DM seam uses this to keep fail-closed behavior for
+  /// accounts Keycast could have a protected-minor verdict for, even if the
+  /// same pubkey later appears through a self-custody auth source.
+  bool wasKeycastAccountFor(String? pubkey) =>
+      pubkey != null && (_prefs.getBool(_keycastAccountKey(pubkey)) ?? false);
+
+  /// Persist that [pubkey] is Keycast-backed. This marker is monotonic: once
+  /// a pubkey has been associated with Keycast, absent verdicts must keep
+  /// failing closed for DM safety.
+  Future<void> markKeycastAccount(String? pubkey) async {
+    if (pubkey == null) return;
+    final key = _keycastAccountKey(pubkey);
+    if (_prefs.getBool(key) == true) return;
+    await _prefs.setBool(key, true);
+  }
 
   /// Apply a live keycast status: confirmed protected -> persist true;
   /// confirmed not-protected -> persist false; unknown -> retain. A write is

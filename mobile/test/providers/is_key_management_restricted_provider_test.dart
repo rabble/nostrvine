@@ -1,6 +1,6 @@
 // ABOUTME: Tests isKeyManagementRestrictedProvider (#182) — the fail-CLOSED gate
 // ABOUTME: for nsec export + key import/change. Delegates to the #176 DM seam, so
-// ABOUTME: an unresolved / suppressed protected-minor check must restrict.
+// ABOUTME: unresolved / suppressed Keycast checks must restrict.
 
 import 'dart:async';
 
@@ -29,6 +29,9 @@ void main() {
     prefs = await SharedPreferences.getInstance();
     authService = _MockAuthService();
     when(() => authService.currentPublicKeyHex).thenReturn(pubkey);
+    when(
+      () => authService.authenticationSource,
+    ).thenReturn(AuthenticationSource.divineOAuth);
   });
 
   ProviderContainer containerWith({
@@ -49,8 +52,8 @@ void main() {
   }
 
   test('restricted while the protected-minor check is unresolved', () {
-    // Fail closed: a suppressed/cold-start check on a never-seen account must
-    // hide the key-export/import affordances. This is exactly where the
+    // Fail closed: a suppressed/cold-start check on a never-seen Keycast
+    // account must hide the key-export/import affordances. This is where the
     // fail-OPEN isProtectedMinorProvider would (wrongly) return false.
     final container = containerWith(
       authState: AuthState.authenticated,

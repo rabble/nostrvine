@@ -87,4 +87,25 @@ void main() {
       expect(store.lastKnownFor(otherPubkey), isNull);
     });
   });
+
+  group('wasKeycastAccountFor', () {
+    test('unmarked account reads false', () {
+      expect(store.wasKeycastAccountFor(pubkey), false);
+      expect(store.wasKeycastAccountFor(null), false);
+    });
+
+    test('markKeycastAccount persists per account', () async {
+      await store.markKeycastAccount(pubkey);
+
+      expect(store.wasKeycastAccountFor(pubkey), true);
+      expect(store.wasKeycastAccountFor(otherPubkey), false);
+    });
+
+    test('persists across instances', () async {
+      await store.markKeycastAccount(pubkey);
+
+      final fresh = ProtectedMinorStickyStore(prefs: prefs);
+      expect(fresh.wasKeycastAccountFor(pubkey), true);
+    });
+  });
 }

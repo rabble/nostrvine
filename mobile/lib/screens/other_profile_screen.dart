@@ -426,6 +426,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
                   headerProfile?.bestDisplayName ??
                   widget.displayNameHint ??
                   context.l10n.profileTitle;
+              final isMessageRestricted = _messagingBlockedForProtectedMinor();
 
               return Scaffold(
                 backgroundColor: VineTheme.surfaceBackground,
@@ -455,9 +456,8 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
                     scrollController: _scrollController,
                     onBack: context.pop,
                     onMore: _more,
-                    onMessageUser: _messagingBlockedForProtectedMinor()
-                        ? null
-                        : _messageUser,
+                    onMessageUser: _messageUser,
+                    isMessageRestricted: isMessageRestricted,
                     onShareProfile: _shareProfile,
                     onBlockedTap: _showUnblockConfirmation,
                     displayNameHint: widget.displayNameHint,

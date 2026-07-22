@@ -144,21 +144,27 @@ final isProtectedMinorProvider = Provider<bool>((ref) {
 /// absent answer (airplane mode, cleared storage, blocked keycast domain,
 /// expired token), so "no answer" must restrict rather than lift.
 ///
-/// Restricted unless a positive not-protected verdict exists:
+/// Keycast-backed accounts are restricted unless a positive not-protected
+/// verdict exists:
 /// - trusted live `notProtected` -> unrestricted (persisted for cold start);
 /// - persisted last-known `notProtected` -> unrestricted, so adults don't eat
 ///   a lockout on every network blip;
 /// - everything else (protected, unknown, loading, missing token, never
 ///   resolved, unauthenticated) -> restricted.
 ///
-/// Accepted cost per the design doc's fail-safe posture: a brand-new install
-/// during a keycast outage can DM only official accounts until the first
-/// check clears (rare, self-heals).
+/// Pure self-custody accounts are outside Keycast's verified-minor signal and
+/// must not be permanently restricted by an answer Keycast can never provide.
 final isDmRestrictedProvider = Provider<bool>((ref) {
   final authState = ref.watch(currentAuthStateProvider);
-  final pubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
+  final authService = ref.watch(authServiceProvider);
+  final pubkey = authService.currentPublicKeyHex;
+  final authSource = authService.authenticationSource;
   final store = ref.watch(protectedMinorStickyStoreProvider);
   final live = ref.watch(protectedMinorStatusProvider);
+
+  if (authSource == AuthenticationSource.divineOAuth) {
+    store.markKeycastAccount(pubkey);
+  }
 
   final trusted = trustedProtectedMinorStatus(
     authenticated: authState == AuthState.authenticated,
@@ -171,9 +177,22 @@ final isDmRestrictedProvider = Provider<bool>((ref) {
     if (trusted.kind == ProtectedMinorStatusKind.protected) return true;
     if (trusted.kind == ProtectedMinorStatusKind.notProtected) return false;
   }
-  // No trusted answer: only a persisted positive not-protected lifts the
-  // restriction; a never-seen account fails closed.
-  return store.lastKnownFor(pubkey) ?? true;
+  // No trusted answer: an explicit persisted verdict wins. Otherwise, fail
+  // closed only when Keycast could apply to this account now or historically.
+  final lastKnown = store.lastKnownFor(pubkey);
+  if (lastKnown != null) return lastKnown;
+  if (authState != AuthState.authenticated || pubkey == null) return true;
+  if (authSource == AuthenticationSource.divineOAuth) return true;
+  if (store.wasKeycastAccountFor(pubkey)) return true;
+  return switch (authSource) {
+    AuthenticationSource.automatic ||
+    AuthenticationSource.importedKeys ||
+    AuthenticationSource.bunker ||
+    AuthenticationSource.amber ||
+    AuthenticationSource.nip07 => false,
+    AuthenticationSource.none => true,
+    AuthenticationSource.divineOAuth => true,
+  };
 });
 
 /// Whether the current DM restriction comes from a confirmed protected-minor
@@ -203,11 +222,11 @@ final hasConfirmedDmRestrictionProvider = Provider<bool>((ref) {
 /// a direct reuse) so the call site documents intent, and the two conditions
 /// can diverge later without touching the screen.
 ///
-/// Fails closed for the same reason DMs do: the restricted party can trivially
-/// suppress the input that produces "unknown" (airplane mode, cleared storage,
-/// blocked keycast domain, expired token), so a missing answer must hide the
-/// affordance rather than hand over the key. This is why it does NOT reuse the
-/// fail-OPEN [isProtectedMinorProvider] that #175's content lock consumes.
+/// Uses the same signal-applicability boundary as the DM seam: Keycast-backed
+/// accounts fail closed on an absent answer, while pure self-custody accounts
+/// are not restricted by a Keycast verdict that cannot exist for them. This is
+/// why it does NOT reuse the fail-OPEN [isProtectedMinorProvider] that #175's
+/// content lock consumes.
 final isKeyManagementRestrictedProvider = Provider<bool>(
   (ref) => ref.watch(isDmRestrictedProvider),
 );

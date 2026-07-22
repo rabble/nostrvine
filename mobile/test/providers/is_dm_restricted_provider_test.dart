@@ -30,12 +30,17 @@ void main() {
     prefs = await SharedPreferences.getInstance();
     authService = _MockAuthService();
     when(() => authService.currentPublicKeyHex).thenReturn(pubkey);
+    when(
+      () => authService.authenticationSource,
+    ).thenReturn(AuthenticationSource.divineOAuth);
   });
 
   ProviderContainer containerWith({
     required AuthState authState,
     Future<ProtectedMinorStatus> Function()? status,
+    AuthenticationSource authSource = AuthenticationSource.divineOAuth,
   }) {
+    when(() => authService.authenticationSource).thenReturn(authSource);
     final container = ProviderContainer(
       overrides: [
         currentAuthStateProvider.overrideWithValue(authState),
@@ -49,10 +54,10 @@ void main() {
     return container;
   }
 
-  test('restricted while status is unresolved and no verdict persisted', () {
-    // Cold start / keycast outage / suppressed check on a never-seen account:
-    // fail closed. The restricted party can trivially produce this state
-    // (airplane mode, cleared storage), so it must not lift the gate.
+  test('Keycast account is restricted while unresolved with no verdict', () {
+    // Cold start / keycast outage / suppressed check on a never-seen Keycast
+    // account: fail closed. The restricted party can trivially produce this
+    // state (airplane mode, cleared storage), so it must not lift the gate.
     final container = containerWith(
       authState: AuthState.authenticated,
       status: () => Completer<ProtectedMinorStatus>().future,
@@ -60,6 +65,22 @@ void main() {
 
     expect(container.read(isDmRestrictedProvider), isTrue);
   });
+
+  test(
+    'non-Keycast account is unrestricted when Keycast verdict is absent',
+    () {
+      // Self-custody accounts are outside Keycast's verified-minor signal. An
+      // absent Keycast verdict for them is structurally inapplicable, not a
+      // suppressible signal.
+      final container = containerWith(
+        authState: AuthState.authenticated,
+        authSource: AuthenticationSource.importedKeys,
+        status: () => Completer<ProtectedMinorStatus>().future,
+      );
+
+      expect(container.read(isDmRestrictedProvider), isFalse);
+    },
+  );
 
   test('unauthenticated with no verdict persisted is restricted', () {
     final container = containerWith(authState: AuthState.unauthenticated);
@@ -115,6 +136,22 @@ void main() {
 
     expect(container.read(isDmRestrictedProvider), isTrue);
   });
+
+  test(
+    'ever-Keycast pubkey remains restricted after imported-key reauth',
+    () async {
+      final store = ProtectedMinorStickyStore(prefs: prefs);
+      await store.markKeycastAccount(pubkey);
+
+      final container = containerWith(
+        authState: AuthState.authenticated,
+        authSource: AuthenticationSource.importedKeys,
+        status: () => Completer<ProtectedMinorStatus>().future,
+      );
+
+      expect(container.read(isDmRestrictedProvider), isTrue);
+    },
+  );
 
   test('an unknown resolution falls back to the persisted verdict', () async {
     final store = ProtectedMinorStickyStore(prefs: prefs);
