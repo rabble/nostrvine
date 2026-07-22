@@ -64,6 +64,12 @@ class CameraController: NSObject {
     var maxDurationMs: Int?
     var isWriterSessionStarted: Bool = false
 
+    /// Set while the region-mandated recording-start tone plays so the audio
+    /// sample handler drops samples — keeps the tone out of the clip while
+    /// video keeps recording. Confined to `videoOutputQueue`; owned by the
+    /// RecordingSound extension flow.
+    var suppressAudioForRecordingSound = false
+
     /// Completion handler for camera switch
     var switchCameraCompletion: (([String: Any]?, String?) -> Void)?
 

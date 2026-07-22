@@ -189,6 +189,12 @@ class CameraController: NSObject {
     private var maxDurationMs: Int?
     private var isWriterSessionStarted: Bool = false
 
+    /// Set while the region-mandated recording-start tone plays so
+    /// `captureOutput` drops audio samples — keeps the tone out of the clip
+    /// while video keeps recording. Confined to `videoOutputQueue`; owned by
+    /// the RecordingSound extension flow.
+    private var suppressAudioForRecordingSound = false
+
     /// End PTS (`presentationTime + frameDuration`) of the last video frame
     /// appended to the asset writer. Used at finalize to bound the writer
     /// session to the video's actual end, so a look-ahead stabilization mode
@@ -2312,6 +2318,7 @@ class CameraController: NSObject {
             self.recordingStartTime = Date()
             self.appendedAudioBufferCount = 0
             self.maxAudioPeakDb = -160
+            self.suppressAudioForRecordingSound = false
 
             // Check and enable auto-flash if needed
             self.checkAndEnableAutoFlash()
@@ -2320,6 +2327,18 @@ class CameraController: NSObject {
                 "Recording started (audioTrack=\(addedAudioInput != nil))",
                 name: "DivineCamera.Recording"
             )
+
+            // Region-mandated recording sound (JP/KR). Hold audio writing until
+            // the tone finishes so the mic doesn't capture it into the clip;
+            // video keeps recording from frame zero.
+            if self.isRecordingSoundMandatory {
+                self.suppressAudioForRecordingSound = true
+                self.playRecordingStartTone { [weak self] in
+                    self?.videoOutputQueue.async {
+                        self?.suppressAudioForRecordingSound = false
+                    }
+                }
+            }
 
             // Schedule max duration timer if specified
             if let maxMs = self.maxDurationMs, maxMs > 0 {
@@ -2410,6 +2429,11 @@ class CameraController: NSObject {
                 guard let self = self else { return }
                 
                 DispatchQueue.main.async {
+                    // Region-mandated recording sound (JP/KR). Fired after
+                    // writing finishes — past the last audio sample — so it
+                    // signals the stop without landing in the clip.
+                    self.playRecordingStopSoundIfMandatory()
+
                     if writer.status == .completed {
                         // Get video dimensions
                         guard let outputURL = self.currentRecordingURL else {
@@ -2831,7 +2855,7 @@ extension CameraController: AVCaptureVideoDataOutputSampleBufferDelegate {
             // would produce a valid AAC track with no sound.
             if isRecording, !audioInterrupted, let writer = assetWriter, let audioInput = audioWriterInput {
                 // Only append audio after session has started
-                if isWriterSessionStarted && writer.status == .writing && audioInput.isReadyForMoreMediaData {
+                if isWriterSessionStarted && writer.status == .writing && !suppressAudioForRecordingSound && audioInput.isReadyForMoreMediaData {
                     audioInput.append(sampleBuffer)
                     appendedAudioBufferCount += 1
                     for channel in connection.audioChannels {

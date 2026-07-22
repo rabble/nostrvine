@@ -16,6 +16,7 @@ import android.hardware.camera2.CameraMetadata
 import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.CaptureResult
 import android.hardware.camera2.TotalCaptureResult
+import android.media.MediaActionSound
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -56,6 +57,13 @@ class CameraController(
     private var preview: Preview? = null
     private var videoCapture: VideoCapture<Recorder>? = null
     private var recording: Recording? = null
+
+    // Camera sound for the region-mandated recording start/stop tone (JP/KR),
+    // preloaded so the start tone is timely. See RecordingSoundPolicy.
+    private val mediaActionSound = MediaActionSound().apply {
+        load(MediaActionSound.START_VIDEO_RECORDING)
+        load(MediaActionSound.STOP_VIDEO_RECORDING)
+    }
 
     // Still-photo use case for single-frame (stop-motion) capture. Null when the
     // device cannot bind it concurrently with Preview + VideoCapture, in which
@@ -209,6 +217,10 @@ class CameraController(
     private var currentRecordingFile: File? = null
     private var videoQuality: Quality = Quality.FHD
     private var maxDurationRunnable: Runnable? = null
+
+    // Cancels the audio-unmute scheduled after the mandated start tone (JP/KR)
+    // so a late unmute can't touch a finished or subsequent recording.
+    private var unmuteRunnable: Runnable? = null
     private var autoStopCallback: ((Map<String, Any?>?, String?) -> Unit)? = null
 
     // Fires once the incoming camera has produced enough frames after a lens
@@ -246,6 +258,11 @@ class CameraController(
         // reports a frame (rare device quirk), so `await switchCamera` on the
         // Dart side can't hang forever.
         private const val SWITCH_FIRST_FRAME_TIMEOUT_MS = 1200L
+
+        // Audio stays muted this long after the mandated recording-start tone
+        // (JP/KR) begins, so the tone isn't captured into the clip. Sized to
+        // cover the system START_VIDEO_RECORDING tone.
+        private const val RECORDING_START_TONE_MUTE_MS = 300L
 
         // Preview frames to let pass after a lens switch before resolving it.
         // The incoming camera renders onto a fresh texture; its capture result
@@ -2125,6 +2142,18 @@ class CameraController(
      * Internal recording start — also used for encoder-fallback retries.
      */
     @SuppressLint("MissingPermission")
+    /**
+     * Whether the device region or language mandates the recording sound
+     * (Japan/South Korea).
+     */
+    private fun isRecordingSoundMandatory(): Boolean {
+        val locale = Locale.getDefault()
+        return RecordingSoundPolicy.requiresRecordingSound(
+            locale.country,
+            locale.language
+        )
+    }
+
     private fun startRecordingInternal(
         maxDurationMs: Int?,
         useCache: Boolean,
@@ -2173,6 +2202,29 @@ class CameraController(
                                 TAG,
                                 "VideoRecordEvent.Start received - waiting for first frame..."
                             )
+                            // Region-mandated recording sound (JP/KR). CameraX
+                            // has no per-sample audio gate, so mute audio while
+                            // the start tone plays — the muted window writes
+                            // silence, keeping the tone out of the clip — then
+                            // unmute once it ends. Video records from frame 0.
+                            if (isRecordingSoundMandatory()) {
+                                recording?.mute(true)
+                                mediaActionSound.play(
+                                    MediaActionSound.START_VIDEO_RECORDING
+                                )
+                                unmuteRunnable?.let {
+                                    mainHandler.removeCallbacks(it)
+                                }
+                                val runnable = Runnable {
+                                    if (isRecording) recording?.mute(false)
+                                    unmuteRunnable = null
+                                }
+                                unmuteRunnable = runnable
+                                mainHandler.postDelayed(
+                                    runnable,
+                                    RECORDING_START_TONE_MUTE_MS
+                                )
+                            }
                         }
 
                         is VideoRecordEvent.Status -> {
@@ -2219,6 +2271,17 @@ class CameraController(
                         is VideoRecordEvent.Finalize -> {
                             isRecording = false
                             recordingTrulyStarted = false
+                            // Region-mandated recording sound (JP/KR). Cancel any
+                            // pending unmute, then play the stop tone on finalize
+                            // — after the clip is written — so it is never part
+                            // of the recording.
+                            unmuteRunnable?.let { mainHandler.removeCallbacks(it) }
+                            unmuteRunnable = null
+                            if (isRecordingSoundMandatory()) {
+                                mediaActionSound.play(
+                                    MediaActionSound.STOP_VIDEO_RECORDING
+                                )
+                            }
                             // Cancel any pending auto-stop
                             maxDurationRunnable?.let { mainHandler.removeCallbacks(it) }
                             maxDurationRunnable = null
@@ -2535,6 +2598,9 @@ class CameraController(
             recording?.stop()
             recording = null
             isRecording = false
+            unmuteRunnable?.let { mainHandler.removeCallbacks(it) }
+            unmuteRunnable = null
+            mediaActionSound.release()
 
             cameraProvider?.unbindAll()
             cameraProvider = null

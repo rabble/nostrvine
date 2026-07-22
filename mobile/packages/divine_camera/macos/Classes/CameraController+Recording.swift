@@ -176,12 +176,25 @@ extension CameraController {
 
                 self.isRecording = true
                 self.isWriterSessionStarted = false
+                self.suppressAudioForRecordingSound = false
                 self.recordingStartTime = Date()
 
                 DivineCameraLog.shared.info(
                     "Recording started (audioTrack=\(addedAudioInput != nil))",
                     name: "DivineCamera.Recording"
                 )
+
+                // Region-mandated recording sound (JP/KR). Hold audio writing
+                // until the tone finishes so the mic doesn't capture it into
+                // the clip; video keeps recording from frame zero.
+                if self.isRecordingSoundMandatory {
+                    self.suppressAudioForRecordingSound = true
+                    self.playRecordingStartTone { [weak self] in
+                        self?.videoOutputQueue.async {
+                            self?.suppressAudioForRecordingSound = false
+                        }
+                    }
+                }
 
                 // Schedule max duration timer if specified
                 if let maxMs = maxDurationMs, maxMs > 0 {
@@ -272,6 +285,11 @@ extension CameraController {
                 let hadAudioTrack = self.audioWriterInput != nil
 
                 DispatchQueue.main.async {
+                    // Region-mandated recording sound (JP/KR). Fired after
+                    // writing finishes — past the last audio sample — so it
+                    // signals the stop without landing in the clip.
+                    self.playRecordingStopSoundIfMandatory()
+
                     if writer.status == .completed {
                         let duration: Int
                         if let startTime = self.recordingStartTime {

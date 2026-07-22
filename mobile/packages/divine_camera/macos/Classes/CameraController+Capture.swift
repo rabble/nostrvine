@@ -102,6 +102,7 @@ extension CameraController: AVCaptureVideoDataOutputSampleBufferDelegate {
                 let audioInput = audioWriterInput
             {
                 if isWriterSessionStarted && writer.status == .writing
+                    && !suppressAudioForRecordingSound
                     && audioInput.isReadyForMoreMediaData
                 {
                     let appended = audioInput.append(sampleBuffer)

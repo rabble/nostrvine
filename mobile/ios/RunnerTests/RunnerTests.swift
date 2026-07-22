@@ -272,3 +272,61 @@ final class MediaSessionScopePolicyTests: XCTestCase {
     XCTAssertFalse(policy.isEnabled)
   }
 }
+
+/// Native coverage for `RecordingSoundPolicy` (pure, no AVFoundation/AudioToolbox)
+/// — the region gate for the JP/KR-mandated recording start/stop sound. The
+/// custom `AVAssetWriter` pipeline bypasses the system camera, so this decides
+/// whether the app must replicate the OS-level sound. Only the region branch is
+/// worth pinning; the `AudioServicesPlaySystemSound` side effect is not.
+final class RecordingSoundPolicyTests: XCTestCase {
+  func testRequiredForJapanRegion() {
+    XCTAssertTrue(
+      RecordingSoundPolicy.requiresRecordingSound(
+        regionCode: "JP", languageCode: "en"))
+  }
+
+  func testRequiredForKoreaRegion() {
+    XCTAssertTrue(
+      RecordingSoundPolicy.requiresRecordingSound(
+        regionCode: "KR", languageCode: "en"))
+  }
+
+  func testRequiredForJapaneseLanguageEvenWhenRegionElsewhere() {
+    XCTAssertTrue(
+      RecordingSoundPolicy.requiresRecordingSound(
+        regionCode: "US", languageCode: "ja"))
+  }
+
+  func testRequiredForKoreanLanguageEvenWhenRegionElsewhere() {
+    XCTAssertTrue(
+      RecordingSoundPolicy.requiresRecordingSound(
+        regionCode: "US", languageCode: "ko"))
+  }
+
+  func testCaseInsensitiveRegionAndLanguage() {
+    XCTAssertTrue(
+      RecordingSoundPolicy.requiresRecordingSound(
+        regionCode: "jp", languageCode: nil))
+    XCTAssertTrue(
+      RecordingSoundPolicy.requiresRecordingSound(
+        regionCode: nil, languageCode: "JA"))
+  }
+
+  func testNotRequiredForOtherRegionAndLanguage() {
+    XCTAssertFalse(
+      RecordingSoundPolicy.requiresRecordingSound(
+        regionCode: "US", languageCode: "en"))
+    XCTAssertFalse(
+      RecordingSoundPolicy.requiresRecordingSound(
+        regionCode: "DE", languageCode: "de"))
+  }
+
+  func testNotRequiredWhenBothUnknown() {
+    XCTAssertFalse(
+      RecordingSoundPolicy.requiresRecordingSound(
+        regionCode: nil, languageCode: nil))
+    XCTAssertFalse(
+      RecordingSoundPolicy.requiresRecordingSound(
+        regionCode: "", languageCode: ""))
+  }
+}
