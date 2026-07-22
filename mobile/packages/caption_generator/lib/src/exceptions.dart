@@ -32,9 +32,12 @@ final class UnsupportedAudioFormatException extends CaptionGenerationException {
     : super(message, 'UnsupportedAudioFormatException');
 }
 
-/// The user denied (or the OS restricts) speech recognition authorization.
+/// Speech recognition is not authorized.
 ///
-/// Apple platforms only — prompt the user towards the system settings.
+/// On Apple platforms the user denied (or the OS restricts) speech
+/// recognition. On Android the platform recognizer reported insufficient
+/// permissions — the `RECORD_AUDIO` grant it requires even for file input is
+/// missing. Either way, prompt the user towards the system settings.
 final class SpeechNotAuthorizedException extends CaptionGenerationException {
   /// Creates the exception.
   const SpeechNotAuthorizedException()

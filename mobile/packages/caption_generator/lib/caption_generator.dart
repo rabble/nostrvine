@@ -55,8 +55,9 @@ class CaptionGenerator {
   /// * [AudioFileNotFoundException] if [audioPath] does not exist.
   /// * [UnsupportedAudioFormatException] if the audio cannot be read
   ///   (Android WAV requirements above).
-  /// * [SpeechNotAuthorizedException] if the user denied speech recognition
-  ///   (Apple platforms).
+  /// * [SpeechNotAuthorizedException] if speech recognition is not authorized:
+  ///   the user denied it (Apple), or the `RECORD_AUDIO` permission the
+  ///   platform recognizer requires is not granted (Android).
   /// * [SpeechRecognizerUnavailableException] if the device or locale has no
   ///   recognizer — on Android also below Android 14 or without Google's
   ///   on-device recognition service.

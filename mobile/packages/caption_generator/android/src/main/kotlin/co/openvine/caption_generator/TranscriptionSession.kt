@@ -357,17 +357,58 @@ internal class TranscriptionSession(
         }
     }
 
-    private fun buildSegments(): List<Map<String, Any>> =
-        words.mapIndexed { index, (text, startMs) ->
-            val endMs = words.getOrNull(index + 1)?.second ?: audioDurationMs
+    private fun buildSegments(): List<Map<String, Any>> {
+        val starts = words.map { it.second }
+        val fallbackMs = medianInterWordGapMs(starts) ?: DEFAULT_LAST_WORD_MS
+        return words.mapIndexed { index, (text, startMs) ->
             mapOf(
                 "text" to text,
                 "startMs" to startMs,
-                "endMs" to maxOf(endMs, startMs),
+                "endMs" to wordEndMs(starts, index, audioDurationMs, fallbackMs),
             )
         }
+    }
 
-    private companion object {
+    internal companion object {
         const val CHUNK_SIZE = 8192
+
+        /**
+         * Display duration for the final word when there is no following
+         * word to bound it and too few words to estimate a cadence.
+         */
+        const val DEFAULT_LAST_WORD_MS = 2000L
+
+        /**
+         * End time for the word at [index] given the [starts] of every word.
+         *
+         * Non-final words end at the next word's start. The final word has no
+         * such bound; rather than stretch it to [audioDurationMs] — which pins
+         * a lone trailing caption across trailing silence — it ends
+         * [fallbackMs] after its own start. Clamped to never exceed
+         * [audioDurationMs] and never precede the word's own start.
+         */
+        fun wordEndMs(
+            starts: List<Long>,
+            index: Int,
+            audioDurationMs: Long,
+            fallbackMs: Long,
+        ): Long {
+            val startMs = starts[index]
+            val end = starts.getOrNull(index + 1)
+                ?: minOf(audioDurationMs, startMs + fallbackMs)
+            return maxOf(minOf(end, audioDurationMs), startMs)
+        }
+
+        /** Median gap between consecutive word starts, or null if < 2 words. */
+        fun medianInterWordGapMs(starts: List<Long>): Long? {
+            if (starts.size < 2) return null
+            val gaps = starts.zipWithNext { a, b -> b - a }.sorted()
+            val mid = gaps.size / 2
+            return if (gaps.size % 2 == 1) {
+                gaps[mid]
+            } else {
+                (gaps[mid - 1] + gaps[mid]) / 2
+            }
+        }
     }
 }
