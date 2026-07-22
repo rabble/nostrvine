@@ -18,6 +18,7 @@ import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/utils/draft_copy_naming.dart';
 import 'package:openvine/widgets/library/empty_library_state.dart';
+import 'package:openvine/widgets/video_clip/clip_thumbnail_image.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Tab widget displaying a list of saved drafts.
@@ -369,20 +370,20 @@ class DraftListTile extends StatelessWidget {
         width: 40,
         height: 40,
         decoration: ShapeDecoration(
-          image: thumbnailExists
-              ? DecorationImage(
-                  image: FileImage(File(thumbnailPath)),
-                  fit: BoxFit.cover,
-                )
-              : null,
-          color: thumbnailExists ? null : VineTheme.cardBackground,
+          color: VineTheme.cardBackground,
           shape: RoundedRectangleBorder(
             side: const BorderSide(color: VineTheme.onSurfaceDisabled),
             borderRadius: BorderRadius.circular(16),
           ),
         ),
         child: thumbnailExists
-            ? null
+            ? ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: ClipThumbnailImage(
+                  path: thumbnailPath,
+                  fit: BoxFit.cover,
+                ),
+              )
             : const DivineIcon(
                 icon: DivineIconName.filmSlate,
                 color: VineTheme.secondaryText,

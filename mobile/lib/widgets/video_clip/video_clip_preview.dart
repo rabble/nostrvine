@@ -16,6 +16,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
 import 'package:openvine/widgets/stop_motion/stop_motion_player.dart';
+import 'package:openvine/widgets/video_clip/clip_thumbnail_image.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 class VideoClipPreview extends ConsumerStatefulWidget {
@@ -224,8 +225,8 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreview> {
                                     Hero(
                                       tag:
                                           'Video-Clip-Preview-${widget.clip.id}',
-                                      child: Image.file(
-                                        File(widget.clip.thumbnailPath!),
+                                      child: ClipThumbnailImage(
+                                        path: widget.clip.thumbnailPath!,
                                         fit: BoxFit.cover,
                                       ),
                                     ),

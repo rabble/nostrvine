@@ -15,6 +15,7 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_preview_screen.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
+import 'package:openvine/widgets/video_clip/clip_thumbnail_image.dart';
 
 /// Shows a bottom sheet when a background upload fails.
 ///
@@ -198,7 +199,10 @@ class _DraftPreviewState extends State<_DraftPreview> {
           height: previewHeight,
           width: previewWidth,
           child: _hasThumb
-              ? Image.file(File(widget.clip!.thumbnailPath!), fit: BoxFit.cover)
+              ? ClipThumbnailImage(
+                  path: widget.clip!.thumbnailPath!,
+                  fit: BoxFit.cover,
+                )
               : SvgPicture.asset(
                   'assets/stickers/alert.svg',
                   height: 132,

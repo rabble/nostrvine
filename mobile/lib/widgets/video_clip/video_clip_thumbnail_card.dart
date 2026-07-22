@@ -1,13 +1,12 @@
 // ABOUTME: Thumbnail card widget for displaying video clips in grid layout
 // ABOUTME: Shows thumbnail with duration badge, selection state, and tap handlers
 
-import 'dart:io';
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/utils/video_editor_utils.dart';
+import 'package:openvine/widgets/video_clip/clip_thumbnail_image.dart';
 
 /// Thumbnail card for a single clip in the grid.
 ///
@@ -69,6 +68,8 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
   Widget build(BuildContext context) {
     // Calculate aspect ratio for container
     final aspectRatio = widget.clip.targetAspectRatio.value;
+    final showDurationBadge =
+        widget.showDurationBadge && !widget.clip.isStopMotion;
 
     final l10n = context.l10n;
     return Semantics(
@@ -116,13 +117,13 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
                     /// recordings: their playback length (frame count / 12fps)
                     /// is a tiny, misleading value, so they read as a still
                     /// image marked only by the stop-motion badge.
-                    if (widget.showDurationBadge && !widget.clip.isStopMotion)
+                    if (showDurationBadge)
                       _DurationBadge(clip: widget.clip),
 
                     if (widget.clip.libraryTitle case final title?)
                       _TitleBadge(
                         title: title,
-                        bottomOffset: widget.showDurationBadge ? 32 : 8,
+                        bottomOffset: showDurationBadge ? 32 : 8,
                       ),
 
                     /// Selection check circle - top right
@@ -140,58 +141,32 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
 }
 
 /// Builds the thumbnail image or placeholder.
-///
-/// Checks thumbnail file existence synchronously on init and refreshes
-/// via [didUpdateWidget] when the clip's thumbnail path changes.
-class _Thumbnail extends StatefulWidget {
+class _Thumbnail extends StatelessWidget {
   const _Thumbnail({required this.clip});
 
   final DivineVideoClip clip;
 
   @override
-  State<_Thumbnail> createState() => _ThumbnailState();
-}
-
-class _ThumbnailState extends State<_Thumbnail> {
-  late bool _thumbnailExists;
-
-  @override
-  void initState() {
-    super.initState();
-    _thumbnailExists = _checkThumbnailExists();
-  }
-
-  @override
-  void didUpdateWidget(_Thumbnail oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.clip.thumbnailPath != widget.clip.thumbnailPath) {
-      _thumbnailExists = _checkThumbnailExists();
-    }
-  }
-
-  /// Checks if the thumbnail file exists on disk.
-  bool _checkThumbnailExists() {
-    if (widget.clip.thumbnailPath == null) {
-      return false;
-    }
-    return File(widget.clip.thumbnailPath!).existsSync();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    if (_thumbnailExists && widget.clip.thumbnailPath != null) {
+    final thumbnailPath = clip.thumbnailPath;
+    if (thumbnailPath != null) {
       return Hero(
-        tag: 'Video-Clip-Preview-${widget.clip.id}',
+        tag: 'Video-Clip-Preview-${clip.id}',
         // Stop-motion clips use a full-resolution still as their thumbnail;
         // bound the decode to the grid cell so it doesn't cost tens of MB.
-        child: Image.file(
-          File(widget.clip.thumbnailPath!),
-          fit: .cover,
+        child: ClipThumbnailImage(
+          path: thumbnailPath,
+          fit: BoxFit.cover,
           cacheHeight:
               (MediaQuery.sizeOf(context).width *
                       MediaQuery.devicePixelRatioOf(context) /
                       2)
                   .round(),
+          placeholder: const DivineIcon(
+            icon: DivineIconName.videoCamera,
+            color: VineTheme.lightText,
+            size: 32,
+          ),
         ),
       );
     }

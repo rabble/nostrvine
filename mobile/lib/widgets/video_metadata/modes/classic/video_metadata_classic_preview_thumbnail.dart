@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'dart:io';
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/widgets/video_clip/clip_thumbnail_image.dart';
 import 'package:openvine/widgets/video_editor/video_editor_processing_overlay.dart';
 
 class VideoMetadataClassicPreviewThumbnail extends ConsumerStatefulWidget {
@@ -129,7 +128,10 @@ class _VideoMetadataClassicPreviewThumbnailState
                           key: const ValueKey('thumbnail'),
                           fit: StackFit.expand,
                           children: [
-                            Image.file(File(clip.thumbnailPath!), fit: .cover),
+                            ClipThumbnailImage(
+                              path: clip.thumbnailPath!,
+                              fit: .cover,
+                            ),
                             VideoEditorProcessingOverlay(
                               clip: clip,
                               isProcessing:
