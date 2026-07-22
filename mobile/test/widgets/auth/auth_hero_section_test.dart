@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/config/app_config.dart';
@@ -21,6 +22,28 @@ List<String> _svgAssetNames(WidgetTester tester) => tester
     .whereType<SvgAssetLoader>()
     .map((loader) => loader.assetName)
     .toList();
+
+int _imageSemanticsNodeCount(WidgetTester tester) {
+  final root = tester
+      .binding
+      .renderViews
+      .first
+      .owner!
+      .semanticsOwner!
+      .rootSemanticsNode!;
+  var count = 0;
+
+  bool visit(SemanticsNode node) {
+    if (node.flagsCollection.isImage) {
+      count++;
+    }
+    node.visitChildren(visit);
+    return true;
+  }
+
+  visit(root);
+  return count;
+}
 
 void main() {
   group(AuthHeroSection, () {
@@ -116,6 +139,18 @@ void main() {
         final semantics = tester.ensureSemantics();
         await tester.pumpWidget(createTestWidget(locale: const Locale('ar')));
 
+        expect(find.bySemanticsLabel(AppConfig.appName), findsOneWidget);
+
+        semantics.dispose();
+      });
+
+      testWidgets('exports only the wordmark image to semantics', (
+        tester,
+      ) async {
+        final semantics = tester.ensureSemantics();
+        await tester.pumpWidget(createTestWidget());
+
+        expect(_imageSemanticsNodeCount(tester), equals(1));
         expect(find.bySemanticsLabel(AppConfig.appName), findsOneWidget);
 
         semantics.dispose();
