@@ -155,6 +155,10 @@ _MinorReviewRoutingSignature _minorReviewRoutingSignature(
 /// and tears down the reel's just-created player mid-initialization. Gating the
 /// refresh on this predicate keeps genuine restriction flips reactive while
 /// leaving an already-open reel untouched.
+///
+/// [previous] is nullable only for defensiveness and the first-emission tests;
+/// the production `ref.listen` at [goRouterProvider] omits `fireImmediately`,
+/// so Riverpod only ever invokes it with a real prior [AsyncValue].
 @visibleForTesting
 bool minorAccountReviewStatusAffectsRouting(
   AsyncValue<MinorAccountReviewStatus>? previous,
