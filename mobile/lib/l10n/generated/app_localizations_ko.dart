@@ -1356,7 +1356,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoErrorContentRestricted => '콘텐츠 제한됨';
 
   @override
-  String get videoErrorContentRestrictedBody => '이 영상은 릴레이에 의해 제한됐어요.';
+  String get videoErrorContentRestrictedBody =>
+      'This video was removed for breaking our content rules.';
 
   @override
   String get videoErrorVerifyAgeBody => '이 영상을 보려면 나이를 인증해주세요.';

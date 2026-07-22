@@ -1454,7 +1454,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get videoErrorContentRestrictedBody =>
-      'Este vídeo foi restringido pelo relay.';
+      'This video was removed for breaking our content rules.';
 
   @override
   String get videoErrorVerifyAgeBody =>

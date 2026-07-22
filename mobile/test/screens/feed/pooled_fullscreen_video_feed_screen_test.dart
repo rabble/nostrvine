@@ -1206,15 +1206,15 @@ void main() {
           cubit.report(video.id, PlaybackStatus.ageRestricted);
           await tester.pump();
 
+          final l10n = lookupAppLocalizations(const Locale('en'));
+
           expect(find.byType(ModeratedContentOverlay), findsOneWidget);
           expect(
-            find.text(ModeratedContentOverlayStrings.verifyAgeLabel),
+            find.text(l10n.videoErrorVerifyAgeButton),
             findsOneWidget,
           );
 
-          await tester.tap(
-            find.text(ModeratedContentOverlayStrings.verifyAgeLabel),
-          );
+          await tester.tap(find.text(l10n.videoErrorVerifyAgeButton));
           await tester.pump();
           await tester.pump();
 
@@ -1299,9 +1299,9 @@ void main() {
           cubit.report(video.id, PlaybackStatus.ageRestricted);
           await tester.pump();
 
-          await tester.tap(
-            find.text(ModeratedContentOverlayStrings.verifyAgeLabel),
-          );
+          final l10n = lookupAppLocalizations(const Locale('en'));
+
+          await tester.tap(find.text(l10n.videoErrorVerifyAgeButton));
           await tester.pump();
           await tester.pump();
 

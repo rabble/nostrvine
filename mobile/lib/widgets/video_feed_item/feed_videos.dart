@@ -203,6 +203,10 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
       _feedKey.currentState?.retryAt(index, httpHeaders: httpHeaders) ??
       Future.value(false);
 
+  void _skipPooledVideoAt(int index) {
+    unawaited(_feedKey.currentState?.animateToPage(index + 1));
+  }
+
   @override
   void didUpdateWidget(covariant FeedVideos oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -456,6 +460,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
             index: index,
             resolveSha256: VideoModerationStatusService.resolveSha256,
             onRetry: onRetry,
+            onSkip: () => _skipPooledVideoAt(index),
             retryPlayback: (httpHeaders) =>
                 _retryPooledVideoAt(index, httpHeaders),
             errorType: errorType,
@@ -739,14 +744,14 @@ class __OverlayState extends ConsumerState<_Overlay> {
     // prefetching if it flips on for an already-mounted overlay (initState's
     // prefetch is a no-op while the flag is off). #5720 M3.
     ref.watch(isFeatureEnabledProvider(FeatureFlag.communityContentWarnings));
-    ref.listen(
-      isFeatureEnabledProvider(FeatureFlag.communityContentWarnings),
-      (previous, next) {
-        if (next && previous != true) {
-          _prefetchCommunityLabels();
-        }
-      },
-    );
+    ref.listen(isFeatureEnabledProvider(FeatureFlag.communityContentWarnings), (
+      previous,
+      next,
+    ) {
+      if (next && previous != true) {
+        _prefetchCommunityLabels();
+      }
+    });
 
     // Merge community-suggested warnings (#4771) into the creator/trusted
     // warn labels so a crossed-threshold community label drives the same
@@ -1201,6 +1206,13 @@ class _FeedLoadingOrRestrictedOverlayView extends ConsumerWidget {
                   resolveSha256: VideoModerationStatusService.resolveSha256,
                   // Retry is hidden for moderation-restricted content.
                   onRetry: () {},
+                  onSkip: () {
+                    unawaited(
+                      context
+                          .findAncestorStateOfType<InfiniteVideoFeedState>()
+                          ?.animateToPage(index + 1),
+                    );
+                  },
                   retryPlayback: (httpHeaders) =>
                       context
                           .findAncestorStateOfType<InfiniteVideoFeedState>()

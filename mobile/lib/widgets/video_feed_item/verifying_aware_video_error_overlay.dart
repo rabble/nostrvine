@@ -31,6 +31,7 @@ class VerifyingAwareVideoErrorOverlay extends ConsumerWidget {
     required this.errorType,
     required this.shouldPortraitExpand,
     required this.isSquare,
+    this.onSkip,
     super.key,
   });
 
@@ -41,6 +42,9 @@ class VerifyingAwareVideoErrorOverlay extends ConsumerWidget {
 
   /// Called when the user taps Retry. Hidden for moderation-restricted content.
   final VoidCallback onRetry;
+
+  /// Called when the user taps Skip for moderation-restricted content.
+  final VoidCallback? onSkip;
 
   /// Reloads playback for the retried item with the signed viewer-auth headers.
   final FutureOr<bool> Function(Map<String, String>) retryPlayback;
@@ -60,6 +64,7 @@ class VerifyingAwareVideoErrorOverlay extends ConsumerWidget {
       builder: (context, isVerifying) => PooledVideoErrorOverlay(
         video: video,
         onRetry: onRetry,
+        onSkip: onSkip,
         onVerifyAge: () => retryAgeRestrictedPooledVideo(
           context: context,
           ref: ref,

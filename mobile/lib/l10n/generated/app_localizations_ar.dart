@@ -1426,7 +1426,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get videoErrorContentRestrictedBody =>
-      'تم تقييد هذا الفيديو من طرف المحول.';
+      'This video was removed for breaking our content rules.';
 
   @override
   String get videoErrorVerifyAgeBody => 'تحقّق من عمرك لعرض هذا الفيديو.';

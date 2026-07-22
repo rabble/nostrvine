@@ -549,7 +549,7 @@
     "videoErrorVerifyAge": "Leeftijd verifiëren",
     "videoErrorRetry": "Opnieuw",
     "videoErrorContentRestricted": "Inhoud beperkt",
-    "videoErrorContentRestrictedBody": "Deze video is beperkt door de relay.",
+    "videoErrorContentRestrictedBody": "This video was removed for breaking our content rules.",
     "videoErrorVerifyAgeBody": "Verifieer je leeftijd om deze video te bekijken.",
     "videoErrorSkip": "Overslaan",
     "videoErrorVerifyAgeButton": "Leeftijd verifiëren",

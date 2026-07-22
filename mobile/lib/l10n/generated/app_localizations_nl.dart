@@ -1446,7 +1446,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get videoErrorContentRestrictedBody =>
-      'Deze video is beperkt door de relay.';
+      'This video was removed for breaking our content rules.';
 
   @override
   String get videoErrorVerifyAgeBody =>

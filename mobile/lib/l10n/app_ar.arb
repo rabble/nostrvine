@@ -549,7 +549,7 @@
     "videoErrorVerifyAge": "تحقق من العمر",
     "videoErrorRetry": "إعادة المحاولة",
     "videoErrorContentRestricted": "المحتوى مقيّد",
-    "videoErrorContentRestrictedBody": "تم تقييد هذا الفيديو من طرف المحول.",
+    "videoErrorContentRestrictedBody": "This video was removed for breaking our content rules.",
     "videoErrorVerifyAgeBody": "تحقّق من عمرك لعرض هذا الفيديو.",
     "videoErrorSkip": "تخطّي",
     "videoErrorVerifyAgeButton": "تحقّق من العمر",

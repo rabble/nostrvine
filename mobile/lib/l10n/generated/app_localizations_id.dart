@@ -1413,7 +1413,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get videoErrorContentRestrictedBody =>
-      'Video ini dibatasi oleh relay.';
+      'This video was removed for breaking our content rules.';
 
   @override
   String get videoErrorVerifyAgeBody =>

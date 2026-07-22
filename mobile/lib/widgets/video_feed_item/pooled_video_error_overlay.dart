@@ -29,6 +29,7 @@ class PooledVideoErrorOverlay extends ConsumerStatefulWidget {
     required this.video,
     required this.onRetry,
     required this.errorType,
+    this.onSkip,
     this.onVerifyAge,
     this.isVerifying = false,
     this.shouldPortraitExpand = true,
@@ -38,6 +39,7 @@ class PooledVideoErrorOverlay extends ConsumerStatefulWidget {
 
   final VideoEvent video;
   final VoidCallback onRetry;
+  final VoidCallback? onSkip;
   final VoidCallback? onVerifyAge;
 
   /// Whether an age-verification retry is in flight. Shows the Verify age
@@ -153,7 +155,12 @@ class _PooledVideoErrorOverlayState
         ? context.l10n.videoErrorContentRestrictedBody
         : null;
     final showVerifyAge = isAgeRestricted && widget.onVerifyAge != null;
-    final showRetry = !isModerationRestricted && !showVerifyAge;
+    final showSkip =
+        isModerationRestricted && !isAgeRestricted && widget.onSkip != null;
+    final showRetry =
+        (!isModerationRestricted || (isAgeRestricted && !showVerifyAge)) &&
+        !showSkip &&
+        !showVerifyAge;
     _maybeAutoRetryAgeRestricted(showVerifyAge: showVerifyAge);
 
     return Stack(
@@ -213,6 +220,13 @@ class _PooledVideoErrorOverlayState
                     type: DivineButtonType.tertiary,
                     size: DivineButtonSize.small,
                     onPressed: widget.onRetry,
+                  ),
+                if (showSkip)
+                  DivineButton(
+                    label: context.l10n.videoErrorSkip,
+                    type: DivineButtonType.tertiary,
+                    size: DivineButtonSize.small,
+                    onPressed: widget.onSkip,
                   ),
               ],
             ),

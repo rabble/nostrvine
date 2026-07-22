@@ -549,7 +549,7 @@
     "videoErrorVerifyAge": "Verifikasi Usia",
     "videoErrorRetry": "Coba Lagi",
     "videoErrorContentRestricted": "Konten dibatasi",
-    "videoErrorContentRestrictedBody": "Video ini dibatasi oleh relay.",
+    "videoErrorContentRestrictedBody": "This video was removed for breaking our content rules.",
     "videoErrorVerifyAgeBody": "Verifikasi usiamu untuk melihat video ini.",
     "videoErrorSkip": "Lewati",
     "videoErrorVerifyAgeButton": "Verifikasi usia",

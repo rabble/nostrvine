@@ -1400,7 +1400,8 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoErrorContentRestricted => 'ይዘት ተገድቧል';
 
   @override
-  String get videoErrorContentRestrictedBody => 'ይህ ቪዲዮ በቅብብሎሽ ተገድቧል።';
+  String get videoErrorContentRestrictedBody =>
+      'This video was removed for breaking our content rules.';
 
   @override
   String get videoErrorVerifyAgeBody => 'ይህን ቪዲዮ ለማየት እድሜዎን ያረጋግጡ።';

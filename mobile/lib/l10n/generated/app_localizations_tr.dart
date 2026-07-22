@@ -1418,7 +1418,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoErrorContentRestrictedBody =>
-      'Bu video röle tarafından kısıtlanmış.';
+      'This video was removed for breaking our content rules.';
 
   @override
   String get videoErrorVerifyAgeBody =>

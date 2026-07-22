@@ -1461,7 +1461,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get videoErrorContentRestrictedBody =>
-      'Ten film został ograniczony przez przekaźnik.';
+      'This video was removed for breaking our content rules.';
 
   @override
   String get videoErrorVerifyAgeBody =>

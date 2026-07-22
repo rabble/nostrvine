@@ -104,20 +104,3 @@ class ModeratedContentOverlay extends StatelessWidget {
     );
   }
 }
-
-/// User-facing copy for [ModeratedContentOverlay].
-///
-/// Kept as static constants so tests can reference the same values the
-/// widget renders, preventing drift when copy changes. When l10n lands,
-/// these become the keys fed into the localizer.
-@visibleForTesting
-class ModeratedContentOverlayStrings {
-  const ModeratedContentOverlayStrings._();
-
-  static const String forbiddenTitle = 'Content restricted';
-  static const String forbiddenBody = 'This video was restricted by the relay.';
-  static const String ageRestrictedTitle = 'Age-restricted content';
-  static const String ageRestrictedBody = 'Verify your age to view this video.';
-  static const String skipLabel = 'Skip';
-  static const String verifyAgeLabel = 'Verify age';
-}

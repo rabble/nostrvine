@@ -1458,7 +1458,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get videoErrorContentRestrictedBody =>
-      'Това видео беше ограничено от релето.';
+      'This video was removed for breaking our content rules.';
 
   @override
   String get videoErrorVerifyAgeBody =>

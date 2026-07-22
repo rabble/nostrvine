@@ -1475,7 +1475,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get videoErrorContentRestrictedBody =>
-      'Acest videoclip a fost restricționat de relay.';
+      'This video was removed for breaking our content rules.';
 
   @override
   String get videoErrorVerifyAgeBody =>

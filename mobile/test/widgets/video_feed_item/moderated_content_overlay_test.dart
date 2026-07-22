@@ -40,18 +40,9 @@ void main() {
     ) async {
       await pumpOverlay(tester, status: PlaybackStatus.forbidden);
 
-      expect(
-        find.text(ModeratedContentOverlayStrings.forbiddenTitle),
-        findsOneWidget,
-      );
-      expect(
-        find.text(ModeratedContentOverlayStrings.skipLabel),
-        findsOneWidget,
-      );
-      expect(
-        find.text(ModeratedContentOverlayStrings.verifyAgeLabel),
-        findsNothing,
-      );
+      expect(find.text(enL10n.videoErrorContentRestricted), findsOneWidget);
+      expect(find.text(enL10n.videoErrorSkip), findsOneWidget);
+      expect(find.text(enL10n.videoErrorVerifyAgeButton), findsNothing);
     });
 
     testWidgets('renders age-restricted message and Verify age button', (
@@ -63,18 +54,9 @@ void main() {
         onVerifyAge: () {},
       );
 
-      expect(
-        find.text(ModeratedContentOverlayStrings.ageRestrictedTitle),
-        findsOneWidget,
-      );
-      expect(
-        find.text(ModeratedContentOverlayStrings.verifyAgeLabel),
-        findsOneWidget,
-      );
-      expect(
-        find.text(ModeratedContentOverlayStrings.skipLabel),
-        findsOneWidget,
-      );
+      expect(find.text(enL10n.videoErrorAgeRestricted), findsOneWidget);
+      expect(find.text(enL10n.videoErrorVerifyAgeButton), findsOneWidget);
+      expect(find.text(enL10n.videoErrorSkip), findsOneWidget);
     });
 
     testWidgets('calls onSkip when Skip is tapped', (tester) async {
@@ -84,7 +66,7 @@ void main() {
         status: PlaybackStatus.forbidden,
         onSkip: () => skipped++,
       );
-      await tester.tap(find.text(ModeratedContentOverlayStrings.skipLabel));
+      await tester.tap(find.text(enL10n.videoErrorSkip));
       await tester.pumpAndSettle();
 
       expect(skipped, equals(1));
@@ -97,9 +79,7 @@ void main() {
         status: PlaybackStatus.ageRestricted,
         onVerifyAge: () => verified++,
       );
-      await tester.tap(
-        find.text(ModeratedContentOverlayStrings.verifyAgeLabel),
-      );
+      await tester.tap(find.text(enL10n.videoErrorVerifyAgeButton));
       await tester.pumpAndSettle();
 
       expect(verified, equals(1));
@@ -119,9 +99,7 @@ void main() {
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
         // Disabled while verifying — a tap must be a no-op.
-        await tester.tap(
-          find.text(ModeratedContentOverlayStrings.verifyAgeLabel),
-        );
+        await tester.tap(find.text(enL10n.videoErrorVerifyAgeButton));
         await tester.pump();
         expect(verified, equals(0));
       },
@@ -137,7 +115,7 @@ void main() {
         onSkip: () => skipped++,
         onVerifyAge: () {},
       );
-      await tester.tap(find.text(ModeratedContentOverlayStrings.skipLabel));
+      await tester.tap(find.text(enL10n.videoErrorSkip));
       await tester.pumpAndSettle();
 
       expect(skipped, equals(1));

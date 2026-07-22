@@ -384,7 +384,7 @@
     "videoErrorVerifyAge": "I-verify ang Edad",
     "videoErrorRetry": "Subukan ulit",
     "videoErrorContentRestricted": "Restricted ang content",
-    "videoErrorContentRestrictedBody": "Pinigilan ng relay ang video na ito.",
+    "videoErrorContentRestrictedBody": "This video was removed for breaking our content rules.",
     "videoErrorVerifyAgeBody": "I-verify ang edad mo para mapanood ang video na ito.",
     "videoErrorSkip": "Laktawan",
     "videoErrorVerifyAgeButton": "I-verify ang edad",
