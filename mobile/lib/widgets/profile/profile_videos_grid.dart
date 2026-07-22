@@ -274,7 +274,9 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
       return true;
     }());
     final authService = ref.read(authServiceProvider);
-    final isOwnProfile = authService.currentPublicKeyHex == widget.userIdHex;
+    final currentUserPubkey = authService.currentPublicKeyHex;
+    final isOwnProfile =
+        currentUserPubkey != null && currentUserPubkey == widget.userIdHex;
 
     // Subscribe to the *shape* of the active upload list (id + title +
     // thumbnailPath per upload). Progress is intentionally excluded so that
@@ -410,7 +412,9 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
                   videoEvent: eventEntry.videoEvent,
                   userIdHex: widget.userIdHex,
                   index: index,
-                  onLongPress: isOwnProfile
+                  onLongPress:
+                      currentUserPubkey != null &&
+                          currentUserPubkey == eventEntry.videoEvent.pubkey
                       ? () => _showOwnVideoActions(eventEntry.videoEvent)
                       : null,
                   onTap: () {
@@ -507,6 +511,10 @@ class _VideoGridTile extends StatelessWidget {
     identifier: 'video_thumbnail_$index',
     label: context.l10n.profileVideoThumbnailLabel(index + 1),
     button: true,
+    onLongPress: onLongPress,
+    onLongPressHint: onLongPress == null
+        ? null
+        : context.l10n.videoGridOptionsTitle,
     child: GestureDetector(
       onTap: onTap,
       onLongPress: onLongPress,

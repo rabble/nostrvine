@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show SemanticsAction;
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:db_client/db_client.dart';
@@ -335,6 +336,78 @@ void main() {
           expect(find.text(l10n.videoGridDeleteVideo), findsOneWidget);
         },
       );
+
+      testWidgets(
+        'long-pressing a non-owned tile on own profile shows no actions',
+        (tester) async {
+          when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+          final videos = _createTestVideos(pubkey: _otherPubkey);
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          final profileFeedCubit = _stubbedProfileFeedCubit();
+          final router = GoRouter(
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (context, state) => testProviderScope(
+                  mockAuthService: mockAuth,
+                  child: BlocProvider<BackgroundPublishBloc>.value(
+                    value: mockBloc,
+                    child: Scaffold(
+                      body: BlocProvider<ProfileFeedCubit>.value(
+                        value: profileFeedCubit,
+                        child: ProfileVideosGrid(
+                          videos: videos,
+                          userIdHex: _ownPubkey,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              GoRoute(
+                path: PooledFullscreenVideoFeedScreen.path,
+                builder: (context, state) => const SizedBox.shrink(),
+              ),
+            ],
+          );
+
+          await tester.pumpWidget(
+            MaterialApp.router(
+              routerConfig: router,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+            ),
+          );
+
+          await tester.longPress(find.bySemanticsLabel('Video thumbnail 1'));
+          await tester.pumpAndSettle();
+
+          expect(find.text(l10n.videoGridEditVideo), findsNothing);
+          expect(find.text(l10n.videoGridDeleteVideo), findsNothing);
+        },
+      );
+
+      testWidgets('own video tile exposes long-press semantics', (
+        tester,
+      ) async {
+        when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+        final videos = _createTestVideos(pubkey: _ownPubkey);
+        final handle = tester.ensureSemantics();
+
+        await tester.pumpWidget(
+          buildSubject(userIdHex: _ownPubkey, videos: videos),
+        );
+
+        final node = tester.getSemantics(
+          find.bySemanticsLabel('Video thumbnail 1'),
+        );
+        expect(
+          node.getSemanticsData().hasAction(SemanticsAction.longPress),
+          isTrue,
+        );
+
+        handle.dispose();
+      });
 
       testWidgets(
         "long-pressing a tile on another user's profile shows no actions",
