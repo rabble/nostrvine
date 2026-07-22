@@ -6432,9 +6432,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get authHeroTaglineHuman => 'Човешко творчество.';
 
   @override
-  String get authHeroLogoSemanticLabel => 'Divine';
-
-  @override
   String get keyImportFailedToImport =>
       'Неуспешно импортиране на ключ или свързване с бункер';
 

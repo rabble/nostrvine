@@ -2824,7 +2824,6 @@
     "shareCopiedEventId": "Nakopya sa clipboard ang Nostr event ID",
     "authHeroTaglineAuthentic": "Tunay na sandali.",
     "authHeroTaglineHuman": "Pagkamalikhain ng tao.",
-    "authHeroLogoSemanticLabel": "Divine",
     "keyImportFailedToImport": "Hindi na-import ang key o na-connect ang bunker",
     "keyImportInvalidBunkerUrl": "Hindi wastong bunker URL",
     "keyImportInvalidFormat": "Hindi wastong format. Gamitin ang nsec..., hex, ncryptsec1..., o bunker://...",

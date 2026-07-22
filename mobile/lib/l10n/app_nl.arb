@@ -4248,7 +4248,6 @@
     "shareCopiedEventId": "Nostr-event-ID gekopieerd naar klembord",
     "authHeroTaglineAuthentic": "Authentieke momenten.",
     "authHeroTaglineHuman": "Menselijke creativiteit.",
-    "authHeroLogoSemanticLabel": "Divine",
     "keyImportFailedToImport": "Sleutel importeren of bunker verbinden mislukt",
     "keyImportInvalidBunkerUrl": "Ongeldige bunker-URL",
     "keyImportInvalidFormat": "Ongeldig formaat. Gebruik nsec..., hex, ncryptsec1... of bunker://...",

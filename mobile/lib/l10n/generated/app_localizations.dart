@@ -11130,12 +11130,6 @@ abstract class AppLocalizations {
   /// **'Human creativity.'**
   String get authHeroTaglineHuman;
 
-  /// Screen-reader label for the Divine wordmark logo on the welcome/sign-in screen. This is the brand name and is intentionally identical in every locale — per brand guidelines the name is always written 'Divine' and is never translated or restyled.
-  ///
-  /// In en, this message translates to:
-  /// **'Divine'**
-  String get authHeroLogoSemanticLabel;
-
   /// No description provided for @keyImportFailedToImport.
   ///
   /// In en, this message translates to:

@@ -4248,7 +4248,6 @@
     "shareCopiedEventId": "تم نسخ معرّف حدث Nostr إلى الحافظة",
     "authHeroTaglineAuthentic": "لحظات أصيلة.",
     "authHeroTaglineHuman": "إبداع إنساني.",
-    "authHeroLogoSemanticLabel": "Divine",
     "keyImportFailedToImport": "فشل استيراد المفتاح أو الاتصال بـ bunker",
     "keyImportInvalidBunkerUrl": "رابط bunker غير صالح",
     "keyImportInvalidFormat": "تنسيق غير صالح. استخدم nsec... أو hex أو ncryptsec1... أو bunker://...",

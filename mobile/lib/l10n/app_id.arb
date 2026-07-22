@@ -4248,7 +4248,6 @@
     "shareCopiedEventId": "ID event Nostr disalin ke clipboard",
     "authHeroTaglineAuthentic": "Momen autentik.",
     "authHeroTaglineHuman": "Kreativitas manusia.",
-    "authHeroLogoSemanticLabel": "Divine",
     "keyImportFailedToImport": "Gagal mengimpor kunci atau menyambungkan bunker",
     "keyImportInvalidBunkerUrl": "URL bunker tidak valid",
     "keyImportInvalidFormat": "Format tidak valid. Gunakan nsec..., hex, ncryptsec1..., atau bunker://...",

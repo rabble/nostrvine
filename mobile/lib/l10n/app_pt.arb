@@ -4248,7 +4248,6 @@
     "shareCopiedEventId": "ID do evento Nostr copiado para a área de transferência",
     "authHeroTaglineAuthentic": "Momentos autênticos.",
     "authHeroTaglineHuman": "Criatividade humana.",
-    "authHeroLogoSemanticLabel": "Divine",
     "keyImportFailedToImport": "Falha ao importar a chave ou conectar o bunker",
     "keyImportInvalidBunkerUrl": "URL de bunker inválida",
     "keyImportInvalidFormat": "Formato inválido. Use nsec..., hex, ncryptsec1... ou bunker://...",

@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:openvine/config/app_config.dart';
 import 'package:openvine/l10n/l10n.dart';
 
 /// Hero section with large tagline text and decorative 3D emoji stickers.
@@ -105,10 +106,12 @@ class AuthHeroSection extends StatelessWidget {
           // heart-V); the cursive brand-pack files in assets/icon/ are the
           // retired one. Pinned by auth_hero_section_test.dart so a swap back
           // to the old mark fails CI instead of shipping (see #6282).
+          // The label is the brand name, not copy: it stays out of the ARB
+          // catalog so no locale can translate or transliterate it.
           SvgPicture.asset(
             'assets/icon/logo.svg',
             width: 120,
-            semanticsLabel: context.l10n.authHeroLogoSemanticLabel,
+            semanticsLabel: AppConfig.appName,
           ),
         ],
       ),

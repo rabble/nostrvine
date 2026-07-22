@@ -6522,9 +6522,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get authHeroTaglineHuman => 'Ludzka kreatywność.';
 
   @override
-  String get authHeroLogoSemanticLabel => 'Divine';
-
-  @override
   String get keyImportFailedToImport =>
       'Nie udało się zaimportować klucza ani połączyć z bunkrem';
 

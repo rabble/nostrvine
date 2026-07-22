@@ -7,6 +7,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/config/app_config.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/auth/auth_hero_section.dart';
 
@@ -25,8 +26,9 @@ void main() {
   group(AuthHeroSection, () {
     final l10n = lookupAppLocalizations(const Locale('en'));
 
-    Widget createTestWidget() {
+    Widget createTestWidget({Locale? locale}) {
       return MaterialApp(
+        locale: locale,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         theme: VineTheme.theme,
@@ -92,14 +94,29 @@ void main() {
         expect(_svgAssetNames(tester), contains(_logoAssetPath));
       });
 
+      // `addTearDown(semantics.dispose)` does not work here: flutter_test
+      // verifies semantics handles inside `_runTestBody`, before tear-downs
+      // run, so deferring the dispose fails the test outright.
       testWidgets('announces the brand name to screen readers', (tester) async {
         final semantics = tester.ensureSemantics();
         await tester.pumpWidget(createTestWidget());
 
-        expect(
-          find.bySemanticsLabel(l10n.authHeroLogoSemanticLabel),
-          findsOneWidget,
-        );
+        expect(find.bySemanticsLabel(AppConfig.appName), findsOneWidget);
+
+        semantics.dispose();
+      });
+
+      // The label is the brand name, which is never translated or
+      // transliterated. Sourcing it from the ARB catalog would let a
+      // translation pipeline render it as `ديفاين` / `ディバイン`; this pins the
+      // announced string to `AppConfig.appName` in a non-Latin locale.
+      testWidgets('announces the same brand name in every locale', (
+        tester,
+      ) async {
+        final semantics = tester.ensureSemantics();
+        await tester.pumpWidget(createTestWidget(locale: const Locale('ar')));
+
+        expect(find.bySemanticsLabel(AppConfig.appName), findsOneWidget);
 
         semantics.dispose();
       });

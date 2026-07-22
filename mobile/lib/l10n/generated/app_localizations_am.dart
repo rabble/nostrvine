@@ -6238,9 +6238,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get authHeroTaglineHuman => 'የሰው ፈጠራ።';
 
   @override
-  String get authHeroLogoSemanticLabel => 'Divine';
-
-  @override
   String get keyImportFailedToImport => 'ቁልፍ ማስመጣት ወይም ከቡንከር ጋር መገናኘት አልተሳካም';
 
   @override

@@ -4248,7 +4248,6 @@
     "shareCopiedEventId": "Nostr イベント ID をクリップボードにコピーしたよ",
     "authHeroTaglineAuthentic": "ありのままの瞬間。",
     "authHeroTaglineHuman": "人間の創造性。",
-    "authHeroLogoSemanticLabel": "Divine",
     "keyImportFailedToImport": "鍵のインポートまたはバンカーへの接続に失敗したよ",
     "keyImportInvalidBunkerUrl": "無効なバンカー URL だよ",
     "keyImportInvalidFormat": "無効な形式だよ。nsec...、hex、ncryptsec1...、または bunker://... を使ってね",

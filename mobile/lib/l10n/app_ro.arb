@@ -4248,7 +4248,6 @@
     "shareCopiedEventId": "ID-ul evenimentului Nostr a fost copiat în clipboard",
     "authHeroTaglineAuthentic": "Momente autentice.",
     "authHeroTaglineHuman": "Creativitate umană.",
-    "authHeroLogoSemanticLabel": "Divine",
     "keyImportFailedToImport": "Nu am putut importa cheia sau conecta bunkerul",
     "keyImportInvalidBunkerUrl": "URL de bunker invalid",
     "keyImportInvalidFormat": "Format invalid. Folosește nsec..., hex, ncryptsec1... sau bunker://...",

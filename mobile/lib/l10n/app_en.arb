@@ -3749,10 +3749,6 @@
   "shareCopiedEventId": "Nostr event ID copied to clipboard",
   "authHeroTaglineAuthentic": "Authentic moments.",
   "authHeroTaglineHuman": "Human creativity.",
-  "authHeroLogoSemanticLabel": "Divine",
-  "@authHeroLogoSemanticLabel": {
-    "description": "Screen-reader label for the Divine wordmark logo on the welcome/sign-in screen. This is the brand name and is intentionally identical in every locale — per brand guidelines the name is always written 'Divine' and is never translated or restyled."
-  },
   "keyImportFailedToImport": "Failed to import key or connect bunker",
   "keyImportInvalidBunkerUrl": "Invalid bunker URL",
   "keyImportInvalidFormat": "Invalid format. Use nsec..., hex, ncryptsec1..., or bunker://...",

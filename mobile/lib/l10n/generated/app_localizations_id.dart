@@ -6339,9 +6339,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get authHeroTaglineHuman => 'Kreativitas manusia.';
 
   @override
-  String get authHeroLogoSemanticLabel => 'Divine';
-
-  @override
   String get keyImportFailedToImport =>
       'Gagal mengimpor kunci atau menyambungkan bunker';
 
