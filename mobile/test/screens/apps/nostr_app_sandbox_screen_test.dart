@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
@@ -6,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
@@ -13,7 +16,10 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_bridge.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
+
+class _MockImagePicker extends Mock implements ImagePicker {}
 
 void main() {
   group('NostrAppSandboxScreen', () {
@@ -868,6 +874,215 @@ void main() {
           isEmpty,
         );
       });
+    });
+  });
+
+  group('sandboxAndroidFileSelector', () {
+    late _MockImagePicker picker;
+
+    setUp(() {
+      picker = _MockImagePicker();
+    });
+
+    FileSelectorParams params({
+      List<String> acceptTypes = const ['image/*'],
+      bool isCaptureEnabled = false,
+      FileSelectorMode mode = FileSelectorMode.open,
+    }) {
+      return FileSelectorParams(
+        isCaptureEnabled: isCaptureEnabled,
+        acceptTypes: acceptTypes,
+        mode: mode,
+      );
+    }
+
+    Future<File> passthroughStripper(File imageFile) async => imageFile;
+
+    test('returns a file:// URI picked from the gallery', () async {
+      when(
+        () => picker.pickImage(source: ImageSource.gallery),
+      ).thenAnswer((_) async => XFile('/tmp/badge.png'));
+
+      final result = await sandboxAndroidFileSelector(
+        params(),
+        picker,
+        metadataStripper: passthroughStripper,
+      );
+
+      expect(result, equals(['file:///tmp/badge.png']));
+    });
+
+    test('strips image metadata before returning the file URI', () async {
+      final strippedPaths = <String>[];
+      when(
+        () => picker.pickImage(source: ImageSource.gallery),
+      ).thenAnswer((_) async => XFile('/tmp/badge.png'));
+
+      final result = await sandboxAndroidFileSelector(
+        params(),
+        picker,
+        metadataStripper: (imageFile) async {
+          strippedPaths.add(imageFile.path);
+          return File('/tmp/badge-stripped.jpg');
+        },
+      );
+
+      expect(strippedPaths, equals(['/tmp/badge.png']));
+      expect(result, equals(['file:///tmp/badge-stripped.jpg']));
+    });
+
+    test('uses the camera when the input requests capture', () async {
+      when(
+        () => picker.pickImage(source: ImageSource.camera),
+      ).thenAnswer((_) async => XFile('/tmp/shot.jpg'));
+
+      final result = await sandboxAndroidFileSelector(
+        params(isCaptureEnabled: true),
+        picker,
+        metadataStripper: passthroughStripper,
+      );
+
+      expect(result, equals(['file:///tmp/shot.jpg']));
+      verifyNever(() => picker.pickImage(source: ImageSource.gallery));
+    });
+
+    test('returns empty when the user cancels the picker', () async {
+      when(
+        () => picker.pickImage(source: ImageSource.gallery),
+      ).thenAnswer((_) async => null);
+
+      final result = await sandboxAndroidFileSelector(
+        params(),
+        picker,
+        metadataStripper: passthroughStripper,
+      );
+
+      expect(result, isEmpty);
+    });
+
+    test('picks multiple images in openMultiple mode', () async {
+      when(() => picker.pickMultiImage()).thenAnswer(
+        (_) async => [XFile('/tmp/a.png'), XFile('/tmp/b.png')],
+      );
+
+      final result = await sandboxAndroidFileSelector(
+        params(mode: FileSelectorMode.openMultiple),
+        picker,
+        metadataStripper: passthroughStripper,
+      );
+
+      expect(result, equals(['file:///tmp/a.png', 'file:///tmp/b.png']));
+    });
+
+    test(
+      'uses the camera for openMultiple when capture is requested',
+      () async {
+        when(
+          () => picker.pickImage(source: ImageSource.camera),
+        ).thenAnswer((_) async => XFile('/tmp/capture.jpg'));
+
+        final result = await sandboxAndroidFileSelector(
+          params(mode: FileSelectorMode.openMultiple, isCaptureEnabled: true),
+          picker,
+          metadataStripper: passthroughStripper,
+        );
+
+        expect(result, equals(['file:///tmp/capture.jpg']));
+        verifyNever(() => picker.pickMultiImage());
+        verifyNever(() => picker.pickImage(source: ImageSource.gallery));
+      },
+    );
+
+    test('does not open the picker for save mode', () async {
+      final result = await sandboxAndroidFileSelector(
+        params(mode: FileSelectorMode.save),
+        picker,
+        metadataStripper: passthroughStripper,
+      );
+
+      expect(result, isEmpty);
+      verifyNever(() => picker.pickImage(source: ImageSource.gallery));
+      verifyNever(() => picker.pickImage(source: ImageSource.camera));
+      verifyNever(() => picker.pickMultiImage());
+    });
+
+    test('does not open the picker for a non-image accept type', () async {
+      final result = await sandboxAndroidFileSelector(
+        params(acceptTypes: const ['application/pdf']),
+        picker,
+      );
+
+      expect(result, isEmpty);
+      verifyNever(() => picker.pickImage(source: ImageSource.gallery));
+      verifyNever(() => picker.pickImage(source: ImageSource.camera));
+      verifyNever(() => picker.pickMultiImage());
+    });
+
+    test('falls back to gallery images when no accept type is set', () async {
+      when(
+        () => picker.pickImage(source: ImageSource.gallery),
+      ).thenAnswer((_) async => XFile('/tmp/any.webp'));
+
+      final result = await sandboxAndroidFileSelector(
+        params(acceptTypes: const []),
+        picker,
+        metadataStripper: passthroughStripper,
+      );
+
+      expect(result, equals(['file:///tmp/any.webp']));
+    });
+
+    // Android hands a plain `<input type="file">` (no accept attr) to the
+    // selector as `['']`, `['*']`, or `['*/*']` — not `[]`. All mean
+    // "accept anything" and must open the picker, not silently no-op.
+    for (final anyToken in const ['', '*', '*/*']) {
+      test('opens the gallery for the accept-anything token '
+          '"$anyToken"', () async {
+        when(
+          () => picker.pickImage(source: ImageSource.gallery),
+        ).thenAnswer((_) async => XFile('/tmp/any.png'));
+
+        final result = await sandboxAndroidFileSelector(
+          params(acceptTypes: [anyToken]),
+          picker,
+          metadataStripper: passthroughStripper,
+        );
+
+        expect(result, equals(['file:///tmp/any.png']));
+      });
+    }
+
+    for (final extension in const ['.avif', '.bmp', '.heif', '.tif']) {
+      test(
+        'opens the gallery for image extension token "$extension"',
+        () async {
+          when(
+            () => picker.pickImage(source: ImageSource.gallery),
+          ).thenAnswer((_) async => XFile('/tmp/extension-image'));
+
+          final result = await sandboxAndroidFileSelector(
+            params(acceptTypes: [extension]),
+            picker,
+            metadataStripper: passthroughStripper,
+          );
+
+          expect(result, equals(['file:///tmp/extension-image']));
+        },
+      );
+    }
+
+    test('returns empty when picking throws', () async {
+      when(
+        () => picker.pickImage(source: ImageSource.gallery),
+      ).thenThrow(Exception('picker exploded'));
+
+      final result = await sandboxAndroidFileSelector(
+        params(),
+        picker,
+        metadataStripper: passthroughStripper,
+      );
+
+      expect(result, isEmpty);
     });
   });
 }

@@ -3,6 +3,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:divine_ui/divine_ui.dart';
@@ -12,6 +13,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_metadata_stripper/image_metadata_stripper.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -25,6 +28,7 @@ import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 typedef SandboxViewBuilder =
     Widget Function(void Function(Uri uri) onNavigationAttempt);
 typedef SandboxJavaScriptRunner = Future<void> Function(String script);
+typedef SandboxImageMetadataStripper = Future<File> Function(File imageFile);
 
 const _bridgePayloadObjectMessage = 'Bridge payload must be a JSON object';
 const _bridgeMethodRequiredMessage = 'Bridge method is required';
@@ -273,6 +277,25 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
         }
       },
     );
+
+    // Without this, `webview_flutter` silently ignores HTML file inputs on
+    // Android, so image uploads inside sandboxed apps (e.g. badges) do nothing.
+    final platformController = controller.platform;
+    if (platformController is AndroidWebViewController) {
+      final imagePicker = ImagePicker();
+      await platformController.setOnShowFileSelector(
+        (params) => sandboxAndroidFileSelector(params, imagePicker),
+      );
+      // The picker hands back a file:// URI; the WebView can only read it with
+      // file access enabled, which defaults to false on Android 11+. Without
+      // this the file is chosen but never populates the <input> (0-byte read).
+      // The https sandbox document still can't script-read local file
+      // contents: same-origin policy blocks fetch/XHR to file://, and canvas
+      // tainting blocks reading back <img src="file://…"> pixels. (The
+      // setAllow*FileURLs knobs govern file://-origin documents, which we
+      // never load, so they stay at their safe defaults.)
+      await platformController.setAllowFileAccess(true);
+    }
 
     // Replace the pigeon message channel with the native frame-attesting one
     // (iOS: WKScriptMessageHandler reading frameInfo; Android: WebMessageListener
@@ -740,4 +763,117 @@ class _BootstrappedSandboxPage {
 
   final Uri baseUri;
   final String html;
+}
+
+/// Resolves an Android WebView file-chooser request into `file://` URIs the
+/// WebView can read back into the HTML `<input type="file">`.
+///
+/// This intentionally narrows Android sandbox uploads to images for now:
+/// camera when the input requests capture, gallery otherwise. Picked files are
+/// stripped of metadata before being exposed to the sandbox so third-party apps
+/// do not receive GPS or device EXIF. Returns an empty list when the input wants
+/// a non-image type, save mode, or the user cancels, which the WebView treats as
+/// "no file selected".
+@visibleForTesting
+Future<List<String>> sandboxAndroidFileSelector(
+  FileSelectorParams params,
+  ImagePicker picker, {
+  SandboxImageMetadataStripper? metadataStripper,
+}) async {
+  if (!_acceptsImages(params.acceptTypes)) {
+    return const <String>[];
+  }
+
+  if (params.mode == FileSelectorMode.save) {
+    return const <String>[];
+  }
+
+  final stripMetadata =
+      metadataStripper ?? ImageMetadataStripper.stripMetadataInPlace;
+
+  try {
+    if (params.mode == FileSelectorMode.openMultiple) {
+      if (params.isCaptureEnabled) {
+        final file = await picker.pickImage(source: ImageSource.camera);
+        if (file == null) {
+          return const <String>[];
+        }
+        return _strippedFileUris([file], stripMetadata);
+      }
+      final files = await picker.pickMultiImage();
+      return _strippedFileUris(files, stripMetadata);
+    }
+
+    final source = params.isCaptureEnabled
+        ? ImageSource.camera
+        : ImageSource.gallery;
+    final file = await picker.pickImage(source: source);
+    if (file == null) {
+      return const <String>[];
+    }
+    return _strippedFileUris([file], stripMetadata);
+  } catch (error, stackTrace) {
+    // Expected, user-driven paths land here too (e.g. denying the camera
+    // permission throws PlatformException), so log at warning, not error.
+    Log.log(
+      'Sandbox WebView file selection failed: $error',
+      name: 'NostrAppSandboxScreen',
+      category: LogCategory.ui,
+      level: LogLevel.warning,
+      error: error,
+      stackTrace: stackTrace,
+    );
+    return const <String>[];
+  }
+}
+
+Future<List<String>> _strippedFileUris(
+  List<XFile> files,
+  SandboxImageMetadataStripper stripMetadata,
+) async {
+  final strippedFiles = <String>[];
+  for (final file in files) {
+    final strippedFile = await stripMetadata(File(file.path));
+    strippedFiles.add(Uri.file(strippedFile.path).toString());
+  }
+  return strippedFiles;
+}
+
+/// Whether the `<input accept="…">` tokens permit an image.
+///
+/// An empty list and every "any file" spelling fall through to the image
+/// picker. Android delivers a plain `<input type="file">` (no accept attr) as
+/// `['']`, not `[]`, so `''` counts as accept-anything alongside `*` and
+/// `*/*`. Otherwise the input must explicitly allow an image MIME type
+/// (`image/*`, `image/png`, …) or a listed bare extension.
+bool _acceptsImages(List<String> acceptTypes) {
+  if (acceptTypes.isEmpty) {
+    return true;
+  }
+  return acceptTypes.any(
+    (type) => _isAnyFileToken(type) || _acceptsImageType(type),
+  );
+}
+
+bool _isAnyFileToken(String type) {
+  final normalized = type.trim().toLowerCase();
+  return normalized.isEmpty || normalized == '*' || normalized == '*/*';
+}
+
+bool _acceptsImageType(String type) {
+  final normalized = type.trim().toLowerCase();
+  return normalized.startsWith('image/') ||
+      const {
+        '.avif',
+        '.bmp',
+        '.gif',
+        '.heic',
+        '.heif',
+        '.jpg',
+        '.jpeg',
+        '.png',
+        '.tif',
+        '.tiff',
+        '.webp',
+      }.contains(normalized);
 }
