@@ -31,9 +31,8 @@ class PreparedRecognitionAudio {
   /// Safe on a passthrough result and safe to call more than once. Best
   /// effort: a leftover temp file is harmless and must never surface as an
   /// error over the transcription result.
-  Future<void> dispose() => WavPreprocessor._deleteWorkDirQuietly(
-    _workDirectory,
-  );
+  Future<void> dispose() =>
+      WavPreprocessor._deleteWorkDirQuietly(_workDirectory);
 }
 
 /// Rewrites WAV audio into the canonical format the Android platform
@@ -67,6 +66,12 @@ abstract final class WavPreprocessor {
   /// driving an unbounded allocation. Short-form video never approaches this.
   static const int _maxConvertedFrames = targetSampleRate * 60 * 30;
 
+  /// Largest PCM payload we will read into memory (64 MiB). Checked against the
+  /// data chunk's declared size while parsing the header, before any payload
+  /// buffer is allocated, so an oversized or sparse (huge declared size, tiny
+  /// file) WAV is rejected instead of exhausting the process.
+  static const int _maxDataBytes = 64 * 1024 * 1024;
+
   /// Set true whenever the conversion routine executes, in whichever isolate
   /// runs it. Because statics are per-isolate, a value observed in the caller
   /// isolate after [prepareForRecognition] proves whether the heavy work ran
@@ -74,12 +79,19 @@ abstract final class WavPreprocessor {
   @visibleForTesting
   static bool debugConversionRanInCallerIsolate = false;
 
+  /// Overrides how the per-call working directory is created so tests can
+  /// force a creation failure. `null` uses [Directory.systemTemp]. Test only.
+  @visibleForTesting
+  static Future<Directory> Function(String prefix)?
+  debugCreateWorkDirectoryOverride;
+
   /// Prepares the WAV at [inputPath] for speech recognition.
   ///
-  /// Decode, downmix, resample, and encode run in a worker isolate (via
-  /// [Isolate.run]) so a long clip never stalls the caller. The output size is
-  /// bounded before any buffer is allocated, so a malformed header cannot
-  /// drive a runaway allocation.
+  /// The header is parsed with bounded reads and its size limits validated
+  /// before any payload is allocated; decoding, downmixing, resampling, and
+  /// encoding then run in a worker isolate (via [Isolate.run]) so a long clip
+  /// never stalls the caller and a malformed header cannot drive a runaway
+  /// allocation.
   ///
   /// Returns a [PreparedRecognitionAudio] whose `path` is [inputPath] itself
   /// when the audio is already 16 kHz mono 16-bit integer PCM in a plain
@@ -99,22 +111,25 @@ abstract final class WavPreprocessor {
   /// * [AudioFileNotFoundException] if [inputPath] does not exist.
   /// * [UnsupportedAudioFormatException] if the file is not a readable
   ///   RIFF/WAVE file in a supported PCM encoding, its sample rate is out of
-  ///   range, or the clip is too long to prepare.
-  /// * [TranscriptionFailedException] if reading the input or writing the
-  ///   converted output fails.
+  ///   range, or the payload is too large / the clip too long to prepare.
+  /// * [TranscriptionFailedException] if creating the temp directory, or
+  ///   reading the input or writing the converted output, fails.
   static Future<PreparedRecognitionAudio> prepareForRecognition({
     required String inputPath,
   }) async {
     if (!File(inputPath).existsSync()) {
       throw AudioFileNotFoundException(inputPath);
     }
-    final workDirectory = await Directory.systemTemp.createTemp(
-      'caption_generator',
-    );
+    final workDirectory = await _createWorkDirectory();
     final outputPath = '${workDirectory.path}/$_convertedFileName';
     try {
       final didConvert = await Isolate.run(
-        () => _runPreparation(inputPath, outputPath, _maxConvertedFrames),
+        () => _runPreparation(
+          inputPath,
+          outputPath,
+          _maxConvertedFrames,
+          _maxDataBytes,
+        ),
       );
       if (!didConvert) {
         await _deleteWorkDirQuietly(workDirectory);
@@ -127,49 +142,84 @@ abstract final class WavPreprocessor {
     }
   }
 
+  static Future<Directory> _createWorkDirectory() async {
+    final create =
+        debugCreateWorkDirectoryOverride ??
+        (prefix) => Directory.systemTemp.createTemp(prefix);
+    try {
+      return await create('caption_generator');
+    } on FileSystemException catch (error) {
+      throw TranscriptionFailedException(
+        'Could not create a working directory for audio preparation: '
+        '${error.message}',
+      );
+    }
+  }
+
   /// Reads, validates, and converts the WAV, writing the canonical output to
   /// [outputPath]. Returns `true` when it wrote a converted file, `false` when
   /// the input was already canonical and no output was written.
   ///
-  /// Exposed for tests to drive the read/write-failure and size-limit paths
+  /// Exposed for tests to drive the size-limit and read/write-failure paths
   /// directly; production always reaches it through [Isolate.run].
   @visibleForTesting
   static Future<bool> runPreparation(
     String inputPath,
     String outputPath, {
     int maxConvertedFrames = _maxConvertedFrames,
-  }) => _runPreparation(inputPath, outputPath, maxConvertedFrames);
+    int maxDataBytes = _maxDataBytes,
+  }) =>
+      _runPreparation(inputPath, outputPath, maxConvertedFrames, maxDataBytes);
 
   static Future<bool> _runPreparation(
     String inputPath,
     String outputPath,
     int maxConvertedFrames,
+    int maxDataBytes,
   ) async {
     debugConversionRanInCallerIsolate = true;
-    final Uint8List bytes;
+    RandomAccessFile? raf;
     try {
-      bytes = await File(inputPath).readAsBytes();
-    } on FileSystemException catch (error) {
-      throw TranscriptionFailedException(
-        'Could not read audio during preparation: ${error.message}',
+      final Uint8List payload;
+      final _WavHeader header;
+      try {
+        raf = File(inputPath).openSync();
+        // Bounded metadata parse: reads only chunk headers and the fmt body,
+        // never the payload, so limits are enforced before allocation.
+        header = _WavHeader.readFrom(raf, raf.lengthSync());
+        if (header.isCanonical) {
+          return false;
+        }
+        header.assertConvertible(
+          maxConvertedFrames: maxConvertedFrames,
+          maxDataBytes: maxDataBytes,
+        );
+        raf.setPositionSync(header.dataOffset);
+        payload = raf.readSync(header.dataLength);
+      } on FileSystemException catch (error) {
+        throw TranscriptionFailedException(
+          'Could not read audio during preparation: ${error.message}',
+        );
+      }
+      final mono = header.decodeMonoSamples(payload);
+      final resampled = _resampleLinear(
+        mono,
+        header.sampleRate,
+        targetSampleRate,
       );
+      final encoded = _encodePcm16Wav(resampled, targetSampleRate);
+      try {
+        File(outputPath).writeAsBytesSync(encoded, flush: true);
+      } on FileSystemException catch (error) {
+        throw TranscriptionFailedException(
+          'Could not write converted audio during preparation: '
+          '${error.message}',
+        );
+      }
+      return true;
+    } finally {
+      raf?.closeSync();
     }
-    final wav = _ParsedWav.parse(bytes);
-    if (wav.isCanonical) {
-      return false;
-    }
-    wav.assertConvertible(maxConvertedFrames);
-    final mono = wav.decodeMonoSamples();
-    final resampled = _resampleLinear(mono, wav.sampleRate, targetSampleRate);
-    final encoded = _encodePcm16Wav(resampled, targetSampleRate);
-    try {
-      await File(outputPath).writeAsBytes(encoded, flush: true);
-    } on FileSystemException catch (error) {
-      throw TranscriptionFailedException(
-        'Could not write converted audio during preparation: ${error.message}',
-      );
-    }
-    return true;
   }
 
   static Future<void> _deleteWorkDirQuietly(Directory? directory) async {
@@ -238,55 +288,73 @@ abstract final class WavPreprocessor {
   }
 }
 
-class _ParsedWav {
-  _ParsedWav._({
+/// WAV metadata located by a bounded RIFF walk that never reads the payload.
+class _WavHeader {
+  _WavHeader._({
     required this.sampleRate,
     required this.channels,
     required this.isFloat32,
     required this.wasExtensible,
-    required Uint8List bytes,
-    required int dataOffset,
-    required int dataLength,
-  }) : _bytes = bytes,
-       _dataOffset = dataOffset,
-       _dataLength = dataLength;
+    required this.dataOffset,
+    required this.dataLength,
+    required this.declaredDataSize,
+  });
 
-  factory _ParsedWav.parse(Uint8List bytes) {
-    if (bytes.length < 12 ||
-        !_hasAsciiTag(bytes, 0, 'RIFF') ||
-        !_hasAsciiTag(bytes, 8, 'WAVE')) {
+  /// Parses the RIFF header of [raf] (whose length is [fileLength]) with
+  /// bounded reads — only chunk headers and the `fmt ` body are read, so the
+  /// payload is never loaded here.
+  ///
+  /// Throws [UnsupportedAudioFormatException] if the file is not a readable
+  /// RIFF/WAVE file in a supported PCM encoding.
+  factory _WavHeader.readFrom(RandomAccessFile raf, int fileLength) {
+    if (fileLength < 12) {
       throw const UnsupportedAudioFormatException('Not a RIFF/WAVE file');
     }
-    final data = ByteData.sublistView(bytes);
+    raf.setPositionSync(0);
+    final riff = raf.readSync(12);
+    if (riff.length < 12 ||
+        !_hasAsciiTag(riff, 0, 'RIFF') ||
+        !_hasAsciiTag(riff, 8, 'WAVE')) {
+      throw const UnsupportedAudioFormatException('Not a RIFF/WAVE file');
+    }
     int? formatCode;
     int? channels;
     int? sampleRate;
     int? bitsPerSample;
     int? dataOffset;
     int? dataLength;
+    int? declaredDataSize;
     var wasExtensible = false;
     var offset = 12;
-    while (offset + 8 <= bytes.length) {
-      final chunkSize = data.getUint32(offset + 4, Endian.little);
+    while (offset + 8 <= fileLength) {
+      raf.setPositionSync(offset);
+      final head = raf.readSync(8);
+      if (head.length < 8) break;
+      final chunkSize = ByteData.sublistView(head).getUint32(4, Endian.little);
       final bodyOffset = offset + 8;
-      if (_hasAsciiTag(bytes, offset, 'fmt ') &&
+      if (_hasAsciiTag(head, 0, 'fmt ') &&
           chunkSize >= 16 &&
-          bodyOffset + 16 <= bytes.length) {
-        formatCode = data.getUint16(bodyOffset, Endian.little);
-        channels = data.getUint16(bodyOffset + 2, Endian.little);
-        sampleRate = data.getUint32(bodyOffset + 4, Endian.little);
-        bitsPerSample = data.getUint16(bodyOffset + 14, Endian.little);
+          bodyOffset + 16 <= fileLength) {
+        final available = fileLength - bodyOffset;
+        final wanted = chunkSize >= 40 ? 40 : 16;
+        final fmt = raf.readSync(wanted <= available ? wanted : available);
+        final data = ByteData.sublistView(fmt);
+        formatCode = data.getUint16(0, Endian.little);
+        channels = data.getUint16(2, Endian.little);
+        sampleRate = data.getUint32(4, Endian.little);
+        bitsPerSample = data.getUint16(14, Endian.little);
         if (formatCode == WavPreprocessor._extensibleFormat &&
             chunkSize >= 40 &&
-            bodyOffset + 26 <= bytes.length) {
+            fmt.length >= 26) {
           // WAVE_FORMAT_EXTENSIBLE: the real format is the first two bytes of
           // the SubFormat GUID at offset 24 of the fmt chunk body.
           wasExtensible = true;
-          formatCode = data.getUint16(bodyOffset + 24, Endian.little);
+          formatCode = data.getUint16(24, Endian.little);
         }
-      } else if (_hasAsciiTag(bytes, offset, 'data')) {
+      } else if (_hasAsciiTag(head, 0, 'data')) {
         dataOffset = bodyOffset;
-        final available = bytes.length - bodyOffset;
+        declaredDataSize = chunkSize;
+        final available = fileLength - bodyOffset;
         dataLength = chunkSize < available ? chunkSize : available;
       }
       // Chunks are word-aligned: odd-sized chunks carry one padding byte.
@@ -298,7 +366,7 @@ class _ParsedWav {
         bitsPerSample == null) {
       throw const UnsupportedAudioFormatException('WAV has no fmt chunk');
     }
-    if (dataOffset == null || dataLength == null) {
+    if (dataOffset == null || dataLength == null || declaredDataSize == null) {
       throw const UnsupportedAudioFormatException('WAV has no data chunk');
     }
     if (channels < 1 || sampleRate < 1) {
@@ -316,14 +384,14 @@ class _ParsedWav {
         'at $bitsPerSample bits per sample',
       );
     }
-    return _ParsedWav._(
+    return _WavHeader._(
       sampleRate: sampleRate,
       channels: channels,
       isFloat32: isFloat32,
       wasExtensible: wasExtensible,
-      bytes: bytes,
       dataOffset: dataOffset,
       dataLength: dataLength,
+      declaredDataSize: declaredDataSize,
     );
   }
 
@@ -335,9 +403,16 @@ class _ParsedWav {
   /// are always re-encoded because the native Android reader only accepts a
   /// literal PCM `fmt ` chunk.
   final bool wasExtensible;
-  final Uint8List _bytes;
-  final int _dataOffset;
-  final int _dataLength;
+
+  /// Byte offset of the payload within the file.
+  final int dataOffset;
+
+  /// Payload bytes actually present (declared size clamped to the file).
+  final int dataLength;
+
+  /// Payload size the `data` chunk header declares, used for the size guard so
+  /// a sparse file (huge declared size, tiny body) is rejected up front.
+  final int declaredDataSize;
 
   /// Whether the audio is already exactly what the recognizer wants and can be
   /// passed through untouched.
@@ -348,9 +423,12 @@ class _ParsedWav {
       !wasExtensible;
 
   /// Rejects inputs whose conversion would allocate unbounded or amplified
-  /// buffers, before any output buffer is sized. Called only after
-  /// [isCanonical] is `false`, i.e. a conversion is actually required.
-  void assertConvertible(int maxConvertedFrames) {
+  /// buffers, before any payload is read. Called only after [isCanonical] is
+  /// `false`, i.e. a conversion is actually required.
+  void assertConvertible({
+    required int maxConvertedFrames,
+    required int maxDataBytes,
+  }) {
     if (sampleRate < WavPreprocessor._minInputSampleRate ||
         sampleRate > WavPreprocessor._maxInputSampleRate) {
       throw UnsupportedAudioFormatException(
@@ -359,8 +437,14 @@ class _ParsedWav {
         '-${WavPreprocessor._maxInputSampleRate}Hz)',
       );
     }
+    if (declaredDataSize > maxDataBytes) {
+      throw UnsupportedAudioFormatException(
+        'Audio payload is too large to prepare for recognition: '
+        '$declaredDataSize bytes exceeds the $maxDataBytes-byte limit',
+      );
+    }
     final frameSize = (isFloat32 ? 4 : 2) * channels;
-    final frameCount = _dataLength ~/ frameSize;
+    final frameCount = dataLength ~/ frameSize;
     final convertedFrames =
         frameCount * WavPreprocessor.targetSampleRate ~/ sampleRate;
     if (convertedFrames > maxConvertedFrames) {
@@ -371,17 +455,17 @@ class _ParsedWav {
     }
   }
 
-  /// Decodes the PCM payload to doubles in [-1, 1], averaging all channels
-  /// down to mono.
-  Float64List decodeMonoSamples() {
-    final data = ByteData.sublistView(_bytes);
+  /// Decodes the [payload] PCM (the raw `data` chunk bytes) to doubles in
+  /// [-1, 1], averaging all channels down to mono.
+  Float64List decodeMonoSamples(Uint8List payload) {
+    final data = ByteData.sublistView(payload);
     final bytesPerSample = isFloat32 ? 4 : 2;
     final frameSize = bytesPerSample * channels;
-    final frameCount = _dataLength ~/ frameSize;
+    final frameCount = dataLength ~/ frameSize;
     final samples = Float64List(frameCount);
     for (var frame = 0; frame < frameCount; frame++) {
       var sum = 0.0;
-      final frameOffset = _dataOffset + frame * frameSize;
+      final frameOffset = frame * frameSize;
       for (var channel = 0; channel < channels; channel++) {
         final sampleOffset = frameOffset + channel * bytesPerSample;
         sum += isFloat32

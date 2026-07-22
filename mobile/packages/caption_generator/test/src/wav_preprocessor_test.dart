@@ -19,6 +19,7 @@ void main() {
     });
 
     tearDown(() {
+      WavPreprocessor.debugCreateWorkDirectoryOverride = null;
       tempDir.deleteSync(recursive: true);
     });
 
@@ -324,22 +325,58 @@ void main() {
           throwsA(isA<UnsupportedAudioFormatException>()),
         );
       });
+
+      test('rejects an oversized/sparse data chunk before reading it', () {
+        // A tiny file whose data chunk header lies about being ~2 GiB: the
+        // bounded metadata parse must reject on the declared size rather than
+        // trust it and allocate. Regression for reading the whole payload
+        // before the size check.
+        final inputPath = writeWav(
+          'sparse.wav',
+          buildWav(
+            channels: [List.filled(441, 0.5), List.filled(441, -0.25)],
+            declaredDataSizeOverride: 0x7FFFFFF0,
+          ),
+        );
+
+        expect(
+          () => prepare(inputPath),
+          throwsA(isA<UnsupportedAudioFormatException>()),
+        );
+      });
     });
 
     group('maps I/O failures to typed exceptions', () {
       test('read failure throws $TranscriptionFailedException', () {
-        // A directory exists but cannot be read as a file.
-        final directory = Directory('${tempDir.path}/a_directory')
-          ..createSync();
-
+        // Opening a missing input fails; runPreparation skips the facade's
+        // existence guard, so this exercises the read path's mapping directly.
         expect(
           () => WavPreprocessor.runPreparation(
-            directory.path,
+            '${tempDir.path}/does_not_exist.wav',
             '${tempDir.path}/out.wav',
           ),
           throwsA(isA<TranscriptionFailedException>()),
         );
       });
+
+      test(
+        'temp directory creation failure throws $TranscriptionFailedException',
+        () async {
+          WavPreprocessor.debugCreateWorkDirectoryOverride = (_) async =>
+              throw const FileSystemException('temp unavailable');
+          final inputPath = writeWav(
+            'src.wav',
+            buildWav(
+              channels: [List.filled(441, 0.5), List.filled(441, -0.25)],
+            ),
+          );
+
+          await expectLater(
+            prepare(inputPath),
+            throwsA(isA<TranscriptionFailedException>()),
+          );
+        },
+      );
 
       test('write failure throws $TranscriptionFailedException', () {
         final inputPath = writeWav(

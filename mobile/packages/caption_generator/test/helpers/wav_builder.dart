@@ -11,6 +11,8 @@ import 'dart:typed_data';
 /// format in a `WAVE_FORMAT_EXTENSIBLE` fmt chunk. [includeJunkChunk] inserts
 /// an odd-sized unknown chunk before `fmt ` to exercise chunk skipping.
 /// [omitDataChunk] and [omitFmtChunk] produce intentionally malformed files.
+/// [declaredDataSizeOverride] writes a false `data` chunk size (e.g. a huge
+/// value over a tiny body) to synthesize oversized / sparse input.
 Uint8List buildWav({
   required List<List<double>> channels,
   int sampleRate = 44100,
@@ -21,6 +23,7 @@ Uint8List buildWav({
   bool omitFmtChunk = false,
   int? formatCode,
   int? bitsPerSample,
+  int? declaredDataSizeOverride,
 }) {
   final channelCount = channels.length;
   final sampleCount = channels.first.length;
@@ -85,7 +88,7 @@ Uint8List buildWav({
   if (!omitDataChunk) {
     chunks
       ..add('data'.codeUnits)
-      ..add(_uint32(dataSize))
+      ..add(_uint32(declaredDataSizeOverride ?? dataSize))
       ..add(data.buffer.asUint8List());
   }
 
