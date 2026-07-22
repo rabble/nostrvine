@@ -100,6 +100,60 @@ void main() {
       expect(cues, equals([_word('hello world', 0, 800)]));
     });
 
+    test('starts a new cue after sentence-final punctuation', () {
+      final cues = groupCaptionSegments([
+        _word('Hello,', 0, 300),
+        _word('a', 350, 500),
+        _word('test.', 550, 900),
+        _word('Can', 950, 1100),
+        _word('you?', 1150, 1400),
+        _word('Yes', 1450, 1700),
+      ]);
+
+      expect(
+        cues,
+        equals([
+          _word('Hello, a test.', 0, 900),
+          _word('Can you?', 950, 1400),
+          _word('Yes', 1450, 1700),
+        ]),
+      );
+    });
+
+    test('treats punctuation wrapped in closing quotes as sentence end', () {
+      final cues = groupCaptionSegments([
+        _word('"Stop!"', 0, 400),
+        _word('she', 450, 600),
+        _word('said', 650, 900),
+      ]);
+
+      expect(
+        cues,
+        equals([_word('"Stop!"', 0, 400), _word('she said', 450, 900)]),
+      );
+    });
+
+    test('keeps sentences together when splitAtSentenceEnd is false', () {
+      final cues = groupCaptionSegments(
+        [
+          _word('One.', 0, 300),
+          _word('Two.', 350, 600),
+        ],
+        splitAtSentenceEnd: false,
+      );
+
+      expect(cues, equals([_word('One. Two.', 0, 600)]));
+    });
+
+    test('does not split on mid-sentence commas', () {
+      final cues = groupCaptionSegments([
+        _word('Well,', 0, 300),
+        _word('okay', 350, 600),
+      ]);
+
+      expect(cues, equals([_word('Well, okay', 0, 600)]));
+    });
+
     test('throws $ArgumentError for a non-positive character limit', () {
       expect(
         () => groupCaptionSegments(const [], maxCharactersPerCaption: 0),

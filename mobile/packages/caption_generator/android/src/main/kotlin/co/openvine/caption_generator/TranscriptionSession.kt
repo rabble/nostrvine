@@ -73,6 +73,12 @@ internal class TranscriptionSession(
             )
             putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_CHANNEL_COUNT, 1)
             putExtra(RecognizerIntent.EXTRA_REQUEST_WORD_TIMING, true)
+            // Punctuation + casing via RecognitionPart.formattedText, so the
+            // Dart cue grouper can split at sentence boundaries.
+            putExtra(
+                RecognizerIntent.EXTRA_ENABLE_FORMATTING,
+                RecognizerIntent.FORMATTING_OPTIMIZE_QUALITY,
+            )
             putExtra(
                 RecognizerIntent.EXTRA_SEGMENTED_SESSION,
                 RecognizerIntent.EXTRA_AUDIO_SOURCE,

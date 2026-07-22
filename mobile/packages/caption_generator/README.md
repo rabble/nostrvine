@@ -21,12 +21,20 @@ final words = await generator.generateCaptions(
   localeIdentifier: 'en-US', // defaults to the device locale
 );
 
-// Merge words into display-ready caption cues.
+// Merge words into display-ready caption cues. Cues break at sentence-final
+// punctuation, silence gaps, and length/duration limits.
 final cues = groupCaptionSegments(words);
 for (final cue in cues) {
   print('${cue.start} -> ${cue.end}: ${cue.text}');
 }
 ```
+
+`groupCaptionSegments` splits on sentence-final punctuation by default
+(`splitAtSentenceEnd`). Recognizer word timings tend to smear speech pauses
+away, so punctuation is the more reliable break signal — on both platforms
+the transcript is punctuated (iOS/macOS via `addsPunctuation`, Android via
+`EXTRA_ENABLE_FORMATTING`). Unpunctuated input is unaffected and still breaks
+on silence and the length/duration limits.
 
 Failures throw typed `CaptionGenerationException` subclasses
 (`SpeechNotAuthorizedException`, `SpeechRecognizerUnavailableException`,
