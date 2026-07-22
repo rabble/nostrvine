@@ -184,16 +184,19 @@ abstract final class WavPreprocessor {
       final _WavHeader header;
       try {
         raf = File(inputPath).openSync();
-        // Bounded metadata parse: reads only chunk headers and the fmt body,
-        // never the payload, so limits are enforced before allocation.
-        header = _WavHeader.readFrom(raf, raf.lengthSync());
+        // Bounded metadata parse (chunk headers + fmt body only, never the
+        // payload), then enforce the size/duration limits before reading any
+        // payload — on canonical passthrough too, so a large or long clip is
+        // never streamed to the recognizer unbounded.
+        header = _WavHeader.readFrom(raf, raf.lengthSync())
+          ..assertWithinLimits(
+            maxConvertedFrames: maxConvertedFrames,
+            maxDataBytes: maxDataBytes,
+          );
         if (header.isCanonical) {
           return false;
         }
-        header.assertConvertible(
-          maxConvertedFrames: maxConvertedFrames,
-          maxDataBytes: maxDataBytes,
-        );
+        header.assertResampleable();
         raf.setPositionSync(header.dataOffset);
         payload = raf.readSync(header.dataLength);
       } on FileSystemException catch (error) {
@@ -422,21 +425,14 @@ class _WavHeader {
       !isFloat32 &&
       !wasExtensible;
 
-  /// Rejects inputs whose conversion would allocate unbounded or amplified
-  /// buffers, before any payload is read. Called only after [isCanonical] is
-  /// `false`, i.e. a conversion is actually required.
-  void assertConvertible({
+  /// Rejects inputs whose payload or recognition duration exceeds the limits,
+  /// before any payload is read. Applied to canonical passthrough and
+  /// conversion alike, so a large or long clip is never streamed to the
+  /// recognizer unbounded.
+  void assertWithinLimits({
     required int maxConvertedFrames,
     required int maxDataBytes,
   }) {
-    if (sampleRate < WavPreprocessor._minInputSampleRate ||
-        sampleRate > WavPreprocessor._maxInputSampleRate) {
-      throw UnsupportedAudioFormatException(
-        'Unsupported sample rate ${sampleRate}Hz '
-        '(accepts ${WavPreprocessor._minInputSampleRate}'
-        '-${WavPreprocessor._maxInputSampleRate}Hz)',
-      );
-    }
     if (declaredDataSize > maxDataBytes) {
       throw UnsupportedAudioFormatException(
         'Audio payload is too large to prepare for recognition: '
@@ -451,6 +447,20 @@ class _WavHeader {
       throw UnsupportedAudioFormatException(
         'Audio is too long to prepare for recognition: '
         '$convertedFrames frames exceeds the $maxConvertedFrames-frame limit',
+      );
+    }
+  }
+
+  /// Rejects a sample rate outside the resampleable range, whose conversion
+  /// would over-amplify the sample count. Only meaningful for non-canonical
+  /// input; canonical audio is already at [WavPreprocessor.targetSampleRate].
+  void assertResampleable() {
+    if (sampleRate < WavPreprocessor._minInputSampleRate ||
+        sampleRate > WavPreprocessor._maxInputSampleRate) {
+      throw UnsupportedAudioFormatException(
+        'Unsupported sample rate ${sampleRate}Hz '
+        '(accepts ${WavPreprocessor._minInputSampleRate}'
+        '-${WavPreprocessor._maxInputSampleRate}Hz)',
       );
     }
   }

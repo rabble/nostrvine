@@ -344,6 +344,26 @@ void main() {
           throwsA(isA<UnsupportedAudioFormatException>()),
         );
       });
+
+      test('bounds a canonical clip instead of passing it through', () {
+        // A canonical 16 kHz mono file would passthrough zero-copy, but the
+        // size/duration limits must still apply — otherwise a large or long
+        // canonical clip is streamed to the recognizer unbounded. A low frame
+        // cap forces rejection before the passthrough return.
+        final inputPath = writeWav(
+          'canonical_long.wav',
+          buildWav(channels: [List.filled(1600, 0.25)], sampleRate: 16000),
+        );
+
+        expect(
+          () => WavPreprocessor.runPreparation(
+            inputPath,
+            '${tempDir.path}/out.wav',
+            maxConvertedFrames: 100,
+          ),
+          throwsA(isA<UnsupportedAudioFormatException>()),
+        );
+      });
     });
 
     group('maps I/O failures to typed exceptions', () {
