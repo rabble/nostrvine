@@ -24,15 +24,16 @@ class MethodChannelCaptionGenerator extends CaptionGeneratorPlatform {
         'transcribe',
         <String, Object?>{
           'audioPath': audioPath,
-          'localeIdentifier': localeIdentifier,
+          // Native Android EXTRA_LANGUAGE wants a BCP-47 tag (hyphens); accept
+          // ICU-style underscores from callers and normalize them here.
+          'localeIdentifier': localeIdentifier?.replaceAll('_', '-'),
           'preferOnDeviceRecognition': preferOnDeviceRecognition,
         },
       );
       return (raw ?? const <Object?>[])
           .map(
-            (segment) => CaptionSegment.fromMap(
-              (segment! as Map<Object?, Object?>).cast<Object?, Object?>(),
-            ),
+            (segment) =>
+                CaptionSegment.fromMap(segment! as Map<Object?, Object?>),
           )
           .toList();
     } on PlatformException catch (error, stackTrace) {

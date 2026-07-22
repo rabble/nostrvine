@@ -43,8 +43,9 @@ class CaptionGenerator {
   /// display-ready caption cues. Returns an empty list when no speech was
   /// recognized.
   ///
-  /// [localeIdentifier] selects the recognition language (device locale by
-  /// default). On Android, word end times are approximated from the next
+  /// [localeIdentifier] selects the recognition language as a BCP-47 tag
+  /// (e.g. `en-US`); underscores are normalized to hyphens. Defaults to the
+  /// device locale. On Android, word end times are approximated from the next
   /// word's start because the platform only reports start offsets.
   ///
   /// [preferOnDeviceRecognition] keeps recognition on-device on Apple

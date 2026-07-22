@@ -19,7 +19,8 @@ import 'package:caption_generator/src/models/caption_segment.dart';
 ///   break signal on punctuated transcripts; unpunctuated transcripts are
 ///   unaffected.
 ///
-/// Input order does not matter; segments are sorted by start time first.
+/// Input order does not matter; segments are sorted by start time first, with
+/// caller order preserved for words that share a start (the sort is stable).
 ///
 /// Throws an [ArgumentError] when a limit is not positive.
 List<CaptionSegment> groupCaptionSegments(
@@ -52,7 +53,17 @@ List<CaptionSegment> groupCaptionSegments(
   }
   if (segments.isEmpty) return const [];
 
-  final sorted = [...segments]..sort((a, b) => a.start.compareTo(b.start));
+  // Dart's List.sort is not stable, so decorate with the original index and
+  // use it as a tie-break to keep equal-start words in caller order.
+  final indexed =
+      [
+        for (var i = 0; i < segments.length; i++)
+          (index: i, segment: segments[i]),
+      ]..sort((a, b) {
+        final byStart = a.segment.start.compareTo(b.segment.start);
+        return byStart != 0 ? byStart : a.index.compareTo(b.index);
+      });
+  final sorted = [for (final entry in indexed) entry.segment];
   final cues = <CaptionSegment>[];
   final text = StringBuffer(sorted.first.text);
   var cueStart = sorted.first.start;

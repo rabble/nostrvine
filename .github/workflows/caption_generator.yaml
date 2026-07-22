@@ -1,5 +1,5 @@
 # ABOUTME: CI workflow for the caption_generator package.
-# ABOUTME: Runs tests, formatting, and analysis only when caption_generator files change.
+# ABOUTME: Runs Dart tests/format/analysis plus an Android native compile check.
 
 name: Caption Generator CI
 
@@ -24,3 +24,35 @@ jobs:
     uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/flutter_package.yml@v1
     with:
       working_directory: "mobile/packages/caption_generator"
+
+  # The Dart workflow above never compiles the native Kotlin, so a compile
+  # error would pass green until the package is wired into an app build. This
+  # job compiles the plugin's Android sources (mirrors divine_camera).
+  android-compile:
+    name: Android Compile Check
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: mobile/
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.0"
+          channel: "stable"
+          cache: true
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.14.3"
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Compile caption_generator Android sources
+        working-directory: mobile/android
+        run: gradle :caption_generator:testDebugUnitTest

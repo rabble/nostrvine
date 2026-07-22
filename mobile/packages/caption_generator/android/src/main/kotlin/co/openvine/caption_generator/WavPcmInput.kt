@@ -8,7 +8,8 @@ import java.io.IOException
 import java.io.RandomAccessFile
 
 /**
- * The PCM payload of a WAV file, located so it can be streamed to Vosk.
+ * The PCM payload of a WAV file, located so it can be streamed to the
+ * platform SpeechRecognizer via EXTRA_AUDIO_SOURCE.
  *
  * The Dart layer converts arbitrary extracted audio to 16 kHz mono 16-bit
  * PCM before invoking the platform, so this reader only needs to validate

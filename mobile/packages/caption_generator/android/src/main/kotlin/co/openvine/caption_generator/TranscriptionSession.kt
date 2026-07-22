@@ -51,41 +51,56 @@ internal class TranscriptionSession(
         wav.dataLength * 1000 / (2L * wav.sampleRate)
 
     fun start() {
-        val pipe = ParcelFileDescriptor.createPipe()
-        sourceFd = pipe[0]
-        startAudioWriter(pipe[1])
-        val recognizer = SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
-        this.recognizer = recognizer
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(
-                RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM,
-            )
-            localeIdentifier?.let { putExtra(RecognizerIntent.EXTRA_LANGUAGE, it) }
-            putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE, pipe[0])
-            putExtra(
-                RecognizerIntent.EXTRA_AUDIO_SOURCE_ENCODING,
-                AudioFormat.ENCODING_PCM_16BIT,
-            )
-            putExtra(
-                RecognizerIntent.EXTRA_AUDIO_SOURCE_SAMPLING_RATE,
-                wav.sampleRate,
-            )
-            putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_CHANNEL_COUNT, 1)
-            putExtra(RecognizerIntent.EXTRA_REQUEST_WORD_TIMING, true)
-            // Punctuation + casing via RecognitionPart.formattedText, so the
-            // Dart cue grouper can split at sentence boundaries.
-            putExtra(
-                RecognizerIntent.EXTRA_ENABLE_FORMATTING,
-                RecognizerIntent.FORMATTING_OPTIMIZE_QUALITY,
-            )
-            putExtra(
-                RecognizerIntent.EXTRA_SEGMENTED_SESSION,
-                RecognizerIntent.EXTRA_AUDIO_SOURCE,
+        try {
+            val pipe = ParcelFileDescriptor.createPipe()
+            sourceFd = pipe[0]
+            startAudioWriter(pipe[1])
+            val recognizer =
+                SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
+            this.recognizer = recognizer
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(
+                    RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                    RecognizerIntent.LANGUAGE_MODEL_FREE_FORM,
+                )
+                localeIdentifier?.let {
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, it)
+                }
+                putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE, pipe[0])
+                putExtra(
+                    RecognizerIntent.EXTRA_AUDIO_SOURCE_ENCODING,
+                    AudioFormat.ENCODING_PCM_16BIT,
+                )
+                putExtra(
+                    RecognizerIntent.EXTRA_AUDIO_SOURCE_SAMPLING_RATE,
+                    wav.sampleRate,
+                )
+                putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_CHANNEL_COUNT, 1)
+                putExtra(RecognizerIntent.EXTRA_REQUEST_WORD_TIMING, true)
+                // Punctuation + casing via RecognitionPart.formattedText, so the
+                // Dart cue grouper can split at sentence boundaries.
+                putExtra(
+                    RecognizerIntent.EXTRA_ENABLE_FORMATTING,
+                    RecognizerIntent.FORMATTING_OPTIMIZE_QUALITY,
+                )
+                putExtra(
+                    RecognizerIntent.EXTRA_SEGMENTED_SESSION,
+                    RecognizerIntent.EXTRA_AUDIO_SOURCE,
+                )
+            }
+            recognizer.setRecognitionListener(this)
+            recognizer.startListening(intent)
+        } catch (e: Exception) {
+            // A throw after the audio-writer thread and pipe are created would
+            // otherwise leak them: cleanup() only runs via listener callbacks
+            // that never fire here. fail() closes the read end (unblocking the
+            // writer via a broken pipe), destroys the recognizer, and delivers
+            // a single error result.
+            fail(
+                "transcription_failed",
+                "Failed to start transcription: ${e.message}",
             )
         }
-        recognizer.setRecognitionListener(this)
-        recognizer.startListening(intent)
     }
 
     /**

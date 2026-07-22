@@ -100,6 +100,15 @@ void main() {
       expect(cues, equals([_word('hello world', 0, 800)]));
     });
 
+    test('preserves caller order for words sharing a start time', () {
+      final cues = groupCaptionSegments([
+        _word('New', 1000, 1100),
+        _word('York', 1000, 1200),
+      ]);
+
+      expect(cues, equals([_word('New York', 1000, 1200)]));
+    });
+
     test('starts a new cue after sentence-final punctuation', () {
       final cues = groupCaptionSegments([
         _word('Hello,', 0, 300),

@@ -107,6 +107,35 @@ void main() {
       expect(File(outputPathFor(inputPath)).existsSync(), isFalse);
     });
 
+    test(
+      're-encodes 16 kHz mono EXTENSIBLE PCM16 instead of passthrough',
+      () async {
+        // The audio is already 16 kHz mono 16-bit PCM, but wrapped in a
+        // WAVE_FORMAT_EXTENSIBLE fmt chunk the minimal native Android reader
+        // rejects, so it must be rewritten to a plain-PCM fmt chunk rather than
+        // passed through unchanged.
+        final inputPath = writeWav(
+          'mono16k_extensible.wav',
+          buildWav(
+            channels: [List.filled(1600, 0.25)],
+            sampleRate: 16000,
+            extensible: true,
+          ),
+        );
+
+        final resultPath = await WavPreprocessor.prepareForRecognition(
+          inputPath: inputPath,
+          outputPath: outputPathFor(inputPath),
+        );
+
+        expect(resultPath, equals(outputPathFor(inputPath)));
+        final decoded = DecodedWav.parse(File(resultPath).readAsBytesSync());
+        expect(decoded.formatCode, equals(1));
+        expect(decoded.channels, equals(1));
+        expect(decoded.sampleRate, equals(16000));
+      },
+    );
+
     test('converts 32-bit float samples to 16-bit integers', () async {
       final inputPath = writeWav(
         'float.wav',

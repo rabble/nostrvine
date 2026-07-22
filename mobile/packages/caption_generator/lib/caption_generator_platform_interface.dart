@@ -29,10 +29,10 @@ abstract class CaptionGeneratorPlatform extends PlatformInterface {
 
   /// Transcribes the audio file at [audioPath] into word-level segments.
   ///
-  /// [localeIdentifier] selects the recognition language (device locale by
-  /// default). [preferOnDeviceRecognition] keeps recognition on-device on
-  /// Apple platforms whenever the locale supports it; Android is always
-  /// on-device.
+  /// [localeIdentifier] selects the recognition language as a BCP-47 tag
+  /// (e.g. `en-US`, device locale by default). [preferOnDeviceRecognition]
+  /// keeps recognition on-device on Apple platforms whenever the locale
+  /// supports it; Android is always on-device.
   Future<List<CaptionSegment>> transcribe({
     required String audioPath,
     String? localeIdentifier,

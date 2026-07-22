@@ -71,6 +71,24 @@ void main() {
       );
     });
 
+    test('normalizes an underscore locale to a BCP-47 hyphen tag', () async {
+      late MethodCall received;
+      answerWith((call) {
+        received = call;
+        return null;
+      });
+
+      await platform.transcribe(
+        audioPath: '/tmp/audio.wav',
+        localeIdentifier: 'en_US',
+      );
+
+      expect(
+        (received.arguments as Map)['localeIdentifier'],
+        equals('en-US'),
+      );
+    });
+
     test('returns an empty list when the platform returns null', () async {
       answerWith((_) => null);
 

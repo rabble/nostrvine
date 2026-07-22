@@ -1,13 +1,13 @@
-// ABOUTME: Converts extracted WAV audio into 16 kHz mono 16-bit PCM for Vosk.
-// ABOUTME: Pure-Dart RIFF parsing, channel downmix, and linear resampling.
+// ABOUTME: Converts extracted WAV audio into the 16 kHz mono 16-bit PCM the
+// ABOUTME: Android recognizer wants. Pure-Dart RIFF parse, downmix, resample.
 
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:caption_generator/src/exceptions.dart';
 
-/// Rewrites WAV audio into the canonical format the Android Vosk recognizer
-/// consumes: 16 kHz, mono, 16-bit integer PCM.
+/// Rewrites WAV audio into the canonical format the Android platform
+/// `SpeechRecognizer` consumes: 16 kHz, mono, 16-bit integer PCM.
 ///
 /// Accepts the WAV flavors `pro_video_editor` audio extraction produces
 /// (16-bit integer or 32-bit float PCM, any sample rate and channel count,
@@ -23,8 +23,14 @@ abstract final class WavPreprocessor {
   /// Prepares the WAV at [inputPath] for speech recognition.
   ///
   /// Returns [inputPath] unchanged when the audio is already 16 kHz mono
-  /// 16-bit PCM; otherwise writes the converted audio to [outputPath] and
-  /// returns that. Callers own deleting [outputPath] afterwards.
+  /// 16-bit integer PCM in a plain `fmt ` chunk; otherwise writes the
+  /// converted audio to [outputPath] and returns that. Callers own deleting
+  /// [outputPath] afterwards.
+  ///
+  /// A `WAVE_FORMAT_EXTENSIBLE` wrapper is never passed through even when its
+  /// subformat is already the target format: the minimal native Android reader
+  /// only accepts a literal PCM `fmt ` chunk, so extensible files are always
+  /// re-encoded to that.
   ///
   /// Throws:
   ///
@@ -42,7 +48,8 @@ abstract final class WavPreprocessor {
     final wav = _ParsedWav.parse(await file.readAsBytes());
     if (wav.sampleRate == targetSampleRate &&
         wav.channels == 1 &&
-        !wav.isFloat32) {
+        !wav.isFloat32 &&
+        !wav.wasExtensible) {
       return inputPath;
     }
     final mono = wav.decodeMonoSamples();
@@ -109,6 +116,7 @@ class _ParsedWav {
     required this.sampleRate,
     required this.channels,
     required this.isFloat32,
+    required this.wasExtensible,
     required Uint8List bytes,
     required int dataOffset,
     required int dataLength,
@@ -129,6 +137,7 @@ class _ParsedWav {
     int? bitsPerSample;
     int? dataOffset;
     int? dataLength;
+    var wasExtensible = false;
     var offset = 12;
     while (offset + 8 <= bytes.length) {
       final chunkSize = data.getUint32(offset + 4, Endian.little);
@@ -145,6 +154,7 @@ class _ParsedWav {
             bodyOffset + 26 <= bytes.length) {
           // WAVE_FORMAT_EXTENSIBLE: the real format is the first two bytes of
           // the SubFormat GUID at offset 24 of the fmt chunk body.
+          wasExtensible = true;
           formatCode = data.getUint16(bodyOffset + 24, Endian.little);
         }
       } else if (_hasAsciiTag(bytes, offset, 'data')) {
@@ -183,6 +193,7 @@ class _ParsedWav {
       sampleRate: sampleRate,
       channels: channels,
       isFloat32: isFloat32,
+      wasExtensible: wasExtensible,
       bytes: bytes,
       dataOffset: dataOffset,
       dataLength: dataLength,
@@ -192,6 +203,11 @@ class _ParsedWav {
   final int sampleRate;
   final int channels;
   final bool isFloat32;
+
+  /// Whether the source `fmt ` chunk was `WAVE_FORMAT_EXTENSIBLE`. Such files
+  /// are always re-encoded because the native Android reader only accepts a
+  /// literal PCM `fmt ` chunk.
+  final bool wasExtensible;
   final Uint8List _bytes;
   final int _dataOffset;
   final int _dataLength;
