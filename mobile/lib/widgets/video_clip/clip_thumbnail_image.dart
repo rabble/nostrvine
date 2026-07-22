@@ -24,6 +24,8 @@ class ClipThumbnailImage extends StatelessWidget {
     this.width,
     this.height,
     this.cacheHeight,
+    this.gaplessPlayback = false,
+    this.excludeFromSemantics = false,
     this.placeholder,
   });
 
@@ -34,6 +36,8 @@ class ClipThumbnailImage extends StatelessWidget {
   final double? width;
   final double? height;
   final int? cacheHeight;
+  final bool gaplessPlayback;
+  final bool excludeFromSemantics;
 
   /// Rendered when the file is missing or undecodable. Defaults to a
   /// neutral card-background tile with a film-slate icon (same fallback
@@ -48,6 +52,8 @@ class ClipThumbnailImage extends StatelessWidget {
       width: width,
       height: height,
       cacheHeight: cacheHeight,
+      gaplessPlayback: gaplessPlayback,
+      excludeFromSemantics: excludeFromSemantics,
       errorBuilder: (context, error, stackTrace) =>
           placeholder ?? const _MissingThumbnailPlaceholder(),
     );

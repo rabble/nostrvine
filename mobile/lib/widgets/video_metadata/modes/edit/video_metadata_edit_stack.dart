@@ -43,9 +43,7 @@ class _VideoMetadataEditStackState extends State<VideoMetadataEditStack> {
   @override
   Widget build(BuildContext context) {
     return ProviderScope(
-      overrides: [
-        videoEditorProvider.overrideWith(VideoEditorNotifier.new),
-      ],
+      overrides: [videoEditorProvider.overrideWith(VideoEditorNotifier.new)],
       child: _VideoMetadataEditStackContent(
         video: widget.video,
         initialCollaboratorPubkeys: _initialCollaboratorPubkeys,
@@ -223,9 +221,9 @@ class _EditClipPreview extends StatelessWidget {
                   ClipThumbnailImage(
                     path: pendingThumbnailPath!,
                     fit: BoxFit.cover,
-                    placeholder: const ColoredBox(
-                      color: VineTheme.onSurfaceMuted,
-                    ),
+                    placeholder: thumbnailUrl != null
+                        ? VineCachedImage(imageUrl: thumbnailUrl)
+                        : const ColoredBox(color: VineTheme.onSurfaceMuted),
                   )
                 else if (thumbnailUrl != null)
                   VineCachedImage(imageUrl: thumbnailUrl)

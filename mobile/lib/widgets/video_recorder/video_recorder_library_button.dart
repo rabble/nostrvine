@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,6 +6,7 @@ import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/widgets/video_clip/clip_thumbnail_image.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_navigation.dart';
 
 class VideoRecorderLibraryButton extends ConsumerStatefulWidget {
@@ -162,15 +161,16 @@ class _VideoRecorderLibraryButtonState
                       children: [...previousChildren, ?currentChild],
                     ),
                     child: thumbnailPath != null
-                        ? Image.file(
-                            File(thumbnailPath),
+                        ? ClipThumbnailImage(
                             key: ValueKey(thumbnailPath),
+                            path: thumbnailPath,
                             fit: BoxFit.cover,
                             // Stop-motion stills are full-resolution photos;
                             // bound the decode to the 40px button.
                             cacheHeight:
                                 (40 * MediaQuery.devicePixelRatioOf(context))
                                     .round(),
+                            placeholder: const SizedBox.shrink(),
                           )
                         : const SizedBox.shrink(),
                   ),

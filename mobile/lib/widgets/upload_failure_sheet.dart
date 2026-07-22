@@ -1,8 +1,6 @@
 // ABOUTME: Bottom sheet shown when a background video upload fails.
 // ABOUTME: Displays error reason with retry and save-to-drafts actions.
 
-import 'dart:io';
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -151,33 +149,19 @@ class _UploadFailureSheetContent extends StatelessWidget {
   }
 }
 
-class _DraftPreview extends StatefulWidget {
+class _DraftPreview extends StatelessWidget {
   const _DraftPreview({this.clip});
 
   final DivineVideoClip? clip;
 
-  @override
-  State<_DraftPreview> createState() => _DraftPreviewState();
-}
-
-class _DraftPreviewState extends State<_DraftPreview> {
-  late final bool _hasThumb;
-
-  @override
-  void initState() {
-    super.initState();
-    final path = widget.clip?.thumbnailPath;
-    _hasThumb = path != null && File(path).existsSync();
-  }
-
-  void _openPreview() {
-    final clip = widget.clip;
-    if (clip == null) return;
+  void _openPreview(BuildContext context) {
+    final currentClip = clip;
+    if (currentClip == null) return;
 
     Navigator.of(context).push(
       PageRouteBuilder<void>(
         pageBuilder: (_, _, _) =>
-            VideoMetadataPreviewScreen(clip: clip, previewOnly: true),
+            VideoMetadataPreviewScreen(clip: currentClip, previewOnly: true),
         transitionsBuilder: (_, animation, _, child) {
           return FadeTransition(opacity: animation, child: child);
         },
@@ -188,26 +172,29 @@ class _DraftPreviewState extends State<_DraftPreview> {
   @override
   Widget build(BuildContext context) {
     const previewHeight = 160.0;
-    final aspectRatio = widget.clip?.targetAspectRatio.value ?? 9 / 16;
+    final path = clip?.thumbnailPath;
+    final aspectRatio = clip?.targetAspectRatio.value ?? 9 / 16;
     final previewWidth = previewHeight * aspectRatio;
+    final placeholder = SvgPicture.asset(
+      'assets/stickers/alert.svg',
+      height: 132,
+      width: 132,
+    );
 
     return GestureDetector(
-      onTap: _hasThumb ? _openPreview : null,
+      onTap: path != null ? () => _openPreview(context) : null,
       child: ClipRRect(
         borderRadius: .circular(12),
         child: SizedBox(
           height: previewHeight,
           width: previewWidth,
-          child: _hasThumb
+          child: path != null
               ? ClipThumbnailImage(
-                  path: widget.clip!.thumbnailPath!,
+                  path: path,
                   fit: BoxFit.cover,
+                  placeholder: placeholder,
                 )
-              : SvgPicture.asset(
-                  'assets/stickers/alert.svg',
-                  height: 132,
-                  width: 132,
-                ),
+              : placeholder,
         ),
       ),
     );

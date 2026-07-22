@@ -2,8 +2,6 @@
 // ABOUTME: Lists saved video drafts with options to post, edit, duplicate, delete
 
 import 'dart:async';
-import 'dart:io';
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -354,8 +352,6 @@ class DraftListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final thumbnailPath = draft.coverThumbnailPath;
-    final thumbnailExists =
-        thumbnailPath != null && File(thumbnailPath).existsSync();
 
     return ListTile(
       onTap: onTap,
@@ -372,16 +368,26 @@ class DraftListTile extends StatelessWidget {
         decoration: ShapeDecoration(
           color: VineTheme.cardBackground,
           shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        foregroundDecoration: ShapeDecoration(
+          shape: RoundedRectangleBorder(
             side: const BorderSide(color: VineTheme.onSurfaceDisabled),
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-        child: thumbnailExists
+        child: thumbnailPath != null
             ? ClipRRect(
                 borderRadius: BorderRadius.circular(16),
                 child: ClipThumbnailImage(
                   path: thumbnailPath,
                   fit: BoxFit.cover,
+                  placeholder: const DivineIcon(
+                    icon: DivineIconName.filmSlate,
+                    color: VineTheme.secondaryText,
+                    size: 20,
+                  ),
                 ),
               )
             : const DivineIcon(

@@ -117,8 +117,7 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
                     /// recordings: their playback length (frame count / 12fps)
                     /// is a tiny, misleading value, so they read as a still
                     /// image marked only by the stop-motion badge.
-                    if (showDurationBadge)
-                      _DurationBadge(clip: widget.clip),
+                    if (showDurationBadge) _DurationBadge(clip: widget.clip),
 
                     if (widget.clip.libraryTitle case final title?)
                       _TitleBadge(
