@@ -487,7 +487,7 @@ class _ConversationList extends ConsumerStatefulWidget {
 class _ConversationListState extends ConsumerState<_ConversationList>
     with ScrollPaginationMixin {
   final ScrollController _scrollController = ScrollController();
-  final TextEditingController _searchController = TextEditingController();
+  late final TextEditingController _searchController;
 
   /// ID of the conversation whose long-press action sheet is currently open.
   /// Drives the [ConversationTile] highlight so the user can see which row
@@ -500,7 +500,8 @@ class _ConversationListState extends ConsumerState<_ConversationList>
   @override
   bool canLoadMore() {
     final state = context.read<ConversationListBloc>().state;
-    return state.hasMore && !state.isLoadingMore && !state.isFiltering;
+    // Re-entrancy is guarded by ScrollPaginationMixin's own pending-load latch.
+    return state.hasMore && !state.isFiltering;
   }
 
   @override
@@ -511,6 +512,15 @@ class _ConversationListState extends ConsumerState<_ConversationList>
   @override
   void initState() {
     super.initState();
+    // Seed from the bloc rather than starting empty. This State is recreated
+    // whenever the status leaves `loaded` (a stream error and its retry) or a
+    // keyed BlocProvider above re-inflates the view, while the bloc — and so
+    // state.searchQuery — survives. A fresh empty controller would leave the
+    // list filtered by an invisible query: the search empty state over a blank
+    // field, with pagination silently suspended.
+    _searchController = TextEditingController(
+      text: context.read<ConversationListBloc>().state.searchQuery,
+    );
     initPagination();
   }
 
@@ -546,6 +556,9 @@ class _ConversationListState extends ConsumerState<_ConversationList>
     );
     final searchQuery = context.select<ConversationListBloc, String>(
       (bloc) => bloc.state.searchQuery,
+    );
+    final isFiltering = context.select<ConversationListBloc, bool>(
+      (bloc) => bloc.state.isFiltering,
     );
 
     if (conversations.isEmpty && !hasRequests) return const InboxEmptyState();
@@ -603,10 +616,10 @@ class _ConversationListState extends ConsumerState<_ConversationList>
                   hasRequests: hasRequests,
                   requestUnreadCount: requestUnreadCount,
                   // Suppress the load-more affordance while a filter/search
-                  // narrows the list: pagination grows the unfiltered list,
-                  // and a short filtered result can't scroll to trigger it —
-                  // leaving a spinner that never resolves.
-                  hasMore: hasMore && !unreadOnly && searchQuery.isEmpty,
+                  // narrows the list: the filtered result is already complete,
+                  // and a short one can't scroll to trigger a load — leaving a
+                  // spinner that never resolves.
+                  hasMore: hasMore && !isFiltering,
                   highlightedConversationId: _highlightedConversationId,
                   currentUserPubkey: widget.currentUserPubkey,
                   onOpenRequests: () => _openMessageRequests(context),

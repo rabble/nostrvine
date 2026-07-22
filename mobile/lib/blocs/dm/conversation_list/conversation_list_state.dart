@@ -31,7 +31,6 @@ class ConversationListState extends Equatable {
     this.requestConversations = const [],
     this.potentialRequests = const [],
     this.hasMore = true,
-    this.isLoadingMore = false,
     this.isRestoringHistory = false,
     this.currentLimit = ConversationListState.pageSize,
     this.navigationTarget,
@@ -42,10 +41,18 @@ class ConversationListState extends Equatable {
 
   final ConversationListStatus status;
 
-  /// Conversations shown in the Messages tab (accepted + followed contacts).
+  /// The COMPLETE set of conversations for the Messages tab (accepted +
+  /// followed contacts), unpaginated.
+  ///
+  /// Holding the full set is what lets the unread chip and search answer about
+  /// the whole inbox instead of the loaded page.
   final List<DmConversation> conversations;
 
-  /// [conversations] with the unread filter applied when [unreadOnly] is on.
+  /// The rendered slice of [conversations]: filtered when a filter is active,
+  /// otherwise windowed to [currentLimit].
+  ///
+  /// A filter result is never windowed — it is already complete, so it can be
+  /// shorter than a page without meaning "there might be more".
   ///
   /// Stored (not derived via a getter) so `context.select` sees a stable
   /// list identity across unrelated state emits.
@@ -69,18 +76,21 @@ class ConversationListState extends Equatable {
   /// Stored so that follow-list changes can re-split without a DB query.
   final List<DmConversation> potentialRequests;
 
-  /// Whether more accepted conversations may exist beyond the current page.
+  /// Whether [conversations] holds more rows than the current render window.
+  ///
+  /// Exact, not a heuristic: the full set is loaded, so this is a comparison
+  /// against [currentLimit] rather than a guess from a truncated page.
   final bool hasMore;
-
-  /// Whether a load-more operation is currently in progress.
-  final bool isLoadingMore;
 
   /// Whether a one-time DM history recovery (reinstall backfill / failed-
   /// decrypt replay) is actively running. Drives the restore progress
   /// indicator at the top of the Messages list. See #5202.
   final bool isRestoringHistory;
 
-  /// Current watch limit — grows as the user loads more pages.
+  /// Size of the render window over [conversations] — grows as the user pages.
+  ///
+  /// Not a fetch bound: the conversations are already loaded in full, so
+  /// growing this is a pure re-slice with no query and no spinner.
   final int currentLimit;
 
   /// Set when the user requests navigation to a specific conversation.
@@ -92,10 +102,12 @@ class ConversationListState extends Equatable {
       requestConversations.where((c) => !c.isRead).length;
 
   /// Whether a client-side filter (unread chip or search) is narrowing the
-  /// visible list. Load-more pagination is suspended while this is true —
-  /// it grows the unfiltered accepted window, not the filtered view, so a
-  /// short filtered result must not show a trailing load-more spinner it can
-  /// never scroll to trigger.
+  /// visible list.
+  ///
+  /// Load-more is suspended while this is true: a filtered result is computed
+  /// over the full conversation set and is therefore already complete, so
+  /// growing the render window could only append unfiltered rows — and a short
+  /// filtered list can never scroll far enough to trigger it anyway.
   bool get isFiltering => unreadOnly || searchQuery.isNotEmpty;
 
   ConversationListState copyWith({
@@ -108,7 +120,6 @@ class ConversationListState extends Equatable {
     List<DmConversation>? requestConversations,
     List<DmConversation>? potentialRequests,
     bool? hasMore,
-    bool? isLoadingMore,
     bool? isRestoringHistory,
     int? currentLimit,
     ConversationNavigationTarget? navigationTarget,
@@ -124,7 +135,6 @@ class ConversationListState extends Equatable {
       requestConversations: requestConversations ?? this.requestConversations,
       potentialRequests: potentialRequests ?? this.potentialRequests,
       hasMore: hasMore ?? this.hasMore,
-      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       isRestoringHistory: isRestoringHistory ?? this.isRestoringHistory,
       currentLimit: currentLimit ?? this.currentLimit,
       navigationTarget: clearNavigationTarget
@@ -144,7 +154,6 @@ class ConversationListState extends Equatable {
     requestConversations,
     potentialRequests,
     hasMore,
-    isLoadingMore,
     isRestoringHistory,
     currentLimit,
     navigationTarget,

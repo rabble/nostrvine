@@ -104,6 +104,7 @@ DmConversation _createConversation({
   bool currentUserHasSent = false,
   List<String>? participantPubkeys,
   String lastMessageContent = 'Hello',
+  int lastMessageTimestamp = 1700000100,
 }) {
   return DmConversation(
     id: id,
@@ -112,7 +113,7 @@ DmConversation _createConversation({
     isGroup: isGroup,
     createdAt: 1700000000,
     lastMessageContent: lastMessageContent,
-    lastMessageTimestamp: 1700000100,
+    lastMessageTimestamp: lastMessageTimestamp,
     lastMessageSenderPubkey: _testPubkey1,
     isRead: isRead,
     currentUserHasSent: currentUserHasSent,
@@ -546,6 +547,68 @@ void main() {
           const ConversationListState(status: ConversationListStatus.loading),
           const ConversationListState(status: ConversationListStatus.error),
         ],
+      );
+
+      // Retry from InboxErrorState. Without an error -> loading transition the
+      // tap produced no state change at all: a repeat failure re-emits an
+      // Equatable-equal error state, which `emit` suppresses, so the screen
+      // looked identical before and after the tap.
+      blocTest<ConversationListBloc, ConversationListState>(
+        'retry from error emits loading so a repeat failure is visible',
+        setUp: () {
+          when(
+            () => mockDmRepository.watchAcceptedConversations(
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) => Stream.error(Exception('db failure')));
+          when(
+            () => mockDmRepository.watchPotentialRequests(),
+          ).thenAnswer((_) => Stream.value(const []));
+          when(() => mockDmRepository.isRecoveringHistory).thenReturn(false);
+          when(
+            () => mockDmRepository.historyRecoveryStream,
+          ).thenAnswer((_) => const Stream<bool>.empty());
+        },
+        build: createBloc,
+        seed: () =>
+            const ConversationListState(status: ConversationListStatus.error),
+        act: (bloc) => bloc.add(const ConversationListStarted()),
+        errors: () => [isA<Exception>()],
+        expect: () => [
+          const ConversationListState(status: ConversationListStatus.loading),
+          const ConversationListState(status: ConversationListStatus.error),
+        ],
+      );
+
+      blocTest<ConversationListBloc, ConversationListState>(
+        'retry preserves the render window the user had scrolled to',
+        setUp: () {
+          when(
+            () => mockDmRepository.watchAcceptedConversations(
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) => Stream.error(Exception('db failure')));
+          when(
+            () => mockDmRepository.watchPotentialRequests(),
+          ).thenAnswer((_) => Stream.value(const []));
+          when(() => mockDmRepository.isRecoveringHistory).thenReturn(false);
+          when(
+            () => mockDmRepository.historyRecoveryStream,
+          ).thenAnswer((_) => const Stream<bool>.empty());
+        },
+        build: createBloc,
+        seed: () => const ConversationListState(
+          status: ConversationListStatus.error,
+          currentLimit: ConversationListState.pageSize * 3,
+        ),
+        act: (bloc) => bloc.add(const ConversationListStarted()),
+        errors: () => [isA<Exception>()],
+        verify: (bloc) {
+          expect(
+            bloc.state.currentLimit,
+            equals(ConversationListState.pageSize * 3),
+          );
+        },
       );
 
       blocTest<ConversationListBloc, ConversationListState>(
@@ -1008,21 +1071,15 @@ void main() {
 
     group('ConversationListLoadMore', () {
       blocTest<ConversationListBloc, ConversationListState>(
-        'increments currentLimit and re-triggers started',
+        'widens the render window without re-querying the stream',
         setUp: () {
-          final conversations = List.generate(
-            ConversationListState.pageSize,
-            (i) => _createConversation(
-              id: 'a${i.toRadixString(16).padLeft(63, '0')}',
-              currentUserHasSent: true,
-            ),
-          );
-          _stubStreams(mockDmRepository, accepted: conversations);
+          _stubStreams(mockDmRepository);
         },
         seed: () => ConversationListState(
           status: ConversationListStatus.loaded,
+          // Full set is already loaded: one more than a page.
           conversations: List.generate(
-            ConversationListState.pageSize,
+            ConversationListState.pageSize + 1,
             (i) => _createConversation(
               id: 'a${i.toRadixString(16).padLeft(63, '0')}',
               currentUserHasSent: true,
@@ -1037,6 +1094,19 @@ void main() {
             bloc.state.currentLimit,
             equals(ConversationListState.pageSize * 2),
           );
+          expect(
+            bloc.state.visibleConversations,
+            hasLength(ConversationListState.pageSize + 1),
+            reason: 'the widened window now reveals the whole loaded set',
+          );
+          expect(
+            bloc.state.hasMore,
+            isFalse,
+            reason: 'the window is larger than the loaded set',
+          );
+          // Load-more is a pure re-slice: it must not restart the watch, so
+          // the backfill side effects of _onStarted must not fire again.
+          verifyNever(() => mockDmRepository.backfillHistoryIfNeeded());
         },
       );
 
@@ -1380,9 +1450,9 @@ void main() {
             ).thenReturn(false);
             when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
 
-            // Page-sized accepted list (simulates full page).
+            // More than a page of accepted conversations.
             final accepted = List.generate(
-              ConversationListState.pageSize,
+              ConversationListState.pageSize + 1,
               (i) => _createConversation(
                 id: 'a${i.toRadixString(16).padLeft(63, '0')}',
                 currentUserHasSent: true,
@@ -1404,7 +1474,13 @@ void main() {
           verify: (bloc) {
             expect(
               bloc.state.conversations,
+              hasLength(ConversationListState.pageSize + 1),
+              reason: 'the complete accepted set is loaded, not one page',
+            );
+            expect(
+              bloc.state.visibleConversations,
               hasLength(ConversationListState.pageSize),
+              reason: 'pagination is now a render window over that set',
             );
             expect(bloc.state.requestConversations, hasLength(2));
             expect(bloc.state.hasMore, isTrue);
@@ -1567,7 +1643,6 @@ void main() {
         const <DmConversation>[],
         const <DmConversation>[],
         true,
-        false, // isLoadingMore
         false, // isRestoringHistory
         ConversationListState.pageSize,
         null,
@@ -1731,6 +1806,105 @@ void main() {
       },
     );
 
+    // The unread chip and search filter client-side. If the watch were
+    // paginated, they would answer about the loaded page instead of the inbox:
+    // the list claimed "You're all caught up" while the Messages badge — which
+    // counts the full accepted set — still showed unread.
+    group('filters see the whole inbox, not just the loaded page', () {
+      /// One page of read conversations plus a single unread one ranked
+      /// *below* the initial render window. Timestamps descend so the ranking
+      /// is explicit rather than dependent on sort tie-breaking.
+      List<DmConversation> unreadBeyondFirstPage() => [
+        for (var i = 0; i < ConversationListState.pageSize; i++)
+          _createConversation(
+            id: 'read-$i',
+            lastMessageTimestamp: 1700000100 - i,
+          ),
+        _createConversation(
+          id: 'unread-beyond',
+          isRead: false,
+          lastMessageContent: 'needle in the tail',
+          lastMessageTimestamp: 1700000100 - ConversationListState.pageSize,
+        ),
+      ];
+
+      /// Stubs the accepted stream so it HONOURS `limit`, the way the DAO
+      /// does (`conversations_dao.dart` applies `query.limit(limit)` only when
+      /// limit is non-null). The shared `_stubStreams` helper ignores the
+      /// argument, which would let these tests pass even against a paginated
+      /// watch — they must reproduce the truncation to pin the fix.
+      void stubTruncating(List<DmConversation> all) {
+        _stubStreams(mockDmRepository, accepted: all);
+        when(
+          () => mockDmRepository.watchAcceptedConversations(
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((invocation) {
+          final limit = invocation.namedArguments[#limit] as int?;
+          return Stream.value(limit == null ? all : all.take(limit).toList());
+        });
+      }
+
+      test('watches the accepted stream unpaginated', () async {
+        stubTruncating(unreadBeyondFirstPage());
+        final bloc = createBloc();
+        addTearDown(bloc.close);
+
+        await loadMixedList(bloc);
+
+        verify(
+          () => mockDmRepository.watchAcceptedConversations(),
+        ).called(greaterThanOrEqualTo(1));
+        verifyNever(
+          () => mockDmRepository.watchAcceptedConversations(
+            limit: any(named: 'limit', that: isNotNull),
+          ),
+        );
+      });
+
+      test('unread filter surfaces an unread chat below the window', () async {
+        stubTruncating(unreadBeyondFirstPage());
+        final bloc = createBloc();
+        addTearDown(bloc.close);
+
+        final loaded = await loadMixedList(bloc);
+        expect(
+          loaded.visibleConversations.map((c) => c.id),
+          isNot(contains('unread-beyond')),
+          reason: 'it is outside the initial render window',
+        );
+
+        bloc.add(const ConversationListUnreadFilterToggled());
+        final state = await bloc.stream.firstWhere((s) => s.unreadOnly);
+
+        expect(
+          state.visibleConversations.map((c) => c.id).toList(),
+          equals(['unread-beyond']),
+          reason:
+              'filtering the full set must not report "all caught up" while '
+              'the unpaginated Messages badge counts this conversation',
+        );
+      });
+
+      test('search matches a conversation below the window', () async {
+        stubTruncating(unreadBeyondFirstPage());
+        final bloc = createBloc();
+        addTearDown(bloc.close);
+        await loadMixedList(bloc);
+
+        bloc.add(const ConversationListSearchQueryChanged('needle'));
+        final state = await bloc.stream.firstWhere(
+          (s) => s.searchQuery == 'needle',
+        );
+
+        expect(
+          state.visibleConversations.map((c) => c.id).toList(),
+          equals(['unread-beyond']),
+          reason: 'search must not report "no matches" for unscrolled rows',
+        );
+      });
+    });
+
     test('toggling on narrows visibleConversations to unread only', () async {
       _stubStreams(mockDmRepository, accepted: mixedConversations());
       final bloc = createBloc();
@@ -1878,6 +2052,92 @@ void main() {
       );
     });
 
+    // `profileRepositoryProvider` is nullable-gated on Nostr readiness, so the
+    // inbox can mount before it resolves. The instance is delivered in place
+    // rather than by re-keying the BlocProvider — a key on that provider is the
+    // outermost entry of the nested chain and would tear down every other inbox
+    // bloc and the whole InboxView subtree with it.
+    test(
+      'late-bound ProfileRepository re-resolves the active search',
+      () async {
+        _stubStreams(mockDmRepository, accepted: conversations());
+        when(
+          () => mockProfileRepository.fetchBatchProfiles(
+            pubkeys: any(named: 'pubkeys'),
+          ),
+        ).thenAnswer(
+          (_) async => {
+            _testPubkey3: UserProfile(
+              pubkey: _testPubkey3,
+              displayName: 'Alice Wonder',
+              rawData: const {},
+              createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+              eventId: _testConversationId1,
+            ),
+          },
+        );
+
+        // Cold start: the repository is not ready yet.
+        final bloc = createBloc(withProfiles: false);
+        addTearDown(bloc.close);
+        await load(bloc);
+
+        bloc.add(const ConversationListSearchQueryChanged('alice w'));
+        final unresolved = await bloc.stream.firstWhere(
+          (s) => s.searchQuery == 'alice w',
+        );
+        expect(
+          unresolved.visibleConversations,
+          isEmpty,
+          reason: 'no repository yet, so only the fallback name is available',
+        );
+
+        // The provider hands over the ready instance.
+        bloc.add(
+          ConversationListProfileRepositoryChanged(mockProfileRepository),
+        );
+
+        final resolved = await bloc.stream.firstWhere(
+          (s) => s.visibleConversations.isNotEmpty,
+        );
+        expect(
+          resolved.visibleConversations.map((c) => c.id).toList(),
+          equals(['alice']),
+          reason: 'the active query must re-resolve against the ready instance',
+        );
+      },
+    );
+
+    test('ignores a repository swap to the identical instance', () async {
+      _stubStreams(mockDmRepository, accepted: conversations());
+      final bloc = createBloc();
+      addTearDown(bloc.close);
+      await load(bloc);
+
+      bloc.add(const ConversationListSearchQueryChanged('pizza'));
+      // Wait for the staged name resolution to settle, so the only thing that
+      // could emit afterwards is the repository swap under test.
+      final before = await bloc.stream.firstWhere(
+        (s) => s.searchQuery == 'pizza' && s.profileNames.isNotEmpty,
+      );
+
+      final emitted = <ConversationListState>[];
+      final subscription = bloc.stream.listen(emitted.add);
+      addTearDown(subscription.cancel);
+
+      bloc.add(
+        ConversationListProfileRepositoryChanged(mockProfileRepository),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        emitted,
+        isEmpty,
+        reason: 'a redundant provider fire must not churn the search',
+      );
+      expect(bloc.state, equals(before));
+    });
+
     test('matches counterparty display name via ProfileRepository', () async {
       _stubStreams(mockDmRepository, accepted: conversations());
       when(
@@ -1900,10 +2160,21 @@ void main() {
       await load(bloc);
 
       bloc.add(const ConversationListSearchQueryChanged('alice w'));
-      final state = await bloc.stream.firstWhere(
+
+      // Resolution is staged: the query lands immediately on what needs no
+      // lookup, then refines once the profile batch resolves.
+      final immediate = await bloc.stream.firstWhere(
         (s) => s.searchQuery == 'alice w',
       );
+      expect(
+        immediate.profileNames,
+        isEmpty,
+        reason: 'first emit must not wait on the network',
+      );
 
+      final state = await bloc.stream.firstWhere(
+        (s) => s.profileNames.containsKey(_testPubkey3),
+      );
       expect(
         state.visibleConversations.map((c) => c.id).toList(),
         equals(['alice']),

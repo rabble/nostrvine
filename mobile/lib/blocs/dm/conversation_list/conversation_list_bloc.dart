@@ -50,12 +50,18 @@ class ConversationListBloc
     );
     on<ConversationListNavigationConsumed>(_onNavigationConsumed);
     on<ConversationListBlocklistChanged>(_onBlocklistChanged);
+    on<ConversationListProfileRepositoryChanged>(_onProfileRepositoryChanged);
   }
 
   final DmRepository _dmRepository;
   final FollowRepository _followRepository;
   final ContentBlocklistRepository? _blocklistRepository;
-  final ProfileRepository? _profileRepository;
+
+  /// Swappable: `profileRepositoryProvider` is nullable-gated on Nostr
+  /// readiness and hands over the real instance after cold start. Re-pointed
+  /// by [ConversationListProfileRepositoryChanged] rather than by recreating
+  /// the bloc. Mirrors `NotificationBadgeCubit.setRepository`.
+  ProfileRepository? _profileRepository;
   final ProtectedMinorInboxGate? _protectedMinorInboxGate;
 
   /// Window over which bursty conversation writes are coalesced before the
@@ -92,25 +98,48 @@ class ConversationListBloc
     // remote signer never permanently loses a conversation. See #5202.
     unawaited(_dmRepository.retryPendingDecryptions());
 
-    // Only show the loading spinner and reset limit on first load.
-    if (state.status == ConversationListStatus.initial) {
-      emit(
-        state.copyWith(
-          status: ConversationListStatus.loading,
-          currentLimit: ConversationListState.pageSize,
-        ),
-      );
+    switch (state.status) {
+      case ConversationListStatus.initial:
+        emit(
+          state.copyWith(
+            status: ConversationListStatus.loading,
+            currentLimit: ConversationListState.pageSize,
+          ),
+        );
+      case ConversationListStatus.error:
+        // Retry from InboxErrorState. Without this transition the tap produced
+        // no state change at all: a repeat failure re-emits an Equatable-equal
+        // error state, which `emit` suppresses, so the screen looked identical
+        // before and after — and a slow-but-successful retry left the error
+        // screen up for the whole in-flight window. `currentLimit` is kept: it
+        // is a render window, so resetting it would discard the position the
+        // user had already scrolled to.
+        emit(state.copyWith(status: ConversationListStatus.loading));
+      case ConversationListStatus.loading:
+      case ConversationListStatus.loaded:
+        // Re-entry from _onBlocklistChanged must not flash a spinner over an
+        // already-loaded list or reset the window.
+        break;
     }
 
-    // Stream 1: accepted conversations (paginated, user has sent).
+    // Stream 1: accepted conversations (complete set, user has sent).
     // Stream 2: potential requests (unpaginated, user has NOT sent).
     // Stream 3: following list changes (triggers re-classification).
     // Stream 4: history-recovery progress (drives the restore indicator).
     // Combining ensures requests are never truncated by pagination
     // and follow-list changes are handled automatically.
+    //
+    // Stream 1 is deliberately UNPAGINATED. The unread chip and the search box
+    // filter client-side, so a limited window would make them answer about the
+    // loaded page rather than the inbox: with an unread chat ranked below the
+    // window the list said "You're all caught up" while the Messages badge —
+    // which counts the full accepted set — showed unread, and search reported
+    // "No matches" for conversations the user could not scroll to. Pagination
+    // is now a render window applied in [_computeVisible], not a fetch bound.
+    // This is the same query `DmUnreadCountCubit` already runs app-shell-wide.
     await emit.forEach(
       Rx.combineLatest6(
-        _dmRepository.watchAcceptedConversations(limit: state.currentLimit),
+        _dmRepository.watchAcceptedConversations(),
         _dmRepository.watchPotentialRequests(),
         _followRepository.followingStream.startWith(const []),
         _dmRepository.historyRecoveryStream.startWith(
@@ -203,32 +232,38 @@ class ConversationListBloc
         // A conversation can stream in while a name search is active whose
         // counterparty was not resolved when the search fired; it would fall
         // back to the generated name and drop out of the results until the
-        // next keystroke. Re-run resolution for the new set (a no-op once
-        // every counterparty is cached, so it converges) so a just-arrived
-        // match surfaces on its own.
-        if (state.searchQuery.isNotEmpty &&
-            visibleInbox.any(
-              (c) => !state.profileNames.containsKey(
-                _otherParticipant(c, userPubkey),
-              ),
-            )) {
-          add(ConversationListSearchQueryChanged(state.searchQuery));
+        // next keystroke. Re-run resolution so a just-arrived match surfaces on
+        // its own. Scoped to genuinely NEW rows: the full set legitimately
+        // carries counterparties the chunked resolver has not reached yet, and
+        // re-firing for those would loop on every recompute.
+        if (state.searchQuery.isNotEmpty) {
+          final known = state.conversations.map((c) => c.id).toSet();
+          final hasNewUnresolved = visibleInbox.any(
+            (c) =>
+                !known.contains(c.id) &&
+                !state.profileNames.containsKey(
+                  _otherParticipant(c, userPubkey),
+                ),
+          );
+          if (hasNewUnresolved) {
+            add(ConversationListSearchQueryChanged(state.searchQuery));
+          }
         }
 
         return state.copyWith(
           status: ConversationListStatus.loaded,
           conversations: visibleInbox,
-          visibleConversations: _applyFilters(
+          visibleConversations: _computeVisible(
             visibleInbox,
             unreadOnly: state.unreadOnly,
             query: state.searchQuery,
             profileNames: state.profileNames,
             userPubkey: userPubkey,
+            limit: state.currentLimit,
           ),
           requestConversations: visibleRequests,
           potentialRequests: data.potentialRequests,
-          hasMore: data.accepted.length == state.currentLimit,
-          isLoadingMore: false,
+          hasMore: visibleInbox.length > state.currentLimit,
           isRestoringHistory: data.isRestoring,
         );
       },
@@ -241,26 +276,30 @@ class ConversationListBloc
     );
   }
 
-  Future<void> _onLoadMore(
+  void _onLoadMore(
     ConversationListLoadMore event,
     Emitter<ConversationListState> emit,
-  ) async {
-    if (!state.hasMore ||
-        state.isLoadingMore ||
-        state.status != ConversationListStatus.loaded) {
-      return;
-    }
+  ) {
+    if (!state.hasMore || state.status != ConversationListStatus.loaded) return;
 
+    // The complete set is already loaded, so a page is a render window and this
+    // is a pure re-slice — no stream restart, and therefore no spinner and no
+    // repeat of the backfill/decrypt-replay side effects `_onStarted` triggers.
+    final limit = state.currentLimit + ConversationListState.pageSize;
     emit(
       state.copyWith(
-        isLoadingMore: true,
-        currentLimit: state.currentLimit + ConversationListState.pageSize,
+        currentLimit: limit,
+        visibleConversations: _computeVisible(
+          state.conversations,
+          unreadOnly: state.unreadOnly,
+          query: state.searchQuery,
+          profileNames: state.profileNames,
+          userPubkey: _dmRepository.userPubkey,
+          limit: limit,
+        ),
+        hasMore: state.conversations.length > limit,
       ),
     );
-
-    // Re-trigger the watched stream with the larger limit.
-    // restartable() on ConversationListStarted cancels the previous watch.
-    add(const ConversationListStarted());
   }
 
   void _onUnreadFilterToggled(
@@ -271,12 +310,13 @@ class ConversationListBloc
     emit(
       state.copyWith(
         unreadOnly: unreadOnly,
-        visibleConversations: _applyFilters(
+        visibleConversations: _computeVisible(
           state.conversations,
           unreadOnly: unreadOnly,
           query: state.searchQuery,
           profileNames: state.profileNames,
           userPubkey: _dmRepository.userPubkey,
+          limit: state.currentLimit,
         ),
       ),
     );
@@ -287,60 +327,109 @@ class ConversationListBloc
     Emitter<ConversationListState> emit,
   ) async {
     final query = event.query.trim();
-    var profileNames = state.profileNames;
+    final userPubkey = _dmRepository.userPubkey;
 
-    // Resolve counterparty display names once per pubkey so name matching
-    // works; message-content matching needs no lookup. Falls back to the
-    // deterministic generated name when a profile can't be fetched.
-    if (query.isNotEmpty) {
-      final userPubkey = _dmRepository.userPubkey;
-      final unresolved = state.conversations
-          .map((c) => _otherParticipant(c, userPubkey))
-          .where((pk) => !profileNames.containsKey(pk))
-          .toSet()
-          .toList();
-      if (unresolved.isNotEmpty) {
-        var fetched = const <String, UserProfile>{};
-        if (_profileRepository != null) {
-          try {
-            fetched = await _profileRepository.fetchBatchProfiles(
-              pubkeys: unresolved,
-            );
-          } catch (error, stackTrace) {
-            // Network/cache failure is expected offline — match on the
-            // generated fallback names instead. Not Reportable.
-            addError(error, stackTrace);
-          }
-        }
-        profileNames = {
-          ...profileNames,
-          for (final pubkey in unresolved)
-            pubkey:
-                fetched[pubkey]?.bestDisplayName ??
-                UserProfile.defaultDisplayNameFor(pubkey),
-        };
-      }
-    }
-
+    // Emit first on what needs no lookup — message previews, names already
+    // cached, and the deterministic fallback name — so the query lands
+    // immediately even though the source is now the complete conversation set.
     emit(
       state.copyWith(
         searchQuery: query,
-        profileNames: profileNames,
-        visibleConversations: _applyFilters(
+        visibleConversations: _computeVisible(
           state.conversations,
           unreadOnly: state.unreadOnly,
           query: query,
-          profileNames: profileNames,
-          userPubkey: _dmRepository.userPubkey,
+          profileNames: state.profileNames,
+          userPubkey: userPubkey,
+          limit: state.currentLimit,
         ),
       ),
     );
+
+    // Capture the repository once: a mid-loop swap from
+    // ConversationListProfileRepositoryChanged must not tear the sequence.
+    final profileRepository = _profileRepository;
+    if (query.isEmpty || profileRepository == null) return;
+
+    var profileNames = state.profileNames;
+    final unresolved = state.conversations
+        .map((c) => _otherParticipant(c, userPubkey))
+        .where((pk) => !profileNames.containsKey(pk))
+        .toSet()
+        .toList();
+
+    // Resolve in bounded chunks, most-recent first (state.conversations is
+    // recency-sorted), re-emitting after each so results refine progressively.
+    for (var i = 0; i < unresolved.length; i += searchProfileResolveChunkSize) {
+      if (emit.isDone) return;
+      final chunk = unresolved
+          .skip(i)
+          .take(searchProfileResolveChunkSize)
+          .toList();
+      var fetched = const <String, UserProfile>{};
+      try {
+        fetched = await profileRepository.fetchBatchProfiles(pubkeys: chunk);
+      } catch (error, stackTrace) {
+        // Network/cache failure is expected offline — match on the
+        // generated fallback names instead. Not Reportable.
+        addError(error, stackTrace);
+      }
+      profileNames = {
+        ...profileNames,
+        for (final pubkey in chunk)
+          pubkey:
+              fetched[pubkey]?.bestDisplayName ??
+              UserProfile.defaultDisplayNameFor(pubkey),
+      };
+      if (emit.isDone) return;
+      emit(
+        state.copyWith(
+          profileNames: profileNames,
+          visibleConversations: _computeVisible(
+            state.conversations,
+            unreadOnly: state.unreadOnly,
+            query: query,
+            profileNames: profileNames,
+            userPubkey: userPubkey,
+            limit: state.currentLimit,
+          ),
+        ),
+      );
+    }
   }
 
   static String _otherParticipant(DmConversation conversation, String self) {
     return conversation.participantPubkeys.firstWhere(
       (pk) => pk != self,
       orElse: () => conversation.participantPubkeys.first,
+    );
+  }
+
+  /// Filtered view of [conversations], windowed to [limit] only when no filter
+  /// is active.
+  ///
+  /// [conversations] is the COMPLETE accepted-union-followed set, so a filter
+  /// result is always complete — "You're all caught up" and "No matches" can no
+  /// longer be statements about just the loaded page.
+  static List<DmConversation> _computeVisible(
+    List<DmConversation> conversations, {
+    required bool unreadOnly,
+    required String query,
+    required Map<String, String> profileNames,
+    required String userPubkey,
+    required int limit,
+  }) {
+    if (!unreadOnly && query.isEmpty) {
+      return conversations.length > limit
+          ? conversations.sublist(0, limit)
+          : conversations;
+    }
+    return _applyFilters(
+      conversations,
+      unreadOnly: unreadOnly,
+      query: query,
+      profileNames: profileNames,
+      userPubkey: userPubkey,
     );
   }
 
@@ -398,6 +487,26 @@ class ConversationListBloc
     Emitter<ConversationListState> emit,
   ) {
     emit(state.copyWith(clearNavigationTarget: true));
+  }
+
+  /// Swap in a freshly built [ProfileRepository] without recreating the bloc.
+  ///
+  /// A `ValueKey` on the owning `BlocProvider` would re-inflate every provider
+  /// below it *and* the whole `InboxView` subtree — a `nested` key replaces the
+  /// entire downstream chain, not just its own provider — losing the tab
+  /// selection, scroll offset and search text. Swapping the dependency in place
+  /// refreshes only what actually changed.
+  void _onProfileRepositoryChanged(
+    ConversationListProfileRepositoryChanged event,
+    Emitter<ConversationListState> emit,
+  ) {
+    if (identical(_profileRepository, event.profileRepository)) return;
+    _profileRepository = event.profileRepository;
+    if (state.searchQuery.isEmpty) return;
+    // Any names cached while no repository was available are deterministic
+    // fallbacks, not real profiles. Drop them so the active query re-resolves.
+    emit(state.copyWith(profileNames: const {}));
+    add(ConversationListSearchQueryChanged(state.searchQuery));
   }
 
   /// Re-trigger the watched streams so blocked users are filtered out.

@@ -66,3 +66,18 @@ class ConversationListMarkRead extends ConversationListEvent {
 class ConversationListBlocklistChanged extends ConversationListEvent {
   const ConversationListBlocklistChanged();
 }
+
+/// A freshly built [ProfileRepository] is available for name resolution.
+///
+/// `profileRepositoryProvider` is nullable-gated on Nostr readiness, so it
+/// resolves null -> instance shortly after cold start. Delivering that
+/// instance as an event swaps the dependency in place instead of re-keying
+/// the `BlocProvider`, which would re-inflate the whole inbox subtree.
+class ConversationListProfileRepositoryChanged extends ConversationListEvent {
+  const ConversationListProfileRepositoryChanged(this.profileRepository);
+
+  final ProfileRepository? profileRepository;
+
+  @override
+  List<Object?> get props => [profileRepository];
+}

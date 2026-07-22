@@ -682,6 +682,91 @@ void main() {
         },
       );
 
+      // The search query lives in the bloc, but the controller lives in
+      // _ConversationListState, which is destroyed whenever the status leaves
+      // `loaded`. A fresh empty controller would leave the list filtered by an
+      // invisible query: the search empty state over a blank field.
+      testWidgets(
+        'restores the search field after an error and retry remount',
+        (tester) async {
+          final matching = DmConversation(
+            id: 'match',
+            participantPubkeys: const [currentPubkey, otherPubkey],
+            isGroup: false,
+            createdAt: nowUnix,
+            lastMessageContent: 'quokka sighting',
+            lastMessageTimestamp: nowUnix,
+          );
+          final other = DmConversation(
+            id: 'other',
+            participantPubkeys: const [currentPubkey, otherPubkey],
+            isGroup: false,
+            createdAt: nowUnix - 1,
+            lastMessageContent: 'unrelated',
+            lastMessageTimestamp: nowUnix - 1,
+          );
+
+          final searching = ConversationListState(
+            status: ConversationListStatus.loaded,
+            conversations: [matching, other],
+            visibleConversations: [matching],
+            searchQuery: 'quokka',
+            hasMore: false,
+          );
+          final failed = searching.copyWith(
+            status: ConversationListStatus.error,
+          );
+
+          // Build first: buildSubject() installs its own whenListen stub, so
+          // the controller-backed one has to replace it afterwards. Broadcast
+          // because the view attaches many context.select listeners.
+          final subject = buildSubject();
+          final controller =
+              StreamController<ConversationListState>.broadcast();
+          addTearDown(controller.close);
+          whenListen(mockBloc, controller.stream, initialState: searching);
+
+          await tester.pumpWidget(subject);
+          await tester.pump();
+          await tester.tap(find.text('Messages'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
+
+          final searchField = find.byType(DivineSearchBar);
+          expect(
+            tester.widget<DivineSearchBar>(searchField).controller?.text,
+            equals('quokka'),
+          );
+
+          // Stream fails: _ConversationList unmounts and its controller is
+          // disposed. The bloc — and its searchQuery — survive.
+          controller.add(failed);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
+          expect(
+            find.byType(DivineSearchBar),
+            findsNothing,
+            reason:
+                'the search bar must actually unmount, or this test would '
+                'pass trivially without exercising a remount',
+          );
+
+          // Retry succeeds: the list remounts with the query still active.
+          controller.add(searching);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
+
+          expect(
+            tester.widget<DivineSearchBar>(searchField).controller?.text,
+            equals('quokka'),
+            reason:
+                'an empty field over a filtered list hides why rows are '
+                'missing and leaves the user no way to see the active query',
+          );
+          expect(find.byType(ConversationTile), findsOneWidget);
+        },
+      );
+
       testWidgets(
         'keeps the last conversation tile clear of the FAB when scrolled '
         'to the end',

@@ -13,6 +13,13 @@ const searchDebounceDuration = Duration(milliseconds: 300);
 /// scans plus remote searches on every keystroke.
 const minSearchQueryLength = 2;
 
+/// Maximum counterparty profiles resolved per inbox-search pass.
+///
+/// `ProfileRepository.fetchBatchProfiles` falls back to one parallel relay
+/// request per uncached pubkey, so resolving an entire large inbox in a single
+/// call would fan out one request per conversation on the first keystroke.
+const searchProfileResolveChunkSize = 50;
+
 /// Outer timeout the user-search bloc applies to the entire progressive
 /// stream. When it fires, the bloc still emits the accumulated results
 /// but marks every source still in [SearchSourcePending] as
