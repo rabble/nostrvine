@@ -87,8 +87,8 @@ internal class PlatformFileRecognizer(context: Context) : FileRecognizer {
  * session ends when the write side of the pipe is closed. Word timing is
  * requested with [RecognizerIntent.EXTRA_REQUEST_WORD_TIMING] and read from
  * [RecognitionPart.getTimestampMillis]. Parts only carry start offsets, so a
- * word's end time is approximated by the next word's start (the audio's end
- * for the last word).
+ * word's end time is approximated by the next word's start; the final word
+ * gets a bounded cadence-based fallback.
  *
  * Before starting, the recognizer is asked whether it supports the complete
  * file-audio-source intent. Only on success is the audio writer started and
@@ -119,9 +119,15 @@ internal class TranscriptionSession(
 
     /** Collected (text, startMs) pairs; end times are derived in [finish]. */
     private val words = mutableListOf<Pair<String, Long>>()
+
+    /**
+     * Untimed recognition text collected only as a fallback for recognizers that
+     * return RESULTS_RECOGNITION but no RecognitionParts.
+     */
+    private val untimedFallbackText = mutableListOf<String>()
     private var completed = false
 
-    /** Total audio duration, used as the end time of the last word. */
+    /** Total audio duration, used to clamp timed words and untimed fallbacks. */
     private val audioDurationMs: Long =
         wav.dataLength * 1000 / (2L * wav.sampleRate)
 
@@ -306,6 +312,7 @@ internal class TranscriptionSession(
             RecognitionPart::class.java,
         )
         if (!parts.isNullOrEmpty()) {
+            untimedFallbackText.clear()
             for (part in parts) {
                 val text = part.formattedText ?: part.rawText
                 if (text.isNotBlank()) {
@@ -314,15 +321,15 @@ internal class TranscriptionSession(
             }
             return
         }
-        // Recognizer provided no word parts — fall back to one segment
-        // spanning the whole audio so callers still get usable text.
+        // Recognizer provided no word parts. Keep the text only as a fallback:
+        // if any timed parts arrive in another segmented callback, those win.
         val text = bundle
             .getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
             ?.firstOrNull()
             ?.trim()
             .orEmpty()
         if (text.isNotEmpty()) {
-            words.add(text to 0L)
+            untimedFallbackText.add(text)
         }
     }
 
@@ -358,6 +365,17 @@ internal class TranscriptionSession(
     }
 
     private fun buildSegments(): List<Map<String, Any>> {
+        if (words.isEmpty()) {
+            val text = untimedFallbackText.joinToString(" ").trim()
+            if (text.isEmpty()) return emptyList()
+            return listOf(
+                mapOf(
+                    "text" to text,
+                    "startMs" to 0L,
+                    "endMs" to audioDurationMs,
+                ),
+            )
+        }
         val starts = words.map { it.second }
         val fallbackMs = medianInterWordGapMs(starts) ?: DEFAULT_LAST_WORD_MS
         return words.mapIndexed { index, (text, startMs) ->

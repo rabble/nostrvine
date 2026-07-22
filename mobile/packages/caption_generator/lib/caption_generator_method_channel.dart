@@ -44,13 +44,20 @@ class MethodChannelCaptionGenerator extends CaptionGeneratorPlatform {
   CaptionGenerationException _mapPlatformException(PlatformException error) {
     final message = error.message ?? 'Transcription failed';
     return switch (error.code) {
-      'audio_not_found' => AudioFileNotFoundException(message),
+      'audio_not_found' => AudioFileNotFoundException(
+        _audioPathFromNativeMessage(message),
+      ),
       'invalid_audio' => UnsupportedAudioFormatException(message),
       'not_authorized' => const SpeechNotAuthorizedException(),
-      'recognizer_unavailable' => SpeechRecognizerUnavailableException(
-        message,
-      ),
+      'recognizer_unavailable' => SpeechRecognizerUnavailableException(message),
       _ => TranscriptionFailedException(message, cause: error),
     };
+  }
+
+  String _audioPathFromNativeMessage(String message) {
+    const prefix = 'Audio file not found: ';
+    return message.startsWith(prefix)
+        ? message.substring(prefix.length)
+        : message;
   }
 }

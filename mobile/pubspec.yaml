@@ -191,9 +191,6 @@ dependencies:
 
   cache_sync:
 
-  # Caption Generator - On-device speech-to-text CC generation (last resort)
-  caption_generator:
-
   # Categories Repository - Video categories from Funnelcake API
   categories_repository:
 

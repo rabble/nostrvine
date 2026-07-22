@@ -83,10 +83,7 @@ void main() {
         localeIdentifier: 'en_US',
       );
 
-      expect(
-        (received.arguments as Map)['localeIdentifier'],
-        equals('en-US'),
-      );
+      expect((received.arguments as Map)['localeIdentifier'], equals('en-US'));
     });
 
     test('returns an empty list when the platform returns null', () async {
@@ -128,6 +125,26 @@ void main() {
           );
         });
       }
+
+      test('does not double-prefix native audio_not_found messages', () async {
+        answerWith(
+          (_) => throw PlatformException(
+            code: 'audio_not_found',
+            message: 'Audio file not found: /tmp/missing.wav',
+          ),
+        );
+
+        await expectLater(
+          platform.transcribe(audioPath: '/tmp/missing.wav'),
+          throwsA(
+            isA<AudioFileNotFoundException>().having(
+              (error) => error.message,
+              'message',
+              'Audio file not found: /tmp/missing.wav',
+            ),
+          ),
+        );
+      });
 
       test('falls back to $TranscriptionFailedException with cause', () async {
         answerWith(

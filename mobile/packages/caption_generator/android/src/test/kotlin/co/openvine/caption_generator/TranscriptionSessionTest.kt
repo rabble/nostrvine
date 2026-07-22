@@ -5,8 +5,10 @@ package co.openvine.caption_generator
 
 import android.content.Intent
 import android.os.Build
+import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import android.speech.RecognitionListener
+import android.speech.SpeechRecognizer
 import io.flutter.plugin.common.MethodChannel
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -58,14 +60,45 @@ internal class TranscriptionSessionTest {
         assertEquals(0, result.successCount)
     }
 
+    @Test
+    fun onResults_withoutWordParts_returnsUntimedFallbackAcrossFullAudio() {
+        val recognizer = FakeFileRecognizer(supported = true)
+        val result = RecordingResult()
+        val session = newSession(
+            recognizer,
+            result,
+            locale = null,
+            samples = 16000 * 6,
+        )
+
+        session.start()
+        recognizer.listener!!.onResults(
+            Bundle().apply {
+                putStringArrayList(
+                    SpeechRecognizer.RESULTS_RECOGNITION,
+                    arrayListOf("hello world"),
+                )
+            },
+        )
+
+        assertTrue(recognizer.destroyed)
+        assertEquals(0, result.errorCount)
+        assertEquals(1, result.successCount)
+        val segment = result.successSegments().single()
+        assertEquals("hello world", segment["text"])
+        assertEquals(0L, segment["startMs"])
+        assertEquals(6000L, segment["endMs"])
+    }
+
     private fun newSession(
         recognizer: FakeFileRecognizer,
         result: MethodChannel.Result,
         locale: String?,
+        samples: Int = 16,
     ): TranscriptionSession =
         TranscriptionSession(
             context = RuntimeEnvironment.getApplication(),
-            wav = WavPcmInput.parse(writeMonoWav(samples = 16)),
+            wav = WavPcmInput.parse(writeMonoWav(samples = samples)),
             localeIdentifier = locale,
             result = result,
             recognizerFactory = { recognizer },
@@ -109,9 +142,11 @@ private class RecordingResult : MethodChannel.Result {
         private set
     var lastErrorCode: String? = null
         private set
+    private var lastSuccess: Any? = null
 
     override fun success(result: Any?) {
         successCount += 1
+        lastSuccess = result
     }
 
     override fun error(errorCode: String, errorMessage: String?, errorDetails: Any?) {
@@ -120,6 +155,10 @@ private class RecordingResult : MethodChannel.Result {
     }
 
     override fun notImplemented() = Unit
+
+    @Suppress("UNCHECKED_CAST")
+    fun successSegments(): List<Map<String, Any>> =
+        lastSuccess as List<Map<String, Any>>
 }
 
 /**

@@ -26,8 +26,8 @@ jobs:
       working_directory: "mobile/packages/caption_generator"
 
   # The Dart workflow above never compiles the native Kotlin, so a compile
-  # error would pass green until the package is wired into an app build. This
-  # job compiles the plugin's Android sources (mirrors divine_camera).
+  # error would pass green until the package is wired into an app build.
+  # Compile the plugin's Android sources explicitly.
   android-compile:
     name: Android Compile Check
     runs-on: ubuntu-24.04
@@ -54,5 +54,5 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
       - name: Compile caption_generator Android sources
-        working-directory: mobile/android
-        run: gradle :caption_generator:testDebugUnitTest
+        working-directory: mobile/packages/caption_generator/android
+        run: gradle testDebugUnitTest

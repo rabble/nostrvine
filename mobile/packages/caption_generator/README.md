@@ -49,11 +49,11 @@ mode. An empty list means the recognizer found no speech.
 | Android 14+ | Platform `SpeechRecognizer` | `createOnDeviceSpeechRecognizer` + `EXTRA_AUDIO_SOURCE` file input + `RecognitionPart` word timing. Fully on-device; language packs are managed by the OS. |
 
 On Android, `RecognitionPart` only reports each word's **start** offset, so a
-word's end time is approximated by the next word's start (the audio's end for
-the last word). Devices below Android 14, devices without Google's on-device
-recognition service (e.g. de-Googled ROMs), and locales without a downloaded
-language pack throw `SpeechRecognizerUnavailableException` — treat that as
-"CC suggestion not available on this device".
+word's end time is approximated by the next word's start; the final word gets a
+bounded cadence-based fallback. Devices below Android 14, devices without
+Google's on-device recognition service (e.g. de-Googled ROMs), and locales
+without a downloaded language pack throw `SpeechRecognizerUnavailableException`
+— treat that as "CC suggestion not available on this device".
 
 ### Input format
 
@@ -76,5 +76,9 @@ The first call prompts the user for speech recognition permission.
 
 ### Android setup
 
-No setup or model download required. The plugin manifest already declares
-the `android.speech.RecognitionService` package-visibility query it needs.
+No model download required. The plugin manifest declares the
+`android.speech.RecognitionService` package-visibility query it needs.
+
+The consuming app must request and hold `android.permission.RECORD_AUDIO`;
+Android's platform recognizer requires that grant even when transcribing file
+input. Missing permission is reported as `SpeechNotAuthorizedException`.
