@@ -163,6 +163,8 @@ final isDmRestrictedProvider = Provider<bool>((ref) {
   final live = ref.watch(protectedMinorStatusProvider);
 
   if (authSource == AuthenticationSource.divineOAuth) {
+    // Intentional fire-and-forget monotonic marker; SharedPreferences updates
+    // its in-memory cache before the Future completes.
     store.markKeycastAccount(pubkey);
   }
 
