@@ -89,6 +89,9 @@ void main() {
       final authService = _MockAuthService();
       when(() => authService.currentPublicKeyHex).thenReturn('a' * 64);
       when(
+        () => authService.authenticationSource,
+      ).thenReturn(AuthenticationSource.divineOAuth);
+      when(
         () => officials.isApprovedMinorDmRecipient(strangerHex),
       ).thenAnswer((_) async => false);
       when(
@@ -100,8 +103,8 @@ void main() {
           currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
           sharedPreferencesProvider.overrideWithValue(prefs),
           authServiceProvider.overrideWithValue(authService),
-          // Keycast never answers (outage / suppressed by the restricted
-          // party). The policy must not wait on this to fail closed.
+          // Keycast never answers (outage / suppressed by the restricted party).
+          // Keycast accounts must not wait on this to fail closed.
           protectedMinorStatusProvider.overrideWith(
             (ref) => Completer<ProtectedMinorStatus>().future,
           ),
@@ -131,6 +134,9 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       final authService = _MockAuthService();
       when(() => authService.currentPublicKeyHex).thenReturn('a' * 64);
+      when(
+        () => authService.authenticationSource,
+      ).thenReturn(AuthenticationSource.divineOAuth);
       when(
         () => officials.isApprovedMinorDmRecipient(strangerHex),
       ).thenAnswer((_) async => false);

@@ -46,6 +46,7 @@ class ProfileGridView extends ConsumerStatefulWidget {
     this.onMore,
     this.onOpenClips,
     this.onMessageUser,
+    this.isMessageRestricted = false,
     this.onShareProfile,
     this.onBlockedTap,
     this.scrollController,
@@ -88,6 +89,9 @@ class ProfileGridView extends ConsumerStatefulWidget {
 
   /// Callback when "Message" button is tapped (other profiles only).
   final VoidCallback? onMessageUser;
+
+  /// Whether the Message affordance should be hidden for policy reasons.
+  final bool isMessageRestricted;
 
   /// Callback when share button is tapped.
   final void Function(BuildContext context)? onShareProfile;
@@ -669,6 +673,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
                         displayName: widget.displayName,
                         onOpenClips: widget.onOpenClips,
                         onMessageUser: widget.onMessageUser,
+                        isMessageRestricted: widget.isMessageRestricted,
                         onShareProfile: widget.onShareProfile,
                         onBlockedTap: widget.onBlockedTap,
                       ),

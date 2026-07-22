@@ -67,6 +67,7 @@ class ProfileHeaderWidget extends ConsumerStatefulWidget {
     this.displayName,
     this.onOpenClips,
     this.onMessageUser,
+    this.isMessageRestricted = false,
     this.onShareProfile,
     this.onBlockedTap,
     super.key,
@@ -111,6 +112,9 @@ class ProfileHeaderWidget extends ConsumerStatefulWidget {
 
   /// Callback when "Message" button is tapped (other profiles only).
   final VoidCallback? onMessageUser;
+
+  /// Whether the Message affordance should be hidden for policy reasons.
+  final bool isMessageRestricted;
 
   /// Callback when share button is tapped.
   final void Function(BuildContext context)? onShareProfile;
@@ -393,6 +397,7 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
             onEditProfile: widget.onEditProfile,
             onOpenClips: widget.onOpenClips,
             onMessageUser: widget.onMessageUser,
+            isMessageRestricted: widget.isMessageRestricted,
             onShareProfile: widget.onShareProfile,
             onBlockedTap: widget.onBlockedTap,
           ),

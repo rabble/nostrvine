@@ -167,8 +167,8 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
   /// (protected minor, or an unresolved status that fails closed) and this
   /// pubkey is not an approved official recipient. Drives hiding the Message
   /// affordance and guards the tap itself.
-  bool _messagingBlockedForProtectedMinor() {
-    if (!ref.read(isDmRestrictedProvider)) return false;
+  bool _messagingBlockedForProtectedMinor({bool? isDmRestricted}) {
+    if (!(isDmRestricted ?? ref.read(isDmRestrictedProvider))) return false;
     return !ref
         .read(officialAccountsServiceProvider)
         .isApprovedMinorDmRecipientSync(widget.pubkey);
@@ -426,6 +426,10 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
                   headerProfile?.bestDisplayName ??
                   widget.displayNameHint ??
                   context.l10n.profileTitle;
+              final isDmRestricted = ref.watch(isDmRestrictedProvider);
+              final isMessageRestricted = _messagingBlockedForProtectedMinor(
+                isDmRestricted: isDmRestricted,
+              );
 
               return Scaffold(
                 backgroundColor: VineTheme.surfaceBackground,
@@ -455,9 +459,8 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
                     scrollController: _scrollController,
                     onBack: context.pop,
                     onMore: _more,
-                    onMessageUser: _messagingBlockedForProtectedMinor()
-                        ? null
-                        : _messageUser,
+                    onMessageUser: _messageUser,
+                    isMessageRestricted: isMessageRestricted,
                     onShareProfile: _shareProfile,
                     onBlockedTap: _showUnblockConfirmation,
                     displayNameHint: widget.displayNameHint,

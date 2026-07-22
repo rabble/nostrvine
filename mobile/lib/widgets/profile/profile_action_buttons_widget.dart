@@ -28,6 +28,7 @@ class ProfileActionButtons extends ConsumerWidget {
     this.onEditProfile,
     this.onOpenClips,
     this.onMessageUser,
+    this.isMessageRestricted = false,
     this.onShareProfile,
     this.onBlockedTap,
     super.key,
@@ -41,6 +42,7 @@ class ProfileActionButtons extends ConsumerWidget {
   final VoidCallback? onEditProfile;
   final VoidCallback? onOpenClips;
   final VoidCallback? onMessageUser;
+  final bool isMessageRestricted;
   final void Function(BuildContext context)? onShareProfile;
 
   /// Callback when the Blocked button is tapped.
@@ -49,9 +51,7 @@ class ProfileActionButtons extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (isOwnProfile) {
-      return _ActionButtonsRow(
-        children: _buildOwnProfileButtons(context),
-      );
+      return _ActionButtonsRow(children: _buildOwnProfileButtons(context));
     }
 
     final followRepository = ref.watch(followRepositoryProvider);
@@ -79,6 +79,7 @@ class ProfileActionButtons extends ConsumerWidget {
         currentUserPubkey: nostrClient.publicKey,
         isBlocked: isBlocked,
         canTargetUser: canTargetUser,
+        isMessageRestricted: isMessageRestricted,
         onMessageUser: onMessageUser,
         onShareProfile: onShareProfile,
         onBlockedTap: onBlockedTap,
@@ -143,6 +144,7 @@ class _OtherProfileButtons extends StatelessWidget {
     required this.currentUserPubkey,
     required this.isBlocked,
     required this.canTargetUser,
+    required this.isMessageRestricted,
     required this.onMessageUser,
     required this.onShareProfile,
     required this.onBlockedTap,
@@ -158,6 +160,9 @@ class _OtherProfileButtons extends StatelessWidget {
   /// an explanation (disclosure invariant).
   final bool canTargetUser;
 
+  /// Whether the protected-minor DM policy hides only the message affordance.
+  final bool isMessageRestricted;
+
   final VoidCallback? onMessageUser;
   final void Function(BuildContext context)? onShareProfile;
   final VoidCallback? onBlockedTap;
@@ -168,6 +173,7 @@ class _OtherProfileButtons extends StatelessWidget {
     return BlocSelector<MyFollowingBloc, MyFollowingState, bool>(
       selector: (state) => state.isFollowing(userIdHex),
       builder: (context, isFollowing) {
+        final canShowMessage = canTargetUser && !isMessageRestricted;
         final followButton = FollowFromProfileButtonView(
           pubkey: userIdHex,
           displayName: displayName ?? l10n.profileUserFallback,
@@ -191,16 +197,18 @@ class _OtherProfileButtons extends StatelessWidget {
           // Following: [Message (expanded)] [Following] [Share]
           children = [
             if (canTargetUser) ...[
-              Expanded(
-                child: DivineButton(
-                  expanded: true,
-                  leadingIcon: .envelopeSimple,
-                  type: .secondary,
-                  size: .small,
-                  label: l10n.profileMessageLabel,
-                  onPressed: onMessageUser,
+              if (canShowMessage)
+                Expanded(
+                  child: DivineButton(
+                    expanded: true,
+                    leadingIcon: .envelopeSimple,
+                    type: .secondary,
+                    size: .small,
+                    label: l10n.profileMessageLabel,
+                    onPressed: onMessageUser,
+                  ),
                 ),
-              ),
+              if (!canShowMessage) const Spacer(),
               followButton,
             ] else
               const Spacer(),
@@ -211,13 +219,14 @@ class _OtherProfileButtons extends StatelessWidget {
           children = [
             if (canTargetUser) ...[
               Expanded(child: followButton),
-              DivineButton(
-                leadingIcon: .envelopeSimple,
-                type: .secondary,
-                size: .small,
-                label: '',
-                onPressed: onMessageUser,
-              ),
+              if (canShowMessage)
+                DivineButton(
+                  leadingIcon: .envelopeSimple,
+                  type: .secondary,
+                  size: .small,
+                  label: '',
+                  onPressed: onMessageUser,
+                ),
             ] else
               const Spacer(),
             shareButton,
