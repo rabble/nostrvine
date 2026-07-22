@@ -400,7 +400,6 @@ flutter:
     - assets/fonts/
     - assets/licenses/
     - assets/icon/
-    - assets/loading-brand.gif
     - assets/loading-brand-sprite.png
     - assets/seed_data/seed_events.json
     - assets/seed_data/classic_viner_profiles.json
