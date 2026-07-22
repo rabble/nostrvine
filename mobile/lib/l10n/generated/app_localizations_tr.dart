@@ -5764,6 +5764,11 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String inboxConversationTileLabelUnread(String displayName) {
+    return 'Okunmamış, $displayName ile sohbet';
+  }
+
+  @override
   String get inboxConversationTileLongPressHint => 'Sohbet işlemlerini göster';
 
   @override

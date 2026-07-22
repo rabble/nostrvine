@@ -10146,6 +10146,12 @@ abstract class AppLocalizations {
   /// **'{displayName} conversation'**
   String inboxConversationTileLabel(String displayName);
 
+  /// Accessibility label for an UNREAD conversation row in the inbox list, read by screen readers when the row receives focus. Prefixes the unread status before the display name so assistive-technology users get the same unread signal sighted users get from the dot and emphasized preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Unread, {displayName} conversation'**
+  String inboxConversationTileLabelUnread(String displayName);
+
   /// Accessibility hint announced when a conversation row is focused, telling the user that long-pressing opens the actions sheet (mute, report, block, remove).
   ///
   /// In en, this message translates to:

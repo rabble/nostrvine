@@ -5748,6 +5748,11 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String inboxConversationTileLabelUnread(String displayName) {
+    return 'غير المقروءة، محادثة $displayName';
+  }
+
+  @override
   String get inboxConversationTileLongPressHint => 'عرض إجراءات المحادثة';
 
   @override

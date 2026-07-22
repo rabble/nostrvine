@@ -5835,6 +5835,11 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
+  String inboxConversationTileLabelUnread(String displayName) {
+    return 'Непрочетени, Разговор с $displayName';
+  }
+
+  @override
   String get inboxConversationTileLongPressHint =>
       'Покажи действията за разговора';
 

@@ -5934,6 +5934,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String inboxConversationTileLabelUnread(String displayName) {
+    return 'Necitite, Conversație cu $displayName';
+  }
+
+  @override
   String get inboxConversationTileLongPressHint =>
       'Arată acțiunile pentru conversație';
 

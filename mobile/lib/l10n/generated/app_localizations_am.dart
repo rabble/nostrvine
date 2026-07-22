@@ -5667,6 +5667,11 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String inboxConversationTileLabelUnread(String displayName) {
+    return 'ያልተነበቡ፣ የ$displayName ውይይት';
+  }
+
+  @override
   String get inboxConversationTileLongPressHint => 'የውይይት እርምጃዎችን አሳይ';
 
   @override

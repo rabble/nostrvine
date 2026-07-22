@@ -1991,6 +1991,72 @@ void main() {
         equals(['pizza']),
       );
     });
+
+    test(
+      'a conversation streaming in during an active search is re-resolved '
+      'and surfaces without another keystroke',
+      () async {
+        final acceptedController = StreamController<List<DmConversation>>();
+        _stubStreams(mockDmRepository);
+        when(
+          () => mockDmRepository.watchAcceptedConversations(
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) => acceptedController.stream);
+        when(
+          () => mockProfileRepository.fetchBatchProfiles(
+            pubkeys: any(named: 'pubkeys'),
+          ),
+        ).thenAnswer(
+          (_) async => {
+            _testPubkey3: UserProfile(
+              pubkey: _testPubkey3,
+              displayName: 'Alice Wonder',
+              rawData: const {},
+              createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+              eventId: _testConversationId1,
+            ),
+          },
+        );
+
+        final bloc = createBloc()..add(const ConversationListStarted());
+        addTearDown(() async {
+          await bloc.close();
+          await acceptedController.close();
+        });
+
+        acceptedController.add([
+          _createConversation(id: 'pizza', lastMessageContent: 'pizza friday?'),
+        ]);
+        await bloc.stream.firstWhere(
+          (s) => s.status == ConversationListStatus.loaded,
+        );
+
+        bloc.add(const ConversationListSearchQueryChanged('alice'));
+        await bloc.stream.firstWhere((s) => s.searchQuery == 'alice');
+        // Alice is not in the list yet, so nothing matches.
+        expect(bloc.state.visibleConversations, isEmpty);
+
+        // Alice's conversation arrives — her name was never resolved, so
+        // without the data-path re-resolution it would stay filtered out.
+        acceptedController.add([
+          _createConversation(id: 'pizza', lastMessageContent: 'pizza friday?'),
+          _createConversation(
+            id: 'alice',
+            lastMessageContent: 'see you soon',
+            participantPubkeys: const [_testPubkey1, _testPubkey3],
+          ),
+        ]);
+
+        final state = await bloc.stream.firstWhere(
+          (s) => s.visibleConversations.any((c) => c.id == 'alice'),
+        );
+        expect(
+          state.visibleConversations.map((c) => c.id),
+          contains('alice'),
+        );
+      },
+    );
   });
 
   // Subscription lifecycle (#2931)

@@ -5780,6 +5780,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String inboxConversationTileLabelUnread(String displayName) {
+    return 'Unread, $displayName conversation';
+  }
+
+  @override
   String get inboxConversationTileLongPressHint => 'Show conversation actions';
 
   @override

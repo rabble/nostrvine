@@ -593,6 +593,96 @@ void main() {
       );
 
       testWidgets(
+        'suppresses the load-more spinner while a filter narrows the list',
+        (tester) async {
+          // A full page is loaded (hasMore true) but the unread filter leaves
+          // one short row. The trailing load-more spinner must not render — a
+          // list too short to scroll can never trigger onLoadMore, so it would
+          // spin forever.
+          final conversations = List.generate(
+            20,
+            (index) => DmConversation(
+              id: 'conv$index',
+              participantPubkeys: const [currentPubkey, otherPubkey],
+              isGroup: false,
+              createdAt: nowUnix - index,
+              lastMessageContent: 'Hello $index',
+              lastMessageTimestamp: nowUnix - index,
+              isRead: index != 0,
+            ),
+          );
+          final unread = conversations.where((c) => !c.isRead).toList();
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationListState(
+                status: ConversationListStatus.loaded,
+                conversations: conversations,
+                visibleConversations: unread,
+                unreadOnly: true,
+                // hasMore defaults to true.
+              ),
+            ),
+          );
+          await tester.pump();
+
+          await tester.tap(find.text('Messages'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
+
+          expect(find.byType(ConversationTile), findsOneWidget);
+          expect(
+            find.descendant(
+              of: find.byKey(const ValueKey('messages-$currentPubkey')),
+              matching: find.byType(CircularProgressIndicator),
+            ),
+            findsNothing,
+          );
+        },
+      );
+
+      testWidgets(
+        'shows the load-more spinner when hasMore and no filter is active',
+        (tester) async {
+          final conversations = List.generate(
+            3,
+            (index) => DmConversation(
+              id: 'conv$index',
+              participantPubkeys: const [currentPubkey, otherPubkey],
+              isGroup: false,
+              createdAt: nowUnix - index,
+              lastMessageContent: 'Hello $index',
+              lastMessageTimestamp: nowUnix - index,
+            ),
+          );
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationListState(
+                status: ConversationListStatus.loaded,
+                conversations: conversations,
+                visibleConversations: conversations,
+                // hasMore defaults to true.
+              ),
+            ),
+          );
+          await tester.pump();
+
+          await tester.tap(find.text('Messages'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
+
+          expect(
+            find.descendant(
+              of: find.byKey(const ValueKey('messages-$currentPubkey')),
+              matching: find.byType(CircularProgressIndicator),
+            ),
+            findsOneWidget,
+          );
+        },
+      );
+
+      testWidgets(
         'keeps the last conversation tile clear of the FAB when scrolled '
         'to the end',
         (tester) async {

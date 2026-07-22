@@ -5780,6 +5780,11 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String inboxConversationTileLabelUnread(String displayName) {
+    return 'Olästa, Konversation med $displayName';
+  }
+
+  @override
   String get inboxConversationTileLongPressHint => 'Visa konversationsåtgärder';
 
   @override

@@ -5811,6 +5811,11 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String inboxConversationTileLabelUnread(String displayName) {
+    return 'Ongelezen, Gesprek met $displayName';
+  }
+
+  @override
   String get inboxConversationTileLongPressHint => 'Gespreksacties tonen';
 
   @override

@@ -5851,6 +5851,11 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
+  String inboxConversationTileLabelUnread(String displayName) {
+    return 'Hindi pa nababasa, Usapan kay $displayName';
+  }
+
+  @override
   String get inboxConversationTileLongPressHint =>
       'Ipakita ang mga aksyon sa usapan';
 

@@ -4208,6 +4208,8 @@
     "@inboxConversationActionsSheetLabel": {"description": "Accessibility label announced by screen readers when the long-press actions bottom sheet for a conversation row opens."},
     "inboxConversationTileLabel": "{displayName}との会話",
     "@inboxConversationTileLabel": {"description": "Accessibility label for a conversation row in the inbox list, read by screen readers when the row receives focus. Use the other participant's display name.", "placeholders": {"displayName": {"type": "String", "example": "Alice"}}},
+    "inboxConversationTileLabelUnread": "未読、{displayName}との会話",
+    "@inboxConversationTileLabelUnread": {"description": "Accessibility label for an UNREAD conversation row in the inbox list, read by screen readers when the row receives focus. Prefixes the unread status before the display name so assistive-technology users get the same unread signal sighted users get from the dot and emphasized preview.", "placeholders": {"displayName": {"type": "String", "example": "Alice"}}},
     "inboxConversationTileLongPressHint": "会話の操作を表示",
     "@inboxConversationTileLongPressHint": {"description": "Accessibility hint announced when a conversation row is focused, telling the user that long-pressing opens the actions sheet (mute, report, block, remove)."},
     "curatedListActionsTooltip": "リストの操作",

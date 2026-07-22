@@ -200,6 +200,21 @@ class ConversationListBloc
             ) ??
             blocklistedRequests;
 
+        // A conversation can stream in while a name search is active whose
+        // counterparty was not resolved when the search fired; it would fall
+        // back to the generated name and drop out of the results until the
+        // next keystroke. Re-run resolution for the new set (a no-op once
+        // every counterparty is cached, so it converges) so a just-arrived
+        // match surfaces on its own.
+        if (state.searchQuery.isNotEmpty &&
+            visibleInbox.any(
+              (c) => !state.profileNames.containsKey(
+                _otherParticipant(c, userPubkey),
+              ),
+            )) {
+          add(ConversationListSearchQueryChanged(state.searchQuery));
+        }
+
         return state.copyWith(
           status: ConversationListStatus.loaded,
           conversations: visibleInbox,

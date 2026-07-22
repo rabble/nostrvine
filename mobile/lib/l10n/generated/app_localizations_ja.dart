@@ -5549,6 +5549,11 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String inboxConversationTileLabelUnread(String displayName) {
+    return '未読、$displayNameとの会話';
+  }
+
+  @override
   String get inboxConversationTileLongPressHint => '会話の操作を表示';
 
   @override

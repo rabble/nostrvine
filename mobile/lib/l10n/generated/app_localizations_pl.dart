@@ -5927,6 +5927,11 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
+  String inboxConversationTileLabelUnread(String displayName) {
+    return 'Nieprzeczytane, Konwersacja z $displayName';
+  }
+
+  @override
   String get inboxConversationTileLongPressHint => 'Pokaż akcje konwersacji';
 
   @override

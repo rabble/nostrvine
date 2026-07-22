@@ -499,8 +499,8 @@ class _ConversationListState extends ConsumerState<_ConversationList>
 
   @override
   bool canLoadMore() {
-    final bloc = context.read<ConversationListBloc>();
-    return bloc.state.hasMore && !bloc.state.isLoadingMore;
+    final state = context.read<ConversationListBloc>().state;
+    return state.hasMore && !state.isLoadingMore && !state.isFiltering;
   }
 
   @override
@@ -602,7 +602,11 @@ class _ConversationListState extends ConsumerState<_ConversationList>
                   conversations: visibleConversations,
                   hasRequests: hasRequests,
                   requestUnreadCount: requestUnreadCount,
-                  hasMore: hasMore,
+                  // Suppress the load-more affordance while a filter/search
+                  // narrows the list: pagination grows the unfiltered list,
+                  // and a short filtered result can't scroll to trigger it —
+                  // leaving a spinner that never resolves.
+                  hasMore: hasMore && !unreadOnly && searchQuery.isEmpty,
                   highlightedConversationId: _highlightedConversationId,
                   currentUserPubkey: widget.currentUserPubkey,
                   onOpenRequests: () => _openMessageRequests(context),

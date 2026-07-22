@@ -69,7 +69,12 @@ class ConversationTile extends ConsumerWidget {
 
     return Semantics(
       button: true,
-      label: context.l10n.inboxConversationTileLabel(displayName),
+      // Unread state is conveyed to sighted users by the red dot + emphasized
+      // preview; mirror it for assistive tech by prefixing the unread status
+      // to the row label (same pattern as the notification rows).
+      label: conversation.isRead
+          ? context.l10n.inboxConversationTileLabel(displayName)
+          : context.l10n.inboxConversationTileLabelUnread(displayName),
       onLongPressHint: context.l10n.inboxConversationTileLongPressHint,
       child: GestureDetector(
         onTap: () {

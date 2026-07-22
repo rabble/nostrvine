@@ -91,6 +91,13 @@ class ConversationListState extends Equatable {
   int get requestUnreadCount =>
       requestConversations.where((c) => !c.isRead).length;
 
+  /// Whether a client-side filter (unread chip or search) is narrowing the
+  /// visible list. Load-more pagination is suspended while this is true —
+  /// it grows the unfiltered accepted window, not the filtered view, so a
+  /// short filtered result must not show a trailing load-more spinner it can
+  /// never scroll to trigger.
+  bool get isFiltering => unreadOnly || searchQuery.isNotEmpty;
+
   ConversationListState copyWith({
     ConversationListStatus? status,
     List<DmConversation>? conversations,

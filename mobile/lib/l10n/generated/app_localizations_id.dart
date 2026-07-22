@@ -5755,6 +5755,11 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String inboxConversationTileLabelUnread(String displayName) {
+    return 'Belum dibaca, Percakapan dengan $displayName';
+  }
+
+  @override
   String get inboxConversationTileLongPressHint =>
       'Tampilkan tindakan percakapan';
 

@@ -5569,6 +5569,11 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String inboxConversationTileLabelUnread(String displayName) {
+    return '안 읽음, $displayName님과의 대화';
+  }
+
+  @override
   String get inboxConversationTileLongPressHint => '대화 작업 보기';
 
   @override
