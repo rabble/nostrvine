@@ -166,6 +166,105 @@ void main() {
       );
     });
   });
+
+  group('proofFile C2PA manifest id propagation', () {
+    test('fresh proof generation carries the C2PA manifest id', () async {
+      final directory = await Directory.systemTemp.createTemp(
+        'native-proofmode-test-',
+      );
+      addTearDown(() async {
+        if (directory.existsSync()) {
+          await directory.delete(recursive: true);
+        }
+      });
+
+      final video = File('${directory.path}/video.mp4');
+      await video.writeAsBytes(const [1, 2, 3, 4]);
+
+      const generatedProofHash =
+          'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+      final proofDir = Directory('${directory.path}/$generatedProofHash');
+      await proofDir.create();
+      await File(
+        '${proofDir.path}/$generatedProofHash.asc',
+      ).writeAsString('signature');
+
+      final c2paService = _SigningC2paSigningService(video.path);
+      NativeProofModeService.c2paSigningServiceFactoryOverride = () =>
+          c2paService;
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(proofModeChannel, (call) async {
+            switch (call.method) {
+              case 'isAvailable':
+                return true;
+              case 'getProofDir':
+                final args = call.arguments as Map<Object?, Object?>;
+                return args['proofHash'] == generatedProofHash
+                    ? proofDir.path
+                    : null;
+              case 'generateProof':
+                return generatedProofHash;
+              default:
+                fail('Unexpected proof mode method call: ${call.method}');
+            }
+          });
+
+      final proofData = await NativeProofModeService.proofFile(video);
+
+      expect(proofData, isNotNull);
+      expect(proofData!.videoHash, generatedProofHash);
+      expect(proofData.c2paManifestId, _SigningC2paSigningService.manifestId);
+    });
+
+    test('existing proof metadata carries the C2PA manifest id', () async {
+      final directory = await Directory.systemTemp.createTemp(
+        'native-proofmode-test-',
+      );
+      addTearDown(() async {
+        if (directory.existsSync()) {
+          await directory.delete(recursive: true);
+        }
+      });
+
+      final video = File('${directory.path}/video.mp4');
+      await video.writeAsBytes(const [1, 2, 3, 4]);
+      final videoHash = await NativeProofModeService.generateSha256FileHash(
+        video.path,
+      );
+
+      final proofDir = Directory('${directory.path}/$videoHash');
+      await proofDir.create();
+      await File('${proofDir.path}/$videoHash.asc').writeAsString('signature');
+
+      final c2paService = _SigningC2paSigningService(
+        video.path,
+        allowSign: false,
+      );
+      NativeProofModeService.c2paSigningServiceFactoryOverride = () =>
+          c2paService;
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(proofModeChannel, (call) async {
+            switch (call.method) {
+              case 'isAvailable':
+                return true;
+              case 'getProofDir':
+                final args = call.arguments as Map<Object?, Object?>;
+                return args['proofHash'] == videoHash ? proofDir.path : null;
+              default:
+                fail('Unexpected proof mode method call: ${call.method}');
+            }
+          });
+
+      final proofData = await NativeProofModeService.proofFile(video);
+
+      expect(proofData, isNotNull);
+      expect(proofData!.videoHash, videoHash);
+      expect(proofData.c2paManifestId, _SigningC2paSigningService.manifestId);
+      expect(c2paService.signVideoCallCount, 0);
+    });
+  });
 }
 
 Iterable<LogEntry> _logsContaining(String message) {
@@ -205,5 +304,34 @@ class _FailingC2paSigningService extends C2paSigningService {
   Future<ManifestStoreInfo?> readManifest(String filePath) async {
     readManifestCallCount += 1;
     return null;
+  }
+}
+
+class _SigningC2paSigningService extends C2paSigningService {
+  _SigningC2paSigningService(this.videoPath, {this.allowSign = true});
+
+  static const manifestId = 'urn:c2pa:test-manifest';
+
+  final String videoPath;
+  final bool allowSign;
+  int signVideoCallCount = 0;
+
+  @override
+  Future<C2paSigningResult> signVideo({
+    required String videoPath,
+    NostrCreatorBindingAssertion? creatorBindingAssertion,
+    Map<String, dynamic>? cawgIdentityAssertion,
+    bool enableAdvancedCawgEmbedding = false,
+  }) async {
+    signVideoCallCount += 1;
+    if (!allowSign) {
+      fail('signVideo should not be called when proof metadata exists');
+    }
+    return C2paSigningResult(signedFilePath: this.videoPath, success: true);
+  }
+
+  @override
+  Future<ManifestStoreInfo?> readManifest(String filePath) async {
+    return const ManifestStoreInfo(activeManifest: manifestId);
   }
 }
