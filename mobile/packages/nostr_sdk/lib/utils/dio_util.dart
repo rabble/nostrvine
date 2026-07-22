@@ -8,20 +8,31 @@ import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:cookie_jar/cookie_jar.dart';
+import 'package:nostr_sdk/utils/loopback_host.dart';
 
 Dio? _dio;
 var cookieJar = CookieJar();
 
 class DioUtil {
+  static HttpClient createHttpClient() {
+    final client = HttpClient();
+    client.badCertificateCallback = (cert, host, port) =>
+        allowsLocalBadCertificateHost(host);
+    return client;
+  }
+
+  static void resetForTesting() {
+    _dio?.close(force: true);
+    _dio = null;
+    cookieJar = CookieJar();
+  }
+
   static Dio getDio() {
     if (_dio == null) {
       _dio = Dio();
       if (_dio!.httpClientAdapter is IOHttpClientAdapter) {
-        (_dio!.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
-          final client = HttpClient();
-          client.badCertificateCallback = (cert, host, port) => true;
-          return client;
-        };
+        (_dio!.httpClientAdapter as IOHttpClientAdapter).createHttpClient =
+            createHttpClient;
       }
 
       // _dio!.options.connectTimeout = Duration(minutes: 1);

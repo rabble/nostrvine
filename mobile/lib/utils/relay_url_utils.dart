@@ -1,24 +1,17 @@
 // ABOUTME: Helpers for resolving API base URLs from Nostr relay WebSocket URLs.
 // ABOUTME: Keeps REST endpoints aligned with active relay configuration.
 
+import 'package:nostr_sdk/nostr_sdk.dart' as nostr_sdk;
+
 const _divineRelayHost = 'relay.divine.video';
 const _divineApiBaseUrl = 'https://api.divine.video';
 
-/// Hosts allowed to use cleartext (`ws://` / `http://`) schemes.
-///
-/// Mirrors the loopback allowlist enforced by `network_security_config.xml`
-/// (Android), `NSAllowsLocalNetworking` (iOS/macOS), and the local Docker
-/// stack address `localHost` from `mobile/lib/models/environment_config.dart`.
-/// Any change here must be reflected in:
-///
-///  * `mobile/android/app/src/main/res/xml/network_security_config.xml`
-///  * `mobile/packages/nostr_sdk/lib/nip46/nostr_remote_signer_info.dart`
-///  * `mobile/packages/nostr_client/lib/src/relay_manager.dart`
-const _loopbackHosts = <String>{'localhost', '127.0.0.1', '10.0.2.2', '::1'};
-
 /// True if [host] is a recognized loopback address that may be reached over
 /// cleartext (`ws://` / `http://`).
-bool isLoopbackHost(String host) => _loopbackHosts.contains(host.toLowerCase());
+///
+/// Delegates to the package-level source of truth in `nostr_sdk`; native
+/// cleartext transport config must mirror that predicate.
+bool isLoopbackHost(String host) => nostr_sdk.isLoopbackHost(host);
 
 /// Relay hosts operated by Divine across all environments.
 ///
@@ -76,9 +69,9 @@ bool usesUserChosenRelay(
 /// as the upstream "is this URL a usable relay endpoint" check.
 ///
 /// This predicate is the single source of truth for the application-layer
-/// transport allowlist. The package layer (`nostr_sdk`, `nostr_client`)
-/// duplicates this rule in-package because those packages cannot import from
-/// `mobile/lib/`; any change here must be mirrored there.
+/// relay URL allowlist. The loopback host predicate itself lives in
+/// `nostr_sdk` so package-layer callers can share it without importing app
+/// code.
 bool isRelayUrlAllowed(String url) {
   final uri = Uri.tryParse(url.trim());
   if (uri == null || !uri.hasAuthority || uri.host.isEmpty) return false;

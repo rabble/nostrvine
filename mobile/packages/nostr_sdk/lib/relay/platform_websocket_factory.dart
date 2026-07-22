@@ -10,8 +10,9 @@ import 'web_socket_connection_manager.dart';
 /// {@template platform_websocket_channel_factory}
 /// Platform-aware WebSocket channel factory.
 ///
-/// On non-web platforms (iOS, Android, desktop), uses custom SSL handling
-/// that accepts self-signed certificates for wss:// connections.
+/// On non-web platforms (iOS, Android, desktop), wss:// connections use
+/// platform certificate validation for remote hosts and tolerate
+/// self-signed certificates only for local-stack loopback hosts.
 /// On web platform, uses standard WebSocket.connect().
 /// {@endtemplate}
 class PlatformWebSocketChannelFactory implements WebSocketChannelFactory {
