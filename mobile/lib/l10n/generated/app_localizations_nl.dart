@@ -5543,6 +5543,16 @@ class AppLocalizationsNl extends AppLocalizations {
       'Geen ongelezen berichten op dit moment.';
 
   @override
+  String get inboxSearchHint => 'Berichten zoeken';
+
+  @override
+  String get inboxSearchEmptyTitle => 'Geen resultaten';
+
+  @override
+  String get inboxSearchEmptySubtitle =>
+      'Probeer een andere naam of een ander woord.';
+
+  @override
   String get inboxActionMute => 'Gesprek dempen';
 
   @override

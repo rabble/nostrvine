@@ -2335,6 +2335,9 @@
     "inboxFilterUnread": "Non letti",
     "inboxUnreadEmptyTitle": "Sei in pari",
     "inboxUnreadEmptySubtitle": "Nessun messaggio non letto al momento.",
+    "inboxSearchHint": "Cerca nei messaggi",
+    "inboxSearchEmptyTitle": "Nessun risultato",
+    "inboxSearchEmptySubtitle": "Prova con un altro nome o un'altra parola.",
     "inboxRemoveConfirmBody": "Questo eliminerà la tua conversazione con {displayName}. Questa azione non può essere annullata.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {

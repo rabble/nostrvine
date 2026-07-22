@@ -41,6 +41,7 @@ class InboxPage extends ConsumerWidget {
     final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
     final prefs = ref.watch(sharedPreferencesProvider);
     final reportingService = ref.watch(contentReportingServiceProvider).value;
+    final profileRepository = ref.watch(profileRepositoryProvider);
     final currentUserPubkey =
         ref.watch(authServiceProvider).currentPublicKeyHex ?? '';
     final protectedMinorInboxGate = ref.watch(protectedMinorInboxGateProvider);
@@ -80,10 +81,16 @@ class InboxPage extends ConsumerWidget {
         )),
         providers: [
           BlocProvider(
+            // Re-keyed on the nullable-gated profileRepository alone (it
+            // resolves null -> instance shortly after mount, same shape as
+            // reportingService below) so search name-resolution binds the
+            // ready instance without tearing down every inbox bloc.
+            key: ValueKey(profileRepository),
             create: (_) => ConversationListBloc(
               dmRepository: dmRepository,
               followRepository: followRepository,
               contentBlocklistRepository: blocklistRepository,
+              profileRepository: profileRepository,
               protectedMinorInboxGate: protectedMinorInboxGate,
             )..add(const ConversationListStarted()),
           ),

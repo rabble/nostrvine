@@ -5288,6 +5288,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get inboxUnreadEmptySubtitle => '未読メッセージはありません。';
 
   @override
+  String get inboxSearchHint => 'メッセージを検索';
+
+  @override
+  String get inboxSearchEmptyTitle => '一致なし';
+
+  @override
+  String get inboxSearchEmptySubtitle => '別の名前や言葉で試してください。';
+
+  @override
   String get inboxActionMute => '会話をミュート';
 
   @override

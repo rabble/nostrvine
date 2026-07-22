@@ -5586,6 +5586,15 @@ class AppLocalizationsFil extends AppLocalizations {
   String get inboxUnreadEmptySubtitle => 'Walang hindi pa nababasang mensahe.';
 
   @override
+  String get inboxSearchHint => 'Maghanap ng mga mensahe';
+
+  @override
+  String get inboxSearchEmptyTitle => 'Walang tugma';
+
+  @override
+  String get inboxSearchEmptySubtitle => 'Subukan ang ibang pangalan o salita.';
+
+  @override
   String get inboxActionMute => 'I-mute ang conversation';
 
   @override

@@ -5492,6 +5492,15 @@ class AppLocalizationsId extends AppLocalizations {
   String get inboxUnreadEmptySubtitle => 'Tidak ada pesan yang belum dibaca.';
 
   @override
+  String get inboxSearchHint => 'Cari pesan';
+
+  @override
+  String get inboxSearchEmptyTitle => 'Tidak ada hasil';
+
+  @override
+  String get inboxSearchEmptySubtitle => 'Coba nama atau kata lain.';
+
+  @override
   String get inboxActionMute => 'Bisukan percakapan';
 
   @override

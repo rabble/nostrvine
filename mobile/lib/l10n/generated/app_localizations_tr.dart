@@ -5500,6 +5500,15 @@ class AppLocalizationsTr extends AppLocalizations {
   String get inboxUnreadEmptySubtitle => 'Şu anda okunmamış mesaj yok.';
 
   @override
+  String get inboxSearchHint => 'Mesajlarda ara';
+
+  @override
+  String get inboxSearchEmptyTitle => 'Sonuç yok';
+
+  @override
+  String get inboxSearchEmptySubtitle => 'Başka bir isim veya kelime dene.';
+
+  @override
   String get inboxActionMute => 'Sohbeti sessize al';
 
   @override

@@ -5564,6 +5564,16 @@ class AppLocalizationsEs extends AppLocalizations {
       'No tienes mensajes sin leer ahora mismo.';
 
   @override
+  String get inboxSearchHint => 'Buscar mensajes';
+
+  @override
+  String get inboxSearchEmptyTitle => 'Sin coincidencias';
+
+  @override
+  String get inboxSearchEmptySubtitle =>
+      'Prueba con otro nombre u otra palabra.';
+
+  @override
   String get inboxActionMute => 'Silenciar conversación';
 
   @override

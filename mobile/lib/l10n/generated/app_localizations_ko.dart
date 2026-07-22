@@ -5308,6 +5308,15 @@ class AppLocalizationsKo extends AppLocalizations {
   String get inboxUnreadEmptySubtitle => '읽지 않은 메시지가 없어요.';
 
   @override
+  String get inboxSearchHint => '메시지 검색';
+
+  @override
+  String get inboxSearchEmptyTitle => '일치하는 항목 없음';
+
+  @override
+  String get inboxSearchEmptySubtitle => '다른 이름이나 단어로 시도해 보세요.';
+
+  @override
   String get inboxActionMute => '대화 알림 끄기';
 
   @override

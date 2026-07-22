@@ -5554,6 +5554,15 @@ class AppLocalizationsPt extends AppLocalizations {
       'Nenhuma mensagem por ler neste momento.';
 
   @override
+  String get inboxSearchHint => 'Pesquisar mensagens';
+
+  @override
+  String get inboxSearchEmptyTitle => 'Sem resultados';
+
+  @override
+  String get inboxSearchEmptySubtitle => 'Tenta outro nome ou outra palavra.';
+
+  @override
   String get inboxActionMute => 'Silenciar conversa';
 
   @override

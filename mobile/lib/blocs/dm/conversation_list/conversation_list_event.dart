@@ -42,6 +42,16 @@ class ConversationListUnreadFilterToggled extends ConversationListEvent {
   const ConversationListUnreadFilterToggled();
 }
 
+/// The inbox search query changed.
+class ConversationListSearchQueryChanged extends ConversationListEvent {
+  const ConversationListSearchQueryChanged(this.query);
+
+  final String query;
+
+  @override
+  List<Object?> get props => [query];
+}
+
 /// Mark a conversation as read.
 class ConversationListMarkRead extends ConversationListEvent {
   const ConversationListMarkRead(this.conversationId);

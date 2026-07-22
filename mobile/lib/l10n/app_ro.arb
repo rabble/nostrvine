@@ -2335,6 +2335,9 @@
     "inboxFilterUnread": "Necitite",
     "inboxUnreadEmptyTitle": "Ești la zi",
     "inboxUnreadEmptySubtitle": "Niciun mesaj necitit momentan.",
+    "inboxSearchHint": "Caută mesaje",
+    "inboxSearchEmptyTitle": "Nicio potrivire",
+    "inboxSearchEmptySubtitle": "Încearcă alt nume sau alt cuvânt.",
     "inboxRemoveConfirmBody": "Astfel, conversația ta cu {displayName} va fi ștearsă. Această acțiune nu poate fi anulată.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {

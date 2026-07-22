@@ -2446,6 +2446,9 @@
     "inboxFilterUnread": "Непрочетени",
     "inboxUnreadEmptyTitle": "В крак си с всичко",
     "inboxUnreadEmptySubtitle": "Няма непрочетени съобщения в момента.",
+    "inboxSearchHint": "Търсене в съобщенията",
+    "inboxSearchEmptyTitle": "Няма съвпадения",
+    "inboxSearchEmptySubtitle": "Опитай с друго име или дума.",
     "inboxActionMute": "Заглушаване на разговора",
     "inboxActionReport": "Докладвай {displayName}",
     "@inboxActionReport": {

@@ -5515,6 +5515,15 @@ class AppLocalizationsSv extends AppLocalizations {
   String get inboxUnreadEmptySubtitle => 'Inga olästa meddelanden just nu.';
 
   @override
+  String get inboxSearchHint => 'Sök meddelanden';
+
+  @override
+  String get inboxSearchEmptyTitle => 'Inga träffar';
+
+  @override
+  String get inboxSearchEmptySubtitle => 'Prova ett annat namn eller ord.';
+
+  @override
   String get inboxActionMute => 'Tysta konversation';
 
   @override

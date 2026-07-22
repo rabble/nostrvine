@@ -2334,6 +2334,9 @@
     "inboxFilterUnread": "Okunmamış",
     "inboxUnreadEmptyTitle": "Her şeyi okudun",
     "inboxUnreadEmptySubtitle": "Şu anda okunmamış mesaj yok.",
+    "inboxSearchHint": "Mesajlarda ara",
+    "inboxSearchEmptyTitle": "Sonuç yok",
+    "inboxSearchEmptySubtitle": "Başka bir isim veya kelime dene.",
     "inboxRemoveConfirmBody": "Bu işlem, {displayName} ile olan sohbetini siler. Bu işlem geri alınamaz.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {

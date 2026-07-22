@@ -2594,6 +2594,9 @@
     "inboxFilterUnread": "ያልተነበቡ",
     "inboxUnreadEmptyTitle": "ሁሉንም አንብበሃል",
     "inboxUnreadEmptySubtitle": "አሁን ያልተነበበ መልዕክት የለም።",
+    "inboxSearchHint": "መልዕክቶችን ፈልግ",
+    "inboxSearchEmptyTitle": "ምንም አልተገኘም",
+    "inboxSearchEmptySubtitle": "ሌላ ስም ወይም ቃል ሞክር።",
     "inboxActionMute": "ውይይት ድምጸ-ከል አድርግ",
     "inboxActionReport": "ሪፖርት {displayName}",
     "@inboxActionReport": {

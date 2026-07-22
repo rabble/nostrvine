@@ -5658,6 +5658,15 @@ class AppLocalizationsPl extends AppLocalizations {
   String get inboxUnreadEmptySubtitle => 'Brak nieprzeczytanych wiadomości.';
 
   @override
+  String get inboxSearchHint => 'Szukaj wiadomości';
+
+  @override
+  String get inboxSearchEmptyTitle => 'Brak wyników';
+
+  @override
+  String get inboxSearchEmptySubtitle => 'Spróbuj innego imienia lub słowa.';
+
+  @override
   String get inboxActionMute => 'Wycisz rozmowę';
 
   @override

@@ -2339,6 +2339,9 @@
     "inboxFilterUnread": "No leídos",
     "inboxUnreadEmptyTitle": "Estás al día",
     "inboxUnreadEmptySubtitle": "No tienes mensajes sin leer ahora mismo.",
+    "inboxSearchHint": "Buscar mensajes",
+    "inboxSearchEmptyTitle": "Sin coincidencias",
+    "inboxSearchEmptySubtitle": "Prueba con otro nombre u otra palabra.",
     "inboxRemoveConfirmBody": "Esto eliminará tu conversación con {displayName}. Esta acción no se puede deshacer.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {

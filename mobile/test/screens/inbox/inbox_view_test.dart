@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -470,6 +471,82 @@ void main() {
           expect(find.byType(ConversationTile), findsNothing);
         },
       );
+
+      testWidgets('typing in the search bar dispatches '
+          '$ConversationListSearchQueryChanged', (tester) async {
+        final conversation = DmConversation(
+          id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+          participantPubkeys: const [currentPubkey, otherPubkey],
+          isGroup: false,
+          createdAt: nowUnix,
+          lastMessageContent: 'Hello',
+          lastMessageTimestamp: nowUnix,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: [conversation],
+              visibleConversations: [conversation],
+              hasMore: false,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('Messages'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+
+        expect(find.byType(DivineSearchBar), findsOneWidget);
+        await tester.enterText(
+          find.descendant(
+            of: find.byType(DivineSearchBar),
+            matching: find.byType(TextField),
+          ),
+          'pizza',
+        );
+        await tester.pump();
+
+        verify(
+          () => mockBloc.add(const ConversationListSearchQueryChanged('pizza')),
+        ).called(1);
+      });
+
+      testWidgets('shows no-matches state when a search finds nothing', (
+        tester,
+      ) async {
+        final conversation = DmConversation(
+          id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+          participantPubkeys: const [currentPubkey, otherPubkey],
+          isGroup: false,
+          createdAt: nowUnix,
+          lastMessageContent: 'Hello',
+          lastMessageTimestamp: nowUnix,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: [conversation],
+              searchQuery: 'zzz',
+              hasMore: false,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('Messages'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.inboxSearchEmptyTitle), findsOneWidget);
+        expect(find.text(l10n.inboxUnreadEmptyTitle), findsNothing);
+        expect(find.byType(ConversationTile), findsNothing);
+      });
 
       testWidgets(
         'renders only visibleConversations, not the full list',

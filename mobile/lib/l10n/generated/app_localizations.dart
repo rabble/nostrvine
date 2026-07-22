@@ -9702,6 +9702,24 @@ abstract class AppLocalizations {
   /// **'No unread messages right now.'**
   String get inboxUnreadEmptySubtitle;
 
+  /// Hint text in the inbox Messages search field.
+  ///
+  /// In en, this message translates to:
+  /// **'Search messages'**
+  String get inboxSearchHint;
+
+  /// Shown in place of the conversation list when an inbox search matches nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'No matches'**
+  String get inboxSearchEmptyTitle;
+
+  /// No description provided for @inboxSearchEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Try a different name or word.'**
+  String get inboxSearchEmptySubtitle;
+
   /// No description provided for @inboxActionMute.
   ///
   /// In en, this message translates to:

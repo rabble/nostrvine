@@ -5482,6 +5482,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get inboxUnreadEmptySubtitle => 'لا توجد رسائل غير مقروءة حاليًا.';
 
   @override
+  String get inboxSearchHint => 'البحث في الرسائل';
+
+  @override
+  String get inboxSearchEmptyTitle => 'لا توجد نتائج';
+
+  @override
+  String get inboxSearchEmptySubtitle => 'جرّب اسمًا أو كلمة أخرى.';
+
+  @override
   String get inboxActionMute => 'كتم المحادثة';
 
   @override

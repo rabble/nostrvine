@@ -5571,6 +5571,15 @@ class AppLocalizationsBg extends AppLocalizations {
       'Няма непрочетени съобщения в момента.';
 
   @override
+  String get inboxSearchHint => 'Търсене в съобщенията';
+
+  @override
+  String get inboxSearchEmptyTitle => 'Няма съвпадения';
+
+  @override
+  String get inboxSearchEmptySubtitle => 'Опитай с друго име или дума.';
+
+  @override
   String get inboxActionMute => 'Заглушаване на разговора';
 
   @override

@@ -5585,6 +5585,16 @@ class AppLocalizationsDe extends AppLocalizations {
       'Gerade keine ungelesenen Nachrichten.';
 
   @override
+  String get inboxSearchHint => 'Nachrichten durchsuchen';
+
+  @override
+  String get inboxSearchEmptyTitle => 'Keine Treffer';
+
+  @override
+  String get inboxSearchEmptySubtitle =>
+      'Versuch einen anderen Namen oder ein anderes Wort.';
+
+  @override
   String get inboxActionMute => 'Unterhaltung stummschalten';
 
   @override

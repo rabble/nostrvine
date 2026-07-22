@@ -2335,6 +2335,9 @@
     "inboxFilterUnread": "Nieprzeczytane",
     "inboxUnreadEmptyTitle": "Wszystko nadrobione",
     "inboxUnreadEmptySubtitle": "Brak nieprzeczytanych wiadomości.",
+    "inboxSearchHint": "Szukaj wiadomości",
+    "inboxSearchEmptyTitle": "Brak wyników",
+    "inboxSearchEmptySubtitle": "Spróbuj innego imienia lub słowa.",
     "inboxRemoveConfirmBody": "Spowoduje to usunięcie rozmowy z {displayName}. Tej operacji nie można cofnąć.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {

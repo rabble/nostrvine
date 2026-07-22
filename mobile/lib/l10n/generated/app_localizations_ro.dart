@@ -5670,6 +5670,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get inboxUnreadEmptySubtitle => 'Niciun mesaj necitit momentan.';
 
   @override
+  String get inboxSearchHint => 'Caută mesaje';
+
+  @override
+  String get inboxSearchEmptyTitle => 'Nicio potrivire';
+
+  @override
+  String get inboxSearchEmptySubtitle => 'Încearcă alt nume sau alt cuvânt.';
+
+  @override
   String get inboxActionMute => 'Dezactivează sunetul conversației';
 
   @override

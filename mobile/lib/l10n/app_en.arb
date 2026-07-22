@@ -3078,6 +3078,15 @@
     "description": "Shown in place of the conversation list when the Unread filter is on and every conversation has been read."
   },
   "inboxUnreadEmptySubtitle": "No unread messages right now.",
+  "inboxSearchHint": "Search messages",
+  "@inboxSearchHint": {
+    "description": "Hint text in the inbox Messages search field."
+  },
+  "inboxSearchEmptyTitle": "No matches",
+  "@inboxSearchEmptyTitle": {
+    "description": "Shown in place of the conversation list when an inbox search matches nothing."
+  },
+  "inboxSearchEmptySubtitle": "Try a different name or word.",
   "inboxActionMute": "Mute conversation",
   "inboxActionReport": "Report {displayName}",
   "@inboxActionReport": {

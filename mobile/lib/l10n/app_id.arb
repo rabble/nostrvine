@@ -2334,6 +2334,9 @@
     "inboxFilterUnread": "Belum dibaca",
     "inboxUnreadEmptyTitle": "Semua sudah kamu baca",
     "inboxUnreadEmptySubtitle": "Tidak ada pesan yang belum dibaca.",
+    "inboxSearchHint": "Cari pesan",
+    "inboxSearchEmptyTitle": "Tidak ada hasil",
+    "inboxSearchEmptySubtitle": "Coba nama atau kata lain.",
     "inboxRemoveConfirmBody": "Ini akan menghapus percakapanmu dengan {displayName}. Tindakan ini tidak bisa dibatalkan.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {

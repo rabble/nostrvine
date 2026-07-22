@@ -26,6 +26,8 @@ class ConversationListState extends Equatable {
     this.conversations = const [],
     this.visibleConversations = const [],
     this.unreadOnly = false,
+    this.searchQuery = '',
+    this.profileNames = const {},
     this.requestConversations = const [],
     this.potentialRequests = const [],
     this.hasMore = true,
@@ -51,6 +53,13 @@ class ConversationListState extends Equatable {
 
   /// Whether the Messages list is filtered to unread conversations only.
   final bool unreadOnly;
+
+  /// Trimmed inbox search query; empty when search is inactive.
+  final String searchQuery;
+
+  /// Resolved display names by counterparty pubkey, used for search
+  /// matching. Grows lazily the first time a query needs a name.
+  final Map<String, String> profileNames;
 
   /// Conversations shown in the Requests tab (non-followed, never replied).
   final List<DmConversation> requestConversations;
@@ -87,6 +96,8 @@ class ConversationListState extends Equatable {
     List<DmConversation>? conversations,
     List<DmConversation>? visibleConversations,
     bool? unreadOnly,
+    String? searchQuery,
+    Map<String, String>? profileNames,
     List<DmConversation>? requestConversations,
     List<DmConversation>? potentialRequests,
     bool? hasMore,
@@ -101,6 +112,8 @@ class ConversationListState extends Equatable {
       conversations: conversations ?? this.conversations,
       visibleConversations: visibleConversations ?? this.visibleConversations,
       unreadOnly: unreadOnly ?? this.unreadOnly,
+      searchQuery: searchQuery ?? this.searchQuery,
+      profileNames: profileNames ?? this.profileNames,
       requestConversations: requestConversations ?? this.requestConversations,
       potentialRequests: potentialRequests ?? this.potentialRequests,
       hasMore: hasMore ?? this.hasMore,
@@ -119,6 +132,8 @@ class ConversationListState extends Equatable {
     conversations,
     visibleConversations,
     unreadOnly,
+    searchQuery,
+    profileNames,
     requestConversations,
     potentialRequests,
     hasMore,

@@ -2335,6 +2335,9 @@
     "inboxFilterUnread": "Ongelezen",
     "inboxUnreadEmptyTitle": "Je bent helemaal bij",
     "inboxUnreadEmptySubtitle": "Geen ongelezen berichten op dit moment.",
+    "inboxSearchHint": "Berichten zoeken",
+    "inboxSearchEmptyTitle": "Geen resultaten",
+    "inboxSearchEmptySubtitle": "Probeer een andere naam of een ander woord.",
     "inboxRemoveConfirmBody": "Dit verwijdert je gesprek met {displayName}. Deze actie kan niet ongedaan worden gemaakt.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {

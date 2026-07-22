@@ -13,6 +13,8 @@ import 'package:equatable/equatable.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation_list/protected_minor_inbox_gate.dart';
+import 'package:openvine/constants/search_constants.dart';
+import 'package:profile_repository/profile_repository.dart';
 import 'package:rxdart/rxdart.dart';
 
 part 'conversation_list_event.dart';
@@ -24,11 +26,13 @@ class ConversationListBloc
     required DmRepository dmRepository,
     required FollowRepository followRepository,
     ContentBlocklistRepository? contentBlocklistRepository,
+    ProfileRepository? profileRepository,
     ProtectedMinorInboxGate? protectedMinorInboxGate,
     Duration recomputeDebounce = _defaultRecomputeDebounce,
   }) : _dmRepository = dmRepository,
        _followRepository = followRepository,
        _blocklistRepository = contentBlocklistRepository,
+       _profileRepository = profileRepository,
        _protectedMinorInboxGate = protectedMinorInboxGate,
        _recomputeDebounce = recomputeDebounce,
        super(const ConversationListState()) {
@@ -36,6 +40,10 @@ class ConversationListBloc
     on<ConversationListLoadMore>(_onLoadMore, transformer: droppable());
     on<ConversationListMarkRead>(_onMarkRead, transformer: droppable());
     on<ConversationListUnreadFilterToggled>(_onUnreadFilterToggled);
+    on<ConversationListSearchQueryChanged>(
+      _onSearchQueryChanged,
+      transformer: debounceRestartable(),
+    );
     on<ConversationListNavigateToUser>(
       _onNavigateToUser,
       transformer: droppable(),
@@ -47,6 +55,7 @@ class ConversationListBloc
   final DmRepository _dmRepository;
   final FollowRepository _followRepository;
   final ContentBlocklistRepository? _blocklistRepository;
+  final ProfileRepository? _profileRepository;
   final ProtectedMinorInboxGate? _protectedMinorInboxGate;
 
   /// Window over which bursty conversation writes are coalesced before the
@@ -194,9 +203,12 @@ class ConversationListBloc
         return state.copyWith(
           status: ConversationListStatus.loaded,
           conversations: visibleInbox,
-          visibleConversations: _applyUnreadFilter(
+          visibleConversations: _applyFilters(
             visibleInbox,
             unreadOnly: state.unreadOnly,
+            query: state.searchQuery,
+            profileNames: state.profileNames,
+            userPubkey: userPubkey,
           ),
           requestConversations: visibleRequests,
           potentialRequests: data.potentialRequests,
@@ -244,20 +256,98 @@ class ConversationListBloc
     emit(
       state.copyWith(
         unreadOnly: unreadOnly,
-        visibleConversations: _applyUnreadFilter(
+        visibleConversations: _applyFilters(
           state.conversations,
           unreadOnly: unreadOnly,
+          query: state.searchQuery,
+          profileNames: state.profileNames,
+          userPubkey: _dmRepository.userPubkey,
         ),
       ),
     );
   }
 
-  static List<DmConversation> _applyUnreadFilter(
+  Future<void> _onSearchQueryChanged(
+    ConversationListSearchQueryChanged event,
+    Emitter<ConversationListState> emit,
+  ) async {
+    final query = event.query.trim();
+    var profileNames = state.profileNames;
+
+    // Resolve counterparty display names once per pubkey so name matching
+    // works; message-content matching needs no lookup. Falls back to the
+    // deterministic generated name when a profile can't be fetched.
+    if (query.isNotEmpty) {
+      final userPubkey = _dmRepository.userPubkey;
+      final unresolved = state.conversations
+          .map((c) => _otherParticipant(c, userPubkey))
+          .where((pk) => !profileNames.containsKey(pk))
+          .toSet()
+          .toList();
+      if (unresolved.isNotEmpty) {
+        var fetched = const <String, UserProfile>{};
+        if (_profileRepository != null) {
+          try {
+            fetched = await _profileRepository.fetchBatchProfiles(
+              pubkeys: unresolved,
+            );
+          } catch (error, stackTrace) {
+            // Network/cache failure is expected offline — match on the
+            // generated fallback names instead. Not Reportable.
+            addError(error, stackTrace);
+          }
+        }
+        profileNames = {
+          ...profileNames,
+          for (final pubkey in unresolved)
+            pubkey:
+                fetched[pubkey]?.bestDisplayName ??
+                UserProfile.defaultDisplayNameFor(pubkey),
+        };
+      }
+    }
+
+    emit(
+      state.copyWith(
+        searchQuery: query,
+        profileNames: profileNames,
+        visibleConversations: _applyFilters(
+          state.conversations,
+          unreadOnly: state.unreadOnly,
+          query: query,
+          profileNames: profileNames,
+          userPubkey: _dmRepository.userPubkey,
+        ),
+      ),
+    );
+  }
+
+  static String _otherParticipant(DmConversation conversation, String self) {
+    return conversation.participantPubkeys.firstWhere(
+      (pk) => pk != self,
+      orElse: () => conversation.participantPubkeys.first,
+    );
+  }
+
+  static List<DmConversation> _applyFilters(
     List<DmConversation> conversations, {
     required bool unreadOnly,
+    required String query,
+    required Map<String, String> profileNames,
+    required String userPubkey,
   }) {
-    if (!unreadOnly) return conversations;
-    return conversations.where((c) => !c.isRead).toList();
+    var result = conversations;
+    if (unreadOnly) result = result.where((c) => !c.isRead).toList();
+    if (query.isEmpty) return result;
+    final normalized = query.toLowerCase();
+    return result.where((c) {
+      final other = _otherParticipant(c, userPubkey);
+      final name =
+          (profileNames[other] ?? UserProfile.defaultDisplayNameFor(other))
+              .toLowerCase();
+      final preview = c.lastMessageContent?.toLowerCase() ?? '';
+      return name.contains(normalized) || preview.contains(normalized);
+    }).toList();
   }
 
   Future<void> _onMarkRead(

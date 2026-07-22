@@ -5518,6 +5518,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inboxUnreadEmptySubtitle => 'No unread messages right now.';
 
   @override
+  String get inboxSearchHint => 'Search messages';
+
+  @override
+  String get inboxSearchEmptyTitle => 'No matches';
+
+  @override
+  String get inboxSearchEmptySubtitle => 'Try a different name or word.';
+
+  @override
   String get inboxActionMute => 'Mute conversation';
 
   @override

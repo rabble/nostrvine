@@ -5406,6 +5406,15 @@ class AppLocalizationsAm extends AppLocalizations {
   String get inboxUnreadEmptySubtitle => 'አሁን ያልተነበበ መልዕክት የለም።';
 
   @override
+  String get inboxSearchHint => 'መልዕክቶችን ፈልግ';
+
+  @override
+  String get inboxSearchEmptyTitle => 'ምንም አልተገኘም';
+
+  @override
+  String get inboxSearchEmptySubtitle => 'ሌላ ስም ወይም ቃል ሞክር።';
+
+  @override
   String get inboxActionMute => 'ውይይት ድምጸ-ከል አድርግ';
 
   @override

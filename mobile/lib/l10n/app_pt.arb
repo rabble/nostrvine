@@ -2335,6 +2335,9 @@
     "inboxFilterUnread": "Não lidas",
     "inboxUnreadEmptyTitle": "Estás em dia",
     "inboxUnreadEmptySubtitle": "Nenhuma mensagem por ler neste momento.",
+    "inboxSearchHint": "Pesquisar mensagens",
+    "inboxSearchEmptyTitle": "Sem resultados",
+    "inboxSearchEmptySubtitle": "Tenta outro nome ou outra palavra.",
     "inboxRemoveConfirmBody": "Isso apagará sua conversa com {displayName}. Esta ação não pode ser desfeita.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {

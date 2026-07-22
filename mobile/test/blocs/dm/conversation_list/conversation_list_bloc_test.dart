@@ -14,6 +14,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
 import 'package:openvine/blocs/dm/conversation_list/protected_minor_inbox_gate.dart';
+import 'package:profile_repository/profile_repository.dart';
 
 class _MockDmRepository extends Mock implements DmRepository {}
 
@@ -21,6 +22,8 @@ class _MockFollowRepository extends Mock implements FollowRepository {}
 
 class _MockContentBlocklistRepository extends Mock
     implements ContentBlocklistRepository {}
+
+class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 // Full 64-character hex Nostr IDs for test data.
 const _testConversationId1 =
@@ -100,6 +103,7 @@ DmConversation _createConversation({
   bool isGroup = false,
   bool currentUserHasSent = false,
   List<String>? participantPubkeys,
+  String lastMessageContent = 'Hello',
 }) {
   return DmConversation(
     id: id,
@@ -107,7 +111,7 @@ DmConversation _createConversation({
         participantPubkeys ?? const [_testPubkey1, _testPubkey2],
     isGroup: isGroup,
     createdAt: 1700000000,
-    lastMessageContent: 'Hello',
+    lastMessageContent: lastMessageContent,
     lastMessageTimestamp: 1700000100,
     lastMessageSenderPubkey: _testPubkey1,
     isRead: isRead,
@@ -1558,6 +1562,8 @@ void main() {
         conversations,
         const <DmConversation>[], // visibleConversations
         false, // unreadOnly
+        '', // searchQuery
+        const <String, String>{}, // profileNames
         const <DmConversation>[],
         const <DmConversation>[],
         true,
@@ -1802,6 +1808,189 @@ void main() {
         expect(state.conversations, hasLength(4));
       },
     );
+  });
+
+  group('ConversationListSearchQueryChanged', () {
+    late _MockDmRepository mockDmRepository;
+    late _MockFollowRepository mockFollowRepository;
+    late _MockProfileRepository mockProfileRepository;
+
+    setUp(() {
+      mockDmRepository = _MockDmRepository();
+      mockFollowRepository = _MockFollowRepository();
+      mockProfileRepository = _MockProfileRepository();
+
+      when(() => mockFollowRepository.isFollowing(any())).thenReturn(true);
+      when(
+        () => mockFollowRepository.followingStream,
+      ).thenAnswer((_) => const Stream<List<String>>.empty());
+      when(
+        () => mockDmRepository.backfillHistoryIfNeeded(),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockDmRepository.retryPendingDecryptions(),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockProfileRepository.fetchBatchProfiles(
+          pubkeys: any(named: 'pubkeys'),
+        ),
+      ).thenAnswer((_) async => const {});
+    });
+
+    ConversationListBloc createBloc({bool withProfiles = true}) =>
+        ConversationListBloc(
+          dmRepository: mockDmRepository,
+          followRepository: mockFollowRepository,
+          profileRepository: withProfiles ? mockProfileRepository : null,
+          recomputeDebounce: Duration.zero,
+        );
+
+    List<DmConversation> conversations() => [
+      _createConversation(id: 'pizza', lastMessageContent: 'pizza friday?'),
+      _createConversation(
+        id: 'alice',
+        lastMessageContent: 'see you soon',
+        participantPubkeys: const [_testPubkey1, _testPubkey3],
+      ),
+    ];
+
+    Future<ConversationListState> load(ConversationListBloc bloc) async {
+      bloc.add(const ConversationListStarted());
+      return bloc.stream.firstWhere(
+        (s) => s.status == ConversationListStatus.loaded,
+      );
+    }
+
+    test('filters by last message content', () async {
+      _stubStreams(mockDmRepository, accepted: conversations());
+      final bloc = createBloc();
+      addTearDown(bloc.close);
+      await load(bloc);
+
+      bloc.add(const ConversationListSearchQueryChanged('pizza'));
+      final state = await bloc.stream.firstWhere(
+        (s) => s.searchQuery == 'pizza',
+      );
+
+      expect(
+        state.visibleConversations.map((c) => c.id).toList(),
+        equals(['pizza']),
+      );
+    });
+
+    test('matches counterparty display name via ProfileRepository', () async {
+      _stubStreams(mockDmRepository, accepted: conversations());
+      when(
+        () => mockProfileRepository.fetchBatchProfiles(
+          pubkeys: any(named: 'pubkeys'),
+        ),
+      ).thenAnswer(
+        (_) async => {
+          _testPubkey3: UserProfile(
+            pubkey: _testPubkey3,
+            displayName: 'Alice Wonder',
+            rawData: const {},
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+            eventId: _testConversationId1,
+          ),
+        },
+      );
+      final bloc = createBloc();
+      addTearDown(bloc.close);
+      await load(bloc);
+
+      bloc.add(const ConversationListSearchQueryChanged('alice w'));
+      final state = await bloc.stream.firstWhere(
+        (s) => s.searchQuery == 'alice w',
+      );
+
+      expect(
+        state.visibleConversations.map((c) => c.id).toList(),
+        equals(['alice']),
+      );
+      expect(state.profileNames[_testPubkey3], equals('Alice Wonder'));
+    });
+
+    test('resolves each pubkey at most once across queries', () async {
+      _stubStreams(mockDmRepository, accepted: conversations());
+      final bloc = createBloc();
+      addTearDown(bloc.close);
+      await load(bloc);
+
+      bloc.add(const ConversationListSearchQueryChanged('one'));
+      await bloc.stream.firstWhere((s) => s.searchQuery == 'one');
+      bloc.add(const ConversationListSearchQueryChanged('two'));
+      await bloc.stream.firstWhere((s) => s.searchQuery == 'two');
+
+      verify(
+        () => mockProfileRepository.fetchBatchProfiles(
+          pubkeys: any(named: 'pubkeys'),
+        ),
+      ).called(1);
+    });
+
+    test('clearing the query restores the full list', () async {
+      _stubStreams(mockDmRepository, accepted: conversations());
+      final bloc = createBloc();
+      addTearDown(bloc.close);
+      await load(bloc);
+
+      bloc.add(const ConversationListSearchQueryChanged('pizza'));
+      await bloc.stream.firstWhere((s) => s.searchQuery == 'pizza');
+      bloc.add(const ConversationListSearchQueryChanged(''));
+      final state = await bloc.stream.firstWhere((s) => s.searchQuery.isEmpty);
+
+      expect(state.visibleConversations, hasLength(2));
+    });
+
+    test('composes with the unread filter', () async {
+      _stubStreams(
+        mockDmRepository,
+        accepted: [
+          _createConversation(
+            id: 'pizza-unread',
+            isRead: false,
+            lastMessageContent: 'pizza friday?',
+          ),
+          _createConversation(
+            id: 'pizza-read',
+            lastMessageContent: 'pizza saturday?',
+          ),
+        ],
+      );
+      final bloc = createBloc();
+      addTearDown(bloc.close);
+      await load(bloc);
+
+      bloc.add(const ConversationListUnreadFilterToggled());
+      await bloc.stream.firstWhere((s) => s.unreadOnly);
+      bloc.add(const ConversationListSearchQueryChanged('pizza'));
+      final state = await bloc.stream.firstWhere(
+        (s) => s.searchQuery == 'pizza',
+      );
+
+      expect(
+        state.visibleConversations.map((c) => c.id).toList(),
+        equals(['pizza-unread']),
+      );
+    });
+
+    test('search works without a ProfileRepository (fallback names)', () async {
+      _stubStreams(mockDmRepository, accepted: conversations());
+      final bloc = createBloc(withProfiles: false);
+      addTearDown(bloc.close);
+      await load(bloc);
+
+      bloc.add(const ConversationListSearchQueryChanged('pizza'));
+      final state = await bloc.stream.firstWhere(
+        (s) => s.searchQuery == 'pizza',
+      );
+
+      expect(
+        state.visibleConversations.map((c) => c.id).toList(),
+        equals(['pizza']),
+      );
+    });
   });
 
   // Subscription lifecycle (#2931)

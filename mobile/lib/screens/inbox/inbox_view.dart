@@ -487,6 +487,7 @@ class _ConversationList extends ConsumerStatefulWidget {
 class _ConversationListState extends ConsumerState<_ConversationList>
     with ScrollPaginationMixin {
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
 
   /// ID of the conversation whose long-press action sheet is currently open.
   /// Drives the [ConversationTile] highlight so the user can see which row
@@ -517,6 +518,7 @@ class _ConversationListState extends ConsumerState<_ConversationList>
   void dispose() {
     disposePagination();
     _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -542,6 +544,9 @@ class _ConversationListState extends ConsumerState<_ConversationList>
     final hasMore = context.select<ConversationListBloc, bool>(
       (bloc) => bloc.state.hasMore,
     );
+    final searchQuery = context.select<ConversationListBloc, String>(
+      (bloc) => bloc.state.searchQuery,
+    );
 
     if (conversations.isEmpty && !hasRequests) return const InboxEmptyState();
 
@@ -560,6 +565,16 @@ class _ConversationListState extends ConsumerState<_ConversationList>
 
     return Column(
       children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: DivineSearchBar(
+            controller: _searchController,
+            hintText: context.l10n.inboxSearchHint,
+            onChanged: (value) => context.read<ConversationListBloc>().add(
+              ConversationListSearchQueryChanged(value),
+            ),
+          ),
+        ),
         UnreadFilterChips(
           unreadOnly: unreadOnly,
           onUnreadOnlyChanged: (value) {
@@ -571,7 +586,13 @@ class _ConversationListState extends ConsumerState<_ConversationList>
         ),
         Expanded(
           child: visibleConversations.isEmpty
-              ? _AllCaughtUpContent(
+              ? _FilteredEmptyContent(
+                  title: searchQuery.isNotEmpty
+                      ? context.l10n.inboxSearchEmptyTitle
+                      : context.l10n.inboxUnreadEmptyTitle,
+                  subtitle: searchQuery.isNotEmpty
+                      ? context.l10n.inboxSearchEmptySubtitle
+                      : context.l10n.inboxUnreadEmptySubtitle,
                   hasRequests: hasRequests,
                   requestUnreadCount: requestUnreadCount,
                   onOpenRequests: () => _openMessageRequests(context),
@@ -821,16 +842,20 @@ class _ConversationListView extends StatelessWidget {
   }
 }
 
-/// Shown when the Unread filter is on and every conversation is read:
-/// keeps the requests banner reachable and confirms the list is not empty
-/// by accident.
-class _AllCaughtUpContent extends StatelessWidget {
-  const _AllCaughtUpContent({
+/// Shown when an active filter (Unread chip or search) leaves nothing to
+/// list: keeps the requests banner reachable and confirms the list is not
+/// empty by accident.
+class _FilteredEmptyContent extends StatelessWidget {
+  const _FilteredEmptyContent({
+    required this.title,
+    required this.subtitle,
     required this.hasRequests,
     required this.requestUnreadCount,
     required this.onOpenRequests,
   });
 
+  final String title;
+  final String subtitle;
   final bool hasRequests;
   final int requestUnreadCount;
   final VoidCallback onOpenRequests;
@@ -853,14 +878,14 @@ class _AllCaughtUpContent extends StatelessWidget {
                 spacing: 8,
                 children: [
                   Text(
-                    context.l10n.inboxUnreadEmptyTitle,
+                    title,
                     style: VineTheme.titleMediumFont(
                       color: VineTheme.onSurfaceMuted,
                     ),
                     textAlign: TextAlign.center,
                   ),
                   Text(
-                    context.l10n.inboxUnreadEmptySubtitle,
+                    subtitle,
                     style: VineTheme.bodyMediumFont(
                       color: VineTheme.onSurfaceMuted,
                     ),

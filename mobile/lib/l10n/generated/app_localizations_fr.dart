@@ -5589,6 +5589,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get inboxUnreadEmptySubtitle => 'Aucun message non lu pour le moment.';
 
   @override
+  String get inboxSearchHint => 'Rechercher des messages';
+
+  @override
+  String get inboxSearchEmptyTitle => 'Aucun résultat';
+
+  @override
+  String get inboxSearchEmptySubtitle => 'Essaie un autre nom ou un autre mot.';
+
+  @override
   String get inboxActionMute => 'Mettre la conversation en sourdine';
 
   @override
