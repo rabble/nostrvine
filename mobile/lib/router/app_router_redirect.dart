@@ -110,6 +110,55 @@ bool _isAuthEntryLocation(String location) {
 bool _isPublicRecorderLocation(String location) =>
     location == VideoRecorderScreen.path;
 
+/// The slice of [MinorAccountReviewStatus] (plus its async loading shape)
+/// that [appRouterRedirect] actually branches on. Two emissions with an
+/// equal signature always produce the same redirect decision.
+typedef _MinorReviewRoutingSignature = ({
+  bool loadingWithoutValue,
+  bool isRestricted,
+  bool hasCase,
+  String? moderationConversationPubkey,
+  String? moderationConversationId,
+  bool allowsParentVideoOrEmail,
+});
+
+_MinorReviewRoutingSignature _minorReviewRoutingSignature(
+  AsyncValue<MinorAccountReviewStatus>? status,
+) {
+  // `value` (not `asData?.value`) mirrors `appRouterRedirect`, which reads the
+  // previous value that Riverpod carries through a background refetch.
+  final review = status?.value;
+  final reviewCase = review?.currentCase;
+  return (
+    loadingWithoutValue:
+        (status?.isLoading ?? false) && !(status?.hasValue ?? false),
+    isRestricted: review?.isRestricted ?? false,
+    hasCase: reviewCase != null,
+    moderationConversationPubkey: reviewCase?.moderationConversationPubkey,
+    moderationConversationId: reviewCase?.moderationConversationId,
+    allowsParentVideoOrEmail: reviewCase?.allowsParentVideoOrEmail ?? false,
+  );
+}
+
+/// Whether a review-status emission can change the router's redirect outcome.
+///
+/// The router refreshes on every [currentMinorAccountReviewStatusProvider]
+/// emission, but a background/resume refetch usually resolves to a routing-
+/// identical value (active → active). Refreshing for those churns the whole
+/// route pipeline while a video reel is pushed on top — reverting the reported
+/// location to the shell branch and firing a spurious `didPushNext` that pauses
+/// and tears down the reel's just-created player mid-initialization. Gating the
+/// refresh on this predicate keeps genuine restriction flips reactive while
+/// leaving an already-open reel untouched.
+@visibleForTesting
+bool minorAccountReviewStatusAffectsRouting(
+  AsyncValue<MinorAccountReviewStatus>? previous,
+  AsyncValue<MinorAccountReviewStatus> next,
+) {
+  return _minorReviewRoutingSignature(previous) !=
+      _minorReviewRoutingSignature(next);
+}
+
 /// Top-level GoRouter redirect: signer-callback → universal-link rewrite →
 /// minor-account-review gating → auth-route gating → unauthenticated gating.
 ///

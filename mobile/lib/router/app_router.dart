@@ -63,6 +63,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     authService.authStateStream,
   );
   ref.listen(currentMinorAccountReviewStatusProvider, (previous, next) {
+    // A resume/background refetch that resolves to a routing-identical status
+    // (active → active) must not refresh: refreshing churns the route pipeline
+    // and tears down a reel pushed on top mid-init. Only refresh when the
+    // redirect outcome can actually change.
+    if (!minorAccountReviewStatusAffectsRouting(previous, next)) {
+      return;
+    }
     refreshListenable.refresh();
   });
   ref.onDispose(refreshListenable.dispose);
