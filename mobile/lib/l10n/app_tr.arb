@@ -4248,6 +4248,7 @@
     "shareCopiedEventId": "Nostr olay kimliği panoya kopyalandı",
     "authHeroTaglineAuthentic": "Gerçek anlar.",
     "authHeroTaglineHuman": "İnsan yaratıcılığı.",
+    "authHeroLogoSemanticLabel": "Divine",
     "keyImportFailedToImport": "Anahtar içe aktarılamadı veya bunker'a bağlanılamadı",
     "keyImportInvalidBunkerUrl": "Geçersiz bunker URL'si",
     "keyImportInvalidFormat": "Geçersiz biçim. nsec..., hex, ncryptsec1... veya bunker://... kullan",

@@ -4248,6 +4248,7 @@
     "shareCopiedEventId": "Nostr-händelsens ID kopierat till urklipp",
     "authHeroTaglineAuthentic": "Äkta ögonblick.",
     "authHeroTaglineHuman": "Mänsklig kreativitet.",
+    "authHeroLogoSemanticLabel": "Divine",
     "keyImportFailedToImport": "Kunde inte importera nyckel eller ansluta bunker",
     "keyImportInvalidBunkerUrl": "Ogiltig bunker-URL",
     "keyImportInvalidFormat": "Ogiltigt format. Använd nsec..., hex, ncryptsec1... eller bunker://...",

@@ -6396,6 +6396,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get authHeroTaglineHuman => 'Menselijke creativiteit.';
 
   @override
+  String get authHeroLogoSemanticLabel => 'Divine';
+
+  @override
   String get keyImportFailedToImport =>
       'Sleutel importeren of bunker verbinden mislukt';
 

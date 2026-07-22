@@ -6439,6 +6439,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get authHeroTaglineHuman => 'Pagkamalikhain ng tao.';
 
   @override
+  String get authHeroLogoSemanticLabel => 'Divine';
+
+  @override
   String get keyImportFailedToImport =>
       'Hindi na-import ang key o na-connect ang bunker';
 

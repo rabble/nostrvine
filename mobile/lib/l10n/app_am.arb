@@ -4373,6 +4373,7 @@
     "shareCopiedEventId": "የNostr ክስተት መለያ ወደ ቅንጥብ ሰሌዳ ተቀድቷል",
     "authHeroTaglineAuthentic": "እውነተኛ አፍታዎች።",
     "authHeroTaglineHuman": "የሰው ፈጠራ።",
+    "authHeroLogoSemanticLabel": "Divine",
     "keyImportFailedToImport": "ቁልፍ ማስመጣት ወይም ከቡንከር ጋር መገናኘት አልተሳካም",
     "keyImportInvalidBunkerUrl": "ልክ ያልሆነ የቡንከር URL",
     "keyImportInvalidFormat": "ልክ ያልሆነ ቅርጸት። nsec...፣ hex፣ ncryptsec1...፣ ወይም bunker://... ይጠቀሙ",

@@ -6524,6 +6524,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get authHeroTaglineHuman => 'Creativitate umană.';
 
   @override
+  String get authHeroLogoSemanticLabel => 'Divine';
+
+  @override
   String get keyImportFailedToImport =>
       'Nu am putut importa cheia sau conecta bunkerul';
 

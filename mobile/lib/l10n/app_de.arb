@@ -4248,6 +4248,7 @@
     "shareCopiedEventId": "Nostr-Event-ID in die Zwischenablage kopiert",
     "authHeroTaglineAuthentic": "Echte Momente.",
     "authHeroTaglineHuman": "Menschliche Kreativität.",
+    "authHeroLogoSemanticLabel": "Divine",
     "keyImportFailedToImport": "Schlüssel konnte nicht importiert oder Bunker nicht verbunden werden",
     "keyImportInvalidBunkerUrl": "Ungültige Bunker-URL",
     "keyImportInvalidFormat": "Ungültiges Format. Verwende nsec…, hex, ncryptsec1… oder bunker://…",

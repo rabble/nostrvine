@@ -6102,6 +6102,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get authHeroTaglineHuman => '人間の創造性。';
 
   @override
+  String get authHeroLogoSemanticLabel => 'Divine';
+
+  @override
   String get keyImportFailedToImport => '鍵のインポートまたはバンカーへの接続に失敗したよ';
 
   @override

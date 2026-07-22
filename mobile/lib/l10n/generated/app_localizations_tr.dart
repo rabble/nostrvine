@@ -6342,6 +6342,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get authHeroTaglineHuman => 'İnsan yaratıcılığı.';
 
   @override
+  String get authHeroLogoSemanticLabel => 'Divine';
+
+  @override
   String get keyImportFailedToImport =>
       'Anahtar içe aktarılamadı veya bunker\'a bağlanılamadı';
 

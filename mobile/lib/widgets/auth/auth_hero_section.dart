@@ -101,8 +101,15 @@ class AuthHeroSection extends StatelessWidget {
 
           const SizedBox(height: 40),
 
-          // Divine wordmark (green SVG logo)
-          SvgPicture.asset('assets/icon/logo.svg', width: 120),
+          // Divine wordmark. `logo.svg` is the current logotype (geometric
+          // heart-V); the cursive brand-pack files in assets/icon/ are the
+          // retired one. Pinned by auth_hero_section_test.dart so a swap back
+          // to the old mark fails CI instead of shipping (see #6282).
+          SvgPicture.asset(
+            'assets/icon/logo.svg',
+            width: 120,
+            semanticsLabel: context.l10n.authHeroLogoSemanticLabel,
+          ),
         ],
       ),
     );
@@ -118,6 +125,13 @@ class _StickerImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SvgPicture.asset(path, width: size, height: size);
+    // Decorative: a bare SvgPicture still exports an `isImage` node with an
+    // empty label to the platform accessibility tree. Flutter's own traversal
+    // skips those, so this is tree hygiene rather than a fix for an audible
+    // bug — but it keeps the four stickers out of what we hand to TalkBack
+    // and VoiceOver, leaving the wordmark as the only image on the screen.
+    return ExcludeSemantics(
+      child: SvgPicture.asset(path, width: size, height: size),
+    );
   }
 }

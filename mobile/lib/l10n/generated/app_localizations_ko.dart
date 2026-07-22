@@ -6131,6 +6131,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get authHeroTaglineHuman => '사람의 창의성.';
 
   @override
+  String get authHeroLogoSemanticLabel => 'Divine';
+
+  @override
   String get keyImportFailedToImport => '키를 가져오거나 벙커에 연결하지 못했어요';
 
   @override

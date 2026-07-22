@@ -3572,6 +3572,7 @@
     "shareCopiedEventId": "Nostr 이벤트 ID를 클립보드에 복사했어요",
     "authHeroTaglineAuthentic": "진짜 순간들.",
     "authHeroTaglineHuman": "사람의 창의성.",
+    "authHeroLogoSemanticLabel": "Divine",
     "keyImportFailedToImport": "키를 가져오거나 벙커에 연결하지 못했어요",
     "keyImportInvalidBunkerUrl": "잘못된 벙커 URL",
     "keyImportInvalidFormat": "잘못된 형식이에요. nsec..., hex, ncryptsec1..., 또는 bunker://... 를 사용해주세요",

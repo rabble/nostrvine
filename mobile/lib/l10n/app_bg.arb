@@ -4379,6 +4379,7 @@
     "shareCopiedEventId": "ID на Nostr събитието е копирано в клипборда",
     "authHeroTaglineAuthentic": "Автентични моменти.",
     "authHeroTaglineHuman": "Човешко творчество.",
+    "authHeroLogoSemanticLabel": "Divine",
     "keyImportFailedToImport": "Неуспешно импортиране на ключ или свързване с бункер",
     "keyImportInvalidBunkerUrl": "Невалиден бункер URL",
     "keyImportInvalidFormat": "Невалиден формат. Използвай nsec..., hex, ncryptsec1... или bunker://...",

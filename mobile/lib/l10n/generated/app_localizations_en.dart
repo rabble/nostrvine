@@ -6359,6 +6359,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authHeroTaglineHuman => 'Human creativity.';
 
   @override
+  String get authHeroLogoSemanticLabel => 'Divine';
+
+  @override
   String get keyImportFailedToImport =>
       'Failed to import key or connect bunker';
 

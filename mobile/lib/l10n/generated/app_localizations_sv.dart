@@ -6363,6 +6363,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get authHeroTaglineHuman => 'Mänsklig kreativitet.';
 
   @override
+  String get authHeroLogoSemanticLabel => 'Divine';
+
+  @override
   String get keyImportFailedToImport =>
       'Kunde inte importera nyckel eller ansluta bunker';
 
