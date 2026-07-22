@@ -1,0 +1,181 @@
+// ABOUTME: Unit tests for the router-refresh gate that keeps a resume/background
+// ABOUTME: review-status refetch from tearing down a reel pushed on top mid-init.
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/models/minor_account_review_status.dart';
+import 'package:openvine/router/app_router.dart';
+
+/// The retained-value loading emission a `ref.watch`-driven reload produces for
+/// a provider currently holding [value]: an `AsyncLoading` that still carries
+/// the prior value (`isLoading` && `hasValue`). This is the shape the router
+/// listener sees mid-refetch when the review-status provider reloads — distinct
+/// from a cold `AsyncLoading` (no value), which the other tests cover.
+Future<AsyncValue<MinorAccountReviewStatus>> _retainedLoadingEmission(
+  MinorAccountReviewStatus value,
+) async {
+  final bump = StateProvider((ref) => 0);
+  final provider = FutureProvider<MinorAccountReviewStatus>((ref) async {
+    ref.watch(bump);
+    return value;
+  });
+  final container = ProviderContainer();
+  addTearDown(container.dispose);
+
+  await container.read(provider.future);
+  final loadingEmissions = <AsyncValue<MinorAccountReviewStatus>>[];
+  container.listen(provider, (previous, next) {
+    if (next.isLoading) loadingEmissions.add(next);
+  });
+  container.read(bump.notifier).state++;
+  await container.read(provider.future);
+  return loadingEmissions.single;
+}
+
+void main() {
+  group('minorAccountReviewStatusAffectsRouting', () {
+    final active = MinorAccountReviewStatus.active();
+    const restricted = MinorAccountReviewStatus(
+      restrictionStatus: AccountRestrictionStatus.restrictedMinorReview,
+    );
+    const restrictedWithConversation = MinorAccountReviewStatus(
+      restrictionStatus: AccountRestrictionStatus.restrictedMinorReview,
+      currentCase: MinorReviewCase(
+        id: 'case-1',
+        state: MinorReviewCaseState.underModeratorReview,
+        suspectedAgeBand: SuspectedAgeBand.unknown,
+        allowedResolution: MinorReviewResolutionType.unknown,
+        instructions: MinorReviewInstructions(title: '', body: ''),
+        supportEmail: 'support@divine.video',
+        moderationConversationId: 'conversation-1',
+      ),
+    );
+
+    test('does not refresh when a refetch resolves to the same status', () {
+      // The resume scenario: the provider re-emits a fresh-but-equal active
+      // value. The instances differ by identity, so the pre-fix code refreshed;
+      // the routing signature is unchanged, so the gate must skip it.
+      expect(
+        minorAccountReviewStatusAffectsRouting(
+          AsyncData(active),
+          AsyncData(MinorAccountReviewStatus.active()),
+        ),
+        isFalse,
+      );
+    });
+
+    test('does not refresh across a refetch that keeps the active value', () async {
+      // A real resume refetch emits a loading state that still carries the
+      // prior value, then resolves back to active. Neither edge changes the
+      // routing signature, so the gate must stay false. Guards the `!hasValue`
+      // half of `loadingWithoutValue`: a plain `isLoading` check would flip the
+      // signature mid-refetch and wrongly refresh, tearing down a reel on top.
+      final retainedLoading = await _retainedLoadingEmission(active);
+      expect(retainedLoading.isLoading && retainedLoading.hasValue, isTrue);
+
+      // active data -> retained loading
+      expect(
+        minorAccountReviewStatusAffectsRouting(
+          AsyncData(active),
+          retainedLoading,
+        ),
+        isFalse,
+      );
+      // retained loading -> fresh active data
+      expect(
+        minorAccountReviewStatusAffectsRouting(
+          retainedLoading,
+          AsyncData(MinorAccountReviewStatus.active()),
+        ),
+        isFalse,
+      );
+    });
+
+    test(
+      'does not refresh across a refetch that keeps the restricted value',
+      () async {
+        // Same edges for a restricted account. The loading emission is an
+        // `AsyncLoading` whose `.value` still holds the restricted status while
+        // `asData` is null. Reading `asData?.value` instead of `.value` in the
+        // signature would drop the restriction mid-refetch, flip the signature,
+        // and refresh — so this pins the `.value` read the gate relies on.
+        final retainedLoading = await _retainedLoadingEmission(restricted);
+        expect(retainedLoading, isA<AsyncLoading<MinorAccountReviewStatus>>());
+        expect(retainedLoading.value, restricted);
+
+        // restricted data -> retained loading
+        expect(
+          minorAccountReviewStatusAffectsRouting(
+            const AsyncData(restricted),
+            retainedLoading,
+          ),
+          isFalse,
+        );
+        // retained loading -> fresh restricted data
+        expect(
+          minorAccountReviewStatusAffectsRouting(
+            retainedLoading,
+            const AsyncData(restricted),
+          ),
+          isFalse,
+        );
+      },
+    );
+
+    test('refreshes when the restriction decision flips', () {
+      expect(
+        minorAccountReviewStatusAffectsRouting(
+          AsyncData(active),
+          const AsyncData(restricted),
+        ),
+        isTrue,
+      );
+    });
+
+    test('refreshes when a cold load resolves to a value', () {
+      expect(
+        minorAccountReviewStatusAffectsRouting(
+          const AsyncLoading<MinorAccountReviewStatus>(),
+          AsyncData(active),
+        ),
+        isTrue,
+      );
+    });
+
+    test('refreshes when a moderation conversation appears on the case', () {
+      expect(
+        minorAccountReviewStatusAffectsRouting(
+          const AsyncData(restricted),
+          const AsyncData(restrictedWithConversation),
+        ),
+        isTrue,
+      );
+    });
+
+    test('first emission refreshes only when it can gate routing', () {
+      // A first unrestricted value needs no refresh — GoRouter evaluates the
+      // redirect on the next navigation anyway, and there is nothing to gate.
+      expect(
+        minorAccountReviewStatusAffectsRouting(null, AsyncData(active)),
+        isFalse,
+      );
+      // A first restricted value, or a first cold-load without a value, must
+      // refresh so the gate fires.
+      expect(
+        minorAccountReviewStatusAffectsRouting(
+          null,
+          const AsyncData(restricted),
+        ),
+        isTrue,
+      );
+      expect(
+        minorAccountReviewStatusAffectsRouting(
+          null,
+          const AsyncLoading<MinorAccountReviewStatus>(),
+        ),
+        isTrue,
+      );
+    });
+  });
+}
