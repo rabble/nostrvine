@@ -2,6 +2,8 @@
 // ABOUTME: Verifies UI rendering for each VideoErrorType and moderation
 // ABOUTME: enrichment for divine URL 404 errors.
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -128,6 +130,36 @@ void main() {
                     value: playbackStatusCubit,
                     child: overlay,
                   ),
+          ),
+        ),
+      );
+    }
+
+    Widget buildWidgetWithModerationFuture({
+      required VideoErrorType? errorType,
+      required Future<VideoModerationStatus?> moderationFuture,
+      VideoEvent? video,
+    }) {
+      final overlay = PooledVideoErrorOverlay(
+        video: video ?? divineVideo,
+        onRetry: () => retryPressed = true,
+        onVerifyAge: () => verifyAgePressed = true,
+        errorType: errorType,
+      );
+      return ProviderScope(
+        overrides: [
+          videoModerationStatusProvider.overrideWith(
+            (ref, sha256) => moderationFuture,
+          ),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: BlocProvider(
+              create: (_) => VideoPlaybackStatusCubit(),
+              child: overlay,
+            ),
           ),
         ),
       );
@@ -594,6 +626,28 @@ void main() {
 
           expect(_blurhashOf(tester).blurhash, isNull);
           expect(find.byType(VineCachedImage), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'suppresses event blurhash and thumbnail while moderation is loading',
+        (tester) async {
+          final moderationCompleter = Completer<VideoModerationStatus?>();
+
+          await tester.pumpWidget(
+            buildWidgetWithModerationFuture(
+              errorType: VideoErrorType.notFound,
+              video: restrictedVideo(),
+              moderationFuture: moderationCompleter.future,
+            ),
+          );
+          await tester.pump();
+
+          expect(_blurhashOf(tester).blurhash, isNull);
+          expect(find.byType(VineCachedImage), findsNothing);
+
+          moderationCompleter.complete(null);
+          await tester.pumpAndSettle();
         },
       );
     });

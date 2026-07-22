@@ -113,6 +113,7 @@ class _PooledVideoErrorOverlayState
     final moderationStatus = moderationAsync?.whenOrNull(
       data: (status) => status,
     );
+    final isModerationStatusLoading = moderationAsync?.isLoading ?? false;
     final isModerationAgeRestricted =
         shouldEnrichNotFoundWithModeration &&
         moderationStatus != null &&
@@ -159,11 +160,13 @@ class _PooledVideoErrorOverlayState
     _maybeAutoRetryAgeRestricted(showVerifyAge: showVerifyAge);
 
     // Hard-walled states (forbidden / moderation-blocked / age-restricted)
-    // withhold the frame entirely: suppress both the event blurhash and the
-    // thumbnail so no frame-derived preview leaks, degrading to the generic
-    // content-type gradient only. notFound / generic keep the event blurhash
-    // and thumbnail fallback. #6242
-    final suppressPreviewMedia = isModerationRestricted || isAgeRestricted;
+    // withhold the frame entirely. While a Divine notFound moderation lookup is
+    // pending, fail closed for the preview layers too: suppress both the event
+    // blurhash and thumbnail so no frame-derived preview leaks before the
+    // moderation result lands. Plain notFound / generic failures keep the event
+    // blurhash and thumbnail fallback. #6242
+    final suppressPreviewMedia =
+        isModerationStatusLoading || isModerationRestricted || isAgeRestricted;
 
     return Stack(
       fit: StackFit.expand,
