@@ -166,9 +166,13 @@ void main() {
           }
         }
 
-        const wordmarkAspectRatio = 320 / 105;
+        // Derive the aspect ratio from the actual bundled asset so this stays
+        // correct across wordmark refreshes — the generator sizes the mark from
+        // the asset's own dimensions, not a fixed ratio.
+        final markDims = await _decodeRgba(wordmarkBytes);
+        final wordmarkAspectRatio = markDims.width / markDims.height;
         const wordmarkDrawWidth = width * 0.15;
-        const wordmarkDrawHeight = wordmarkDrawWidth / wordmarkAspectRatio;
+        final wordmarkDrawHeight = wordmarkDrawWidth / wordmarkAspectRatio;
         const fontSize = wordmarkDrawWidth * 0.14;
         const gap = fontSize * 0.3;
         final paragraph =
