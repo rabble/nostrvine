@@ -337,6 +337,37 @@ void main() {
       );
 
       testWidgets(
+        'is display-only when the reused source cannot be resolved',
+        (tester) async {
+          // hasAudioReference + unresolved source: the referenced creator's
+          // reuse consent is unconfirmable, so the row credits them but offers
+          // no reuse affordance (fail closed).
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                soundByIdProvider(
+                  testAudioEventId,
+                ).overrideWith((ref) async => null),
+              ],
+              child: MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                theme: VineTheme.theme,
+                home: Scaffold(
+                  backgroundColor: Colors.black,
+                  body: MetadataSoundsSection(video: reusedVideo()),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text('Original sound'), findsOneWidget);
+          expect(_divineIcon(DivineIconName.caretRight), findsNothing);
+        },
+      );
+
+      testWidgets(
         'tapping a resolved reused sound opens the detail (no dead-end)',
         (tester) async {
           const sourceVideoId =

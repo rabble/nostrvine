@@ -135,12 +135,16 @@ class _OriginalSoundSection extends ConsumerWidget {
 
   /// Whether the viewer may reuse this original sound.
   ///
-  /// A sound reused from another creator (who already shared it) stays
-  /// reusable. Otherwise the video's own audio is reusable only when the
-  /// creator enabled audio reuse (the `allow_audio_reuse` marker), or when the
-  /// viewer is the creator — you can always reuse your own audio.
+  /// This section is reached in two shapes. When the video has an audio
+  /// reference it reused a sound we couldn't resolve (the
+  /// [_SharedAudioSection] fallback): the referenced source's reuse consent
+  /// can't be confirmed offline, so fail closed — attribution still shows but
+  /// the sound isn't offered for reuse (an owner-saved private sound must not
+  /// leak this way). Otherwise this is the video's own original sound, reusable
+  /// only when its creator enabled audio reuse (the `allow_audio_reuse`
+  /// marker) or when the viewer is that creator.
   bool _canReuseSound(WidgetRef ref) {
-    if (reusedCreatorPubkey != null) return true;
+    if (video.hasAudioReference) return false;
     if (video.allowAudioReuse) return true;
     // Re-evaluate on auth restore/logout/account-switch so the owner exception
     // can't go stale (authServiceProvider alone is a stable instance).
@@ -156,19 +160,12 @@ class _OriginalSoundSection extends ConsumerWidget {
       category: LogCategory.ui,
     );
 
-    // For a reused sound the attribution belongs to the source video, so build
-    // the sound around the referenced source (credited to its creator) rather
-    // than this video's own audio.
-    final syntheticAudio = reusedCreatorPubkey != null
-        ? AudioEvent(
-            id: 'video_${video.audioEventId ?? video.id}',
-            pubkey: reusedCreatorPubkey!,
-            createdAt: video.createdAt,
-            title: 'Original sound - $creatorName',
-            source: 'Original Sound',
-            sourceVideoReference: video.inspiredByVideo?.addressableId,
-          )
-        : AudioEvent.fromVideoOriginalSound(video, creatorName: creatorName);
+    // Only reached for the video's own original sound (the reused-but-
+    // unresolved fallback is display-only), so build from this video directly.
+    final syntheticAudio = AudioEvent.fromVideoOriginalSound(
+      video,
+      creatorName: creatorName,
+    );
 
     // Dismiss the sheet first, then navigate from the root navigator
     // context.

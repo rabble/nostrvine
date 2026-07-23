@@ -181,6 +181,24 @@ void main() {
         expect(sharedPreferences.getString(accountA.storageKey), isNotNull);
       });
 
+      test('drops legacy video_* original sounds during migration', () {
+        // A pre-fix save of another creator's original sound (reuse consent
+        // unknown) must not become reusable after the upgrade.
+        sharedPreferences.setString(
+          'saved_reusable_sounds',
+          jsonEncode([
+            _sound(id: 'shared').toJson(),
+            _sound(id: 'video_original').toJson(),
+          ]),
+        );
+
+        final accountA = SavedSoundsService(
+          sharedPreferences,
+          pubkeyHex: pubkeyA,
+        );
+        expect(accountA.loadSounds().map((sound) => sound.id), ['shared']);
+      });
+
       test('a second account does not inherit the migrated legacy list', () {
         sharedPreferences.setString(
           'saved_reusable_sounds',

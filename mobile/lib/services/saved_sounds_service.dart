@@ -124,7 +124,35 @@ class SavedSoundsService {
     // setString updates the in-memory cache synchronously, so the load right
     // after this call sees the migrated data; disk persistence is fire-and-
     // forget. Write the account bucket before retiring the legacy key.
-    unawaited(_preferences.setString(storageKey, legacy));
+    unawaited(_preferences.setString(storageKey, _consentedLegacy(legacy)));
     unawaited(_preferences.remove(_legacyStorageKey));
+  }
+
+  /// Filters the pre-namespacing list to entries safe to adopt without
+  /// confirming reuse consent.
+  ///
+  /// A video's original sound (`video_*` id) may have been saved during the
+  /// pre-fix device-wide bug even though its creator had disabled reuse. That
+  /// consent can't be validated offline, so those entries are dropped (fail
+  /// closed). Shared (Kind 1063), bundled, and imported sounds were reusable by
+  /// construction and are kept.
+  String _consentedLegacy(String legacy) {
+    try {
+      final decoded = jsonDecode(legacy);
+      if (decoded is! List) return '[]';
+      final kept = <Map<String, dynamic>>[];
+      for (final entry in decoded.whereType<Map>()) {
+        try {
+          final sound = AudioEvent.fromJson(Map<String, dynamic>.from(entry));
+          if (sound.isOriginalSound) continue;
+          kept.add(_persistableSound(sound).toJson());
+        } catch (_) {
+          continue;
+        }
+      }
+      return jsonEncode(kept);
+    } catch (_) {
+      return '[]';
+    }
   }
 }
