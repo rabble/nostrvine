@@ -631,7 +631,7 @@
     "videoErrorVerifyAge": "ዕድሜን ያረጋግጡ",
     "videoErrorRetry": "እንደገና ይሞክሩ",
     "videoErrorContentRestricted": "ይዘት ተገድቧል",
-    "videoErrorContentRestrictedBody": "ይህ ቪዲዮ በቅብብሎሽ ተገድቧል።",
+    "videoErrorContentRestrictedBody": "This video was removed for breaking our content rules.",
     "videoErrorVerifyAgeBody": "ይህን ቪዲዮ ለማየት እድሜዎን ያረጋግጡ።",
     "videoErrorSkip": "ዝለል",
     "videoErrorVerifyAgeButton": "ዕድሜን ያረጋግጡ",

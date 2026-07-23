@@ -158,10 +158,15 @@ class VideoPlaybackStatusState extends Equatable {
 /// Null defaults to [PlaybackStatus.generic] because a missing error type
 /// still represents a non-ready state that should replace the normal
 /// overlay.
-PlaybackStatus playbackStatusFromError(VideoErrorType? errorType) {
+PlaybackStatus playbackStatusFromError(
+  VideoErrorType? errorType, {
+  bool isModerationSource = true,
+}) {
   return switch (errorType) {
     VideoErrorType.ageRestricted => PlaybackStatus.ageRestricted,
-    VideoErrorType.forbidden => PlaybackStatus.forbidden,
+    VideoErrorType.forbidden when isModerationSource =>
+      PlaybackStatus.forbidden,
+    VideoErrorType.forbidden => PlaybackStatus.generic,
     VideoErrorType.notFound => PlaybackStatus.notFound,
     VideoErrorType.generic => PlaybackStatus.generic,
     null => PlaybackStatus.generic,

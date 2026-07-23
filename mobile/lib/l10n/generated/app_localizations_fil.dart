@@ -1463,7 +1463,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get videoErrorContentRestrictedBody =>
-      'Pinigilan ng relay ang video na ito.';
+      'This video was removed for breaking our content rules.';
 
   @override
   String get videoErrorVerifyAgeBody =>

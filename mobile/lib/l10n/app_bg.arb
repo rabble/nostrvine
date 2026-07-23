@@ -578,7 +578,7 @@
     "videoErrorVerifyAge": "Потвърди възрастта",
     "videoErrorRetry": "Опитай пак",
     "videoErrorContentRestricted": "Ограничено съдържание",
-    "videoErrorContentRestrictedBody": "Това видео беше ограничено от релето.",
+    "videoErrorContentRestrictedBody": "This video was removed for breaking our content rules.",
     "videoErrorVerifyAgeBody": "Потвърди възрастта си, за да гледаш това видео.",
     "videoErrorSkip": "Пропусни",
     "videoErrorVerifyAgeButton": "Потвърди възрастта",

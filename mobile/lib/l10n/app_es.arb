@@ -549,7 +549,7 @@
     "videoErrorVerifyAge": "Verificar edad",
     "videoErrorRetry": "Reintentar",
     "videoErrorContentRestricted": "Contenido restringido",
-    "videoErrorContentRestrictedBody": "Este video fue restringido por el relay.",
+    "videoErrorContentRestrictedBody": "This video was removed for breaking our content rules.",
     "videoErrorVerifyAgeBody": "Verificá tu edad para ver este video.",
     "videoErrorSkip": "Saltar",
     "videoErrorVerifyAgeButton": "Verificar edad",

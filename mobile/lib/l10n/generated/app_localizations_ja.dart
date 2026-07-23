@@ -1347,7 +1347,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoErrorContentRestricted => 'コンテンツが制限されてる';
 
   @override
-  String get videoErrorContentRestrictedBody => 'この動画はリレーによって制限されたよ。';
+  String get videoErrorContentRestrictedBody =>
+      'This video was removed for breaking our content rules.';
 
   @override
   String get videoErrorVerifyAgeBody => 'この動画を見るには年齢確認が必要だよ。';

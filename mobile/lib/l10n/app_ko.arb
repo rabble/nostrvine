@@ -354,7 +354,7 @@
     "videoErrorVerifyAge": "나이 인증",
     "videoErrorRetry": "다시 시도",
     "videoErrorContentRestricted": "콘텐츠 제한됨",
-    "videoErrorContentRestrictedBody": "이 영상은 릴레이에 의해 제한됐어요.",
+    "videoErrorContentRestrictedBody": "This video was removed for breaking our content rules.",
     "videoErrorVerifyAgeBody": "이 영상을 보려면 나이를 인증해주세요.",
     "videoErrorSkip": "건너뛰기",
     "videoErrorVerifyAgeButton": "나이 인증",

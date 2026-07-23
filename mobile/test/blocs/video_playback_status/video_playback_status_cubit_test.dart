@@ -281,6 +281,16 @@ void main() {
         );
         expect(playbackStatusFromError(null), PlaybackStatus.generic);
       });
+
+      test('maps third-party forbidden errors to generic playback status', () {
+        expect(
+          playbackStatusFromError(
+            VideoErrorType.forbidden,
+            isModerationSource: false,
+          ),
+          PlaybackStatus.generic,
+        );
+      });
     });
   });
 }

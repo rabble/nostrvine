@@ -549,7 +549,7 @@
     "videoErrorVerifyAge": "年齢を確認",
     "videoErrorRetry": "もう一回",
     "videoErrorContentRestricted": "コンテンツが制限されてる",
-    "videoErrorContentRestrictedBody": "この動画はリレーによって制限されたよ。",
+    "videoErrorContentRestrictedBody": "This video was removed for breaking our content rules.",
     "videoErrorVerifyAgeBody": "この動画を見るには年齢確認が必要だよ。",
     "videoErrorSkip": "スキップ",
     "videoErrorVerifyAgeButton": "年齢を確認",

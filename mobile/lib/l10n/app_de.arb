@@ -549,7 +549,7 @@
     "videoErrorVerifyAge": "Alter verifizieren",
     "videoErrorRetry": "Erneut versuchen",
     "videoErrorContentRestricted": "Inhalt eingeschränkt",
-    "videoErrorContentRestrictedBody": "Dieses Video wurde vom Relay eingeschränkt.",
+    "videoErrorContentRestrictedBody": "This video was removed for breaking our content rules.",
     "videoErrorVerifyAgeBody": "Verifiziere dein Alter, um dieses Video zu sehen.",
     "videoErrorSkip": "Überspringen",
     "videoErrorVerifyAgeButton": "Alter verifizieren",

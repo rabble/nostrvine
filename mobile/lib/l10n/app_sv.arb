@@ -549,7 +549,7 @@
     "videoErrorVerifyAge": "Verifiera ålder",
     "videoErrorRetry": "Försök igen",
     "videoErrorContentRestricted": "Innehåll begränsat",
-    "videoErrorContentRestrictedBody": "Den här videon har begränsats av relen.",
+    "videoErrorContentRestrictedBody": "This video was removed for breaking our content rules.",
     "videoErrorVerifyAgeBody": "Verifiera din ålder för att se den här videon.",
     "videoErrorSkip": "Hoppa över",
     "videoErrorVerifyAgeButton": "Verifiera ålder",

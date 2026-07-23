@@ -698,7 +698,10 @@
   "videoErrorVerifyAge": "Verify Age",
   "videoErrorRetry": "Retry",
   "videoErrorContentRestricted": "Content restricted",
-  "videoErrorContentRestrictedBody": "This video was restricted by the relay.",
+  "videoErrorContentRestrictedBody": "This video was removed for breaking our content rules.",
+  "@videoErrorContentRestrictedBody": {
+    "description": "Body copy for videos blocked by platform moderation, quarantine, or a media-server 403. Do not mention Nostr relays or user relay settings."
+  },
   "videoErrorVerifyAgeBody": "Verify your age to view this video.",
   "videoErrorSkip": "Skip",
   "videoErrorVerifyAgeButton": "Verify age",

@@ -203,6 +203,10 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
       _feedKey.currentState?.retryAt(index, httpHeaders: httpHeaders) ??
       Future.value(false);
 
+  void _skipPooledVideoAt(int index) {
+    unawaited(_feedKey.currentState?.animateToPage(index + 1));
+  }
+
   @override
   void didUpdateWidget(covariant FeedVideos oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -431,18 +435,25 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
             return const SizedBox.shrink();
           }
           final video = widget.videos[index];
+          final cubit = context.read<VideoPlaybackStatusCubit>();
 
           // Dedupe at the call site so `errorBuilder` rebuilds don't
           // schedule a post-frame callback every frame. See
           // _lastReportedError doc above.
           if (_lastReportedError[video.id] != errorType) {
             _lastReportedError[video.id] = errorType;
-            // Capture the cubit eagerly so the post-frame callback doesn't
+            // Capture the status eagerly so the post-frame callback doesn't
             // walk the ancestor tree on a potentially-deactivated element.
-            final cubit = context.read<VideoPlaybackStatusCubit>();
+            final playbackStatus = playbackStatusFromError(
+              errorType,
+              isModerationSource:
+                  VideoModerationStatusService.shouldCheckModeration(
+                    video.videoUrl,
+                  ),
+            );
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (!mounted) return;
-              cubit.report(video.id, playbackStatusFromError(errorType));
+              cubit.report(video.id, playbackStatus);
             });
           }
           // Mirror the BoxFit logic of VideoLoadingPlaceholder /
@@ -455,7 +466,12 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
             video: video,
             index: index,
             resolveSha256: VideoModerationStatusService.resolveSha256,
-            onRetry: onRetry,
+            onRetry: () {
+              _lastReportedError.remove(video.id);
+              cubit.report(video.id, PlaybackStatus.ready);
+              onRetry();
+            },
+            onSkip: () => _skipPooledVideoAt(index),
             retryPlayback: (httpHeaders) =>
                 _retryPooledVideoAt(index, httpHeaders),
             errorType: errorType,
@@ -739,14 +755,14 @@ class __OverlayState extends ConsumerState<_Overlay> {
     // prefetching if it flips on for an already-mounted overlay (initState's
     // prefetch is a no-op while the flag is off). #5720 M3.
     ref.watch(isFeatureEnabledProvider(FeatureFlag.communityContentWarnings));
-    ref.listen(
-      isFeatureEnabledProvider(FeatureFlag.communityContentWarnings),
-      (previous, next) {
-        if (next && previous != true) {
-          _prefetchCommunityLabels();
-        }
-      },
-    );
+    ref.listen(isFeatureEnabledProvider(FeatureFlag.communityContentWarnings), (
+      previous,
+      next,
+    ) {
+      if (next && previous != true) {
+        _prefetchCommunityLabels();
+      }
+    });
 
     // Merge community-suggested warnings (#4771) into the creator/trusted
     // warn labels so a crossed-threshold community label drives the same
@@ -1201,6 +1217,13 @@ class _FeedLoadingOrRestrictedOverlayView extends ConsumerWidget {
                   resolveSha256: VideoModerationStatusService.resolveSha256,
                   // Retry is hidden for moderation-restricted content.
                   onRetry: () {},
+                  onSkip: () {
+                    unawaited(
+                      context
+                          .findAncestorStateOfType<InfiniteVideoFeedState>()
+                          ?.animateToPage(index + 1),
+                    );
+                  },
                   retryPlayback: (httpHeaders) =>
                       context
                           .findAncestorStateOfType<InfiniteVideoFeedState>()

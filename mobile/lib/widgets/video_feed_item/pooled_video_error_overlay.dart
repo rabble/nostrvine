@@ -17,7 +17,10 @@ import 'package:openvine/widgets/vine_cached_image.dart';
 /// Error overlay for videos playing through the pooled video player.
 ///
 /// Shows different UI based on the [VideoErrorType] from the controller:
-/// - [VideoErrorType.forbidden]: Shield icon + "Content restricted" (no retry)
+/// - [VideoErrorType.forbidden] for Divine URLs: Shield icon +
+///   "Content restricted" (no retry)
+/// - [VideoErrorType.forbidden] for third-party URLs: Error icon +
+///   "Video playback error" + Retry
 /// - [VideoErrorType.notFound] with moderation status: Shield icon +
 ///   "Content restricted" (no retry)
 /// - [VideoErrorType.ageRestricted]: Lock icon + "Age-restricted content" +
@@ -29,6 +32,7 @@ class PooledVideoErrorOverlay extends ConsumerStatefulWidget {
     required this.video,
     required this.onRetry,
     required this.errorType,
+    this.onSkip,
     this.onVerifyAge,
     this.isVerifying = false,
     this.shouldPortraitExpand = true,
@@ -38,6 +42,7 @@ class PooledVideoErrorOverlay extends ConsumerStatefulWidget {
 
   final VideoEvent video;
   final VoidCallback onRetry;
+  final VoidCallback? onSkip;
   final VoidCallback? onVerifyAge;
 
   /// Whether an age-verification retry is in flight. Shows the Verify age
@@ -116,7 +121,7 @@ class _PooledVideoErrorOverlayState
         moderationStatus != null &&
         moderationStatus.ageRestricted;
     final isModerationRestricted =
-        type == VideoErrorType.forbidden ||
+        (type == VideoErrorType.forbidden && isDivineUrl) ||
         (shouldEnrichNotFoundWithModeration &&
             moderationStatus != null &&
             moderationStatus.isUnavailableDueToModeration);
@@ -141,8 +146,10 @@ class _PooledVideoErrorOverlayState
         context.l10n.videoErrorContentRestricted,
       (VideoErrorType.notFound, false, false) =>
         context.l10n.videoErrorNotFound,
-      (VideoErrorType.forbidden, false, _) =>
+      (VideoErrorType.forbidden, false, true) =>
         context.l10n.videoErrorContentRestricted,
+      (VideoErrorType.forbidden, false, false) =>
+        context.l10n.videoErrorPlayback,
       (VideoErrorType.ageRestricted, false, _) =>
         context.l10n.videoErrorAgeRestricted,
       (VideoErrorType.generic, false, _) => context.l10n.videoErrorPlayback,
@@ -153,7 +160,12 @@ class _PooledVideoErrorOverlayState
         ? context.l10n.videoErrorContentRestrictedBody
         : null;
     final showVerifyAge = isAgeRestricted && widget.onVerifyAge != null;
-    final showRetry = !isModerationRestricted && !showVerifyAge;
+    final showSkip =
+        isModerationRestricted && !isAgeRestricted && widget.onSkip != null;
+    final showRetry =
+        (!isModerationRestricted || (isAgeRestricted && !showVerifyAge)) &&
+        !showSkip &&
+        !showVerifyAge;
     _maybeAutoRetryAgeRestricted(showVerifyAge: showVerifyAge);
 
     return Stack(
@@ -213,6 +225,13 @@ class _PooledVideoErrorOverlayState
                     type: DivineButtonType.tertiary,
                     size: DivineButtonSize.small,
                     onPressed: widget.onRetry,
+                  ),
+                if (showSkip)
+                  DivineButton(
+                    label: context.l10n.videoErrorSkip,
+                    type: DivineButtonType.tertiary,
+                    size: DivineButtonSize.small,
+                    onPressed: widget.onSkip,
                   ),
               ],
             ),

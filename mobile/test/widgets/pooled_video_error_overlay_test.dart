@@ -25,6 +25,7 @@ void main() {
     late VideoEvent divineVideo;
     late VideoEvent thirdPartyVideo;
     late bool retryPressed;
+    late bool skipPressed;
     late bool verifyAgePressed;
     late AppLocalizations l10n;
 
@@ -42,6 +43,7 @@ void main() {
         videoUrl: 'https://cdn.example.com/video.mp4',
       );
       retryPressed = false;
+      skipPressed = false;
       verifyAgePressed = false;
       l10n = lookupAppLocalizations(const Locale('en'));
     });
@@ -50,12 +52,14 @@ void main() {
       VideoErrorType? errorType,
       VideoEvent? video,
       VoidCallback? onVerifyAge,
+      VoidCallback? onSkip,
       bool isVerifying = false,
       VideoPlaybackStatusCubit? playbackStatusCubit,
     }) {
       final overlay = PooledVideoErrorOverlay(
         video: video ?? divineVideo,
         onRetry: () => retryPressed = true,
+        onSkip: onSkip,
         onVerifyAge: onVerifyAge,
         errorType: errorType,
         isVerifying: isVerifying,
@@ -89,11 +93,13 @@ void main() {
       required VideoModerationStatus moderationStatus,
       VideoEvent? video,
       VoidCallback? onVerifyAge,
+      VoidCallback? onSkip,
       VideoPlaybackStatusCubit? playbackStatusCubit,
     }) {
       final overlay = PooledVideoErrorOverlay(
         video: video ?? divineVideo,
         onRetry: () => retryPressed = true,
+        onSkip: onSkip,
         onVerifyAge: onVerifyAge,
         errorType: errorType,
       );
@@ -140,6 +146,33 @@ void main() {
 
         expect(find.text(l10n.videoErrorRetry), findsNothing);
       });
+
+      testWidgets(
+        'shows retryable playback error for third-party video URLs',
+        (tester) async {
+          await tester.pumpWidget(
+            buildWidget(
+              errorType: VideoErrorType.forbidden,
+              video: thirdPartyVideo,
+              onSkip: () => skipPressed = true,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(_findDivineIcon(DivineIconName.warningCircle), findsOneWidget);
+          expect(find.text(l10n.videoErrorPlayback), findsOneWidget);
+          expect(find.text(l10n.videoErrorContentRestricted), findsNothing);
+          expect(find.text(l10n.videoErrorContentRestrictedBody), findsNothing);
+          expect(find.text(l10n.videoErrorSkip), findsNothing);
+          expect(find.text(l10n.videoErrorRetry), findsOneWidget);
+
+          await tester.tap(find.text(l10n.videoErrorRetry));
+          await tester.pump();
+
+          expect(retryPressed, isTrue);
+          expect(skipPressed, isFalse);
+        },
+      );
     });
 
     group('ageRestricted', () {
@@ -295,6 +328,33 @@ void main() {
         },
       );
 
+      testWidgets('shows Skip when moderation status indicates blocked', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidgetWithModeration(
+            errorType: VideoErrorType.notFound,
+            moderationStatus: const VideoModerationStatus(
+              moderated: true,
+              blocked: true,
+              quarantined: false,
+              ageRestricted: false,
+              needsReview: false,
+              aiGenerated: false,
+            ),
+            onSkip: () => skipPressed = true,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.videoErrorSkip), findsOneWidget);
+
+        await tester.tap(find.text(l10n.videoErrorSkip));
+        await tester.pump();
+
+        expect(skipPressed, isTrue);
+      });
+
       testWidgets(
         'shows shield icon when moderation status indicates quarantined',
         (tester) async {
@@ -345,6 +405,35 @@ void main() {
           await tester.tap(find.text(l10n.videoErrorVerifyAgeButton));
 
           expect(verifyAgePressed, isTrue);
+        },
+      );
+
+      testWidgets(
+        'shows retry when moderation age restriction has no verify action',
+        (tester) async {
+          await tester.pumpWidget(
+            buildWidgetWithModeration(
+              errorType: VideoErrorType.notFound,
+              moderationStatus: const VideoModerationStatus(
+                moderated: true,
+                blocked: false,
+                quarantined: false,
+                ageRestricted: true,
+                needsReview: false,
+                aiGenerated: false,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text(l10n.videoErrorAgeRestricted), findsOneWidget);
+          expect(find.text(l10n.videoErrorVerifyAgeButton), findsNothing);
+          expect(find.text(l10n.videoErrorRetry), findsOneWidget);
+
+          await tester.tap(find.text(l10n.videoErrorRetry));
+          await tester.pump();
+
+          expect(retryPressed, isTrue);
         },
       );
 

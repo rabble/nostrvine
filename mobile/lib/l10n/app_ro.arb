@@ -549,7 +549,7 @@
     "videoErrorVerifyAge": "Verifică vârsta",
     "videoErrorRetry": "Reîncearcă",
     "videoErrorContentRestricted": "Conținut restricționat",
-    "videoErrorContentRestrictedBody": "Acest videoclip a fost restricționat de relay.",
+    "videoErrorContentRestrictedBody": "This video was removed for breaking our content rules.",
     "videoErrorVerifyAgeBody": "Verifică-ți vârsta ca să vezi acest videoclip.",
     "videoErrorSkip": "Sari peste",
     "videoErrorVerifyAgeButton": "Verifică vârsta",

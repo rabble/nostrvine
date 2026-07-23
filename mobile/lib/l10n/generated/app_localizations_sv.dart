@@ -1432,7 +1432,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoErrorContentRestrictedBody =>
-      'Den här videon har begränsats av relen.';
+      'This video was removed for breaking our content rules.';
 
   @override
   String get videoErrorVerifyAgeBody =>

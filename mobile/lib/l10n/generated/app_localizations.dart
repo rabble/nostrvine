@@ -2566,10 +2566,10 @@ abstract class AppLocalizations {
   /// **'Content restricted'**
   String get videoErrorContentRestricted;
 
-  /// No description provided for @videoErrorContentRestrictedBody.
+  /// Body copy for videos blocked by platform moderation, quarantine, or a media-server 403. Do not mention Nostr relays or user relay settings.
   ///
   /// In en, this message translates to:
-  /// **'This video was restricted by the relay.'**
+  /// **'This video was removed for breaking our content rules.'**
   String get videoErrorContentRestrictedBody;
 
   /// No description provided for @videoErrorVerifyAgeBody.

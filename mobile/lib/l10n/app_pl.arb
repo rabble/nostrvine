@@ -549,7 +549,7 @@
     "videoErrorVerifyAge": "Zweryfikuj wiek",
     "videoErrorRetry": "Spróbuj ponownie",
     "videoErrorContentRestricted": "Treść ograniczona",
-    "videoErrorContentRestrictedBody": "Ten film został ograniczony przez przekaźnik.",
+    "videoErrorContentRestrictedBody": "This video was removed for breaking our content rules.",
     "videoErrorVerifyAgeBody": "Zweryfikuj swój wiek, żeby zobaczyć ten film.",
     "videoErrorSkip": "Pomiń",
     "videoErrorVerifyAgeButton": "Zweryfikuj wiek",

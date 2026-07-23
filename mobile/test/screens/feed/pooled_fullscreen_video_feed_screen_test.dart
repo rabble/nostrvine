@@ -115,6 +115,14 @@ class _NativePlayerHarness {
     }
   }
 
+  Future<void> sendEvent(int playerId, Map<Object?, Object?> event) async {
+    await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+      'divine_video_player/player_$playerId/events',
+      _codec.encodeSuccessEnvelope(event),
+      (_) {},
+    );
+  }
+
   Future<void> dispose() async {
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
       _globalChannel,
@@ -1128,6 +1136,54 @@ void main() {
       );
 
       testWidgets(
+        'keeps third-party forbidden playback errors retryable in pooled feed',
+        (tester) async {
+          final nativePlayer = _NativePlayerHarness(tester)..install();
+          addTearDown(nativePlayer.dispose);
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          final video = createTestVideoEvent(
+            id: testVideoId1,
+            pubkey: testPubkey,
+            videoUrl: 'https://cdn.example.com/video.mp4',
+          );
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: [video],
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          await nativePlayer.sendEvent(0, const <Object?, Object?>{
+            'status': 'error',
+            'errorCode': 'network_error',
+            'errorMessage': 'HTTP 403 Forbidden',
+          });
+          await tester.pump();
+          await tester.pump();
+
+          final cubit = BlocProvider.of<VideoPlaybackStatusCubit>(
+            tester.element(find.byType(FullscreenFeedContent)),
+          );
+          expect(cubit.state.statusFor(video.id), PlaybackStatus.generic);
+          expect(find.byType(ModeratedContentOverlay), findsNothing);
+          expect(find.text(l10n.videoErrorPlayback), findsOneWidget);
+          expect(find.text(l10n.videoErrorContentRestricted), findsNothing);
+          expect(find.text(l10n.videoErrorRetry), findsOneWidget);
+
+          await tester.tap(find.text(l10n.videoErrorRetry));
+          await tester.pump();
+
+          expect(cubit.state.statusFor(video.id), PlaybackStatus.ready);
+          expect(find.byType(ModeratedContentOverlay), findsNothing);
+        },
+      );
+
+      testWidgets(
         'acknowledges pendingSkipTarget when the BLoC signals a skip',
         (tester) async {
           final videos = createTestVideos();
@@ -1206,15 +1262,15 @@ void main() {
           cubit.report(video.id, PlaybackStatus.ageRestricted);
           await tester.pump();
 
+          final l10n = lookupAppLocalizations(const Locale('en'));
+
           expect(find.byType(ModeratedContentOverlay), findsOneWidget);
           expect(
-            find.text(ModeratedContentOverlayStrings.verifyAgeLabel),
+            find.text(l10n.videoErrorVerifyAgeButton),
             findsOneWidget,
           );
 
-          await tester.tap(
-            find.text(ModeratedContentOverlayStrings.verifyAgeLabel),
-          );
+          await tester.tap(find.text(l10n.videoErrorVerifyAgeButton));
           await tester.pump();
           await tester.pump();
 
@@ -1299,9 +1355,9 @@ void main() {
           cubit.report(video.id, PlaybackStatus.ageRestricted);
           await tester.pump();
 
-          await tester.tap(
-            find.text(ModeratedContentOverlayStrings.verifyAgeLabel),
-          );
+          final l10n = lookupAppLocalizations(const Locale('en'));
+
+          await tester.tap(find.text(l10n.videoErrorVerifyAgeButton));
           await tester.pump();
           await tester.pump();
 
