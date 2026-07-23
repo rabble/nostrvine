@@ -9988,7 +9988,7 @@ void main() {
         expect(result.requests, hasLength(1));
       });
 
-      test('group conversation always goes to requests', () {
+      test('group with every member followed goes to followed list', () {
         final conv = makeConversation(
           id: 'conv1',
           participantPubkeys: [_validPubkeyA, _validPubkeyB, _validPubkeyC],
@@ -9998,7 +9998,41 @@ void main() {
         final result = DmRepository.classifyPotentialRequests(
           [conv],
           userPubkey: _validPubkeyA,
-          isFollowing: (_) => true, // Even if all are followed
+          isFollowing: (_) => true,
+        );
+
+        expect(result.followed, hasLength(1));
+        expect(result.requests, isEmpty);
+      });
+
+      test('group with any unfollowed member goes to requests', () {
+        final conv = makeConversation(
+          id: 'conv1',
+          participantPubkeys: [_validPubkeyA, _validPubkeyB, _validPubkeyC],
+          isGroup: true,
+        );
+
+        final result = DmRepository.classifyPotentialRequests(
+          [conv],
+          userPubkey: _validPubkeyA,
+          isFollowing: (pk) => pk == _validPubkeyB,
+        );
+
+        expect(result.followed, isEmpty);
+        expect(result.requests, hasLength(1));
+      });
+
+      test('group with no followed members goes to requests', () {
+        final conv = makeConversation(
+          id: 'conv1',
+          participantPubkeys: [_validPubkeyA, _validPubkeyB, _validPubkeyC],
+          isGroup: true,
+        );
+
+        final result = DmRepository.classifyPotentialRequests(
+          [conv],
+          userPubkey: _validPubkeyA,
+          isFollowing: (_) => false,
         );
 
         expect(result.followed, isEmpty);
@@ -10028,7 +10062,7 @@ void main() {
 
       test(
         'conversation with 2+ non-self participants is a request even when '
-        'isGroup is false and a member is followed',
+        'isGroup is false and only one member is followed',
         () {
           final conv = makeConversation(
             id: 'conv1',
@@ -10040,7 +10074,7 @@ void main() {
           final result = DmRepository.classifyPotentialRequests(
             [conv],
             userPubkey: _validPubkeyA,
-            isFollowing: (_) => true,
+            isFollowing: (pk) => pk == _validPubkeyB,
           );
 
           expect(result.followed, isEmpty);

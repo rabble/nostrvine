@@ -1260,7 +1260,7 @@ void main() {
       group('group conversation classification', () {
         blocTest<ConversationListBloc, ConversationListState>(
           'classifies group conversation as request '
-          'when user has not sent regardless of follow state',
+          'when user has not sent and any member is unfollowed',
           setUp: () {
             // _testPubkey2 is followed, _testPubkey3 is not.
             when(
@@ -1285,6 +1285,35 @@ void main() {
           verify: (bloc) {
             expect(bloc.state.conversations, isEmpty);
             expect(bloc.state.requestConversations, hasLength(1));
+          },
+        );
+
+        blocTest<ConversationListBloc, ConversationListState>(
+          'classifies group conversation as inbox '
+          'when every member is followed even if user has not sent',
+          setUp: () {
+            when(
+              () => mockFollowRepository.isFollowing(_testPubkey2),
+            ).thenReturn(true);
+            when(
+              () => mockFollowRepository.isFollowing(_testPubkey3),
+            ).thenReturn(true);
+            when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
+
+            final conversations = [
+              _createConversation(
+                id: _testConversationId1,
+                isGroup: true,
+                participantPubkeys: [_testPubkey1, _testPubkey2, _testPubkey3],
+              ),
+            ];
+            _stubStreams(mockDmRepository, potentialRequests: conversations);
+          },
+          build: createBloc,
+          act: (bloc) => bloc.add(const ConversationListStarted()),
+          verify: (bloc) {
+            expect(bloc.state.conversations, hasLength(1));
+            expect(bloc.state.requestConversations, isEmpty);
           },
         );
 

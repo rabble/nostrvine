@@ -17,8 +17,8 @@ import 'package:rxdart/rxdart.dart';
 ///
 /// The badge must equal the unread conversations the Messages list actually
 /// renders. That list is **follow-aware**: it shows accepted conversations
-/// (the user has replied) PLUS 1:1 conversations from followed peers the user
-/// has not replied to yet, and it hides blocklisted peers. Counting only
+/// (the user has replied) PLUS unreplied conversations where every non-self
+/// participant is followed, and it hides blocklisted peers. Counting only
 /// `currentUserHasSent == true` (the previous behaviour) undercounted unread
 /// chats from followed-but-unreplied peers. See #4976.
 ///

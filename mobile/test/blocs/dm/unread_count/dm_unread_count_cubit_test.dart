@@ -76,6 +76,24 @@ DmConversation _convo(
   );
 }
 
+DmConversation _groupConvo(
+  String id, {
+  required List<String> peers,
+  required bool isRead,
+  required bool currentUserHasSent,
+  int timestamp = 1700000000,
+}) {
+  return DmConversation(
+    id: id,
+    participantPubkeys: [_me, ...peers],
+    isGroup: true,
+    createdAt: timestamp,
+    lastMessageTimestamp: timestamp,
+    isRead: isRead,
+    currentUserHasSent: currentUserHasSent,
+  );
+}
+
 /// Pad an index into a unique 64-char hex conversation id / pubkey.
 String _hex(int i) => i.toRadixString(16).padLeft(64, '0');
 
@@ -196,6 +214,29 @@ void main() {
         acceptedController.add(const []);
         potentialController.add([
           _convo('c1', peer: _alice, isRead: false, currentUserHasSent: false),
+        ]);
+        await _settle();
+
+        expect(cubit.state, equals(1));
+      },
+    );
+
+    test(
+      'counts an unread group when every peer is followed and the user has '
+      'never replied',
+      () async {
+        followed.addAll({_alice, _bob});
+        final cubit = buildCubit();
+        addTearDown(cubit.close);
+
+        acceptedController.add(const []);
+        potentialController.add([
+          _groupConvo(
+            'group-1',
+            peers: [_alice, _bob],
+            isRead: false,
+            currentUserHasSent: false,
+          ),
         ]);
         await _settle();
 
