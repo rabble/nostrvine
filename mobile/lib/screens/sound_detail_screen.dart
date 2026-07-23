@@ -209,16 +209,18 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
   ///
   /// Shared and bundled sounds were explicitly published for reuse, so they
   /// always qualify. A video's *original* sound is reusable only when its
-  /// creator enabled audio reuse, or when the viewer is that creator (you can
-  /// always reuse your own audio). Without the source video — e.g. a raw
-  /// `/sound/<video-id>` deep link — reuse consent can't be confirmed, so it
-  /// is withheld.
+  /// creator enabled audio reuse (carried on [AudioEvent.allowsReuse], so this
+  /// holds regardless of how the screen was reached — reuse chain, deep link,
+  /// or the metadata sheet), or when the viewer is that creator.
   bool _canReuseSound() {
     final sound = widget.sound;
     if (!sound.isOriginalSound) return true;
+    if (sound.allowsReuse) return true;
+    // Owner exception — re-evaluate on auth restore/logout/account-switch so it
+    // can't go stale (authServiceProvider alone is a stable instance).
+    ref.watch(currentAuthStateProvider);
     final viewer = ref.watch(authServiceProvider).currentPublicKeyHex;
-    if (viewer != null && viewer == sound.pubkey) return true;
-    return widget.sourceVideo?.allowAudioReuse ?? false;
+    return viewer != null && viewer == sound.pubkey;
   }
 
   void _navigateToVideo(String videoId, int index, List<VideoEvent> videos) {

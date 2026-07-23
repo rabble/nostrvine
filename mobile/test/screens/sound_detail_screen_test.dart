@@ -508,12 +508,6 @@ void main() {
       const creatorPubkey =
           'test_pubkey_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
-      // createTestAudioEvent's default pubkey is [creatorPubkey].
-      AudioEvent originalSound() => createTestAudioEvent(
-        id: 'video_$sourceVideoId',
-        title: 'Original sound',
-      );
-
       VideoEvent sourceVideo({required bool allowReuse}) => VideoEvent(
         id: sourceVideoId,
         pubkey: creatorPubkey,
@@ -523,6 +517,13 @@ void main() {
         videoUrl: 'https://example.com/video/$sourceVideoId.mp4',
         rawTags: allowReuse ? const {'allow_audio_reuse': 'true'} : const {},
       );
+
+      // The synthesized original sound carries allowsReuse from the video, so
+      // the gate works regardless of whether sourceVideo is threaded through.
+      AudioEvent originalSound({required bool allowReuse}) =>
+          AudioEvent.fromVideoOriginalSound(
+            sourceVideo(allowReuse: allowReuse),
+          );
 
       List<dynamic> gridOverrides() => [
         soundUsageCountProvider(
@@ -539,10 +540,7 @@ void main() {
       ) async {
         await tester.pumpWidget(
           createTestWidget(
-            child: SoundDetailScreen(
-              sound: originalSound(),
-              sourceVideo: sourceVideo(allowReuse: false),
-            ),
+            child: SoundDetailScreen(sound: originalSound(allowReuse: false)),
             overrides: gridOverrides(),
           ),
         );
@@ -554,22 +552,24 @@ void main() {
         expect(find.text('Preview'), findsOneWidget);
       });
 
-      testWidgets('shows Use Sound when the creator enabled audio reuse', (
-        tester,
-      ) async {
-        await tester.pumpWidget(
-          createTestWidget(
-            child: SoundDetailScreen(
-              sound: originalSound(),
-              sourceVideo: sourceVideo(allowReuse: true),
+      testWidgets(
+        'shows Use Sound for a reusable original sound reached without a '
+        'source video',
+        (tester) async {
+          // Regression: the resolved reuse path (and deep links) pass only the
+          // sound, no sourceVideo. Reuse must still be offered when the creator
+          // enabled it.
+          await tester.pumpWidget(
+            createTestWidget(
+              child: SoundDetailScreen(sound: originalSound(allowReuse: true)),
+              overrides: gridOverrides(),
             ),
-            overrides: gridOverrides(),
-          ),
-        );
-        await tester.pump();
+          );
+          await tester.pump();
 
-        expect(find.text('Use Sound'), findsOneWidget);
-      });
+          expect(find.text('Use Sound'), findsOneWidget);
+        },
+      );
 
       testWidgets('shows Use Sound for the creator viewing their own sound', (
         tester,
@@ -577,30 +577,13 @@ void main() {
         await tester.pumpWidget(
           createTestWidget(
             viewerPubkey: creatorPubkey,
-            child: SoundDetailScreen(
-              sound: originalSound(),
-              sourceVideo: sourceVideo(allowReuse: false),
-            ),
+            child: SoundDetailScreen(sound: originalSound(allowReuse: false)),
             overrides: gridOverrides(),
           ),
         );
         await tester.pump();
 
         expect(find.text('Use Sound'), findsOneWidget);
-      });
-
-      testWidgets('hides Use Sound for a deep link with no source video', (
-        tester,
-      ) async {
-        await tester.pumpWidget(
-          createTestWidget(
-            child: SoundDetailScreen(sound: originalSound()),
-            overrides: gridOverrides(),
-          ),
-        );
-        await tester.pump();
-
-        expect(find.text('Use Sound'), findsNothing);
       });
     });
 

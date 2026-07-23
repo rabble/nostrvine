@@ -142,6 +142,9 @@ class _OriginalSoundSection extends ConsumerWidget {
   bool _canReuseSound(WidgetRef ref) {
     if (reusedCreatorPubkey != null) return true;
     if (video.allowAudioReuse) return true;
+    // Re-evaluate on auth restore/logout/account-switch so the owner exception
+    // can't go stale (authServiceProvider alone is a stable instance).
+    ref.watch(currentAuthStateProvider);
     final viewerPubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
     return viewerPubkey != null && viewerPubkey == video.pubkey;
   }
