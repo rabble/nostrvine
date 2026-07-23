@@ -1909,9 +1909,10 @@ void main() {
               notificationType: 'mention',
               sourcePubkey: 'source_author',
               sourceKind: NIP71VideoKinds.addressableShortVideo,
-              sourceEventId: 'source_video_evt_old',
+              sourceEventId: 'source_video_evt_current',
               referencedEventId: null,
-              rootEventId: 'source_video_evt_current',
+              rootEventId: 'parent_video_evt',
+              rootEventKind: NIP71VideoKinds.addressableShortVideo,
               rootDTag: 'video-d-tag',
               rootAddressableId: rootAddressableId,
               referencedVideoTitle: 'Source video',
@@ -1937,6 +1938,55 @@ void main() {
             equals('https://example.com/thumb.jpg'),
           );
           expect(item.actors.single.displayName, equals('Alice'));
+        },
+      );
+
+      test(
+        'kind 34236 video reply mention uses source video metadata',
+        () async {
+          const badRootAddressableId =
+              '${NIP71VideoKinds.addressableShortVideo}:'
+              '$userPubkey:parent-video-d-tag';
+          const expectedAddressableId =
+              '${NIP71VideoKinds.addressableShortVideo}:'
+              'source_author:source-video-d-tag';
+          stubNotifications([
+            makeNotification(
+              notificationType: 'mention',
+              sourcePubkey: 'source_author',
+              sourceKind: NIP71VideoKinds.addressableShortVideo,
+              sourceEventId: 'source_video_evt',
+              referencedEventId: null,
+              rootEventId: 'parent_video_evt',
+              rootEventKind: NIP71VideoKinds.addressableShortVideo,
+              rootDTag: 'parent-video-d-tag',
+              rootAddressableId: badRootAddressableId,
+              referencedVideoTitle: 'Parent video',
+              referencedVideoThumbnail: 'https://example.com/parent.jpg',
+            ),
+          ]);
+          stubVideoStats(
+            'source_video_evt',
+            makeVideoStats(
+              id: 'source_video_evt',
+              pubkey: 'source_author',
+              dTag: 'source-video-d-tag',
+              title: 'Source reply video',
+              thumbnail: 'https://example.com/source.jpg',
+            ),
+          );
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+
+          final item = page.items.single as VideoNotification;
+          expect(item.videoEventId, equals('source_video_evt'));
+          expect(item.videoAddressableId, equals(expectedAddressableId));
+          expect(item.videoTitle, equals('Source reply video'));
+          expect(
+            item.videoThumbnailUrl,
+            equals('https://example.com/source.jpg'),
+          );
         },
       );
 
@@ -1999,15 +2049,16 @@ void main() {
               sourceKind: NIP71VideoKinds.addressableShortVideo,
               sourceEventId: 'source_video_evt_old',
               referencedEventId: null,
-              rootEventId: 'source_video_evt_current',
+              rootEventId: 'recipient_video_evt',
+              rootEventKind: NIP71VideoKinds.addressableShortVideo,
               rootDTag: 'video-d-tag',
               rootAddressableId: badRootAddressableId,
             ),
           ]);
           stubVideoStats(
-            'source_video_evt_current',
+            'source_video_evt_old',
             makeVideoStats(
-              id: 'source_video_evt_current',
+              id: 'source_video_evt_old',
               pubkey: 'source_author',
               dTag: 'video-d-tag',
             ),
@@ -2017,7 +2068,47 @@ void main() {
           final page = await repository.getNotifications();
 
           final item = page.items.single as VideoNotification;
-          expect(item.videoEventId, equals('source_video_evt_current'));
+          expect(item.videoEventId, equals('source_video_evt_old'));
+          expect(item.videoAddressableId, equals(expectedAddressableId));
+        },
+      );
+
+      test(
+        'kind 34236 mention ignores root addressable id with non-video kind',
+        () async {
+          const badRootAddressableId =
+              '${NIP71VideoKinds.addressableShortVideo}:'
+              'source_author:video-d-tag';
+          const expectedAddressableId =
+              '${NIP71VideoKinds.addressableShortVideo}:'
+              'source_author:source-video-d-tag';
+          stubNotifications([
+            makeNotification(
+              notificationType: 'mention',
+              sourcePubkey: 'source_author',
+              sourceKind: NIP71VideoKinds.addressableShortVideo,
+              sourceEventId: 'source_video_evt',
+              referencedEventId: null,
+              rootEventId: 'source_video_evt',
+              rootEventKind: 1,
+              rootDTag: 'video-d-tag',
+              rootAddressableId: badRootAddressableId,
+            ),
+          ]);
+          stubVideoStats(
+            'source_video_evt',
+            makeVideoStats(
+              id: 'source_video_evt',
+              pubkey: 'source_author',
+              dTag: 'source-video-d-tag',
+            ),
+          );
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+
+          final item = page.items.single as VideoNotification;
+          expect(item.videoEventId, equals('source_video_evt'));
           expect(item.videoAddressableId, equals(expectedAddressableId));
         },
       );

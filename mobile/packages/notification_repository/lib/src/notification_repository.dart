@@ -1229,6 +1229,10 @@ class NotificationRepository {
       if (!_isVideoAnchoredKind(kind)) continue;
       final eventId = _videoAnchorEventId(kind, n);
       if (eventId == null || eventId.isEmpty) continue;
+      // Video-sourced mentions are anchored to the sender's source video.
+      // Their root coordinate is validated separately by
+      // _trustedSourceRootAddressableId because the root can be a parent video
+      // owned by the notification recipient.
       if (kind != NotificationKind.mention &&
           _hasKnownReferencedVideoOwnerMismatch(
             kind: kind,
@@ -1278,22 +1282,26 @@ class NotificationRepository {
                 : n.referencedDTag,
           )
           .firstWhere((d) => d != null, orElse: () => null);
-      final rootAddressableId = group
-          .map((n) => _trustedSourceRootAddressableId(n, video: video))
-          .firstWhere((id) => id != null && id.isNotEmpty, orElse: () => null);
-      final addressableId = entry.key.kind == NotificationKind.mention
-          ? _nonEmpty(rootAddressableId) ??
+      final isVideoMention = entry.key.kind == NotificationKind.mention;
+      final addressableId = isVideoMention
+          ? _trustedRootAddressableIdForGroup(group, video: video) ??
                 _sourceVideoAddressableId(dTag: dTag, video: video)
           : _recipientScopedVideoAddressableId(dTag: dTag, video: video);
-      // Prefer thumbnail from the notification payload — it comes directly from
-      // the server and is stable even after a metadata update (unlike the stats
-      // lookup which uses the mutable event ID and may 404 post-edit).
+      // Normal video rows prefer payload media because it is stable after
+      // metadata updates. Video mentions prefer source metadata when available:
+      // a video reply's payload root can be the recipient's parent video.
       final thumbnailFromNotif = group
           .map((n) => n.referencedVideoThumbnail)
           .firstWhere((t) => t != null && t.isNotEmpty, orElse: () => null);
       final titleFromNotif = group
           .map((n) => n.referencedVideoTitle)
           .firstWhere((t) => t != null && t.isNotEmpty, orElse: () => null);
+      final thumbnailUrl = isVideoMention
+          ? _nonEmpty(video?.thumbnail) ?? _nonEmpty(thumbnailFromNotif)
+          : _nonEmpty(thumbnailFromNotif) ?? _nonEmpty(video?.thumbnail);
+      final videoTitle = isVideoMention
+          ? _nonEmpty(video?.title) ?? _nonEmpty(titleFromNotif)
+          : _nonEmpty(titleFromNotif) ?? _nonEmpty(video?.title);
       // Carry the lead actor's comment text so the quoted body stays in
       // sync with the bold first-actor span after named-actor reordering.
       // Only meaningful for `comment` kind — likes and reposts have no
@@ -1308,9 +1316,8 @@ class NotificationRepository {
           type: entry.key.kind,
           videoEventId: entry.key.eventId,
           videoAddressableId: addressableId,
-          videoThumbnailUrl:
-              _nonEmpty(thumbnailFromNotif) ?? _nonEmpty(video?.thumbnail),
-          videoTitle: _nonEmpty(titleFromNotif) ?? _nonEmpty(video?.title),
+          videoThumbnailUrl: thumbnailUrl,
+          videoTitle: videoTitle,
           actors: actors,
           totalCount: group.length,
           timestamp: group.first.createdAt,
@@ -1572,6 +1579,13 @@ class NotificationRepository {
         ':$ownerPubkey:$resolvedDTag';
   }
 
+  static String? _trustedRootAddressableIdForGroup(
+    List<RelayNotification> group, {
+    required VideoStats? video,
+  }) => group
+      .map((n) => _trustedSourceRootAddressableId(n, video: video))
+      .firstWhere((id) => id != null && id.isNotEmpty, orElse: () => null);
+
   static String? _trustedSourceRootAddressableId(
     RelayNotification notification, {
     required VideoStats? video,
@@ -1580,7 +1594,9 @@ class NotificationRepository {
     if (addressableId == null) return null;
     final parsed = _parseAddressableId(addressableId);
     if (parsed == null) return null;
-    if (!NIP71VideoKinds.isVideoKind(parsed.kind)) return null;
+    final rootKind = notification.rootEventKind;
+    if (rootKind != null && parsed.kind != rootKind) return null;
+    if (!NIP71VideoKinds.isVideoKind(rootKind ?? parsed.kind)) return null;
     if (parsed.pubkey.isEmpty || parsed.dTag.isEmpty) return null;
     if (parsed.pubkey != notification.sourcePubkey) return null;
 
@@ -1854,7 +1870,7 @@ class NotificationRepository {
   static String? _videoMetadataEventId(RelayNotification n) {
     final kind = _mapNotificationKind(n);
     if (_isVideoSourcedMention(n)) {
-      return _nonEmpty(n.rootEventId) ?? _nonEmpty(n.sourceEventId);
+      return _nonEmpty(n.sourceEventId);
     }
     return _videoAnchorEventId(kind, n);
   }
@@ -1909,7 +1925,7 @@ class NotificationRepository {
     RelayNotification n,
   ) {
     if (kind == NotificationKind.mention && _isVideoSourcedMention(n)) {
-      return _nonEmpty(n.rootEventId) ?? _nonEmpty(n.sourceEventId);
+      return _nonEmpty(n.sourceEventId);
     }
     if (kind == NotificationKind.comment) {
       if (n.isReferencedVideo &&
