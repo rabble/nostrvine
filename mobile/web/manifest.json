@@ -1,17 +1,21 @@
 {
-    "name": "divine",
-    "short_name": "divine",
+    "name": "Divine",
+    "short_name": "Divine",
     "start_url": "/",
     "scope": "/",
     "display": "standalone",
     "background_color": "#000000",
-    "theme_color": "#00BF63",
-    "description": "A decentralized vine-like video sharing app powered by Nostr",
+    "theme_color": "#27C58B",
+    "description": "Watch and share 6-second looping videos on the decentralized Nostr network.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "lang": "en-US",
     "dir": "ltr",
-    "categories": ["social", "video", "entertainment"],
+    "categories": [
+        "social",
+        "video",
+        "entertainment"
+    ],
     "icons": [
         {
             "src": "icons/Icon-192.png",
