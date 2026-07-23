@@ -161,6 +161,24 @@ void main() {
         );
       });
 
+      testWidgets('mention message for video-sourced mention kind', (
+        tester,
+      ) async {
+        await _pump(
+          tester,
+          notification: _video(
+            type: NotificationKind.mention,
+            videoTitle: 'Inspired clip',
+          ),
+        );
+
+        expect(
+          find.textContaining(_l10n.notificationMentionedYou('Alice')),
+          findsOneWidget,
+        );
+        expect(find.textContaining('Inspired clip'), findsNothing);
+      });
+
       testWidgets('appends video title for like / comment / repost', (
         tester,
       ) async {

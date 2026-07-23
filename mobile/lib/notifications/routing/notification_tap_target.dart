@@ -71,11 +71,14 @@ class OpenInboxTarget extends NotificationTapTarget {
 /// entry point. The push path historically keyed this off a `'reply'` string
 /// the backend never sends, so comments never auto-opened from a push; routing
 /// through this helper fixes that drift.
-bool notificationKindOpensComments(NotificationKind? kind) =>
+bool notificationKindOpensComments(
+  NotificationKind? kind, {
+  bool hasCommentTarget = false,
+}) =>
     kind == NotificationKind.comment ||
     kind == NotificationKind.reply ||
     kind == NotificationKind.likeComment ||
-    kind == NotificationKind.mention;
+    (kind == NotificationKind.mention && hasCommentTarget);
 
 /// Maps the push wire `type` to a [NotificationKind].
 ///
@@ -135,12 +138,14 @@ String? videoAddressableTarget(String? referencedAddress) {
 /// * `follow` → the actor's profile (or the inbox if no pubkey is known).
 /// * `system` → the inbox.
 /// * any other kind with a video target → the video, with comments auto-opened
-///   per [notificationKindOpensComments].
+///   per [notificationKindOpensComments]. Mentions only auto-open comments
+///   when [hasCommentTarget] explicitly says the row targets a comment.
 /// * any other kind without a video target → the actor's profile, or the inbox
 ///   when no pubkey is known.
 NotificationTapTarget resolveNotificationTapTarget({
   required NotificationKind? kind,
   required bool hasVideoTarget,
+  bool hasCommentTarget = false,
   String? actorPubkey,
 }) {
   if (kind == NotificationKind.follow) {
@@ -151,7 +156,10 @@ NotificationTapTarget resolveNotificationTapTarget({
   }
   if (hasVideoTarget) {
     return OpenVideoTarget(
-      autoOpenComments: notificationKindOpensComments(kind),
+      autoOpenComments: notificationKindOpensComments(
+        kind,
+        hasCommentTarget: hasCommentTarget,
+      ),
     );
   }
   return _profileOrInbox(actorPubkey);

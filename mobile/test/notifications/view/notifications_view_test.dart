@@ -1148,7 +1148,7 @@ void main() {
 
     group('tap routing — mention', () {
       testWidgets('mention tap resolves the mention event to the root video '
-          'and opens with autoOpenComments:true', (tester) async {
+          'without auto-opening comments', (tester) async {
         final videoService = _MockVideoEventService();
         final nostrClient = _MockNostrClient();
         final videosRepository = _MockVideosRepository();
@@ -1210,7 +1210,7 @@ void main() {
         expect(result.videoArgs, isEmpty);
         expect(result.videoDetailRoutes, hasLength(1));
         expect(result.videoDetailRoutes.single.videoId, rootVideoEventId);
-        expect(result.videoDetailRoutes.single.extra?.autoOpenComments, isTrue);
+        expect(result.videoDetailRoutes.single.extra, isNull);
       });
 
       testWidgets(
@@ -1343,6 +1343,14 @@ void main() {
           actor: ActorInfo(pubkey: 'c', displayName: 'Carol'),
           timestamp: DateTime(2026),
         ),
+        ActorNotification(
+          id: 'a4',
+          type: NotificationKind.mention,
+          actor: ActorInfo(pubkey: 'f', displayName: 'Fran'),
+          timestamp: DateTime(2026),
+          targetEventId: 'comment-mention',
+          hasCommentTarget: true,
+        ),
         VideoNotification(
           id: 'v1',
           type: NotificationKind.like,
@@ -1359,6 +1367,14 @@ void main() {
           totalCount: 1,
           timestamp: DateTime(2026),
         ),
+        VideoNotification(
+          id: 'v3',
+          type: NotificationKind.mention,
+          videoEventId: 'video3',
+          actors: const [ActorInfo(pubkey: 'g', displayName: 'Gail')],
+          totalCount: 1,
+          timestamp: DateTime(2026),
+        ),
       ];
 
       testWidgets('null filter renders every notification', (tester) async {
@@ -1371,7 +1387,7 @@ void main() {
 
         await _pumpView(tester, mockBloc);
 
-        expect(find.byType(NotificationListItem), findsNWidgets(5));
+        expect(find.byType(NotificationListItem), findsNWidgets(7));
       });
 
       testWidgets('follow filter renders only follow notifications', (
@@ -1402,6 +1418,26 @@ void main() {
           await _pumpView(tester, mockBloc, kindFilter: NotificationKind.like);
 
           // VideoNotification(like) + ActorNotification(likeComment) = 2.
+          expect(find.byType(NotificationListItem), findsNWidgets(2));
+        },
+      );
+
+      testWidgets(
+        'comment filter includes comment mentions but not video mentions',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            NotificationFeedState(
+              status: NotificationFeedStatus.loaded,
+              notifications: mixed,
+            ),
+          );
+
+          await _pumpView(
+            tester,
+            mockBloc,
+            kindFilter: NotificationKind.comment,
+          );
+
           expect(find.byType(NotificationListItem), findsNWidgets(2));
         },
       );

@@ -125,7 +125,9 @@ void main() {
     String? referencedEventId = 'video_default',
     String? referencedDTag,
     String? rootEventId,
+    int? rootEventKind,
     String? rootEventPubkey,
+    String? rootDTag,
     String? rootAddressableId,
     String? targetCommentId,
     String? content,
@@ -144,7 +146,9 @@ void main() {
       referencedEventId: referencedEventId,
       referencedDTag: referencedDTag,
       rootEventId: rootEventId,
+      rootEventKind: rootEventKind,
       rootEventPubkey: rootEventPubkey,
+      rootDTag: rootDTag,
       rootAddressableId: rootAddressableId,
       targetCommentId: targetCommentId,
       content: content,
@@ -1895,6 +1899,130 @@ void main() {
       );
 
       test(
+        'kind 34236 video-sourced mention maps to video notification',
+        () async {
+          const rootAddressableId =
+              '${NIP71VideoKinds.addressableShortVideo}:'
+              'source_author:video-d-tag';
+          stubNotifications([
+            makeNotification(
+              notificationType: 'mention',
+              sourcePubkey: 'source_author',
+              sourceKind: NIP71VideoKinds.addressableShortVideo,
+              sourceEventId: 'source_video_evt_old',
+              referencedEventId: null,
+              rootEventId: 'source_video_evt_current',
+              rootDTag: 'video-d-tag',
+              rootAddressableId: rootAddressableId,
+              referencedVideoTitle: 'Source video',
+              referencedVideoThumbnail: 'https://example.com/thumb.jpg',
+            ),
+          ]);
+          stubProfiles({
+            'source_author': makeProfile(
+              'source_author',
+              displayName: 'Alice',
+            ),
+          });
+
+          final page = await repository.getNotifications();
+
+          final item = page.items.single as VideoNotification;
+          expect(item.type, equals(NotificationKind.mention));
+          expect(item.videoEventId, equals('source_video_evt_current'));
+          expect(item.videoAddressableId, equals(rootAddressableId));
+          expect(item.videoTitle, equals('Source video'));
+          expect(
+            item.videoThumbnailUrl,
+            equals('https://example.com/thumb.jpg'),
+          );
+          expect(item.actors.single.displayName, equals('Alice'));
+        },
+      );
+
+      test(
+        'kind 34236 mention edits dedupe by root addressable id',
+        () async {
+          const rootAddressableId =
+              '${NIP71VideoKinds.addressableShortVideo}:'
+              'source_author:video-d-tag';
+          stubNotifications([
+            makeNotification(
+              id: 'new-row',
+              notificationType: 'mention',
+              sourcePubkey: 'source_author',
+              sourceKind: NIP71VideoKinds.addressableShortVideo,
+              sourceEventId: 'source_video_evt_new',
+              referencedEventId: null,
+              rootEventId: 'source_video_evt_new',
+              rootAddressableId: rootAddressableId,
+              createdAt: DateTime(2025, 1, 2),
+            ),
+            makeNotification(
+              id: 'old-row',
+              notificationType: 'mention',
+              sourcePubkey: 'source_author',
+              sourceKind: NIP71VideoKinds.addressableShortVideo,
+              sourceEventId: 'source_video_evt_old',
+              referencedEventId: null,
+              rootEventId: 'source_video_evt_old',
+              rootAddressableId: rootAddressableId,
+              createdAt: DateTime(2025),
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+
+          final item = page.items.single as VideoNotification;
+          expect(item.id, equals('new-row'));
+          expect(item.type, equals(NotificationKind.mention));
+          expect(item.totalCount, equals(2));
+          expect(item.videoEventId, equals('source_video_evt_new'));
+          expect(item.videoAddressableId, equals(rootAddressableId));
+        },
+      );
+
+      test(
+        'kind 34236 mention ignores root addressable id from another owner',
+        () async {
+          const badRootAddressableId =
+              '${NIP71VideoKinds.addressableShortVideo}:'
+              '$userPubkey:video-d-tag';
+          const expectedAddressableId =
+              '${NIP71VideoKinds.addressableShortVideo}:'
+              'source_author:video-d-tag';
+          stubNotifications([
+            makeNotification(
+              notificationType: 'mention',
+              sourcePubkey: 'source_author',
+              sourceKind: NIP71VideoKinds.addressableShortVideo,
+              sourceEventId: 'source_video_evt_old',
+              referencedEventId: null,
+              rootEventId: 'source_video_evt_current',
+              rootDTag: 'video-d-tag',
+              rootAddressableId: badRootAddressableId,
+            ),
+          ]);
+          stubVideoStats(
+            'source_video_evt_current',
+            makeVideoStats(
+              id: 'source_video_evt_current',
+              pubkey: 'source_author',
+              dTag: 'video-d-tag',
+            ),
+          );
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+
+          final item = page.items.single as VideoNotification;
+          expect(item.videoEventId, equals('source_video_evt_current'));
+          expect(item.videoAddressableId, equals(expectedAddressableId));
+        },
+      );
+
+      test(
         'kind 1111 staging mention with rootEventId maps to video comment',
         () async {
           stubNotifications([
@@ -2213,6 +2341,7 @@ void main() {
           fromPubkey: 'cached_actor',
           timestamp: 1700000000,
           targetEventId: 'cached_event',
+          hasCommentTarget: false,
           isRead: false,
           cachedAt: DateTime(2026),
         );
@@ -2283,6 +2412,7 @@ void main() {
                 fromPubkey: 'actor_pub',
                 timestamp: 1700000000,
                 targetEventId: 'video_evt_1',
+                hasCommentTarget: false,
                 isRead: false,
                 cachedAt: DateTime(2026),
               ),
@@ -2332,6 +2462,7 @@ void main() {
                 fromPubkey: 'actor_pub',
                 timestamp: 1700000000,
                 targetEventId: 'video_evt_1',
+                hasCommentTarget: false,
                 isRead: false,
                 cachedAt: DateTime(2026),
               ),
@@ -2396,6 +2527,7 @@ void main() {
                 type: 'follow',
                 fromPubkey: 'follower_pub',
                 timestamp: 1700000000,
+                hasCommentTarget: false,
                 targetPubkey: 'follower_pub',
                 isRead: false,
                 cachedAt: DateTime(2026),
@@ -2465,6 +2597,7 @@ void main() {
                 fromPubkey: 'actor_pub',
                 timestamp: 1700000000,
                 targetEventId: 'video_evt_1',
+                hasCommentTarget: false,
                 isRead: false,
                 cachedAt: DateTime(2026),
               ),
@@ -2562,6 +2695,7 @@ void main() {
                 fromPubkey: 'actor_pub',
                 timestamp: 1700000000,
                 targetEventId: 'video_evt_1',
+                hasCommentTarget: false,
                 isRead: false,
                 cachedAt: DateTime(2026),
               ),
@@ -2633,6 +2767,7 @@ void main() {
               fromPubkey: 'actor_pub',
               timestamp: 1700000000,
               targetEventId: 'video_evt_2',
+              hasCommentTarget: false,
               content: 'Nice clip!',
               isRead: false,
               cachedAt: DateTime(2026),
@@ -2662,6 +2797,52 @@ void main() {
         );
       });
 
+      test('cached "videoMention" row remains a video mention placeholder '
+          'with stable route', () async {
+        const addressableId =
+            '${NIP71VideoKinds.addressableShortVideo}:'
+            'source_author:video-d-tag';
+        when(
+          () =>
+              notificationsDao.getAllNotifications(limit: any(named: 'limit')),
+        ).thenAnswer(
+          (_) async => [
+            NotificationRow(
+              id: 'cached_video_mention_1',
+              type: 'videoMention',
+              fromPubkey: 'actor_pub',
+              timestamp: 1700000000,
+              targetEventId: 'source_video_evt',
+              videoAddressableId: addressableId,
+              hasCommentTarget: false,
+              isRead: false,
+              cachedAt: DateTime(2026),
+            ),
+          ],
+        );
+        final hydrated = NotificationRepository(
+          funnelcakeApiClient: funnelcakeApiClient,
+          profileRepository: profileRepository,
+          notificationsDao: notificationsDao,
+          userPubkey: userPubkey,
+        );
+        addTearDown(hydrated.close);
+
+        await expectLater(
+          hydrated.watchSnapshot(),
+          emitsThrough(
+            predicate<NotificationPage>((p) {
+              if (p.items.length != 1) return false;
+              final item = p.items.first;
+              return item is VideoNotification &&
+                  item.type == NotificationKind.mention &&
+                  item.videoEventId == 'source_video_evt' &&
+                  item.videoAddressableId == addressableId;
+            }, 'placeholder is VideoNotification(mention) with addressable id'),
+          ),
+        );
+      });
+
       test(
         'cached "repost" row becomes $VideoNotification placeholder',
         () async {
@@ -2678,6 +2859,7 @@ void main() {
                 fromPubkey: 'actor_pub',
                 timestamp: 1700000000,
                 targetEventId: 'video_evt_3',
+                hasCommentTarget: false,
                 isRead: true,
                 cachedAt: DateTime(2026),
               ),
@@ -2724,6 +2906,7 @@ void main() {
                 type: 'like',
                 fromPubkey: 'actor_pub',
                 timestamp: 1700000000,
+                hasCommentTarget: false,
                 isRead: false,
                 cachedAt: DateTime(2026),
               ),
@@ -2758,6 +2941,7 @@ void main() {
                 type: 'follow',
                 fromPubkey: 'follower_pub',
                 timestamp: 1700000000,
+                hasCommentTarget: false,
                 targetPubkey: 'follower_pub',
                 isRead: false,
                 cachedAt: DateTime(2026),

@@ -605,6 +605,30 @@
             "dsl_features": []
           },
           {
+            "name": "video_addressable_id",
+            "getter_name": "videoAddressableId",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "has_comment_target",
+            "getter_name": "hasCommentTarget",
+            "moor_type": "bool",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "CHECK (\"has_comment_target\" IN (0, 1))",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "CHECK (\"has_comment_target\" IN (0, 1))"
+            },
+            "default_dart": "const CustomExpression('0')",
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
             "name": "target_pubkey",
             "getter_name": "targetPubkey",
             "moor_type": "string",
@@ -2958,7 +2982,7 @@
       "sql": [
         {
           "dialect": "sqlite",
-          "sql": "CREATE TABLE IF NOT EXISTS \"notifications\" (\"id\" TEXT NOT NULL, \"type\" TEXT NOT NULL, \"from_pubkey\" TEXT NOT NULL, \"target_event_id\" TEXT NULL, \"target_pubkey\" TEXT NULL, \"content\" TEXT NULL, \"timestamp\" INTEGER NOT NULL, \"is_read\" INTEGER NOT NULL DEFAULT 0 CHECK (\"is_read\" IN (0, 1)), \"cached_at\" INTEGER NOT NULL, \"owner_pubkey\" TEXT NULL, PRIMARY KEY (\"id\", \"owner_pubkey\"));"
+          "sql": "CREATE TABLE IF NOT EXISTS \"notifications\" (\"id\" TEXT NOT NULL, \"type\" TEXT NOT NULL, \"from_pubkey\" TEXT NOT NULL, \"target_event_id\" TEXT NULL, \"video_addressable_id\" TEXT NULL, \"has_comment_target\" INTEGER NOT NULL DEFAULT 0 CHECK (\"has_comment_target\" IN (0, 1)), \"target_pubkey\" TEXT NULL, \"content\" TEXT NULL, \"timestamp\" INTEGER NOT NULL, \"is_read\" INTEGER NOT NULL DEFAULT 0 CHECK (\"is_read\" IN (0, 1)), \"cached_at\" INTEGER NOT NULL, \"owner_pubkey\" TEXT NULL, PRIMARY KEY (\"id\", \"owner_pubkey\"));"
         }
       ]
     },

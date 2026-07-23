@@ -11,12 +11,22 @@ void main() {
       NotificationKind.comment,
       NotificationKind.reply,
       NotificationKind.likeComment,
-      NotificationKind.mention,
     ]) {
       test('is true for $kind', () {
         expect(notificationKindOpensComments(kind), isTrue);
       });
     }
+
+    test('is true for mention only with a comment target', () {
+      expect(notificationKindOpensComments(NotificationKind.mention), isFalse);
+      expect(
+        notificationKindOpensComments(
+          NotificationKind.mention,
+          hasCommentTarget: true,
+        ),
+        isTrue,
+      );
+    });
 
     for (final kind in const [
       NotificationKind.like,
@@ -106,13 +116,12 @@ void main() {
       },
     );
 
-    test('comment / likeComment / mention with a video target auto-open '
+    test('comment / likeComment / reply with a video target auto-open '
         'comments', () {
       for (final kind in const [
         NotificationKind.comment,
         NotificationKind.likeComment,
         NotificationKind.reply,
-        NotificationKind.mention,
       ]) {
         expect(
           resolveNotificationTapTarget(kind: kind, hasVideoTarget: true),
@@ -120,6 +129,27 @@ void main() {
           reason: '$kind should auto-open comments',
         );
       }
+    });
+
+    test('video mention opens video without auto-opening comments', () {
+      expect(
+        resolveNotificationTapTarget(
+          kind: NotificationKind.mention,
+          hasVideoTarget: true,
+        ),
+        const OpenVideoTarget(autoOpenComments: false),
+      );
+    });
+
+    test('comment mention opens video with comments', () {
+      expect(
+        resolveNotificationTapTarget(
+          kind: NotificationKind.mention,
+          hasVideoTarget: true,
+          hasCommentTarget: true,
+        ),
+        const OpenVideoTarget(autoOpenComments: true),
+      );
     });
 
     test(

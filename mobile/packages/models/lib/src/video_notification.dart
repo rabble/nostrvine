@@ -3,7 +3,8 @@
 
 part of 'notification_item.dart';
 
-/// A notification anchored to a video — likes, comments, or reposts.
+/// A notification anchored to a video — likes, comments, reposts, or source
+/// video mentions.
 ///
 /// One row per (video × kind) regardless of how many actors interacted.
 /// The list of [actors] is capped for stacked-avatar display; [totalCount]
@@ -29,9 +30,10 @@ class VideoNotification extends NotificationItem {
          type == NotificationKind.like ||
              type == NotificationKind.likeComment ||
              type == NotificationKind.comment ||
+             type == NotificationKind.mention ||
              type == NotificationKind.repost,
          'VideoNotification only supports like, likeComment, comment, '
-         'repost',
+         'mention, repost',
        ),
        assert(actors.length > 0, 'must have at least one actor'),
        assert(
