@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
@@ -92,8 +93,12 @@ class _SharedAudioSection extends ConsumerWidget {
 }
 
 /// Section showing "Original sound - @creator" for videos without shared
-/// audio. Tapping navigates to [SoundDetailScreen] where the user can
-/// preview and select the sound for recording.
+/// audio.
+///
+/// The row is always shown for attribution, but it is only a reuse entry point
+/// (tappable into [SoundDetailScreen]) when the sound may be reused — see
+/// [_canReuseSound]. When it may not, the row is display-only credit, so a
+/// creator who left audio sharing off is not silently made reusable.
 class _OriginalSoundSection extends ConsumerWidget {
   const _OriginalSoundSection({required this.video, this.reusedCreatorPubkey});
 
@@ -119,50 +124,26 @@ class _OriginalSoundSection extends ConsumerWidget {
 
     return MetadataSection(
       label: context.l10n.metadataSoundsLabel,
-      child: Semantics(
-        button: true,
-        label: context.l10n.metadataSoundsOriginalSoundSemantics(creatorName),
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () => _navigateToSoundDetail(context, creatorName),
-          child: Row(
-            spacing: 16,
-            children: [
-              const DivineIcon(
-                icon: DivineIconName.waveform,
-                color: VineTheme.onSurfaceVariant,
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      context.l10n.metadataOriginalSound,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: VineTheme.titleMediumFont(),
-                    ),
-                    Text(
-                      creatorName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: VineTheme.bodyMediumFont(
-                        color: VineTheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const DivineIcon(
-                icon: DivineIconName.caretRight,
-                color: VineTheme.onSurfaceVariant,
-                size: 20,
-              ),
-            ],
-          ),
-        ),
+      child: _OriginalSoundRow(
+        creatorName: creatorName,
+        onTap: _canReuseSound(ref)
+            ? () => _navigateToSoundDetail(context, creatorName)
+            : null,
       ),
     );
+  }
+
+  /// Whether the viewer may reuse this original sound.
+  ///
+  /// A sound reused from another creator (who already shared it) stays
+  /// reusable. Otherwise the video's own audio is reusable only when the
+  /// creator enabled audio reuse (the `allow_audio_reuse` marker), or when the
+  /// viewer is the creator — you can always reuse your own audio.
+  bool _canReuseSound(WidgetRef ref) {
+    if (reusedCreatorPubkey != null) return true;
+    if (video.allowAudioReuse) return true;
+    final viewerPubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
+    return viewerPubkey != null && viewerPubkey == video.pubkey;
   }
 
   void _navigateToSoundDetail(BuildContext context, String creatorName) {
@@ -197,6 +178,72 @@ class _OriginalSoundSection extends ConsumerWidget {
         extra: <String, dynamic>{'sound': syntheticAudio, 'sourceVideo': video},
       );
     });
+  }
+}
+
+/// The "Original sound - @creator" row.
+///
+/// When [onTap] is non-null the row is a reuse entry point: tappable, with a
+/// trailing chevron and button semantics. When null it is display-only
+/// attribution — the sound may not be reused, so viewers see the credit but no
+/// affordance to adopt it.
+class _OriginalSoundRow extends StatelessWidget {
+  const _OriginalSoundRow({required this.creatorName, required this.onTap});
+
+  final String creatorName;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final onTap = this.onTap;
+    final row = Row(
+      spacing: 16,
+      children: [
+        const DivineIcon(
+          icon: DivineIconName.waveform,
+          color: VineTheme.onSurfaceVariant,
+        ),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                context.l10n.metadataOriginalSound,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: VineTheme.titleMediumFont(),
+              ),
+              Text(
+                creatorName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: VineTheme.bodyMediumFont(
+                  color: VineTheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (onTap != null)
+          const DivineIcon(
+            icon: DivineIconName.caretRight,
+            color: VineTheme.onSurfaceVariant,
+            size: 20,
+          ),
+      ],
+    );
+
+    if (onTap == null) return row;
+
+    return Semantics(
+      button: true,
+      label: context.l10n.metadataSoundsOriginalSoundSemantics(creatorName),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: row,
+      ),
+    );
   }
 }
 
