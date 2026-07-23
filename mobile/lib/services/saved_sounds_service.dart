@@ -26,17 +26,17 @@ class SavedSoundsService {
   /// `null` when signed out.
   final String? _pubkeyHex;
 
-  /// SharedPreferences key for the current account's saved sounds.
+  /// SharedPreferences key for a specific account's saved sounds.
   ///
   /// Saved sounds are scoped per account so a sound one account adopts never
   /// leaks into another account on a shared device. The signed-out state uses
-  /// a dedicated anonymous bucket.
-  String get storageKey {
-    final pubkey = _pubkeyHex;
-    return pubkey == null || pubkey.isEmpty
-        ? '${_keyPrefix}_anon'
-        : '${_keyPrefix}_$pubkey';
-  }
+  /// a dedicated anonymous bucket. Exposed so account teardown can target the
+  /// deleted account's bucket without duplicating the key format.
+  static String accountStorageKey(String pubkeyHex) =>
+      pubkeyHex.isEmpty ? '${_keyPrefix}_anon' : '${_keyPrefix}_$pubkeyHex';
+
+  /// SharedPreferences key for the current account's saved sounds.
+  String get storageKey => accountStorageKey(_pubkeyHex ?? '');
 
   List<AudioEvent> loadSounds() {
     _migrateLegacyBucketIfNeeded();
@@ -122,10 +122,25 @@ class SavedSoundsService {
     if (legacy == null) return;
 
     // setString updates the in-memory cache synchronously, so the load right
-    // after this call sees the migrated data; disk persistence is fire-and-
-    // forget. Write the account bucket before retiring the legacy key.
-    unawaited(_preferences.setString(storageKey, _consentedLegacy(legacy)));
-    unawaited(_preferences.remove(_legacyStorageKey));
+    // after this call sees the migrated data; disk persistence and the legacy
+    // retire are ordered so the shared key is only dropped after the account
+    // bucket is durably written (see [_migrateLegacyBucket]).
+    unawaited(_migrateLegacyBucket(_consentedLegacy(legacy)));
+  }
+
+  /// Persists the migrated list into the account bucket, then retires the
+  /// legacy key — but only once the write succeeds, so a failed or interrupted
+  /// write can never drop the data (the migration simply retries on the next
+  /// load while the legacy key survives).
+  Future<void> _migrateLegacyBucket(String migrated) async {
+    try {
+      final written = await _preferences.setString(storageKey, migrated);
+      if (written) {
+        await _preferences.remove(_legacyStorageKey);
+      }
+    } catch (_) {
+      // Leave the legacy key in place; migration retries on the next load.
+    }
   }
 
   /// Filters the pre-namespacing list to entries safe to adopt without

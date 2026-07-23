@@ -4,9 +4,12 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+class _MockSharedPreferences extends Mock implements SharedPreferences {}
 
 AudioEvent _sound({
   required String id,
@@ -165,21 +168,27 @@ void main() {
         expect(account.loadSounds(), isEmpty);
       });
 
-      test('migrates the legacy device-wide list into the first account', () {
-        sharedPreferences.setString(
-          'saved_reusable_sounds',
-          jsonEncode([_sound(id: 'legacy').toJson()]),
-        );
+      test(
+        'migrates the legacy device-wide list into the first account',
+        () async {
+          sharedPreferences.setString(
+            'saved_reusable_sounds',
+            jsonEncode([_sound(id: 'legacy').toJson()]),
+          );
 
-        final accountA = SavedSoundsService(
-          sharedPreferences,
-          pubkeyHex: pubkeyA,
-        );
-        expect(accountA.loadSounds().map((sound) => sound.id), ['legacy']);
-        // Legacy key retired so it can't be adopted again.
-        expect(sharedPreferences.getString('saved_reusable_sounds'), isNull);
-        expect(sharedPreferences.getString(accountA.storageKey), isNotNull);
-      });
+          final accountA = SavedSoundsService(
+            sharedPreferences,
+            pubkeyHex: pubkeyA,
+          );
+          expect(accountA.loadSounds().map((sound) => sound.id), ['legacy']);
+
+          // The legacy key is retired only after the account bucket is durably
+          // written, so let the ordered migration finish first.
+          await Future<void>.delayed(Duration.zero);
+          expect(sharedPreferences.getString('saved_reusable_sounds'), isNull);
+          expect(sharedPreferences.getString(accountA.storageKey), isNotNull);
+        },
+      );
 
       test('drops legacy video_* original sounds during migration', () {
         // A pre-fix save of another creator's original sound (reuse consent
@@ -199,19 +208,52 @@ void main() {
         expect(accountA.loadSounds().map((sound) => sound.id), ['shared']);
       });
 
-      test('a second account does not inherit the migrated legacy list', () {
-        sharedPreferences.setString(
-          'saved_reusable_sounds',
-          jsonEncode([_sound(id: 'legacy').toJson()]),
-        );
+      test(
+        'a second account does not inherit the migrated legacy list',
+        () async {
+          sharedPreferences.setString(
+            'saved_reusable_sounds',
+            jsonEncode([_sound(id: 'legacy').toJson()]),
+          );
 
-        SavedSoundsService(sharedPreferences, pubkeyHex: pubkeyA).loadSounds();
+          SavedSoundsService(
+            sharedPreferences,
+            pubkeyHex: pubkeyA,
+          ).loadSounds();
+          // Let the first account's migration retire the legacy key.
+          await Future<void>.delayed(Duration.zero);
 
-        final accountB = SavedSoundsService(
-          sharedPreferences,
-          pubkeyHex: pubkeyB,
-        );
-        expect(accountB.loadSounds(), isEmpty);
+          final accountB = SavedSoundsService(
+            sharedPreferences,
+            pubkeyHex: pubkeyB,
+          );
+          expect(accountB.loadSounds(), isEmpty);
+        },
+      );
+
+      test('keeps the legacy key when the migration write fails', () async {
+        final mockPrefs = _MockSharedPreferences();
+        const legacyKey = 'saved_reusable_sounds';
+        final service = SavedSoundsService(mockPrefs, pubkeyHex: pubkeyA);
+        final accountKey = service.storageKey;
+
+        when(() => mockPrefs.containsKey(accountKey)).thenReturn(false);
+        when(
+          () => mockPrefs.getString(legacyKey),
+        ).thenReturn(jsonEncode([_sound(id: 'legacy').toJson()]));
+        when(() => mockPrefs.getString(accountKey)).thenReturn(null);
+        // The durable write fails.
+        when(
+          () => mockPrefs.setString(accountKey, any()),
+        ).thenAnswer((_) async => false);
+        when(() => mockPrefs.remove(any())).thenAnswer((_) async => true);
+
+        service.loadSounds();
+        await Future<void>.delayed(Duration.zero);
+
+        // Legacy key must survive so the migration retries — never removed
+        // after a failed write.
+        verifyNever(() => mockPrefs.remove(legacyKey));
       });
 
       test('does not migrate the legacy list into the signed-out bucket', () {
