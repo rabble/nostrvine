@@ -81,3 +81,9 @@ class ConversationListProfileRepositoryChanged extends ConversationListEvent {
   @override
   List<Object?> get props => [profileRepository];
 }
+
+/// Resolve names for newly streamed conversations without changing the query.
+class _ConversationListProfileResolutionRequested
+    extends ConversationListEvent {
+  const _ConversationListProfileResolutionRequested();
+}

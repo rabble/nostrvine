@@ -2052,6 +2052,34 @@ void main() {
       );
     });
 
+    test(
+      'single-character search does not fan out profile resolution',
+      () async {
+        _stubStreams(mockDmRepository, accepted: conversations());
+        final bloc = createBloc();
+        addTearDown(bloc.close);
+        await load(bloc);
+
+        bloc.add(const ConversationListSearchQueryChanged('p'));
+        await Future<void>.delayed(const Duration(milliseconds: 350));
+
+        expect(
+          bloc.state.searchQuery,
+          isEmpty,
+          reason: 'inbox search follows the shared minSearchQueryLength gate',
+        );
+        expect(
+          bloc.state.visibleConversations.map((c) => c.id).toList(),
+          equals(['pizza', 'alice']),
+        );
+        verifyNever(
+          () => mockProfileRepository.fetchBatchProfiles(
+            pubkeys: any(named: 'pubkeys'),
+          ),
+        );
+      },
+    );
+
     // `profileRepositoryProvider` is nullable-gated on Nostr readiness, so the
     // inbox can mount before it resolves. The instance is delivered in place
     // rather than by re-keying the BlocProvider — a key on that provider is the
@@ -2181,6 +2209,39 @@ void main() {
       );
       expect(state.profileNames[_testPubkey3], equals('Alice Wonder'));
     });
+
+    test(
+      'failed profile resolution still caches fallback names',
+      () async {
+        _stubStreams(mockDmRepository, accepted: conversations());
+        when(
+          () => mockProfileRepository.fetchBatchProfiles(
+            pubkeys: any(named: 'pubkeys'),
+          ),
+        ).thenThrow(Exception('relay offline'));
+        final bloc = createBloc();
+        addTearDown(bloc.close);
+        await load(bloc);
+
+        bloc.add(const ConversationListSearchQueryChanged('alice'));
+        final state = await bloc.stream.firstWhere(
+          (s) => s.profileNames.containsKey(_testPubkey2),
+        );
+
+        expect(
+          state.profileNames.keys,
+          containsAll([_testPubkey2, _testPubkey3]),
+        );
+        expect(
+          state.profileNames[_testPubkey2],
+          equals(UserProfile.defaultDisplayNameFor(_testPubkey2)),
+        );
+        expect(
+          state.profileNames[_testPubkey3],
+          equals(UserProfile.defaultDisplayNameFor(_testPubkey3)),
+        );
+      },
+    );
 
     test('resolves each pubkey at most once across queries', () async {
       _stubStreams(mockDmRepository, accepted: conversations());
@@ -2324,6 +2385,74 @@ void main() {
         );
         expect(
           state.visibleConversations.map((c) => c.id),
+          contains('alice'),
+        );
+      },
+    );
+
+    test(
+      'stream re-resolution does not supersede a newer pending keystroke',
+      () async {
+        final acceptedController = StreamController<List<DmConversation>>();
+        _stubStreams(mockDmRepository);
+        when(
+          () => mockDmRepository.watchAcceptedConversations(
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) => acceptedController.stream);
+        when(
+          () => mockProfileRepository.fetchBatchProfiles(
+            pubkeys: any(named: 'pubkeys'),
+          ),
+        ).thenAnswer(
+          (_) async => {
+            _testPubkey3: UserProfile(
+              pubkey: _testPubkey3,
+              displayName: 'Alice Wonder',
+              rawData: const {},
+              createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+              eventId: _testConversationId1,
+            ),
+          },
+        );
+
+        final bloc = createBloc()..add(const ConversationListStarted());
+        addTearDown(() async {
+          await bloc.close();
+          await acceptedController.close();
+        });
+
+        acceptedController.add([
+          _createConversation(id: 'pizza', lastMessageContent: 'pizza friday?'),
+        ]);
+        await bloc.stream.firstWhere(
+          (s) => s.status == ConversationListStatus.loaded,
+        );
+
+        bloc.add(const ConversationListSearchQueryChanged('alice'));
+        await bloc.stream.firstWhere((s) => s.searchQuery == 'alice');
+
+        bloc.add(const ConversationListSearchQueryChanged('alice w'));
+        acceptedController.add([
+          _createConversation(id: 'pizza', lastMessageContent: 'pizza friday?'),
+          _createConversation(
+            id: 'alice',
+            lastMessageContent: 'see you soon',
+            participantPubkeys: const [_testPubkey1, _testPubkey3],
+          ),
+        ]);
+
+        await Future<void>.delayed(const Duration(milliseconds: 350));
+
+        expect(
+          bloc.state.searchQuery,
+          equals('alice w'),
+          reason:
+              'data-path profile resolution must not enqueue the previous '
+              'query into the debounced user-input stream',
+        );
+        expect(
+          bloc.state.visibleConversations.map((c) => c.id),
           contains('alice'),
         );
       },

@@ -44,6 +44,10 @@ class ConversationListBloc
       _onSearchQueryChanged,
       transformer: debounceRestartable(),
     );
+    on<_ConversationListProfileResolutionRequested>(
+      _onProfileResolutionRequested,
+      transformer: restartable(),
+    );
     on<ConversationListNavigateToUser>(
       _onNavigateToUser,
       transformer: droppable(),
@@ -236,7 +240,7 @@ class ConversationListBloc
         // its own. Scoped to genuinely NEW rows: the full set legitimately
         // carries counterparties the chunked resolver has not reached yet, and
         // re-firing for those would loop on every recompute.
-        if (state.searchQuery.isNotEmpty) {
+        if (state.searchQuery.length >= minSearchQueryLength) {
           final known = state.conversations.map((c) => c.id).toSet();
           final hasNewUnresolved = visibleInbox.any(
             (c) =>
@@ -246,7 +250,7 @@ class ConversationListBloc
                 ),
           );
           if (hasNewUnresolved) {
-            add(ConversationListSearchQueryChanged(state.searchQuery));
+            add(const _ConversationListProfileResolutionRequested());
           }
         }
 
@@ -326,7 +330,8 @@ class ConversationListBloc
     ConversationListSearchQueryChanged event,
     Emitter<ConversationListState> emit,
   ) async {
-    final query = event.query.trim();
+    final rawQuery = event.query.trim();
+    final query = rawQuery.length < minSearchQueryLength ? '' : rawQuery;
     final userPubkey = _dmRepository.userPubkey;
 
     // Emit first on what needs no lookup — message previews, names already
@@ -348,6 +353,31 @@ class ConversationListBloc
 
     // Capture the repository once: a mid-loop swap from
     // ConversationListProfileRepositoryChanged must not tear the sequence.
+    await _resolveMissingProfileNames(
+      emit,
+      query: query,
+      userPubkey: userPubkey,
+    );
+  }
+
+  Future<void> _onProfileResolutionRequested(
+    _ConversationListProfileResolutionRequested event,
+    Emitter<ConversationListState> emit,
+  ) async {
+    final query = state.searchQuery;
+    if (query.length < minSearchQueryLength) return;
+    await _resolveMissingProfileNames(
+      emit,
+      query: query,
+      userPubkey: _dmRepository.userPubkey,
+    );
+  }
+
+  Future<void> _resolveMissingProfileNames(
+    Emitter<ConversationListState> emit, {
+    required String query,
+    required String userPubkey,
+  }) async {
     final profileRepository = _profileRepository;
     if (query.isEmpty || profileRepository == null) return;
 
