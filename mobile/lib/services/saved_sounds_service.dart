@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:meta/meta.dart';
 import 'package:models/models.dart' show AudioEvent;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -19,6 +20,20 @@ class SavedSoundsService {
   /// The pre-namespacing device-wide key (no account suffix). Read once at
   /// upgrade to migrate existing saves into the first account that loads.
   static const String _legacyStorageKey = _keyPrefix;
+
+  /// Process-wide guard so the one-shot legacy migration is claimed by exactly
+  /// one account. Set synchronously the instant an account claims it — before
+  /// the async write — so a second account loading during that write can't also
+  /// adopt the same device-wide list (#6330). Released only when the account
+  /// write fails, so a failed migration retries on a later load.
+  static bool _legacyMigrationClaimed = false;
+
+  /// Resets the process-wide legacy-migration claim. Tests share one isolate,
+  /// so each migration test must start from an unclaimed state.
+  @visibleForTesting
+  static void resetLegacyMigrationClaimForTesting() {
+    _legacyMigrationClaimed = false;
+  }
 
   final SharedPreferences _preferences;
 
@@ -118,28 +133,43 @@ class SavedSoundsService {
     final pubkey = _pubkeyHex;
     if (pubkey == null || pubkey.isEmpty) return;
     if (_preferences.containsKey(storageKey)) return;
+    if (_legacyMigrationClaimed) return;
     final legacy = _preferences.getString(_legacyStorageKey);
     if (legacy == null) return;
 
-    // setString updates the in-memory cache synchronously, so the load right
-    // after this call sees the migrated data; disk persistence and the legacy
-    // retire are ordered so the shared key is only dropped after the account
-    // bucket is durably written (see [_migrateLegacyBucket]).
+    // Claim synchronously: there is no await between reading the legacy key and
+    // setting this flag, so a second account that loads during the async write
+    // below sees the claim and cannot re-adopt the same list. setString also
+    // updates the in-memory cache synchronously, so the load right after this
+    // call still sees the migrated data.
+    _legacyMigrationClaimed = true;
     unawaited(_migrateLegacyBucket(_consentedLegacy(legacy)));
   }
 
   /// Persists the migrated list into the account bucket, then retires the
-  /// legacy key — but only once the write succeeds, so a failed or interrupted
-  /// write can never drop the data (the migration simply retries on the next
-  /// load while the legacy key survives).
+  /// legacy key. The claim is released only when the account write itself fails,
+  /// so a failed or interrupted write can never drop the data (the migration
+  /// retries on the next load while the legacy key survives); once the write
+  /// succeeds the claim stays, so no other account can re-adopt the list even if
+  /// retiring the legacy key later fails.
   Future<void> _migrateLegacyBucket(String migrated) async {
     try {
-      final written = await _preferences.setString(storageKey, migrated);
-      if (written) {
-        await _preferences.remove(_legacyStorageKey);
+      if (!await _preferences.setString(storageKey, migrated)) {
+        // The account write was rejected: release the claim and leave the
+        // legacy key so the next load retries the whole migration.
+        _legacyMigrationClaimed = false;
+        return;
       }
     } catch (_) {
-      // Leave the legacy key in place; migration retries on the next load.
+      // The account write threw: same as above — retry on the next load.
+      _legacyMigrationClaimed = false;
+      return;
+    }
+    try {
+      await _preferences.remove(_legacyStorageKey);
+    } catch (_) {
+      // Account bucket is durably written; leaving the legacy key is harmless
+      // now that the claim is permanent for this process.
     }
   }
 

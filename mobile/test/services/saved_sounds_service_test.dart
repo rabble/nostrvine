@@ -1,6 +1,7 @@
 // ABOUTME: Tests for the persisted reusable sounds library service.
 // ABOUTME: Covers saving, dedupe, ordering, and corrupt storage fallback.
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -38,6 +39,9 @@ void main() {
     late SharedPreferences sharedPreferences;
 
     setUp(() async {
+      // The migration claim is a process-wide static; reset it so the shared
+      // test isolate can't leak a prior test's claim into this one.
+      SavedSoundsService.resetLegacyMigrationClaimForTesting();
       SharedPreferences.setMockInitialValues({});
       sharedPreferences = await SharedPreferences.getInstance();
     });
@@ -255,6 +259,50 @@ void main() {
         // after a failed write.
         verifyNever(() => mockPrefs.remove(legacyKey));
       });
+
+      test(
+        'a second account cannot re-adopt the legacy list mid-migration',
+        () async {
+          final mockPrefs = _MockSharedPreferences();
+          const legacyKey = 'saved_reusable_sounds';
+          final legacyJson = jsonEncode([_sound(id: 'shared').toJson()]);
+
+          final serviceA = SavedSoundsService(mockPrefs, pubkeyHex: pubkeyA);
+          final serviceB = SavedSoundsService(mockPrefs, pubkeyHex: pubkeyB);
+          final keyA = serviceA.storageKey;
+          final keyB = serviceB.storageKey;
+
+          when(() => mockPrefs.containsKey(keyA)).thenReturn(false);
+          when(() => mockPrefs.containsKey(keyB)).thenReturn(false);
+          when(() => mockPrefs.getString(legacyKey)).thenReturn(legacyJson);
+          when(() => mockPrefs.getString(keyA)).thenReturn(null);
+          when(() => mockPrefs.getString(keyB)).thenReturn(null);
+          // Hold A's migration write open so B loads inside the migration
+          // window while the legacy key is still present.
+          final blockedWrite = Completer<bool>();
+          when(
+            () => mockPrefs.setString(keyA, any()),
+          ).thenAnswer((_) => blockedWrite.future);
+          when(
+            () => mockPrefs.setString(keyB, any()),
+          ).thenAnswer((_) async => true);
+          when(() => mockPrefs.remove(any())).thenAnswer((_) async => true);
+
+          // A claims the migration synchronously; its write stays pending.
+          serviceA.loadSounds();
+          // B loads while A's write is unresolved and the legacy key survives.
+          serviceB.loadSounds();
+
+          // Only A ever tried to adopt the legacy list; B was blocked by the
+          // claim and never wrote its own bucket.
+          verify(() => mockPrefs.setString(keyA, any())).called(1);
+          verifyNever(() => mockPrefs.setString(keyB, any()));
+
+          // Let A finish so no pending future outlives the test.
+          blockedWrite.complete(true);
+          await Future<void>.delayed(Duration.zero);
+        },
+      );
 
       test('does not migrate the legacy list into the signed-out bucket', () {
         sharedPreferences.setString(

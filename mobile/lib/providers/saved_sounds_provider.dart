@@ -56,7 +56,7 @@ class SavedSoundsNotifier extends Notifier<List<AudioEvent>> {
     final service = ref.read(savedSoundsServiceProvider);
     final enriched = await _ensureDuration(sound);
     final result = await service.saveSound(enriched);
-    if (identical(ref.read(savedSoundsServiceProvider), service)) {
+    if (_targetsCurrentBucket(service)) {
       state = service.loadSounds();
     }
     return result;
@@ -65,10 +65,18 @@ class SavedSoundsNotifier extends Notifier<List<AudioEvent>> {
   Future<void> removeSound(String soundId) async {
     final service = ref.read(savedSoundsServiceProvider);
     await service.removeSound(soundId);
-    if (identical(ref.read(savedSoundsServiceProvider), service)) {
+    if (_targetsCurrentBucket(service)) {
       state = service.loadSounds();
     }
   }
+
+  /// Whether [service] still targets the account bucket the provider is
+  /// currently bound to. Compares the stable storage key rather than object
+  /// identity: an A→B→A switch mid-write yields a *fresh* service instance for
+  /// the same A bucket, so `identical` would wrongly drop the completed write
+  /// from the current state.
+  bool _targetsCurrentBucket(SavedSoundsService service) =>
+      ref.read(savedSoundsServiceProvider).storageKey == service.storageKey;
 
   Future<void> _backfillMissingDurations(SavedSoundsService service) async {
     final current = service.loadSounds();
@@ -85,7 +93,7 @@ class SavedSoundsNotifier extends Notifier<List<AudioEvent>> {
     }
     if (!changed) return;
     await service.replaceAll(updated);
-    if (identical(ref.read(savedSoundsServiceProvider), service)) {
+    if (_targetsCurrentBucket(service)) {
       state = updated;
     }
   }
