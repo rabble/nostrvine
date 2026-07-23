@@ -1003,6 +1003,44 @@ void main() {
       );
     });
 
+    testWidgets('keeps the standalone support button without a creator site', (
+      tester,
+    ) async {
+      // A short-but-hex pubkey renders an npub but cannot produce a Divine
+      // Space URL, so there is nothing to pair the support button with.
+      const shortHex = 'abc123';
+      final creatorProfile = createTestProfile(
+        displayName: 'Creator',
+        rawData: {
+          divineMonetizationLinksKey: [
+            const MonetizationLink(
+              provider: MonetizationLinkProvider.cashApp,
+              category: MonetizationLinkCategory.tip,
+              url: r'https://cash.app/$creator',
+              enabled: true,
+            ).toJson(),
+          ],
+        },
+      );
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: shortHex,
+          isOwnProfile: false,
+          suppliedProfile: creatorProfile,
+          monetizationLinksEnabled: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('profile-creator-site-button')),
+        findsNothing,
+      );
+      expect(find.byKey(const Key('profile-support-button')), findsOneWidget);
+      expect(find.text('Support'), findsOneWidget);
+    });
+
     testWidgets('hides support affordance when monetization flag is off', (
       tester,
     ) async {
