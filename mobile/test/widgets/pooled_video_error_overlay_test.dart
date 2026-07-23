@@ -146,6 +146,33 @@ void main() {
 
         expect(find.text(l10n.videoErrorRetry), findsNothing);
       });
+
+      testWidgets(
+        'shows retryable playback error for third-party video URLs',
+        (tester) async {
+          await tester.pumpWidget(
+            buildWidget(
+              errorType: VideoErrorType.forbidden,
+              video: thirdPartyVideo,
+              onSkip: () => skipPressed = true,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(_findDivineIcon(DivineIconName.warningCircle), findsOneWidget);
+          expect(find.text(l10n.videoErrorPlayback), findsOneWidget);
+          expect(find.text(l10n.videoErrorContentRestricted), findsNothing);
+          expect(find.text(l10n.videoErrorContentRestrictedBody), findsNothing);
+          expect(find.text(l10n.videoErrorSkip), findsNothing);
+          expect(find.text(l10n.videoErrorRetry), findsOneWidget);
+
+          await tester.tap(find.text(l10n.videoErrorRetry));
+          await tester.pump();
+
+          expect(retryPressed, isTrue);
+          expect(skipPressed, isFalse);
+        },
+      );
     });
 
     group('ageRestricted', () {

@@ -17,7 +17,10 @@ import 'package:openvine/widgets/vine_cached_image.dart';
 /// Error overlay for videos playing through the pooled video player.
 ///
 /// Shows different UI based on the [VideoErrorType] from the controller:
-/// - [VideoErrorType.forbidden]: Shield icon + "Content restricted" (no retry)
+/// - [VideoErrorType.forbidden] for Divine URLs: Shield icon +
+///   "Content restricted" (no retry)
+/// - [VideoErrorType.forbidden] for third-party URLs: Error icon +
+///   "Video playback error" + Retry
 /// - [VideoErrorType.notFound] with moderation status: Shield icon +
 ///   "Content restricted" (no retry)
 /// - [VideoErrorType.ageRestricted]: Lock icon + "Age-restricted content" +
@@ -118,7 +121,7 @@ class _PooledVideoErrorOverlayState
         moderationStatus != null &&
         moderationStatus.ageRestricted;
     final isModerationRestricted =
-        type == VideoErrorType.forbidden ||
+        (type == VideoErrorType.forbidden && isDivineUrl) ||
         (shouldEnrichNotFoundWithModeration &&
             moderationStatus != null &&
             moderationStatus.isUnavailableDueToModeration);
@@ -143,8 +146,10 @@ class _PooledVideoErrorOverlayState
         context.l10n.videoErrorContentRestricted,
       (VideoErrorType.notFound, false, false) =>
         context.l10n.videoErrorNotFound,
-      (VideoErrorType.forbidden, false, _) =>
+      (VideoErrorType.forbidden, false, true) =>
         context.l10n.videoErrorContentRestricted,
+      (VideoErrorType.forbidden, false, false) =>
+        context.l10n.videoErrorPlayback,
       (VideoErrorType.ageRestricted, false, _) =>
         context.l10n.videoErrorAgeRestricted,
       (VideoErrorType.generic, false, _) => context.l10n.videoErrorPlayback,
