@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:openvine/config/app_config.dart';
 import 'package:openvine/l10n/l10n.dart';
 
 /// Hero section with large tagline text and decorative 3D emoji stickers.
@@ -101,8 +102,15 @@ class AuthHeroSection extends StatelessWidget {
 
           const SizedBox(height: 40),
 
-          // Divine wordmark (green SVG logo)
-          SvgPicture.asset('assets/icon/logo.svg', width: 120),
+          // Divine wordmark. `logo.svg` is the current geometric heart-V mark;
+          // auth_hero_section_test.dart pins it against retired brand assets.
+          // The label is the brand name, not copy: it stays out of the ARB
+          // catalog so no locale can translate or transliterate it.
+          SvgPicture.asset(
+            DivineIconName.logo.assetPath,
+            width: 120,
+            semanticsLabel: AppConfig.appName,
+          ),
         ],
       ),
     );
@@ -118,6 +126,11 @@ class _StickerImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SvgPicture.asset(path, width: size, height: size);
+    return SvgPicture.asset(
+      path,
+      width: size,
+      height: size,
+      excludeFromSemantics: true,
+    );
   }
 }
