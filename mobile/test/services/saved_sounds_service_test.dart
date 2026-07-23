@@ -165,18 +165,69 @@ void main() {
         expect(account.loadSounds(), isEmpty);
       });
 
-      test('does not read the legacy device-wide key', () {
+      test('migrates the legacy device-wide list into the first account', () {
         sharedPreferences.setString(
           'saved_reusable_sounds',
           jsonEncode([_sound(id: 'legacy').toJson()]),
         );
 
-        final service = SavedSoundsService(
+        final accountA = SavedSoundsService(
           sharedPreferences,
           pubkeyHex: pubkeyA,
         );
-        expect(service.loadSounds(), isEmpty);
+        expect(accountA.loadSounds().map((sound) => sound.id), ['legacy']);
+        // Legacy key retired so it can't be adopted again.
+        expect(sharedPreferences.getString('saved_reusable_sounds'), isNull);
+        expect(sharedPreferences.getString(accountA.storageKey), isNotNull);
       });
+
+      test('a second account does not inherit the migrated legacy list', () {
+        sharedPreferences.setString(
+          'saved_reusable_sounds',
+          jsonEncode([_sound(id: 'legacy').toJson()]),
+        );
+
+        SavedSoundsService(sharedPreferences, pubkeyHex: pubkeyA).loadSounds();
+
+        final accountB = SavedSoundsService(
+          sharedPreferences,
+          pubkeyHex: pubkeyB,
+        );
+        expect(accountB.loadSounds(), isEmpty);
+      });
+
+      test('does not migrate the legacy list into the signed-out bucket', () {
+        sharedPreferences.setString(
+          'saved_reusable_sounds',
+          jsonEncode([_sound(id: 'legacy').toJson()]),
+        );
+
+        final anon = SavedSoundsService(sharedPreferences);
+        expect(anon.loadSounds(), isEmpty);
+        // Legacy stays untouched for a real account to adopt later.
+        expect(sharedPreferences.getString('saved_reusable_sounds'), isNotNull);
+      });
+
+      test(
+        'does not migrate when the account already has saved sounds',
+        () async {
+          final accountA = SavedSoundsService(
+            sharedPreferences,
+            pubkeyHex: pubkeyA,
+          );
+          await accountA.saveSound(_sound(id: 'own'));
+          sharedPreferences.setString(
+            'saved_reusable_sounds',
+            jsonEncode([_sound(id: 'legacy').toJson()]),
+          );
+
+          expect(accountA.loadSounds().map((sound) => sound.id), ['own']);
+          expect(
+            sharedPreferences.getString('saved_reusable_sounds'),
+            isNotNull,
+          );
+        },
+      );
     });
   });
 }
