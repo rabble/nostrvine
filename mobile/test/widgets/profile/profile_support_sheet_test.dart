@@ -66,4 +66,44 @@ void main() {
     expect(find.text('Patreon'), findsNothing);
     expect(find.text('Subscribe / support'), findsNothing);
   });
+
+  testWidgets('tapping a link row starts the outbound flow', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: VineTheme.theme,
+        home: Scaffold(
+          body: Builder(
+            builder: (context) {
+              return TextButton(
+                onPressed: () => showProfileSupportSheet(
+                  context: context,
+                  links: [
+                    const MonetizationLink(
+                      provider: MonetizationLinkProvider.cashApp,
+                      category: MonetizationLinkCategory.tip,
+                      url: r'https://cash.app/$creator',
+                      enabled: true,
+                    ),
+                  ],
+                  analytics: const NoOpAnalyticsEventSink(),
+                ),
+                child: const Text('Open'),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Cash App'));
+    await tester.pumpAndSettle();
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    expect(find.text(l10n.messageExternalLinkDialogTitle), findsOneWidget);
+  });
 }

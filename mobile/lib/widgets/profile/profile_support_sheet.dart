@@ -33,7 +33,7 @@ Future<void> showProfileSupportSheet({
         : context.l10n.profileSupportSheetTitle,
     children: [
       Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
         child: Text(
           appStoreTipPolicy
               ? context.l10n.profileTipSheetBody
@@ -71,20 +71,19 @@ class _SupportLinkGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 8,
-        children: [
-          Text(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          child: Text(
             title.toUpperCase(),
             style: VineTheme.labelSmallFont(color: VineTheme.onSurfaceVariant),
           ),
-          for (final link in links)
-            _SupportLinkTile(link: link, analytics: analytics),
-        ],
-      ),
+        ),
+        for (final link in links)
+          _SupportLinkTile(link: link, analytics: analytics),
+      ],
     );
   }
 }
@@ -97,40 +96,30 @@ class _SupportLinkTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () async {
-        trackMonetizationOutboundClicked(analytics: analytics, link: link);
-        await openExternalLink(context, link.url);
-        if (context.mounted) Navigator.of(context).pop();
-      },
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        decoration: BoxDecoration(
-          color: VineTheme.cardBackground,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: VineTheme.outlineMuted),
+    return Material(
+      type: MaterialType.transparency,
+      child: ListTile(
+        minTileHeight: 56,
+        leading: const DivineIcon(
+          icon: DivineIconName.linkSimple,
+          color: VineTheme.primary,
         ),
-        child: Row(
-          children: [
-            const DivineIcon(
-              icon: DivineIconName.linkSimple,
-              color: VineTheme.primary,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                link.provider.displayName,
-                style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
-              ),
-            ),
-            const DivineIcon(
-              icon: DivineIconName.arrowUpRight,
-              color: VineTheme.onSurfaceVariant,
-              size: 20,
-            ),
-          ],
+        title: Text(
+          link.provider.displayName,
+          style: VineTheme.titleMediumFont(),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
+        trailing: const DivineIcon(
+          icon: DivineIconName.arrowUpRight,
+          color: VineTheme.onSurfaceVariant,
+          size: 20,
+        ),
+        onTap: () async {
+          trackMonetizationOutboundClicked(analytics: analytics, link: link);
+          await openExternalLink(context, link.url);
+          if (context.mounted) Navigator.of(context).pop();
+        },
       ),
     );
   }
