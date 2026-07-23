@@ -15,11 +15,7 @@ import 'package:unified_logger/unified_logger.dart';
 
 part 'email_verification_state.dart';
 
-enum EmailTokenVerificationStatus {
-  success,
-  terminalFailure,
-  transientFailure,
-}
+enum EmailTokenVerificationStatus { success, terminalFailure, transientFailure }
 
 final class EmailTokenVerificationResult extends Equatable {
   const EmailTokenVerificationResult._(this.status, {this.errorCode});
@@ -81,11 +77,47 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
 
   Timer? _pollTimer;
   Timer? _timeoutTimer;
+  Timer? _resendTimer;
   String? _pendingDeviceCode;
   String? _pendingVerifier;
   String? _pendingInviteCode;
   String? _pendingVerificationToken;
   bool _isVerifyingEmailToken = false;
+  int _verificationGeneration = 0;
+
+  /// True once a terminal completion has been claimed for the current
+  /// verification. Set synchronously at the top of [_exchangeCodeAndLogin]
+  /// before the first await, so a racing poll completion and a racing PIN
+  /// submit cannot both reach token exchange / invite consumption. Reset
+  /// only by [startPolling] when a fresh verification begins.
+  bool _completionClaimed = false;
+
+  /// Whether a terminal completion has already been claimed for the current
+  /// verification — either by an in-flight/finished exchange on this instance
+  /// ([_completionClaimed]) or by another cubit instance that already
+  /// exchanged the same device code (the static [_completedDeviceCode]).
+  bool get _isCompletionClaimed =>
+      _completionClaimed ||
+      (_completedDeviceCode != null &&
+          _completedDeviceCode == _pendingDeviceCode);
+
+  bool _matchesActiveVerification({
+    required int generation,
+    required String deviceCode,
+    required String verifier,
+    required String? email,
+  }) {
+    return !isClosed &&
+        generation == _verificationGeneration &&
+        _pendingDeviceCode == deviceCode &&
+        _pendingVerifier == verifier &&
+        state.pendingEmail == email;
+  }
+
+  /// Client-side cooldown between resend requests, matching keycast's 5-minute
+  /// server-side rate limit. The server always returns success (anti-
+  /// enumeration), so the client owns surfacing the cooldown to the user.
+  static const resendCooldown = Duration(minutes: 5);
 
   /// Cubit-internal backoff counter for [_schedulePoll]. Lives outside
   /// state because the UI never reads it — analogous to [_pollTimer] and
@@ -144,6 +176,7 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
       category: LogCategory.auth,
     );
 
+    _verificationGeneration++;
     _pendingDeviceCode = deviceCode;
     _pendingVerifier = verifier;
     _pendingInviteCode = inviteCode == null
@@ -157,11 +190,16 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
       ),
     );
 
-    // Cancel any existing timers
+    // Cancel any existing timers. The resend cooldown timer is nulled too
+    // (it is not reassigned below, unlike the poll/timeout timers) so a re-init
+    // can't leave an orphaned Timer.periodic ticking onto the reset state.
     _pollTimer?.cancel();
     _timeoutTimer?.cancel();
+    _resendTimer?.cancel();
+    _resendTimer = null;
 
     _pollTickIndex = 0;
+    _completionClaimed = false;
     _schedulePoll();
 
     // Set timeout to stop polling after 15 minutes
@@ -169,6 +207,7 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
   }
 
   void _schedulePoll() {
+    final scheduledGeneration = _verificationGeneration;
     final delay = _delayForTick(_pollTickIndex);
     _pollTimer = Timer(delay, () async {
       _pollTickIndex++;
@@ -178,7 +217,16 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
       // _pendingDeviceCode, which stops the recursion cleanly. Using the
       // pending state — not _pollTimer — as the guard keeps intent explicit
       // and survives future cleanup paths that forget to clear the timer.
-      if (!isClosed && _pendingDeviceCode != null) {
+      //
+      // Also bail once the poll window has elapsed: _onTimeout keeps the
+      // pending device code (so PIN entry still works) but the poll loop must
+      // stop. Without this, an in-flight _poll() resuming after the timeout
+      // would re-arm the timer and poll forever. resumePollingAfterTimeout()
+      // restarts cleanly via startPolling when a late link click warrants it.
+      if (!isClosed &&
+          scheduledGeneration == _verificationGeneration &&
+          _pendingDeviceCode != null &&
+          state.status != EmailVerificationStatus.pollingTimedOut) {
         _schedulePoll();
       }
     });
@@ -394,17 +442,29 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
   }
 
   void _onTimeout() {
+    // A poll/PIN completion already landing (or finished) owns the terminal
+    // state — don't clobber its success with pollingTimedOut.
+    if (_isCompletionClaimed) return;
     Log.warning(
       'Email verification polling timed out after '
-      '${_pollingTimeout.inMinutes} minutes',
+      '${_pollingTimeout.inMinutes} minutes — keeping PIN entry available',
       name: 'EmailVerificationCubit',
       category: LogCategory.auth,
     );
-    _cleanup();
+    // Stop the poll/timeout timers but KEEP the pending device code + verifier
+    // so the user can still finish via the emailed PIN. Dropping to a terminal
+    // failure here would force a re-registration (and trip the duplicate-email
+    // edge); instead the screen stays usable for PIN entry / resend.
+    _stopPollTimers();
+    // Also tear down the resend cooldown timer so its periodic tick can't
+    // revive resendCooldownSeconds onto the fresh timed-out state emitted
+    // below (which resets resend fields to idle/0).
+    _resendTimer?.cancel();
+    _resendTimer = null;
     emit(
-      const EmailVerificationState(
-        status: EmailVerificationStatus.failure,
-        errorCode: EmailVerificationError.timeout,
+      EmailVerificationState(
+        status: EmailVerificationStatus.pollingTimedOut,
+        pendingEmail: state.pendingEmail,
       ),
     );
   }
@@ -421,6 +481,283 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
       case null:
         return EmailVerificationError.pollFailed;
     }
+  }
+
+  /// Cancel the poll + timeout timers without clearing the pending
+  /// verification context (unlike [_cleanup], which also nulls the device
+  /// code / verifier and is used on terminal completion).
+  void _stopPollTimers() {
+    _pollTimer?.cancel();
+    _pollTimer = null;
+    _timeoutTimer?.cancel();
+    _timeoutTimer = null;
+  }
+
+  /// Re-arm polling after a [EmailVerificationStatus.pollingTimedOut], reusing
+  /// the device code / verifier the timeout retained.
+  ///
+  /// Used when a late email-link click marks the email verified on the server
+  /// *after* the 15-minute poll window already elapsed: re-arming lets the next
+  /// poll pick up the completion so the flow auto-finishes instead of waiting
+  /// on manual PIN entry. No-ops unless we are timed out and still hold the
+  /// pending context.
+  void resumePollingAfterTimeout() {
+    if (state.status != EmailVerificationStatus.pollingTimedOut) return;
+    final deviceCode = _pendingDeviceCode;
+    final verifier = _pendingVerifier;
+    if (deviceCode == null || verifier == null) return;
+    Log.info(
+      'Re-arming polling after timeout following a late verifyEmail',
+      name: 'EmailVerificationCubit',
+      category: LogCategory.auth,
+    );
+    startPolling(
+      deviceCode: deviceCode,
+      verifier: verifier,
+      email: state.pendingEmail ?? '',
+      inviteCode: _pendingInviteCode,
+    );
+  }
+
+  /// Submit the 6-digit PIN the user read from the verification email.
+  ///
+  /// On success keycast returns the OAuth authorization code synchronously,
+  /// which is fed into the same [_exchangeCodeAndLogin] path as the link/poll
+  /// flow — no separate completion logic. Failures surface as a
+  /// [PinSubmissionStatus.failure] with a [EmailVerificationError] code; the
+  /// link/poll affordances stay intact.
+  Future<void> submitPin(String pin) async {
+    if (_isCompletionClaimed) {
+      // A poll completion or an earlier PIN submit already claimed the
+      // exchange. Submitting again would burn a server-side PIN attempt (and
+      // could double-consume the invite) or overwrite the landed success.
+      Log.info(
+        'submitPin ignored — completion already claimed',
+        name: 'EmailVerificationCubit',
+        category: LogCategory.auth,
+      );
+      return;
+    }
+
+    final deviceCode = _pendingDeviceCode;
+    final verifier = _pendingVerifier;
+    final email = state.pendingEmail;
+    final generation = _verificationGeneration;
+    if (deviceCode == null || verifier == null) {
+      // No pending context to exchange against (e.g. expired persistence).
+      // Retrying the PIN can't help — surface a generic failure.
+      Log.warning(
+        'submitPin called without pending device code / verifier',
+        name: 'EmailVerificationCubit',
+        category: LogCategory.auth,
+      );
+      emit(
+        state.copyWith(
+          pinStatus: PinSubmissionStatus.failure,
+          pinErrorCode: EmailVerificationError.pinFailed,
+        ),
+      );
+      return;
+    }
+
+    emit(state.copyWith(pinStatus: PinSubmissionStatus.submitting));
+
+    try {
+      final result = await _oauthClient.verifyPin(
+        deviceCode: deviceCode,
+        pin: pin,
+      );
+
+      if (!_matchesActiveVerification(
+        generation: generation,
+        deviceCode: deviceCode,
+        verifier: verifier,
+        email: email,
+      )) {
+        Log.info(
+          'submitPin: active verification changed during verifyPin — abandoning',
+          name: 'EmailVerificationCubit',
+          category: LogCategory.auth,
+        );
+        return;
+      }
+
+      if (result.alreadyCompleted) {
+        Log.info(
+          'PIN verification already completed; leaving polling/link recovery active',
+          name: 'EmailVerificationCubit',
+          category: LogCategory.auth,
+        );
+        emit(
+          state.copyWith(
+            pinStatus: PinSubmissionStatus.idle,
+            pinErrorCode: null,
+          ),
+        );
+        return;
+      }
+
+      if (result.success && result.code != null) {
+        if (_isCompletionClaimed) {
+          // A poll completion won the race while verifyPin was in flight.
+          // Don't re-exchange or stop timers it already owns.
+          return;
+        }
+        Log.info(
+          'PIN verification succeeded, exchanging code',
+          name: 'EmailVerificationCubit',
+          category: LogCategory.auth,
+        );
+        _stopPollTimers();
+        await _exchangeCodeAndLogin(result.code!, verifier);
+        return;
+      }
+
+      Log.warning(
+        'PIN verification failed: ${result.errorCode}',
+        name: 'EmailVerificationCubit',
+        category: LogCategory.auth,
+      );
+      if (result.errorCode == VerifyPinError.emailAlreadyRegistered) {
+        _stopPollTimers();
+        emit(
+          state.copyWith(
+            status: EmailVerificationStatus.failure,
+            errorCode: EmailVerificationError.emailAlreadyRegistered,
+            pinStatus: PinSubmissionStatus.idle,
+            pinErrorCode: null,
+          ),
+        );
+        return;
+      }
+      emit(
+        state.copyWith(
+          pinStatus: PinSubmissionStatus.failure,
+          pinErrorCode: _pinErrorFor(result.errorCode),
+        ),
+      );
+    } catch (e, stackTrace) {
+      if (!_matchesActiveVerification(
+        generation: generation,
+        deviceCode: deviceCode,
+        verifier: verifier,
+        email: email,
+      )) {
+        return;
+      }
+      Log.error(
+        'PIN verification exception: $e',
+        name: 'EmailVerificationCubit',
+        category: LogCategory.auth,
+      );
+      addError(e, stackTrace);
+      emit(
+        state.copyWith(
+          pinStatus: PinSubmissionStatus.failure,
+          pinErrorCode: EmailVerificationError.pinFailed,
+        ),
+      );
+    }
+  }
+
+  static EmailVerificationError _pinErrorFor(VerifyPinError? error) {
+    return switch (error) {
+      VerifyPinError.invalid => EmailVerificationError.pinInvalid,
+      VerifyPinError.expired => EmailVerificationError.pinExpired,
+      VerifyPinError.locked => EmailVerificationError.pinLocked,
+      VerifyPinError.unavailable => EmailVerificationError.pinUnavailable,
+      VerifyPinError.emailAlreadyRegistered =>
+        EmailVerificationError.emailAlreadyRegistered,
+      VerifyPinError.network ||
+      VerifyPinError.server ||
+      null => EmailVerificationError.pinFailed,
+    };
+  }
+
+  /// Request a fresh verification email (link + PIN) and start the 5-minute
+  /// resend cooldown. No-ops while a resend is in flight or on cooldown.
+  Future<void> resendVerification() async {
+    final email = state.pendingEmail;
+    final deviceCode = _pendingDeviceCode;
+    final verifier = _pendingVerifier;
+    final generation = _verificationGeneration;
+    if (email == null || email.isEmpty) return;
+    if (deviceCode == null || verifier == null) return;
+    if (state.resendStatus == ResendStatus.sending ||
+        state.resendStatus == ResendStatus.cooldown) {
+      return;
+    }
+
+    emit(state.copyWith(resendStatus: ResendStatus.sending));
+    try {
+      final result = await _oauthClient.resendHeadlessVerification(deviceCode);
+      if (!_matchesActiveVerification(
+        generation: generation,
+        deviceCode: deviceCode,
+        verifier: verifier,
+        email: email,
+      )) {
+        return;
+      }
+      if (result.success) {
+        _startResendCooldown();
+        return;
+      }
+      // The request reached the server but it declined to send. Leave resend
+      // retryable and surface a visible failure instead of a silent dead button.
+      Log.warning(
+        'Resend verification returned failure; keeping resend available',
+        name: 'EmailVerificationCubit',
+        category: LogCategory.auth,
+      );
+      emit(state.copyWith(resendStatus: ResendStatus.failure));
+    } catch (e, stackTrace) {
+      if (!_matchesActiveVerification(
+        generation: generation,
+        deviceCode: deviceCode,
+        verifier: verifier,
+        email: email,
+      )) {
+        return;
+      }
+      // Transient network failure — leave resend available to retry.
+      Log.warning(
+        'Resend verification request failed: $e',
+        name: 'EmailVerificationCubit',
+        category: LogCategory.auth,
+      );
+      addError(e, stackTrace);
+      emit(state.copyWith(resendStatus: ResendStatus.failure));
+    }
+  }
+
+  void _startResendCooldown() {
+    _resendTimer?.cancel();
+    var remaining = resendCooldown.inSeconds;
+    emit(
+      state.copyWith(
+        resendStatus: ResendStatus.cooldown,
+        resendCooldownSeconds: remaining,
+      ),
+    );
+    _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (isClosed) {
+        timer.cancel();
+        return;
+      }
+      remaining--;
+      if (remaining <= 0) {
+        timer.cancel();
+        emit(
+          state.copyWith(
+            resendStatus: ResendStatus.idle,
+            resendCooldownSeconds: 0,
+          ),
+        );
+      } else {
+        emit(state.copyWith(resendCooldownSeconds: remaining));
+      }
+    });
   }
 
   Future<void> _poll() async {
@@ -485,12 +822,45 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
         name: 'EmailVerificationCubit',
         category: LogCategory.auth,
       );
+      final pollGeneration = _verificationGeneration;
+      final deviceCode = _pendingDeviceCode;
+      final verifier = _pendingVerifier;
+      if (deviceCode == null) {
+        Log.warning(
+          'Poll called but pending device code was cleared, cleaning up',
+          name: 'EmailVerificationCubit',
+          category: LogCategory.auth,
+        );
+        _cleanup();
+        return;
+      }
+
       final tokenResult = await _verifyPendingTokenIfNeeded();
+      if (pollGeneration != _verificationGeneration ||
+          _pendingDeviceCode != deviceCode ||
+          _pendingVerifier != verifier) {
+        Log.info(
+          'Poll context changed during token verification — abandoning stale poll',
+          name: 'EmailVerificationCubit',
+          category: LogCategory.auth,
+        );
+        return;
+      }
       if (tokenResult.status == EmailTokenVerificationStatus.terminalFailure) {
         return;
       }
 
-      final result = await _oauthClient.pollForCode(_pendingDeviceCode!);
+      final result = await _oauthClient.pollForCode(deviceCode);
+      if (pollGeneration != _verificationGeneration ||
+          _pendingDeviceCode != deviceCode ||
+          _pendingVerifier != verifier) {
+        Log.info(
+          'Poll context changed during pollForCode — abandoning stale poll',
+          name: 'EmailVerificationCubit',
+          category: LogCategory.auth,
+        );
+        return;
+      }
 
       Log.info(
         'Poll result: status=${result.status}, hasCode=${result.code != null}, '
@@ -503,13 +873,25 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
         case PollStatus.complete:
           Log.info(
             'Email verification complete! code=${result.code != null}, '
-            'verifier=${_pendingVerifier != null}',
+            'verifier=${verifier != null}',
             name: 'EmailVerificationCubit',
             category: LogCategory.auth,
           );
           _pollTimer?.cancel();
-          if (result.code != null && _pendingVerifier != null) {
-            await _exchangeCodeAndLogin(result.code!, _pendingVerifier!);
+          if (_isCompletionClaimed) {
+            // A PIN submit (or an earlier completion) already claimed the
+            // exchange while this poll was in flight. Bail instead of emitting
+            // a missingAuthCode failure over the success it is landing.
+            Log.info(
+              'Completion already claimed, ignoring in-flight poll result '
+              '(cubit=$hashCode)',
+              name: 'EmailVerificationCubit',
+              category: LogCategory.auth,
+            );
+            return;
+          }
+          if (result.code != null && verifier != null) {
+            await _exchangeCodeAndLogin(result.code!, verifier);
           } else {
             // Edge case: completion detected but missing code or verifier.
             // Log presence only — BYOK verifiers embed the raw nsec and
@@ -517,7 +899,7 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
             Log.error(
               'Verification complete but missing code or verifier! '
               'code=${result.code != null}, '
-              'verifier=${_pendingVerifier != null}',
+              'verifier=${verifier != null}',
               name: 'EmailVerificationCubit',
               category: LogCategory.auth,
             );
@@ -552,6 +934,39 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
             // Don't stop polling - it will retry in 3 seconds
           } else {
             final errorCode = _errorForPollFailure(result);
+
+            // A completion was already claimed (an in-flight/finished exchange
+            // on this instance, or another cubit finished this device code).
+            // A late poll error is stale and must not clobber that success.
+            if (_isCompletionClaimed) {
+              Log.warning(
+                'Ignoring post-completion poll error (cubit=$hashCode): '
+                '$errorMsg',
+                name: 'EmailVerificationCubit',
+                category: LogCategory.auth,
+              );
+              return;
+            }
+
+            // After the poll window elapsed, _onTimeout deliberately retains
+            // the pending device code / verifier so PIN entry still works. A
+            // recoverable/unknown poll error that lands late must not tear that
+            // down — only a genuinely expired / already-registered device code
+            // is truly terminal.
+            final isTerminalFailure =
+                errorCode == EmailVerificationError.emailAlreadyRegistered ||
+                errorCode == EmailVerificationError.verificationLinkExpired;
+            if (!isTerminalFailure &&
+                state.status == EmailVerificationStatus.pollingTimedOut) {
+              Log.warning(
+                'Recoverable poll error after timeout — keeping PIN entry '
+                'available: $errorMsg',
+                name: 'EmailVerificationCubit',
+                category: LogCategory.auth,
+              );
+              return;
+            }
+
             final pendingEmail = state.pendingEmail;
             Log.error(
               'Email verification polling error (stopping): '
@@ -606,6 +1021,24 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
   static const _consumeRetryDelay = Duration(milliseconds: 500);
 
   Future<void> _exchangeCodeAndLogin(String code, String verifier) async {
+    // Atomically claim completion before the first await. A racing poll
+    // completion or a second PIN submit that reaches here after the claim
+    // returns immediately, preventing a duplicate token exchange or a double
+    // invite consumption. Snapshot then null the pending device code / verifier
+    // under the claim so a resuming in-flight _poll() reads the cleared context
+    // and bails (see the PollStatus.complete guard) instead of landing a second
+    // exchange or emitting missingAuthCode over this success.
+    if (_isCompletionClaimed) {
+      return;
+    }
+    _completionClaimed = true;
+    final exchangeGeneration = _verificationGeneration;
+    final claimedDeviceCode = _pendingDeviceCode;
+    _pendingDeviceCode = null;
+    _pendingVerifier = null;
+
+    bool isStaleExchange() => exchangeGeneration != _verificationGeneration;
+
     for (var attempt = 1; attempt <= _maxExchangeRetries; attempt++) {
       try {
         Log.info(
@@ -618,9 +1051,15 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
           code: code,
           verifier: verifier,
         );
+        if (isStaleExchange()) {
+          return;
+        }
 
         final session = KeycastSession.fromTokenResponse(tokenResponse);
         await _consumeInviteWithSessionIfNeeded(session);
+        if (isStaleExchange()) {
+          return;
+        }
 
         Log.info(
           'Token exchange successful, showing verification confirmation',
@@ -630,7 +1069,9 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
 
         // Mark this device code as completed so zombie cubits from engine
         // restarts (which hold different AuthService instances) will stop.
-        _completedDeviceCode = _pendingDeviceCode;
+        // Uses the snapshot taken at claim time because _pendingDeviceCode was
+        // nulled under the completion claim above.
+        _completedDeviceCode = claimedDeviceCode;
 
         // Emit success BEFORE signing in, because signInWithDivineOAuth
         // triggers an auth state change that causes GoRouter to redirect
@@ -665,6 +1106,9 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
 
         return; // Success - exit the retry loop
       } on InviteApiException catch (e) {
+        if (isStaleExchange()) {
+          return;
+        }
         await _authService.clearPendingDivineOAuthSession();
         Log.error(
           'Invite activation failed: '
@@ -684,6 +1128,9 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
         );
         return;
       } on OAuthException catch (e) {
+        if (isStaleExchange()) {
+          return;
+        }
         // OAuth errors are not retryable (e.g., invalid code, expired code)
         Log.error(
           'OAuth exchange failed: ${e.message}',
@@ -699,6 +1146,9 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
         );
         return; // Don't retry OAuth errors
       } catch (e) {
+        if (isStaleExchange()) {
+          return;
+        }
         // Network errors - retry if we have attempts left
         final isLastAttempt = attempt == _maxExchangeRetries;
         Log.warning(
@@ -725,11 +1175,15 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
 
         // Wait before retrying
         await Future<void>.delayed(_exchangeRetryDelay);
+        if (isStaleExchange()) {
+          return;
+        }
       }
     }
   }
 
   void _cleanup() {
+    _verificationGeneration++;
     Log.info(
       '_cleanup (cubit=$hashCode, hadPollTimer=${_pollTimer != null}, '
       'hadTimeoutTimer=${_timeoutTimer != null})',
@@ -740,6 +1194,8 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
     _pollTimer = null;
     _timeoutTimer?.cancel();
     _timeoutTimer = null;
+    _resendTimer?.cancel();
+    _resendTimer = null;
     _pollTickIndex = 0;
     _pendingDeviceCode = null;
     _pendingVerifier = null;

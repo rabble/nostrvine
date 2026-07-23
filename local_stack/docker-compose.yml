@@ -29,8 +29,8 @@ services:
       retries: 10
 
   keycast-migrate:
-    image: ghcr.io/divinevideo/keycast:latest
-    pull_policy: always
+    image: ${KEYCAST_IMAGE:-ghcr.io/divinevideo/keycast:latest}
+    pull_policy: ${KEYCAST_PULL_POLICY:-always}
     entrypoint: ["./keycast"]
     command: ["--migrate"]
     depends_on:
@@ -40,8 +40,8 @@ services:
       DATABASE_URL: postgres://postgres:password@keycast-postgres:5432/keycast
 
   keycast:
-    image: ghcr.io/divinevideo/keycast:latest
-    pull_policy: always
+    image: ${KEYCAST_IMAGE:-ghcr.io/divinevideo/keycast:latest}
+    pull_policy: ${KEYCAST_PULL_POLICY:-always}
     ports:
       - "43000:3000"
       - "45173:5173"

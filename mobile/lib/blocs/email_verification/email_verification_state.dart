@@ -3,6 +3,12 @@
 
 part of 'email_verification_cubit.dart';
 
+/// Sentinel for [EmailVerificationState.copyWith] so the nullable reason codes
+/// can distinguish "argument omitted" (preserve the current value) from
+/// "explicit null" (clear the value). Without it, the only way to express
+/// "leave it alone" collides with "set it to null".
+const Object _unset = Object();
+
 /// Status of email verification polling
 enum EmailVerificationStatus {
   /// Not polling
@@ -11,10 +17,43 @@ enum EmailVerificationStatus {
   /// Actively polling for verification
   polling,
 
+  /// The 15-minute poll window elapsed without verification, but the screen
+  /// stays usable: the user can still enter the emailed PIN (or resend it)
+  /// instead of being dropped to a terminal "Start Over" dead end.
+  pollingTimedOut,
+
   /// Verification completed successfully
   success,
 
   /// Polling failed with an error
+  failure,
+}
+
+/// Status of an in-app PIN submission, surfaced alongside [polling] /
+/// [pollingTimedOut] so PIN feedback never replaces the link/poll affordances.
+enum PinSubmissionStatus {
+  /// No PIN submission in flight.
+  idle,
+
+  /// A PIN is being verified against the server.
+  submitting,
+
+  /// The last PIN submission failed; see [EmailVerificationState.pinErrorCode].
+  failure,
+}
+
+/// Status of the "resend verification email" affordance.
+enum ResendStatus {
+  /// Resend is available.
+  idle,
+
+  /// A resend request is in flight.
+  sending,
+
+  /// Resend is on its post-send 5-minute cooldown.
+  cooldown,
+
+  /// The last resend attempt failed; the user may retry.
   failure,
 }
 
@@ -62,6 +101,22 @@ enum EmailVerificationError {
 
   /// Invite activation failed for an unspecified reason.
   inviteUnknown,
+
+  /// The submitted PIN was incorrect.
+  pinInvalid,
+
+  /// The submitted PIN (or its verify window) has expired.
+  pinExpired,
+
+  /// The PIN is locked after too many failed attempts; a resend is required.
+  pinLocked,
+
+  /// PIN verification failed for a network / server / unexpected reason.
+  pinFailed,
+
+  /// The verify-pin endpoint is unavailable (absent / unclassified 4xx); the
+  /// user should fall back to the email link or request a fresh code.
+  pinUnavailable,
 }
 
 /// State for email verification polling
@@ -72,6 +127,10 @@ final class EmailVerificationState extends Equatable {
     this.errorCode,
     this.showInviteGateRecovery = false,
     this.inviteRecoveryCode,
+    this.pinStatus = PinSubmissionStatus.idle,
+    this.pinErrorCode,
+    this.resendStatus = ResendStatus.idle,
+    this.resendCooldownSeconds = 0,
   });
 
   /// Current polling status
@@ -92,23 +151,57 @@ final class EmailVerificationState extends Equatable {
   /// Invite code to prefill when recovering through the invite gate.
   final String? inviteRecoveryCode;
 
+  /// Status of the in-app PIN submission.
+  final PinSubmissionStatus pinStatus;
+
+  /// Reason code for the last PIN failure. Read by the UI only when
+  /// [pinStatus] is [PinSubmissionStatus.failure]; mapped to localized copy
+  /// the same way as [errorCode] — never a raw English string.
+  final EmailVerificationError? pinErrorCode;
+
+  /// Status of the resend-verification affordance.
+  final ResendStatus resendStatus;
+
+  /// Seconds remaining on the resend cooldown (0 when [resendStatus] is not
+  /// [ResendStatus.cooldown]).
+  final int resendCooldownSeconds;
+
   /// Whether currently polling
   bool get isPolling => status == EmailVerificationStatus.polling;
 
+  /// Returns a copy with the given fields replaced.
+  ///
+  /// The nullable reason codes [errorCode] and [pinErrorCode] use a sentinel
+  /// default: omitting the argument preserves the current value, while passing
+  /// an explicit `null` clears it. Every other field follows the usual
+  /// `value ?? this.value` preserve-on-omit shape.
   EmailVerificationState copyWith({
     EmailVerificationStatus? status,
     String? pendingEmail,
-    EmailVerificationError? errorCode,
+    Object? errorCode = _unset,
     bool? showInviteGateRecovery,
     String? inviteRecoveryCode,
+    PinSubmissionStatus? pinStatus,
+    Object? pinErrorCode = _unset,
+    ResendStatus? resendStatus,
+    int? resendCooldownSeconds,
   }) {
     return EmailVerificationState(
       status: status ?? this.status,
       pendingEmail: pendingEmail ?? this.pendingEmail,
-      errorCode: errorCode,
+      errorCode: identical(errorCode, _unset)
+          ? this.errorCode
+          : errorCode as EmailVerificationError?,
       showInviteGateRecovery:
           showInviteGateRecovery ?? this.showInviteGateRecovery,
       inviteRecoveryCode: inviteRecoveryCode ?? this.inviteRecoveryCode,
+      pinStatus: pinStatus ?? this.pinStatus,
+      pinErrorCode: identical(pinErrorCode, _unset)
+          ? this.pinErrorCode
+          : pinErrorCode as EmailVerificationError?,
+      resendStatus: resendStatus ?? this.resendStatus,
+      resendCooldownSeconds:
+          resendCooldownSeconds ?? this.resendCooldownSeconds,
     );
   }
 
@@ -119,5 +212,9 @@ final class EmailVerificationState extends Equatable {
     errorCode,
     showInviteGateRecovery,
     inviteRecoveryCode,
+    pinStatus,
+    pinErrorCode,
+    resendStatus,
+    resendCooldownSeconds,
   ];
 }

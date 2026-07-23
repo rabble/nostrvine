@@ -4,15 +4,12 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
-import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
-import 'package:openvine/l10n/email_verification_error_l10n.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/screens/explore/explore_screen.dart';
+import 'package:openvine/router/routes/router_guards.dart';
 import 'package:openvine/utils/validators.dart';
 import 'package:openvine/widgets/auth/auth_error_box.dart';
 import 'package:openvine/widgets/auth/auth_form_scaffold.dart';
@@ -112,6 +109,7 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
         email: email,
         password: password,
         nsec: nsec,
+        ownerPublicKeyHex: authService.currentPublicKeyHex,
       );
     } catch (e) {
       Log.error(
@@ -132,6 +130,7 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
     required String email,
     required String password,
     required String nsec,
+    required String? ownerPublicKeyHex,
   }) async {
     final (result, verifier) = await oauth.headlessRegister(
       email: email,
@@ -147,53 +146,23 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
       return;
     }
 
-    if (result.verificationRequired && result.deviceCode != null) {
-      // Start polling
-      if (mounted) {
-        context.read<EmailVerificationCubit>().startPolling(
-          deviceCode: result.deviceCode!,
-          verifier: verifier,
-          email: email,
-        );
+    final deviceCode = result.deviceCode;
+    if (result.verificationRequired && deviceCode != null) {
+      await ref
+          .read(pendingVerificationServiceProvider)
+          .save(
+            deviceCode: deviceCode,
+            verifier: verifier,
+            email: email,
+            ownerPublicKeyHex: ownerPublicKeyHex,
+          );
+      if (!mounted) return;
 
-        // Show verification dialog but let user continue
-        _showVerificationDialog(email);
-      }
+      TextInput.finishAutofillContext();
+      context.go(pendingEmailVerificationLocation(email: email));
     } else {
       _setGeneralError(context.l10n.authRegistrationComplete);
     }
-  }
-
-  void _showVerificationDialog(String email) {
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => PopScope(
-        canPop: false,
-        child: _VerificationDialog(
-          email: email,
-          onContinue: () {
-            Navigator.of(dialogContext).pop();
-            _continueToApp();
-          },
-          onSuccess: () {
-            // Signal password managers to save credentials BEFORE we unmount
-            // the form via navigation.
-            if (!mounted) return;
-            TextInput.finishAutofillContext();
-            context.go(ExploreScreen.path);
-          },
-        ),
-      ),
-    );
-  }
-
-  void _continueToApp() {
-    if (!mounted) return;
-    // Signal password managers to save credentials BEFORE we unmount
-    // the form via navigation.
-    TextInput.finishAutofillContext();
-    context.go(ExploreScreen.path);
   }
 
   @override
@@ -235,170 +204,6 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
         isLoading: _isLoading,
         onPressed: _handleSubmit,
       ),
-    );
-  }
-}
-
-/// Reactive dialog that watches verification state and auto-closes on success
-class _VerificationDialog extends ConsumerWidget {
-  const _VerificationDialog({
-    required this.email,
-    required this.onContinue,
-    required this.onSuccess,
-  });
-
-  final String email;
-  final VoidCallback onContinue;
-  final VoidCallback onSuccess;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final authService = ref.watch(authServiceProvider);
-
-    return BlocBuilder<EmailVerificationCubit, EmailVerificationState>(
-      builder: (context, verificationState) {
-        // Auto-close when verification completes (user is no longer anonymous)
-        if (!verificationState.isPolling &&
-            verificationState.errorCode == null &&
-            !authService.isAnonymous) {
-          // Use post-frame callback to avoid calling Navigator during build
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            onSuccess();
-          });
-        }
-
-        // Show error state if verification failed
-        final errorCode = verificationState.errorCode;
-        if (errorCode != null) {
-          return AlertDialog(
-            backgroundColor: VineTheme.cardBackground,
-            title: Row(
-              children: [
-                const DivineIcon(
-                  icon: DivineIconName.warningCircle,
-                  color: VineTheme.error,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  context.l10n.authVerificationFailedTitle,
-                  style: const TextStyle(color: VineTheme.whiteText),
-                ),
-              ],
-            ),
-            content: Text(
-              context.l10n.emailVerificationErrorMessage(errorCode),
-              style: const TextStyle(color: VineTheme.secondaryText),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(
-                  context.l10n.authClose,
-                  style: const TextStyle(color: VineTheme.vineGreen),
-                ),
-              ),
-            ],
-          );
-        }
-
-        // Show success state briefly before auto-closing
-        if (!authService.isAnonymous) {
-          return AlertDialog(
-            backgroundColor: VineTheme.cardBackground,
-            title: Row(
-              children: [
-                const DivineIcon(
-                  icon: DivineIconName.checkCircle,
-                  color: VineTheme.vineGreen,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  context.l10n.authAccountSecured,
-                  style: const TextStyle(color: VineTheme.whiteText),
-                ),
-              ],
-            ),
-            content: Text(
-              context.l10n.authAccountLinkedToEmail,
-              style: const TextStyle(color: VineTheme.onSurfaceVariant),
-            ),
-          );
-        }
-
-        // Show waiting state
-        return AlertDialog(
-          backgroundColor: VineTheme.cardBackground,
-          title: Row(
-            children: [
-              const DivineIcon(
-                icon: DivineIconName.envelope,
-                color: VineTheme.vineGreen,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                context.l10n.authVerifyYourEmail,
-                style: const TextStyle(color: VineTheme.whiteText),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                context.l10n.authVerificationLinkSent,
-                style: const TextStyle(color: VineTheme.secondaryText),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                email,
-                style: const TextStyle(
-                  color: VineTheme.whiteText,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                context.l10n.authClickLinkContinue,
-                style: const TextStyle(
-                  color: VineTheme.secondaryText,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: VineTheme.vineGreen,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    context.l10n.authWaitingForVerificationEllipsis,
-                    style: const TextStyle(
-                      color: VineTheme.vineGreen,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: onContinue,
-              child: Text(
-                context.l10n.authContinueToApp,
-                style: const TextStyle(color: VineTheme.vineGreen),
-              ),
-            ),
-          ],
-        );
-      },
     );
   }
 }

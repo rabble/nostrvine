@@ -63,6 +63,11 @@ enum FeatureFlag {
     'Suggest content-warning labels on videos and blur videos whose labels '
         'crossed the community threshold. Off by default pending T&S '
         'rollout sign-off.',
+  ),
+  emailVerificationPinFallback(
+    'Email Verification PIN Fallback',
+    'Show the in-app email verification PIN and resend fallback. Off by '
+        'default until keycast verify-pin support is deployed.',
   );
 
   const FeatureFlag(this.displayName, this.description);

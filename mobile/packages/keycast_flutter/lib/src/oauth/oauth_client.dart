@@ -759,6 +759,216 @@ class KeycastOAuth {
     }
   }
 
+  /// Verify a pending registration with the 6-digit PIN from the email.
+  ///
+  /// Submits `{device_code, pin}` to `/api/headless/verify-pin`. On success the
+  /// server finalizes verification and returns the OAuth authorization code
+  /// synchronously in [VerifyPinResult.code]; the caller exchanges it via
+  /// [exchangeCode] using the registration verifier (Redis-independent — no
+  /// polling needed).
+  ///
+  /// Never throws for expected failures (mirrors [headlessRegister] /
+  /// [verifyEmail]): a wrong / expired / locked PIN, a malformed response, or a
+  /// network error all return a [VerifyPinResult] carrying a [VerifyPinError].
+  Future<VerifyPinResult> verifyPin({
+    required String deviceCode,
+    required String pin,
+  }) async {
+    try {
+      final response = await _client
+          .post(
+            Uri.parse('${config.serverUrl}/api/headless/verify-pin'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'device_code': deviceCode, 'pin': pin}),
+          )
+          .timeout(requestTimeout);
+
+      // Endpoint absent — mirror the endpoint_not_found handling in
+      // headlessRegister / headlessLogin. Checked before JSON parsing because
+      // a 404 body is typically non-JSON (proxy/CDN HTML), which would
+      // otherwise be misread as a server error.
+      if (response.statusCode == 404) {
+        return VerifyPinResult.failure(
+          VerifyPinError.unavailable,
+          description: 'verify-pin endpoint not available (404)',
+        );
+      }
+
+      if (response.statusCode >= 500) {
+        return VerifyPinResult.failure(
+          VerifyPinError.server,
+          description: 'Server error (${response.statusCode})',
+        );
+      }
+
+      Map<String, dynamic> json;
+      try {
+        json = jsonDecode(response.body) as Map<String, dynamic>;
+      } catch (_) {
+        return VerifyPinResult.failure(
+          VerifyPinError.server,
+          description: 'Invalid server response (${response.statusCode})',
+        );
+      }
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final code = json['code'] as String?;
+        if (code != null && code.isNotEmpty) {
+          return VerifyPinResult.success(code);
+        }
+        return VerifyPinResult.alreadyCompleted();
+      }
+
+      // Honor `code` first (then `error`), matching the 2xx success path and
+      // the register/login helpers, so a keycast response that carries the
+      // failure identifier under `code` is classified correctly.
+      final errorCode = _responseErrorCode(json, '');
+      final description = _responseErrorMessage(json, errorCode);
+      return VerifyPinResult.failure(
+        _classifyPinError(response.statusCode, errorCode),
+        description: description,
+      );
+    } on TimeoutException {
+      return VerifyPinResult.failure(
+        VerifyPinError.network,
+        description: 'Request timed out',
+      );
+    } catch (e) {
+      return VerifyPinResult.failure(
+        VerifyPinError.network,
+        description: 'Network error: $e',
+      );
+    }
+  }
+
+  /// Map an HTTP status + server error code to a [VerifyPinError].
+  ///
+  /// Known keycast PIN error codes are matched first (typed), so a generic
+  /// OAuth/request error such as `invalid_request` is classified as
+  /// [VerifyPinError.unavailable] rather than masquerading as a wrong PIN.
+  /// Status-code hints and substring matching are kept only as a last-resort
+  /// fallback for when the endpoint returns a bare/opaque failure — preserving
+  /// tolerance of keycast's anti-enumeration posture.
+  static VerifyPinError _classifyPinError(int statusCode, String errorCode) {
+    final code = errorCode.toLowerCase();
+
+    // 1) Known keycast PIN error codes take precedence over any heuristic.
+    const expiredCodes = {'pin_expired', 'expired', 'code_expired'};
+    const lockedCodes = {
+      'pin_locked',
+      'locked',
+      'too_many_attempts',
+      'pin_attempts_exceeded',
+    };
+    const invalidCodes = {
+      'pin_invalid',
+      'invalid_pin',
+      'incorrect_pin',
+      'wrong_pin',
+    };
+    // Generic OAuth/request errors are NOT wrong-PIN signals — route them to
+    // unavailable so they can't fall through to the bare 400/401 -> invalid
+    // rule below.
+    const unavailableCodes = {
+      'endpoint_not_found',
+      'not_found',
+      'pin_unavailable',
+      'invalid_request',
+      'bad_request',
+      'unsupported_grant_type',
+    };
+    if (expiredCodes.contains(code)) return VerifyPinError.expired;
+    if (lockedCodes.contains(code)) return VerifyPinError.locked;
+    if (invalidCodes.contains(code)) return VerifyPinError.invalid;
+    if (unavailableCodes.contains(code)) return VerifyPinError.unavailable;
+    if (statusCode == 409 || code == 'email_already_exists') {
+      return VerifyPinError.emailAlreadyRegistered;
+    }
+
+    // 2) Status-code hints for a bare/opaque failure.
+    if (statusCode == 423 || statusCode == 429) return VerifyPinError.locked;
+    if (statusCode == 410) return VerifyPinError.expired;
+
+    // 3) Last-resort substring / bare-status fallback. A generic invalid_request
+    //    was already routed to unavailable above, so it never reaches the
+    //    400/401 -> invalid rule here.
+    if (code.contains('lock') || code.contains('attempt')) {
+      return VerifyPinError.locked;
+    }
+    if (code.contains('expired')) return VerifyPinError.expired;
+    if (statusCode == 400 ||
+        statusCode == 401 ||
+        code.contains('invalid') ||
+        code.contains('pin')) {
+      return VerifyPinError.invalid;
+    }
+    // Any other unclassified 4xx: the PIN path is unavailable here, so steer
+    // the user to the email link / resend rather than claiming an incorrect PIN.
+    return VerifyPinError.unavailable;
+  }
+
+  /// Request a fresh verification email (link + PIN) for [email].
+  ///
+  /// Posts to `/api/auth/resend-verification`. The server always responds with
+  /// success to avoid email enumeration and rate-limits to one send per
+  /// 5 minutes; callers surface their own client-side cooldown.
+  Future<ResendVerificationResult> resendVerification(String email) async {
+    try {
+      final response = await _client
+          .post(
+            Uri.parse('${config.serverUrl}/api/auth/resend-verification'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'email': email}),
+          )
+          .timeout(requestTimeout);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        try {
+          final json = jsonDecode(response.body) as Map<String, dynamic>;
+          return ResendVerificationResult.fromJson(json);
+        } catch (_) {
+          // A 2xx with a non-JSON body still means the request was accepted.
+          return ResendVerificationResult(success: true);
+        }
+      }
+      return ResendVerificationResult.failure();
+    } catch (_) {
+      return ResendVerificationResult.failure();
+    }
+  }
+
+  /// Request a fresh link + PIN for a pending headless verification session.
+  ///
+  /// Posts to `/api/headless/resend-pin` with the active `device_code`, which
+  /// lets keycast re-arm the pending `oauth_codes` row used by headless
+  /// registration. Use [resendVerification] for users-table email-token flows.
+  Future<ResendVerificationResult> resendHeadlessVerification(
+    String deviceCode,
+  ) async {
+    try {
+      final response = await _client
+          .post(
+            Uri.parse('${config.serverUrl}/api/headless/resend-pin'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'device_code': deviceCode}),
+          )
+          .timeout(requestTimeout);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        try {
+          final json = jsonDecode(response.body) as Map<String, dynamic>;
+          return ResendVerificationResult.fromJson(json);
+        } catch (_) {
+          // A 2xx with a non-JSON body still means the request was accepted.
+          return ResendVerificationResult(success: true);
+        }
+      }
+      return ResendVerificationResult.failure();
+    } catch (_) {
+      return ResendVerificationResult.failure();
+    }
+  }
+
   /// Delete the user's account permanently from Keycast
   ///
   /// Requires an active bearer token from headless login/register flow.

@@ -13,6 +13,7 @@ class PendingVerification {
     required this.email,
     required this.createdAt,
     this.inviteCode,
+    this.ownerPublicKeyHex,
   });
 
   final String deviceCode;
@@ -20,10 +21,15 @@ class PendingVerification {
   final String email;
   final DateTime createdAt;
   final String? inviteCode;
+  final String? ownerPublicKeyHex;
 
-  /// Expiration duration for pending verification data (30 minutes).
-  /// OAuth device codes typically expire in 15-30 minutes.
-  static const expirationDuration = Duration(minutes: 30);
+  /// Expiration duration for pending verification data (24 hours).
+  ///
+  /// Matches keycast's 24h email-verify window (keycast#262). The deviceCode +
+  /// verifier must survive that long so a user who returns late — e.g. after
+  /// reading the PIN from their email hours later — still has the verifier to
+  /// exchange the synchronously-returned OAuth code.
+  static const expirationDuration = Duration(hours: 24);
 
   /// Check if this pending verification has expired
   bool get isExpired =>
@@ -46,6 +52,8 @@ class PendingVerificationService {
   static const _keyEmail = 'pending_verification_email';
   static const _keyCreatedAt = 'pending_verification_created_at';
   static const _keyInviteCode = 'pending_verification_invite_code';
+  static const _keyOwnerPublicKeyHex =
+      'pending_verification_owner_public_key_hex';
 
   /// Save pending verification data to secure storage.
   ///
@@ -55,6 +63,7 @@ class PendingVerificationService {
     required String verifier,
     required String email,
     String? inviteCode,
+    String? ownerPublicKeyHex,
   }) async {
     try {
       final createdAt = DateTime.now().toIso8601String();
@@ -64,6 +73,10 @@ class PendingVerificationService {
         _storage.write(key: _keyEmail, value: email),
         _storage.write(key: _keyCreatedAt, value: createdAt),
         _storage.write(key: _keyInviteCode, value: inviteCode),
+        _storage.write(
+          key: _keyOwnerPublicKeyHex,
+          value: ownerPublicKeyHex,
+        ),
       ]);
       Log.info(
         'Saved pending verification for ${redactEmailForLogs(email)}',
@@ -83,7 +96,7 @@ class PendingVerificationService {
   /// Load pending verification data from secure storage.
   ///
   /// Returns null if no pending verification exists, data is incomplete,
-  /// or data has expired (after 30 minutes).
+  /// or data has expired (after the 24h verify window).
   Future<PendingVerification?> load() async {
     try {
       final results = await Future.wait([
@@ -92,6 +105,7 @@ class PendingVerificationService {
         _storage.read(key: _keyEmail),
         _storage.read(key: _keyCreatedAt),
         _storage.read(key: _keyInviteCode),
+        _storage.read(key: _keyOwnerPublicKeyHex),
       ]);
 
       final deviceCode = results[0];
@@ -99,6 +113,7 @@ class PendingVerificationService {
       final email = results[2];
       final createdAtStr = results[3];
       final inviteCode = results[4];
+      final ownerPublicKeyHex = results[5];
 
       // All fields required
       if (deviceCode == null || verifier == null || email == null) {
@@ -117,6 +132,7 @@ class PendingVerificationService {
         email: email,
         createdAt: createdAt,
         inviteCode: inviteCode,
+        ownerPublicKeyHex: ownerPublicKeyHex,
       );
 
       // Check expiration
@@ -161,6 +177,7 @@ class PendingVerificationService {
         _storage.delete(key: _keyEmail),
         _storage.delete(key: _keyCreatedAt),
         _storage.delete(key: _keyInviteCode),
+        _storage.delete(key: _keyOwnerPublicKeyHex),
       ]);
       Log.info(
         'Cleared pending verification',

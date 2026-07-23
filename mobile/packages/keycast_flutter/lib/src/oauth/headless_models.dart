@@ -194,6 +194,95 @@ enum PollStatus {
   error, // Something went wrong
 }
 
+/// Reason a [VerifyPinResult] failed.
+///
+/// keycast intentionally returns uniform anti-enumeration errors, so the
+/// server may collapse several of these into one generic failure. Callers
+/// should treat distinct cases as advisory and fall back to generic copy.
+enum VerifyPinError {
+  /// The submitted PIN was incorrect.
+  invalid,
+
+  /// The PIN (or its 24h verification window) has expired.
+  expired,
+
+  /// Too many failed attempts — the PIN is locked until a new one is sent.
+  locked,
+
+  /// Transient network error or timeout.
+  network,
+
+  /// Server returned a 5xx or otherwise unexpected/malformed response.
+  server,
+
+  /// The verify-pin endpoint is absent (404) or returned an unclassified 4xx.
+  /// The PIN path isn't usable here; the UI should steer the user back to the
+  /// email link / resend rather than claiming the PIN was incorrect.
+  unavailable,
+
+  /// Finalizing verification found the email already attached to an account.
+  emailAlreadyRegistered,
+}
+
+/// Result from POST /api/headless/verify-pin
+class VerifyPinResult {
+  VerifyPinResult({
+    required this.success,
+    this.alreadyCompleted = false,
+    this.code,
+    this.errorCode,
+    this.errorDescription,
+  });
+
+  factory VerifyPinResult.success(String code) =>
+      VerifyPinResult(success: true, code: code);
+
+  factory VerifyPinResult.alreadyCompleted() =>
+      VerifyPinResult(success: true, alreadyCompleted: true);
+
+  factory VerifyPinResult.failure(
+    VerifyPinError errorCode, {
+    String? description,
+  }) => VerifyPinResult(
+    success: false,
+    errorCode: errorCode,
+    errorDescription: description,
+  );
+
+  final bool success;
+
+  /// True when keycast reports this registration was already finalized.
+  final bool alreadyCompleted;
+
+  /// OAuth authorization code, returned synchronously on success.
+  final String? code;
+
+  /// Reason code on failure (null on success).
+  final VerifyPinError? errorCode;
+
+  /// Human-readable description from the server, for logs only — never shown
+  /// to the user (the UI localizes [errorCode]).
+  final String? errorDescription;
+}
+
+/// Result from POST /api/auth/resend-verification
+class ResendVerificationResult {
+  ResendVerificationResult({required this.success, this.message});
+
+  factory ResendVerificationResult.fromJson(Map<String, dynamic> json) {
+    return ResendVerificationResult(
+      success: json['success'] as bool? ?? false,
+      message: json['message'] as String?,
+    );
+  }
+
+  factory ResendVerificationResult.failure() =>
+      ResendVerificationResult(success: false);
+
+  final bool success;
+  final String? message;
+}
+
 /// Result from POST /api/auth/forgot-password
 class ForgotPasswordResult {
   ForgotPasswordResult({required this.success, this.message, this.error});

@@ -93,6 +93,7 @@ List<RouteBase> authRoutes() {
           deviceCode: params['deviceCode'],
           verifier: params['verifier'],
           email: params['email'],
+          restored: params['restored'] == 'true',
         );
       },
     ),

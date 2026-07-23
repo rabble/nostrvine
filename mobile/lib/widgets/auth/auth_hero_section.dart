@@ -106,10 +106,15 @@ class AuthHeroSection extends StatelessWidget {
           // auth_hero_section_test.dart pins it against retired brand assets.
           // The label is the brand name, not copy: it stays out of the ARB
           // catalog so no locale can translate or transliterate it.
-          SvgPicture.asset(
-            DivineIconName.logo.assetPath,
-            width: 120,
-            semanticsLabel: AppConfig.appName,
+          Semantics(
+            label: AppConfig.appName,
+            image: true,
+            child: ExcludeSemantics(
+              child: SvgPicture.asset(
+                DivineIconName.logo.assetPath,
+                width: 120,
+              ),
+            ),
           ),
         ],
       ),

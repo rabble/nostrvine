@@ -213,9 +213,9 @@ void main() {
         () {
           when(() => mockAuthService.isAuthenticated).thenReturn(false);
           when(() => mockAuthService.isRegistered).thenReturn(false);
-          when(() => mockOAuth.pollForCode(testDeviceCode)).thenAnswer(
-            (_) async => PollResult(status: PollStatus.pending),
-          );
+          when(
+            () => mockOAuth.pollForCode(testDeviceCode),
+          ).thenAnswer((_) async => PollResult(status: PollStatus.pending));
 
           var verifyCalls = 0;
           when(() => mockOAuth.verifyEmail(token: 'verify-token')).thenAnswer((
@@ -1211,6 +1211,1375 @@ void main() {
         }
       });
     });
+
+    group('submitPin', () {
+      const pin = '123456';
+      const pinCode = 'pin-auth-code';
+
+      void stubExchangeSuccess() {
+        when(() => mockAuthService.isRegistered).thenReturn(false);
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockAuthService.isAnonymous).thenReturn(false);
+        when(
+          () => mockOAuth.pollForCode(testDeviceCode),
+        ).thenAnswer((_) async => PollResult.pending());
+        when(
+          () => mockOAuth.verifyPin(deviceCode: testDeviceCode, pin: pin),
+        ).thenAnswer((_) async => VerifyPinResult.success(pinCode));
+        when(
+          () => mockOAuth.exchangeCode(code: pinCode, verifier: testVerifier),
+        ).thenAnswer(
+          (_) async => const TokenResponse(bunkerUrl: 'wss://relay.test'),
+        );
+        when(
+          () => mockAuthService.signInWithDivineOAuth(any()),
+        ).thenAnswer((_) async {});
+      }
+
+      test('valid PIN exchanges the code and authenticates', () {
+        stubExchangeSuccess();
+
+        fakeAsync((fake) {
+          final cubit = buildCubit()
+            ..startPolling(
+              deviceCode: testDeviceCode,
+              verifier: testVerifier,
+              email: testEmail,
+            );
+
+          unawaited(cubit.submitPin(pin));
+          fake.elapse(const Duration(seconds: 2));
+
+          expect(cubit.state.status, EmailVerificationStatus.success);
+          verifyInOrder([
+            () => mockOAuth.verifyPin(deviceCode: testDeviceCode, pin: pin),
+            () => mockOAuth.exchangeCode(code: pinCode, verifier: testVerifier),
+            () => mockAuthService.signInWithDivineOAuth(any()),
+          ]);
+
+          cubit.close();
+          fake.flushMicrotasks();
+        });
+      });
+
+      test(
+        'already-completed PIN response clears submission without error',
+        () {
+          when(() => mockAuthService.isRegistered).thenReturn(false);
+          when(() => mockAuthService.isAuthenticated).thenReturn(false);
+          when(
+            () => mockOAuth.pollForCode(testDeviceCode),
+          ).thenAnswer((_) async => PollResult.pending());
+          when(
+            () => mockOAuth.verifyPin(deviceCode: testDeviceCode, pin: pin),
+          ).thenAnswer((_) async => VerifyPinResult.alreadyCompleted());
+
+          fakeAsync((fake) {
+            final cubit = buildCubit()
+              ..startPolling(
+                deviceCode: testDeviceCode,
+                verifier: testVerifier,
+                email: testEmail,
+              );
+
+            unawaited(cubit.submitPin(pin));
+            fake.elapse(const Duration(milliseconds: 100));
+
+            expect(cubit.state.status, EmailVerificationStatus.polling);
+            expect(cubit.state.pinStatus, PinSubmissionStatus.idle);
+            expect(cubit.state.pinErrorCode, isNull);
+            verifyNever(
+              () => mockOAuth.exchangeCode(
+                code: any(named: 'code'),
+                verifier: any(named: 'verifier'),
+              ),
+            );
+
+            cubit.close();
+            fake.flushMicrotasks();
+          });
+        },
+      );
+
+      test('duplicate email from PIN routes to sign-in recovery failure', () {
+        when(() => mockAuthService.isRegistered).thenReturn(false);
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(
+          () => mockOAuth.pollForCode(testDeviceCode),
+        ).thenAnswer((_) async => PollResult.pending());
+        when(
+          () => mockOAuth.verifyPin(deviceCode: testDeviceCode, pin: pin),
+        ).thenAnswer(
+          (_) async =>
+              VerifyPinResult.failure(VerifyPinError.emailAlreadyRegistered),
+        );
+
+        fakeAsync((fake) {
+          final cubit = buildCubit()
+            ..startPolling(
+              deviceCode: testDeviceCode,
+              verifier: testVerifier,
+              email: testEmail,
+            );
+
+          unawaited(cubit.submitPin(pin));
+          fake.elapse(const Duration(milliseconds: 100));
+
+          expect(cubit.state.status, EmailVerificationStatus.failure);
+          expect(
+            cubit.state.errorCode,
+            EmailVerificationError.emailAlreadyRegistered,
+          );
+          expect(cubit.state.pinStatus, PinSubmissionStatus.idle);
+          expect(cubit.state.pinErrorCode, isNull);
+
+          cubit.close();
+          fake.flushMicrotasks();
+        });
+      });
+
+      test(
+        'abandons exchange when pending context is cleared during verifyPin',
+        () {
+          when(() => mockAuthService.isRegistered).thenReturn(false);
+          when(() => mockAuthService.isAuthenticated).thenReturn(false);
+          when(() => mockAuthService.isAnonymous).thenReturn(false);
+          when(
+            () => mockOAuth.pollForCode(testDeviceCode),
+          ).thenAnswer((_) async => PollResult.pending());
+          // verifyPin hangs so the escape hatch can clear the pending context
+          // before it resolves.
+          when(
+            () => mockOAuth.verifyPin(deviceCode: testDeviceCode, pin: pin),
+          ).thenAnswer((_) async {
+            await Future<void>.delayed(const Duration(seconds: 5));
+            return VerifyPinResult.success(pinCode);
+          });
+          when(
+            () => mockOAuth.exchangeCode(code: pinCode, verifier: testVerifier),
+          ).thenAnswer(
+            (_) async => const TokenResponse(bunkerUrl: 'wss://relay.test'),
+          );
+          when(
+            () => mockAuthService.signInWithDivineOAuth(any()),
+          ).thenAnswer((_) async {});
+
+          fakeAsync((fake) {
+            final cubit = buildCubit()
+              ..startPolling(
+                deviceCode: testDeviceCode,
+                verifier: testVerifier,
+                email: testEmail,
+              );
+
+            unawaited(cubit.submitPin(pin));
+            fake.elapse(const Duration(milliseconds: 100));
+            expect(cubit.state.pinStatus, PinSubmissionStatus.submitting);
+
+            // The user leaves (escape hatch) while verifyPin is still in
+            // flight; stopPolling clears the pending context WITHOUT claiming
+            // completion.
+            cubit.stopPolling();
+
+            // verifyPin now resolves success — the abandoned submit must NOT
+            // exchange or sign in.
+            fake.elapse(const Duration(seconds: 6));
+
+            verifyNever(
+              () => mockOAuth.exchangeCode(
+                code: any(named: 'code'),
+                verifier: any(named: 'verifier'),
+              ),
+            );
+            verifyNever(() => mockAuthService.signInWithDivineOAuth(any()));
+            expect(cubit.state.status, isNot(EmailVerificationStatus.success));
+
+            cubit.close();
+            fake.flushMicrotasks();
+          });
+        },
+      );
+
+      test(
+        'delayed PIN failure after a new attempt does not emit on current state',
+        () {
+          const secondDeviceCode = 'second-device-code-def456';
+          const secondVerifier = 'second-verifier-uvw123';
+          const secondEmail = 'second@example.com';
+
+          when(() => mockAuthService.isRegistered).thenReturn(false);
+          when(() => mockAuthService.isAuthenticated).thenReturn(false);
+          when(
+            () => mockOAuth.pollForCode(testDeviceCode),
+          ).thenAnswer((_) async => PollResult.pending());
+          when(
+            () => mockOAuth.pollForCode(secondDeviceCode),
+          ).thenAnswer((_) async => PollResult.pending());
+          when(
+            () => mockOAuth.verifyPin(deviceCode: testDeviceCode, pin: pin),
+          ).thenAnswer((_) async {
+            await Future<void>.delayed(const Duration(seconds: 5));
+            return VerifyPinResult.failure(VerifyPinError.invalid);
+          });
+
+          fakeAsync((fake) {
+            final cubit = buildCubit()
+              ..startPolling(
+                deviceCode: testDeviceCode,
+                verifier: testVerifier,
+                email: testEmail,
+              );
+
+            unawaited(cubit.submitPin(pin));
+            fake.elapse(const Duration(milliseconds: 100));
+            expect(cubit.state.pinStatus, PinSubmissionStatus.submitting);
+
+            cubit.startPolling(
+              deviceCode: secondDeviceCode,
+              verifier: secondVerifier,
+              email: secondEmail,
+            );
+
+            fake.elapse(const Duration(seconds: 6));
+            fake.flushMicrotasks();
+
+            expect(cubit.state.status, EmailVerificationStatus.polling);
+            expect(cubit.state.pendingEmail, secondEmail);
+            expect(cubit.state.pinStatus, PinSubmissionStatus.idle);
+            expect(cubit.state.pinErrorCode, isNull);
+
+            cubit.close();
+            fake.flushMicrotasks();
+          });
+        },
+      );
+
+      void stubPinFailure(VerifyPinError error) {
+        when(() => mockAuthService.isRegistered).thenReturn(false);
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(
+          () => mockOAuth.pollForCode(testDeviceCode),
+        ).thenAnswer((_) async => PollResult.pending());
+        when(
+          () => mockOAuth.verifyPin(deviceCode: testDeviceCode, pin: pin),
+        ).thenAnswer((_) async => VerifyPinResult.failure(error));
+      }
+
+      test('invalid PIN surfaces pinInvalid and keeps polling status', () {
+        stubPinFailure(VerifyPinError.invalid);
+
+        fakeAsync((fake) {
+          final cubit = buildCubit()
+            ..startPolling(
+              deviceCode: testDeviceCode,
+              verifier: testVerifier,
+              email: testEmail,
+            );
+
+          unawaited(cubit.submitPin(pin));
+          fake.elapse(const Duration(milliseconds: 100));
+
+          expect(cubit.state.pinStatus, PinSubmissionStatus.failure);
+          expect(cubit.state.pinErrorCode, EmailVerificationError.pinInvalid);
+          expect(cubit.state.status, EmailVerificationStatus.polling);
+          verifyNever(
+            () => mockOAuth.exchangeCode(
+              code: any(named: 'code'),
+              verifier: any(named: 'verifier'),
+            ),
+          );
+
+          cubit.close();
+          fake.flushMicrotasks();
+        });
+      });
+
+      test('expired PIN surfaces pinExpired', () {
+        stubPinFailure(VerifyPinError.expired);
+
+        fakeAsync((fake) {
+          final cubit = buildCubit()
+            ..startPolling(
+              deviceCode: testDeviceCode,
+              verifier: testVerifier,
+              email: testEmail,
+            );
+
+          unawaited(cubit.submitPin(pin));
+          fake.elapse(const Duration(milliseconds: 100));
+
+          expect(cubit.state.pinErrorCode, EmailVerificationError.pinExpired);
+
+          cubit.close();
+          fake.flushMicrotasks();
+        });
+      });
+
+      test('locked PIN surfaces pinLocked', () {
+        stubPinFailure(VerifyPinError.locked);
+
+        fakeAsync((fake) {
+          final cubit = buildCubit()
+            ..startPolling(
+              deviceCode: testDeviceCode,
+              verifier: testVerifier,
+              email: testEmail,
+            );
+
+          unawaited(cubit.submitPin(pin));
+          fake.elapse(const Duration(milliseconds: 100));
+
+          expect(cubit.state.pinErrorCode, EmailVerificationError.pinLocked);
+
+          cubit.close();
+          fake.flushMicrotasks();
+        });
+      });
+
+      test('unavailable PIN endpoint surfaces pinUnavailable', () {
+        stubPinFailure(VerifyPinError.unavailable);
+
+        fakeAsync((fake) {
+          final cubit = buildCubit()
+            ..startPolling(
+              deviceCode: testDeviceCode,
+              verifier: testVerifier,
+              email: testEmail,
+            );
+
+          unawaited(cubit.submitPin(pin));
+          fake.elapse(const Duration(milliseconds: 100));
+
+          expect(
+            cubit.state.pinErrorCode,
+            EmailVerificationError.pinUnavailable,
+          );
+
+          cubit.close();
+          fake.flushMicrotasks();
+        });
+      });
+
+      test('without pending context fails without calling the server', () {
+        final cubit = buildCubit();
+
+        cubit.submitPin(pin);
+
+        expect(cubit.state.pinStatus, PinSubmissionStatus.failure);
+        expect(cubit.state.pinErrorCode, EmailVerificationError.pinFailed);
+        verifyNever(
+          () => mockOAuth.verifyPin(
+            deviceCode: any(named: 'deviceCode'),
+            pin: any(named: 'pin'),
+          ),
+        );
+
+        cubit.close();
+      });
+    });
+
+    group('completion race (poll vs PIN submit)', () {
+      const pin = '123456';
+      const pinCode = 'pin-auth-code';
+      const pollCode = 'poll-auth-code';
+
+      // A PIN submit and a poll completion can land on the same cubit at once
+      // (user types the PIN while the link's poll is mid-flight). Only one may
+      // reach token exchange / invite consumption, and the in-flight poll must
+      // not overwrite the PIN-driven success with a missingAuthCode failure.
+      test(
+        'PIN submit wins; in-flight poll bails without a second exchange',
+        () {
+          when(() => mockAuthService.isRegistered).thenReturn(false);
+          when(() => mockAuthService.isAuthenticated).thenReturn(false);
+          when(() => mockAuthService.isAnonymous).thenReturn(false);
+          when(() => mockOAuth.config).thenReturn(
+            const OAuthConfig(
+              serverUrl: 'https://login.divine.video',
+              clientId: 'client-id',
+              redirectUri: 'divine://auth',
+            ),
+          );
+          // pollForCode resolves slowly so the poll is still in flight when
+          // the PIN submit claims completion.
+          when(() => mockOAuth.pollForCode(testDeviceCode)).thenAnswer((
+            _,
+          ) async {
+            await Future<void>.delayed(const Duration(seconds: 5));
+            return PollResult.complete(pollCode);
+          });
+          when(
+            () => mockOAuth.verifyPin(deviceCode: testDeviceCode, pin: pin),
+          ).thenAnswer((_) async => VerifyPinResult.success(pinCode));
+          when(
+            () => mockOAuth.exchangeCode(
+              code: any(named: 'code'),
+              verifier: any(named: 'verifier'),
+            ),
+          ).thenAnswer(
+            (_) async => const TokenResponse(bunkerUrl: 'wss://relay.test'),
+          );
+          when(
+            () => mockInviteApiClient.consumeInviteWithSession(
+              code: any(named: 'code'),
+              oauthConfig: any(named: 'oauthConfig'),
+              session: any(named: 'session'),
+            ),
+          ).thenAnswer(
+            (_) async => const InviteConsumeResult(
+              message: 'Welcome',
+              codesAllocated: 5,
+            ),
+          );
+          when(
+            () => mockAuthService.signInWithDivineOAuth(any()),
+          ).thenAnswer((_) async {});
+
+          fakeAsync((fake) {
+            final cubit = buildCubit()
+              ..startPolling(
+                deviceCode: testDeviceCode,
+                verifier: testVerifier,
+                email: testEmail,
+                inviteCode: 'ab12ef34',
+              );
+
+            // Fire the first poll tick; _poll() is now awaiting the slow
+            // pollForCode (in flight).
+            fake.elapse(const Duration(seconds: 3));
+
+            // User submits the PIN mid-flight. It claims completion and runs
+            // the exchange + consume to success.
+            unawaited(cubit.submitPin(pin));
+            fake.elapse(const Duration(seconds: 2));
+
+            expect(cubit.state.status, EmailVerificationStatus.success);
+
+            // Let the in-flight poll resolve. It must observe the claim and
+            // bail — no second exchange, no missingAuthCode over success.
+            fake.elapse(const Duration(seconds: 10));
+
+            expect(cubit.state.status, EmailVerificationStatus.success);
+            expect(cubit.state.errorCode, isNull);
+            verify(
+              () => mockOAuth.exchangeCode(
+                code: any(named: 'code'),
+                verifier: any(named: 'verifier'),
+              ),
+            ).called(1);
+            verify(
+              () => mockInviteApiClient.consumeInviteWithSession(
+                code: any(named: 'code'),
+                oauthConfig: any(named: 'oauthConfig'),
+                session: any(named: 'session'),
+              ),
+            ).called(1);
+            verify(
+              () => mockAuthService.signInWithDivineOAuth(any()),
+            ).called(1);
+
+            cubit.close();
+            fake.flushMicrotasks();
+          });
+        },
+      );
+
+      test('a second PIN submit after one is claimed does not re-exchange', () {
+        when(() => mockAuthService.isRegistered).thenReturn(false);
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockAuthService.isAnonymous).thenReturn(false);
+        when(() => mockOAuth.config).thenReturn(
+          const OAuthConfig(
+            serverUrl: 'https://login.divine.video',
+            clientId: 'client-id',
+            redirectUri: 'divine://auth',
+          ),
+        );
+        when(
+          () => mockOAuth.pollForCode(testDeviceCode),
+        ).thenAnswer((_) async => PollResult.pending());
+        when(
+          () => mockOAuth.verifyPin(deviceCode: testDeviceCode, pin: pin),
+        ).thenAnswer((_) async => VerifyPinResult.success(pinCode));
+        when(
+          () => mockOAuth.exchangeCode(code: pinCode, verifier: testVerifier),
+        ).thenAnswer(
+          (_) async => const TokenResponse(bunkerUrl: 'wss://relay.test'),
+        );
+        when(
+          () => mockInviteApiClient.consumeInviteWithSession(
+            code: any(named: 'code'),
+            oauthConfig: any(named: 'oauthConfig'),
+            session: any(named: 'session'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              const InviteConsumeResult(message: 'Welcome', codesAllocated: 5),
+        );
+        when(
+          () => mockAuthService.signInWithDivineOAuth(any()),
+        ).thenAnswer((_) async {});
+
+        fakeAsync((fake) {
+          final cubit = buildCubit()
+            ..startPolling(
+              deviceCode: testDeviceCode,
+              verifier: testVerifier,
+              email: testEmail,
+              inviteCode: 'ab12ef34',
+            );
+
+          unawaited(cubit.submitPin(pin));
+          fake.elapse(const Duration(seconds: 2));
+          expect(cubit.state.status, EmailVerificationStatus.success);
+
+          // Second submit after completion is already claimed must no-op.
+          unawaited(cubit.submitPin(pin));
+          fake.elapse(const Duration(seconds: 2));
+
+          expect(cubit.state.status, EmailVerificationStatus.success);
+          verify(
+            () => mockOAuth.verifyPin(deviceCode: testDeviceCode, pin: pin),
+          ).called(1);
+          verify(
+            () => mockOAuth.exchangeCode(code: pinCode, verifier: testVerifier),
+          ).called(1);
+          verify(
+            () => mockInviteApiClient.consumeInviteWithSession(
+              code: any(named: 'code'),
+              oauthConfig: any(named: 'oauthConfig'),
+              session: any(named: 'session'),
+            ),
+          ).called(1);
+
+          cubit.close();
+          fake.flushMicrotasks();
+        });
+      });
+
+      test(
+        'stale poll completion after a new attempt does not exchange or cleanup',
+        () {
+          const secondDeviceCode = 'second-device-code-def456';
+          const secondVerifier = 'second-verifier-uvw123';
+          const secondEmail = 'second@example.com';
+
+          when(() => mockAuthService.isRegistered).thenReturn(false);
+          when(() => mockAuthService.isAuthenticated).thenReturn(false);
+          when(() => mockAuthService.isAnonymous).thenReturn(false);
+          when(() => mockOAuth.pollForCode(testDeviceCode)).thenAnswer((
+            _,
+          ) async {
+            await Future<void>.delayed(const Duration(seconds: 5));
+            return PollResult.complete(pollCode);
+          });
+          when(
+            () => mockOAuth.pollForCode(secondDeviceCode),
+          ).thenAnswer((_) async => PollResult.pending());
+          when(
+            () => mockOAuth.exchangeCode(
+              code: pollCode,
+              verifier: secondVerifier,
+            ),
+          ).thenAnswer(
+            (_) async => const TokenResponse(bunkerUrl: 'wss://relay.test'),
+          );
+          when(
+            () => mockInviteApiClient.consumeInviteWithSession(
+              code: any(named: 'code'),
+              oauthConfig: any(named: 'oauthConfig'),
+              session: any(named: 'session'),
+            ),
+          ).thenAnswer(
+            (_) async => const InviteConsumeResult(
+              message: 'Welcome',
+              codesAllocated: 5,
+            ),
+          );
+          when(
+            () => mockAuthService.signInWithDivineOAuth(any()),
+          ).thenAnswer((_) async {});
+
+          fakeAsync((fake) {
+            final cubit = buildCubit()
+              ..startPolling(
+                deviceCode: testDeviceCode,
+                verifier: testVerifier,
+                email: testEmail,
+              );
+
+            fake.elapse(const Duration(seconds: 3));
+            verify(() => mockOAuth.pollForCode(testDeviceCode)).called(1);
+
+            cubit.startPolling(
+              deviceCode: secondDeviceCode,
+              verifier: secondVerifier,
+              email: secondEmail,
+            );
+
+            fake.elapse(const Duration(seconds: 5));
+            fake.flushMicrotasks();
+
+            expect(cubit.state.status, EmailVerificationStatus.polling);
+            expect(cubit.state.pendingEmail, secondEmail);
+            verifyNever(
+              () => mockOAuth.exchangeCode(
+                code: any(named: 'code'),
+                verifier: any(named: 'verifier'),
+              ),
+            );
+            verifyNever(
+              () => mockOAuth.exchangeCode(
+                code: pollCode,
+                verifier: secondVerifier,
+              ),
+            );
+
+            verify(() => mockOAuth.pollForCode(secondDeviceCode)).called(1);
+
+            cubit.close();
+            fake.flushMicrotasks();
+          });
+        },
+      );
+
+      test(
+        'stale terminal poll error after a new attempt does not emit or cleanup',
+        () {
+          const secondDeviceCode = 'second-device-code-def456';
+          const secondVerifier = 'second-verifier-uvw123';
+          const secondEmail = 'second@example.com';
+
+          when(() => mockAuthService.isRegistered).thenReturn(false);
+          when(() => mockAuthService.isAuthenticated).thenReturn(false);
+          when(() => mockOAuth.pollForCode(testDeviceCode)).thenAnswer((
+            _,
+          ) async {
+            await Future<void>.delayed(const Duration(seconds: 5));
+            return PollResult.error(
+              'Invalid or expired verification token',
+              statusCode: 401,
+              failure: KeycastAuthFailure.expiredVerification,
+            );
+          });
+          when(
+            () => mockOAuth.pollForCode(secondDeviceCode),
+          ).thenAnswer((_) async => PollResult.pending());
+
+          fakeAsync((fake) {
+            final cubit = buildCubit()
+              ..startPolling(
+                deviceCode: testDeviceCode,
+                verifier: testVerifier,
+                email: testEmail,
+              );
+
+            fake.elapse(const Duration(seconds: 3));
+            verify(() => mockOAuth.pollForCode(testDeviceCode)).called(1);
+
+            cubit.startPolling(
+              deviceCode: secondDeviceCode,
+              verifier: secondVerifier,
+              email: secondEmail,
+            );
+
+            fake.elapse(const Duration(seconds: 5));
+            fake.flushMicrotasks();
+
+            expect(cubit.state.status, EmailVerificationStatus.polling);
+            expect(cubit.state.pendingEmail, secondEmail);
+            expect(cubit.state.errorCode, isNull);
+
+            verify(() => mockOAuth.pollForCode(secondDeviceCode)).called(1);
+
+            cubit.close();
+            fake.flushMicrotasks();
+          });
+        },
+      );
+
+      test(
+        'stale exchange retry after a new attempt does not emit cleanup or sign in',
+        () {
+          const secondDeviceCode = 'second-device-code-def456';
+          const secondVerifier = 'second-verifier-uvw123';
+          const secondEmail = 'second@example.com';
+          const firstCode = 'first-auth-code';
+
+          when(() => mockAuthService.isRegistered).thenReturn(false);
+          when(() => mockAuthService.isAuthenticated).thenReturn(false);
+          when(() => mockAuthService.isAnonymous).thenReturn(false);
+          when(
+            () => mockOAuth.pollForCode(testDeviceCode),
+          ).thenAnswer((_) async => PollResult.complete(firstCode));
+          when(
+            () => mockOAuth.pollForCode(secondDeviceCode),
+          ).thenAnswer((_) async => PollResult.pending());
+
+          var firstExchangeCalls = 0;
+          when(
+            () =>
+                mockOAuth.exchangeCode(code: firstCode, verifier: testVerifier),
+          ).thenAnswer((_) async {
+            firstExchangeCalls++;
+            if (firstExchangeCalls == 1) {
+              throw Exception('transient network error');
+            }
+            return const TokenResponse(bunkerUrl: 'wss://first-session.test');
+          });
+          when(
+            () => mockAuthService.signInWithDivineOAuth(any()),
+          ).thenAnswer((_) async {});
+
+          fakeAsync((fake) {
+            final cubit = buildCubit()
+              ..startPolling(
+                deviceCode: testDeviceCode,
+                verifier: testVerifier,
+                email: testEmail,
+              );
+
+            // First poll completes and starts exchange attempt A. Its first
+            // exchange throws, putting A into the 2s retry delay.
+            fake.elapse(const Duration(seconds: 4));
+            expect(firstExchangeCalls, 1);
+
+            // A fresh attempt B starts while A is waiting to retry. This bumps
+            // the generation and must keep its polling context/timers intact.
+            cubit.startPolling(
+              deviceCode: secondDeviceCode,
+              verifier: secondVerifier,
+              email: secondEmail,
+            );
+            expect(cubit.state.status, EmailVerificationStatus.polling);
+            expect(cubit.state.pendingEmail, secondEmail);
+
+            // Let A's retry delay elapse and its second exchange return a
+            // session. A is stale and must not commit, cleanup B, emit failure
+            // or success, or sign in with the first session.
+            fake.elapse(const Duration(seconds: 3));
+            fake.flushMicrotasks();
+
+            expect(firstExchangeCalls, 1);
+            expect(cubit.state.status, EmailVerificationStatus.polling);
+            expect(cubit.state.pendingEmail, secondEmail);
+            expect(cubit.state.errorCode, isNull);
+            verifyNever(() => mockAuthService.signInWithDivineOAuth(any()));
+
+            // B's scheduled poll should still be alive.
+            verify(() => mockOAuth.pollForCode(secondDeviceCode)).called(1);
+
+            cubit.close();
+            fake.flushMicrotasks();
+          });
+        },
+      );
+    });
+
+    group('resendVerification', () {
+      test('sends, enters cooldown, then re-enables after 5 minutes', () {
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockAuthService.isRegistered).thenReturn(false);
+        when(
+          () => mockOAuth.pollForCode(testDeviceCode),
+        ).thenAnswer((_) async => PollResult.pending());
+        when(
+          () => mockOAuth.resendHeadlessVerification(testDeviceCode),
+        ).thenAnswer((_) async => ResendVerificationResult(success: true));
+
+        fakeAsync((fake) {
+          final cubit = buildCubit()
+            ..startPolling(
+              deviceCode: testDeviceCode,
+              verifier: testVerifier,
+              email: testEmail,
+            );
+
+          unawaited(cubit.resendVerification());
+          fake.elapse(const Duration(milliseconds: 100));
+
+          expect(cubit.state.resendStatus, ResendStatus.cooldown);
+          expect(cubit.state.resendCooldownSeconds, 300);
+
+          fake.elapse(const Duration(seconds: 1));
+          expect(cubit.state.resendCooldownSeconds, 299);
+
+          fake.elapse(const Duration(minutes: 5));
+          expect(cubit.state.resendStatus, ResendStatus.idle);
+          expect(cubit.state.resendCooldownSeconds, 0);
+
+          verify(
+            () => mockOAuth.resendHeadlessVerification(testDeviceCode),
+          ).called(1);
+
+          cubit.close();
+          fake.flushMicrotasks();
+        });
+      });
+
+      test('is ignored while already on cooldown', () {
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockAuthService.isRegistered).thenReturn(false);
+        when(
+          () => mockOAuth.pollForCode(testDeviceCode),
+        ).thenAnswer((_) async => PollResult.pending());
+        when(
+          () => mockOAuth.resendHeadlessVerification(testDeviceCode),
+        ).thenAnswer((_) async => ResendVerificationResult(success: true));
+
+        fakeAsync((fake) {
+          final cubit = buildCubit()
+            ..startPolling(
+              deviceCode: testDeviceCode,
+              verifier: testVerifier,
+              email: testEmail,
+            );
+
+          unawaited(cubit.resendVerification());
+          fake.elapse(const Duration(milliseconds: 100));
+          unawaited(cubit.resendVerification());
+          fake.elapse(const Duration(milliseconds: 100));
+
+          verify(
+            () => mockOAuth.resendHeadlessVerification(testDeviceCode),
+          ).called(1);
+
+          cubit.close();
+          fake.flushMicrotasks();
+        });
+      });
+
+      test('a failure() result surfaces retryable failure', () {
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockAuthService.isRegistered).thenReturn(false);
+        when(
+          () => mockOAuth.pollForCode(testDeviceCode),
+        ).thenAnswer((_) async => PollResult.pending());
+        when(
+          () => mockOAuth.resendHeadlessVerification(testDeviceCode),
+        ).thenAnswer((_) async => ResendVerificationResult.failure());
+
+        fakeAsync((fake) {
+          final cubit = buildCubit()
+            ..startPolling(
+              deviceCode: testDeviceCode,
+              verifier: testVerifier,
+              email: testEmail,
+            );
+
+          unawaited(cubit.resendVerification());
+          fake.elapse(const Duration(milliseconds: 100));
+
+          expect(cubit.state.resendStatus, ResendStatus.failure);
+          expect(cubit.state.resendCooldownSeconds, 0);
+
+          cubit.close();
+          fake.flushMicrotasks();
+        });
+      });
+
+      test('a thrown error surfaces retryable failure', () {
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockAuthService.isRegistered).thenReturn(false);
+        when(
+          () => mockOAuth.pollForCode(testDeviceCode),
+        ).thenAnswer((_) async => PollResult.pending());
+        when(
+          () => mockOAuth.resendHeadlessVerification(testDeviceCode),
+        ).thenThrow(Exception('network down'));
+
+        fakeAsync((fake) {
+          final cubit = buildCubit()
+            ..startPolling(
+              deviceCode: testDeviceCode,
+              verifier: testVerifier,
+              email: testEmail,
+            );
+
+          unawaited(cubit.resendVerification());
+          fake.elapse(const Duration(milliseconds: 100));
+
+          expect(cubit.state.resendStatus, ResendStatus.failure);
+          expect(cubit.state.resendCooldownSeconds, 0);
+
+          cubit.close();
+          fake.flushMicrotasks();
+        });
+      });
+
+      test('startPolling cancels an active resend cooldown timer', () {
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockAuthService.isRegistered).thenReturn(false);
+        when(
+          () => mockOAuth.pollForCode(testDeviceCode),
+        ).thenAnswer((_) async => PollResult.pending());
+        when(
+          () => mockOAuth.resendHeadlessVerification(testDeviceCode),
+        ).thenAnswer((_) async => ResendVerificationResult(success: true));
+
+        fakeAsync((fake) {
+          final cubit = buildCubit()
+            ..startPolling(
+              deviceCode: testDeviceCode,
+              verifier: testVerifier,
+              email: testEmail,
+            );
+
+          unawaited(cubit.resendVerification());
+          fake.elapse(const Duration(milliseconds: 100));
+          expect(cubit.state.resendStatus, ResendStatus.cooldown);
+          expect(cubit.state.resendCooldownSeconds, 300);
+
+          // Re-init polling (e.g. re-arm after timeout, or a fresh
+          // registration). The cooldown timer must be cancelled so it cannot
+          // keep ticking onto the reset state.
+          cubit.startPolling(
+            deviceCode: testDeviceCode,
+            verifier: testVerifier,
+            email: testEmail,
+          );
+          expect(cubit.state.resendStatus, ResendStatus.idle);
+          expect(cubit.state.resendCooldownSeconds, 0);
+
+          // An orphaned cooldown timer would fire here and mutate the state.
+          fake.elapse(const Duration(seconds: 3));
+          expect(cubit.state.resendStatus, ResendStatus.idle);
+          expect(
+            cubit.state.resendCooldownSeconds,
+            0,
+            reason: 'orphaned resend timer must be cancelled on re-init',
+          );
+
+          cubit.close();
+          fake.flushMicrotasks();
+        });
+      });
+
+      test(
+        'delayed resend completion after a new attempt does not start cooldown',
+        () {
+          const secondDeviceCode = 'second-device-code-def456';
+          const secondVerifier = 'second-verifier-uvw123';
+          const secondEmail = 'second@example.com';
+
+          when(() => mockAuthService.isAuthenticated).thenReturn(false);
+          when(() => mockAuthService.isRegistered).thenReturn(false);
+          when(
+            () => mockOAuth.pollForCode(testDeviceCode),
+          ).thenAnswer((_) async => PollResult.pending());
+          when(
+            () => mockOAuth.pollForCode(secondDeviceCode),
+          ).thenAnswer((_) async => PollResult.pending());
+          when(
+            () => mockOAuth.resendHeadlessVerification(testDeviceCode),
+          ).thenAnswer((_) async {
+            await Future<void>.delayed(const Duration(seconds: 5));
+            return ResendVerificationResult(success: true);
+          });
+
+          fakeAsync((fake) {
+            final cubit = buildCubit()
+              ..startPolling(
+                deviceCode: testDeviceCode,
+                verifier: testVerifier,
+                email: testEmail,
+              );
+
+            unawaited(cubit.resendVerification());
+            fake.elapse(const Duration(milliseconds: 100));
+            expect(cubit.state.resendStatus, ResendStatus.sending);
+
+            cubit.startPolling(
+              deviceCode: secondDeviceCode,
+              verifier: secondVerifier,
+              email: secondEmail,
+            );
+
+            fake.elapse(const Duration(seconds: 6));
+            fake.flushMicrotasks();
+
+            expect(cubit.state.status, EmailVerificationStatus.polling);
+            expect(cubit.state.pendingEmail, secondEmail);
+            expect(cubit.state.resendStatus, ResendStatus.idle);
+            expect(cubit.state.resendCooldownSeconds, 0);
+            verify(
+              () => mockOAuth.resendHeadlessVerification(testDeviceCode),
+            ).called(1);
+
+            cubit.close();
+            fake.flushMicrotasks();
+          });
+        },
+      );
+    });
+
+    group('resumePollingAfterTimeout', () {
+      const lateCode = 'late-poll-code';
+
+      test('re-arms polling and completes after a late link click', () {
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockAuthService.isRegistered).thenReturn(false);
+        when(() => mockAuthService.isAnonymous).thenReturn(false);
+        // Pending the whole 15-min window, so the cubit times out.
+        when(
+          () => mockOAuth.pollForCode(testDeviceCode),
+        ).thenAnswer((_) async => PollResult.pending());
+        when(
+          () => mockOAuth.exchangeCode(code: lateCode, verifier: testVerifier),
+        ).thenAnswer(
+          (_) async => const TokenResponse(bunkerUrl: 'wss://relay.test'),
+        );
+        when(
+          () => mockAuthService.signInWithDivineOAuth(any()),
+        ).thenAnswer((_) async {});
+
+        fakeAsync((fake) {
+          final cubit = buildCubit()
+            ..startPolling(
+              deviceCode: testDeviceCode,
+              verifier: testVerifier,
+              email: testEmail,
+            );
+
+          fake.elapse(const Duration(minutes: 16));
+          expect(cubit.state.status, EmailVerificationStatus.pollingTimedOut);
+
+          // The late link click has now marked the email verified server-side,
+          // so the re-armed poll returns a code.
+          when(
+            () => mockOAuth.pollForCode(testDeviceCode),
+          ).thenAnswer((_) async => PollResult.complete(lateCode));
+
+          cubit.resumePollingAfterTimeout();
+          fake.elapse(const Duration(seconds: 4));
+
+          expect(cubit.state.status, EmailVerificationStatus.success);
+          verify(
+            () =>
+                mockOAuth.exchangeCode(code: lateCode, verifier: testVerifier),
+          ).called(1);
+
+          cubit.close();
+          fake.flushMicrotasks();
+        });
+      });
+
+      test('no-ops when not timed out', () {
+        final cubit = buildCubit();
+
+        cubit.resumePollingAfterTimeout();
+
+        expect(cubit.state.status, EmailVerificationStatus.initial);
+        verifyNever(() => mockOAuth.pollForCode(any()));
+
+        cubit.close();
+      });
+    });
+
+    group('poll timeout keeps PIN entry available', () {
+      test(
+        'an in-flight poll that resumes after timeout does not reschedule',
+        () {
+          when(() => mockAuthService.isAuthenticated).thenReturn(false);
+          when(() => mockAuthService.isRegistered).thenReturn(false);
+
+          // Each poll hangs for ~1000s so a poll is still in flight when the
+          // 15-minute timeout fires, and the resume is driven by the fake clock
+          // (a timer) rather than a microtask — making the recursion-guard
+          // decision observable via elapse().
+          var pollCalls = 0;
+          when(() => mockOAuth.pollForCode(testDeviceCode)).thenAnswer((
+            _,
+          ) async {
+            pollCalls++;
+            await Future<void>.delayed(const Duration(seconds: 1000));
+            return PollResult.pending();
+          });
+
+          fakeAsync((fake) {
+            final cubit = buildCubit()
+              ..startPolling(
+                deviceCode: testDeviceCode,
+                verifier: testVerifier,
+                email: testEmail,
+              );
+
+            // First poll fires at +3s and is still in flight (resolves ~1003s).
+            fake.elapse(const Duration(seconds: 4));
+            expect(pollCalls, 1);
+
+            // The 15-minute timeout fires while the poll is still in flight.
+            fake.elapse(const Duration(minutes: 15));
+            expect(cubit.state.status, EmailVerificationStatus.pollingTimedOut);
+
+            // Drive past the in-flight poll's resolution (~1003s). It must NOT
+            // re-arm the poll loop — _onTimeout retains the pending device code
+            // for PIN entry, but the poll loop is over. Without the guard, the
+            // resumed poll reschedules and pollCalls climbs.
+            fake.elapse(const Duration(minutes: 10));
+
+            expect(
+              pollCalls,
+              1,
+              reason: 'a poll resuming after timeout must not reschedule',
+            );
+            expect(cubit.state.status, EmailVerificationStatus.pollingTimedOut);
+
+            cubit.close();
+            fake.flushMicrotasks();
+          });
+        },
+      );
+
+      test('timeout transitions to pollingTimedOut, not failure', () {
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockAuthService.isRegistered).thenReturn(false);
+        when(
+          () => mockOAuth.pollForCode(testDeviceCode),
+        ).thenAnswer((_) async => PollResult.pending());
+
+        fakeAsync((fake) {
+          final cubit = buildCubit()
+            ..startPolling(
+              deviceCode: testDeviceCode,
+              verifier: testVerifier,
+              email: testEmail,
+            );
+
+          fake.elapse(const Duration(minutes: 16));
+
+          expect(cubit.state.status, EmailVerificationStatus.pollingTimedOut);
+          expect(cubit.state.pendingEmail, testEmail);
+
+          cubit.close();
+          fake.flushMicrotasks();
+        });
+      });
+
+      test('PIN can still be submitted after the poll timeout', () {
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockAuthService.isRegistered).thenReturn(false);
+        when(() => mockAuthService.isAnonymous).thenReturn(false);
+        when(
+          () => mockOAuth.pollForCode(testDeviceCode),
+        ).thenAnswer((_) async => PollResult.pending());
+        when(
+          () => mockOAuth.verifyPin(deviceCode: testDeviceCode, pin: '123456'),
+        ).thenAnswer((_) async => VerifyPinResult.success('late-code'));
+        when(
+          () =>
+              mockOAuth.exchangeCode(code: 'late-code', verifier: testVerifier),
+        ).thenAnswer(
+          (_) async => const TokenResponse(bunkerUrl: 'wss://relay.test'),
+        );
+        when(
+          () => mockAuthService.signInWithDivineOAuth(any()),
+        ).thenAnswer((_) async {});
+
+        fakeAsync((fake) {
+          final cubit = buildCubit()
+            ..startPolling(
+              deviceCode: testDeviceCode,
+              verifier: testVerifier,
+              email: testEmail,
+            );
+
+          fake.elapse(const Duration(minutes: 16));
+          expect(cubit.state.status, EmailVerificationStatus.pollingTimedOut);
+
+          unawaited(cubit.submitPin('123456'));
+          fake.elapse(const Duration(seconds: 2));
+
+          expect(cubit.state.status, EmailVerificationStatus.success);
+
+          cubit.close();
+          fake.flushMicrotasks();
+        });
+      });
+
+      test('timeout does not clobber an in-flight claimed completion', () {
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockAuthService.isRegistered).thenReturn(false);
+        when(() => mockAuthService.isAnonymous).thenReturn(false);
+        when(
+          () => mockOAuth.pollForCode(testDeviceCode),
+        ).thenAnswer((_) async => PollResult.complete('race-code'));
+        // Exchange hangs past the 15-minute timeout, so the completion is
+        // claimed (set synchronously in _exchangeCodeAndLogin) but unfinished
+        // when _onTimeout fires.
+        when(
+          () =>
+              mockOAuth.exchangeCode(code: 'race-code', verifier: testVerifier),
+        ).thenAnswer((_) async {
+          await Future<void>.delayed(const Duration(minutes: 20));
+          return const TokenResponse(bunkerUrl: 'wss://relay.test');
+        });
+        when(
+          () => mockAuthService.signInWithDivineOAuth(any()),
+        ).thenAnswer((_) async {});
+
+        fakeAsync((fake) {
+          final cubit = buildCubit()
+            ..startPolling(
+              deviceCode: testDeviceCode,
+              verifier: testVerifier,
+              email: testEmail,
+            );
+
+          // First poll at +3s returns complete and claims the exchange.
+          fake.elapse(const Duration(seconds: 4));
+
+          // The 15-minute timeout fires while the exchange is still in flight.
+          fake.elapse(const Duration(minutes: 15));
+          expect(
+            cubit.state.status,
+            isNot(EmailVerificationStatus.pollingTimedOut),
+            reason: 'a claimed completion must not be clobbered by the timeout',
+          );
+
+          // Let the exchange finish — success lands.
+          fake.elapse(const Duration(minutes: 6));
+          expect(cubit.state.status, EmailVerificationStatus.success);
+
+          cubit.close();
+          fake.flushMicrotasks();
+        });
+      });
+
+      test('in-flight recoverable poll error after timeout keeps PIN entry '
+          'available', () {
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockAuthService.isRegistered).thenReturn(false);
+
+        // The poll hangs past the 15-minute timeout, then resolves with a
+        // non-transient but recoverable/unknown failure.
+        when(() => mockOAuth.pollForCode(testDeviceCode)).thenAnswer((_) async {
+          await Future<void>.delayed(const Duration(seconds: 1000));
+          // No explicit failure -> defaults to the non-transient
+          // KeycastAuthFailure.unknown (a recoverable/unknown poll error).
+          return PollResult.error('server error');
+        });
+
+        fakeAsync((fake) {
+          final cubit = buildCubit()
+            ..startPolling(
+              deviceCode: testDeviceCode,
+              verifier: testVerifier,
+              email: testEmail,
+            );
+
+          fake.elapse(const Duration(seconds: 4)); // poll in flight
+          fake.elapse(const Duration(minutes: 15)); // timeout fires
+          expect(cubit.state.status, EmailVerificationStatus.pollingTimedOut);
+
+          // The in-flight poll resolves with a recoverable error after the
+          // window elapsed. It must NOT tear down the preserved PIN path.
+          fake.elapse(const Duration(minutes: 10));
+
+          expect(
+            cubit.state.status,
+            EmailVerificationStatus.pollingTimedOut,
+            reason:
+                'a recoverable poll error after timeout must keep PIN entry '
+                'usable, not drop to terminal failure',
+          );
+          expect(cubit.state.pendingEmail, testEmail);
+
+          cubit.close();
+          fake.flushMicrotasks();
+        });
+      });
+
+      test('in-flight expired poll error after timeout still terminates', () {
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockAuthService.isRegistered).thenReturn(false);
+
+        when(() => mockOAuth.pollForCode(testDeviceCode)).thenAnswer((_) async {
+          await Future<void>.delayed(const Duration(seconds: 1000));
+          return PollResult.error(
+            'expired',
+            failure: KeycastAuthFailure.expiredVerification,
+          );
+        });
+
+        fakeAsync((fake) {
+          final cubit = buildCubit()
+            ..startPolling(
+              deviceCode: testDeviceCode,
+              verifier: testVerifier,
+              email: testEmail,
+            );
+
+          fake.elapse(const Duration(seconds: 4));
+          fake.elapse(const Duration(minutes: 15));
+          expect(cubit.state.status, EmailVerificationStatus.pollingTimedOut);
+
+          fake.elapse(const Duration(minutes: 10));
+
+          expect(
+            cubit.state.status,
+            EmailVerificationStatus.failure,
+            reason:
+                'a genuinely-expired device code must still terminate even '
+                'after the poll window elapsed',
+          );
+          expect(
+            cubit.state.errorCode,
+            EmailVerificationError.verificationLinkExpired,
+          );
+
+          cubit.close();
+          fake.flushMicrotasks();
+        });
+      });
+
+      test('timeout cancels an active resend cooldown timer', () {
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockAuthService.isRegistered).thenReturn(false);
+        when(
+          () => mockOAuth.pollForCode(testDeviceCode),
+        ).thenAnswer((_) async => PollResult.pending());
+        when(
+          () => mockOAuth.resendHeadlessVerification(testDeviceCode),
+        ).thenAnswer((_) async => ResendVerificationResult(success: true));
+
+        fakeAsync((fake) {
+          final cubit = buildCubit()
+            ..startPolling(
+              deviceCode: testDeviceCode,
+              verifier: testVerifier,
+              email: testEmail,
+            );
+
+          // Resend late (minute 12) so the 5-minute cooldown is still active
+          // when the 15-minute timeout fires.
+          fake.elapse(const Duration(minutes: 12));
+          unawaited(cubit.resendVerification());
+          fake.elapse(const Duration(milliseconds: 100));
+          expect(cubit.state.resendStatus, ResendStatus.cooldown);
+          expect(cubit.state.resendCooldownSeconds, 300);
+
+          // Timeout fires ~3 min into the cooldown.
+          fake.elapse(const Duration(minutes: 3));
+          expect(cubit.state.status, EmailVerificationStatus.pollingTimedOut);
+          expect(cubit.state.resendStatus, ResendStatus.idle);
+          expect(cubit.state.resendCooldownSeconds, 0);
+
+          // An orphaned cooldown tick would revive resendCooldownSeconds onto
+          // the timed-out state here.
+          fake.elapse(const Duration(seconds: 3));
+          expect(cubit.state.resendStatus, ResendStatus.idle);
+          expect(
+            cubit.state.resendCooldownSeconds,
+            0,
+            reason: 'resend timer must be cancelled on timeout',
+          );
+
+          cubit.close();
+          fake.flushMicrotasks();
+        });
+      });
+    });
   });
 
   group('EmailVerificationState', () {
@@ -1273,7 +2642,7 @@ void main() {
       expect(updated.errorCode, isNull);
     });
 
-    test('copyWith clears errorCode when not provided', () {
+    test('copyWith preserves errorCode when the argument is omitted', () {
       const original = EmailVerificationState(
         status: EmailVerificationStatus.failure,
         errorCode: EmailVerificationError.timeout,
@@ -1284,7 +2653,43 @@ void main() {
       );
 
       expect(updated.status, EmailVerificationStatus.polling);
+      expect(updated.errorCode, EmailVerificationError.timeout);
+    });
+
+    test('copyWith clears errorCode when passed explicit null', () {
+      const original = EmailVerificationState(
+        status: EmailVerificationStatus.failure,
+        errorCode: EmailVerificationError.timeout,
+      );
+
+      final updated = original.copyWith(errorCode: null);
+
       expect(updated.errorCode, isNull);
+    });
+
+    test('copyWith preserves pinErrorCode when an unrelated field changes', () {
+      const original = EmailVerificationState(
+        status: EmailVerificationStatus.pollingTimedOut,
+        pinStatus: PinSubmissionStatus.failure,
+        pinErrorCode: EmailVerificationError.pinInvalid,
+      );
+
+      final updated = original.copyWith(resendCooldownSeconds: 42);
+
+      expect(updated.resendCooldownSeconds, 42);
+      expect(updated.pinErrorCode, EmailVerificationError.pinInvalid);
+    });
+
+    test('copyWith clears pinErrorCode when passed explicit null', () {
+      const original = EmailVerificationState(
+        status: EmailVerificationStatus.pollingTimedOut,
+        pinStatus: PinSubmissionStatus.failure,
+        pinErrorCode: EmailVerificationError.pinInvalid,
+      );
+
+      final updated = original.copyWith(pinErrorCode: null);
+
+      expect(updated.pinErrorCode, isNull);
     });
 
     group('equality', () {
@@ -1326,12 +2731,13 @@ void main() {
 
   group('EmailVerificationStatus', () {
     test('has all expected values', () {
-      expect(EmailVerificationStatus.values, hasLength(4));
+      expect(EmailVerificationStatus.values, hasLength(5));
       expect(
         EmailVerificationStatus.values,
         containsAll([
           EmailVerificationStatus.initial,
           EmailVerificationStatus.polling,
+          EmailVerificationStatus.pollingTimedOut,
           EmailVerificationStatus.success,
           EmailVerificationStatus.failure,
         ]),
