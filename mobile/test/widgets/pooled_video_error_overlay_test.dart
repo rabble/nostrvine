@@ -2,6 +2,8 @@
 // ABOUTME: Verifies UI rendering for each VideoErrorType and moderation
 // ABOUTME: enrichment for divine URL 404 errors.
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -13,12 +15,24 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
+import 'package:openvine/widgets/blurhash_display.dart';
 import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 
 import '../builders/test_video_event_builder.dart';
+import '../helpers/test_provider_overrides.dart'
+    show createMockMediaCacheManager;
 
 Finder _findDivineIcon(DivineIconName name) =>
     find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
+
+/// The single blurhash layer rendered beneath the error scrim.
+BlurhashDisplay _blurhashOf(WidgetTester tester) =>
+    tester.widget<BlurhashDisplay>(find.byType(BlurhashDisplay));
+
+/// A valid event-level blurhash used to distinguish the frame-derived preview
+/// from the generic content-type fallback.
+const _eventBlurhash = 'LEHV6nWB2yk8pyo0adR*.7kCMdnj';
 
 void main() {
   group(PooledVideoErrorOverlay, () {
@@ -122,6 +136,36 @@ void main() {
                     value: playbackStatusCubit,
                     child: overlay,
                   ),
+          ),
+        ),
+      );
+    }
+
+    Widget buildWidgetWithModerationFuture({
+      required VideoErrorType? errorType,
+      required Future<VideoModerationStatus?> moderationFuture,
+      VideoEvent? video,
+    }) {
+      final overlay = PooledVideoErrorOverlay(
+        video: video ?? divineVideo,
+        onRetry: () => retryPressed = true,
+        onVerifyAge: () => verifyAgePressed = true,
+        errorType: errorType,
+      );
+      return ProviderScope(
+        overrides: [
+          videoModerationStatusProvider.overrideWith(
+            (ref, sha256) => moderationFuture,
+          ),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: BlocProvider(
+              create: (_) => VideoPlaybackStatusCubit(),
+              child: overlay,
+            ),
           ),
         ),
       );
@@ -537,6 +581,162 @@ void main() {
           expect(_findDivineIcon(DivineIconName.shieldCheck), findsOneWidget);
           expect(find.text(l10n.videoErrorContentRestricted), findsOneWidget);
           expect(find.text(l10n.videoErrorRetry), findsNothing);
+        },
+      );
+    });
+
+    group('dead media fallback', () {
+      // Route the thumbnail through a stubbed cache so its load fails
+      // deterministically (like an expired 401/404) and stays off the real
+      // on-disk cache in the merged test isolate.
+      setUp(() => debugImageCacheOverride = createMockMediaCacheManager());
+      tearDown(() => debugImageCacheOverride = null);
+
+      testWidgets(
+        'reveals the blurhash when a present thumbnail fails to load (#6242)',
+        (tester) async {
+          await tester.pumpWidget(
+            buildWidget(errorType: VideoErrorType.notFound),
+          );
+          await tester.pumpAndSettle();
+
+          // The thumbnail collapsed into its (empty) errorWidget, so it no
+          // longer covers the blurhash beneath it...
+          expect(find.byKey(const ValueKey('error')), findsOneWidget);
+          // ...leaving the blurhash visible instead of a bare color.
+          expect(find.byType(BlurhashDisplay), findsOneWidget);
+        },
+      );
+
+      testWidgets('renders a blurhash when the thumbnail URL is missing', (
+        tester,
+      ) async {
+        final noThumbnail = TestVideoEventBuilder.create(
+          id: 'no-thumbnail-video',
+          videoUrl: 'https://blossom.divine.video/$testSha256.mp4',
+          thumbnailUrl: '',
+        );
+
+        await tester.pumpWidget(
+          buildWidget(errorType: VideoErrorType.notFound, video: noThumbnail),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(BlurhashDisplay), findsOneWidget);
+        expect(find.byType(VineCachedImage), findsNothing);
+      });
+
+      testWidgets('keeps the event blurhash for not-found dead media', (
+        tester,
+      ) async {
+        final withBlurhash = TestVideoEventBuilder.create(
+          id: 'blurhash-video',
+          videoUrl: 'https://blossom.divine.video/$testSha256.mp4',
+          thumbnailUrl: '',
+          blurhash: _eventBlurhash,
+        );
+
+        await tester.pumpWidget(
+          buildWidget(errorType: VideoErrorType.notFound, video: withBlurhash),
+        );
+        await tester.pumpAndSettle();
+
+        // The event's own blurhash is passed through, not the generic
+        // content-type fallback, so broken/expired media still degrades to
+        // the real frame impression.
+        expect(_blurhashOf(tester).blurhash, equals(_eventBlurhash));
+      });
+    });
+
+    group('restricted media suppression', () {
+      // Keep the stubbed thumbnail off the real on-disk cache, matching the
+      // dead-media group, so the pre-suppression frame never hits the network.
+      setUp(() => debugImageCacheOverride = createMockMediaCacheManager());
+      tearDown(() => debugImageCacheOverride = null);
+
+      // Carries both a thumbnail and its own event blurhash, so a failure to
+      // suppress would surface a frame-derived preview.
+      VideoEvent restrictedVideo() => TestVideoEventBuilder.create(
+        id: 'restricted-video',
+        videoUrl: 'https://blossom.divine.video/$testSha256.mp4',
+        thumbnailUrl: 'https://blossom.divine.video/$testSha256.jpg',
+        blurhash: _eventBlurhash,
+      );
+
+      testWidgets('suppresses event blurhash and thumbnail for forbidden', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(
+            errorType: VideoErrorType.forbidden,
+            video: restrictedVideo(),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(_blurhashOf(tester).blurhash, isNull);
+        expect(find.byType(VineCachedImage), findsNothing);
+      });
+
+      testWidgets(
+        'suppresses event blurhash and thumbnail for age-restricted',
+        (tester) async {
+          await tester.pumpWidget(
+            buildWidget(
+              errorType: VideoErrorType.ageRestricted,
+              video: restrictedVideo(),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(_blurhashOf(tester).blurhash, isNull);
+          expect(find.byType(VineCachedImage), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'suppresses event blurhash and thumbnail for moderation-blocked media',
+        (tester) async {
+          await tester.pumpWidget(
+            buildWidgetWithModeration(
+              errorType: VideoErrorType.notFound,
+              video: restrictedVideo(),
+              moderationStatus: const VideoModerationStatus(
+                moderated: true,
+                blocked: true,
+                quarantined: false,
+                ageRestricted: false,
+                needsReview: false,
+                aiGenerated: false,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(_blurhashOf(tester).blurhash, isNull);
+          expect(find.byType(VineCachedImage), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'suppresses event blurhash and thumbnail while moderation is loading',
+        (tester) async {
+          final moderationCompleter = Completer<VideoModerationStatus?>();
+
+          await tester.pumpWidget(
+            buildWidgetWithModerationFuture(
+              errorType: VideoErrorType.notFound,
+              video: restrictedVideo(),
+              moderationFuture: moderationCompleter.future,
+            ),
+          );
+          await tester.pump();
+
+          expect(_blurhashOf(tester).blurhash, isNull);
+          expect(find.byType(VineCachedImage), findsNothing);
+
+          moderationCompleter.complete(null);
+          await tester.pumpAndSettle();
         },
       );
     });

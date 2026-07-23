@@ -10,8 +10,10 @@ import 'package:infinite_video_feed/infinite_video_feed.dart'
     show VideoErrorType;
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
+import 'package:openvine/extensions/video_event_content_type_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
+import 'package:openvine/widgets/blurhash_display.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
 /// Error overlay for videos playing through the pooled video player.
@@ -116,6 +118,7 @@ class _PooledVideoErrorOverlayState
     final moderationStatus = moderationAsync?.whenOrNull(
       data: (status) => status,
     );
+    final isModerationStatusLoading = moderationAsync?.isLoading ?? false;
     final isModerationAgeRestricted =
         shouldEnrichNotFoundWithModeration &&
         moderationStatus != null &&
@@ -168,24 +171,44 @@ class _PooledVideoErrorOverlayState
         !showVerifyAge;
     _maybeAutoRetryAgeRestricted(showVerifyAge: showVerifyAge);
 
+    // Hard-walled states (forbidden / moderation-blocked / age-restricted)
+    // withhold the frame entirely. While a Divine notFound moderation lookup is
+    // pending, fail closed for the preview layers too: suppress both the event
+    // blurhash and thumbnail so no frame-derived preview leaks before the
+    // moderation result lands. Plain notFound / generic failures keep the event
+    // blurhash and thumbnail fallback. #6242
+    final suppressPreviewMedia =
+        isModerationStatusLoading || isModerationRestricted || isAgeRestricted;
+
     return Stack(
       fit: StackFit.expand,
       children: [
         ColoredBox(
           color: VineTheme.backgroundColor,
-          child:
-              widget.video.thumbnailUrl != null &&
-                  widget.video.thumbnailUrl!.isNotEmpty
-              ? SizedBox.expand(
-                  child: VineCachedImage(
-                    imageUrl: widget.video.thumbnailUrl!,
-                    fit: _resolveBoxFit(),
-                    fadeInDuration: Duration.zero,
-                    fadeOutDuration: Duration.zero,
-                    errorWidget: (_, _, _) => const SizedBox.shrink(),
-                  ),
-                )
-              : const SizedBox.expand(),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Blurhash preview beneath the thumbnail so expired or missing
+              // media degrades to a soft placeholder instead of a bare color,
+              // matching the feed grid's fallback. #6242
+              BlurhashDisplay(
+                blurhash: suppressPreviewMedia ? null : widget.video.blurhash,
+                contentType: widget.video.blurhashContentType,
+              ),
+              if (!suppressPreviewMedia &&
+                  widget.video.thumbnailUrl != null &&
+                  widget.video.thumbnailUrl!.isNotEmpty)
+                VineCachedImage(
+                  imageUrl: widget.video.thumbnailUrl!,
+                  fit: _resolveBoxFit(),
+                  fadeInDuration: Duration.zero,
+                  fadeOutDuration: Duration.zero,
+                  // On a failed/expired thumbnail, reveal the blurhash beneath
+                  // rather than collapsing to a bare color.
+                  errorWidget: (_, _, _) => const SizedBox.shrink(),
+                ),
+            ],
+          ),
         ),
         ColoredBox(
           color: VineTheme.scrim50,

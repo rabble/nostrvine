@@ -99,6 +99,7 @@ class _BlurhashDisplayState extends State<BlurhashDisplay> {
               child: CustomPaint(
                 painter: _BlurhashImagePainter(
                   snapshot.data!,
+                  fit: widget.fit,
                   opacity: widget.opacity,
                 ),
                 size: Size(
@@ -194,9 +195,10 @@ class _BlurhashDisplayState extends State<BlurhashDisplay> {
 
 /// Custom painter for rendering decoded blurhash image
 class _BlurhashImagePainter extends CustomPainter {
-  _BlurhashImagePainter(this.image, {this.opacity = 1.0});
+  _BlurhashImagePainter(this.image, {required this.fit, this.opacity = 1.0});
 
   final ui.Image image;
+  final BoxFit fit;
   final double opacity;
 
   // Paint color alpha modulates the drawn image, so opacity costs nothing
@@ -207,14 +209,16 @@ class _BlurhashImagePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Scale the image to fit the widget size
-    final src = Rect.fromLTWH(
-      0,
-      0,
-      image.width.toDouble(),
-      image.height.toDouble(),
+    final imageSize = Size(image.width.toDouble(), image.height.toDouble());
+    final fittedSizes = applyBoxFit(fit, imageSize, size);
+    final src = Alignment.center.inscribe(
+      fittedSizes.source,
+      Offset.zero & imageSize,
     );
-    final dst = Rect.fromLTWH(0, 0, size.width, size.height);
+    final dst = Alignment.center.inscribe(
+      fittedSizes.destination,
+      Offset.zero & size,
+    );
 
     canvas.drawImageRect(image, src, dst, _paint);
   }
@@ -223,6 +227,7 @@ class _BlurhashImagePainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
     return oldDelegate is! _BlurhashImagePainter ||
         oldDelegate.image != image ||
+        oldDelegate.fit != fit ||
         oldDelegate.opacity != opacity;
   }
 }
