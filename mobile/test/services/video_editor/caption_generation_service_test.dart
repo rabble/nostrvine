@@ -7,12 +7,16 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/audio_extraction_service.dart';
 import 'package:openvine/services/video_editor/caption_generation_service.dart';
+import 'package:openvine/services/video_editor/caption_remote_transcriber.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 class _MockAudioExtractionService extends Mock
     implements AudioExtractionService {}
 
 class _MockCaptionGenerator extends Mock implements CaptionGenerator {}
+
+class _MockCaptionRemoteTranscriber extends Mock
+    implements CaptionRemoteTranscriber {}
 
 DivineVideoClip _clip(
   String id, {
@@ -80,6 +84,68 @@ void main() {
         ),
       );
     }
+
+    test('prefers the remote transcriber when it succeeds', () async {
+      stubExtraction();
+      final remote = _MockCaptionRemoteTranscriber();
+      when(
+        () => remote.transcribe(
+          audioPath: any(named: 'audioPath'),
+          localeIdentifier: any(named: 'localeIdentifier'),
+        ),
+      ).thenAnswer((_) async => [_word('Remote.', 0, 500)]);
+      final remoteService = CaptionGenerationService(
+        audioExtractionService: extraction,
+        captionGenerator: generator,
+        remoteTranscriber: remote,
+      );
+
+      final outcome = await remoteService.generateForClips(
+        clips: [_clip('a')],
+        localeIdentifier: 'en-US',
+      );
+
+      expect(
+        (outcome as CaptionsGenerated).cues.single.text,
+        equals('Remote.'),
+      );
+      // On-device is never touched when the remote path succeeds.
+      verifyNever(
+        () => generator.generateCaptions(
+          audioPath: any(named: 'audioPath'),
+          localeIdentifier: any(named: 'localeIdentifier'),
+        ),
+      );
+    });
+
+    test('falls back to on-device when the remote transcriber fails', () async {
+      stubExtraction();
+      final remote = _MockCaptionRemoteTranscriber();
+      when(
+        () => remote.transcribe(
+          audioPath: any(named: 'audioPath'),
+          localeIdentifier: any(named: 'localeIdentifier'),
+        ),
+      ).thenThrow(const CaptionRemoteTranscriptionException('boom'));
+      when(
+        () => generator.generateCaptions(
+          audioPath: any(named: 'audioPath'),
+          localeIdentifier: any(named: 'localeIdentifier'),
+        ),
+      ).thenAnswer((_) async => [_word('Local.', 0, 500)]);
+      final remoteService = CaptionGenerationService(
+        audioExtractionService: extraction,
+        captionGenerator: generator,
+        remoteTranscriber: remote,
+      );
+
+      final outcome = await remoteService.generateForClips(
+        clips: [_clip('a')],
+        localeIdentifier: 'en-US',
+      );
+
+      expect((outcome as CaptionsGenerated).cues.single.text, equals('Local.'));
+    });
 
     test('maps words from consecutive clips onto the timeline', () async {
       stubExtraction();

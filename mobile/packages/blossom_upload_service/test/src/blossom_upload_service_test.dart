@@ -2533,6 +2533,121 @@ void main() {
       });
     });
 
+    group('transcribeAudio', () {
+      test(
+        'posts audio with t=media auth and returns the VTT on 200',
+        () async {
+          final mockDio = _MockDio();
+          when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthProvider.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async => _signedEvent(_testPublicKey, 24242, const [], ''),
+          );
+          when(
+            () => mockDio.post<String>(
+              any(),
+              data: any(named: 'data'),
+              queryParameters: any(named: 'queryParameters'),
+              options: any(named: 'options'),
+            ),
+          ).thenAnswer(
+            (_) async => Response<String>(
+              requestOptions: RequestOptions(path: '/transcribe'),
+              statusCode: 200,
+              data: 'WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nhi\n',
+            ),
+          );
+
+          final service = BlossomUploadService(
+            authProvider: mockAuthProvider,
+            dio: mockDio,
+          );
+
+          final vtt = await service.transcribeAudio(
+            bytes: Uint8List.fromList([1, 2, 3]),
+            language: 'en-US',
+          );
+
+          expect(vtt, contains('WEBVTT'));
+
+          final tags =
+              verify(
+                    () => mockAuthProvider.createAndSignEvent(
+                      kind: any(named: 'kind'),
+                      content: any(named: 'content'),
+                      tags: captureAny(named: 'tags'),
+                    ),
+                  ).captured.single
+                  as List<List<String>>;
+          expect(tags, contains(equals(['t', 'media'])));
+
+          final options =
+              verify(
+                    () => mockDio.post<String>(
+                      any(),
+                      data: any(named: 'data'),
+                      queryParameters: any(named: 'queryParameters'),
+                      options: captureAny(named: 'options'),
+                    ),
+                  ).captured.single
+                  as Options;
+          expect(options.headers!['Content-Type'], equals('audio/wav'));
+        },
+      );
+
+      test('returns null when not authenticated', () async {
+        when(() => mockAuthProvider.isAuthenticated).thenReturn(false);
+        final service = BlossomUploadService(authProvider: mockAuthProvider);
+        final vtt = await service.transcribeAudio(
+          bytes: Uint8List.fromList([1, 2, 3]),
+        );
+        expect(vtt, isNull);
+      });
+
+      test('returns null on a non-200 response', () async {
+        final mockDio = _MockDio();
+        when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthProvider.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer(
+          (_) async => _signedEvent(_testPublicKey, 24242, const [], ''),
+        );
+        when(
+          () => mockDio.post<String>(
+            any(),
+            data: any(named: 'data'),
+            queryParameters: any(named: 'queryParameters'),
+            options: any(named: 'options'),
+          ),
+        ).thenAnswer(
+          (_) async => Response<String>(
+            requestOptions: RequestOptions(path: '/transcribe'),
+            statusCode: 500,
+          ),
+        );
+
+        final service = BlossomUploadService(
+          authProvider: mockAuthProvider,
+          dio: mockDio,
+        );
+
+        final vtt = await service.transcribeAudio(
+          bytes: Uint8List.fromList([1, 2, 3]),
+        );
+
+        expect(vtt, isNull);
+      });
+    });
+
     group('Model classes', () {
       group(BlossomUploadResult, () {
         test('cdnUrl returns fallbackUrl when present', () {

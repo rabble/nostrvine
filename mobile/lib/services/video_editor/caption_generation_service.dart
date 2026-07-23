@@ -6,6 +6,7 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/caption_generation_outcome.dart';
 import 'package:openvine/models/video_editor/caption_track.dart';
 import 'package:openvine/services/audio_extraction_service.dart';
+import 'package:openvine/services/video_editor/caption_remote_transcriber.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 export 'package:openvine/models/video_editor/caption_generation_outcome.dart';
@@ -23,17 +24,29 @@ class CaptionGenerationService {
   CaptionGenerationService({
     required AudioExtractionService audioExtractionService,
     required CaptionGenerator captionGenerator,
+    CaptionRemoteTranscriber? remoteTranscriber,
   }) : _audioExtractionService = audioExtractionService,
-       _captionGenerator = captionGenerator;
+       _captionGenerator = captionGenerator,
+       _remoteTranscriber = remoteTranscriber;
 
   /// Creates the service with its production dependencies.
-  factory CaptionGenerationService.production() => CaptionGenerationService(
+  ///
+  /// Pass [remoteTranscriber] to prefer server-side transcription (falling
+  /// back to on-device per clip on failure); omit it for on-device only.
+  factory CaptionGenerationService.production({
+    CaptionRemoteTranscriber? remoteTranscriber,
+  }) => CaptionGenerationService(
     audioExtractionService: AudioExtractionService(),
     captionGenerator: CaptionGenerator(),
+    remoteTranscriber: remoteTranscriber,
   );
 
   final AudioExtractionService _audioExtractionService;
   final CaptionGenerator _captionGenerator;
+
+  /// Optional server-side transcriber, preferred over [_captionGenerator] when
+  /// present. Falls back to on-device per clip when a remote call fails.
+  final CaptionRemoteTranscriber? _remoteTranscriber;
 
   static const String _logName = 'CaptionGenerationService';
 
@@ -80,7 +93,7 @@ class CaptionGenerationService {
       }
 
       try {
-        final segments = await _captionGenerator.generateCaptions(
+        final segments = await _transcribeClip(
           audioPath: audioPath,
           localeIdentifier: localeIdentifier,
         );
@@ -110,6 +123,38 @@ class CaptionGenerationService {
         ),
     ];
     return CaptionsGenerated(cues);
+  }
+
+  /// Transcribes one clip's audio, preferring the server-side transcriber and
+  /// falling back to on-device recognition when it fails.
+  ///
+  /// Remote failures are swallowed (logged) so a flaky network never blocks
+  /// generation; an on-device [CaptionGenerationException] still propagates to
+  /// the caller so it can surface the right failure reason.
+  Future<List<CaptionSegment>> _transcribeClip({
+    required String audioPath,
+    required String localeIdentifier,
+  }) async {
+    final remote = _remoteTranscriber;
+    if (remote != null) {
+      try {
+        return await remote.transcribe(
+          audioPath: audioPath,
+          localeIdentifier: localeIdentifier,
+        );
+      } on Object catch (e) {
+        Log.warning(
+          '🎬 Remote caption transcription failed; falling back to '
+          'on-device: $e',
+          name: _logName,
+          category: LogCategory.video,
+        );
+      }
+    }
+    return _captionGenerator.generateCaptions(
+      audioPath: audioPath,
+      localeIdentifier: localeIdentifier,
+    );
   }
 
   /// Windows [segments] (timed in the clip's full-source playback time) to

@@ -32,6 +32,7 @@ import 'package:openvine/models/video_editor/caption_style_preset.dart';
 import 'package:openvine/models/video_editor/caption_track.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
+import 'package:openvine/providers/upload_media_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/repositories/sticker_repository.dart';
 import 'package:openvine/screens/library_screen.dart';
@@ -40,6 +41,7 @@ import 'package:openvine/screens/video_editor/voice_over_recorder_screen.dart';
 import 'package:openvine/screens/video_editor/voice_over_take_commit.dart';
 import 'package:openvine/screens/video_editor/voice_over_take_placement.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
+import 'package:openvine/services/video_editor/caption_remote_transcriber.dart';
 import 'package:openvine/utils/await_push_transition.dart';
 import 'package:openvine/utils/mounted_post_frame.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_selection_bottom_sheet.dart';
@@ -617,6 +619,12 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
 
     mainBloc.add(const VideoEditorMainOpenSubEditor(.captions));
 
+    // Prefer server-side transcription (higher quality); the service falls
+    // back to on-device per clip when the request fails.
+    final remoteTranscriber = BlossomCaptionTranscriber(
+      ref.read(blossomUploadServiceProvider),
+    );
+
     final result = await showCaptionsEditorSheet(
       context,
       burnIn: burnIn,
@@ -627,6 +635,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
       totalDuration: clipEditorBloc.state.totalDuration,
       initialCues: initialCues,
       canDeleteTrack: hasSession,
+      remoteTranscriber: remoteTranscriber,
     );
 
     mainBloc.add(const VideoEditorMainSubEditorClosed());

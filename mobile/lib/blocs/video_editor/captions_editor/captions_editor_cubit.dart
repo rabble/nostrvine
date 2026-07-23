@@ -8,6 +8,7 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/caption_style.dart';
 import 'package:openvine/models/video_editor/caption_track.dart';
 import 'package:openvine/services/video_editor/caption_generation_service.dart';
+import 'package:openvine/services/video_editor/caption_remote_transcriber.dart';
 import 'package:uuid/uuid.dart';
 
 part 'captions_editor_state.dart';
@@ -29,9 +30,13 @@ class CaptionsEditorCubit extends Cubit<CaptionsEditorState> {
     bool burnIn = false,
     CaptionCustomStyle? customStyle,
     List<CaptionCue>? initialCues,
+    CaptionRemoteTranscriber? remoteTranscriber,
     CaptionGenerationService? generationService,
   }) : _generationService =
-           generationService ?? CaptionGenerationService.production(),
+           generationService ??
+           CaptionGenerationService.production(
+             remoteTranscriber: remoteTranscriber,
+           ),
        _clips = clips,
        _totalDuration = totalDuration,
        super(
