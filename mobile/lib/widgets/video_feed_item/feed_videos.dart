@@ -435,18 +435,25 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
             return const SizedBox.shrink();
           }
           final video = widget.videos[index];
+          final cubit = context.read<VideoPlaybackStatusCubit>();
 
           // Dedupe at the call site so `errorBuilder` rebuilds don't
           // schedule a post-frame callback every frame. See
           // _lastReportedError doc above.
           if (_lastReportedError[video.id] != errorType) {
             _lastReportedError[video.id] = errorType;
-            // Capture the cubit eagerly so the post-frame callback doesn't
+            // Capture the status eagerly so the post-frame callback doesn't
             // walk the ancestor tree on a potentially-deactivated element.
-            final cubit = context.read<VideoPlaybackStatusCubit>();
+            final playbackStatus = playbackStatusFromError(
+              errorType,
+              isModerationSource:
+                  VideoModerationStatusService.shouldCheckModeration(
+                    video.videoUrl,
+                  ),
+            );
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (!mounted) return;
-              cubit.report(video.id, playbackStatusFromError(errorType));
+              cubit.report(video.id, playbackStatus);
             });
           }
           // Mirror the BoxFit logic of VideoLoadingPlaceholder /
@@ -459,7 +466,11 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
             video: video,
             index: index,
             resolveSha256: VideoModerationStatusService.resolveSha256,
-            onRetry: onRetry,
+            onRetry: () {
+              _lastReportedError.remove(video.id);
+              cubit.report(video.id, PlaybackStatus.ready);
+              onRetry();
+            },
             onSkip: () => _skipPooledVideoAt(index),
             retryPlayback: (httpHeaders) =>
                 _retryPooledVideoAt(index, httpHeaders),

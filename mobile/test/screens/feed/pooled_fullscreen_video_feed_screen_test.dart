@@ -115,6 +115,14 @@ class _NativePlayerHarness {
     }
   }
 
+  Future<void> sendEvent(int playerId, Map<Object?, Object?> event) async {
+    await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+      'divine_video_player/player_$playerId/events',
+      _codec.encodeSuccessEnvelope(event),
+      (_) {},
+    );
+  }
+
   Future<void> dispose() async {
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
       _globalChannel,
@@ -1124,6 +1132,54 @@ void main() {
             () =>
                 mockBloc.add(any(that: isA<FullscreenFeedVideoUnavailable>())),
           );
+        },
+      );
+
+      testWidgets(
+        'keeps third-party forbidden playback errors retryable in pooled feed',
+        (tester) async {
+          final nativePlayer = _NativePlayerHarness(tester)..install();
+          addTearDown(nativePlayer.dispose);
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          final video = createTestVideoEvent(
+            id: testVideoId1,
+            pubkey: testPubkey,
+            videoUrl: 'https://cdn.example.com/video.mp4',
+          );
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: [video],
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          await nativePlayer.sendEvent(0, const <Object?, Object?>{
+            'status': 'error',
+            'errorCode': 'network_error',
+            'errorMessage': 'HTTP 403 Forbidden',
+          });
+          await tester.pump();
+          await tester.pump();
+
+          final cubit = BlocProvider.of<VideoPlaybackStatusCubit>(
+            tester.element(find.byType(FullscreenFeedContent)),
+          );
+          expect(cubit.state.statusFor(video.id), PlaybackStatus.generic);
+          expect(find.byType(ModeratedContentOverlay), findsNothing);
+          expect(find.text(l10n.videoErrorPlayback), findsOneWidget);
+          expect(find.text(l10n.videoErrorContentRestricted), findsNothing);
+          expect(find.text(l10n.videoErrorRetry), findsOneWidget);
+
+          await tester.tap(find.text(l10n.videoErrorRetry));
+          await tester.pump();
+
+          expect(cubit.state.statusFor(video.id), PlaybackStatus.ready);
+          expect(find.byType(ModeratedContentOverlay), findsNothing);
         },
       );
 
