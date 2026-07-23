@@ -1003,7 +1003,7 @@ void main() {
       );
     });
 
-    testWidgets('grows the support slot when links arrive late', (
+    testWidgets('shows the support button in the frame the links arrive', (
       tester,
     ) async {
       // The REST profile projection cannot carry Divine's custom Kind 0
@@ -1036,7 +1036,8 @@ void main() {
       final creatorSiteButton = find.byKey(
         const Key('profile-creator-site-button'),
       );
-      expect(find.byKey(const Key('profile-support-button')), findsNothing);
+      final supportButton = find.byKey(const Key('profile-support-button'));
+      expect(supportButton, findsNothing);
       final fullWidth = tester.getRect(creatorSiteButton).width;
 
       await tester.pumpWidget(
@@ -1049,12 +1050,12 @@ void main() {
       );
       await tester.pump();
 
-      // Mid-animation the neighbour has not yet given up its full width.
-      expect(tester.getRect(creatorSiteButton).width, fullWidth);
-
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(const Key('profile-support-button')), findsOneWidget);
+      // Visible in the frame the links land — no implicit animation may gate
+      // it. AnimatedSize never completes while its subtree's tickers are
+      // muted (inactive PageView / TabBarView page, route transition), which
+      // stranded this button at zero width.
+      expect(supportButton, findsOneWidget);
+      expect(tester.getRect(supportButton).width, greaterThan(0));
       expect(tester.getRect(creatorSiteButton).width, lessThan(fullWidth));
     });
 

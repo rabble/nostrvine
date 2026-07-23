@@ -515,11 +515,16 @@ class _ProfileCreatorActionsRow extends ConsumerWidget {
     final monetizationEnabled = ref.watch(
       isFeatureEnabledProvider(FeatureFlag.profileMonetizationLinks),
     );
-    final showSupport = monetizationEnabled && links.isNotEmpty;
-
+    // Monetization links live in custom Kind 0 fields that the REST profile
+    // projection cannot carry, so the support affordance can only appear once
+    // the relay/cache event lands. Render it directly: an implicit size
+    // animation would smooth that arrival, but AnimatedSize never completes
+    // while its subtree's tickers are muted (an inactive PageView / TabBarView
+    // page or route transition), stranding the button at zero width.
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
       child: Row(
+        spacing: 6,
         children: [
           Expanded(
             child: ProfileCreatorSiteButton(
@@ -527,40 +532,10 @@ class _ProfileCreatorActionsRow extends ConsumerWidget {
               isOwnProfile: isOwnProfile,
             ),
           ),
-          // Monetization links live in custom Kind 0 fields that the REST
-          // profile projection cannot carry, so they land only once the
-          // relay/cache event arrives — after the creator-site button is
-          // already on screen. Grow the slot instead of popping it in, so
-          // the button beside it does not appear to jump.
-          _ProfileSupportSlot(
-            child: showSupport ? _ProfileSupportIconButton(links: links) : null,
-          ),
+          if (monetizationEnabled && links.isNotEmpty)
+            _ProfileSupportIconButton(links: links),
         ],
       ),
-    );
-  }
-}
-
-/// Trailing row slot that animates open when the support affordance
-/// resolves, rather than snapping the neighbouring button narrower.
-class _ProfileSupportSlot extends StatelessWidget {
-  const _ProfileSupportSlot({required this.child});
-
-  final Widget? child;
-
-  @override
-  Widget build(BuildContext context) {
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
-
-    return AnimatedSize(
-      duration: reduceMotion
-          ? Duration.zero
-          : const Duration(milliseconds: 200),
-      curve: Curves.easeOut,
-      alignment: Alignment.centerRight,
-      child: child == null
-          ? const SizedBox.shrink()
-          : Padding(padding: const EdgeInsets.only(left: 6), child: child),
     );
   }
 }
