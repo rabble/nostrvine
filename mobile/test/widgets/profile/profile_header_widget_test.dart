@@ -1003,6 +1003,61 @@ void main() {
       );
     });
 
+    testWidgets('grows the support slot when links arrive late', (
+      tester,
+    ) async {
+      // The REST profile projection cannot carry Divine's custom Kind 0
+      // fields, so monetization links land after the header first renders.
+      final withoutLinks = createTestProfile(displayName: 'Creator');
+      final withLinks = createTestProfile(
+        displayName: 'Creator',
+        rawData: {
+          divineMonetizationLinksKey: [
+            const MonetizationLink(
+              provider: MonetizationLinkProvider.cashApp,
+              category: MonetizationLinkCategory.tip,
+              url: r'https://cash.app/$creator',
+              enabled: true,
+            ).toJson(),
+          ],
+        },
+      );
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: false,
+          suppliedProfile: withoutLinks,
+          monetizationLinksEnabled: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final creatorSiteButton = find.byKey(
+        const Key('profile-creator-site-button'),
+      );
+      expect(find.byKey(const Key('profile-support-button')), findsNothing);
+      final fullWidth = tester.getRect(creatorSiteButton).width;
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: false,
+          suppliedProfile: withLinks,
+          monetizationLinksEnabled: true,
+        ),
+      );
+      await tester.pump();
+
+      // Mid-animation the neighbour has not yet given up its full width.
+      expect(tester.getRect(creatorSiteButton).width, fullWidth);
+
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('profile-support-button')), findsOneWidget);
+      expect(tester.getRect(creatorSiteButton).width, lessThan(fullWidth));
+    });
+
     testWidgets('keeps the standalone support button without a creator site', (
       tester,
     ) async {
