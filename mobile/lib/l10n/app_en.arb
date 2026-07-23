@@ -5746,6 +5746,18 @@
   "@profileCouldNotOpenWebsite": {
     "description": "Snackbar message shown when url_launcher fails to open the profile website link."
   },
+  "profileCreatorSiteVisitLabel": "Visit creator site",
+  "@profileCreatorSiteVisitLabel": {
+    "description": "Prominent profile CTA that opens another creator's public Divine Space site."
+  },
+  "profileCreatorSiteOwnLabel": "View your site",
+  "@profileCreatorSiteOwnLabel": {
+    "description": "Prominent profile CTA that opens the current user's public Divine Space site."
+  },
+  "profileCreatorSiteOpenFailed": "Couldn't open creator site",
+  "@profileCreatorSiteOpenFailed": {
+    "description": "Snackbar shown when the creator's public Divine Space site cannot be opened."
+  },
   "videoMetadataEditCoverTitle": "Edit cover",
   "videoMetadataEditCoverCloseSemanticLabel": "Close cover editor",
   "videoMetadataEditCoverConfirmSemanticLabel": "Confirm cover selection",

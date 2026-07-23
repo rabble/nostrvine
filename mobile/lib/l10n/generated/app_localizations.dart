@@ -16828,6 +16828,24 @@ abstract class AppLocalizations {
   /// **'Could not open website'**
   String get profileCouldNotOpenWebsite;
 
+  /// Prominent profile CTA that opens another creator's public Divine Space site.
+  ///
+  /// In en, this message translates to:
+  /// **'Visit creator site'**
+  String get profileCreatorSiteVisitLabel;
+
+  /// Prominent profile CTA that opens the current user's public Divine Space site.
+  ///
+  /// In en, this message translates to:
+  /// **'View your site'**
+  String get profileCreatorSiteOwnLabel;
+
+  /// Snackbar shown when the creator's public Divine Space site cannot be opened.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open creator site'**
+  String get profileCreatorSiteOpenFailed;
+
   /// No description provided for @videoMetadataEditCoverTitle.
   ///
   /// In en, this message translates to:

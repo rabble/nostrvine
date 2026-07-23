@@ -23,6 +23,10 @@ class _ProfileNameAndBio extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final website = profile?.website;
+    final showWebsite =
+        website?.isNotEmpty == true &&
+        !isDivineSpaceProfileUrlForPubkey(website, userIdHex);
     // Every child except the badge row carries the horizontal inset. The
     // badge block spans the full width so its row can scroll edge-to-edge.
     const inset = EdgeInsets.symmetric(
@@ -65,9 +69,9 @@ class _ProfileNameAndBio extends StatelessWidget {
                 const SizedBox(height: 16),
                 Skeleton.keep(child: _AboutText(about: about!)),
               ],
-              if (profile?.website?.isNotEmpty == true) ...[
+              if (showWebsite) ...[
                 const SizedBox(height: 8),
-                Skeleton.keep(child: ProfileWebsiteRow(url: profile!.website!)),
+                Skeleton.keep(child: ProfileWebsiteRow(url: website!)),
               ],
               _VerifiedAccountsBlock(isOwnProfile: isOwnProfile),
             ],

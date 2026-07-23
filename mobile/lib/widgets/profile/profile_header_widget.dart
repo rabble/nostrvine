@@ -37,6 +37,7 @@ import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_actions_sheet/profile_actions_sheet.dart';
+import 'package:openvine/widgets/profile/profile_creator_site_button.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 import 'package:openvine/widgets/profile/profile_support_sheet.dart';
 import 'package:openvine/widgets/profile/profile_website_row.dart';
@@ -368,6 +369,10 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
                 ),
               ],
             ),
+          ),
+          ProfileCreatorSiteButton(
+            userIdHex: widget.userIdHex,
+            isOwnProfile: widget.isOwnProfile,
           ),
           _ProfileSupportButton(
             links: monetizationLinksForCurrentStorefront(

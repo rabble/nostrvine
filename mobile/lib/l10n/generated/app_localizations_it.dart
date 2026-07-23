@@ -9871,6 +9871,15 @@ class AppLocalizationsIt extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
+  String get profileCreatorSiteVisitLabel => 'Visit creator site';
+
+  @override
+  String get profileCreatorSiteOwnLabel => 'View your site';
+
+  @override
+  String get profileCreatorSiteOpenFailed => 'Couldn\'t open creator site';
+
+  @override
   String get videoMetadataEditCoverTitle => 'Modifica copertina';
 
   @override

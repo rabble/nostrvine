@@ -31,8 +31,10 @@ import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
+import 'package:openvine/widgets/profile/profile_creator_site_button.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
+import 'package:openvine/widgets/profile/profile_website_row.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
@@ -236,6 +238,7 @@ void main() {
       String? about,
       String? picture,
       String? nip05,
+      String? website,
       Map<String, dynamic> rawData = const {},
       DateTime? createdAt,
       String eventId = 'test-event',
@@ -248,6 +251,7 @@ void main() {
           'about': ?about,
           'picture': ?picture,
           'nip05': ?nip05,
+          'website': ?website,
           ...rawData,
         },
         displayName: displayName,
@@ -255,6 +259,7 @@ void main() {
         about: about,
         picture: picture,
         nip05: nip05,
+        website: website,
         createdAt: createdAt ?? DateTime.now(),
         eventId: eventId,
       );
@@ -850,6 +855,86 @@ void main() {
       },
     );
 
+    testWidgets('shows the creator site CTA on own and other profiles', (
+      tester,
+    ) async {
+      final profile = createTestProfile(
+        displayName: 'Creator',
+        about: 'Creator bio',
+      );
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: true,
+          suppliedProfile: profile,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('View your site'), findsOneWidget);
+      expect(
+        find.byKey(const Key('profile-creator-site-button')),
+        findsOneWidget,
+      );
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: false,
+          suppliedProfile: profile,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Visit creator site'), findsOneWidget);
+      expect(find.text('View your site'), findsNothing);
+    });
+
+    testWidgets('deduplicates only the matching generated profile website', (
+      tester,
+    ) async {
+      final profileUri = divineSpaceProfileUri(testUserHex)!;
+      final matchingProfile = createTestProfile(
+        displayName: 'Creator',
+        website: '$profileUri/',
+      );
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: false,
+          suppliedProfile: matchingProfile,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ProfileWebsiteRow), findsNothing);
+      expect(
+        find.byKey(const Key('profile-creator-site-button')),
+        findsOneWidget,
+      );
+
+      final differentWebsiteProfile = createTestProfile(
+        displayName: 'Creator',
+        website: 'https://creator.example/shop',
+      );
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: false,
+          suppliedProfile: differentWebsiteProfile,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ProfileWebsiteRow), findsOneWidget);
+      expect(
+        find.byKey(const Key('profile-creator-site-button')),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('shows support affordance for other profiles with links', (
       tester,
     ) async {
@@ -879,10 +964,18 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('profile-support-button')), findsOneWidget);
+      expect(
+        find.byKey(const Key('profile-creator-site-button')),
+        findsOneWidget,
+      );
       expect(find.text('Support'), findsOneWidget);
       expect(
-        tester.getTopLeft(find.text('Support')).dy,
+        tester.getTopLeft(find.text('Visit creator site')).dy,
         greaterThan(tester.getBottomLeft(find.text('Creator bio')).dy),
+      );
+      expect(
+        tester.getTopLeft(find.text('Support')).dy,
+        greaterThan(tester.getBottomLeft(find.text('Visit creator site')).dy),
       );
       expect(
         tester.getTopLeft(find.text('Support')).dy,
