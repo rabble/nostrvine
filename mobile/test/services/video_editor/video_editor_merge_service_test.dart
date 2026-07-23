@@ -183,5 +183,72 @@ void main() {
 
       expect(result, isNull);
     });
+
+    test(
+      'preserves provenance when every clip shares the same source',
+      () async {
+        VideoEditorRenderService.renderVideoOverride =
+            ({
+              required clips,
+              required usePersistentStorage,
+              aspectRatio,
+              parameters,
+              taskId,
+              maxOutputDuration,
+            }) async => '/documents/merged.mp4';
+
+        DivineVideoClip sameSourceClip(String id) =>
+            _createClip(id: id).copyWith(
+              sourceAuthorPubkey: 'source-author-pubkey',
+              sourceEventId: 'source-event-id',
+              sourceAddressableId: '34236:source-author-pubkey:source-d-tag',
+              sourceRelayHint: 'wss://relay.divine.video',
+            );
+
+        final result = await VideoEditorMergeService.mergeClips(
+          clips: [sameSourceClip('a'), sameSourceClip('b')],
+          renderId: 'merge-1',
+        );
+
+        expect(result!.sourceAuthorPubkey, equals('source-author-pubkey'));
+        expect(result.sourceEventId, equals('source-event-id'));
+        expect(
+          result.sourceAddressableId,
+          equals('34236:source-author-pubkey:source-d-tag'),
+        );
+        expect(result.sourceRelayHint, equals('wss://relay.divine.video'));
+      },
+    );
+
+    test('drops provenance when clips come from different sources', () async {
+      VideoEditorRenderService.renderVideoOverride =
+          ({
+            required clips,
+            required usePersistentStorage,
+            aspectRatio,
+            parameters,
+            taskId,
+            maxOutputDuration,
+          }) async => '/documents/merged.mp4';
+
+      final result = await VideoEditorMergeService.mergeClips(
+        clips: [
+          _createClip(id: 'a').copyWith(
+            sourceAuthorPubkey: 'author-a',
+            sourceEventId: 'event-a',
+          ),
+          _createClip(id: 'b').copyWith(
+            sourceAuthorPubkey: 'author-b',
+            sourceEventId: 'event-b',
+          ),
+        ],
+        renderId: 'merge-1',
+      );
+
+      expect(result!.sourceAuthorPubkey, isNull);
+      expect(result.sourceEventId, isNull);
+      expect(result.sourceAddressableId, isNull);
+      expect(result.sourceRelayHint, isNull);
+    });
   });
 }

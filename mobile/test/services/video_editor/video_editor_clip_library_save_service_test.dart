@@ -359,6 +359,40 @@ void main() {
       expect(result, isNull);
     });
 
+    test(
+      'carries the imported-source attribution onto the saved clip',
+      () async {
+        VideoEditorRenderService.renderVideoOverride =
+            ({
+              required clips,
+              required usePersistentStorage,
+              aspectRatio,
+              parameters,
+              taskId,
+              maxOutputDuration,
+            }) async => '/documents/divine_1.mp4';
+
+        final result =
+            await VideoEditorClipLibrarySaveService.flattenClipForLibrary(
+              clip: _createClip().copyWith(
+                sourceAuthorPubkey: 'source-author-pubkey',
+                sourceEventId: 'source-event-id',
+                sourceAddressableId: '34236:source-author-pubkey:source-d-tag',
+                sourceRelayHint: 'wss://relay.divine.video',
+              ),
+              renderId: 'save-1',
+            );
+
+        expect(result!.sourceAuthorPubkey, equals('source-author-pubkey'));
+        expect(result.sourceEventId, equals('source-event-id'));
+        expect(
+          result.sourceAddressableId,
+          equals('34236:source-author-pubkey:source-d-tag'),
+        );
+        expect(result.sourceRelayHint, equals('wss://relay.divine.video'));
+      },
+    );
+
     group('cleanupFlattenedClip', () {
       late Directory tempDir;
 

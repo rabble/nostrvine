@@ -46,6 +46,10 @@ class VideoEditorMergeService {
     );
 
     final first = clips.first;
+    // Imported-source attribution only survives a merge when every input
+    // shares the same source; a mix of sources has no single author to
+    // credit, so the merged clip keeps none.
+    final keepSource = clips.every((clip) => _sameSource(clip, first));
     return DivineVideoClip(
       id: 'merged_${DateTime.now().microsecondsSinceEpoch}',
       video: EditorVideo.file(outputPath),
@@ -55,6 +59,16 @@ class VideoEditorMergeService {
       originalAspectRatio: first.originalAspectRatio,
       thumbnailPath: first.thumbnailPath,
       lensMetadata: first.lensMetadata,
+      sourceAuthorPubkey: keepSource ? first.sourceAuthorPubkey : null,
+      sourceEventId: keepSource ? first.sourceEventId : null,
+      sourceAddressableId: keepSource ? first.sourceAddressableId : null,
+      sourceRelayHint: keepSource ? first.sourceRelayHint : null,
     );
   }
+
+  static bool _sameSource(DivineVideoClip a, DivineVideoClip b) =>
+      a.sourceAuthorPubkey == b.sourceAuthorPubkey &&
+      a.sourceEventId == b.sourceEventId &&
+      a.sourceAddressableId == b.sourceAddressableId &&
+      a.sourceRelayHint == b.sourceRelayHint;
 }

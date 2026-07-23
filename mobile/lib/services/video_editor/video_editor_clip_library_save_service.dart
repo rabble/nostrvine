@@ -91,6 +91,12 @@ class VideoEditorClipLibrarySaveService {
       thumbnailPath: thumbnail?.path ?? clip.thumbnailPath,
       thumbnailTimestamp: thumbnail?.timestamp,
       lensMetadata: clip.lensMetadata,
+      // A flatten re-renders the same logical clip, so its imported-source
+      // attribution carries over unchanged.
+      sourceAuthorPubkey: clip.sourceAuthorPubkey,
+      sourceEventId: clip.sourceEventId,
+      sourceAddressableId: clip.sourceAddressableId,
+      sourceRelayHint: clip.sourceRelayHint,
     );
   }
 
