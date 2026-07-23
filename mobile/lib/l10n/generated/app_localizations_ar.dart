@@ -8317,17 +8317,43 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorOpenCaptionsSemanticLabel => 'فتح محرر الترجمات';
 
   @override
-  String get videoEditorCaptionsModeTitle => 'إضافة ترجمات';
+  String get videoEditorCaptionsBurnInLabel => 'دمج في الفيديو';
 
   @override
-  String get videoEditorCaptionsModeSubtitle =>
-      'اطبعها داخل الفيديو بأسلوب مميز، أو أرفقها كترجمات (CC) يمكن للمشاهدين تشغيلها وإيقافها.';
+  String get videoEditorCaptionsPresetCustom => 'مخصص';
 
   @override
-  String get videoEditorCaptionsModeBurnIn => 'طباعة داخل الفيديو';
+  String get videoEditorCaptionsCustomStyleTitle => 'نمط مخصص';
 
   @override
-  String get videoEditorCaptionsModeOverlay => 'ترجمات (CC)';
+  String get videoEditorCaptionsCustomApply => 'تطبيق';
+
+  @override
+  String get videoEditorCaptionsCustomFont => 'الخط';
+
+  @override
+  String get videoEditorCaptionsCustomTextColor => 'لون النص';
+
+  @override
+  String get videoEditorCaptionsCustomBackground => 'الخلفية';
+
+  @override
+  String get videoEditorCaptionsCustomBackgroundColor => 'لون الخلفية';
+
+  @override
+  String get videoEditorCaptionsCustomAnimation => 'الحركة';
+
+  @override
+  String get videoEditorCaptionsAnimationNone => 'بلا';
+
+  @override
+  String get videoEditorCaptionsAnimationFade => 'تلاشٍ';
+
+  @override
+  String get videoEditorCaptionsAnimationPop => 'ظهور';
+
+  @override
+  String get videoEditorCaptionsAnimationSpring => 'نابض';
 
   @override
   String get videoEditorCaptionsEditTitle => 'الترجمات';
@@ -8393,7 +8419,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorCaptionsPresetPop => 'بوب';
 
   @override
-  String get videoEditorCaptionsPresetSlideUp => 'انزلاق';
+  String get videoEditorCaptionsPresetZoom => 'Zoom';
 
   @override
   String get videoEditorCaptionsPresetSpring => 'نابض';
@@ -8405,11 +8431,46 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorCaptionsPresetHeadline => 'عنوان';
 
   @override
-  String get videoEditorCaptionsSwitchToOverlay => 'التبديل إلى الترجمات (CC)';
+  String get videoEditorCaptionsPresetTypewriter => 'آلة كاتبة';
 
   @override
-  String get videoEditorCaptionsSwitchToBurnIn =>
-      'التبديل إلى الترجمات المطبوعة';
+  String get videoEditorCaptionsPresetMarker => 'قلم تحديد';
+
+  @override
+  String get videoEditorCaptionsPresetScript => 'خط مزخرف';
+
+  @override
+  String get videoEditorCaptionsPresetRetro => 'ريترو';
+
+  @override
+  String get videoEditorCaptionsPresetElegant => 'أنيق';
+
+  @override
+  String get videoEditorCaptionsPresetBubble => 'فقاعة';
+
+  @override
+  String get videoEditorCaptionsPresetNeon => 'نيون';
+
+  @override
+  String get videoEditorCaptionsPresetBold => 'عريض';
+
+  @override
+  String get videoEditorCaptionsPresetDreamy => 'حالم';
+
+  @override
+  String get videoEditorCaptionsPresetOcean => 'محيط';
+
+  @override
+  String get videoEditorCaptionsPresetSunny => 'مشمس';
+
+  @override
+  String get videoEditorCaptionsPresetHandwritten => 'خط اليد';
+
+  @override
+  String get videoEditorCaptionsPresetSerif => 'سيريف';
+
+  @override
+  String get videoEditorCaptionsPresetStamp => 'ختم';
 
   @override
   String get videoEditorOpenTextSemanticLabel => 'فتح محرر النص';

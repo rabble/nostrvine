@@ -143,13 +143,15 @@ extension VideoEditorExtensions on ProImageEditorState {
     setState(() {});
   }
 
-  /// Updates one overlay-mode caption cue's timing.
+  /// Updates one caption cue's timing.
   ///
   /// Mirrors [setSoundTimeline]: with [skipUpdateHistory] the current meta is
   /// mutated in-place (ongoing trim drag), otherwise a new undo point is
-  /// created. Cues shorter than [VideoEditorConstants.minCaptionCueDuration] are clamped by moving
-  /// the changed edge. No-op when the session has no overlay caption track or
-  /// [cueId] is unknown.
+  /// created. The given range is stored verbatim — cues may freely overlap;
+  /// the interaction layer owns the minimum-duration policy. When the track
+  /// is burned in, the matching caption layer is retimed in the same step so
+  /// the canvas render and the exported video stay in sync. No-op when the
+  /// session has no caption track or [cueId] is unknown.
   void setCaptionCueTimeline({
     required String cueId,
     Duration? startTime,
@@ -162,22 +164,27 @@ extension VideoEditorExtensions on ProImageEditorState {
     if (index < 0) return;
 
     final cue = track.cues[index];
-    var newStart = startTime ?? cue.start;
-    var newEnd = endTime ?? cue.end;
-    if (newEnd - newStart < VideoEditorConstants.minCaptionCueDuration) {
-      if (startTime != null && endTime == null) {
-        newStart = newEnd - VideoEditorConstants.minCaptionCueDuration;
-        if (newStart < Duration.zero) newStart = Duration.zero;
-      } else {
-        newEnd = newStart + VideoEditorConstants.minCaptionCueDuration;
-      }
-    }
-
+    final newStart = startTime ?? cue.start;
+    final newEnd = endTime ?? cue.end;
     final cues = List<CaptionCue>.from(track.cues);
     cues[index] = cue.copyWith(start: newStart, end: newEnd);
     final updated = track.copyWith(cues: cues).toJson();
 
+    final layerIndex = activeLayers.indexWhere(
+      (layer) =>
+          isCaptionCueLayer(layer) &&
+          layer.meta?[VideoEditorConstants.captionCueIdMetaKey] == cueId,
+    );
+
     if (!skipUpdateHistory) {
+      if (layerIndex >= 0) {
+        setLayerTimeline(
+          index: layerIndex,
+          startTime: newStart,
+          endTime: newEnd,
+          skipUpdateHistory: true,
+        );
+      }
       addHistory(
         meta: {
           ...stateManager.activeMeta,
@@ -189,6 +196,14 @@ extension VideoEditorExtensions on ProImageEditorState {
       // directly — matching setSoundTimeline's drag behavior.
       stateManager.activeMeta[VideoEditorConstants.captionsStateHistoryKey] =
           updated;
+      if (layerIndex >= 0) {
+        setLayerTimeline(
+          index: layerIndex,
+          startTime: newStart,
+          endTime: newEnd,
+          skipUpdateHistory: true,
+        );
+      }
     }
     setState(() {});
   }

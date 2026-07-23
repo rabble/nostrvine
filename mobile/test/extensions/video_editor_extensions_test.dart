@@ -39,6 +39,9 @@ void main() {
     stateManager = _MockStateManager();
 
     when(() => editor.stateManager).thenReturn(stateManager);
+    // No burned-in caption layers by default; setCaptionCueTimeline looks
+    // here to keep a matching layer's timing in sync.
+    when(() => editor.activeLayers).thenReturn(<Layer>[]);
     when(
       () => editor.addHistory(
         layers: any(named: 'layers'),
@@ -275,7 +278,6 @@ void main() {
       end: Duration(milliseconds: 2000),
     );
     const track = CaptionTrack(
-      mode: CaptionRenderMode.overlay,
       presetId: 'classic',
       languageTag: 'en-US',
       cues: [cue],
@@ -377,12 +379,14 @@ void main() {
       );
     });
 
-    test('setCaptionCueTimeline clamps below the minimum cue duration', () {
+    test('setCaptionCueTimeline stores the given range verbatim', () {
       when(() => stateManager.activeMeta).thenReturn({
         VideoEditorConstants.captionsStateHistoryKey: track.toJson(),
       });
 
-      // Right-trim towards the start: end is clamped to start + minimum.
+      // Minimum-duration and collision policy live in resolveCaptionTrim at
+      // the interaction layer; the store write must not second-guess it by
+      // moving the fixed opposite edge.
       editor.setCaptionCueTimeline(
         cueId: 'cue-1',
         endTime: const Duration(milliseconds: 510),
@@ -394,8 +398,8 @@ void main() {
             as Map<Object?, Object?>,
       );
       expect(
-        updated.cues.single.end - updated.cues.single.start,
-        equals(VideoEditorConstants.minCaptionCueDuration),
+        updated.cues.single.end,
+        equals(const Duration(milliseconds: 510)),
       );
     });
 

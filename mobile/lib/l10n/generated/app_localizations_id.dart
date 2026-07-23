@@ -8337,17 +8337,43 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoEditorOpenCaptionsSemanticLabel => 'Buka editor subtitel';
 
   @override
-  String get videoEditorCaptionsModeTitle => 'Tambahkan subtitel';
+  String get videoEditorCaptionsBurnInLabel => 'Tanam ke video';
 
   @override
-  String get videoEditorCaptionsModeSubtitle =>
-      'Bakar ke dalam video dengan gaya, atau lampirkan sebagai subtitel (CC) yang bisa diaktifkan dan dinonaktifkan penonton.';
+  String get videoEditorCaptionsPresetCustom => 'Kustom';
 
   @override
-  String get videoEditorCaptionsModeBurnIn => 'Bakar ke video';
+  String get videoEditorCaptionsCustomStyleTitle => 'Gaya kustom';
 
   @override
-  String get videoEditorCaptionsModeOverlay => 'Subtitel (CC)';
+  String get videoEditorCaptionsCustomApply => 'Terapkan';
+
+  @override
+  String get videoEditorCaptionsCustomFont => 'Font';
+
+  @override
+  String get videoEditorCaptionsCustomTextColor => 'Warna teks';
+
+  @override
+  String get videoEditorCaptionsCustomBackground => 'Latar';
+
+  @override
+  String get videoEditorCaptionsCustomBackgroundColor => 'Warna latar';
+
+  @override
+  String get videoEditorCaptionsCustomAnimation => 'Animasi';
+
+  @override
+  String get videoEditorCaptionsAnimationNone => 'Tidak ada';
+
+  @override
+  String get videoEditorCaptionsAnimationFade => 'Pudar';
+
+  @override
+  String get videoEditorCaptionsAnimationPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsAnimationSpring => 'Pegas';
 
   @override
   String get videoEditorCaptionsEditTitle => 'Subtitel';
@@ -8413,7 +8439,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoEditorCaptionsPresetPop => 'Pop';
 
   @override
-  String get videoEditorCaptionsPresetSlideUp => 'Slide';
+  String get videoEditorCaptionsPresetZoom => 'Zoom';
 
   @override
   String get videoEditorCaptionsPresetSpring => 'Spring';
@@ -8425,11 +8451,46 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoEditorCaptionsPresetHeadline => 'Judul';
 
   @override
-  String get videoEditorCaptionsSwitchToOverlay => 'Beralih ke subtitel (CC)';
+  String get videoEditorCaptionsPresetTypewriter => 'Mesin tik';
 
   @override
-  String get videoEditorCaptionsSwitchToBurnIn =>
-      'Beralih ke subtitel yang dibakar';
+  String get videoEditorCaptionsPresetMarker => 'Spidol';
+
+  @override
+  String get videoEditorCaptionsPresetScript => 'Kaligrafi';
+
+  @override
+  String get videoEditorCaptionsPresetRetro => 'Retro';
+
+  @override
+  String get videoEditorCaptionsPresetElegant => 'Elegan';
+
+  @override
+  String get videoEditorCaptionsPresetBubble => 'Gelembung';
+
+  @override
+  String get videoEditorCaptionsPresetNeon => 'Neon';
+
+  @override
+  String get videoEditorCaptionsPresetBold => 'Tebal';
+
+  @override
+  String get videoEditorCaptionsPresetDreamy => 'Mimpi';
+
+  @override
+  String get videoEditorCaptionsPresetOcean => 'Samudra';
+
+  @override
+  String get videoEditorCaptionsPresetSunny => 'Cerah';
+
+  @override
+  String get videoEditorCaptionsPresetHandwritten => 'Tulisan tangan';
+
+  @override
+  String get videoEditorCaptionsPresetSerif => 'Serif';
+
+  @override
+  String get videoEditorCaptionsPresetStamp => 'Stempel';
 
   @override
   String get videoEditorOpenTextSemanticLabel => 'Buka editor teks';

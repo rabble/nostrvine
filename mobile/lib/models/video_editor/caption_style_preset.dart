@@ -1,92 +1,80 @@
 // ABOUTME: Track-wide caption style presets: font + colors + animation as one
-// ABOUTME: fixed unit, and the TextLayer factory for burned-in caption cues.
+// ABOUTME: fixed unit, wrapping the shared CaptionStyle render model.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/painting.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/extensions/layer_animation_storage.dart';
+import 'package:openvine/models/video_editor/caption_style.dart';
 import 'package:openvine/models/video_editor/caption_track.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/pro_video_editor.dart' as pve;
 
-/// A caption look: font, colors, and enter/leave animation as one fixed unit.
+/// A named built-in caption look wrapping a [CaptionStyle].
 ///
-/// Presets are the only way captions are styled — font and animation are never
-/// configured separately. The animation primitives are restricted to what
+/// Presets are referenced by [id]; a user-defined `CaptionCustomStyle` is the
+/// alternative. The animation primitives are restricted to what
 /// pro_video_editor renders natively (fade/slide/scale with easing curves), so
 /// the in-editor preview (pro_image_editor `LayerTimelineVisibility`) and the
 /// exported video always match.
 class CaptionStylePreset {
-  /// Creates a preset. Instances live in [presets]; UI resolves display names
-  /// from [id] via l10n.
-  const CaptionStylePreset({
+  /// Creates a preset from its style fields.
+  CaptionStylePreset({
     required this.id,
-    required this.font,
-    required this.color,
-    required this.background,
-    required this.colorMode,
-    required this.enter,
-    required this.leave,
-    this.fontScale = 1,
-  });
+    required TextFont font,
+    required Color color,
+    required Color background,
+    required LayerBackgroundMode colorMode,
+    required List<pve.LayerAnimation> enter,
+    required List<pve.LayerAnimation> leave,
+    double fontScale = 1,
+  }) : style = CaptionStyle(
+         font: font,
+         color: color,
+         background: background,
+         colorMode: colorMode,
+         enter: enter,
+         leave: leave,
+         fontScale: fontScale,
+       );
 
   /// Stable identifier stored on the [CaptionTrack].
   final String id;
 
+  /// The renderable style this preset resolves to.
+  final CaptionStyle style;
+
   /// The Google Font this preset renders with.
-  final TextFont font;
+  TextFont get font => style.font;
 
   /// Text color.
-  final Color color;
+  Color get color => style.color;
 
   /// Pill/background color (used when [colorMode] draws a background).
-  final Color background;
+  Color get background => style.background;
 
   /// How [color] and [background] combine on the text layer.
-  final LayerBackgroundMode colorMode;
+  LayerBackgroundMode get colorMode => style.colorMode;
 
   /// Animations played when a cue appears.
-  final List<pve.LayerAnimation> enter;
+  List<pve.LayerAnimation> get enter => style.enter;
 
   /// Animations played when a cue disappears.
-  final List<pve.LayerAnimation> leave;
+  List<pve.LayerAnimation> get leave => style.leave;
 
   /// Multiplier on the editor's base font size.
-  final double fontScale;
+  double get fontScale => style.fontScale;
 
   /// Builds the burned-in editor layer for [cue].
-  ///
-  /// [fittedBoxScale] and [bodySize] are the canvas metrics the editor screen
-  /// exposes, used to place the cue bottom-center in render coordinates (the
-  /// same conversion the sticker flow applies).
   TextLayer buildLayer(
     CaptionCue cue, {
     required double fittedBoxScale,
     required Size bodySize,
-  }) {
-    return TextLayer(
-      text: cue.text,
-      textStyle: font(),
-      colorMode: colorMode,
-      color: color,
-      background: background,
-      align: TextAlign.center,
-      fontScale: fontScale,
-      offset: Offset(0, bodySize.height * _bottomOffsetFactor / fittedBoxScale),
-      startTime: cue.start,
-      endTime: cue.end,
-      animations: [...enter, ...leave].toLayerAnimations(),
-      meta: {
-        VideoEditorConstants.captionCueMetaKey: true,
-        VideoEditorConstants.captionCueIdMetaKey: cue.id,
-      },
-    );
-  }
-
-  /// Vertical placement of caption cues: fraction of the canvas height below
-  /// center, keeping captions in the lower third without touching the edge.
-  static const double _bottomOffsetFactor = 0.32;
+  }) => style.buildLayer(
+    cue,
+    fittedBoxScale: fittedBoxScale,
+    bodySize: bodySize,
+  );
 
   /// Resolves [id] to its preset, falling back to the first preset so an
   /// unknown id from an old draft still renders.
@@ -98,7 +86,13 @@ class CaptionStylePreset {
   /// Colors from the editor's shared text palette
   /// ([VideoEditorConstants.colors]) so presets introduce no new raw colors.
   static final Color _white = VideoEditorConstants.colors[0];
+  static final Color _black = VideoEditorConstants.colors[1];
+  static final Color _yellow = VideoEditorConstants.colors[4];
+  static final Color _lime = VideoEditorConstants.colors[5];
   static final Color _pink = VideoEditorConstants.colors[6];
+  static final Color _orange = VideoEditorConstants.colors[7];
+  static final Color _lavender = VideoEditorConstants.colors[8];
+  static final Color _blue = VideoEditorConstants.colors[10];
 
   /// All available presets, in display order.
   static final List<CaptionStylePreset> presets = [
@@ -125,14 +119,14 @@ class CaptionStylePreset {
         ),
       ],
     ),
-    const CaptionStylePreset(
+    CaptionStylePreset(
       id: 'pop',
       font: GoogleFonts.bricolageGrotesque,
       color: VideoEditorConstants.primaryColor,
       background: VineTheme.scrim65,
       colorMode: LayerBackgroundMode.onlyColor,
       fontScale: 1.15,
-      enter: [
+      enter: const [
         pve.LayerAnimation(
           type: pve.LayerAnimationType.scale,
           phase: pve.AnimationPhase.animateIn,
@@ -146,7 +140,7 @@ class CaptionStylePreset {
           duration: Duration(milliseconds: 150),
         ),
       ],
-      leave: [
+      leave: const [
         pve.LayerAnimation(
           type: pve.LayerAnimationType.fade,
           phase: pve.AnimationPhase.animateOut,
@@ -155,18 +149,18 @@ class CaptionStylePreset {
       ],
     ),
     CaptionStylePreset(
-      id: 'slideUp',
+      id: 'zoom',
       font: GoogleFonts.montserrat,
       color: _white,
       background: VineTheme.scrim65,
       colorMode: LayerBackgroundMode.backgroundAndColor,
       enter: const [
         pve.LayerAnimation(
-          type: pve.LayerAnimationType.slide,
+          type: pve.LayerAnimationType.scale,
           phase: pve.AnimationPhase.animateIn,
           duration: Duration(milliseconds: 350),
           curve: pve.AnimationCurve.easeOutCubic,
-          slideDirection: pve.SlideDirection.bottom,
+          scaleFrom: 0.7,
         ),
         pve.LayerAnimation(
           type: pve.LayerAnimationType.fade,
@@ -182,14 +176,14 @@ class CaptionStylePreset {
         ),
       ],
     ),
-    const CaptionStylePreset(
+    CaptionStylePreset(
       id: 'spring',
       font: GoogleFonts.poppins,
       color: VineTheme.primaryContainer,
       background: VineTheme.scrim65,
       colorMode: LayerBackgroundMode.onlyColor,
       fontScale: 1.1,
-      enter: [
+      enter: const [
         pve.LayerAnimation(
           type: pve.LayerAnimationType.scale,
           phase: pve.AnimationPhase.animateIn,
@@ -198,7 +192,7 @@ class CaptionStylePreset {
           scaleFrom: 0.3,
         ),
       ],
-      leave: [
+      leave: const [
         pve.LayerAnimation(
           type: pve.LayerAnimationType.fade,
           phase: pve.AnimationPhase.animateOut,
@@ -236,20 +230,368 @@ class CaptionStylePreset {
       fontScale: 1.3,
       enter: const [
         pve.LayerAnimation(
-          type: pve.LayerAnimationType.slide,
+          type: pve.LayerAnimationType.scale,
           phase: pve.AnimationPhase.animateIn,
           duration: Duration(milliseconds: 300),
-          curve: pve.AnimationCurve.easeOut,
-          slideDirection: pve.SlideDirection.left,
+          curve: pve.AnimationCurve.easeOutCubic,
+          scaleFrom: 1.25,
+        ),
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.fade,
+          phase: pve.AnimationPhase.animateIn,
+          duration: Duration(milliseconds: 200),
         ),
       ],
       leave: const [
         pve.LayerAnimation(
-          type: pve.LayerAnimationType.slide,
+          type: pve.LayerAnimationType.fade,
+          phase: pve.AnimationPhase.animateOut,
+          duration: Duration(milliseconds: 200),
+        ),
+      ],
+    ),
+    CaptionStylePreset(
+      id: 'typewriter',
+      font: GoogleFonts.anonymousPro,
+      color: _white,
+      background: VineTheme.scrim65,
+      colorMode: LayerBackgroundMode.backgroundAndColor,
+      enter: const [
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.fade,
+          phase: pve.AnimationPhase.animateIn,
+          duration: Duration(milliseconds: 100),
+        ),
+      ],
+      leave: const [
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.fade,
+          phase: pve.AnimationPhase.animateOut,
+          duration: Duration(milliseconds: 100),
+        ),
+      ],
+    ),
+    CaptionStylePreset(
+      id: 'marker',
+      font: GoogleFonts.permanentMarker,
+      color: _yellow,
+      background: VineTheme.scrim65,
+      colorMode: LayerBackgroundMode.onlyColor,
+      fontScale: 1.1,
+      enter: const [
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.scale,
+          phase: pve.AnimationPhase.animateIn,
+          duration: Duration(milliseconds: 300),
+          curve: pve.AnimationCurve.easeOutCubic,
+          scaleFrom: 0.7,
+        ),
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.fade,
+          phase: pve.AnimationPhase.animateIn,
+          duration: Duration(milliseconds: 150),
+        ),
+      ],
+      leave: const [
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.fade,
+          phase: pve.AnimationPhase.animateOut,
+          duration: Duration(milliseconds: 150),
+        ),
+      ],
+    ),
+    CaptionStylePreset(
+      id: 'script',
+      font: GoogleFonts.dancingScript,
+      color: _white,
+      background: VineTheme.scrim65,
+      colorMode: LayerBackgroundMode.onlyColor,
+      fontScale: 1.2,
+      enter: const [
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.fade,
+          phase: pve.AnimationPhase.animateIn,
+          duration: Duration(milliseconds: 400),
+          curve: pve.AnimationCurve.easeOut,
+        ),
+      ],
+      leave: const [
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.fade,
           phase: pve.AnimationPhase.animateOut,
           duration: Duration(milliseconds: 300),
           curve: pve.AnimationCurve.easeIn,
-          slideDirection: pve.SlideDirection.right,
+        ),
+      ],
+    ),
+    CaptionStylePreset(
+      id: 'retro',
+      font: GoogleFonts.lobster,
+      color: _orange,
+      background: VineTheme.scrim65,
+      colorMode: LayerBackgroundMode.onlyColor,
+      fontScale: 1.1,
+      enter: const [
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.fade,
+          phase: pve.AnimationPhase.animateIn,
+          duration: Duration(milliseconds: 300),
+          curve: pve.AnimationCurve.easeOut,
+        ),
+      ],
+      leave: const [
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.fade,
+          phase: pve.AnimationPhase.animateOut,
+          duration: Duration(milliseconds: 250),
+          curve: pve.AnimationCurve.easeIn,
+        ),
+      ],
+    ),
+    CaptionStylePreset(
+      id: 'elegant',
+      font: GoogleFonts.playfairDisplay,
+      color: _white,
+      background: VineTheme.scrim65,
+      colorMode: LayerBackgroundMode.onlyColor,
+      fontScale: 1.05,
+      enter: const [
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.fade,
+          phase: pve.AnimationPhase.animateIn,
+          duration: Duration(milliseconds: 500),
+          curve: pve.AnimationCurve.easeOut,
+        ),
+      ],
+      leave: const [
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.fade,
+          phase: pve.AnimationPhase.animateOut,
+          duration: Duration(milliseconds: 400),
+          curve: pve.AnimationCurve.easeIn,
+        ),
+      ],
+    ),
+    CaptionStylePreset(
+      id: 'bubble',
+      font: GoogleFonts.quicksand,
+      color: _black,
+      background: _white,
+      colorMode: LayerBackgroundMode.backgroundAndColor,
+      enter: const [
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.scale,
+          phase: pve.AnimationPhase.animateIn,
+          duration: Duration(milliseconds: 500),
+          curve: pve.AnimationCurve.bounceOut,
+          scaleFrom: 0.5,
+        ),
+      ],
+      leave: const [
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.fade,
+          phase: pve.AnimationPhase.animateOut,
+          duration: Duration(milliseconds: 150),
+        ),
+      ],
+    ),
+    CaptionStylePreset(
+      id: 'neon',
+      font: GoogleFonts.rubik,
+      color: _lime,
+      background: VineTheme.scrim65,
+      colorMode: LayerBackgroundMode.onlyColor,
+      enter: const [
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.scale,
+          phase: pve.AnimationPhase.animateIn,
+          duration: Duration(milliseconds: 250),
+          curve: pve.AnimationCurve.easeOutCubic,
+          scaleFrom: 0.9,
+        ),
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.fade,
+          phase: pve.AnimationPhase.animateIn,
+          duration: Duration(milliseconds: 200),
+        ),
+      ],
+      leave: const [
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.fade,
+          phase: pve.AnimationPhase.animateOut,
+          duration: Duration(milliseconds: 200),
+        ),
+      ],
+    ),
+    CaptionStylePreset(
+      id: 'bold',
+      font: GoogleFonts.oswald,
+      color: _white,
+      background: _black,
+      colorMode: LayerBackgroundMode.backgroundAndColor,
+      fontScale: 1.2,
+      enter: const [
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.scale,
+          phase: pve.AnimationPhase.animateIn,
+          duration: Duration(milliseconds: 300),
+          curve: pve.AnimationCurve.easeOutCubic,
+          scaleFrom: 0.82,
+        ),
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.fade,
+          phase: pve.AnimationPhase.animateIn,
+          duration: Duration(milliseconds: 180),
+        ),
+      ],
+      leave: const [
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.fade,
+          phase: pve.AnimationPhase.animateOut,
+          duration: Duration(milliseconds: 200),
+        ),
+      ],
+    ),
+    CaptionStylePreset(
+      id: 'dreamy',
+      font: GoogleFonts.josefinSans,
+      color: _lavender,
+      background: VineTheme.scrim65,
+      colorMode: LayerBackgroundMode.onlyColor,
+      fontScale: 1.1,
+      enter: const [
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.fade,
+          phase: pve.AnimationPhase.animateIn,
+          duration: Duration(milliseconds: 550),
+          curve: pve.AnimationCurve.easeOut,
+        ),
+      ],
+      leave: const [
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.fade,
+          phase: pve.AnimationPhase.animateOut,
+          duration: Duration(milliseconds: 400),
+          curve: pve.AnimationCurve.easeIn,
+        ),
+      ],
+    ),
+    CaptionStylePreset(
+      id: 'ocean',
+      font: GoogleFonts.barlow,
+      color: _blue,
+      background: VineTheme.scrim65,
+      colorMode: LayerBackgroundMode.onlyColor,
+      enter: const [
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.fade,
+          phase: pve.AnimationPhase.animateIn,
+          duration: Duration(milliseconds: 300),
+          curve: pve.AnimationCurve.easeOut,
+        ),
+      ],
+      leave: const [
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.fade,
+          phase: pve.AnimationPhase.animateOut,
+          duration: Duration(milliseconds: 250),
+          curve: pve.AnimationCurve.easeIn,
+        ),
+      ],
+    ),
+    CaptionStylePreset(
+      id: 'sunny',
+      font: GoogleFonts.raleway,
+      color: _yellow,
+      background: VineTheme.scrim65,
+      colorMode: LayerBackgroundMode.backgroundAndColor,
+      enter: const [
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.fade,
+          phase: pve.AnimationPhase.animateIn,
+          duration: Duration(milliseconds: 250),
+          curve: pve.AnimationCurve.easeOut,
+        ),
+      ],
+      leave: const [
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.fade,
+          phase: pve.AnimationPhase.animateOut,
+          duration: Duration(milliseconds: 250),
+          curve: pve.AnimationCurve.easeIn,
+        ),
+      ],
+    ),
+    CaptionStylePreset(
+      id: 'handwritten',
+      font: GoogleFonts.caveat,
+      color: _white,
+      background: VineTheme.scrim65,
+      colorMode: LayerBackgroundMode.onlyColor,
+      fontScale: 1.25,
+      enter: const [
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.fade,
+          phase: pve.AnimationPhase.animateIn,
+          duration: Duration(milliseconds: 300),
+          curve: pve.AnimationCurve.easeOut,
+        ),
+      ],
+      leave: const [
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.fade,
+          phase: pve.AnimationPhase.animateOut,
+          duration: Duration(milliseconds: 250),
+        ),
+      ],
+    ),
+    CaptionStylePreset(
+      id: 'serif',
+      font: GoogleFonts.lora,
+      color: _white,
+      background: VineTheme.scrim65,
+      colorMode: LayerBackgroundMode.backgroundAndColor,
+      enter: const [
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.fade,
+          phase: pve.AnimationPhase.animateIn,
+          duration: Duration(milliseconds: 250),
+        ),
+      ],
+      leave: const [
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.fade,
+          phase: pve.AnimationPhase.animateOut,
+          duration: Duration(milliseconds: 250),
+        ),
+      ],
+    ),
+    CaptionStylePreset(
+      id: 'stamp',
+      font: GoogleFonts.ubuntu,
+      color: _white,
+      background: VineTheme.scrim65,
+      colorMode: LayerBackgroundMode.onlyColor,
+      fontScale: 1.15,
+      enter: const [
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.scale,
+          phase: pve.AnimationPhase.animateIn,
+          duration: Duration(milliseconds: 300),
+          curve: pve.AnimationCurve.easeOutCubic,
+          scaleFrom: 1.6,
+        ),
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.fade,
+          phase: pve.AnimationPhase.animateIn,
+          duration: Duration(milliseconds: 150),
+        ),
+      ],
+      leave: const [
+        pve.LayerAnimation(
+          type: pve.LayerAnimationType.fade,
+          phase: pve.AnimationPhase.animateOut,
+          duration: Duration(milliseconds: 150),
         ),
       ],
     ),

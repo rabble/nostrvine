@@ -1,15 +1,14 @@
-// ABOUTME: Widget tests for the captions editor screen.
+// ABOUTME: Widget tests for the captions editor bottom sheet.
 // ABOUTME: Covers generation states, cue editing, and the confirm result.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_editor/captions_editor/captions_editor_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/video_editor/caption_track.dart';
-import 'package:openvine/screens/video_editor/video_captions_editor_screen.dart';
 import 'package:openvine/services/video_editor/caption_generation_service.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_captions_sheet.dart';
 
 class _MockCaptionGenerationService extends Mock
     implements CaptionGenerationService {}
@@ -32,58 +31,42 @@ void main() {
     ).thenAnswer((_) async => outcome);
   }
 
-  Widget buildScreen({
-    CaptionRenderMode mode = CaptionRenderMode.overlay,
+  Widget buildHost({
+    bool burnIn = false,
     List<CaptionCue>? initialCues,
     void Function(CaptionsEditorResult?)? onResult,
   }) {
-    // A real GoRouter hosts the flow because the screen pops via the
-    // go_router `context.pop` extension, mirroring production (the editor
-    // pushes it with Navigator.push inside a GoRouter app).
-    return MaterialApp.router(
-      routerConfig: GoRouter(
-        routes: [
-          GoRoute(
-            path: '/',
-            builder: (_, _) => Builder(
-              builder: (context) => Center(
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final result =
-                        await Navigator.of(
-                          context,
-                        ).push<CaptionsEditorResult>(
-                          MaterialPageRoute(
-                            builder: (_) => VideoCaptionsEditorScreen(
-                              mode: mode,
-                              presetId: 'classic',
-                              languageTag: 'en-US',
-                              clips: const [],
-                              totalDuration: const Duration(seconds: 6),
-                              initialCues: initialCues,
-                              cubit: CaptionsEditorCubit(
-                                clips: const [],
-                                totalDuration: const Duration(seconds: 6),
-                                mode: mode,
-                                presetId: 'classic',
-                                languageTag: 'en-US',
-                                initialCues: initialCues,
-                                generationService: service,
-                              ),
-                            ),
-                          ),
-                        );
-                    onResult?.call(result);
-                  },
-                  child: const Text('open'),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+    return MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
+      home: Builder(
+        builder: (context) => Center(
+          child: ElevatedButton(
+            onPressed: () async {
+              final result = await showCaptionsEditorSheet(
+                context,
+                burnIn: burnIn,
+                presetId: 'classic',
+                languageTag: 'en-US',
+                clips: const [],
+                totalDuration: const Duration(seconds: 6),
+                initialCues: initialCues,
+                cubit: CaptionsEditorCubit(
+                  clips: const [],
+                  totalDuration: const Duration(seconds: 6),
+                  burnIn: burnIn,
+                  presetId: 'classic',
+                  languageTag: 'en-US',
+                  initialCues: initialCues,
+                  generationService: service,
+                ),
+              );
+              onResult?.call(result);
+            },
+            child: const Text('open'),
+          ),
+        ),
+      ),
     );
   }
 
@@ -92,7 +75,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  group(VideoCaptionsEditorScreen, () {
+  group('showCaptionsEditorSheet', () {
     testWidgets('shows generated cues after transcription', (tester) async {
       stubOutcome(
         const CaptionsGenerated([
@@ -105,7 +88,7 @@ void main() {
         ]),
       );
 
-      await tester.pumpWidget(buildScreen());
+      await tester.pumpWidget(buildHost());
       await open(tester);
 
       expect(find.text('Hello world.'), findsOneWidget);
@@ -118,7 +101,7 @@ void main() {
           const CaptionsFailed(CaptionGenerationFailure.recognizerUnavailable),
         );
 
-        await tester.pumpWidget(buildScreen());
+        await tester.pumpWidget(buildHost());
         await open(tester);
 
         expect(
@@ -138,7 +121,7 @@ void main() {
       (tester) async {
         CaptionsEditorResult? result;
         await tester.pumpWidget(
-          buildScreen(
+          buildHost(
             initialCues: const [
               CaptionCue(
                 id: 'cue-0',
@@ -159,7 +142,7 @@ void main() {
         await open(tester);
 
         await tester.enterText(
-          find.widgetWithText(TextFormField, 'Clear me.'),
+          find.widgetWithText(TextField, 'Clear me.'),
           '   ',
         );
         await tester.tap(
@@ -169,14 +152,60 @@ void main() {
 
         final confirmed = result! as CaptionsConfirmed;
         expect(confirmed.cues.map((c) => c.text), equals(['Keep me.']));
-        expect(confirmed.track.mode, equals(CaptionRenderMode.overlay));
+        expect(confirmed.track.burnIn, isFalse);
         expect(confirmed.track.cues.map((c) => c.id), equals(['cue-0']));
+      },
+    );
+
+    testWidgets(
+      'editing a cue time via the slider commits the new range',
+      (tester) async {
+        CaptionsEditorResult? result;
+        await tester.pumpWidget(
+          buildHost(
+            initialCues: const [
+              CaptionCue(
+                id: 'cue-0',
+                text: 'Hello.',
+                start: Duration.zero,
+                end: Duration(seconds: 1),
+              ),
+              CaptionCue(
+                id: 'cue-1',
+                text: 'World.',
+                start: Duration(seconds: 2),
+                end: Duration(seconds: 3),
+              ),
+            ],
+            onResult: (r) => result = r,
+          ),
+        );
+        await open(tester);
+
+        // The slider spans the whole video; extending cue-0 past the next
+        // cue is allowed (cues may overlap), so the value is applied as-is.
+        final slider = tester.widget<RangeSlider>(
+          find.byType(RangeSlider).first,
+        );
+        slider.onChanged!(const RangeValues(0, 5));
+        await tester.pumpAndSettle();
+
+        await tester.tap(
+          find.bySemanticsLabel(l10n.videoEditorCaptionsDoneSemanticLabel),
+        );
+        await tester.pumpAndSettle();
+
+        final confirmed = result! as CaptionsConfirmed;
+        expect(
+          confirmed.cues.first.end,
+          equals(const Duration(seconds: 5)),
+        );
       },
     );
 
     testWidgets('existing session skips generation', (tester) async {
       await tester.pumpWidget(
-        buildScreen(
+        buildHost(
           initialCues: const [
             CaptionCue(
               id: 'cue-0',

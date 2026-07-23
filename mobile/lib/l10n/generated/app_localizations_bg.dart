@@ -8444,17 +8444,43 @@ class AppLocalizationsBg extends AppLocalizations {
       'Отвори редактора на субтитри';
 
   @override
-  String get videoEditorCaptionsModeTitle => 'Добави субтитри';
+  String get videoEditorCaptionsBurnInLabel => 'Вграждане във видеото';
 
   @override
-  String get videoEditorCaptionsModeSubtitle =>
-      'Вгради ги във видеото със стил или ги прикачи като субтитри (CC), които зрителите могат да включват и изключват.';
+  String get videoEditorCaptionsPresetCustom => 'Собствен';
 
   @override
-  String get videoEditorCaptionsModeBurnIn => 'Вгради във видеото';
+  String get videoEditorCaptionsCustomStyleTitle => 'Собствен стил';
 
   @override
-  String get videoEditorCaptionsModeOverlay => 'Субтитри (CC)';
+  String get videoEditorCaptionsCustomApply => 'Приложи';
+
+  @override
+  String get videoEditorCaptionsCustomFont => 'Шрифт';
+
+  @override
+  String get videoEditorCaptionsCustomTextColor => 'Цвят на текста';
+
+  @override
+  String get videoEditorCaptionsCustomBackground => 'Фон';
+
+  @override
+  String get videoEditorCaptionsCustomBackgroundColor => 'Цвят на фона';
+
+  @override
+  String get videoEditorCaptionsCustomAnimation => 'Анимация';
+
+  @override
+  String get videoEditorCaptionsAnimationNone => 'Няма';
+
+  @override
+  String get videoEditorCaptionsAnimationFade => 'Избледняване';
+
+  @override
+  String get videoEditorCaptionsAnimationPop => 'Поп';
+
+  @override
+  String get videoEditorCaptionsAnimationSpring => 'Пружина';
 
   @override
   String get videoEditorCaptionsEditTitle => 'Субтитри';
@@ -8522,7 +8548,7 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoEditorCaptionsPresetPop => 'Поп';
 
   @override
-  String get videoEditorCaptionsPresetSlideUp => 'Слайд';
+  String get videoEditorCaptionsPresetZoom => 'Zoom';
 
   @override
   String get videoEditorCaptionsPresetSpring => 'Спринг';
@@ -8534,12 +8560,46 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoEditorCaptionsPresetHeadline => 'Заглавие';
 
   @override
-  String get videoEditorCaptionsSwitchToOverlay =>
-      'Превключи към субтитри (CC)';
+  String get videoEditorCaptionsPresetTypewriter => 'Пишеща машина';
 
   @override
-  String get videoEditorCaptionsSwitchToBurnIn =>
-      'Превключи към вградени субтитри';
+  String get videoEditorCaptionsPresetMarker => 'Маркер';
+
+  @override
+  String get videoEditorCaptionsPresetScript => 'Калиграфия';
+
+  @override
+  String get videoEditorCaptionsPresetRetro => 'Ретро';
+
+  @override
+  String get videoEditorCaptionsPresetElegant => 'Елегантен';
+
+  @override
+  String get videoEditorCaptionsPresetBubble => 'Балонче';
+
+  @override
+  String get videoEditorCaptionsPresetNeon => 'Неон';
+
+  @override
+  String get videoEditorCaptionsPresetBold => 'Удебелен';
+
+  @override
+  String get videoEditorCaptionsPresetDreamy => 'Мечтателен';
+
+  @override
+  String get videoEditorCaptionsPresetOcean => 'Океан';
+
+  @override
+  String get videoEditorCaptionsPresetSunny => 'Слънчев';
+
+  @override
+  String get videoEditorCaptionsPresetHandwritten => 'Ръкописен';
+
+  @override
+  String get videoEditorCaptionsPresetSerif => 'Серифен';
+
+  @override
+  String get videoEditorCaptionsPresetStamp => 'Печат';
 
   @override
   String get videoEditorOpenTextSemanticLabel => 'Отвори текстовия редактор';

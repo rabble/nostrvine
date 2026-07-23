@@ -177,18 +177,11 @@ class TimelineOverlayBloc
           ),
     ];
 
+    // Caption cues are always addressed by cue id from the track meta — the
+    // single source of truth. When burned in, the matching text layers are a
+    // derived render (excluded from the layer strip above) kept in time-sync
+    // by `setCaptionCueTimeline`; they are never separate timeline items.
     final captions = <TimelineOverlayItem>[
-      for (final layer in event.layers)
-        if (isCaptionCueLayer(layer))
-          TimelineOverlayItem(
-            id: layer.id,
-            type: .captions,
-            startTime: layer.startTime ?? .zero,
-            endTime: _clampEnd(layer.endTime ?? total, total),
-            label: _labelForLayer(layer),
-            layer: layer,
-          ),
-      // Overlay-mode cues are not layers; they are addressed by cue id.
       for (final cue in event.captionTrack?.cues ?? const <CaptionCue>[])
         TimelineOverlayItem(
           id: cue.id,
@@ -255,6 +248,7 @@ class TimelineOverlayBloc
         isLayerMultiSelectMode:
             state.isLayerMultiSelectMode && prunedMultiSelect.isNotEmpty,
         multiSelectedLayerIds: prunedMultiSelect,
+        captionsBurnIn: event.captionTrack?.burnIn ?? false,
       ),
     );
   }

@@ -71,6 +71,11 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
   final _playheadPosition = ValueNotifier<Duration>(Duration.zero);
   final _volumePreviewNotifier = ValueNotifier<double?>(null);
 
+  /// Scope notifier for the fine editor play time, cached in
+  /// [didChangeDependencies]. Driven from the scroll offset while the user
+  /// scrubs so canvas overlays (the CC caption pill) follow the scrub live.
+  ValueNotifier<Duration>? _scopePlayTimeNotifier;
+
   /// Active pointer positions — when ≥ 2 we compute pinch scale.
   final Map<int, Offset> _pointerPositions = {};
 
@@ -98,6 +103,12 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
     _scrollController = ScrollController()..addListener(_updatePlayheadTime);
     _verticalScrollController = ScrollController();
     _overlayStripsScrollController = ScrollController();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _scopePlayTimeNotifier = VideoEditorScope.of(context).playTimeNotifier;
   }
 
   @override
@@ -695,26 +706,15 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
         _reorderEditorList(audioTracks, audioIdx, targetIdx);
 
       case .captions:
-        // Burned-in cues are layers; overlay cues live in the caption track
-        // meta and have no editor list to reorder.
-        final layer = item.layer;
-        if (layer != null) {
-          final layers = editor.activeLayers;
-          final layerIdx = layers.indexWhere((l) => l.id == item.id);
-          editor.setLayerTimeline(
-            index: layerIdx,
-            startTime: startTime,
-            endTime: startTime + duration,
-            skipUpdateHistory: true,
-          );
-        } else {
-          editor.setCaptionCueTimeline(
-            cueId: item.id,
-            startTime: startTime,
-            endTime: startTime + duration,
-            skipUpdateHistory: true,
-          );
-        }
+        // Overlapping cues stack rows via the bloc's generic lane packing;
+        // there is no editor list to reorder for captions. The cue timeline
+        // write also syncs the burned-in layer when present.
+        editor.setCaptionCueTimeline(
+          cueId: item.id,
+          startTime: startTime,
+          endTime: startTime + duration,
+          skipUpdateHistory: true,
+        );
     }
 
     context.read<TimelineOverlayBloc>().add(
@@ -836,24 +836,12 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
         );
 
       case .captions:
-        final layer = item.layer;
-        if (layer != null) {
-          final layers = editor.activeLayers;
-          final layerIdx = layers.indexWhere((l) => l.id == item.id);
-          editor.setLayerTimeline(
-            index: layerIdx,
-            startTime: startTime,
-            endTime: endTime,
-            skipUpdateHistory: true,
-          );
-        } else {
-          editor.setCaptionCueTimeline(
-            cueId: item.id,
-            startTime: startTime,
-            endTime: endTime,
-            skipUpdateHistory: true,
-          );
-        }
+        editor.setCaptionCueTimeline(
+          cueId: item.id,
+          startTime: startTime,
+          endTime: endTime,
+          skipUpdateHistory: true,
+        );
     }
 
     context.read<TimelineOverlayBloc>().add(
@@ -976,24 +964,12 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
         );
 
       case .captions:
-        final layer = item.layer;
-        if (layer != null) {
-          final layers = editor.activeLayers;
-          final layerIdx = layers.indexWhere((l) => l.id == item.id);
-          editor.setLayerTimeline(
-            index: layerIdx,
-            startTime: startTime,
-            endTime: startTime + item.duration,
-            skipUpdateHistory: true,
-          );
-        } else {
-          editor.setCaptionCueTimeline(
-            cueId: item.id,
-            startTime: startTime,
-            endTime: startTime + item.duration,
-            skipUpdateHistory: true,
-          );
-        }
+        editor.setCaptionCueTimeline(
+          cueId: item.id,
+          startTime: startTime,
+          endTime: startTime + item.duration,
+          skipUpdateHistory: true,
+        );
     }
   }
 
@@ -1099,7 +1075,18 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
   /// Derives the time at the playhead from scroll offset.
   void _updatePlayheadTime() {
     if (!_scrollController.hasClients) return;
-    _playheadPosition.value = _scrollOffsetToPosition(_scrollController.offset);
+    final position = _scrollOffsetToPosition(_scrollController.offset);
+    _playheadPosition.value = position;
+
+    // While scrubbing (video paused) the scroll offset is the source of truth
+    // for the play time, so drive the scope notifier straight from it —
+    // unthrottled — and canvas overlays like the CC caption pill follow the
+    // scrub live instead of waiting on the throttled seek round-trip (which a
+    // paused/seeking player can stall). During playback the canvas playhead
+    // ticker owns this notifier, so leave it untouched.
+    if (!context.read<VideoEditorMainBloc>().state.isPlaying) {
+      _scopePlayTimeNotifier?.value = position;
+    }
   }
 
   /// Converts a composite playback [position] to the corresponding scroll

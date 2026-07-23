@@ -8035,17 +8035,43 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorOpenCaptionsSemanticLabel => '字幕エディタを開く';
 
   @override
-  String get videoEditorCaptionsModeTitle => '字幕を追加';
+  String get videoEditorCaptionsBurnInLabel => '動画に焼き込む';
 
   @override
-  String get videoEditorCaptionsModeSubtitle =>
-      'スタイル付きで動画に焼き込むか、視聴者がオン/オフできるクローズドキャプション(CC)として添付できます。';
+  String get videoEditorCaptionsPresetCustom => 'カスタム';
 
   @override
-  String get videoEditorCaptionsModeBurnIn => '動画に焼き込む';
+  String get videoEditorCaptionsCustomStyleTitle => 'カスタムスタイル';
 
   @override
-  String get videoEditorCaptionsModeOverlay => 'クローズドキャプション(CC)';
+  String get videoEditorCaptionsCustomApply => '適用';
+
+  @override
+  String get videoEditorCaptionsCustomFont => 'フォント';
+
+  @override
+  String get videoEditorCaptionsCustomTextColor => '文字色';
+
+  @override
+  String get videoEditorCaptionsCustomBackground => '背景';
+
+  @override
+  String get videoEditorCaptionsCustomBackgroundColor => '背景色';
+
+  @override
+  String get videoEditorCaptionsCustomAnimation => 'アニメーション';
+
+  @override
+  String get videoEditorCaptionsAnimationNone => 'なし';
+
+  @override
+  String get videoEditorCaptionsAnimationFade => 'フェード';
+
+  @override
+  String get videoEditorCaptionsAnimationPop => 'ポップ';
+
+  @override
+  String get videoEditorCaptionsAnimationSpring => 'スプリング';
 
   @override
   String get videoEditorCaptionsEditTitle => '字幕';
@@ -8111,7 +8137,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorCaptionsPresetPop => 'ポップ';
 
   @override
-  String get videoEditorCaptionsPresetSlideUp => 'スライド';
+  String get videoEditorCaptionsPresetZoom => 'Zoom';
 
   @override
   String get videoEditorCaptionsPresetSpring => 'スプリング';
@@ -8123,10 +8149,46 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorCaptionsPresetHeadline => 'ヘッドライン';
 
   @override
-  String get videoEditorCaptionsSwitchToOverlay => 'クローズドキャプション(CC)に切り替える';
+  String get videoEditorCaptionsPresetTypewriter => 'タイプライター';
 
   @override
-  String get videoEditorCaptionsSwitchToBurnIn => '焼き込み字幕に切り替える';
+  String get videoEditorCaptionsPresetMarker => 'マーカー';
+
+  @override
+  String get videoEditorCaptionsPresetScript => 'カリグラフィー';
+
+  @override
+  String get videoEditorCaptionsPresetRetro => 'レトロ';
+
+  @override
+  String get videoEditorCaptionsPresetElegant => 'エレガント';
+
+  @override
+  String get videoEditorCaptionsPresetBubble => 'バブル';
+
+  @override
+  String get videoEditorCaptionsPresetNeon => 'ネオン';
+
+  @override
+  String get videoEditorCaptionsPresetBold => '太字';
+
+  @override
+  String get videoEditorCaptionsPresetDreamy => 'ドリーミー';
+
+  @override
+  String get videoEditorCaptionsPresetOcean => 'オーシャン';
+
+  @override
+  String get videoEditorCaptionsPresetSunny => 'サニー';
+
+  @override
+  String get videoEditorCaptionsPresetHandwritten => '手書き';
+
+  @override
+  String get videoEditorCaptionsPresetSerif => 'セリフ';
+
+  @override
+  String get videoEditorCaptionsPresetStamp => 'スタンプ';
 
   @override
   String get videoEditorOpenTextSemanticLabel => 'テキストエディタを開く';

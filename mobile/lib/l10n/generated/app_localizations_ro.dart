@@ -8547,17 +8547,43 @@ class AppLocalizationsRo extends AppLocalizations {
       'Deschide editorul de subtitrări';
 
   @override
-  String get videoEditorCaptionsModeTitle => 'Adaugă subtitrări';
+  String get videoEditorCaptionsBurnInLabel => 'Încorporează în videoclip';
 
   @override
-  String get videoEditorCaptionsModeSubtitle =>
-      'Imprimă-le în videoclip cu un stil sau atașează-le ca subtitrări (CC) pe care spectatorii le pot activa și dezactiva.';
+  String get videoEditorCaptionsPresetCustom => 'Person.';
 
   @override
-  String get videoEditorCaptionsModeBurnIn => 'Imprimă în videoclip';
+  String get videoEditorCaptionsCustomStyleTitle => 'Stil personalizat';
 
   @override
-  String get videoEditorCaptionsModeOverlay => 'Subtitrări (CC)';
+  String get videoEditorCaptionsCustomApply => 'Aplică';
+
+  @override
+  String get videoEditorCaptionsCustomFont => 'Font';
+
+  @override
+  String get videoEditorCaptionsCustomTextColor => 'Culoare text';
+
+  @override
+  String get videoEditorCaptionsCustomBackground => 'Fundal';
+
+  @override
+  String get videoEditorCaptionsCustomBackgroundColor => 'Culoare fundal';
+
+  @override
+  String get videoEditorCaptionsCustomAnimation => 'Animație';
+
+  @override
+  String get videoEditorCaptionsAnimationNone => 'Niciuna';
+
+  @override
+  String get videoEditorCaptionsAnimationFade => 'Estompare';
+
+  @override
+  String get videoEditorCaptionsAnimationPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsAnimationSpring => 'Arc';
 
   @override
   String get videoEditorCaptionsEditTitle => 'Subtitrări';
@@ -8625,7 +8651,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorCaptionsPresetPop => 'Pop';
 
   @override
-  String get videoEditorCaptionsPresetSlideUp => 'Slide';
+  String get videoEditorCaptionsPresetZoom => 'Zoom';
 
   @override
   String get videoEditorCaptionsPresetSpring => 'Spring';
@@ -8637,11 +8663,46 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorCaptionsPresetHeadline => 'Titlu';
 
   @override
-  String get videoEditorCaptionsSwitchToOverlay => 'Treci la subtitrări (CC)';
+  String get videoEditorCaptionsPresetTypewriter => 'Mașină de scris';
 
   @override
-  String get videoEditorCaptionsSwitchToBurnIn =>
-      'Treci la subtitrări imprimate';
+  String get videoEditorCaptionsPresetMarker => 'Marker';
+
+  @override
+  String get videoEditorCaptionsPresetScript => 'Caligrafie';
+
+  @override
+  String get videoEditorCaptionsPresetRetro => 'Retro';
+
+  @override
+  String get videoEditorCaptionsPresetElegant => 'Elegant';
+
+  @override
+  String get videoEditorCaptionsPresetBubble => 'Bulă';
+
+  @override
+  String get videoEditorCaptionsPresetNeon => 'Neon';
+
+  @override
+  String get videoEditorCaptionsPresetBold => 'Aldin';
+
+  @override
+  String get videoEditorCaptionsPresetDreamy => 'Visător';
+
+  @override
+  String get videoEditorCaptionsPresetOcean => 'Ocean';
+
+  @override
+  String get videoEditorCaptionsPresetSunny => 'Însorit';
+
+  @override
+  String get videoEditorCaptionsPresetHandwritten => 'Scris de mână';
+
+  @override
+  String get videoEditorCaptionsPresetSerif => 'Serif';
+
+  @override
+  String get videoEditorCaptionsPresetStamp => 'Ștampilă';
 
   @override
   String get videoEditorOpenTextSemanticLabel => 'Deschide editorul de text';

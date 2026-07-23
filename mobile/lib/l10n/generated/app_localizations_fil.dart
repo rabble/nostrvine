@@ -8459,17 +8459,43 @@ class AppLocalizationsFil extends AppLocalizations {
       'Buksan ang subtitle editor';
 
   @override
-  String get videoEditorCaptionsModeTitle => 'Magdagdag ng mga subtitle';
+  String get videoEditorCaptionsBurnInLabel => 'I-burn sa video';
 
   @override
-  String get videoEditorCaptionsModeSubtitle =>
-      'I-burn ang mga ito sa video gamit ang isang istilo, o ikabit bilang mga subtitle (CC) na puwedeng i-on at i-off ng manonood.';
+  String get videoEditorCaptionsPresetCustom => 'Custom';
 
   @override
-  String get videoEditorCaptionsModeBurnIn => 'I-burn sa video';
+  String get videoEditorCaptionsCustomStyleTitle => 'Custom na estilo';
 
   @override
-  String get videoEditorCaptionsModeOverlay => 'Mga subtitle (CC)';
+  String get videoEditorCaptionsCustomApply => 'Ilapat';
+
+  @override
+  String get videoEditorCaptionsCustomFont => 'Font';
+
+  @override
+  String get videoEditorCaptionsCustomTextColor => 'Kulay ng teksto';
+
+  @override
+  String get videoEditorCaptionsCustomBackground => 'Background';
+
+  @override
+  String get videoEditorCaptionsCustomBackgroundColor => 'Kulay ng background';
+
+  @override
+  String get videoEditorCaptionsCustomAnimation => 'Animation';
+
+  @override
+  String get videoEditorCaptionsAnimationNone => 'Wala';
+
+  @override
+  String get videoEditorCaptionsAnimationFade => 'Fade';
+
+  @override
+  String get videoEditorCaptionsAnimationPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsAnimationSpring => 'Spring';
 
   @override
   String get videoEditorCaptionsEditTitle => 'Mga subtitle';
@@ -8540,7 +8566,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoEditorCaptionsPresetPop => 'Pop';
 
   @override
-  String get videoEditorCaptionsPresetSlideUp => 'Slide';
+  String get videoEditorCaptionsPresetZoom => 'Zoom';
 
   @override
   String get videoEditorCaptionsPresetSpring => 'Spring';
@@ -8552,12 +8578,46 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoEditorCaptionsPresetHeadline => 'Headline';
 
   @override
-  String get videoEditorCaptionsSwitchToOverlay =>
-      'Lumipat sa mga subtitle (CC)';
+  String get videoEditorCaptionsPresetTypewriter => 'Makinilya';
 
   @override
-  String get videoEditorCaptionsSwitchToBurnIn =>
-      'Lumipat sa mga naka-burn na subtitle';
+  String get videoEditorCaptionsPresetMarker => 'Marker';
+
+  @override
+  String get videoEditorCaptionsPresetScript => 'Kaligrapiya';
+
+  @override
+  String get videoEditorCaptionsPresetRetro => 'Retro';
+
+  @override
+  String get videoEditorCaptionsPresetElegant => 'Elegante';
+
+  @override
+  String get videoEditorCaptionsPresetBubble => 'Bula';
+
+  @override
+  String get videoEditorCaptionsPresetNeon => 'Neon';
+
+  @override
+  String get videoEditorCaptionsPresetBold => 'Makapal';
+
+  @override
+  String get videoEditorCaptionsPresetDreamy => 'Panaginip';
+
+  @override
+  String get videoEditorCaptionsPresetOcean => 'Karagatan';
+
+  @override
+  String get videoEditorCaptionsPresetSunny => 'Maaraw';
+
+  @override
+  String get videoEditorCaptionsPresetHandwritten => 'Sulat-kamay';
+
+  @override
+  String get videoEditorCaptionsPresetSerif => 'Serif';
+
+  @override
+  String get videoEditorCaptionsPresetStamp => 'Selyo';
 
   @override
   String get videoEditorOpenTextSemanticLabel => 'Buksan ang text editor';

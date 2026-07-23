@@ -8463,17 +8463,43 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoEditorOpenCaptionsSemanticLabel => 'Untertitel-Editor öffnen';
 
   @override
-  String get videoEditorCaptionsModeTitle => 'Untertitel hinzufügen';
+  String get videoEditorCaptionsBurnInLabel => 'In Video einbrennen';
 
   @override
-  String get videoEditorCaptionsModeSubtitle =>
-      'Brenne sie mit einem Style ins Video, oder häng sie als Untertitel (CC) an, die Zuschauer ein- und ausschalten können.';
+  String get videoEditorCaptionsPresetCustom => 'Eigen';
 
   @override
-  String get videoEditorCaptionsModeBurnIn => 'Ins Video brennen';
+  String get videoEditorCaptionsCustomStyleTitle => 'Eigener Stil';
 
   @override
-  String get videoEditorCaptionsModeOverlay => 'Untertitel (CC)';
+  String get videoEditorCaptionsCustomApply => 'Anwenden';
+
+  @override
+  String get videoEditorCaptionsCustomFont => 'Schrift';
+
+  @override
+  String get videoEditorCaptionsCustomTextColor => 'Textfarbe';
+
+  @override
+  String get videoEditorCaptionsCustomBackground => 'Hintergrund';
+
+  @override
+  String get videoEditorCaptionsCustomBackgroundColor => 'Hintergrundfarbe';
+
+  @override
+  String get videoEditorCaptionsCustomAnimation => 'Animation';
+
+  @override
+  String get videoEditorCaptionsAnimationNone => 'Keine';
+
+  @override
+  String get videoEditorCaptionsAnimationFade => 'Einblenden';
+
+  @override
+  String get videoEditorCaptionsAnimationPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsAnimationSpring => 'Feder';
 
   @override
   String get videoEditorCaptionsEditTitle => 'Untertitel';
@@ -8542,7 +8568,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoEditorCaptionsPresetPop => 'Pop';
 
   @override
-  String get videoEditorCaptionsPresetSlideUp => 'Slide';
+  String get videoEditorCaptionsPresetZoom => 'Zoom';
 
   @override
   String get videoEditorCaptionsPresetSpring => 'Spring';
@@ -8554,12 +8580,46 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoEditorCaptionsPresetHeadline => 'Schlagzeile';
 
   @override
-  String get videoEditorCaptionsSwitchToOverlay =>
-      'Zu Untertiteln (CC) wechseln';
+  String get videoEditorCaptionsPresetTypewriter => 'Schreibmaschine';
 
   @override
-  String get videoEditorCaptionsSwitchToBurnIn =>
-      'Zu eingebrannten Untertiteln wechseln';
+  String get videoEditorCaptionsPresetMarker => 'Marker';
+
+  @override
+  String get videoEditorCaptionsPresetScript => 'Schreibschrift';
+
+  @override
+  String get videoEditorCaptionsPresetRetro => 'Retro';
+
+  @override
+  String get videoEditorCaptionsPresetElegant => 'Elegant';
+
+  @override
+  String get videoEditorCaptionsPresetBubble => 'Bubble';
+
+  @override
+  String get videoEditorCaptionsPresetNeon => 'Neon';
+
+  @override
+  String get videoEditorCaptionsPresetBold => 'Fett';
+
+  @override
+  String get videoEditorCaptionsPresetDreamy => 'Verträumt';
+
+  @override
+  String get videoEditorCaptionsPresetOcean => 'Ozean';
+
+  @override
+  String get videoEditorCaptionsPresetSunny => 'Sonnig';
+
+  @override
+  String get videoEditorCaptionsPresetHandwritten => 'Handschrift';
+
+  @override
+  String get videoEditorCaptionsPresetSerif => 'Serif';
+
+  @override
+  String get videoEditorCaptionsPresetStamp => 'Stempel';
 
   @override
   String get videoEditorOpenTextSemanticLabel => 'Text-Editor öffnen';

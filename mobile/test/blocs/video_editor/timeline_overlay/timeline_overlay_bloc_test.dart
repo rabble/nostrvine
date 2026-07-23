@@ -108,8 +108,8 @@ void main() {
       );
 
       blocTest<TimelineOverlayBloc, TimelineOverlayState>(
-        'partitions caption layers into the captions strip and maps '
-        'overlay cues',
+        'drives the captions strip from cues and keeps burned layers off '
+        'both strips',
         build: TimelineOverlayBloc.new,
         act: (bloc) => bloc.add(
           TimelineOverlayItemsUpdate(
@@ -120,14 +120,16 @@ void main() {
                 startTime: Duration.zero,
                 endTime: const Duration(seconds: 2),
               ),
+              // A burned-in caption layer is a derived render, not a timeline
+              // item: excluded from the layer strip and never a caption item.
               TextLayer(
                 id: 'caption-layer-1',
                 text: 'Burned cue',
-                startTime: const Duration(seconds: 1),
-                endTime: const Duration(seconds: 2),
+                startTime: const Duration(seconds: 3),
+                endTime: const Duration(seconds: 4),
                 meta: const {
                   VideoEditorConstants.captionCueMetaKey: true,
-                  VideoEditorConstants.captionCueIdMetaKey: 'cue-9',
+                  VideoEditorConstants.captionCueIdMetaKey: 'cue-1',
                 },
               ),
             ],
@@ -135,13 +137,13 @@ void main() {
             audioTracks: const [],
             totalVideoDuration: const Duration(seconds: 6),
             captionTrack: const CaptionTrack(
-              mode: CaptionRenderMode.overlay,
+              burnIn: true,
               presetId: 'classic',
               languageTag: 'en-US',
               cues: [
                 CaptionCue(
                   id: 'cue-1',
-                  text: 'Overlay cue',
+                  text: 'The cue',
                   start: Duration(seconds: 3),
                   end: Duration(seconds: 4),
                 ),
@@ -158,19 +160,15 @@ void main() {
               .where((i) => i.type == TimelineOverlayType.captions)
               .toList();
 
-          // The plain text layer stays a layer item; the caption layer moves
-          // to the captions strip.
+          // The plain text layer stays a layer item; the burned caption layer
+          // appears on neither strip.
           expect(layerItems.map((i) => i.id), equals(['text-1']));
+          // Caption items come only from the track cues, addressed by cue id.
+          expect(captionItems.map((i) => i.id), equals(['cue-1']));
+          expect(captionItems.single.layer, isNull);
+          expect(captionItems.single.label, equals('The cue'));
           expect(
-            captionItems.map((i) => i.id),
-            equals(['caption-layer-1', 'cue-1']),
-          );
-          // The burned cue keeps its layer; the overlay cue has none.
-          expect(captionItems.first.layer, isNotNull);
-          expect(captionItems.last.layer, isNull);
-          expect(captionItems.last.label, equals('Overlay cue'));
-          expect(
-            captionItems.last.startTime,
+            captionItems.single.startTime,
             equals(const Duration(seconds: 3)),
           );
         },

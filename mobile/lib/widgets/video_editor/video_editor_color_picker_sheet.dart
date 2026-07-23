@@ -11,6 +11,28 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Shows the full HSV color picker as a bottom sheet, resolving with the
+/// picked color, or `null` when dismissed.
+///
+/// Reuses the same picker the text editor's custom-color flow opens.
+Future<Color?> showFullColorPicker(
+  BuildContext context, {
+  required Color initialColor,
+}) async {
+  Color? picked;
+  await VineBottomSheet.show<void>(
+    context: context,
+    expanded: false,
+    scrollable: false,
+    isScrollControlled: true,
+    body: _FullColorPickerSheet(
+      initialColor: initialColor,
+      onColorSelected: (color) => picked = color,
+    ),
+  );
+  return picked;
+}
+
 /// Bottom sheet for color selection in the video editor.
 class VideoEditorColorPickerSheet extends ConsumerStatefulWidget {
   const VideoEditorColorPickerSheet({

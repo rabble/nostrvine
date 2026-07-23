@@ -135,9 +135,8 @@ void main() {
         verify(() => mockDraftService.deleteDraft(draft.id)).called(1);
       });
 
-      group('overlay captions', () {
+      group('caption publishing', () {
         const overlayTrack = CaptionTrack(
-          mode: CaptionRenderMode.overlay,
           presetId: 'classic',
           languageTag: 'de-CH',
           cues: [
@@ -262,7 +261,49 @@ void main() {
           },
         );
 
-        test('ignores burned-in caption tracks', () async {
+        test('publishes CC for burned-in caption tracks too', () async {
+          _setupSuccessfulPublish(
+            mockAuthService: mockAuthService,
+            mockUploadManager: mockUploadManager,
+            mockDraftService: mockDraftService,
+            mockVideoEventPublisher: mockVideoEventPublisher,
+          );
+          when(
+            () => mockBlossomService.uploadSubtitleVtt(
+              bytes: any(named: 'bytes'),
+            ),
+          ).thenAnswer(
+            (_) async => const BlossomUploadResult(
+              success: true,
+              url: 'https://media.divine.video/vtt123',
+            ),
+          );
+          when(
+            () => mockVideoEventPublisher.publishSubtitleTrack(
+              vineId: any(named: 'vineId'),
+              vttContent: any(named: 'vttContent'),
+              blossomUrl: any(named: 'blossomUrl'),
+              lang: any(named: 'lang'),
+            ),
+          ).thenAnswer((_) async => '39307:pk:subtitles:test_video_id');
+
+          final result = await service.publishVideo(
+            draft: _createTestDraft(
+              editorEditingParameters: editingParamsFor(
+                overlayTrack.copyWith(burnIn: true),
+              ),
+            ),
+          );
+
+          expect(result, isA<PublishSuccess>());
+          verify(
+            () => mockBlossomService.uploadSubtitleVtt(
+              bytes: any(named: 'bytes'),
+            ),
+          ).called(1);
+        });
+
+        test('publishes no CC when there are no cues', () async {
           _setupSuccessfulPublish(
             mockAuthService: mockAuthService,
             mockUploadManager: mockUploadManager,
@@ -274,7 +315,7 @@ void main() {
             draft: _createTestDraft(
               editorEditingParameters: editingParamsFor(
                 const CaptionTrack(
-                  mode: CaptionRenderMode.burnIn,
+                  burnIn: true,
                   presetId: 'pop',
                   languageTag: 'en-US',
                 ),

@@ -48,6 +48,7 @@ void main() {
               originalClipAspectRatio: 9 / 16,
               bodySizeNotifier: ValueNotifier(const Size(400, 600)),
               zoomMatrixNotifier: ValueNotifier(Matrix4.identity()),
+              playTimeNotifier: ValueNotifier(Duration.zero),
               fromLibrary: false,
               onOpenCamera: () {},
               onOpenClipsEditor: () {},

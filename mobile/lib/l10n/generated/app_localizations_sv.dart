@@ -8365,17 +8365,43 @@ class AppLocalizationsSv extends AppLocalizations {
       'Öppna undertextredigeraren';
 
   @override
-  String get videoEditorCaptionsModeTitle => 'Lägg till undertexter';
+  String get videoEditorCaptionsBurnInLabel => 'Bränn in i videon';
 
   @override
-  String get videoEditorCaptionsModeSubtitle =>
-      'Bränn in dem i videon med en stil, eller bifoga dem som undertexter (CC) som tittare kan slå på och av.';
+  String get videoEditorCaptionsPresetCustom => 'Egen';
 
   @override
-  String get videoEditorCaptionsModeBurnIn => 'Bränn in i videon';
+  String get videoEditorCaptionsCustomStyleTitle => 'Egen stil';
 
   @override
-  String get videoEditorCaptionsModeOverlay => 'Undertexter (CC)';
+  String get videoEditorCaptionsCustomApply => 'Använd';
+
+  @override
+  String get videoEditorCaptionsCustomFont => 'Typsnitt';
+
+  @override
+  String get videoEditorCaptionsCustomTextColor => 'Textfärg';
+
+  @override
+  String get videoEditorCaptionsCustomBackground => 'Bakgrund';
+
+  @override
+  String get videoEditorCaptionsCustomBackgroundColor => 'Bakgrundsfärg';
+
+  @override
+  String get videoEditorCaptionsCustomAnimation => 'Animation';
+
+  @override
+  String get videoEditorCaptionsAnimationNone => 'Ingen';
+
+  @override
+  String get videoEditorCaptionsAnimationFade => 'Tona';
+
+  @override
+  String get videoEditorCaptionsAnimationPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsAnimationSpring => 'Fjäder';
 
   @override
   String get videoEditorCaptionsEditTitle => 'Undertexter';
@@ -8443,7 +8469,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoEditorCaptionsPresetPop => 'Pop';
 
   @override
-  String get videoEditorCaptionsPresetSlideUp => 'Slide';
+  String get videoEditorCaptionsPresetZoom => 'Zoom';
 
   @override
   String get videoEditorCaptionsPresetSpring => 'Spring';
@@ -8455,11 +8481,46 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoEditorCaptionsPresetHeadline => 'Rubrik';
 
   @override
-  String get videoEditorCaptionsSwitchToOverlay => 'Byt till undertexter (CC)';
+  String get videoEditorCaptionsPresetTypewriter => 'Skrivmaskin';
 
   @override
-  String get videoEditorCaptionsSwitchToBurnIn =>
-      'Byt till inbrända undertexter';
+  String get videoEditorCaptionsPresetMarker => 'Märkpenna';
+
+  @override
+  String get videoEditorCaptionsPresetScript => 'Kalligrafi';
+
+  @override
+  String get videoEditorCaptionsPresetRetro => 'Retro';
+
+  @override
+  String get videoEditorCaptionsPresetElegant => 'Elegant';
+
+  @override
+  String get videoEditorCaptionsPresetBubble => 'Bubbla';
+
+  @override
+  String get videoEditorCaptionsPresetNeon => 'Neon';
+
+  @override
+  String get videoEditorCaptionsPresetBold => 'Fet';
+
+  @override
+  String get videoEditorCaptionsPresetDreamy => 'Drömsk';
+
+  @override
+  String get videoEditorCaptionsPresetOcean => 'Ocean';
+
+  @override
+  String get videoEditorCaptionsPresetSunny => 'Solig';
+
+  @override
+  String get videoEditorCaptionsPresetHandwritten => 'Handskriven';
+
+  @override
+  String get videoEditorCaptionsPresetSerif => 'Serif';
+
+  @override
+  String get videoEditorCaptionsPresetStamp => 'Stämpel';
 
   @override
   String get videoEditorOpenTextSemanticLabel => 'Öppna textredigerare';

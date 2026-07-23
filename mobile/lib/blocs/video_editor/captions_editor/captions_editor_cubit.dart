@@ -5,14 +5,17 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/video_editor/caption_style.dart';
 import 'package:openvine/models/video_editor/caption_track.dart';
 import 'package:openvine/services/video_editor/caption_generation_service.dart';
+import 'package:uuid/uuid.dart';
 
 part 'captions_editor_state.dart';
 
 /// Manages one captions editing session.
 ///
-/// Created per `VideoCaptionsEditorScreen` visit (like `AudioTimingCubit`).
+/// Created per captions-sheet visit (`showCaptionsEditorSheet`), like
+/// `AudioTimingCubit`.
 /// A fresh session (no [initialCues]) starts with on-device generation; an
 /// existing session starts ready with its cues.
 class CaptionsEditorCubit extends Cubit<CaptionsEditorState> {
@@ -21,9 +24,10 @@ class CaptionsEditorCubit extends Cubit<CaptionsEditorState> {
   CaptionsEditorCubit({
     required List<DivineVideoClip> clips,
     required Duration totalDuration,
-    required CaptionRenderMode mode,
     required String presetId,
     required String languageTag,
+    bool burnIn = false,
+    CaptionCustomStyle? customStyle,
     List<CaptionCue>? initialCues,
     CaptionGenerationService? generationService,
   }) : _generationService =
@@ -32,8 +36,9 @@ class CaptionsEditorCubit extends Cubit<CaptionsEditorState> {
        _totalDuration = totalDuration,
        super(
          CaptionsEditorState(
-           mode: mode,
+           burnIn: burnIn,
            presetId: presetId,
+           customStyle: customStyle,
            languageTag: languageTag,
            status: initialCues != null
                ? CaptionsEditorStatus.ready
@@ -49,7 +54,7 @@ class CaptionsEditorCubit extends Cubit<CaptionsEditorState> {
   /// Default length of a manually added cue.
   static const Duration _newCueDuration = Duration(seconds: 2);
 
-  var _nextManualCueId = 0;
+  static const _uuid = Uuid();
 
   /// Runs on-device generation for a fresh session. No-op when the session
   /// started from existing cues.
@@ -90,6 +95,49 @@ class CaptionsEditorCubit extends Cubit<CaptionsEditorState> {
     );
   }
 
+  /// Applies a manually entered start/end time for [cueId].
+  ///
+  /// The edited edge is clamped so the cue keeps
+  /// [VideoEditorConstants.minCaptionCueDuration] and stays inside the
+  /// video. Cues may freely overlap each other.
+  void updateCueTiming(String cueId, {Duration? start, Duration? end}) {
+    final index = state.cues.indexWhere((cue) => cue.id == cueId);
+    if (index == -1) return;
+    final cue = state.cues[index];
+
+    var newStart = cue.start;
+    if (start != null) {
+      var upper = cue.end - VideoEditorConstants.minCaptionCueDuration;
+      if (upper < Duration.zero) upper = Duration.zero;
+      newStart = _clampDuration(start, Duration.zero, upper);
+    }
+    var newEnd = cue.end;
+    if (end != null) {
+      var lower = newStart + VideoEditorConstants.minCaptionCueDuration;
+      if (lower > _totalDuration) lower = _totalDuration;
+      newEnd = _clampDuration(end, lower, _totalDuration);
+    }
+    if (newStart == cue.start && newEnd == cue.end) return;
+
+    emit(
+      state.copyWith(
+        cues: [
+          for (final other in state.cues)
+            if (other.id == cueId)
+              other.copyWith(start: newStart, end: newEnd)
+            else
+              other,
+        ],
+      ),
+    );
+  }
+
+  static Duration _clampDuration(Duration value, Duration min, Duration max) {
+    if (value < min) return min;
+    if (value > max) return max;
+    return value;
+  }
+
   /// Removes the cue with [cueId].
   void removeCue(String cueId) {
     emit(
@@ -103,19 +151,17 @@ class CaptionsEditorCubit extends Cubit<CaptionsEditorState> {
   }
 
   /// Appends a new cue after the last one (or at the timeline start),
-  /// clamped to the video duration. Fine-tuning happens on the timeline.
+  /// clamped to the video duration. Near the video end it back-shifts over
+  /// the previous cue — overlapping is allowed. Fine-tuning happens on the
+  /// timeline.
   void addCue() {
     final lastEnd = state.cues.isEmpty ? Duration.zero : state.cues.last.end;
     var start = lastEnd;
     var end = start + _newCueDuration;
     if (end > _totalDuration) {
       end = _totalDuration;
-      // Prefer a shorter cue in the remaining tail; only when that tail is
-      // too small to read, back-shift over the previous cue instead.
-      if (end - start < VideoEditorConstants.minCaptionCueDuration) {
-        start = end - _newCueDuration;
-        if (start < Duration.zero) start = Duration.zero;
-      }
+      start = end - _newCueDuration;
+      if (start < Duration.zero) start = Duration.zero;
     }
     emit(
       state.copyWith(
@@ -123,7 +169,7 @@ class CaptionsEditorCubit extends Cubit<CaptionsEditorState> {
         cues: [
           ...state.cues,
           CaptionCue(
-            id: 'manual-${_nextManualCueId++}',
+            id: 'manual-${_uuid.v4()}',
             text: '',
             start: start,
             end: end,
@@ -133,14 +179,22 @@ class CaptionsEditorCubit extends Cubit<CaptionsEditorState> {
     );
   }
 
-  /// Selects the track-wide style preset (burn-in mode).
+  /// Selects a built-in style preset (burn-in mode), dropping any custom
+  /// style.
   void setPreset(String presetId) {
-    emit(state.copyWith(presetId: presetId));
+    emit(state.copyWith(presetId: presetId, clearCustomStyle: true));
   }
 
-  /// Switches between burn-in and CC overlay. Cue text and timing survive;
-  /// the commit handler materializes or removes layers accordingly.
-  void setMode(CaptionRenderMode mode) {
-    emit(state.copyWith(mode: mode));
+  /// Applies a user-defined style (burn-in mode), taking precedence over the
+  /// preset.
+  void setCustomStyle(CaptionCustomStyle customStyle) {
+    emit(state.copyWith(customStyle: customStyle));
+  }
+
+  /// Toggles burning the captions into the video (CC is always published).
+  /// Cue text and timing survive; the commit handler materializes or removes
+  /// the burned-in layers accordingly.
+  void setBurnIn({required bool burnIn}) {
+    emit(state.copyWith(burnIn: burnIn));
   }
 }

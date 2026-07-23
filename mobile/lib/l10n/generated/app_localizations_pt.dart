@@ -8422,17 +8422,43 @@ class AppLocalizationsPt extends AppLocalizations {
       'Abrir o editor de legendas';
 
   @override
-  String get videoEditorCaptionsModeTitle => 'Adicionar legendas';
+  String get videoEditorCaptionsBurnInLabel => 'Gravar no vídeo';
 
   @override
-  String get videoEditorCaptionsModeSubtitle =>
-      'Grave-as no vídeo com um estilo, ou anexe-as como legendas (CC) que podem ser ativadas e desativadas.';
+  String get videoEditorCaptionsPresetCustom => 'Person.';
 
   @override
-  String get videoEditorCaptionsModeBurnIn => 'Gravar no vídeo';
+  String get videoEditorCaptionsCustomStyleTitle => 'Estilo personalizado';
 
   @override
-  String get videoEditorCaptionsModeOverlay => 'Legendas (CC)';
+  String get videoEditorCaptionsCustomApply => 'Aplicar';
+
+  @override
+  String get videoEditorCaptionsCustomFont => 'Fonte';
+
+  @override
+  String get videoEditorCaptionsCustomTextColor => 'Cor do texto';
+
+  @override
+  String get videoEditorCaptionsCustomBackground => 'Fundo';
+
+  @override
+  String get videoEditorCaptionsCustomBackgroundColor => 'Cor do fundo';
+
+  @override
+  String get videoEditorCaptionsCustomAnimation => 'Animação';
+
+  @override
+  String get videoEditorCaptionsAnimationNone => 'Nenhuma';
+
+  @override
+  String get videoEditorCaptionsAnimationFade => 'Fade';
+
+  @override
+  String get videoEditorCaptionsAnimationPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsAnimationSpring => 'Mola';
 
   @override
   String get videoEditorCaptionsEditTitle => 'Legendas';
@@ -8501,7 +8527,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditorCaptionsPresetPop => 'Pop';
 
   @override
-  String get videoEditorCaptionsPresetSlideUp => 'Slide';
+  String get videoEditorCaptionsPresetZoom => 'Zoom';
 
   @override
   String get videoEditorCaptionsPresetSpring => 'Spring';
@@ -8513,11 +8539,46 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditorCaptionsPresetHeadline => 'Manchete';
 
   @override
-  String get videoEditorCaptionsSwitchToOverlay => 'Mudar para legendas (CC)';
+  String get videoEditorCaptionsPresetTypewriter => 'Máquina de escrever';
 
   @override
-  String get videoEditorCaptionsSwitchToBurnIn =>
-      'Mudar para legendas gravadas';
+  String get videoEditorCaptionsPresetMarker => 'Marcador';
+
+  @override
+  String get videoEditorCaptionsPresetScript => 'Caligrafia';
+
+  @override
+  String get videoEditorCaptionsPresetRetro => 'Retrô';
+
+  @override
+  String get videoEditorCaptionsPresetElegant => 'Elegante';
+
+  @override
+  String get videoEditorCaptionsPresetBubble => 'Bolha';
+
+  @override
+  String get videoEditorCaptionsPresetNeon => 'Neon';
+
+  @override
+  String get videoEditorCaptionsPresetBold => 'Negrito';
+
+  @override
+  String get videoEditorCaptionsPresetDreamy => 'Sonhador';
+
+  @override
+  String get videoEditorCaptionsPresetOcean => 'Oceano';
+
+  @override
+  String get videoEditorCaptionsPresetSunny => 'Ensolarado';
+
+  @override
+  String get videoEditorCaptionsPresetHandwritten => 'Manuscrito';
+
+  @override
+  String get videoEditorCaptionsPresetSerif => 'Serifa';
+
+  @override
+  String get videoEditorCaptionsPresetStamp => 'Carimbo';
 
   @override
   String get videoEditorOpenTextSemanticLabel => 'Abrir editor de texto';

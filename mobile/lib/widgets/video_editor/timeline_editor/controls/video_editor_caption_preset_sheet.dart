@@ -1,49 +1,101 @@
-// ABOUTME: Bottom sheet for picking the track-wide caption style preset.
-// ABOUTME: Each tile loops the preset's real font, colors, and animation.
-
-import 'dart:ui' show lerpDouble;
+// ABOUTME: Bottom sheet for picking the caption style: built-in presets plus
+// ABOUTME: a Custom tile that opens the user-defined style editor.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/models/video_editor/caption_style.dart';
 import 'package:openvine/models/video_editor/caption_style_preset.dart';
-import 'package:openvine/widgets/video_editor/timeline_editor/controls/animation_picker_components.dart';
-import 'package:pro_image_editor/pro_image_editor.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/controls/caption_style_preview.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_caption_custom_style_sheet.dart';
+
+/// The chosen caption style: a built-in preset or a user-defined custom style.
+sealed class CaptionStyleSelection {
+  const CaptionStyleSelection();
+}
+
+/// A built-in preset was chosen.
+class CaptionPresetSelection extends CaptionStyleSelection {
+  /// Creates a preset selection.
+  const CaptionPresetSelection(this.presetId);
+
+  /// The chosen preset id.
+  final String presetId;
+}
+
+/// A user-defined custom style was chosen.
+class CaptionCustomSelection extends CaptionStyleSelection {
+  /// Creates a custom selection.
+  const CaptionCustomSelection(this.style);
+
+  /// The chosen custom style.
+  final CaptionCustomStyle style;
+}
 
 /// Resolves the localized display name of the preset with [presetId].
 String captionPresetDisplayName(AppLocalizations l10n, String presetId) =>
     switch (presetId) {
       'pop' => l10n.videoEditorCaptionsPresetPop,
-      'slideUp' => l10n.videoEditorCaptionsPresetSlideUp,
+      'zoom' => l10n.videoEditorCaptionsPresetZoom,
       'spring' => l10n.videoEditorCaptionsPresetSpring,
       'mono' => l10n.videoEditorCaptionsPresetMono,
       'headline' => l10n.videoEditorCaptionsPresetHeadline,
+      'typewriter' => l10n.videoEditorCaptionsPresetTypewriter,
+      'marker' => l10n.videoEditorCaptionsPresetMarker,
+      'script' => l10n.videoEditorCaptionsPresetScript,
+      'retro' => l10n.videoEditorCaptionsPresetRetro,
+      'elegant' => l10n.videoEditorCaptionsPresetElegant,
+      'bubble' => l10n.videoEditorCaptionsPresetBubble,
+      'neon' => l10n.videoEditorCaptionsPresetNeon,
+      'bold' => l10n.videoEditorCaptionsPresetBold,
+      'dreamy' => l10n.videoEditorCaptionsPresetDreamy,
+      'ocean' => l10n.videoEditorCaptionsPresetOcean,
+      'sunny' => l10n.videoEditorCaptionsPresetSunny,
+      'handwritten' => l10n.videoEditorCaptionsPresetHandwritten,
+      'serif' => l10n.videoEditorCaptionsPresetSerif,
+      'stamp' => l10n.videoEditorCaptionsPresetStamp,
       _ => l10n.videoEditorCaptionsPresetClassic,
     };
 
-/// Shows the caption preset picker; resolves with the chosen preset id, or
-/// `null` when dismissed.
-Future<String?> showCaptionPresetSheet(
+/// Shows the caption style picker; resolves with the chosen selection (a
+/// built-in preset or a custom style), or `null` when dismissed.
+///
+/// [selectedId] highlights the active preset; [currentCustomStyle] seeds the
+/// Custom tile and its editor when a custom style is already active.
+Future<CaptionStyleSelection?> showCaptionStyleSheet(
   BuildContext context, {
   required String selectedId,
+  CaptionCustomStyle? currentCustomStyle,
 }) {
-  return VineBottomSheet.show<String>(
+  return VineBottomSheet.show<CaptionStyleSelection>(
     context: context,
-    expanded: false,
-    scrollable: false,
     title: Text(context.l10n.videoEditorCaptionsPresetTitle),
-    body: CaptionPresetPickerView(selectedId: selectedId),
+    buildScrollBody: (scrollController) => CaptionPresetPickerView(
+      selectedId: selectedId,
+      currentCustomStyle: currentCustomStyle,
+      scrollController: scrollController,
+    ),
   );
 }
 
-/// Horizontal list of caption presets with looping animated previews.
+/// Vertically scrolling style grid: a Custom tile plus built-in presets.
 class CaptionPresetPickerView extends StatefulWidget {
-  /// Creates the picker with the currently selected preset highlighted.
-  const CaptionPresetPickerView({required this.selectedId, super.key});
+  /// Creates the picker with the currently selected style highlighted.
+  const CaptionPresetPickerView({
+    required this.selectedId,
+    this.currentCustomStyle,
+    this.scrollController,
+    super.key,
+  });
 
-  /// The currently selected preset id.
+  /// The currently selected preset id (ignored when a custom style is active).
   final String selectedId;
+
+  /// The active custom style, when one is set.
+  final CaptionCustomStyle? currentCustomStyle;
+
+  /// Sheet-provided controller so drag-to-resize keeps working.
+  final ScrollController? scrollController;
 
   @override
   State<CaptionPresetPickerView> createState() =>
@@ -54,8 +106,8 @@ class _CaptionPresetPickerViewState extends State<CaptionPresetPickerView>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
-  /// One preview loop: enter animation, hold, repeat.
-  static const _loopMs = 2400;
+  /// One preview loop: cue A enters/holds/leaves, then cue B, then repeat.
+  static const _loopMs = 3200;
 
   @override
   void initState() {
@@ -72,48 +124,74 @@ class _CaptionPresetPickerViewState extends State<CaptionPresetPickerView>
     super.dispose();
   }
 
+  Future<void> _openCustomEditor() async {
+    final style = await showCaptionCustomStyleSheet(
+      context,
+      initial: widget.currentCustomStyle ?? CaptionCustomStyle.initial(),
+    );
+    if (style != null && mounted) {
+      Navigator.of(context).pop(CaptionCustomSelection(style));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return SizedBox(
-      height: 170,
-      child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        scrollDirection: Axis.horizontal,
-        itemCount: CaptionStylePreset.presets.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          final preset = CaptionStylePreset.presets[index];
-          return _PresetTile(
-            preset: preset,
-            label: captionPresetDisplayName(l10n, preset.id),
-            selected: preset.id == widget.selectedId,
-            controller: _controller,
-            loopMs: _loopMs,
-            onTap: () => Navigator.of(context).pop(preset.id),
-          );
-        },
+    final hasCustom = widget.currentCustomStyle != null;
+    return GridView.builder(
+      controller: widget.scrollController,
+      padding: .fromLTRB(
+        16,
+        16,
+        16,
+        16 + MediaQuery.viewPaddingOf(context).bottom,
       ),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 12,
+        childAspectRatio: 1.15,
+      ),
+      // The Custom tile leads; built-in presets follow.
+      itemCount: CaptionStylePreset.presets.length + 1,
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return _CustomStyleTile(
+            label: l10n.videoEditorCaptionsPresetCustom,
+            selected: hasCustom,
+            onTap: _openCustomEditor,
+          );
+        }
+        final preset = CaptionStylePreset.presets[index - 1];
+        final label = captionPresetDisplayName(l10n, preset.id);
+        return _StyleTile(
+          style: preset.style,
+          label: label,
+          selected: !hasCustom && preset.id == widget.selectedId,
+          controller: _controller,
+          loopMs: _loopMs,
+          onTap: () =>
+              Navigator.of(context).pop(CaptionPresetSelection(preset.id)),
+        );
+      },
     );
   }
 }
 
-class _PresetTile extends StatelessWidget {
-  const _PresetTile({
-    required this.preset,
+/// Shared tile frame: a bordered, selectable preview area over a caption
+/// label. [preview] fills the framed area.
+class _CaptionTileFrame extends StatelessWidget {
+  const _CaptionTileFrame({
     required this.label,
     required this.selected,
-    required this.controller,
-    required this.loopMs,
     required this.onTap,
+    required this.preview,
   });
 
-  final CaptionStylePreset preset;
   final String label;
   final bool selected;
-  final AnimationController controller;
-  final int loopMs;
   final VoidCallback onTap;
+  final Widget preview;
 
   @override
   Widget build(BuildContext context) {
@@ -129,30 +207,23 @@ class _PresetTile extends StatelessWidget {
           behavior: HitTestBehavior.opaque,
           child: Column(
             spacing: 6,
-            mainAxisSize: MainAxisSize.min,
             children: [
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: selected ? VineTheme.primary : VineTheme.transparent,
-                    width: 2,
+              Expanded(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: selected
+                          ? VineTheme.primary
+                          : VineTheme.transparent,
+                      width: 2,
+                    ),
                   ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(2),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(7),
-                    child: ExcludeSemantics(
-                      child: AnimatedBuilder(
-                        animation: controller,
-                        builder: (context, _) => _PresetPreview(
-                          preset: preset,
-                          label: label,
-                          loopValue: controller.value,
-                          loopMs: loopMs,
-                        ),
-                      ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(2),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(7),
+                      child: ExcludeSemantics(child: preview),
                     ),
                   ),
                 ),
@@ -173,108 +244,79 @@ class _PresetTile extends StatelessWidget {
   }
 }
 
-/// Renders the preset's sample caption with its enter animations applied at
-/// the controller's current loop position.
-class _PresetPreview extends StatelessWidget {
-  const _PresetPreview({
-    required this.preset,
+class _StyleTile extends StatelessWidget {
+  const _StyleTile({
+    required this.style,
     required this.label,
-    required this.loopValue,
+    required this.selected,
+    required this.controller,
     required this.loopMs,
+    required this.onTap,
   });
 
-  final CaptionStylePreset preset;
+  final CaptionStyle style;
   final String label;
-  final double loopValue;
+  final bool selected;
+  final AnimationController controller;
   final int loopMs;
-
-  static const double _width = 108;
-  static const double _height = 120;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    var opacity = 1.0;
-    var scale = 1.0;
-    var offset = Offset.zero;
-
-    // Compose all enter animations, matching how the export renderer and
-    // LayerTimelineVisibility combine per-layer animations.
-    for (final animation in preset.enter) {
-      final progress = flutterCurveFor(animation.curve).transform(
-        _holdProgress(loopValue, animation.duration.inMilliseconds),
-      );
-      switch (animation.type.name) {
-        case 'fade':
-          opacity *= progress.clamp(0.0, 1.0);
-        case 'scale':
-          scale *= lerpDouble(animation.scaleFrom ?? 0.5, 1, progress) ?? 1;
-        case 'slide':
-          final away = 1 - progress;
-          offset += switch (animation.slideDirection?.name) {
-            'left' => Offset(-away * _width, 0),
-            'right' => Offset(away * _width, 0),
-            'top' => Offset(0, -away * _height),
-            _ => Offset(0, away * _height),
-          };
-      }
-    }
-
-    final hasPill = preset.colorMode != LayerBackgroundMode.onlyColor;
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [VineTheme.primaryDarkGreen, VineTheme.surfaceBackground],
-        ),
-      ),
-      child: SizedBox(
-        width: _width,
-        height: _height,
-        child: Center(
-          child: Transform.translate(
-            offset: offset,
-            child: Transform.scale(
-              scale: scale,
-              child: Opacity(
-                opacity: opacity.clamp(0.0, 1.0),
-                child: Container(
-                  padding: hasPill
-                      ? const EdgeInsets.symmetric(horizontal: 8, vertical: 4)
-                      : EdgeInsets.zero,
-                  decoration: hasPill
-                      ? BoxDecoration(
-                          color: preset.background,
-                          borderRadius: BorderRadius.circular(8),
-                        )
-                      : null,
-                  child: Text(
-                    label,
-                    style: preset.font(
-                      fontSize:
-                          VideoEditorConstants.baseFontSize *
-                          preset.fontScale *
-                          0.62,
-                      color: preset.color,
-                    ),
-                  ),
-                ),
-              ),
-            ),
+    return _CaptionTileFrame(
+      label: label,
+      selected: selected,
+      onTap: onTap,
+      preview: LayoutBuilder(
+        builder: (context, constraints) => AnimatedBuilder(
+          animation: controller,
+          builder: (context, _) => CaptionStylePreview(
+            style: style,
+            loopValue: controller.value,
+            loopMs: loopMs,
+            width: constraints.maxWidth,
+            height: constraints.maxHeight,
           ),
         ),
       ),
     );
   }
+}
 
-  /// Maps the loop position (0..1) to a held 0..1 ramp: the animation plays
-  /// over its own duration, then holds fully-entered until the loop restarts.
-  double _holdProgress(double value, int durationMs) {
-    final ratio = (durationMs.clamp(0, loopMs)) / loopMs;
-    final start = (1 - ratio) / 2;
-    final end = start + ratio;
-    if (ratio <= 0 || value <= start) return 0;
-    if (value >= end) return 1;
-    return (value - start) / (end - start);
+/// The Custom tile: a static edit affordance (no animated preview).
+class _CustomStyleTile extends StatelessWidget {
+  const _CustomStyleTile({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return _CaptionTileFrame(
+      label: label,
+      selected: selected,
+      onTap: onTap,
+      preview: const DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [VineTheme.primaryDarkGreen, VineTheme.surfaceBackground],
+          ),
+        ),
+        child: Center(
+          child: DivineIcon(
+            icon: DivineIconName.pencilSimple,
+            color: VineTheme.lightText,
+            size: 32,
+          ),
+        ),
+      ),
+    );
   }
 }

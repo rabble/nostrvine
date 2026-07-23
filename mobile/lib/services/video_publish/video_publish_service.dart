@@ -268,7 +268,7 @@ class VideoPublishService {
         currentUserPubkey: pubkey,
       );
 
-      final captionTrack = _overlayCaptionTrack(draft);
+      final captionTrack = _captionTrackForPublish(draft);
       final textTrackRefs = captionTrack != null
           ? await _publishSubtitleAssets(captionTrack, pendingUpload)
           : const <String>[];
@@ -328,18 +328,17 @@ class VideoPublishService {
     }
   }
 
-  /// The draft's CC-overlay caption track, or `null` when the session has no
-  /// captions, they are burned in, or the stored value is malformed.
-  CaptionTrack? _overlayCaptionTrack(DivineVideoDraft draft) {
+  /// The draft's caption track for CC publishing, or `null` when the session
+  /// has no captions or the stored value is malformed. Captions are always
+  /// published as CC — whether or not they are also burned in.
+  CaptionTrack? _captionTrackForPublish(DivineVideoDraft draft) {
     try {
       final meta = draft.editorEditingParameters['meta'];
       if (meta is! Map) return null;
       final raw = meta[VideoEditorConstants.captionsStateHistoryKey];
       if (raw is! Map<Object?, Object?>) return null;
       final track = CaptionTrack.fromJson(raw);
-      if (track.mode != CaptionRenderMode.overlay || track.cues.isEmpty) {
-        return null;
-      }
+      if (track.cues.isEmpty) return null;
       return track;
     } catch (e, stackTrace) {
       Log.error(
@@ -366,8 +365,11 @@ class VideoPublishService {
       final vineId = upload.videoId;
       if (vineId == null || vineId.isEmpty) return const [];
 
+      // Timeline edits can reorder or overlap cues; WebVTT expects cues in
+      // start order, so sort before serializing.
       final vtt = SubtitleService.generateVtt(
-        [for (final cue in track.cues) cue.toSubtitleCue()],
+        [for (final cue in track.cues) cue.toSubtitleCue()]
+          ..sort((a, b) => a.start.compareTo(b.start)),
       );
       final result = await blossomService.uploadSubtitleVtt(
         bytes: Uint8List.fromList(utf8.encode(vtt)),

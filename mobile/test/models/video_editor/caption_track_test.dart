@@ -2,8 +2,12 @@
 // ABOUTME: Covers JSON round-trips, adapters, and unknown-mode fallback.
 
 import 'package:caption_generator/caption_generator.dart';
+import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/models/video_editor/caption_style.dart';
 import 'package:openvine/models/video_editor/caption_track.dart';
+import 'package:pro_image_editor/pro_image_editor.dart'
+    show LayerBackgroundMode;
 
 void main() {
   const cue = CaptionCue(
@@ -59,7 +63,6 @@ void main() {
 
   group(CaptionTrack, () {
     const track = CaptionTrack(
-      mode: CaptionRenderMode.overlay,
       presetId: 'classic',
       languageTag: 'de-CH',
       cues: [cue],
@@ -69,30 +72,68 @@ void main() {
       final decoded = CaptionTrack.fromJson(track.toJson());
 
       expect(decoded, equals(track));
-      expect(decoded.mode, equals(CaptionRenderMode.overlay));
+      expect(decoded.burnIn, isFalse);
       expect(decoded.cues.single, equals(cue));
     });
 
-    test('round-trips burn-in mode without cues', () {
+    test('round-trips a burn-in track with cues', () {
       const burnIn = CaptionTrack(
-        mode: CaptionRenderMode.burnIn,
+        burnIn: true,
         presetId: 'pop',
         languageTag: 'en-US',
+        cues: [cue],
       );
 
       final decoded = CaptionTrack.fromJson(burnIn.toJson());
 
-      expect(decoded.mode, equals(CaptionRenderMode.burnIn));
-      expect(decoded.cues, isEmpty);
+      expect(decoded.burnIn, isTrue);
+      expect(decoded.cues.single, equals(cue));
     });
 
-    test('falls back to overlay for an unknown serialized mode', () {
-      final json = track.toJson()..['mode'] = 'holograph';
-
-      expect(
-        CaptionTrack.fromJson(json).mode,
-        equals(CaptionRenderMode.overlay),
+    test('round-trips a custom style', () {
+      const custom = CaptionCustomStyle(
+        fontIndex: 4,
+        color: Color(0xFF112233),
+        background: Color(0x80445566),
+        colorMode: LayerBackgroundMode.onlyColor,
+        animation: CaptionAnimationStyle.pop,
       );
+      final withCustom = track.copyWith(burnIn: true, customStyle: custom);
+
+      final decoded = CaptionTrack.fromJson(withCustom.toJson());
+
+      expect(decoded.customStyle, equals(custom));
+      expect(decoded, equals(withCustom));
+    });
+
+    test('omits customStyle from JSON when absent and clears it on copy', () {
+      expect(track.toJson().containsKey('customStyle'), isFalse);
+
+      const custom = CaptionCustomStyle(
+        fontIndex: 0,
+        color: Color(0xFFFFFFFF),
+        background: Color(0x80000000),
+        colorMode: LayerBackgroundMode.backgroundAndColor,
+        animation: CaptionAnimationStyle.fade,
+      );
+      final withCustom = track.copyWith(customStyle: custom);
+      expect(withCustom.copyWith(clearCustomStyle: true).customStyle, isNull);
+    });
+
+    test('reads burnIn from a legacy serialized mode field', () {
+      final json = track.toJson()
+        ..remove('burnIn')
+        ..['mode'] = 'burnIn';
+
+      expect(CaptionTrack.fromJson(json).burnIn, isTrue);
+    });
+
+    test('defaults burnIn to false for an unknown legacy mode', () {
+      final json = track.toJson()
+        ..remove('burnIn')
+        ..['mode'] = 'holograph';
+
+      expect(CaptionTrack.fromJson(json).burnIn, isFalse);
     });
 
     test('fromJson throws $FormatException for malformed maps', () {
@@ -106,7 +147,7 @@ void main() {
       final updated = track.copyWith(presetId: 'mono');
 
       expect(updated.presetId, equals('mono'));
-      expect(updated.mode, equals(track.mode));
+      expect(updated.burnIn, equals(track.burnIn));
       expect(updated.cues, equals(track.cues));
     });
   });

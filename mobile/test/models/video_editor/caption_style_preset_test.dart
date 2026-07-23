@@ -46,6 +46,20 @@ void main() {
       }
     });
 
+    test('no preset uses a slide animation', () {
+      // Slide enters fully off-frame, which reads as distracting for
+      // subtitles; captions use fade/scale only.
+      for (final preset in CaptionStylePreset.presets) {
+        for (final animation in [...preset.enter, ...preset.leave]) {
+          expect(
+            animation.type,
+            isNot(pve.LayerAnimationType.slide),
+            reason: preset.id,
+          );
+        }
+      }
+    });
+
     test('byId resolves a preset and falls back to the first', () {
       expect(CaptionStylePreset.byId('mono').id, equals('mono'));
       expect(

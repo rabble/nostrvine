@@ -1,26 +1,10 @@
-// ABOUTME: Caption track model for the video editor (burn-in or CC overlay).
-// ABOUTME: Cues are timed text; the track carries mode, preset, and language.
+// ABOUTME: Caption track model for the video editor.
+// ABOUTME: Cues are timed text; the track carries burn-in, preset, language.
 
 import 'package:caption_generator/caption_generator.dart';
 import 'package:equatable/equatable.dart';
+import 'package:openvine/models/video_editor/caption_style.dart';
 import 'package:openvine/services/subtitle_service.dart';
-
-/// How the caption track is rendered into the published video.
-enum CaptionRenderMode {
-  /// Cues are rasterized into the exported video as animated text layers.
-  burnIn,
-
-  /// Cues ride alongside the video as a WebVTT closed-caption track
-  /// (Blossom VTT + kind 39307 + `text-track` tags) and render at playback.
-  overlay;
-
-  /// Parses the serialized [name], defaulting to [overlay] for unknown input
-  /// so a future mode never crashes an old draft.
-  static CaptionRenderMode fromName(String? name) => switch (name) {
-    'burnIn' => burnIn,
-    _ => overlay,
-  };
-}
 
 /// A single caption cue: one piece of timed text on the video timeline.
 class CaptionCue extends Equatable {
@@ -109,16 +93,18 @@ class CaptionCue extends Equatable {
 
 /// The video's caption track as stored in editor history meta.
 ///
-/// In [CaptionRenderMode.overlay] the [cues] list is the source of truth. In
-/// [CaptionRenderMode.burnIn] the cues live as marked editor layers instead
-/// and [cues] stays empty — the track then only remembers [mode], [presetId],
-/// and [languageTag] so re-opening the captions flow restores the session.
+/// [cues] is always the source of truth: captions are always published as a
+/// WebVTT closed-caption track (Blossom VTT + kind 39307 + `text-track`
+/// tags). [burnIn] is an additional choice — when `true` the cues are *also*
+/// rasterized into the exported video, styled either by the built-in
+/// [presetId] or, when set, the user-defined [customStyle].
 class CaptionTrack extends Equatable {
   /// Creates a caption track.
   const CaptionTrack({
-    required this.mode,
     required this.presetId,
     required this.languageTag,
+    this.burnIn = false,
+    this.customStyle,
     this.cues = const [],
   });
 
@@ -132,10 +118,13 @@ class CaptionTrack extends Equatable {
     if (presetId is! String || languageTag is! String || rawCues is! List) {
       throw FormatException('Malformed caption track: $json');
     }
+    final rawBurnIn = json['burnIn'];
     return CaptionTrack(
-      mode: CaptionRenderMode.fromName(json['mode'] as String?),
+      // Legacy drafts stored a `mode` string instead of a `burnIn` bool.
+      burnIn: rawBurnIn is bool ? rawBurnIn : json['mode'] == 'burnIn',
       presetId: presetId,
       languageTag: languageTag,
+      customStyle: CaptionCustomStyle.fromJson(json['customStyle']),
       cues: [
         for (final cue in rawCues)
           CaptionCue.fromJson(cue! as Map<Object?, Object?>),
@@ -143,39 +132,54 @@ class CaptionTrack extends Equatable {
     );
   }
 
-  /// Whether cues are burned into the video or attached as a CC track.
-  final CaptionRenderMode mode;
+  /// Whether the cues are additionally burned into the exported video.
+  final bool burnIn;
 
-  /// The track-wide style/animation preset id (see `CaptionStylePreset`).
+  /// The built-in style/animation preset id (see `CaptionStylePreset`). Used
+  /// for the burned-in look when [customStyle] is `null`.
   final String presetId;
+
+  /// The user-defined style, taking precedence over [presetId] when set.
+  final CaptionCustomStyle? customStyle;
 
   /// BCP-47 tag of the caption language (e.g. `en-US`).
   final String languageTag;
 
-  /// The cues, ordered by start time. Empty in burn-in mode.
+  /// The cues, ordered by start time.
   final List<CaptionCue> cues;
 
   /// Encodes this track for draft/history storage.
   Map<String, Object?> toJson() => <String, Object?>{
-    'mode': mode.name,
+    'burnIn': burnIn,
     'presetId': presetId,
     'languageTag': languageTag,
+    if (customStyle != null) 'customStyle': customStyle!.toJson(),
     'cues': [for (final cue in cues) cue.toJson()],
   };
 
-  /// Copy with the given fields replaced.
+  /// Copy with the given fields replaced. Pass [clearCustomStyle] to drop a
+  /// custom style (selecting a built-in preset again).
   CaptionTrack copyWith({
-    CaptionRenderMode? mode,
+    bool? burnIn,
     String? presetId,
     String? languageTag,
+    CaptionCustomStyle? customStyle,
+    bool clearCustomStyle = false,
     List<CaptionCue>? cues,
   }) => CaptionTrack(
-    mode: mode ?? this.mode,
+    burnIn: burnIn ?? this.burnIn,
     presetId: presetId ?? this.presetId,
     languageTag: languageTag ?? this.languageTag,
+    customStyle: clearCustomStyle ? null : (customStyle ?? this.customStyle),
     cues: cues ?? this.cues,
   );
 
   @override
-  List<Object?> get props => [mode, presetId, languageTag, cues];
+  List<Object?> get props => [
+    burnIn,
+    presetId,
+    customStyle,
+    languageTag,
+    cues,
+  ];
 }

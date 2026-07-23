@@ -8352,17 +8352,43 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditorOpenCaptionsSemanticLabel => 'Open captions editor';
 
   @override
-  String get videoEditorCaptionsModeTitle => 'Add captions';
+  String get videoEditorCaptionsBurnInLabel => 'Burn into video';
 
   @override
-  String get videoEditorCaptionsModeSubtitle =>
-      'Burn them into the video with a style, or attach them as closed captions viewers can turn on and off.';
+  String get videoEditorCaptionsPresetCustom => 'Custom';
 
   @override
-  String get videoEditorCaptionsModeBurnIn => 'Burn into video';
+  String get videoEditorCaptionsCustomStyleTitle => 'Custom style';
 
   @override
-  String get videoEditorCaptionsModeOverlay => 'Closed captions (CC)';
+  String get videoEditorCaptionsCustomApply => 'Apply';
+
+  @override
+  String get videoEditorCaptionsCustomFont => 'Font';
+
+  @override
+  String get videoEditorCaptionsCustomTextColor => 'Text color';
+
+  @override
+  String get videoEditorCaptionsCustomBackground => 'Background';
+
+  @override
+  String get videoEditorCaptionsCustomBackgroundColor => 'Background color';
+
+  @override
+  String get videoEditorCaptionsCustomAnimation => 'Animation';
+
+  @override
+  String get videoEditorCaptionsAnimationNone => 'None';
+
+  @override
+  String get videoEditorCaptionsAnimationFade => 'Fade';
+
+  @override
+  String get videoEditorCaptionsAnimationPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsAnimationSpring => 'Spring';
 
   @override
   String get videoEditorCaptionsEditTitle => 'Captions';
@@ -8428,7 +8454,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditorCaptionsPresetPop => 'Pop';
 
   @override
-  String get videoEditorCaptionsPresetSlideUp => 'Slide';
+  String get videoEditorCaptionsPresetZoom => 'Zoom';
 
   @override
   String get videoEditorCaptionsPresetSpring => 'Spring';
@@ -8440,12 +8466,46 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditorCaptionsPresetHeadline => 'Headline';
 
   @override
-  String get videoEditorCaptionsSwitchToOverlay =>
-      'Switch to closed captions (CC)';
+  String get videoEditorCaptionsPresetTypewriter => 'Typewriter';
 
   @override
-  String get videoEditorCaptionsSwitchToBurnIn =>
-      'Switch to burned-in captions';
+  String get videoEditorCaptionsPresetMarker => 'Marker';
+
+  @override
+  String get videoEditorCaptionsPresetScript => 'Script';
+
+  @override
+  String get videoEditorCaptionsPresetRetro => 'Retro';
+
+  @override
+  String get videoEditorCaptionsPresetElegant => 'Elegant';
+
+  @override
+  String get videoEditorCaptionsPresetBubble => 'Bubble';
+
+  @override
+  String get videoEditorCaptionsPresetNeon => 'Neon';
+
+  @override
+  String get videoEditorCaptionsPresetBold => 'Bold';
+
+  @override
+  String get videoEditorCaptionsPresetDreamy => 'Dreamy';
+
+  @override
+  String get videoEditorCaptionsPresetOcean => 'Ocean';
+
+  @override
+  String get videoEditorCaptionsPresetSunny => 'Sunny';
+
+  @override
+  String get videoEditorCaptionsPresetHandwritten => 'Handwritten';
+
+  @override
+  String get videoEditorCaptionsPresetSerif => 'Serif';
+
+  @override
+  String get videoEditorCaptionsPresetStamp => 'Stamp';
 
   @override
   String get videoEditorOpenTextSemanticLabel => 'Open text editor';

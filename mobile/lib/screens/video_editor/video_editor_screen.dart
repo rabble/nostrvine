@@ -35,7 +35,6 @@ import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/repositories/sticker_repository.dart';
 import 'package:openvine/screens/library_screen.dart';
-import 'package:openvine/screens/video_editor/video_captions_editor_screen.dart';
 import 'package:openvine/screens/video_editor/video_text_editor_screen.dart';
 import 'package:openvine/screens/video_editor/voice_over_recorder_screen.dart';
 import 'package:openvine/screens/video_editor/voice_over_take_commit.dart';
@@ -47,7 +46,7 @@ import 'package:openvine/widgets/video_editor/audio_editor/audio_selection_botto
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker_sheet.dart';
-import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_caption_preset_sheet.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_captions_sheet.dart';
 import 'package:openvine/widgets/video_editor/video_editor_scaffold.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -112,6 +111,10 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
   /// editor's zoom matrix. The letterbox scrim applies the same transform so
   /// the bars move with the magnified frame.
   final _zoomMatrixNotifier = ValueNotifier<Matrix4>(Matrix4.identity());
+
+  /// Fine-grained editor play time (timeline space), updated by the canvas on
+  /// every playhead tick so canvas overlays track playback smoothly.
+  final _playTimeNotifier = ValueNotifier<Duration>(Duration.zero);
 
   /// Tracks the previous audio tracks to detect offset changes.
   List<AudioEvent> _previousAudioTracks = const [];
@@ -257,6 +260,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
     _isLoadingDraft.dispose();
     _bodySizeNotifier.dispose();
     _zoomMatrixNotifier.dispose();
+    _playTimeNotifier.dispose();
     super.dispose();
   }
 
@@ -581,8 +585,8 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
     return result.copyWith(scale: 1 / _fittedBoxScale);
   }
 
-  /// Opens the captions flow: burn-in/CC prompt (plus preset pick) on first
-  /// use, straight to the captions editor when a session already exists.
+  /// Opens the captions editor sheet. Captions are always published as CC;
+  /// the sheet's burn-in toggle decides whether they are also burned in.
   Future<void> _openCaptions({
     required VideoEditorMainBloc mainBloc,
     required ClipEditorBloc clipEditorBloc,
@@ -594,43 +598,16 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
     final captionLayers = editor.activeLayers.where(isCaptionCueLayer).toList();
     final hasSession = existingTrack != null || captionLayers.isNotEmpty;
 
-    var mode =
-        existingTrack?.mode ??
-        (captionLayers.isNotEmpty
-            ? CaptionRenderMode.burnIn
-            : CaptionRenderMode.overlay);
-    var presetId =
+    final burnIn = existingTrack?.burnIn ?? captionLayers.isNotEmpty;
+    final presetId =
         existingTrack?.presetId ?? CaptionStylePreset.presets.first.id;
-    List<CaptionCue>? initialCues;
-
-    if (hasSession) {
-      initialCues = mode == CaptionRenderMode.burnIn
-          ? captionCuesFromLayers(captionLayers)
-          : existingTrack!.cues;
-    } else {
-      final choice = await VineBottomSheetPrompt.show<CaptionRenderMode>(
-        context: context,
-        sticker: .vintageTvTestPattern,
-        title: context.l10n.videoEditorCaptionsModeTitle,
-        subtitle: context.l10n.videoEditorCaptionsModeSubtitle,
-        primaryButtonText: context.l10n.videoEditorCaptionsModeBurnIn,
-        secondaryButtonText: context.l10n.videoEditorCaptionsModeOverlay,
-        onPrimaryPressed: () =>
-            Navigator.of(context).pop(CaptionRenderMode.burnIn),
-        onSecondaryPressed: () =>
-            Navigator.of(context).pop(CaptionRenderMode.overlay),
-      );
-      if (choice == null || !mounted) return;
-      mode = choice;
-      if (mode == CaptionRenderMode.burnIn) {
-        final picked = await showCaptionPresetSheet(
-          context,
-          selectedId: presetId,
-        );
-        if (picked == null || !mounted) return;
-        presetId = picked;
-      }
-    }
+    // Cues are authoritative on the track; only a legacy burn-in draft (cues
+    // stored solely as layers) needs the layer fallback.
+    final List<CaptionCue>? initialCues = hasSession
+        ? (existingTrack != null && existingTrack.cues.isNotEmpty
+              ? existingTrack.cues
+              : captionCuesFromLayers(captionLayers))
+        : null;
 
     // The app language drives recognition; a stored track keeps the language
     // it was transcribed with.
@@ -640,24 +617,16 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
 
     mainBloc.add(const VideoEditorMainOpenSubEditor(.captions));
 
-    final result = await Navigator.push<CaptionsEditorResult>(
+    final result = await showCaptionsEditorSheet(
       context,
-      PageRouteBuilder<CaptionsEditorResult>(
-        opaque: false,
-        barrierColor: VineTheme.transparent,
-        pageBuilder: (_, _, _) => VideoCaptionsEditorScreen(
-          mode: mode,
-          presetId: presetId,
-          languageTag: languageTag,
-          clips: clipEditorBloc.state.clips,
-          totalDuration: clipEditorBloc.state.totalDuration,
-          initialCues: initialCues,
-          canDeleteTrack: hasSession,
-        ),
-        transitionsBuilder: (_, animation, _, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-      ),
+      burnIn: burnIn,
+      presetId: presetId,
+      customStyle: existingTrack?.customStyle,
+      languageTag: languageTag,
+      clips: clipEditorBloc.state.clips,
+      totalDuration: clipEditorBloc.state.totalDuration,
+      initialCues: initialCues,
+      canDeleteTrack: hasSession,
     );
 
     mainBloc.add(const VideoEditorMainSubEditorClosed());
@@ -666,8 +635,9 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
   }
 
   /// Commits a captions-editor result as one history entry (one undo step):
-  /// overlay cues go into the `captions` meta key, burn-in cues are
-  /// materialized as marked caption layers, delete removes both.
+  /// the track (cues + burn-in flag) goes into the `captions` meta key, and
+  /// when burn-in is on the cues are also materialized as marked caption
+  /// layers. Delete removes both.
   void _commitCaptionsResult(CaptionsEditorResult result) {
     final editor = _editor;
     if (editor == null) return;
@@ -675,18 +645,20 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
     switch (result) {
       case CaptionsDeleted():
         editor.commitCaptionState(track: null);
-      case CaptionsConfirmed(:final track)
-          when track.mode == CaptionRenderMode.overlay:
+      case CaptionsConfirmed(:final track) when !track.burnIn:
         editor.commitCaptionState(track: track);
       case CaptionsConfirmed(:final track, :final cues):
-        final preset = CaptionStylePreset.byId(track.presetId);
+        // A custom style wins over the built-in preset for the burned look.
+        final style =
+            track.customStyle?.resolve() ??
+            CaptionStylePreset.byId(track.presetId).style;
         final bodySize = _bodySizeNotifier.value;
         final scale = _fittedBoxScale;
         editor.commitCaptionState(
           track: track,
           captionLayers: [
             for (final cue in cues)
-              preset.buildLayer(cue, fittedBoxScale: scale, bodySize: bodySize),
+              style.buildLayer(cue, fittedBoxScale: scale, bodySize: bodySize),
           ],
         );
     }
@@ -1009,6 +981,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
               originalClipAspectRatio: clip?.originalAspectRatio ?? 9 / 16,
               bodySizeNotifier: _bodySizeNotifier,
               zoomMatrixNotifier: _zoomMatrixNotifier,
+              playTimeNotifier: _playTimeNotifier,
               fromLibrary: widget.fromLibrary,
               onOpenCamera: () => _openCamera(
                 clipEditorBloc: context.read<ClipEditorBloc>(),

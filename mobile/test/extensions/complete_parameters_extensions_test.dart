@@ -476,7 +476,6 @@ void main() {
 
   group('captionTrackFromMeta', () {
     const track = CaptionTrack(
-      mode: CaptionRenderMode.overlay,
       presetId: 'classic',
       languageTag: 'en-US',
       cues: [

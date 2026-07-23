@@ -32,6 +32,7 @@ void main() {
       originalClipAspectRatio: 9 / 16,
       bodySizeNotifier: bodySize,
       zoomMatrixNotifier: zoom,
+      playTimeNotifier: ValueNotifier(Duration.zero),
       fromLibrary: false,
     );
   }

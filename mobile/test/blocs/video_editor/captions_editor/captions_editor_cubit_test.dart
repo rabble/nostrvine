@@ -2,11 +2,15 @@
 // ABOUTME: Covers generation outcomes, cue editing, preset, and mode ops.
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_editor/captions_editor/captions_editor_cubit.dart';
+import 'package:openvine/models/video_editor/caption_style.dart';
 import 'package:openvine/models/video_editor/caption_track.dart';
 import 'package:openvine/services/video_editor/caption_generation_service.dart';
+import 'package:pro_image_editor/pro_image_editor.dart'
+    show LayerBackgroundMode;
 
 class _MockCaptionGenerationService extends Mock
     implements CaptionGenerationService {}
@@ -31,7 +35,6 @@ void main() {
           generationService: service,
           clips: const [],
           totalDuration: const Duration(seconds: 6),
-          mode: CaptionRenderMode.overlay,
           presetId: 'classic',
           languageTag: 'en-US',
           initialCues: initialCues,
@@ -169,8 +172,89 @@ void main() {
       ],
     );
 
+    group('updateCueTiming', () {
+      const neighborCues = [
+        cue,
+        CaptionCue(
+          id: 'cue-1',
+          text: 'World.',
+          start: Duration(seconds: 2),
+          end: Duration(seconds: 3),
+        ),
+      ];
+
+      blocTest<CaptionsEditorCubit, CaptionsEditorState>(
+        'applies an in-range edit verbatim',
+        build: () => build(initialCues: neighborCues),
+        act: (cubit) => cubit.updateCueTiming(
+          'cue-0',
+          end: const Duration(milliseconds: 1500),
+        ),
+        expect: () => [
+          isA<CaptionsEditorState>().having(
+            (s) => s.cues.first.end,
+            'end',
+            const Duration(milliseconds: 1500),
+          ),
+        ],
+      );
+
+      blocTest<CaptionsEditorCubit, CaptionsEditorState>(
+        'clamps the end only at the video duration (overlaps allowed)',
+        build: () => build(initialCues: neighborCues),
+        act: (cubit) => cubit
+          // Extends past the next cue's start — allowed, cues may overlap.
+          ..updateCueTiming('cue-0', end: const Duration(seconds: 5))
+          // Extends past the video end — clamped to the total duration.
+          ..updateCueTiming('cue-1', end: const Duration(seconds: 30)),
+        expect: () => [
+          isA<CaptionsEditorState>().having(
+            (s) => s.cues.first.end,
+            'end',
+            const Duration(seconds: 5),
+          ),
+          isA<CaptionsEditorState>().having(
+            (s) => s.cues.last.end,
+            'end',
+            const Duration(seconds: 6),
+          ),
+        ],
+      );
+
+      blocTest<CaptionsEditorCubit, CaptionsEditorState>(
+        'clamps the start only at zero and the minimum duration',
+        build: () => build(initialCues: neighborCues),
+        act: (cubit) => cubit
+          // Runs before the previous cue's end — allowed, cues may overlap.
+          ..updateCueTiming('cue-1', start: Duration.zero)
+          // Past its own end — clamped to end minus the minimum duration.
+          ..updateCueTiming('cue-1', start: const Duration(seconds: 10)),
+        expect: () => [
+          isA<CaptionsEditorState>().having(
+            (s) => s.cues.last.start,
+            'start',
+            Duration.zero,
+          ),
+          isA<CaptionsEditorState>().having(
+            (s) => s.cues.last.start,
+            'start',
+            const Duration(milliseconds: 2800),
+          ),
+        ],
+      );
+
+      blocTest<CaptionsEditorCubit, CaptionsEditorState>(
+        'ignores unknown cues and no-op edits',
+        build: () => build(initialCues: const [cue]),
+        act: (cubit) => cubit
+          ..updateCueTiming('missing', start: Duration.zero)
+          ..updateCueTiming('cue-0', start: Duration.zero),
+        expect: () => const <CaptionsEditorState>[],
+      );
+    });
+
     blocTest<CaptionsEditorCubit, CaptionsEditorState>(
-      'addCue appends after the last cue, clamped to the video end',
+      'addCue appends after the last cue, back-shifting at the video end',
       build: () => build(
         initialCues: const [
           CaptionCue(
@@ -181,13 +265,15 @@ void main() {
           ),
         ],
       ),
+      // Only 1 s of tail is left, so the 2 s cue back-shifts to end at the
+      // video end and overlaps the previous cue — overlaps are allowed.
       act: (cubit) => cubit.addCue(),
       expect: () => [
         isA<CaptionsEditorState>().having(
           (s) => s.cues.last,
           'new cue',
           isA<CaptionCue>()
-              .having((c) => c.start, 'start', const Duration(seconds: 5))
+              .having((c) => c.start, 'start', const Duration(seconds: 4))
               .having((c) => c.end, 'end', const Duration(seconds: 6))
               .having((c) => c.text, 'text', isEmpty),
         ),
@@ -195,30 +281,64 @@ void main() {
     );
 
     blocTest<CaptionsEditorCubit, CaptionsEditorState>(
-      'setPreset and setMode update the session',
+      'setPreset and setBurnIn update the session',
       build: () => build(initialCues: const [cue]),
       act: (cubit) => cubit
         ..setPreset('pop')
-        ..setMode(CaptionRenderMode.burnIn),
+        ..setBurnIn(burnIn: true),
       expect: () => [
         isA<CaptionsEditorState>().having((s) => s.presetId, 'presetId', 'pop'),
-        isA<CaptionsEditorState>().having(
-          (s) => s.mode,
-          'mode',
-          CaptionRenderMode.burnIn,
-        ),
+        isA<CaptionsEditorState>().having((s) => s.burnIn, 'burnIn', true),
       ],
     );
 
-    test('track keeps cues only in overlay mode', () {
-      final cubit = build(initialCues: const [cue])
-        ..setMode(CaptionRenderMode.burnIn);
+    test('track keeps cues whether or not burned in', () {
+      final cubit = build(initialCues: const [cue])..setBurnIn(burnIn: true);
       addTearDown(cubit.close);
 
-      expect(cubit.state.track.cues, isEmpty);
+      expect(cubit.state.track.burnIn, isTrue);
+      expect(cubit.state.track.cues, equals(const [cue]));
 
-      cubit.setMode(CaptionRenderMode.overlay);
+      cubit.setBurnIn(burnIn: false);
+      expect(cubit.state.track.burnIn, isFalse);
       expect(cubit.state.track.cues, equals(const [cue]));
     });
+
+    const customStyle = CaptionCustomStyle(
+      fontIndex: 2,
+      color: Color(0xFFFF0000),
+      background: Color(0x80000000),
+      colorMode: LayerBackgroundMode.onlyColor,
+      animation: CaptionAnimationStyle.spring,
+    );
+
+    blocTest<CaptionsEditorCubit, CaptionsEditorState>(
+      'setCustomStyle applies the custom style',
+      build: () => build(initialCues: const [cue]),
+      act: (cubit) => cubit.setCustomStyle(customStyle),
+      expect: () => [
+        isA<CaptionsEditorState>()
+            .having((s) => s.customStyle, 'customStyle', customStyle)
+            .having((s) => s.hasCustomStyle, 'hasCustomStyle', true),
+      ],
+    );
+
+    blocTest<CaptionsEditorCubit, CaptionsEditorState>(
+      'setPreset clears an active custom style',
+      build: () => build(initialCues: const [cue]),
+      act: (cubit) => cubit
+        ..setCustomStyle(customStyle)
+        ..setPreset('mono'),
+      expect: () => [
+        isA<CaptionsEditorState>().having(
+          (s) => s.customStyle,
+          'customStyle',
+          customStyle,
+        ),
+        isA<CaptionsEditorState>()
+            .having((s) => s.customStyle, 'customStyle', isNull)
+            .having((s) => s.presetId, 'presetId', 'mono'),
+      ],
+    );
   });
 }

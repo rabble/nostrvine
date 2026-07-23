@@ -47,6 +47,7 @@ void main() {
               originalClipAspectRatio: 9 / 16,
               bodySizeNotifier: bodySizeNotifier,
               zoomMatrixNotifier: ValueNotifier(Matrix4.identity()),
+              playTimeNotifier: ValueNotifier(Duration.zero),
               fromLibrary: false,
               child: const Scaffold(body: VideoEditorCanvas()),
             ),

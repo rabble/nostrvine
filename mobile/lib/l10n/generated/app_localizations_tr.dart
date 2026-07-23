@@ -8339,17 +8339,43 @@ class AppLocalizationsTr extends AppLocalizations {
       'Altyazı düzenleyicisini aç';
 
   @override
-  String get videoEditorCaptionsModeTitle => 'Altyazı ekle';
+  String get videoEditorCaptionsBurnInLabel => 'Videoya göm';
 
   @override
-  String get videoEditorCaptionsModeSubtitle =>
-      'Bir stille videoya işle ya da izleyicilerin açıp kapatabildiği altyazılar (CC) olarak ekle.';
+  String get videoEditorCaptionsPresetCustom => 'Özel';
 
   @override
-  String get videoEditorCaptionsModeBurnIn => 'Videoya işle';
+  String get videoEditorCaptionsCustomStyleTitle => 'Özel stil';
 
   @override
-  String get videoEditorCaptionsModeOverlay => 'Altyazılar (CC)';
+  String get videoEditorCaptionsCustomApply => 'Uygula';
+
+  @override
+  String get videoEditorCaptionsCustomFont => 'Yazı tipi';
+
+  @override
+  String get videoEditorCaptionsCustomTextColor => 'Metin rengi';
+
+  @override
+  String get videoEditorCaptionsCustomBackground => 'Arka plan';
+
+  @override
+  String get videoEditorCaptionsCustomBackgroundColor => 'Arka plan rengi';
+
+  @override
+  String get videoEditorCaptionsCustomAnimation => 'Animasyon';
+
+  @override
+  String get videoEditorCaptionsAnimationNone => 'Yok';
+
+  @override
+  String get videoEditorCaptionsAnimationFade => 'Solma';
+
+  @override
+  String get videoEditorCaptionsAnimationPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsAnimationSpring => 'Yay';
 
   @override
   String get videoEditorCaptionsEditTitle => 'Altyazılar';
@@ -8418,7 +8444,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorCaptionsPresetPop => 'Pop';
 
   @override
-  String get videoEditorCaptionsPresetSlideUp => 'Slide';
+  String get videoEditorCaptionsPresetZoom => 'Zoom';
 
   @override
   String get videoEditorCaptionsPresetSpring => 'Spring';
@@ -8430,11 +8456,46 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorCaptionsPresetHeadline => 'Manşet';
 
   @override
-  String get videoEditorCaptionsSwitchToOverlay => 'Altyazılara (CC) geç';
+  String get videoEditorCaptionsPresetTypewriter => 'Daktilo';
 
   @override
-  String get videoEditorCaptionsSwitchToBurnIn =>
-      'Videoya işlenmiş altyazılara geç';
+  String get videoEditorCaptionsPresetMarker => 'Marker';
+
+  @override
+  String get videoEditorCaptionsPresetScript => 'Kaligrafi';
+
+  @override
+  String get videoEditorCaptionsPresetRetro => 'Retro';
+
+  @override
+  String get videoEditorCaptionsPresetElegant => 'Zarif';
+
+  @override
+  String get videoEditorCaptionsPresetBubble => 'Baloncuk';
+
+  @override
+  String get videoEditorCaptionsPresetNeon => 'Neon';
+
+  @override
+  String get videoEditorCaptionsPresetBold => 'Kalın';
+
+  @override
+  String get videoEditorCaptionsPresetDreamy => 'Rüya gibi';
+
+  @override
+  String get videoEditorCaptionsPresetOcean => 'Okyanus';
+
+  @override
+  String get videoEditorCaptionsPresetSunny => 'Güneşli';
+
+  @override
+  String get videoEditorCaptionsPresetHandwritten => 'El yazısı';
+
+  @override
+  String get videoEditorCaptionsPresetSerif => 'Serif';
+
+  @override
+  String get videoEditorCaptionsPresetStamp => 'Damga';
 
   @override
   String get videoEditorOpenTextSemanticLabel => 'Metin düzenleyiciyi aç';
