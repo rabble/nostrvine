@@ -872,7 +872,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('View your site'), findsOneWidget);
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.profileCreatorSiteOwnLabel), findsOneWidget);
       expect(
         find.byKey(const Key('profile-creator-site-button')),
         findsOneWidget,
@@ -887,8 +888,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Visit creator site'), findsOneWidget);
-      expect(find.text('View your site'), findsNothing);
+      expect(find.text(l10n.profileCreatorSiteVisitLabel), findsOneWidget);
+      expect(find.text(l10n.profileCreatorSiteOwnLabel), findsNothing);
     });
 
     testWidgets('deduplicates only the matching generated profile website', (
@@ -1093,8 +1094,9 @@ void main() {
         find.byKey(const Key('profile-creator-site-button')),
         findsNothing,
       );
+      final l10n = lookupAppLocalizations(const Locale('en'));
       expect(find.byKey(const Key('profile-support-button')), findsOneWidget);
-      expect(find.text('Support'), findsOneWidget);
+      expect(find.text(l10n.profileSupportButtonLabel), findsOneWidget);
     });
 
     testWidgets('hides support affordance when monetization flag is off', (
@@ -1156,8 +1158,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      final l10n = lookupAppLocalizations(const Locale('en'));
       expect(find.byKey(const Key('profile-support-button')), findsNothing);
-      expect(find.text('Support'), findsNothing);
+      expect(find.text(l10n.profileSupportButtonLabel), findsNothing);
     });
 
     testWidgets('uses tip affordance copy on iOS storefronts', (tester) async {

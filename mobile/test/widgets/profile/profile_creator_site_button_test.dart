@@ -83,7 +83,8 @@ void main() {
     ) async {
       await tester.pumpWidget(_wrap(isOwnProfile: false));
 
-      expect(find.text('Visit creator site'), findsOneWidget);
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.profileCreatorSiteVisitLabel), findsOneWidget);
       final button = tester.widget<DivineButton>(find.byType(DivineButton));
       expect(button.type, DivineButtonType.secondary);
       expect(button.size, DivineButtonSize.small);
@@ -94,8 +95,9 @@ void main() {
     testWidgets('uses owner-specific copy', (tester) async {
       await tester.pumpWidget(_wrap(isOwnProfile: true));
 
-      expect(find.text('View your site'), findsOneWidget);
-      expect(find.text('Visit creator site'), findsNothing);
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.profileCreatorSiteOwnLabel), findsOneWidget);
+      expect(find.text(l10n.profileCreatorSiteVisitLabel), findsNothing);
     });
 
     testWidgets('opens the generated URL in the system browser', (
@@ -134,7 +136,8 @@ void main() {
       await tester.tap(find.byKey(const Key('profile-creator-site-button')));
       await tester.pump();
 
-      expect(find.text("Couldn't open creator site"), findsOneWidget);
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.profileCreatorSiteOpenFailed), findsOneWidget);
     });
 
     testWidgets('shows feedback when the launcher throws', (tester) async {
@@ -148,7 +151,8 @@ void main() {
       await tester.tap(find.byKey(const Key('profile-creator-site-button')));
       await tester.pump();
 
-      expect(find.text("Couldn't open creator site"), findsOneWidget);
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.profileCreatorSiteOpenFailed), findsOneWidget);
     });
 
     testWidgets('does not expose a broken destination for an invalid key', (

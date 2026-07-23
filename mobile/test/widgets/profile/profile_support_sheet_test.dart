@@ -55,16 +55,12 @@ void main() {
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Tip this creator'), findsOneWidget);
-    expect(
-      find.text(
-        'Tips open outside Divine. They are optional and do not unlock content, subscriptions, features, or access in Divine.',
-      ),
-      findsOneWidget,
-    );
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    expect(find.text(l10n.profileTipSheetTitle), findsOneWidget);
+    expect(find.text(l10n.profileTipSheetBody), findsOneWidget);
     expect(find.text('Cash App'), findsOneWidget);
     expect(find.text('Patreon'), findsNothing);
-    expect(find.text('Subscribe / support'), findsNothing);
+    expect(find.text(l10n.profileSupportSubscriptionSection), findsNothing);
   });
 
   testWidgets('tapping a link row starts the outbound flow', (tester) async {
