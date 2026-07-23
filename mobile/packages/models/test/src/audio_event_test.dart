@@ -389,6 +389,43 @@ void main() {
         expect(audioEvent.title, isNull);
         expect(audioEvent.pubkey, equals(testPubkey));
       });
+
+      test('carries allowsReuse from the source video', () {
+        VideoEvent video({required bool allowReuse}) => VideoEvent(
+          id: testHexId,
+          pubkey: testPubkey,
+          createdAt: 1700000000,
+          content: 'classic vine',
+          timestamp: DateTime(2026),
+          videoUrl: 'https://example.com/video.mp4',
+          duration: 6,
+          vineId: 'vine-123',
+          rawTags: allowReuse ? const {'allow_audio_reuse': 'true'} : const {},
+        );
+
+        expect(
+          AudioEvent.fromVideoOriginalSound(
+            video(allowReuse: true),
+          ).allowsReuse,
+          isTrue,
+        );
+        expect(
+          AudioEvent.fromVideoOriginalSound(
+            video(allowReuse: false),
+          ).allowsReuse,
+          isFalse,
+        );
+      });
+
+      test('defaults allowsReuse to true for a plain AudioEvent', () {
+        const audioEvent = AudioEvent(
+          id: testHexId,
+          pubkey: testPubkey,
+          createdAt: 1700000000,
+        );
+
+        expect(audioEvent.allowsReuse, isTrue);
+      });
     });
 
     group('attributionEventId', () {

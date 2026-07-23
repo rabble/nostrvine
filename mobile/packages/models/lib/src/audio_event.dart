@@ -57,6 +57,7 @@ class AudioEvent {
     this.startTime = Duration.zero,
     this.endTime,
     this.anchorClipId,
+    this.allowsReuse = true,
   });
 
   /// Parse an AudioEvent from a Nostr Event.
@@ -188,6 +189,7 @@ class AudioEvent {
       title: creatorName == null ? null : 'Original sound - $creatorName',
       source: 'Original Sound',
       sourceVideoReference: '34236:${video.pubkey}:${video.vineId ?? video.id}',
+      allowsReuse: video.allowAudioReuse,
     );
   }
 
@@ -439,6 +441,16 @@ class AudioEvent {
   /// Local-only editor state, never published to Nostr.
   final String? anchorClipId;
 
+  /// Whether the source creator permits this sound to be reused by others.
+  ///
+  /// Meaningful only for a video's synthesized original sound
+  /// ([AudioEvent.fromVideoOriginalSound]), where it carries the source video's
+  /// `allow_audio_reuse` marker so a reuse gate can decide without re-fetching
+  /// the video. Shared Kind 1063 and bundled sounds were published for reuse,
+  /// so this defaults to `true`. Transient — not serialized (an adopted sound
+  /// was reusable when saved) and not part of identity equality.
+  final bool allowsReuse;
+
   /// Whether this audio is currently anchored to a source video clip.
   bool get isAnchored => anchorClipId != null;
 
@@ -552,6 +564,7 @@ class AudioEvent {
     Duration? endTime,
     String? anchorClipId,
     bool clearAnchorClipId = false,
+    bool? allowsReuse,
   }) {
     return AudioEvent(
       id: id ?? this.id,
@@ -574,6 +587,7 @@ class AudioEvent {
       anchorClipId: clearAnchorClipId
           ? null
           : (anchorClipId ?? this.anchorClipId),
+      allowsReuse: allowsReuse ?? this.allowsReuse,
     );
   }
 

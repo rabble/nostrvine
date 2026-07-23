@@ -3,13 +3,21 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' show AudioEvent;
+import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 final savedSoundsServiceProvider = Provider<SavedSoundsService>((ref) {
-  return SavedSoundsService(ref.watch(sharedPreferencesProvider));
+  // Rebuild on sign-in/out and account switch so the service (and the sounds
+  // list built from it) always targets the current account's bucket.
+  ref.watch(currentAuthStateProvider);
+  final pubkeyHex = ref.watch(authServiceProvider).currentPublicKeyHex;
+  return SavedSoundsService(
+    ref.watch(sharedPreferencesProvider),
+    pubkeyHex: pubkeyHex,
+  );
 });
 
 final savedSoundsProvider =
@@ -18,36 +26,60 @@ final savedSoundsProvider =
     );
 
 class SavedSoundsNotifier extends Notifier<List<AudioEvent>> {
+  SavedSoundsService? _backfillService;
   bool _backfillScheduled = false;
 
   @override
   List<AudioEvent> build() {
-    final sounds = ref.watch(savedSoundsServiceProvider).loadSounds();
+    final service = ref.watch(savedSoundsServiceProvider);
+    // Allow one backfill per account: reset when the service (and therefore
+    // the account bucket) changes so an account switch re-evaluates instead of
+    // staying suppressed by a previous account's run.
+    if (!identical(service, _backfillService)) {
+      _backfillService = service;
+      _backfillScheduled = false;
+    }
+    final sounds = service.loadSounds();
     if (!_backfillScheduled && sounds.any((s) => (s.duration ?? 0) <= 0)) {
       // Fire-and-forget backfill for legacy entries that were saved
       // before SavedSoundsNotifier started persisting durations.
       _backfillScheduled = true;
-      Future.microtask(_backfillMissingDurations);
+      Future.microtask(() => _backfillMissingDurations(service));
     }
     return sounds;
   }
 
   Future<SavedSoundSaveResult> saveSound(AudioEvent sound) async {
+    // Freeze the account bucket before any await: an account switch mid-save
+    // must not redirect the write — or a stale-account state update — into a
+    // different account's bucket.
+    final service = ref.read(savedSoundsServiceProvider);
     final enriched = await _ensureDuration(sound);
-    final result = await ref
-        .read(savedSoundsServiceProvider)
-        .saveSound(enriched);
-    state = ref.read(savedSoundsServiceProvider).loadSounds();
+    final result = await service.saveSound(enriched);
+    if (_targetsCurrentBucket(service)) {
+      state = service.loadSounds();
+    }
     return result;
   }
 
   Future<void> removeSound(String soundId) async {
-    await ref.read(savedSoundsServiceProvider).removeSound(soundId);
-    state = ref.read(savedSoundsServiceProvider).loadSounds();
+    final service = ref.read(savedSoundsServiceProvider);
+    await service.removeSound(soundId);
+    if (_targetsCurrentBucket(service)) {
+      state = service.loadSounds();
+    }
   }
 
-  Future<void> _backfillMissingDurations() async {
-    final current = state;
+  /// Whether [service] still targets the account bucket the provider is
+  /// currently bound to. Compares the stable storage key rather than object
+  /// identity: an A→B→A switch mid-write yields a *fresh* service instance for
+  /// the same A bucket, so `identical` would wrongly drop the completed write
+  /// from the current state.
+  bool _targetsCurrentBucket(SavedSoundsService service) =>
+      ref.read(savedSoundsServiceProvider).storageKey == service.storageKey;
+
+  Future<void> _backfillMissingDurations(SavedSoundsService service) async {
+    final current = service.loadSounds();
     final updated = <AudioEvent>[];
     var changed = false;
     for (final sound in current) {
@@ -60,8 +92,10 @@ class SavedSoundsNotifier extends Notifier<List<AudioEvent>> {
       updated.add(enriched);
     }
     if (!changed) return;
-    await ref.read(savedSoundsServiceProvider).replaceAll(updated);
-    state = updated;
+    await service.replaceAll(updated);
+    if (_targetsCurrentBucket(service)) {
+      state = updated;
+    }
   }
 
   /// Probes [ProVideoEditor] for the missing duration so the saved

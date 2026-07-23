@@ -78,5 +78,106 @@ void main() {
       expect(container.read(savedSoundsProvider), isEmpty);
       expect(service.loadSounds(), isEmpty);
     });
+
+    test('saveSound freezes the account bucket across the awaits', () async {
+      const pubkeyA =
+          'a123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+      const pubkeyB =
+          'b123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+      final serviceA = SavedSoundsService(
+        sharedPreferences,
+        pubkeyHex: pubkeyA,
+      );
+      final serviceB = SavedSoundsService(
+        sharedPreferences,
+        pubkeyHex: pubkeyB,
+      );
+
+      // Drive the "current account bucket" directly so the switch is
+      // deterministic, independent of auth-state propagation.
+      var current = serviceA;
+      final container = ProviderContainer(
+        overrides: [
+          savedSoundsServiceProvider.overrideWith((ref) => current),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      // Prime for account A; saveSound freezes serviceA before its first await.
+      expect(container.read(savedSoundsProvider), isEmpty);
+      final future = container
+          .read(savedSoundsProvider.notifier)
+          .saveSound(_sound(id: 'sound1'));
+
+      // Switch the active bucket to B mid-save and force the rebind.
+      current = serviceB;
+      container.invalidate(savedSoundsServiceProvider);
+      expect(container.read(savedSoundsProvider), isEmpty);
+
+      await future;
+
+      // The write landed in the frozen account A, never leaked into B, and the
+      // stale-account state update was skipped.
+      expect(serviceA.loadSounds().map((sound) => sound.id), ['sound1']);
+      expect(serviceB.loadSounds(), isEmpty);
+      expect(container.read(savedSoundsProvider), isEmpty);
+    });
+
+    test(
+      'applies the write to current state after an A->B->A switch',
+      () async {
+        const pubkeyA =
+            'a123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+        const pubkeyB =
+            'b123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+        // Two distinct instances for the same A bucket model the provider
+        // rebuilding a *fresh* service when it returns to account A.
+        final serviceA1 = SavedSoundsService(
+          sharedPreferences,
+          pubkeyHex: pubkeyA,
+        );
+        final serviceB = SavedSoundsService(
+          sharedPreferences,
+          pubkeyHex: pubkeyB,
+        );
+        final serviceA2 = SavedSoundsService(
+          sharedPreferences,
+          pubkeyHex: pubkeyA,
+        );
+
+        var current = serviceA1;
+        final container = ProviderContainer(
+          overrides: [
+            savedSoundsServiceProvider.overrideWith((ref) => current),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        // saveSound freezes serviceA1 before its first await.
+        expect(container.read(savedSoundsProvider), isEmpty);
+        final future = container
+            .read(savedSoundsProvider.notifier)
+            .saveSound(_sound(id: 'sound1'));
+
+        // A -> B -> A mid-save: the provider ends on a fresh A instance
+        // (serviceA2), which is not identical to the frozen serviceA1.
+        current = serviceB;
+        container.invalidate(savedSoundsServiceProvider);
+        expect(container.read(savedSoundsProvider), isEmpty);
+        current = serviceA2;
+        container.invalidate(savedSoundsServiceProvider);
+        expect(container.read(savedSoundsProvider), isEmpty);
+
+        await future;
+
+        // The write landed in A's bucket and the current A state reflects it,
+        // even though the current service instance differs from the frozen one.
+        expect(serviceA2.loadSounds().map((sound) => sound.id), ['sound1']);
+        expect(
+          container.read(savedSoundsProvider).map((sound) => sound.id),
+          ['sound1'],
+        );
+      },
+    );
   });
 }

@@ -1,6 +1,7 @@
 // ABOUTME: Service to clear user-specific cached data when identity changes
 // ABOUTME: Prevents data leakage between different Nostr accounts after reinstall
 
+import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -194,6 +195,18 @@ class UserDataCleanupService {
         await _prefs.remove(legacyDraftOwnerKey);
         clearedCount++;
         clearedKeys.add(legacyDraftOwnerKey);
+      }
+    }
+
+    // The per-account saved-sounds bucket holds audio ids, urls, and metadata.
+    // Drop it only on a destructive delete of a known account — a plain account
+    // switch keeps it so the user's library survives switching back.
+    if (deleteUserData && userPubkey != null && userPubkey.isNotEmpty) {
+      final savedSoundsKey = SavedSoundsService.accountStorageKey(userPubkey);
+      if (_prefs.containsKey(savedSoundsKey)) {
+        await _prefs.remove(savedSoundsKey);
+        clearedCount++;
+        clearedKeys.add(savedSoundsKey);
       }
     }
 

@@ -205,6 +205,24 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
     );
   }
 
+  /// Whether the viewer may reuse [SoundDetailScreen.sound].
+  ///
+  /// Shared and bundled sounds were explicitly published for reuse, so they
+  /// always qualify. A video's *original* sound is reusable only when its
+  /// creator enabled audio reuse (carried on [AudioEvent.allowsReuse], so this
+  /// holds regardless of how the screen was reached — reuse chain, deep link,
+  /// or the metadata sheet), or when the viewer is that creator.
+  bool _canReuseSound() {
+    final sound = widget.sound;
+    if (!sound.isOriginalSound) return true;
+    if (sound.allowsReuse) return true;
+    // Owner exception — re-evaluate on auth restore/logout/account-switch so it
+    // can't go stale (authServiceProvider alone is a stable instance).
+    ref.watch(currentAuthStateProvider);
+    final viewer = ref.watch(authServiceProvider).currentPublicKeyHex;
+    return viewer != null && viewer == sound.pubkey;
+  }
+
   void _navigateToVideo(String videoId, int index, List<VideoEvent> videos) {
     Log.info(
       'Showing video feed at index $index for video: $videoId',
@@ -274,7 +292,7 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
                   isPlaying: _isPlayingPreview,
                   isLoadingPreview: _isLoadingPreview,
                   onPreviewTap: _togglePreview,
-                  onUseSoundTap: _onUseSound,
+                  onUseSoundTap: _canReuseSound() ? _onUseSound : null,
                 ),
 
                 // Divider
@@ -353,7 +371,10 @@ class _SoundHeader extends ConsumerStatefulWidget {
   final bool isPlaying;
   final bool isLoadingPreview;
   final VoidCallback onPreviewTap;
-  final VoidCallback onUseSoundTap;
+
+  /// Tap handler for the "Use Sound" button, or `null` when the sound may not
+  /// be reused — in which case the button is hidden entirely.
+  final VoidCallback? onUseSoundTap;
 
   @override
   ConsumerState<_SoundHeader> createState() => _SoundHeaderState();
@@ -496,32 +517,34 @@ class _SoundHeaderState extends ConsumerState<_SoundHeader> {
                 ),
               ),
 
-              const SizedBox(width: 12),
+              if (widget.onUseSoundTap != null) ...[
+                const SizedBox(width: 12),
 
-              // Use Sound button
-              Expanded(
-                child: Semantics(
-                  identifier: 'sound_detail_use_button',
-                  button: true,
-                  child: ElevatedButton.icon(
-                    onPressed: widget.onUseSoundTap,
-                    icon: const DivineIcon(
-                      icon: DivineIconName.plus,
-                      size: 20,
-                      color: VineTheme.backgroundColor,
-                    ),
-                    label: Text(context.l10n.soundUseSound),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: VineTheme.vineGreen,
-                      foregroundColor: VineTheme.backgroundColor,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                // Use Sound button
+                Expanded(
+                  child: Semantics(
+                    identifier: 'sound_detail_use_button',
+                    button: true,
+                    child: ElevatedButton.icon(
+                      onPressed: widget.onUseSoundTap,
+                      icon: const DivineIcon(
+                        icon: DivineIconName.plus,
+                        size: 20,
+                        color: VineTheme.backgroundColor,
+                      ),
+                      label: Text(context.l10n.soundUseSound),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: VineTheme.vineGreen,
+                        foregroundColor: VineTheme.backgroundColor,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
         ],

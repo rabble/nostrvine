@@ -24,6 +24,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sound_service/sound_service.dart';
 
 import '../helpers/go_router.dart';
+import '../helpers/test_provider_overrides.dart';
 
 class _MockAudioPlaybackService extends Mock implements AudioPlaybackService {}
 
@@ -114,9 +115,21 @@ class MockVideosUsingSoundErrorNotifier
 }
 
 /// Test wrapper widget that provides necessary context.
-Widget createTestWidget({required Widget child, List<dynamic>? overrides}) {
+///
+/// [viewerPubkey] seeds the mocked signed-in pubkey used by the reuse gate;
+/// defaults to signed-out (null).
+Widget createTestWidget({
+  required Widget child,
+  List<dynamic>? overrides,
+  String? viewerPubkey,
+}) {
+  final mockAuth = createMockAuthService();
+  when(() => mockAuth.currentPublicKeyHex).thenReturn(viewerPubkey);
   return ProviderScope(
-    overrides: [...?overrides],
+    overrides: [
+      authServiceProvider.overrideWithValue(mockAuth),
+      ...?overrides,
+    ],
     child: MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
@@ -486,6 +499,91 @@ void main() {
 
         expect(find.text('Use Sound'), findsOneWidget);
         expect(_divineIcon(DivineIconName.plus), findsOneWidget);
+      });
+    });
+
+    group('Use Sound reuse gating', () {
+      const sourceVideoId =
+          'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
+      const creatorPubkey =
+          'test_pubkey_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+
+      VideoEvent sourceVideo({required bool allowReuse}) => VideoEvent(
+        id: sourceVideoId,
+        pubkey: creatorPubkey,
+        createdAt: 1700000000,
+        content: '',
+        timestamp: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
+        videoUrl: 'https://example.com/video/$sourceVideoId.mp4',
+        rawTags: allowReuse ? const {'allow_audio_reuse': 'true'} : const {},
+      );
+
+      // The synthesized original sound carries allowsReuse from the video, so
+      // the gate works regardless of whether sourceVideo is threaded through.
+      AudioEvent originalSound({required bool allowReuse}) =>
+          AudioEvent.fromVideoOriginalSound(
+            sourceVideo(allowReuse: allowReuse),
+          );
+
+      List<dynamic> gridOverrides() => [
+        soundUsageCountProvider(
+          sourceVideoId,
+        ).overrideWith((ref) => Future.value(0)),
+        videosUsingSoundProvider(
+          sourceVideoId,
+        ).overrideWith((ref) => Future.value(<String>[])),
+        audioPlaybackServiceProvider.overrideWithValue(mockAudioService),
+      ];
+
+      testWidgets('hides Use Sound when the creator disabled audio reuse', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            child: SoundDetailScreen(sound: originalSound(allowReuse: false)),
+            overrides: gridOverrides(),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Use Sound'), findsNothing);
+        expect(_divineIcon(DivineIconName.plus), findsNothing);
+        // Preview stays available for the un-adoptable sound.
+        expect(find.text('Preview'), findsOneWidget);
+      });
+
+      testWidgets(
+        'shows Use Sound for a reusable original sound reached without a '
+        'source video',
+        (tester) async {
+          // Regression: the resolved reuse path (and deep links) pass only the
+          // sound, no sourceVideo. Reuse must still be offered when the creator
+          // enabled it.
+          await tester.pumpWidget(
+            createTestWidget(
+              child: SoundDetailScreen(sound: originalSound(allowReuse: true)),
+              overrides: gridOverrides(),
+            ),
+          );
+          await tester.pump();
+
+          expect(find.text('Use Sound'), findsOneWidget);
+        },
+      );
+
+      testWidgets('shows Use Sound for the creator viewing their own sound', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            viewerPubkey: creatorPubkey,
+            child: SoundDetailScreen(sound: originalSound(allowReuse: false)),
+            overrides: gridOverrides(),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Use Sound'), findsOneWidget);
       });
     });
 

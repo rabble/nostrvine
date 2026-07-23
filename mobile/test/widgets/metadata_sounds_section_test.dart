@@ -6,14 +6,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_sounds_section.dart';
 
+import '../helpers/test_provider_overrides.dart';
+
 Finder _divineIcon(DivineIconName name) =>
     find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
+
+MockAuthService _mockAuth({String? viewerPubkey}) {
+  final mockAuth = createMockAuthService();
+  when(() => mockAuth.currentPublicKeyHex).thenReturn(viewerPubkey);
+  return mockAuth;
+}
 
 void main() {
   group(MetadataSoundsSection, () {
@@ -52,7 +62,10 @@ void main() {
       );
     }
 
-    VideoEvent createVideoWithoutAudio({String? authorName}) {
+    VideoEvent createVideoWithoutAudio({
+      String? authorName,
+      bool allowAudioReuse = false,
+    }) {
       final now = DateTime.now();
       return VideoEvent(
         id: testVideoId,
@@ -63,18 +76,25 @@ void main() {
         timestamp: now,
         title: 'Test Video',
         authorName: authorName,
+        rawTags: allowAudioReuse
+            ? const {'allow_audio_reuse': 'true'}
+            : const {},
       );
     }
 
     Widget buildTestWidget({
       required VideoEvent video,
       AudioEvent? audioOverride,
+      String? viewerPubkey,
     }) {
       return ProviderScope(
         overrides: [
           soundByIdProvider(testAudioEventId).overrideWith((ref) async {
             return audioOverride ?? testAudio;
           }),
+          authServiceProvider.overrideWithValue(
+            _mockAuth(viewerPubkey: viewerPubkey),
+          ),
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -149,15 +169,6 @@ void main() {
         expect(find.text('Jake Lara'), findsOneWidget);
       });
 
-      testWidgets('shows chevron (tappable to use sound)', (tester) async {
-        final video = createVideoWithoutAudio();
-
-        await tester.pumpWidget(buildTestWidget(video: video));
-        await tester.pumpAndSettle();
-
-        expect(_divineIcon(DivineIconName.caretRight), findsOneWidget);
-      });
-
       testWidgets('falls back to original sound when audio event is null', (
         tester,
       ) async {
@@ -169,6 +180,7 @@ void main() {
               soundByIdProvider(testAudioEventId).overrideWith((ref) async {
                 return null;
               }),
+              authServiceProvider.overrideWithValue(_mockAuth()),
             ],
             child: MaterialApp(
               localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -187,6 +199,86 @@ void main() {
         // Should fall back to original sound
         expect(find.text('Original sound'), findsOneWidget);
       });
+    });
+
+    group('Original sound reuse gating', () {
+      testWidgets(
+        'is display-only (no chevron) when the creator disabled audio reuse',
+        (tester) async {
+          final video = createVideoWithoutAudio();
+
+          await tester.pumpWidget(buildTestWidget(video: video));
+          await tester.pumpAndSettle();
+
+          expect(find.text('Original sound'), findsOneWidget);
+          expect(_divineIcon(DivineIconName.caretRight), findsNothing);
+        },
+      );
+
+      testWidgets('does not navigate when a display-only sound is tapped', (
+        tester,
+      ) async {
+        final router = GoRouter(
+          initialLocation: '/',
+          routes: [
+            GoRoute(
+              path: '/',
+              builder: (_, _) => Scaffold(
+                body: MetadataSoundsSection(video: createVideoWithoutAudio()),
+              ),
+            ),
+            GoRoute(
+              path: SoundDetailScreen.path,
+              name: SoundDetailScreen.routeName,
+              builder: (_, _) => const Scaffold(body: Text('DETAIL')),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [authServiceProvider.overrideWithValue(_mockAuth())],
+            child: MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              theme: VineTheme.theme,
+              routerConfig: router,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Original sound'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('DETAIL'), findsNothing);
+        expect(find.text('Original sound'), findsOneWidget);
+      });
+
+      testWidgets('shows chevron when the creator enabled audio reuse', (
+        tester,
+      ) async {
+        final video = createVideoWithoutAudio(allowAudioReuse: true);
+
+        await tester.pumpWidget(buildTestWidget(video: video));
+        await tester.pumpAndSettle();
+
+        expect(_divineIcon(DivineIconName.caretRight), findsOneWidget);
+      });
+
+      testWidgets(
+        'shows chevron for the creator viewing their own video with reuse off',
+        (tester) async {
+          final video = createVideoWithoutAudio();
+
+          await tester.pumpWidget(
+            buildTestWidget(video: video, viewerPubkey: testPubkey),
+          );
+          await tester.pumpAndSettle();
+
+          expect(_divineIcon(DivineIconName.caretRight), findsOneWidget);
+        },
+      );
     });
 
     group('Reused sound fallback', () {
@@ -241,6 +333,37 @@ void main() {
           );
           // The reusing user's own author name must not be credited.
           expect(find.text('Jake Lara'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'is display-only when the reused source cannot be resolved',
+        (tester) async {
+          // hasAudioReference + unresolved source: the referenced creator's
+          // reuse consent is unconfirmable, so the row credits them but offers
+          // no reuse affordance (fail closed).
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                soundByIdProvider(
+                  testAudioEventId,
+                ).overrideWith((ref) async => null),
+              ],
+              child: MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                theme: VineTheme.theme,
+                home: Scaffold(
+                  backgroundColor: Colors.black,
+                  body: MetadataSoundsSection(video: reusedVideo()),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text('Original sound'), findsOneWidget);
+          expect(_divineIcon(DivineIconName.caretRight), findsNothing);
         },
       );
 

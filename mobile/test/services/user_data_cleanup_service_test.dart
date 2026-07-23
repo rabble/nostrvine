@@ -2,6 +2,7 @@
 // ABOUTME: Validates that user-specific data is cleared when switching accounts
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -177,6 +178,38 @@ void main() {
           prefs.containsKey(UserDataCleanupService.legacyDraftOwnerKey),
           isFalse,
         );
+      });
+
+      test(
+        'clears the saved-sounds bucket on destructive account delete',
+        () async {
+          const pubkey =
+              'a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456';
+          final bucketKey = SavedSoundsService.accountStorageKey(pubkey);
+          await prefs.setString(bucketKey, '[{"id":"sound1"}]');
+
+          await service.clearUserSpecificData(
+            deleteUserData: true,
+            userPubkey: pubkey,
+          );
+
+          expect(prefs.containsKey(bucketKey), isFalse);
+        },
+      );
+
+      test('keeps the saved-sounds bucket on a plain account switch', () async {
+        const pubkey =
+            'a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456';
+        final bucketKey = SavedSoundsService.accountStorageKey(pubkey);
+        await prefs.setString(bucketKey, '[{"id":"sound1"}]');
+
+        await service.clearUserSpecificData(
+          isIdentityChange: true,
+          userPubkey: pubkey,
+        );
+
+        // A switch (not a delete) preserves the library for switching back.
+        expect(prefs.containsKey(bucketKey), isTrue);
       });
 
       test('marks legacy draft owner only when legacy drafts exist', () async {
