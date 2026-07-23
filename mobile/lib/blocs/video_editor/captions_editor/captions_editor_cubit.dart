@@ -77,10 +77,16 @@ class CaptionsEditorCubit extends Cubit<CaptionsEditorState> {
     }
   }
 
-  /// Continues with an empty cue list after [CaptionsEditorStatus.empty] or
-  /// [CaptionsEditorStatus.failed].
+  /// Switches to manual editing after [CaptionsEditorStatus.empty] or
+  /// [CaptionsEditorStatus.failed], seeding one blank cue so an input field is
+  /// ready to type into immediately.
   void startEmpty() {
-    emit(state.copyWith(status: CaptionsEditorStatus.ready, cues: const []));
+    emit(
+      state.copyWith(
+        status: CaptionsEditorStatus.ready,
+        cues: [_newCue(after: Duration.zero)],
+      ),
+    );
   }
 
   /// Replaces the text of the cue with [cueId].
@@ -156,26 +162,33 @@ class CaptionsEditorCubit extends Cubit<CaptionsEditorState> {
   /// timeline.
   void addCue() {
     final lastEnd = state.cues.isEmpty ? Duration.zero : state.cues.last.end;
-    var start = lastEnd;
+    emit(
+      state.copyWith(
+        status: CaptionsEditorStatus.ready,
+        cues: [
+          ...state.cues,
+          _newCue(after: lastEnd),
+        ],
+      ),
+    );
+  }
+
+  /// A blank cue spanning [_newCueDuration] starting at [after], back-shifted
+  /// to stay inside the video near its end. Its id is a UUID so it never
+  /// collides with cues from an earlier session after re-opening the sheet.
+  CaptionCue _newCue({required Duration after}) {
+    var start = after;
     var end = start + _newCueDuration;
     if (end > _totalDuration) {
       end = _totalDuration;
       start = end - _newCueDuration;
       if (start < Duration.zero) start = Duration.zero;
     }
-    emit(
-      state.copyWith(
-        status: CaptionsEditorStatus.ready,
-        cues: [
-          ...state.cues,
-          CaptionCue(
-            id: 'manual-${_uuid.v4()}',
-            text: '',
-            start: start,
-            end: end,
-          ),
-        ],
-      ),
+    return CaptionCue(
+      id: 'manual-${_uuid.v4()}',
+      text: '',
+      start: start,
+      end: end,
     );
   }
 

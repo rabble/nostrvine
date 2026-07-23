@@ -123,7 +123,7 @@ void main() {
     );
 
     blocTest<CaptionsEditorCubit, CaptionsEditorState>(
-      'startEmpty moves a failed session to ready with no cues',
+      'startEmpty moves a failed session to ready with one blank cue',
       build: () {
         stubOutcome(const CaptionsFailed(CaptionGenerationFailure.failed));
         return build();
@@ -136,7 +136,8 @@ void main() {
       expect: () => [
         isA<CaptionsEditorState>()
             .having((s) => s.status, 'status', CaptionsEditorStatus.ready)
-            .having((s) => s.cues, 'cues', isEmpty),
+            .having((s) => s.cues, 'cues', hasLength(1))
+            .having((s) => s.cues.single.text, 'blank cue text', isEmpty),
       ],
     );
 
