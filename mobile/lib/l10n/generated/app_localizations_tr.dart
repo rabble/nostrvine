@@ -9745,13 +9745,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'Visit creator site';
+  String get profileCreatorSiteVisitLabel => 'Creator sitesini ziyaret et';
 
   @override
-  String get profileCreatorSiteOwnLabel => 'View your site';
+  String get profileCreatorSiteOwnLabel => 'Siteni görüntüle';
 
   @override
-  String get profileCreatorSiteOpenFailed => 'Couldn\'t open creator site';
+  String get profileCreatorSiteOpenFailed => 'Creator sitesi açılamadı';
 
   @override
   String get videoMetadataEditCoverTitle => 'Kapağı düzenle';

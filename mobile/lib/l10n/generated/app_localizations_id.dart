@@ -9748,13 +9748,14 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'Visit creator site';
+  String get profileCreatorSiteVisitLabel => 'Kunjungi situs kreator';
 
   @override
-  String get profileCreatorSiteOwnLabel => 'View your site';
+  String get profileCreatorSiteOwnLabel => 'Lihat situs kamu';
 
   @override
-  String get profileCreatorSiteOpenFailed => 'Couldn\'t open creator site';
+  String get profileCreatorSiteOpenFailed =>
+      'Tidak dapat membuka situs kreator';
 
   @override
   String get videoMetadataEditCoverTitle => 'Edit sampul';

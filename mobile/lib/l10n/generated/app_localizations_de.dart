@@ -9889,13 +9889,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'Visit creator site';
+  String get profileCreatorSiteVisitLabel => 'Creator-Seite besuchen';
 
   @override
-  String get profileCreatorSiteOwnLabel => 'View your site';
+  String get profileCreatorSiteOwnLabel => 'Deine Seite ansehen';
 
   @override
-  String get profileCreatorSiteOpenFailed => 'Couldn\'t open creator site';
+  String get profileCreatorSiteOpenFailed =>
+      'Creator-Seite konnte nicht geöffnet werden';
 
   @override
   String get videoMetadataEditCoverTitle => 'Cover bearbeiten';

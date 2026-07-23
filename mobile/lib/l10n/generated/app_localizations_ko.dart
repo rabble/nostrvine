@@ -9422,13 +9422,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'Visit creator site';
+  String get profileCreatorSiteVisitLabel => '크리에이터 사이트 방문';
 
   @override
-  String get profileCreatorSiteOwnLabel => 'View your site';
+  String get profileCreatorSiteOwnLabel => '내 사이트 보기';
 
   @override
-  String get profileCreatorSiteOpenFailed => 'Couldn\'t open creator site';
+  String get profileCreatorSiteOpenFailed => '크리에이터 사이트를 열 수 없습니다';
 
   @override
   String get videoMetadataEditCoverTitle => '커버 편집';

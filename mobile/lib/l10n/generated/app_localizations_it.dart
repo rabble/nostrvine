@@ -9871,13 +9871,14 @@ class AppLocalizationsIt extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'Visit creator site';
+  String get profileCreatorSiteVisitLabel => 'Visita il sito del creator';
 
   @override
-  String get profileCreatorSiteOwnLabel => 'View your site';
+  String get profileCreatorSiteOwnLabel => 'Vedi il tuo sito';
 
   @override
-  String get profileCreatorSiteOpenFailed => 'Couldn\'t open creator site';
+  String get profileCreatorSiteOpenFailed =>
+      'Impossibile aprire il sito del creator';
 
   @override
   String get videoMetadataEditCoverTitle => 'Modifica copertina';

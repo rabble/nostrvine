@@ -9977,13 +9977,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'Visit creator site';
+  String get profileCreatorSiteVisitLabel => 'Vezi site-ul creatorului';
 
   @override
-  String get profileCreatorSiteOwnLabel => 'View your site';
+  String get profileCreatorSiteOwnLabel => 'Vezi site-ul tău';
 
   @override
-  String get profileCreatorSiteOpenFailed => 'Couldn\'t open creator site';
+  String get profileCreatorSiteOpenFailed =>
+      'Site-ul creatorului nu a putut fi deschis';
 
   @override
   String get videoMetadataEditCoverTitle => 'Editează coperta';

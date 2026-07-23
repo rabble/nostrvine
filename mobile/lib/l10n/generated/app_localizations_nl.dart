@@ -9823,13 +9823,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'Visit creator site';
+  String get profileCreatorSiteVisitLabel => 'Creatorsite bekijken';
 
   @override
-  String get profileCreatorSiteOwnLabel => 'View your site';
+  String get profileCreatorSiteOwnLabel => 'Jouw site bekijken';
 
   @override
-  String get profileCreatorSiteOpenFailed => 'Couldn\'t open creator site';
+  String get profileCreatorSiteOpenFailed => 'Kan creatorsite niet openen';
 
   @override
   String get videoMetadataEditCoverTitle => 'Omslag bewerken';

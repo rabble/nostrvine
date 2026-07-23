@@ -9776,13 +9776,14 @@ class AppLocalizationsSv extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'Visit creator site';
+  String get profileCreatorSiteVisitLabel => 'Besök kreatörens sida';
 
   @override
-  String get profileCreatorSiteOwnLabel => 'View your site';
+  String get profileCreatorSiteOwnLabel => 'Visa din sida';
 
   @override
-  String get profileCreatorSiteOpenFailed => 'Couldn\'t open creator site';
+  String get profileCreatorSiteOpenFailed =>
+      'Det gick inte att öppna kreatörens sida';
 
   @override
   String get videoMetadataEditCoverTitle => 'Redigera omslag';

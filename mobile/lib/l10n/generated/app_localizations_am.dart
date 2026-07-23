@@ -9571,13 +9571,13 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'Visit creator site';
+  String get profileCreatorSiteVisitLabel => 'የፈጣሪ ጣቢያን ይጎብኙ';
 
   @override
-  String get profileCreatorSiteOwnLabel => 'View your site';
+  String get profileCreatorSiteOwnLabel => 'የእርስዎን ጣቢያ ይመልከቱ';
 
   @override
-  String get profileCreatorSiteOpenFailed => 'Couldn\'t open creator site';
+  String get profileCreatorSiteOpenFailed => 'የፈጣሪ ጣቢያን መክፈት አልተቻለም';
 
   @override
   String get videoMetadataEditCoverTitle => 'Edit cover';

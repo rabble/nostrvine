@@ -9960,13 +9960,13 @@ class AppLocalizationsPl extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'Visit creator site';
+  String get profileCreatorSiteVisitLabel => 'Zobacz stronę twórcy';
 
   @override
-  String get profileCreatorSiteOwnLabel => 'View your site';
+  String get profileCreatorSiteOwnLabel => 'Zobacz swoją stronę';
 
   @override
-  String get profileCreatorSiteOpenFailed => 'Couldn\'t open creator site';
+  String get profileCreatorSiteOpenFailed => 'Nie można otworzyć strony twórcy';
 
   @override
   String get videoMetadataEditCoverTitle => 'Edytuj okładkę';
