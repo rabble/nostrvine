@@ -149,6 +149,11 @@ void main() {
       ) async {
         final semantics = tester.ensureSemantics();
         await tester.pumpWidget(createTestWidget());
+        // flutter_svg attaches the semantics label immediately but only flags
+        // the node as an image once the picture finishes decoding — which
+        // isn't guaranteed on the first frame (it varies with SVG-cache warmth
+        // and platform in the merged-isolate suite). Settle before counting.
+        await tester.pumpAndSettle();
 
         expect(_imageSemanticsNodeCount(tester), equals(1));
         expect(find.bySemanticsLabel(AppConfig.appName), findsOneWidget);
