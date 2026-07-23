@@ -39,6 +39,21 @@ void main() {
     return event;
   }
 
+  Future<void> waitForKindIndex(Event event) async {
+    // cacheUserEvent is fire-and-forget: the event record is written before
+    // its kind index. Wait for the index entry instead of assuming that one
+    // event-loop pump means both Hive writes have completed.
+    for (var attempt = 0; attempt < 20; attempt++) {
+      await pumpEventQueue();
+      if (service
+          .getEventsByKind(event.kind)
+          .any((cachedEvent) => cachedEvent.id == event.id)) {
+        return;
+      }
+    }
+    fail('Event ${event.id} was not added to kind ${event.kind} index');
+  }
+
   setUp(() async {
     // Defend against Hive state leaked by an earlier file in the shared
     // very_good --optimization isolate: this service suite and the sibling
@@ -185,11 +200,11 @@ void main() {
 
       await service.initialize(userPubkey);
       service.cacheUserEvent(userEvent);
-      await pumpEventQueue();
+      await waitForKindIndex(userEvent);
 
       await service.initialize(otherPubkey);
       service.cacheUserEvent(otherUserEvent);
-      await pumpEventQueue();
+      await waitForKindIndex(otherUserEvent);
 
       expect(service.hasEvent(userEvent.id), isFalse);
       expect(service.getEventById(userEvent.id), isNull);
@@ -212,7 +227,7 @@ void main() {
 
         await service.initialize(userPubkey);
         service.cacheUserEvent(event);
-        await pumpEventQueue();
+        await waitForKindIndex(event);
         expect(service.hasEvent(event.id), isTrue);
 
         service.resetCurrentUser();
