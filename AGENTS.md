@@ -9,13 +9,26 @@
 
 ## Divine Context And Brain
 
-- Before starting broad product, architecture, protocol, or cross-repo work, read `${DIVINE_CONTEXT_ROOT:-../divine-context}/AGENT_CONTEXT.md` if it exists. If it is unavailable, rely on this repo's focused docs and ask before making cross-repo assumptions.
-- `divine-context` is the cross-repo handbook for product goals, architecture, terminology, Nostr usage, and the service catalog. Use it before inventing a new service, protocol shape, or product assumption.
-- Divine Brain is an optional developer-local knowledge source for company context that is not visible in the local working tree: Slack decisions, Drive docs, GitHub history, Gmail threads, Figma context, Cloudflare Workers, Fastly services, incidents, customer themes, and prior implementation rationale.
-- When Divine Brain MCP tools are configured and a task would benefit from company memory, prefer `mcp__divine_brain__search` for raw engineering/context retrieval, `mcp__divine_brain__ask` for synthesized answers, `mcp__divine_brain__world` for typed entity lookup, and `mcp__divine_brain__sql` for allow-listed rollups.
-- Cite Brain results back to the user or PR text when they influence the answer. If Brain is unavailable, say that directly and continue only from local evidence; do not guess missing company context.
-- Do not commit Divine Brain CF Access headers, service tokens, nsecs, or other credentials to this repo. Brain auth belongs in developer-local/global MCP configuration. The repo `.mcp.json` may list non-secret public MCP servers only.
+Before broad product, architecture, protocol, cross-repo, service-boundary, or pull-request authoring, review, or modification work, read the shared Divine context primer.
 
+Resolve the context directory and clone it there if it is missing:
+
+```bash
+CONTEXT_DIR="${DIVINE_CONTEXT_ROOT:-../divine-context}"
+[ -e "$CONTEXT_DIR/.git" ] || gh repo clone divinevideo/divine-context "$CONTEXT_DIR"
+```
+
+Use that value as `<context-dir>` below.
+
+The `divine-context` repo is private, so cloning requires GitHub access. If clone, network, or auth fails, continue from the local repo docs and avoid cross-repo assumptions.
+
+Before updating an existing context checkout, verify it is clean and on its default branch. If it is clean and on the default branch, update it with `git -C <context-dir> pull --ff-only`. If it is dirty, on another branch, cannot fast-forward, or network/auth fails, leave it untouched and say the context may be stale.
+
+Read `<context-dir>/AGENT_CONTEXT.md` and follow its instructions. If unavailable, continue from the local repo docs and avoid cross-repo assumptions.
+
+Before working on a pull request, follow `<context-dir>/PR_REVIEW.md` and use `<context-dir>/PR_REVIEW_TEAMS.md` to request the normal team and check takeover authority. Ordinary review remains open to any eligible Divine human. Before modifying a pull-request branch, enforce the mapping and every takeover gate; if the mapping cannot be read, feedback-only review may continue but automated takeover must stop. Request and verify required human review automatically when tooling permits. If the runbook is unavailable, leave the pull request open and report the blocker.
+
+If a Divine Brain search or ask tool is available, you may use it for company memory. Treat it as optional and credentialed: tool names vary by client, and work must continue when Brain is unavailable. When Brain results influence work, cite the returned document ids. Never commit Brain credentials or expose Brain-derived sensitive content in public PRs, issues, branch names, commit messages, code comments, logs, screenshots, release notes, or externally shared agent transcripts.
 ## Worktree-First Task Workflow
 
 > See `.claude/rules/agent_workflow.md` for detailed rationale and forbidden patterns. The bullets below are the operational summary.
