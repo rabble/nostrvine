@@ -1,9 +1,8 @@
-import 'dart:io';
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/widgets/video_clip/clip_thumbnail_image.dart';
 
 class VideoEditorThumbnail extends ConsumerWidget {
   const VideoEditorThumbnail({
@@ -23,7 +22,10 @@ class VideoEditorThumbnail extends ConsumerWidget {
     return FittedBox(
       fit: .cover,
       child: clip.thumbnailPath != null
-          ? Image.file(File(clip.thumbnailPath!))
+          ? ClipThumbnailImage(
+              path: clip.thumbnailPath!,
+              placeholder: SizedBox.fromSize(size: contentSize),
+            )
           : SizedBox.fromSize(
               size: contentSize,
               child: const Center(

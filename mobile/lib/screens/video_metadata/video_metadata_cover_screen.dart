@@ -14,6 +14,7 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/video_clip/clip_thumbnail_image.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:time_formatter/time_formatter.dart';
@@ -368,9 +369,7 @@ class _VideoMetadataCoverScreenState
                   _BottomArea(
                     clip: widget.clip,
                     thumbnail: (
-                      file: widget.clip.thumbnailPath != null
-                          ? File(widget.clip.thumbnailPath!)
-                          : null,
+                      path: widget.clip.thumbnailPath,
                       networkUrl: widget.thumbnailUrl,
                     ),
                     stripThumbnails: _stripThumbnails,
@@ -450,7 +449,7 @@ class _VideoAreaState extends State<_VideoArea> {
     }
     final localPath = widget.clip.thumbnailPath;
     if (localPath != null) {
-      return Image.file(File(localPath), fit: BoxFit.cover);
+      return ClipThumbnailImage(path: localPath, fit: BoxFit.cover);
     }
     return const ColoredBox(color: VineTheme.onSurfaceMuted);
   }
@@ -570,7 +569,7 @@ class _BottomArea extends StatelessWidget {
   });
 
   final DivineVideoClip clip;
-  final ({File? file, String? networkUrl})? thumbnail;
+  final ({String? path, String? networkUrl})? thumbnail;
   final List<StripThumbnail> stripThumbnails;
   final Duration clipDuration;
   final Duration selectedPosition;
@@ -606,7 +605,7 @@ class _ThumbnailStrip extends StatefulWidget {
   });
 
   final DivineVideoClip clip;
-  final ({File? file, String? networkUrl})? thumbnail;
+  final ({String? path, String? networkUrl})? thumbnail;
   final List<StripThumbnail> stripThumbnails;
   final Duration clipDuration;
   final Duration selectedPosition;
@@ -783,7 +782,7 @@ class _ThumbnailStripState extends State<_ThumbnailStrip> {
 class _SlotImage extends StatelessWidget {
   const _SlotImage({required this.thumbnail, this.stripThumbnailPath});
 
-  final ({File? file, String? networkUrl})? thumbnail;
+  final ({String? path, String? networkUrl})? thumbnail;
   final String? stripThumbnailPath;
 
   @override
@@ -798,18 +797,25 @@ class _SlotImage extends StatelessWidget {
                   const ColoredBox(color: VineTheme.surfaceContainerHigh),
             ),
           )
-        : thumbnail?.file != null
-        ? Image.file(thumbnail!.file!, fit: .cover, excludeFromSemantics: true)
+        : thumbnail?.path != null
+        ? ClipThumbnailImage(
+            path: thumbnail!.path!,
+            fit: .cover,
+            excludeFromSemantics: true,
+            placeholder: const ColoredBox(
+              color: VineTheme.surfaceContainerHigh,
+            ),
+          )
         : const ColoredBox(color: VineTheme.surfaceContainerHigh);
 
     if (stripThumbnailPath == null) return fallback;
 
-    return Image.file(
-      File(stripThumbnailPath!),
+    return ClipThumbnailImage(
+      path: stripThumbnailPath!,
       fit: BoxFit.cover,
       gaplessPlayback: true,
       excludeFromSemantics: true,
-      errorBuilder: (_, _, _) => fallback,
+      placeholder: fallback,
     );
   }
 }

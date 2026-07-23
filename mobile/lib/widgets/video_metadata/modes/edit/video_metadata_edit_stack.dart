@@ -1,8 +1,6 @@
 // ABOUTME: Full-screen scaffold for editing already-published video metadata.
 // ABOUTME: Reuses VideoMetadataFormFields from the capture stack.
 
-import 'dart:io';
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart' hide AspectRatio;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +11,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_cover_screen.dart';
+import 'package:openvine/widgets/video_clip/clip_thumbnail_image.dart';
 import 'package:openvine/widgets/video_metadata/modes/edit/video_metadata_edit_bottom_bar.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_form_fields.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
@@ -44,9 +43,7 @@ class _VideoMetadataEditStackState extends State<VideoMetadataEditStack> {
   @override
   Widget build(BuildContext context) {
     return ProviderScope(
-      overrides: [
-        videoEditorProvider.overrideWith(VideoEditorNotifier.new),
-      ],
+      overrides: [videoEditorProvider.overrideWith(VideoEditorNotifier.new)],
       child: _VideoMetadataEditStackContent(
         video: widget.video,
         initialCollaboratorPubkeys: _initialCollaboratorPubkeys,
@@ -221,9 +218,12 @@ class _EditClipPreview extends StatelessWidget {
               fit: StackFit.expand,
               children: [
                 if (pendingThumbnailPath != null)
-                  Image.file(
-                    File(pendingThumbnailPath!),
+                  ClipThumbnailImage(
+                    path: pendingThumbnailPath!,
                     fit: BoxFit.cover,
+                    placeholder: thumbnailUrl != null
+                        ? VineCachedImage(imageUrl: thumbnailUrl)
+                        : const ColoredBox(color: VineTheme.onSurfaceMuted),
                   )
                 else if (thumbnailUrl != null)
                   VineCachedImage(imageUrl: thumbnailUrl)

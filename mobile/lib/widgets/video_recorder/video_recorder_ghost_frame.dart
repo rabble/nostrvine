@@ -1,10 +1,9 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/widgets/video_clip/clip_thumbnail_image.dart';
 
 /// Semi-transparent overlay of the last recorded clip's final frame.
 ///
@@ -70,8 +69,8 @@ class VideoRecorderGhostFrame extends ConsumerWidget {
                 opacity: 0.48,
                 child: Transform.flip(
                   flipX: ghostData.isFrontCamera,
-                  child: Image.file(
-                    File(ghostData.path),
+                  child: ClipThumbnailImage(
+                    path: ghostData.path,
                     fit: .cover,
                     width: .infinity,
                     height: .infinity,
@@ -82,6 +81,7 @@ class VideoRecorderGhostFrame extends ConsumerWidget {
                         (MediaQuery.sizeOf(context).height *
                                 MediaQuery.devicePixelRatioOf(context))
                             .round(),
+                    placeholder: const SizedBox.shrink(),
                   ),
                 ),
               ),

@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:divine_ui/divine_ui.dart';
@@ -6,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/widgets/video_clip/clip_thumbnail_image.dart';
 import 'package:pro_image_editor/features/filter_editor/widgets/filter_generator.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
@@ -26,7 +26,10 @@ class VideoMetadataCapturePreviewThumbnail extends ConsumerWidget {
       );
     }
 
-    final thumbnail = Image.file(File(clip.thumbnailPath!), fit: .cover);
+    final thumbnail = ClipThumbnailImage(
+      path: clip.thumbnailPath!,
+      fit: .cover,
+    );
 
     return Stack(
       fit: .expand,
