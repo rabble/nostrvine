@@ -123,9 +123,9 @@ void main() {
     });
 
     test('keeps the stills when the flag is not set', () {
-      final copy = stopMotionClip(['/a.jpg']).copyWith(
-        video: editor.EditorVideo.file(File('/rendered.mp4')),
-      );
+      final copy = stopMotionClip([
+        '/a.jpg',
+      ]).copyWith(video: editor.EditorVideo.file(File('/rendered.mp4')));
 
       expect(copy.stopMotionFrames, hasLength(1));
     });
@@ -149,9 +149,9 @@ void main() {
     });
 
     test('round-trips through JSON and defaults to zero when absent', () {
-      final shifted = clip('/videos/clip.mp4').copyWith(
-        sourceStartOffset: const Duration(milliseconds: 3210),
-      );
+      final shifted = clip(
+        '/videos/clip.mp4',
+      ).copyWith(sourceStartOffset: const Duration(milliseconds: 3210));
 
       final restored = DivineVideoClip.fromJson(shifted.toJson(), '/videos');
       expect(
@@ -184,15 +184,12 @@ void main() {
     });
 
     test('round-trips through JSON and defaults to zero when absent', () {
-      final floored = clip('/videos/clip.mp4').copyWith(
-        minTrimStart: const Duration(milliseconds: 2500),
-      );
+      final floored = clip(
+        '/videos/clip.mp4',
+      ).copyWith(minTrimStart: const Duration(milliseconds: 2500));
 
       final restored = DivineVideoClip.fromJson(floored.toJson(), '/videos');
-      expect(
-        restored.minTrimStart,
-        equals(const Duration(milliseconds: 2500)),
-      );
+      expect(restored.minTrimStart, equals(const Duration(milliseconds: 2500)));
 
       // Old drafts/history entries have no key — must default to zero.
       final legacy = DivineVideoClip.fromJson(
@@ -200,6 +197,72 @@ void main() {
         '/videos',
       );
       expect(legacy.minTrimStart, equals(Duration.zero));
+    });
+  });
+
+  group('DivineVideoClip source provenance', () {
+    test('round-trips through JSON when populated', () {
+      final source = clip('/videos/clip.mp4').copyWith(
+        sourceAuthorPubkey: 'source-author-pubkey',
+        sourceEventId: 'source-event-id',
+        sourceAddressableId: '34236:source-author-pubkey:source-d-tag',
+        sourceRelayHint: 'wss://relay.divine.video',
+      );
+
+      final json = source.toJson();
+      expect(json['sourceAuthorPubkey'], 'source-author-pubkey');
+      expect(json['sourceEventId'], 'source-event-id');
+      expect(
+        json['sourceAddressableId'],
+        '34236:source-author-pubkey:source-d-tag',
+      );
+      expect(json['sourceRelayHint'], 'wss://relay.divine.video');
+
+      final restored = DivineVideoClip.fromJson(json, '/videos');
+      expect(restored.sourceAuthorPubkey, source.sourceAuthorPubkey);
+      expect(restored.sourceEventId, source.sourceEventId);
+      expect(restored.sourceAddressableId, source.sourceAddressableId);
+      expect(restored.sourceRelayHint, source.sourceRelayHint);
+    });
+
+    test('defaults to null for legacy JSON and omits empty keys', () {
+      final json = clip('/videos/clip.mp4').toJson();
+      expect(json.containsKey('sourceAuthorPubkey'), isFalse);
+      expect(json.containsKey('sourceEventId'), isFalse);
+      expect(json.containsKey('sourceAddressableId'), isFalse);
+      expect(json.containsKey('sourceRelayHint'), isFalse);
+
+      final restored = DivineVideoClip.fromJson(json, '/videos');
+      expect(restored.sourceAuthorPubkey, isNull);
+      expect(restored.sourceEventId, isNull);
+      expect(restored.sourceAddressableId, isNull);
+      expect(restored.sourceRelayHint, isNull);
+    });
+
+    test('survives copyWith and can be cleared explicitly', () {
+      final source = clip('/videos/clip.mp4').copyWith(
+        sourceAuthorPubkey: 'source-author-pubkey',
+        sourceEventId: 'source-event-id',
+        sourceAddressableId: '34236:source-author-pubkey:source-d-tag',
+        sourceRelayHint: 'wss://relay.divine.video',
+      );
+
+      final copied = source.copyWith(duration: const Duration(seconds: 6));
+      expect(copied.sourceAuthorPubkey, source.sourceAuthorPubkey);
+      expect(copied.sourceEventId, source.sourceEventId);
+      expect(copied.sourceAddressableId, source.sourceAddressableId);
+      expect(copied.sourceRelayHint, source.sourceRelayHint);
+
+      final cleared = copied.copyWith(
+        clearSourceAuthorPubkey: true,
+        clearSourceEventId: true,
+        clearSourceAddressableId: true,
+        clearSourceRelayHint: true,
+      );
+      expect(cleared.sourceAuthorPubkey, isNull);
+      expect(cleared.sourceEventId, isNull);
+      expect(cleared.sourceAddressableId, isNull);
+      expect(cleared.sourceRelayHint, isNull);
     });
   });
 
@@ -215,9 +278,9 @@ void main() {
       // A 5s clip split at 2s: start half [0,2s], end half [2s,5s] on the same
       // file with minTrimStart 2s. Summing budgetDuration must recover the
       // original 5s, not 2s + 5s = 7s.
-      final startHalf = clip('/videos/clip.mp4').copyWith(
-        duration: const Duration(seconds: 2),
-      );
+      final startHalf = clip(
+        '/videos/clip.mp4',
+      ).copyWith(duration: const Duration(seconds: 2));
       final endHalf = clip('/videos/clip.mp4').copyWith(
         trimStart: const Duration(seconds: 2),
         minTrimStart: const Duration(seconds: 2),

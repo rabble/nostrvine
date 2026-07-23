@@ -162,6 +162,10 @@ class VideoClipImportService {
         originalAspectRatio: actualRatio ?? 1,
         targetAspectRatio: _targetAspectRatioFor(video, actualRatio),
         ghostFramePath: ghostFramePath,
+        sourceAuthorPubkey: video.pubkey,
+        sourceEventId: video.id,
+        sourceAddressableId: video.addressableId,
+        sourceRelayHint: video.sourceRelay,
       );
 
       await _clipLibraryService.saveClip(clip);

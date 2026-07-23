@@ -40,6 +40,10 @@ class DivineVideoClip {
     this.proofManifestJson,
     this.deletedAt,
     this.transition,
+    this.sourceAuthorPubkey,
+    this.sourceEventId,
+    this.sourceAddressableId,
+    this.sourceRelayHint,
   }) : assert(
          video != null || stopMotionFrames != null,
          'A clip must have either a video file or stop-motion frames',
@@ -136,6 +140,19 @@ class DivineVideoClip {
   /// tail into the first clip's head so a looping player restarts seamlessly.
   /// Drives both the live editor preview and the final rendered composition.
   final ClipTransition? transition;
+
+  /// Original video author's pubkey when this local clip was imported from an
+  /// existing published video.
+  final String? sourceAuthorPubkey;
+
+  /// Original source event id for imported clips.
+  final String? sourceEventId;
+
+  /// Addressable kind 34236 coordinate for the source video when available.
+  final String? sourceAddressableId;
+
+  /// Relay hint for fetching the source video or author attribution.
+  final String? sourceRelayHint;
 
   double get durationInSeconds => duration.inMilliseconds / 1000.0;
 
@@ -302,6 +319,14 @@ class DivineVideoClip {
     DateTime? deletedAt,
     ClipTransition? transition,
     bool clearTransition = false,
+    String? sourceAuthorPubkey,
+    bool clearSourceAuthorPubkey = false,
+    String? sourceEventId,
+    bool clearSourceEventId = false,
+    String? sourceAddressableId,
+    bool clearSourceAddressableId = false,
+    String? sourceRelayHint,
+    bool clearSourceRelayHint = false,
   }) {
     final isNewLogicalClip = id != null && id != this.id;
 
@@ -347,6 +372,18 @@ class DivineVideoClip {
           : (proofManifestJson ?? this.proofManifestJson),
       deletedAt: deletedAt ?? this.deletedAt,
       transition: clearTransition ? null : (transition ?? this.transition),
+      sourceAuthorPubkey: clearSourceAuthorPubkey
+          ? null
+          : (sourceAuthorPubkey ?? this.sourceAuthorPubkey),
+      sourceEventId: clearSourceEventId
+          ? null
+          : (sourceEventId ?? this.sourceEventId),
+      sourceAddressableId: clearSourceAddressableId
+          ? null
+          : (sourceAddressableId ?? this.sourceAddressableId),
+      sourceRelayHint: clearSourceRelayHint
+          ? null
+          : (sourceRelayHint ?? this.sourceRelayHint),
     );
   }
 
@@ -389,6 +426,11 @@ class DivineVideoClip {
         'reversedVideoPath': p.basename(reversedVideoPath!),
       if (proofManifestJson != null) 'proofManifestJson': proofManifestJson,
       if (transition != null) 'transition': transition!.toMap(),
+      if (sourceAuthorPubkey != null) 'sourceAuthorPubkey': sourceAuthorPubkey,
+      if (sourceEventId != null) 'sourceEventId': sourceEventId,
+      if (sourceAddressableId != null)
+        'sourceAddressableId': sourceAddressableId,
+      if (sourceRelayHint != null) 'sourceRelayHint': sourceRelayHint,
     };
   }
 
@@ -503,6 +545,10 @@ class DivineVideoClip {
       ),
       proofManifestJson: json['proofManifestJson'] as String?,
       transition: _transitionFromJson(json['transition']),
+      sourceAuthorPubkey: json['sourceAuthorPubkey'] as String?,
+      sourceEventId: json['sourceEventId'] as String?,
+      sourceAddressableId: json['sourceAddressableId'] as String?,
+      sourceRelayHint: json['sourceRelayHint'] as String?,
     );
   }
 
