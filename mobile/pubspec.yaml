@@ -462,9 +462,10 @@ flutter_launcher_icons:
   # Covers the PWA / home-screen icons under web/icons. This block also
   # rewrites web/favicon.png from image_path and emits maskable icons without
   # safe-zone padding, so follow every run with
-  # `dart run scripts/generate_web_favicon.dart` to put the plate-free tab mark
-  # and padded maskable icons back. It rewrites web/manifest.json in place too,
-  # stripping the trailing newline — re-add it before committing.
+  # `dart run scripts/generate_web_favicon.dart` to derive the plate-free tab
+  # mark from the current app icon and put the padded maskable icons back. It
+  # rewrites web/manifest.json in place too, stripping the trailing newline —
+  # re-add it before committing.
   web:
     generate: true
     image_path: "assets/icon/app_icon.png"

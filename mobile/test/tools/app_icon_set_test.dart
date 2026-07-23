@@ -1,6 +1,6 @@
 // ABOUTME: Guards that every generated launcher icon still derives from
-// ABOUTME: assets/icon/app_icon.png, the browser favicon from the isolated
-// ABOUTME: avatar, that the generator config points at both sources, and that
+// ABOUTME: assets/icon/app_icon.png, including the browser favicon's isolated
+// ABOUTME: foreground, that the generator config points at the source, and that
 // ABOUTME: the flat colours shipped alongside them are still Brand Green.
 
 import 'dart:convert';
@@ -15,15 +15,6 @@ import 'package:yaml/yaml.dart';
 
 /// The single source of truth every launcher icon is generated from.
 const _appIconSource = 'assets/icon/app_icon.png';
-
-/// The source the browser-tab favicon is generated from: the isolated,
-/// plate-free brand avatar the app icon is itself based on.
-///
-/// `flutter_launcher_icons` has no separate favicon setting — its `web:` block
-/// rewrites [_faviconPath] from [_appIconSource] — so the favicon is written
-/// afterwards by `scripts/generate_web_favicon.dart`. A regenerate that skips
-/// that second step turns the browser tab favicon group red.
-const _faviconSource = 'assets/icon/divine_icon_transparent.png';
 
 const _faviconPath = 'web/favicon.png';
 
@@ -63,6 +54,8 @@ const _maxSignatureDistance = 20.0;
 const _maskableSafeRadiusFraction = 0.4;
 
 const _brightForegroundThreshold = 200;
+
+const _foregroundShapeExtent = 32;
 
 bool _isMaskableIcon(File file) => _maskableIconPaths.contains(file.path);
 
@@ -131,6 +124,76 @@ double _distance(Float64List a, Float64List b) {
   return total / a.length;
 }
 
+bool _isBrightForeground(_DecodedImage image, int x, int y) {
+  final offset = (y * image.width + x) * 4;
+  return image.rgba[offset] > _brightForegroundThreshold &&
+      image.rgba[offset + 1] > _brightForegroundThreshold &&
+      image.rgba[offset + 2] > _brightForegroundThreshold &&
+      image.rgba[offset + 3] > 0;
+}
+
+/// Reduces the bright avatar body, wings, and halo to a crop-normalized mask.
+///
+/// The app icon has a green launcher plate while the favicon is transparent,
+/// so comparing their full RGB signatures would mostly measure the intended
+/// background difference. The bright foreground silhouette is the part that
+/// must remain the same brand render across both surfaces.
+Future<Uint8List> _brightForegroundShape(File file) async {
+  final image = await _decodeImage(file);
+  var minX = image.width;
+  var minY = image.height;
+  var maxX = -1;
+  var maxY = -1;
+
+  for (var y = 0; y < image.height; y++) {
+    for (var x = 0; x < image.width; x++) {
+      if (!_isBrightForeground(image, x, y)) continue;
+      minX = math.min(minX, x);
+      minY = math.min(minY, y);
+      maxX = math.max(maxX, x);
+      maxY = math.max(maxY, y);
+    }
+  }
+
+  expect(
+    maxX,
+    greaterThanOrEqualTo(minX),
+    reason: '${file.path} is not bright',
+  );
+  expect(
+    maxY,
+    greaterThanOrEqualTo(minY),
+    reason: '${file.path} is not bright',
+  );
+
+  final width = maxX - minX + 1;
+  final height = maxY - minY + 1;
+  final shape = Uint8List(_foregroundShapeExtent * _foregroundShapeExtent);
+  for (var y = 0; y < _foregroundShapeExtent; y++) {
+    for (var x = 0; x < _foregroundShapeExtent; x++) {
+      final sourceX =
+          minX + (((x + 0.5) * width) / _foregroundShapeExtent).floor();
+      final sourceY =
+          minY + (((y + 0.5) * height) / _foregroundShapeExtent).floor();
+      if (_isBrightForeground(image, sourceX, sourceY)) {
+        shape[y * _foregroundShapeExtent + x] = 1;
+      }
+    }
+  }
+  return shape;
+}
+
+double _intersectionOverUnion(Uint8List a, Uint8List b) {
+  var intersection = 0;
+  var union = 0;
+  for (var i = 0; i < a.length; i++) {
+    final either = a[i] == 1 || b[i] == 1;
+    if (either) union++;
+    if (a[i] == 1 && b[i] == 1) intersection++;
+  }
+  return intersection / union;
+}
+
 List<File> _pngsNamed(String directory, String prefix) {
   final dir = Directory(directory);
   if (!dir.existsSync()) return const [];
@@ -143,8 +206,8 @@ List<File> _pngsNamed(String directory, String prefix) {
 const _androidDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi', 'xxxhdpi'];
 
 /// Every generated icon, grouped by the platform that consumes it. All derive
-/// from [_appIconSource] except web's [_faviconPath], which is a tab mark
-/// rather than a launcher icon and comes from [_faviconSource].
+/// from [_appIconSource], with the favicon's launcher plate removed by the
+/// web post-generator.
 ///
 /// `drawable-*/launch_image.png` sits beside `ic_launcher_foreground.png` but
 /// is the wordmark splash, not a launcher icon — the name prefix excludes it.
@@ -237,17 +300,7 @@ void main() {
 
           for (var y = 0; y < image.height; y++) {
             for (var x = 0; x < image.width; x++) {
-              final offset = (y * image.width + x) * 4;
-              final red = image.rgba[offset];
-              final green = image.rgba[offset + 1];
-              final blue = image.rgba[offset + 2];
-              final alpha = image.rgba[offset + 3];
-              final isBrightForeground =
-                  alpha > 0 &&
-                  red > _brightForegroundThreshold &&
-                  green > _brightForegroundThreshold &&
-                  blue > _brightForegroundThreshold;
-              if (!isBrightForeground) continue;
+              if (!_isBrightForeground(image, x, y)) continue;
 
               brightForegroundPixels++;
               final distanceFromCenter = math.sqrt(
@@ -277,36 +330,48 @@ void main() {
   });
 
   group('browser tab favicon', () {
-    test('is a resample of $_faviconSource', () async {
-      final distance = _distance(
-        await _signature(File(_faviconSource)),
-        await _signature(File(_faviconPath)),
+    test('uses the current app icon foreground silhouette', () async {
+      final similarity = _intersectionOverUnion(
+        await _brightForegroundShape(File(_appIconSource)),
+        await _brightForegroundShape(File(_faviconPath)),
       );
       expect(
-        distance,
-        lessThan(_maxSignatureDistance),
+        similarity,
+        greaterThan(0.85),
         reason:
-            '$_faviconPath does not match $_faviconSource (distance '
-            '$distance). `dart run flutter_launcher_icons` overwrites it from '
-            '$_appIconSource — follow it with '
+            '$_faviconPath uses a different avatar render from '
+            '$_appIconSource (foreground similarity $similarity). Run '
             '`dart run scripts/generate_web_favicon.dart`',
       );
     });
 
-    test('sources artwork distinct from $_appIconSource', () async {
-      // Without this, replacing the avatar with a copy of the app icon would
-      // leave the check above green while the tab silently regained the plate.
-      final distance = _distance(
-        await _signature(File(_appIconSource)),
-        await _signature(File(_faviconSource)),
-      );
+    test('removes the launcher plate', () async {
+      final image = await _decodeImage(File(_faviconPath));
+      final cornerAlphas = [
+        image.rgba[3],
+        image.rgba[(image.width - 1) * 4 + 3],
+        image.rgba[((image.height - 1) * image.width) * 4 + 3],
+        image.rgba[(image.width * image.height - 1) * 4 + 3],
+      ];
       expect(
-        distance,
-        greaterThan(_maxSignatureDistance),
+        cornerAlphas,
+        everyElement(isZero),
         reason:
-            '$_faviconSource is no longer distinguishable from $_appIconSource '
-            '(distance $distance), so the favicon guard cannot discriminate',
+            '$_faviconPath still has the green launcher plate. Run '
+            '`dart run scripts/generate_web_favicon.dart`',
       );
+    });
+
+    test('preserves the centered green play button', () async {
+      final image = await _decodeImage(File(_faviconPath));
+      final center = ((image.height ~/ 2) * image.width + image.width ~/ 2) * 4;
+      final red = image.rgba[center];
+      final green = image.rgba[center + 1];
+      final blue = image.rgba[center + 2];
+      final alpha = image.rgba[center + 3];
+      expect(alpha, greaterThan(0));
+      expect(green - red, greaterThanOrEqualTo(8));
+      expect(green - blue, greaterThanOrEqualTo(4));
     });
   });
 
