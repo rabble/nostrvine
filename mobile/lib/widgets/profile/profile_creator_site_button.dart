@@ -69,6 +69,9 @@ bool isDivineSpaceProfileUrlForPubkey(String? rawUrl, String userIdHex) {
 }
 
 /// A prominent button that opens a creator's public Divine Space profile.
+///
+/// Renders without outer padding so callers can place it in a row beside
+/// other profile actions.
 class ProfileCreatorSiteButton extends StatelessWidget {
   /// Creates the creator-site CTA for a public Nostr profile.
   const ProfileCreatorSiteButton({
@@ -92,18 +95,16 @@ class ProfileCreatorSiteButton extends StatelessWidget {
     final uri = divineSpaceProfileUri(userIdHex);
     if (uri == null) return const SizedBox.shrink();
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      child: DivineButton(
-        key: const Key('profile-creator-site-button'),
-        type: DivineButtonType.secondary,
-        leadingIcon: DivineIconName.globe,
-        expanded: true,
-        label: isOwnProfile
-            ? context.l10n.profileCreatorSiteOwnLabel
-            : context.l10n.profileCreatorSiteVisitLabel,
-        onPressed: () => _open(context, uri),
-      ),
+    return DivineButton(
+      key: const Key('profile-creator-site-button'),
+      type: DivineButtonType.secondary,
+      size: DivineButtonSize.small,
+      leadingIcon: DivineIconName.globe,
+      expanded: true,
+      label: isOwnProfile
+          ? context.l10n.profileCreatorSiteOwnLabel
+          : context.l10n.profileCreatorSiteVisitLabel,
+      onPressed: () => _open(context, uri),
     );
   }
 

@@ -370,11 +370,9 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
               ],
             ),
           ),
-          ProfileCreatorSiteButton(
+          _ProfileCreatorActionsRow(
             userIdHex: widget.userIdHex,
             isOwnProfile: widget.isOwnProfile,
-          ),
-          _ProfileSupportButton(
             links: monetizationLinksForCurrentStorefront(
               effectiveProfile?.enabledMonetizationLinks ?? const [],
             ),
@@ -491,6 +489,81 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
   }
 }
 
+/// Creator-site CTA paired with the support affordance beside it.
+///
+/// Mirrors [ProfileActionButtons]' row: one expanded labelled button plus
+/// icon-only companions, so both rows share the same inset and rhythm.
+class _ProfileCreatorActionsRow extends ConsumerWidget {
+  const _ProfileCreatorActionsRow({
+    required this.userIdHex,
+    required this.isOwnProfile,
+    required this.links,
+  });
+
+  final String userIdHex;
+  final bool isOwnProfile;
+  final List<MonetizationLink> links;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Without a creator site there is nothing to pair the support button
+    // with, so it keeps its standalone centered layout.
+    if (divineSpaceProfileUri(userIdHex) == null) {
+      return _ProfileSupportButton(links: links);
+    }
+
+    final monetizationEnabled = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.profileMonetizationLinks),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+      child: Row(
+        spacing: 6,
+        children: [
+          Expanded(
+            child: ProfileCreatorSiteButton(
+              userIdHex: userIdHex,
+              isOwnProfile: isOwnProfile,
+            ),
+          ),
+          if (monetizationEnabled && links.isNotEmpty)
+            _ProfileSupportIconButton(links: links),
+        ],
+      ),
+    );
+  }
+}
+
+/// Icon-only support affordance shown beside the creator-site CTA.
+class _ProfileSupportIconButton extends ConsumerWidget {
+  const _ProfileSupportIconButton({required this.links});
+
+  final List<MonetizationLink> links;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final label = usesAppleAppStoreTipPolicy
+        ? context.l10n.profileTipButtonLabel
+        : context.l10n.profileSupportButtonLabel;
+
+    // Icon-only DivineButton rather than DivineIconButton: the latter paints
+    // its 2px border outside the nominal size (44px at `small`), so it would
+    // stand 4px taller than the creator-site button beside it. This is the
+    // same pairing ProfileActionButtons uses for its Message / Following
+    // icons.
+    return DivineButton(
+      key: const Key('profile-support-button'),
+      label: '',
+      leadingIcon: .heart,
+      type: .secondary,
+      size: .small,
+      semanticLabel: label,
+      onPressed: () => _openSupportSheet(context, ref, links),
+    );
+  }
+}
+
 class _ProfileSupportButton extends ConsumerWidget {
   const _ProfileSupportButton({required this.links});
 
@@ -504,7 +577,6 @@ class _ProfileSupportButton extends ConsumerWidget {
     );
     if (!enabled) return const SizedBox.shrink();
 
-    final analytics = ref.watch(analyticsEventSinkProvider);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: Align(
@@ -516,21 +588,25 @@ class _ProfileSupportButton extends ConsumerWidget {
           label: usesAppleAppStoreTipPolicy
               ? context.l10n.profileTipButtonLabel
               : context.l10n.profileSupportButtonLabel,
-          onPressed: () {
-            trackMonetizationAffordanceTapped(
-              analytics: analytics,
-              links: links,
-            );
-            showProfileSupportSheet(
-              context: context,
-              links: links,
-              analytics: analytics,
-            );
-          },
+          onPressed: () => _openSupportSheet(context, ref, links),
         ),
       ),
     );
   }
+}
+
+void _openSupportSheet(
+  BuildContext context,
+  WidgetRef ref,
+  List<MonetizationLink> links,
+) {
+  final analytics = ref.read(analyticsEventSinkProvider);
+  trackMonetizationAffordanceTapped(analytics: analytics, links: links);
+  showProfileSupportSheet(
+    context: context,
+    links: links,
+    analytics: analytics,
+  );
 }
 
 /// Profile name, NIP-05, bio, and public key display.

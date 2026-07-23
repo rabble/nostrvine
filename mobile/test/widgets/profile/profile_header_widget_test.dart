@@ -963,23 +963,43 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('profile-support-button')), findsOneWidget);
-      expect(
-        find.byKey(const Key('profile-creator-site-button')),
-        findsOneWidget,
+      final supportButton = find.byKey(const Key('profile-support-button'));
+      final creatorSiteButton = find.byKey(
+        const Key('profile-creator-site-button'),
       );
-      expect(find.text('Support'), findsOneWidget);
+      expect(supportButton, findsOneWidget);
+      expect(creatorSiteButton, findsOneWidget);
+      expect(tester.getSemantics(supportButton).label, contains('Support'));
       expect(
-        tester.getTopLeft(find.text('Visit creator site')).dy,
+        tester.getTopLeft(creatorSiteButton).dy,
         greaterThan(tester.getBottomLeft(find.text('Creator bio')).dy),
       );
       expect(
-        tester.getTopLeft(find.text('Support')).dy,
-        greaterThan(tester.getBottomLeft(find.text('Visit creator site')).dy),
+        tester.getTopLeft(creatorSiteButton).dy,
+        lessThan(tester.getTopLeft(find.text('Likes')).dy),
+      );
+
+      // The support affordance sits beside the creator-site CTA in a single
+      // row, mirroring the profile action buttons below it.
+      final creatorRect = tester.getRect(creatorSiteButton);
+      final supportRect = tester.getRect(supportButton);
+      expect(supportRect.left, greaterThanOrEqualTo(creatorRect.right));
+      expect(supportRect.center.dy, closeTo(creatorRect.center.dy, 1));
+
+      // Both painted chips must share an edge. DivineIconButton paints its
+      // 2px border outside the nominal size and would stand 4px taller than
+      // the creator-site button, so the support affordance uses an
+      // icon-only DivineButton instead.
+      Rect paintedChip(Finder button) => tester.getRect(
+        find.descendant(of: button, matching: find.byType(Ink)).first,
       );
       expect(
-        tester.getTopLeft(find.text('Support')).dy,
-        lessThan(tester.getTopLeft(find.text('Likes')).dy),
+        paintedChip(supportButton).height,
+        paintedChip(creatorSiteButton).height,
+      );
+      expect(
+        paintedChip(supportButton).top,
+        paintedChip(creatorSiteButton).top,
       );
     });
 
@@ -1073,9 +1093,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('profile-support-button')), findsOneWidget);
-      expect(find.text('Tip'), findsOneWidget);
-      expect(find.text('Support'), findsNothing);
+      final supportButton = find.byKey(const Key('profile-support-button'));
+      expect(supportButton, findsOneWidget);
+      final label = tester.getSemantics(supportButton).label;
+      expect(label, contains('Tip'));
+      expect(label, isNot(contains('Support')));
     });
 
     testWidgets('displays stats from ProfileStats when provided', (

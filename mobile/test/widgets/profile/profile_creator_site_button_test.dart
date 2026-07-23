@@ -86,7 +86,7 @@ void main() {
       expect(find.text('Visit creator site'), findsOneWidget);
       final button = tester.widget<DivineButton>(find.byType(DivineButton));
       expect(button.type, DivineButtonType.secondary);
-      expect(button.size, DivineButtonSize.base);
+      expect(button.size, DivineButtonSize.small);
       expect(button.leadingIcon, DivineIconName.globe);
       expect(button.expanded, isTrue);
     });
