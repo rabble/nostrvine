@@ -8,7 +8,7 @@ import 'package:unified_logger/unified_logger.dart';
 /// A branded loading indicator that displays the animated Divine logo.
 ///
 /// Uses a sprite sheet for efficient GPU rendering. The sprite sheet contains
-/// 27 frames arranged vertically, each 500x500 pixels. Animation cycles through
+/// [frameCount] square frames arranged vertically. Animation cycles through
 /// frames using an AnimationController for smooth, consistent playback.
 ///
 /// Benefits over GIF:
@@ -18,6 +18,18 @@ import 'package:unified_logger/unified_logger.dart';
 /// - Better performance on repeated displays
 class BrandedLoadingIndicator extends StatefulWidget {
   const BrandedLoadingIndicator({super.key, this.size = 80.0});
+
+  /// Sprite sheet backing the animation: the Divine brand mark
+  /// (`assets/icon/divine_mark.svg`) in white, drawn as a wing-flap cycle.
+  @visibleForTesting
+  static const String spriteAsset = 'assets/loading-brand-sprite.png';
+
+  /// Number of square frames stacked vertically in [spriteAsset].
+  ///
+  /// Slicing depends on this matching the sheet exactly, so
+  /// `branded_loading_indicator_test.dart` pins it against the asset.
+  @visibleForTesting
+  static const int frameCount = 27;
 
   /// The size (width and height) of the loading indicator.
   final double size;
@@ -31,8 +43,6 @@ class _BrandedLoadingIndicatorState extends State<BrandedLoadingIndicator>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
-  // Sprite sheet configuration (original frames are 500x500 pixels)
-  static const int _frameCount = 27;
   static const Duration _animationDuration = Duration(milliseconds: 1800);
 
   @override
@@ -54,8 +64,12 @@ class _BrandedLoadingIndicatorState extends State<BrandedLoadingIndicator>
       animation: _controller,
       builder: (context, child) {
         // Calculate current frame based on animation value
-        final frameIndex = (_controller.value * _frameCount).floor();
-        final clampedFrame = frameIndex.clamp(0, _frameCount - 1);
+        final frameIndex =
+            (_controller.value * BrandedLoadingIndicator.frameCount).floor();
+        final clampedFrame = frameIndex.clamp(
+          0,
+          BrandedLoadingIndicator.frameCount - 1,
+        );
 
         // Calculate the vertical offset to show the correct frame
         final yOffset = -clampedFrame * widget.size;
@@ -66,7 +80,7 @@ class _BrandedLoadingIndicatorState extends State<BrandedLoadingIndicator>
           child: ClipRect(
             child: OverflowBox(
               maxWidth: widget.size,
-              maxHeight: widget.size * _frameCount,
+              maxHeight: widget.size * BrandedLoadingIndicator.frameCount,
               alignment: Alignment.topCenter,
               child: Transform.translate(
                 offset: Offset(0, yOffset),
@@ -77,9 +91,9 @@ class _BrandedLoadingIndicatorState extends State<BrandedLoadingIndicator>
         );
       },
       child: Image.asset(
-        'assets/loading-brand-sprite.png',
+        BrandedLoadingIndicator.spriteAsset,
         width: widget.size,
-        height: widget.size * _frameCount,
+        height: widget.size * BrandedLoadingIndicator.frameCount,
         fit: BoxFit.fitWidth,
         errorBuilder: (context, error, stackTrace) {
           Log.warning(
