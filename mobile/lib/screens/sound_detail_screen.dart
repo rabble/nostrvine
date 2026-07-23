@@ -205,6 +205,22 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
     );
   }
 
+  /// Whether the viewer may reuse [SoundDetailScreen.sound].
+  ///
+  /// Shared and bundled sounds were explicitly published for reuse, so they
+  /// always qualify. A video's *original* sound is reusable only when its
+  /// creator enabled audio reuse, or when the viewer is that creator (you can
+  /// always reuse your own audio). Without the source video — e.g. a raw
+  /// `/sound/<video-id>` deep link — reuse consent can't be confirmed, so it
+  /// is withheld.
+  bool _canReuseSound() {
+    final sound = widget.sound;
+    if (!sound.isOriginalSound) return true;
+    final viewer = ref.watch(authServiceProvider).currentPublicKeyHex;
+    if (viewer != null && viewer == sound.pubkey) return true;
+    return widget.sourceVideo?.allowAudioReuse ?? false;
+  }
+
   void _navigateToVideo(String videoId, int index, List<VideoEvent> videos) {
     Log.info(
       'Showing video feed at index $index for video: $videoId',
@@ -274,7 +290,7 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
                   isPlaying: _isPlayingPreview,
                   isLoadingPreview: _isLoadingPreview,
                   onPreviewTap: _togglePreview,
-                  onUseSoundTap: _onUseSound,
+                  onUseSoundTap: _canReuseSound() ? _onUseSound : null,
                 ),
 
                 // Divider
@@ -353,7 +369,10 @@ class _SoundHeader extends ConsumerStatefulWidget {
   final bool isPlaying;
   final bool isLoadingPreview;
   final VoidCallback onPreviewTap;
-  final VoidCallback onUseSoundTap;
+
+  /// Tap handler for the "Use Sound" button, or `null` when the sound may not
+  /// be reused — in which case the button is hidden entirely.
+  final VoidCallback? onUseSoundTap;
 
   @override
   ConsumerState<_SoundHeader> createState() => _SoundHeaderState();
@@ -496,32 +515,34 @@ class _SoundHeaderState extends ConsumerState<_SoundHeader> {
                 ),
               ),
 
-              const SizedBox(width: 12),
+              if (widget.onUseSoundTap != null) ...[
+                const SizedBox(width: 12),
 
-              // Use Sound button
-              Expanded(
-                child: Semantics(
-                  identifier: 'sound_detail_use_button',
-                  button: true,
-                  child: ElevatedButton.icon(
-                    onPressed: widget.onUseSoundTap,
-                    icon: const DivineIcon(
-                      icon: DivineIconName.plus,
-                      size: 20,
-                      color: VineTheme.backgroundColor,
-                    ),
-                    label: Text(context.l10n.soundUseSound),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: VineTheme.vineGreen,
-                      foregroundColor: VineTheme.backgroundColor,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                // Use Sound button
+                Expanded(
+                  child: Semantics(
+                    identifier: 'sound_detail_use_button',
+                    button: true,
+                    child: ElevatedButton.icon(
+                      onPressed: widget.onUseSoundTap,
+                      icon: const DivineIcon(
+                        icon: DivineIconName.plus,
+                        size: 20,
+                        color: VineTheme.backgroundColor,
+                      ),
+                      label: Text(context.l10n.soundUseSound),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: VineTheme.vineGreen,
+                        foregroundColor: VineTheme.backgroundColor,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
         ],

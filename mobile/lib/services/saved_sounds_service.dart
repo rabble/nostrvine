@@ -9,11 +9,32 @@ import 'package:shared_preferences/shared_preferences.dart';
 enum SavedSoundSaveResult { saved, alreadySaved }
 
 class SavedSoundsService {
-  SavedSoundsService(this._preferences);
+  SavedSoundsService(this._preferences, {String? pubkeyHex})
+    : _pubkeyHex = pubkeyHex;
 
-  static const storageKey = 'saved_reusable_sounds';
+  /// Prefix for the per-account storage keys.
+  static const _keyPrefix = 'saved_reusable_sounds';
 
   final SharedPreferences _preferences;
+
+  /// Signed-in pubkey (hex) whose saved sounds this instance manages, or
+  /// `null` when signed out.
+  final String? _pubkeyHex;
+
+  /// SharedPreferences key for the current account's saved sounds.
+  ///
+  /// Saved sounds are scoped per account so a sound one account adopts never
+  /// leaks into another account on a shared device. The signed-out state uses
+  /// a dedicated anonymous bucket. The legacy device-wide key
+  /// (`saved_reusable_sounds`, no suffix) is intentionally left orphaned; it is
+  /// never read again, so pre-existing saves reset once — a light convenience
+  /// feature, not data worth migrating across an ambiguous account boundary.
+  String get storageKey {
+    final pubkey = _pubkeyHex;
+    return pubkey == null || pubkey.isEmpty
+        ? '${_keyPrefix}_anon'
+        : '${_keyPrefix}_$pubkey';
+  }
 
   List<AudioEvent> loadSounds() {
     final rawSounds = _preferences.getString(storageKey);

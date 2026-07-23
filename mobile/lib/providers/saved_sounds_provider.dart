@@ -3,13 +3,21 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' show AudioEvent;
+import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 final savedSoundsServiceProvider = Provider<SavedSoundsService>((ref) {
-  return SavedSoundsService(ref.watch(sharedPreferencesProvider));
+  // Rebuild on sign-in/out and account switch so the service (and the sounds
+  // list built from it) always targets the current account's bucket.
+  ref.watch(currentAuthStateProvider);
+  final pubkeyHex = ref.watch(authServiceProvider).currentPublicKeyHex;
+  return SavedSoundsService(
+    ref.watch(sharedPreferencesProvider),
+    pubkeyHex: pubkeyHex,
+  );
 });
 
 final savedSoundsProvider =

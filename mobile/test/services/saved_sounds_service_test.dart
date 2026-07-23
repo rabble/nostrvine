@@ -108,24 +108,75 @@ void main() {
     });
 
     test('returns empty list when persisted JSON is corrupt', () {
-      sharedPreferences.setString(SavedSoundsService.storageKey, 'not json');
       final service = SavedSoundsService(sharedPreferences);
+      sharedPreferences.setString(service.storageKey, 'not json');
 
       expect(service.loadSounds(), isEmpty);
     });
 
     test('skips invalid persisted entries without dropping valid sounds', () {
+      final service = SavedSoundsService(sharedPreferences);
       final validSound = _sound(id: 'sound1', title: 'Valid Sound');
       sharedPreferences.setString(
-        SavedSoundsService.storageKey,
+        service.storageKey,
         jsonEncode([
           validSound.toJson(),
           {'id': 123},
         ]),
       );
-      final service = SavedSoundsService(sharedPreferences);
 
       expect(service.loadSounds(), [validSound]);
+    });
+
+    group('per-account isolation', () {
+      const pubkeyA =
+          'a123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+      const pubkeyB =
+          'b123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+
+      test('a sound saved under one account is invisible to another', () async {
+        await SavedSoundsService(
+          sharedPreferences,
+          pubkeyHex: pubkeyA,
+        ).saveSound(_sound(id: 'sound1'));
+
+        final accountB = SavedSoundsService(
+          sharedPreferences,
+          pubkeyHex: pubkeyB,
+        );
+        expect(accountB.loadSounds(), isEmpty);
+
+        final accountA = SavedSoundsService(
+          sharedPreferences,
+          pubkeyHex: pubkeyA,
+        );
+        expect(accountA.loadSounds().map((sound) => sound.id), ['sound1']);
+      });
+
+      test('the signed-out bucket is separate from any account', () async {
+        await SavedSoundsService(
+          sharedPreferences,
+        ).saveSound(_sound(id: 'sound1'));
+
+        final account = SavedSoundsService(
+          sharedPreferences,
+          pubkeyHex: pubkeyA,
+        );
+        expect(account.loadSounds(), isEmpty);
+      });
+
+      test('does not read the legacy device-wide key', () {
+        sharedPreferences.setString(
+          'saved_reusable_sounds',
+          jsonEncode([_sound(id: 'legacy').toJson()]),
+        );
+
+        final service = SavedSoundsService(
+          sharedPreferences,
+          pubkeyHex: pubkeyA,
+        );
+        expect(service.loadSounds(), isEmpty);
+      });
     });
   });
 }
