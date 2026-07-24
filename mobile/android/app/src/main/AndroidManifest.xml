@@ -169,6 +169,22 @@
 
 
         </activity>
+        <!-- Native OAuth return link for flutter_web_auth_2. -->
+        <activity
+            android:name="com.linusu.flutter_web_auth_2.CallbackActivity"
+            android:exported="true">
+            <intent-filter
+                android:label="flutter_web_auth_2"
+                android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="divine.video"
+                    android:path="/app/callback" />
+            </intent-filter>
+        </activity>
         <activity
             android:name="zendesk.support.request.RequestActivity"
             android:theme="@style/ZendeskTheme" />
