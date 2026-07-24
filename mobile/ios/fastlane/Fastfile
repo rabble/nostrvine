@@ -12,7 +12,7 @@ platform :ios do
     bump_xcodebuild_settings_timeout
     ensure_flutter_config
     snapshot
-    frameit(path: "./fastlane/screenshots")
+    frame_marketing_images
   end
 
   desc "Capture only (no framing) — useful while iterating on the UI test"
@@ -22,9 +22,17 @@ platform :ios do
     snapshot
   end
 
-  desc "Frame only — re-runs caption/frame compositing on existing captures"
+  desc "Frame only — re-runs caption compositing on existing captures"
   lane :frame do
-    frameit(path: "./fastlane/screenshots")
+    frame_marketing_images
+  end
+
+  desc "Composite brand canvas + caption + rounded screenshot (Pillow)"
+  private_lane :frame_marketing_images do
+    # frameit's title layout is finicky and needs ImageMagick; a small
+    # Pillow script (self-bootstrapping venv) gives full control over the
+    # caption band and reads the same keyword.strings / title.strings.
+    sh("bash", File.join(__dir__, "frame.sh"))
   end
 
   desc "Upload framed screenshots to App Store Connect (DISABLED by default)"

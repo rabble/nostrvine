@@ -15,15 +15,15 @@ flutter build ios --simulator --debug --config-only --dart-define=SCREENSHOT_MOD
 # 2. Capture + frame.
 cd ios
 bundle install          # first time only
-brew install imagemagick  # first time only — frameit needs it to composite
 bundle exec fastlane screenshots
 ```
 
-`frameit` (the framing/caption step) requires **ImageMagick or
-GraphicsMagick** on the PATH. Without it, capture still succeeds but
-framing silently no-ops. If a run captured but produced no `*_framed.png`,
-install ImageMagick and re-frame the existing captures with
-`bundle exec fastlane frame` — no need to recapture.
+Framing (brand canvas + caption + rounded screenshot) is done by
+`fastlane/frame_screenshots.py`, run via `fastlane/frame.sh`, which
+bootstraps a local Python venv with Pillow on first run — **no manual
+ImageMagick / pip step**. To re-frame existing captures without
+recapturing (e.g. after editing caption copy), run
+`bundle exec fastlane frame`.
 
 The `screenshots` lane verifies step 1 ran (it checks `Generated.xcconfig`
 for the `SCREENSHOT_MODE` define) and fails fast with instructions if not.
@@ -61,11 +61,12 @@ bundle exec fastlane frame     # re-frame existing captures (fast)
   `SCREENSHOT_SEED_CLIPS=1` is in the launch environment.
 - `snapshot` overrides the status bar (9:41, full signal/battery) via
   `override_status_bar` in the `Snapfile`.
-- `frameit` composites device frames, the dark-green background
-  (`#00150D`), and captions in Bricolage Grotesque — headline in brand
+- `frame_screenshots.py` composites the dark-green brand canvas
+  (`#00150D`), the caption in Bricolage Grotesque — headline in brand
   green `#27C58B` (from `<locale>/keyword.strings`), subhead in white
-  (from `<locale>/title.strings`). `02_creator_post` intentionally has no
-  caption — the creator's on-video caption carries it.
+  (from `<locale>/title.strings`) — and the rounded device capture below.
+  `02_creator_post` intentionally has no caption entry — the creator's
+  on-video caption carries it.
 
 ## How to change caption copy
 

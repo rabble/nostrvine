@@ -90,3 +90,4 @@ ios/fastlane/screenshots/**/*.png
 ios/fastlane/screenshots/**/*.html
 ios/fastlane/README.md
 ios/fastlane/DerivedData/
+ios/fastlane/.venv/
