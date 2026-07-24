@@ -319,6 +319,118 @@ void main() {
           },
         );
 
+        test(
+          'passes the uploaded VTT URL when subtitle event publish times out',
+          () async {
+            _setupSuccessfulPublish(
+              mockAuthService: mockAuthService,
+              mockUploadManager: mockUploadManager,
+              mockDraftService: mockDraftService,
+              mockVideoEventPublisher: mockVideoEventPublisher,
+            );
+            when(
+              () => mockBlossomService.uploadSubtitleVtt(
+                bytes: any(named: 'bytes'),
+              ),
+            ).thenAnswer(
+              (_) async => const BlossomUploadResult(
+                success: true,
+                url: 'https://media.divine.video/vtt123',
+              ),
+            );
+            when(
+              () => mockVideoEventPublisher.publishSubtitleTrack(
+                vineId: any(named: 'vineId'),
+                vttContent: any(named: 'vttContent'),
+                blossomUrl: any(named: 'blossomUrl'),
+                lang: any(named: 'lang'),
+              ),
+            ).thenAnswer((_) => Completer<String?>().future);
+
+            final boundedService = VideoPublishService(
+              uploadManager: mockUploadManager,
+              authService: mockAuthService,
+              videoEventPublisher: mockVideoEventPublisher,
+              blossomService: mockBlossomService,
+              draftService: mockDraftService,
+              collaboratorInviteService: mockCollaboratorInviteService,
+              mentionResolutionService: mockMentionResolutionService,
+              subtitlePublishTimeout: const Duration(milliseconds: 20),
+              onProgressChanged:
+                  ({required double progress, required String draftId}) =>
+                      progressChanges.add(progress),
+            );
+
+            final result = await boundedService.publishVideo(
+              draft: _createTestDraft(
+                editorEditingParameters: editingParamsFor(overlayTrack),
+              ),
+            );
+
+            expect(result, isA<PublishSuccess>());
+            final captured = verify(
+              () => _verifyPublishVideoEvent(
+                mockVideoEventPublisher,
+                textTrackRefs: captureAny(named: 'textTrackRefs'),
+                textTrackLang: any(named: 'textTrackLang'),
+              ),
+            ).captured;
+            expect(
+              captured.single,
+              equals(['https://media.divine.video/vtt123']),
+            );
+          },
+        );
+
+        test(
+          'passes the uploaded VTT URL when subtitle event publish throws',
+          () async {
+            _setupSuccessfulPublish(
+              mockAuthService: mockAuthService,
+              mockUploadManager: mockUploadManager,
+              mockDraftService: mockDraftService,
+              mockVideoEventPublisher: mockVideoEventPublisher,
+            );
+            when(
+              () => mockBlossomService.uploadSubtitleVtt(
+                bytes: any(named: 'bytes'),
+              ),
+            ).thenAnswer(
+              (_) async => const BlossomUploadResult(
+                success: true,
+                url: 'https://media.divine.video/vtt123',
+              ),
+            );
+            when(
+              () => mockVideoEventPublisher.publishSubtitleTrack(
+                vineId: any(named: 'vineId'),
+                vttContent: any(named: 'vttContent'),
+                blossomUrl: any(named: 'blossomUrl'),
+                lang: any(named: 'lang'),
+              ),
+            ).thenThrow(StateError('relay unavailable'));
+
+            final result = await service.publishVideo(
+              draft: _createTestDraft(
+                editorEditingParameters: editingParamsFor(overlayTrack),
+              ),
+            );
+
+            expect(result, isA<PublishSuccess>());
+            final captured = verify(
+              () => _verifyPublishVideoEvent(
+                mockVideoEventPublisher,
+                textTrackRefs: captureAny(named: 'textTrackRefs'),
+                textTrackLang: any(named: 'textTrackLang'),
+              ),
+            ).captured;
+            expect(
+              captured.single,
+              equals(['https://media.divine.video/vtt123']),
+            );
+          },
+        );
+
         test('publishes CC for burned-in caption tracks too', () async {
           _setupSuccessfulPublish(
             mockAuthService: mockAuthService,

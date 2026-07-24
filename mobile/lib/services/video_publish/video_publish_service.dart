@@ -188,7 +188,8 @@ class VideoPublishService {
 
   /// Deadline for each optional caption-asset network step. Captions are
   /// best-effort, so a stalled upload / relay publish must never hold up the
-  /// primary video event — on timeout we publish without caption refs.
+  /// primary video event. An upload timeout yields no refs; a later relay
+  /// timeout preserves the direct VTT URL.
   final Duration _subtitlePublishTimeout;
 
   static const Duration _defaultSubtitlePublishTimeout = Duration(seconds: 30);
@@ -392,24 +393,41 @@ class VideoPublishService {
         return const [];
       }
 
-      final coordsRef = await videoEventPublisher
-          .publishSubtitleTrack(
-            vineId: vineId,
-            vttContent: vtt,
-            blossomUrl: blossomUrl,
-            lang: _languageCode(track.languageTag),
-          )
-          .timeout(_subtitlePublishTimeout);
-      return [blossomUrl, ?coordsRef];
+      try {
+        final coordsRef = await videoEventPublisher
+            .publishSubtitleTrack(
+              vineId: vineId,
+              vttContent: vtt,
+              blossomUrl: blossomUrl,
+              lang: _languageCode(track.languageTag),
+            )
+            .timeout(_subtitlePublishTimeout);
+        return [blossomUrl, ?coordsRef];
+      } on TimeoutException catch (e) {
+        Log.warning(
+          '⚠️ Subtitle event publish timed out - publishing with direct '
+          'VTT URL: $e',
+          category: LogCategory.video,
+        );
+        return [blossomUrl];
+      } catch (e, stackTrace) {
+        Log.error(
+          'Subtitle event publish failed - publishing with direct VTT URL',
+          category: LogCategory.video,
+          error: e,
+          stackTrace: stackTrace,
+        );
+        return [blossomUrl];
+      }
     } on TimeoutException catch (e) {
       Log.warning(
-        '⚠️ Caption asset publish timed out - publishing without captions: $e',
+        '⚠️ Caption VTT upload timed out - publishing without captions: $e',
         category: LogCategory.video,
       );
       return const [];
     } catch (e, stackTrace) {
       Log.error(
-        'Caption asset publish failed - publishing without captions',
+        'Caption VTT upload failed - publishing without captions',
         category: LogCategory.video,
         error: e,
         stackTrace: stackTrace,
