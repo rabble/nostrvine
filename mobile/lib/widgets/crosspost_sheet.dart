@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_crosspost/video_crosspost_cubit.dart';
 import 'package:openvine/blocs/video_crosspost/video_crosspost_state.dart';
+import 'package:openvine/config/app_config.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/crosspost_models.dart';
 import 'package:openvine/providers/upload_media_providers.dart';
@@ -155,7 +156,8 @@ class CrosspostSheetView extends StatelessWidget {
       context.l10n.crosspostErrorNotEligible,
     VideoCrosspostSubmitError.notConnected =>
       context.l10n.crosspostErrorNotConnected,
-    VideoCrosspostSubmitError.unauthorized ||
+    VideoCrosspostSubmitError.unauthorized =>
+      context.l10n.crosspostErrorUnauthorized,
     VideoCrosspostSubmitError.network ||
     null => context.l10n.crosspostErrorNetwork,
   };
@@ -283,11 +285,14 @@ class _JobRow extends StatelessWidget {
               else
                 DivineIcon(
                   icon: switch (job.status) {
-                    CrosspostJobStatus.posted => DivineIconName.checkCircle,
+                    CrosspostJobStatus.posted ||
+                    CrosspostJobStatus.skipped => DivineIconName.checkCircle,
                     _ => DivineIconName.warningCircle,
                   },
                   size: 20,
-                  color: job.status == CrosspostJobStatus.posted
+                  color:
+                      job.status == CrosspostJobStatus.posted ||
+                          job.status == CrosspostJobStatus.skipped
                       ? VineTheme.vineGreen
                       : VineTheme.error,
                 ),
@@ -303,7 +308,7 @@ class _JobRow extends StatelessWidget {
             _ViewPostLink(url: job.externalPostUrl!),
           if (job.status == CrosspostJobStatus.failed)
             Text(
-              job.errorMessage ?? context.l10n.crosspostFailedGeneric,
+              _failureText(context, job.errorCode),
               style: VineTheme.bodySmallFont(color: VineTheme.error),
             ),
           if (job.status == CrosspostJobStatus.needsReauth)
@@ -327,6 +332,16 @@ class _JobRow extends StatelessWidget {
     CrosspostJobStatus.needsReauth => context.l10n.crosspostStatusNeedsReauth,
     CrosspostJobStatus.skipped => context.l10n.crosspostStatusSkipped,
   };
+
+  String _failureText(BuildContext context, String? errorCode) =>
+      switch (errorCode) {
+        'not_owner' => context.l10n.crosspostErrorNotOwner,
+        'not_eligible' => context.l10n.crosspostErrorNotEligible,
+        'not_connected' => context.l10n.crosspostErrorNotConnected,
+        'unauthorized' => context.l10n.crosspostErrorUnauthorized,
+        'network' => context.l10n.crosspostErrorNetwork,
+        _ => context.l10n.crosspostFailedGeneric,
+      };
 }
 
 class _ViewPostLink extends StatelessWidget {
@@ -344,19 +359,22 @@ class _ViewPostLink extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         onTap: () =>
             launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
-        child: Row(
-          spacing: 6,
-          children: [
-            Text(
-              label,
-              style: VineTheme.labelLargeFont(color: VineTheme.vineGreen),
-            ),
-            const DivineIcon(
-              icon: DivineIconName.arrowUpRight,
-              size: 16,
-              color: VineTheme.vineGreen,
-            ),
-          ],
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Row(
+            spacing: 6,
+            children: [
+              Text(
+                label,
+                style: VineTheme.labelLargeFont(color: VineTheme.vineGreen),
+              ),
+              const DivineIcon(
+                icon: DivineIconName.arrowUpRight,
+                size: 16,
+                color: VineTheme.vineGreen,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -383,7 +401,7 @@ class _ReconnectPrompt extends StatelessWidget {
           type: DivineButtonType.secondary,
           size: DivineButtonSize.small,
           onPressed: () => launchUrl(
-            Uri.parse(CrossposterUrls.base),
+            Uri.parse(AppConfig.crossposterBaseUrl),
             mode: LaunchMode.externalApplication,
           ),
         ),

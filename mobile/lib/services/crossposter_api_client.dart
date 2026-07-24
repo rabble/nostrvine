@@ -1,10 +1,12 @@
 // ABOUTME: HTTP client for crossposter.divine.video manual crossposting
 // ABOUTME: Lists connected platforms and creates/polls per-video crosspost jobs
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:keycast_flutter/keycast_flutter.dart';
+import 'package:openvine/config/app_config.dart';
 import 'package:openvine/models/crosspost_models.dart';
 
 export 'package:openvine/models/crosspost_models.dart';
@@ -16,13 +18,10 @@ export 'package:openvine/models/crosspost_models.dart';
 class CrossposterApiClient {
   CrossposterApiClient({
     required KeycastOAuth oauthClient,
-    this.baseUrl = defaultBaseUrl,
+    this.baseUrl = AppConfig.crossposterBaseUrl,
     http.Client? httpClient,
   }) : _oauthClient = oauthClient,
        _httpClient = httpClient ?? http.Client();
-
-  /// Production crossposter endpoint.
-  static const String defaultBaseUrl = CrossposterUrls.base;
 
   static const _timeout = Duration(seconds: 20);
 
@@ -48,12 +47,16 @@ class CrossposterApiClient {
 
   /// Fetch the caller's platform connections (all statuses).
   ///
-  /// Throws [CrossposterApiException] when unauthenticated or on a
-  /// non-200 response.
+  /// Throws [CrossposterApiException] when unauthenticated, unreachable,
+  /// timed out, malformed, or on a non-200 response.
   Future<List<CrossposterConnection>> getConnections() async {
-    final response = await _httpClient
-        .get(Uri.parse('$baseUrl/connections'), headers: await _authHeaders())
-        .timeout(_timeout);
+    final response = await _send(
+      () async => _httpClient.get(
+        Uri.parse('$baseUrl/connections'),
+        headers: await _authHeaders(),
+      ),
+      'Failed to fetch connections',
+    );
     final json = _decodeOrThrow(response, 'Failed to fetch connections');
     final connections = json['connections'] as List<dynamic>? ?? [];
     return connections
@@ -74,28 +77,30 @@ class CrossposterApiClient {
     required String eventId,
     required List<String> platforms,
   }) async {
-    final response = await _httpClient
-        .post(
-          Uri.parse('$baseUrl/videos/$eventId/crossposts'),
-          headers: await _authHeaders(),
-          body: jsonEncode({'platforms': platforms}),
-        )
-        .timeout(_timeout);
+    final response = await _send(
+      () async => _httpClient.post(
+        Uri.parse('$baseUrl/videos/$eventId/crossposts'),
+        headers: await _authHeaders(),
+        body: jsonEncode({'platforms': platforms}),
+      ),
+      'Failed to create crossposts',
+    );
     final json = _decodeOrThrow(response, 'Failed to create crossposts');
     return _parseJobs(json);
   }
 
   /// Fetch the current crosspost jobs for the video [eventId].
   ///
-  /// Throws [CrossposterApiException] when unauthenticated or on a
-  /// non-200 response.
+  /// Throws [CrossposterApiException] when unauthenticated, unreachable,
+  /// timed out, malformed, or on a non-200 response.
   Future<List<CrosspostJob>> getCrossposts({required String eventId}) async {
-    final response = await _httpClient
-        .get(
-          Uri.parse('$baseUrl/videos/$eventId/crossposts'),
-          headers: await _authHeaders(),
-        )
-        .timeout(_timeout);
+    final response = await _send(
+      () async => _httpClient.get(
+        Uri.parse('$baseUrl/videos/$eventId/crossposts'),
+        headers: await _authHeaders(),
+      ),
+      'Failed to fetch crossposts',
+    );
     final json = _decodeOrThrow(response, 'Failed to fetch crossposts');
     return _parseJobs(json);
   }
@@ -108,16 +113,49 @@ class CrossposterApiClient {
         .toList();
   }
 
+  Future<http.Response> _send(
+    Future<http.Response> Function() request,
+    String fallbackMessage,
+  ) async {
+    try {
+      return await request().timeout(_timeout);
+    } on CrossposterApiException {
+      rethrow;
+    } on TimeoutException catch (e) {
+      throw CrossposterApiException(
+        '$fallbackMessage: timed out',
+        code: 'network',
+        cause: e,
+      );
+    } on http.ClientException catch (e) {
+      throw CrossposterApiException(
+        '$fallbackMessage: network error',
+        code: 'network',
+        cause: e,
+      );
+    }
+  }
+
   Map<String, dynamic> _decodeOrThrow(
     http.Response response,
     String fallbackMessage,
   ) {
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      final decoded = jsonDecode(response.body);
-      if (decoded is Map<String, dynamic>) return decoded;
+      try {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map<String, dynamic>) return decoded;
+      } on FormatException catch (e) {
+        throw CrossposterApiException(
+          fallbackMessage,
+          statusCode: response.statusCode,
+          code: 'malformed_response',
+          cause: e,
+        );
+      }
       throw CrossposterApiException(
         fallbackMessage,
         statusCode: response.statusCode,
+        code: 'malformed_response',
       );
     }
     String? code;
@@ -139,5 +177,9 @@ class CrossposterApiClient {
       statusCode: response.statusCode,
       code: code,
     );
+  }
+
+  void close() {
+    _httpClient.close();
   }
 }

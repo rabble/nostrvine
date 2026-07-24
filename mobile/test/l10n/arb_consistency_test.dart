@@ -179,8 +179,8 @@ void main() {
 
 // Add keys here only when a translation pass is intentionally deferred.
 const _knownUntranslatedDebt = <String>{
-  // Manual crossposting from the share sheet; translation deferred to
-  // the next l10n pass.
+  // #6366: manual crossposting from the share sheet; translation deferred
+  // to the next l10n pass.
   'shareSheetCrosspost',
   'crosspostSheetTitle',
   'crosspostSheetSubtitle',
@@ -198,6 +198,7 @@ const _knownUntranslatedDebt = <String>{
   'crosspostErrorNotOwner',
   'crosspostErrorNotEligible',
   'crosspostErrorNotConnected',
+  'crosspostErrorUnauthorized',
   'crosspostErrorNetwork',
   'crosspostFailedGeneric',
   'crosspostStillWorking',

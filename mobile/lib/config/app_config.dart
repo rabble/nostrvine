@@ -24,6 +24,11 @@ class AppConfig {
     defaultValue: 'https://apps.divine.video',
   );
 
+  static const String crossposterBaseUrl = String.fromEnvironment(
+    'CROSSPOSTER_URL',
+    defaultValue: 'https://crossposter.divine.video',
+  );
+
   // Environment detection
   static const String environment = String.fromEnvironment(
     'ENVIRONMENT',
@@ -78,6 +83,7 @@ class AppConfig {
     'backendUrl': backendBaseUrl,
     'inviteServerUrl': inviteServerBaseUrl,
     'appsDirectoryUrl': appsDirectoryBaseUrl,
+    'crossposterUrl': crossposterBaseUrl,
     'isDevelopment': isDevelopment,
     'isProduction': isProduction,
     'isGhActionsPrPreviewBuild': isGhActionsPrPreviewBuild,

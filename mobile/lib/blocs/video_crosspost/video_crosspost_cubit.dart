@@ -56,10 +56,12 @@ class VideoCrosspostCubit extends Cubit<VideoCrosspostState> {
       );
     } on CrossposterApiException catch (e, stackTrace) {
       Log.error(
-        'Failed to load crossposter connections: $e',
+        'Failed to load crossposter connections',
         name: 'VideoCrosspostCubit',
+        error: e,
         stackTrace: stackTrace,
       );
+      addError(e, stackTrace);
       if (isClosed) return;
       emit(state.copyWith(status: VideoCrosspostStatus.connectionsFailed));
     }
@@ -87,10 +89,12 @@ class VideoCrosspostCubit extends Cubit<VideoCrosspostState> {
       _onJobsUpdated(jobs);
     } on CrossposterApiException catch (e, stackTrace) {
       Log.error(
-        'Crosspost submit failed: $e',
+        'Crosspost submit failed',
         name: 'VideoCrosspostCubit',
+        error: e,
         stackTrace: stackTrace,
       );
+      addError(e, stackTrace);
       if (isClosed) return;
       emit(
         state.copyWith(
@@ -153,13 +157,14 @@ class VideoCrosspostCubit extends Cubit<VideoCrosspostState> {
           ),
         );
         if (!pending) _stopPolling();
-      } on CrossposterApiException catch (e) {
+      } on CrossposterApiException catch (e, stackTrace) {
         // Transient poll failure — keep the timer running and retry on
         // the next tick.
         Log.warning(
           'Crosspost poll failed, will retry: $e',
           name: 'VideoCrosspostCubit',
         );
+        addError(e, stackTrace);
       }
     });
   }

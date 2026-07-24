@@ -141,6 +141,21 @@ void main() {
           ),
         );
       });
+
+      test('wraps transport errors as $CrossposterApiException', () async {
+        when(
+          () => httpClient.get(any(), headers: any(named: 'headers')),
+        ).thenThrow(http.ClientException('offline'));
+
+        expect(
+          client.getConnections,
+          throwsA(
+            isA<CrossposterApiException>()
+                .having((e) => e.code, 'code', equals('network'))
+                .having((e) => e.cause, 'cause', isA<http.ClientException>()),
+          ),
+        );
+      });
     });
 
     group('createCrossposts', () {
@@ -226,6 +241,29 @@ void main() {
           ),
         );
       });
+
+      test('wraps malformed success body as $CrossposterApiException', () {
+        when(
+          () => httpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => http.Response('<html>bad</html>', 200));
+
+        expect(
+          () => client.createCrossposts(
+            eventId: eventId,
+            platforms: ['instagram'],
+          ),
+          throwsA(
+            isA<CrossposterApiException>()
+                .having((e) => e.statusCode, 'statusCode', equals(200))
+                .having((e) => e.code, 'code', equals('malformed_response'))
+                .having((e) => e.cause, 'cause', isA<FormatException>()),
+          ),
+        );
+      });
     });
 
     group('getCrossposts', () {
@@ -298,6 +336,14 @@ void main() {
           ),
         );
       });
+    });
+
+    test('closes the owned HTTP client', () {
+      when(() => httpClient.close()).thenReturn(null);
+
+      client.close();
+
+      verify(() => httpClient.close()).called(1);
     });
   });
 }

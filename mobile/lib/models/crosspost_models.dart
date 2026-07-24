@@ -1,13 +1,6 @@
 // ABOUTME: Wire models for the crossposter service (crossposter.divine.video)
 // ABOUTME: Connections, jobs, job statuses, and the typed API exception
 
-/// Well-known crossposter service URLs.
-abstract class CrossposterUrls {
-  /// Production crossposter endpoint; also hosts the connection
-  /// management web UI used for reconnecting platforms.
-  static const base = 'https://crossposter.divine.video';
-}
-
 /// Lifecycle states reported by the crossposter for a single job.
 enum CrosspostJobStatus {
   queued,
@@ -37,7 +30,8 @@ enum CrosspostJobStatus {
       this == CrosspostJobStatus.queued ||
       this == CrosspostJobStatus.uploading ||
       this == CrosspostJobStatus.dispatching ||
-      this == CrosspostJobStatus.processing;
+      this == CrosspostJobStatus.processing ||
+      this == CrosspostJobStatus.unknown;
 }
 
 /// A platform account link from `GET /connections`.
@@ -105,11 +99,17 @@ class CrosspostJob {
 /// (`not_owner`, `not_eligible`, `not_connected`, `unauthorized`, ...)
 /// when the response included one.
 class CrossposterApiException implements Exception {
-  const CrossposterApiException(this.message, {this.statusCode, this.code});
+  const CrossposterApiException(
+    this.message, {
+    this.statusCode,
+    this.code,
+    this.cause,
+  });
 
   final String message;
   final int? statusCode;
   final String? code;
+  final Object? cause;
 
   @override
   String toString() =>

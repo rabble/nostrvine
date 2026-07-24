@@ -216,16 +216,16 @@ final uploadBackpressureActiveProvider = Provider<bool>((ref) {
 
 /// OS-backed background upload transport (URLSession on iOS/macOS, a
 /// foreground service on Android), adapted to the Blossom transport port.
-final backgroundUploadTransportProvider = Provider<BlossomBackgroundTransport>(
-  (ref) {
-    final prefs = ref.watch(sharedPreferencesProvider);
-    return _BackgroundUploadTransportAdapter(
-      BackgroundUploader.instance,
-      notificationTitle: () =>
-          currentAppL10n(prefs).backgroundUploadNotificationTitle,
-    );
-  },
-);
+final backgroundUploadTransportProvider = Provider<BlossomBackgroundTransport>((
+  ref,
+) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return _BackgroundUploadTransportAdapter(
+    BackgroundUploader.instance,
+    notificationTitle: () =>
+        currentAppL10n(prefs).backgroundUploadNotificationTitle,
+  );
+});
 
 /// Foreground session used by the background-publish bloc to keep the process
 /// network alive across the whole publish (upload + signing + relay), not just
@@ -314,7 +314,9 @@ CrosspostApiClient crosspostApiClient(Ref ref) {
 @riverpod
 CrossposterApiClient crossposterApiClient(Ref ref) {
   final oauthClient = ref.watch(oauthClientProvider);
-  return CrossposterApiClient(oauthClient: oauthClient);
+  final client = CrossposterApiClient(oauthClient: oauthClient);
+  ref.onDispose(client.close);
+  return client;
 }
 
 /// Audio playback service for sound playback during recording and preview

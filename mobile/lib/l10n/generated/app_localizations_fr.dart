@@ -3514,6 +3514,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get crosspostErrorNotConnected => 'That platform isn\'t connected.';
 
   @override
+  String get crosspostErrorUnauthorized =>
+      'Reconnect your account, then try again.';
+
+  @override
   String get crosspostErrorNetwork =>
       'Couldn\'t reach the crossposter. Try again in a moment.';
 

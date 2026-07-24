@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_crosspost/video_crosspost_cubit.dart';
@@ -43,16 +46,6 @@ void main() {
       client = _MockCrossposterApiClient();
     });
 
-    Future<void> waitUntil(bool Function() condition) async {
-      final deadline = DateTime.now().add(const Duration(seconds: 5));
-      while (!condition()) {
-        if (DateTime.now().isAfter(deadline)) {
-          fail('waitUntil timed out');
-        }
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-      }
-    }
-
     VideoCrosspostCubit buildCubit({
       List<CrossposterConnection>? initialConnections,
       Duration pollInterval = const Duration(milliseconds: 10),
@@ -83,9 +76,9 @@ void main() {
       blocTest<VideoCrosspostCubit, VideoCrosspostState>(
         'emits ready with connections and preselects connected platforms',
         build: () {
-          when(() => client.getConnections()).thenAnswer(
-            (_) async => [instagramConnection, disconnectedTiktok],
-          );
+          when(
+            () => client.getConnections(),
+          ).thenAnswer((_) async => [instagramConnection, disconnectedTiktok]);
           return buildCubit();
         },
         act: (cubit) => cubit.loadConnections(),
@@ -104,9 +97,9 @@ void main() {
       blocTest<VideoCrosspostCubit, VideoCrosspostState>(
         'emits connectionsFailed when the client throws',
         build: () {
-          when(() => client.getConnections()).thenThrow(
-            const CrossposterApiException('boom', statusCode: 500),
-          );
+          when(
+            () => client.getConnections(),
+          ).thenThrow(const CrossposterApiException('boom', statusCode: 500));
           return buildCubit();
         },
         act: (cubit) => cubit.loadConnections(),
@@ -118,6 +111,7 @@ void main() {
             status: VideoCrosspostStatus.connectionsFailed,
           ),
         ],
+        errors: () => [isA<CrossposterApiException>()],
       );
     });
 
@@ -155,7 +149,7 @@ void main() {
         verifyNever(() => client.getCrossposts(eventId: eventId));
       });
 
-      test('polls until jobs reach a terminal state', () async {
+      test('polls until jobs reach a terminal state', () {
         when(
           () => client.createCrossposts(
             eventId: eventId,
@@ -170,25 +164,31 @@ void main() {
           return polls < 2 ? [queuedJob] : [postedJob];
         });
 
-        final cubit = buildCubit(initialConnections: [instagramConnection]);
-        addTearDown(cubit.close);
+        fakeAsync((fake) {
+          final cubit = buildCubit(initialConnections: [instagramConnection]);
 
-        await cubit.submit();
-        expect(cubit.state.status, equals(VideoCrosspostStatus.polling));
+          unawaited(cubit.submit());
+          fake.flushMicrotasks();
+          expect(cubit.state.status, equals(VideoCrosspostStatus.polling));
 
-        await waitUntil(
-          () => cubit.state.status == VideoCrosspostStatus.finished,
-        );
+          fake
+            ..elapse(const Duration(milliseconds: 20))
+            ..flushMicrotasks();
 
-        expect(
-          cubit.state.jobs.single.externalPostUrl,
-          equals('https://www.instagram.com/reel/abc/'),
-        );
-        expect(cubit.state.pollTimedOut, isFalse);
+          expect(cubit.state.status, equals(VideoCrosspostStatus.finished));
+          expect(
+            cubit.state.jobs.single.externalPostUrl,
+            equals('https://www.instagram.com/reel/abc/'),
+          );
+          expect(cubit.state.pollTimedOut, isFalse);
+
+          unawaited(cubit.close());
+          fake.flushMicrotasks();
+        });
       });
 
       test('gives up with pollTimedOut when jobs stay pending past the '
-          'timeout', () async {
+          'timeout', () {
         when(
           () => client.createCrossposts(
             eventId: eventId,
@@ -199,22 +199,28 @@ void main() {
           () => client.getCrossposts(eventId: eventId),
         ).thenAnswer((_) async => [queuedJob]);
 
-        final cubit = buildCubit(
-          initialConnections: [instagramConnection],
-          pollTimeout: const Duration(milliseconds: 30),
-        );
-        addTearDown(cubit.close);
+        fakeAsync((fake) {
+          final cubit = buildCubit(
+            initialConnections: [instagramConnection],
+            pollTimeout: const Duration(milliseconds: 30),
+          );
 
-        await cubit.submit();
-        await waitUntil(
-          () => cubit.state.status == VideoCrosspostStatus.finished,
-        );
+          unawaited(cubit.submit());
+          fake
+            ..flushMicrotasks()
+            ..elapse(const Duration(milliseconds: 50))
+            ..flushMicrotasks();
 
-        expect(cubit.state.pollTimedOut, isTrue);
-        expect(cubit.state.hasPendingJobs, isTrue);
+          expect(cubit.state.status, equals(VideoCrosspostStatus.finished));
+          expect(cubit.state.pollTimedOut, isTrue);
+          expect(cubit.state.hasPendingJobs, isTrue);
+
+          unawaited(cubit.close());
+          fake.flushMicrotasks();
+        });
       });
 
-      test('keeps polling through a transient poll failure', () async {
+      test('keeps polling through a transient poll failure', () {
         when(
           () => client.createCrossposts(
             eventId: eventId,
@@ -232,15 +238,21 @@ void main() {
           return [postedJob];
         });
 
-        final cubit = buildCubit(initialConnections: [instagramConnection]);
-        addTearDown(cubit.close);
+        fakeAsync((fake) {
+          final cubit = buildCubit(initialConnections: [instagramConnection]);
 
-        await cubit.submit();
-        await waitUntil(
-          () => cubit.state.status == VideoCrosspostStatus.finished,
-        );
+          unawaited(cubit.submit());
+          fake
+            ..flushMicrotasks()
+            ..elapse(const Duration(milliseconds: 20))
+            ..flushMicrotasks();
 
-        expect(cubit.state.pollTimedOut, isFalse);
+          expect(cubit.state.status, equals(VideoCrosspostStatus.finished));
+          expect(cubit.state.pollTimedOut, isFalse);
+
+          unawaited(cubit.close());
+          fake.flushMicrotasks();
+        });
       });
 
       for (final (code, expected) in [
@@ -265,10 +277,7 @@ void main() {
 
           await cubit.submit();
 
-          expect(
-            cubit.state.status,
-            equals(VideoCrosspostStatus.submitFailed),
-          );
+          expect(cubit.state.status, equals(VideoCrosspostStatus.submitFailed));
           expect(cubit.state.submitError, equals(expected));
         });
       }
@@ -291,10 +300,8 @@ void main() {
 
     test('close cancels polling so no further client calls fire', () async {
       when(
-        () => client.createCrossposts(
-          eventId: eventId,
-          platforms: ['instagram'],
-        ),
+        () =>
+            client.createCrossposts(eventId: eventId, platforms: ['instagram']),
       ).thenAnswer((_) async => [queuedJob]);
       when(
         () => client.getCrossposts(eventId: eventId),

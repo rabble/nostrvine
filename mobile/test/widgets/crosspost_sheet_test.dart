@@ -125,7 +125,9 @@ void main() {
       expect(find.text(l10n.crosspostViewPost), findsOneWidget);
     });
 
-    testWidgets('shows server error message for a failed job', (tester) async {
+    testWidgets('shows localized generic text for an unmapped failed job', (
+      tester,
+    ) async {
       when(() => cubit.state).thenReturn(
         const VideoCrosspostState(
           status: VideoCrosspostStatus.finished,
@@ -144,7 +146,30 @@ void main() {
       await pumpSheet(tester);
 
       expect(find.text(l10n.crosspostStatusFailed), findsOneWidget);
-      expect(find.text('Instagram rejected the media'), findsOneWidget);
+      expect(find.text(l10n.crosspostFailedGeneric), findsOneWidget);
+      expect(find.text('Instagram rejected the media'), findsNothing);
+    });
+
+    testWidgets('shows localized text for a mapped failed job', (tester) async {
+      when(() => cubit.state).thenReturn(
+        const VideoCrosspostState(
+          status: VideoCrosspostStatus.finished,
+          jobs: [
+            CrosspostJob(
+              id: 'job-1',
+              platform: 'instagram',
+              status: CrosspostJobStatus.failed,
+              errorCode: 'not_eligible',
+              errorMessage: 'Server copy must not render',
+            ),
+          ],
+        ),
+      );
+
+      await pumpSheet(tester);
+
+      expect(find.text(l10n.crosspostErrorNotEligible), findsOneWidget);
+      expect(find.text('Server copy must not render'), findsNothing);
     });
 
     testWidgets('prompts to reconnect on a needs_reauth job', (tester) async {
@@ -208,6 +233,23 @@ void main() {
       await pumpSheet(tester);
 
       expect(find.text(l10n.crosspostErrorNotEligible), findsOneWidget);
+    });
+
+    testWidgets('shows reconnect copy after unauthorized submit', (
+      tester,
+    ) async {
+      when(() => cubit.state).thenReturn(
+        const VideoCrosspostState(
+          status: VideoCrosspostStatus.submitFailed,
+          connections: [instagramConnection],
+          selectedPlatforms: {'instagram'},
+          submitError: VideoCrosspostSubmitError.unauthorized,
+        ),
+      );
+
+      await pumpSheet(tester);
+
+      expect(find.text(l10n.crosspostErrorUnauthorized), findsOneWidget);
     });
   });
 }

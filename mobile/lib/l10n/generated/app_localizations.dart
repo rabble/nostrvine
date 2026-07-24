@@ -6060,6 +6060,12 @@ abstract class AppLocalizations {
   /// **'That platform isn\'t connected.'**
   String get crosspostErrorNotConnected;
 
+  /// No description provided for @crosspostErrorUnauthorized.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnect your account, then try again.'**
+  String get crosspostErrorUnauthorized;
+
   /// No description provided for @crosspostErrorNetwork.
   ///
   /// In en, this message translates to:
