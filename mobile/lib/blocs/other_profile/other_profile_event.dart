@@ -55,15 +55,3 @@ final class OtherProfileUnblockRequested extends OtherProfileEvent {
 final class VerifiedClaimsRequested extends OtherProfileEvent {
   const VerifiedClaimsRequested();
 }
-
-/// Internal event that self-heals a link-stripped profile.
-///
-/// When the bloc is monetization-aware (`requireRawKind0`) but the profile it
-/// ended up showing is a Funnelcake REST projection — which strips the custom
-/// `divine_monetization_links` Kind 0 field, usually because the relay Kind 0
-/// fetch came back null on a flaky relay — this re-fetches the raw Kind 0 with
-/// exponential backoff so the Tip/Support affordance appears once the relay
-/// recovers, instead of being stranded until an explicit refresh.
-final class MonetizationRefetchRequested extends OtherProfileEvent {
-  const MonetizationRefetchRequested();
-}

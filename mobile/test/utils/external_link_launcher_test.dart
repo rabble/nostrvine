@@ -16,7 +16,7 @@ void main() {
       expect(isTrustedExternalLinkHost('divine.video'), isTrue);
       expect(isTrustedExternalLinkHost('MEDIA.DIVINE.VIDEO'), isTrue);
       expect(isTrustedExternalLinkHost('cdn.divine.video'), isTrue);
-      // First-party creator-site property (profile "Website" CTA).
+      // First-party creator-site property (profile creator-site CTA).
       expect(isTrustedExternalLinkHost('divine.space'), isTrue);
     });
 

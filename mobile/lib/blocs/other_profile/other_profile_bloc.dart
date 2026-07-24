@@ -34,16 +34,14 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
     required FollowRepository followRepository,
     bool requireRawKind0 = false,
     IdentityClaimsRepository? identityClaimsRepository,
-    Duration monetizationRefetchInitialDelay = const Duration(
-      milliseconds: 600,
-    ),
+    List<Duration> rawKind0RetryDelays = _defaultRawKind0RetryDelays,
   }) : _profileRepository = profileRepository,
        _blocklistRepository = contentBlocklistRepository,
        _currentUserPubkey = currentUserPubkey,
        _followRepository = followRepository,
        _requireRawKind0 = requireRawKind0,
        _identityClaimsRepository = identityClaimsRepository,
-       _monetizationRefetchInitialDelay = monetizationRefetchInitialDelay,
+       _rawKind0RetryDelays = rawKind0RetryDelays,
        super(const OtherProfileInitial()) {
     on<OtherProfileLoadRequested>(_onLoadRequested);
     on<OtherProfileRefreshRequested>(_onRefreshRequested);
@@ -51,10 +49,6 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
     on<OtherProfileUnblockRequested>(_onUnblockRequested);
     on<VerifiedClaimsRequested>(
       _onVerifiedClaimsRequested,
-      transformer: restartable(),
-    );
-    on<MonetizationRefetchRequested>(
-      _onMonetizationRefetchRequested,
       transformer: restartable(),
     );
   }
@@ -66,14 +60,15 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
   final bool _requireRawKind0;
   final IdentityClaimsRepository? _identityClaimsRepository;
 
-  /// First backoff before the monetization self-heal re-fetch; doubles each
-  /// attempt. Injectable so tests don't wait on real relay backoff.
-  final Duration _monetizationRefetchInitialDelay;
+  /// Repository-owned raw Kind 0 retry delays. Injectable so tests don't wait
+  /// on real relay backoff.
+  final List<Duration> _rawKind0RetryDelays;
 
-  /// Bounded self-heal attempts to recover the relay Kind 0 (and its
-  /// monetization links) after a REST-only load. Kept small so a genuinely
-  /// REST-only creator isn't retried forever.
-  static const _monetizationRefetchMaxAttempts = 3;
+  static const _defaultRawKind0RetryDelays = [
+    Duration(milliseconds: 600),
+    Duration(milliseconds: 1200),
+    Duration(milliseconds: 2400),
+  ];
 
   /// The pubkey of the profile being viewed.
   final String pubkey;
@@ -106,10 +101,7 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
     );
 
     try {
-      final freshProfile = await _profileRepository.fetchFreshProfile(
-        pubkey: pubkey,
-        requireRawKind0: _requireRawKind0,
-      );
+      final freshProfile = await _fetchFreshProfile();
       if (isClosed) return;
       final latestClaims = _claimsFromState(state);
       if (freshProfile != null) {
@@ -154,7 +146,6 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
         );
       }
     }
-    _maybeScheduleMonetizationRefetch();
   }
 
   Future<void> _onRefreshRequested(
@@ -178,10 +169,7 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
     );
 
     try {
-      final freshProfile = await _profileRepository.fetchFreshProfile(
-        pubkey: pubkey,
-        requireRawKind0: _requireRawKind0,
-      );
+      final freshProfile = await _fetchFreshProfile();
       if (isClosed) return;
       if (freshProfile != null) {
         emit(
@@ -219,69 +207,17 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
         );
       }
     }
-    _maybeScheduleMonetizationRefetch();
   }
 
-  void _maybeScheduleMonetizationRefetch() {
-    if (_needsMonetizationRefetch(state)) {
-      add(const MonetizationRefetchRequested());
+  Future<UserProfile?> _fetchFreshProfile() {
+    if (!_requireRawKind0) {
+      return _profileRepository.fetchFreshProfile(pubkey: pubkey);
     }
-  }
-
-  /// Whether the currently-loaded profile is a Funnelcake REST projection
-  /// (`eventId` prefixed `rest-`, which strips `divine_monetization_links`)
-  /// that a raw Kind 0 re-fetch could upgrade. A relay Kind 0 (real event id)
-  /// with no monetization links is a genuine "no tips" state and is left alone.
-  bool _needsMonetizationRefetch(OtherProfileState state) {
-    if (!_requireRawKind0) return false;
-    if (state is! OtherProfileLoaded) return false;
-    final profile = state.profile;
-    return profile.eventId.startsWith('rest-') &&
-        profile.enabledMonetizationLinks.isEmpty;
-  }
-
-  Future<void> _onMonetizationRefetchRequested(
-    MonetizationRefetchRequested event,
-    Emitter<OtherProfileState> emit,
-  ) async {
-    for (
-      var attempt = 0;
-      attempt < _monetizationRefetchMaxAttempts;
-      attempt++
-    ) {
-      if (!_needsMonetizationRefetch(state)) return;
-      // Exponential backoff — give a flapping relay time to reconnect between
-      // tries before asking for the raw Kind 0 again.
-      await Future<void>.delayed(
-        _monetizationRefetchInitialDelay * (1 << attempt),
-      );
-      if (isClosed || emit.isDone || !_needsMonetizationRefetch(state)) return;
-
-      final UserProfile? fresh;
-      try {
-        fresh = await _profileRepository.fetchFreshProfile(
-          pubkey: pubkey,
-          requireRawKind0: true,
-        );
-      } on Exception {
-        continue; // transient failure — retry after the next backoff
-      }
-      if (isClosed || emit.isDone) return;
-
-      // Only replace once we recover the relay Kind 0 (real event id); a null
-      // or still-REST result means keep the current profile and try again.
-      if (fresh != null && !fresh.eventId.startsWith('rest-')) {
-        emit(
-          OtherProfileLoaded(
-            profile: fresh,
-            isFresh: true,
-            verifiedClaims: _claimsFromState(state),
-          ),
-        );
-        add(const VerifiedClaimsRequested());
-        return;
-      }
-    }
+    return _profileRepository.fetchFreshProfile(
+      pubkey: pubkey,
+      requireRawKind0: true,
+      rawKind0RetryDelays: _rawKind0RetryDelays,
+    );
   }
 
   Future<void> _onVerifiedClaimsRequested(

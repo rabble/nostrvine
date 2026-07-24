@@ -95,12 +95,17 @@ class OtherProfileScreen extends ConsumerWidget {
     );
 
     return BlocProvider(
-      // Re-create the bloc when the monetization flag flips: it decides
-      // requireRawKind0 (relay Kind 0 vs REST projection), and a keyless
-      // create: would capture the first value forever — so toggling the flag
-      // on an already-mounted profile would never fetch the monetization
-      // links, and the Tip/Support affordance would never appear.
-      key: ValueKey(requireRawKind0),
+      // Re-create the bloc when captured dependencies change. A keyless
+      // create: would keep stale repositories/current-user state after auth or
+      // account changes, and would also miss requireRawKind0 flag flips.
+      key: ValueKey((
+        requireRawKind0,
+        profileRepository,
+        blocklistRepository,
+        nostrClient.publicKey,
+        followRepository,
+        identityClaimsRepository,
+      )),
       create: (context) => OtherProfileBloc(
         pubkey: pubkey,
         profileRepository: profileRepository,

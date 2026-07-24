@@ -1052,8 +1052,8 @@ void main() {
     });
 
     testWidgets(
-      'holds the Website button until the relay Kind 0 resolves, then reveals '
-      'the Tip pill in the same frame',
+      'holds the creator-site pill until the relay Kind 0 resolves, then '
+      'reveals the Tip pill in the same frame',
       (tester) async {
         // Funnelcake's REST projection strips the custom monetization Kind 0
         // field, so the link-stripped REST profile (rest- event id) lands
@@ -1092,7 +1092,7 @@ void main() {
         );
         final supportButton = find.byKey(const Key('profile-support-button'));
 
-        // Held while only the REST projection is known — no lone Website
+        // Held while only the REST projection is known — no lone creator-site
         // button ahead of the Tip pill.
         expect(creatorSiteButton, findsNothing);
         expect(supportButton, findsNothing);
@@ -1114,7 +1114,7 @@ void main() {
     );
 
     testWidgets(
-      'reveals the Website button alone after the resolve timeout when the '
+      'reveals the creator-site pill alone after the resolve timeout when the '
       'relay never upgrades the REST projection',
       (tester) async {
         final restProjection = createTestProfile(
@@ -1140,14 +1140,81 @@ void main() {
         // Held while the REST projection is all we have.
         expect(creatorSiteButton, findsNothing);
 
-        // Past the fallback timeout the Website button reveals on its own so a
-        // dead relay can't strand the CTA; the REST projection carries no
+        // Past the fallback timeout the creator-site pill reveals on its own so
+        // a dead relay can't strand the CTA; the REST projection carries no
         // links, so no Tip pill appears.
         await tester.pump(const Duration(seconds: 11));
         await tester.pump();
 
         expect(creatorSiteButton, findsOneWidget);
         expect(supportButton, findsNothing);
+      },
+    );
+
+    testWidgets(
+      'shows the own-profile creator-site pill from a REST projection',
+      (tester) async {
+        final restProjection = createTestProfile(
+          displayName: 'Creator',
+          eventId: 'rest-improvising',
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            suppliedProfile: restProjection,
+            monetizationLinksEnabled: true,
+          ),
+        );
+        await tester.pump();
+
+        expect(
+          find.byKey(const Key('profile-creator-site-button')),
+          findsOneWidget,
+        );
+        expect(find.byKey(const Key('profile-support-button')), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'keeps the creator-site pill visible after timeout when REST refreshes',
+      (tester) async {
+        final restProjection = createTestProfile(
+          displayName: 'Creator',
+          eventId: 'rest-improvising',
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: false,
+            suppliedProfile: restProjection,
+            monetizationLinksEnabled: true,
+          ),
+        );
+        await tester.pump();
+
+        final creatorSiteButton = find.byKey(
+          const Key('profile-creator-site-button'),
+        );
+        expect(creatorSiteButton, findsNothing);
+
+        await tester.pump(const Duration(seconds: 11));
+        await tester.pump();
+        expect(creatorSiteButton, findsOneWidget);
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: false,
+            suppliedProfile: restProjection,
+            monetizationLinksEnabled: true,
+          ),
+        );
+        await tester.pump();
+
+        expect(creatorSiteButton, findsOneWidget);
       },
     );
 

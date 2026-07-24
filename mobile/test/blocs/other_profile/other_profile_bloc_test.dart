@@ -638,32 +638,29 @@ void main() {
         return observer;
       }
 
-      test(
-        'records no error when closed before the fresh profile resolves '
-        'on load',
-        () async {
-          final observer = captureBlocErrors();
-          final freshCompleter = Completer<UserProfile?>();
-          when(
-            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
-          ).thenAnswer((_) async => createTestProfile());
-          when(
-            () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
-          ).thenAnswer((_) => freshCompleter.future);
+      test('records no error when closed before the fresh profile resolves '
+          'on load', () async {
+        final observer = captureBlocErrors();
+        final freshCompleter = Completer<UserProfile?>();
+        when(
+          () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+        ).thenAnswer((_) async => createTestProfile());
+        when(
+          () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
+        ).thenAnswer((_) => freshCompleter.future);
 
-          final bloc = createBloc()..add(const OtherProfileLoadRequested());
+        final bloc = createBloc()..add(const OtherProfileLoadRequested());
 
-          // Let the handler emit loading and park on fetchFreshProfile.
-          await pumpEventQueue();
-          // The profile screen is disposed while the fetch is in flight.
-          await bloc.close();
-          // The awaited fetch now resolves after close.
-          freshCompleter.complete(createTestProfile());
-          await pumpEventQueue();
+        // Let the handler emit loading and park on fetchFreshProfile.
+        await pumpEventQueue();
+        // The profile screen is disposed while the fetch is in flight.
+        await bloc.close();
+        // The awaited fetch now resolves after close.
+        freshCompleter.complete(createTestProfile());
+        await pumpEventQueue();
 
-          expect(observer.errors, isEmpty);
-        },
-      );
+        expect(observer.errors, isEmpty);
+      });
 
       test(
         'records no error when closed before the fresh fetch throws on load',
@@ -690,26 +687,23 @@ void main() {
         },
       );
 
-      test(
-        'records no error when closed before the fresh profile resolves '
-        'on refresh',
-        () async {
-          final observer = captureBlocErrors();
-          final freshCompleter = Completer<UserProfile?>();
-          when(
-            () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
-          ).thenAnswer((_) => freshCompleter.future);
+      test('records no error when closed before the fresh profile resolves '
+          'on refresh', () async {
+        final observer = captureBlocErrors();
+        final freshCompleter = Completer<UserProfile?>();
+        when(
+          () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
+        ).thenAnswer((_) => freshCompleter.future);
 
-          final bloc = createBloc()..add(const OtherProfileRefreshRequested());
+        final bloc = createBloc()..add(const OtherProfileRefreshRequested());
 
-          await pumpEventQueue();
-          await bloc.close();
-          freshCompleter.complete(createTestProfile());
-          await pumpEventQueue();
+        await pumpEventQueue();
+        await bloc.close();
+        freshCompleter.complete(createTestProfile());
+        await pumpEventQueue();
 
-          expect(observer.errors, isEmpty);
-        },
-      );
+        expect(observer.errors, isEmpty);
+      });
 
       test(
         'records no error when closed before a seeded refresh fetch throws',
@@ -882,10 +876,8 @@ void main() {
 
       blocTest<OtherProfileBloc, OtherProfileState>(
         'renders the cached snapshot instantly, then the resolved claims',
-        seed: () => OtherProfileLoaded(
-          profile: createTestProfile(),
-          isFresh: true,
-        ),
+        seed: () =>
+            OtherProfileLoaded(profile: createTestProfile(), isFresh: true),
         setUp: () {
           when(
             () => mockClaimsRepository.cachedVerifiedClaims(
@@ -893,10 +885,8 @@ void main() {
               tags: any(named: 'tags'),
             ),
           ).thenAnswer(
-            (_) async => const CachedVerifiedClaims(
-              claims: [aliceClaim],
-              isFresh: true,
-            ),
+            (_) async =>
+                const CachedVerifiedClaims(claims: [aliceClaim], isFresh: true),
           );
           when(
             () => mockClaimsRepository.resolveClaims(
@@ -939,10 +929,8 @@ void main() {
 
       blocTest<OtherProfileBloc, OtherProfileState>(
         'keeps last-known-good claims when the verifier fails',
-        seed: () => OtherProfileLoaded(
-          profile: createTestProfile(),
-          isFresh: true,
-        ),
+        seed: () =>
+            OtherProfileLoaded(profile: createTestProfile(), isFresh: true),
         setUp: () {
           when(
             () => mockClaimsRepository.cachedVerifiedClaims(
@@ -978,10 +966,8 @@ void main() {
 
       blocTest<OtherProfileBloc, OtherProfileState>(
         'degrades to the network path when the cache read throws',
-        seed: () => OtherProfileLoaded(
-          profile: createTestProfile(),
-          isFresh: true,
-        ),
+        seed: () =>
+            OtherProfileLoaded(profile: createTestProfile(), isFresh: true),
         setUp: () {
           when(
             () => mockProfileRepository.cachedIdentityTags(testPubkey),
@@ -1010,10 +996,8 @@ void main() {
       late Completer<List<IdentityClaim>> staleResolve;
       blocTest<OtherProfileBloc, OtherProfileState>(
         'uses the newest verification result when requests overlap',
-        seed: () => OtherProfileLoaded(
-          profile: createTestProfile(),
-          isFresh: true,
-        ),
+        seed: () =>
+            OtherProfileLoaded(profile: createTestProfile(), isFresh: true),
         setUp: () {
           staleResolve = Completer<List<IdentityClaim>>();
           var resolveCall = 0;
@@ -1079,10 +1063,8 @@ void main() {
               tags: any(named: 'tags'),
             ),
           ).thenAnswer(
-            (_) async => const CachedVerifiedClaims(
-              claims: [aliceClaim],
-              isFresh: true,
-            ),
+            (_) async =>
+                const CachedVerifiedClaims(claims: [aliceClaim], isFresh: true),
           );
           when(
             () => mockClaimsRepository.resolveClaims(
@@ -1155,10 +1137,8 @@ void main() {
               tags: any(named: 'tags'),
             ),
           ).thenAnswer(
-            (_) async => const CachedVerifiedClaims(
-              claims: [bobClaim],
-              isFresh: false,
-            ),
+            (_) async =>
+                const CachedVerifiedClaims(claims: [bobClaim], isFresh: false),
           );
           when(
             () => mockClaimsRepository.resolveClaims(
@@ -1322,10 +1302,8 @@ void main() {
               tags: any(named: 'tags'),
             ),
           ).thenAnswer(
-            (_) async => const CachedVerifiedClaims(
-              claims: [aliceClaim],
-              isFresh: true,
-            ),
+            (_) async =>
+                const CachedVerifiedClaims(claims: [aliceClaim], isFresh: true),
           );
           when(
             () => mockClaimsRepository.resolveClaims(
@@ -1482,8 +1460,7 @@ void main() {
       );
 
       blocTest<OtherProfileBloc, OtherProfileState>(
-        're-fetches the raw Kind 0 when a REST-only profile lands with the '
-        'monetization flag on, recovering the links',
+        'asks the repository to retry raw Kind 0 when monetization is on',
         build: () {
           when(
             () => mockProfileRepository.getCachedProfile(
@@ -1492,15 +1469,13 @@ void main() {
           ).thenAnswer(
             (_) async => createTestProfile(eventId: 'rest-$testPubkey'),
           );
-          // First raw Kind 0 fetch fails (relay flapping) → REST fallback;
-          // the self-heal retry lands the relay Kind 0 with the tip links.
-          final answers = <UserProfile?>[null, relayProfileWithLinks()];
           when(
             () => mockProfileRepository.fetchFreshProfile(
               pubkey: any(named: 'pubkey'),
               requireRawKind0: any(named: 'requireRawKind0'),
+              rawKind0RetryDelays: any(named: 'rawKind0RetryDelays'),
             ),
-          ).thenAnswer((_) async => answers.removeAt(0));
+          ).thenAnswer((_) async => relayProfileWithLinks());
           return OtherProfileBloc(
             profileRepository: mockProfileRepository,
             pubkey: testPubkey,
@@ -1508,23 +1483,23 @@ void main() {
             currentUserPubkey: testCurrentUserPubkey,
             followRepository: mockFollowRepository,
             requireRawKind0: true,
-            monetizationRefetchInitialDelay: const Duration(milliseconds: 1),
+            rawKind0RetryDelays: const [Duration(milliseconds: 1)],
           );
         },
         act: (bloc) => bloc.add(const OtherProfileLoadRequested()),
-        wait: const Duration(milliseconds: 100),
         verify: (bloc) {
           final state = bloc.state;
           expect(state, isA<OtherProfileLoaded>());
           final profile = (state as OtherProfileLoaded).profile;
-          expect(profile.eventId, isNot(startsWith('rest-')));
+          expect(profile.isRestProjection, isFalse);
           expect(profile.enabledMonetizationLinks, isNotEmpty);
           verify(
             () => mockProfileRepository.fetchFreshProfile(
               pubkey: testPubkey,
               requireRawKind0: true,
+              rawKind0RetryDelays: const [Duration(milliseconds: 1)],
             ),
-          ).called(2); // initial load + one self-heal retry
+          ).called(1);
         },
       );
 
@@ -1542,6 +1517,7 @@ void main() {
             () => mockProfileRepository.fetchFreshProfile(
               pubkey: any(named: 'pubkey'),
               requireRawKind0: any(named: 'requireRawKind0'),
+              rawKind0RetryDelays: any(named: 'rawKind0RetryDelays'),
             ),
           ).thenAnswer((_) async => null);
           return OtherProfileBloc(
@@ -1550,17 +1526,14 @@ void main() {
             contentBlocklistRepository: mockBlocklistRepository,
             currentUserPubkey: testCurrentUserPubkey,
             followRepository: mockFollowRepository,
-            monetizationRefetchInitialDelay: const Duration(milliseconds: 1),
+            rawKind0RetryDelays: const [Duration(milliseconds: 1)],
           );
         },
         act: (bloc) => bloc.add(const OtherProfileLoadRequested()),
-        wait: const Duration(milliseconds: 50),
         verify: (_) {
           // Omitting requireRawKind0 matches the default (false) call only.
           verify(
-            () => mockProfileRepository.fetchFreshProfile(
-              pubkey: testPubkey,
-            ),
+            () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
           ).called(1); // only the initial load; no self-heal retries
         },
       );

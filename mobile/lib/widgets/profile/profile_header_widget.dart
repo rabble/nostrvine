@@ -230,16 +230,15 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
     // REST projection strips, so on a cold load the link-stripped REST profile
     // can arrive before the relay/cache Kind 0. Treat the monetization answer
     // as authoritative only once the flag is off or a non-REST Kind 0 has
-    // landed, so the creator-actions row can reveal the Website button and the
-    // Tip pill together instead of the Website rendering first and the Tip
+    // landed, so the creator-actions row can reveal the creator-site pill and
+    // the Tip pill together instead of the creator site rendering first and Tip
     // popping in a beat later (#6328).
     final isMonetizationEnabled = ref.watch(
       isFeatureEnabledProvider(FeatureFlag.profileMonetizationLinks),
     );
     final isMonetizationResolved =
         !isMonetizationEnabled ||
-        (!isLoadingIdentity &&
-            !(effectiveProfile?.eventId.startsWith('rest-') ?? false));
+        (!isLoadingIdentity && !(effectiveProfile?.isRestProjection ?? false));
 
     // Use hints as fallbacks for users without Kind 0 profiles (e.g., classic Viners)
     // Check for both null AND empty string - some profiles have empty picture field
@@ -440,12 +439,12 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
     // projection that cannot carry it, even when the REST timestamp is newer.
     if (suppliedHasMonetization &&
         !blocHasMonetization &&
-        blocProfile.eventId.startsWith('rest-')) {
+        blocProfile.isRestProjection) {
       return suppliedProfile;
     }
     if (blocHasMonetization &&
         !suppliedHasMonetization &&
-        suppliedProfile.eventId.startsWith('rest-')) {
+        suppliedProfile.isRestProjection) {
       return blocProfile;
     }
 
@@ -541,11 +540,7 @@ void _openSupportSheet(
 ) {
   final analytics = ref.read(analyticsEventSinkProvider);
   trackMonetizationAffordanceTapped(analytics: analytics, links: links);
-  showProfileSupportSheet(
-    context: context,
-    links: links,
-    analytics: analytics,
-  );
+  showProfileSupportSheet(context: context, links: links, analytics: analytics);
 }
 
 /// Profile name, NIP-05, bio, and public key display.

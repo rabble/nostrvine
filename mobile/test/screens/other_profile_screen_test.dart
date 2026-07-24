@@ -138,15 +138,15 @@ void main() {
     when(() => blocklistRepository.isBlocked(any())).thenReturn(false);
     when(() => blocklistRepository.hasBlockedUs(any())).thenReturn(false);
     when(() => blocklistRepository.hasMutedUs(any())).thenReturn(false);
-    when(() => blocklistRepository.shouldFilterFromFeeds(any())).thenReturn(
-      false,
-    );
-    when(() => blocklistRepository.currentState).thenReturn(
-      ContentPolicyState.empty(),
-    );
-    when(() => blocklistRepository.stateStream).thenAnswer(
-      (_) => const Stream<ContentPolicyState>.empty(),
-    );
+    when(
+      () => blocklistRepository.shouldFilterFromFeeds(any()),
+    ).thenReturn(false);
+    when(
+      () => blocklistRepository.currentState,
+    ).thenReturn(ContentPolicyState.empty());
+    when(
+      () => blocklistRepository.stateStream,
+    ).thenAnswer((_) => const Stream<ContentPolicyState>.empty());
 
     when(
       likesRepository.watchLikedEventIds,
@@ -155,9 +155,9 @@ void main() {
       repostsRepository.watchRepostedAddressableIds,
     ).thenAnswer((_) => const Stream<Set<String>>.empty());
 
-    when(() => videoEventService.authorVideos(any())).thenReturn(
-      const <VideoEvent>[],
-    );
+    when(
+      () => videoEventService.authorVideos(any()),
+    ).thenReturn(const <VideoEvent>[]);
     when(() => videoEventService.filterVideoList(any())).thenAnswer(
       (invocation) => invocation.positionalArguments.first as List<VideoEvent>,
     );
@@ -170,12 +170,12 @@ void main() {
     ).thenReturn(false);
     when(() => videoEventService.addListener(any())).thenReturn(null);
     when(() => videoEventService.removeListener(any())).thenReturn(null);
-    when(() => videoEventService.addVideoUpdateListener(any())).thenReturn(
-      () {},
-    );
-    when(() => videoEventService.subscribeToUserVideos(any())).thenAnswer(
-      (_) async {},
-    );
+    when(
+      () => videoEventService.addVideoUpdateListener(any()),
+    ).thenReturn(() {});
+    when(
+      () => videoEventService.subscribeToUserVideos(any()),
+    ).thenAnswer((_) async {});
     when(
       () => videosRepository.getAuthorFeed(
         authorPubkey: any(named: 'authorPubkey'),
@@ -185,9 +185,9 @@ void main() {
       ),
     ).thenAnswer((_) async => emptyAuthorFeed());
 
-    when(() => officials.isApprovedMinorDmRecipientSync(any())).thenReturn(
-      false,
-    );
+    when(
+      () => officials.isApprovedMinorDmRecipientSync(any()),
+    ).thenReturn(false);
     when(() => nostrClient.publicKey).thenReturn(viewerPubkey);
     when(() => authService.currentPublicKeyHex).thenReturn(viewerPubkey);
     when(() => authService.authState).thenReturn(AuthState.authenticated);
@@ -197,9 +197,7 @@ void main() {
     when(() => authService.isRpcUpgradeInProgress).thenReturn(false);
   });
 
-  Widget buildSubject({
-    required ProviderContainer container,
-  }) {
+  Widget buildSubject({required ProviderContainer container}) {
     return UncontrolledProviderScope(
       container: container,
       child: MaterialApp(
@@ -237,21 +235,21 @@ void main() {
         isDmRestrictedProvider.overrideWith(
           (ref) => ref.watch(restrictedProvider),
         ),
-        userProfileStatsReactiveProvider(targetPubkey).overrideWith(
-          (ref) => const Stream<ProfileStats?>.empty(),
-        ),
-        fetchUserProfileProvider(targetPubkey).overrideWith(
-          (ref) async => profile(),
-        ),
-        isFeatureEnabledProvider(FeatureFlag.videoReplies).overrideWith(
-          (ref) => false,
-        ),
+        userProfileStatsReactiveProvider(
+          targetPubkey,
+        ).overrideWith((ref) => const Stream<ProfileStats?>.empty()),
+        fetchUserProfileProvider(
+          targetPubkey,
+        ).overrideWith((ref) async => profile()),
+        isFeatureEnabledProvider(
+          FeatureFlag.videoReplies,
+        ).overrideWith((ref) => false),
         isFeatureEnabledProvider(
           FeatureFlag.profileMonetizationLinks,
         ).overrideWith((ref) => false),
-        isFeatureEnabledProvider(FeatureFlag.curatedLists).overrideWith(
-          (ref) => false,
-        ),
+        isFeatureEnabledProvider(
+          FeatureFlag.curatedLists,
+        ).overrideWith((ref) => false),
       ],
     );
   }
@@ -301,9 +299,13 @@ void main() {
         () => profileRepo.watchProfile(pubkey: any(named: 'pubkey')),
       ).thenAnswer((_) => const Stream<UserProfile?>.empty());
       when(
+        () => profileRepo.fetchFreshProfile(pubkey: any(named: 'pubkey')),
+      ).thenAnswer((_) async => profile());
+      when(
         () => profileRepo.fetchFreshProfile(
           pubkey: any(named: 'pubkey'),
           requireRawKind0: any(named: 'requireRawKind0'),
+          rawKind0RetryDelays: any(named: 'rawKind0RetryDelays'),
         ),
       ).thenAnswer((_) async => profile());
       // The load also drives the identity-claims flow; stub it to resolve to
@@ -351,18 +353,18 @@ void main() {
           videoEventServiceProvider.overrideWithValue(videoEventService),
           officialAccountsServiceProvider.overrideWithValue(officials),
           isDmRestrictedProvider.overrideWith((ref) => false),
-          userProfileStatsReactiveProvider(targetPubkey).overrideWith(
-            (ref) => const Stream<ProfileStats?>.empty(),
-          ),
-          fetchUserProfileProvider(targetPubkey).overrideWith(
-            (ref) async => profile(),
-          ),
-          isFeatureEnabledProvider(FeatureFlag.videoReplies).overrideWith(
-            (ref) => false,
-          ),
-          isFeatureEnabledProvider(FeatureFlag.curatedLists).overrideWith(
-            (ref) => false,
-          ),
+          userProfileStatsReactiveProvider(
+            targetPubkey,
+          ).overrideWith((ref) => const Stream<ProfileStats?>.empty()),
+          fetchUserProfileProvider(
+            targetPubkey,
+          ).overrideWith((ref) async => profile()),
+          isFeatureEnabledProvider(
+            FeatureFlag.videoReplies,
+          ).overrideWith((ref) => false),
+          isFeatureEnabledProvider(
+            FeatureFlag.curatedLists,
+          ).overrideWith((ref) => false),
           isFeatureEnabledProvider(
             FeatureFlag.profileMonetizationLinks,
           ).overrideWith((ref) => ref.watch(flag)),
@@ -391,6 +393,7 @@ void main() {
         () => profileRepo.fetchFreshProfile(
           pubkey: targetPubkey,
           requireRawKind0: true,
+          rawKind0RetryDelays: any(named: 'rawKind0RetryDelays'),
         ),
       );
 
@@ -403,6 +406,7 @@ void main() {
         () => profileRepo.fetchFreshProfile(
           pubkey: targetPubkey,
           requireRawKind0: true,
+          rawKind0RetryDelays: any(named: 'rawKind0RetryDelays'),
         ),
       ).called(1);
     },

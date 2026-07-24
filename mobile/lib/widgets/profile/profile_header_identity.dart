@@ -78,7 +78,6 @@ class _ProfileNameAndBio extends StatelessWidget {
                 const SizedBox(height: 16),
                 Skeleton.keep(child: _AboutText(about: about!)),
               ],
-              const SizedBox(height: 8),
               Skeleton.keep(
                 child: _ProfileCreatorLinksRow(
                   userIdHex: userIdHex,
@@ -87,8 +86,10 @@ class _ProfileNameAndBio extends StatelessWidget {
                   isMonetizationResolved: isMonetizationResolved,
                 ),
               ),
-              if (showWebsite)
+              if (showWebsite) ...[
+                const SizedBox(height: 8),
                 Skeleton.keep(child: ProfileWebsiteRow(url: website!)),
+              ],
               _VerifiedAccountsBlock(isOwnProfile: isOwnProfile),
             ],
           ),
@@ -150,6 +151,7 @@ class _ProfileCreatorLinksRowState
 
   Timer? _resolveTimer;
   bool _resolveTimedOut = false;
+  bool _hasRevealed = false;
   bool? _wasResolved;
 
   @override
@@ -164,7 +166,7 @@ class _ProfileCreatorLinksRowState
     _resolveTimer?.cancel();
     _resolveTimer = null;
     if (isResolved) return;
-    _resolveTimedOut = false;
+    if (!_hasRevealed) _resolveTimedOut = false;
     _resolveTimer = Timer(_resolveTimeout, () {
       if (mounted) setState(() => _resolveTimedOut = true);
     });
@@ -179,39 +181,56 @@ class _ProfileCreatorLinksRowState
     // renders on its own and never waits.
     if (!hasCreatorSite) {
       return showSupport
-          ? _ProfileSupportButton(links: widget.links)
+          ? Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: _ProfileSupportButton(links: widget.links),
+            )
           : const SizedBox.shrink();
     }
+
+    final isRevealed =
+        widget.isOwnProfile ||
+        widget.isMonetizationResolved ||
+        _resolveTimedOut ||
+        _hasRevealed;
 
     // Drive the resolution timeout from a post-frame callback rather than
     // mutating timer state during build. The `_wasResolved` guard inside
     // `_syncResolveTimer` keeps this idempotent.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _syncResolveTimer(isResolved: widget.isMonetizationResolved);
-      }
-    });
+    if (!widget.isOwnProfile) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _syncResolveTimer(isResolved: widget.isMonetizationResolved);
+        }
+      });
+    }
 
     // Hold the whole row until the monetization answer is authoritative so
     // both pills reveal in the same frame, rather than the creator-site pill
-    // rendering first off the link-stripped REST projection.
-    if (!widget.isMonetizationResolved && !_resolveTimedOut) {
+    // rendering first off the link-stripped REST projection. Own profiles do
+    // not show visitor Tip/Support links here, so their creator site need not
+    // wait for the other-profile monetization pairing.
+    if (!isRevealed) {
       return const SizedBox.shrink();
     }
+    _hasRevealed = true;
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      spacing: 12,
-      children: [
-        Flexible(
-          child: ProfileCreatorSiteButton(
-            userIdHex: widget.userIdHex,
-            isOwnProfile: widget.isOwnProfile,
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        spacing: 12,
+        children: [
+          Flexible(
+            child: ProfileCreatorSiteButton(
+              userIdHex: widget.userIdHex,
+              isOwnProfile: widget.isOwnProfile,
+            ),
           ),
-        ),
-        if (showSupport) _ProfileSupportButton(links: widget.links),
-      ],
+          if (showSupport) _ProfileSupportButton(links: widget.links),
+        ],
+      ),
     );
   }
 }
