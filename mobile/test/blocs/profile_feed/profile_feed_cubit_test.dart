@@ -102,7 +102,7 @@ class _Harness {
     when(
       () => ves.filterVideoList(any()),
     ).thenAnswer((i) => i.positionalArguments[0] as List<VideoEvent>);
-    when(() => ves.isVideoEventLocallyDeleted(any())).thenReturn(false);
+    when(() => ves.isVideoEventKnownDeleted(any())).thenReturn(false);
     when(() => ves.subscribeToUserVideos(any())).thenAnswer((_) async {});
     when(() => ves.unsubscribeFromUserVideos(any())).thenAnswer((_) async {});
     when(
@@ -730,7 +730,7 @@ void main() {
         _video('b', createdAt: 2000),
       ]);
       when(
-        () => h.ves.isVideoEventLocallyDeleted(
+        () => h.ves.isVideoEventKnownDeleted(
           any(that: isA<VideoEvent>().having((v) => v.id, 'id', 'b')),
         ),
       ).thenReturn(true);
@@ -882,12 +882,35 @@ void main() {
 
     test('tombstoned videos are excluded from emitted state', () async {
       when(
-        () => h.ves.isVideoEventLocallyDeleted(
+        () => h.ves.isVideoEventKnownDeleted(
           any(that: isA<VideoEvent>().having((v) => v.id, 'id', 'a')),
         ),
       ).thenReturn(true);
       final cubit = await buildReady(_result([_video('a'), _video('b')]));
       addTearDown(cubit.close);
+
+      expect(cubit.state.videos.map((v) => v.id), ['b']);
+    });
+
+    test('service tombstone removes an already-loaded REST video', () async {
+      final originalAudit = ProfileFeedCubit.relaySnapshotAudit;
+      ProfileFeedCubit.relaySnapshotAudit = const Duration(milliseconds: 20);
+      addTearDown(() => ProfileFeedCubit.relaySnapshotAudit = originalAudit);
+
+      final cubit = await buildReady(_result([_video('a'), _video('b')]));
+      addTearDown(cubit.close);
+      expect(cubit.state.videos.map((v) => v.id), ['a', 'b']);
+
+      when(
+        () => h.ves.isVideoEventKnownDeleted(
+          any(that: isA<VideoEvent>().having((v) => v.id, 'id', 'a')),
+        ),
+      ).thenReturn(true);
+      when(() => h.ves.authorVideos(_author)).thenReturn(const <VideoEvent>[]);
+
+      h.onChanged!();
+      await Future<void>.delayed(const Duration(milliseconds: 60));
+      await pumpEventQueue();
 
       expect(cubit.state.videos.map((v) => v.id), ['b']);
     });
@@ -901,7 +924,7 @@ void main() {
           createdAt: 5000,
         );
         when(
-          () => h.ves.isVideoEventLocallyDeleted(
+          () => h.ves.isVideoEventKnownDeleted(
             any(
               that: isA<VideoEvent>()
                   .having((v) => v.id, 'id', 'new-event-id-from-rest')

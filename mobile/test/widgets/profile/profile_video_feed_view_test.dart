@@ -117,7 +117,7 @@ void main() {
         () => videoEventService.filterVideoList(any()),
       ).thenAnswer((i) => i.positionalArguments.first as List<VideoEvent>);
       when(
-        () => videoEventService.isVideoEventLocallyDeleted(any()),
+        () => videoEventService.isVideoEventKnownDeleted(any()),
       ).thenReturn(false);
       when(
         () => videoEventService.subscribeToUserVideos(any()),
