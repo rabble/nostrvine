@@ -2646,6 +2646,39 @@ void main() {
 
         expect(vtt, isNull);
       });
+
+      test('returns null when the request throws', () async {
+        final mockDio = _MockDio();
+        when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthProvider.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer(
+          (_) async => _signedEvent(_testPublicKey, 24242, const [], ''),
+        );
+        when(
+          () => mockDio.post<String>(
+            any(),
+            data: any(named: 'data'),
+            queryParameters: any(named: 'queryParameters'),
+            options: any(named: 'options'),
+          ),
+        ).thenThrow(Exception('network failure'));
+
+        final service = BlossomUploadService(
+          authProvider: mockAuthProvider,
+          dio: mockDio,
+        );
+
+        final vtt = await service.transcribeAudio(
+          bytes: Uint8List.fromList([1, 2, 3]),
+        );
+
+        expect(vtt, isNull);
+      });
     });
 
     group('Model classes', () {
