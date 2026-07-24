@@ -5,6 +5,8 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/settings_account/settings_account_cubit.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/services/feature_flag_service.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
@@ -13,10 +15,13 @@ class _MockAuthService extends Mock implements AuthService {}
 
 class _MockDraftStorageService extends Mock implements DraftStorageService {}
 
+class _MockFeatureFlagService extends Mock implements FeatureFlagService {}
+
 void main() {
   group(SettingsAccountCubit, () {
     late _MockAuthService mockAuthService;
     late _MockDraftStorageService mockDraftStorageService;
+    late _MockFeatureFlagService mockFeatureFlagService;
 
     final testAccounts = [
       KnownAccount(
@@ -38,6 +43,7 @@ void main() {
     setUp(() {
       mockAuthService = _MockAuthService();
       mockDraftStorageService = _MockDraftStorageService();
+      mockFeatureFlagService = _MockFeatureFlagService();
 
       when(
         () => mockAuthService.getKnownAccounts(),
@@ -48,11 +54,15 @@ void main() {
       when(
         () => mockDraftStorageService.getDraftCount(),
       ).thenAnswer((_) async => 0);
+      when(
+        () => mockFeatureFlagService.isEnabled(FeatureFlag.accountSwitching),
+      ).thenReturn(true);
     });
 
     SettingsAccountCubit buildCubit() => SettingsAccountCubit(
       authService: mockAuthService,
       draftStorageService: mockDraftStorageService,
+      featureFlagService: mockFeatureFlagService,
     );
 
     test('initial state is correct', () {
@@ -179,6 +189,41 @@ void main() {
         verify: (_) {
           verify(() => mockAuthService.signOut()).called(1);
           verifyNever(() => mockAuthService.pendingAccountSwitchPubkey = any());
+        },
+      );
+    });
+
+    group('feature flag guard', () {
+      setUp(() {
+        when(
+          () => mockFeatureFlagService.isEnabled(FeatureFlag.accountSwitching),
+        ).thenReturn(false);
+      });
+
+      blocTest<SettingsAccountCubit, SettingsAccountState>(
+        'switchToAccount does not sign out when the flag is disabled',
+        seed: () => SettingsAccountState(
+          status: SettingsAccountStatus.loaded,
+          accounts: testAccounts,
+          currentPubkey: testAccounts.first.pubkeyHex,
+        ),
+        build: buildCubit,
+        act: (cubit) async =>
+            cubit.switchToAccount(testAccounts.last.pubkeyHex),
+        verify: (_) {
+          verifyNever(() => mockAuthService.signOut());
+          verifyNever(
+            () => mockAuthService.pendingAccountSwitchPubkey = any(),
+          );
+        },
+      );
+
+      blocTest<SettingsAccountCubit, SettingsAccountState>(
+        'addNewAccount does not sign out when the flag is disabled',
+        build: buildCubit,
+        act: (cubit) async => cubit.addNewAccount(),
+        verify: (_) {
+          verifyNever(() => mockAuthService.signOut());
         },
       );
     });
