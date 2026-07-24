@@ -2848,7 +2848,7 @@
   "videoEditorCaptionsAnimationSpring": "Pegas",
   "videoEditorCaptionsEditTitle": "Subtitel",
   "videoEditorCaptionsGeneratingTitle": "Mendengarkan…",
-  "videoEditorCaptionsGeneratingSubtitle": "Audio ditranskripsikan langsung di perangkat ini. Tidak ada yang keluar dari ponselmu.",
+  "videoEditorCaptionsGeneratingSubtitle": "Mengubah audiomu jadi saran subtitel.",
   "videoEditorCaptionsNoSpeechMessage": "Kami tidak mendengar suara apa pun. Kamu tetap bisa menulis subtitel sendiri.",
   "videoEditorCaptionsUnavailableMessage": "Pengenalan suara tidak tersedia di perangkat ini. Kamu bisa menulis subtitel sendiri.",
   "videoEditorCaptionsNotAuthorizedMessage": "Pengenalan suara tidak diizinkan. Aktifkan di Pengaturan atau tulis subtitel sendiri.",

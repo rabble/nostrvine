@@ -8398,7 +8398,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoEditorCaptionsGeneratingSubtitle =>
-      'Transcribing your audio right on this device. Nothing leaves your phone.';
+      'Turning your audio into caption suggestions.';
 
   @override
   String get videoEditorCaptionsNoSpeechMessage =>

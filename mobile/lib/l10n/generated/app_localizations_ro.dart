@@ -8593,7 +8593,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get videoEditorCaptionsGeneratingSubtitle =>
-      'Audio-ul este transcris direct pe acest dispozitiv. Nimic nu părăsește telefonul tău.';
+      'Transformăm audio-ul tău în sugestii de subtitrare.';
 
   @override
   String get videoEditorCaptionsNoSpeechMessage =>

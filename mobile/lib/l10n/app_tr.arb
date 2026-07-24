@@ -2848,7 +2848,7 @@
   "videoEditorCaptionsAnimationSpring": "Yay",
   "videoEditorCaptionsEditTitle": "Altyazılar",
   "videoEditorCaptionsGeneratingTitle": "Dinliyoruz…",
-  "videoEditorCaptionsGeneratingSubtitle": "Sesin doğrudan bu cihazda yazıya dökülüyor. Hiçbir şey telefonundan çıkmıyor.",
+  "videoEditorCaptionsGeneratingSubtitle": "Sesini altyazı önerilerine dönüştürüyoruz.",
   "videoEditorCaptionsNoSpeechMessage": "Hiç konuşma duyamadık. Altyazıları yine de kendin yazabilirsin.",
   "videoEditorCaptionsUnavailableMessage": "Konuşma tanıma bu cihazda kullanılamıyor. Altyazıları kendin yazabilirsin.",
   "videoEditorCaptionsNotAuthorizedMessage": "Konuşma tanımaya izin verilmiyor. Ayarlar'dan aç ya da altyazıları kendin yaz.",

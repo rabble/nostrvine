@@ -2860,7 +2860,7 @@
   "videoEditorCaptionsAnimationSpring": "Feder",
   "videoEditorCaptionsEditTitle": "Untertitel",
   "videoEditorCaptionsGeneratingTitle": "Wir hören zu…",
-  "videoEditorCaptionsGeneratingSubtitle": "Dein Audio wird direkt auf dem Gerät transkribiert. Nichts verlässt dein Handy.",
+  "videoEditorCaptionsGeneratingSubtitle": "Wir machen aus deinem Audio Untertitel-Vorschläge.",
   "videoEditorCaptionsNoSpeechMessage": "Wir konnten keine Sprache hören. Du kannst die Untertitel trotzdem selbst schreiben.",
   "videoEditorCaptionsUnavailableMessage": "Spracherkennung ist auf diesem Gerät nicht verfügbar. Du kannst die Untertitel selbst schreiben.",
   "videoEditorCaptionsNotAuthorizedMessage": "Spracherkennung ist nicht erlaubt. Aktiviere sie in den Einstellungen oder schreib die Untertitel selbst.",

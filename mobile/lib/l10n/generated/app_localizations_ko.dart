@@ -8103,8 +8103,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorCaptionsGeneratingTitle => '음성을 듣고 있어요…';
 
   @override
-  String get videoEditorCaptionsGeneratingSubtitle =>
-      '오디오는 이 기기에서 바로 텍스트로 변환돼요. 아무것도 휴대폰 밖으로 나가지 않아요.';
+  String get videoEditorCaptionsGeneratingSubtitle => '오디오로 자막 제안을 만들고 있어요.';
 
   @override
   String get videoEditorCaptionsNoSpeechMessage =>

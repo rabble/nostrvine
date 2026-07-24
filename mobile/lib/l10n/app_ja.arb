@@ -2841,7 +2841,7 @@
   "videoEditorCaptionsAnimationSpring": "スプリング",
   "videoEditorCaptionsEditTitle": "字幕",
   "videoEditorCaptionsGeneratingTitle": "音声を聞き取っています…",
-  "videoEditorCaptionsGeneratingSubtitle": "音声はこの端末上で直接文字起こしされます。データが端末の外に出ることはありません。",
+  "videoEditorCaptionsGeneratingSubtitle": "音声から字幕の候補を作成しています。",
   "videoEditorCaptionsNoSpeechMessage": "音声が聞き取れませんでした。字幕は自分で書くこともできます。",
   "videoEditorCaptionsUnavailableMessage": "この端末では音声認識を利用できません。字幕は自分で書けます。",
   "videoEditorCaptionsNotAuthorizedMessage": "音声認識が許可されていません。設定で有効にするか、字幕を自分で書いてください。",

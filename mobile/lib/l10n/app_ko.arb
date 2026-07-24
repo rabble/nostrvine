@@ -2172,7 +2172,7 @@
   "videoEditorCaptionsAnimationSpring": "스프링",
   "videoEditorCaptionsEditTitle": "자막",
   "videoEditorCaptionsGeneratingTitle": "음성을 듣고 있어요…",
-  "videoEditorCaptionsGeneratingSubtitle": "오디오는 이 기기에서 바로 텍스트로 변환돼요. 아무것도 휴대폰 밖으로 나가지 않아요.",
+  "videoEditorCaptionsGeneratingSubtitle": "오디오로 자막 제안을 만들고 있어요.",
   "videoEditorCaptionsNoSpeechMessage": "음성이 들리지 않았어요. 자막을 직접 작성할 수도 있어요.",
   "videoEditorCaptionsUnavailableMessage": "이 기기에서는 음성 인식을 사용할 수 없어요. 자막을 직접 작성할 수 있어요.",
   "videoEditorCaptionsNotAuthorizedMessage": "음성 인식이 허용되지 않았어요. 설정에서 켜거나 자막을 직접 작성하세요.",

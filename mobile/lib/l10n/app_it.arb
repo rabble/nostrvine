@@ -2860,7 +2860,7 @@
   "videoEditorCaptionsAnimationSpring": "Molla",
   "videoEditorCaptionsEditTitle": "Sottotitoli",
   "videoEditorCaptionsGeneratingTitle": "In ascolto…",
-  "videoEditorCaptionsGeneratingSubtitle": "Trascriviamo l'audio direttamente su questo dispositivo. Nulla lascia il tuo telefono.",
+  "videoEditorCaptionsGeneratingSubtitle": "Trasformiamo il tuo audio in suggerimenti per i sottotitoli.",
   "videoEditorCaptionsNoSpeechMessage": "Non abbiamo sentito alcuna voce. Puoi comunque scrivere i sottotitoli tu stesso.",
   "videoEditorCaptionsUnavailableMessage": "Il riconoscimento vocale non è disponibile su questo dispositivo. Puoi scrivere i sottotitoli tu stesso.",
   "videoEditorCaptionsNotAuthorizedMessage": "Il riconoscimento vocale non è consentito. Attivalo nelle Impostazioni o scrivi i sottotitoli tu stesso.",

@@ -8243,7 +8243,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoEditorCaptionsGeneratingSubtitle =>
-      'ድምጽህ በዚህ መሣሪያ ላይ በቀጥታ ወደ ጽሑፍ ይቀየራል። ምንም ከስልክህ አይወጣም።';
+      'ድምጽህን ወደ የግርጌ ጽሑፍ ሐሳቦች እየቀየርን ነው።';
 
   @override
   String get videoEditorCaptionsNoSpeechMessage =>

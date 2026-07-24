@@ -2860,7 +2860,7 @@
   "videoEditorCaptionsAnimationSpring": "Arc",
   "videoEditorCaptionsEditTitle": "Subtitrări",
   "videoEditorCaptionsGeneratingTitle": "Ascultăm…",
-  "videoEditorCaptionsGeneratingSubtitle": "Audio-ul este transcris direct pe acest dispozitiv. Nimic nu părăsește telefonul tău.",
+  "videoEditorCaptionsGeneratingSubtitle": "Transformăm audio-ul tău în sugestii de subtitrare.",
   "videoEditorCaptionsNoSpeechMessage": "Nu am auzit nicio voce. Poți totuși să scrii subtitrările singur.",
   "videoEditorCaptionsUnavailableMessage": "Recunoașterea vocală nu este disponibilă pe acest dispozitiv. Poți scrie subtitrările singur.",
   "videoEditorCaptionsNotAuthorizedMessage": "Recunoașterea vocală nu este permisă. Activeaz-o din Setări sau scrie subtitrările singur.",

@@ -2860,7 +2860,7 @@
   "videoEditorCaptionsAnimationSpring": "Mola",
   "videoEditorCaptionsEditTitle": "Legendas",
   "videoEditorCaptionsGeneratingTitle": "Ouvindo…",
-  "videoEditorCaptionsGeneratingSubtitle": "Transcrevemos o áudio direto neste aparelho. Nada sai do seu telefone.",
+  "videoEditorCaptionsGeneratingSubtitle": "Transformamos seu áudio em sugestões de legenda.",
   "videoEditorCaptionsNoSpeechMessage": "Não ouvimos nenhuma fala. Você ainda pode escrever as legendas.",
   "videoEditorCaptionsUnavailableMessage": "O reconhecimento de voz não está disponível neste aparelho. Você pode escrever as legendas.",
   "videoEditorCaptionsNotAuthorizedMessage": "O reconhecimento de voz não está permitido. Ative-o nos Ajustes ou escreva as legendas.",

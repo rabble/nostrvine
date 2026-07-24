@@ -8505,7 +8505,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get videoEditorCaptionsGeneratingSubtitle =>
-      'Tina-transcribe ang audio mismo sa device na ito. Walang lumalabas sa telepono mo.';
+      'Ginagawang mga suhestiyong subtitle ang audio mo.';
 
   @override
   String get videoEditorCaptionsNoSpeechMessage =>

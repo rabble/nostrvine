@@ -1798,7 +1798,7 @@
   "videoEditorCaptionsAnimationSpring": "Spring",
   "videoEditorCaptionsEditTitle": "Mga subtitle",
   "videoEditorCaptionsGeneratingTitle": "Nakikinig…",
-  "videoEditorCaptionsGeneratingSubtitle": "Tina-transcribe ang audio mismo sa device na ito. Walang lumalabas sa telepono mo.",
+  "videoEditorCaptionsGeneratingSubtitle": "Ginagawang mga suhestiyong subtitle ang audio mo.",
   "videoEditorCaptionsNoSpeechMessage": "Wala kaming narinig na boses. Puwede mo pa ring isulat ang mga subtitle.",
   "videoEditorCaptionsUnavailableMessage": "Hindi available ang speech recognition sa device na ito. Puwede mong isulat ang mga subtitle.",
   "videoEditorCaptionsNotAuthorizedMessage": "Hindi pinapayagan ang speech recognition. I-enable ito sa Settings o isulat ang mga subtitle.",

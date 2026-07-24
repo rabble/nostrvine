@@ -4886,7 +4886,7 @@
   },
   "videoEditorCaptionsEditTitle": "Captions",
   "videoEditorCaptionsGeneratingTitle": "Listening for speech…",
-  "videoEditorCaptionsGeneratingSubtitle": "Transcribing your audio right on this device. Nothing leaves your phone.",
+  "videoEditorCaptionsGeneratingSubtitle": "Turning your audio into caption suggestions.",
   "videoEditorCaptionsNoSpeechMessage": "We couldn't hear any speech. You can still write captions yourself.",
   "videoEditorCaptionsUnavailableMessage": "Speech recognition isn't available on this device. You can write captions yourself.",
   "videoEditorCaptionsNotAuthorizedMessage": "Speech recognition isn't allowed. Enable it in Settings or write captions yourself.",

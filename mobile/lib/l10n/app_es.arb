@@ -2868,7 +2868,7 @@
   "videoEditorCaptionsAnimationSpring": "Resorte",
   "videoEditorCaptionsEditTitle": "Subtítulos",
   "videoEditorCaptionsGeneratingTitle": "Escuchando…",
-  "videoEditorCaptionsGeneratingSubtitle": "Transcribimos tu audio directamente en este dispositivo. Nada sale de tu teléfono.",
+  "videoEditorCaptionsGeneratingSubtitle": "Convertimos tu audio en sugerencias de subtítulos.",
   "videoEditorCaptionsNoSpeechMessage": "No hemos oído ninguna voz. Aun así puedes escribir los subtítulos tú mismo.",
   "videoEditorCaptionsUnavailableMessage": "El reconocimiento de voz no está disponible en este dispositivo. Puedes escribir los subtítulos tú mismo.",
   "videoEditorCaptionsNotAuthorizedMessage": "El reconocimiento de voz no está permitido. Actívalo en Ajustes o escribe los subtítulos tú mismo.",

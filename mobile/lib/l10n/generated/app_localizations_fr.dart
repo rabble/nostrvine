@@ -8520,7 +8520,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get videoEditorCaptionsGeneratingSubtitle =>
-      'Votre audio est transcrit directement sur cet appareil. Rien ne quitte votre téléphone.';
+      'Nous transformons votre audio en suggestions de sous-titres.';
 
   @override
   String get videoEditorCaptionsNoSpeechMessage =>

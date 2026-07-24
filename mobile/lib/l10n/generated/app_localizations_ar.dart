@@ -8363,7 +8363,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get videoEditorCaptionsGeneratingSubtitle =>
-      'يتم تفريغ الصوت مباشرة على هذا الجهاز. لا شيء يغادر هاتفك.';
+      'نحوّل صوتك إلى اقتراحات ترجمة.';
 
   @override
   String get videoEditorCaptionsNoSpeechMessage =>

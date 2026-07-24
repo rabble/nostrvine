@@ -8383,7 +8383,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get videoEditorCaptionsGeneratingSubtitle =>
-      'Audio ditranskripsikan langsung di perangkat ini. Tidak ada yang keluar dari ponselmu.';
+      'Mengubah audiomu jadi saran subtitel.';
 
   @override
   String get videoEditorCaptionsNoSpeechMessage =>

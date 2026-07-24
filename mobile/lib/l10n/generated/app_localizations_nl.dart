@@ -8449,7 +8449,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get videoEditorCaptionsGeneratingSubtitle =>
-      'Je audio wordt direct op dit apparaat getranscribeerd. Er verlaat niets je telefoon.';
+      'We maken ondertitelsuggesties van je audio.';
 
   @override
   String get videoEditorCaptionsNoSpeechMessage =>

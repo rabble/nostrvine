@@ -8509,7 +8509,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get videoEditorCaptionsGeneratingSubtitle =>
-      'Dein Audio wird direkt auf dem Gerät transkribiert. Nichts verlässt dein Handy.';
+      'Wir machen aus deinem Audio Untertitel-Vorschläge.';
 
   @override
   String get videoEditorCaptionsNoSpeechMessage =>

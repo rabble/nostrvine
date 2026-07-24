@@ -2841,7 +2841,7 @@
   "videoEditorCaptionsAnimationSpring": "نابض",
   "videoEditorCaptionsEditTitle": "الترجمات",
   "videoEditorCaptionsGeneratingTitle": "نستمع الآن…",
-  "videoEditorCaptionsGeneratingSubtitle": "يتم تفريغ الصوت مباشرة على هذا الجهاز. لا شيء يغادر هاتفك.",
+  "videoEditorCaptionsGeneratingSubtitle": "نحوّل صوتك إلى اقتراحات ترجمة.",
   "videoEditorCaptionsNoSpeechMessage": "لم نسمع أي كلام. لا يزال بإمكانك كتابة الترجمات بنفسك.",
   "videoEditorCaptionsUnavailableMessage": "التعرف على الكلام غير متاح على هذا الجهاز. يمكنك كتابة الترجمات بنفسك.",
   "videoEditorCaptionsNotAuthorizedMessage": "التعرف على الكلام غير مسموح به. فعّله من الإعدادات أو اكتب الترجمات بنفسك.",

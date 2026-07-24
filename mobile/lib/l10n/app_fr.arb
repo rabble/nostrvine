@@ -2860,7 +2860,7 @@
   "videoEditorCaptionsAnimationSpring": "Ressort",
   "videoEditorCaptionsEditTitle": "Sous-titres",
   "videoEditorCaptionsGeneratingTitle": "Écoute en cours…",
-  "videoEditorCaptionsGeneratingSubtitle": "Votre audio est transcrit directement sur cet appareil. Rien ne quitte votre téléphone.",
+  "videoEditorCaptionsGeneratingSubtitle": "Nous transformons votre audio en suggestions de sous-titres.",
   "videoEditorCaptionsNoSpeechMessage": "Nous n'avons entendu aucune voix. Vous pouvez quand même écrire les sous-titres vous-même.",
   "videoEditorCaptionsUnavailableMessage": "La reconnaissance vocale n'est pas disponible sur cet appareil. Vous pouvez écrire les sous-titres vous-même.",
   "videoEditorCaptionsNotAuthorizedMessage": "La reconnaissance vocale n'est pas autorisée. Activez-la dans les Réglages ou écrivez les sous-titres vous-même.",

@@ -14559,7 +14559,7 @@ abstract class AppLocalizations {
   /// No description provided for @videoEditorCaptionsGeneratingSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Transcribing your audio right on this device. Nothing leaves your phone.'**
+  /// **'Turning your audio into caption suggestions.'**
   String get videoEditorCaptionsGeneratingSubtitle;
 
   /// No description provided for @videoEditorCaptionsNoSpeechMessage.

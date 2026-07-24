@@ -2860,7 +2860,7 @@
   "videoEditorCaptionsAnimationSpring": "Fjäder",
   "videoEditorCaptionsEditTitle": "Undertexter",
   "videoEditorCaptionsGeneratingTitle": "Lyssnar…",
-  "videoEditorCaptionsGeneratingSubtitle": "Ljudet transkriberas direkt på den här enheten. Inget lämnar din telefon.",
+  "videoEditorCaptionsGeneratingSubtitle": "Vi gör undertextförslag av ditt ljud.",
   "videoEditorCaptionsNoSpeechMessage": "Vi hörde inget tal. Du kan ändå skriva undertexterna själv.",
   "videoEditorCaptionsUnavailableMessage": "Taligenkänning är inte tillgängligt på den här enheten. Du kan skriva undertexterna själv.",
   "videoEditorCaptionsNotAuthorizedMessage": "Taligenkänning är inte tillåtet. Aktivera det i Inställningar eller skriv undertexterna själv.",

@@ -8080,8 +8080,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorCaptionsGeneratingTitle => '音声を聞き取っています…';
 
   @override
-  String get videoEditorCaptionsGeneratingSubtitle =>
-      '音声はこの端末上で直接文字起こしされます。データが端末の外に出ることはありません。';
+  String get videoEditorCaptionsGeneratingSubtitle => '音声から字幕の候補を作成しています。';
 
   @override
   String get videoEditorCaptionsNoSpeechMessage =>

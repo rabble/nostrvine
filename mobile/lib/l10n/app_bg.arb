@@ -3110,7 +3110,7 @@
   "videoEditorCaptionsAnimationSpring": "Пружина",
   "videoEditorCaptionsEditTitle": "Субтитри",
   "videoEditorCaptionsGeneratingTitle": "Слушаме…",
-  "videoEditorCaptionsGeneratingSubtitle": "Аудиото се транскрибира директно на това устройство. Нищо не напуска телефона ти.",
+  "videoEditorCaptionsGeneratingSubtitle": "Превръщаме аудиото ти в предложения за субтитри.",
   "videoEditorCaptionsNoSpeechMessage": "Не чухме реч. Все пак можеш да напишеш субтитрите сам.",
   "videoEditorCaptionsUnavailableMessage": "Разпознаването на реч не е налично на това устройство. Можеш да напишеш субтитрите сам.",
   "videoEditorCaptionsNotAuthorizedMessage": "Разпознаването на реч не е разрешено. Включи го в Настройки или напиши субтитрите сам.",

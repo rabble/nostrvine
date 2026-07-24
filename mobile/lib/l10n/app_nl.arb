@@ -2860,7 +2860,7 @@
   "videoEditorCaptionsAnimationSpring": "Veer",
   "videoEditorCaptionsEditTitle": "Ondertitels",
   "videoEditorCaptionsGeneratingTitle": "We luisteren…",
-  "videoEditorCaptionsGeneratingSubtitle": "Je audio wordt direct op dit apparaat getranscribeerd. Er verlaat niets je telefoon.",
+  "videoEditorCaptionsGeneratingSubtitle": "We maken ondertitelsuggesties van je audio.",
   "videoEditorCaptionsNoSpeechMessage": "We hoorden geen spraak. Je kunt de ondertitels alsnog zelf schrijven.",
   "videoEditorCaptionsUnavailableMessage": "Spraakherkenning is niet beschikbaar op dit apparaat. Je kunt de ondertitels zelf schrijven.",
   "videoEditorCaptionsNotAuthorizedMessage": "Spraakherkenning is niet toegestaan. Zet het aan in Instellingen of schrijf de ondertitels zelf.",

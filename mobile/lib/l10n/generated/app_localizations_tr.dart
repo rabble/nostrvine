@@ -8385,7 +8385,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoEditorCaptionsGeneratingSubtitle =>
-      'Sesin doğrudan bu cihazda yazıya dökülüyor. Hiçbir şey telefonundan çıkmıyor.';
+      'Sesini altyazı önerilerine dönüştürüyoruz.';
 
   @override
   String get videoEditorCaptionsNoSpeechMessage =>

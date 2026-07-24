@@ -8411,7 +8411,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoEditorCaptionsGeneratingSubtitle =>
-      'Ljudet transkriberas direkt på den här enheten. Inget lämnar din telefon.';
+      'Vi gör undertextförslag av ditt ljud.';
 
   @override
   String get videoEditorCaptionsNoSpeechMessage =>

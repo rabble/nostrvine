@@ -8490,7 +8490,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get videoEditorCaptionsGeneratingSubtitle =>
-      'Trascriviamo l\'audio direttamente su questo dispositivo. Nulla lascia il tuo telefono.';
+      'Trasformiamo il tuo audio in suggerimenti per i sottotitoli.';
 
   @override
   String get videoEditorCaptionsNoSpeechMessage =>

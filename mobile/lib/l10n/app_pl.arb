@@ -2860,7 +2860,7 @@
   "videoEditorCaptionsAnimationSpring": "Sprężyna",
   "videoEditorCaptionsEditTitle": "Napisy",
   "videoEditorCaptionsGeneratingTitle": "Słuchamy…",
-  "videoEditorCaptionsGeneratingSubtitle": "Transkrypcja dźwięku odbywa się bezpośrednio na tym urządzeniu. Nic nie opuszcza Twojego telefonu.",
+  "videoEditorCaptionsGeneratingSubtitle": "Zamieniamy Twoje audio w propozycje napisów.",
   "videoEditorCaptionsNoSpeechMessage": "Nie usłyszeliśmy żadnej mowy. Nadal możesz napisać napisy samodzielnie.",
   "videoEditorCaptionsUnavailableMessage": "Rozpoznawanie mowy nie jest dostępne na tym urządzeniu. Możesz napisać napisy samodzielnie.",
   "videoEditorCaptionsNotAuthorizedMessage": "Rozpoznawanie mowy nie jest dozwolone. Włącz je w Ustawieniach albo napisz napisy samodzielnie.",

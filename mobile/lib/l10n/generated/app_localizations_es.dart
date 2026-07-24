@@ -8492,7 +8492,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get videoEditorCaptionsGeneratingSubtitle =>
-      'Transcribimos tu audio directamente en este dispositivo. Nada sale de tu teléfono.';
+      'Convertimos tu audio en sugerencias de subtítulos.';
 
   @override
   String get videoEditorCaptionsNoSpeechMessage =>
