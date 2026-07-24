@@ -102,6 +102,23 @@ final class DivineScreenshots: XCTestCase {
         )
     }
 
+    /// Waits for a `/video/:id` detail screen to leave its loading state and
+    /// its player to render a first frame — without this the capture catches
+    /// the branded loading spinner or a black, still-decoding video texture.
+    private func waitForVideoLoaded(_ app: XCUIApplication) {
+        let loading = element(app, "video_detail_loading")
+        // The spinner should exist briefly, then disappear once the event
+        // and its player are ready. Missing entirely (fast load) is fine.
+        _ = loading.waitForExistence(timeout: 5)
+        let gone = loading.waitForNonExistence(
+            timeout: DivineScreenshots.warmupTimeout
+        )
+        XCTAssertTrue(gone, "Video detail stayed on the loading spinner")
+        // No element signals "first frame decoded", so give the native
+        // player a bounded settle to paint before the snapshot.
+        Thread.sleep(forTimeInterval: 6)
+    }
+
     // MARK: - Warm-up
 
     /// Creates (or restores) the throwaway account and publishes the
@@ -126,6 +143,7 @@ final class DivineScreenshots: XCTestCase {
         let app = launchApp(
             route: "/video/\(DivineScreenshots.creatorPostVideoId)"
         )
+        waitForVideoLoaded(app)
         // The on-video caption ("VINE IS BACK!") is the reliable anchor;
         // the loop-count badge renders on the same screen but isn't a
         // stable wait target.
@@ -137,6 +155,7 @@ final class DivineScreenshots: XCTestCase {
         let app = launchApp(
             route: "/video/\(DivineScreenshots.verifiedVideoId)"
         )
+        waitForVideoLoaded(app)
         waitFor(app, "video_title")
         element(app, "video_title").tap()
         // The About sheet's proof data is fetched separately and can lag
@@ -147,6 +166,8 @@ final class DivineScreenshots: XCTestCase {
             "verification_section",
             timeout: DivineScreenshots.warmupTimeout
         )
+        // Let the About sheet finish presenting before the snapshot.
+        Thread.sleep(forTimeInterval: 1.5)
         snapshot("03_verification")
     }
 
@@ -190,6 +211,7 @@ final class DivineScreenshots: XCTestCase {
         let app = launchApp(
             route: "/video/\(DivineScreenshots.shareVideoId)"
         )
+        waitForVideoLoaded(app)
         waitFor(app, "share_button")
         element(app, "share_button").tap()
         waitFor(app, "share_with_section")

@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart' show NostrClient;
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -269,9 +270,14 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
     final videoEventService = ref.read(videoEventServiceProvider);
 
     if (_isLoading) {
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: VineTheme.backgroundColor,
-        body: Center(child: BrandedLoadingIndicator()),
+        body: Center(
+          child: Semantics(
+            identifier: SemanticIds.videoDetailLoading,
+            child: const BrandedLoadingIndicator(),
+          ),
+        ),
       );
     }
 

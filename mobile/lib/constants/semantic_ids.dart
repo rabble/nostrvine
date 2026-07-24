@@ -32,4 +32,6 @@ abstract class SemanticIds {
   static String shareContact(int index) => 'share_contact_$index';
 
   static const String editorTimeline = 'editor_timeline';
+
+  static const String videoDetailLoading = 'video_detail_loading';
 }
