@@ -65,10 +65,25 @@ class CaptionsEditorCubit extends Cubit<CaptionsEditorState> {
   /// started from existing cues.
   Future<void> initialize() async {
     if (state.status != CaptionsEditorStatus.generating) return;
-    final outcome = await _generationService.generateForClips(
-      clips: _clips,
-      localeIdentifier: state.languageTag,
-    );
+    final CaptionGenerationOutcome outcome;
+    try {
+      outcome = await _generationService.generateForClips(
+        clips: _clips,
+        localeIdentifier: state.languageTag,
+      );
+    } catch (_) {
+      // The service contract is "never throws", but this call is unawaited by
+      // the sheet — guard so an unexpected escape lands on the manual-entry
+      // fallback instead of stranding the editor on the loading state.
+      if (isClosed) return;
+      emit(
+        state.copyWith(
+          status: CaptionsEditorStatus.failed,
+          failure: CaptionGenerationFailure.failed,
+        ),
+      );
+      return;
+    }
     if (isClosed) return;
     switch (outcome) {
       case CaptionsGenerated(:final cues):

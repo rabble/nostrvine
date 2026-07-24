@@ -13,6 +13,7 @@ import 'package:openvine/models/video_editor/caption_generation_outcome.dart';
 import 'package:openvine/models/video_editor/caption_style.dart';
 import 'package:openvine/models/video_editor/caption_track.dart';
 import 'package:openvine/services/video_editor/caption_remote_transcriber.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_caption_preset_sheet.dart';
 
 /// Result of the captions editor sheet, returned via [Navigator.pop].
@@ -270,9 +271,7 @@ class _GeneratingView extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       spacing: 16,
       children: [
-        const Center(
-          child: CircularProgressIndicator(color: VineTheme.vineGreen),
-        ),
+        const Center(child: BrandedLoadingIndicator(size: 60)),
         Text(
           l10n.videoEditorCaptionsGeneratingTitle,
           textAlign: TextAlign.center,

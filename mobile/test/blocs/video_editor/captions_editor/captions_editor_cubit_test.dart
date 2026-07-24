@@ -108,6 +108,29 @@ void main() {
     );
 
     blocTest<CaptionsEditorCubit, CaptionsEditorState>(
+      'emits failed when generation throws unexpectedly',
+      build: () {
+        when(
+          () => service.generateForClips(
+            clips: any(named: 'clips'),
+            localeIdentifier: any(named: 'localeIdentifier'),
+          ),
+        ).thenThrow(Exception('boom'));
+        return build();
+      },
+      act: (cubit) => cubit.initialize(),
+      expect: () => [
+        isA<CaptionsEditorState>()
+            .having((s) => s.status, 'status', CaptionsEditorStatus.failed)
+            .having(
+              (s) => s.failure,
+              'failure',
+              CaptionGenerationFailure.failed,
+            ),
+      ],
+    );
+
+    blocTest<CaptionsEditorCubit, CaptionsEditorState>(
       'initialize is a no-op for a session with existing cues',
       build: () => build(initialCues: const [cue]),
       act: (cubit) => cubit.initialize(),

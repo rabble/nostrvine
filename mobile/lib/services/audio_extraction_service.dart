@@ -274,6 +274,45 @@ class AudioExtractionService {
     }
   }
 
+  /// Merges the trimmed audio of several source [segments] into one WAV whose
+  /// timeline is their gap-free concatenation, returning the written path plus
+  /// a per-segment offset map. Caption generation uses this to transcribe a
+  /// multi-clip video in a single pass instead of one call per clip.
+  ///
+  /// [sampleRate] / [channels] pin the output format (e.g. 16 kHz mono for
+  /// speech recognition, which also keeps the file small).
+  ///
+  /// Throws [AudioExtractionException] if merging or file writing fails.
+  Future<AudioMergeResult> mergeClipAudio({
+    required List<AudioMergeSegment> segments,
+    int? sampleRate,
+    int? channels,
+  }) async {
+    final tempDir = await getTemporaryDirectory();
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final outputPath = '${tempDir.path}/merged_audio_$timestamp.wav';
+
+    try {
+      final result = await ProVideoEditor.instance.mergeAudioToFile(
+        outputPath,
+        AudioMergeConfigs(
+          segments: segments,
+          sampleRate: sampleRate,
+          channels: channels,
+        ),
+      );
+      _temporaryFiles.add(result.outputPath);
+      return result;
+    } catch (e) {
+      Log.error(
+        'Audio merge failed: $e',
+        name: _logName,
+        category: _logCategory,
+      );
+      throw AudioExtractionException('Failed to merge audio', cause: e);
+    }
+  }
+
   /// Cleans up temporary audio files created by this service.
   ///
   /// Call this method when you no longer need the extracted audio files
