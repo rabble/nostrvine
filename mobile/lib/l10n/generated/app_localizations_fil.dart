@@ -2240,7 +2240,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get nostrSettingsDeleteAccountSubtitle =>
-      'PERMANENTENG burahin ang account mo at LAHAT ng content sa Nostr relays. Hindi na ito maibabalik.';
+      'Nagpapadala ng mga deletion request para sa content mo at nila-log out ka sa device na ito. Ang mga relay, client, search index, at iba pang naka-log in na device ay maaaring may kopya pa rin.';
 
   @override
   String get relayDiagnosticTitle => 'Mga Relay Diagnostic';
@@ -6844,11 +6844,11 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get deleteAccountKeyDeletionWarning =>
-      'Nabura ang account, pero maaaring hindi pa lubusang naalis ang iyong mga key sa device na ito. Pumunta sa Settings → Nostr Keys → Remove Keys para subukan ulit.';
+      'Naipadala na ang mga deletion request, pero maaaring hindi pa lubusang naalis ang iyong mga key sa device na ito. Pumunta sa Settings → Nostr Keys → Remove Keys para subukan ulit.';
 
   @override
   String get deleteAccountLocalDataDeletionFailed =>
-      'Account deleted and signed out, but some local data could not be removed from this device.';
+      'Naipadala na ang mga deletion request at naka-log out ka na, pero may ilang local data na hindi maalis sa device na ito.';
 
   @override
   String get deleteAccountPreparingDeletion => 'Inihahanda ang pagbura...';
@@ -6874,11 +6874,12 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi nabura ang iyong account sa server. Pakitsek ang iyong koneksyon at subukan ulit.';
 
   @override
-  String get deleteAccountSuccess => 'Nabura na ang iyong account';
+  String get deleteAccountSuccess =>
+      'Naipadala na ang mga deletion request. Naka-log out ka na sa device na ito.';
 
   @override
   String get deleteAccountWarningBody =>
-      'This permanently deletes your account and all your content from Divine, and sends a deletion request to other Nostr relays. Some relays and clients may still keep copies.';
+      'Nagpapadala ito ng mga deletion request para sa account at content mo, binubura ang Divine account mo kapag posible, at nila-log out ka sa device na ito. Ang ilang relay, client, at search index ay maaaring may kopya pa rin. Ang iba pang naka-log in na device ay mananatiling aktibo hanggang alisin mo ang mga key doon.';
 
   @override
   String get exportProgressStageApplyingTextOverlay =>

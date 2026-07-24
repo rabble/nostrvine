@@ -1045,7 +1045,7 @@
         }
     },
     "nostrSettingsDeleteAccount": "መለያ እና ውሂብ ሰርዝ",
-    "nostrSettingsDeleteAccountSubtitle": "መለያዎን እና ሁሉንም ይዘት ከNostr ቅብብሎሾች ላይ በቋሚነት ይሰርዙ። ይህ ሊመለስ አይችልም።",
+    "nostrSettingsDeleteAccountSubtitle": "የይዘትዎን የመሰረዝ ጥያቄዎች ይልካል እና ከዚህ መሣሪያ ያስወጣዎታል። ቅብብሎሾች፣ ደንበኞች፣ የፍለጋ ማውጫዎች እና ሌሎች የገቡ መሣሪያዎች ቅጂዎችን ሊይዙ ይችላሉ።",
     "relayDiagnosticTitle": "ቅብብል ምርመራዎች",
     "@relayDiagnosticTitle": {
         "description": "Relay diagnostics screen app bar title"
@@ -4224,7 +4224,7 @@
     "videoEditorStopMotionTooShortSnackbar": "ቪዲዮው ቢያንስ {seconds} ሰከንድ መሆን አለበት — ጥቂት ተጨማሪ ፍሬሞችን ያንሱ።",
     "videoEditorMergeProgressLabel": "ትንሽ ይቆዩ፣ ቅንጥቦችዎን እያዋሃድን ነው",
     "videoEditorMergeFailed": "ቅንጥቦችን ማዋሃድ አልተቻለም። እባክዎ እንደገና ይሞክሩ።",
-    "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device.",
+    "deleteAccountLocalDataDeletionFailed": "የመሰረዝ ጥያቄዎች ተልከዋል እና ወጥተዋል፣ ግን አንዳንድ የአካባቢ ውሂብ ከዚህ መሣሪያ ማስወገድ አልተቻለም።",
     "imageCropEditorRotateLabel": "አሽከርክር",
     "imageCropEditorFlipLabel": "ግልብጥ",
     "imageCropEditorResetLabel": "ዳግም አስጀምር",
@@ -4484,7 +4484,7 @@
     "deleteAccountContentDeletionFailed": "ይዘትን ከማስተላለፊያዎች መሰረዝ አልተሳካም",
     "deleteAccountDeleteAllContentButton": "ሁሉንም ይዘት ሰርዝ",
     "deleteAccountFinalConfirmationTitle": "⚠️ የመጨረሻ ማረጋገጫ",
-    "deleteAccountKeyDeletionWarning": "መለያ ተሰርዟል፣ ግን ቁልፎችዎ ከዚህ መሣሪያ ሙሉ በሙሉ ላይወገዱ ይችላሉ። እንደገና ለመሞከር ወደ ቅንብሮች → Nostr ቁልፎች → ቁልፎችን አስወግድ ይሂዱ።",
+    "deleteAccountKeyDeletionWarning": "የመሰረዝ ጥያቄዎች ተልከዋል፣ ግን ቁልፎችዎ ከዚህ መሣሪያ ሙሉ በሙሉ ላይወገዱ ይችላሉ። እንደገና ለመሞከር ወደ ቅንብሮች → Nostr ቁልፎች → ቁልፎችን አስወግድ ይሂዱ።",
     "deleteAccountPreparingDeletion": "ስረዛን በማዘጋጀት ላይ...",
     "deleteAccountProgressEvents": "{current} / {total} ክስተቶች",
     "@deleteAccountProgressEvents": {"placeholders": {"current": {"type": "int"}, "total": {"type": "int"}}},
@@ -4492,7 +4492,8 @@
     "deleteAccountRemoveKeysConfirm": "ከመሣሪያ አስወግድ",
     "deleteAccountRemoveKeysTitle": "ይህን መለያ ከዚህ መሣሪያ ማስወገድ?",
     "deleteAccountServerDeletionFailed": "መለያዎን ከአገልጋዩ መሰረዝ አልተቻለም። እባክዎ ግንኙነትዎን ይፈትሹ እና እንደገና ይሞክሩ።",
-    "deleteAccountSuccess": "መለያዎ ተሰርዟል",
+    "deleteAccountSuccess": "የመሰረዝ ጥያቄዎች ተልከዋል። ከዚህ መሣሪያ ወጥተዋል።",
+    "deleteAccountWarningBody": "ይህ ለመለያዎ እና ለይዘትዎ የመሰረዝ ጥያቄዎችን ይልካል፣ የሚቻል ከሆነ የDivine መለያዎን ይሰርዛል እና ከዚህ መሣሪያ ያስወጣዎታል። አንዳንድ ቅብብሎሾች፣ ደንበኞች እና የፍለጋ ማውጫዎች ቅጂዎችን ሊይዙ ይችላሉ። ሌሎች የገቡ መሣሪያዎች እዚያ ቁልፎችን እስኪያስወግዱ ድረስ ንቁ ሆነው ይቆያሉ።",
     "exportProgressStageApplyingTextOverlay": "የጽሑፍ ሽፋን በመጨመር ላይ...",
     "exportProgressStageComplete": "ወደ ውጪ መላክ ተጠናቀቀ!",
     "exportProgressStageConcatenating": "ክሊፖችን በማጣመር ላይ...",

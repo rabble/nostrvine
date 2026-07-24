@@ -1275,7 +1275,10 @@
     }
   },
   "nostrSettingsDeleteAccount": "Delete Account and Data",
-  "nostrSettingsDeleteAccountSubtitle": "Permanently delete your account and content from Divine, and request removal from other Nostr relays. Some copies may remain.",
+  "nostrSettingsDeleteAccountSubtitle": "Sends deletion requests for your content and signs you out on this device. Relays, clients, search indexes, and other signed-in devices may keep copies.",
+  "@nostrSettingsDeleteAccountSubtitle": {
+    "description": "Subtitle for the destructive account deletion settings row. Be clear that Nostr deletion is request-based, not a guarantee that every relay, client, cache, search index, or other signed-in device will forget the account."
+  },
   "relayDiagnosticTitle": "Relay Diagnostics",
   "@relayDiagnosticTitle": {
     "description": "Relay diagnostics screen app bar title"
@@ -3888,8 +3891,8 @@
   "deleteAccountDeletionIncomplete": "We couldn't finish deleting your account. Try again.",
   "@deleteAccountDeletionIncomplete": {"description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."},
   "deleteAccountFinalConfirmationTitle": "\u26a0\ufe0f Final Confirmation",
-  "deleteAccountKeyDeletionWarning": "Account deleted, but your keys may not have been fully removed from this device. Go to Settings \u2192 Nostr Keys \u2192 Remove Keys to retry.",
-  "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device.",
+  "deleteAccountKeyDeletionWarning": "Deletion requests sent, but your keys may not have been fully removed from this device. Go to Settings \u2192 Nostr Keys \u2192 Remove Keys to retry.",
+  "deleteAccountLocalDataDeletionFailed": "Deletion requests sent and you're signed out, but some local data could not be removed from this device.",
   "deleteAccountPreparingDeletion": "Preparing deletion...",
   "deleteAccountProgressEvents": "{current} / {total} events",
   "@deleteAccountProgressEvents": {"placeholders": {"current": {"type": "int"}, "total": {"type": "int"}}},
@@ -3897,9 +3900,10 @@
   "deleteAccountRemoveKeysConfirm": "Remove from device",
   "deleteAccountRemoveKeysTitle": "Remove this account from this device?",
   "deleteAccountServerDeletionFailed": "Could not delete your account from the server. Please check your connection and try again.",
-  "deleteAccountSuccess": "Your account has been deleted",
-  "deleteAccountWarningBody": "This permanently deletes your account and all your content from Divine, and sends a deletion request to other Nostr relays. Some relays and clients may still keep copies.",
-  "@deleteAccountWarningBody": {"description": "Warning body in the delete-account confirmation dialog, shown above the type-to-confirm field."},
+  "deleteAccountSuccess": "Deletion requests sent. You're signed out on this device.",
+  "@deleteAccountSuccess": {"description": "Snackbar after the account deletion flow publishes Nostr deletion requests, deletes the Divine account when applicable, and signs out locally. Do not imply guaranteed deletion from every relay, client, cache, search index, or other signed-in device."},
+  "deleteAccountWarningBody": "This sends deletion requests for your account and content, deletes your Divine account when possible, and signs you out on this device. Some relays, clients, and search indexes may keep copies. Other signed-in devices stay active until you remove the keys there.",
+  "@deleteAccountWarningBody": {"description": "Warning body in the delete-account confirmation dialog, shown above the type-to-confirm field. Be clear that Nostr deletion is request-based, not a guarantee that every relay, client, cache, search index, or other signed-in device will forget the account."},
   "exportProgressStageApplyingTextOverlay": "Adding text overlay...",
   "exportProgressStageComplete": "Export complete!",
   "exportProgressStageConcatenating": "Combining clips...",

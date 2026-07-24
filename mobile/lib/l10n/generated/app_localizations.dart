@@ -3854,10 +3854,10 @@ abstract class AppLocalizations {
   /// **'Delete Account and Data'**
   String get nostrSettingsDeleteAccount;
 
-  /// No description provided for @nostrSettingsDeleteAccountSubtitle.
+  /// Subtitle for the destructive account deletion settings row. Be clear that Nostr deletion is request-based, not a guarantee that every relay, client, cache, search index, or other signed-in device will forget the account.
   ///
   /// In en, this message translates to:
-  /// **'Permanently delete your account and content from Divine, and request removal from other Nostr relays. Some copies may remain.'**
+  /// **'Sends deletion requests for your content and signs you out on this device. Relays, clients, search indexes, and other signed-in devices may keep copies.'**
   String get nostrSettingsDeleteAccountSubtitle;
 
   /// Relay diagnostics screen app bar title
@@ -11784,13 +11784,13 @@ abstract class AppLocalizations {
   /// No description provided for @deleteAccountKeyDeletionWarning.
   ///
   /// In en, this message translates to:
-  /// **'Account deleted, but your keys may not have been fully removed from this device. Go to Settings → Nostr Keys → Remove Keys to retry.'**
+  /// **'Deletion requests sent, but your keys may not have been fully removed from this device. Go to Settings → Nostr Keys → Remove Keys to retry.'**
   String get deleteAccountKeyDeletionWarning;
 
   /// No description provided for @deleteAccountLocalDataDeletionFailed.
   ///
   /// In en, this message translates to:
-  /// **'Account deleted and signed out, but some local data could not be removed from this device.'**
+  /// **'Deletion requests sent and you\'re signed out, but some local data could not be removed from this device.'**
   String get deleteAccountLocalDataDeletionFailed;
 
   /// No description provided for @deleteAccountPreparingDeletion.
@@ -11829,16 +11829,16 @@ abstract class AppLocalizations {
   /// **'Could not delete your account from the server. Please check your connection and try again.'**
   String get deleteAccountServerDeletionFailed;
 
-  /// No description provided for @deleteAccountSuccess.
+  /// Snackbar after the account deletion flow publishes Nostr deletion requests, deletes the Divine account when applicable, and signs out locally. Do not imply guaranteed deletion from every relay, client, cache, search index, or other signed-in device.
   ///
   /// In en, this message translates to:
-  /// **'Your account has been deleted'**
+  /// **'Deletion requests sent. You\'re signed out on this device.'**
   String get deleteAccountSuccess;
 
-  /// Warning body in the delete-account confirmation dialog, shown above the type-to-confirm field.
+  /// Warning body in the delete-account confirmation dialog, shown above the type-to-confirm field. Be clear that Nostr deletion is request-based, not a guarantee that every relay, client, cache, search index, or other signed-in device will forget the account.
   ///
   /// In en, this message translates to:
-  /// **'This permanently deletes your account and all your content from Divine, and sends a deletion request to other Nostr relays. Some relays and clients may still keep copies.'**
+  /// **'This sends deletion requests for your account and content, deletes your Divine account when possible, and signs you out on this device. Some relays, clients, and search indexes may keep copies. Other signed-in devices stay active until you remove the keys there.'**
   String get deleteAccountWarningBody;
 
   /// No description provided for @exportProgressStageApplyingTextOverlay.

@@ -2164,7 +2164,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get nostrSettingsDeleteAccountSubtitle =>
-      'መለያዎን እና ሁሉንም ይዘት ከNostr ቅብብሎሾች ላይ በቋሚነት ይሰርዙ። ይህ ሊመለስ አይችልም።';
+      'የይዘትዎን የመሰረዝ ጥያቄዎች ይልካል እና ከዚህ መሣሪያ ያስወጣዎታል። ቅብብሎሾች፣ ደንበኞች፣ የፍለጋ ማውጫዎች እና ሌሎች የገቡ መሣሪያዎች ቅጂዎችን ሊይዙ ይችላሉ።';
 
   @override
   String get relayDiagnosticTitle => 'ቅብብል ምርመራዎች';
@@ -6630,11 +6630,11 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get deleteAccountKeyDeletionWarning =>
-      'መለያ ተሰርዟል፣ ግን ቁልፎችዎ ከዚህ መሣሪያ ሙሉ በሙሉ ላይወገዱ ይችላሉ። እንደገና ለመሞከር ወደ ቅንብሮች → Nostr ቁልፎች → ቁልፎችን አስወግድ ይሂዱ።';
+      'የመሰረዝ ጥያቄዎች ተልከዋል፣ ግን ቁልፎችዎ ከዚህ መሣሪያ ሙሉ በሙሉ ላይወገዱ ይችላሉ። እንደገና ለመሞከር ወደ ቅንብሮች → Nostr ቁልፎች → ቁልፎችን አስወግድ ይሂዱ።';
 
   @override
   String get deleteAccountLocalDataDeletionFailed =>
-      'Account deleted and signed out, but some local data could not be removed from this device.';
+      'የመሰረዝ ጥያቄዎች ተልከዋል እና ወጥተዋል፣ ግን አንዳንድ የአካባቢ ውሂብ ከዚህ መሣሪያ ማስወገድ አልተቻለም።';
 
   @override
   String get deleteAccountPreparingDeletion => 'ስረዛን በማዘጋጀት ላይ...';
@@ -6659,11 +6659,11 @@ class AppLocalizationsAm extends AppLocalizations {
       'መለያዎን ከአገልጋዩ መሰረዝ አልተቻለም። እባክዎ ግንኙነትዎን ይፈትሹ እና እንደገና ይሞክሩ።';
 
   @override
-  String get deleteAccountSuccess => 'መለያዎ ተሰርዟል';
+  String get deleteAccountSuccess => 'የመሰረዝ ጥያቄዎች ተልከዋል። ከዚህ መሣሪያ ወጥተዋል።';
 
   @override
   String get deleteAccountWarningBody =>
-      'This permanently deletes your account and all your content from Divine, and sends a deletion request to other Nostr relays. Some relays and clients may still keep copies.';
+      'ይህ ለመለያዎ እና ለይዘትዎ የመሰረዝ ጥያቄዎችን ይልካል፣ የሚቻል ከሆነ የDivine መለያዎን ይሰርዛል እና ከዚህ መሣሪያ ያስወጣዎታል። አንዳንድ ቅብብሎሾች፣ ደንበኞች እና የፍለጋ ማውጫዎች ቅጂዎችን ሊይዙ ይችላሉ። ሌሎች የገቡ መሣሪያዎች እዚያ ቁልፎችን እስኪያስወግዱ ድረስ ንቁ ሆነው ይቆያሉ።';
 
   @override
   String get exportProgressStageApplyingTextOverlay => 'የጽሑፍ ሽፋን በመጨመር ላይ...';

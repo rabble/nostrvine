@@ -2226,7 +2226,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get nostrSettingsDeleteAccountSubtitle =>
-      'Apague PERMANENTEMENTE sua conta e TODO o conteúdo dos relays Nostr. Isso não pode ser desfeito.';
+      'Envia solicitações de exclusão do seu conteúdo e desconecta você neste dispositivo. Relays, clientes, índices de busca e outros dispositivos conectados podem manter cópias.';
 
   @override
   String get relayDiagnosticTitle => 'Diagnósticos de relay';
@@ -6811,11 +6811,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get deleteAccountKeyDeletionWarning =>
-      'Conta excluída, mas suas chaves podem não ter sido totalmente removidas deste dispositivo. Vá em Configurações → Chaves Nostr → Remover chaves para tentar de novo.';
+      'Solicitações de exclusão enviadas, mas suas chaves podem não ter sido totalmente removidas deste dispositivo. Vá em Configurações → Chaves Nostr → Remover chaves para tentar de novo.';
 
   @override
   String get deleteAccountLocalDataDeletionFailed =>
-      'Account deleted and signed out, but some local data could not be removed from this device.';
+      'Solicitações de exclusão enviadas e você foi desconectado, mas alguns dados locais não puderam ser removidos deste dispositivo.';
 
   @override
   String get deleteAccountPreparingDeletion => 'Preparando a exclusão...';
@@ -6841,11 +6841,12 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não foi possível excluir sua conta do servidor. Verifique sua conexão e tente novamente.';
 
   @override
-  String get deleteAccountSuccess => 'Sua conta foi excluída';
+  String get deleteAccountSuccess =>
+      'Solicitações de exclusão enviadas. Você foi desconectado neste dispositivo.';
 
   @override
   String get deleteAccountWarningBody =>
-      'This permanently deletes your account and all your content from Divine, and sends a deletion request to other Nostr relays. Some relays and clients may still keep copies.';
+      'Isso envia solicitações de exclusão da sua conta e do seu conteúdo, exclui sua conta Divine quando possível e desconecta você neste dispositivo. Alguns relays, clientes e índices de busca podem manter cópias. Outros dispositivos conectados continuam ativos até você remover as chaves lá.';
 
   @override
   String get exportProgressStageApplyingTextOverlay =>

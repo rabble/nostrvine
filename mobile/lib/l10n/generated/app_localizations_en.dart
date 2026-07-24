@@ -2207,7 +2207,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get nostrSettingsDeleteAccountSubtitle =>
-      'Permanently delete your account and content from Divine, and request removal from other Nostr relays. Some copies may remain.';
+      'Sends deletion requests for your content and signs you out on this device. Relays, clients, search indexes, and other signed-in devices may keep copies.';
 
   @override
   String get relayDiagnosticTitle => 'Relay Diagnostics';
@@ -6757,11 +6757,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteAccountKeyDeletionWarning =>
-      'Account deleted, but your keys may not have been fully removed from this device. Go to Settings → Nostr Keys → Remove Keys to retry.';
+      'Deletion requests sent, but your keys may not have been fully removed from this device. Go to Settings → Nostr Keys → Remove Keys to retry.';
 
   @override
   String get deleteAccountLocalDataDeletionFailed =>
-      'Account deleted and signed out, but some local data could not be removed from this device.';
+      'Deletion requests sent and you\'re signed out, but some local data could not be removed from this device.';
 
   @override
   String get deleteAccountPreparingDeletion => 'Preparing deletion...';
@@ -6787,11 +6787,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not delete your account from the server. Please check your connection and try again.';
 
   @override
-  String get deleteAccountSuccess => 'Your account has been deleted';
+  String get deleteAccountSuccess =>
+      'Deletion requests sent. You\'re signed out on this device.';
 
   @override
   String get deleteAccountWarningBody =>
-      'This permanently deletes your account and all your content from Divine, and sends a deletion request to other Nostr relays. Some relays and clients may still keep copies.';
+      'This sends deletion requests for your account and content, deletes your Divine account when possible, and signs you out on this device. Some relays, clients, and search indexes may keep copies. Other signed-in devices stay active until you remove the keys there.';
 
   @override
   String get exportProgressStageApplyingTextOverlay => 'Adding text overlay...';

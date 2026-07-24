@@ -89,23 +89,32 @@ Future<void> _showDialog(
   await tester.pumpAndSettle();
 }
 
+AppLocalizations _englishL10n() => lookupAppLocalizations(const Locale('en'));
+
+Finder _deleteAllContentButton() => find.widgetWithText(
+  ElevatedButton,
+  _englishL10n().deleteAccountDeleteAllContentButton,
+);
+
+Future<void> _tapBurnUsernameCheckbox(WidgetTester tester) async {
+  await tester.drag(
+    find.byType(SingleChildScrollView).first,
+    const Offset(0, -160),
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(find.byType(Checkbox));
+}
+
 void main() {
   group('showDeleteAllContentWarningDialog – confirmation input', () {
     testWidgets('empty string keeps Delete button disabled', (tester) async {
       await _showDialog(tester);
 
-      expect(
-        find.text(
-          lookupAppLocalizations(
-            const Locale('en'),
-          ).deleteAccountConfirmDeletePrompt,
-        ),
-        findsOneWidget,
-      );
+      final l10n = _englishL10n();
+      expect(find.text(l10n.deleteAccountWarningBody), findsOneWidget);
+      expect(find.text(l10n.deleteAccountConfirmDeletePrompt), findsOneWidget);
       // Button should be disabled (onPressed == null → tapping does nothing)
-      final button = tester.widget<ElevatedButton>(
-        find.widgetWithText(ElevatedButton, 'Delete All Content'),
-      );
+      final button = tester.widget<ElevatedButton>(_deleteAllContentButton());
       expect(button.onPressed, isNull);
     });
 
@@ -115,9 +124,7 @@ void main() {
       await tester.enterText(find.byType(TextField), 'confirm');
       await tester.pump();
 
-      final button = tester.widget<ElevatedButton>(
-        find.widgetWithText(ElevatedButton, 'Delete All Content'),
-      );
+      final button = tester.widget<ElevatedButton>(_deleteAllContentButton());
       expect(button.onPressed, isNull);
     });
 
@@ -127,9 +134,7 @@ void main() {
       await tester.enterText(find.byType(TextField), 'DELETE');
       await tester.pump();
 
-      final button = tester.widget<ElevatedButton>(
-        find.widgetWithText(ElevatedButton, 'Delete All Content'),
-      );
+      final button = tester.widget<ElevatedButton>(_deleteAllContentButton());
       expect(button.onPressed, isNotNull);
     });
 
@@ -139,9 +144,7 @@ void main() {
       await tester.enterText(find.byType(TextField), 'delete');
       await tester.pump();
 
-      final button = tester.widget<ElevatedButton>(
-        find.widgetWithText(ElevatedButton, 'Delete All Content'),
-      );
+      final button = tester.widget<ElevatedButton>(_deleteAllContentButton());
       expect(button.onPressed, isNotNull);
     });
 
@@ -151,9 +154,7 @@ void main() {
       await tester.enterText(find.byType(TextField), 'Delete');
       await tester.pump();
 
-      final button = tester.widget<ElevatedButton>(
-        find.widgetWithText(ElevatedButton, 'Delete All Content'),
-      );
+      final button = tester.widget<ElevatedButton>(_deleteAllContentButton());
       expect(button.onPressed, isNotNull);
     });
 
@@ -165,9 +166,7 @@ void main() {
       await tester.enterText(find.byType(TextField), 'DELETE ');
       await tester.pump();
 
-      final button = tester.widget<ElevatedButton>(
-        find.widgetWithText(ElevatedButton, 'Delete All Content'),
-      );
+      final button = tester.widget<ElevatedButton>(_deleteAllContentButton());
       expect(button.onPressed, isNotNull);
     });
 
@@ -179,9 +178,7 @@ void main() {
       await tester.enterText(find.byType(TextField), ' delete');
       await tester.pump();
 
-      final button = tester.widget<ElevatedButton>(
-        find.widgetWithText(ElevatedButton, 'Delete All Content'),
-      );
+      final button = tester.widget<ElevatedButton>(_deleteAllContentButton());
       expect(button.onPressed, isNotNull);
     });
 
@@ -199,9 +196,7 @@ void main() {
       await tester.enterText(find.byType(TextField), 'delete');
       await tester.pump();
 
-      await tester.tap(
-        find.widgetWithText(ElevatedButton, 'Delete All Content'),
-      );
+      await tester.tap(_deleteAllContentButton());
       await tester.pumpAndSettle();
 
       expect(called, isTrue);
@@ -248,13 +243,11 @@ void main() {
             }) => received = burnUsername,
       );
 
-      await tester.tap(find.byType(CheckboxListTile));
+      await _tapBurnUsernameCheckbox(tester);
       await tester.pump();
       await tester.enterText(find.byType(TextField), 'delete');
       await tester.pump();
-      await tester.tap(
-        find.widgetWithText(ElevatedButton, 'Delete All Content'),
-      );
+      await tester.tap(_deleteAllContentButton());
       await tester.pumpAndSettle();
 
       expect(received, isTrue);
@@ -276,9 +269,7 @@ void main() {
 
       await tester.enterText(find.byType(TextField), 'delete');
       await tester.pump();
-      await tester.tap(
-        find.widgetWithText(ElevatedButton, 'Delete All Content'),
-      );
+      await tester.tap(_deleteAllContentButton());
       await tester.pumpAndSettle();
 
       expect(received, isFalse);
@@ -313,10 +304,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Dialog is already open (lookup still pending) but no toggle yet.
-      expect(
-        find.widgetWithText(ElevatedButton, 'Delete All Content'),
-        findsOneWidget,
-      );
+      expect(_deleteAllContentButton(), findsOneWidget);
       expect(find.byType(CheckboxListTile), findsNothing);
 
       completer.complete((name: 'Alice', canonical: 'alice'));
@@ -358,10 +346,7 @@ void main() {
       completer.completeError(Exception('lookup failed'));
       await tester.pumpAndSettle();
 
-      expect(
-        find.widgetWithText(ElevatedButton, 'Delete All Content'),
-        findsOneWidget,
-      );
+      expect(_deleteAllContentButton(), findsOneWidget);
       expect(find.byType(CheckboxListTile), findsNothing);
       expect(tester.takeException(), isNull);
     });
@@ -384,13 +369,11 @@ void main() {
             },
       );
 
-      await tester.tap(find.byType(CheckboxListTile));
+      await _tapBurnUsernameCheckbox(tester);
       await tester.pump();
       await tester.enterText(find.byType(TextField), 'delete');
       await tester.pump();
-      await tester.tap(
-        find.widgetWithText(ElevatedButton, 'Delete All Content'),
-      );
+      await tester.tap(_deleteAllContentButton());
       await tester.pumpAndSettle();
 
       expect(receivedBurn, isTrue);
@@ -419,9 +402,7 @@ void main() {
       await _showDialog(tester, confirmation: _divineUsername());
       await tester.enterText(find.byType(TextField), 'DELETE');
       await tester.pump();
-      final button = tester.widget<ElevatedButton>(
-        find.widgetWithText(ElevatedButton, 'Delete All Content'),
-      );
+      final button = tester.widget<ElevatedButton>(_deleteAllContentButton());
       expect(button.onPressed, isNull);
     });
 
@@ -429,9 +410,7 @@ void main() {
       await _showDialog(tester, confirmation: _divineUsername());
       await tester.enterText(find.byType(TextField), '@rabble.divine.video');
       await tester.pump();
-      final button = tester.widget<ElevatedButton>(
-        find.widgetWithText(ElevatedButton, 'Delete All Content'),
-      );
+      final button = tester.widget<ElevatedButton>(_deleteAllContentButton());
       expect(button.onPressed, isNotNull);
     });
 
@@ -441,9 +420,7 @@ void main() {
       await _showDialog(tester, confirmation: _divineUsername());
       await tester.enterText(find.byType(TextField), 'rabble.divine.video');
       await tester.pump();
-      final button = tester.widget<ElevatedButton>(
-        find.widgetWithText(ElevatedButton, 'Delete All Content'),
-      );
+      final button = tester.widget<ElevatedButton>(_deleteAllContentButton());
       expect(button.onPressed, isNotNull);
     });
   });
@@ -490,14 +467,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      final l10n = _englishL10n();
       expect(
-        find.text(
-          'Account deleted and signed out, but some local data could not be '
-          'removed from this device.',
-        ),
+        find.text(l10n.deleteAccountLocalDataDeletionFailed),
         findsOneWidget,
       );
-      expect(find.text('Your account has been deleted'), findsNothing);
+      expect(find.text(l10n.deleteAccountSuccess), findsNothing);
     });
 
     testWidgets('opted-in burn failure aborts deletion and shows error', (
@@ -596,9 +571,7 @@ void main() {
           expectedPubkey: any(named: 'expectedPubkey'),
         ),
       ).called(1);
-      verify(
-        () => profileRepository.releaseUsername(name: 'alice'),
-      ).called(1);
+      verify(() => profileRepository.releaseUsername(name: 'alice')).called(1);
     });
 
     testWidgets('does not release the username when burn is not opted in', (
@@ -693,9 +666,7 @@ void main() {
 
     testWidgets(
       'discloses the release when content deletion fails after burn',
-      (
-        tester,
-      ) async {
+      (tester) async {
         final deletionService = _MockAccountDeletionService();
         final authService = _MockAuthService();
         final profileRepository = _MockProfileRepository();
@@ -743,9 +714,7 @@ void main() {
 
     testWidgets(
       'discloses the release when keycast deletion fails after burn',
-      (
-        tester,
-      ) async {
+      (tester) async {
         final deletionService = _MockAccountDeletionService();
         final authService = _MockAuthService();
         final profileRepository = _MockProfileRepository();
@@ -799,9 +768,7 @@ void main() {
 
     testWidgets(
       'network-error release with name still owned aborts as failed',
-      (
-        tester,
-      ) async {
+      (tester) async {
         final deletionService = _MockAccountDeletionService();
         final authService = _MockAuthService();
         final profileRepository = _MockProfileRepository();
@@ -958,13 +925,12 @@ void main() {
 
       final announcements = <Map<Object?, Object?>>[];
       tester.binding.defaultBinaryMessenger
-          .setMockDecodedMessageHandler<Object?>(
-            SystemChannels.accessibility,
-            (Object? message) async {
-              if (message is Map) announcements.add(message);
-              return null;
-            },
-          );
+          .setMockDecodedMessageHandler<Object?>(SystemChannels.accessibility, (
+            Object? message,
+          ) async {
+            if (message is Map) announcements.add(message);
+            return null;
+          });
       addTearDown(
         () => tester.binding.defaultBinaryMessenger
             .setMockDecodedMessageHandler<Object?>(

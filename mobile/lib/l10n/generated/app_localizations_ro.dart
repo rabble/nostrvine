@@ -2265,7 +2265,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get nostrSettingsDeleteAccountSubtitle =>
-      'Șterge PERMANENT contul tău și TOT conținutul de pe relay-urile Nostr. Asta nu poate fi anulat.';
+      'Trimite cereri de ștergere pentru conținutul tău și te deconectează pe acest dispozitiv. Relay-urile, clienții, indexurile de căutare și alte dispozitive conectate pot păstra copii.';
 
   @override
   String get relayDiagnosticTitle => 'Diagnostice relay';
@@ -6929,11 +6929,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get deleteAccountKeyDeletionWarning =>
-      'Contul a fost șters, dar cheile tale s-ar putea să nu fi fost eliminate complet de pe acest dispozitiv. Mergi la Setări → Chei Nostr → Elimină cheile ca să reîncerci.';
+      'Cereri de ștergere trimise, dar cheile tale s-ar putea să nu fi fost eliminate complet de pe acest dispozitiv. Mergi la Setări → Chei Nostr → Elimină cheile ca să reîncerci.';
 
   @override
   String get deleteAccountLocalDataDeletionFailed =>
-      'Account deleted and signed out, but some local data could not be removed from this device.';
+      'Cereri de ștergere trimise și ai fost deconectat, dar unele date locale nu au putut fi eliminate de pe acest dispozitiv.';
 
   @override
   String get deleteAccountPreparingDeletion => 'Se pregătește ștergerea...';
@@ -6959,11 +6959,12 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu am putut șterge contul tău de pe server. Verifică-ți conexiunea și încearcă din nou.';
 
   @override
-  String get deleteAccountSuccess => 'Contul tău a fost șters';
+  String get deleteAccountSuccess =>
+      'Cereri de ștergere trimise. Ai fost deconectat pe acest dispozitiv.';
 
   @override
   String get deleteAccountWarningBody =>
-      'This permanently deletes your account and all your content from Divine, and sends a deletion request to other Nostr relays. Some relays and clients may still keep copies.';
+      'Aceasta trimite cereri de ștergere pentru contul și conținutul tău, șterge contul tău Divine când e posibil și te deconectează pe acest dispozitiv. Unele relay-uri, clienți și indexuri de căutare pot păstra copii. Alte dispozitive conectate rămân active până când elimini cheile de pe ele.';
 
   @override
   String get exportProgressStageApplyingTextOverlay =>
