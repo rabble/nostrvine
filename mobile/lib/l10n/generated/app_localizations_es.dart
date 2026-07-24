@@ -9879,10 +9879,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get profileCreatorSiteOwnLabel => 'Tu sitio';
 
   @override
-  String get profileCreatorSiteOpenFailed =>
-      'No se pudo abrir el sitio del creador';
-
-  @override
   String get videoMetadataEditCoverTitle => 'Editar portada';
 
   @override

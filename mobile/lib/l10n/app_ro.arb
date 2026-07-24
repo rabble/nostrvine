@@ -4064,7 +4064,6 @@
     "profileCouldNotOpenWebsite": "Could not open website",
     "profileCreatorSiteVisitLabel": "Site web",
     "profileCreatorSiteOwnLabel": "Site-ul tău",
-    "profileCreatorSiteOpenFailed": "Site-ul creatorului nu a putut fi deschis",
     "profileSetupWebsiteLabel": "Website (Optional)",
     "profileSetupWebsiteHint": "https://yoursite.com",
     "videoEditorTransformLabel": "Transformă",

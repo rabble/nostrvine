@@ -9751,9 +9751,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileCreatorSiteOwnLabel => 'Siten';
 
   @override
-  String get profileCreatorSiteOpenFailed => 'Creator sitesi açılamadı';
-
-  @override
   String get videoMetadataEditCoverTitle => 'Kapağı düzenle';
 
   @override

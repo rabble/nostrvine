@@ -9761,9 +9761,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileCreatorSiteOwnLabel => 'Your site';
 
   @override
-  String get profileCreatorSiteOpenFailed => 'Couldn\'t open creator site';
-
-  @override
   String get videoMetadataEditCoverTitle => 'Edit cover';
 
   @override

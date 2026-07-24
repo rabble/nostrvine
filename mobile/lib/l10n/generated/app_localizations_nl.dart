@@ -9829,9 +9829,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileCreatorSiteOwnLabel => 'Jouw site';
 
   @override
-  String get profileCreatorSiteOpenFailed => 'Kan creatorsite niet openen';
-
-  @override
   String get videoMetadataEditCoverTitle => 'Omslag bewerken';
 
   @override

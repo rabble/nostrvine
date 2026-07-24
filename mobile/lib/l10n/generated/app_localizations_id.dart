@@ -9754,10 +9754,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileCreatorSiteOwnLabel => 'Situs kamu';
 
   @override
-  String get profileCreatorSiteOpenFailed =>
-      'Tidak dapat membuka situs kreator';
-
-  @override
   String get videoMetadataEditCoverTitle => 'Edit sampul';
 
   @override

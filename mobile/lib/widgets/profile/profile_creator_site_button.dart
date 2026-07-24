@@ -3,18 +3,14 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/features/monetization/monetization_analytics.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/analytics_providers.dart';
+import 'package:openvine/utils/external_link_launcher.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 const _divineSpaceHost = 'divine.space';
-
-/// Pluggable creator-site URL launcher for tests.
-typedef CreatorSiteUrlLauncher =
-    Future<bool> Function(Uri uri, LaunchMode mode);
-
-Future<bool> _defaultLauncher(Uri uri, LaunchMode mode) =>
-    launchUrl(uri, mode: mode);
 
 /// Returns the public Divine Space URL for [userIdHex].
 ///
@@ -72,12 +68,11 @@ bool isDivineSpaceProfileUrlForPubkey(String? rawUrl, String userIdHex) {
 ///
 /// Renders without outer padding so callers can place it in a row beside
 /// other profile actions.
-class ProfileCreatorSiteButton extends StatelessWidget {
+class ProfileCreatorSiteButton extends ConsumerWidget {
   /// Creates the creator-site CTA for a public Nostr profile.
   const ProfileCreatorSiteButton({
     required this.userIdHex,
     required this.isOwnProfile,
-    this.launcher = _defaultLauncher,
     super.key,
   });
 
@@ -87,11 +82,8 @@ class ProfileCreatorSiteButton extends StatelessWidget {
   /// Whether the displayed profile belongs to the current user.
   final bool isOwnProfile;
 
-  /// URL launcher hook for tests.
-  final CreatorSiteUrlLauncher launcher;
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final uri = divineSpaceProfileUri(userIdHex);
     if (uri == null) return const SizedBox.shrink();
 
@@ -104,24 +96,20 @@ class ProfileCreatorSiteButton extends StatelessWidget {
       label: isOwnProfile
           ? context.l10n.profileCreatorSiteOwnLabel
           : context.l10n.profileCreatorSiteVisitLabel,
-      onPressed: () => _open(context, uri),
+      onPressed: () => _open(context, ref, uri),
     );
   }
 
-  Future<void> _open(BuildContext context, Uri uri) async {
-    var launched = false;
-    try {
-      launched = await launcher(uri, LaunchMode.externalApplication);
-    } on Object {
-      launched = false;
-    }
-
-    if (!launched && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        DivineSnackbarContainer.snackBar(
-          context.l10n.profileCreatorSiteOpenFailed,
-        ),
-      );
-    }
+  /// Records the discovery tap, then hands off to the shared launcher.
+  ///
+  /// `divine.space` is a first-party trusted host, so [openExternalLink]
+  /// opens it directly (no confirmation) while still centralizing outbound
+  /// launch and trusted-domain policy.
+  Future<void> _open(BuildContext context, WidgetRef ref, Uri uri) async {
+    trackCreatorSiteCtaTapped(
+      analytics: ref.read(analyticsEventSinkProvider),
+      isOwnProfile: isOwnProfile,
+    );
+    await openExternalLink(context, uri.toString());
   }
 }

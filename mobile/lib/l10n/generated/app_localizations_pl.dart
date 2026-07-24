@@ -9966,9 +9966,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get profileCreatorSiteOwnLabel => 'Twoja strona';
 
   @override
-  String get profileCreatorSiteOpenFailed => 'Nie można otworzyć strony twórcy';
-
-  @override
   String get videoMetadataEditCoverTitle => 'Edytuj okładkę';
 
   @override

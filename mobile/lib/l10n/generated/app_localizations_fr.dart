@@ -9916,10 +9916,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get profileCreatorSiteOwnLabel => 'Votre site';
 
   @override
-  String get profileCreatorSiteOpenFailed =>
-      'Impossible d\'ouvrir le site du créateur';
-
-  @override
   String get videoMetadataEditCoverTitle => 'Modifier la couverture';
 
   @override

@@ -9720,9 +9720,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get profileCreatorSiteOwnLabel => 'موقعك';
 
   @override
-  String get profileCreatorSiteOpenFailed => 'تعذّر فتح موقع المُنشئ';
-
-  @override
   String get videoMetadataEditCoverTitle => 'تعديل الغلاف';
 
   @override

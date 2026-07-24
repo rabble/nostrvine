@@ -4064,7 +4064,6 @@
     "profileCouldNotOpenWebsite": "Could not open website",
     "profileCreatorSiteVisitLabel": "ウェブサイト",
     "profileCreatorSiteOwnLabel": "自分のサイト",
-    "profileCreatorSiteOpenFailed": "クリエイターのサイトを開けませんでした",
     "profileSetupWebsiteLabel": "Website (Optional)",
     "profileSetupWebsiteHint": "https://yoursite.com",
     "videoEditorTransformLabel": "変形",

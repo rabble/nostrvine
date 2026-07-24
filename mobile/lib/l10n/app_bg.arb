@@ -4195,7 +4195,6 @@
     "profileCouldNotOpenWebsite": "Could not open website",
     "profileCreatorSiteVisitLabel": "Уебсайт",
     "profileCreatorSiteOwnLabel": "Твоят сайт",
-    "profileCreatorSiteOpenFailed": "Сайтът на създателя не можа да се отвори",
     "profileSetupWebsiteLabel": "Website (Optional)",
     "profileSetupWebsiteHint": "https://yoursite.com",
     "videoEditorTransformLabel": "Преобразуване",

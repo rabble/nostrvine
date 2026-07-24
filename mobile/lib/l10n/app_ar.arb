@@ -4064,7 +4064,6 @@
     "profileCouldNotOpenWebsite": "Could not open website",
     "profileCreatorSiteVisitLabel": "الموقع الإلكتروني",
     "profileCreatorSiteOwnLabel": "موقعك",
-    "profileCreatorSiteOpenFailed": "تعذّر فتح موقع المُنشئ",
     "profileSetupWebsiteLabel": "Website (Optional)",
     "profileSetupWebsiteHint": "https://yoursite.com",
     "videoEditorTransformLabel": "تحويل",

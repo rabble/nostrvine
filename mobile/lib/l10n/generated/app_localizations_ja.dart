@@ -9403,9 +9403,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileCreatorSiteOwnLabel => '自分のサイト';
 
   @override
-  String get profileCreatorSiteOpenFailed => 'クリエイターのサイトを開けませんでした';
-
-  @override
   String get videoMetadataEditCoverTitle => 'カバーを編集';
 
   @override

@@ -4064,7 +4064,6 @@
     "profileCouldNotOpenWebsite": "Could not open website",
     "profileCreatorSiteVisitLabel": "Site web",
     "profileCreatorSiteOwnLabel": "Votre site",
-    "profileCreatorSiteOpenFailed": "Impossible d'ouvrir le site du créateur",
     "profileSetupWebsiteLabel": "Website (Optional)",
     "profileSetupWebsiteHint": "https://yoursite.com",
     "videoEditorTransformLabel": "Transformer",

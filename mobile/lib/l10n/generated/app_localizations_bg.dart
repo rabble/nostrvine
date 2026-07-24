@@ -9878,10 +9878,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get profileCreatorSiteOwnLabel => 'Твоят сайт';
 
   @override
-  String get profileCreatorSiteOpenFailed =>
-      'Сайтът на създателя не можа да се отвори';
-
-  @override
   String get videoMetadataEditCoverTitle => 'Edit cover';
 
   @override

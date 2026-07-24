@@ -9888,10 +9888,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get profileCreatorSiteOwnLabel => 'Iyong site';
 
   @override
-  String get profileCreatorSiteOpenFailed =>
-      'Hindi mabuksan ang site ng creator';
-
-  @override
   String get videoMetadataEditCoverTitle => 'Edit cover';
 
   @override

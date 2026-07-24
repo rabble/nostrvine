@@ -9983,10 +9983,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileCreatorSiteOwnLabel => 'Site-ul tău';
 
   @override
-  String get profileCreatorSiteOpenFailed =>
-      'Site-ul creatorului nu a putut fi deschis';
-
-  @override
   String get videoMetadataEditCoverTitle => 'Editează coperta';
 
   @override

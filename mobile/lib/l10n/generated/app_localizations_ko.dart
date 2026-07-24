@@ -9428,9 +9428,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileCreatorSiteOwnLabel => '내 사이트';
 
   @override
-  String get profileCreatorSiteOpenFailed => '크리에이터 사이트를 열 수 없습니다';
-
-  @override
   String get videoMetadataEditCoverTitle => '커버 편집';
 
   @override

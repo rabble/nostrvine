@@ -3388,7 +3388,6 @@
     "profileCouldNotOpenWebsite": "Could not open website",
     "profileCreatorSiteVisitLabel": "웹사이트",
     "profileCreatorSiteOwnLabel": "내 사이트",
-    "profileCreatorSiteOpenFailed": "크리에이터 사이트를 열 수 없습니다",
     "profileSetupWebsiteLabel": "Website (Optional)",
     "profileSetupWebsiteHint": "https://yoursite.com",
     "videoEditorTransformLabel": "변형",

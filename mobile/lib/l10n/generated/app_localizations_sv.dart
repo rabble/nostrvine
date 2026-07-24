@@ -9782,10 +9782,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get profileCreatorSiteOwnLabel => 'Din sida';
 
   @override
-  String get profileCreatorSiteOpenFailed =>
-      'Det gick inte att öppna kreatörens sida';
-
-  @override
   String get videoMetadataEditCoverTitle => 'Redigera omslag';
 
   @override

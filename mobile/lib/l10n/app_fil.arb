@@ -2640,7 +2640,6 @@
     "profileCouldNotOpenWebsite": "Could not open website",
     "profileCreatorSiteVisitLabel": "Website",
     "profileCreatorSiteOwnLabel": "Iyong site",
-    "profileCreatorSiteOpenFailed": "Hindi mabuksan ang site ng creator",
     "profileSetupWebsiteLabel": "Website (Optional)",
     "profileSetupWebsiteHint": "https://yoursite.com",
     "videoEditorTransformLabel": "I-transform",

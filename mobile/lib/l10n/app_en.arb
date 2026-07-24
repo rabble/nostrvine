@@ -5754,10 +5754,6 @@
   "@profileCreatorSiteOwnLabel": {
     "description": "Prominent profile CTA that opens the current user's public Divine Space site."
   },
-  "profileCreatorSiteOpenFailed": "Couldn't open creator site",
-  "@profileCreatorSiteOpenFailed": {
-    "description": "Snackbar shown when the creator's public Divine Space site cannot be opened."
-  },
   "videoMetadataEditCoverTitle": "Edit cover",
   "videoMetadataEditCoverCloseSemanticLabel": "Close cover editor",
   "videoMetadataEditCoverConfirmSemanticLabel": "Confirm cover selection",

@@ -4189,7 +4189,6 @@
     "profileCouldNotOpenWebsite": "Could not open website",
     "profileCreatorSiteVisitLabel": "ድር ጣቢያ",
     "profileCreatorSiteOwnLabel": "የእርስዎ ጣቢያ",
-    "profileCreatorSiteOpenFailed": "የፈጣሪ ጣቢያን መክፈት አልተቻለም",
     "profileSetupWebsiteLabel": "Website (Optional)",
     "profileSetupWebsiteHint": "https://yoursite.com",
     "videoEditorTransformLabel": "መለወጥ",

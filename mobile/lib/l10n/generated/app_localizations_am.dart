@@ -9577,9 +9577,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileCreatorSiteOwnLabel => 'የእርስዎ ጣቢያ';
 
   @override
-  String get profileCreatorSiteOpenFailed => 'የፈጣሪ ጣቢያን መክፈት አልተቻለም';
-
-  @override
   String get videoMetadataEditCoverTitle => 'Edit cover';
 
   @override
