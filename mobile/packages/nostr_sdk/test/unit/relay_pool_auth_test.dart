@@ -161,6 +161,22 @@ void main() {
       final sentAuth = sentMessagesOfType(fakeRelay, 'AUTH');
       expect(sentAuth, isEmpty);
     });
+
+    test('marks relay alwaysAuth after AUTH challenge', () async {
+      final signer = LocalNostrSigner(testPrivateKey);
+      final nostr = Nostr(signer, [], dummyTempRelay);
+      await nostr.refreshPublicKey();
+
+      final fakeRelay = _AuthFakeRelay('wss://auth-fake.example');
+      final added = await nostr.relayPool.add(fakeRelay);
+      expect(added, isTrue);
+      expect(fakeRelay.relayStatus.alwaysAuth, isFalse);
+
+      await fakeRelay.deliver(['AUTH', challenge]);
+
+      expect(fakeRelay.relayStatus.alwaysAuth, isTrue);
+      expect(sentMessagesOfType(fakeRelay, 'AUTH'), hasLength(1));
+    });
   });
 
   group('RelayPool auth-required publish retry', () {
@@ -224,7 +240,29 @@ void main() {
       expect(outcome.confirmed, isTrue);
       expect(outcome.acceptedBy, equals([relay.url]));
       expect(outcome.rejectedBy, isEmpty);
+      expect(relay.relayStatus.alwaysAuth, isTrue);
     });
+
+    test(
+      'registers auth-required query even when trigger send fails',
+      () async {
+        relay.relayStatus.alwaysAuth = true;
+        relay.failSends = true;
+        final subscription = Subscription([
+          Filter(kinds: [EventKind.textNote]).toJson(),
+        ], (_) {});
+
+        final result = await nostr.relayPool.relayDoQuery(
+          relay,
+          subscription,
+          false,
+        );
+
+        expect(result, isTrue);
+        expect(relay.checkQuery(subscription.id), isTrue);
+        expect(sentMessagesOfType(relay, 'REQ'), hasLength(1));
+      },
+    );
 
     test('republishes when AUTH OK arrives before EVENT rejection', () async {
       const eventId =
@@ -381,6 +419,81 @@ void main() {
         hasLength(1),
         reason: 'a failed AUTH must not retry the EVENT',
       );
+    });
+
+    test('reports auth-required reason when relay never challenges', () async {
+      const eventId =
+          '7777777777777777777777777777777777777777777777777777777777777777';
+      final outcomeFuture = nostr.relayPool.sendEventAwaitOk(
+        [
+          'EVENT',
+          {'id': eventId, 'kind': EventKind.giftWrap},
+        ],
+        eventId: eventId,
+        eventKind: EventKind.giftWrap,
+        targetRelays: [relay.url],
+        timeout: const Duration(milliseconds: 10),
+      );
+
+      await relay.deliver([
+        'OK',
+        eventId,
+        false,
+        'auth-required: you must auth',
+      ]);
+
+      final outcome = await outcomeFuture;
+
+      expect(outcome.failed, isTrue);
+      expect(
+        outcome.rejectedBy,
+        equals({relay.url: 'auth-required: you must auth'}),
+      );
+      expect(outcome.noResponseFrom, isEmpty);
+    });
+
+    test('rejects with stored reason when AUTH cannot be signed', () async {
+      const eventId =
+          '8888888888888888888888888888888888888888888888888888888888888888';
+      final unauthenticatedNostr = Nostr(
+        _NullKeySigner(),
+        [],
+        (url) => RelayBase(url, RelayStatus(url)),
+      );
+      final unauthenticatedRelay = _AuthFakeRelay(
+        'wss://auth-required-no-key.example',
+      );
+      final added = await unauthenticatedNostr.relayPool.add(
+        unauthenticatedRelay,
+      );
+      expect(added, isTrue);
+      final outcomeFuture = unauthenticatedNostr.relayPool.sendEventAwaitOk(
+        [
+          'EVENT',
+          {'id': eventId, 'kind': EventKind.giftWrap},
+        ],
+        eventId: eventId,
+        eventKind: EventKind.giftWrap,
+        targetRelays: [unauthenticatedRelay.url],
+        timeout: const Duration(seconds: 1),
+      );
+
+      await unauthenticatedRelay.deliver([
+        'OK',
+        eventId,
+        false,
+        'auth-required: you must auth',
+      ]);
+      await unauthenticatedRelay.deliver(['AUTH', challenge]);
+
+      final outcome = await outcomeFuture;
+
+      expect(outcome.failed, isTrue);
+      expect(
+        outcome.rejectedBy,
+        equals({unauthenticatedRelay.url: 'auth-required: you must auth'}),
+      );
+      expect(sentMessagesOfType(unauthenticatedRelay, 'AUTH'), isEmpty);
     });
 
     test(

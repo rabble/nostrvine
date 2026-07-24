@@ -231,6 +231,7 @@ class RelayPool {
     required DateTime deadline,
   }) {
     relay.relayStatus.alwaysAuth = true;
+    tracker.deferRejection(relay.url, reason);
     final retry = _AuthRequiredPublishRetry(
       message: message,
       tracker: tracker,
@@ -287,6 +288,7 @@ class RelayPool {
         '🔐 Re-publishing auth-required EVENT after AUTH '
         'eventId=$eventId relay=${relay.url}',
       );
+      retry.tracker.clearDeferredRejection(relay.url);
       final sent = await relay
           .send(
             retry.message,
@@ -421,13 +423,17 @@ class RelayPool {
       if ((sendAfterAuth || relay.relayStatus.alwaysAuth) &&
           !relay.relayStatus.authed) {
         log('🔐 Auth-required query - sending to trigger AUTH challenge');
+        relay.saveQuery(subscription);
         final result = await relay
             .send(message, forceSend: true)
             .timeout(perRelaySendTimeout, onTimeout: () => false);
-        if (result) {
-          relay.saveQuery(subscription);
-          return true;
+        if (!result) {
+          log(
+            '🔐 Auth-required query trigger send failed; query remains saved '
+            'for replay after reconnect/auth: ${subscription.id} ${relay.url}',
+          );
         }
+        return true;
       } else {
         // Skip reconnect during query fan-out to avoid blocking
         // other relays while one dead relay tries exponential backoff.
@@ -1020,9 +1026,13 @@ class RelayPool {
               '🔐 Pending ${relay.pendingAuthedMessages.length} messages for after auth confirmation',
             );
           }
+        } else {
+          log('🔐 AUTH signing returned null for ${relay.url}');
+          _rejectAuthRequiredPublishesForRelay(relay, '');
         }
       } catch (err, stackTrace) {
         log('🔐 AUTH handling failed for ${relay.url}: $err\n$stackTrace');
+        _rejectAuthRequiredPublishesForRelay(relay, '');
       }
     } else if (messageType == 'COUNT') {
       // NIP-45 COUNT response

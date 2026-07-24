@@ -47,6 +47,13 @@ class MockRelay extends RelayBase {
   void clearSentMessages() {
     sentMessages.clear();
   }
+
+  Future<void> deliver(List<dynamic> message) async {
+    final result = onMessage?.call(this, message);
+    if (result is Future) {
+      await result;
+    }
+  }
 }
 
 void main() {
@@ -158,35 +165,19 @@ void main() {
       expect(relay.sentMessages.length, equals(1));
       expect(relay.sentMessages.first[0], equals('REQ'));
 
-      // Simulate successful authentication
-      relay.relayStatus.authed = true;
-
-      // Manually trigger post-AUTH subscription replay (normally done after
-      // AUTH OK handling in RelayPool).
-      for (final subscription in relay.getSubscriptions()) {
-        await relay.send(subscription.toJson());
-      }
-
+      await relay.deliver(['AUTH', relay.authChallenge]);
       expect(relay.sentMessages.length, equals(2));
+      expect(relay.sentMessages.last[0], equals('AUTH'));
+      final authEvent = relay.sentMessages.last[1] as Map<String, dynamic>;
+      final authEventId = authEvent['id'];
+      expect(authEventId, isA<String>());
+
+      await relay.deliver(['OK', authEventId, true, '']);
+
+      expect(relay.sentMessages.length, equals(3));
       expect(relay.sentMessages.last[0], equals('REQ'));
       expect(relay.pendingAuthedMessages.isEmpty, isTrue);
-    });
-
-    test('Auth challenge functionality basic test', () async {
-      final relayUrl = 'wss://auth.relay.com';
-      final relay = MockRelay(relayUrl);
-
-      await nostr.relayPool.add(relay);
-      nostr.setRelayAlwaysAuth(relayUrl, true);
-
-      // Send subscription that should be queued for auth
-      nostr.subscribe([
-        Filter(kinds: [EventKind.textNote]).toJson(),
-      ], (event) {});
-
-      expect(relay.sentMessages, hasLength(1));
-      expect(relay.sentMessages.first[0], equals('REQ'));
-      expect(relay.pendingAuthedMessages, isEmpty);
+      expect(relay.relayStatus.authed, isTrue);
     });
 
     test('Mixed relay configuration - some with alwaysAuth', () async {
