@@ -173,6 +173,7 @@ docs/superpowers/specs/.clearance-*/
 
 # Ephemeral working context / session notes — never tracked (any depth)
 .context/
+.zcode/
 
 # Playwright MCP scratch output
 **/.playwright-mcp/
