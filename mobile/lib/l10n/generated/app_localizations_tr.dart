@@ -9745,10 +9745,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'Creator sitesini ziyaret et';
+  String get profileCreatorSiteVisitLabel => 'Web sitesi';
 
   @override
-  String get profileCreatorSiteOwnLabel => 'Siteni görüntüle';
+  String get profileCreatorSiteOwnLabel => 'Siten';
 
   @override
   String get profileCreatorSiteOpenFailed => 'Creator sitesi açılamadı';

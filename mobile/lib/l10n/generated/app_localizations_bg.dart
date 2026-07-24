@@ -9872,10 +9872,10 @@ class AppLocalizationsBg extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'Виж сайта на създателя';
+  String get profileCreatorSiteVisitLabel => 'Уебсайт';
 
   @override
-  String get profileCreatorSiteOwnLabel => 'Виж своя сайт';
+  String get profileCreatorSiteOwnLabel => 'Твоят сайт';
 
   @override
   String get profileCreatorSiteOpenFailed =>

@@ -9714,10 +9714,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'زيارة موقع المُنشئ';
+  String get profileCreatorSiteVisitLabel => 'الموقع الإلكتروني';
 
   @override
-  String get profileCreatorSiteOwnLabel => 'عرض موقعك';
+  String get profileCreatorSiteOwnLabel => 'موقعك';
 
   @override
   String get profileCreatorSiteOpenFailed => 'تعذّر فتح موقع المُنشئ';

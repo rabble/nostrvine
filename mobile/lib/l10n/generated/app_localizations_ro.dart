@@ -9977,10 +9977,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'Vezi site-ul creatorului';
+  String get profileCreatorSiteVisitLabel => 'Site web';
 
   @override
-  String get profileCreatorSiteOwnLabel => 'Vezi site-ul tău';
+  String get profileCreatorSiteOwnLabel => 'Site-ul tău';
 
   @override
   String get profileCreatorSiteOpenFailed =>

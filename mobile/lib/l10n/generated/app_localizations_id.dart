@@ -9748,10 +9748,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'Kunjungi situs kreator';
+  String get profileCreatorSiteVisitLabel => 'Situs web';
 
   @override
-  String get profileCreatorSiteOwnLabel => 'Lihat situs kamu';
+  String get profileCreatorSiteOwnLabel => 'Situs kamu';
 
   @override
   String get profileCreatorSiteOpenFailed =>

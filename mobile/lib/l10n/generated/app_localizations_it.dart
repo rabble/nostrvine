@@ -9871,10 +9871,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'Visita il sito del creator';
+  String get profileCreatorSiteVisitLabel => 'Sito web';
 
   @override
-  String get profileCreatorSiteOwnLabel => 'Vedi il tuo sito';
+  String get profileCreatorSiteOwnLabel => 'Il tuo sito';
 
   @override
   String get profileCreatorSiteOpenFailed =>

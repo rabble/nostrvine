@@ -9571,10 +9571,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'የፈጣሪ ጣቢያን ይጎብኙ';
+  String get profileCreatorSiteVisitLabel => 'ድር ጣቢያ';
 
   @override
-  String get profileCreatorSiteOwnLabel => 'የእርስዎን ጣቢያ ይመልከቱ';
+  String get profileCreatorSiteOwnLabel => 'የእርስዎ ጣቢያ';
 
   @override
   String get profileCreatorSiteOpenFailed => 'የፈጣሪ ጣቢያን መክፈት አልተቻለም';

@@ -9889,10 +9889,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'Creator-Seite besuchen';
+  String get profileCreatorSiteVisitLabel => 'Website';
 
   @override
-  String get profileCreatorSiteOwnLabel => 'Deine Seite ansehen';
+  String get profileCreatorSiteOwnLabel => 'Deine Seite';
 
   @override
   String get profileCreatorSiteOpenFailed =>

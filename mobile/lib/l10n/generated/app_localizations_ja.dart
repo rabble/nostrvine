@@ -9397,10 +9397,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'クリエイターのサイトを見る';
+  String get profileCreatorSiteVisitLabel => 'ウェブサイト';
 
   @override
-  String get profileCreatorSiteOwnLabel => '自分のサイトを見る';
+  String get profileCreatorSiteOwnLabel => '自分のサイト';
 
   @override
   String get profileCreatorSiteOpenFailed => 'クリエイターのサイトを開けませんでした';

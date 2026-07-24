@@ -9422,10 +9422,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => '크리에이터 사이트 방문';
+  String get profileCreatorSiteVisitLabel => '웹사이트';
 
   @override
-  String get profileCreatorSiteOwnLabel => '내 사이트 보기';
+  String get profileCreatorSiteOwnLabel => '내 사이트';
 
   @override
   String get profileCreatorSiteOpenFailed => '크리에이터 사이트를 열 수 없습니다';

@@ -9776,10 +9776,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'Besök kreatörens sida';
+  String get profileCreatorSiteVisitLabel => 'Webbplats';
 
   @override
-  String get profileCreatorSiteOwnLabel => 'Visa din sida';
+  String get profileCreatorSiteOwnLabel => 'Din sida';
 
   @override
   String get profileCreatorSiteOpenFailed =>

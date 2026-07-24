@@ -5746,11 +5746,11 @@
   "@profileCouldNotOpenWebsite": {
     "description": "Snackbar message shown when url_launcher fails to open the profile website link."
   },
-  "profileCreatorSiteVisitLabel": "Visit creator site",
+  "profileCreatorSiteVisitLabel": "Website",
   "@profileCreatorSiteVisitLabel": {
     "description": "Prominent profile CTA that opens another creator's public Divine Space site."
   },
-  "profileCreatorSiteOwnLabel": "View your site",
+  "profileCreatorSiteOwnLabel": "Your site",
   "@profileCreatorSiteOwnLabel": {
     "description": "Prominent profile CTA that opens the current user's public Divine Space site."
   },

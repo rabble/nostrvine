@@ -9882,10 +9882,10 @@ class AppLocalizationsFil extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'Bisitahin ang site ng creator';
+  String get profileCreatorSiteVisitLabel => 'Website';
 
   @override
-  String get profileCreatorSiteOwnLabel => 'Tingnan ang iyong site';
+  String get profileCreatorSiteOwnLabel => 'Iyong site';
 
   @override
   String get profileCreatorSiteOpenFailed =>

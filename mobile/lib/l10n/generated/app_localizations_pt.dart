@@ -9839,10 +9839,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'Ver site do criador';
+  String get profileCreatorSiteVisitLabel => 'Site';
 
   @override
-  String get profileCreatorSiteOwnLabel => 'Ver seu site';
+  String get profileCreatorSiteOwnLabel => 'Seu site';
 
   @override
   String get profileCreatorSiteOpenFailed =>

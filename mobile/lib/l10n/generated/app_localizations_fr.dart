@@ -9910,10 +9910,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'Voir le site du créateur';
+  String get profileCreatorSiteVisitLabel => 'Site web';
 
   @override
-  String get profileCreatorSiteOwnLabel => 'Voir votre site';
+  String get profileCreatorSiteOwnLabel => 'Votre site';
 
   @override
   String get profileCreatorSiteOpenFailed =>
