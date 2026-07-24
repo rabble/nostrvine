@@ -1066,6 +1066,106 @@ void main() {
       expect(tester.getRect(creatorSiteButton).width, lessThan(fullWidth));
     });
 
+    testWidgets(
+      'holds the Website button until the relay Kind 0 resolves, then reveals '
+      'the Tip pill in the same frame',
+      (tester) async {
+        // Funnelcake's REST projection strips the custom monetization Kind 0
+        // field, so the link-stripped REST profile (rest- event id) lands
+        // first and the relay Kind 0 (with links) arrives a beat later.
+        final restProjection = createTestProfile(
+          displayName: 'Creator',
+          eventId: 'rest-improvising',
+        );
+        final relayKind0 = createTestProfile(
+          displayName: 'Creator',
+          eventId: 'kind0-improvising',
+          rawData: {
+            divineMonetizationLinksKey: [
+              const MonetizationLink(
+                provider: MonetizationLinkProvider.cashApp,
+                category: MonetizationLinkCategory.tip,
+                url: r'https://cash.app/$creator',
+                enabled: true,
+              ).toJson(),
+            ],
+          },
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: false,
+            suppliedProfile: restProjection,
+            monetizationLinksEnabled: true,
+          ),
+        );
+        await tester.pump();
+
+        final creatorSiteButton = find.byKey(
+          const Key('profile-creator-site-button'),
+        );
+        final supportButton = find.byKey(const Key('profile-support-button'));
+
+        // Held while only the REST projection is known — no lone Website
+        // button ahead of the Tip pill.
+        expect(creatorSiteButton, findsNothing);
+        expect(supportButton, findsNothing);
+
+        // Relay Kind 0 lands carrying the links → both reveal together.
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: false,
+            suppliedProfile: relayKind0,
+            monetizationLinksEnabled: true,
+          ),
+        );
+        await tester.pump();
+
+        expect(creatorSiteButton, findsOneWidget);
+        expect(supportButton, findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'reveals the Website button alone after the resolve timeout when the '
+      'relay never upgrades the REST projection',
+      (tester) async {
+        final restProjection = createTestProfile(
+          displayName: 'Creator',
+          eventId: 'rest-improvising',
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: false,
+            suppliedProfile: restProjection,
+            monetizationLinksEnabled: true,
+          ),
+        );
+        await tester.pump();
+
+        final creatorSiteButton = find.byKey(
+          const Key('profile-creator-site-button'),
+        );
+        final supportButton = find.byKey(const Key('profile-support-button'));
+
+        // Held while the REST projection is all we have.
+        expect(creatorSiteButton, findsNothing);
+
+        // Past the fallback timeout the Website button reveals on its own so a
+        // dead relay can't strand the CTA; the REST projection carries no
+        // links, so no Tip pill appears.
+        await tester.pump(const Duration(seconds: 11));
+        await tester.pump();
+
+        expect(creatorSiteButton, findsOneWidget);
+        expect(supportButton, findsNothing);
+      },
+    );
+
     testWidgets('keeps the standalone support button without a creator site', (
       tester,
     ) async {

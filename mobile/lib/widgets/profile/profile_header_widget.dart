@@ -226,6 +226,21 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
       if (mounted) _syncIdentitySkeletonTimer(isLoading: isLoadingIdentity);
     });
 
+    // Monetization links live in the custom Kind 0 fields that Funnelcake's
+    // REST projection strips, so on a cold load the link-stripped REST profile
+    // can arrive before the relay/cache Kind 0. Treat the monetization answer
+    // as authoritative only once the flag is off or a non-REST Kind 0 has
+    // landed, so the creator-actions row can reveal the Website button and the
+    // Tip pill together instead of the Website rendering first and the Tip
+    // popping in a beat later (#6328).
+    final isMonetizationEnabled = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.profileMonetizationLinks),
+    );
+    final isMonetizationResolved =
+        !isMonetizationEnabled ||
+        (!isLoadingIdentity &&
+            !(effectiveProfile?.eventId.startsWith('rest-') ?? false));
+
     // Use hints as fallbacks for users without Kind 0 profiles (e.g., classic Viners)
     // Check for both null AND empty string - some profiles have empty picture field
     final profilePictureUrl = (effectiveProfile?.picture?.isNotEmpty == true)
@@ -376,6 +391,7 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
             links: monetizationLinksForCurrentStorefront(
               effectiveProfile?.enabledMonetizationLinks ?? const [],
             ),
+            isMonetizationResolved: isMonetizationResolved,
           ),
           if (!widget.isOwnProfile) ...[
             PeopleListMembershipIndicator(pubkey: widget.userIdHex),
@@ -493,34 +509,99 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
 ///
 /// Mirrors [ProfileActionButtons]' row: one expanded labelled button plus
 /// icon-only companions, so both rows share the same inset and rhythm.
-class _ProfileCreatorActionsRow extends ConsumerWidget {
+///
+/// The monetization links live in custom Kind 0 fields that Funnelcake's REST
+/// projection strips, so on a cold load the relay/cache Kind 0 (and its Tip
+/// links) can land a beat after the link-stripped REST profile. Rendering the
+/// Website button off the REST projection immediately would leave the Tip pill
+/// to pop in seconds later — so the whole row waits until the monetization
+/// answer is authoritative ([isMonetizationResolved]) and reveals both together
+/// (#6328). A timeout reveals the Website button on its own if the relay never
+/// answers, so a dead relay cannot strand the CTA.
+class _ProfileCreatorActionsRow extends ConsumerStatefulWidget {
   const _ProfileCreatorActionsRow({
     required this.userIdHex,
     required this.isOwnProfile,
     required this.links,
+    required this.isMonetizationResolved,
   });
 
   final String userIdHex;
   final bool isOwnProfile;
   final List<MonetizationLink> links;
 
+  /// Whether the monetization answer for this profile is authoritative — the
+  /// flag is off, or a non-REST Kind 0 has landed. While false the row is held
+  /// so the Website button and the Tip pill appear in the same frame.
+  final bool isMonetizationResolved;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ProfileCreatorActionsRow> createState() =>
+      _ProfileCreatorActionsRowState();
+}
+
+class _ProfileCreatorActionsRowState
+    extends ConsumerState<_ProfileCreatorActionsRow> {
+  /// Longest the row waits for the relay Kind 0 before revealing the Website
+  /// button on its own. Comfortably exceeds the repository's 5s relay-query cap
+  /// plus a flapping-relay reconnect, so a live-but-slow relay still resolves
+  /// (and both buttons reveal together) before this fires; only a genuinely
+  /// dead relay hits the fallback. The Tip pill still fills in if its links
+  /// arrive after the timeout.
+  static const _resolveTimeout = Duration(seconds: 10);
+
+  Timer? _resolveTimer;
+  bool _resolveTimedOut = false;
+  bool? _wasResolved;
+
+  @override
+  void dispose() {
+    _resolveTimer?.cancel();
+    super.dispose();
+  }
+
+  void _syncResolveTimer({required bool isResolved}) {
+    if (_wasResolved == isResolved) return;
+    _wasResolved = isResolved;
+    _resolveTimer?.cancel();
+    _resolveTimer = null;
+    if (isResolved) return;
+    _resolveTimedOut = false;
+    _resolveTimer = Timer(_resolveTimeout, () {
+      if (mounted) setState(() => _resolveTimedOut = true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final userIdHex = widget.userIdHex;
+    final links = widget.links;
+
     // Without a creator site there is nothing to pair the support button
-    // with, so it keeps its standalone centered layout.
+    // with, so it keeps its standalone centered layout and never waits.
     if (divineSpaceProfileUri(userIdHex) == null) {
       return _ProfileSupportButton(links: links);
+    }
+
+    // Drive the resolution timeout from a post-frame callback rather than
+    // mutating timer state during build. The `_wasResolved` guard inside
+    // `_syncResolveTimer` keeps this idempotent.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _syncResolveTimer(isResolved: widget.isMonetizationResolved);
+      }
+    });
+
+    // Hold the whole row until the monetization answer is authoritative so the
+    // Website button and the Tip pill reveal in the same frame, rather than the
+    // Website rendering first off the link-stripped REST projection.
+    if (!widget.isMonetizationResolved && !_resolveTimedOut) {
+      return const SizedBox.shrink();
     }
 
     final monetizationEnabled = ref.watch(
       isFeatureEnabledProvider(FeatureFlag.profileMonetizationLinks),
     );
-    // Monetization links live in custom Kind 0 fields that the REST profile
-    // projection cannot carry, so the support affordance can only appear once
-    // the relay/cache event lands. Render it directly: an implicit size
-    // animation would smooth that arrival, but AnimatedSize never completes
-    // while its subtree's tickers are muted (an inactive PageView / TabBarView
-    // page or route transition), stranding the button at zero width.
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
       child: Row(
@@ -529,7 +610,7 @@ class _ProfileCreatorActionsRow extends ConsumerWidget {
           Expanded(
             child: ProfileCreatorSiteButton(
               userIdHex: userIdHex,
-              isOwnProfile: isOwnProfile,
+              isOwnProfile: widget.isOwnProfile,
             ),
           ),
           if (monetizationEnabled && links.isNotEmpty)
