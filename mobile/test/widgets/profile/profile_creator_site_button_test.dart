@@ -117,30 +117,58 @@ void main() {
       UrlLauncherPlatform.instance = originalLauncher;
     });
 
-    testWidgets('uses prominent design-system styling and visitor copy', (
+    testWidgets('renders as a compact pill carrying the Divine mark', (
       tester,
     ) async {
       await tester.pumpWidget(
         _wrap(isOwnProfile: false, analytics: _RecordingAnalyticsSink()),
       );
 
-      final l10n = lookupAppLocalizations(const Locale('en'));
-      expect(find.text(l10n.profileCreatorSiteVisitLabel), findsOneWidget);
+      // Sized to match the tip/support pill it sits beside.
       final button = tester.widget<DivineButton>(find.byType(DivineButton));
       expect(button.type, DivineButtonType.secondary);
-      expect(button.size, DivineButtonSize.small);
-      expect(button.leadingIcon, DivineIconName.globe);
-      expect(button.expanded, isTrue);
+      expect(button.size, DivineButtonSize.tiny);
+      // The Divine mark distinguishes it from the generic globe on the Kind-0
+      // website row below.
+      expect(button.leadingIcon, DivineIconName.divineMark);
+      expect(button.expanded, isFalse);
     });
 
-    testWidgets('uses owner-specific copy', (tester) async {
+    testWidgets('names the destination in the visitor label', (tester) async {
+      await tester.pumpWidget(
+        _wrap(isOwnProfile: false, analytics: _RecordingAnalyticsSink()),
+      );
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.profileCreatorSiteVisitLabel), findsOneWidget);
+      expect(find.text(l10n.profileCreatorSiteOwnLabel), findsNothing);
+
+      // The visible label carries the accessible name — no separate
+      // Semantics label to drift out of sync with the copy.
+      final handle = tester.ensureSemantics();
+      expect(
+        find.bySemanticsLabel(l10n.profileCreatorSiteVisitLabel),
+        findsWidgets,
+      );
+      handle.dispose();
+    });
+
+    testWidgets('claims the site as the viewer’s own on their profile', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _wrap(isOwnProfile: true, analytics: _RecordingAnalyticsSink()),
       );
 
       final l10n = lookupAppLocalizations(const Locale('en'));
       expect(find.text(l10n.profileCreatorSiteOwnLabel), findsOneWidget);
-      expect(find.text(l10n.profileCreatorSiteVisitLabel), findsNothing);
+
+      final handle = tester.ensureSemantics();
+      expect(
+        find.bySemanticsLabel(l10n.profileCreatorSiteOwnLabel),
+        findsWidgets,
+      );
+      handle.dispose();
     });
 
     testWidgets('launches the generated URL through the shared launcher', (

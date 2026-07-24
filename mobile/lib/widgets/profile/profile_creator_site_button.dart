@@ -1,4 +1,4 @@
-// ABOUTME: Prominent profile CTA linking to the creator's Divine Space site.
+// ABOUTME: Profile link row pointing at the creator's Divine Space site.
 // ABOUTME: Builds a deterministic public URL from the profile's Nostr pubkey.
 
 import 'package:divine_ui/divine_ui.dart';
@@ -64,12 +64,14 @@ bool isDivineSpaceProfileUrlForPubkey(String? rawUrl, String userIdHex) {
   return normalizedPath == expected.path;
 }
 
-/// A prominent button that opens a creator's public Divine Space profile.
+/// A compact pill that opens a creator's public Divine Space profile.
 ///
-/// Renders without outer padding so callers can place it in a row beside
-/// other profile actions.
+/// Sized to match the tip/support pill it sits beside, and carries the Divine
+/// mark rather than a globe so it reads as a distinct destination from the
+/// generic Kind-0 website row below it. The label names the destination
+/// outright ("my divine.space"), so no separate semantic label is needed.
 class ProfileCreatorSiteButton extends ConsumerWidget {
-  /// Creates the creator-site CTA for a public Nostr profile.
+  /// Creates the creator-site pill for a public Nostr profile.
   const ProfileCreatorSiteButton({
     required this.userIdHex,
     required this.isOwnProfile,
@@ -89,10 +91,9 @@ class ProfileCreatorSiteButton extends ConsumerWidget {
 
     return DivineButton(
       key: const Key('profile-creator-site-button'),
-      type: DivineButtonType.secondary,
-      size: DivineButtonSize.small,
-      leadingIcon: DivineIconName.globe,
-      expanded: true,
+      type: .secondary,
+      size: .tiny,
+      leadingIcon: DivineIconName.divineMark,
       label: isOwnProfile
           ? context.l10n.profileCreatorSiteOwnLabel
           : context.l10n.profileCreatorSiteVisitLabel,

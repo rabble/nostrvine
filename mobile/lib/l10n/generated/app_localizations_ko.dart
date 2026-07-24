@@ -9422,10 +9422,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => '웹사이트';
+  String get profileCreatorSiteVisitLabel => 'divine.space';
 
   @override
-  String get profileCreatorSiteOwnLabel => '내 사이트';
+  String get profileCreatorSiteOwnLabel => '내 divine.space';
 
   @override
   String get videoMetadataEditCoverTitle => '커버 편집';

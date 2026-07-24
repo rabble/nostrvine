@@ -9873,10 +9873,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'Sitio web';
+  String get profileCreatorSiteVisitLabel => 'divine.space';
 
   @override
-  String get profileCreatorSiteOwnLabel => 'Tu sitio';
+  String get profileCreatorSiteOwnLabel => 'mi divine.space';
 
   @override
   String get videoMetadataEditCoverTitle => 'Editar portada';

@@ -9745,10 +9745,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'Web sitesi';
+  String get profileCreatorSiteVisitLabel => 'divine.space';
 
   @override
-  String get profileCreatorSiteOwnLabel => 'Siten';
+  String get profileCreatorSiteOwnLabel => 'divine.space’ım';
 
   @override
   String get videoMetadataEditCoverTitle => 'Kapağı düzenle';

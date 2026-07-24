@@ -16828,16 +16828,16 @@ abstract class AppLocalizations {
   /// **'Could not open website'**
   String get profileCouldNotOpenWebsite;
 
-  /// Prominent profile CTA that opens another creator's public Divine Space site.
+  /// Label on the profile pill that opens another creator's public Divine Space site. 'divine.space' is a domain name and must not be translated.
   ///
   /// In en, this message translates to:
-  /// **'Website'**
+  /// **'divine.space'**
   String get profileCreatorSiteVisitLabel;
 
-  /// Prominent profile CTA that opens the current user's public Divine Space site.
+  /// Label on the profile pill that opens the current user's own public Divine Space site. Only the possessive determiner is translated; 'divine.space' is a domain name and must not be translated.
   ///
   /// In en, this message translates to:
-  /// **'Your site'**
+  /// **'my divine.space'**
   String get profileCreatorSiteOwnLabel;
 
   /// No description provided for @videoMetadataEditCoverTitle.

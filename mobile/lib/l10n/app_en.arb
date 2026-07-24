@@ -5746,13 +5746,13 @@
   "@profileCouldNotOpenWebsite": {
     "description": "Snackbar message shown when url_launcher fails to open the profile website link."
   },
-  "profileCreatorSiteVisitLabel": "Website",
+  "profileCreatorSiteVisitLabel": "divine.space",
   "@profileCreatorSiteVisitLabel": {
-    "description": "Prominent profile CTA that opens another creator's public Divine Space site."
+    "description": "Label on the profile pill that opens another creator's public Divine Space site. 'divine.space' is a domain name and must not be translated."
   },
-  "profileCreatorSiteOwnLabel": "Your site",
+  "profileCreatorSiteOwnLabel": "my divine.space",
   "@profileCreatorSiteOwnLabel": {
-    "description": "Prominent profile CTA that opens the current user's public Divine Space site."
+    "description": "Label on the profile pill that opens the current user's own public Divine Space site. Only the possessive determiner is translated; 'divine.space' is a domain name and must not be translated."
   },
   "videoMetadataEditCoverTitle": "Edit cover",
   "videoMetadataEditCoverCloseSemanticLabel": "Close cover editor",

@@ -380,18 +380,14 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
                     displayNameHint: widget.displayNameHint,
                     accentColor: profileColor,
                     isOwnProfile: widget.isOwnProfile,
+                    monetizationLinks: monetizationLinksForCurrentStorefront(
+                      effectiveProfile?.enabledMonetizationLinks ?? const [],
+                    ),
+                    isMonetizationResolved: isMonetizationResolved,
                   ),
                 ),
               ],
             ),
-          ),
-          _ProfileCreatorActionsRow(
-            userIdHex: widget.userIdHex,
-            isOwnProfile: widget.isOwnProfile,
-            links: monetizationLinksForCurrentStorefront(
-              effectiveProfile?.enabledMonetizationLinks ?? const [],
-            ),
-            isMonetizationResolved: isMonetizationResolved,
           ),
           if (!widget.isOwnProfile) ...[
             PeopleListMembershipIndicator(pubkey: widget.userIdHex),
@@ -505,145 +501,9 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
   }
 }
 
-/// Creator-site CTA paired with the support affordance beside it.
+/// Tip/support pill rendered inline beside the creator-site pill.
 ///
-/// Mirrors [ProfileActionButtons]' row: one expanded labelled button plus
-/// icon-only companions, so both rows share the same inset and rhythm.
-///
-/// The monetization links live in custom Kind 0 fields that Funnelcake's REST
-/// projection strips, so on a cold load the relay/cache Kind 0 (and its Tip
-/// links) can land a beat after the link-stripped REST profile. Rendering the
-/// Website button off the REST projection immediately would leave the Tip pill
-/// to pop in seconds later — so the whole row waits until the monetization
-/// answer is authoritative ([isMonetizationResolved]) and reveals both together
-/// (#6328). A timeout reveals the Website button on its own if the relay never
-/// answers, so a dead relay cannot strand the CTA.
-class _ProfileCreatorActionsRow extends ConsumerStatefulWidget {
-  const _ProfileCreatorActionsRow({
-    required this.userIdHex,
-    required this.isOwnProfile,
-    required this.links,
-    required this.isMonetizationResolved,
-  });
-
-  final String userIdHex;
-  final bool isOwnProfile;
-  final List<MonetizationLink> links;
-
-  /// Whether the monetization answer for this profile is authoritative — the
-  /// flag is off, or a non-REST Kind 0 has landed. While false the row is held
-  /// so the Website button and the Tip pill appear in the same frame.
-  final bool isMonetizationResolved;
-
-  @override
-  ConsumerState<_ProfileCreatorActionsRow> createState() =>
-      _ProfileCreatorActionsRowState();
-}
-
-class _ProfileCreatorActionsRowState
-    extends ConsumerState<_ProfileCreatorActionsRow> {
-  /// Longest the row waits for the relay Kind 0 before revealing the Website
-  /// button on its own. Comfortably exceeds the repository's 5s relay-query cap
-  /// plus a flapping-relay reconnect, so a live-but-slow relay still resolves
-  /// (and both buttons reveal together) before this fires; only a genuinely
-  /// dead relay hits the fallback. The Tip pill still fills in if its links
-  /// arrive after the timeout.
-  static const _resolveTimeout = Duration(seconds: 10);
-
-  Timer? _resolveTimer;
-  bool _resolveTimedOut = false;
-  bool? _wasResolved;
-
-  @override
-  void dispose() {
-    _resolveTimer?.cancel();
-    super.dispose();
-  }
-
-  void _syncResolveTimer({required bool isResolved}) {
-    if (_wasResolved == isResolved) return;
-    _wasResolved = isResolved;
-    _resolveTimer?.cancel();
-    _resolveTimer = null;
-    if (isResolved) return;
-    _resolveTimedOut = false;
-    _resolveTimer = Timer(_resolveTimeout, () {
-      if (mounted) setState(() => _resolveTimedOut = true);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final userIdHex = widget.userIdHex;
-    final links = widget.links;
-
-    // Without a creator site there is nothing to pair the support button
-    // with, so it keeps its standalone centered layout and never waits.
-    if (divineSpaceProfileUri(userIdHex) == null) {
-      return _ProfileSupportButton(links: links);
-    }
-
-    // Drive the resolution timeout from a post-frame callback rather than
-    // mutating timer state during build. The `_wasResolved` guard inside
-    // `_syncResolveTimer` keeps this idempotent.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _syncResolveTimer(isResolved: widget.isMonetizationResolved);
-      }
-    });
-
-    // Hold the whole row until the monetization answer is authoritative so the
-    // Website button and the Tip pill reveal in the same frame, rather than the
-    // Website rendering first off the link-stripped REST projection.
-    if (!widget.isMonetizationResolved && !_resolveTimedOut) {
-      return const SizedBox.shrink();
-    }
-
-    final monetizationEnabled = ref.watch(
-      isFeatureEnabledProvider(FeatureFlag.profileMonetizationLinks),
-    );
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
-      child: Row(
-        spacing: 6,
-        children: [
-          Expanded(
-            child: ProfileCreatorSiteButton(
-              userIdHex: userIdHex,
-              isOwnProfile: widget.isOwnProfile,
-            ),
-          ),
-          if (monetizationEnabled && links.isNotEmpty)
-            _ProfileSupportInlineButton(links: links),
-        ],
-      ),
-    );
-  }
-}
-
-/// Tip/support affordance shown beside the creator-site CTA.
-class _ProfileSupportInlineButton extends ConsumerWidget {
-  const _ProfileSupportInlineButton({required this.links});
-
-  final List<MonetizationLink> links;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Small secondary DivineButton to height-match the creator-site CTA beside
-    // it, mirroring the labelled Message / Following pairing in
-    // ProfileActionButtons. The visible label carries its accessible name, so
-    // no separate semanticLabel is needed.
-    return DivineButton(
-      key: const Key('profile-support-button'),
-      label: _supportAffordanceLabel(context),
-      leadingIcon: _supportAffordanceIcon,
-      type: .secondary,
-      size: .small,
-      onPressed: () => _openSupportSheet(context, ref, links),
-    );
-  }
-}
-
+/// Bare — the enclosing row owns spacing and alignment.
 class _ProfileSupportButton extends ConsumerWidget {
   const _ProfileSupportButton({required this.links});
 
@@ -651,36 +511,24 @@ class _ProfileSupportButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (links.isEmpty) return const SizedBox.shrink();
-    final enabled = ref.watch(
-      isFeatureEnabledProvider(FeatureFlag.profileMonetizationLinks),
-    );
-    if (!enabled) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: Align(
-        child: DivineButton(
-          key: const Key('profile-support-button'),
-          leadingIcon: _supportAffordanceIcon,
-          type: .secondary,
-          size: .tiny,
-          label: _supportAffordanceLabel(context),
-          onPressed: () => _openSupportSheet(context, ref, links),
-        ),
-      ),
+    return DivineButton(
+      key: const Key('profile-support-button'),
+      type: .secondary,
+      size: .tiny,
+      label: _supportAffordanceLabel(context),
+      onPressed: () => _openSupportSheet(context, ref, links),
     );
   }
 }
 
-/// Glyph for the tip/support affordance. iOS surfaces optional creator *tips*
-/// (a bolt); other storefronts frame the broader *support* action (a sparkle).
-DivineIconName get _supportAffordanceIcon => usesAppleAppStoreTipPolicy
-    ? DivineIconName.lightning
-    : DivineIconName.sparkle;
+/// Whether the tip/support affordance should be offered for [links].
+bool _showSupportAffordance(WidgetRef ref, List<MonetizationLink> links) =>
+    links.isNotEmpty &&
+    ref.watch(isFeatureEnabledProvider(FeatureFlag.profileMonetizationLinks));
 
-/// Visible label paired with [_supportAffordanceIcon] — "Tip" on iOS
-/// storefronts, "Support" elsewhere.
+/// Visible label for the tip/support affordance — "Tip" on iOS storefronts,
+/// "Support" elsewhere. Deliberately label-only: a bolt glyph reads as
+/// Lightning-Network payment, which this is not.
 String _supportAffordanceLabel(BuildContext context) =>
     usesAppleAppStoreTipPolicy
     ? context.l10n.profileTipButtonLabel

@@ -7,6 +7,8 @@ class _ProfileNameAndBio extends StatelessWidget {
     required this.nip05,
     required this.about,
     required this.isOwnProfile,
+    required this.monetizationLinks,
+    required this.isMonetizationResolved,
     this.displayNameHint,
     this.accentColor,
   });
@@ -16,6 +18,13 @@ class _ProfileNameAndBio extends StatelessWidget {
   final String? nip05;
   final String? about;
   final bool isOwnProfile;
+
+  /// Storefront-filtered tip/support links for the displayed profile.
+  final List<MonetizationLink> monetizationLinks;
+
+  /// Whether the monetization answer for this profile is authoritative.
+  final bool isMonetizationResolved;
+
   final String? displayNameHint;
 
   /// Optional accent color (from profile color) for links/buttons.
@@ -69,10 +78,17 @@ class _ProfileNameAndBio extends StatelessWidget {
                 const SizedBox(height: 16),
                 Skeleton.keep(child: _AboutText(about: about!)),
               ],
-              if (showWebsite) ...[
-                const SizedBox(height: 8),
+              const SizedBox(height: 8),
+              Skeleton.keep(
+                child: _ProfileCreatorLinksRow(
+                  userIdHex: userIdHex,
+                  isOwnProfile: isOwnProfile,
+                  links: monetizationLinks,
+                  isMonetizationResolved: isMonetizationResolved,
+                ),
+              ),
+              if (showWebsite)
                 Skeleton.keep(child: ProfileWebsiteRow(url: website!)),
-              ],
               _VerifiedAccountsBlock(isOwnProfile: isOwnProfile),
             ],
           ),
@@ -85,6 +101,120 @@ class _ProfileNameAndBio extends StatelessWidget {
 /// Horizontal inset applied to the name/bio identity block. Shared so the
 /// badge row can break out of it and scroll edge-to-edge.
 const double _profileIdentityHorizontalInset = 16;
+
+/// The creator-site pill with the tip/support pill beside it.
+///
+/// Both affordances point outward at the creator, so they share one centered
+/// row when the user has enabled tipping. With only one of them present the
+/// row collapses to that single child, still centered.
+///
+/// The monetization links live in custom Kind 0 fields that Funnelcake's REST
+/// projection strips, so on a cold load the relay/cache Kind 0 (and its Tip
+/// links) can land a beat after the link-stripped REST profile. Rendering the
+/// creator-site pill off the REST projection immediately would leave the Tip
+/// pill to pop in seconds later — so the whole row waits until the
+/// monetization answer is authoritative ([isMonetizationResolved]) and reveals
+/// both together (#6328). A timeout reveals the creator-site pill on its own
+/// if the relay never answers, so a dead relay cannot strand the CTA.
+class _ProfileCreatorLinksRow extends ConsumerStatefulWidget {
+  const _ProfileCreatorLinksRow({
+    required this.userIdHex,
+    required this.isOwnProfile,
+    required this.links,
+    required this.isMonetizationResolved,
+  });
+
+  final String userIdHex;
+  final bool isOwnProfile;
+  final List<MonetizationLink> links;
+
+  /// Whether the monetization answer for this profile is authoritative — the
+  /// flag is off, or a non-REST Kind 0 has landed. While false the row is held
+  /// so both pills appear in the same frame.
+  final bool isMonetizationResolved;
+
+  @override
+  ConsumerState<_ProfileCreatorLinksRow> createState() =>
+      _ProfileCreatorLinksRowState();
+}
+
+class _ProfileCreatorLinksRowState
+    extends ConsumerState<_ProfileCreatorLinksRow> {
+  /// Longest the row waits for the relay Kind 0 before revealing the
+  /// creator-site pill on its own. Comfortably exceeds the repository's 5s
+  /// relay-query cap plus a flapping-relay reconnect, so a live-but-slow relay
+  /// still resolves (and both pills reveal together) before this fires; only a
+  /// genuinely dead relay hits the fallback. The Tip pill still fills in if
+  /// its links arrive after the timeout.
+  static const _resolveTimeout = Duration(seconds: 10);
+
+  Timer? _resolveTimer;
+  bool _resolveTimedOut = false;
+  bool? _wasResolved;
+
+  @override
+  void dispose() {
+    _resolveTimer?.cancel();
+    super.dispose();
+  }
+
+  void _syncResolveTimer({required bool isResolved}) {
+    if (_wasResolved == isResolved) return;
+    _wasResolved = isResolved;
+    _resolveTimer?.cancel();
+    _resolveTimer = null;
+    if (isResolved) return;
+    _resolveTimedOut = false;
+    _resolveTimer = Timer(_resolveTimeout, () {
+      if (mounted) setState(() => _resolveTimedOut = true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasCreatorSite = divineSpaceProfileUri(widget.userIdHex) != null;
+    final showSupport = _showSupportAffordance(ref, widget.links);
+
+    // Without a creator site there is nothing to pair the pill with, so it
+    // renders on its own and never waits.
+    if (!hasCreatorSite) {
+      return showSupport
+          ? _ProfileSupportButton(links: widget.links)
+          : const SizedBox.shrink();
+    }
+
+    // Drive the resolution timeout from a post-frame callback rather than
+    // mutating timer state during build. The `_wasResolved` guard inside
+    // `_syncResolveTimer` keeps this idempotent.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _syncResolveTimer(isResolved: widget.isMonetizationResolved);
+      }
+    });
+
+    // Hold the whole row until the monetization answer is authoritative so
+    // both pills reveal in the same frame, rather than the creator-site pill
+    // rendering first off the link-stripped REST projection.
+    if (!widget.isMonetizationResolved && !_resolveTimedOut) {
+      return const SizedBox.shrink();
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      spacing: 12,
+      children: [
+        Flexible(
+          child: ProfileCreatorSiteButton(
+            userIdHex: widget.userIdHex,
+            isOwnProfile: widget.isOwnProfile,
+          ),
+        ),
+        if (showSupport) _ProfileSupportButton(links: widget.links),
+      ],
+    );
+  }
+}
 
 class _ProfileBadgesBlock extends ConsumerWidget {
   const _ProfileBadgesBlock({required this.userIdHex});

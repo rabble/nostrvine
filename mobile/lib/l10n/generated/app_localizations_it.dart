@@ -9871,10 +9871,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'Sito web';
+  String get profileCreatorSiteVisitLabel => 'divine.space';
 
   @override
-  String get profileCreatorSiteOwnLabel => 'Il tuo sito';
+  String get profileCreatorSiteOwnLabel => 'il mio divine.space';
 
   @override
   String get videoMetadataEditCoverTitle => 'Modifica copertina';

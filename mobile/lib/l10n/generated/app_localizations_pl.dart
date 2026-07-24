@@ -9960,10 +9960,10 @@ class AppLocalizationsPl extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'Strona';
+  String get profileCreatorSiteVisitLabel => 'divine.space';
 
   @override
-  String get profileCreatorSiteOwnLabel => 'Twoja strona';
+  String get profileCreatorSiteOwnLabel => 'moja divine.space';
 
   @override
   String get videoMetadataEditCoverTitle => 'Edytuj okładkę';

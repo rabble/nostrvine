@@ -874,11 +874,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final l10n = lookupAppLocalizations(const Locale('en'));
+      final linkFinder = find.byKey(const Key('profile-creator-site-button'));
+      expect(linkFinder, findsOneWidget);
       expect(find.text(l10n.profileCreatorSiteOwnLabel), findsOneWidget);
-      expect(
-        find.byKey(const Key('profile-creator-site-button')),
-        findsOneWidget,
-      );
 
       await tester.pumpWidget(
         buildTestWidget(
@@ -889,8 +887,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text(l10n.profileCreatorSiteVisitLabel), findsOneWidget);
+      expect(linkFinder, findsOneWidget);
+      // "my divine.space" contains "divine.space", so assert the owner copy
+      // is gone rather than just that the visitor copy is present.
       expect(find.text(l10n.profileCreatorSiteOwnLabel), findsNothing);
+      expect(find.text(l10n.profileCreatorSiteVisitLabel), findsOneWidget);
     });
 
     testWidgets('deduplicates only the matching generated profile website', (
@@ -971,43 +972,32 @@ void main() {
       );
       expect(supportButton, findsOneWidget);
       expect(creatorSiteButton, findsOneWidget);
-      // Labelled support pill, not an icon-only heart: the visible copy
-      // carries its accessible name, and non-iOS storefronts use the sparkle.
+      // Label-only support pill: a bolt glyph reads as Lightning-Network
+      // payment, so the affordance carries copy and no icon.
       final l10n = lookupAppLocalizations(const Locale('en'));
       expect(find.text(l10n.profileSupportButtonLabel), findsOneWidget);
-      expect(
-        tester.widget<DivineButton>(supportButton).leadingIcon,
-        DivineIconName.sparkle,
-      );
-      expect(
-        tester.getTopLeft(creatorSiteButton).dy,
-        greaterThan(tester.getBottomLeft(find.text('Creator bio')).dy),
-      );
-      expect(
-        tester.getTopLeft(creatorSiteButton).dy,
-        lessThan(tester.getTopLeft(find.text('Likes')).dy),
-      );
+      expect(tester.widget<DivineButton>(supportButton).leadingIcon, isNull);
 
-      // The support affordance sits beside the creator-site CTA in a single
-      // row, mirroring the profile action buttons below it.
+      // Both affordances share one centered row in the identity block,
+      // between the bio and the stats.
       final creatorRect = tester.getRect(creatorSiteButton);
       final supportRect = tester.getRect(supportButton);
       expect(supportRect.left, greaterThanOrEqualTo(creatorRect.right));
       expect(supportRect.center.dy, closeTo(creatorRect.center.dy, 1));
+      expect(
+        creatorRect.top,
+        greaterThan(tester.getBottomLeft(find.text('Creator bio')).dy),
+      );
+      expect(
+        supportRect.top,
+        lessThan(tester.getTopLeft(find.text('Likes')).dy),
+      );
 
-      // Both painted chips must share an edge. Both are small secondary
-      // DivineButtons, so their painted chips have matching height and top.
-      Rect paintedChip(Finder button) => tester.getRect(
-        find.descendant(of: button, matching: find.byType(Ink)).first,
-      );
-      expect(
-        paintedChip(supportButton).height,
-        paintedChip(creatorSiteButton).height,
-      );
-      expect(
-        paintedChip(supportButton).top,
-        paintedChip(creatorSiteButton).top,
-      );
+      // The pair is centered as a unit, not left-aligned.
+      final rowRect = creatorRect.expandToInclude(supportRect);
+      final screenWidth =
+          tester.view.physicalSize.width / tester.view.devicePixelRatio;
+      expect(rowRect.center.dx, closeTo(screenWidth / 2, 1));
     });
 
     testWidgets('shows the support button in the frame the links arrive', (
@@ -1040,12 +1030,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final creatorSiteButton = find.byKey(
-        const Key('profile-creator-site-button'),
-      );
       final supportButton = find.byKey(const Key('profile-support-button'));
       expect(supportButton, findsNothing);
-      final fullWidth = tester.getRect(creatorSiteButton).width;
 
       await tester.pumpWidget(
         buildTestWidget(
@@ -1063,7 +1049,6 @@ void main() {
       // stranded this button at zero width.
       expect(supportButton, findsOneWidget);
       expect(tester.getRect(supportButton).width, greaterThan(0));
-      expect(tester.getRect(creatorSiteButton).width, lessThan(fullWidth));
     });
 
     testWidgets(
@@ -1301,11 +1286,9 @@ void main() {
       final l10n = lookupAppLocalizations(const Locale('en'));
       expect(find.text(l10n.profileTipButtonLabel), findsOneWidget);
       expect(find.text(l10n.profileSupportButtonLabel), findsNothing);
-      // iOS storefronts surface the bolt for the optional-tip framing.
-      expect(
-        tester.widget<DivineButton>(supportButton).leadingIcon,
-        DivineIconName.lightning,
-      );
+      // Copy alone carries the tip framing — no bolt, which would read as a
+      // Lightning-Network payment rather than an optional creator tip.
+      expect(tester.widget<DivineButton>(supportButton).leadingIcon, isNull);
     });
 
     testWidgets('displays stats from ProfileStats when provided', (

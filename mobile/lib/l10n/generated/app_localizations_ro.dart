@@ -9977,10 +9977,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'Site web';
+  String get profileCreatorSiteVisitLabel => 'divine.space';
 
   @override
-  String get profileCreatorSiteOwnLabel => 'Site-ul tău';
+  String get profileCreatorSiteOwnLabel => 'divine.space-ul meu';
 
   @override
   String get videoMetadataEditCoverTitle => 'Editează coperta';

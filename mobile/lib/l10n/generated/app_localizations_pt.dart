@@ -9839,10 +9839,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'Site';
+  String get profileCreatorSiteVisitLabel => 'divine.space';
 
   @override
-  String get profileCreatorSiteOwnLabel => 'Seu site';
+  String get profileCreatorSiteOwnLabel => 'meu divine.space';
 
   @override
   String get videoMetadataEditCoverTitle => 'Editar capa';
