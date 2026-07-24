@@ -38,8 +38,10 @@ final class DivineScreenshots: XCTestCase {
 
     /// First-launch account creation + relay warm-up can be slow.
     private static let warmupTimeout: TimeInterval = 180
-    /// Regular content loads (network fetch + render).
-    private static let contentTimeout: TimeInterval = 90
+    /// Regular content loads. Every content screen fetches live production
+    /// data (funnelcake / relays), so the wait must absorb network variance
+    /// — a too-tight bound is the main source of flaky captures.
+    private static let contentTimeout: TimeInterval = 180
 
     override func setUpWithError() throws {
         continueAfterFailure = false
