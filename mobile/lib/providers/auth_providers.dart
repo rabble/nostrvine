@@ -20,6 +20,7 @@ import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/services/account_deletion_service.dart';
+import 'package:openvine/services/auth/account_scope.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/cawg_verifier_client.dart';
 import 'package:openvine/services/email_verification_listener.dart';
@@ -187,6 +188,38 @@ AuthState currentAuthState(Ref ref) {
   // Return current state
   return authService.authState;
 }
+
+/// The active account as an [AccountScope], derived from [AuthService]'s
+/// current session.
+///
+/// This is the bridge form of `activeAccountProvider` (design §8.1): it
+/// *derives* the scope from the existing mutable auth state so consumers can
+/// begin reading the immutable [AccountScope] type today. When the container
+/// swap lands (Phase 4) this provider is overridden with a concrete scope at
+/// container construction and the derivation is removed — consumers do not
+/// change.
+///
+/// Rebuilds on every auth transition by watching [currentAuthStateProvider].
+final activeAccountProvider = Provider<AccountScope>((ref) {
+  // Rebuild whenever authentication state changes.
+  ref.watch(currentAuthStateProvider);
+  final authService = ref.watch(authServiceProvider);
+
+  final identity = authService.currentIdentity;
+  final pubkeyHex = authService.currentPublicKeyHex;
+  if (authService.authState != AuthState.authenticated ||
+      identity == null ||
+      pubkeyHex == null) {
+    return const SignedOut();
+  }
+  return SignedIn(
+    AccountSession(
+      pubkeyHex: pubkeyHex,
+      identity: identity,
+      source: authService.authenticationSource,
+    ),
+  );
+});
 
 /// Boundary-safe auth helper for recorder exits.
 ///
