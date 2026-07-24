@@ -525,5 +525,78 @@ void main() {
       expect(results[0].isSuccess, isFalse);
       expect(results[0].error, isNotNull);
     });
+
+    group('inner rumor id is derived, never trusted', () {
+      // A NIP-59 rumor is unsigned, so its claimed `id` is attacker-chosen —
+      // and it becomes the direct_messages primary key and the reaction
+      // upsert key downstream.
+      test(
+        'a claimed non-canonical id is replaced by the canonical one',
+        () async {
+          final recipientPriv = generatePrivateKey();
+          final recipientPub = getPublicKey(recipientPriv);
+          final senderPriv = generatePrivateKey();
+          final senderPub = getPublicKey(senderPriv);
+
+          final rumor = _buildRumor(
+            senderPubkey: senderPub,
+            recipientPubkey: recipientPub,
+            content: 'overwrite me',
+          );
+          final canonicalId = rumor.id;
+          rumor.id = 'f' * 64;
+
+          final gift = await _buildGiftWrap(
+            rumor: rumor,
+            senderPrivateKey: senderPriv,
+            recipientPubkey: recipientPub,
+          );
+
+          final results = await decryptGiftWrapBatch(
+            DecryptBatchRequest(
+              events: [gift.toJson()],
+              privateKeyHex: recipientPriv,
+            ),
+          );
+
+          expect(results, hasLength(1));
+          expect(results[0].isSuccess, isTrue);
+          final decrypted = Event.fromJson(results[0].rumor!);
+          expect(decrypted.id, isNot(equals('f' * 64)));
+          expect(decrypted.id, equals(canonicalId));
+          expect(decrypted.isValid, isTrue);
+          expect(decrypted.content, equals('overwrite me'));
+        },
+      );
+
+      test('an honest sender sees no divergence in the id', () async {
+        final recipientPriv = generatePrivateKey();
+        final recipientPub = getPublicKey(recipientPriv);
+        final senderPriv = generatePrivateKey();
+        final senderPub = getPublicKey(senderPriv);
+
+        final rumor = _buildRumor(
+          senderPubkey: senderPub,
+          recipientPubkey: recipientPub,
+          content: 'round trip',
+        );
+
+        final gift = await _buildGiftWrap(
+          rumor: rumor,
+          senderPrivateKey: senderPriv,
+          recipientPubkey: recipientPub,
+        );
+
+        final results = await decryptGiftWrapBatch(
+          DecryptBatchRequest(
+            events: [gift.toJson()],
+            privateKeyHex: recipientPriv,
+          ),
+        );
+
+        expect(results[0].isSuccess, isTrue);
+        expect(Event.fromJson(results[0].rumor!).id, equals(rumor.id));
+      });
+    });
   });
 }

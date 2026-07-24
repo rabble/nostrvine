@@ -203,5 +203,90 @@ void main() {
       expect(rumor!.content, equals('still delivered'));
       expect(rumor.pubkey, equals(senderPubkey));
     });
+
+    group('inner rumor id is derived, never trusted', () {
+      // NIP-59 leaves the rumor unsigned, so nothing binds its claimed `id`
+      // to its body — yet that id becomes the direct_messages primary key
+      // and the reaction upsert key. A sender who claims an id already in
+      // use could otherwise silently overwrite another user's row.
+      test(
+        'a claimed non-canonical id is replaced by the canonical one',
+        () async {
+          final tampered = Event(
+            senderPubkey,
+            EventKind.privateDirectMessage,
+            const <List<String>>[],
+            'secret message',
+          );
+          final canonicalId = tampered.id;
+          // Claim an id that does not match the body at all.
+          tampered.id = 'f' * 64;
+
+          final wrap = await buildGiftWrap(
+            rumor: tampered,
+            senderPrivateKey: senderPrivateKey,
+            recipientPubkey: getPublicKey(recipientPrivateKey),
+          );
+
+          final rumor = await GiftWrapUtil.getRumorEvent(recipientNostr, wrap);
+
+          expect(rumor, isNotNull);
+          expect(rumor!.id, isNot(equals('f' * 64)));
+          expect(rumor.id, equals(canonicalId));
+          expect(rumor.isValid, isTrue);
+          // Body is untouched — only the id is re-derived.
+          expect(rumor.content, equals('secret message'));
+          expect(rumor.pubkey, equals(senderPubkey));
+        },
+      );
+
+      test('an honest sender sees no divergence in the id', () async {
+        final honest = Event(
+          senderPubkey,
+          EventKind.privateDirectMessage,
+          const <List<String>>[
+            ['p', 'abc'],
+          ],
+          'round trip',
+        );
+        final wrap = await buildGiftWrap(
+          rumor: honest,
+          senderPrivateKey: senderPrivateKey,
+          recipientPubkey: getPublicKey(recipientPrivateKey),
+        );
+
+        final rumor = await GiftWrapUtil.getRumorEvent(recipientNostr, wrap);
+
+        // Our own send path builds rumors through the same constructor, so
+        // the self-wrap round trip and outgoing-queue key stay consistent.
+        expect(rumor!.id, equals(honest.id));
+      });
+
+      test('a spoofed author is re-attributed AND its id re-derived from the '
+          'seal pubkey', () async {
+        final impostorPubkey = getPublicKey(generatePrivateKey());
+        final spoofed = Event(
+          impostorPubkey,
+          EventKind.privateDirectMessage,
+          const <List<String>>[],
+          'i am someone else',
+        );
+        final spoofedId = spoofed.id;
+
+        final wrap = await buildGiftWrap(
+          rumor: spoofed,
+          // Sealed and signed by the real sender, claiming another author.
+          senderPrivateKey: senderPrivateKey,
+          recipientPubkey: getPublicKey(recipientPrivateKey),
+        );
+
+        final rumor = await GiftWrapUtil.getRumorEvent(recipientNostr, wrap);
+
+        expect(rumor, isNotNull);
+        expect(rumor!.pubkey, equals(senderPubkey));
+        expect(rumor.id, isNot(equals(spoofedId)));
+        expect(rumor.isValid, isTrue);
+      });
+    });
   });
 }

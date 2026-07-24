@@ -151,31 +151,25 @@ Future<DecryptedRumorResult> _decryptOne(
     );
   }
 
-  // NIP-17 sender verification: the rumor's claimed author is NOT
-  // cryptographically authenticated — the seal's pubkey IS (it signed
-  // the seal). When they differ, attribute the message to the seal's
-  // authenticated pubkey to prevent impersonation. This mirrors the
-  // logic in GiftWrapUtil.getRumorEvent.
-  final rumorPubkey = rumorJson['pubkey'];
-  final spoofedAuthor =
-      rumorPubkey is String && rumorPubkey != sealEvent.pubkey;
-
-  // Round-trip through Event to normalize shape and re-emit toJson so
-  // the main isolate receives exactly what Event.fromJson expects back.
+  // NIP-59 leaves the rumor unsigned, so NOTHING in it is authenticated —
+  // not its `pubkey` and not its `id`. The seal's pubkey IS authenticated
+  // (it signed the seal), so it is the authoritative author, and the id is
+  // derived rather than trusted: it becomes the `direct_messages` primary
+  // key and the reaction upsert key, so accepting a claimed one lets a
+  // sender overwrite another user's row. Rebuilding through the Event
+  // constructor recomputes the canonical NIP-01 id from the rumor's own
+  // fields — for a well-formed sender it equals the claimed id, so there is
+  // no observable divergence. Mirrors GiftWrapUtil.getRumorEvent and
+  // DmRepository._rumorFromSlot, which already build rumors this way.
   try {
-    var rumor = Event.fromJson(rumorJson);
-    if (spoofedAuthor) {
-      // C4: rebuild with the seal's authenticated pubkey so the rumor id
-      // is RECOMPUTED to match (Event.fromJson would otherwise carry over
-      // the spoofed id). The rebuilt rumor is unsigned, per NIP-59.
-      rumor = Event(
-        sealEvent.pubkey,
-        rumor.kind,
-        rumor.tags,
-        rumor.content,
-        createdAt: rumor.createdAt,
-      );
-    }
+    final parsed = Event.fromJson(rumorJson);
+    final rumor = Event(
+      sealEvent.pubkey,
+      parsed.kind,
+      parsed.tags,
+      parsed.content,
+      createdAt: parsed.createdAt,
+    );
     return DecryptedRumorResult.success(rumor.toJson());
   } on Object catch (e) {
     return DecryptedRumorResult.failure(

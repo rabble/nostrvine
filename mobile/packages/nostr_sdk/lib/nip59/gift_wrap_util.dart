@@ -128,19 +128,28 @@ class GiftWrapUtil {
         'GiftWrap sender pubkey mismatch: seal=${rumorEvent.pubkey} '
         'rumor=${innerEvent.pubkey}. Using seal pubkey as authoritative sender.',
       );
-      // C4: rebuild the rumor with the seal's authenticated pubkey so the
-      // event id is RECOMPUTED to match (Event.fromJson would otherwise carry
-      // over the spoofed id). The rebuilt rumor is unsigned, per NIP-59.
-      return Event(
-        rumorEvent.pubkey,
-        innerEvent.kind,
-        innerEvent.tags,
-        innerEvent.content,
-        createdAt: innerEvent.createdAt,
-      );
     }
 
-    return innerEvent;
+    // Rebuild unconditionally through the Event constructor so BOTH
+    // unauthenticated fields are handled at one seam: the pubkey becomes the
+    // seal's (authenticated) one, and the id is DERIVED rather than trusted.
+    //
+    // Because the rumor is unsigned, nothing binds its claimed `id` to its
+    // body — yet that id becomes the `direct_messages` primary key and the
+    // reaction upsert key, so a sender who claims an id already in use can
+    // silently overwrite another user's row. The constructor recomputes the
+    // canonical NIP-01 id from the rumor's own fields; for a well-formed
+    // sender it equals the claimed id, so there is no observable divergence,
+    // and for a non-canonical one the recompute is the more correct choice.
+    // DmRepository._rumorFromSlot already builds rumors exactly this way.
+    // The rebuilt rumor is unsigned, per NIP-59.
+    return Event(
+      rumorEvent.pubkey,
+      innerEvent.kind,
+      innerEvent.tags,
+      innerEvent.content,
+      createdAt: innerEvent.createdAt,
+    );
   }
 
   static Future<Event?> getGiftWrapEvent(
