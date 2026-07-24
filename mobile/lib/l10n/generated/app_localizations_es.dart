@@ -6861,7 +6861,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get deleteAccountWarningBody =>
-      'This permanently deletes your account and all your content from Divine, and sends a deletion request to other Nostr relays. Some relays and clients may still keep copies.';
+      'This sends deletion requests for your account and content, deletes your Divine account when possible, and signs you out on this device. Some relays, clients, and search indexes may keep copies. Other signed-in devices stay active until you remove the keys there.';
 
   @override
   String get exportProgressStageApplyingTextOverlay =>

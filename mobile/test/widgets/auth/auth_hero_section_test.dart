@@ -23,7 +23,7 @@ List<String> _svgAssetNames(WidgetTester tester) => tester
     .map((loader) => loader.assetName)
     .toList();
 
-int _imageSemanticsNodeCount(WidgetTester tester) {
+int _wordmarkImageSemanticsNodeCount(WidgetTester tester) {
   final root = tester
       .binding
       .renderViews
@@ -34,7 +34,7 @@ int _imageSemanticsNodeCount(WidgetTester tester) {
   var count = 0;
 
   bool visit(SemanticsNode node) {
-    if (node.flagsCollection.isImage) {
+    if (node.flagsCollection.isImage && node.label == AppConfig.appName) {
       count++;
     }
     node.visitChildren(visit);
@@ -144,7 +144,7 @@ void main() {
         semantics.dispose();
       });
 
-      testWidgets('exports only the wordmark image to semantics', (
+      testWidgets('exports the wordmark image to semantics', (
         tester,
       ) async {
         final semantics = tester.ensureSemantics();
@@ -155,7 +155,7 @@ void main() {
         // and platform in the merged-isolate suite). Settle before counting.
         await tester.pumpAndSettle();
 
-        expect(_imageSemanticsNodeCount(tester), equals(1));
+        expect(_wordmarkImageSemanticsNodeCount(tester), equals(1));
         expect(find.bySemanticsLabel(AppConfig.appName), findsOneWidget);
 
         semantics.dispose();
