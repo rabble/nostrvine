@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,6 +16,8 @@ import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
@@ -60,6 +63,9 @@ void main() {
       () => mockAuthService.authStateStream,
     ).thenAnswer((_) => authStateController.stream);
     when(() => mockAuthService.isAuthenticated).thenReturn(false);
+    when(() => mockAuthService.authState).thenReturn(AuthState.unauthenticated);
+    when(() => mockAuthService.isAnonymous).thenReturn(false);
+    when(() => mockAuthService.currentPublicKeyHex).thenReturn(null);
 
     // Stub pending verification service
     when(() => mockPendingVerification.clear()).thenAnswer((_) async {});
@@ -82,13 +88,16 @@ void main() {
     String? verifier,
     String? email,
     String? token,
+    bool restored = false,
+    bool pinFallbackEnabled = true,
     EmailVerificationState initialState = const EmailVerificationState(),
+    Stream<EmailVerificationState>? stateStream,
   }) {
     // Set up cubit state
     when(() => mockCubit.state).thenReturn(initialState);
     whenListen(
       mockCubit,
-      const Stream<EmailVerificationState>.empty(),
+      stateStream ?? const Stream<EmailVerificationState>.empty(),
       initialState: initialState,
     );
 
@@ -99,6 +108,9 @@ void main() {
         pendingVerificationServiceProvider.overrideWithValue(
           mockPendingVerification,
         ),
+        isFeatureEnabledProvider(
+          FeatureFlag.emailVerificationPinFallback,
+        ).overrideWithValue(pinFallbackEnabled),
       ],
       child: RepositoryProvider<InviteApiClient>.value(
         value: mockInviteApiClient,
@@ -121,6 +133,7 @@ void main() {
                       verifier: verifier,
                       email: email,
                       token: token,
+                      restored: restored,
                     ),
                   ),
                 ),
@@ -161,7 +174,10 @@ void main() {
     String? verifier,
     String? email,
     String? token,
+    bool restored = false,
+    bool pinFallbackEnabled = true,
     EmailVerificationState initialState = const EmailVerificationState(),
+    Stream<EmailVerificationState>? stateStream,
   }) async {
     await tester.binding.setSurfaceSize(const Size(800, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -171,7 +187,10 @@ void main() {
         verifier: verifier,
         email: email,
         token: token,
+        restored: restored,
+        pinFallbackEnabled: pinFallbackEnabled,
         initialState: initialState,
+        stateStream: stateStream,
       ),
     );
   }
@@ -605,6 +624,56 @@ void main() {
       );
 
       testWidgets(
+        'does not start polling when disposed during persistence load',
+        (tester) async {
+          final loadCompleter = Completer<PendingVerification?>();
+          when(
+            () => mockPendingVerification.load(),
+          ).thenAnswer((_) => loadCompleter.future);
+          when(
+            () => mockOAuth.verifyEmail(token: any(named: 'token')),
+          ).thenAnswer((_) async => VerifyEmailResult(success: true));
+          when(
+            () => mockCubit.startPolling(
+              deviceCode: any(named: 'deviceCode'),
+              verifier: any(named: 'verifier'),
+              email: any(named: 'email'),
+              inviteCode: any(named: 'inviteCode'),
+            ),
+          ).thenReturn(null);
+
+          await tester.pumpWidget(createTestWidget(token: 'persisted-token'));
+          await tester.pump();
+
+          // Unmount the screen while the persistence load is still in flight.
+          await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+          await tester.pump();
+
+          // Resolve the load after dispose — the mounted guard must stop the
+          // resumed async path from re-arming polling on a dead widget.
+          loadCompleter.complete(
+            PendingVerification(
+              deviceCode: 'persisted-device-code',
+              verifier: 'persisted-verifier',
+              email: 'user@example.com',
+              createdAt: DateTime(2026),
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 10));
+
+          verifyNever(
+            () => mockCubit.startPolling(
+              deviceCode: any(named: 'deviceCode'),
+              verifier: any(named: 'verifier'),
+              email: any(named: 'email'),
+              inviteCode: any(named: 'inviteCode'),
+            ),
+          );
+        },
+      );
+
+      testWidgets(
         're-verifies when token changes while already in token mode',
         (tester) async {
           final tokenNotifier = ValueNotifier<String>('token-1');
@@ -619,9 +688,7 @@ void main() {
             const Stream<EmailVerificationState>.empty(),
             initialState: initialState,
           );
-          when(
-            () => mockCubit.verifyEmailToken(token: 'token-1'),
-          ).thenAnswer(
+          when(() => mockCubit.verifyEmailToken(token: 'token-1')).thenAnswer(
             (_) async => const EmailTokenVerificationResult.terminalFailure(
               EmailVerificationError.verificationLinkExpired,
             ),
@@ -664,9 +731,7 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 10));
 
-          verify(
-            () => mockCubit.verifyEmailToken(token: 'token-1'),
-          ).called(1);
+          verify(() => mockCubit.verifyEmailToken(token: 'token-1')).called(1);
 
           tokenNotifier.value = 'token-2';
           await tester.pump();
@@ -678,6 +743,531 @@ void main() {
               keepPollingOnTransient: true,
             ),
           ).called(1);
+        },
+      );
+
+      testWidgets(
+        'late link click after timeout re-arms polling on verifyEmail success',
+        (tester) async {
+          // Start with no token: the link click below delivers the first
+          // token to an already-open, timed-out screen (the real late-click).
+          final tokenNotifier = ValueNotifier<String>('');
+          const timedOutState = EmailVerificationState(
+            status: EmailVerificationStatus.pollingTimedOut,
+            pendingEmail: 'user@example.com',
+          );
+
+          when(() => mockCubit.state).thenReturn(timedOutState);
+          whenListen(
+            mockCubit,
+            const Stream<EmailVerificationState>.empty(),
+            initialState: timedOutState,
+          );
+          when(() => mockCubit.resumePollingAfterTimeout()).thenReturn(null);
+          when(
+            () => mockCubit.verifyEmailToken(
+              token: any(named: 'token'),
+              pendingEmail: any(named: 'pendingEmail'),
+              keepPollingOnTransient: any(named: 'keepPollingOnTransient'),
+            ),
+          ).thenAnswer(
+            (_) async => const EmailTokenVerificationResult.success(),
+          );
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                ...getStandardTestOverrides(mockAuthService: mockAuthService),
+                oauthClientProvider.overrideWithValue(mockOAuth),
+                pendingVerificationServiceProvider.overrideWithValue(
+                  mockPendingVerification,
+                ),
+              ],
+              child: MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                theme: VineTheme.theme,
+                home: BlocProvider<EmailVerificationCubit>.value(
+                  value: mockCubit,
+                  child: ValueListenableBuilder<String>(
+                    valueListenable: tokenNotifier,
+                    builder: (context, token, _) =>
+                        EmailVerificationScreen(token: token),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 10));
+
+          // A late link click arrives while the screen sits in pollingTimedOut.
+          tokenNotifier.value = 'token-2';
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 10));
+
+          verify(
+            () => mockCubit.verifyEmailToken(
+              token: 'token-2',
+              pendingEmail: 'user@example.com',
+              keepPollingOnTransient: true,
+            ),
+          ).called(1);
+          verify(() => mockCubit.resumePollingAfterTimeout()).called(1);
+        },
+      );
+    });
+
+    group('PIN entry fallback', () {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      const pollingState = EmailVerificationState(
+        status: EmailVerificationStatus.polling,
+        pendingEmail: 'user@example.com',
+      );
+
+      testWidgets('renders the PIN field, prompt, and submit in polling mode', (
+        tester,
+      ) async {
+        await pumpVerificationScreen(
+          tester,
+          deviceCode: 'test-device-code',
+          verifier: 'test-verifier',
+          email: 'user@example.com',
+          initialState: pollingState,
+        );
+        await tester.pump();
+
+        expect(find.text(l10n.authVerificationPinPrompt), findsOneWidget);
+        expect(find.byType(TextFormField), findsOneWidget);
+        expect(
+          find.widgetWithText(DivineButton, l10n.authVerificationPinSubmit),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('hides the PIN fallback when the feature flag is disabled', (
+        tester,
+      ) async {
+        await pumpVerificationScreen(
+          tester,
+          deviceCode: 'test-device-code',
+          verifier: 'test-verifier',
+          email: 'user@example.com',
+          pinFallbackEnabled: false,
+          initialState: pollingState,
+        );
+        await tester.pump();
+
+        expect(find.text(l10n.authVerificationPinPrompt), findsNothing);
+        expect(find.byType(TextFormField), findsNothing);
+        expect(
+          find.widgetWithText(DivineButton, l10n.authVerificationPinSubmit),
+          findsNothing,
+        );
+        expect(
+          find.widgetWithText(DivineButton, l10n.authOpenEmailApp),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('submitting a 6-digit PIN dispatches submitPin', (
+        tester,
+      ) async {
+        when(() => mockCubit.submitPin(any())).thenAnswer((_) async {});
+
+        await pumpVerificationScreen(
+          tester,
+          deviceCode: 'test-device-code',
+          verifier: 'test-verifier',
+          email: 'user@example.com',
+          initialState: pollingState,
+        );
+        await tester.pump();
+
+        await tester.enterText(find.byType(TextFormField), '123456');
+        await tester.pump();
+        await tester.tap(
+          find.widgetWithText(DivineButton, l10n.authVerificationPinSubmit),
+        );
+        await tester.pump();
+
+        verify(() => mockCubit.submitPin('123456')).called(1);
+      });
+
+      testWidgets('shows the localized error when a PIN submission failed', (
+        tester,
+      ) async {
+        await pumpVerificationScreen(
+          tester,
+          deviceCode: 'test-device-code',
+          verifier: 'test-verifier',
+          email: 'user@example.com',
+          initialState: const EmailVerificationState(
+            status: EmailVerificationStatus.polling,
+            pendingEmail: 'user@example.com',
+            pinStatus: PinSubmissionStatus.failure,
+            pinErrorCode: EmailVerificationError.pinInvalid,
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(l10n.authVerificationErrorPinInvalid), findsOneWidget);
+      });
+
+      testWidgets('announces a PIN failure to assistive tech', (tester) async {
+        final announcements = <Map<Object?, Object?>>[];
+        tester.binding.defaultBinaryMessenger
+            .setMockDecodedMessageHandler<Object?>(
+              SystemChannels.accessibility,
+              (Object? message) async {
+                if (message is Map) announcements.add(message);
+                return null;
+              },
+            );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger
+              .setMockDecodedMessageHandler<Object?>(
+                SystemChannels.accessibility,
+                null,
+              ),
+        );
+
+        await pumpVerificationScreen(
+          tester,
+          deviceCode: 'test-device-code',
+          verifier: 'test-verifier',
+          email: 'user@example.com',
+          initialState: pollingState,
+          stateStream: Stream<EmailVerificationState>.fromIterable(const [
+            EmailVerificationState(
+              status: EmailVerificationStatus.polling,
+              pendingEmail: 'user@example.com',
+              pinStatus: PinSubmissionStatus.failure,
+              pinErrorCode: EmailVerificationError.pinInvalid,
+            ),
+          ]),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        expect(
+          announcements.any((message) {
+            final data = message['data'];
+            return message['type'] == 'announce' &&
+                data is Map &&
+                data['message'] == l10n.authVerificationErrorPinInvalid;
+          }),
+          isTrue,
+        );
+      });
+
+      testWidgets('surfaces the resend cooldown countdown', (tester) async {
+        await pumpVerificationScreen(
+          tester,
+          deviceCode: 'test-device-code',
+          verifier: 'test-verifier',
+          email: 'user@example.com',
+          initialState: const EmailVerificationState(
+            status: EmailVerificationStatus.polling,
+            pendingEmail: 'user@example.com',
+            resendStatus: ResendStatus.cooldown,
+            resendCooldownSeconds: 299,
+          ),
+        );
+        await tester.pump();
+
+        expect(
+          find.text(l10n.authVerificationResendCooldown('4:59')),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('surfaces a retryable resend failure', (tester) async {
+        await pumpVerificationScreen(
+          tester,
+          deviceCode: 'test-device-code',
+          verifier: 'test-verifier',
+          email: 'user@example.com',
+          initialState: const EmailVerificationState(
+            status: EmailVerificationStatus.polling,
+            pendingEmail: 'user@example.com',
+            resendStatus: ResendStatus.failure,
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(l10n.authVerificationResendFailed), findsOneWidget);
+        expect(find.text(l10n.authVerificationResend), findsOneWidget);
+      });
+
+      testWidgets('tapping resend dispatches resendVerification', (
+        tester,
+      ) async {
+        when(() => mockCubit.resendVerification()).thenAnswer((_) async {});
+
+        await pumpVerificationScreen(
+          tester,
+          deviceCode: 'test-device-code',
+          verifier: 'test-verifier',
+          email: 'user@example.com',
+          initialState: pollingState,
+        );
+        await tester.pump();
+
+        await tester.tap(find.text(l10n.authVerificationResend));
+        await tester.pump();
+
+        verify(() => mockCubit.resendVerification()).called(1);
+      });
+
+      testWidgets('pollingTimedOut keeps PIN entry but drops the spinner', (
+        tester,
+      ) async {
+        await pumpVerificationScreen(
+          tester,
+          deviceCode: 'test-device-code',
+          verifier: 'test-verifier',
+          email: 'user@example.com',
+          initialState: const EmailVerificationState(
+            status: EmailVerificationStatus.pollingTimedOut,
+            pendingEmail: 'user@example.com',
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(l10n.authVerificationPinPrompt), findsOneWidget);
+        expect(find.text(l10n.authWaitingForVerification), findsNothing);
+      });
+    });
+
+    group('cold-start restore escape hatch', () {
+      const pollingState = EmailVerificationState(
+        status: EmailVerificationStatus.polling,
+        pendingEmail: 'user@example.com',
+      );
+
+      testWidgets('restored polling mode shows the PIN field', (tester) async {
+        await pumpVerificationScreen(
+          tester,
+          deviceCode: 'test-device-code',
+          verifier: 'test-verifier',
+          email: 'user@example.com',
+          restored: true,
+          initialState: pollingState,
+        );
+        await tester.pump();
+
+        expect(
+          find.text(
+            lookupAppLocalizations(
+              const Locale('en'),
+            ).authVerificationPinPrompt,
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets(
+        'closing in restored mode clears the pending record and returns home',
+        (tester) async {
+          await pumpVerificationScreen(
+            tester,
+            deviceCode: 'test-device-code',
+            verifier: 'test-verifier',
+            email: 'user@example.com',
+            restored: true,
+            initialState: pollingState,
+          );
+          await tester.pump();
+
+          await tester.tap(_divineIcon(DivineIconName.x));
+          await tester.pumpAndSettle();
+
+          verify(() => mockPendingVerification.clear()).called(1);
+          expect(find.byType(EmailVerificationScreen), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'closing in normal (non-restored) mode keeps the pending record',
+        (tester) async {
+          await pumpVerificationScreen(
+            tester,
+            deviceCode: 'test-device-code',
+            verifier: 'test-verifier',
+            email: 'user@example.com',
+            initialState: pollingState,
+          );
+          await tester.pump();
+
+          await tester.tap(_divineIcon(DivineIconName.x));
+          await tester.pumpAndSettle();
+
+          verifyNever(() => mockPendingVerification.clear());
+        },
+      );
+
+      testWidgets(
+        'polling-mode restore hydrates inviteCode from the persisted record',
+        (tester) async {
+          // The restore URL carries deviceCode/verifier/email but cannot carry
+          // the invite; on a cold start the in-memory grant is gone, so the
+          // invite must come from the persisted record.
+          when(() => mockPendingVerification.load()).thenAnswer(
+            (_) async => PendingVerification(
+              deviceCode: 'test-device-code',
+              verifier: 'test-verifier',
+              email: 'user@example.com',
+              createdAt: DateTime(2026),
+              inviteCode: 'INV-CODE',
+            ),
+          );
+          when(
+            () => mockCubit.startPolling(
+              deviceCode: any(named: 'deviceCode'),
+              verifier: any(named: 'verifier'),
+              email: any(named: 'email'),
+              inviteCode: any(named: 'inviteCode'),
+            ),
+          ).thenReturn(null);
+
+          await pumpVerificationScreen(
+            tester,
+            deviceCode: 'test-device-code',
+            verifier: 'test-verifier',
+            email: 'user@example.com',
+            restored: true,
+            initialState: pollingState,
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 10));
+
+          verify(
+            () => mockCubit.startPolling(
+              deviceCode: 'test-device-code',
+              verifier: 'test-verifier',
+              email: 'user@example.com',
+              inviteCode: 'INV-CODE',
+            ),
+          ).called(1);
+        },
+      );
+
+      testWidgets(
+        'Start Over from a terminal failure clears the pending record',
+        (tester) async {
+          await pumpVerificationScreen(
+            tester,
+            deviceCode: 'test-device-code',
+            verifier: 'test-verifier',
+            initialState: const EmailVerificationState(
+              status: EmailVerificationStatus.failure,
+              errorCode: EmailVerificationError.pollFailed,
+            ),
+          );
+          await tester.pump();
+
+          await tester.tap(find.widgetWithText(DivineButton, 'Start over'));
+          await tester.pumpAndSettle();
+
+          verify(() => mockPendingVerification.clear()).called(greaterThan(0));
+        },
+      );
+
+      testWidgets(
+        'restore rehydrates deviceCode/verifier from the record, not the URL',
+        (tester) async {
+          when(() => mockPendingVerification.load()).thenAnswer(
+            (_) async => PendingVerification(
+              deviceCode: 'record-device',
+              verifier: 'record-verifier',
+              email: 'user@example.com',
+              createdAt: DateTime.now(),
+              inviteCode: 'record-invite',
+            ),
+          );
+          when(
+            () => mockCubit.startPolling(
+              deviceCode: any(named: 'deviceCode'),
+              verifier: any(named: 'verifier'),
+              email: any(named: 'email'),
+              inviteCode: any(named: 'inviteCode'),
+            ),
+          ).thenReturn(null);
+
+          // The restore URL carries only email + restored=true; the secrets
+          // must come from the persisted record.
+          await pumpVerificationScreen(
+            tester,
+            email: 'user@example.com',
+            restored: true,
+            initialState: pollingState,
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 10));
+
+          verify(
+            () => mockCubit.startPolling(
+              deviceCode: 'record-device',
+              verifier: 'record-verifier',
+              email: 'user@example.com',
+              inviteCode: 'record-invite',
+            ),
+          ).called(1);
+        },
+      );
+
+      testWidgets(
+        'restore does not poll an owner-bound record for another identity',
+        (tester) async {
+          const recordOwner =
+              '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+          const activeOwner =
+              'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
+          when(
+            () => mockAuthService.authState,
+          ).thenReturn(AuthState.authenticated);
+          when(() => mockAuthService.isAnonymous).thenReturn(true);
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn(activeOwner);
+          when(() => mockPendingVerification.load()).thenAnswer(
+            (_) async => PendingVerification(
+              deviceCode: 'record-device',
+              verifier: 'record-verifier',
+              email: 'user@example.com',
+              createdAt: DateTime.now(),
+              ownerPublicKeyHex: recordOwner,
+            ),
+          );
+          when(
+            () => mockCubit.startPolling(
+              deviceCode: any(named: 'deviceCode'),
+              verifier: any(named: 'verifier'),
+              email: any(named: 'email'),
+              inviteCode: any(named: 'inviteCode'),
+            ),
+          ).thenReturn(null);
+
+          await pumpVerificationScreen(
+            tester,
+            email: 'user@example.com',
+            restored: true,
+            initialState: pollingState,
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 10));
+
+          verifyNever(
+            () => mockCubit.startPolling(
+              deviceCode: any(named: 'deviceCode'),
+              verifier: any(named: 'verifier'),
+              email: any(named: 'email'),
+              inviteCode: any(named: 'inviteCode'),
+            ),
+          );
         },
       );
     });

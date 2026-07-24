@@ -177,7 +177,6 @@ void main() {
   });
 }
 
-// Every key in app_en.arb is currently translated in all non-English locales.
 // Add keys here only when a translation pass is intentionally deferred.
 const _knownUntranslatedDebt = <String>{
   // #6217: light-mode experiment copy; translation deferred until rollout.
@@ -205,6 +204,21 @@ const _knownUntranslatedDebt = <String>{
   'communitySuggestFailure',
   'communitySuggestAlready',
   'communitySuggestActionLabel',
+  // Added by the in-app email-verification PIN fallback (#5578). The English
+  // source ships now; the non-English locales fall back to English until the
+  // next translation pass picks these up.
+  'authVerificationPinPrompt',
+  'authVerificationPinFieldLabel',
+  'authVerificationPinSubmit',
+  'authVerificationResendPrompt',
+  'authVerificationResend',
+  'authVerificationResendCooldown',
+  'authVerificationResendFailed',
+  'authVerificationErrorPinInvalid',
+  'authVerificationErrorPinExpired',
+  'authVerificationErrorPinLocked',
+  'authVerificationErrorPinFailed',
+  'authVerificationErrorPinUnavailable',
 };
 
 const _signatureVerificationKeys = <String>{

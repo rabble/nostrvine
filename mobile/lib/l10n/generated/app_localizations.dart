@@ -5232,6 +5232,48 @@ abstract class AppLocalizations {
   /// **'Open email app'**
   String get authOpenEmailApp;
 
+  /// No description provided for @authVerificationPinPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Or enter the 6-digit code from your email'**
+  String get authVerificationPinPrompt;
+
+  /// No description provided for @authVerificationPinFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'6-digit code'**
+  String get authVerificationPinFieldLabel;
+
+  /// No description provided for @authVerificationPinSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify code'**
+  String get authVerificationPinSubmit;
+
+  /// No description provided for @authVerificationResendPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Didn\'t get it?'**
+  String get authVerificationResendPrompt;
+
+  /// No description provided for @authVerificationResend.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend'**
+  String get authVerificationResend;
+
+  /// Disabled-state label for the resend button during its cooldown. {time} is a preformatted m:ss countdown (e.g. 4:59).
+  ///
+  /// In en, this message translates to:
+  /// **'Resend in {time}'**
+  String authVerificationResendCooldown(String time);
+
+  /// No description provided for @authVerificationResendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t resend the email. Try again.'**
+  String get authVerificationResendFailed;
+
   /// No description provided for @authWelcomeToDivine.
   ///
   /// In en, this message translates to:
@@ -5747,6 +5789,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This email is already registered. Sign in instead.'**
   String get authVerificationEmailAlreadyRegistered;
+
+  /// No description provided for @authVerificationErrorPinInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'That code didn\'t match. Double-check it and try again.'**
+  String get authVerificationErrorPinInvalid;
+
+  /// No description provided for @authVerificationErrorPinExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'That code has expired. Tap resend to get a new one.'**
+  String get authVerificationErrorPinExpired;
+
+  /// No description provided for @authVerificationErrorPinLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many tries. Tap resend to get a fresh code.'**
+  String get authVerificationErrorPinLocked;
+
+  /// No description provided for @authVerificationErrorPinFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t verify that code. Please try again.'**
+  String get authVerificationErrorPinFailed;
+
+  /// No description provided for @authVerificationErrorPinUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Code entry isn\'t available right now. Tap the link in your email, or resend to get a fresh one.'**
+  String get authVerificationErrorPinUnavailable;
 
   /// No description provided for @authInviteErrorAlreadyUsed.
   ///

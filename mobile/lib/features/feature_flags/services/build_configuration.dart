@@ -49,6 +49,9 @@ class BuildConfiguration {
         // Default OFF pending T&S sign-off on surfacing warnings from
         // unverified community votes (#4771).
         return const bool.fromEnvironment('FF_COMMUNITY_CONTENT_WARNINGS');
+      case FeatureFlag.emailVerificationPinFallback:
+        // Default OFF until keycast verify-pin support is deployed.
+        return const bool.fromEnvironment('FF_EMAIL_VERIFICATION_PIN_FALLBACK');
     }
   }
 
@@ -91,6 +94,8 @@ class BuildConfiguration {
         return 'FF_ADAPTIVE_MEDIA_CHROME';
       case FeatureFlag.communityContentWarnings:
         return 'FF_COMMUNITY_CONTENT_WARNINGS';
+      case FeatureFlag.emailVerificationPinFallback:
+        return 'FF_EMAIL_VERIFICATION_PIN_FALLBACK';
     }
   }
 }

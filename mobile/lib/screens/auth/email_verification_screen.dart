@@ -11,18 +11,23 @@ import 'package:android_intent_plus/flag.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart' show SemanticsService;
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/email_verification_error_l10n.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/explore/explore_screen.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/utils/pending_verification_restore_policy.dart';
 import 'package:openvine/utils/sensitive_uri_for_logs.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -40,6 +45,7 @@ class EmailVerificationScreen extends ConsumerStatefulWidget {
     this.deviceCode,
     this.verifier,
     this.email,
+    this.restored = false,
   });
 
   /// Token from deep link (token mode)
@@ -53,6 +59,13 @@ class EmailVerificationScreen extends ConsumerStatefulWidget {
 
   /// User's email address (polling mode)
   final String? email;
+
+  /// Whether the screen was restored on a cold start from the persisted
+  /// pending-verification record (see `pendingEmailVerificationRestoreLocation`
+  /// in the router). When true, the close / "Start over" affordance is treated
+  /// as an escape hatch: it clears the persisted record so the user can
+  /// register or log in as a different user without being restored back here.
+  final bool restored;
 
   /// Check if this is polling mode
   bool get isPollingMode =>
@@ -119,12 +132,17 @@ class _EmailVerificationScreenState
         name: 'EmailVerificationScreen',
         category: LogCategory.auth,
       );
-      _cubit.startPolling(
-        deviceCode: widget.deviceCode!,
-        verifier: widget.verifier!,
-        email: widget.email ?? '',
-        inviteCode: context.read<InviteGateBloc>().state.accessGrant?.code,
+      unawaited(_startPollingWithHydratedInvite());
+    } else if (widget.restored) {
+      // Cold-start restore: the URL deliberately carries no deviceCode /
+      // verifier (they are secrets), so rehydrate the full context from the
+      // persisted record.
+      Log.info(
+        'Restoring verification from persisted record (cubit=${_cubit.hashCode})',
+        name: 'EmailVerificationScreen',
+        category: LogCategory.auth,
       );
+      unawaited(_restoreFromPersistedRecord());
     } else if (widget.isTokenMode) {
       // Token mode - check for persisted verification data for auto-login
       _isTokenMode = true;
@@ -136,6 +154,69 @@ class _EmailVerificationScreenState
         category: LogCategory.auth,
       );
     }
+  }
+
+  /// Starts polling for the URL's device code / verifier (the fresh
+  /// post-registration path), hydrating the invite code from the persisted
+  /// record.
+  ///
+  /// The registration URL carries deviceCode/verifier but not the invite, and
+  /// the in-memory [InviteGateBloc] grant may already be gone. Reading the
+  /// invite from the matching persisted record — mirroring the token-mode path
+  /// — keeps the invite so it is consumed on completion. Falls back to the
+  /// in-memory grant when no matching record is present.
+  Future<void> _startPollingWithHydratedInvite() async {
+    final pending = await ref.read(pendingVerificationServiceProvider).load();
+    if (!mounted) return;
+    final recordInvite =
+        (pending != null && pending.deviceCode == widget.deviceCode)
+        ? pending.inviteCode
+        : null;
+    final inviteCode =
+        recordInvite ?? context.read<InviteGateBloc>().state.accessGrant?.code;
+    _cubit.startPolling(
+      deviceCode: widget.deviceCode!,
+      verifier: widget.verifier!,
+      email: widget.email ?? '',
+      inviteCode: inviteCode,
+    );
+  }
+
+  /// Rehydrates the full verification context from the persisted record and
+  /// starts polling, for the cold-start restore path whose URL carries no
+  /// secrets (deviceCode / verifier). If no record survives, there is nothing
+  /// to restore — leave the screen so the user can use the escape hatch.
+  Future<void> _restoreFromPersistedRecord() async {
+    final pending = await ref.read(pendingVerificationServiceProvider).load();
+    if (!mounted) return;
+    if (pending == null) {
+      Log.warning(
+        'Cold-start restore found no pending record',
+        name: 'EmailVerificationScreen',
+        category: LogCategory.auth,
+      );
+      return;
+    }
+    final authService = ref.read(authServiceProvider);
+    if (!canRestorePendingEmailVerification(
+      pending: pending,
+      authState: authService.authState,
+      isAnonymous: authService.isAnonymous,
+      currentPublicKeyHex: authService.currentPublicKeyHex,
+    )) {
+      Log.warning(
+        'Cold-start restore rejected for the active identity',
+        name: 'EmailVerificationScreen',
+        category: LogCategory.auth,
+      );
+      return;
+    }
+    _cubit.startPolling(
+      deviceCode: pending.deviceCode,
+      verifier: pending.verifier,
+      email: pending.email,
+      inviteCode: pending.inviteCode,
+    );
   }
 
   /// Initialize token mode, checking for persisted data for auto-login.
@@ -243,6 +324,11 @@ class _EmailVerificationScreenState
       return;
     }
 
+    // A late link click after the 15-minute poll window: re-arm polling so it
+    // auto-completes instead of waiting on manual PIN entry. No-ops unless the
+    // cubit is in pollingTimedOut with retained context.
+    _cubit.resumePollingAfterTimeout();
+
     Log.info(
       'Email verification successful from token update',
       name: 'EmailVerificationScreen',
@@ -313,9 +399,12 @@ class _EmailVerificationScreenState
 
   void _handleCancel() {
     _cubit.stopPolling();
-    // Don't clear pending verification data - user may still verify via email
-    // link later. Data will be cleared on: successful login, logout, or
-    // expiration (30 minutes).
+    // On a normal post-registration cancel, don't clear pending verification
+    // data — the user may still verify via the email link or PIN later. Data is
+    // cleared on successful login, logout, or expiration (24h verify window).
+    // On a cold-start restore, closing is the escape hatch ("register / log in
+    // as a different user"), so clear the record to avoid restoring back here.
+    _maybeClearRestoredRecord();
     // Go back to previous screen (registration form)
     if (context.canPop()) {
       context.pop();
@@ -325,6 +414,10 @@ class _EmailVerificationScreenState
   }
 
   void _handleStartOver() {
+    // Start Over is a terminal exit: verification failed and the persisted
+    // record is unusable, so clear it unconditionally (not just in restored
+    // mode) so a later cold start doesn't restore the user into a dead flow.
+    ref.read(pendingVerificationServiceProvider).clear();
     context.go('/');
   }
 
@@ -338,6 +431,13 @@ class _EmailVerificationScreenState
         error: context.l10n.emailVerificationErrorMessage(errorCode),
       ),
     );
+  }
+
+  /// Clears the persisted pending-verification record when this screen was
+  /// restored on a cold start, so leaving it doesn't trap the user back here.
+  void _maybeClearRestoredRecord() {
+    if (!widget.restored) return;
+    ref.read(pendingVerificationServiceProvider).clear();
   }
 
   void _handleInviteRecovery(
@@ -360,12 +460,31 @@ class _EmailVerificationScreenState
       resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: BlocConsumer<EmailVerificationCubit, EmailVerificationState>(
+          listenWhen: (previous, current) =>
+              previous.status != current.status ||
+              previous.pinStatus != current.pinStatus ||
+              previous.pinErrorCode != current.pinErrorCode,
           listener: (context, state) {
             if (state.status == EmailVerificationStatus.success) {
               _handleSuccess();
             }
+            if (state.pinStatus == PinSubmissionStatus.failure) {
+              final message = context.l10n.emailVerificationErrorMessage(
+                state.pinErrorCode ?? EmailVerificationError.pinFailed,
+              );
+              SemanticsService.sendAnnouncement(
+                View.of(context),
+                message,
+                Directionality.of(context),
+              );
+            }
           },
           builder: (context, state) {
+            final pinFallbackEnabled = ref.watch(
+              isFeatureEnabledProvider(
+                FeatureFlag.emailVerificationPinFallback,
+              ),
+            );
             final showCloseButton =
                 state.status != EmailVerificationStatus.success;
             return Column(
@@ -395,11 +514,20 @@ class _EmailVerificationScreenState
                       EmailVerificationStatus.initial => _PollingContent(
                         email: null,
                         isPollingMode: widget.isPollingMode || !_isTokenMode,
+                        showPinFallback: pinFallbackEnabled,
                       ),
                       EmailVerificationStatus.polling => _PollingContent(
                         email: state.pendingEmail,
                         isPollingMode: widget.isPollingMode || !_isTokenMode,
+                        showPinFallback: pinFallbackEnabled,
                       ),
+                      EmailVerificationStatus.pollingTimedOut =>
+                        _PollingContent(
+                          email: state.pendingEmail,
+                          isPollingMode: widget.isPollingMode || !_isTokenMode,
+                          showPinFallback: pinFallbackEnabled,
+                          isActivelyPolling: false,
+                        ),
                       EmailVerificationStatus.success =>
                         const _SuccessContent(),
                       EmailVerificationStatus.failure => _ErrorContent(
@@ -507,10 +635,21 @@ class _StatusButton extends StatelessWidget {
 
 /// Polling/loading content shown while waiting for email verification.
 class _PollingContent extends StatelessWidget {
-  const _PollingContent({required this.email, required this.isPollingMode});
+  const _PollingContent({
+    required this.email,
+    required this.isPollingMode,
+    required this.showPinFallback,
+    this.isActivelyPolling = true,
+  });
 
   final String? email;
   final bool isPollingMode;
+  final bool showPinFallback;
+
+  /// Whether the poll loop is still running. When the 15-minute window
+  /// elapses this becomes false: the spinner is dropped but PIN entry / resend
+  /// stay available instead of a terminal failure screen.
+  final bool isActivelyPolling;
 
   Future<void> _openEmailApp() async {
     Log.info(
@@ -575,96 +714,289 @@ class _PollingContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Scroll-safe so the added PIN entry never overflows on short screens,
+    // while still vertically centering the content on tall ones.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(
+              child: Column(
+                children: [
+                  const Spacer(),
+
+                  // Email sticker
+                  Transform.rotate(
+                    angle: -8 * pi / 180,
+                    child: const DivineSticker(
+                      sticker: DivineStickerName.email,
+                      size: 120,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Title
+                  Text(
+                    isPollingMode
+                        ? context.l10n.authCompleteRegistration
+                        : context.l10n.authVerifying,
+                    style: const TextStyle(
+                      fontFamily: VineTheme.fontFamilyBricolage,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
+                      color: VineTheme.whiteText,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+
+                  if (isPollingMode && email != null && email!.isNotEmpty) ...[
+                    Text(
+                      context.l10n.authVerificationLinkSent,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: VineTheme.secondaryText,
+                        height: 1.4,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      email!,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: VineTheme.whiteText,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      context.l10n.authClickVerificationLink,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: VineTheme.secondaryText,
+                        height: 1.4,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ] else ...[
+                    Text(
+                      context.l10n.authPleaseWaitVerifying,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: VineTheme.secondaryText,
+                        height: 1.4,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+
+                  const Spacer(),
+
+                  // Status + action buttons at bottom
+                  Padding(
+                    padding: const EdgeInsets.only(top: 32, bottom: 32),
+                    child: Column(
+                      children: [
+                        if (isPollingMode && showPinFallback) ...[
+                          const _PinEntrySection(),
+                          const SizedBox(height: 20),
+                        ],
+                        if (isActivelyPolling)
+                          _StatusButton(
+                            label: context.l10n.authWaitingForVerification,
+                          ),
+                        if (isPollingMode) ...[
+                          const SizedBox(height: 20),
+                          DivineButton(
+                            expanded: true,
+                            type: DivineButtonType.secondary,
+                            label: context.l10n.authOpenEmailApp,
+                            onPressed: _openEmailApp,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// In-app PIN entry: a 6-digit code field the user reads from the verification
+/// email, submitted to keycast as a fallback when the email link / poll never
+/// completes (e.g. sandboxed in-app browsers). Additive — shown alongside the
+/// link/poll affordances, never replacing them.
+class _PinEntrySection extends StatefulWidget {
+  const _PinEntrySection();
+
+  @override
+  State<_PinEntrySection> createState() => _PinEntrySectionState();
+}
+
+class _PinEntrySectionState extends State<_PinEntrySection> {
+  static const _pinLength = 6;
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (_controller.text.length != _pinLength) return;
+    if (context.read<EmailVerificationCubit>().state.pinStatus ==
+        PinSubmissionStatus.submitting) {
+      return;
+    }
+    context.read<EmailVerificationCubit>().submitPin(_controller.text);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final pinStatus = context.select(
+      (EmailVerificationCubit c) => c.state.pinStatus,
+    );
+    final pinErrorCode = context.select(
+      (EmailVerificationCubit c) => c.state.pinErrorCode,
+    );
+    final submitting = pinStatus == PinSubmissionStatus.submitting;
+    final errorText = pinStatus == PinSubmissionStatus.failure
+        ? l10n.emailVerificationErrorMessage(
+            pinErrorCode ?? EmailVerificationError.pinFailed,
+          )
+        : null;
+    final canSubmit = _controller.text.length == _pinLength && !submitting;
+
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Spacer(),
-
-        // Email sticker
-        Transform.rotate(
-          angle: -8 * pi / 180,
-          child: const DivineSticker(
-            sticker: DivineStickerName.email,
-            size: 120,
-          ),
-        ),
-        const SizedBox(height: 32),
-
-        // Title
         Text(
-          isPollingMode
-              ? context.l10n.authCompleteRegistration
-              : context.l10n.authVerifying,
-          style: const TextStyle(
-            fontFamily: VineTheme.fontFamilyBricolage,
-            fontSize: 28,
-            fontWeight: FontWeight.w700,
-            color: VineTheme.whiteText,
-          ),
+          l10n.authVerificationPinPrompt,
+          style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 16),
-
-        if (isPollingMode && email != null && email!.isNotEmpty) ...[
-          Text(
-            context.l10n.authVerificationLinkSent,
-            style: const TextStyle(
-              fontSize: 16,
-              color: VineTheme.secondaryText,
-              height: 1.4,
-            ),
-            textAlign: TextAlign.center,
+        const SizedBox(height: 12),
+        // Material wrap keeps the field's ink / overlay layer stable across the
+        // verification screen's route transitions.
+        Material(
+          type: MaterialType.transparency,
+          child: DivineAuthTextField(
+            label: l10n.authVerificationPinFieldLabel,
+            controller: _controller,
+            enabled: !submitting,
+            autocorrect: false,
+            keyboardType: TextInputType.number,
+            textInputAction: TextInputAction.done,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(_pinLength),
+            ],
+            errorText: errorText,
+            onChanged: (_) => setState(() {}),
+            onSubmitted: (_) => _submit(),
           ),
+        ),
+        const SizedBox(height: 16),
+        DivineButton(
+          expanded: true,
+          label: l10n.authVerificationPinSubmit,
+          isLoading: submitting,
+          onPressed: canSubmit ? _submit : null,
+        ),
+        const SizedBox(height: 12),
+        const _ResendRow(),
+      ],
+    );
+  }
+}
+
+/// Resend-verification affordance with the 5-minute cooldown surfaced.
+class _ResendRow extends StatelessWidget {
+  const _ResendRow();
+
+  static String _formatCooldown(int totalSeconds) {
+    final minutes = totalSeconds ~/ 60;
+    final seconds = totalSeconds % 60;
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final resendStatus = context.select(
+      (EmailVerificationCubit c) => c.state.resendStatus,
+    );
+    final cooldownSeconds = context.select(
+      (EmailVerificationCubit c) => c.state.resendCooldownSeconds,
+    );
+    final disabled =
+        resendStatus == ResendStatus.sending ||
+        resendStatus == ResendStatus.cooldown;
+    final label = resendStatus == ResendStatus.cooldown
+        ? l10n.authVerificationResendCooldown(_formatCooldown(cooldownSeconds))
+        : l10n.authVerificationResend;
+
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              l10n.authVerificationResendPrompt,
+              style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+            ),
+            const SizedBox(width: 4),
+            Semantics(
+              button: true,
+              enabled: !disabled,
+              label: label,
+              child: ExcludeSemantics(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: disabled
+                      ? null
+                      : () => context
+                            .read<EmailVerificationCubit>()
+                            .resendVerification(),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      minWidth: 48,
+                      minHeight: 48,
+                    ),
+                    child: Center(
+                      child: Text(
+                        label,
+                        style: VineTheme.labelLargeFont(
+                          color: disabled
+                              ? VineTheme.secondaryText
+                              : VineTheme.vineGreen,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (resendStatus == ResendStatus.failure) ...[
           const SizedBox(height: 4),
           Text(
-            email!,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: VineTheme.whiteText,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            context.l10n.authClickVerificationLink,
-            style: const TextStyle(
-              fontSize: 14,
-              color: VineTheme.secondaryText,
-              height: 1.4,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ] else ...[
-          Text(
-            context.l10n.authPleaseWaitVerifying,
-            style: const TextStyle(
-              fontSize: 16,
-              color: VineTheme.secondaryText,
-              height: 1.4,
-            ),
+            l10n.authVerificationResendFailed,
+            style: VineTheme.bodySmallFont(color: VineTheme.error),
             textAlign: TextAlign.center,
           ),
         ],
-
-        const Spacer(),
-
-        // Status + action buttons at bottom
-        Padding(
-          padding: const EdgeInsets.only(bottom: 32),
-          child: Column(
-            children: [
-              _StatusButton(label: context.l10n.authWaitingForVerification),
-              if (isPollingMode) ...[
-                const SizedBox(height: 20),
-                DivineButton(
-                  expanded: true,
-                  label: context.l10n.authOpenEmailApp,
-                  onPressed: _openEmailApp,
-                ),
-              ],
-            ],
-          ),
-        ),
       ],
     );
   }

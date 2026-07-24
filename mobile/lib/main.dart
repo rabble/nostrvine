@@ -1502,11 +1502,49 @@ Future<void> _initializeCoreServices(ProviderContainer container) async {
     category: LogCategory.system,
   );
 
+  await restorePendingEmailVerificationOnStartup(container);
+
   Log.info(
     '[INIT] ✅ Core services initialized',
     name: 'Main',
     category: LogCategory.system,
   );
+}
+
+/// Restore the email-verification screen on a plain cold reopen (no deep link).
+///
+/// Registration persists the deviceCode/verifier/email (24h TTL) but nothing
+/// consults it on a normal startup, so a user who killed the app to read the
+/// 6-digit PIN from their email would otherwise land on Welcome. When the user
+/// has an unexpired pending record belonging to the current startup identity,
+/// route them back to the polling-mode verification screen (PIN field visible)
+/// so they can finish. Verification deep links (token mode) are handled by
+/// [EmailVerificationListener]; this only fires from the Welcome landing and
+/// never overrides a screen a deep link already opened.
+Future<void> restorePendingEmailVerificationOnStartup(
+  ProviderContainer container,
+) async {
+  final authService = container.read(authServiceProvider);
+  final pending = await container
+      .read(pendingVerificationServiceProvider)
+      .load();
+  final router = container.read(goRouterProvider);
+  final currentPath = router.routeInformationProvider.value.uri.path;
+  final target = pendingEmailVerificationStartupLocation(
+    pending: pending,
+    authState: authService.authState,
+    isAnonymous: authService.isAnonymous,
+    currentPublicKeyHex: authService.currentPublicKeyHex,
+    currentPath: currentPath,
+  );
+  if (target == null) return;
+
+  Log.info(
+    'Restoring pending email verification on cold start',
+    name: 'Main',
+    category: LogCategory.auth,
+  );
+  router.go(target);
 }
 
 Future<void> _configurePlaybackAudioSession() async {
@@ -1992,7 +2030,8 @@ class _DivineAppState extends ConsumerState<DivineApp>
           final currentLocation = router.routeInformationProvider.value.uri
               .toString();
           Log.info(
-            '🔗 Current router location: $currentLocation',
+            '🔗 Current router location: '
+            '${redactUriStringForLogs(currentLocation)}',
             name: 'DeepLinkHandler',
             category: LogCategory.ui,
           );

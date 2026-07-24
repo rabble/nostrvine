@@ -1727,6 +1727,19 @@
   "authPleaseWaitVerifying": "Please wait while we verify your email...",
   "authWaitingForVerification": "Waiting for verification",
   "authOpenEmailApp": "Open email app",
+  "authVerificationPinPrompt": "Or enter the 6-digit code from your email",
+  "authVerificationPinFieldLabel": "6-digit code",
+  "authVerificationPinSubmit": "Verify code",
+  "authVerificationResendPrompt": "Didn't get it?",
+  "authVerificationResend": "Resend",
+  "authVerificationResendCooldown": "Resend in {time}",
+  "@authVerificationResendCooldown": {
+    "description": "Disabled-state label for the resend button during its cooldown. {time} is a preformatted m:ss countdown (e.g. 4:59).",
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "authVerificationResendFailed": "We couldn't resend the email. Try again.",
   "authWelcomeToDivine": "Welcome to Divine!",
   "authEmailVerified": "Your email has been verified.",
   "authSigningYouIn": "Signing you in",
@@ -1845,6 +1858,11 @@
   "authVerificationErrorOAuthExchange": "Verification failed. Please try registering again.",
   "authVerificationErrorSignInFailed": "Sign-in failed. Please try logging in manually.",
   "authVerificationEmailAlreadyRegistered": "This email is already registered. Sign in instead.",
+  "authVerificationErrorPinInvalid": "That code didn't match. Double-check it and try again.",
+  "authVerificationErrorPinExpired": "That code has expired. Tap resend to get a new one.",
+  "authVerificationErrorPinLocked": "Too many tries. Tap resend to get a fresh code.",
+  "authVerificationErrorPinFailed": "We couldn't verify that code. Please try again.",
+  "authVerificationErrorPinUnavailable": "Code entry isn't available right now. Tap the link in your email, or resend to get a fresh one.",
   "authInviteErrorAlreadyUsed": "That invite code is no longer available. Go back to your invite code, join the waitlist, or contact support.",
   "authInviteErrorInvalid": "That invite code cannot be used right now. Go back to your invite code, join the waitlist, or contact support.",
   "authInviteErrorTemporary": "We couldn't confirm your invite right now. Go back to your invite code and try again, or contact support.",

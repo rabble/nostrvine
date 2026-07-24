@@ -2972,6 +2972,31 @@ class AppLocalizationsId extends AppLocalizations {
   String get authOpenEmailApp => 'Buka aplikasi email';
 
   @override
+  String get authVerificationPinPrompt =>
+      'Or enter the 6-digit code from your email';
+
+  @override
+  String get authVerificationPinFieldLabel => '6-digit code';
+
+  @override
+  String get authVerificationPinSubmit => 'Verify code';
+
+  @override
+  String get authVerificationResendPrompt => 'Didn\'t get it?';
+
+  @override
+  String get authVerificationResend => 'Resend';
+
+  @override
+  String authVerificationResendCooldown(String time) {
+    return 'Resend in $time';
+  }
+
+  @override
+  String get authVerificationResendFailed =>
+      'We couldn\'t resend the email. Try again.';
+
+  @override
   String get authWelcomeToDivine => 'Selamat datang di Divine!';
 
   @override
@@ -3264,6 +3289,26 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get authVerificationEmailAlreadyRegistered =>
       'Email ini sudah terdaftar. Masuk saja.';
+
+  @override
+  String get authVerificationErrorPinInvalid =>
+      'That code didn\'t match. Double-check it and try again.';
+
+  @override
+  String get authVerificationErrorPinExpired =>
+      'That code has expired. Tap resend to get a new one.';
+
+  @override
+  String get authVerificationErrorPinLocked =>
+      'Too many tries. Tap resend to get a fresh code.';
+
+  @override
+  String get authVerificationErrorPinFailed =>
+      'We couldn\'t verify that code. Please try again.';
+
+  @override
+  String get authVerificationErrorPinUnavailable =>
+      'Code entry isn\'t available right now. Tap the link in your email, or resend to get a fresh one.';
 
   @override
   String get authInviteErrorAlreadyUsed =>

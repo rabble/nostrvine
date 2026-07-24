@@ -39,6 +39,16 @@ extension EmailVerificationErrorL10n on AppLocalizations {
         return authInviteErrorTemporary;
       case EmailVerificationError.inviteUnknown:
         return authInviteErrorUnknown;
+      case EmailVerificationError.pinInvalid:
+        return authVerificationErrorPinInvalid;
+      case EmailVerificationError.pinExpired:
+        return authVerificationErrorPinExpired;
+      case EmailVerificationError.pinLocked:
+        return authVerificationErrorPinLocked;
+      case EmailVerificationError.pinFailed:
+        return authVerificationErrorPinFailed;
+      case EmailVerificationError.pinUnavailable:
+        return authVerificationErrorPinUnavailable;
     }
   }
 }

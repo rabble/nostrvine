@@ -20,6 +20,71 @@ Future<Connection> _openKeycastConnection() async {
   );
 }
 
+/// The plaintext 6-digit PIN the e2e types into the verification screen.
+///
+/// keycast stores PINs bcrypt-hashed and never surfaces the plaintext, so the
+/// test seeds a KNOWN hash ([knownPinHash]) instead of trying to read the real
+/// one, then types this value. keycast still verifies it for real through
+/// `/api/headless/verify-pin`.
+const knownPin = '123456';
+
+/// A real bcrypt hash of [knownPin] (`123456`, cost 12).
+///
+/// Written into `oauth_codes.pin_hash` by [seedKnownPin]. The cost is encoded
+/// in the hash, so keycast's bcrypt verify reads it back regardless of the
+/// cost keycast itself uses when issuing PINs.
+const knownPinHash =
+    r'$2b$12$zmj2GR8M0AJVKHSLtnE.SumQqxgVumEcPLqi5oN0mdW6KXZQW2Df6';
+
+/// Seed a known PIN for [email] so the e2e can type [knownPin].
+///
+/// Sets `oauth_codes.pin_hash` to [knownPinHash] and resets `pin_attempts` on
+/// the most recent pending row for [email]. Mirrors the DB access the token
+/// helper uses — no keycast prod changes, no mail-catcher. Requires a keycast
+/// image that has the verify-pin migration (keycast#262 / `keycast:262-local`).
+/// Retries because the row may not be written immediately after registration.
+Future<void> seedKnownPin(
+  String email, {
+  int retries = 10,
+  Duration delay = const Duration(seconds: 2),
+}) async {
+  for (var i = 0; i < retries; i++) {
+    try {
+      final conn = await _openKeycastConnection();
+      try {
+        final result = await conn.execute(
+          Sql.named(
+            'UPDATE oauth_codes '
+            'SET pin_hash = @pinHash, pin_attempts = 0 '
+            'WHERE id = ('
+            '  SELECT id FROM oauth_codes '
+            '  WHERE pending_email = @email '
+            '  ORDER BY created_at DESC '
+            '  LIMIT 1)',
+          ),
+          parameters: {'pinHash': knownPinHash, 'email': email},
+        );
+        if (result.affectedRows > 0) {
+          debugPrint('seedKnownPin: seeded PIN for $email');
+          return;
+        }
+      } finally {
+        await conn.close();
+      }
+    } catch (e) {
+      debugPrint('seedKnownPin attempt ${i + 1} failed: $e');
+    }
+
+    if (i < retries - 1) {
+      await Future<void>.delayed(delay);
+    }
+  }
+
+  throw Exception(
+    'Failed to seed known PIN for $email after $retries retries',
+  );
+}
+
 /// Query the email verification token from local keycast postgres.
 ///
 /// Connects to postgres via the host-mapped port (15432) from the Android
