@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:badge_repository/badge_repository.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:cache_sync/cache_sync.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -970,7 +971,14 @@ void main() {
       );
       expect(supportButton, findsOneWidget);
       expect(creatorSiteButton, findsOneWidget);
-      expect(tester.getSemantics(supportButton).label, contains('Support'));
+      // Labelled support pill, not an icon-only heart: the visible copy
+      // carries its accessible name, and non-iOS storefronts use the sparkle.
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.profileSupportButtonLabel), findsOneWidget);
+      expect(
+        tester.widget<DivineButton>(supportButton).leadingIcon,
+        DivineIconName.sparkle,
+      );
       expect(
         tester.getTopLeft(creatorSiteButton).dy,
         greaterThan(tester.getBottomLeft(find.text('Creator bio')).dy),
@@ -987,10 +995,8 @@ void main() {
       expect(supportRect.left, greaterThanOrEqualTo(creatorRect.right));
       expect(supportRect.center.dy, closeTo(creatorRect.center.dy, 1));
 
-      // Both painted chips must share an edge. DivineIconButton paints its
-      // 2px border outside the nominal size and would stand 4px taller than
-      // the creator-site button, so the support affordance uses an
-      // icon-only DivineButton instead.
+      // Both painted chips must share an edge. Both are small secondary
+      // DivineButtons, so their painted chips have matching height and top.
       Rect paintedChip(Finder button) => tester.getRect(
         find.descendant(of: button, matching: find.byType(Ink)).first,
       );
@@ -1192,9 +1198,14 @@ void main() {
 
       final supportButton = find.byKey(const Key('profile-support-button'));
       expect(supportButton, findsOneWidget);
-      final label = tester.getSemantics(supportButton).label;
-      expect(label, contains('Tip'));
-      expect(label, isNot(contains('Support')));
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.profileTipButtonLabel), findsOneWidget);
+      expect(find.text(l10n.profileSupportButtonLabel), findsNothing);
+      // iOS storefronts surface the bolt for the optional-tip framing.
+      expect(
+        tester.widget<DivineButton>(supportButton).leadingIcon,
+        DivineIconName.lightning,
+      );
     });
 
     testWidgets('displays stats from ProfileStats when provided', (

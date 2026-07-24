@@ -533,37 +533,31 @@ class _ProfileCreatorActionsRow extends ConsumerWidget {
             ),
           ),
           if (monetizationEnabled && links.isNotEmpty)
-            _ProfileSupportIconButton(links: links),
+            _ProfileSupportInlineButton(links: links),
         ],
       ),
     );
   }
 }
 
-/// Icon-only support affordance shown beside the creator-site CTA.
-class _ProfileSupportIconButton extends ConsumerWidget {
-  const _ProfileSupportIconButton({required this.links});
+/// Tip/support affordance shown beside the creator-site CTA.
+class _ProfileSupportInlineButton extends ConsumerWidget {
+  const _ProfileSupportInlineButton({required this.links});
 
   final List<MonetizationLink> links;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final label = usesAppleAppStoreTipPolicy
-        ? context.l10n.profileTipButtonLabel
-        : context.l10n.profileSupportButtonLabel;
-
-    // Icon-only DivineButton rather than DivineIconButton: the latter paints
-    // its 2px border outside the nominal size (44px at `small`), so it would
-    // stand 4px taller than the creator-site button beside it. This is the
-    // same pairing ProfileActionButtons uses for its Message / Following
-    // icons.
+    // Small secondary DivineButton to height-match the creator-site CTA beside
+    // it, mirroring the labelled Message / Following pairing in
+    // ProfileActionButtons. The visible label carries its accessible name, so
+    // no separate semanticLabel is needed.
     return DivineButton(
       key: const Key('profile-support-button'),
-      label: '',
-      leadingIcon: .heart,
+      label: _supportAffordanceLabel(context),
+      leadingIcon: _supportAffordanceIcon,
       type: .secondary,
       size: .small,
-      semanticLabel: label,
       onPressed: () => _openSupportSheet(context, ref, links),
     );
   }
@@ -587,18 +581,29 @@ class _ProfileSupportButton extends ConsumerWidget {
       child: Align(
         child: DivineButton(
           key: const Key('profile-support-button'),
-          leadingIcon: .heart,
+          leadingIcon: _supportAffordanceIcon,
           type: .secondary,
           size: .tiny,
-          label: usesAppleAppStoreTipPolicy
-              ? context.l10n.profileTipButtonLabel
-              : context.l10n.profileSupportButtonLabel,
+          label: _supportAffordanceLabel(context),
           onPressed: () => _openSupportSheet(context, ref, links),
         ),
       ),
     );
   }
 }
+
+/// Glyph for the tip/support affordance. iOS surfaces optional creator *tips*
+/// (a bolt); other storefronts frame the broader *support* action (a sparkle).
+DivineIconName get _supportAffordanceIcon => usesAppleAppStoreTipPolicy
+    ? DivineIconName.lightning
+    : DivineIconName.sparkle;
+
+/// Visible label paired with [_supportAffordanceIcon] — "Tip" on iOS
+/// storefronts, "Support" elsewhere.
+String _supportAffordanceLabel(BuildContext context) =>
+    usesAppleAppStoreTipPolicy
+    ? context.l10n.profileTipButtonLabel
+    : context.l10n.profileSupportButtonLabel;
 
 void _openSupportSheet(
   BuildContext context,
