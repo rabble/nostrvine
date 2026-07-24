@@ -1,6 +1,7 @@
 // ABOUTME: Screen-local cubit for the captions editor.
 // ABOUTME: Runs on-device generation and manages the editable cue list.
 
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
@@ -30,12 +31,14 @@ class CaptionsEditorCubit extends Cubit<CaptionsEditorState> {
     bool burnIn = false,
     CaptionCustomStyle? customStyle,
     List<CaptionCue>? initialCues,
-    CaptionRemoteTranscriber? remoteTranscriber,
+    BlossomUploadService? blossomUploadService,
     CaptionGenerationService? generationService,
   }) : _generationService =
            generationService ??
            CaptionGenerationService.production(
-             remoteTranscriber: remoteTranscriber,
+             remoteTranscriber: blossomUploadService != null
+                 ? BlossomCaptionTranscriber(blossomUploadService)
+                 : null,
            ),
        _clips = clips,
        _totalDuration = totalDuration,

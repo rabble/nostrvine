@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -12,7 +13,6 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/caption_generation_outcome.dart';
 import 'package:openvine/models/video_editor/caption_style.dart';
 import 'package:openvine/models/video_editor/caption_track.dart';
-import 'package:openvine/services/video_editor/caption_remote_transcriber.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_caption_preset_sheet.dart';
 
@@ -57,7 +57,7 @@ Future<CaptionsEditorResult?> showCaptionsEditorSheet(
   CaptionCustomStyle? customStyle,
   List<CaptionCue>? initialCues,
   bool canDeleteTrack = false,
-  CaptionRemoteTranscriber? remoteTranscriber,
+  BlossomUploadService? blossomUploadService,
   @visibleForTesting CaptionsEditorCubit? cubit,
 }) async {
   final l10n = context.l10n;
@@ -71,7 +71,7 @@ Future<CaptionsEditorResult?> showCaptionsEditorSheet(
         customStyle: customStyle,
         languageTag: languageTag,
         initialCues: initialCues,
-        remoteTranscriber: remoteTranscriber,
+        blossomUploadService: blossomUploadService,
       );
   unawaited(sessionCubit.initialize());
 
