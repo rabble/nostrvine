@@ -10,6 +10,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:divine_video_player/divine_video_player.dart'
     show DivineVideoPlayerController;
+import 'package:feed_tuning_repository/feed_tuning_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -1526,6 +1527,74 @@ void main() {
           () => mockBloc.add(const FullscreenFeedIndexChanged(1)),
         );
       });
+    });
+
+    group('feed-tuning undo', () {
+      testWidgets(
+        'does not crash when Undo is tapped after the screen unmounts',
+        (tester) async {
+          // Regression for a FATAL Crashlytics crash: the tuning receipt lives
+          // in the app-level ScaffoldMessenger and outlives this screen.
+          // Popping the feed while the receipt is visible, then tapping Undo,
+          // called `context.read` on the unmounted State — a null-check on the
+          // dead element.
+          const initialState = FullscreenFeedState();
+          final controller = StreamController<FullscreenFeedState>();
+          addTearDown(controller.close);
+          when(() => mockBloc.state).thenReturn(initialState);
+          whenListen(mockBloc, controller.stream, initialState: initialState);
+
+          final showContent = ValueNotifier<bool>(true);
+          addTearDown(showContent.dispose);
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              mockProfileRepository: mockProfileRepository,
+              mockNip05VerificationService: mockNip05VerificationService,
+              // A persistent Scaffold keeps a registered target on the
+              // app-level messenger after the feed unmounts — mirroring the
+              // underlying route that remains when the fullscreen feed pops.
+              home: Scaffold(
+                body: ValueListenableBuilder<bool>(
+                  valueListenable: showContent,
+                  builder: (context, show, _) =>
+                      show ? buildContent() : const SizedBox.shrink(),
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+
+          controller.add(
+            initialState.copyWith(
+              lastTuningAction: const FullscreenFeedTuningAction(
+                videoId: testVideoId1,
+                direction: FeedTuningDirection.less,
+                sequence: 1,
+                publishedEventId: 'published-tuning-event-id',
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 1)); // reveal animation
+
+          final undoLabel = lookupAppLocalizations(
+            const Locale('en'),
+          ).feedTuningUndo;
+          expect(find.text(undoLabel), findsOneWidget);
+
+          // Pop the feed: unmount FullscreenFeedContent while the
+          // messenger-owned receipt stays on screen.
+          showContent.value = false;
+          await tester.pump();
+          expect(find.text(undoLabel), findsOneWidget);
+
+          await tester.tap(find.text(undoLabel));
+          await tester.pump();
+
+          expect(tester.takeException(), isNull);
+        },
+      );
     });
   });
 }

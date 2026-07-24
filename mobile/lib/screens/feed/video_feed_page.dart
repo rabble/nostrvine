@@ -248,6 +248,10 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   }
 
   void _undoTuning(String feedTuningEventId, String videoId) {
+    // The Undo receipt lives in the app-level ScaffoldMessenger, so it can
+    // fire after this screen was popped and its State unmounted — touching
+    // `context` then throws a null-check on the dead element. Bail if gone.
+    if (!mounted) return;
     final bloc = context.read<VideoFeedBloc>()
       ..add(VideoFeedTuningUndoRequested(feedTuningEventId));
     final videos = bloc.state.videos;
