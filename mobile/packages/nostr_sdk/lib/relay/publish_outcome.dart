@@ -72,6 +72,8 @@ class PublishTracker {
     required this.eventId,
     this.eventKind,
     this.diagnosticTag,
+    this.message,
+    this.deadline,
     required this.expectedRelays,
     required Duration timeout,
   }) {
@@ -86,6 +88,12 @@ class PublishTracker {
 
   /// Caller-supplied tag for temporary publish diagnostics, when enabled.
   final String? diagnosticTag;
+
+  /// Original EVENT frame for SDK-internal retry paths.
+  final List<dynamic>? message;
+
+  /// Hard publish deadline shared with SDK-internal retry paths.
+  final DateTime? deadline;
 
   /// Relay URLs we expect responses from.
   final Set<String> expectedRelays;

@@ -2,6 +2,8 @@
 // ABOUTME: Ensures NIP-42 AUTH challenges do not crash when the cached
 // ABOUTME: public key is empty (post-signOut, mid-init, account switch).
 
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:nostr_sdk/relay/client_connected.dart';
@@ -76,11 +78,27 @@ class _AuthFakeRelay extends Relay {
 }
 
 void main() {
-  group('RelayPool AUTH branch empty-pubkey guard', () {
-    const testPrivateKey =
-        '5ee1c8000ab28edd64d74a7d951ac2dd559814887b1b9e1ac7c5f89e96125c12';
-    const challenge = 'abcdef0123456789abcdef0123456789';
+  const testPrivateKey =
+      '5ee1c8000ab28edd64d74a7d951ac2dd559814887b1b9e1ac7c5f89e96125c12';
+  const challenge =
+      'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
 
+  List<List<dynamic>> sentMessagesOfType(_AuthFakeRelay relay, String type) {
+    return relay.sentMessages
+        .where((m) => m.isNotEmpty && m.first == type)
+        .toList(growable: false);
+  }
+
+  String sentAuthEventId(_AuthFakeRelay relay) {
+    final authMessages = sentMessagesOfType(relay, 'AUTH');
+    expect(authMessages, hasLength(1));
+    final authEvent = authMessages.single[1] as Map<String, dynamic>;
+    final id = authEvent['id'];
+    expect(id, isA<String>());
+    return id as String;
+  }
+
+  group('RelayPool AUTH branch empty-pubkey guard', () {
     Relay dummyTempRelay(String url) => RelayBase(url, RelayStatus(url));
 
     test(
@@ -112,9 +130,7 @@ void main() {
           isNotEmpty,
           reason: 'AUTH handler should refresh the cached pubkey from signer',
         );
-        final sentAuth = fakeRelay.sentMessages
-            .where((m) => m.isNotEmpty && m.first == 'AUTH')
-            .toList();
+        final sentAuth = sentMessagesOfType(fakeRelay, 'AUTH');
         expect(
           sentAuth,
           hasLength(1),
@@ -138,10 +154,145 @@ void main() {
 
       // No AUTH response should have been produced since no key is
       // available to sign one.
-      final sentAuth = fakeRelay.sentMessages
-          .where((m) => m.isNotEmpty && m.first == 'AUTH')
-          .toList();
+      final sentAuth = sentMessagesOfType(fakeRelay, 'AUTH');
       expect(sentAuth, isEmpty);
+    });
+  });
+
+  group('RelayPool auth-required publish retry', () {
+    late LocalNostrSigner signer;
+    late Nostr nostr;
+    late _AuthFakeRelay relay;
+
+    setUp(() async {
+      signer = LocalNostrSigner(testPrivateKey);
+      nostr = Nostr(signer, [], (url) => RelayBase(url, RelayStatus(url)));
+      await nostr.refreshPublicKey();
+      relay = _AuthFakeRelay('wss://auth-required.example');
+      final added = await nostr.relayPool.add(relay);
+      expect(added, isTrue);
+    });
+
+    test('republishes an awaited EVENT once after NIP-42 succeeds', () async {
+      const eventId =
+          '1111111111111111111111111111111111111111111111111111111111111111';
+      final outcomeFuture = nostr.relayPool.sendEventAwaitOk(
+        [
+          'EVENT',
+          {'id': eventId, 'kind': EventKind.giftWrap},
+        ],
+        eventId: eventId,
+        eventKind: EventKind.giftWrap,
+        targetRelays: [relay.url],
+        timeout: const Duration(seconds: 1),
+      );
+
+      expect(sentMessagesOfType(relay, 'EVENT'), hasLength(1));
+
+      await relay.deliver([
+        'OK',
+        eventId,
+        false,
+        'auth-required: you must auth',
+      ]);
+      var completed = false;
+      unawaited(outcomeFuture.then((_) => completed = true));
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        completed,
+        isFalse,
+        reason: 'auth-required rejection should wait for AUTH retry',
+      );
+
+      await relay.deliver(['AUTH', challenge]);
+      final authEventId = sentAuthEventId(relay);
+      await relay.deliver(['OK', authEventId, true, '']);
+
+      expect(
+        sentMessagesOfType(relay, 'EVENT'),
+        hasLength(2),
+        reason: 'the original EVENT should be retried once after AUTH',
+      );
+
+      await relay.deliver(['OK', eventId, true, '']);
+      final outcome = await outcomeFuture;
+
+      expect(outcome.confirmed, isTrue);
+      expect(outcome.acceptedBy, equals([relay.url]));
+      expect(outcome.rejectedBy, isEmpty);
+    });
+
+    test('republishes when AUTH OK arrives before EVENT rejection', () async {
+      const eventId =
+          '3333333333333333333333333333333333333333333333333333333333333333';
+      final outcomeFuture = nostr.relayPool.sendEventAwaitOk(
+        [
+          'EVENT',
+          {'id': eventId, 'kind': EventKind.giftWrap},
+        ],
+        eventId: eventId,
+        eventKind: EventKind.giftWrap,
+        targetRelays: [relay.url],
+        timeout: const Duration(seconds: 1),
+      );
+
+      await relay.deliver(['AUTH', challenge]);
+      final authEventId = sentAuthEventId(relay);
+      await relay.deliver(['OK', authEventId, true, '']);
+      await relay.deliver([
+        'OK',
+        eventId,
+        false,
+        'auth-required: you must auth',
+      ]);
+
+      expect(sentMessagesOfType(relay, 'EVENT'), hasLength(2));
+
+      await relay.deliver(['OK', eventId, true, '']);
+      final outcome = await outcomeFuture;
+
+      expect(outcome.confirmed, isTrue);
+      expect(outcome.acceptedBy, equals([relay.url]));
+    });
+
+    test('does not loop when the post-auth EVENT is still rejected', () async {
+      const eventId =
+          '2222222222222222222222222222222222222222222222222222222222222222';
+      final outcomeFuture = nostr.relayPool.sendEventAwaitOk(
+        [
+          'EVENT',
+          {'id': eventId, 'kind': EventKind.giftWrap},
+        ],
+        eventId: eventId,
+        eventKind: EventKind.giftWrap,
+        targetRelays: [relay.url],
+        timeout: const Duration(seconds: 1),
+      );
+
+      await relay.deliver([
+        'OK',
+        eventId,
+        false,
+        'auth-required: you must auth',
+      ]);
+      await relay.deliver(['AUTH', challenge]);
+      final authEventId = sentAuthEventId(relay);
+      await relay.deliver(['OK', authEventId, true, '']);
+      await relay.deliver(['OK', eventId, false, 'restricted: members only']);
+
+      final outcome = await outcomeFuture;
+
+      expect(outcome.failed, isTrue);
+      expect(outcome.acceptedBy, isEmpty);
+      expect(
+        outcome.rejectedBy,
+        equals({relay.url: 'restricted: members only'}),
+      );
+      expect(
+        sentMessagesOfType(relay, 'EVENT'),
+        hasLength(2),
+        reason: 'post-auth rejection should not trigger another republish',
+      );
     });
   });
 }

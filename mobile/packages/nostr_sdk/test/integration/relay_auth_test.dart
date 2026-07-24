@@ -110,7 +110,7 @@ void main() {
       expect(config['wss://relay3.com'], isTrue);
     });
 
-    test('Messages queued when relay requires alwaysAuth', () async {
+    test('Subscriptions trigger AUTH when relay requires alwaysAuth', () async {
       final relayUrl = 'wss://auth.relay.com';
       final relay = MockRelay(relayUrl);
       relay.shouldSendAuthChallenge = true;
@@ -118,16 +118,13 @@ void main() {
       await nostr.relayPool.add(relay);
       nostr.setRelayAlwaysAuth(relayUrl, true);
 
-      // Subscribe should be queued for authentication
-      // ignore: unused_local_variable - subscription created to test queueing behavior
-      final subscription = nostr.subscribe([
+      nostr.subscribe([
         Filter(kinds: [EventKind.textNote]).toJson(),
       ], (event) {});
 
-      // Message should be in pending auth messages, not sent yet
-      expect(relay.sentMessages.isEmpty, isTrue);
-      expect(relay.pendingAuthedMessages.isNotEmpty, isTrue);
-      expect(relay.pendingAuthedMessages.first[0], equals('REQ'));
+      expect(relay.sentMessages, hasLength(1));
+      expect(relay.sentMessages.first[0], equals('REQ'));
+      expect(relay.pendingAuthedMessages, isEmpty);
     });
 
     test('Events queued when relay requires alwaysAuth', () async {
@@ -153,7 +150,7 @@ void main() {
       expect(relay.pendingAuthedMessages.first[0], equals('EVENT'));
     });
 
-    test('Messages sent after authentication when alwaysAuth is true', () async {
+    test('Subscriptions are re-sent after authentication succeeds', () async {
       final relayUrl = 'wss://auth.relay.com';
       final relay = MockRelay(relayUrl);
 
@@ -165,18 +162,20 @@ void main() {
         Filter(kinds: [EventKind.textNote]).toJson(),
       ], (event) {});
 
-      expect(relay.sentMessages.isEmpty, isTrue);
-      expect(relay.pendingAuthedMessages.length, equals(1));
+      expect(relay.sentMessages.length, equals(1));
+      expect(relay.sentMessages.first[0], equals('REQ'));
 
       // Simulate successful authentication
       relay.relayStatus.authed = true;
 
-      // Manually trigger sending of pending messages (normally done after AUTH response)
-      relay.sendPendingMessages();
+      // Manually trigger post-AUTH subscription replay (normally done after
+      // AUTH OK handling in RelayPool).
+      for (final subscription in relay.getSubscriptions()) {
+        await relay.send(subscription.toJson());
+      }
 
-      // Now the message should be sent
-      expect(relay.sentMessages.length, equals(1));
-      expect(relay.sentMessages.first[0], equals('REQ'));
+      expect(relay.sentMessages.length, equals(2));
+      expect(relay.sentMessages.last[0], equals('REQ'));
       expect(relay.pendingAuthedMessages.isEmpty, isTrue);
     });
 
@@ -192,9 +191,9 @@ void main() {
         Filter(kinds: [EventKind.textNote]).toJson(),
       ], (event) {});
 
-      // Message should be queued for authentication
-      expect(relay.pendingAuthedMessages.isNotEmpty, isTrue);
-      expect(relay.pendingAuthedMessages.first[0], equals('REQ'));
+      expect(relay.sentMessages, hasLength(1));
+      expect(relay.sentMessages.first[0], equals('REQ'));
+      expect(relay.pendingAuthedMessages, isEmpty);
     });
 
     test('Mixed relay configuration - some with alwaysAuth', () async {
