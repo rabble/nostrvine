@@ -827,6 +827,87 @@ void main() {
       },
     );
 
+    testWidgets(
+      'does not crash when Undo is tapped after the feed unmounts',
+      (tester) async {
+        // Regression for a FATAL Crashlytics crash: the tuning receipt lives
+        // in the app-level ScaffoldMessenger and outlives this screen. Popping
+        // the feed while the receipt is visible, then tapping Undo, called
+        // `context.read` on the unmounted State — a null-check on the dead
+        // element.
+        final videos = [
+          createTestVideoEvent(id: 'video-0'),
+          createTestVideoEvent(id: 'video-1'),
+        ];
+        final initialState = VideoFeedBlocState(
+          status: VideoFeedStatus.success,
+          videos: videos,
+        );
+        final tunedState = initialState.copyWith(
+          lastTuningAction: VideoFeedTuningAction(
+            videoId: videos.first.id,
+            direction: FeedTuningDirection.less,
+            sequence: 1,
+            publishedEventId: 'published-tuning-event-id',
+          ),
+        );
+        final controller = StreamController<VideoFeedBlocState>();
+        addTearDown(controller.close);
+        when(() => videoFeedBloc.state).thenReturn(initialState);
+        whenListen(
+          videoFeedBloc,
+          controller.stream,
+          initialState: initialState,
+        );
+
+        final showFeed = ValueNotifier<bool>(true);
+        addTearDown(showFeed.dispose);
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            home: MultiBlocProvider(
+              providers: [
+                BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),
+                BlocProvider<VideoPlaybackStatusCubit>(
+                  create: (_) => VideoPlaybackStatusCubit(),
+                ),
+                BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
+              ],
+              child: Scaffold(
+                body: ValueListenableBuilder<bool>(
+                  valueListenable: showFeed,
+                  builder: (context, show, _) =>
+                      show ? const VideoFeedView() : const SizedBox.shrink(),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        when(() => videoFeedBloc.state).thenReturn(tunedState);
+        controller.add(tunedState);
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1)); // reveal animation
+
+        final undoLabel = lookupAppLocalizations(
+          const Locale('en'),
+        ).feedTuningUndo;
+        expect(find.text(undoLabel), findsOneWidget);
+
+        // Pop the feed: unmount VideoFeedView while the messenger-owned
+        // receipt stays on screen.
+        showFeed.value = false;
+        await tester.pump();
+        expect(find.text(undoLabel), findsOneWidget);
+
+        await tester.tap(find.text(undoLabel));
+        await tester.pump();
+
+        expect(tester.takeException(), isNull);
+      },
+    );
+
     testWidgets('requests auto-refresh when app returns from background', (
       tester,
     ) async {

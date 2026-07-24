@@ -542,6 +542,10 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   }
 
   void _undoTuning(String feedTuningEventId, String videoId) {
+    // The Undo receipt lives in the app-level ScaffoldMessenger, so it can
+    // fire after this screen was popped and its State unmounted — touching
+    // `context` then throws a null-check on the dead element. Bail if gone.
+    if (!mounted) return;
     final bloc = context.read<FullscreenFeedBloc>()
       ..add(FullscreenFeedTuningUndoRequested(feedTuningEventId));
     final videos = bloc.state.videos;
