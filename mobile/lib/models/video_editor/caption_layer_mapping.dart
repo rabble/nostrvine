@@ -10,6 +10,25 @@ import 'package:pro_image_editor/pro_image_editor.dart';
 bool isCaptionCueLayer(Layer layer) =>
     layer.meta?[VideoEditorConstants.captionCueMetaKey] == true;
 
+/// The cue id a burned-in caption [layer] carries, or `null` when [layer] is
+/// not a caption cue layer (or lost its stored id).
+String? captionCueIdOf(Layer layer) => isCaptionCueLayer(layer)
+    ? (layer.meta?[VideoEditorConstants.captionCueIdMetaKey] as String?)
+    : null;
+
+/// Carries the on-canvas transform (position, rotation, scale) of a previous
+/// caption layer over onto a freshly [rebuilt] one, so re-editing a burn-in
+/// track doesn't silently reset a user's manual adjustments. Returns [rebuilt]
+/// unchanged when there is no matching [existing] layer.
+TextLayer preserveCaptionLayerTransform(TextLayer rebuilt, Layer? existing) =>
+    existing == null
+    ? rebuilt
+    : rebuilt.copyWith(
+        offset: existing.offset,
+        rotation: existing.rotation,
+        scale: existing.scale,
+      );
+
 /// Rebuilds the cue list from burned-in caption [layers], ordered by start.
 ///
 /// Inverse of `CaptionStylePreset.buildLayer` for mode switching and for

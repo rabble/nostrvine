@@ -658,11 +658,25 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
             CaptionStylePreset.byId(track.presetId).style;
         final bodySize = _bodySizeNotifier.value;
         final scale = _fittedBoxScale;
+        // Preserve any on-canvas position/rotation/scale the user already
+        // applied to a cue's layer, keyed by cue id, so re-editing captions
+        // doesn't reset their manual adjustments.
+        final existingByCueId = <String, Layer>{
+          for (final layer in editor.activeLayers)
+            ?captionCueIdOf(layer): layer,
+        };
         editor.commitCaptionState(
           track: track,
           captionLayers: [
             for (final cue in cues)
-              style.buildLayer(cue, fittedBoxScale: scale, bodySize: bodySize),
+              preserveCaptionLayerTransform(
+                style.buildLayer(
+                  cue,
+                  fittedBoxScale: scale,
+                  bodySize: bodySize,
+                ),
+                existingByCueId[cue.id],
+              ),
           ],
         );
     }

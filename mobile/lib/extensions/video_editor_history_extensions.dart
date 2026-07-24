@@ -18,7 +18,10 @@ extension VideoEditorHistoryExtensions on StateManager {
     if (raw is! Map<Object?, Object?>) return null;
     try {
       return CaptionTrack.fromJson(raw);
-    } on FormatException {
+    } on Object {
+      // A stale or malformed draft must never crash editor loading. Normalize
+      // every parse failure — FormatException, or a TypeError from a bad nested
+      // cue/style cast — to "no captions".
       return null;
     }
   }

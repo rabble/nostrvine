@@ -329,6 +329,86 @@ void main() {
 
       when(() => stateManager.activeMeta).thenReturn({});
       expect(stateManager.captionTrack, isNull);
+
+      // A nested non-map cue throws a TypeError inside fromJson; the getter
+      // must normalize any parse failure (not only FormatException) to null.
+      when(() => stateManager.activeMeta).thenReturn({
+        VideoEditorConstants.captionsStateHistoryKey: {
+          'presetId': 'classic',
+          'languageTag': 'en-US',
+          'cues': ['not-a-map'],
+        },
+      });
+      expect(stateManager.captionTrack, isNull);
+    });
+
+    test('removeCaptionCue drops an overlay cue in one history entry', () {
+      when(() => stateManager.activeMeta).thenReturn({
+        VideoEditorConstants.captionsStateHistoryKey: track.toJson(),
+      });
+
+      editor.removeCaptionCue('cue-1');
+
+      final captured = verify(
+        () => editor.addHistory(
+          layers: captureAny(named: 'layers'),
+          meta: captureAny(named: 'meta'),
+        ),
+      ).captured;
+      expect(captured.first as List<Layer>, isEmpty);
+      final meta = captured.last as Map<String, dynamic>;
+      final updated = CaptionTrack.fromJson(
+        meta[VideoEditorConstants.captionsStateHistoryKey]
+            as Map<Object?, Object?>,
+      );
+      expect(updated.cues, isEmpty);
+    });
+
+    test('removeCaptionCue drops a burn-in cue and its layer together', () {
+      final captionLayer = TextLayer(
+        text: 'Hello.',
+        meta: {
+          VideoEditorConstants.captionCueMetaKey: true,
+          VideoEditorConstants.captionCueIdMetaKey: 'cue-1',
+        },
+      );
+      final otherLayer = TextLayer(text: 'keep');
+      when(() => editor.activeLayers).thenReturn([captionLayer, otherLayer]);
+      when(() => stateManager.activeMeta).thenReturn({
+        VideoEditorConstants.captionsStateHistoryKey: track.toJson(),
+      });
+
+      editor.removeCaptionCue('cue-1');
+
+      final captured = verify(
+        () => editor.addHistory(
+          layers: captureAny(named: 'layers'),
+          meta: captureAny(named: 'meta'),
+        ),
+      ).captured;
+      // The caption layer is dropped; the unrelated layer is kept.
+      expect(captured.first, equals([otherLayer]));
+      final meta = captured.last as Map<String, dynamic>;
+      final updated = CaptionTrack.fromJson(
+        meta[VideoEditorConstants.captionsStateHistoryKey]
+            as Map<Object?, Object?>,
+      );
+      expect(updated.cues, isEmpty);
+    });
+
+    test('removeCaptionCue is a no-op when nothing matches', () {
+      when(() => stateManager.activeMeta).thenReturn({
+        VideoEditorConstants.captionsStateHistoryKey: track.toJson(),
+      });
+
+      editor.removeCaptionCue('missing');
+
+      verifyNever(
+        () => editor.addHistory(
+          layers: any(named: 'layers'),
+          meta: any(named: 'meta'),
+        ),
+      );
     });
 
     test('setCaptionCueTimeline retimes the cue as a history entry', () {

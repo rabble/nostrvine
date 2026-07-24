@@ -2723,16 +2723,33 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
             },
             onScaleEnd: (_) {
               if (_isLayerBeingTransformed) {
-                if (bloc.state.isLayerOverRemoveArea) {
+                final removed = _selectedLayer;
+                final captionCueId =
+                    bloc.state.isLayerOverRemoveArea && removed != null
+                    ? captionCueIdOf(removed)
+                    : null;
+
+                if (captionCueId != null) {
+                  // Burn-in caption: drop the cue and its layer together in one
+                  // history step, so the track meta and the exported video stay
+                  // consistent (never leave an orphaned cue behind).
                   Log.debug(
-                    '🎬 Layer removed via drag',
+                    '🎬 Caption layer removed via drag',
                     name: 'VideoEditorCanvas',
                     category: LogCategory.video,
                   );
-                  scope.editor?.activeLayers.remove(_selectedLayer);
+                  scope.editor?.removeCaptionCue(captionCueId);
+                } else {
+                  if (bloc.state.isLayerOverRemoveArea) {
+                    Log.debug(
+                      '🎬 Layer removed via drag',
+                      name: 'VideoEditorCanvas',
+                      category: LogCategory.video,
+                    );
+                    scope.editor?.activeLayers.remove(removed);
+                  }
+                  _onStateHistoryChange(scope, bloc);
                 }
-
-                _onStateHistoryChange(scope, bloc);
                 _selectedLayer = null;
               }
 

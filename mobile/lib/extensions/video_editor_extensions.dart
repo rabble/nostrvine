@@ -143,6 +143,40 @@ extension VideoEditorExtensions on ProImageEditorState {
     setState(() {});
   }
 
+  /// Removes one caption cue and, when it's burned in, its matching text layer
+  /// — in a single history entry, so the track metadata and the
+  /// rendered/exported layers can never drift apart. Callable from either the
+  /// timeline (by cue id) or the canvas (by the removed layer's cue id).
+  ///
+  /// No-op when there is no caption track or nothing matches [cueId].
+  void removeCaptionCue(String cueId) {
+    final track = stateManager.captionTrack;
+    if (track == null) return;
+
+    final remainingCues = [
+      for (final cue in track.cues)
+        if (cue.id != cueId) cue,
+    ];
+    final remainingLayers = [
+      for (final layer in activeLayers)
+        if (captionCueIdOf(layer) != cueId) layer,
+    ];
+    final removedCue = remainingCues.length != track.cues.length;
+    final removedLayer = remainingLayers.length != activeLayers.length;
+    if (!removedCue && !removedLayer) return;
+
+    addHistory(
+      layers: remainingLayers,
+      meta: {
+        ...stateManager.activeMeta,
+        VideoEditorConstants.captionsStateHistoryKey: track
+            .copyWith(cues: remainingCues)
+            .toJson(),
+      },
+    );
+    setState(() {});
+  }
+
   /// Updates one caption cue's timing.
   ///
   /// Mirrors [setSoundTimeline]: with [skipUpdateHistory] the current meta is

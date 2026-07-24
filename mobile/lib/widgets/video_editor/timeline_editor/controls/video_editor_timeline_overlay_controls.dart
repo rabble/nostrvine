@@ -208,24 +208,9 @@ class _CaptionOverlayControls extends StatelessWidget {
     final editor = scope.editor;
     if (editor == null) return;
 
-    final layer = item.layer;
-    if (layer != null) {
-      // Burned-in cue: the layer is the cue.
-      editor.removeLayer(layer);
-      return;
-    }
-
-    // Overlay cue: rewrite the caption track without it (one undo step).
-    final track = editor.stateManager.captionTrack;
-    if (track == null) return;
-    editor.setCaptionState(
-      track.copyWith(
-        cues: [
-          for (final cue in track.cues)
-            if (cue.id != item.id) cue,
-        ],
-      ),
-    );
+    // Drops the cue and, when burned in, its text layer together — so a
+    // deleted caption never lingers in the exported video.
+    editor.removeCaptionCue(item.id);
     TimelineOverlayControls._deselect(context);
   }
 }
