@@ -55,6 +55,8 @@ class _MockVideosRepository extends Mock implements VideosRepository {}
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
 
+class _FakeVideoEvent extends Fake implements VideoEvent {}
+
 class _MockOfficials extends Mock implements OfficialAccountsService {}
 
 class _MockIdentityClaimsRepository extends Mock
@@ -95,6 +97,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(const OtherProfileLoadRequested());
+    registerFallbackValue(_FakeVideoEvent());
     registerFallbackValue(const <List<String>>[]);
     registerFallbackValue(const <IdentityClaim>[]);
   });
@@ -158,6 +161,13 @@ void main() {
     when(() => videoEventService.filterVideoList(any())).thenAnswer(
       (invocation) => invocation.positionalArguments.first as List<VideoEvent>,
     );
+    // ProfileFeedCubit._restoreFromCache filters tombstones through this, but
+    // only when the shared cache already holds videos for this author. Under
+    // the merged `very_good --optimization` isolate that depends on which test
+    // files ran first, so leaving it unstubbed fails only on some orderings.
+    when(
+      () => videoEventService.isVideoEventLocallyDeleted(any()),
+    ).thenReturn(false);
     when(() => videoEventService.addListener(any())).thenReturn(null);
     when(() => videoEventService.removeListener(any())).thenReturn(null);
     when(() => videoEventService.addVideoUpdateListener(any())).thenReturn(
