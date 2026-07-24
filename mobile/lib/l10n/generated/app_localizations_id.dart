@@ -2179,7 +2179,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get nostrSettingsDeleteAccountSubtitle =>
-      'Hapus PERMANEN akunmu dan SEMUA konten dari relay Nostr. Tindakan ini tidak bisa dibatalkan.';
+      'Mengirim permintaan penghapusan untuk kontenmu dan mengeluarkanmu dari akun di perangkat ini. Relay, klien, indeks pencarian, dan perangkat lain yang masih masuk mungkin menyimpan salinan.';
 
   @override
   String get relayDiagnosticTitle => 'Diagnostik Relay';
@@ -6738,11 +6738,11 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get deleteAccountKeyDeletionWarning =>
-      'Akun dihapus, tapi kuncimu mungkin belum sepenuhnya terhapus dari perangkat ini. Buka Pengaturan → Kunci Nostr → Hapus Kunci untuk mencoba lagi.';
+      'Permintaan penghapusan terkirim, tapi kuncimu mungkin belum sepenuhnya terhapus dari perangkat ini. Buka Pengaturan → Kunci Nostr → Hapus Kunci untuk mencoba lagi.';
 
   @override
   String get deleteAccountLocalDataDeletionFailed =>
-      'Account deleted and signed out, but some local data could not be removed from this device.';
+      'Permintaan penghapusan terkirim dan kamu keluar dari akun, tapi sebagian data lokal tidak bisa dihapus dari perangkat ini.';
 
   @override
   String get deleteAccountPreparingDeletion => 'Menyiapkan penghapusan...';
@@ -6768,11 +6768,12 @@ class AppLocalizationsId extends AppLocalizations {
       'Tidak bisa menghapus akunmu dari server. Silakan periksa koneksimu dan coba lagi.';
 
   @override
-  String get deleteAccountSuccess => 'Akunmu telah dihapus';
+  String get deleteAccountSuccess =>
+      'Permintaan penghapusan terkirim. Kamu keluar dari akun di perangkat ini.';
 
   @override
   String get deleteAccountWarningBody =>
-      'This sends deletion requests for your account and content, deletes your Divine account when possible, and signs you out on this device. Some relays, clients, and search indexes may keep copies. Other signed-in devices stay active until you remove the keys there.';
+      'Ini mengirim permintaan penghapusan untuk akun dan kontenmu, menghapus akun Divine-mu jika memungkinkan, dan mengeluarkanmu dari akun di perangkat ini. Beberapa relay, klien, dan indeks pencarian mungkin menyimpan salinan. Perangkat lain yang masih masuk tetap aktif sampai kamu menghapus kuncinya di sana.';
 
   @override
   String get exportProgressStageApplyingTextOverlay =>

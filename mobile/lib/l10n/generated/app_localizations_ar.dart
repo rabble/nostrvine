@@ -2195,7 +2195,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get nostrSettingsDeleteAccountSubtitle =>
-      'احذف حسابك وكلّ محتواك من محولات Nostr بشكل دائم. لا يمكن التراجع عن هذا الإجراء.';
+      'يرسل طلبات حذف لمحتواك ويسجّل خروجك من هذا الجهاز. قد تحتفظ المحوّلات والعملاء وفهارس البحث والأجهزة الأخرى المسجّلة الدخول بنسخ.';
 
   @override
   String get relayDiagnosticTitle => 'تشخيص المحول';
@@ -6726,11 +6726,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get deleteAccountKeyDeletionWarning =>
-      'تم حذف الحساب، لكن قد لا تكون مفاتيحك أُزيلت بالكامل من هذا الجهاز. اذهب إلى الإعدادات ← مفاتيح Nostr ← إزالة المفاتيح لإعادة المحاولة.';
+      'تم إرسال طلبات الحذف، لكن قد لا تكون مفاتيحك أُزيلت بالكامل من هذا الجهاز. اذهب إلى الإعدادات ← مفاتيح Nostr ← إزالة المفاتيح لإعادة المحاولة.';
 
   @override
   String get deleteAccountLocalDataDeletionFailed =>
-      'Account deleted and signed out, but some local data could not be removed from this device.';
+      'تم إرسال طلبات الحذف وتم تسجيل خروجك، لكن تعذّر إزالة بعض البيانات المحلية من هذا الجهاز.';
 
   @override
   String get deleteAccountPreparingDeletion => 'جارٍ التحضير للحذف...';
@@ -6755,11 +6755,12 @@ class AppLocalizationsAr extends AppLocalizations {
       'تعذّر حذف حسابك من الخادم. يرجى التحقق من اتصالك والمحاولة مرّة أخرى.';
 
   @override
-  String get deleteAccountSuccess => 'تم حذف حسابك';
+  String get deleteAccountSuccess =>
+      'تم إرسال طلبات الحذف. تم تسجيل خروجك من هذا الجهاز.';
 
   @override
   String get deleteAccountWarningBody =>
-      'This sends deletion requests for your account and content, deletes your Divine account when possible, and signs you out on this device. Some relays, clients, and search indexes may keep copies. Other signed-in devices stay active until you remove the keys there.';
+      'هذا يرسل طلبات حذف لحسابك ومحتواك، ويحذف حساب Divine الخاص بك عند الإمكان، ويسجّل خروجك من هذا الجهاز. قد تحتفظ بعض المحوّلات والعملاء وفهارس البحث بنسخ. تبقى الأجهزة الأخرى المسجّلة الدخول نشطة حتى تزيل المفاتيح منها.';
 
   @override
   String get exportProgressStageApplyingTextOverlay =>

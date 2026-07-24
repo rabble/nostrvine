@@ -2105,7 +2105,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get nostrSettingsDeleteAccountSubtitle =>
-      'Nostr 릴레이에서 계정과 모든 콘텐츠를 영구히 삭제해요. 되돌릴 수 없어요.';
+      '콘텐츠 삭제 요청을 보내고 이 기기에서 로그아웃해요. 릴레이, 클라이언트, 검색 색인, 그리고 로그인된 다른 기기에는 사본이 남을 수 있어요.';
 
   @override
   String get relayDiagnosticTitle => '릴레이 진단';
@@ -6513,11 +6513,11 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get deleteAccountKeyDeletionWarning =>
-      '계정은 삭제됐지만, 키가 이 기기에서 완전히 제거되지 않았을 수 있어요. 설정 → Nostr 키 → 키 제거로 가서 다시 시도하세요.';
+      '삭제 요청을 보냈지만, 키가 이 기기에서 완전히 제거되지 않았을 수 있어요. 설정 → Nostr 키 → 키 제거로 가서 다시 시도하세요.';
 
   @override
   String get deleteAccountLocalDataDeletionFailed =>
-      'Account deleted and signed out, but some local data could not be removed from this device.';
+      '삭제 요청을 보내고 로그아웃됐지만, 일부 로컬 데이터는 이 기기에서 제거하지 못했어요.';
 
   @override
   String get deleteAccountPreparingDeletion => '삭제 준비 중...';
@@ -6542,11 +6542,11 @@ class AppLocalizationsKo extends AppLocalizations {
       '서버에서 계정을 삭제하지 못했어요. 연결을 확인하고 다시 시도해주세요.';
 
   @override
-  String get deleteAccountSuccess => '계정이 삭제됐어요';
+  String get deleteAccountSuccess => '삭제 요청을 보냈어요. 이 기기에서 로그아웃됐어요.';
 
   @override
   String get deleteAccountWarningBody =>
-      'This sends deletion requests for your account and content, deletes your Divine account when possible, and signs you out on this device. Some relays, clients, and search indexes may keep copies. Other signed-in devices stay active until you remove the keys there.';
+      '이건 계정과 콘텐츠의 삭제 요청을 보내고, 가능하면 Divine 계정을 삭제하고, 이 기기에서 로그아웃해요. 일부 릴레이, 클라이언트, 검색 색인에는 사본이 남을 수 있어요. 로그인된 다른 기기는 거기서 키를 제거할 때까지 계속 활성 상태예요.';
 
   @override
   String get exportProgressStageApplyingTextOverlay => '텍스트 오버레이 추가 중...';

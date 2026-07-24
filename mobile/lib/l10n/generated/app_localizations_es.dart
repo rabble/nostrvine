@@ -2230,7 +2230,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get nostrSettingsDeleteAccountSubtitle =>
-      'Eliminá tu cuenta y TODO tu contenido de los relays de Nostr de forma PERMANENTE. Esto no se puede deshacer.';
+      'Envía solicitudes de eliminación de tu contenido y cierra tu sesión en este dispositivo. Los relays, clientes, índices de búsqueda y otros dispositivos con la sesión iniciada pueden conservar copias.';
 
   @override
   String get relayDiagnosticTitle => 'Diagnóstico de relays';
@@ -6827,11 +6827,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get deleteAccountKeyDeletionWarning =>
-      'Cuenta eliminada, pero es posible que tus claves no se hayan quitado por completo de este dispositivo. Andá a Ajustes → Claves de Nostr → Quitar claves para reintentar.';
+      'Solicitudes de eliminación enviadas, pero es posible que tus claves no se hayan quitado por completo de este dispositivo. Andá a Ajustes → Claves de Nostr → Quitar claves para reintentar.';
 
   @override
   String get deleteAccountLocalDataDeletionFailed =>
-      'Account deleted and signed out, but some local data could not be removed from this device.';
+      'Solicitudes de eliminación enviadas y se cerró tu sesión, pero no se pudieron quitar algunos datos locales de este dispositivo.';
 
   @override
   String get deleteAccountPreparingDeletion => 'Preparando la eliminación...';
@@ -6857,11 +6857,12 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se pudo eliminar tu cuenta del servidor. Revisá tu conexión e intentá de nuevo.';
 
   @override
-  String get deleteAccountSuccess => 'Tu cuenta fue eliminada';
+  String get deleteAccountSuccess =>
+      'Solicitudes de eliminación enviadas. Se cerró tu sesión en este dispositivo.';
 
   @override
   String get deleteAccountWarningBody =>
-      'This sends deletion requests for your account and content, deletes your Divine account when possible, and signs you out on this device. Some relays, clients, and search indexes may keep copies. Other signed-in devices stay active until you remove the keys there.';
+      'Esto envía solicitudes de eliminación de tu cuenta y contenido, elimina tu cuenta de Divine cuando es posible y cierra tu sesión en este dispositivo. Algunos relays, clientes e índices de búsqueda pueden conservar copias. Otros dispositivos con la sesión iniciada siguen activos hasta que quites las claves ahí.';
 
   @override
   String get exportProgressStageApplyingTextOverlay =>

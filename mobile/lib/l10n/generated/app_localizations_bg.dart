@@ -2245,7 +2245,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get nostrSettingsDeleteAccountSubtitle =>
-      'ИЗТРИВА ЗАВИНАГИ акаунта ти и ЦЯЛОТО съдържание от Nostr релетата. Това не може да се отмени.';
+      'Изпраща заявки за изтриване на съдържанието ти и те отписва на това устройство. Релетата, клиентите, индексите за търсене и другите устройства с вход може да запазят копия.';
 
   @override
   String get relayDiagnosticTitle => 'Релейна диагностика';
@@ -6835,11 +6835,11 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get deleteAccountKeyDeletionWarning =>
-      'Акаунтът е изтрит, но ключовете ти може да не са премахнати напълно от това устройство. Отиди в Настройки → Nostr ключове → Премахни ключовете, за да опиташ пак.';
+      'Заявките за изтриване са изпратени, но ключовете ти може да не са премахнати напълно от това устройство. Отиди в Настройки → Nostr ключове → Премахни ключовете, за да опиташ пак.';
 
   @override
   String get deleteAccountLocalDataDeletionFailed =>
-      'Account deleted and signed out, but some local data could not be removed from this device.';
+      'Заявките за изтриване са изпратени и си отписан, но някои локални данни не можаха да бъдат премахнати от това устройство.';
 
   @override
   String get deleteAccountPreparingDeletion => 'Подготовка за изтриване...';
@@ -6865,11 +6865,12 @@ class AppLocalizationsBg extends AppLocalizations {
       'Не успяхме да изтрием акаунта ти от сървъра. Провери връзката си и опитай пак.';
 
   @override
-  String get deleteAccountSuccess => 'Акаунтът ти е изтрит';
+  String get deleteAccountSuccess =>
+      'Заявките за изтриване са изпратени. Отписан си на това устройство.';
 
   @override
   String get deleteAccountWarningBody =>
-      'This sends deletion requests for your account and content, deletes your Divine account when possible, and signs you out on this device. Some relays, clients, and search indexes may keep copies. Other signed-in devices stay active until you remove the keys there.';
+      'Това изпраща заявки за изтриване на акаунта и съдържанието ти, изтрива акаунта ти в Divine, когато е възможно, и те отписва на това устройство. Някои релета, клиенти и индекси за търсене може да запазят копия. Другите устройства с вход остават активни, докато не премахнеш ключовете там.';
 
   @override
   String get exportProgressStageApplyingTextOverlay =>

@@ -2200,7 +2200,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get nostrSettingsDeleteAccountSubtitle =>
-      'Radera PERMANENT ditt konto och ALLT innehåll från Nostr-reler. Detta kan inte ångras.';
+      'Skickar raderingsförfrågningar för ditt innehåll och loggar ut dig på den här enheten. Reläer, klienter, sökindex och andra inloggade enheter kan behålla kopior.';
 
   @override
   String get relayDiagnosticTitle => 'Reldiagnostik';
@@ -6763,11 +6763,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get deleteAccountKeyDeletionWarning =>
-      'Kontot borttaget, men dina nycklar kan finnas kvar på den här enheten. Gå till Inställningar → Nostr-nycklar → Ta bort nycklar för att försöka igen.';
+      'Raderingsförfrågningar skickade, men dina nycklar kan finnas kvar på den här enheten. Gå till Inställningar → Nostr-nycklar → Ta bort nycklar för att försöka igen.';
 
   @override
   String get deleteAccountLocalDataDeletionFailed =>
-      'Account deleted and signed out, but some local data could not be removed from this device.';
+      'Raderingsförfrågningar skickade och du är utloggad, men vissa lokala data kunde inte tas bort från den här enheten.';
 
   @override
   String get deleteAccountPreparingDeletion => 'Förbereder borttagning...';
@@ -6793,11 +6793,12 @@ class AppLocalizationsSv extends AppLocalizations {
       'Kunde inte ta bort ditt konto från servern. Kontrollera din anslutning och försök igen.';
 
   @override
-  String get deleteAccountSuccess => 'Ditt konto har tagits bort';
+  String get deleteAccountSuccess =>
+      'Raderingsförfrågningar skickade. Du är utloggad på den här enheten.';
 
   @override
   String get deleteAccountWarningBody =>
-      'This sends deletion requests for your account and content, deletes your Divine account when possible, and signs you out on this device. Some relays, clients, and search indexes may keep copies. Other signed-in devices stay active until you remove the keys there.';
+      'Det här skickar raderingsförfrågningar för ditt konto och innehåll, tar bort ditt Divine-konto när det går och loggar ut dig på den här enheten. Vissa reläer, klienter och sökindex kan behålla kopior. Andra inloggade enheter förblir aktiva tills du tar bort nycklarna där.';
 
   @override
   String get exportProgressStageApplyingTextOverlay =>

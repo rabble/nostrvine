@@ -2187,7 +2187,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get nostrSettingsDeleteAccountSubtitle =>
-      'Hesabını ve TÜM içeriğini Nostr rölelerinden KALICI olarak sil. Bu işlem geri alınamaz.';
+      'İçeriğin için silme istekleri gönderir ve bu cihazda oturumunu kapatır. Röleler, istemciler, arama dizinleri ve oturum açmış diğer cihazlar kopyaları saklayabilir.';
 
   @override
   String get relayDiagnosticTitle => 'Röle Tanılamaları';
@@ -6742,11 +6742,11 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get deleteAccountKeyDeletionWarning =>
-      'Hesap silindi ama anahtarların bu cihazdan tamamen kaldırılmamış olabilir. Tekrar denemek için Ayarlar → Nostr Anahtarları → Anahtarları Kaldır\'a git.';
+      'Silme istekleri gönderildi ama anahtarların bu cihazdan tamamen kaldırılmamış olabilir. Tekrar denemek için Ayarlar → Nostr Anahtarları → Anahtarları Kaldır\'a git.';
 
   @override
   String get deleteAccountLocalDataDeletionFailed =>
-      'Account deleted and signed out, but some local data could not be removed from this device.';
+      'Silme istekleri gönderildi ve oturumun kapatıldı ama bazı yerel veriler bu cihazdan kaldırılamadı.';
 
   @override
   String get deleteAccountPreparingDeletion => 'Silme hazırlanıyor...';
@@ -6772,11 +6772,12 @@ class AppLocalizationsTr extends AppLocalizations {
       'Hesabın sunucudan silinemedi. Lütfen bağlantını kontrol et ve tekrar dene.';
 
   @override
-  String get deleteAccountSuccess => 'Hesabın silindi';
+  String get deleteAccountSuccess =>
+      'Silme istekleri gönderildi. Bu cihazda oturumun kapatıldı.';
 
   @override
   String get deleteAccountWarningBody =>
-      'This sends deletion requests for your account and content, deletes your Divine account when possible, and signs you out on this device. Some relays, clients, and search indexes may keep copies. Other signed-in devices stay active until you remove the keys there.';
+      'Bu, hesabın ve içeriğin için silme istekleri gönderir, mümkün olduğunda Divine hesabını siler ve bu cihazda oturumunu kapatır. Bazı röleler, istemciler ve arama dizinleri kopyaları saklayabilir. Oturum açmış diğer cihazlar, oradaki anahtarları kaldırana kadar aktif kalır.';
 
   @override
   String get exportProgressStageApplyingTextOverlay =>

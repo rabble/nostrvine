@@ -2094,7 +2094,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get nostrSettingsDeleteAccountSubtitle =>
-      'アカウントとすべてのコンテンツを Nostr リレーから完全に削除するよ。元には戻せないよ。';
+      'コンテンツの削除リクエストを送信して、このデバイスからサインアウトするよ。リレーやクライアント、検索インデックス、ほかのサインイン中のデバイスにはコピーが残ることがあるよ。';
 
   @override
   String get relayDiagnosticTitle => 'リレー診断';
@@ -6487,11 +6487,11 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get deleteAccountKeyDeletionWarning =>
-      'アカウントは削除したけど、鍵がこのデバイスから完全には消えてないかもしれないよ。[設定]→[Nostr 鍵]→[鍵を削除]でもう一回試してね。';
+      '削除リクエストを送信したよ。でも、鍵がこのデバイスから完全には消えてないかもしれないよ。[設定]→[Nostr 鍵]→[鍵を削除]でもう一回試してね。';
 
   @override
   String get deleteAccountLocalDataDeletionFailed =>
-      'Account deleted and signed out, but some local data could not be removed from this device.';
+      '削除リクエストを送信してサインアウトしたよ。でも、一部のローカルデータはこのデバイスから削除できなかったよ。';
 
   @override
   String get deleteAccountPreparingDeletion => '削除の準備中...';
@@ -6516,11 +6516,11 @@ class AppLocalizationsJa extends AppLocalizations {
       'サーバーからアカウントを削除できなかったよ。接続を確認してもう一回試してね。';
 
   @override
-  String get deleteAccountSuccess => 'アカウントを削除したよ';
+  String get deleteAccountSuccess => '削除リクエストを送信したよ。このデバイスからサインアウトしたよ。';
 
   @override
   String get deleteAccountWarningBody =>
-      'This sends deletion requests for your account and content, deletes your Divine account when possible, and signs you out on this device. Some relays, clients, and search indexes may keep copies. Other signed-in devices stay active until you remove the keys there.';
+      'これはアカウントとコンテンツの削除リクエストを送信して、可能なら Divine アカウントを削除し、このデバイスからサインアウトするよ。一部のリレーやクライアント、検索インデックスにはコピーが残ることがあるよ。ほかのサインイン中のデバイスは、そこで鍵を削除するまで有効なままだよ。';
 
   @override
   String get exportProgressStageApplyingTextOverlay => 'テキストオーバーレイを追加中...';

@@ -2217,7 +2217,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get nostrSettingsDeleteAccountSubtitle =>
-      'Verwijder je account en ALLE inhoud PERMANENT van Nostr-relays. Dit kan niet ongedaan worden gemaakt.';
+      'Stuurt verwijderverzoeken voor je content en meldt je op dit apparaat af. Relays, clients, zoekindexen en andere aangemelde apparaten kunnen kopieën bewaren.';
 
   @override
   String get relayDiagnosticTitle => 'Relay-diagnostiek';
@@ -6794,11 +6794,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get deleteAccountKeyDeletionWarning =>
-      'Account verwijderd, maar je sleutels zijn mogelijk niet volledig van dit apparaat verwijderd. Ga naar Instellingen → Nostr-sleutels → Sleutels verwijderen om het opnieuw te proberen.';
+      'Verwijderverzoeken verstuurd, maar je sleutels zijn mogelijk niet volledig van dit apparaat verwijderd. Ga naar Instellingen → Nostr-sleutels → Sleutels verwijderen om het opnieuw te proberen.';
 
   @override
   String get deleteAccountLocalDataDeletionFailed =>
-      'Account deleted and signed out, but some local data could not be removed from this device.';
+      'Verwijderverzoeken verstuurd en je bent afgemeld, maar sommige lokale gegevens konden niet van dit apparaat worden verwijderd.';
 
   @override
   String get deleteAccountPreparingDeletion => 'Verwijdering voorbereiden...';
@@ -6824,11 +6824,12 @@ class AppLocalizationsNl extends AppLocalizations {
       'Je account kon niet van de server worden verwijderd. Controleer je verbinding en probeer het opnieuw.';
 
   @override
-  String get deleteAccountSuccess => 'Je account is verwijderd';
+  String get deleteAccountSuccess =>
+      'Verwijderverzoeken verstuurd. Je bent op dit apparaat afgemeld.';
 
   @override
   String get deleteAccountWarningBody =>
-      'This sends deletion requests for your account and content, deletes your Divine account when possible, and signs you out on this device. Some relays, clients, and search indexes may keep copies. Other signed-in devices stay active until you remove the keys there.';
+      'Dit stuurt verwijderverzoeken voor je account en content, verwijdert je Divine-account waar mogelijk en meldt je op dit apparaat af. Sommige relays, clients en zoekindexen kunnen kopieën bewaren. Andere aangemelde apparaten blijven actief totdat je daar de sleutels verwijdert.';
 
   @override
   String get exportProgressStageApplyingTextOverlay =>

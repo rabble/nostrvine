@@ -2249,7 +2249,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get nostrSettingsDeleteAccountSubtitle =>
-      'TRWALE usuń swoje konto i WSZYSTKIE treści z przekaźników Nostr. Tego nie da się cofnąć.';
+      'Wysyła żądania usunięcia twoich treści i wylogowuje cię na tym urządzeniu. Przekaźniki, klienty, indeksy wyszukiwania i inne zalogowane urządzenia mogą zachować kopie.';
 
   @override
   String get relayDiagnosticTitle => 'Diagnostyka przekaźnika';
@@ -6926,11 +6926,11 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get deleteAccountKeyDeletionWarning =>
-      'Konto usunięte, ale twoje klucze mogły nie zostać w pełni usunięte z tego urządzenia. Przejdź do Ustawienia → Klucze Nostr → Usuń klucze, aby spróbować ponownie.';
+      'Żądania usunięcia wysłane, ale twoje klucze mogły nie zostać w pełni usunięte z tego urządzenia. Przejdź do Ustawienia → Klucze Nostr → Usuń klucze, aby spróbować ponownie.';
 
   @override
   String get deleteAccountLocalDataDeletionFailed =>
-      'Account deleted and signed out, but some local data could not be removed from this device.';
+      'Żądania usunięcia wysłane i wylogowano cię, ale niektórych danych lokalnych nie udało się usunąć z tego urządzenia.';
 
   @override
   String get deleteAccountPreparingDeletion => 'Przygotowywanie usuwania...';
@@ -6956,11 +6956,12 @@ class AppLocalizationsPl extends AppLocalizations {
       'Nie udało się usunąć twojego konta z serwera. Sprawdź połączenie i spróbuj ponownie.';
 
   @override
-  String get deleteAccountSuccess => 'Twoje konto zostało usunięte';
+  String get deleteAccountSuccess =>
+      'Żądania usunięcia wysłane. Wylogowano cię na tym urządzeniu.';
 
   @override
   String get deleteAccountWarningBody =>
-      'This sends deletion requests for your account and content, deletes your Divine account when possible, and signs you out on this device. Some relays, clients, and search indexes may keep copies. Other signed-in devices stay active until you remove the keys there.';
+      'To wysyła żądania usunięcia twojego konta i treści, usuwa twoje konto Divine, gdy to możliwe, i wylogowuje cię na tym urządzeniu. Niektóre przekaźniki, klienty i indeksy wyszukiwania mogą zachować kopie. Inne zalogowane urządzenia pozostają aktywne, dopóki nie usuniesz na nich kluczy.';
 
   @override
   String get exportProgressStageApplyingTextOverlay =>
