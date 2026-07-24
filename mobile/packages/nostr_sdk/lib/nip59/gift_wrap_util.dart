@@ -182,6 +182,19 @@ class GiftWrapUtil {
     );
     await nostr.signEvent(sealEvent);
 
+    // [Nostr.signEvent] is a no-op when the signer returns null, which is a
+    // reachable outcome for every remote signer: an Amber user dismissing the
+    // approval prompt, a NIP-46 bunker RPC timing out, a NIP-07 rejection.
+    // Without this check the seal ships with an empty `sig`, the wrap around
+    // it is signed with a valid ephemeral key so relays accept it, the send
+    // reports as delivered — and every recipient drops it at the seal
+    // signature check. Returning null routes the caller to a retryable
+    // failure that keeps its durable queue row instead.
+    if (sealEvent.sig.isEmpty) {
+      log('GiftWrap seal was not signed; refusing to publish an unsigned DM.');
+      return null;
+    }
+
     var randomPrivateKey = generatePrivateKey();
     var randomPubkey = getPublicKey(randomPrivateKey);
     var randomKey = NIP44V2.shareSecret(randomPrivateKey, receiverPublicKey);
@@ -246,6 +259,10 @@ Future<Event?> buildGiftWrapFromHex({
     sealEventContent,
     createdAt: sealCreatedAt,
   );
+  // No unsigned-seal guard is needed here: [Event.sign] only no-ops when the
+  // key fails `keyIsValid`, and `getPublicKey` above rejects exactly those
+  // keys by throwing first. The throw propagates to the caller as a failed
+  // build, which is the same safe outcome. Pinned by a test.
   sealEvent.sign(senderPrivateKeyHex);
 
   final randomPrivateKey = generatePrivateKey();

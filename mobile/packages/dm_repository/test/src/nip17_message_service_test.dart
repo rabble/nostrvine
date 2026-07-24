@@ -38,6 +38,43 @@ class _RpcExceptionDouble implements Exception {
   String toString() => 'RpcException: $message';
 }
 
+/// Encrypts normally but returns `null` from [signEvent], reproducing what
+/// every remote signer does when signing is declined: an Amber user dismissing
+/// the approval prompt, a NIP-46 bunker RPC timing out, a NIP-07 rejection.
+class _RefusesToSignSigner implements NostrSigner {
+  _RefusesToSignSigner(this._delegate);
+
+  final LocalNostrSigner _delegate;
+
+  @override
+  Future<Event?> signEvent(Event event) async => null;
+
+  @override
+  Future<String?> getPublicKey() => _delegate.getPublicKey();
+
+  @override
+  Future<Map<dynamic, dynamic>?> getRelays() => _delegate.getRelays();
+
+  @override
+  Future<String?> encrypt(String pubkey, String plaintext) =>
+      _delegate.encrypt(pubkey, plaintext);
+
+  @override
+  Future<String?> decrypt(String pubkey, String ciphertext) =>
+      _delegate.decrypt(pubkey, ciphertext);
+
+  @override
+  Future<String?> nip44Encrypt(String pubkey, String plaintext) =>
+      _delegate.nip44Encrypt(pubkey, plaintext);
+
+  @override
+  Future<String?> nip44Decrypt(String pubkey, String ciphertext) =>
+      _delegate.nip44Decrypt(pubkey, ciphertext);
+
+  @override
+  void close() => _delegate.close();
+}
+
 /// Denies every recipient — stands in for a protected minor's policy where the
 /// counterparty is not in the approved official set.
 Future<DmSendPolicyDecision> _denyAllPolicy(String recipientPubkey) async =>
@@ -1505,6 +1542,43 @@ void main() {
         expect(result.error, isNotNull);
         verifyNever(() => mockNostrClient.publishEvent(any()));
       });
+
+      test(
+        'sendRumor fails, and publishes nothing, when the signer declines to '
+        'sign the seal',
+        () async {
+          // End-to-end through the REAL GiftWrapUtil: a declining signer used
+          // to yield a seal with an empty sig, wrapped under a valid ephemeral
+          // key, which relays accepted and the caller recorded as delivered —
+          // while every recipient dropped it. The send must fail instead, so
+          // the durable queue row survives and the sweep re-drives it.
+          final decliningService = NIP17MessageService(
+            signer: _RefusesToSignSigner(LocalNostrSigner(_testPrivateKey)),
+            senderPublicKey: getPublicKey(_testPrivateKey),
+            nostrService: mockNostrClient,
+          );
+
+          final rumor = decliningService.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'must not ship unsigned',
+          );
+
+          final result = await decliningService.sendRumor(
+            rumorEvent: rumor,
+            recipientPubkey: _recipientPubkey,
+          );
+
+          expect(result.success, isFalse);
+          expect(result.error, isNotNull);
+          verifyNever(() => mockNostrClient.publishEvent(any()));
+          verifyNever(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              timeout: any(named: 'timeout'),
+            ),
+          );
+        },
+      );
 
       test('returns failure when the gift-wrap builder throws', () async {
         final throwingBuilderService = NIP17MessageService(

@@ -9,6 +9,43 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 
+/// A signer that encrypts normally but refuses to sign, returning `null` from
+/// [signEvent] exactly as a remote signer does when the user dismisses the
+/// Amber approval prompt, a NIP-46 bunker RPC times out, or NIP-07 rejects.
+class _RefusesToSignSigner implements NostrSigner {
+  _RefusesToSignSigner(this._delegate);
+
+  final LocalNostrSigner _delegate;
+
+  @override
+  Future<Event?> signEvent(Event event) async => null;
+
+  @override
+  Future<String?> getPublicKey() => _delegate.getPublicKey();
+
+  @override
+  Future<Map<dynamic, dynamic>?> getRelays() => _delegate.getRelays();
+
+  @override
+  Future<String?> encrypt(String pubkey, String plaintext) =>
+      _delegate.encrypt(pubkey, plaintext);
+
+  @override
+  Future<String?> decrypt(String pubkey, String ciphertext) =>
+      _delegate.decrypt(pubkey, ciphertext);
+
+  @override
+  Future<String?> nip44Encrypt(String pubkey, String plaintext) =>
+      _delegate.nip44Encrypt(pubkey, plaintext);
+
+  @override
+  Future<String?> nip44Decrypt(String pubkey, String ciphertext) =>
+      _delegate.nip44Decrypt(pubkey, ciphertext);
+
+  @override
+  void close() => _delegate.close();
+}
+
 void main() {
   Relay dummyRelay(String url) => RelayBase(url, RelayStatus(url));
 
@@ -287,6 +324,85 @@ void main() {
         expect(rumor.id, isNot(equals(spoofedId)));
         expect(rumor.isValid, isTrue);
       });
+    });
+  });
+
+  group('getGiftWrapEvent refuses to ship an unsigned seal', () {
+    late String senderPrivateKey;
+    late String recipientPubkey;
+
+    setUp(() {
+      senderPrivateKey = generatePrivateKey();
+      recipientPubkey = getPublicKey(generatePrivateKey());
+    });
+
+    Event rumorFor(String senderPubkey) =>
+        Event(senderPubkey, EventKind.privateDirectMessage, <List<String>>[
+          ['p', recipientPubkey],
+        ], 'never delivered');
+
+    test('returns null when the signer declines to sign the seal', () async {
+      final signer = _RefusesToSignSigner(LocalNostrSigner(senderPrivateKey));
+      final nostr = Nostr(signer, const [], dummyRelay);
+      await nostr.refreshPublicKey();
+
+      final wrap = await GiftWrapUtil.getGiftWrapEvent(
+        nostr,
+        rumorFor(getPublicKey(senderPrivateKey)),
+        recipientPubkey,
+      );
+
+      // A wrap here would be signed by a valid ephemeral key, so relays would
+      // accept it and the send would report delivered — while every recipient
+      // dropped it at the seal signature check.
+      expect(wrap, isNull);
+    });
+
+    test('still builds a signed wrap when the signer cooperates', () async {
+      final nostr = Nostr(
+        LocalNostrSigner(senderPrivateKey),
+        const [],
+        dummyRelay,
+      );
+      await nostr.refreshPublicKey();
+
+      final wrap = await GiftWrapUtil.getGiftWrapEvent(
+        nostr,
+        rumorFor(getPublicKey(senderPrivateKey)),
+        recipientPubkey,
+      );
+
+      expect(wrap, isNotNull);
+      expect(verifyGiftWrapPart(wrap!), isTrue);
+    });
+
+    test(
+      'buildGiftWrapFromHex fails loudly on a key Event.sign would no-op on',
+      () async {
+        // Event.sign silently no-ops when keyIsValid is false, which would
+        // otherwise produce the same unsigned seal as a declining signer. On
+        // this path getPublicKey rejects those keys first, so the build throws
+        // instead of returning a wrap — no unsigned DM can escape either way.
+        expect(
+          () => buildGiftWrapFromHex(
+            senderPrivateKeyHex: 'not-a-valid-private-key',
+            rumorJson: rumorFor(getPublicKey(generatePrivateKey())).toJson(),
+            receiverPublicKey: recipientPubkey,
+          ),
+          throwsArgumentError,
+        );
+      },
+    );
+
+    test('buildGiftWrapFromHex still builds for a valid key', () async {
+      final wrap = await buildGiftWrapFromHex(
+        senderPrivateKeyHex: senderPrivateKey,
+        rumorJson: rumorFor(getPublicKey(senderPrivateKey)).toJson(),
+        receiverPublicKey: recipientPubkey,
+      );
+
+      expect(wrap, isNotNull);
+      expect(verifyGiftWrapPart(wrap!), isTrue);
     });
   });
 }
