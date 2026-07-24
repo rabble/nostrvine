@@ -9,6 +9,7 @@ import 'package:openvine/services/seed_media_preload_service.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 
+import '../helpers/flutter_assets_channel.dart';
 import '../mocks/mock_path_provider_platform.dart';
 
 /// Wires up a mock handler for `flutter/assets` so [rootBundle] reads return
@@ -40,9 +41,10 @@ void _mockSeedMediaAssets({
       });
 }
 
+// Restores flutter_test's default `flutter/assets` handler. Nulling it would
+// strand asset loading for every later suite in the shared VGV isolate.
 void _clearAssetMock() {
-  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-      .setMockMessageHandler('flutter/assets', null);
+  restoreFlutterAssetsDefaultHandler();
 }
 
 void main() {

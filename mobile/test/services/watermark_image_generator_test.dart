@@ -9,6 +9,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/watermark_image_generator.dart';
 
+import '../helpers/flutter_assets_channel.dart';
+
 const _wordmarkAssetKey = 'assets/icon/divine_wordmark.png';
 
 /// Mocks `flutter/assets` so [rootBundle] serves [bytes] for the wordmark path,
@@ -26,9 +28,10 @@ void _mockWordmarkAsset(Uint8List bytes) {
       });
 }
 
+// Restores flutter_test's default `flutter/assets` handler. Nulling it would
+// strand asset loading for every later suite in the shared VGV isolate.
 void _clearAssetMock() {
-  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-      .setMockMessageHandler('flutter/assets', null);
+  restoreFlutterAssetsDefaultHandler();
 }
 
 /// Installs an asset handler that returns `null` for every key, so
