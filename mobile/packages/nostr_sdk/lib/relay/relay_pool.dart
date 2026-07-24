@@ -24,7 +24,7 @@ import 'relay_type.dart';
 import 'signature_verification_policy.dart';
 
 class _AuthRequiredPublishRetry {
-  const _AuthRequiredPublishRetry({
+  _AuthRequiredPublishRetry({
     required this.message,
     required this.tracker,
     required this.reason,
@@ -35,6 +35,11 @@ class _AuthRequiredPublishRetry {
   final PublishTracker tracker;
   final String reason;
   final DateTime deadline;
+
+  /// Set once the EVENT has been re-sent after AUTH. A single tracked entry
+  /// lingers as the dedup marker until the relay answers OK, so later
+  /// AUTH/OK triggers must not push the same frame again.
+  bool resent = false;
 }
 
 class RelayPool {
@@ -208,7 +213,14 @@ class RelayPool {
       return false;
     }
     if (_isExplicitAuthRequiredReason(message)) return true;
-    return _isRestrictedReason(message) && !relay.relayStatus.authed;
+    // A bare "restricted" reason is NIP-01's generic members-only rejection
+    // and is only auth-retryable when the relay actually speaks NIP-42 (it
+    // sent an AUTH challenge, so alwaysAuth is set) and has not authed yet.
+    // Without that guard a permanent allow-list rejection would be tracked
+    // and hang until the publish deadline instead of failing fast.
+    return _isRestrictedReason(message) &&
+        relay.relayStatus.alwaysAuth &&
+        !relay.relayStatus.authed;
   }
 
   void _trackAuthRequiredPublish({
@@ -240,7 +252,9 @@ class RelayPool {
     }
   }
 
-  Future<void> _retryAuthRequiredPublishesForRelay(Relay relay) async {
+  List<MapEntry<String, _AuthRequiredPublishRetry>> _retryEntriesForRelay(
+    Relay relay,
+  ) {
     final retryEntries = <MapEntry<String, _AuthRequiredPublishRetry>>[];
     for (final entry in _authRequiredPublishRetries.entries) {
       final retry = entry.value[relay.url];
@@ -248,15 +262,16 @@ class RelayPool {
         retryEntries.add(MapEntry(entry.key, retry));
       }
     }
+    return retryEntries;
+  }
 
-    for (final entry in retryEntries) {
+  Future<void> _retryAuthRequiredPublishesForRelay(Relay relay) async {
+    for (final entry in _retryEntriesForRelay(relay)) {
       final eventId = entry.key;
       final retry = entry.value;
-      if (!DateTime.now().isBefore(retry.deadline)) {
-        retry.tracker.onRejected(relay.url, retry.reason);
-        _removeAuthRequiredPublish(eventId, relay.url);
-        continue;
-      }
+      // A resent entry lingers only as the dedup marker; do not push it again
+      // on a later AUTH/OK trigger for this relay.
+      if (retry.resent) continue;
 
       final timeout = retry.deadline.difference(DateTime.now());
       if (timeout <= Duration.zero) {
@@ -265,6 +280,9 @@ class RelayPool {
         continue;
       }
 
+      // Mark before the await: onMessage delivery is fire-and-forget, so a
+      // re-entrant OK/AUTH frame must not resend this in-flight EVENT.
+      retry.resent = true;
       log(
         '🔐 Re-publishing auth-required EVENT after AUTH '
         'eventId=$eventId relay=${relay.url}',
@@ -285,15 +303,7 @@ class RelayPool {
   }
 
   void _rejectAuthRequiredPublishesForRelay(Relay relay, String authMessage) {
-    final retryEntries = <MapEntry<String, _AuthRequiredPublishRetry>>[];
-    for (final entry in _authRequiredPublishRetries.entries) {
-      final retry = entry.value[relay.url];
-      if (retry != null) {
-        retryEntries.add(MapEntry(entry.key, retry));
-      }
-    }
-
-    for (final entry in retryEntries) {
+    for (final entry in _retryEntriesForRelay(relay)) {
       entry.value.tracker.onRejected(
         relay.url,
         authMessage.isEmpty ? entry.value.reason : authMessage,
@@ -948,6 +958,14 @@ class RelayPool {
               '🔐 AUTH post-auth: NO subscriptions saved for '
               '${relay.url}',
             );
+          }
+
+          // Re-issue one-shot queries. Their pre-auth REQ was sent to trigger
+          // the challenge and may have been CLOSED with auth-required, so the
+          // saved query still needs to run once the relay accepts us.
+          for (final query in relay.getQueries()) {
+            log('🔐 AUTH post-auth: re-sending query ${query.id} ${relay.url}');
+            relay.send(query.toJson());
           }
           await _retryAuthRequiredPublishesForRelay(relay);
         } else {

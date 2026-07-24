@@ -47,13 +47,6 @@ class MockRelay extends RelayBase {
   void clearSentMessages() {
     sentMessages.clear();
   }
-
-  void sendPendingMessages() {
-    while (pendingAuthedMessages.isNotEmpty) {
-      final message = pendingAuthedMessages.removeAt(0);
-      send(message);
-    }
-  }
 }
 
 void main() {

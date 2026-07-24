@@ -42,6 +42,10 @@ class _AuthFakeRelay extends Relay {
 
   final List<List<dynamic>> sentMessages = [];
 
+  /// When true, [send] records the frame but reports transport failure, so the
+  /// post-auth resend path (`onRelayUnavailable`) can be exercised.
+  bool failSends = false;
+
   @override
   Future<bool> doConnect() async {
     relayStatus.connected = ClientConnected.connected;
@@ -62,7 +66,7 @@ class _AuthFakeRelay extends Relay {
     DateTime? deadline,
   }) async {
     sentMessages.add(message);
-    return true;
+    return !failSends;
   }
 
   /// Drive an inbound message through the handler registered by RelayPool,
@@ -255,7 +259,7 @@ void main() {
       expect(outcome.acceptedBy, equals([relay.url]));
     });
 
-    test('does not loop when the post-auth EVENT is still rejected', () async {
+    test('does not loop when the relay keeps rejecting after AUTH', () async {
       const eventId =
           '2222222222222222222222222222222222222222222222222222222222222222';
       final outcomeFuture = nostr.relayPool.sendEventAwaitOk(
@@ -278,7 +282,11 @@ void main() {
       await relay.deliver(['AUTH', challenge]);
       final authEventId = sentAuthEventId(relay);
       await relay.deliver(['OK', authEventId, true, '']);
-      await relay.deliver(['OK', eventId, false, 'restricted: members only']);
+      // A second auth-required after AUTH would re-trigger a retry if the
+      // dedup marker were missing; the tracked entry must suppress it. Using
+      // an auth-required reason here (not "restricted") isolates the dedup
+      // guard as the sole reason the second republish does not happen.
+      await relay.deliver(['OK', eventId, false, 'auth-required: still no']);
 
       final outcome = await outcomeFuture;
 
@@ -286,13 +294,133 @@ void main() {
       expect(outcome.acceptedBy, isEmpty);
       expect(
         outcome.rejectedBy,
-        equals({relay.url: 'restricted: members only'}),
+        equals({relay.url: 'auth-required: still no'}),
       );
       expect(
         sentMessagesOfType(relay, 'EVENT'),
         hasLength(2),
-        reason: 'post-auth rejection should not trigger another republish',
+        reason: 'the dedup marker must prevent a second post-auth republish',
       );
     });
+
+    test('fails fast on restricted rejection with no AUTH offered', () async {
+      const eventId =
+          '4444444444444444444444444444444444444444444444444444444444444444';
+      final outcomeFuture = nostr.relayPool.sendEventAwaitOk(
+        [
+          'EVENT',
+          {'id': eventId, 'kind': EventKind.giftWrap},
+        ],
+        eventId: eventId,
+        eventKind: EventKind.giftWrap,
+        targetRelays: [relay.url],
+        timeout: const Duration(seconds: 1),
+      );
+
+      // The relay never sends an AUTH challenge (alwaysAuth stays false), so a
+      // bare "restricted" is a permanent members-only rejection, not NIP-42.
+      await relay.deliver([
+        'OK',
+        eventId,
+        false,
+        'restricted: not on allow list',
+      ]);
+
+      final outcome = await outcomeFuture;
+
+      expect(outcome.failed, isTrue);
+      expect(
+        outcome.rejectedBy,
+        equals({relay.url: 'restricted: not on allow list'}),
+      );
+      expect(
+        sentMessagesOfType(relay, 'EVENT'),
+        hasLength(1),
+        reason: 'a members-only relay that never offers AUTH must not retry',
+      );
+    });
+
+    test('rejects the publish when the relay AUTH fails', () async {
+      const eventId =
+          '5555555555555555555555555555555555555555555555555555555555555555';
+      final outcomeFuture = nostr.relayPool.sendEventAwaitOk(
+        [
+          'EVENT',
+          {'id': eventId, 'kind': EventKind.giftWrap},
+        ],
+        eventId: eventId,
+        eventKind: EventKind.giftWrap,
+        targetRelays: [relay.url],
+        timeout: const Duration(seconds: 1),
+      );
+
+      await relay.deliver([
+        'OK',
+        eventId,
+        false,
+        'auth-required: you must auth',
+      ]);
+      await relay.deliver(['AUTH', challenge]);
+      final authEventId = sentAuthEventId(relay);
+      await relay.deliver([
+        'OK',
+        authEventId,
+        false,
+        'auth failed: bad signature',
+      ]);
+
+      final outcome = await outcomeFuture;
+
+      expect(outcome.failed, isTrue);
+      expect(
+        outcome.rejectedBy,
+        equals({relay.url: 'auth failed: bad signature'}),
+      );
+      expect(
+        sentMessagesOfType(relay, 'EVENT'),
+        hasLength(1),
+        reason: 'a failed AUTH must not retry the EVENT',
+      );
+    });
+
+    test(
+      'marks the relay unavailable when the post-auth resend fails',
+      () async {
+        const eventId =
+            '6666666666666666666666666666666666666666666666666666666666666666';
+        final outcomeFuture = nostr.relayPool.sendEventAwaitOk(
+          [
+            'EVENT',
+            {'id': eventId, 'kind': EventKind.giftWrap},
+          ],
+          eventId: eventId,
+          eventKind: EventKind.giftWrap,
+          targetRelays: [relay.url],
+          timeout: const Duration(seconds: 1),
+        );
+
+        await relay.deliver([
+          'OK',
+          eventId,
+          false,
+          'auth-required: you must auth',
+        ]);
+        await relay.deliver(['AUTH', challenge]);
+        final authEventId = sentAuthEventId(relay);
+        relay.failSends = true;
+        await relay.deliver(['OK', authEventId, true, '']);
+
+        final outcome = await outcomeFuture;
+
+        expect(outcome.failed, isTrue);
+        expect(outcome.acceptedBy, isEmpty);
+        expect(outcome.rejectedBy, isEmpty);
+        expect(
+          sentMessagesOfType(relay, 'EVENT'),
+          hasLength(2),
+          reason: 'the resend is attempted once before giving up',
+        );
+      },
+    );
   });
 }
