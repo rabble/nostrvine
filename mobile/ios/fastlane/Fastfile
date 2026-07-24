@@ -1,4 +1,5 @@
 require "base64"
+require "fileutils"
 
 # Fastfile — App Store screenshot pipeline for Divine.
 # Run from mobile/ios: `bundle exec fastlane screenshots`
@@ -9,6 +10,7 @@ default_platform(:ios)
 platform :ios do
   desc "Capture all App Store screenshots and frame them with captions"
   lane :screenshots do
+    preflight_build_hygiene
     bump_xcodebuild_settings_timeout
     ensure_flutter_config
     snapshot
@@ -17,6 +19,7 @@ platform :ios do
 
   desc "Capture only (no framing) — useful while iterating on the UI test"
   lane :capture do
+    preflight_build_hygiene
     bump_xcodebuild_settings_timeout
     ensure_flutter_config
     snapshot
@@ -48,12 +51,48 @@ platform :ios do
     )
   end
 
+  desc "Guard against concurrent builds and stale test-result staging"
+  private_lane :preflight_build_hygiene do
+    derived_data = File.expand_path("DerivedData", __dir__)
+
+    # Another xcodebuild (stale retry, second agent session, Xcode itself)
+    # holding this DerivedData's build.db fails the whole run with
+    # "database is locked ... two concurrent builds". Detect the holder via
+    # lsof on the db file and stop before wasting a build cycle.
+    build_db = File.join(
+      derived_data, "Build", "Intermediates.noindex", "XCBuildData", "build.db"
+    )
+    if File.exist?(build_db)
+      pids = `lsof -t -- #{build_db.shellescape} 2>/dev/null`.split.uniq
+      unless pids.empty?
+        holders = `ps -o pid=,comm= -p #{pids.join(',')}`.strip
+        UI.user_error!(
+          "DerivedData build database is in use by another process:\n" \
+          "#{holders}\n" \
+          "Close Xcode / wait for the other build to finish (or kill it), " \
+          "then re-run."
+        )
+      end
+    end
+
+    # A crashed test runner leaves a half-written .xcresult staging dir; the
+    # next run then fails result-bundle saving with
+    # "mkstemp: No such file or directory" and reports TEST FAILED even when
+    # every test passed — which used to trigger a full pointless re-run.
+    # These are local logs only; the screenshots live elsewhere.
+    FileUtils.rm_rf(File.join(derived_data, "Logs", "Test"))
+  end
+
   desc "Give xcodebuild -showBuildSettings room for slow SPM resolution"
   private_lane :bump_xcodebuild_settings_timeout do
     # Default base timeout is 3s; SPM dependency resolution on this project
     # takes far longer, so snapshot's showBuildSettings probe times out.
     ENV["FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT"] = "180"
     ENV["FASTLANE_XCODEBUILD_SETTINGS_RETRIES"] = "5"
+    # snapshot overrides the status bar immediately after booting the sim
+    # (default wait is 0s); on a cold boot that raced the springboard and
+    # crashed the test runner on its first attempt. Give boot up to 30s.
+    ENV["SNAPSHOT_SIMULATOR_WAIT_FOR_BOOT_TIMEOUT"] = "30"
   end
 
   desc "Verify the Flutter Xcode config was generated with SCREENSHOT_MODE"
