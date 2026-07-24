@@ -5,7 +5,6 @@ import 'dart:io';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/config/app_config.dart';
@@ -22,28 +21,6 @@ List<String> _svgAssetNames(WidgetTester tester) => tester
     .whereType<SvgAssetLoader>()
     .map((loader) => loader.assetName)
     .toList();
-
-int _wordmarkImageSemanticsNodeCount(WidgetTester tester) {
-  final root = tester
-      .binding
-      .renderViews
-      .first
-      .owner!
-      .semanticsOwner!
-      .rootSemanticsNode!;
-  var count = 0;
-
-  bool visit(SemanticsNode node) {
-    if (node.flagsCollection.isImage && node.label == AppConfig.appName) {
-      count++;
-    }
-    node.visitChildren(visit);
-    return true;
-  }
-
-  visit(root);
-  return count;
-}
 
 void main() {
   group(AuthHeroSection, () {
@@ -149,13 +126,16 @@ void main() {
       ) async {
         final semantics = tester.ensureSemantics();
         await tester.pumpWidget(createTestWidget());
-        // flutter_svg attaches the semantics label immediately but only flags
-        // the node as an image once the picture finishes decoding — which
-        // isn't guaranteed on the first frame (it varies with SVG-cache warmth
-        // and platform in the merged-isolate suite). Settle before counting.
         await tester.pumpAndSettle();
 
-        expect(_wordmarkImageSemanticsNodeCount(tester), equals(1));
+        final wordmarkSemantics = find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics &&
+              widget.properties.image == true &&
+              widget.properties.label == AppConfig.appName,
+        );
+
+        expect(wordmarkSemantics, findsOneWidget);
         expect(find.bySemanticsLabel(AppConfig.appName), findsOneWidget);
 
         semantics.dispose();

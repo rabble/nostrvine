@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/config/screenshot_mode.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/preferences_providers.dart';
@@ -62,7 +63,7 @@ class RecordButton extends ConsumerWidget {
         state.isRecording;
 
     return Semantics(
-      identifier: 'divine-camera-record-button',
+      identifier: SemanticIds.cameraRecordButton,
       button: true,
       enabled: isEnabled,
       tooltip: state.isRecording
@@ -112,7 +113,7 @@ class _BlockedRecordButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      identifier: 'divine-camera-record-button',
+      identifier: SemanticIds.cameraRecordButton,
       button: true,
       tooltip: context.l10n.videoRecorderStartRecordingTooltip,
       onTap: onTap,

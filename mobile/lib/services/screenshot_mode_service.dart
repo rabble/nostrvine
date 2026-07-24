@@ -187,10 +187,15 @@ Future<void> seedScreenshotEditorClips(ProviderContainer container) async {
 Future<File> _materializeAsset(String assetPath, String targetDir) async {
   final data = await rootBundle.load(assetPath);
   final file = File('$targetDir/screenshot_${assetPath.split('/').last}');
-  if (!file.existsSync()) {
-    await file.writeAsBytes(
-      data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
-    );
+  final bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+  if (file.existsSync() && file.lengthSync() == bytes.length) {
+    return file;
   }
+  final tempFile = File('${file.path}.tmp');
+  await tempFile.writeAsBytes(bytes, flush: true);
+  if (file.existsSync()) {
+    await file.delete();
+  }
+  await tempFile.rename(file.path);
   return file;
 }

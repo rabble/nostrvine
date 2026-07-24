@@ -33,6 +33,9 @@ extension FlutterError: @retroactive Error {}
   // DEBUG-only; absent from Release binaries.
   private func exportScreenshotLaunchConfig() {
     let env = ProcessInfo.processInfo.environment
+    guard env["SCREENSHOT_INITIAL_ROUTE"] != nil || env["SCREENSHOT_SEED_CLIPS"] != nil else {
+      return
+    }
     let defaults = UserDefaults.standard
     defaults.set(
       env["SCREENSHOT_INITIAL_ROUTE"] ?? "",

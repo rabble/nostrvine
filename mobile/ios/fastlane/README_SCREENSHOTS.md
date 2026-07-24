@@ -1,6 +1,6 @@
 # App Store screenshot pipeline
 
-Automated, caption-overlaid App Store screenshots for diVine. One command
+Automated, caption-overlaid App Store screenshots for Divine. One command
 captures all 9 screens on both required device sizes and composites the
 marketing captions on top.
 
@@ -42,10 +42,11 @@ bundle exec fastlane frame     # re-frame existing captures (fast)
 
 ## How it works
 
-- The Fastfile regenerates the Flutter Xcode config with
+- Before running fastlane, generate the Flutter Xcode config with
   `--dart-define=SCREENSHOT_MODE=true`. That flag (see
   `lib/config/screenshot_mode.dart`) is compile-time false outside debug
-  builds — no screenshot affordance ships in Release.
+  builds; the Fastfile verifies the define is present before capture, and
+  no screenshot affordance ships in Release.
 - On launch, screenshot mode creates a **throwaway Nostr account**
   (fresh key, terms auto-accepted) and follows a fixed set of well-known
   creators (see `ScreenshotModeService.creatorPubkeysHex`) so the share
@@ -53,9 +54,10 @@ bundle exec fastlane frame     # re-frame existing captures (fast)
   simulator between runs.
 - `ios/DivineUITests/DivineScreenshots.swift` launches the app once per
   screen with `SCREENSHOT_INITIAL_ROUTE` in the launch environment; the
-  router (screenshot builds only) starts on that route. Every step waits
-  on an accessibility identifier from `lib/constants/semantic_ids.dart` —
-  no sleeps.
+  screenshot startup hook reads that value from `SharedPreferences` and
+  drives the router after first-frame startup. Every step waits on an
+  accessibility identifier from `lib/constants/semantic_ids.dart` — no
+  sleeps.
 - The camera preview is a bundled still (simulators have no camera); the
   editor timeline is seeded from bundled clips when
   `SCREENSHOT_SEED_CLIPS=1` is in the launch environment.

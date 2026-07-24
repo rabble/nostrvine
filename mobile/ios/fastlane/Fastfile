@@ -1,6 +1,6 @@
 require "base64"
 
-# Fastfile — App Store screenshot pipeline for diVine.
+# Fastfile — App Store screenshot pipeline for Divine.
 # Run from mobile/ios: `bundle exec fastlane screenshots`
 # See fastlane/README_SCREENSHOTS.md for the full guide.
 
@@ -38,22 +38,14 @@ platform :ios do
   desc "Upload framed screenshots to App Store Connect (DISABLED by default)"
   lane :upload_screenshots do
     # Deliberately disabled: this pipeline must never push to App Store
-    # Connect without an explicit human decision. To enable, remove the
-    # user_error! line, provide an App Store Connect API key via the
-    # APP_STORE_CONNECT_API_KEY_* environment variables, and review the
-    # deliver preview before confirming.
+    # Connect without an explicit human decision. To enable, replace this
+    # guard with a reviewed deliver configuration and provide an App Store
+    # Connect API key via the APP_STORE_CONNECT_API_KEY_* environment
+    # variables.
     UI.user_error!(
       "Uploading is intentionally disabled. " \
       "Edit the upload_screenshots lane in fastlane/Fastfile to enable it."
     )
-    # deliver(
-    #   app_identifier: "co.openvine.app",
-    #   skip_binary_upload: true,
-    #   skip_metadata: true,
-    #   skip_app_version_update: true,
-    #   screenshots_path: "./fastlane/screenshots",
-    #   overwrite_screenshots: true,
-    # )
   end
 
   desc "Give xcodebuild -showBuildSettings room for slow SPM resolution"

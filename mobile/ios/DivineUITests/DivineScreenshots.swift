@@ -4,8 +4,8 @@
 //
 //  App Store screenshot suite driven by fastlane snapshot.
 //
-//  Every capture launches the app fresh with SCREENSHOT_INITIAL_ROUTE so the
-//  Flutter router (in SCREENSHOT_MODE debug builds) lands directly on the
+//  Every capture launches the app fresh with SCREENSHOT_INITIAL_ROUTE; the
+//  app reads that value during screenshot-mode startup and navigates to the
 //  target screen. Elements are located by the accessibility identifiers the
 //  Flutter side exposes via `SemanticIds` (lib/constants/semantic_ids.dart).
 //
@@ -147,7 +147,7 @@ final class DivineScreenshots: XCTestCase {
 
     func test04Capture() {
         let app = launchApp(route: "/video-recorder")
-        waitFor(app, "divine-camera-record-button")
+        waitFor(app, "camera_record_button")
         snapshot("04_capture")
     }
 
@@ -159,7 +159,7 @@ final class DivineScreenshots: XCTestCase {
 
     func test06Modes() {
         let app = launchApp(route: "/video-recorder")
-        waitFor(app, "divine-camera-record-button")
+        waitFor(app, "camera_record_button")
         waitFor(app, "camera_mode_capture")
         snapshot("06_modes")
     }

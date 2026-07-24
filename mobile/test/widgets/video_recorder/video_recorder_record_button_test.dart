@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -211,7 +212,7 @@ void main() {
           find.byWidgetPredicate(
             (w) =>
                 w is Semantics &&
-                w.properties.identifier == 'divine-camera-record-button',
+                w.properties.identifier == SemanticIds.cameraRecordButton,
           ),
         );
         expect(semantics.properties.button, isTrue);
@@ -222,66 +223,56 @@ void main() {
     // long-touch on the record button while a tap-started recording is
     // in progress must NOT dispatch a stop event on release.
     group('phantom click regression (issue #4409)', () {
-      testWidgets(
-        'long-press release does not stop a tap-started recording',
-        (tester) async {
-          when(() => recorderBloc.state).thenReturn(
-            const VideoRecorderBlocState(
-              recordingState: VideoRecorderState.recording,
-              canRecord: true,
-              isCameraInitialized: true,
-            ),
-          );
+      testWidgets('long-press release does not stop a tap-started recording', (
+        tester,
+      ) async {
+        when(() => recorderBloc.state).thenReturn(
+          const VideoRecorderBlocState(
+            recordingState: VideoRecorderState.recording,
+            canRecord: true,
+            isCameraInitialized: true,
+          ),
+        );
 
-          await tester.pumpWidget(
-            ProviderScope(
-              overrides: [
-                sharedPreferencesProvider.overrideWithValue(
-                  sharedPreferences,
-                ),
-                clipManagerProvider.overrideWith(
-                  () => _TestClipManagerNotifier(clips: const []),
-                ),
-              ],
-              child: BlocProvider<VideoRecorderBloc>.value(
-                value: recorderBloc,
-                child: const MaterialApp(
-                  localizationsDelegates:
-                      AppLocalizations.localizationsDelegates,
-                  supportedLocales: AppLocalizations.supportedLocales,
-                  home: Scaffold(body: Center(child: RecordButton())),
-                ),
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+              clipManagerProvider.overrideWith(
+                () => _TestClipManagerNotifier(clips: const []),
+              ),
+            ],
+            child: BlocProvider<VideoRecorderBloc>.value(
+              value: recorderBloc,
+              child: const MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: Scaffold(body: Center(child: RecordButton())),
               ),
             ),
-          );
-          await tester.pumpAndSettle();
+          ),
+        );
+        await tester.pumpAndSettle();
 
-          // Simulate the user resting a finger on the shutter while a
-          // tap-started take is already running.
-          final gesture = await tester.startGesture(
-            tester.getCenter(find.byType(RecordButton)),
-          );
-          await tester.pump(const Duration(seconds: 1));
-          await gesture.up();
-          await tester.pumpAndSettle();
+        // Simulate the user resting a finger on the shutter while a
+        // tap-started take is already running.
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.byType(RecordButton)),
+        );
+        await tester.pump(const Duration(seconds: 1));
+        await gesture.up();
+        await tester.pumpAndSettle();
 
-          verifyNever(
-            () => recorderBloc.add(
-              const VideoRecorderRecordingStopRequested(),
-            ),
-          );
-          verifyNever(
-            () => recorderBloc.add(
-              const VideoRecorderRecordingStartRequested(),
-            ),
-          );
-          verifyNever(
-            () => recorderBloc.add(
-              const VideoRecorderRecordingToggleRequested(),
-            ),
-          );
-        },
-      );
+        verifyNever(
+          () => recorderBloc.add(const VideoRecorderRecordingStopRequested()),
+        );
+        verifyNever(
+          () => recorderBloc.add(const VideoRecorderRecordingStartRequested()),
+        );
+        verifyNever(
+          () => recorderBloc.add(const VideoRecorderRecordingToggleRequested()),
+        );
+      });
 
       testWidgets(
         'long-press from idle starts recording and release stops it',
@@ -300,9 +291,7 @@ void main() {
           await tester.pumpWidget(
             ProviderScope(
               overrides: [
-                sharedPreferencesProvider.overrideWithValue(
-                  sharedPreferences,
-                ),
+                sharedPreferencesProvider.overrideWithValue(sharedPreferences),
                 clipManagerProvider.overrideWith(
                   () => _TestClipManagerNotifier(clips: const []),
                 ),
@@ -328,14 +317,11 @@ void main() {
           await tester.pumpAndSettle();
 
           verify(
-            () => recorderBloc.add(
-              const VideoRecorderRecordingStartRequested(),
-            ),
+            () =>
+                recorderBloc.add(const VideoRecorderRecordingStartRequested()),
           ).called(1);
           verify(
-            () => recorderBloc.add(
-              const VideoRecorderRecordingStopRequested(),
-            ),
+            () => recorderBloc.add(const VideoRecorderRecordingStopRequested()),
           ).called(1);
         },
       );
@@ -360,23 +346,19 @@ void main() {
           await tester.pump();
 
           verify(
-            () => recorderBloc.add(
-              const VideoRecorderRecordingStartRequested(),
-            ),
+            () =>
+                recorderBloc.add(const VideoRecorderRecordingStartRequested()),
           ).called(1);
           verifyNever(
-            () => recorderBloc.add(
-              const VideoRecorderRecordingToggleRequested(),
-            ),
+            () =>
+                recorderBloc.add(const VideoRecorderRecordingToggleRequested()),
           );
 
           await gesture.up();
           await tester.pumpAndSettle();
 
           verify(
-            () => recorderBloc.add(
-              const VideoRecorderRecordingStopRequested(),
-            ),
+            () => recorderBloc.add(const VideoRecorderRecordingStopRequested()),
           ).called(1);
         },
       );

@@ -4,6 +4,17 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Parsed per-launch screenshot configuration.
+class ScreenshotLaunchConfig {
+  const ScreenshotLaunchConfig({
+    required this.initialRoute,
+    required this.seedClips,
+  });
+
+  final String? initialRoute;
+  final bool seedClips;
+}
+
 /// Compile-time switch and launch config for the App Store screenshot
 /// pipeline.
 ///
@@ -39,8 +50,22 @@ abstract class ScreenshotMode {
   /// navigating to the capture route.
   static void loadLaunchConfig(SharedPreferences prefs) {
     if (!enabled) return;
-    final route = prefs.getString(_routeKey);
-    initialRoute = (route == null || route.isEmpty) ? null : route;
-    seedClips = prefs.getString(_seedClipsKey) == '1';
+    final config = parseLaunchConfig(
+      route: prefs.getString(_routeKey),
+      seedClips: prefs.getString(_seedClipsKey),
+    );
+    initialRoute = config.initialRoute;
+    seedClips = config.seedClips;
+  }
+
+  /// Parses raw launch values exported by the native side.
+  static ScreenshotLaunchConfig parseLaunchConfig({
+    required String? route,
+    required String? seedClips,
+  }) {
+    return ScreenshotLaunchConfig(
+      initialRoute: route == null || route.isEmpty ? null : route,
+      seedClips: seedClips == '1',
+    );
   }
 }

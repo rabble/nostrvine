@@ -95,7 +95,7 @@ class ShareActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return VideoActionButton(
       icon: .shareFatDuo,
-      semanticIdentifier: 'share_button',
+      semanticIdentifier: SemanticIds.shareButton,
       semanticLabel: context.l10n.shareVideoLabel,
       labelWhenZero: context.l10n.videoActionShareLabel,
       onPressed: () {
@@ -152,9 +152,7 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
       followRepository: ref.read(followRepositoryProvider),
       bookmarkServiceFuture: ref.read(bookmarkServiceProvider.future),
       cacheManager: openVineImageCache,
-      videoClipImportService: ref.read(
-        videoClipImportServiceProvider,
-      ),
+      videoClipImportService: ref.read(videoClipImportServiceProvider),
     )..add(const ShareSheetContactsLoadRequested());
   }
 
@@ -292,10 +290,7 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
                   : context.l10n.shareFailedToAddBookmark);
         _safePop(context);
         messenger.showSnackBar(
-          DivineSnackbarContainer.snackBar(
-            snackText,
-            error: !succeeded,
-          ),
+          DivineSnackbarContainer.snackBar(snackText, error: !succeeded),
         );
         if (succeeded) {
           requestProfileSavedVideosSyncIfAvailable(
@@ -313,10 +308,7 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
             : context.l10n.shareSheetAddToClipsFailed;
         _safePop(context);
         messenger.showSnackBar(
-          DivineSnackbarContainer.snackBar(
-            snackText,
-            error: !succeeded,
-          ),
+          DivineSnackbarContainer.snackBar(snackText, error: !succeeded),
         );
       case ShareSheetCopiedToClipboard(:final kind, :final text):
         final snackText = switch (kind) {
@@ -326,9 +318,7 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
         };
         Clipboard.setData(ClipboardData(text: text));
         _safePop(context);
-        messenger.showSnackBar(
-          DivineSnackbarContainer.snackBar(snackText),
-        );
+        messenger.showSnackBar(DivineSnackbarContainer.snackBar(snackText));
       case ShareSheetShareViaTriggered(
         :final shareUrl,
         :final thumbnailPath,
