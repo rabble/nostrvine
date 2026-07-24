@@ -23,6 +23,25 @@ import 'relay_base.dart';
 import 'relay_type.dart';
 import 'signature_verification_policy.dart';
 
+class _AuthRequiredPublishRetry {
+  _AuthRequiredPublishRetry({
+    required this.message,
+    required this.tracker,
+    required this.reason,
+    required this.deadline,
+  });
+
+  final List<dynamic> message;
+  final PublishTracker tracker;
+  final String reason;
+  final DateTime deadline;
+
+  /// Set once the EVENT has been re-sent after AUTH. A single tracked entry
+  /// lingers as the dedup marker until the relay answers OK, so later
+  /// AUTH/OK triggers must not push the same frame again.
+  bool resent = false;
+}
+
 class RelayPool {
   // avoid to send these events to cache relay
   static List<int> cacheAvoidEvents = [
@@ -89,6 +108,14 @@ class RelayPool {
 
   /// Track publishes awaiting OK confirmations (per event id).
   final Map<String, PublishTracker> _pendingPublishes = {};
+
+  /// Awaited publishes that were rejected before the relay completed NIP-42.
+  ///
+  /// Keyed by event id, then relay url. These are retried once after the
+  /// corresponding relay confirms AUTH, bounded by the publish's original
+  /// deadline.
+  final Map<String, Map<String, _AuthRequiredPublishRetry>>
+  _authRequiredPublishRetries = {};
 
   Relay Function(String) tempRelayGener;
 
@@ -165,6 +192,126 @@ class RelayPool {
 
   void _logPublishDiagnostic(String diagnosticTag, String message) {
     log('$diagnosticTag relay diagnostic: $message');
+  }
+
+  bool _isExplicitAuthRequiredReason(String message) {
+    final lower = message.trim().toLowerCase();
+    return lower.startsWith('auth-required');
+  }
+
+  bool _isRestrictedReason(String message) {
+    return message.trim().toLowerCase().startsWith('restricted');
+  }
+
+  bool _shouldRetryPublishAfterAuth({
+    required Relay relay,
+    required String eventId,
+    required String message,
+  }) {
+    final retriesForEvent = _authRequiredPublishRetries[eventId];
+    if (retriesForEvent != null && retriesForEvent.containsKey(relay.url)) {
+      return false;
+    }
+    if (_isExplicitAuthRequiredReason(message)) return true;
+    // A bare "restricted" reason is NIP-01's generic members-only rejection
+    // and is only auth-retryable when the relay actually speaks NIP-42 (it
+    // sent an AUTH challenge, so alwaysAuth is set) and has not authed yet.
+    // Without that guard a permanent allow-list rejection would be tracked
+    // and hang until the publish deadline instead of failing fast.
+    return _isRestrictedReason(message) &&
+        relay.relayStatus.alwaysAuth &&
+        !relay.relayStatus.authed;
+  }
+
+  void _trackAuthRequiredPublish({
+    required Relay relay,
+    required List<dynamic> message,
+    required PublishTracker tracker,
+    required String reason,
+    required DateTime deadline,
+  }) {
+    relay.relayStatus.alwaysAuth = true;
+    tracker.deferRejection(relay.url, reason);
+    final retry = _AuthRequiredPublishRetry(
+      message: message,
+      tracker: tracker,
+      reason: reason,
+      deadline: deadline,
+    );
+    _authRequiredPublishRetries.putIfAbsent(
+      tracker.eventId,
+      () => <String, _AuthRequiredPublishRetry>{},
+    )[relay.url] = retry;
+  }
+
+  void _removeAuthRequiredPublish(String eventId, String relayUrl) {
+    final retriesForEvent = _authRequiredPublishRetries[eventId];
+    if (retriesForEvent == null) return;
+    retriesForEvent.remove(relayUrl);
+    if (retriesForEvent.isEmpty) {
+      _authRequiredPublishRetries.remove(eventId);
+    }
+  }
+
+  List<MapEntry<String, _AuthRequiredPublishRetry>> _retryEntriesForRelay(
+    Relay relay,
+  ) {
+    final retryEntries = <MapEntry<String, _AuthRequiredPublishRetry>>[];
+    for (final entry in _authRequiredPublishRetries.entries) {
+      final retry = entry.value[relay.url];
+      if (retry != null) {
+        retryEntries.add(MapEntry(entry.key, retry));
+      }
+    }
+    return retryEntries;
+  }
+
+  Future<void> _retryAuthRequiredPublishesForRelay(Relay relay) async {
+    for (final entry in _retryEntriesForRelay(relay)) {
+      final eventId = entry.key;
+      final retry = entry.value;
+      // A resent entry lingers only as the dedup marker; do not push it again
+      // on a later AUTH/OK trigger for this relay.
+      if (retry.resent) continue;
+
+      final timeout = retry.deadline.difference(DateTime.now());
+      if (timeout <= Duration.zero) {
+        retry.tracker.onRejected(relay.url, retry.reason);
+        _removeAuthRequiredPublish(eventId, relay.url);
+        continue;
+      }
+
+      // Mark before the await: onMessage delivery is fire-and-forget, so a
+      // re-entrant OK/AUTH frame must not resend this in-flight EVENT.
+      retry.resent = true;
+      log(
+        '🔐 Re-publishing auth-required EVENT after AUTH '
+        'eventId=$eventId relay=${relay.url}',
+      );
+      retry.tracker.clearDeferredRejection(relay.url);
+      final sent = await relay
+          .send(
+            retry.message,
+            skipReconnect: true,
+            queueIfFailed: false,
+            deadline: retry.deadline,
+          )
+          .timeout(timeout, onTimeout: () => false);
+      if (!sent) {
+        retry.tracker.onRelayUnavailable(relay.url);
+        _removeAuthRequiredPublish(eventId, relay.url);
+      }
+    }
+  }
+
+  void _rejectAuthRequiredPublishesForRelay(Relay relay, String authMessage) {
+    for (final entry in _retryEntriesForRelay(relay)) {
+      entry.value.tracker.onRejected(
+        relay.url,
+        authMessage.isEmpty ? entry.value.reason : authMessage,
+      );
+      _removeAuthRequiredPublish(entry.key, relay.url);
+    }
   }
 
   Future<bool> add(
@@ -275,22 +422,18 @@ class RelayPool {
       var message = subscription.toJson();
       if ((sendAfterAuth || relay.relayStatus.alwaysAuth) &&
           !relay.relayStatus.authed) {
-        // For vine.hol.is, send the query to trigger AUTH challenge
-        if (relay.url.contains('vine.hol.is')) {
-          log('🔐 vine.hol.is query - sending to trigger AUTH challenge');
-          final result = await relay
-              .send(message, forceSend: true)
-              .timeout(perRelaySendTimeout, onTimeout: () => false);
-          if (result) {
-            relay.saveQuery(subscription);
-            return true;
-          }
-        } else {
-          // Save query before — message will be sent after auth completes
-          relay.saveQuery(subscription);
-          relay.pendingAuthedMessages.add(message);
-          return true;
+        log('🔐 Auth-required query - sending to trigger AUTH challenge');
+        relay.saveQuery(subscription);
+        final result = await relay
+            .send(message, forceSend: true)
+            .timeout(perRelaySendTimeout, onTimeout: () => false);
+        if (!result) {
+          log(
+            '🔐 Auth-required query trigger send failed; query remains saved '
+            'for replay after reconnect/auth: ${subscription.id} ${relay.url}',
+          );
         }
+        return true;
       } else {
         // Skip reconnect during query fan-out to avoid blocking
         // other relays while one dead relay tries exponential backoff.
@@ -735,6 +878,7 @@ class RelayPool {
       final publishTracker = _pendingPublishes[eventId];
       if (publishTracker != null) {
         if (success) {
+          _removeAuthRequiredPublish(eventId, relay.url);
           publishTracker.onAccepted(relay.url);
           final diagnosticTag = publishTracker.diagnosticTag;
           if (diagnosticTag != null) {
@@ -744,7 +888,37 @@ class RelayPool {
               'eventId=$eventId relay=${relay.url}',
             );
           }
+        } else if (_shouldRetryPublishAfterAuth(
+          relay: relay,
+          eventId: eventId,
+          message: message,
+        )) {
+          final originalMessage = publishTracker.message;
+          final deadline = publishTracker.deadline;
+          if (originalMessage == null || deadline == null) {
+            publishTracker.onRejected(relay.url, message);
+          } else {
+            _trackAuthRequiredPublish(
+              relay: relay,
+              message: originalMessage,
+              tracker: publishTracker,
+              reason: message,
+              deadline: deadline,
+            );
+            final diagnosticTag = publishTracker.diagnosticTag;
+            if (diagnosticTag != null) {
+              _logPublishDiagnostic(
+                diagnosticTag,
+                'OK auth-required kind=${publishTracker.eventKind} '
+                'eventId=$eventId relay=${relay.url} reason=$message',
+              );
+            }
+            if (relay.relayStatus.authed) {
+              await _retryAuthRequiredPublishesForRelay(relay);
+            }
+          }
         } else {
+          _removeAuthRequiredPublish(eventId, relay.url);
           publishTracker.onRejected(relay.url, message);
           final diagnosticTag = publishTracker.diagnosticTag;
           if (diagnosticTag != null) {
@@ -791,9 +965,19 @@ class RelayPool {
               '${relay.url}',
             );
           }
+
+          // Re-issue one-shot queries. Their pre-auth REQ was sent to trigger
+          // the challenge and may have been CLOSED with auth-required, so the
+          // saved query still needs to run once the relay accepts us.
+          for (final query in relay.getQueries()) {
+            log('🔐 AUTH post-auth: re-sending query ${query.id} ${relay.url}');
+            relay.send(query.toJson());
+          }
+          await _retryAuthRequiredPublishesForRelay(relay);
         } else {
           relay.relayStatus.authed = false;
           log('🔐 AUTH failed for ${relay.url}: $message');
+          _rejectAuthRequiredPublishesForRelay(relay, message);
         }
       }
     } else if (messageType == "NOTICE") {
@@ -811,6 +995,7 @@ class RelayPool {
         log('🔐 AUTH challenge received from ${relay.url}');
         final challenge = _stringAt(relay, json, 1, 'AUTH challenge');
         if (challenge == null) return;
+        relay.relayStatus.alwaysAuth = true;
         final challengePreview = challenge.length > 16
             ? challenge.substring(0, 16)
             : challenge;
@@ -841,9 +1026,13 @@ class RelayPool {
               '🔐 Pending ${relay.pendingAuthedMessages.length} messages for after auth confirmation',
             );
           }
+        } else {
+          log('🔐 AUTH signing returned null for ${relay.url}');
+          _rejectAuthRequiredPublishesForRelay(relay, '');
         }
       } catch (err, stackTrace) {
         log('🔐 AUTH handling failed for ${relay.url}: $err\n$stackTrace');
+        _rejectAuthRequiredPublishesForRelay(relay, '');
       }
     } else if (messageType == 'COUNT') {
       // NIP-45 COUNT response
@@ -1011,17 +1200,13 @@ class RelayPool {
       log(subscribeMsg);
       if ((sendAfterAuth || relay.relayStatus.alwaysAuth) &&
           !relay.relayStatus.authed) {
-        // For vine.hol.is, send the subscription to trigger AUTH challenge
-        if (relay.url.contains('vine.hol.is')) {
-          log(
-            '🔐 vine.hol.is subscription - sending to trigger AUTH challenge',
-          );
-          var result = await relay.send(message, forceSend: true);
-          if (result) {
-            return true;
-          }
-        } else {
-          relay.pendingAuthedMessages.add(message);
+        log(
+          '🔐 Auth-required subscription - sending to trigger AUTH challenge',
+        );
+        final result = await relay
+            .send(message, forceSend: true)
+            .timeout(perRelaySendTimeout, onTimeout: () => false);
+        if (result) {
           return true;
         }
       } else {
@@ -1332,22 +1517,20 @@ class RelayPool {
             '🔐 Relay ${relay.url} requires auth (alwaysAuth=${relay.relayStatus.alwaysAuth}, authed=${relay.relayStatus.authed})',
           );
 
-          // For vine.hol.is, we need to send one message to trigger AUTH challenge
-          // Many relays only send AUTH challenges when they receive a message that needs auth
-          if (relay.url.contains('vine.hol.is')) {
+          // Many relays only send AUTH challenges after a frame that needs
+          // auth. Deadline-bound publishes cannot sit in the auth queue, so
+          // send once inside the deadline and let the OK/AUTH handlers retry
+          // the EVENT if the relay accepts after NIP-42 completes.
+          if (deadline != null) {
             log(
-              '🔐 vine.hol.is detected - sending message to trigger AUTH challenge',
+              '🔐 Deadline-bound auth publish - sending to trigger AUTH challenge',
             );
-            // Auth-trigger path intentionally does NOT pass skipReconnect:
-            // the AUTH handshake requires a real send. Per-relay timeout
-            // still applies so a stuck auth-trigger send cannot block the
-            // rest of the fan-out.
             var timedOut = false;
             var result = await relay
                 .send(
                   message,
                   forceSend: true,
-                  queueIfFailed: deadline == null,
+                  queueIfFailed: false,
                   deadline: deadline,
                 )
                 .timeout(
@@ -1373,25 +1556,15 @@ class RelayPool {
               'auth-trigger send kind=$eventKind eventId=$eventId '
               'relay=${relay.url} sent=$result',
             );
-            // Don't queue this message since we're sending it
           } else {
-            // Deadline-bound sends intentionally do not queue for AUTH: a queued
-            // frame could publish after the caller already returned failure.
-            if (deadline == null) {
-              log('🔐 Queueing message for authentication: ${message[0]}');
-              relay.pendingAuthedMessages.add(message);
-              sentTo.add(relay.url);
-              attemptedRelayUrls.add(relay.url);
-              onSent?.call(relay.url);
-              logDiagnostic(
-                'queued for auth kind=$eventKind eventId=$eventId relay=${relay.url}',
-              );
-            } else {
-              logDiagnostic(
-                'auth queue skipped kind=$eventKind eventId=$eventId relay=${relay.url} '
-                'reason=deadlineBoundSend',
-              );
-            }
+            log('🔐 Queueing message for authentication: ${message[0]}');
+            relay.pendingAuthedMessages.add(message);
+            sentTo.add(relay.url);
+            attemptedRelayUrls.add(relay.url);
+            onSent?.call(relay.url);
+            logDiagnostic(
+              'queued for auth kind=$eventKind eventId=$eventId relay=${relay.url}',
+            );
           }
           log(
             '🔐 Pending authed messages count: ${relay.pendingAuthedMessages.length}',
@@ -1522,21 +1695,24 @@ class RelayPool {
     if (existing != null) {
       return existing.future;
     }
+    final sentAt = DateTime.now();
+    final deadline = sentAt.add(timeout);
     final tracker = PublishTracker(
       eventId: eventId,
       eventKind: eventKind ?? _eventKindFromMessage(message),
       diagnosticTag: diagnosticTag,
+      message: message,
+      deadline: deadline,
       expectedRelays: <String>{},
       timeout: timeout,
     );
     _pendingPublishes[eventId] = tracker;
 
-    final sentAt = DateTime.now();
     final sentTo = await _sendCollect(
       message,
       tempRelays: tempRelays,
       targetRelays: targetRelays,
-      deadline: sentAt.add(timeout),
+      deadline: deadline,
       diagnosticTag: diagnosticTag,
       onSent: (relayUrl) => tracker.expectedRelays.add(relayUrl),
     );
@@ -1570,7 +1746,10 @@ class RelayPool {
               _repairSilentRelays(outcome.noResponseFrom, sentAt);
             }
           })
-          .whenComplete(() => _pendingPublishes.remove(eventId)),
+          .whenComplete(() {
+            _pendingPublishes.remove(eventId);
+            _authRequiredPublishRetries.remove(eventId);
+          }),
     );
     return tracker.future;
   }

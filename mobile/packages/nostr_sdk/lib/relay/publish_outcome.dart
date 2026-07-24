@@ -72,6 +72,8 @@ class PublishTracker {
     required this.eventId,
     this.eventKind,
     this.diagnosticTag,
+    this.message,
+    this.deadline,
     required this.expectedRelays,
     required Duration timeout,
   }) {
@@ -87,10 +89,17 @@ class PublishTracker {
   /// Caller-supplied tag for temporary publish diagnostics, when enabled.
   final String? diagnosticTag;
 
+  /// Original EVENT frame for SDK-internal retry paths.
+  final List<dynamic>? message;
+
+  /// Hard publish deadline shared with SDK-internal retry paths.
+  final DateTime? deadline;
+
   /// Relay URLs we expect responses from.
   final Set<String> expectedRelays;
 
   final Map<String, String> _rejected = {};
+  final Map<String, String> _deferredRejections = {};
   final Set<String> _accepted = {};
   final Completer<PublishOutcome> _completer = Completer<PublishOutcome>();
   late final Timer _timer;
@@ -101,6 +110,7 @@ class PublishTracker {
   /// Call when the relay returned `OK true`.
   void onAccepted(String relayUrl) {
     if (_closed) return;
+    _deferredRejections.remove(relayUrl);
     _accepted.add(relayUrl);
     // First confirmation is enough for deletion-style operations; we still
     // collect the remaining responses but complete immediately.
@@ -110,13 +120,33 @@ class PublishTracker {
   /// Call when the relay returned `OK false` with a reason.
   void onRejected(String relayUrl, String reason) {
     if (_closed) return;
+    _deferredRejections.remove(relayUrl);
     _rejected[relayUrl] = reason;
     _maybeCompleteIfAllAnswered();
+  }
+
+  /// Record a relay rejection that should be reported if the publish times out,
+  /// without counting the relay as answered yet.
+  void deferRejection(String relayUrl, String reason) {
+    if (_closed ||
+        _accepted.contains(relayUrl) ||
+        _rejected.containsKey(relayUrl)) {
+      return;
+    }
+    _deferredRejections[relayUrl] = reason;
+  }
+
+  /// Clear a previously deferred rejection when the relay is retried or
+  /// otherwise no longer represents the original rejection.
+  void clearDeferredRejection(String relayUrl) {
+    if (_closed) return;
+    _deferredRejections.remove(relayUrl);
   }
 
   /// Call when a relay disconnected or otherwise cannot be awaited further.
   void onRelayUnavailable(String relayUrl) {
     if (_closed) return;
+    _deferredRejections.remove(relayUrl);
     expectedRelays.remove(relayUrl);
     _maybeCompleteIfAllAnswered();
   }
@@ -137,15 +167,21 @@ class PublishTracker {
     if (_closed) return;
     _closed = true;
     _timer.cancel();
+    final effectiveRejected = Map<String, String>.from(_rejected);
+    if (_accepted.isEmpty) {
+      effectiveRejected.addAll(_deferredRejections);
+    }
     final noResponse = expectedRelays
-        .where((r) => !_accepted.contains(r) && !_rejected.containsKey(r))
+        .where(
+          (r) => !_accepted.contains(r) && !effectiveRejected.containsKey(r),
+        )
         .toList(growable: false);
     _completer.complete(
       PublishOutcome(
         eventId: eventId,
         eventKind: eventKind,
         acceptedBy: _accepted.toList(growable: false),
-        rejectedBy: Map<String, String>.unmodifiable(_rejected),
+        rejectedBy: Map<String, String>.unmodifiable(effectiveRejected),
         noResponseFrom: noResponse,
       ),
     );
