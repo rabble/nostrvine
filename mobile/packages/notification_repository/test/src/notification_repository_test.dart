@@ -2028,7 +2028,7 @@ void main() {
       );
 
       test(
-        'keeps a bech32 npub intact when it spans the 50-char cut',
+        'keeps a bounded leading bech32 npub intact when it spans the cut',
         () async {
           // Regression: a reply whose content begins with a raw npub longer
           // than the 50-char preview cap must keep the token intact so the
@@ -2053,6 +2053,27 @@ void main() {
       );
 
       test(
+        'keeps a bech32 npub after leading whitespace or punctuation',
+        () async {
+          const npub =
+              'npub180cvv07tjdrrgpa9jzd0cdkej42kwsaxq9rz7gvdpjx6nz004f9uulstw6';
+          const content = ' @$npub';
+          stubNotifications([
+            makeNotification(
+              notificationType: 'comment',
+              sourceKind: 1,
+              content: content,
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.single as VideoNotification;
+          expect(item.commentText, equals(content));
+        },
+      );
+
+      test(
         'omits a bech32 reference straddling the cut instead of splitting it',
         () async {
           // 'Reply to ' (9 chars) + npub (63) + ' more' straddles the
@@ -2073,8 +2094,47 @@ void main() {
 
           final page = await repository.getNotifications();
           final item = page.items.single as VideoNotification;
-          expect(item.commentText, equals('Reply to ...'));
+          expect(item.commentText, equals('Reply to...'));
           expect(item.commentText, isNot(contains('npub1')));
+        },
+      );
+
+      test(
+        'does not preserve unbounded leading token-shaped content',
+        () async {
+          final content = 'npub1${'a' * 5000}';
+          stubNotifications([
+            makeNotification(
+              notificationType: 'comment',
+              sourceKind: 1,
+              content: content,
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.single as VideoNotification;
+          expect(item.commentText, equals('...'));
+          expect(item.commentText!.length, lessThanOrEqualTo(53));
+        },
+      );
+
+      test(
+        'does not treat embedded alphanumeric bech32-looking text as a token',
+        () async {
+          final content = 'prefixnpub1${'a' * 60}';
+          stubNotifications([
+            makeNotification(
+              notificationType: 'comment',
+              sourceKind: 1,
+              content: content,
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.single as VideoNotification;
+          expect(item.commentText, equals('${content.substring(0, 50)}...'));
         },
       );
 
