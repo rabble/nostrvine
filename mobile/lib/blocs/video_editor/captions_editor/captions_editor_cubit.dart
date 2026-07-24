@@ -90,9 +90,20 @@ class CaptionsEditorCubit extends Cubit<CaptionsEditorState> {
     if (isClosed) return;
     switch (outcome) {
       case CaptionsGenerated(:final cues):
-        emit(state.copyWith(status: CaptionsEditorStatus.ready, cues: cues));
+        emit(
+          state.copyWith(
+            status: CaptionsEditorStatus.ready,
+            cues: cues,
+            clearFailure: true,
+          ),
+        );
       case CaptionsEmpty():
-        emit(state.copyWith(status: CaptionsEditorStatus.empty));
+        emit(
+          state.copyWith(
+            status: CaptionsEditorStatus.empty,
+            clearFailure: true,
+          ),
+        );
       case CaptionsFailed(:final reason):
         emit(
           state.copyWith(status: CaptionsEditorStatus.failed, failure: reason),
@@ -108,6 +119,7 @@ class CaptionsEditorCubit extends Cubit<CaptionsEditorState> {
       state.copyWith(
         status: CaptionsEditorStatus.ready,
         cues: [_newCue(after: Duration.zero)],
+        clearFailure: true,
       ),
     );
   }
@@ -188,6 +200,7 @@ class CaptionsEditorCubit extends Cubit<CaptionsEditorState> {
     emit(
       state.copyWith(
         status: CaptionsEditorStatus.ready,
+        clearFailure: true,
         cues: [
           ...state.cues,
           _newCue(after: lastEnd),

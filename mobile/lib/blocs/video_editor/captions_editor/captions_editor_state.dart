@@ -81,7 +81,8 @@ class CaptionsEditorState extends Equatable {
   CaptionTrack get committedTrack => track.copyWith(cues: committedCues);
 
   /// Copy with the given fields replaced. Pass [clearCustomStyle] to drop a
-  /// custom style (selecting a built-in preset again).
+  /// custom style (selecting a built-in preset again), and [clearFailure] when
+  /// leaving a failed state.
   CaptionsEditorState copyWith({
     CaptionsEditorStatus? status,
     CaptionGenerationFailure? failure,
@@ -89,10 +90,11 @@ class CaptionsEditorState extends Equatable {
     String? presetId,
     CaptionCustomStyle? customStyle,
     bool clearCustomStyle = false,
+    bool clearFailure = false,
     List<CaptionCue>? cues,
   }) => CaptionsEditorState(
     status: status ?? this.status,
-    failure: failure ?? this.failure,
+    failure: clearFailure ? null : (failure ?? this.failure),
     burnIn: burnIn ?? this.burnIn,
     presetId: presetId ?? this.presetId,
     customStyle: clearCustomStyle ? null : (customStyle ?? this.customStyle),

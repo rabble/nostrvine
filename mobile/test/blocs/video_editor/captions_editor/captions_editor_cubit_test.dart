@@ -159,6 +159,7 @@ void main() {
       expect: () => [
         isA<CaptionsEditorState>()
             .having((s) => s.status, 'status', CaptionsEditorStatus.ready)
+            .having((s) => s.failure, 'failure', isNull)
             .having((s) => s.cues, 'cues', hasLength(1))
             .having((s) => s.cues.single.text, 'blank cue text', isEmpty),
       ],
