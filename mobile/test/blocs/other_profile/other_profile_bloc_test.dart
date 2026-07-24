@@ -1459,6 +1459,112 @@ void main() {
         ],
       );
     });
+
+    group('monetization self-heal (#6329)', () {
+      UserProfile relayProfileWithLinks() => UserProfile(
+        pubkey: testPubkey,
+        displayName: testDisplayName,
+        about: testAbout,
+        picture: testPicture,
+        createdAt: DateTime(2026),
+        eventId:
+            'relayevent0123456789012345678901234567890123456789012345678901',
+        rawData: {
+          divineMonetizationLinksKey: [
+            const MonetizationLink(
+              provider: MonetizationLinkProvider.cashApp,
+              category: MonetizationLinkCategory.tip,
+              url: r'https://cash.app/$creator',
+              enabled: true,
+            ).toJson(),
+          ],
+        },
+      );
+
+      blocTest<OtherProfileBloc, OtherProfileState>(
+        're-fetches the raw Kind 0 when a REST-only profile lands with the '
+        'monetization flag on, recovering the links',
+        build: () {
+          when(
+            () => mockProfileRepository.getCachedProfile(
+              pubkey: any(named: 'pubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => createTestProfile(eventId: 'rest-$testPubkey'),
+          );
+          // First raw Kind 0 fetch fails (relay flapping) → REST fallback;
+          // the self-heal retry lands the relay Kind 0 with the tip links.
+          final answers = <UserProfile?>[null, relayProfileWithLinks()];
+          when(
+            () => mockProfileRepository.fetchFreshProfile(
+              pubkey: any(named: 'pubkey'),
+              requireRawKind0: any(named: 'requireRawKind0'),
+            ),
+          ).thenAnswer((_) async => answers.removeAt(0));
+          return OtherProfileBloc(
+            profileRepository: mockProfileRepository,
+            pubkey: testPubkey,
+            contentBlocklistRepository: mockBlocklistRepository,
+            currentUserPubkey: testCurrentUserPubkey,
+            followRepository: mockFollowRepository,
+            requireRawKind0: true,
+            monetizationRefetchInitialDelay: const Duration(milliseconds: 1),
+          );
+        },
+        act: (bloc) => bloc.add(const OtherProfileLoadRequested()),
+        wait: const Duration(milliseconds: 100),
+        verify: (bloc) {
+          final state = bloc.state;
+          expect(state, isA<OtherProfileLoaded>());
+          final profile = (state as OtherProfileLoaded).profile;
+          expect(profile.eventId, isNot(startsWith('rest-')));
+          expect(profile.enabledMonetizationLinks, isNotEmpty);
+          verify(
+            () => mockProfileRepository.fetchFreshProfile(
+              pubkey: testPubkey,
+              requireRawKind0: true,
+            ),
+          ).called(2); // initial load + one self-heal retry
+        },
+      );
+
+      blocTest<OtherProfileBloc, OtherProfileState>(
+        'does not re-fetch when the monetization flag is off',
+        build: () {
+          when(
+            () => mockProfileRepository.getCachedProfile(
+              pubkey: any(named: 'pubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => createTestProfile(eventId: 'rest-$testPubkey'),
+          );
+          when(
+            () => mockProfileRepository.fetchFreshProfile(
+              pubkey: any(named: 'pubkey'),
+              requireRawKind0: any(named: 'requireRawKind0'),
+            ),
+          ).thenAnswer((_) async => null);
+          return OtherProfileBloc(
+            profileRepository: mockProfileRepository,
+            pubkey: testPubkey,
+            contentBlocklistRepository: mockBlocklistRepository,
+            currentUserPubkey: testCurrentUserPubkey,
+            followRepository: mockFollowRepository,
+            monetizationRefetchInitialDelay: const Duration(milliseconds: 1),
+          );
+        },
+        act: (bloc) => bloc.add(const OtherProfileLoadRequested()),
+        wait: const Duration(milliseconds: 50),
+        verify: (_) {
+          // Omitting requireRawKind0 matches the default (false) call only.
+          verify(
+            () => mockProfileRepository.fetchFreshProfile(
+              pubkey: testPubkey,
+            ),
+          ).called(1); // only the initial load; no self-heal retries
+        },
+      );
+    });
   });
 }
 
