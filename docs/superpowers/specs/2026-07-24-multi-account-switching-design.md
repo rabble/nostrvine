@@ -784,7 +784,14 @@ even if 3–5 are abandoned.
 - [x] Delete `identity_manager_service.dart`. (commit `858619843`)
 - [x] Close the half-enforced feature flag (§3.2f) — add the cubit guard the
   2026-04-14 design specified. (commit `d5f08774d`)
-- [ ] Resolve `PendingProductEvents` attribution. **[still UNVERIFIED]**
+- [x] Resolve `PendingProductEvents` attribution. **Verified it was a real,
+  flag-independent bug:** the batch flush signs with the *current* account's
+  NIP-98 token, rows carried no owner, and sign-out did not clear them, so a
+  logout→login-as-different-account published the prior account's queued
+  analytics under the new signature. Fixed by owner-scoping the queue (stamp
+  at enqueue from the event's own `userPubkey`, filter flush to the current
+  account). This one did *not* need the container — the queue already runs in
+  a current-user context, so filtering `getRetryable` was enough.
 
 **Reordered during implementation — prefs prefixing + cleanup split moved to
 Phase 3.** The 18-key cleanup list turned out to be only **8 live keys across 5
