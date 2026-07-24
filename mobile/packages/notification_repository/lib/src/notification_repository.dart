@@ -46,6 +46,15 @@ final RegExp _npubIdentifierPattern = RegExp(
   caseSensitive: false,
 );
 
+/// A bech32 Nostr reference embedded in note content, e.g. `npub1…` or
+/// `nostr:nprofile1…`. Matches the same token shape the UI linkifier decodes
+/// (npub/nprofile/note/nevent/naddr), so comment previews never slice a token
+/// mid-string and defeat downstream npub → display-name resolution.
+final RegExp _bech32ReferencePattern = RegExp(
+  '(?:nostr:)?(?:npub|nprofile|note|nevent|naddr)1[0-9a-z]+',
+  caseSensitive: false,
+);
+
 /// Retry policy for the first-page notifications fetch.
 ///
 /// Retries only transient server faults — HTTP `5xx` and request timeouts
@@ -1775,16 +1784,44 @@ class NotificationRepository {
     return n.referencedEventId;
   }
 
-  /// Truncates comment text to [_maxCommentLength] characters.
+  /// Truncates comment text to roughly [_maxCommentLength] characters.
   ///
   /// Only applies to comment and reply notifications.
+  ///
+  /// The cut avoids splitting a bech32 Nostr reference (`npub1…`,
+  /// `nprofile1…`, `note1…`, `nevent1…`, `naddr1…`) mid-token. A sliced token
+  /// can no longer be decoded, so the row widget falls back to rendering the
+  /// raw `npub1…` string verbatim instead of resolving it to a display name.
+  /// Keeping the token intact lets the UI linkifier resolve it to `@<name>`.
   static String? _truncateComment(String? content, NotificationKind kind) {
     if (content == null) return null;
     if (kind != NotificationKind.comment && kind != NotificationKind.reply) {
       return null;
     }
     if (content.length <= _maxCommentLength) return content;
-    return '${content.substring(0, _maxCommentLength)}...';
+
+    final cut = _bech32AwareCut(content, _maxCommentLength);
+    return cut < content.length ? '${content.substring(0, cut)}...' : content;
+  }
+
+  /// Returns the largest end index `<= [limit]` that does not fall inside a
+  /// bech32 Nostr reference.
+  ///
+  /// If a reference straddles [limit] but starts at or before it, the cut is
+  /// pulled back to the reference's start so the whole token is omitted from
+  /// the preview rather than split. If the content *begins* with a reference
+  /// that itself reaches or exceeds [limit] (e.g. a reply whose body is just
+  /// an npub), the token's full extent is returned so the UI can resolve it —
+  /// ellipsizing would otherwise leave an undecodable fragment.
+  static int _bech32AwareCut(String content, int limit) {
+    for (final match in _bech32ReferencePattern.allMatches(content)) {
+      final startsBeforeOrAtLimit = match.start < limit;
+      final endsAfterLimit = match.end > limit;
+      if (!startsBeforeOrAtLimit || !endsAfterLimit) continue;
+      if (match.start == 0) return match.end;
+      return match.start;
+    }
+    return limit;
   }
 }
 

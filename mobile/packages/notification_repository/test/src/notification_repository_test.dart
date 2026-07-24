@@ -2028,6 +2028,57 @@ void main() {
       );
 
       test(
+        'keeps a bech32 npub intact when it spans the 50-char cut',
+        () async {
+          // Regression: a reply whose content begins with a raw npub longer
+          // than the 50-char preview cap must keep the token intact so the
+          // row widget can decode it to a display name. Slicing it
+          // mid-bech32 destroyed the checksum and the row fell back to
+          // rendering a raw "npub1..." fragment verbatim.
+          const npub =
+              'npub180cvv07tjdrrgpa9jzd0cdkej42kwsaxq9rz7gvdpjx6nz004f9uulstw6';
+          stubNotifications([
+            makeNotification(
+              notificationType: 'comment',
+              sourceKind: 1,
+              content: npub,
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.single as VideoNotification;
+          expect(item.commentText, equals(npub));
+        },
+      );
+
+      test(
+        'omits a bech32 reference straddling the cut instead of splitting it',
+        () async {
+          // 'Reply to ' (9 chars) + npub (63) + ' more' straddles the
+          // 50-char limit: the npub starts at index 9 and ends at 72. The
+          // cut pulls back to the token's start so the preview shows only
+          // the leading text, never a sliced npub fragment.
+          const npub =
+              'npub180cvv07tjdrrgpa9jzd0cdkej42kwsaxq9rz7gvdpjx6nz004f9uulstw6';
+          const content = 'Reply to $npub more';
+          stubNotifications([
+            makeNotification(
+              notificationType: 'comment',
+              sourceKind: 1,
+              content: content,
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.single as VideoNotification;
+          expect(item.commentText, equals('Reply to ...'));
+          expect(item.commentText, isNot(contains('npub1')));
+        },
+      );
+
+      test(
         'like / repost on video leaves commentText null (no body text)',
         () async {
           // Default makeNotification is a reaction (kind 7) on a video,
