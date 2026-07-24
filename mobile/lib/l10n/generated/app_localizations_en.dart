@@ -5499,6 +5499,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inboxEmptySubtitle => 'That + button won\'t bite.';
 
   @override
+  String get inboxLoadErrorTitle => 'Messages didn\'t load';
+
+  @override
+  String get inboxLoadErrorSubtitle =>
+      'Check your connection and give it another go.';
+
+  @override
+  String get inboxFilterAll => 'All';
+
+  @override
+  String get inboxFilterUnread => 'Unread';
+
+  @override
+  String get inboxUnreadEmptyTitle => 'You\'re all caught up';
+
+  @override
+  String get inboxUnreadEmptySubtitle => 'No unread messages right now.';
+
+  @override
+  String get inboxSearchHint => 'Search messages';
+
+  @override
+  String get inboxSearchEmptyTitle => 'No matches';
+
+  @override
+  String get inboxSearchEmptySubtitle => 'Try a different name or word.';
+
+  @override
   String get inboxActionMute => 'Mute conversation';
 
   @override
@@ -5749,6 +5777,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String inboxConversationTileLabel(String displayName) {
     return '$displayName conversation';
+  }
+
+  @override
+  String inboxConversationTileLabelUnread(String displayName) {
+    return 'Unread, $displayName conversation';
   }
 
   @override

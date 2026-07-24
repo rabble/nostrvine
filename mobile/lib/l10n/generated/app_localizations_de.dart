@@ -5565,6 +5565,36 @@ class AppLocalizationsDe extends AppLocalizations {
   String get inboxEmptySubtitle => 'Der + Button beißt nicht.';
 
   @override
+  String get inboxLoadErrorTitle => 'Nachrichten konnten nicht geladen werden';
+
+  @override
+  String get inboxLoadErrorSubtitle =>
+      'Prüf deine Verbindung und versuch es nochmal.';
+
+  @override
+  String get inboxFilterAll => 'Alle';
+
+  @override
+  String get inboxFilterUnread => 'Ungelesen';
+
+  @override
+  String get inboxUnreadEmptyTitle => 'Du bist auf dem Laufenden';
+
+  @override
+  String get inboxUnreadEmptySubtitle =>
+      'Gerade keine ungelesenen Nachrichten.';
+
+  @override
+  String get inboxSearchHint => 'Nachrichten durchsuchen';
+
+  @override
+  String get inboxSearchEmptyTitle => 'Keine Treffer';
+
+  @override
+  String get inboxSearchEmptySubtitle =>
+      'Versuch einen anderen Namen oder ein anderes Wort.';
+
+  @override
   String get inboxActionMute => 'Unterhaltung stummschalten';
 
   @override
@@ -5821,6 +5851,11 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String inboxConversationTileLabel(String displayName) {
     return 'Unterhaltung mit $displayName';
+  }
+
+  @override
+  String inboxConversationTileLabelUnread(String displayName) {
+    return 'Ungelesen, Unterhaltung mit $displayName';
   }
 
   @override

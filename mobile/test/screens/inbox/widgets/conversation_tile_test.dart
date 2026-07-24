@@ -372,6 +372,146 @@ void main() {
           expect(dotFinder, findsNothing);
         },
       );
+
+      testWidgets('renders emphasized preview when conversation is unread', (
+        tester,
+      ) async {
+        final testProfile = createTestProfile(displayName: 'Alice');
+        final testConversation = createTestConversation(
+          lastMessageContent: 'Hey, how are you?',
+          lastMessageTimestamp: nowUnix,
+          isRead: false,
+        );
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            additionalOverrides: [
+              fetchUserProfileProvider(
+                otherPubkey,
+              ).overrideWith((ref) async => testProfile),
+            ],
+            home: Scaffold(
+              body: ConversationTile(
+                conversation: testConversation,
+                currentUserPubkey: currentPubkey,
+                onTap: () {},
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final preview = tester.widget<Text>(find.text('Hey, how are you?'));
+        expect(preview.style?.fontWeight, equals(FontWeight.w600));
+        expect(preview.style?.color, equals(VineTheme.whiteText));
+      });
+
+      testWidgets('renders muted preview when conversation is read', (
+        tester,
+      ) async {
+        final testProfile = createTestProfile(displayName: 'Alice');
+        final testConversation = createTestConversation(
+          lastMessageContent: 'Hey, how are you?',
+          lastMessageTimestamp: nowUnix,
+        );
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            additionalOverrides: [
+              fetchUserProfileProvider(
+                otherPubkey,
+              ).overrideWith((ref) async => testProfile),
+            ],
+            home: Scaffold(
+              body: ConversationTile(
+                conversation: testConversation,
+                currentUserPubkey: currentPubkey,
+                onTap: () {},
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final preview = tester.widget<Text>(find.text('Hey, how are you?'));
+        expect(preview.style?.fontWeight, equals(FontWeight.w400));
+        expect(preview.style?.color, equals(VineTheme.onSurfaceVariant));
+      });
+
+      testWidgets('announces unread status in the semantic label', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final testProfile = createTestProfile(displayName: 'Alice');
+        final testConversation = createTestConversation(
+          lastMessageContent: 'Hey, how are you?',
+          lastMessageTimestamp: nowUnix,
+          isRead: false,
+        );
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            additionalOverrides: [
+              fetchUserProfileProvider(
+                otherPubkey,
+              ).overrideWith((ref) async => testProfile),
+            ],
+            home: Scaffold(
+              body: ConversationTile(
+                conversation: testConversation,
+                currentUserPubkey: currentPubkey,
+                onTap: () {},
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final semantics = tester.getSemantics(find.byType(ConversationTile));
+        expect(
+          semantics.label,
+          contains(l10n.inboxConversationTileLabelUnread('Alice')),
+        );
+      });
+
+      testWidgets('omits the unread prefix from the label when read', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final testProfile = createTestProfile(displayName: 'Alice');
+        final testConversation = createTestConversation(
+          lastMessageContent: 'Hey, how are you?',
+          lastMessageTimestamp: nowUnix,
+        );
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            additionalOverrides: [
+              fetchUserProfileProvider(
+                otherPubkey,
+              ).overrideWith((ref) async => testProfile),
+            ],
+            home: Scaffold(
+              body: ConversationTile(
+                conversation: testConversation,
+                currentUserPubkey: currentPubkey,
+                onTap: () {},
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final semantics = tester.getSemantics(find.byType(ConversationTile));
+        expect(
+          semantics.label,
+          contains(l10n.inboxConversationTileLabel('Alice')),
+        );
+        expect(
+          semantics.label,
+          isNot(contains(l10n.inboxConversationTileLabelUnread('Alice'))),
+        );
+      });
     });
 
     group('interactions', () {

@@ -9666,6 +9666,60 @@ abstract class AppLocalizations {
   /// **'That + button won\'t bite.'**
   String get inboxEmptySubtitle;
 
+  /// No description provided for @inboxLoadErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages didn\'t load'**
+  String get inboxLoadErrorTitle;
+
+  /// No description provided for @inboxLoadErrorSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your connection and give it another go.'**
+  String get inboxLoadErrorSubtitle;
+
+  /// Filter chip label showing all conversations in the Messages inbox.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get inboxFilterAll;
+
+  /// Filter chip label showing only unread conversations in the Messages inbox.
+  ///
+  /// In en, this message translates to:
+  /// **'Unread'**
+  String get inboxFilterUnread;
+
+  /// Shown in place of the conversation list when the Unread filter is on and every conversation has been read.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re all caught up'**
+  String get inboxUnreadEmptyTitle;
+
+  /// No description provided for @inboxUnreadEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No unread messages right now.'**
+  String get inboxUnreadEmptySubtitle;
+
+  /// Hint text in the inbox Messages search field.
+  ///
+  /// In en, this message translates to:
+  /// **'Search messages'**
+  String get inboxSearchHint;
+
+  /// Shown in place of the conversation list when an inbox search matches nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'No matches'**
+  String get inboxSearchEmptyTitle;
+
+  /// No description provided for @inboxSearchEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Try a different name or word.'**
+  String get inboxSearchEmptySubtitle;
+
   /// No description provided for @inboxActionMute.
   ///
   /// In en, this message translates to:
@@ -10091,6 +10145,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{displayName} conversation'**
   String inboxConversationTileLabel(String displayName);
+
+  /// Accessibility label for an UNREAD conversation row in the inbox list, read by screen readers when the row receives focus. Prefixes the unread status before the display name so assistive-technology users get the same unread signal sighted users get from the dot and emphasized preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Unread, {displayName} conversation'**
+  String inboxConversationTileLabelUnread(String displayName);
 
   /// Accessibility hint announced when a conversation row is focused, telling the user that long-pressing opens the actions sheet (mute, report, block, remove).
   ///

@@ -5640,6 +5640,33 @@ class AppLocalizationsPl extends AppLocalizations {
   String get inboxEmptySubtitle => 'Ten przycisk + nie gryzie.';
 
   @override
+  String get inboxLoadErrorTitle => 'Wiadomości się nie wczytały';
+
+  @override
+  String get inboxLoadErrorSubtitle => 'Sprawdź połączenie i spróbuj ponownie.';
+
+  @override
+  String get inboxFilterAll => 'Wszystkie';
+
+  @override
+  String get inboxFilterUnread => 'Nieprzeczytane';
+
+  @override
+  String get inboxUnreadEmptyTitle => 'Wszystko nadrobione';
+
+  @override
+  String get inboxUnreadEmptySubtitle => 'Brak nieprzeczytanych wiadomości.';
+
+  @override
+  String get inboxSearchHint => 'Szukaj wiadomości';
+
+  @override
+  String get inboxSearchEmptyTitle => 'Brak wyników';
+
+  @override
+  String get inboxSearchEmptySubtitle => 'Spróbuj innego imienia lub słowa.';
+
+  @override
   String get inboxActionMute => 'Wycisz rozmowę';
 
   @override
@@ -5897,6 +5924,11 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String inboxConversationTileLabel(String displayName) {
     return 'Konwersacja z $displayName';
+  }
+
+  @override
+  String inboxConversationTileLabelUnread(String displayName) {
+    return 'Nieprzeczytane, Konwersacja z $displayName';
   }
 
   @override

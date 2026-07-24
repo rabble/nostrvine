@@ -13,13 +13,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
+import 'package:openvine/blocs/dm/conversation_mute/conversation_mute_cubit.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
+import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
 import 'package:openvine/screens/inbox/inbox_view.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:profile_repository/profile_repository.dart';
 
 import '../../helpers/go_router.dart';
 import '../../helpers/test_provider_overrides.dart';
@@ -44,6 +47,12 @@ class _MockDmUnreadCountCubit extends MockCubit<int>
 /// rebuilds a fresh repository (initially not-ready, then ready) as the nostr
 /// session advances identityKnown -> nostrReady. See repository_providers.dart.
 final _dmRepoSwap = StateProvider<int>((ref) => 0);
+
+/// Flip this to force `profileRepositoryProvider` to resolve from null to a
+/// ready instance, the nullable-gated shape it has in production.
+final _profileRepoSwap = StateProvider<int>((ref) => 0);
+
+class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 void main() {
   const testPubkey =
@@ -215,7 +224,10 @@ void main() {
         when(() => repo.stopListening()).thenAnswer((_) async {});
       }
 
-      Widget buildApp(DmRepository readyRepo) {
+      Widget buildApp(
+        DmRepository readyRepo, {
+        ProfileRepository? readyProfileRepo,
+      }) {
         return testMaterialApp(
           home: MultiBlocProvider(
             providers: [
@@ -235,6 +247,11 @@ void main() {
             ),
             contentBlocklistRepositoryProvider.overrideWithValue(
               mockBlocklistRepository,
+            ),
+            // Nullable-gated in production: null until Nostr is ready.
+            profileRepositoryProvider.overrideWith(
+              (ref) =>
+                  ref.watch(_profileRepoSwap) == 0 ? null : readyProfileRepo,
             ),
             goRouterProvider.overrideWithValue(mockGoRouter),
           ],
@@ -311,6 +328,69 @@ void main() {
                 'an identical repo identity yields an equal record key, so the '
                 'bloc must not churn on unrelated provider rebuilds',
           );
+        },
+      );
+
+      // `profileRepositoryProvider` is nullable-gated on Nostr readiness, so it
+      // resolves null -> instance after mount. Keying the ConversationListBloc
+      // provider on it would be the OUTERMOST entry of the nested provider
+      // chain, so it would re-inflate every provider below it and the whole
+      // InboxView subtree. The instance is delivered as an event instead.
+      testWidgets(
+        'a profileRepository flip refreshes only the conversation bloc '
+        'dependency, tearing down nothing',
+        (tester) async {
+          stubInbox(mockDmRepository, userPubkey: testPubkey);
+          final readyProfileRepo = _MockProfileRepository();
+
+          await tester.pumpWidget(
+            buildApp(mockDmRepository, readyProfileRepo: readyProfileRepo),
+          );
+          await tester.pump();
+
+          final conversationBloc = readBloc(tester);
+          final followingBloc = BlocProvider.of<MyFollowingBloc>(
+            tester.element(find.byType(InboxView)),
+          );
+          final muteCubit = BlocProvider.of<ConversationMuteCubit>(
+            tester.element(find.byType(InboxView)),
+          );
+          final viewState = tester.state(find.byType(InboxView));
+
+          // The provider hands over the ready ProfileRepository.
+          ProviderScope.containerOf(
+            tester.element(find.byType(InboxPage)),
+            listen: false,
+          ).read(_profileRepoSwap.notifier).state = 1;
+          await tester.pump();
+
+          expect(
+            readBloc(tester),
+            same(conversationBloc),
+            reason: 'the bloc is re-pointed in place, not reconstructed',
+          );
+          expect(
+            BlocProvider.of<MyFollowingBloc>(
+              tester.element(find.byType(InboxView)),
+            ),
+            same(followingBloc),
+            reason: 'an unrelated bloc must survive the flip',
+          );
+          expect(
+            BlocProvider.of<ConversationMuteCubit>(
+              tester.element(find.byType(InboxView)),
+            ),
+            same(muteCubit),
+            reason: 'an unrelated cubit must survive the flip',
+          );
+          expect(
+            tester.state(find.byType(InboxView)),
+            same(viewState),
+            reason:
+                'remounting InboxView would discard the selected tab, scroll '
+                'offset and search text',
+          );
+          expect(conversationBloc.isClosed, isFalse);
         },
       );
     });

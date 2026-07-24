@@ -3066,6 +3066,30 @@
   },
   "inboxEmptyTitle": "No messages yet",
   "inboxEmptySubtitle": "That + button won't bite.",
+  "inboxLoadErrorTitle": "Messages didn't load",
+  "inboxLoadErrorSubtitle": "Check your connection and give it another go.",
+  "inboxFilterAll": "All",
+  "@inboxFilterAll": {
+    "description": "Filter chip label showing all conversations in the Messages inbox."
+  },
+  "inboxFilterUnread": "Unread",
+  "@inboxFilterUnread": {
+    "description": "Filter chip label showing only unread conversations in the Messages inbox."
+  },
+  "inboxUnreadEmptyTitle": "You're all caught up",
+  "@inboxUnreadEmptyTitle": {
+    "description": "Shown in place of the conversation list when the Unread filter is on and every conversation has been read."
+  },
+  "inboxUnreadEmptySubtitle": "No unread messages right now.",
+  "inboxSearchHint": "Search messages",
+  "@inboxSearchHint": {
+    "description": "Hint text in the inbox Messages search field."
+  },
+  "inboxSearchEmptyTitle": "No matches",
+  "@inboxSearchEmptyTitle": {
+    "description": "Shown in place of the conversation list when an inbox search matches nothing."
+  },
+  "inboxSearchEmptySubtitle": "Try a different name or word.",
   "inboxActionMute": "Mute conversation",
   "inboxActionReport": "Report {displayName}",
   "@inboxActionReport": {
@@ -3400,6 +3424,16 @@
   "inboxConversationTileLabel": "{displayName} conversation",
   "@inboxConversationTileLabel": {
     "description": "Accessibility label for a conversation row in the inbox list, read by screen readers when the row receives focus. Use the other participant's display name.",
+    "placeholders": {
+      "displayName": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "inboxConversationTileLabelUnread": "Unread, {displayName} conversation",
+  "@inboxConversationTileLabelUnread": {
+    "description": "Accessibility label for an UNREAD conversation row in the inbox list, read by screen readers when the row receives focus. Prefixes the unread status before the display name so assistive-technology users get the same unread signal sighted users get from the dot and emphasized preview.",
     "placeholders": {
       "displayName": {
         "type": "String",

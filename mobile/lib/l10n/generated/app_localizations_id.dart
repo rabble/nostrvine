@@ -5474,6 +5474,33 @@ class AppLocalizationsId extends AppLocalizations {
   String get inboxEmptySubtitle => 'Tombol + tidak menggigit kok.';
 
   @override
+  String get inboxLoadErrorTitle => 'Pesan gagal dimuat';
+
+  @override
+  String get inboxLoadErrorSubtitle => 'Periksa koneksimu dan coba lagi.';
+
+  @override
+  String get inboxFilterAll => 'Semua';
+
+  @override
+  String get inboxFilterUnread => 'Belum dibaca';
+
+  @override
+  String get inboxUnreadEmptyTitle => 'Semua sudah kamu baca';
+
+  @override
+  String get inboxUnreadEmptySubtitle => 'Tidak ada pesan yang belum dibaca.';
+
+  @override
+  String get inboxSearchHint => 'Cari pesan';
+
+  @override
+  String get inboxSearchEmptyTitle => 'Tidak ada hasil';
+
+  @override
+  String get inboxSearchEmptySubtitle => 'Coba nama atau kata lain.';
+
+  @override
   String get inboxActionMute => 'Bisukan percakapan';
 
   @override
@@ -5725,6 +5752,11 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String inboxConversationTileLabel(String displayName) {
     return 'Percakapan dengan $displayName';
+  }
+
+  @override
+  String inboxConversationTileLabelUnread(String displayName) {
+    return 'Belum dibaca, Percakapan dengan $displayName';
   }
 
   @override

@@ -29,8 +29,10 @@ import 'package:openvine/screens/inbox/widgets/conversation_actions_sheet.dart';
 import 'package:openvine/screens/inbox/widgets/conversation_tile.dart';
 import 'package:openvine/screens/inbox/widgets/following_bar.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_empty_state.dart';
+import 'package:openvine/screens/inbox/widgets/inbox_error_state.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_fab.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_segmented_toggle.dart';
+import 'package:openvine/screens/inbox/widgets/unread_filter_chips.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Main inbox view containing the Messages/Notifications segmented toggle
@@ -461,7 +463,11 @@ class _ConversationListContent extends StatelessWidget {
       ConversationListStatus.loading => const Center(
         child: CircularProgressIndicator(color: VineTheme.primary),
       ),
-      ConversationListStatus.error => const InboxEmptyState(),
+      ConversationListStatus.error => InboxErrorState(
+        onRetry: () => context.read<ConversationListBloc>().add(
+          const ConversationListStarted(),
+        ),
+      ),
       ConversationListStatus.loaded => _ConversationList(
         currentUserPubkey: currentUserPubkey,
       ),
@@ -481,6 +487,7 @@ class _ConversationList extends ConsumerStatefulWidget {
 class _ConversationListState extends ConsumerState<_ConversationList>
     with ScrollPaginationMixin {
   final ScrollController _scrollController = ScrollController();
+  late final TextEditingController _searchController;
 
   /// ID of the conversation whose long-press action sheet is currently open.
   /// Drives the [ConversationTile] highlight so the user can see which row
@@ -492,8 +499,9 @@ class _ConversationListState extends ConsumerState<_ConversationList>
 
   @override
   bool canLoadMore() {
-    final bloc = context.read<ConversationListBloc>();
-    return bloc.state.hasMore && !bloc.state.isLoadingMore;
+    final state = context.read<ConversationListBloc>().state;
+    // Re-entrancy is guarded by ScrollPaginationMixin's own pending-load latch.
+    return state.hasMore && !state.isFiltering;
   }
 
   @override
@@ -504,6 +512,15 @@ class _ConversationListState extends ConsumerState<_ConversationList>
   @override
   void initState() {
     super.initState();
+    // Seed from the bloc rather than starting empty. This State is recreated
+    // whenever the status leaves `loaded` (a stream error and its retry) or a
+    // keyed BlocProvider above re-inflates the view, while the bloc — and so
+    // state.searchQuery — survives. A fresh empty controller would leave the
+    // list filtered by an invisible query: the search empty state over a blank
+    // field, with pagination silently suspended.
+    _searchController = TextEditingController(
+      text: context.read<ConversationListBloc>().state.searchQuery,
+    );
     initPagination();
   }
 
@@ -511,6 +528,7 @@ class _ConversationListState extends ConsumerState<_ConversationList>
   void dispose() {
     disposePagination();
     _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -520,6 +538,13 @@ class _ConversationListState extends ConsumerState<_ConversationList>
         .select<ConversationListBloc, List<DmConversation>>(
           (bloc) => bloc.state.conversations,
         );
+    final visibleConversations = context
+        .select<ConversationListBloc, List<DmConversation>>(
+          (bloc) => bloc.state.visibleConversations,
+        );
+    final unreadOnly = context.select<ConversationListBloc, bool>(
+      (bloc) => bloc.state.unreadOnly,
+    );
     final hasRequests = context.select<ConversationListBloc, bool>(
       (bloc) => bloc.state.requestConversations.isNotEmpty,
     );
@@ -529,8 +554,12 @@ class _ConversationListState extends ConsumerState<_ConversationList>
     final hasMore = context.select<ConversationListBloc, bool>(
       (bloc) => bloc.state.hasMore,
     );
-
-    final bannerOffset = hasRequests ? 1 : 0;
+    final searchQuery = context.select<ConversationListBloc, String>(
+      (bloc) => bloc.state.searchQuery,
+    );
+    final isFiltering = context.select<ConversationListBloc, bool>(
+      (bloc) => bloc.state.isFiltering,
+    );
 
     if (conversations.isEmpty && !hasRequests) return const InboxEmptyState();
 
@@ -547,46 +576,60 @@ class _ConversationListState extends ConsumerState<_ConversationList>
       );
     }
 
-    return ListView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.only(bottom: _kConversationListBottomInset),
-      itemCount: conversations.length + bannerOffset + (hasMore ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (hasRequests && index == 0) {
-          return MessageRequestsBanner(
-            requestCount: requestUnreadCount,
-            onTap: () => _openMessageRequests(context),
-          );
-        }
-
-        final conversationIndex = index - bannerOffset;
-
-        if (conversationIndex == conversations.length) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
-            child: Center(
-              child: SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  color: VineTheme.primary,
-                  strokeWidth: 2,
-                ),
-              ),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: DivineSearchBar(
+            controller: _searchController,
+            hintText: context.l10n.inboxSearchHint,
+            onChanged: (value) => context.read<ConversationListBloc>().add(
+              ConversationListSearchQueryChanged(value),
             ),
-          );
-        }
-
-        final conversation = conversations[conversationIndex];
-        return ConversationTile(
-          conversation: conversation,
-          currentUserPubkey: widget.currentUserPubkey,
-          highlighted: conversation.id == _highlightedConversationId,
-          onTap: () => _onConversationTapped(context, conversation),
-          onLongPress: () =>
-              _onConversationLongPressed(context, ref, conversation),
-        );
-      },
+          ),
+        ),
+        UnreadFilterChips(
+          unreadOnly: unreadOnly,
+          onUnreadOnlyChanged: (value) {
+            if (value == unreadOnly) return;
+            context.read<ConversationListBloc>().add(
+              const ConversationListUnreadFilterToggled(),
+            );
+          },
+        ),
+        Expanded(
+          child: visibleConversations.isEmpty
+              ? _FilteredEmptyContent(
+                  title: searchQuery.isNotEmpty
+                      ? context.l10n.inboxSearchEmptyTitle
+                      : context.l10n.inboxUnreadEmptyTitle,
+                  subtitle: searchQuery.isNotEmpty
+                      ? context.l10n.inboxSearchEmptySubtitle
+                      : context.l10n.inboxUnreadEmptySubtitle,
+                  hasRequests: hasRequests,
+                  requestUnreadCount: requestUnreadCount,
+                  onOpenRequests: () => _openMessageRequests(context),
+                )
+              : _ConversationListView(
+                  scrollController: _scrollController,
+                  conversations: visibleConversations,
+                  hasRequests: hasRequests,
+                  requestUnreadCount: requestUnreadCount,
+                  // Suppress the load-more affordance while a filter/search
+                  // narrows the list: the filtered result is already complete,
+                  // and a short one can't scroll to trigger a load — leaving a
+                  // spinner that never resolves.
+                  hasMore: hasMore && !isFiltering,
+                  highlightedConversationId: _highlightedConversationId,
+                  currentUserPubkey: widget.currentUserPubkey,
+                  onOpenRequests: () => _openMessageRequests(context),
+                  onConversationTapped: (conversation) =>
+                      _onConversationTapped(context, conversation),
+                  onConversationLongPressed: (conversation) =>
+                      _onConversationLongPressed(context, ref, conversation),
+                ),
+        ),
+      ],
     );
   }
 
@@ -740,5 +783,137 @@ class _ConversationListState extends ConsumerState<_ConversationList>
       ),
     );
     return result ?? false;
+  }
+}
+
+/// Scrolling conversation list: optional requests banner, conversation
+/// tiles for [conversations], and a trailing load-more spinner.
+class _ConversationListView extends StatelessWidget {
+  const _ConversationListView({
+    required this.scrollController,
+    required this.conversations,
+    required this.hasRequests,
+    required this.requestUnreadCount,
+    required this.hasMore,
+    required this.highlightedConversationId,
+    required this.currentUserPubkey,
+    required this.onOpenRequests,
+    required this.onConversationTapped,
+    required this.onConversationLongPressed,
+  });
+
+  final ScrollController scrollController;
+  final List<DmConversation> conversations;
+  final bool hasRequests;
+  final int requestUnreadCount;
+  final bool hasMore;
+  final String? highlightedConversationId;
+  final String currentUserPubkey;
+  final VoidCallback onOpenRequests;
+  final ValueChanged<DmConversation> onConversationTapped;
+  final ValueChanged<DmConversation> onConversationLongPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final bannerOffset = hasRequests ? 1 : 0;
+    return ListView.builder(
+      controller: scrollController,
+      padding: const EdgeInsets.only(bottom: _kConversationListBottomInset),
+      itemCount: conversations.length + bannerOffset + (hasMore ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (hasRequests && index == 0) {
+          return MessageRequestsBanner(
+            requestCount: requestUnreadCount,
+            onTap: onOpenRequests,
+          );
+        }
+
+        final conversationIndex = index - bannerOffset;
+
+        if (conversationIndex == conversations.length) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  color: VineTheme.primary,
+                  strokeWidth: 2,
+                ),
+              ),
+            ),
+          );
+        }
+
+        final conversation = conversations[conversationIndex];
+        return ConversationTile(
+          conversation: conversation,
+          currentUserPubkey: currentUserPubkey,
+          highlighted: conversation.id == highlightedConversationId,
+          onTap: () => onConversationTapped(conversation),
+          onLongPress: () => onConversationLongPressed(conversation),
+        );
+      },
+    );
+  }
+}
+
+/// Shown when an active filter (Unread chip or search) leaves nothing to
+/// list: keeps the requests banner reachable and confirms the list is not
+/// empty by accident.
+class _FilteredEmptyContent extends StatelessWidget {
+  const _FilteredEmptyContent({
+    required this.title,
+    required this.subtitle,
+    required this.hasRequests,
+    required this.requestUnreadCount,
+    required this.onOpenRequests,
+  });
+
+  final String title;
+  final String subtitle;
+  final bool hasRequests;
+  final int requestUnreadCount;
+  final VoidCallback onOpenRequests;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        if (hasRequests)
+          MessageRequestsBanner(
+            requestCount: requestUnreadCount,
+            onTap: onOpenRequests,
+          ),
+        Expanded(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 48),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                spacing: 8,
+                children: [
+                  Text(
+                    title,
+                    style: VineTheme.titleMediumFont(
+                      color: VineTheme.onSurfaceMuted,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  Text(
+                    subtitle,
+                    style: VineTheme.bodyMediumFont(
+                      color: VineTheme.onSurfaceMuted,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }

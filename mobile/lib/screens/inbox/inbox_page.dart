@@ -41,6 +41,7 @@ class InboxPage extends ConsumerWidget {
     final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
     final prefs = ref.watch(sharedPreferencesProvider);
     final reportingService = ref.watch(contentReportingServiceProvider).value;
+    final profileRepository = ref.watch(profileRepositoryProvider);
     final currentUserPubkey =
         ref.watch(authServiceProvider).currentPublicKeyHex ?? '';
     final protectedMinorInboxGate = ref.watch(protectedMinorInboxGateProvider);
@@ -80,10 +81,19 @@ class InboxPage extends ConsumerWidget {
         )),
         providers: [
           BlocProvider(
+            // Deliberately unkeyed on profileRepository. A key here would NOT
+            // narrow anything: `providers[0]` is the OUTERMOST entry in the
+            // nested chain, so keying it re-inflates every provider below plus
+            // the whole InboxView subtree — losing the tab selection, scroll
+            // offset and search text. The nullable-gated instance is delivered
+            // in place by ConversationListProfileRepositoryChanged from
+            // _InboxRepositorySync below, refreshing only this bloc's
+            // dependency. The constructor still carries the initial value.
             create: (_) => ConversationListBloc(
               dmRepository: dmRepository,
               followRepository: followRepository,
               contentBlocklistRepository: blocklistRepository,
+              profileRepository: profileRepository,
               protectedMinorInboxGate: protectedMinorInboxGate,
             )..add(const ConversationListStarted()),
           ),
@@ -118,14 +128,21 @@ class InboxPage extends ConsumerWidget {
             ),
           ),
         ],
-        child: const _InboxNotificationBadgeRepositorySync(child: InboxView()),
+        child: const _InboxRepositorySync(child: InboxView()),
       ),
     );
   }
 }
 
-class _InboxNotificationBadgeRepositorySync extends ConsumerWidget {
-  const _InboxNotificationBadgeRepositorySync({required this.child});
+/// Forwards late-resolving repositories to the blocs that need them, without
+/// re-keying any provider.
+///
+/// Both of these dependencies resolve after mount, and both are consumed by a
+/// single bloc. Pushing them in as a setter/event refreshes only that bloc —
+/// whereas a `ValueKey` on the owning `BlocProvider` would tear down the entire
+/// downstream provider chain and the `InboxView` subtree with it.
+class _InboxRepositorySync extends ConsumerWidget {
+  const _InboxRepositorySync({required this.child});
 
   final Widget child;
 
@@ -133,6 +150,11 @@ class _InboxNotificationBadgeRepositorySync extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.listen(notificationRepositoryProvider, (_, repository) {
       context.read<NotificationBadgeCubit>().setRepository(repository);
+    });
+    ref.listen(profileRepositoryProvider, (_, repository) {
+      context.read<ConversationListBloc>().add(
+        ConversationListProfileRepositoryChanged(repository),
+      );
     });
     return child;
   }

@@ -5482,6 +5482,33 @@ class AppLocalizationsTr extends AppLocalizations {
   String get inboxEmptySubtitle => '+ tuşu ısırmaz.';
 
   @override
+  String get inboxLoadErrorTitle => 'Mesajlar yüklenemedi';
+
+  @override
+  String get inboxLoadErrorSubtitle => 'Bağlantını kontrol edip tekrar dene.';
+
+  @override
+  String get inboxFilterAll => 'Tümü';
+
+  @override
+  String get inboxFilterUnread => 'Okunmamış';
+
+  @override
+  String get inboxUnreadEmptyTitle => 'Her şeyi okudun';
+
+  @override
+  String get inboxUnreadEmptySubtitle => 'Şu anda okunmamış mesaj yok.';
+
+  @override
+  String get inboxSearchHint => 'Mesajlarda ara';
+
+  @override
+  String get inboxSearchEmptyTitle => 'Sonuç yok';
+
+  @override
+  String get inboxSearchEmptySubtitle => 'Başka bir isim veya kelime dene.';
+
+  @override
   String get inboxActionMute => 'Sohbeti sessize al';
 
   @override
@@ -5734,6 +5761,11 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String inboxConversationTileLabel(String displayName) {
     return '$displayName ile sohbet';
+  }
+
+  @override
+  String inboxConversationTileLabelUnread(String displayName) {
+    return 'Okunmamış, $displayName ile sohbet';
   }
 
   @override

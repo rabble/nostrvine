@@ -24,10 +24,13 @@ class ConversationListState extends Equatable {
   const ConversationListState({
     this.status = ConversationListStatus.initial,
     this.conversations = const [],
+    this.visibleConversations = const [],
+    this.unreadOnly = false,
+    this.searchQuery = '',
+    this.profileNames = const {},
     this.requestConversations = const [],
     this.potentialRequests = const [],
     this.hasMore = true,
-    this.isLoadingMore = false,
     this.isRestoringHistory = false,
     this.currentLimit = ConversationListState.pageSize,
     this.navigationTarget,
@@ -38,8 +41,32 @@ class ConversationListState extends Equatable {
 
   final ConversationListStatus status;
 
-  /// Conversations shown in the Messages tab (accepted + followed contacts).
+  /// The COMPLETE set of conversations for the Messages tab (accepted +
+  /// followed contacts), unpaginated.
+  ///
+  /// Holding the full set is what lets the unread chip and search answer about
+  /// the whole inbox instead of the loaded page.
   final List<DmConversation> conversations;
+
+  /// The rendered slice of [conversations]: filtered when a filter is active,
+  /// otherwise windowed to [currentLimit].
+  ///
+  /// A filter result is never windowed — it is already complete, so it can be
+  /// shorter than a page without meaning "there might be more".
+  ///
+  /// Stored (not derived via a getter) so `context.select` sees a stable
+  /// list identity across unrelated state emits.
+  final List<DmConversation> visibleConversations;
+
+  /// Whether the Messages list is filtered to unread conversations only.
+  final bool unreadOnly;
+
+  /// Trimmed inbox search query; empty when search is inactive.
+  final String searchQuery;
+
+  /// Resolved display names by counterparty pubkey, used for search
+  /// matching. Grows lazily the first time a query needs a name.
+  final Map<String, String> profileNames;
 
   /// Conversations shown in the Requests tab (non-followed, never replied).
   final List<DmConversation> requestConversations;
@@ -49,18 +76,21 @@ class ConversationListState extends Equatable {
   /// Stored so that follow-list changes can re-split without a DB query.
   final List<DmConversation> potentialRequests;
 
-  /// Whether more accepted conversations may exist beyond the current page.
+  /// Whether [conversations] holds more rows than the current render window.
+  ///
+  /// Exact, not a heuristic: the full set is loaded, so this is a comparison
+  /// against [currentLimit] rather than a guess from a truncated page.
   final bool hasMore;
-
-  /// Whether a load-more operation is currently in progress.
-  final bool isLoadingMore;
 
   /// Whether a one-time DM history recovery (reinstall backfill / failed-
   /// decrypt replay) is actively running. Drives the restore progress
   /// indicator at the top of the Messages list. See #5202.
   final bool isRestoringHistory;
 
-  /// Current watch limit — grows as the user loads more pages.
+  /// Size of the render window over [conversations] — grows as the user pages.
+  ///
+  /// Not a fetch bound: the conversations are already loaded in full, so
+  /// growing this is a pure re-slice with no query and no spinner.
   final int currentLimit;
 
   /// Set when the user requests navigation to a specific conversation.
@@ -71,13 +101,25 @@ class ConversationListState extends Equatable {
   int get requestUnreadCount =>
       requestConversations.where((c) => !c.isRead).length;
 
+  /// Whether a client-side filter (unread chip or search) is narrowing the
+  /// visible list.
+  ///
+  /// Load-more is suspended while this is true: a filtered result is computed
+  /// over the full conversation set and is therefore already complete, so
+  /// growing the render window could only append unfiltered rows — and a short
+  /// filtered list can never scroll far enough to trigger it anyway.
+  bool get isFiltering => unreadOnly || searchQuery.isNotEmpty;
+
   ConversationListState copyWith({
     ConversationListStatus? status,
     List<DmConversation>? conversations,
+    List<DmConversation>? visibleConversations,
+    bool? unreadOnly,
+    String? searchQuery,
+    Map<String, String>? profileNames,
     List<DmConversation>? requestConversations,
     List<DmConversation>? potentialRequests,
     bool? hasMore,
-    bool? isLoadingMore,
     bool? isRestoringHistory,
     int? currentLimit,
     ConversationNavigationTarget? navigationTarget,
@@ -86,10 +128,13 @@ class ConversationListState extends Equatable {
     return ConversationListState(
       status: status ?? this.status,
       conversations: conversations ?? this.conversations,
+      visibleConversations: visibleConversations ?? this.visibleConversations,
+      unreadOnly: unreadOnly ?? this.unreadOnly,
+      searchQuery: searchQuery ?? this.searchQuery,
+      profileNames: profileNames ?? this.profileNames,
       requestConversations: requestConversations ?? this.requestConversations,
       potentialRequests: potentialRequests ?? this.potentialRequests,
       hasMore: hasMore ?? this.hasMore,
-      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       isRestoringHistory: isRestoringHistory ?? this.isRestoringHistory,
       currentLimit: currentLimit ?? this.currentLimit,
       navigationTarget: clearNavigationTarget
@@ -102,10 +147,13 @@ class ConversationListState extends Equatable {
   List<Object?> get props => [
     status,
     conversations,
+    visibleConversations,
+    unreadOnly,
+    searchQuery,
+    profileNames,
     requestConversations,
     potentialRequests,
     hasMore,
-    isLoadingMore,
     isRestoringHistory,
     currentLimit,
     navigationTarget,

@@ -5388,6 +5388,33 @@ class AppLocalizationsAm extends AppLocalizations {
   String get inboxEmptySubtitle => 'ያ + ቁልፍ አይነክሰውም።';
 
   @override
+  String get inboxLoadErrorTitle => 'መልዕክቶቹ አልተጫኑም';
+
+  @override
+  String get inboxLoadErrorSubtitle => 'ግንኙነትህን አረጋግጠህ እንደገና ሞክር።';
+
+  @override
+  String get inboxFilterAll => 'ሁሉም';
+
+  @override
+  String get inboxFilterUnread => 'ያልተነበቡ';
+
+  @override
+  String get inboxUnreadEmptyTitle => 'ሁሉንም አንብበሃል';
+
+  @override
+  String get inboxUnreadEmptySubtitle => 'አሁን ያልተነበበ መልዕክት የለም።';
+
+  @override
+  String get inboxSearchHint => 'መልዕክቶችን ፈልግ';
+
+  @override
+  String get inboxSearchEmptyTitle => 'ምንም አልተገኘም';
+
+  @override
+  String get inboxSearchEmptySubtitle => 'ሌላ ስም ወይም ቃል ሞክር።';
+
+  @override
   String get inboxActionMute => 'ውይይት ድምጸ-ከል አድርግ';
 
   @override
@@ -5637,6 +5664,11 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String inboxConversationTileLabel(String displayName) {
     return 'የ$displayName ውይይት';
+  }
+
+  @override
+  String inboxConversationTileLabelUnread(String displayName) {
+    return 'ያልተነበቡ፣ የ$displayName ውይይት';
   }
 
   @override

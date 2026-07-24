@@ -5550,6 +5550,35 @@ class AppLocalizationsIt extends AppLocalizations {
   String get inboxEmptySubtitle => 'Il pulsante + non morde.';
 
   @override
+  String get inboxLoadErrorTitle => 'I messaggi non si sono caricati';
+
+  @override
+  String get inboxLoadErrorSubtitle => 'Controlla la connessione e riprova.';
+
+  @override
+  String get inboxFilterAll => 'Tutti';
+
+  @override
+  String get inboxFilterUnread => 'Non letti';
+
+  @override
+  String get inboxUnreadEmptyTitle => 'Sei in pari';
+
+  @override
+  String get inboxUnreadEmptySubtitle =>
+      'Nessun messaggio non letto al momento.';
+
+  @override
+  String get inboxSearchHint => 'Cerca nei messaggi';
+
+  @override
+  String get inboxSearchEmptyTitle => 'Nessun risultato';
+
+  @override
+  String get inboxSearchEmptySubtitle =>
+      'Prova con un altro nome o un\'altra parola.';
+
+  @override
   String get inboxActionMute => 'Silenzia conversazione';
 
   @override
@@ -5802,6 +5831,11 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String inboxConversationTileLabel(String displayName) {
     return 'Conversazione con $displayName';
+  }
+
+  @override
+  String inboxConversationTileLabelUnread(String displayName) {
+    return 'Non letti, Conversazione con $displayName';
   }
 
   @override
