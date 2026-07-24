@@ -778,19 +778,33 @@ even if 3–5 are abandoned.
 ### Phase 1 — Data-layer correctness (no architecture change)
 *Fixes real bugs in today's build. Zero dependency on the rest.*
 
-- Add `owner_pubkey` to `Notifications`; backfill; filter all reads. **This is a
-  live cross-account leak today.**
-- Resolve `PendingProductEvents` attribution.
-- Prefix the 21 viewer-scoped prefs keys; migrate existing values.
-- Split `UserDataCleanupService` into `switchAway` (preserve) and
-  `deleteAccountFromDevice` (destroy). Removes the destructive path from switch.
-- Delete `identity_manager_service.dart`.
-- Close the half-enforced feature flag (§3.2f) — add the cubit guard the
-  2026-04-14 design specified.
-- Land the §10.1 gate test against current code.
+- [x] Add `owner_pubkey` to `Notifications`; migrate; filter all reads; claim
+  legacy rows at session setup. **This was a live cross-account leak.**
+  (commit `858619843`)
+- [x] Delete `identity_manager_service.dart`. (commit `858619843`)
+- [x] Close the half-enforced feature flag (§3.2f) — add the cubit guard the
+  2026-04-14 design specified. (commit `d5f08774d`)
+- [ ] Resolve `PendingProductEvents` attribution. **[still UNVERIFIED]**
 
-**Ships value alone:** closes the notification leak and the prefs data-loss path
-regardless of what happens next.
+**Reordered during implementation — prefs prefixing + cleanup split moved to
+Phase 3.** The 18-key cleanup list turned out to be only **8 live keys across 5
+services** (`seen_videos`, `bookmark`, `curated_list`, `content_reporting`,
+`content_deletion`); the other 10 are dead (present only in the cleanup list).
+Every one of those 5 services is constructed with **no account** and a static
+global key. Prefixing them *before* the container boundary exists would require
+bolting bespoke "react to account change" plumbing onto each — the exact
+scattered per-subsystem reactive code Phase 3/4 deletes, and its own reliability
+risk (the #4969/#5472/#6174 family). Post-container each service is constructed
+inside an account-bound container and simply receives its pubkey; the migration
+is identical, the plumbing is zero. The prefs bug is low-severity (local cache,
+mostly relay-backed), so deferring it a few phases is safer than shipping
+throwaway reactive code now. Moved to Phase 3 (see below).
+
+The §10.1 leak gate test is also moved to Phase 4 — it exercises the container
+swap, which does not exist until then.
+
+**Shipped value alone:** closed the notification cross-account leak and the
+half-open feature flag, independent of the rest.
 
 ### Phase 2 — Credential storage
 *Removes the non-atomic secret copy.*
@@ -814,6 +828,16 @@ non-corrupting.
 - Point `currentPublicKeyHex` at `activeAccountProvider` as a deprecated
   forwarder. **No call sites change.**
 - Fix the 9 `ref.read(authServiceProvider).currentPublicKeyHex` capture sites.
+- **Prefix the 8 live viewer-scoped prefs keys** across the 5 services
+  (`seen_videos`, `bookmark`, `curated_list`, `content_reporting`,
+  `content_deletion`), now that each receives its account pubkey at
+  construction. Migration: copy the old global value into the account key once,
+  then claim-on-first-signin like drafts/notifications. Per-key A→B→A regression
+  test. Drop these keys from `UserDataCleanupService`'s always-clear list.
+- **Split `UserDataCleanupService`** into `switchAway` (preserve owner-scoped
+  data) and `deleteAccountFromDevice` (destroy). Removes the destructive path
+  from switch — the direct #4623 fix. Coupled to the prefs prefixing above,
+  which is why both land here rather than in Phase 1.
 
 ### Phase 4 — Container swap
 *The actual switch.*
