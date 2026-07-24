@@ -55,13 +55,22 @@ def wrap(draw, text, font, maxw):
     return lines
 
 
+def line_height(font, sample="Ag"):
+    b = font.getbbox(sample)
+    return b[3] - b[1]
+
+
 def draw_centered(draw, lines, font, y, color, canvas_w, gap):
+    lh = line_height(font)
     for ln in lines:
         tw = draw.textlength(ln, font=font)
         draw.text(((canvas_w - tw) / 2, y), ln, font=font, fill=color)
-        b = font.getbbox(ln)
-        y += (b[3] - b[1]) + gap
+        y += lh + gap
     return y
+
+
+def block_height(lines, font, gap):
+    return len(lines) * line_height(font) + max(0, len(lines) - 1) * gap
 
 
 def rounded(img, radius):
@@ -85,28 +94,38 @@ def build(shot_path, out_path, device, headline, subhead):
     cw, ch = canvas_for(device)
     canvas = Image.new("RGB", (cw, ch), BG)
     draw = ImageDraw.Draw(canvas)
-    head_font = ImageFont.truetype(FONT_PATH, int(cw * 0.072))
-    sub_font = ImageFont.truetype(FONT_PATH, int(cw * 0.034))
 
-    y = int(ch * 0.055)
-    y = draw_centered(
-        draw, wrap(draw, headline, head_font, cw - 140), head_font,
-        y, GREEN, cw, gap=6,
-    )
-    if subhead:
-        y += int(ch * 0.012)
-        y = draw_centered(
-            draw, wrap(draw, subhead, sub_font, cw - 180), sub_font,
-            y, WHITE, cw, gap=6,
-        )
+    # Fixed caption band so every screenshot starts at the same Y — the set
+    # lines up when Apple shows them side by side. The caption is vertically
+    # centered within the band, so 1- and 2-line headlines both look anchored.
+    band_h = int(ch * 0.185)
+    head_gap, sub_gap, between = 6, 6, int(ch * 0.012)
+
+    if headline:
+        head_font = ImageFont.truetype(FONT_PATH, int(cw * 0.072))
+        head_lines = wrap(draw, headline, head_font, cw - 140)
+        total = block_height(head_lines, head_font, head_gap)
+        sub_lines = None
+        if subhead:
+            sub_font = ImageFont.truetype(FONT_PATH, int(cw * 0.034))
+            sub_lines = wrap(draw, subhead, sub_font, cw - 180)
+            total += between + block_height(sub_lines, sub_font, sub_gap)
+        y = int(ch * 0.045) + max(0, (band_h - int(ch * 0.045) - total) // 2)
+        y = draw_centered(draw, head_lines, head_font, y, GREEN, cw, head_gap)
+        if sub_lines:
+            y += between
+            draw_centered(draw, sub_lines, sub_font, y, WHITE, cw, sub_gap)
+
+    shot_top = band_h
+    avail_h = ch - shot_top - int(ch * 0.045)
+    avail_w = int(cw * 0.86)
 
     shot = Image.open(shot_path).convert("RGB")
-    target_w = int(cw * 0.80)
-    shot = shot.resize((target_w, round(shot.height * target_w / shot.width)))
-    shot = rounded(shot, radius=int(target_w * 0.055))
+    scale = min(avail_w / shot.width, avail_h / shot.height)
+    shot = shot.resize((round(shot.width * scale), round(shot.height * scale)))
+    shot = rounded(shot, radius=int(shot.width * 0.055))
     x = (cw - shot.width) // 2
-    yv = int(ch * 0.30)
-    canvas.paste(shot, (x, yv), shot)
+    canvas.paste(shot, (x, shot_top), shot)
     canvas.save(out_path)
 
 
