@@ -436,6 +436,78 @@ void main() {
       );
     });
 
+    test(
+      'setCaptionCueTimeline retimes a burn-in cue layer and meta atomically '
+      'without mutating the current history entry',
+      () {
+        final captionLayer = TextLayer(
+          text: 'Hello.',
+          meta: {
+            VideoEditorConstants.captionCueMetaKey: true,
+            VideoEditorConstants.captionCueIdMetaKey: 'cue-1',
+          },
+          startTime: const Duration(milliseconds: 500),
+          endTime: const Duration(milliseconds: 2000),
+        );
+        final otherLayer = TextLayer(text: 'keep');
+        when(
+          () => editor.activeLayers,
+        ).thenReturn([captionLayer, otherLayer]);
+        when(() => stateManager.activeMeta).thenReturn({
+          VideoEditorConstants.captionsStateHistoryKey: track.toJson(),
+        });
+
+        editor.setCaptionCueTimeline(
+          cueId: 'cue-1',
+          startTime: const Duration(milliseconds: 800),
+          endTime: const Duration(milliseconds: 2500),
+        );
+
+        final captured = verify(
+          () => editor.addHistory(
+            layers: captureAny(named: 'layers'),
+            meta: captureAny(named: 'meta'),
+          ),
+        ).captured;
+
+        // The new entry carries a retimed COPY of the burn-in layer plus the
+        // updated caption meta in one undo step.
+        final layers = captured.first as List<Layer>;
+        final retimed = layers.firstWhere(
+          (l) => l.meta?[VideoEditorConstants.captionCueIdMetaKey] == 'cue-1',
+        );
+        expect(retimed, isNot(same(captionLayer)));
+        expect(retimed.startTime, equals(const Duration(milliseconds: 800)));
+        expect(retimed.endTime, equals(const Duration(milliseconds: 2500)));
+        expect(layers, contains(otherLayer));
+
+        final meta = captured.last as Map<String, dynamic>;
+        final updated = CaptionTrack.fromJson(
+          meta[VideoEditorConstants.captionsStateHistoryKey]
+              as Map<Object?, Object?>,
+        );
+        expect(
+          updated.cues.single.start,
+          equals(const Duration(milliseconds: 800)),
+        );
+        expect(
+          updated.cues.single.end,
+          equals(const Duration(milliseconds: 2500)),
+        );
+
+        // The previous entry's layer is left untouched, so undo restores the
+        // burned-in text and the CC track at the same (old) timing.
+        expect(
+          captionLayer.startTime,
+          equals(const Duration(milliseconds: 500)),
+        );
+        expect(
+          captionLayer.endTime,
+          equals(const Duration(milliseconds: 2000)),
+        );
+      },
+    );
+
     test('setCaptionCueTimeline mutates meta in-place during drags', () {
       final activeMeta = <String, dynamic>{
         VideoEditorConstants.captionsStateHistoryKey: track.toJson(),

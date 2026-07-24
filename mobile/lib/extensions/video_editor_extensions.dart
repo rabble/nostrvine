@@ -211,20 +211,26 @@ extension VideoEditorExtensions on ProImageEditorState {
     );
 
     if (!skipUpdateHistory) {
+      final meta = {
+        ...stateManager.activeMeta,
+        VideoEditorConstants.captionsStateHistoryKey: updated,
+      };
       if (layerIndex >= 0) {
-        setLayerTimeline(
-          index: layerIndex,
+        // Build the retimed layers list without mutating the current history
+        // entry, then write layers + meta as one atomic undo point — like
+        // [removeCaptionCue]. Pre-mutating the shared layer via
+        // setLayerTimeline(skipUpdateHistory: true) would retime the previous
+        // entry's burn-in layer while leaving its caption meta stale, so undo
+        // would drift the CC track and the burned-in text apart.
+        final layers = [...activeLayers];
+        layers[layerIndex] = activeLayers[layerIndex].copyWith(
           startTime: newStart,
           endTime: newEnd,
-          skipUpdateHistory: true,
         );
+        addHistory(layers: layers, meta: meta);
+      } else {
+        addHistory(meta: meta);
       }
-      addHistory(
-        meta: {
-          ...stateManager.activeMeta,
-          VideoEditorConstants.captionsStateHistoryKey: updated,
-        },
-      );
     } else {
       // Mutate the meta map in-place so the current history entry is updated
       // directly — matching setSoundTimeline's drag behavior.
