@@ -2,6 +2,7 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/config/screenshot_mode.dart';
 import 'package:permissions_service/permissions_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -113,6 +114,13 @@ class CameraPermissionBloc
       name: 'CameraPermissionBloc',
       category: LogCategory.video,
     );
+
+    // Screenshot capture runs stub the camera preview and must never
+    // surface the native permission dialog (it deadlocks XCUITest waits).
+    if (ScreenshotMode.enabled) {
+      emit(const CameraPermissionLoaded(CameraPermissionStatus.authorized));
+      return;
+    }
 
     // Linux has no camera support yet, so permissions are irrelevant and we
     // assume authorized. macOS now goes through the real permission check

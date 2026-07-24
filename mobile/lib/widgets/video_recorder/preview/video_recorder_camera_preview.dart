@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
+import 'package:openvine/config/screenshot_mode.dart';
 import 'package:openvine/utils/platform_helpers.dart';
 import 'package:openvine/widgets/video_recorder/preview/video_recorder_mobile_preview.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_camera_placeholder.dart';
@@ -109,6 +110,14 @@ class _CameraPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Simulators have no camera, so the sensor aspect ratio stays 0 and the
+    // live preview collapses to nothing. The screenshot pipeline substitutes
+    // a full-bleed bundled frame. Compile-time false outside screenshot
+    // builds.
+    if (ScreenshotMode.enabled) {
+      return const VideoRecorderMobilePreview(enableTapToFocus: false);
+    }
+
     final (:sensorAspectRatio, :textureId) = context.select(
       (VideoRecorderBloc b) => (
         sensorAspectRatio: b.state.cameraSensorAspectRatio,

@@ -3,9 +3,11 @@
 
 import 'package:analytics/analytics.dart';
 import 'package:dm_repository/dm_repository.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/config/screenshot_mode.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -58,6 +60,13 @@ part 'app_router_redirect.dart';
 /// when a new route is pushed on top of the feed).
 final routeObserver = RouteObserver<ModalRoute<dynamic>>();
 
+/// Launch-environment route override used by the XCUITest screenshot
+/// pipeline. Returns null (no override) outside screenshot builds.
+String? _screenshotInitialRoute() {
+  if (!ScreenshotMode.enabled || kIsWeb) return null;
+  return ScreenshotMode.initialRoute;
+}
+
 final goRouterProvider = Provider<GoRouter>((ref) {
   // Use ref.read to avoid recreating the router on auth state changes
   final authService = ref.read(authServiceProvider);
@@ -81,8 +90,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
   final router = GoRouter(
     navigatorKey: NavigatorKeys.root,
-    // Start at /welcome - redirect logic will navigate to appropriate route
-    initialLocation: WelcomeScreen.path,
+    // Start at /welcome - redirect logic will navigate to appropriate route.
+    // Screenshot builds (debug-only) may override this from the launch
+    // environment so each XCUITest launch lands on the screen it captures.
+    initialLocation: _screenshotInitialRoute() ?? WelcomeScreen.path,
     observers: _buildRouterObservers(),
     // Refresh router when auth or account-review state changes
     refreshListenable: refreshListenable,

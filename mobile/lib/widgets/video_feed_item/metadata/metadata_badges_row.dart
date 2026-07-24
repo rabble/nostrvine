@@ -7,6 +7,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/utils/proofmode_helpers.dart';
@@ -66,31 +67,35 @@ class _HumanMadeBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      spacing: 4,
-      children: [
-        const DivineIcon(icon: DivineIconName.divineMark),
-        Text.rich(
-          TextSpan(
-            children: [
-              TextSpan(
-                text: context.l10n.metadataBadgeHumanMade,
-                style: VineTheme.titleSmallFont(),
-              ),
-              WidgetSpan(
-                alignment: PlaceholderAlignment.top,
-                child: Text(
-                  'HM',
-                  style: VineTheme.titleSmallFont().copyWith(
-                    fontSize: VineTheme.titleSmallFont().fontSize! / 1.555,
+    return Semantics(
+      identifier: SemanticIds.humanMadeBadge,
+      label: context.l10n.metadataBadgeHumanMade,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 4,
+        children: [
+          const DivineIcon(icon: DivineIconName.divineMark),
+          Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: context.l10n.metadataBadgeHumanMade,
+                  style: VineTheme.titleSmallFont(),
+                ),
+                WidgetSpan(
+                  alignment: PlaceholderAlignment.top,
+                  child: Text(
+                    'HM',
+                    style: VineTheme.titleSmallFont().copyWith(
+                      fontSize: VineTheme.titleSmallFont().fontSize! / 1.555,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

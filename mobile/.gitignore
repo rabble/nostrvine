@@ -82,3 +82,11 @@ test*.mp4
 test/goldens/**/failures/
 packages/*/test/**/failures/
 integration_test/test_bundle.dart
+
+# fastlane screenshot pipeline artifacts (generated per run)
+ios/fastlane/report.xml
+ios/fastlane/test_output/
+ios/fastlane/screenshots/**/*.png
+ios/fastlane/screenshots/**/*.html
+ios/fastlane/README.md
+ios/fastlane/DerivedData/

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
+import 'package:openvine/config/screenshot_mode.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/preferences_providers.dart';
@@ -51,7 +52,10 @@ class RecordButton extends ConsumerWidget {
         state.timerDuration == .off && !state.recorderMode.capturesStills;
     final canStartRecordingOnPressDown =
         isLongPressSupported && startsRecordingOnPressDown;
+    // Screenshot builds run on simulators with no camera hardware; the
+    // button must still render in its enabled (prominent) state there.
     final isEnabled =
+        ScreenshotMode.enabled ||
         (state.canRecord &&
             state.isCameraInitialized &&
             (hasRemainingDuration || !state.recorderMode.hasRecordingLimit)) ||

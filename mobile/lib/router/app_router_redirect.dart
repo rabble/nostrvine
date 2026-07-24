@@ -209,6 +209,21 @@ String? appRouterRedirect(Ref ref, GoRouterState state) {
 
   final location = state.matchedLocation;
   final authState = authService.authState;
+
+  // Screenshot capture runs drive each screen via an imperative
+  // `router.go(screenshotRoute)`. Once authenticated, suppress all redirect
+  // gating (minor-account-review interstitial, empty-following bounce) so
+  // the router honors that route instead of resolving to the home feed.
+  // Only bypass when a capture route is actually set — otherwise fall
+  // through so an authenticated launch with no route still leaves /welcome
+  // for the home feed. Compile-time false outside SCREENSHOT_MODE debug
+  // builds.
+  if (ScreenshotMode.enabled &&
+      authState == AuthState.authenticated &&
+      ScreenshotMode.initialRoute != null) {
+    return null;
+  }
+
   final reviewStatusAsync = ref.read(
     currentMinorAccountReviewStatusProvider,
   );

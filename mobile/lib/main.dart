@@ -39,6 +39,7 @@ import 'package:openvine/blocs/locale/locale_cubit.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/bootstrap/font_licenses.dart';
 import 'package:openvine/config/app_config.dart';
+import 'package:openvine/config/screenshot_mode.dart';
 import 'package:openvine/config/zendesk_config.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/features/app/startup/startup_coordinator.dart';
@@ -103,6 +104,7 @@ import 'package:openvine/services/notification_target_resolver.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/pro_video_editor_log_forwarder.dart';
 import 'package:openvine/services/quick_actions_coordinator.dart';
+import 'package:openvine/services/screenshot_mode_service.dart';
 import 'package:openvine/services/secure_storage_options.dart';
 import 'package:openvine/services/seed_data_preload_service.dart';
 import 'package:openvine/services/seed_media_preload_service.dart';
@@ -1503,6 +1505,27 @@ Future<void> _initializeCoreServices(ProviderContainer container) async {
   );
 
   await restorePendingEmailVerificationOnStartup(container);
+
+  if (ScreenshotMode.enabled) {
+    await buildScreenshotModeService(container).prepare();
+    // The native side wrote the capture route + seed flag into
+    // SharedPreferences at launch (AppDelegate). Load them, seed editor
+    // clips if requested, then drive the router imperatively —
+    // initialLocation resolves before this runs, so it can't be used.
+    ScreenshotMode.loadLaunchConfig(container.read(sharedPreferencesProvider));
+    if (ScreenshotMode.seedClips) {
+      await seedScreenshotEditorClips(container);
+    }
+    final screenshotRoute = ScreenshotMode.initialRoute;
+    if (screenshotRoute != null) {
+      container.read(goRouterProvider).go(screenshotRoute);
+    }
+    Log.info(
+      '[INIT] ✅ Screenshot mode prepared',
+      name: 'Main',
+      category: LogCategory.system,
+    );
+  }
 
   Log.info(
     '[INIT] ✅ Core services initialized',

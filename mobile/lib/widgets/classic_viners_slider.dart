@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
@@ -114,14 +115,17 @@ class _VinerAvatarList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: viners.length,
-      itemBuilder: (context, index) {
-        final viner = viners[index];
-        return _VinerAvatar(viner: viner);
-      },
+    return Semantics(
+      identifier: SemanticIds.classicVinersRow,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: viners.length,
+        itemBuilder: (context, index) {
+          final viner = viners[index];
+          return _VinerAvatar(viner: viner);
+        },
+      ),
     );
   }
 }

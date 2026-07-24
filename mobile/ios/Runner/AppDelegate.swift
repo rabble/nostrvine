@@ -17,8 +17,33 @@ extension FlutterError: @retroactive Error {}
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
     UNUserNotificationCenter.current().delegate = self as UNUserNotificationCenterDelegate
+    #if DEBUG
+    exportScreenshotLaunchConfig()
+    #endif
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
+
+  #if DEBUG
+  // Bridges the App Store screenshot pipeline's launch environment into
+  // shared_preferences, which Dart reads reliably. Dart's Platform.environment
+  // is empty on iOS and a custom method channel races engine init under the
+  // UIScene implicit-engine model, so the launch env (XCUITest
+  // launchEnvironment / simctl SIMCTL_CHILD_) is surfaced via UserDefaults
+  // instead — the "flutter." prefix matches shared_preferences' key space.
+  // DEBUG-only; absent from Release binaries.
+  private func exportScreenshotLaunchConfig() {
+    let env = ProcessInfo.processInfo.environment
+    let defaults = UserDefaults.standard
+    defaults.set(
+      env["SCREENSHOT_INITIAL_ROUTE"] ?? "",
+      forKey: "flutter.screenshot_initial_route"
+    )
+    defaults.set(
+      env["SCREENSHOT_SEED_CLIPS"] ?? "",
+      forKey: "flutter.screenshot_seed_clips"
+    )
+  }
+  #endif
 
   // UIScene lifecycle: Called when Flutter engine is ready
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {

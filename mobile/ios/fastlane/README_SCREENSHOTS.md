@@ -1,0 +1,119 @@
+# App Store screenshot pipeline
+
+Automated, caption-overlaid App Store screenshots for diVine. One command
+captures all 9 screens on both required device sizes and composites the
+marketing captions on top.
+
+## How to run
+
+```bash
+# 1. Generate the Xcode config with SCREENSHOT_MODE (from mobile/, normal shell —
+#    running flutter from inside fastlane breaks SPM resolution).
+cd mobile
+flutter build ios --simulator --debug --config-only --dart-define=SCREENSHOT_MODE=true
+
+# 2. Capture + frame.
+cd ios
+bundle install          # first time only
+bundle exec fastlane screenshots
+```
+
+The `screenshots` lane verifies step 1 ran (it checks `Generated.xcconfig`
+for the `SCREENSHOT_MODE` define) and fails fast with instructions if not.
+
+Output lands in `mobile/ios/fastlane/screenshots/<locale>/` — raw captures
+as `<device>-<name>.png`, framed + captioned versions as
+`*_framed.png`. Nothing is ever uploaded; the `upload_screenshots` lane is
+deliberately disabled.
+
+Partial runs while iterating:
+
+```bash
+bundle exec fastlane capture   # capture only, skip framing
+bundle exec fastlane frame     # re-frame existing captures (fast)
+```
+
+## How it works
+
+- The Fastfile regenerates the Flutter Xcode config with
+  `--dart-define=SCREENSHOT_MODE=true`. That flag (see
+  `lib/config/screenshot_mode.dart`) is compile-time false outside debug
+  builds — no screenshot affordance ships in Release.
+- On launch, screenshot mode creates a **throwaway Nostr account**
+  (fresh key, terms auto-accepted) and follows a fixed set of well-known
+  creators (see `ScreenshotModeService.creatorPubkeysHex`) so the share
+  sheet and feeds have real content. The account persists on the
+  simulator between runs.
+- `ios/DivineUITests/DivineScreenshots.swift` launches the app once per
+  screen with `SCREENSHOT_INITIAL_ROUTE` in the launch environment; the
+  router (screenshot builds only) starts on that route. Every step waits
+  on an accessibility identifier from `lib/constants/semantic_ids.dart` —
+  no sleeps.
+- The camera preview is a bundled still (simulators have no camera); the
+  editor timeline is seeded from bundled clips when
+  `SCREENSHOT_SEED_CLIPS=1` is in the launch environment.
+- `snapshot` overrides the status bar (9:41, full signal/battery) via
+  `override_status_bar` in the `Snapfile`.
+- `frameit` composites device frames, the dark-green background
+  (`#00150D`), and captions in Bricolage Grotesque — headline in brand
+  green `#27C58B` (from `<locale>/keyword.strings`), subhead in white
+  (from `<locale>/title.strings`). `02_creator_post` intentionally has no
+  caption — the creator's on-video caption carries it.
+
+## How to change caption copy
+
+Edit `fastlane/screenshots/<locale>/keyword.strings` (headline) and
+`title.strings` (subhead), keyed by screenshot name:
+
+```
+"04_capture" = "Press record. Make something weird";
+```
+
+Then re-run `bundle exec fastlane frame`. Check legibility at thumbnail
+size: `sips -Z 200 <framed>.png --out /tmp/thumb.png` and eyeball it.
+
+## How to add a locale
+
+1. Add the locale to `languages([...])` in `fastlane/Snapfile`
+   (e.g. `"fr-FR"`, `"de-DE"`, `"pl"`, `"fil"`).
+2. Create `fastlane/screenshots/<locale>/keyword.strings` and
+   `title.strings` with translated captions.
+3. Re-run `bundle exec fastlane screenshots`. snapshot passes the locale
+   to the app, which already ships these translations.
+
+## How to add a new screen
+
+1. Give the target widget a stable identifier: add a constant to
+   `lib/constants/semantic_ids.dart` and wrap the widget in
+   `Semantics(identifier: SemanticIds.yourThing, ...)`.
+2. Add a `testNN...` method to
+   `ios/DivineUITests/DivineScreenshots.swift`: launch with the route,
+   `waitFor(...)` the identifier, then `snapshot("NN_name")`.
+3. Add caption entries to `keyword.strings` / `title.strings` in every
+   locale directory.
+
+## Pinned content (change when needed)
+
+Constants at the top of `DivineScreenshots.swift`:
+
+- `creatorPostVideoId` — Lele Pons' "VINE IS BACK!" event id (02, 09).
+- `verifiedVideoId` — a video whose About sheet shows the Human-Made
+  badge and all four verification checks (03).
+- `profileNpub` — the profile captured for 07.
+
+## Environment / credentials
+
+None required for capture. The throwaway account is generated at runtime
+and never leaves the simulator; no nsec or App Store Connect key is read
+or stored. If `upload_screenshots` is ever enabled, provide an App Store
+Connect API key via `APP_STORE_CONNECT_API_KEY_*` env vars — never commit
+credentials.
+
+## Notes
+
+- Content screens (01, 02, 05, 07, 09) render live production data —
+  loop counts and thumbnails will differ between runs; the framing is
+  deterministic.
+- Both simulators (`iPhone 16 Pro Max`, `iPhone 11 Pro Max`) must exist;
+  create them with `xcrun simctl create` if `snapshot` reports a missing
+  device.

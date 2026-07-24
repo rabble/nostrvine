@@ -1,0 +1,5 @@
+# Fastlane tooling for the App Store screenshot pipeline.
+# Usage: `bundle install` then `bundle exec fastlane screenshots`.
+source 'https://rubygems.org'
+
+gem 'fastlane'

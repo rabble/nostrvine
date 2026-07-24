@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' show Event;
+import 'package:openvine/config/screenshot_mode.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/auth/nostr_identity.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -336,6 +337,10 @@ class PushNotificationSessionCoordinator {
     if (current.authorizationStatus != AuthorizationStatus.notDetermined) {
       return current;
     }
+
+    // Screenshot capture runs must never surface the iOS permission
+    // dialog — it deadlocks the XCUITest waits.
+    if (ScreenshotMode.enabled) return current;
 
     final existingRequest = _permissionRequestFuture;
     if (existingRequest != null) return existingRequest;

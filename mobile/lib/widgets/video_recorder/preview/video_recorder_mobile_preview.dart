@@ -2,6 +2,7 @@ import 'package:divine_camera/divine_camera.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
+import 'package:openvine/config/screenshot_mode.dart';
 
 /// Camera preview widget for mobile platforms with touch gestures.
 class VideoRecorderMobilePreview extends StatelessWidget {
@@ -11,6 +12,13 @@ class VideoRecorderMobilePreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Simulators have no camera hardware, so the App Store screenshot
+    // pipeline (debug-only builds) substitutes a bundled frame for the
+    // live viewfinder. Compile-time false outside SCREENSHOT_MODE builds.
+    if (ScreenshotMode.enabled) {
+      return const _ScreenshotViewfinderStandIn();
+    }
+
     final bloc = context.read<VideoRecorderBloc>();
 
     return CameraPreviewWidget(
@@ -25,6 +33,25 @@ class VideoRecorderMobilePreview extends StatelessWidget {
             }
           : null,
       loadingWidget: Container(color: const Color(0xFF141414)),
+    );
+  }
+}
+
+/// Full-bleed bundled frame shown in place of the live camera preview
+/// during screenshot capture runs on the simulator.
+class _ScreenshotViewfinderStandIn extends StatelessWidget {
+  const _ScreenshotViewfinderStandIn();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox.expand(
+      child: Image(
+        image: AssetImage(
+          'assets/seed_media/thumbnails/'
+          '606486ed7079b4b2614e9ca3e0f46c1c9a4a39d52c90dd25a9e51d1b7cf96b33.jpg',
+        ),
+        fit: BoxFit.cover,
+      ),
     );
   }
 }

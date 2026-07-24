@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
@@ -361,51 +362,56 @@ class _ClassicVideoItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => onVideoTap(videos, index),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(4),
-        child: Stack(
-          children: [
-            VideoThumbnailWidget(video: video),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: Container(
-                padding: const EdgeInsets.only(
-                  left: 8,
-                  right: 8,
-                  bottom: 6,
-                  top: 24,
-                ),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [VineTheme.transparent, VineTheme.scrim80],
+    return Semantics(
+      identifier: SemanticIds.classicVideoTile(index),
+      button: true,
+      label: video.displayTitle,
+      child: GestureDetector(
+        onTap: () => onVideoTap(videos, index),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: Stack(
+            children: [
+              VideoThumbnailWidget(video: video),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  padding: const EdgeInsets.only(
+                    left: 8,
+                    right: 8,
+                    bottom: 6,
+                    top: 24,
                   ),
-                ),
-                child: UserName.fromPubKey(
-                  video.pubkey,
-                  embeddedName: video.displayAuthorName,
-                  maxLines: 1,
-                  style: const TextStyle(
-                    color: VineTheme.whiteText,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    shadows: [
-                      Shadow(
-                        offset: Offset(0, 1),
-                        blurRadius: 3,
-                        color: VineTheme.scrim50,
-                      ),
-                    ],
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [VineTheme.transparent, VineTheme.scrim80],
+                    ),
+                  ),
+                  child: UserName.fromPubKey(
+                    video.pubkey,
+                    embeddedName: video.displayAuthorName,
+                    maxLines: 1,
+                    style: const TextStyle(
+                      color: VineTheme.whiteText,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      shadows: [
+                        Shadow(
+                          offset: Offset(0, 1),
+                          blurRadius: 3,
+                          color: VineTheme.scrim50,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

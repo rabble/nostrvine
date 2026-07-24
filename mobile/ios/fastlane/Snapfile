@@ -1,0 +1,50 @@
+# Snapfile — configuration for `fastlane snapshot`.
+# Docs: https://docs.fastlane.tools/actions/snapshot/
+
+# Both sizes App Store Connect requires (6.9" and 6.5").
+devices([
+  "iPhone 16 Pro Max",
+  "iPhone 11 Pro Max",
+])
+
+# Add locales here to produce localized screenshot sets (the app already
+# ships these locales): e.g. "fr-FR", "de-DE", "pl", "fil".
+languages([
+  "en-US",
+])
+
+workspace("Runner.xcworkspace")
+scheme("DivineUITests")
+
+# The scheme's Flutter "prepare" pre-action regenerates
+# FlutterGeneratedPluginSwiftPackage, defaulting its SPM platform to iOS 13.0
+# when IPHONEOS_DEPLOYMENT_TARGET is absent from the build env — which then
+# fails to satisfy plugins that require iOS 15/16. Pin it so the regenerated
+# package targets iOS 16 to match the Podfile / Runner target.
+xcargs("IPHONEOS_DEPLOYMENT_TARGET=16.0")
+
+output_directory("./fastlane/screenshots")
+clear_previous_screenshots(true)
+
+# Reuse a stable derived-data dir so repeat runs build incrementally.
+# Without this, snapshot uses a fresh temp dir each run and does a full
+# clean compile + SPM re-resolve every time (~45 min); incremental is minutes.
+derived_data_path("./fastlane/DerivedData")
+
+# Never `clean` — that would defeat the incremental reuse above.
+clean(false)
+
+# 9:41, full signal, full battery — required for App Store listing shots.
+override_status_bar(true)
+
+# The app talks to production relays during capture; serial simulators keep
+# the network + first-launch account seeding deterministic.
+concurrent_simulators(false)
+
+# The throwaway screenshot account persists between runs on the same
+# simulator; erasing would just slow every run down with a re-signup.
+erase_simulator(false)
+
+dark_mode(true)
+stop_after_first_error(true)
+number_of_retries(1)

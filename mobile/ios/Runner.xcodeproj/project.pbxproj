@@ -11,21 +11,24 @@
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
 		38FD4E59291C9572AF216296 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3B2A13AD2D9A576685353158 /* Pods_Runner.framework */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
+		3D296F1CD52EEC353354B505 /* SnapshotHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFDB7ACB68DA1546A0CCA26A /* SnapshotHelper.swift */; };
+		3EB13B9046685257BDD640FB /* NostrBridgeAttestationPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06671AD11C80317FA3B1799D /* NostrBridgeAttestationPlugin.swift */; };
+		4538A593ED259ADE95BE0F82 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C9F614F010AAECBECA4DA109 /* Foundation.framework */; };
 		4F86E81FB269DE72E2131EBC /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E86217C65C2A7ED5885FDC2 /* NotificationService.swift */; };
 		62ACD9D0D737E6772C26E9DF /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 8CE07D4A15ABF6932C18302C /* GoogleService-Info.plist */; };
 		66F22673A01C965F74615E46 /* BuildFile in Frameworks */ = {isa = PBXBuildFile; };
 		6E3EAE672F3747792842A5A3 /* NotificationServiceExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = C696D98D09FD161565BF6483 /* NotificationServiceExtension.appex */; };
 		6FDAD046102CCA6028B8B9A3 /* BuildFile in Frameworks */ = {isa = PBXBuildFile; };
-		D1A000000000000000000001 /* CameraQuickActionWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A000000000000000000005 /* CameraQuickActionWidget.swift */; };
-		D1A000000000000000000002 /* CameraQuickActionWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = D1A000000000000000000008 /* CameraQuickActionWidget.appex */; };
-		D1A000000000000000000003 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = D1A00000000000000000001B /* Localizable.strings */; };
-		3EB13B9046685257BDD640FB /* NostrBridgeAttestationPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06671AD11C80317FA3B1799D /* NostrBridgeAttestationPlugin.swift */; };
+		7448569019F99AE3960D617E /* DivineScreenshots.swift in Sources */ = {isa = PBXBuildFile; fileRef = B380C2DEDB76FE1B1BDC0161 /* DivineScreenshots.swift */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		BCA7A887EC3BDE698127BCB5 /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 037A7FC0D83198C29E787FD1 /* Pods_RunnerTests.framework */; };
+		D1A000000000000000000001 /* CameraQuickActionWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A000000000000000000005 /* CameraQuickActionWidget.swift */; };
+		D1A000000000000000000002 /* CameraQuickActionWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = D1A000000000000000000008 /* CameraQuickActionWidget.appex */; };
+		D1A000000000000000000003 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = D1A00000000000000000001B /* Localizable.strings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -36,19 +39,26 @@
 			remoteGlobalIDString = 6160B2963EF9AC3D27CA3F2F;
 			remoteInfo = NotificationServiceExtension;
 		};
-		D1A000000000000000000004 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = D1A000000000000000000020;
-			remoteInfo = CameraQuickActionWidget;
-		};
 		331C8085294A63A400263BE5 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 97C146ED1CF9000F007C117D;
 			remoteInfo = Runner;
+		};
+		5A24D411408084DCC60D9B30 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 97C146ED1CF9000F007C117D;
+			remoteInfo = Runner;
+		};
+		D1A000000000000000000004 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D1A000000000000000000020;
+			remoteInfo = CameraQuickActionWidget;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -79,6 +89,7 @@
 
 /* Begin PBXFileReference section */
 		037A7FC0D83198C29E787FD1 /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		06671AD11C80317FA3B1799D /* NostrBridgeAttestationPlugin.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NostrBridgeAttestationPlugin.swift; sourceTree = "<group>"; };
 		0F9089E8B21DD51EA95A008F /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
@@ -93,7 +104,6 @@
 		431E99C1821481F33B9E053C /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
 		5E86217C65C2A7ED5885FDC2 /* NotificationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
-		06671AD11C80317FA3B1799D /* NostrBridgeAttestationPlugin.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NostrBridgeAttestationPlugin.swift; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7724038FFA9E1FC6C1CB27D0 /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
 		78E0A7A72DC9AD7400C4905E /* FlutterGeneratedPluginSwiftPackage */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = FlutterGeneratedPluginSwiftPackage; path = Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage; sourceTree = "<group>"; };
@@ -108,7 +118,10 @@
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		97C147251CF9000F007C117E /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
+		B380C2DEDB76FE1B1BDC0161 /* DivineScreenshots.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DivineScreenshots.swift; sourceTree = "<group>"; };
+		C16A69932FC765BCE0EA69F0 /* DivineUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DivineUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C696D98D09FD161565BF6483 /* NotificationServiceExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = NotificationServiceExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		C9F614F010AAECBECA4DA109 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		D1A000000000000000000005 /* CameraQuickActionWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CameraQuickActionWidget.swift; sourceTree = "<group>"; };
 		D1A000000000000000000006 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		D1A000000000000000000007 /* CameraQuickActionWidget.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = CameraQuickActionWidget.entitlements; sourceTree = "<group>"; };
@@ -131,9 +144,18 @@
 		D1A000000000000000000018 /* ro */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ro; path = ro.lproj/Localizable.strings; sourceTree = "<group>"; };
 		D1A000000000000000000019 /* sv */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = sv; path = sv.lproj/Localizable.strings; sourceTree = "<group>"; };
 		D1A00000000000000000001A /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/Localizable.strings; sourceTree = "<group>"; };
+		FFDB7ACB68DA1546A0CCA26A /* SnapshotHelper.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SnapshotHelper.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		3788C3CA3C763C24340085DC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4538A593ED259ADE95BE0F82 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		59E15513EBF285B360FA62B0 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -170,6 +192,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		27D5A01E0DFB594EB489DDCD /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				C9F614F010AAECBECA4DA109 /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
 		331C8082294A63A400263BE5 /* RunnerTests */ = {
 			isa = PBXGroup;
 			children = (
@@ -183,6 +213,7 @@
 			children = (
 				3B2A13AD2D9A576685353158 /* Pods_Runner.framework */,
 				037A7FC0D83198C29E787FD1 /* Pods_RunnerTests.framework */,
+				27D5A01E0DFB594EB489DDCD /* iOS */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -211,6 +242,7 @@
 				5DDB07F187303E5F682EAAB3 /* Frameworks */,
 				D848421FEE281E0D22EAD079 /* NotificationServiceExtension */,
 				D1A00000000000000000001C /* CameraQuickActionWidget */,
+				E6E5343B49E34738EBCF225C /* DivineUITests */,
 			);
 			sourceTree = "<group>";
 		};
@@ -221,6 +253,7 @@
 				331C8081294A63A400263BE5 /* RunnerTests.xctest */,
 				C696D98D09FD161565BF6483 /* NotificationServiceExtension.appex */,
 				D1A000000000000000000008 /* CameraQuickActionWidget.appex */,
+				C16A69932FC765BCE0EA69F0 /* DivineUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -240,6 +273,18 @@
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 			);
 			path = Runner;
+			sourceTree = "<group>";
+		};
+		D1A00000000000000000001C /* CameraQuickActionWidget */ = {
+			isa = PBXGroup;
+			children = (
+				D1A000000000000000000005 /* CameraQuickActionWidget.swift */,
+				D1A00000000000000000001B /* Localizable.strings */,
+				D1A000000000000000000006 /* Info.plist */,
+				D1A000000000000000000007 /* CameraQuickActionWidget.entitlements */,
+			);
+			name = CameraQuickActionWidget;
+			path = CameraQuickActionWidget;
 			sourceTree = "<group>";
 		};
 		D80FBB93F86F62AD04D673A7 /* Pods */ = {
@@ -266,16 +311,14 @@
 			path = NotificationServiceExtension;
 			sourceTree = "<group>";
 		};
-		D1A00000000000000000001C /* CameraQuickActionWidget */ = {
+		E6E5343B49E34738EBCF225C /* DivineUITests */ = {
 			isa = PBXGroup;
 			children = (
-				D1A000000000000000000005 /* CameraQuickActionWidget.swift */,
-				D1A00000000000000000001B /* Localizable.strings */,
-				D1A000000000000000000006 /* Info.plist */,
-				D1A000000000000000000007 /* CameraQuickActionWidget.entitlements */,
+				B380C2DEDB76FE1B1BDC0161 /* DivineScreenshots.swift */,
+				FFDB7ACB68DA1546A0CCA26A /* SnapshotHelper.swift */,
 			);
-			name = CameraQuickActionWidget;
-			path = CameraQuickActionWidget;
+			name = DivineUITests;
+			path = DivineUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -317,22 +360,23 @@
 			productReference = C696D98D09FD161565BF6483 /* NotificationServiceExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
-		D1A000000000000000000020 /* CameraQuickActionWidget */ = {
+		9519587FDFEF94B3660DD6CF /* DivineUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = D1A000000000000000000022 /* Build configuration list for PBXNativeTarget "CameraQuickActionWidget" */;
+			buildConfigurationList = 775851D0A3CD236BAA2D2853 /* Build configuration list for PBXNativeTarget "DivineUITests" */;
 			buildPhases = (
-				D1A00000000000000000001F /* Sources */,
-				D1A00000000000000000001D /* Frameworks */,
-				D1A00000000000000000001E /* Resources */,
+				2CA0BEF3ED6048C2463F7927 /* Sources */,
+				3788C3CA3C763C24340085DC /* Frameworks */,
+				ED0CF9D069F82098C15A5A29 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				AFA9F531ABA983E2C7A125F3 /* PBXTargetDependency */,
 			);
-			name = CameraQuickActionWidget;
-			productName = CameraQuickActionWidget;
-			productReference = D1A000000000000000000008 /* CameraQuickActionWidget.appex */;
-			productType = "com.apple.product-type.app-extension";
+			name = DivineUITests;
+			productName = DivineUITests;
+			productReference = C16A69932FC765BCE0EA69F0 /* DivineUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 		97C146ED1CF9000F007C117D /* Runner */ = {
 			isa = PBXNativeTarget;
@@ -363,6 +407,23 @@
 			productReference = 97C146EE1CF9000F007C117D /* Runner.app */;
 			productType = "com.apple.product-type.application";
 		};
+		D1A000000000000000000020 /* CameraQuickActionWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D1A000000000000000000022 /* Build configuration list for PBXNativeTarget "CameraQuickActionWidget" */;
+			buildPhases = (
+				D1A00000000000000000001F /* Sources */,
+				D1A00000000000000000001D /* Frameworks */,
+				D1A00000000000000000001E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CameraQuickActionWidget;
+			productName = CameraQuickActionWidget;
+			productReference = D1A000000000000000000008 /* CameraQuickActionWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -377,12 +438,12 @@
 						CreatedOnToolsVersion = 14.0;
 						TestTargetID = 97C146ED1CF9000F007C117D;
 					};
-					D1A000000000000000000020 = {
-						CreatedOnToolsVersion = 15.0;
-					};
 					97C146ED1CF9000F007C117D = {
 						CreatedOnToolsVersion = 7.3.1;
 						LastSwiftMigration = 1100;
+					};
+					D1A000000000000000000020 = {
+						CreatedOnToolsVersion = 15.0;
 					};
 				};
 			};
@@ -423,6 +484,7 @@
 				331C8080294A63A400263BE5 /* RunnerTests */,
 				6160B2963EF9AC3D27CA3F2F /* NotificationServiceExtension */,
 				D1A000000000000000000020 /* CameraQuickActionWidget */,
+				9519587FDFEF94B3660DD6CF /* DivineUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -442,14 +504,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		D1A00000000000000000001E /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				D1A000000000000000000003 /* Localizable.strings in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		97C146EC1CF9000F007C117D /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -459,6 +513,21 @@
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
 				62ACD9D0D737E6772C26E9DF /* GoogleService-Info.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D1A00000000000000000001E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D1A000000000000000000003 /* Localizable.strings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		ED0CF9D069F82098C15A5A29 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -577,6 +646,15 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		2CA0BEF3ED6048C2463F7927 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7448569019F99AE3960D617E /* DivineScreenshots.swift in Sources */,
+				3D296F1CD52EEC353354B505 /* SnapshotHelper.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		331C807D294A63A400263BE5 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -595,19 +673,19 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		F5E89B4CEF72BFBBA421856E /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				4F86E81FB269DE72E2131EBC /* NotificationService.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		D1A00000000000000000001F /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				D1A000000000000000000001 /* CameraQuickActionWidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F5E89B4CEF72BFBBA421856E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4F86E81FB269DE72E2131EBC /* NotificationService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -618,6 +696,12 @@
 			isa = PBXTargetDependency;
 			target = 97C146ED1CF9000F007C117D /* Runner */;
 			targetProxy = 331C8085294A63A400263BE5 /* PBXContainerItemProxy */;
+		};
+		AFA9F531ABA983E2C7A125F3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = Runner;
+			target = 97C146ED1CF9000F007C117D /* Runner */;
+			targetProxy = 5A24D411408084DCC60D9B30 /* PBXContainerItemProxy */;
 		};
 		C436A121E3E9C7CE79C8ACF7 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -678,6 +762,23 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		0BC0507D5E3CE82900357116 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = Runner;
+			};
+			name = Debug;
+		};
 		249021D3217E4FDB00AE95B9 /* Profile */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -822,8 +923,8 @@
 				CODE_SIGN_ENTITLEMENTS = NotificationServiceExtension/NotificationServiceExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 506;
-				DEVELOPMENT_TEAM = GZCZBKH7MY;
 				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = GZCZBKH7MY;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = NotificationServiceExtension/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -849,8 +950,8 @@
 				CODE_SIGN_ENTITLEMENTS = NotificationServiceExtension/NotificationServiceExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 506;
-				DEVELOPMENT_TEAM = GZCZBKH7MY;
 				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = GZCZBKH7MY;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = NotificationServiceExtension/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -1007,6 +1108,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -1051,8 +1153,8 @@
 				CODE_SIGN_ENTITLEMENTS = NotificationServiceExtension/NotificationServiceExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 506;
-				DEVELOPMENT_TEAM = GZCZBKH7MY;
 				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = GZCZBKH7MY;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = NotificationServiceExtension/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -1071,6 +1173,24 @@
 			};
 			name = Release;
 		};
+		CF7F20E6143507C66B284ADD /* Profile */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = Runner;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Profile;
+		};
 		D1A000000000000000000023 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1079,8 +1199,8 @@
 				CODE_SIGN_ENTITLEMENTS = CameraQuickActionWidget/CameraQuickActionWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 506;
-				DEVELOPMENT_TEAM = GZCZBKH7MY;
 				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = GZCZBKH7MY;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = CameraQuickActionWidget/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -1108,8 +1228,8 @@
 				CODE_SIGN_ENTITLEMENTS = CameraQuickActionWidget/CameraQuickActionWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 506;
-				DEVELOPMENT_TEAM = GZCZBKH7MY;
 				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = GZCZBKH7MY;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = CameraQuickActionWidget/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -1137,8 +1257,8 @@
 				CODE_SIGN_ENTITLEMENTS = CameraQuickActionWidget/CameraQuickActionWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 506;
-				DEVELOPMENT_TEAM = GZCZBKH7MY;
 				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = GZCZBKH7MY;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = CameraQuickActionWidget/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -1157,6 +1277,24 @@
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Profile;
+		};
+		D5C99739AAD4B4594BA82E2F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = Runner;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
@@ -1181,12 +1319,12 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		D1A000000000000000000022 /* Build configuration list for PBXNativeTarget "CameraQuickActionWidget" */ = {
+		775851D0A3CD236BAA2D2853 /* Build configuration list for PBXNativeTarget "DivineUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				D1A000000000000000000024 /* Release */,
-				D1A000000000000000000023 /* Debug */,
-				D1A000000000000000000025 /* Profile */,
+				D5C99739AAD4B4594BA82E2F /* Release */,
+				0BC0507D5E3CE82900357116 /* Debug */,
+				CF7F20E6143507C66B284ADD /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -1207,6 +1345,16 @@
 				97C147061CF9000F007C117D /* Debug */,
 				97C147071CF9000F007C117D /* Release */,
 				249021D4217E4FDB00AE95B9 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D1A000000000000000000022 /* Build configuration list for PBXNativeTarget "CameraQuickActionWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D1A000000000000000000024 /* Release */,
+				D1A000000000000000000023 /* Debug */,
+				D1A000000000000000000025 /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

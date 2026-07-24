@@ -6,6 +6,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:openvine/config/screenshot_mode.dart';
 import 'package:openvine/services/notification_helpers.dart'
     show NotificationPayloadKeys;
 import 'package:unified_logger/unified_logger.dart';
@@ -211,6 +212,18 @@ class NotificationService {
   /// Ensure notification permissions are granted
   /// Public method to request permissions explicitly
   Future<void> ensurePermission() async {
+    // Screenshot capture runs must never surface the iOS permission
+    // dialog — XCUITest interruption monitors don't fire on bare
+    // waitForExistence, so the alert would deadlock every capture.
+    if (ScreenshotMode.enabled) {
+      Log.debug(
+        'Screenshot mode: skipping notification permission prompt',
+        name: 'NotificationService',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
     // Skip if already granted
     if (_permissionsGranted) {
       Log.debug(

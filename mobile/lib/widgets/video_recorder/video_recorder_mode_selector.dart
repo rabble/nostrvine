@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 
 /// Horizontal picker-wheel mode selector.
@@ -251,6 +252,7 @@ class _VideoRecorderModeSelectorWheelState
                       return SizedBox(
                         width: itemWidths[i],
                         child: Semantics(
+                          identifier: SemanticIds.cameraMode(modes[i].name),
                           label: modes[i].label,
                           selected: isSelected,
                           button: true,

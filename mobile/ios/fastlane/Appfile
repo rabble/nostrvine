@@ -1,0 +1,4 @@
+app_identifier("co.openvine.app")
+# App Store Connect credentials are intentionally NOT stored here.
+# The upload lane is disabled; when it is ever enabled, provide
+# FASTLANE_APPLE_ID / App Store Connect API key via environment variables.

@@ -1,0 +1,83 @@
+require "base64"
+
+# Fastfile — App Store screenshot pipeline for diVine.
+# Run from mobile/ios: `bundle exec fastlane screenshots`
+# See fastlane/README_SCREENSHOTS.md for the full guide.
+
+default_platform(:ios)
+
+platform :ios do
+  desc "Capture all App Store screenshots and frame them with captions"
+  lane :screenshots do
+    bump_xcodebuild_settings_timeout
+    ensure_flutter_config
+    snapshot
+    frameit(path: "./fastlane/screenshots")
+  end
+
+  desc "Capture only (no framing) — useful while iterating on the UI test"
+  lane :capture do
+    bump_xcodebuild_settings_timeout
+    ensure_flutter_config
+    snapshot
+  end
+
+  desc "Frame only — re-runs caption/frame compositing on existing captures"
+  lane :frame do
+    frameit(path: "./fastlane/screenshots")
+  end
+
+  desc "Upload framed screenshots to App Store Connect (DISABLED by default)"
+  lane :upload_screenshots do
+    # Deliberately disabled: this pipeline must never push to App Store
+    # Connect without an explicit human decision. To enable, remove the
+    # user_error! line, provide an App Store Connect API key via the
+    # APP_STORE_CONNECT_API_KEY_* environment variables, and review the
+    # deliver preview before confirming.
+    UI.user_error!(
+      "Uploading is intentionally disabled. " \
+      "Edit the upload_screenshots lane in fastlane/Fastfile to enable it."
+    )
+    # deliver(
+    #   app_identifier: "co.openvine.app",
+    #   skip_binary_upload: true,
+    #   skip_metadata: true,
+    #   skip_app_version_update: true,
+    #   screenshots_path: "./fastlane/screenshots",
+    #   overwrite_screenshots: true,
+    # )
+  end
+
+  desc "Give xcodebuild -showBuildSettings room for slow SPM resolution"
+  private_lane :bump_xcodebuild_settings_timeout do
+    # Default base timeout is 3s; SPM dependency resolution on this project
+    # takes far longer, so snapshot's showBuildSettings probe times out.
+    ENV["FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT"] = "180"
+    ENV["FASTLANE_XCODEBUILD_SETTINGS_RETRIES"] = "5"
+  end
+
+  desc "Verify the Flutter Xcode config was generated with SCREENSHOT_MODE"
+  private_lane :ensure_flutter_config do
+    # snapshot's `xcodebuild build test` reuses ios/Flutter/Generated.xcconfig,
+    # which must carry the SCREENSHOT_MODE dart-define. Running `flutter build`
+    # from inside fastlane is unreliable (its env breaks SPM resolution, a
+    # scrubbed env hangs), so generate the config in a normal shell first:
+    #
+    #   cd mobile && flutter build ios --simulator --debug --config-only \
+    #     --dart-define=SCREENSHOT_MODE=true
+    #
+    # This lane just checks the marker is present and fails fast otherwise.
+    config = File.expand_path("../Flutter/Generated.xcconfig", __dir__)
+    defines = File.read(config)[/DART_DEFINES=(.*)/, 1].to_s
+    ok = defines.split(",").any? do |b64|
+      Base64.decode64(b64) == "SCREENSHOT_MODE=true"
+    end
+    unless ok
+      UI.user_error!(
+        "Generated.xcconfig is missing SCREENSHOT_MODE. Run first:\n" \
+        "  cd mobile && flutter build ios --simulator --debug " \
+        "--config-only --dart-define=SCREENSHOT_MODE=true"
+      )
+    end
+  end
+end
