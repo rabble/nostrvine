@@ -45,6 +45,34 @@ class DmSyncState {
   /// under "Message requests".
   static const int currentDrainVersion = 3;
 
+  /// Maximum clock skew, in seconds, tolerated on a self-asserted DM
+  /// `created_at` before it is treated as implausible.
+  ///
+  /// A NIP-59 inner rumor is unsigned — only the kind-13 seal and kind-1059
+  /// wrap are cryptographically bound — so its `created_at` is chosen freely
+  /// by whoever sent the wrap. Unbounded, one rumor stamped far in the future
+  /// permanently blackholes the inbox: it advances [newestSyncedAt], and
+  /// `DmRepository.startListening` derives the live subscription's `since:`
+  /// from it, so no relay ever returns anything again.
+  ///
+  /// One hour is deliberately far below the 2-day `since:` overlap window: a
+  /// timestamp saturating this allowance still yields
+  /// `since = (now + 1h) - 2d = now - 47h`, comfortably in the past, so even
+  /// the maximum accepted skew cannot push the cursor past now. It also
+  /// absorbs any realistic consumer-device clock error.
+  static const int maxFutureSkewSeconds = 3600;
+
+  /// Lower bound for a plausible Nostr `created_at` (2020-01-01T00:00:00Z).
+  ///
+  /// Guards the opposite end of the same unauthenticated field. The history
+  /// drain seeds its `until:` cursor from [oldestSyncedAt]; a rumor stamped
+  /// below the outer floor of all relay-retained history makes the first page
+  /// come back empty, which the drain reads as exhaustion and latches
+  /// `historyDrainComplete` with zero recovery. Nostr did not exist before
+  /// this instant, so no legitimate DM predates it and real history is never
+  /// truncated.
+  static const int minPlausibleCreatedAt = 1577836800;
+
   /// Returns the newest (highest) `created_at` unix timestamp we have
   /// successfully processed for [pubkey], or `null` if nothing has been
   /// processed yet.
@@ -59,15 +87,71 @@ class DmSyncState {
   /// successfully processed for [pubkey]. Advances `newestSyncedAt`
   /// upward and `oldestSyncedAt` downward monotonically — older events
   /// never roll back `newest`, and newer events never roll back `oldest`.
+  ///
+  /// [createdAt] is caller-supplied and, for a NIP-59 rumor, unauthenticated,
+  /// so each boundary is bounded independently before it is persisted: the
+  /// newest is capped at now ([maxFutureSkewSeconds]) and the oldest floored
+  /// at [minPlausibleCreatedAt]. The two bounds are applied separately rather
+  /// than clamping one value, because they defend two different failure modes
+  /// and must not interact on a device whose own clock is wrong.
+  ///
+  /// This is defence in depth: `DmRepository` already refuses to persist a
+  /// rumor dated beyond the skew allowance, so a well-behaved caller never
+  /// reaches the cap here.
   Future<void> recordSeen(String pubkey, {required int createdAt}) async {
+    final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+    final cappedNewest = createdAt > nowSec + maxFutureSkewSeconds
+        ? nowSec
+        : createdAt;
     final newest = newestSyncedAt(pubkey);
-    if (newest == null || createdAt > newest) {
-      await _prefs.setInt('$_newestPrefix$pubkey', createdAt);
+    if (newest == null || cappedNewest > newest) {
+      await _prefs.setInt('$_newestPrefix$pubkey', cappedNewest);
     }
+
+    final flooredOldest = createdAt < minPlausibleCreatedAt
+        ? minPlausibleCreatedAt
+        : createdAt;
     final oldest = oldestSyncedAt(pubkey);
-    if (oldest == null || createdAt < oldest) {
-      await _prefs.setInt('$_oldestPrefix$pubkey', createdAt);
+    if (oldest == null || flooredOldest < oldest) {
+      await _prefs.setInt('$_oldestPrefix$pubkey', flooredOldest);
     }
+  }
+
+  /// Repairs sync boundaries left out of bounds by an earlier build for
+  /// [pubkey], and re-arms the history drain when it finds any.
+  ///
+  /// The guards in [recordSeen] only protect writes made from this build
+  /// onward. An install that already persisted a poisoned boundary stays
+  /// blackholed forever otherwise — the failure is silent, so the user has no
+  /// way to attribute it and no recovery short of a reinstall or account
+  /// switch. Called once per subscription start, before the `since:` filter
+  /// is derived.
+  ///
+  /// Clearing the completion flag and resume cursor matches
+  /// [upgradeDrainVersionIfNeeded]: while the poisoned boundary was in place
+  /// the subscription filtered out real history, so the one-time drain must
+  /// run again to recover whatever the relays still hold.
+  Future<void> repairPoisonedBoundaries(String pubkey) async {
+    final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    var repaired = false;
+
+    final newest = newestSyncedAt(pubkey);
+    if (newest != null && newest > nowSec + maxFutureSkewSeconds) {
+      await _prefs.setInt('$_newestPrefix$pubkey', nowSec);
+      repaired = true;
+    }
+
+    final oldest = oldestSyncedAt(pubkey);
+    if (oldest != null && oldest < minPlausibleCreatedAt) {
+      await _prefs.setInt('$_oldestPrefix$pubkey', minPlausibleCreatedAt);
+      repaired = true;
+    }
+
+    if (!repaired) return;
+
+    await _prefs.remove('$_drainCompletePrefix$pubkey');
+    await _prefs.remove('$_drainCursorPrefix$pubkey');
   }
 
   /// Whether the one-time full-history drain has completed for [pubkey].

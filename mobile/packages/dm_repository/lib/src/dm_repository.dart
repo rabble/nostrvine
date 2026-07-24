@@ -755,44 +755,52 @@ class DmRepository {
     _reconnectTimer = null;
     if (_giftWrapSubscription != null || _subscribing || !isInitialized) return;
 
-    // Count-based windowing: first open fetches a bounded backlog
-    // (limit:50), later opens fetch only recent events via a `since:`
-    // filter. The 2-day overlap absorbs NIP-17 randomized created_at
-    // jitter (gift wraps tweak their outer created_at within a ~2 day
-    // window). See docs/plans/2026-04-05-dm-scaling-fix-design.md.
-    final newest = _syncState?.newestSyncedAt(_userPubkey);
-    final isFirstOpen = newest == null;
-    final filter = nostr_filter.Filter(
-      kinds: [
-        EventKind.giftWrap,
-        EventKind.directMessage,
-        EventKind.eventDeletion,
-      ],
-      p: [_userPubkey],
-      limit: isFirstOpen ? 50 : null,
-      since: isFirstOpen ? null : (newest - 2 * 86400),
-    );
-
-    Log.info(
-      'Starting DM subscription for pubkey $_userPubkey '
-      '(connected relays: '
-      '${_nostrClient.connectedRelayCount}/'
-      '${_nostrClient.configuredRelayCount}, '
-      'filter: ${filter.toJson()})',
-      category: LogCategory.system,
-    );
-
-    // Resolve the user's OWN kind-10050 inbox relays and target the live
-    // subscription at them — as BOTH tempRelays (to add connections outside
-    // the default pool) AND targetRelays — so gift wraps a NIP-17 sender
-    // delivered to relays outside divine's default pool are read. A `null`
-    // result (no kind-10050 / resolve failure) preserves the prior
-    // default-pool behavior. Memoized per session, so the resolve (bounded by
-    // the queryEvents ~5s timeout) only delays the FIRST open. `_subscribing`
-    // guards the await window against a concurrent startListening opening a
-    // duplicate subscription. See #4974.
+    // Claim the subscribe slot BEFORE the first await. `_subscribing` is what
+    // stops a concurrent startListening() from opening a duplicate
+    // subscription, so every suspension point below must be inside it — the
+    // re-entrancy check above is only sound while the code between it and this
+    // assignment stays synchronous. The `finally` below always releases it.
     _subscribing = true;
     try {
+      // Heal boundaries a pre-guard build may have poisoned with an
+      // unauthenticated rumor timestamp before deriving `since:` from them —
+      // otherwise an already-affected install stays silently blackholed.
+      await _syncState?.repairPoisonedBoundaries(_userPubkey);
+
+      // Count-based windowing: first open fetches a bounded backlog
+      // (limit:50), later opens fetch only recent events via a `since:`
+      // filter. The 2-day overlap absorbs NIP-17 randomized created_at
+      // jitter (gift wraps tweak their outer created_at within a ~2 day
+      // window). See docs/plans/2026-04-05-dm-scaling-fix-design.md.
+      final newest = _syncState?.newestSyncedAt(_userPubkey);
+      final isFirstOpen = newest == null;
+      final filter = nostr_filter.Filter(
+        kinds: [
+          EventKind.giftWrap,
+          EventKind.directMessage,
+          EventKind.eventDeletion,
+        ],
+        p: [_userPubkey],
+        limit: isFirstOpen ? 50 : null,
+        since: isFirstOpen ? null : (newest - 2 * 86400),
+      );
+
+      Log.info(
+        'Starting DM subscription for pubkey $_userPubkey '
+        '(connected relays: '
+        '${_nostrClient.connectedRelayCount}/'
+        '${_nostrClient.configuredRelayCount}, '
+        'filter: ${filter.toJson()})',
+        category: LogCategory.system,
+      );
+
+      // Resolve the user's OWN kind-10050 inbox relays and target the live
+      // subscription at them — as BOTH tempRelays (to add connections outside
+      // the default pool) AND targetRelays — so gift wraps a NIP-17 sender
+      // delivered to relays outside divine's default pool are read. A `null`
+      // result (no kind-10050 / resolve failure) preserves the prior
+      // default-pool behavior. Memoized per session, so the resolve (bounded
+      // by the queryEvents ~5s timeout) only delays the FIRST open. See #4974.
       // Capture the session token before the await: `filter` was built with
       // the current `_userPubkey`, so if an account switch lands during the
       // resolve we must NOT open a subscription targeting the previous user.
@@ -1681,6 +1689,25 @@ class DmRepository {
       // Bind to a final local so the non-null type promotes inside the
       // runInTransaction closure below (a nullable parameter would not).
       final rumor = rumorEvent;
+
+      // A NIP-59 rumor is unsigned, so `created_at` is chosen freely by the
+      // sender. Refuse an implausibly future-dated one before any kind
+      // routing — this seam covers kinds 14/15, reactions and deletions
+      // alike. Persisting it would advance the sync cursor past now and
+      // blackhole every later subscription (and pin the thread to the top of
+      // the inbox forever). Ledger the wrap so it is not re-decrypted on
+      // every launch; the sender can always resend with an honest timestamp.
+      final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      if (rumor.createdAt > nowSec + DmSyncState.maxFutureSkewSeconds) {
+        Log.warning(
+          'Rejected DM (kind ${rumor.kind}) from ${rumor.pubkey}: rumor '
+          'created_at ${rumor.createdAt} is beyond the accepted skew of '
+          '${DmSyncState.maxFutureSkewSeconds}s (now $nowSec)',
+          category: LogCategory.system,
+        );
+        await _recordProcessedWrap(giftWrapEvent.id);
+        return;
+      }
 
       // NIP-17 spec line 14 explicitly permits kind 7 reactions inside
       // the gift-wrap envelope. Reaction deletions are also wrapped by

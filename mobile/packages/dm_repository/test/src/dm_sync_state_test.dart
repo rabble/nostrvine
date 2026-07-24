@@ -13,6 +13,16 @@ void main() {
     const pkA = 'npub1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
     const pkB = 'npub1bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
 
+    // Ascending plausible Nostr timestamps (Nov 2023). The boundary
+    // assertions below only care about relative order, but `recordSeen`
+    // floors anything before [DmSyncState.minPlausibleCreatedAt], so the
+    // fixtures have to be times a real event could carry.
+    const tsOldest = 1700000000;
+    const tsMid = 1700000500;
+    const tsNewer = 1700001000;
+    const tsNewest = 1700002000;
+    const tsOther = 1700003000;
+
     setUp(() async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
       prefs = await SharedPreferences.getInstance();
@@ -31,10 +41,10 @@ void main() {
     test(
       'recordSeen sets both newest and oldest for the first event',
       () async {
-        await state.recordSeen(pkA, createdAt: 1000);
+        await state.recordSeen(pkA, createdAt: tsOldest);
 
-        expect(state.newestSyncedAt(pkA), equals(1000));
-        expect(state.oldestSyncedAt(pkA), equals(1000));
+        expect(state.newestSyncedAt(pkA), equals(tsOldest));
+        expect(state.oldestSyncedAt(pkA), equals(tsOldest));
       },
     );
 
@@ -42,10 +52,10 @@ void main() {
       'recordSeen advances newest monotonically — lower createdAt does '
       'not overwrite',
       () async {
-        await state.recordSeen(pkA, createdAt: 2000);
-        await state.recordSeen(pkA, createdAt: 1500);
+        await state.recordSeen(pkA, createdAt: tsNewer);
+        await state.recordSeen(pkA, createdAt: tsMid);
 
-        expect(state.newestSyncedAt(pkA), equals(2000));
+        expect(state.newestSyncedAt(pkA), equals(tsNewer));
       },
     );
 
@@ -53,11 +63,11 @@ void main() {
       'recordSeen advances oldest monotonically downward — higher '
       'createdAt does not overwrite oldest',
       () async {
-        await state.recordSeen(pkA, createdAt: 1000);
-        await state.recordSeen(pkA, createdAt: 2000);
+        await state.recordSeen(pkA, createdAt: tsOldest);
+        await state.recordSeen(pkA, createdAt: tsNewer);
 
-        expect(state.oldestSyncedAt(pkA), equals(1000));
-        expect(state.newestSyncedAt(pkA), equals(2000));
+        expect(state.oldestSyncedAt(pkA), equals(tsOldest));
+        expect(state.newestSyncedAt(pkA), equals(tsNewer));
       },
     );
 
@@ -65,18 +75,18 @@ void main() {
       "recordSeen scopes state per pubkey — one user's boundary does "
       'not bleed into another',
       () async {
-        await state.recordSeen(pkA, createdAt: 1000);
-        await state.recordSeen(pkA, createdAt: 2000);
+        await state.recordSeen(pkA, createdAt: tsOldest);
+        await state.recordSeen(pkA, createdAt: tsNewer);
 
         expect(state.newestSyncedAt(pkB), isNull);
         expect(state.oldestSyncedAt(pkB), isNull);
 
-        await state.recordSeen(pkB, createdAt: 5000);
+        await state.recordSeen(pkB, createdAt: tsOther);
 
-        expect(state.newestSyncedAt(pkA), equals(2000));
-        expect(state.oldestSyncedAt(pkA), equals(1000));
-        expect(state.newestSyncedAt(pkB), equals(5000));
-        expect(state.oldestSyncedAt(pkB), equals(5000));
+        expect(state.newestSyncedAt(pkA), equals(tsNewer));
+        expect(state.oldestSyncedAt(pkA), equals(tsOldest));
+        expect(state.newestSyncedAt(pkB), equals(tsOther));
+        expect(state.oldestSyncedAt(pkB), equals(tsOther));
       },
     );
 
@@ -84,16 +94,16 @@ void main() {
       'clear removes both newest and oldest for the given pubkey and '
       'leaves others intact',
       () async {
-        await state.recordSeen(pkA, createdAt: 1000);
-        await state.recordSeen(pkA, createdAt: 2000);
-        await state.recordSeen(pkB, createdAt: 3000);
+        await state.recordSeen(pkA, createdAt: tsOldest);
+        await state.recordSeen(pkA, createdAt: tsNewer);
+        await state.recordSeen(pkB, createdAt: tsNewest);
 
         await state.clear(pkA);
 
         expect(state.newestSyncedAt(pkA), isNull);
         expect(state.oldestSyncedAt(pkA), isNull);
-        expect(state.newestSyncedAt(pkB), equals(3000));
-        expect(state.oldestSyncedAt(pkB), equals(3000));
+        expect(state.newestSyncedAt(pkB), equals(tsNewest));
+        expect(state.oldestSyncedAt(pkB), equals(tsNewest));
       },
     );
 
@@ -101,9 +111,9 @@ void main() {
       'clearAll removes sync state for every pubkey and leaves '
       'non-dm keys intact',
       () async {
-        await state.recordSeen(pkA, createdAt: 1000);
-        await state.recordSeen(pkA, createdAt: 2000);
-        await state.recordSeen(pkB, createdAt: 3000);
+        await state.recordSeen(pkA, createdAt: tsOldest);
+        await state.recordSeen(pkA, createdAt: tsNewer);
+        await state.recordSeen(pkB, createdAt: tsNewest);
         await prefs.setString('unrelated_key', 'keep_me');
 
         await state.clearAll();
@@ -318,6 +328,109 @@ void main() {
         expect(state.dmRelayListPublished(pkB), isFalse);
         expect(prefs.getString('unrelated_key'), equals('keep_me'));
       });
+    });
+
+    group('unauthenticated rumor timestamps', () {
+      // A NIP-59 rumor is unsigned, so `created_at` is attacker-chosen.
+      // Absolute out-of-bounds values keep these deterministic without
+      // needing to control the wall clock.
+      const year2100 = 4102444800;
+      const epochOne = 1;
+
+      int nowSec() => DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      test('recordSeen caps a far-future createdAt at now', () async {
+        await state.recordSeen(pkA, createdAt: year2100);
+
+        final newest = state.newestSyncedAt(pkA);
+        expect(newest, isNotNull);
+        expect(newest, lessThan(year2100));
+        expect(newest, closeTo(nowSec(), 5));
+      });
+
+      test(
+        'a capped createdAt cannot push the live since: filter past now',
+        () async {
+          await state.recordSeen(pkA, createdAt: year2100);
+
+          // DmRepository.startListening derives `since` this way; if it ever
+          // lands in the future the relay returns nothing and the inbox is
+          // silently blackholed.
+          final since = state.newestSyncedAt(pkA)! - 2 * 86400;
+          expect(since, lessThan(nowSec()));
+        },
+      );
+
+      test('recordSeen floors an implausibly old createdAt', () async {
+        await state.recordSeen(pkA, createdAt: epochOne);
+
+        expect(
+          state.oldestSyncedAt(pkA),
+          equals(DmSyncState.minPlausibleCreatedAt),
+        );
+      });
+
+      test('recordSeen leaves an in-range createdAt untouched', () async {
+        final honest = nowSec() - 60;
+
+        await state.recordSeen(pkA, createdAt: honest);
+
+        expect(state.newestSyncedAt(pkA), equals(honest));
+        expect(state.oldestSyncedAt(pkA), equals(honest));
+      });
+
+      test(
+        'repairPoisonedBoundaries heals a cursor persisted by an older build '
+        'and re-arms the drain',
+        () async {
+          // Simulate a pre-guard build having written the poisoned value.
+          await prefs.setInt('dm.newestSyncedAt.$pkA', year2100);
+          await state.markHistoryDrainComplete(pkA);
+          expect(state.historyDrainComplete(pkA), isTrue);
+
+          await state.repairPoisonedBoundaries(pkA);
+
+          expect(state.newestSyncedAt(pkA), closeTo(nowSec(), 5));
+          expect(state.historyDrainComplete(pkA), isFalse);
+        },
+      );
+
+      test('repairPoisonedBoundaries heals an implausibly old floor', () async {
+        await prefs.setInt('dm.oldestSyncedAt.$pkA', epochOne);
+
+        await state.repairPoisonedBoundaries(pkA);
+
+        expect(
+          state.oldestSyncedAt(pkA),
+          equals(DmSyncState.minPlausibleCreatedAt),
+        );
+      });
+
+      test(
+        'repairPoisonedBoundaries is a no-op for healthy boundaries',
+        () async {
+          final honest = nowSec() - 3600;
+          await state.recordSeen(pkA, createdAt: honest);
+          await state.markHistoryDrainComplete(pkA);
+
+          await state.repairPoisonedBoundaries(pkA);
+
+          expect(state.newestSyncedAt(pkA), equals(honest));
+          expect(state.oldestSyncedAt(pkA), equals(honest));
+          // A healthy install must not be forced through a re-drain.
+          expect(state.historyDrainComplete(pkA), isTrue);
+        },
+      );
+
+      test(
+        'repairPoisonedBoundaries is a no-op when nothing is stored',
+        () async {
+          await state.repairPoisonedBoundaries(pkA);
+
+          expect(state.newestSyncedAt(pkA), isNull);
+          expect(state.oldestSyncedAt(pkA), isNull);
+        },
+      );
     });
   });
 }
