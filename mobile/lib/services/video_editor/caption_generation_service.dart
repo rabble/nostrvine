@@ -315,9 +315,16 @@ class CaptionGenerationService {
 
   /// Shifts each transcribed word from merged-output time onto the composition
   /// timeline. A word is attributed to the segment whose output window contains
-  /// it, then moved by that segment's `timelineStart - outputStart` delta — the
-  /// two differ only when clips were skipped from the merge (muted / no file),
-  /// leaving the skipped clip's timeline span as a caption-free gap.
+  /// its start, then moved by that segment's `timelineStart - outputStart`
+  /// delta — the two differ only when clips were skipped from the merge (muted
+  /// / no file), leaving the skipped clip's timeline span as a caption-free gap.
+  ///
+  /// The merged audio is gap-free, so a word can straddle the boundary between
+  /// two concatenated segments. Its endpoints are clamped to the attributed
+  /// segment's output window before the shift, so a word whose tail belongs to
+  /// the next audible clip is capped at this clip's timeline end instead of
+  /// spilling later speech into the skipped clip's muted gap. The full word
+  /// text is kept intact; only its timing is bounded.
   List<CaptionSegment> _mapMergedToTimeline(
     List<CaptionSegment> words,
     List<AudioMergeSegmentOffset> offsets,
@@ -327,16 +334,13 @@ class CaptionGenerationService {
     final mapped = <CaptionSegment>[];
     for (final word in words) {
       final index = _segmentIndexFor(word.start, offsets);
-      final delta = timelineStarts[index] - offsets[index].outputStart;
-      final start = word.start + delta;
-      final end = word.end + delta;
-      mapped.add(
-        CaptionSegment(
-          text: word.text,
-          start: start < Duration.zero ? Duration.zero : start,
-          end: end < start ? start : end,
-        ),
-      );
+      final offset = offsets[index];
+      final delta = timelineStarts[index] - offset.outputStart;
+      final start =
+          _clamp(word.start, offset.outputStart, offset.outputEnd) + delta;
+      final end =
+          _clamp(word.end, offset.outputStart, offset.outputEnd) + delta;
+      mapped.add(CaptionSegment(text: word.text, start: start, end: end));
     }
     return mapped;
   }

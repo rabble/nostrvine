@@ -1,6 +1,7 @@
 // ABOUTME: Tests for VideoPublishService
 // ABOUTME: Uses mocked dependencies to test publish flow without real uploads
 
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
@@ -236,6 +237,63 @@ void main() {
             );
 
             final result = await service.publishVideo(
+              draft: _createTestDraft(
+                editorEditingParameters: editingParamsFor(overlayTrack),
+              ),
+            );
+
+            expect(result, isA<PublishSuccess>());
+            verifyNever(
+              () => mockVideoEventPublisher.publishSubtitleTrack(
+                vineId: any(named: 'vineId'),
+                vttContent: any(named: 'vttContent'),
+                blossomUrl: any(named: 'blossomUrl'),
+                lang: any(named: 'lang'),
+              ),
+            );
+            final captured = verify(
+              () => _verifyPublishVideoEvent(
+                mockVideoEventPublisher,
+                textTrackRefs: captureAny(named: 'textTrackRefs'),
+                textTrackLang: any(named: 'textTrackLang'),
+              ),
+            ).captured;
+            expect(captured.single, isEmpty);
+          },
+        );
+
+        test(
+          'publishes without refs when the VTT upload never completes',
+          () async {
+            _setupSuccessfulPublish(
+              mockAuthService: mockAuthService,
+              mockUploadManager: mockUploadManager,
+              mockDraftService: mockDraftService,
+              mockVideoEventPublisher: mockVideoEventPublisher,
+            );
+            // A stalled Dio upload never resolves; the bounded deadline must
+            // still let the primary video publish proceed without caption refs.
+            when(
+              () => mockBlossomService.uploadSubtitleVtt(
+                bytes: any(named: 'bytes'),
+              ),
+            ).thenAnswer((_) => Completer<BlossomUploadResult>().future);
+
+            final boundedService = VideoPublishService(
+              uploadManager: mockUploadManager,
+              authService: mockAuthService,
+              videoEventPublisher: mockVideoEventPublisher,
+              blossomService: mockBlossomService,
+              draftService: mockDraftService,
+              collaboratorInviteService: mockCollaboratorInviteService,
+              mentionResolutionService: mockMentionResolutionService,
+              subtitlePublishTimeout: const Duration(milliseconds: 20),
+              onProgressChanged:
+                  ({required double progress, required String draftId}) =>
+                      progressChanges.add(progress),
+            );
+
+            final result = await boundedService.publishVideo(
               draft: _createTestDraft(
                 editorEditingParameters: editingParamsFor(overlayTrack),
               ),

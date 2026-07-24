@@ -254,6 +254,32 @@ void main() {
         expect(captured, hasLength(1));
       });
 
+      test(
+        'clamps a word crossing a compacted boundary out of the skipped gap',
+        () async {
+          // Clips a and c are audible; the muted clip between them is dropped
+          // from the merge but still occupies 3s of timeline. In the merged
+          // audio a and c are contiguous ([0,3s) and [3s,6s)); on the timeline
+          // a is at 0s and c is at 6s. A word straddling the a/c merge boundary
+          // must stay inside a's span, not spill its tail into the muted gap.
+          stubMerge([_offset(0, 3000), _offset(3000, 3000)]);
+          final service = buildService(
+            remote: remoteReturning([_word('boundary', 2900, 3200)]),
+          );
+
+          final outcome = await service.generateForClips(
+            clips: [_clip('a'), _clip('muted', volume: 0), _clip('c')],
+            localeIdentifier: 'en-US',
+          );
+
+          final cue = (outcome as CaptionsGenerated).cues.single;
+          expect(cue.text, equals('boundary'));
+          expect(cue.start, equals(const Duration(milliseconds: 2900)));
+          // Clamped to clip a's timeline end (3s); never into the gap [3s,6s).
+          expect(cue.end, equals(const Duration(seconds: 3)));
+        },
+      );
+
       test('returns empty when the server finds no speech', () async {
         stubMerge([_offset(0, 3000)]);
         final service = buildService(remote: remoteReturning(const []));

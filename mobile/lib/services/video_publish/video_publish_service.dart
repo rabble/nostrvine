@@ -156,7 +156,8 @@ class VideoPublishService {
     this.collaboratorInviteService,
     this.languagePreferenceService,
     this.mentionResolutionService,
-  });
+    Duration subtitlePublishTimeout = _defaultSubtitlePublishTimeout,
+  }) : _subtitlePublishTimeout = subtitlePublishTimeout;
 
   /// Manages background video uploads.
   final UploadManager uploadManager;
@@ -184,6 +185,13 @@ class VideoPublishService {
 
   /// Resolves typed mentions before publishing Nostr video events.
   final MentionResolutionService? mentionResolutionService;
+
+  /// Deadline for each optional caption-asset network step. Captions are
+  /// best-effort, so a stalled upload / relay publish must never hold up the
+  /// primary video event — on timeout we publish without caption refs.
+  final Duration _subtitlePublishTimeout;
+
+  static const Duration _defaultSubtitlePublishTimeout = Duration(seconds: 30);
 
   /// Tracks the current background upload ID.
   String? _backgroundUploadId;
@@ -371,9 +379,9 @@ class VideoPublishService {
         [for (final cue in track.cues) cue.toSubtitleCue()]
           ..sort((a, b) => a.start.compareTo(b.start)),
       );
-      final result = await blossomService.uploadSubtitleVtt(
-        bytes: Uint8List.fromList(utf8.encode(vtt)),
-      );
+      final result = await blossomService
+          .uploadSubtitleVtt(bytes: Uint8List.fromList(utf8.encode(vtt)))
+          .timeout(_subtitlePublishTimeout);
       final blossomUrl = result.url;
       if (!result.success || blossomUrl == null) {
         Log.warning(
@@ -384,13 +392,21 @@ class VideoPublishService {
         return const [];
       }
 
-      final coordsRef = await videoEventPublisher.publishSubtitleTrack(
-        vineId: vineId,
-        vttContent: vtt,
-        blossomUrl: blossomUrl,
-        lang: _languageCode(track.languageTag),
-      );
+      final coordsRef = await videoEventPublisher
+          .publishSubtitleTrack(
+            vineId: vineId,
+            vttContent: vtt,
+            blossomUrl: blossomUrl,
+            lang: _languageCode(track.languageTag),
+          )
+          .timeout(_subtitlePublishTimeout);
       return [blossomUrl, ?coordsRef];
+    } on TimeoutException catch (e) {
+      Log.warning(
+        '⚠️ Caption asset publish timed out - publishing without captions: $e',
+        category: LogCategory.video,
+      );
+      return const [];
     } catch (e, stackTrace) {
       Log.error(
         'Caption asset publish failed - publishing without captions',
