@@ -11,6 +11,17 @@ class NotificationsDao extends DatabaseAccessor<AppDatabase>
     with _$NotificationsDaoMixin {
   NotificationsDao(super.attachedDatabase);
 
+  /// Build a filter expression that returns rows owned by [ownerPubkey]
+  /// **or** legacy rows with no owner (NULL).
+  ///
+  /// A null [ownerPubkey] means "unscoped" and matches every row, preserving
+  /// the pre-multi-account behaviour for callers that have no signed-in user.
+  Expression<bool> _ownedOrLegacy(String? ownerPubkey) {
+    if (ownerPubkey == null) return const Constant(true);
+    return notifications.ownerPubkey.equals(ownerPubkey) |
+        notifications.ownerPubkey.isNull();
+  }
+
   /// Upsert a notification
   Future<void> upsertNotification({
     required String id,
@@ -21,6 +32,7 @@ class NotificationsDao extends DatabaseAccessor<AppDatabase>
     String? targetPubkey,
     String? content,
     bool isRead = false,
+    String? ownerPubkey,
   }) {
     return into(notifications).insertOnConflictUpdate(
       NotificationsCompanion.insert(
@@ -33,13 +45,18 @@ class NotificationsDao extends DatabaseAccessor<AppDatabase>
         content: Value(content),
         isRead: Value(isRead),
         cachedAt: DateTime.now(),
+        ownerPubkey: Value(ownerPubkey),
       ),
     );
   }
 
   /// Get all notifications sorted by timestamp (newest first)
-  Future<List<NotificationRow>> getAllNotifications({int? limit}) {
+  Future<List<NotificationRow>> getAllNotifications({
+    int? limit,
+    String? ownerPubkey,
+  }) {
     final query = select(notifications)
+      ..where((_) => _ownedOrLegacy(ownerPubkey))
       ..orderBy([
         (t) => OrderingTerm(expression: t.timestamp, mode: OrderingMode.desc),
       ]);
@@ -50,9 +67,11 @@ class NotificationsDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Get unread notifications count
-  Future<int> getUnreadCount() async {
+  Future<int> getUnreadCount({String? ownerPubkey}) async {
     final query = selectOnly(notifications)
-      ..where(notifications.isRead.equals(false))
+      ..where(
+        notifications.isRead.equals(false) & _ownedOrLegacy(ownerPubkey),
+      )
       ..addColumns([notifications.id.count()]);
     final result = await query.getSingle();
     return result.read(notifications.id.count()) ?? 0;
@@ -68,10 +87,9 @@ class NotificationsDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Mark all notifications as read
-  Future<int> markAllAsRead() {
-    return update(notifications).write(
-      const NotificationsCompanion(isRead: Value(true)),
-    );
+  Future<int> markAllAsRead({String? ownerPubkey}) {
+    return (update(notifications)..where((_) => _ownedOrLegacy(ownerPubkey)))
+        .write(const NotificationsCompanion(isRead: Value(true)));
   }
 
   /// Delete notification by ID
@@ -94,8 +112,12 @@ class NotificationsDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Watch all notifications (reactive stream)
-  Stream<List<NotificationRow>> watchAllNotifications({int? limit}) {
+  Stream<List<NotificationRow>> watchAllNotifications({
+    int? limit,
+    String? ownerPubkey,
+  }) {
     final query = select(notifications)
+      ..where((_) => _ownedOrLegacy(ownerPubkey))
       ..orderBy([
         (t) => OrderingTerm(expression: t.timestamp, mode: OrderingMode.desc),
       ]);
@@ -106,18 +128,34 @@ class NotificationsDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Watch unread count (reactive stream)
-  Stream<int> watchUnreadCount() {
+  Stream<int> watchUnreadCount({String? ownerPubkey}) {
     final query = selectOnly(notifications)
-      ..where(notifications.isRead.equals(false))
+      ..where(
+        notifications.isRead.equals(false) & _ownedOrLegacy(ownerPubkey),
+      )
       ..addColumns([notifications.id.count()]);
     return query.watchSingle().map(
       (row) => row.read(notifications.id.count()) ?? 0,
     );
   }
 
-  /// Clear all notifications
-  Future<int> clearAll() {
-    return delete(notifications).go();
+  /// Clear all notifications belonging to [ownerPubkey] (and legacy rows).
+  ///
+  /// A null [ownerPubkey] clears the whole table.
+  Future<int> clearAll({String? ownerPubkey}) {
+    return (delete(
+      notifications,
+    )..where((_) => _ownedOrLegacy(ownerPubkey))).go();
+  }
+
+  /// Claim legacy notifications (NULL ownerPubkey) for [newOwnerPubkey].
+  ///
+  /// Called during session setup so pre-multi-account rows are attributed to
+  /// the signed-in account instead of staying visible to every account.
+  Future<int> claimLegacyRows(String newOwnerPubkey) {
+    return (update(notifications)..where((t) => t.ownerPubkey.isNull())).write(
+      NotificationsCompanion(ownerPubkey: Value(newOwnerPubkey)),
+    );
   }
 
   /// Replaces every cached notification with [rows] in a single transaction.
@@ -128,7 +166,13 @@ class NotificationsDao extends DatabaseAccessor<AppDatabase>
   ///
   /// Accepts plain Dart records so callers don't need to depend on
   /// `package:drift` to build the row companions.
-  Future<void> replaceAll(List<NotificationCacheRow> rows) async {
+  ///
+  /// Only [ownerPubkey]'s rows (and unclaimed legacy rows) are replaced —
+  /// another signed-in account's cached inbox survives a refresh here.
+  Future<void> replaceAll(
+    List<NotificationCacheRow> rows, {
+    String? ownerPubkey,
+  }) async {
     final cachedAt = DateTime.now();
     final companions = rows
         .map(
@@ -142,11 +186,14 @@ class NotificationsDao extends DatabaseAccessor<AppDatabase>
             content: Value(r.content),
             isRead: Value(r.isRead),
             cachedAt: cachedAt,
+            ownerPubkey: Value(ownerPubkey),
           ),
         )
         .toList();
     await transaction(() async {
-      await delete(notifications).go();
+      await (delete(
+        notifications,
+      )..where((_) => _ownedOrLegacy(ownerPubkey))).go();
       if (companions.isEmpty) return;
       await batch((b) => b.insertAll(notifications, companions));
     });

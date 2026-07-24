@@ -239,6 +239,15 @@ class Notifications extends Table {
   BoolColumn get isRead => boolean().withDefault(const Constant(false))();
   DateTimeColumn get cachedAt => dateTime().named('cached_at')();
 
+  /// Hex public key of the account this notification was delivered to.
+  /// NULL for legacy rows created before multi-account support; those are
+  /// claimed by the next signed-in account via `claimLegacyRows`.
+  ///
+  /// Notifications are viewer-scoped — the same relay event produces a row
+  /// only for the account it targets — so reads must filter on this column
+  /// or one account sees another's inbox.
+  TextColumn get ownerPubkey => text().nullable().named('owner_pubkey')();
+
   @override
   Set<Column> get primaryKey => {id};
 
@@ -252,6 +261,11 @@ class Notifications extends Table {
       'idx_notification_is_read',
       'CREATE INDEX IF NOT EXISTS idx_notification_is_read '
           'ON notifications (is_read)',
+    ),
+    Index(
+      'idx_notification_owner_timestamp',
+      'CREATE INDEX IF NOT EXISTS idx_notification_owner_timestamp '
+          'ON notifications (owner_pubkey, timestamp DESC)',
     ),
   ];
 }

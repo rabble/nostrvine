@@ -295,6 +295,15 @@ class AppDatabase extends _$AppDatabase {
       ON clips (owner_pubkey)
     ''');
 
+    // Notifications are viewer-scoped but shipped without an owner column,
+    // so every signed-in account read one shared inbox. Existing rows stay
+    // NULL and are claimed by the next session setup, matching drafts/clips.
+    await _addColumnIfMissing('notifications', 'owner_pubkey', 'TEXT');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_notification_owner_timestamp
+      ON notifications (owner_pubkey, timestamp DESC)
+    ''');
+
     // Soft-delete marker for clip trash bin. NULL = active; non-NULL =
     // trashed at that timestamp. Purged after the retention window.
     await _addColumnIfMissing('clips', 'deleted_at', 'INTEGER');
