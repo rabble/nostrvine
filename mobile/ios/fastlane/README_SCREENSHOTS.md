@@ -15,8 +15,15 @@ flutter build ios --simulator --debug --config-only --dart-define=SCREENSHOT_MOD
 # 2. Capture + frame.
 cd ios
 bundle install          # first time only
+brew install imagemagick  # first time only — frameit needs it to composite
 bundle exec fastlane screenshots
 ```
+
+`frameit` (the framing/caption step) requires **ImageMagick or
+GraphicsMagick** on the PATH. Without it, capture still succeeds but
+framing silently no-ops. If a run captured but produced no `*_framed.png`,
+install ImageMagick and re-frame the existing captures with
+`bundle exec fastlane frame` — no need to recapture.
 
 The `screenshots` lane verifies step 1 ran (it checks `Generated.xcconfig`
 for the `SCREENSHOT_MODE` define) and fails fast with instructions if not.
