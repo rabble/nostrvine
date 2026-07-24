@@ -47,12 +47,16 @@ class ScreenshotModeService {
   final ScreenshotProfileWarmer? _warmProfiles;
   final ScreenshotKeyGenerator _generatePrivateKeyHex;
 
-  /// Well-known Divine creators the throwaway account follows so the
-  /// share sheet's "Share with" row and the home feed have real content.
-  /// First entry is Lele Pons (the 02_creator_post subject); the rest are
-  /// top classic Viners from the funnelcake popular-classics feed.
+  /// Divine creators the throwaway account follows (and whose profiles are
+  /// warmed) so the share sheet's "Share with" row, the home feed, and the
+  /// captured profile/verification/share screens all have real content and
+  /// loaded avatars. Includes the creators featured on individual screens
+  /// (Lele Pons, andrinG, Travis & Sallie Mae) plus top classic Viners from
+  /// the funnelcake popular-classics feed.
   static const List<String> creatorPubkeysHex = [
     '6e0f5188eac64e8e00166c1b285bfc27af8ddd873c540942d656405c46dd5ed8',
+    '3d8a667b6defd4906700a55f64fb26b004f8681fde6d8f2f7501903bac0d4a58',
+    '352198449c5ff6e7e74a66a55d17ba4fc4a0a018a2d756ee589b655d823f6c27',
     '1482f9cbf1f2918c961329ea4f6ef1aac7151b0c758f0555b3255d30d62d4e9d',
     '86c5313d94c26f149734606922df4b14eadf863904cc6d054ee48757a5731500',
     '9e00b0acaee85a26b5581153b38a0fd92cbd5c1bbd1c6300c34e4686735e34ac',

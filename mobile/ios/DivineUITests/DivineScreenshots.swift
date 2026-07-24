@@ -19,20 +19,25 @@ final class DivineScreenshots: XCTestCase {
 
     // MARK: - Capture subjects
 
-    /// Lele Pons' "VINE IS BACK!" post (event id, hex).
+    /// Lele Pons' "VINE IS BACK!" post — the hero creator shot (02).
     static let creatorPostVideoId =
         "4f3123c6468b1f87865c8e3baedbcca149c54b9d9acd17ebbaa6029b76fff7ea"
 
     /// Video whose About sheet shows the Human-Made badge and all four
-    /// verification checkmarks (device attestation, PGP, C2PA, manifest).
-    /// The Lele Pons post predates the C2PA manifest fix (#6289), so a
-    /// fully-signed recent capture is used instead.
+    /// verification checkmarks (device attestation, PGP, C2PA, manifest):
+    /// "#LNICPuppetShow" by Travis & Sallie Mae. Featured on 03 to spread
+    /// the creators beyond Lele.
     static let verifiedVideoId =
-        "c5b8a771a225a3b169ff939c10333a7a7be5f3e9f6ea936feb31b9ef378ad13e"
+        "0b0d32021d70a6df1a9c70afa3f6337a7b1c6e3849609e25d550accd7e957537"
 
-    /// Profile captured for 07_profile (Lele Pons).
+    /// Profile captured for 07_profile (andrinG).
     static let profileNpub =
-        "npub1dc84rz82ce8guqqkdsdjskluy7hcmhv8832qjskk2eq9c3katmvqyfvrhp"
+        "npub18k9xv7mdal2fqecq540kf7exkqz0s6qlmekc7tm4qxgrhtqdffvqmz4mmq"
+
+    /// Video whose share sheet is captured for 09 (andrinG — "i said
+    /// DRIVE!!!!"), so Lele isn't the subject of every screen.
+    static let shareVideoId =
+        "5de2fb46103e57ff8ee27d6d4fc667ad1d7b2b7c3081814a3edad7e6ac680f93"
 
     // MARK: - Launch helpers
 
@@ -183,7 +188,7 @@ final class DivineScreenshots: XCTestCase {
 
     func test09Share() {
         let app = launchApp(
-            route: "/video/\(DivineScreenshots.creatorPostVideoId)"
+            route: "/video/\(DivineScreenshots.shareVideoId)"
         )
         waitFor(app, "share_button")
         element(app, "share_button").tap()
