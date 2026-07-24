@@ -89,7 +89,9 @@ class _StackItems extends StatelessWidget {
       fit: .expand,
       key: ValueKey('Camera-Count-${state.cameraRebuildCount}'),
       children: [
-        if (state.isCameraInitialized)
+        // Simulators never initialize the camera, so the screenshot pipeline
+        // renders the stubbed preview instead of the black placeholder.
+        if (state.isCameraInitialized || ScreenshotMode.enabled)
           _CameraPreview(enableTapToFocus: enableTapToFocus)
         else
           VideoRecorderCameraPlaceholder(

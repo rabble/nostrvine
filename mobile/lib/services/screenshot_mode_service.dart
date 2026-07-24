@@ -19,6 +19,9 @@ import 'package:unified_logger/unified_logger.dart';
 /// Publishes a follow for a single hex pubkey.
 typedef ScreenshotFollowAction = Future<void> Function(String pubkeyHex);
 
+/// Warms creator profiles (kind-0) so their avatars have URLs to load.
+typedef ScreenshotProfileWarmer = Future<void> Function(List<String> pubkeys);
+
 /// Generates a throwaway Nostr private key (hex).
 typedef ScreenshotKeyGenerator = String Function();
 
@@ -32,13 +35,16 @@ class ScreenshotModeService {
   ScreenshotModeService({
     required AuthService authService,
     required ScreenshotFollowAction follow,
+    ScreenshotProfileWarmer? warmProfiles,
     ScreenshotKeyGenerator generatePrivateKeyHex = generatePrivateKey,
   }) : _authService = authService,
        _follow = follow,
+       _warmProfiles = warmProfiles,
        _generatePrivateKeyHex = generatePrivateKeyHex;
 
   final AuthService _authService;
   final ScreenshotFollowAction _follow;
+  final ScreenshotProfileWarmer? _warmProfiles;
   final ScreenshotKeyGenerator _generatePrivateKeyHex;
 
   /// Well-known Divine creators the throwaway account follows so the
@@ -64,6 +70,12 @@ class ScreenshotModeService {
   Future<void> prepare() async {
     await _ensureAuthenticated();
     await _followCreators();
+    if (_warmProfiles != null) {
+      await _runStep(
+        'warm creator profiles',
+        () => _warmProfiles(creatorPubkeysHex),
+      );
+    }
   }
 
   Future<void> _ensureAuthenticated() async {
@@ -111,6 +123,11 @@ ScreenshotModeService buildScreenshotModeService(ProviderContainer container) {
       final followRepository = container.read(followRepositoryProvider);
       if (followRepository.followingPubkeys.contains(pubkeyHex)) return;
       await followRepository.follow(pubkeyHex);
+    },
+    warmProfiles: (pubkeys) async {
+      final profileRepository = container.read(profileRepositoryProvider);
+      if (profileRepository == null) return;
+      await profileRepository.fetchBatchProfiles(pubkeys: pubkeys);
     },
   );
 }
