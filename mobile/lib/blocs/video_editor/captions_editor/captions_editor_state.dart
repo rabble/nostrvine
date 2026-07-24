@@ -50,7 +50,8 @@ class CaptionsEditorState extends Equatable {
   /// BCP-47 recognition/caption language.
   final String languageTag;
 
-  /// The editable cues, ordered by start time.
+  /// The editable cues, in edit order (free timing edits can reorder them; see
+  /// [committedCues] for the start-sorted commit view).
   final List<CaptionCue> cues;
 
   /// Whether a custom style is active (vs a built-in preset).
@@ -65,6 +66,19 @@ class CaptionsEditorState extends Equatable {
     languageTag: languageTag,
     cues: cues,
   );
+
+  /// The cues committed on confirm: cues whose text was cleared are dropped
+  /// (they render as nothing and would only clutter the timeline and VTT), and
+  /// the remainder is sorted by start time — free timing edits can reorder
+  /// cues, but everything downstream (timeline, VTT) expects timeline order.
+  List<CaptionCue> get committedCues => [
+    for (final cue in cues)
+      if (cue.text.trim().isNotEmpty) cue,
+  ]..sort((a, b) => a.start.compareTo(b.start));
+
+  /// The caption track committed on confirm — [track] carrying only the
+  /// normalized [committedCues].
+  CaptionTrack get committedTrack => track.copyWith(cues: committedCues);
 
   /// Copy with the given fields replaced. Pass [clearCustomStyle] to drop a
   /// custom style (selecting a built-in preset again).

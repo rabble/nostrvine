@@ -78,20 +78,11 @@ Future<CaptionsEditorResult?> showCaptionsEditorSheet(
   void confirm() {
     final state = sessionCubit.state;
     if (state.status == CaptionsEditorStatus.generating) return;
-    // Cues whose text was cleared are dropped on confirm; they render as
-    // nothing anyway and would only clutter the timeline and the VTT.
-    // Free timing edits can reorder cues, so re-sort by start time — the
-    // session keeps the edit order stable, but everything downstream
-    // (timeline, VTT) expects timeline order.
-    final cues = [
-      for (final cue in state.cues)
-        if (cue.text.trim().isNotEmpty) cue,
-    ]..sort((a, b) => a.start.compareTo(b.start));
+    // Normalization (drop cleared cues, sort by start) lives on the cubit
+    // state so it stays testable and downstream-consistent.
+    final track = state.committedTrack;
     Navigator.of(context).pop<CaptionsEditorResult>(
-      CaptionsConfirmed(
-        track: state.track.copyWith(cues: cues),
-        cues: cues,
-      ),
+      CaptionsConfirmed(track: track, cues: track.cues),
     );
   }
 

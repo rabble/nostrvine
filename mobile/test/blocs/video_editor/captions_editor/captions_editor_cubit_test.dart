@@ -328,6 +328,52 @@ void main() {
       expect(cubit.state.track.cues, equals(const [cue]));
     });
 
+    group('committedCues', () {
+      const cleared = CaptionCue(
+        id: 'cue-cleared',
+        text: '   ',
+        start: Duration(seconds: 1),
+        end: Duration(seconds: 2),
+      );
+      const early = CaptionCue(
+        id: 'cue-early',
+        text: 'First',
+        start: Duration(seconds: 1),
+        end: Duration(seconds: 2),
+      );
+      const late_ = CaptionCue(
+        id: 'cue-late',
+        text: 'Second',
+        start: Duration(seconds: 3),
+        end: Duration(seconds: 4),
+      );
+
+      test('drops cleared cues and sorts the rest by start time', () {
+        final cubit = build(initialCues: const [late_, cleared, early]);
+        addTearDown(cubit.close);
+
+        expect(cubit.state.committedCues, equals(const [early, late_]));
+      });
+
+      test('committedTrack carries the normalized cues', () {
+        final cubit = build(initialCues: const [late_, cleared, early])
+          ..setBurnIn(burnIn: true);
+        addTearDown(cubit.close);
+
+        expect(cubit.state.committedTrack.cues, equals(const [early, late_]));
+        expect(cubit.state.committedTrack.burnIn, isTrue);
+        expect(cubit.state.committedTrack.presetId, equals('classic'));
+      });
+
+      test('does not mutate the editable cue order', () {
+        final cubit = build(initialCues: const [late_, cleared, early]);
+        addTearDown(cubit.close);
+
+        cubit.state.committedCues;
+        expect(cubit.state.cues, equals(const [late_, cleared, early]));
+      });
+    });
+
     const customStyle = CaptionCustomStyle(
       fontIndex: 2,
       color: Color(0xFFFF0000),
