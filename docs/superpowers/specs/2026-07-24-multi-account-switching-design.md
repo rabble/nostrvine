@@ -848,6 +848,41 @@ non-corrupting.
   `nostr_client_provider.dart` and `auth_providers.dart`.
 - Full §10.2 test matrix.
 
+#### Implementation note — the `activate()` blocker (found during Phase 3)
+
+`AccountStore.activate(pubkeyHex)` (§8.1) is specified as side-effect-free:
+build and *prove* the target account's signer, and only commit by swapping the
+container. The current codebase cannot do this yet, and the reason is specific:
+
+- **`AuthService.signInForAccount(pubkeyHex, authSource)`
+  (`auth_service.dart:1547`) fuses two responsibilities** that atomic switching
+  needs separated: it (a) reconnects the source-specific signer
+  (`_reconnectAmber` / `_reconnectBunker` / `_reconnectNip07` /
+  `signInWithDivineOAuth`) **and** (b) mutates the global active session as it
+  goes. There is no "return a proven session without becoming it" seam.
+- **`AuthService` is a device-level singleton**, not per-container, so there is
+  no prior active session to roll back *to* if the target fails mid-activation.
+  The mutation is destructive the moment it starts.
+- **`SignerFactory.buildIdentity(...)` (`signer_factory.dart:120`) is already
+  side-effect-free** — it takes pre-connected signer objects and returns a
+  `NostrIdentity`. So the pure half exists; what's missing is a side-effect-free
+  *connect + prove* step feeding it.
+
+**Required refactor before `swapAccount` can be atomic:** extract a
+`Future<AccountSession> buildAndProveSession(KnownAccount)` that reads the
+account's credentials (addressed, post-Phase-2), performs the source-specific
+connect (reusing the `_reconnect*` bodies), proves liveness
+(`get_public_key` == expected for remote signers; instant for local), and
+returns an `AccountSession` **without** writing any global active state. Then
+`signInForAccount` becomes `buildAndProveSession(...)` + a separate "make
+active" commit, and `swapAccount` calls the former, commits by container swap,
+and on failure simply drops the half-built session (§8.2 step 1).
+
+This is the highest-risk edit in the project (a bug locks users out), touches
+the signing path, and should be done as its own focused change with the §10.2
+rollback/interrupt matrix written first. It is the reason Phase 4 is not a
+"finish it in the same sitting" task.
+
 ### Phase 5 — UX and rollout
 - Build the account-switcher surface; wire the three R3 entry points.
 - Failure/retry UI; per-row spinner.
