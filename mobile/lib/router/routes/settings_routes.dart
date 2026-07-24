@@ -19,6 +19,7 @@ import 'package:openvine/screens/settings/app_language_screen.dart';
 import 'package:openvine/screens/settings/appearance_settings_screen.dart';
 import 'package:openvine/screens/settings/bluesky_settings_screen.dart';
 import 'package:openvine/screens/settings/content_preferences_screen.dart';
+import 'package:openvine/screens/settings/crossposting_settings_screen.dart';
 import 'package:openvine/screens/settings/general_settings_screen.dart';
 import 'package:openvine/screens/settings/invites_screen.dart';
 import 'package:openvine/screens/settings/legal_screen.dart';
@@ -91,6 +92,11 @@ List<RouteBase> settingsRoutes(Ref ref) {
       path: BlueskySettingsScreen.path,
       name: BlueskySettingsScreen.routeName,
       builder: (_, _) => const BlueskySettingsScreen(),
+    ),
+    GoRoute(
+      path: CrosspostingSettingsScreen.path,
+      name: CrosspostingSettingsScreen.routeName,
+      builder: (_, _) => const CrosspostingSettingsScreen(),
     ),
     GoRoute(
       path: NostrSettingsScreen.path,

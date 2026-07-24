@@ -74,6 +74,11 @@ void main() {
         status: CrosspostingConnectionStatus.needsReauth,
         externalAccountName: '@creator',
       );
+      const instagramConnected = CrosspostingConnection(
+        id: 'instagram-connected-later',
+        platform: CrosspostingPlatform.instagram,
+        status: CrosspostingConnectionStatus.connected,
+      );
       const youtubeConnection = CrosspostingConnection(
         id: 'youtube-connected',
         platform: CrosspostingPlatform.youtube,
@@ -106,11 +111,7 @@ void main() {
             platform: CrosspostingPlatform.instagram,
             status: CrosspostingConnectionStatus.disconnected,
           ),
-          CrosspostingConnection(
-            id: 'instagram-connected-later',
-            platform: CrosspostingPlatform.instagram,
-            status: CrosspostingConnectionStatus.connected,
-          ),
+          instagramConnected,
           instagramReauth,
           youtubeConnection,
         ],
@@ -143,15 +144,15 @@ void main() {
           CrosspostingPlatformSettings(
             platform: CrosspostingPlatform.instagram,
             supportsAutomatic: true,
-            connection: instagramReauth,
+            connection: instagramConnected,
             mode: CrosspostingMode.automatic,
           ),
         ],
       );
       expect(settings.first.isConnected, isTrue);
       expect(settings.first.needsReauth, isFalse);
-      expect(settings.last.isConnected, isFalse);
-      expect(settings.last.needsReauth, isTrue);
+      expect(settings.last.isConnected, isTrue);
+      expect(settings.last.needsReauth, isFalse);
     });
 
     test(
@@ -271,6 +272,35 @@ void main() {
       expect(settings.single.connection, isNull);
       expect(settings.single.mode, CrosspostingMode.disabled);
     });
+
+    test(
+      'rejects automatic preference when capability is unavailable',
+      () async {
+        when(apiClient.getPlatforms).thenAnswer(
+          (_) async => const [
+            CrosspostingPlatformInfo(
+              platform: CrosspostingPlatform.x,
+              enabled: true,
+              supportsAutomatic: false,
+            ),
+          ],
+        );
+        when(apiClient.getConnections).thenAnswer((_) async => const []);
+        when(apiClient.getPreferences).thenAnswer(
+          (_) async => const [
+            CrosspostingPreference(
+              platform: CrosspostingPlatform.x,
+              mode: CrosspostingMode.automatic,
+            ),
+          ],
+        );
+
+        await expectLater(
+          repository.loadSettings(),
+          throwsA(isA<CrosspostingApiException>()),
+        );
+      },
+    );
   });
 
   test('platform settings are immutable values with mode copyWith', () {

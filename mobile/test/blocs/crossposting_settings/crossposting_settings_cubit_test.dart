@@ -17,6 +17,7 @@ class _RecordingCrosspostingSettingsCubit extends CrosspostingSettingsCubit {
   _RecordingCrosspostingSettingsCubit({
     required super.repository,
     required super.launchOAuth,
+    super.nonceGenerator,
   });
 
   final reportedErrors = <Object>[];
@@ -77,7 +78,7 @@ void main() {
       launchedUrls = [];
       callbackUri = Uri.parse(
         'https://divine.video/app/callback'
-        '?connection=connected&platform=instagram',
+        '?app_state=test-nonce&connection=connected&platform=instagram',
       );
       when(
         () => repository.loadSettings(),
@@ -106,6 +107,7 @@ void main() {
     }) {
       return _RecordingCrosspostingSettingsCubit(
         repository: repository,
+        nonceGenerator: () => 'test-nonce',
         launchOAuth:
             launcher ??
             (url) async {
@@ -252,6 +254,10 @@ void main() {
 
           final refresh = cubit.refresh();
           await refreshStarted.future;
+          expect(
+            cubit.state.pendingAction,
+            CrosspostingPlatformAction.refreshing,
+          );
           await cubit.connect(CrosspostingPlatform.x);
 
           verifyNever(
@@ -263,6 +269,7 @@ void main() {
           refreshed.complete(const [xSettings]);
           await refresh;
           expect(cubit.state.entries, const [xSettings]);
+          expect(cubit.state.pendingAction, isNull);
         },
       );
 
@@ -295,6 +302,17 @@ void main() {
     });
 
     group('connect', () {
+      test('default OAuth nonces are random URL-safe values', () {
+        final first = generateCrosspostingOAuthNonce();
+        final second = generateCrosspostingOAuthNonce();
+
+        expect(first, hasLength(43));
+        expect(second, hasLength(43));
+        expect(first, isNot(second));
+        expect(RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(first), isTrue);
+        expect(RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(second), isTrue);
+      });
+
       test(
         'uses the exact universal-link return URL and launches auth',
         () async {
@@ -311,7 +329,10 @@ void main() {
                     ),
                   ).captured.single
                   as Uri;
-          expect(captured.toString(), 'https://divine.video/app/callback');
+          expect(
+            captured.toString(),
+            'https://divine.video/app/callback?app_state=test-nonce',
+          );
           expect(launchedUrls, [authorizationUrl]);
         },
       );
@@ -345,7 +366,8 @@ void main() {
           final refreshStarted = Completer<void>();
           final refreshed = Completer<List<CrosspostingPlatformSettings>>();
           callbackUri = Uri.parse(
-            'https://divine.video/app/callback?${testCase.query}',
+            'https://divine.video/app/callback'
+            '?app_state=test-nonce&${testCase.query}',
           );
           when(
             () => repository.loadSettings(),
@@ -435,7 +457,13 @@ void main() {
         test(
           '${invalid.key} is rejected after refreshing server truth',
           () async {
-            callbackUri = Uri.parse(invalid.value);
+            final invalidUri = Uri.parse(invalid.value);
+            callbackUri = invalidUri.replace(
+              query:
+                  '${invalidUri.query}'
+                  '${invalidUri.hasQuery ? '&' : ''}'
+                  'app_state=test-nonce',
+            );
             when(
               () => repository.loadSettings(),
             ).thenAnswer((_) async => const [xSettings]);
@@ -449,6 +477,38 @@ void main() {
             expect(cubit.state.outcome, isNull);
             expect(cubit.reportedErrors, hasLength(1));
             verify(() => repository.loadSettings()).called(1);
+          },
+        );
+      }
+
+      for (final nonceCase in const {
+        'missing nonce': null,
+        'mismatched nonce': 'another-attempt',
+      }.entries) {
+        test(
+          '${nonceCase.key} is rejected after refreshing server truth',
+          () async {
+            callbackUri =
+                Uri.parse(
+                  'https://divine.video/app/callback',
+                ).replace(
+                  queryParameters: {
+                    if (nonceCase.value != null) 'app_state': nonceCase.value,
+                    'connection': 'connected',
+                    'platform': 'instagram',
+                  },
+                );
+            when(
+              () => repository.loadSettings(),
+            ).thenAnswer((_) async => const [xSettings]);
+            final cubit = buildCubit();
+            addTearDown(cubit.close);
+
+            await cubit.connect(CrosspostingPlatform.instagram);
+
+            expect(cubit.state.entries, const [xSettings]);
+            expect(cubit.state.error, CrosspostingSettingsError.generic);
+            expect(cubit.state.outcome, isNull);
           },
         );
       }
@@ -651,6 +711,32 @@ void main() {
         expect(cubit.reportedErrors.single, isA<StateError>());
       });
 
+      test(
+        'treats not_connected disconnect as complete and reloads server truth',
+        () async {
+          when(() => repository.disconnect(any(), any())).thenThrow(
+            const CrosspostingApiException(
+              'already disconnected',
+              statusCode: 400,
+              code: 'not_connected',
+            ),
+          );
+          final cubit = buildCubit();
+          addTearDown(cubit.close);
+          await cubit.load();
+          when(
+            () => repository.loadSettings(),
+          ).thenAnswer((_) async => const [xSettings]);
+
+          await cubit.disconnect(CrosspostingPlatform.instagram);
+
+          expect(cubit.state.entries, const [xSettings]);
+          expect(cubit.state.error, isNull);
+          expect(cubit.state.pendingAction, isNull);
+          verify(() => repository.loadSettings()).called(2);
+        },
+      );
+
       test('reports reload failure after a successful disconnect', () async {
         final reloadFailure = StateError('reload failed');
         final cubit = buildCubit();
@@ -666,7 +752,17 @@ void main() {
             'instagram-connection',
           ),
         ).called(1);
-        expect(cubit.state.entries, initialSettings);
+        expect(
+          cubit.state.entries,
+          const [
+            CrosspostingPlatformSettings(
+              platform: CrosspostingPlatform.instagram,
+              supportsAutomatic: true,
+              mode: CrosspostingMode.disabled,
+            ),
+            xSettings,
+          ],
+        );
         expect(cubit.state.pendingAction, isNull);
         expect(cubit.state.error, CrosspostingSettingsError.generic);
         expect(cubit.reportedErrors, [reloadFailure]);
@@ -699,27 +795,34 @@ void main() {
         expect(cubit.state.pendingAction, isNull);
       });
 
-      test('rolls back and maps not_connected to a distinct error', () async {
-        when(() => repository.setMode(any(), any())).thenThrow(
-          const CrosspostingApiException(
-            'not connected',
-            statusCode: 400,
-            code: 'not_connected',
-          ),
-        );
-        final cubit = buildCubit();
-        addTearDown(cubit.close);
-        await cubit.load();
-        await cubit.setMode(
-          CrosspostingPlatform.instagram,
-          CrosspostingMode.automatic,
-        );
+      test(
+        'reloads server truth and maps not_connected to a distinct error',
+        () async {
+          when(() => repository.setMode(any(), any())).thenThrow(
+            const CrosspostingApiException(
+              'not connected',
+              statusCode: 400,
+              code: 'not_connected',
+            ),
+          );
+          final cubit = buildCubit();
+          addTearDown(cubit.close);
+          await cubit.load();
+          when(
+            () => repository.loadSettings(),
+          ).thenAnswer((_) async => const [xSettings]);
+          await cubit.setMode(
+            CrosspostingPlatform.instagram,
+            CrosspostingMode.automatic,
+          );
 
-        expect(cubit.state.entries.first.mode, CrosspostingMode.manual);
-        expect(cubit.state.error, CrosspostingSettingsError.notConnected);
-        expect(cubit.state.pendingAction, isNull);
-        expect(cubit.reportedErrors.single, isA<CrosspostingApiException>());
-      });
+          expect(cubit.state.entries, const [xSettings]);
+          expect(cubit.state.error, CrosspostingSettingsError.notConnected);
+          expect(cubit.state.pendingAction, isNull);
+          expect(cubit.reportedErrors.single, isA<CrosspostingApiException>());
+          verify(() => repository.loadSettings()).called(2);
+        },
+      );
 
       test('rolls back and reports a generic save failure', () async {
         when(

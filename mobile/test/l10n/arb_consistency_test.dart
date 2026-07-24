@@ -219,6 +219,30 @@ const _knownUntranslatedDebt = <String>{
   'authVerificationErrorPinLocked',
   'authVerificationErrorPinFailed',
   'authVerificationErrorPinUnavailable',
+  // Crossposting settings strings; translation deferred to the next
+  // l10n pass.
+  'settingsCrosspostingTitle',
+  'settingsCrosspostingSubtitle',
+  'crosspostingSignInRequired',
+  'crosspostingLoadFailed',
+  'crosspostingNoPlatforms',
+  'crosspostingRetry',
+  'crosspostingNotConnected',
+  'crosspostingConnected',
+  'crosspostingNeedsReconnect',
+  'crosspostingConnect',
+  'crosspostingReconnect',
+  'crosspostingDisconnect',
+  'crosspostingModeOff',
+  'crosspostingModeManual',
+  'crosspostingModeManualSubtitle',
+  'crosspostingModeAutomatic',
+  'crosspostingModeAutomaticSubtitle',
+  'crosspostingNotConnectedError',
+  'crosspostingGenericError',
+  'crosspostingConnectionSuccess',
+  'crosspostingConnectionFailed',
+  'crosspostingConnectionDenied',
 };
 
 const _signatureVerificationKeys = <String>{

@@ -1,6 +1,9 @@
 // ABOUTME: Orchestrates repository-backed crossposting settings actions
 // ABOUTME: Serializes operations and validates native OAuth callbacks
 
+import 'dart:convert';
+import 'dart:math';
+
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:openvine/repositories/crossposting_repository.dart';
@@ -13,20 +16,33 @@ part 'crossposting_settings_state.dart';
 /// A `null` callback means the user closed or cancelled the browser session.
 typedef CrosspostingOAuthLauncher = Future<Uri?> Function(Uri authorizationUrl);
 
+/// Creates an unguessable value that correlates a browser callback to one
+/// in-flight connect attempt.
+typedef CrosspostingNonceGenerator = String Function();
+
+String generateCrosspostingOAuthNonce() {
+  final random = Random.secure();
+  final bytes = List<int>.generate(32, (_) => random.nextInt(256));
+  return base64Url.encode(bytes).replaceAll('=', '');
+}
+
 class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
   CrosspostingSettingsCubit({
     required CrosspostingRepository repository,
     required CrosspostingOAuthLauncher launchOAuth,
+    CrosspostingNonceGenerator nonceGenerator = generateCrosspostingOAuthNonce,
   }) : _repository = repository,
        _launchOAuth = launchOAuth,
+       _nonceGenerator = nonceGenerator,
        super(CrosspostingSettingsState());
 
-  static final Uri returnUrl = Uri.parse(
+  static final Uri callbackBaseUrl = Uri.parse(
     'https://divine.video/app/callback',
   );
 
   final CrosspostingRepository _repository;
   final CrosspostingOAuthLauncher _launchOAuth;
+  final CrosspostingNonceGenerator _nonceGenerator;
 
   bool _operationInProgress = false;
 
@@ -57,6 +73,16 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
           )) {
         return;
       }
+      if (!showLoading &&
+          !_emitIfOpen(
+            state.copyWith(
+              pendingAction: CrosspostingPlatformAction.refreshing,
+              clearError: true,
+              clearOutcome: true,
+            ),
+          )) {
+        return;
+      }
 
       final entries = await _repository.loadSettings();
       if (isClosed) return;
@@ -65,6 +91,7 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
           status: CrosspostingSettingsStatus.loaded,
           entries: entries,
           clearError: true,
+          clearPending: true,
         ),
       );
     } catch (error, stackTrace) {
@@ -86,6 +113,13 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
   Future<void> _connect(CrosspostingPlatform platform) async {
     _beginAction(CrosspostingPlatformAction.connecting, platform);
     try {
+      final nonce = _nonceGenerator();
+      if (nonce.isEmpty) {
+        throw StateError('Crossposting OAuth nonce must not be empty');
+      }
+      final returnUrl = callbackBaseUrl.replace(
+        queryParameters: {'app_state': nonce},
+      );
       final start = await _repository.startConnection(
         platform,
         returnUrl: returnUrl,
@@ -99,7 +133,11 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
       Object? callbackError;
       if (callback != null) {
         try {
-          outcome = _parseCallback(callback, expectedPlatform: platform);
+          outcome = _parseCallback(
+            callback,
+            expectedPlatform: platform,
+            expectedNonce: nonce,
+          );
         } catch (error, stackTrace) {
           callbackError = error;
           if (isClosed) return;
@@ -157,8 +195,29 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
       if (connection == null) return;
 
       _beginAction(CrosspostingPlatformAction.disconnecting, platform);
-      await _repository.disconnect(platform, connection.id);
+      try {
+        await _repository.disconnect(platform, connection.id);
+      } on CrosspostingApiException catch (error, stackTrace) {
+        if (error.kind != CrosspostingApiErrorKind.notConnected) rethrow;
+        if (isClosed) return;
+        addError(error, stackTrace);
+      }
       if (isClosed) return;
+      _emitIfOpen(
+        state.copyWith(
+          entries: [
+            for (final entry in state.entries)
+              if (entry.platform == platform)
+                CrosspostingPlatformSettings(
+                  platform: entry.platform,
+                  supportsAutomatic: entry.supportsAutomatic,
+                  mode: CrosspostingMode.disabled,
+                )
+              else
+                entry,
+          ],
+        ),
+      );
 
       final entries = await _repository.loadSettings();
       if (isClosed) return;
@@ -211,10 +270,26 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
       } on CrosspostingApiException catch (error, stackTrace) {
         if (isClosed) return;
         addError(error, stackTrace);
+        if (error.kind == CrosspostingApiErrorKind.notConnected) {
+          try {
+            final entries = await _repository.loadSettings();
+            if (isClosed) return;
+            _emitActionError(
+              CrosspostingSettingsError.notConnected,
+              entries: entries,
+            );
+          } catch (reloadError, reloadStackTrace) {
+            if (isClosed) return;
+            addError(reloadError, reloadStackTrace);
+            _emitActionError(
+              CrosspostingSettingsError.generic,
+              entries: previousEntries,
+            );
+          }
+          return;
+        }
         _emitActionError(
-          error.kind == CrosspostingApiErrorKind.notConnected
-              ? CrosspostingSettingsError.notConnected
-              : CrosspostingSettingsError.generic,
+          CrosspostingSettingsError.generic,
           entries: previousEntries,
         );
       } catch (error, stackTrace) {
@@ -318,10 +393,11 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
   CrosspostingOAuthOutcome _parseCallback(
     Uri callback, {
     required CrosspostingPlatform expectedPlatform,
+    required String expectedNonce,
   }) {
-    if (callback.scheme != returnUrl.scheme ||
-        callback.host != returnUrl.host ||
-        callback.path != returnUrl.path ||
+    if (callback.scheme != callbackBaseUrl.scheme ||
+        callback.host != callbackBaseUrl.host ||
+        callback.path != callbackBaseUrl.path ||
         callback.hasPort ||
         callback.userInfo.isNotEmpty ||
         callback.hasFragment) {
@@ -331,8 +407,11 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
     final platformValues = callback.queryParametersAll['platform'];
     final connectionValues = callback.queryParametersAll['connection'];
     final reasonValues = callback.queryParametersAll['reason'];
+    final nonceValues = callback.queryParametersAll['app_state'];
     if (platformValues?.length != 1 ||
         connectionValues?.length != 1 ||
+        nonceValues?.length != 1 ||
+        nonceValues!.single != expectedNonce ||
         (reasonValues != null && reasonValues.length != 1)) {
       throw const FormatException('Invalid crossposting callback parameters');
     }

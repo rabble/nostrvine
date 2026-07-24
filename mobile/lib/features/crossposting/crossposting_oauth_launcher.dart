@@ -8,8 +8,8 @@ const _invalidCallbackMessage =
     'Invalid crossposting OAuth callback. Expected '
     'https://divine.video/app/callback with no user info or explicit port.';
 const _callbackPrefix = 'https://';
-final _authorityTerminator = RegExp(r'[/#?]');
-final _malformedPercentTriplet = RegExp(r'%(?![0-9A-Fa-f]{2})');
+final _authorityTerminator = RegExp('[/#?]');
+final _malformedPercentTriplet = RegExp('%(?![0-9A-Fa-f]{2})');
 
 /// Authentication seam matching the arguments used by [FlutterWebAuth2].
 typedef CrosspostingAuthenticate =
@@ -66,7 +66,7 @@ Uri _parseCallback(String callback) {
 bool _hasExactRawAuthority(String callback) {
   if (!callback.startsWith(_callbackPrefix)) return false;
 
-  final authorityStart = _callbackPrefix.length;
+  const authorityStart = _callbackPrefix.length;
   final terminator = callback.indexOf(_authorityTerminator, authorityStart);
   final authorityEnd = terminator == -1 ? callback.length : terminator;
   return callback.substring(authorityStart, authorityEnd) == 'divine.video';

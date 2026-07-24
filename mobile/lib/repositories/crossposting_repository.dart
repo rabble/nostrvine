@@ -4,6 +4,9 @@
 import 'package:equatable/equatable.dart';
 import 'package:openvine/services/crossposting_api_client.dart';
 
+export 'package:openvine/services/crossposting_api_client.dart'
+    show CrosspostingMode, CrosspostingPlatform;
+
 /// User-visible crossposting state for one enabled platform.
 class CrosspostingPlatformSettings extends Equatable {
   const CrosspostingPlatformSettings({
@@ -79,6 +82,12 @@ class CrosspostingRepository {
       preferences,
       platformInfo.platform,
     );
+    if (!platformInfo.supportsAutomatic &&
+        preference?.mode == CrosspostingMode.automatic) {
+      throw CrosspostingApiException(
+        'Automatic mode is not supported for ${platformInfo.platform.wireName}',
+      );
+    }
     return CrosspostingPlatformSettings(
       platform: platformInfo.platform,
       supportsAutomatic: platformInfo.supportsAutomatic,
@@ -96,13 +105,20 @@ class CrosspostingRepository {
     CrosspostingPlatform platform,
     String? preferredConnectionId,
   ) {
+    CrosspostingConnection? preferredNeedsReauth;
     if (preferredConnectionId != null) {
       for (final connection in connections) {
-        if (connection.platform == platform &&
-            connection.id == preferredConnectionId &&
-            connection.status != CrosspostingConnectionStatus.disconnected) {
+        if (connection.platform != platform ||
+            connection.id != preferredConnectionId) {
+          continue;
+        }
+        if (connection.status == CrosspostingConnectionStatus.connected) {
           return connection;
         }
+        if (connection.status == CrosspostingConnectionStatus.needsReauth) {
+          preferredNeedsReauth = connection;
+        }
+        break;
       }
     }
 
@@ -118,7 +134,7 @@ class CrosspostingRepository {
           break;
       }
     }
-    return needsReauth;
+    return preferredNeedsReauth ?? needsReauth;
   }
 
   CrosspostingPreference? _preferenceFor(

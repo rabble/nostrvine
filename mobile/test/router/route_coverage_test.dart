@@ -1,9 +1,11 @@
 // ABOUTME: Validates all app_router.dart routes have corresponding parseRoute cases
 // ABOUTME: Prevents route definition/parsing drift that caused the relay-settings bug
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/features/people_lists/view/create_people_list_page.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
+import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/apps/app_detail_screen.dart';
 import 'package:openvine/screens/apps/apps_directory_screen.dart';
@@ -27,6 +29,7 @@ import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings/appearance_settings_screen.dart';
+import 'package:openvine/screens/settings/crossposting_settings_screen.dart';
 import 'package:openvine/screens/settings/invites_screen.dart';
 import 'package:openvine/screens/settings/monetization_links_settings_screen.dart';
 import 'package:openvine/screens/settings/nip05_settings_screen.dart';
@@ -41,6 +44,19 @@ import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 
 void main() {
+  test('crossposting route is nonvideo for activeVideoIdProvider', () {
+    final route = parseRoute(CrosspostingSettingsScreen.path);
+    final container = ProviderContainer(
+      overrides: [
+        pageContextProvider.overrideWithValue(AsyncValue.data(route)),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    expect(route.type, RouteType.crosspostingSettings);
+    expect(container.read(activeVideoIdProvider), isNull);
+  });
+
   group('Route Coverage Validation', () {
     group('Settings routes parse to their own RouteTypes', () {
       // Each settings sub-route has its own RouteType to prevent
@@ -187,6 +203,24 @@ void main() {
             parseRoute(AppearanceSettingsScreen.path),
           );
           expect(canonical, AppearanceSettingsScreen.path);
+        },
+      );
+
+      test(
+        '${CrosspostingSettingsScreen.path} parses to RouteType.crosspostingSettings',
+        () {
+          final context = parseRoute(CrosspostingSettingsScreen.path);
+          expect(context.type, RouteType.crosspostingSettings);
+        },
+      );
+
+      test(
+        '${CrosspostingSettingsScreen.path} round-trips through buildRoute(parseRoute())',
+        () {
+          final canonical = buildRoute(
+            parseRoute(CrosspostingSettingsScreen.path),
+          );
+          expect(canonical, CrosspostingSettingsScreen.path);
         },
       );
 
@@ -557,6 +591,7 @@ void main() {
       'hashtag': HashtagScreenRouter.pathForTag('nostr'),
       'category gallery': CategoryGalleryScreen.locationFor('animals'),
       'settings': SettingsScreen.path,
+      'crossposting settings': CrosspostingSettingsScreen.path,
       'monetization links settings': MonetizationLinksSettingsScreen.path,
       'badges': BadgesScreen.path,
       'relay settings': RelaySettingsScreen.path,
@@ -603,6 +638,7 @@ void main() {
         RouteType.invites: InvitesScreen.path,
         RouteType.badges: BadgesScreen.path,
         RouteType.settings: SettingsScreen.path,
+        RouteType.crosspostingSettings: CrosspostingSettingsScreen.path,
         RouteType.monetizationLinksSettings:
             MonetizationLinksSettingsScreen.path,
         RouteType.relaySettings: RelaySettingsScreen.path,

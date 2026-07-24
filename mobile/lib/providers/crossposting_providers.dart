@@ -2,25 +2,34 @@
 // ABOUTME: Owns the API client lifecycle and repository construction
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/repositories/crossposting_repository.dart';
+import 'package:openvine/services/auth_service.dart' show AuthState;
 import 'package:openvine/services/crossposting_api_client.dart';
+
+final crosspostingEligibleProvider = Provider<bool>((ref) {
+  final authState = ref.watch(currentAuthStateProvider);
+  final authService = ref.watch(authServiceProvider);
+  return authState == AuthState.authenticated &&
+      authService.currentPublicKeyHex != null &&
+      authService.isRegistered;
+});
 
 typedef CrosspostingApiClientFactory =
     CrosspostingApiClient Function(
-      KeycastOAuth oauthClient,
+      CrosspostingAccessTokenReader accessTokenReader,
     );
 
 final crosspostingApiClientFactoryProvider =
     Provider<CrosspostingApiClientFactory>((ref) {
-      return (oauthClient) => CrosspostingApiClient(oauthClient: oauthClient);
+      return (accessTokenReader) =>
+          CrosspostingApiClient(accessTokenReader: accessTokenReader);
     });
 
 final crosspostingApiClientProvider = Provider<CrosspostingApiClient>((ref) {
-  final oauthClient = ref.watch(oauthClientProvider);
+  final authService = ref.watch(authServiceProvider);
   final createClient = ref.watch(crosspostingApiClientFactoryProvider);
-  final client = createClient(oauthClient);
+  final client = createClient(authService.getBoundDivineAccessToken);
   ref.onDispose(client.close);
   return client;
 });

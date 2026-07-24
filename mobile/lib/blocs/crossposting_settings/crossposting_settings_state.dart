@@ -5,8 +5,13 @@ part of 'crossposting_settings_cubit.dart';
 
 enum CrosspostingSettingsStatus { initial, loading, loaded, failure }
 
-/// A per-platform operation that prevents overlapping user mutations.
-enum CrosspostingPlatformAction { connecting, disconnecting, savingMode }
+/// An operation that prevents overlapping reads and user mutations.
+enum CrosspostingPlatformAction {
+  refreshing,
+  connecting,
+  disconnecting,
+  savingMode,
+}
 
 /// Transient error category surfaced by the settings UI.
 enum CrosspostingSettingsError { generic, notConnected }

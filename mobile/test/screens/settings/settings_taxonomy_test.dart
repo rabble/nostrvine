@@ -105,6 +105,7 @@ void main() {
 
     when(() => localeCubit.state).thenReturn(const LocaleState());
     when(() => authService.isAuthenticated).thenReturn(false);
+    when(() => authService.isRegistered).thenReturn(false);
     when(() => authService.isAnonymous).thenReturn(false);
     when(() => authService.hasExpiredOAuthSession).thenReturn(false);
     when(() => authService.getKnownAccounts()).thenAnswer((_) async => []);

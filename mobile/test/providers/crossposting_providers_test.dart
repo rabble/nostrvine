@@ -4,51 +4,55 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/crossposting_providers.dart';
+import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/crossposting_api_client.dart';
 
-class _MockKeycastOAuth extends Mock implements KeycastOAuth {}
+class _MockAuthService extends Mock implements AuthService {}
 
 class _MockCrosspostingApiClient extends Mock
     implements CrosspostingApiClient {}
 
-final _oauthSelectorProvider = StateProvider<KeycastOAuth>((_) {
+final _authSelectorProvider = StateProvider<AuthService>((_) {
   throw StateError('Must be overridden');
 });
 
 void main() {
-  test('OAuth changes rebuild and dispose API clients', () async {
-    final firstOAuth = _MockKeycastOAuth();
-    final secondOAuth = _MockKeycastOAuth();
+  test('auth changes rebuild and dispose owner-bound API clients', () async {
+    final firstAuth = _MockAuthService();
+    final secondAuth = _MockAuthService();
     final firstClient = _MockCrosspostingApiClient();
     final secondClient = _MockCrosspostingApiClient();
+    when(firstAuth.getBoundDivineAccessToken).thenAnswer((_) async => 'first');
+    when(
+      secondAuth.getBoundDivineAccessToken,
+    ).thenAnswer((_) async => 'second');
     when(firstClient.close).thenReturn(null);
     when(secondClient.close).thenReturn(null);
-    final builtFor = <KeycastOAuth>[];
+    final readers = <CrosspostingAccessTokenReader>[];
     final container = ProviderContainer(
       overrides: [
-        _oauthSelectorProvider.overrideWith((_) => firstOAuth),
-        oauthClientProvider.overrideWith(
-          (ref) => ref.watch(_oauthSelectorProvider),
+        _authSelectorProvider.overrideWith((_) => firstAuth),
+        authServiceProvider.overrideWith(
+          (ref) => ref.watch(_authSelectorProvider),
         ),
-        crosspostingApiClientFactoryProvider.overrideWithValue((oauthClient) {
-          builtFor.add(oauthClient);
-          return identical(oauthClient, firstOAuth)
-              ? firstClient
-              : secondClient;
+        crosspostingApiClientFactoryProvider.overrideWithValue((reader) {
+          readers.add(reader);
+          return readers.length == 1 ? firstClient : secondClient;
         }),
       ],
     );
 
     expect(container.read(crosspostingApiClientProvider), same(firstClient));
-    container.read(_oauthSelectorProvider.notifier).state = secondOAuth;
+    expect(await readers.single(), 'first');
+    container.read(_authSelectorProvider.notifier).state = secondAuth;
     await Future<void>.delayed(Duration.zero);
 
     expect(container.read(crosspostingApiClientProvider), same(secondClient));
-    expect(builtFor, [firstOAuth, secondOAuth]);
+    expect(await readers.last(), 'second');
+    expect(readers, hasLength(2));
     verify(firstClient.close).called(1);
     verifyNever(secondClient.close);
 

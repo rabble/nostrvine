@@ -7,19 +7,16 @@ import 'dart:convert';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
-import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/services/crossposting_api_client.dart';
-
-class _MockKeycastOAuth extends Mock implements KeycastOAuth {}
 
 class _MockHttpClient extends Mock implements http.Client {}
 
 void main() {
   group(CrosspostingApiClient, () {
-    late _MockKeycastOAuth oauthClient;
     late _MockHttpClient httpClient;
     late CrosspostingApiClient client;
+    late String? currentAccessToken;
 
     const accessToken = 'session-access-token';
 
@@ -28,17 +25,11 @@ void main() {
     });
 
     setUp(() {
-      oauthClient = _MockKeycastOAuth();
       httpClient = _MockHttpClient();
+      currentAccessToken = accessToken;
       client = CrosspostingApiClient(
-        oauthClient: oauthClient,
+        accessTokenReader: () async => currentAccessToken,
         httpClient: httpClient,
-      );
-      when(() => oauthClient.getSessionOrRefresh()).thenAnswer(
-        (_) async => const KeycastSession(
-          bunkerUrl: 'bunker://test',
-          accessToken: accessToken,
-        ),
       );
     });
 
@@ -147,6 +138,15 @@ void main() {
 
       test('rejects a malformed platforms collection', () async {
         stubGet(jsonEncode({'platforms': <String, dynamic>{}}));
+
+        await expectLater(
+          client.getPlatforms(),
+          throwsA(isA<CrosspostingApiException>()),
+        );
+      });
+
+      test('rejects a missing platforms collection', () async {
+        stubGet(jsonEncode(<String, dynamic>{}));
 
         await expectLater(
           client.getPlatforms(),
@@ -322,9 +322,7 @@ void main() {
       });
 
       test('throws unauthorized when there is no session', () async {
-        when(
-          () => oauthClient.getSessionOrRefresh(),
-        ).thenAnswer((_) async => null);
+        currentAccessToken = null;
 
         expect(
           () => client.getConnections(),
@@ -343,6 +341,15 @@ void main() {
 
       test('rejects a malformed connections collection', () async {
         stubGet(jsonEncode({'connections': 'not-a-list'}));
+
+        await expectLater(
+          client.getConnections(),
+          throwsA(isA<CrosspostingApiException>()),
+        );
+      });
+
+      test('rejects a missing connections collection', () async {
+        stubGet(jsonEncode(<String, dynamic>{}));
 
         await expectLater(
           client.getConnections(),
@@ -714,6 +721,15 @@ void main() {
         );
       });
 
+      test('rejects a missing preferences collection', () async {
+        stubGet(jsonEncode(<String, dynamic>{}));
+
+        await expectLater(
+          client.getPreferences(),
+          throwsA(isA<CrosspostingApiException>()),
+        );
+      });
+
       for (final malformedField in const {
         'mode': 42,
         'connectionId': false,
@@ -988,6 +1004,20 @@ void main() {
               ),
         ),
       );
+    });
+
+    test('diagnostic text omits raw messages and transport causes', () {
+      final exception = CrosspostingApiException(
+        'https://secret.example/connection/private-id',
+        statusCode: 500,
+        code: 'server_error',
+        cause: StateError('Bearer private-token'),
+      );
+
+      expect(exception.toString(), contains('server_error'));
+      expect(exception.toString(), isNot(contains('secret.example')));
+      expect(exception.toString(), isNot(contains('private-id')));
+      expect(exception.toString(), isNot(contains('private-token')));
     });
 
     test('close closes the owned HTTP client', () {

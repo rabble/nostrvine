@@ -13,10 +13,12 @@ import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/crossposting_providers.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/screens/settings/app_language_screen.dart';
 import 'package:openvine/screens/settings/appearance_settings_screen.dart';
 import 'package:openvine/screens/settings/bluesky_settings_screen.dart';
+import 'package:openvine/screens/settings/crossposting_settings_screen.dart';
 import 'package:openvine/screens/settings/storage/storage_management_page.dart';
 import 'package:openvine/services/feed_aspect_ratio_preference_service.dart';
 import 'package:openvine/services/locale_preference_service.dart';
@@ -35,6 +37,7 @@ class GeneralSettingsScreen extends ConsumerWidget {
     final showAppearance = ref.watch(
       isFeatureEnabledProvider(FeatureFlag.lightMode),
     );
+    final showCrossposting = ref.watch(crosspostingEligibleProvider);
 
     return Scaffold(
       appBar: DiVineAppBar(
@@ -49,8 +52,8 @@ class GeneralSettingsScreen extends ConsumerWidget {
           constraints: const BoxConstraints(maxWidth: 600),
           child: ListView(
             children: [
-              if (showBluesky) ...[
-                _SectionHeader(context.l10n.generalSettingsSectionIntegrations),
+              _SectionHeader(context.l10n.generalSettingsSectionIntegrations),
+              if (showBluesky)
                 ListTile(
                   leading: const Icon(
                     Icons.cloud_upload,
@@ -70,7 +73,26 @@ class GeneralSettingsScreen extends ConsumerWidget {
                   ),
                   onTap: () => context.push(BlueskySettingsScreen.path),
                 ),
-              ],
+              if (showCrossposting)
+                ListTile(
+                  leading: const DivineIcon(
+                    icon: DivineIconName.shareNetwork,
+                    color: VineTheme.vineGreen,
+                  ),
+                  title: Text(
+                    context.l10n.settingsCrosspostingTitle,
+                    style: _titleStyle,
+                  ),
+                  subtitle: Text(
+                    context.l10n.settingsCrosspostingSubtitle,
+                    style: _subtitleStyle,
+                  ),
+                  trailing: const DivineIcon(
+                    icon: DivineIconName.caretRight,
+                    color: VineTheme.lightText,
+                  ),
+                  onTap: () => context.push(CrosspostingSettingsScreen.path),
+                ),
               _SectionHeader(context.l10n.generalSettingsSectionViewing),
               const _ClosedCaptionsToggle(),
               const _FeedAspectRatioPreferenceTile(),

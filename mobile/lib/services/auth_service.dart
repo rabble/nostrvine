@@ -417,6 +417,32 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// Returns true if authenticated via Divine OAuth, false for anonymous/imported keys
   bool get isRegistered => _authSource == AuthenticationSource.divineOAuth;
 
+  /// Returns the active account's Divine OAuth access token.
+  ///
+  /// The token is owner-bound and refreshes through the process-wide
+  /// single-flight coordinator so crossposter requests cannot race Keycast's
+  /// rotating refresh token or reuse another account's stored session.
+  Future<String?> getBoundDivineAccessToken() async {
+    final ownerPubkey = currentPublicKeyHex;
+    if (_authState != AuthState.authenticated ||
+        _authSource != AuthenticationSource.divineOAuth ||
+        ownerPubkey == null ||
+        ownerPubkey.isEmpty) {
+      return null;
+    }
+
+    final token = await _oauthCoordinator.accessTokenForOwner(
+      expectedOwnerPubkey: ownerPubkey,
+      storedSessionReader: () => KeycastSession.load(_flutterSecureStorage),
+    );
+    if (_authState != AuthState.authenticated ||
+        _authSource != AuthenticationSource.divineOAuth ||
+        currentPublicKeyHex != ownerPubkey) {
+      return null;
+    }
+    return token;
+  }
+
   /// Whether the active account has a local private key that can be exported.
   bool get canExportLocalNsec {
     if (!isAuthenticated) return false;

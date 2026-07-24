@@ -5,7 +5,9 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
-import 'package:keycast_flutter/keycast_flutter.dart';
+
+/// Reads an account-bound Divine OAuth access token.
+typedef CrosspostingAccessTokenReader = Future<String?> Function();
 
 T? _optionalJsonField<T>(
   Map<String, dynamic> json,
@@ -228,9 +230,8 @@ class CrosspostingApiException implements Exception {
 
   @override
   String toString() =>
-      'CrosspostingApiException: $message '
-      '(${statusCode ?? 'no status'}${code == null ? '' : ', $code'})'
-      '${cause == null ? '' : '; cause: $cause'}';
+      'CrosspostingApiException'
+      '(status: ${statusCode ?? 'none'}, code: ${code ?? 'none'})';
 }
 
 /// Client for the Divine crossposter service
@@ -240,10 +241,10 @@ class CrosspostingApiException implements Exception {
 /// app already holds for login.divine.video.
 class CrosspostingApiClient {
   CrosspostingApiClient({
-    required KeycastOAuth oauthClient,
+    required CrosspostingAccessTokenReader accessTokenReader,
     String baseUrl = defaultBaseUrl,
     http.Client? httpClient,
-  }) : _oauthClient = oauthClient,
+  }) : _accessTokenReader = accessTokenReader,
        _baseUrl = baseUrl,
        _httpClient = httpClient ?? http.Client();
 
@@ -257,7 +258,7 @@ class CrosspostingApiClient {
     'crossposter.divine.video',
   };
 
-  final KeycastOAuth _oauthClient;
+  final CrosspostingAccessTokenReader _accessTokenReader;
   final String _baseUrl;
   final http.Client _httpClient;
 
@@ -265,8 +266,7 @@ class CrosspostingApiClient {
   void close() => _httpClient.close();
 
   Future<Map<String, String>> _authHeaders() async {
-    final session = await _oauthClient.getSessionOrRefresh();
-    final token = session?.accessToken;
+    final token = await _accessTokenReader();
     if (token == null) {
       throw const CrosspostingApiException(
         'Not authenticated',
@@ -288,7 +288,7 @@ class CrosspostingApiClient {
   /// Throws [CrosspostingApiException] on failure.
   Future<List<CrosspostingPlatformInfo>> getPlatforms() async {
     final json = await _get('/platforms?format=json');
-    final entries = _optionalJsonField<List<dynamic>>(json, 'platforms') ?? [];
+    final entries = _requiredJsonField<List<dynamic>>(json, 'platforms');
     final platforms = <CrosspostingPlatformInfo>[];
     for (final rawEntry in entries) {
       final entry = _jsonObject(rawEntry, 'platform entry');
@@ -313,8 +313,7 @@ class CrosspostingApiClient {
   /// Throws [CrosspostingApiException] on failure.
   Future<List<CrosspostingConnection>> getConnections() async {
     final json = await _get('/connections');
-    final entries =
-        _optionalJsonField<List<dynamic>>(json, 'connections') ?? [];
+    final entries = _requiredJsonField<List<dynamic>>(json, 'connections');
     final connections = <CrosspostingConnection>[];
     for (final rawEntry in entries) {
       final entry = _jsonObject(rawEntry, 'connection entry');
@@ -391,8 +390,7 @@ class CrosspostingApiClient {
   /// Throws [CrosspostingApiException] on failure.
   Future<List<CrosspostingPreference>> getPreferences() async {
     final json = await _get('/preferences');
-    final entries =
-        _optionalJsonField<List<dynamic>>(json, 'preferences') ?? [];
+    final entries = _requiredJsonField<List<dynamic>>(json, 'preferences');
     final preferences = <CrosspostingPreference>[];
     for (final rawEntry in entries) {
       final entry = _jsonObject(rawEntry, 'preference entry');
