@@ -41,6 +41,7 @@ class PendingProductEvent {
     this.attemptCount = 0,
     this.nextAttemptAt,
     this.lastError,
+    this.ownerPubkey,
   });
 
   final String id;
@@ -51,6 +52,10 @@ class PendingProductEvent {
   final DateTime? nextAttemptAt;
   final String? lastError;
   final DateTime createdAt;
+
+  /// Hex pubkey of the account that produced this event, or null for legacy
+  /// rows enqueued before owner scoping existed.
+  final String? ownerPubkey;
 }
 
 @DriftAccessor(tables: [PendingProductEvents])
@@ -68,6 +73,7 @@ class PendingProductEventsDao extends DatabaseAccessor<AppDatabase>
       nextAttemptAt: Value(event.nextAttemptAt),
       lastError: Value(event.lastError),
       createdAt: event.createdAt,
+      ownerPubkey: Value(event.ownerPubkey),
     );
   }
 
@@ -81,6 +87,7 @@ class PendingProductEventsDao extends DatabaseAccessor<AppDatabase>
       nextAttemptAt: row.nextAttemptAt,
       lastError: row.lastError,
       createdAt: row.createdAt,
+      ownerPubkey: row.ownerPubkey,
     );
   }
 
@@ -105,10 +112,14 @@ class PendingProductEventsDao extends DatabaseAccessor<AppDatabase>
     return row == null ? null : _rowToModel(row);
   }
 
+  /// Returns retryable events for [ownerPubkey] (plus legacy rows with no
+  /// owner). A null [ownerPubkey] returns rows for every account, preserving
+  /// the pre-owner-scoping behaviour.
   Future<List<PendingProductEvent>> getRetryable({
     required DateTime now,
     required int maxAttempts,
     required int limit,
+    String? ownerPubkey,
   }) async {
     final query = select(pendingProductEvents)
       ..where(
@@ -117,12 +128,21 @@ class PendingProductEventsDao extends DatabaseAccessor<AppDatabase>
             (table.status.equals(PendingProductEventStatus.pending.name) |
                 table.status.equals(PendingProductEventStatus.failed.name)) &
             (table.nextAttemptAt.isNull() |
-                table.nextAttemptAt.isSmallerOrEqualValue(now)),
+                table.nextAttemptAt.isSmallerOrEqualValue(now)) &
+            _ownedOrLegacy(table.ownerPubkey, ownerPubkey),
       )
       ..orderBy([(table) => OrderingTerm(expression: table.createdAt)])
       ..limit(limit);
     final rows = await query.get();
     return rows.map(_rowToModel).toList();
+  }
+
+  Expression<bool> _ownedOrLegacy(
+    GeneratedColumn<String> column,
+    String? ownerPubkey,
+  ) {
+    if (ownerPubkey == null) return const Constant(true);
+    return column.equals(ownerPubkey) | column.isNull();
   }
 
   Future<bool> markPublishing(String id) async {

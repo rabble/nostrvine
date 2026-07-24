@@ -700,6 +700,13 @@ class AppDatabase extends _$AppDatabase {
       CREATE INDEX IF NOT EXISTS idx_pending_product_events_created_at
       ON pending_product_events (created_at)
     ''');
+    // Owner scoping so the flush only publishes the current account's queued
+    // events (see PendingProductEvents.ownerPubkey). Legacy rows stay NULL.
+    await _addColumnIfMissing('pending_product_events', 'owner_pubkey', 'TEXT');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_pending_product_events_owner
+      ON pending_product_events (owner_pubkey, status, next_attempt_at)
+    ''');
 
     // Check if pending_gift_wraps table exists, create if missing.
     // Added for #5202 (durable failed-decrypt gift-wrap retry queue).

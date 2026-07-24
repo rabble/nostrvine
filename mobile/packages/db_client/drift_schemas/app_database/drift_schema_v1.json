@@ -2555,6 +2555,16 @@
             "default_dart": null,
             "default_client_dart": null,
             "dsl_features": []
+          },
+          {
+            "name": "owner_pubkey",
+            "getter_name": "ownerPubkey",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
           }
         ],
         "is_virtual": false,
@@ -3064,7 +3074,7 @@
       "sql": [
         {
           "dialect": "sqlite",
-          "sql": "CREATE TABLE IF NOT EXISTS \"pending_product_events\" (\"id\" TEXT NOT NULL, \"event_name\" TEXT NOT NULL, \"payload_json\" TEXT NOT NULL, \"status\" TEXT NOT NULL, \"attempt_count\" INTEGER NOT NULL DEFAULT 0, \"next_attempt_at\" INTEGER NULL, \"last_error\" TEXT NULL, \"created_at\" INTEGER NOT NULL, PRIMARY KEY (\"id\"));"
+          "sql": "CREATE TABLE IF NOT EXISTS \"pending_product_events\" (\"id\" TEXT NOT NULL, \"event_name\" TEXT NOT NULL, \"payload_json\" TEXT NOT NULL, \"status\" TEXT NOT NULL, \"attempt_count\" INTEGER NOT NULL DEFAULT 0, \"next_attempt_at\" INTEGER NULL, \"last_error\" TEXT NULL, \"created_at\" INTEGER NOT NULL, \"owner_pubkey\" TEXT NULL, PRIMARY KEY (\"id\"));"
         }
       ]
     },

@@ -526,6 +526,9 @@ ProductEventQueue productEventQueue(Ref ref) {
   final queue = ProductEventQueue(
     dao: db.pendingProductEventsDao,
     ingestClient: ingestClient,
+    // Read fresh at flush so a logout/login as a different account only
+    // publishes that account's own queued events under its own signature.
+    currentOwnerPubkey: () => ref.read(authServiceProvider).currentPublicKeyHex,
   );
 
   queue.recoverPublishingAndFlush().catchError((Object e) {

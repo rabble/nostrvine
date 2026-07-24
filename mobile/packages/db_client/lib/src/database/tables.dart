@@ -1393,6 +1393,15 @@ class PendingProductEvents extends Table {
 
   DateTimeColumn get createdAt => dateTime().named('created_at')();
 
+  /// Hex pubkey of the account that produced this event.
+  ///
+  /// The flush signs the batch with the *current* account's NIP-98 token, so
+  /// events are filtered to the current owner at flush time — otherwise a
+  /// logout/login as a different account would publish the prior account's
+  /// queued events under the new account's signature. NULL for legacy rows
+  /// enqueued before this column existed; those flush under whoever is active.
+  TextColumn get ownerPubkey => text().nullable().named('owner_pubkey')();
+
   @override
   Set<Column> get primaryKey => {id};
 
@@ -1402,6 +1411,11 @@ class PendingProductEvents extends Table {
       'CREATE INDEX IF NOT EXISTS '
           'idx_pending_product_events_status_next_attempt '
           'ON pending_product_events (status, next_attempt_at)',
+    ),
+    Index(
+      'idx_pending_product_events_owner',
+      'CREATE INDEX IF NOT EXISTS idx_pending_product_events_owner '
+          'ON pending_product_events (owner_pubkey, status, next_attempt_at)',
     ),
     Index(
       'idx_pending_product_events_created_at',

@@ -2582,6 +2582,14 @@ class PendingProductEvents extends Table with TableInfo {
     requiredDuringInsert: true,
     $customConstraints: 'NOT NULL',
   );
+  late final GeneratedColumn<String> ownerPubkey = GeneratedColumn<String>(
+    'owner_pubkey',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: 'NULL',
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2592,6 +2600,7 @@ class PendingProductEvents extends Table with TableInfo {
     nextAttemptAt,
     lastError,
     createdAt,
+    ownerPubkey,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;

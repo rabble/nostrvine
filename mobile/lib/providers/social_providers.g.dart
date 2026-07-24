@@ -354,7 +354,7 @@ final class ProductEventQueueProvider
   }
 }
 
-String _$productEventQueueHash() => r'34617155654c8991021f5e8e9aaf1508da4e4db8';
+String _$productEventQueueHash() => r'5862cf1f79c8e494b395ced71d50a8a0ca8dd203';
 
 /// Analytics service with opt-out support.
 ///
