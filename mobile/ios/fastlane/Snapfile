@@ -47,4 +47,7 @@ erase_simulator(false)
 
 dark_mode(true)
 stop_after_first_error(true)
-number_of_retries(1)
+# No retries: the content waits are robust, and a retry re-runs xcodebuild
+# against the pinned derived_data_path, which collides with the first build
+# ("database is locked / two concurrent builds").
+number_of_retries(0)
