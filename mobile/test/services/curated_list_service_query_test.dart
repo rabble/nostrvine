@@ -628,6 +628,30 @@ void main() {
         expect(finalLists?.first.name, 'Non-Empty List');
       });
 
+      test('filters out lists with malformed addressable references', () async {
+        final malformedList = Event.fromJson({
+          'id': 'malformed_${'1' * 54}',
+          'pubkey': 'author_${'2' * 57}',
+          'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          'kind': 30005,
+          'tags': [
+            ['d', 'malformed-list'],
+            ['title', 'Malformed List'],
+            ['a', '34236::missing-pubkey'],
+          ],
+          'content': '',
+          'sig': 'test_signature',
+        });
+
+        when(
+          () => mockNostr.subscribe(any()),
+        ).thenAnswer((_) => Stream.value(malformedList));
+
+        final updates = await service.streamPublicListsFromRelays().toList();
+
+        expect(updates, isEmpty);
+      });
+
       test('supports pagination with until parameter', () async {
         final oldEvent = Event.fromJson({
           'id':

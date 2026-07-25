@@ -5,8 +5,11 @@
 import 'package:models/models.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' show Event;
 
-/// NIP-71 video kind numbers accepted in `a` tags.
-const _nip71VideoKinds = {'34235', '34236', '34237'};
+/// NIP-71 addressable video kind numbers accepted in `a` tags.
+const _nip71AddressableVideoKinds = {
+  NIP71VideoKinds.addressableNormalVideo,
+  NIP71VideoKinds.addressableShortVideo,
+};
 
 /// Utility for converting between Nostr events and [CuratedList] models.
 ///
@@ -74,6 +77,7 @@ abstract final class CuratedListConverter {
 
       final timestamp = DateTime.fromMillisecondsSinceEpoch(
         event.createdAt * 1000,
+        isUtc: true,
       );
 
       return CuratedList(
@@ -160,9 +164,13 @@ abstract final class CuratedListConverter {
 
   static bool _isAddressableVideoReference(String value) {
     final parts = value.split(':');
+    final kind = int.tryParse(parts.first);
+    final dTag = parts.length >= 3 ? parts.sublist(2).join(':') : '';
+
     return parts.length >= 3 &&
-        _nip71VideoKinds.contains(parts[0]) &&
+        kind != null &&
+        _nip71AddressableVideoKinds.contains(kind) &&
         parts[1].isNotEmpty &&
-        parts[2].isNotEmpty;
+        dTag.isNotEmpty;
   }
 }
