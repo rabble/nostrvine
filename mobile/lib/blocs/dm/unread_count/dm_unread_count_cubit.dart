@@ -23,15 +23,21 @@ import 'package:rxdart/rxdart.dart';
 /// chats from followed-but-unreplied peers. See #4976.
 ///
 /// Parity with the list is structural: this reuses the same static
-/// [DmRepository.classifyPotentialRequests] / [DmRepository.mergeAndSort]
-/// helpers and [ContentBlocklistRepository.filterBlockedConversations] that
+/// [DmRepository.classifyPotentialRequests] / [DmRepository.mergeAndSort] /
+/// [DmRepository.extractPinnedSupport] helpers and
+/// [ContentBlocklistRepository.filterBlockedConversations] that
 /// [ConversationListBloc] uses, so the count cannot drift from the list. It
-/// intentionally does NOT replicate two list-only concerns:
+/// intentionally does NOT replicate one list-only concern:
 ///
 /// * **Pagination** — the list renders one page; the badge counts the full
 ///   accepted set (unpaginated) so it reflects total unread, not the page.
-/// * **Recovery hold-back (#5304)** — that only delays the *requests* bucket,
-///   which never feeds this count.
+///
+/// The pinned support row (#6283) IS counted, because the inbox renders it
+/// with an unread dot. That pulls one conversation out of the requests bucket
+/// and into this count — an inbound-only moderation thread (the team wrote
+/// first) is no longer a Requests entry, it is the pin. The recovery hold-back
+/// (#5304) does not apply to it for the same reason it does not in the bloc:
+/// the pin is never routed into a bucket, so it cannot flash between two.
 ///
 /// The app-shell provides this cubit once via `ref.read`, but
 /// `dmRepositoryProvider` / `followRepositoryProvider` /
@@ -52,8 +58,12 @@ class DmUnreadCountCubit extends Cubit<int> {
     ContentBlocklistRepository? contentBlocklistRepository,
     ProtectedMinorInboxGate? protectedMinorInboxGate,
     Duration recomputeDebounce = _defaultRecomputeDebounce,
+    String? supportRowPubkey,
+    List<String> supportRowLegacyPubkeys = const [],
   }) : _protectedMinorInboxGate = protectedMinorInboxGate,
        _recomputeDebounce = recomputeDebounce,
+       _supportRowPubkey = supportRowPubkey,
+       _supportRowLegacyPubkeys = supportRowLegacyPubkeys,
        super(0) {
     setRepositories(
       dmRepository: dmRepository,
@@ -78,6 +88,13 @@ class DmUnreadCountCubit extends Cubit<int> {
   /// [setRepositories]. Null when the user is unrestricted / not wired.
   final ProtectedMinorInboxGate? _protectedMinorInboxGate;
   final Duration _recomputeDebounce;
+
+  /// Moderation pubkey the inbox pins (#6283), and the keys it has rotated
+  /// away from. Injected exactly as `ConversationListBloc` takes them, and for
+  /// the same reason: the badge must partition the list the same way the list
+  /// does, or it counts rows the inbox does not render and misses one it does.
+  final String? _supportRowPubkey;
+  final List<String> _supportRowLegacyPubkeys;
   DmRepository? _dmRepository;
   FollowRepository? _followRepository;
   ContentBlocklistRepository? _blocklistRepository;
@@ -208,7 +225,26 @@ class DmUnreadCountCubit extends Cubit<int> {
       userPubkey: userPubkey,
       isFollowing: followRepository.isFollowing,
     );
-    final inbox = DmRepository.mergeAndSort(accepted, split.followed);
+    final merged = DmRepository.mergeAndSort(accepted, split.followed);
+
+    // Partition the pinned support row out exactly as the inbox does (#6283),
+    // then count it back in. Two things have to happen and neither is optional:
+    // a retired-key moderation thread must STOP being counted (the inbox drops
+    // it entirely), and a current-key one must START being counted even when it
+    // arrived as a request (the inbox renders it as the pin, unread dot and
+    // all). Counting `pin.inbox` alone would do the first and not the second.
+    // The bloc's synthetic stand-in is deliberately NOT reproduced here: it is
+    // always read, so it can only ever add zero and one more gate pass.
+    final pin = DmRepository.extractPinnedSupport(
+      userPubkey: userPubkey,
+      supportPubkey: _supportRowPubkey,
+      legacyPubkeys: _supportRowLegacyPubkeys,
+      inbox: merged,
+      requests: split.requests,
+    );
+    final adopted = pin.pinned;
+    final inbox = adopted == null ? pin.inbox : [...pin.inbox, adopted];
+
     final blocklisted =
         _blocklistRepository?.filterBlockedConversations(
           inbox,
@@ -217,6 +253,9 @@ class DmUnreadCountCubit extends Cubit<int> {
         inbox;
     // Protected-minor filter (#176): the badge must apply the SAME predicate as
     // the list, or it leaks the existence + count of hidden contact attempts.
+    // Filtering the union in one pass rather than the pin separately keeps this
+    // to a single gate call — `filter` can kick a receive-time revalidation, so
+    // each extra call site is another revalidation trigger.
     final visible =
         _protectedMinorInboxGate?.filter(blocklisted, userPubkey: userPubkey) ??
         blocklisted;
