@@ -4,7 +4,6 @@
 // ABOUTME: gift-wrap subscription is auth-session-scoped via
 // ABOUTME: dmRepositoryProvider, not driven by this screen's lifecycle.
 
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -47,13 +46,6 @@ class InboxPage extends ConsumerWidget {
     final currentUserPubkey =
         ref.watch(authServiceProvider).currentPublicKeyHex ?? '';
     final protectedMinorInboxGate = ref.watch(protectedMinorInboxGateProvider);
-    // Pinned Divine Moderation support row (#6283). The identity comes from
-    // the release-pinned official-accounts list — the same anchor the
-    // protected-minor gate resolves against — so the row can never point
-    // somewhere the gate would not approve.
-    final supportRowPubkey = kPinnedOfficialAccounts
-        .firstWhereOrNull((a) => a.role == 'moderation')
-        ?.pubkeyHex;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -104,7 +96,11 @@ class InboxPage extends ConsumerWidget {
               contentBlocklistRepository: blocklistRepository,
               profileRepository: profileRepository,
               protectedMinorInboxGate: protectedMinorInboxGate,
-              supportRowPubkey: supportRowPubkey,
+              // Pinned Divine Moderation support row (#6283). The identity is
+              // the release-pinned one — the same anchor the protected-minor
+              // gate resolves against — so the row can never point somewhere
+              // the gate would not approve.
+              supportRowPubkey: kModerationPubkeyHex,
               supportRowLegacyPubkeys: kLegacyModerationPubkeys,
             )..add(const ConversationListStarted()),
           ),

@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_sdk/nip05/nip05_validor.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/constants/nostr_event_kinds.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -105,15 +106,11 @@ class ModerationLabelService {
   static const String _contentWarningNamespace = 'content-warning';
 
   /// NIP-05 address for the Divine moderation identity.
-  static const String divineModerationNip05 = 'moderation@divine.video';
+  static const String divineModerationNip05 = kModerationNip05;
 
-  /// Fallback pubkey when NIP-05 resolution fails.
-  static const String fallbackModerationPubkeyHex =
-      '8fd5eb6d8f362163bc00a5ab6b4a3167dbf32d00ec4efdbcf43b3c9514433b7e';
-
-  /// Old pubkey — used only for one-time migration of stored subscriptions.
-  static const String _legacyModerationPubkeyHex =
-      '121b915baba659cbe59626a8afaf83b01dc42354dfecaad9d465d51bb5715d72';
+  /// Fallback pubkey when NIP-05 resolution fails — the key pinned in this
+  /// build, which is also what the protected-minor gate anchors on.
+  static const String fallbackModerationPubkeyHex = kModerationPubkeyHex;
 
   /// Cache TTL for NIP-05 resolved pubkey (24 hours).
   static const Duration _resolvedPubkeyTtl = Duration(hours: 24);
@@ -202,8 +199,8 @@ class ModerationLabelService {
       _isFollowingModerationEnabled =
           _prefs.getBool(_followingModerationEnabledKey) ?? false;
 
-      // Migrate legacy pubkey if present in stored subscriptions
-      await _migrateLegacyPubkey(_prefs);
+      // Migrate retired pubkeys if present in stored subscriptions
+      await _migrateLegacyPubkey();
 
       // Always subscribe to Divine labeler
       if (!_subscribedLabelers.contains(_divineModerationPubkey)) {
@@ -733,24 +730,30 @@ class ModerationLabelService {
     );
   }
 
-  /// Migrate the legacy moderation pubkey out of stored subscriptions.
+  /// Migrate retired moderation pubkeys out of stored subscriptions.
   ///
-  /// Existing users may have the old pubkey persisted. This swaps it for
-  /// the current resolved pubkey so they subscribe to the right labeler.
-  Future<void> _migrateLegacyPubkey(SharedPreferences prefs) async {
-    if (!_subscribedLabelers.contains(_legacyModerationPubkeyHex)) return;
+  /// Existing users may have a pre-rotation pubkey persisted. Swaps every one
+  /// still subscribed for the current resolved pubkey so they follow the right
+  /// labeler. Idempotent — runs on every init.
+  Future<void> _migrateLegacyPubkey() async {
+    final retired = kLegacyModerationPubkeys
+        .where(_subscribedLabelers.contains)
+        .toList();
+    if (retired.isEmpty) return;
 
-    _subscribedLabelers.remove(_legacyModerationPubkeyHex);
+    _subscribedLabelers.removeAll(retired);
     _subscribedLabelers.add(_divineModerationPubkey);
     await _saveSubscribedLabelers();
 
-    // Clean up any labels fetched from the old key
-    _removeLabelsForLabeler(_legacyModerationPubkeyHex);
-    _loadedLabelers.remove(_legacyModerationPubkeyHex);
+    for (final pubkey in retired) {
+      // Clean up any labels fetched from the old key
+      _removeLabelsForLabeler(pubkey);
+      _loadedLabelers.remove(pubkey);
+    }
 
     Log.info(
-      'Migrated moderation labeler from legacy pubkey '
-      '$_legacyModerationPubkeyHex to $_divineModerationPubkey',
+      'Migrated moderation labeler from retired pubkey(s) '
+      '${retired.join(', ')} to $_divineModerationPubkey',
       name: 'ModerationLabelService',
       category: LogCategory.system,
     );
