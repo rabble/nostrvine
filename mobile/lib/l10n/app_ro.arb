@@ -86,6 +86,7 @@
     "settingsInvites": "Invitații",
     "settingsSwitchAccount": "Schimbă contul",
     "settingsAddAnotherAccount": "Adaugă alt cont",
+  "settingsAccountSwitchFailed": "Nu s-a putut schimba contul. Încearcă din nou.",
     "settingsUnsavedDraftsTitle": "Ciorne nesalvate",
     "settingsUnsavedDraftsMessage": "Ai {count} {count, plural, =1{ciornă} other{ciorne}} nesalvate. Schimbarea contului âți va păstra {count, plural, =1{ciorna} other{ciornele}}, dar poate vrei să {count, plural, =1{o} other{le}} publici sau să {count, plural, =1{o} other{le}} revizuiîi întâi.",
     "@settingsUnsavedDraftsMessage": {

@@ -114,6 +114,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsAddAnotherAccount => 'إضافة حساب آخر';
 
   @override
+  String get settingsAccountSwitchFailed =>
+      'تعذر تبديل الحسابات. يُرجى المحاولة مرة أخرى.';
+
+  @override
   String get settingsUnsavedDraftsTitle => 'مسودات غير محفوظة';
 
   @override

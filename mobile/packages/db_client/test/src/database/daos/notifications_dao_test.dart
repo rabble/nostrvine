@@ -283,22 +283,19 @@ void main() {
         expect(count, equals(0));
       });
 
-      test(
-        'returns count of all rows '
-        '(UPDATE touches all rows regardless of current value)',
-        () async {
-          await dao.upsertNotification(
-            id: 'notif_1',
-            type: 'like',
-            fromPubkey: testPubkey,
-            timestamp: 1700000000,
-            isRead: true,
-          );
+      test('returns count of all rows '
+          '(UPDATE touches all rows regardless of current value)', () async {
+        await dao.upsertNotification(
+          id: 'notif_1',
+          type: 'like',
+          fromPubkey: testPubkey,
+          timestamp: 1700000000,
+          isRead: true,
+        );
 
-          final updated = await dao.markAllAsRead();
-          expect(updated, equals(1));
-        },
-      );
+        final updated = await dao.markAllAsRead();
+        expect(updated, equals(1));
+      });
     });
 
     group('deleteNotification', () {
@@ -554,6 +551,198 @@ void main() {
 
         final results = await dao.getAllNotifications();
         expect(results, isEmpty);
+      });
+    });
+
+    group('owner scoping', () {
+      const ownerA =
+          '1111111111111111111111111111111111111111111111111111111111111111';
+      const ownerB =
+          '2222222222222222222222222222222222222222222222222222222222222222';
+
+      test('getAllNotifications hides another owner rows', () async {
+        await dao.upsertNotification(
+          id: 'for_a',
+          type: 'like',
+          fromPubkey: testPubkey,
+          timestamp: 1700000000,
+          ownerPubkey: ownerA,
+        );
+        await dao.upsertNotification(
+          id: 'for_b',
+          type: 'follow',
+          fromPubkey: testPubkey2,
+          timestamp: 1700000001,
+          ownerPubkey: ownerB,
+        );
+
+        final forA = await dao.getAllNotifications(ownerPubkey: ownerA);
+
+        expect(forA.map((r) => r.id), equals(['for_a']));
+      });
+
+      test('getAllNotifications includes legacy rows with no owner', () async {
+        await dao.upsertNotification(
+          id: 'legacy',
+          type: 'like',
+          fromPubkey: testPubkey,
+          timestamp: 1700000000,
+        );
+
+        final forA = await dao.getAllNotifications(ownerPubkey: ownerA);
+
+        expect(forA.map((r) => r.id), equals(['legacy']));
+      });
+
+      test('getUnreadCount excludes another owner unread rows', () async {
+        await dao.upsertNotification(
+          id: 'for_a',
+          type: 'like',
+          fromPubkey: testPubkey,
+          timestamp: 1700000000,
+          ownerPubkey: ownerA,
+        );
+        await dao.upsertNotification(
+          id: 'for_b',
+          type: 'like',
+          fromPubkey: testPubkey2,
+          timestamp: 1700000001,
+          ownerPubkey: ownerB,
+        );
+
+        expect(await dao.getUnreadCount(ownerPubkey: ownerA), equals(1));
+      });
+
+      test('markAllAsRead leaves another owner rows unread', () async {
+        await dao.upsertNotification(
+          id: 'for_a',
+          type: 'like',
+          fromPubkey: testPubkey,
+          timestamp: 1700000000,
+          ownerPubkey: ownerA,
+        );
+        await dao.upsertNotification(
+          id: 'for_b',
+          type: 'like',
+          fromPubkey: testPubkey2,
+          timestamp: 1700000001,
+          ownerPubkey: ownerB,
+        );
+
+        await dao.markAllAsRead(ownerPubkey: ownerA);
+
+        final all = await dao.getAllNotifications();
+        expect(all.firstWhere((r) => r.id == 'for_a').isRead, isTrue);
+        expect(all.firstWhere((r) => r.id == 'for_b').isRead, isFalse);
+      });
+
+      test(
+        'same id can be stored and marked independently per owner',
+        () async {
+          await dao.upsertNotification(
+            id: 'shared_event',
+            type: 'mention',
+            fromPubkey: testPubkey,
+            timestamp: 1700000000,
+            ownerPubkey: ownerA,
+          );
+          await dao.upsertNotification(
+            id: 'shared_event',
+            type: 'mention',
+            fromPubkey: testPubkey2,
+            timestamp: 1700000001,
+            ownerPubkey: ownerB,
+          );
+
+          expect(await dao.getAllNotifications(), hasLength(2));
+
+          final marked = await dao.markAsRead(
+            'shared_event',
+            ownerPubkey: ownerA,
+          );
+
+          expect(marked, isTrue);
+          final ownerARow = (await dao.getAllNotifications(
+            ownerPubkey: ownerA,
+          )).singleWhere((row) => row.id == 'shared_event');
+          final ownerBRow = (await dao.getAllNotifications(
+            ownerPubkey: ownerB,
+          )).singleWhere((row) => row.id == 'shared_event');
+          expect(ownerARow.isRead, isTrue);
+          expect(ownerBRow.isRead, isFalse);
+        },
+      );
+
+      test('clearAll preserves another owner rows', () async {
+        await dao.upsertNotification(
+          id: 'for_a',
+          type: 'like',
+          fromPubkey: testPubkey,
+          timestamp: 1700000000,
+          ownerPubkey: ownerA,
+        );
+        await dao.upsertNotification(
+          id: 'for_b',
+          type: 'follow',
+          fromPubkey: testPubkey2,
+          timestamp: 1700000001,
+          ownerPubkey: ownerB,
+        );
+
+        await dao.clearAll(ownerPubkey: ownerA);
+
+        final all = await dao.getAllNotifications();
+        expect(all.map((r) => r.id), equals(['for_b']));
+      });
+
+      test('replaceAll only replaces the given owner rows', () async {
+        await dao.upsertNotification(
+          id: 'for_b',
+          type: 'follow',
+          fromPubkey: testPubkey2,
+          timestamp: 1700000001,
+          ownerPubkey: ownerB,
+        );
+
+        await dao.replaceAll([], ownerPubkey: ownerA);
+
+        final all = await dao.getAllNotifications();
+        expect(all.map((r) => r.id), equals(['for_b']));
+      });
+
+      test('claimLegacyRows assigns unowned rows to the new owner', () async {
+        await dao.upsertNotification(
+          id: 'legacy',
+          type: 'like',
+          fromPubkey: testPubkey,
+          timestamp: 1700000000,
+        );
+        await dao.upsertNotification(
+          id: 'for_b',
+          type: 'follow',
+          fromPubkey: testPubkey2,
+          timestamp: 1700000001,
+          ownerPubkey: ownerB,
+        );
+
+        final claimed = await dao.claimLegacyRows(ownerA);
+
+        expect(claimed, equals(1));
+        final forB = await dao.getAllNotifications(ownerPubkey: ownerB);
+        expect(forB.map((r) => r.id), equals(['for_b']));
+      });
+
+      test('claimed rows stop appearing for a different owner', () async {
+        await dao.upsertNotification(
+          id: 'legacy',
+          type: 'like',
+          fromPubkey: testPubkey,
+          timestamp: 1700000000,
+        );
+
+        await dao.claimLegacyRows(ownerA);
+
+        expect(await dao.getAllNotifications(ownerPubkey: ownerB), isEmpty);
       });
     });
   });

@@ -115,6 +115,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsAddAnotherAccount => 'Weiteres Konto hinzufügen';
 
   @override
+  String get settingsAccountSwitchFailed =>
+      'Konten konnten nicht gewechselt werden. Bitte versuch es erneut.';
+
+  @override
   String get settingsUnsavedDraftsTitle => 'Ungespeicherte Entwürfe';
 
   @override

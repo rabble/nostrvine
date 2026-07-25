@@ -69,9 +69,7 @@ FlutterSecureStorage flutterSecureStorage(Ref ref) => FlutterSecureStorage(
   // Do not enable AndroidOptions.resetOnError here. This storage holds
   // OAuth/Keycast and pending-verification credentials; silently deleting
   // them after a transient Android Keystore read error logs users out.
-  aOptions: const AndroidOptions(
-    encryptedSharedPreferences: true,
-  ),
+  aOptions: const AndroidOptions(encryptedSharedPreferences: true),
   // macOS debug builds can't use the data-protection keychain (#5563).
   mOptions: appMacOsSecureStorageOptions(),
 );
@@ -129,7 +127,7 @@ AuthService authService(Ref ref) {
   //   authService → funnelcakeApiClient → nostrService → authService
   // Using currentEnvironmentProvider is safe (no auth/nostr dependency).
   final authEnv = ref.read(currentEnvironmentProvider);
-  return AuthService(
+  final authService = AuthService(
     userDataCleanupService: userDataCleanupService,
     keyStorage: keyStorage,
     oauthClient: oauthClient,
@@ -166,6 +164,8 @@ AuthService authService(Ref ref) {
       }
     },
   );
+  ref.onDispose(() => unawaited(authService.dispose()));
+  return authService;
 }
 
 /// Provider that returns current auth state and rebuilds when it changes.
@@ -410,9 +410,7 @@ IdentityClaimsRepository identityClaimsRepository(Ref ref) {
   return IdentityClaimsRepository(
     verifierClient: ref.watch(verifierClientProvider),
     identityVerificationsDao: ref
-        .watch(
-          databaseProvider,
-        )
+        .watch(databaseProvider)
         .identityVerificationsDao,
   );
 }

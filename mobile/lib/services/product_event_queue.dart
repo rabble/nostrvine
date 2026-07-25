@@ -36,19 +36,33 @@ class ProductEventQueue {
     required AnalyticsIngestClient ingestClient,
     ProductEventRetryConfig retryConfig = const ProductEventRetryConfig(),
     DateTime Function() now = DateTime.now,
+    String? Function()? currentOwnerPubkey,
   }) : _dao = dao,
        _ingestClient = ingestClient,
        _retryConfig = retryConfig,
-       _now = now;
+       _now = now,
+       _currentOwnerPubkey = currentOwnerPubkey;
 
   final PendingProductEventsDao _dao;
   final AnalyticsIngestClient _ingestClient;
+
+  /// Reads the signed-in account's hex pubkey at flush time. When null (or the
+  /// reader returns null) the flush is unscoped — the legacy behaviour, used
+  /// where no account context is available.
+  ///
+  /// The flush signs the batch with the current account's NIP-98 token, so
+  /// events are filtered to this owner to avoid publishing another account's
+  /// queued events under the wrong signature.
+  final String? Function()? _currentOwnerPubkey;
   final ProductEventRetryConfig _retryConfig;
   final DateTime Function() _now;
 
   bool _isFlushing = false;
 
   Future<void> enqueue(ProductAnalyticsEvent event) async {
+    final ownerPubkey = event.userPubkey.isNotEmpty
+        ? event.userPubkey
+        : _currentOwnerPubkey?.call();
     await _dao.enqueue(
       PendingProductEvent(
         id: event.eventId,
@@ -56,6 +70,7 @@ class ProductEventQueue {
         payloadJson: event.toPayloadJson(),
         status: PendingProductEventStatus.pending,
         createdAt: event.occurredAt,
+        ownerPubkey: ownerPubkey?.isEmpty ?? true ? null : ownerPubkey,
       ),
     );
   }
@@ -86,6 +101,7 @@ class ProductEventQueue {
       now: _now(),
       maxAttempts: _retryConfig.maxAttempts,
       limit: _retryConfig.batchSize,
+      ownerPubkey: _currentOwnerPubkey?.call(),
     );
     if (rows.isEmpty) return;
 

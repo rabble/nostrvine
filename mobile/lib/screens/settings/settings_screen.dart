@@ -19,8 +19,10 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/developer_mode_tap_provider.dart';
+import 'package:openvine/providers/device_scope.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
+import 'package:openvine/providers/swap_account.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/apps/apps_directory_screen.dart';
 import 'package:openvine/screens/apps/apps_permissions_screen.dart';
@@ -68,6 +70,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _accountCubit = SettingsAccountCubit(
       authService: ref.read(authServiceProvider),
       draftStorageService: ref.read(draftStorageServiceProvider),
+      featureFlagService: ref.read(featureFlagServiceProvider),
     )..load();
   }
 
@@ -157,7 +160,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             isCurrentAccount: account.pubkeyHex == accountState.currentPubkey,
             onTap: () async {
               Navigator.of(context).pop();
-              await _accountCubit.switchToAccount(account.pubkeyHex);
+              if (account.pubkeyHex == accountState.currentPubkey) return;
+              final deviceScope = ref.read(deviceScopeProvider);
+              try {
+                // In-place swap: no sign-out, no welcome-screen bounce. On
+                // failure the current account is left untouched.
+                await swapAccount(
+                  deviceScope: deviceScope,
+                  controller: deviceScope.switchController,
+                  account: account,
+                );
+              } catch (e, stackTrace) {
+                Log.error(
+                  'Account switch failed',
+                  name: 'SettingsScreen',
+                  error: e,
+                  stackTrace: stackTrace,
+                );
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(context.l10n.settingsAccountSwitchFailed),
+                  ),
+                );
+              }
             },
           ),
         ),

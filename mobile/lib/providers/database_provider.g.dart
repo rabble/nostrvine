@@ -48,7 +48,7 @@ final class DatabaseProvider
   }
 }
 
-String _$databaseHash() => r'a0f8710fdf73cec74ed14b4d31687951d2b6aaa5';
+String _$databaseHash() => r'796653fd2966d78027e2b960097b4eaaf7b76e9d';
 
 /// AppDbClient wrapping the database for NostrClient integration.
 /// Enables optimistic caching of Nostr events in the local database.

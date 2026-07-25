@@ -86,6 +86,7 @@
     "settingsInvites": "ግብዣዎች",
     "settingsSwitchAccount": "መለያ ቀይር",
     "settingsAddAnotherAccount": "ሌላ መለያ ያክሉ",
+  "settingsAccountSwitchFailed": "መለያዎችን መቀየር አልተቻለም። እባክዎ እንደገና ይሞክሩ።",
     "settingsUnsavedDraftsTitle": "ያልተቀመጡ ረቂቆች",
     "settingsUnsavedDraftsMessage": "ያልተቀመጡ {count} {count, plural, =1{ረቂቅ} other{ረቂቆች}} አሉህ። አካውንት ስትቀይር {count, plural, =1{ረቂቁ} other{ረቂቆቹ}} ይቀመጣሉ፣ ግን መጀመሪያ {count, plural, =1{ልታትመው ወይም ልትመለከተው} other{ልታትማቸው ወይም ልትመለከታቸው}} ትችላለህ።",
     "@settingsUnsavedDraftsMessage": {

@@ -115,6 +115,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get settingsAddAnotherAccount => 'Tambah akun lain';
 
   @override
+  String get settingsAccountSwitchFailed =>
+      'Tidak dapat beralih akun. Coba lagi.';
+
+  @override
   String get settingsUnsavedDraftsTitle => 'Draf Belum Tersimpan';
 
   @override

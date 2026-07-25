@@ -239,8 +239,17 @@ class Notifications extends Table {
   BoolColumn get isRead => boolean().withDefault(const Constant(false))();
   DateTimeColumn get cachedAt => dateTime().named('cached_at')();
 
+  /// Hex public key of the account this notification was delivered to.
+  /// NULL for legacy rows created before multi-account support; those are
+  /// claimed by the next signed-in account via `claimLegacyRows`.
+  ///
+  /// Notifications are viewer-scoped — the same relay event produces a row
+  /// only for the account it targets — so reads must filter on this column
+  /// or one account sees another's inbox.
+  TextColumn get ownerPubkey => text().nullable().named('owner_pubkey')();
+
   @override
-  Set<Column> get primaryKey => {id};
+  Set<Column> get primaryKey => {id, ownerPubkey};
 
   List<Index> get indexes => [
     Index(
@@ -252,6 +261,11 @@ class Notifications extends Table {
       'idx_notification_is_read',
       'CREATE INDEX IF NOT EXISTS idx_notification_is_read '
           'ON notifications (is_read)',
+    ),
+    Index(
+      'idx_notification_owner_timestamp',
+      'CREATE INDEX IF NOT EXISTS idx_notification_owner_timestamp '
+          'ON notifications (owner_pubkey, timestamp DESC)',
     ),
   ];
 }
@@ -1379,6 +1393,15 @@ class PendingProductEvents extends Table {
 
   DateTimeColumn get createdAt => dateTime().named('created_at')();
 
+  /// Hex pubkey of the account that produced this event.
+  ///
+  /// The flush signs the batch with the *current* account's NIP-98 token, so
+  /// events are filtered to the current owner at flush time — otherwise a
+  /// logout/login as a different account would publish the prior account's
+  /// queued events under the new account's signature. NULL for legacy rows
+  /// enqueued before this column existed; those flush under whoever is active.
+  TextColumn get ownerPubkey => text().nullable().named('owner_pubkey')();
+
   @override
   Set<Column> get primaryKey => {id};
 
@@ -1388,6 +1411,11 @@ class PendingProductEvents extends Table {
       'CREATE INDEX IF NOT EXISTS '
           'idx_pending_product_events_status_next_attempt '
           'ON pending_product_events (status, next_attempt_at)',
+    ),
+    Index(
+      'idx_pending_product_events_owner',
+      'CREATE INDEX IF NOT EXISTS idx_pending_product_events_owner '
+          'ON pending_product_events (owner_pubkey, status, next_attempt_at)',
     ),
     Index(
       'idx_pending_product_events_created_at',

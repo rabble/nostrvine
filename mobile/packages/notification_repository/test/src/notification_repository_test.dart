@@ -95,9 +95,17 @@ void main() {
     // existing tests don't need to know about them. Tests exercising the
     // cache override these explicitly.
     when(
-      () => notificationsDao.getAllNotifications(limit: any(named: 'limit')),
+      () => notificationsDao.getAllNotifications(
+        limit: any(named: 'limit'),
+        ownerPubkey: any(named: 'ownerPubkey'),
+      ),
     ).thenAnswer((_) async => <NotificationRow>[]);
-    when(() => notificationsDao.replaceAll(any())).thenAnswer((_) async {});
+    when(
+      () => notificationsDao.replaceAll(
+        any(),
+        ownerPubkey: any(named: 'ownerPubkey'),
+      ),
+    ).thenAnswer((_) async {});
     repository = buildRepository();
   });
 
@@ -644,7 +652,12 @@ void main() {
         });
         stubNotifications([makeNotification()], unreadCount: 1);
         await repository.refresh();
-        verify(() => notificationsDao.replaceAll(any())).called(1);
+        verify(
+          () => notificationsDao.replaceAll(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).called(1);
       });
 
       test('passes cursor for pagination', () async {
@@ -2166,8 +2179,10 @@ void main() {
           cachedAt: DateTime(2026),
         );
         when(
-          () =>
-              notificationsDao.getAllNotifications(limit: any(named: 'limit')),
+          () => notificationsDao.getAllNotifications(
+            limit: any(named: 'limit'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         ).thenAnswer((_) async => [cachedRow]);
 
         final hydrated = NotificationRepository(
@@ -2194,8 +2209,10 @@ void main() {
 
       test('hydration is a no-op when DAO is empty', () async {
         when(
-          () =>
-              notificationsDao.getAllNotifications(limit: any(named: 'limit')),
+          () => notificationsDao.getAllNotifications(
+            limit: any(named: 'limit'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         ).thenAnswer((_) async => <NotificationRow>[]);
 
         final hydrated = NotificationRepository(
@@ -2218,6 +2235,7 @@ void main() {
           when(
             () => notificationsDao.getAllNotifications(
               limit: any(named: 'limit'),
+              ownerPubkey: any(named: 'ownerPubkey'),
             ),
           ).thenAnswer(
             (_) async => [
@@ -2266,6 +2284,7 @@ void main() {
           when(
             () => notificationsDao.getAllNotifications(
               limit: any(named: 'limit'),
+              ownerPubkey: any(named: 'ownerPubkey'),
             ),
           ).thenAnswer(
             (_) async => [
@@ -2330,6 +2349,7 @@ void main() {
           when(
             () => notificationsDao.getAllNotifications(
               limit: any(named: 'limit'),
+              ownerPubkey: any(named: 'ownerPubkey'),
             ),
           ).thenAnswer(
             (_) async => [
@@ -2397,6 +2417,7 @@ void main() {
           when(
             () => notificationsDao.getAllNotifications(
               limit: any(named: 'limit'),
+              ownerPubkey: any(named: 'ownerPubkey'),
             ),
           ).thenAnswer(
             (_) async => [
@@ -2496,6 +2517,7 @@ void main() {
           when(
             () => notificationsDao.getAllNotifications(
               limit: any(named: 'limit'),
+              ownerPubkey: any(named: 'ownerPubkey'),
             ),
           ).thenAnswer(
             (_) async => [
@@ -2520,7 +2542,10 @@ void main() {
             (_) async => const MarkReadResponse(success: true, markedCount: 1),
           );
           when(
-            () => notificationsDao.markAsRead(any()),
+            () => notificationsDao.markAsRead(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
           ).thenAnswer((_) async => true);
 
           final hydrated = NotificationRepository(
@@ -2561,8 +2586,10 @@ void main() {
       test('cached "comment" row becomes $VideoNotification placeholder '
           'with commentText preserved', () async {
         when(
-          () =>
-              notificationsDao.getAllNotifications(limit: any(named: 'limit')),
+          () => notificationsDao.getAllNotifications(
+            limit: any(named: 'limit'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         ).thenAnswer(
           (_) async => [
             NotificationRow(
@@ -2606,6 +2633,7 @@ void main() {
           when(
             () => notificationsDao.getAllNotifications(
               limit: any(named: 'limit'),
+              ownerPubkey: any(named: 'ownerPubkey'),
             ),
           ).thenAnswer(
             (_) async => [
@@ -2652,6 +2680,7 @@ void main() {
           when(
             () => notificationsDao.getAllNotifications(
               limit: any(named: 'limit'),
+              ownerPubkey: any(named: 'ownerPubkey'),
             ),
           ).thenAnswer(
             (_) async => [
@@ -2685,6 +2714,7 @@ void main() {
           when(
             () => notificationsDao.getAllNotifications(
               limit: any(named: 'limit'),
+              ownerPubkey: any(named: 'ownerPubkey'),
             ),
           ).thenAnswer(
             (_) async => [
@@ -3109,7 +3139,10 @@ void main() {
           (_) async => const MarkReadResponse(success: true, markedCount: 2),
         );
         when(
-          () => notificationsDao.markAsRead(any()),
+          () => notificationsDao.markAsRead(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         ).thenAnswer((_) async => true);
 
         await repository.markAsRead(['n1', 'n2']);
@@ -3121,8 +3154,12 @@ void main() {
             authHeaders: any(named: 'authHeaders'),
           ),
         ).called(1);
-        verify(() => notificationsDao.markAsRead('n1')).called(1);
-        verify(() => notificationsDao.markAsRead('n2')).called(1);
+        verify(
+          () => notificationsDao.markAsRead('n1', ownerPubkey: userPubkey),
+        ).called(1);
+        verify(
+          () => notificationsDao.markAsRead('n2', ownerPubkey: userPubkey),
+        ).called(1);
       });
 
       test('does nothing for empty id list', () async {
@@ -3149,7 +3186,10 @@ void main() {
           (_) async => const MarkReadResponse(success: true, markedCount: 2),
         );
         when(
-          () => notificationsDao.markAsRead(any()),
+          () => notificationsDao.markAsRead(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         ).thenAnswer((_) async => true);
         stubProfiles({
           'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
@@ -3185,10 +3225,16 @@ void main() {
           ),
         ).called(1);
         verify(
-          () => notificationsDao.markAsRead('newer_server_notification'),
+          () => notificationsDao.markAsRead(
+            'newer_server_notification',
+            ownerPubkey: userPubkey,
+          ),
         ).called(1);
         verify(
-          () => notificationsDao.markAsRead('older_server_notification'),
+          () => notificationsDao.markAsRead(
+            'older_server_notification',
+            ownerPubkey: userPubkey,
+          ),
         ).called(1);
       });
 
@@ -3283,7 +3329,12 @@ void main() {
                 'roll back the optimistic flip so the snapshot matches '
                 'server truth.',
           );
-          verifyNever(() => notificationsDao.markAsRead(any()));
+          verifyNever(
+            () => notificationsDao.markAsRead(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
         },
       );
     });
@@ -3306,7 +3357,11 @@ void main() {
         ).thenAnswer(
           (_) async => const MarkReadResponse(success: true, markedCount: 5),
         );
-        when(() => notificationsDao.markAllAsRead()).thenAnswer((_) async => 5);
+        when(
+          () => notificationsDao.markAllAsRead(
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => 5);
 
         await repository.markAllAsRead();
 
@@ -3316,7 +3371,11 @@ void main() {
             authHeaders: any(named: 'authHeaders'),
           ),
         ).called(1);
-        verify(() => notificationsDao.markAllAsRead()).called(1);
+        verify(
+          () => notificationsDao.markAllAsRead(
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).called(1);
       });
 
       test(
@@ -3456,7 +3515,9 @@ void main() {
             (_) async => const MarkReadResponse(success: true, markedCount: 1),
           );
           when(
-            () => notificationsDao.markAllAsRead(),
+            () => notificationsDao.markAllAsRead(
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
           ).thenAnswer((_) async => 1);
 
           final authRepo = NotificationRepository(
@@ -3516,7 +3577,10 @@ void main() {
             (_) async => const MarkReadResponse(success: true, markedCount: 1),
           );
           when(
-            () => notificationsDao.markAsRead(any()),
+            () => notificationsDao.markAsRead(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
           ).thenAnswer((_) async => true);
 
           final authRepo = NotificationRepository(
@@ -3602,9 +3666,16 @@ void main() {
           (_) async => const MarkReadResponse(success: true, markedCount: 1),
         );
         when(
-          () => notificationsDao.markAsRead(any()),
+          () => notificationsDao.markAsRead(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         ).thenAnswer((_) async => true);
-        when(() => notificationsDao.markAllAsRead()).thenAnswer((_) async => 0);
+        when(
+          () => notificationsDao.markAllAsRead(
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => 0);
       });
 
       test('seeds watchSnapshot with NotificationPage.empty', () async {

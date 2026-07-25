@@ -86,6 +86,7 @@
     "settingsInvites": "Invitations",
     "settingsSwitchAccount": "Changer de compte",
     "settingsAddAnotherAccount": "Ajouter un autre compte",
+  "settingsAccountSwitchFailed": "Impossible de changer de compte. Réessaie.",
     "settingsUnsavedDraftsTitle": "Brouillons non enregistrés",
     "settingsUnsavedDraftsMessage": "Tu as {count} {count, plural, one{brouillon} other{brouillons}} non enregistré{count, plural, one{} other{s}}. Changer de compte va garder {count, plural, one{ton brouillon} other{tes brouillons}}, mais tu voudras peut-être {count, plural, one{le} other{les}} publier ou relire d''abord.",
     "@settingsUnsavedDraftsMessage": {

@@ -3037,6 +3037,17 @@ class $NotificationsTable extends Notifications
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _ownerPubkeyMeta = const VerificationMeta(
+    'ownerPubkey',
+  );
+  @override
+  late final GeneratedColumn<String> ownerPubkey = GeneratedColumn<String>(
+    'owner_pubkey',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -3048,6 +3059,7 @@ class $NotificationsTable extends Notifications
     timestamp,
     isRead,
     cachedAt,
+    ownerPubkey,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3128,11 +3140,20 @@ class $NotificationsTable extends Notifications
     } else if (isInserting) {
       context.missing(_cachedAtMeta);
     }
+    if (data.containsKey('owner_pubkey')) {
+      context.handle(
+        _ownerPubkeyMeta,
+        ownerPubkey.isAcceptableOrUnknown(
+          data['owner_pubkey']!,
+          _ownerPubkeyMeta,
+        ),
+      );
+    }
     return context;
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {id};
+  Set<GeneratedColumn> get $primaryKey => {id, ownerPubkey};
   @override
   NotificationRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
@@ -3173,6 +3194,10 @@ class $NotificationsTable extends Notifications
         DriftSqlType.dateTime,
         data['${effectivePrefix}cached_at'],
       )!,
+      ownerPubkey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_pubkey'],
+      ),
     );
   }
 
@@ -3192,6 +3217,15 @@ class NotificationRow extends DataClass implements Insertable<NotificationRow> {
   final int timestamp;
   final bool isRead;
   final DateTime cachedAt;
+
+  /// Hex public key of the account this notification was delivered to.
+  /// NULL for legacy rows created before multi-account support; those are
+  /// claimed by the next signed-in account via `claimLegacyRows`.
+  ///
+  /// Notifications are viewer-scoped — the same relay event produces a row
+  /// only for the account it targets — so reads must filter on this column
+  /// or one account sees another's inbox.
+  final String? ownerPubkey;
   const NotificationRow({
     required this.id,
     required this.type,
@@ -3202,6 +3236,7 @@ class NotificationRow extends DataClass implements Insertable<NotificationRow> {
     required this.timestamp,
     required this.isRead,
     required this.cachedAt,
+    this.ownerPubkey,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3221,6 +3256,9 @@ class NotificationRow extends DataClass implements Insertable<NotificationRow> {
     map['timestamp'] = Variable<int>(timestamp);
     map['is_read'] = Variable<bool>(isRead);
     map['cached_at'] = Variable<DateTime>(cachedAt);
+    if (!nullToAbsent || ownerPubkey != null) {
+      map['owner_pubkey'] = Variable<String>(ownerPubkey);
+    }
     return map;
   }
 
@@ -3241,6 +3279,9 @@ class NotificationRow extends DataClass implements Insertable<NotificationRow> {
       timestamp: Value(timestamp),
       isRead: Value(isRead),
       cachedAt: Value(cachedAt),
+      ownerPubkey: ownerPubkey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ownerPubkey),
     );
   }
 
@@ -3259,6 +3300,7 @@ class NotificationRow extends DataClass implements Insertable<NotificationRow> {
       timestamp: serializer.fromJson<int>(json['timestamp']),
       isRead: serializer.fromJson<bool>(json['isRead']),
       cachedAt: serializer.fromJson<DateTime>(json['cachedAt']),
+      ownerPubkey: serializer.fromJson<String?>(json['ownerPubkey']),
     );
   }
   @override
@@ -3274,6 +3316,7 @@ class NotificationRow extends DataClass implements Insertable<NotificationRow> {
       'timestamp': serializer.toJson<int>(timestamp),
       'isRead': serializer.toJson<bool>(isRead),
       'cachedAt': serializer.toJson<DateTime>(cachedAt),
+      'ownerPubkey': serializer.toJson<String?>(ownerPubkey),
     };
   }
 
@@ -3287,6 +3330,7 @@ class NotificationRow extends DataClass implements Insertable<NotificationRow> {
     int? timestamp,
     bool? isRead,
     DateTime? cachedAt,
+    Value<String?> ownerPubkey = const Value.absent(),
   }) => NotificationRow(
     id: id ?? this.id,
     type: type ?? this.type,
@@ -3299,6 +3343,7 @@ class NotificationRow extends DataClass implements Insertable<NotificationRow> {
     timestamp: timestamp ?? this.timestamp,
     isRead: isRead ?? this.isRead,
     cachedAt: cachedAt ?? this.cachedAt,
+    ownerPubkey: ownerPubkey.present ? ownerPubkey.value : this.ownerPubkey,
   );
   NotificationRow copyWithCompanion(NotificationsCompanion data) {
     return NotificationRow(
@@ -3317,6 +3362,9 @@ class NotificationRow extends DataClass implements Insertable<NotificationRow> {
       timestamp: data.timestamp.present ? data.timestamp.value : this.timestamp,
       isRead: data.isRead.present ? data.isRead.value : this.isRead,
       cachedAt: data.cachedAt.present ? data.cachedAt.value : this.cachedAt,
+      ownerPubkey: data.ownerPubkey.present
+          ? data.ownerPubkey.value
+          : this.ownerPubkey,
     );
   }
 
@@ -3331,7 +3379,8 @@ class NotificationRow extends DataClass implements Insertable<NotificationRow> {
           ..write('content: $content, ')
           ..write('timestamp: $timestamp, ')
           ..write('isRead: $isRead, ')
-          ..write('cachedAt: $cachedAt')
+          ..write('cachedAt: $cachedAt, ')
+          ..write('ownerPubkey: $ownerPubkey')
           ..write(')'))
         .toString();
   }
@@ -3347,6 +3396,7 @@ class NotificationRow extends DataClass implements Insertable<NotificationRow> {
     timestamp,
     isRead,
     cachedAt,
+    ownerPubkey,
   );
   @override
   bool operator ==(Object other) =>
@@ -3360,7 +3410,8 @@ class NotificationRow extends DataClass implements Insertable<NotificationRow> {
           other.content == this.content &&
           other.timestamp == this.timestamp &&
           other.isRead == this.isRead &&
-          other.cachedAt == this.cachedAt);
+          other.cachedAt == this.cachedAt &&
+          other.ownerPubkey == this.ownerPubkey);
 }
 
 class NotificationsCompanion extends UpdateCompanion<NotificationRow> {
@@ -3373,6 +3424,7 @@ class NotificationsCompanion extends UpdateCompanion<NotificationRow> {
   final Value<int> timestamp;
   final Value<bool> isRead;
   final Value<DateTime> cachedAt;
+  final Value<String?> ownerPubkey;
   final Value<int> rowid;
   const NotificationsCompanion({
     this.id = const Value.absent(),
@@ -3384,6 +3436,7 @@ class NotificationsCompanion extends UpdateCompanion<NotificationRow> {
     this.timestamp = const Value.absent(),
     this.isRead = const Value.absent(),
     this.cachedAt = const Value.absent(),
+    this.ownerPubkey = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   NotificationsCompanion.insert({
@@ -3396,6 +3449,7 @@ class NotificationsCompanion extends UpdateCompanion<NotificationRow> {
     required int timestamp,
     this.isRead = const Value.absent(),
     required DateTime cachedAt,
+    this.ownerPubkey = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        type = Value(type),
@@ -3412,6 +3466,7 @@ class NotificationsCompanion extends UpdateCompanion<NotificationRow> {
     Expression<int>? timestamp,
     Expression<bool>? isRead,
     Expression<DateTime>? cachedAt,
+    Expression<String>? ownerPubkey,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -3424,6 +3479,7 @@ class NotificationsCompanion extends UpdateCompanion<NotificationRow> {
       if (timestamp != null) 'timestamp': timestamp,
       if (isRead != null) 'is_read': isRead,
       if (cachedAt != null) 'cached_at': cachedAt,
+      if (ownerPubkey != null) 'owner_pubkey': ownerPubkey,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -3438,6 +3494,7 @@ class NotificationsCompanion extends UpdateCompanion<NotificationRow> {
     Value<int>? timestamp,
     Value<bool>? isRead,
     Value<DateTime>? cachedAt,
+    Value<String?>? ownerPubkey,
     Value<int>? rowid,
   }) {
     return NotificationsCompanion(
@@ -3450,6 +3507,7 @@ class NotificationsCompanion extends UpdateCompanion<NotificationRow> {
       timestamp: timestamp ?? this.timestamp,
       isRead: isRead ?? this.isRead,
       cachedAt: cachedAt ?? this.cachedAt,
+      ownerPubkey: ownerPubkey ?? this.ownerPubkey,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -3484,6 +3542,9 @@ class NotificationsCompanion extends UpdateCompanion<NotificationRow> {
     if (cachedAt.present) {
       map['cached_at'] = Variable<DateTime>(cachedAt.value);
     }
+    if (ownerPubkey.present) {
+      map['owner_pubkey'] = Variable<String>(ownerPubkey.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -3502,6 +3563,7 @@ class NotificationsCompanion extends UpdateCompanion<NotificationRow> {
           ..write('timestamp: $timestamp, ')
           ..write('isRead: $isRead, ')
           ..write('cachedAt: $cachedAt, ')
+          ..write('ownerPubkey: $ownerPubkey, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -13557,6 +13619,17 @@ class $PendingProductEventsTable extends PendingProductEvents
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _ownerPubkeyMeta = const VerificationMeta(
+    'ownerPubkey',
+  );
+  @override
+  late final GeneratedColumn<String> ownerPubkey = GeneratedColumn<String>(
+    'owner_pubkey',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -13567,6 +13640,7 @@ class $PendingProductEventsTable extends PendingProductEvents
     nextAttemptAt,
     lastError,
     createdAt,
+    ownerPubkey,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -13644,6 +13718,15 @@ class $PendingProductEventsTable extends PendingProductEvents
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
+    if (data.containsKey('owner_pubkey')) {
+      context.handle(
+        _ownerPubkeyMeta,
+        ownerPubkey.isAcceptableOrUnknown(
+          data['owner_pubkey']!,
+          _ownerPubkeyMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -13685,6 +13768,10 @@ class $PendingProductEventsTable extends PendingProductEvents
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
       )!,
+      ownerPubkey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_pubkey'],
+      ),
     );
   }
 
@@ -13704,6 +13791,15 @@ class PendingProductEventRow extends DataClass
   final DateTime? nextAttemptAt;
   final String? lastError;
   final DateTime createdAt;
+
+  /// Hex pubkey of the account that produced this event.
+  ///
+  /// The flush signs the batch with the *current* account's NIP-98 token, so
+  /// events are filtered to the current owner at flush time — otherwise a
+  /// logout/login as a different account would publish the prior account's
+  /// queued events under the new account's signature. NULL for legacy rows
+  /// enqueued before this column existed; those flush under whoever is active.
+  final String? ownerPubkey;
   const PendingProductEventRow({
     required this.id,
     required this.eventName,
@@ -13713,6 +13809,7 @@ class PendingProductEventRow extends DataClass
     this.nextAttemptAt,
     this.lastError,
     required this.createdAt,
+    this.ownerPubkey,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -13729,6 +13826,9 @@ class PendingProductEventRow extends DataClass
       map['last_error'] = Variable<String>(lastError);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || ownerPubkey != null) {
+      map['owner_pubkey'] = Variable<String>(ownerPubkey);
+    }
     return map;
   }
 
@@ -13746,6 +13846,9 @@ class PendingProductEventRow extends DataClass
           ? const Value.absent()
           : Value(lastError),
       createdAt: Value(createdAt),
+      ownerPubkey: ownerPubkey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ownerPubkey),
     );
   }
 
@@ -13763,6 +13866,7 @@ class PendingProductEventRow extends DataClass
       nextAttemptAt: serializer.fromJson<DateTime?>(json['nextAttemptAt']),
       lastError: serializer.fromJson<String?>(json['lastError']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      ownerPubkey: serializer.fromJson<String?>(json['ownerPubkey']),
     );
   }
   @override
@@ -13777,6 +13881,7 @@ class PendingProductEventRow extends DataClass
       'nextAttemptAt': serializer.toJson<DateTime?>(nextAttemptAt),
       'lastError': serializer.toJson<String?>(lastError),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'ownerPubkey': serializer.toJson<String?>(ownerPubkey),
     };
   }
 
@@ -13789,6 +13894,7 @@ class PendingProductEventRow extends DataClass
     Value<DateTime?> nextAttemptAt = const Value.absent(),
     Value<String?> lastError = const Value.absent(),
     DateTime? createdAt,
+    Value<String?> ownerPubkey = const Value.absent(),
   }) => PendingProductEventRow(
     id: id ?? this.id,
     eventName: eventName ?? this.eventName,
@@ -13800,6 +13906,7 @@ class PendingProductEventRow extends DataClass
         : this.nextAttemptAt,
     lastError: lastError.present ? lastError.value : this.lastError,
     createdAt: createdAt ?? this.createdAt,
+    ownerPubkey: ownerPubkey.present ? ownerPubkey.value : this.ownerPubkey,
   );
   PendingProductEventRow copyWithCompanion(PendingProductEventsCompanion data) {
     return PendingProductEventRow(
@@ -13817,6 +13924,9 @@ class PendingProductEventRow extends DataClass
           : this.nextAttemptAt,
       lastError: data.lastError.present ? data.lastError.value : this.lastError,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      ownerPubkey: data.ownerPubkey.present
+          ? data.ownerPubkey.value
+          : this.ownerPubkey,
     );
   }
 
@@ -13830,7 +13940,8 @@ class PendingProductEventRow extends DataClass
           ..write('attemptCount: $attemptCount, ')
           ..write('nextAttemptAt: $nextAttemptAt, ')
           ..write('lastError: $lastError, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('ownerPubkey: $ownerPubkey')
           ..write(')'))
         .toString();
   }
@@ -13845,6 +13956,7 @@ class PendingProductEventRow extends DataClass
     nextAttemptAt,
     lastError,
     createdAt,
+    ownerPubkey,
   );
   @override
   bool operator ==(Object other) =>
@@ -13857,7 +13969,8 @@ class PendingProductEventRow extends DataClass
           other.attemptCount == this.attemptCount &&
           other.nextAttemptAt == this.nextAttemptAt &&
           other.lastError == this.lastError &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.ownerPubkey == this.ownerPubkey);
 }
 
 class PendingProductEventsCompanion
@@ -13870,6 +13983,7 @@ class PendingProductEventsCompanion
   final Value<DateTime?> nextAttemptAt;
   final Value<String?> lastError;
   final Value<DateTime> createdAt;
+  final Value<String?> ownerPubkey;
   final Value<int> rowid;
   const PendingProductEventsCompanion({
     this.id = const Value.absent(),
@@ -13880,6 +13994,7 @@ class PendingProductEventsCompanion
     this.nextAttemptAt = const Value.absent(),
     this.lastError = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.ownerPubkey = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   PendingProductEventsCompanion.insert({
@@ -13891,6 +14006,7 @@ class PendingProductEventsCompanion
     this.nextAttemptAt = const Value.absent(),
     this.lastError = const Value.absent(),
     required DateTime createdAt,
+    this.ownerPubkey = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        eventName = Value(eventName),
@@ -13906,6 +14022,7 @@ class PendingProductEventsCompanion
     Expression<DateTime>? nextAttemptAt,
     Expression<String>? lastError,
     Expression<DateTime>? createdAt,
+    Expression<String>? ownerPubkey,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -13917,6 +14034,7 @@ class PendingProductEventsCompanion
       if (nextAttemptAt != null) 'next_attempt_at': nextAttemptAt,
       if (lastError != null) 'last_error': lastError,
       if (createdAt != null) 'created_at': createdAt,
+      if (ownerPubkey != null) 'owner_pubkey': ownerPubkey,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -13930,6 +14048,7 @@ class PendingProductEventsCompanion
     Value<DateTime?>? nextAttemptAt,
     Value<String?>? lastError,
     Value<DateTime>? createdAt,
+    Value<String?>? ownerPubkey,
     Value<int>? rowid,
   }) {
     return PendingProductEventsCompanion(
@@ -13941,6 +14060,7 @@ class PendingProductEventsCompanion
       nextAttemptAt: nextAttemptAt ?? this.nextAttemptAt,
       lastError: lastError ?? this.lastError,
       createdAt: createdAt ?? this.createdAt,
+      ownerPubkey: ownerPubkey ?? this.ownerPubkey,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -13972,6 +14092,9 @@ class PendingProductEventsCompanion
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (ownerPubkey.present) {
+      map['owner_pubkey'] = Variable<String>(ownerPubkey.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -13989,6 +14112,7 @@ class PendingProductEventsCompanion
           ..write('nextAttemptAt: $nextAttemptAt, ')
           ..write('lastError: $lastError, ')
           ..write('createdAt: $createdAt, ')
+          ..write('ownerPubkey: $ownerPubkey, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -17512,6 +17636,7 @@ typedef $$NotificationsTableCreateCompanionBuilder =
       required int timestamp,
       Value<bool> isRead,
       required DateTime cachedAt,
+      Value<String?> ownerPubkey,
       Value<int> rowid,
     });
 typedef $$NotificationsTableUpdateCompanionBuilder =
@@ -17525,6 +17650,7 @@ typedef $$NotificationsTableUpdateCompanionBuilder =
       Value<int> timestamp,
       Value<bool> isRead,
       Value<DateTime> cachedAt,
+      Value<String?> ownerPubkey,
       Value<int> rowid,
     });
 
@@ -17579,6 +17705,11 @@ class $$NotificationsTableFilterComposer
 
   ColumnFilters<DateTime> get cachedAt => $composableBuilder(
     column: $table.cachedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -17636,6 +17767,11 @@ class $$NotificationsTableOrderingComposer
     column: $table.cachedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$NotificationsTableAnnotationComposer
@@ -17679,6 +17815,11 @@ class $$NotificationsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get cachedAt =>
       $composableBuilder(column: $table.cachedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
+    builder: (column) => column,
+  );
 }
 
 class $$NotificationsTableTableManager
@@ -17721,6 +17862,7 @@ class $$NotificationsTableTableManager
                 Value<int> timestamp = const Value.absent(),
                 Value<bool> isRead = const Value.absent(),
                 Value<DateTime> cachedAt = const Value.absent(),
+                Value<String?> ownerPubkey = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => NotificationsCompanion(
                 id: id,
@@ -17732,6 +17874,7 @@ class $$NotificationsTableTableManager
                 timestamp: timestamp,
                 isRead: isRead,
                 cachedAt: cachedAt,
+                ownerPubkey: ownerPubkey,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -17745,6 +17888,7 @@ class $$NotificationsTableTableManager
                 required int timestamp,
                 Value<bool> isRead = const Value.absent(),
                 required DateTime cachedAt,
+                Value<String?> ownerPubkey = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => NotificationsCompanion.insert(
                 id: id,
@@ -17756,6 +17900,7 @@ class $$NotificationsTableTableManager
                 timestamp: timestamp,
                 isRead: isRead,
                 cachedAt: cachedAt,
+                ownerPubkey: ownerPubkey,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -22270,6 +22415,7 @@ typedef $$PendingProductEventsTableCreateCompanionBuilder =
       Value<DateTime?> nextAttemptAt,
       Value<String?> lastError,
       required DateTime createdAt,
+      Value<String?> ownerPubkey,
       Value<int> rowid,
     });
 typedef $$PendingProductEventsTableUpdateCompanionBuilder =
@@ -22282,6 +22428,7 @@ typedef $$PendingProductEventsTableUpdateCompanionBuilder =
       Value<DateTime?> nextAttemptAt,
       Value<String?> lastError,
       Value<DateTime> createdAt,
+      Value<String?> ownerPubkey,
       Value<int> rowid,
     });
 
@@ -22331,6 +22478,11 @@ class $$PendingProductEventsTableFilterComposer
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -22383,6 +22535,11 @@ class $$PendingProductEventsTableOrderingComposer
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$PendingProductEventsTableAnnotationComposer
@@ -22423,6 +22580,11 @@ class $$PendingProductEventsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
+    builder: (column) => column,
+  );
 }
 
 class $$PendingProductEventsTableTableManager
@@ -22476,6 +22638,7 @@ class $$PendingProductEventsTableTableManager
                 Value<DateTime?> nextAttemptAt = const Value.absent(),
                 Value<String?> lastError = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<String?> ownerPubkey = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PendingProductEventsCompanion(
                 id: id,
@@ -22486,6 +22649,7 @@ class $$PendingProductEventsTableTableManager
                 nextAttemptAt: nextAttemptAt,
                 lastError: lastError,
                 createdAt: createdAt,
+                ownerPubkey: ownerPubkey,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -22498,6 +22662,7 @@ class $$PendingProductEventsTableTableManager
                 Value<DateTime?> nextAttemptAt = const Value.absent(),
                 Value<String?> lastError = const Value.absent(),
                 required DateTime createdAt,
+                Value<String?> ownerPubkey = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PendingProductEventsCompanion.insert(
                 id: id,
@@ -22508,6 +22673,7 @@ class $$PendingProductEventsTableTableManager
                 nextAttemptAt: nextAttemptAt,
                 lastError: lastError,
                 createdAt: createdAt,
+                ownerPubkey: ownerPubkey,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

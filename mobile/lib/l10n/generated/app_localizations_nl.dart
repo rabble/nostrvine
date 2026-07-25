@@ -115,6 +115,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsAddAnotherAccount => 'Nog een account toevoegen';
 
   @override
+  String get settingsAccountSwitchFailed =>
+      'Kan niet van account wisselen. Probeer het opnieuw.';
+
+  @override
   String get settingsUnsavedDraftsTitle => 'Niet-opgeslagen concepten';
 
   @override

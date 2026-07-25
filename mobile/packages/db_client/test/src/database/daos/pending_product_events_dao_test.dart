@@ -20,6 +20,7 @@ void main() {
     DateTime? createdAt,
     DateTime? nextAttemptAt,
     String? lastError,
+    String? ownerPubkey,
   }) {
     return PendingProductEvent(
       id: id,
@@ -30,6 +31,7 @@ void main() {
       createdAt: createdAt ?? DateTime.utc(2026, 7),
       nextAttemptAt: nextAttemptAt,
       lastError: lastError,
+      ownerPubkey: ownerPubkey,
     );
   }
 
@@ -140,6 +142,50 @@ void main() {
       );
 
       expect(retryable.map((event) => event.id), ['failed-old', 'pending-new']);
+    });
+
+    group('owner scoping', () {
+      const ownerA =
+          '1111111111111111111111111111111111111111111111111111111111111111';
+      const ownerB =
+          '2222222222222222222222222222222222222222222222222222222222222222';
+
+      test('enqueue round-trips ownerPubkey', () async {
+        await dao.enqueue(makeEvent(id: 'a', ownerPubkey: ownerA));
+        expect((await dao.getById('a'))!.ownerPubkey, equals(ownerA));
+      });
+
+      test('getRetryable returns only the requested owner rows', () async {
+        await dao.enqueue(makeEvent(id: 'for-a', ownerPubkey: ownerA));
+        await dao.enqueue(makeEvent(id: 'for-b', ownerPubkey: ownerB));
+        await dao.enqueue(makeEvent(id: 'legacy'));
+
+        final retryable = await dao.getRetryable(
+          now: DateTime.utc(2026, 7, 2),
+          maxAttempts: 5,
+          limit: 10,
+          ownerPubkey: ownerA,
+        );
+
+        expect(retryable.map((event) => event.id).toSet(), equals({'for-a'}));
+      });
+
+      test(
+        'getRetryable without an owner returns only ownerless rows',
+        () async {
+          await dao.enqueue(makeEvent(id: 'for-a', ownerPubkey: ownerA));
+          await dao.enqueue(makeEvent(id: 'for-b', ownerPubkey: ownerB));
+          await dao.enqueue(makeEvent(id: 'legacy'));
+
+          final retryable = await dao.getRetryable(
+            now: DateTime.utc(2026, 7, 2),
+            maxAttempts: 5,
+            limit: 10,
+          );
+
+          expect(retryable.map((event) => event.id).toSet(), {'legacy'});
+        },
+      );
     });
 
     test('markDeadLetter stops exhausted events from retrying', () async {

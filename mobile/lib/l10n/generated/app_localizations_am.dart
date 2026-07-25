@@ -112,6 +112,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get settingsAddAnotherAccount => 'ሌላ መለያ ያክሉ';
 
   @override
+  String get settingsAccountSwitchFailed =>
+      'መለያዎችን መቀየር አልተቻለም። እባክዎ እንደገና ይሞክሩ።';
+
+  @override
   String get settingsUnsavedDraftsTitle => 'ያልተቀመጡ ረቂቆች';
 
   @override

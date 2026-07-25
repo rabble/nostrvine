@@ -354,7 +354,7 @@ final class ProductEventQueueProvider
   }
 }
 
-String _$productEventQueueHash() => r'34617155654c8991021f5e8e9aaf1508da4e4db8';
+String _$productEventQueueHash() => r'5862cf1f79c8e494b395ced71d50a8a0ca8dd203';
 
 /// Analytics service with opt-out support.
 ///
@@ -626,7 +626,7 @@ final class UserDataCleanupServiceProvider
 }
 
 String _$userDataCleanupServiceHash() =>
-    r'd43c9e33330dbb13066804eb64dd1f9d333f530d';
+    r'8da4c0c036d38d3b84b67ea082c63a4fdc344441';
 
 /// Hashtag service depends on Video event service and cache service
 

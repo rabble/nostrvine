@@ -654,6 +654,14 @@ class Notifications extends Table with TableInfo {
     requiredDuringInsert: true,
     $customConstraints: 'NOT NULL',
   );
+  late final GeneratedColumn<String> ownerPubkey = GeneratedColumn<String>(
+    'owner_pubkey',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: 'NULL',
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -665,6 +673,7 @@ class Notifications extends Table with TableInfo {
     timestamp,
     isRead,
     cachedAt,
+    ownerPubkey,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -672,7 +681,7 @@ class Notifications extends Table with TableInfo {
   String get actualTableName => $name;
   static const String $name = 'notifications';
   @override
-  Set<GeneratedColumn> get $primaryKey => {id};
+  Set<GeneratedColumn> get $primaryKey => {id, ownerPubkey};
   @override
   Never map(Map<String, dynamic> data, {String? tablePrefix}) {
     throw UnsupportedError('TableInfo.map in schema verification code');
@@ -684,7 +693,9 @@ class Notifications extends Table with TableInfo {
   }
 
   @override
-  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  List<String> get customConstraints => const [
+    'PRIMARY KEY(id, owner_pubkey)',
+  ];
   @override
   bool get dontWriteConstraints => true;
 }
@@ -2573,6 +2584,14 @@ class PendingProductEvents extends Table with TableInfo {
     requiredDuringInsert: true,
     $customConstraints: 'NOT NULL',
   );
+  late final GeneratedColumn<String> ownerPubkey = GeneratedColumn<String>(
+    'owner_pubkey',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: 'NULL',
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2583,6 +2602,7 @@ class PendingProductEvents extends Table with TableInfo {
     nextAttemptAt,
     lastError,
     createdAt,
+    ownerPubkey,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;

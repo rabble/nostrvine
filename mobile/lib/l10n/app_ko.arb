@@ -62,6 +62,7 @@
     "settingsInvites": "초대장",
     "settingsSwitchAccount": "계정 전환",
     "settingsAddAnotherAccount": "다른 계정 추가",
+  "settingsAccountSwitchFailed": "계정을 전환할 수 없었어요. 다시 시도해 주세요.",
     "settingsUnsavedDraftsTitle": "저장되지 않은 초안",
     "settingsUnsavedDraftsMessage": "저장되지 않은 초안이 {count}개 있어요. 계정을 바꿔도 초안은 유지되지만, 먼저 게시하거나 검토하는 게 좋아요.",
     "settingsCancel": "취소",

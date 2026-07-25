@@ -123,6 +123,10 @@ class AppLocalizationsPl extends AppLocalizations {
   String get settingsAddAnotherAccount => 'Dodaj kolejne konto';
 
   @override
+  String get settingsAccountSwitchFailed =>
+      'Nie udało się przełączyć kont. Spróbuj ponownie.';
+
+  @override
   String get settingsUnsavedDraftsTitle => 'Niezapisane wersje robocze';
 
   @override

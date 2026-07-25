@@ -526,6 +526,9 @@ ProductEventQueue productEventQueue(Ref ref) {
   final queue = ProductEventQueue(
     dao: db.pendingProductEventsDao,
     ingestClient: ingestClient,
+    // Read fresh at flush so a logout/login as a different account only
+    // publishes that account's own queued events under its own signature.
+    currentOwnerPubkey: () => ref.read(authServiceProvider).currentPublicKeyHex,
   );
 
   queue.recoverPublishingAndFlush().catchError((Object e) {
@@ -673,7 +676,9 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
         // must never suppress re-population of an account's reactions/deletions
         // after its DM data is cleared. See #5452.
         await db.processedGiftWrapsDao.clearAll();
-        await db.notificationsDao.clearAll();
+        // Scoped to the leaving account so a switch does not wipe the other
+        // account's cached inbox along with this one's.
+        await db.notificationsDao.clearAll(ownerPubkey: userPubkey);
         // Issue #3936 requires the NIP-39 identity caches to clear on logout
         // and account switches rather than persisting across identities.
         await db.identityEventsDao.clearAll();
@@ -741,6 +746,10 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
       userPubkey,
       sourceOwnerPubkey: DraftStorageService.anonymousOwnerPubkey,
     );
+    // Notifications shipped without an owner column, so pre-upgrade rows are
+    // unattributed. Claim them for the first account to sign in after the
+    // upgrade rather than leaving them visible to every account.
+    await db.notificationsDao.claimLegacyRows(userPubkey);
   };
 
   return service;

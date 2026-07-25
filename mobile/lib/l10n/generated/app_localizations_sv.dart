@@ -115,6 +115,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsAddAnotherAccount => 'Lägg till ett till konto';
 
   @override
+  String get settingsAccountSwitchFailed =>
+      'Det gick inte att byta konto. Försök igen.';
+
+  @override
   String get settingsUnsavedDraftsTitle => 'Osparade utkast';
 
   @override

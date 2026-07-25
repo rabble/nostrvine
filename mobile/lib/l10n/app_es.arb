@@ -86,6 +86,7 @@
     "settingsInvites": "Invitaciones",
     "settingsSwitchAccount": "Cambiar de cuenta",
     "settingsAddAnotherAccount": "Agregar otra cuenta",
+  "settingsAccountSwitchFailed": "No se pudieron cambiar las cuentas. Inténtalo de nuevo.",
     "settingsUnsavedDraftsTitle": "Borradores sin guardar",
     "settingsUnsavedDraftsMessage": "Tenés {count} {count, plural, =1{borrador sin guardar} other{borradores sin guardar}}. Cambiar de cuenta va a mantener {count, plural, =1{tu borrador} other{tus borradores}}, pero quizás quieras publicar o revisar{count, plural, =1{lo} other{los}} primero.",
     "@settingsUnsavedDraftsMessage": {

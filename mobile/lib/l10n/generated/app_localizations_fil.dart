@@ -115,6 +115,10 @@ class AppLocalizationsFil extends AppLocalizations {
   String get settingsAddAnotherAccount => 'Magdagdag ng isa pang account';
 
   @override
+  String get settingsAccountSwitchFailed =>
+      'Hindi mailipat ang mga account. Pakisubukan ulit.';
+
+  @override
   String get settingsUnsavedDraftsTitle => 'Mga Hindi Naka-save na Draft';
 
   @override

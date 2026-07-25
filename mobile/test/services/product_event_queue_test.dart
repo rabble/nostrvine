@@ -52,9 +52,62 @@ void main() {
         expect(captured.eventName, 'screen_time');
         expect(captured.payloadJson, contains('"event_id":"event-a"'));
         expect(captured.status, PendingProductEventStatus.pending);
+        expect(
+          captured.ownerPubkey,
+          '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd',
+        );
         verifyNever(() => client.publishBatch(any()));
       },
     );
+
+    test('enqueue scopes anonymous payloads to the current account', () async {
+      const owner =
+          '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd';
+      final scopedQueue = ProductEventQueue(
+        dao: dao,
+        ingestClient: client,
+        currentOwnerPubkey: () => owner,
+      );
+      when(() => dao.enqueue(any())).thenAnswer((_) async {});
+      final event = _event('event-anon', userPubkey: '');
+
+      await scopedQueue.enqueue(event);
+
+      final captured =
+          verify(() => dao.enqueue(captureAny())).captured.single
+              as PendingProductEvent;
+      expect(captured.ownerPubkey, owner);
+    });
+
+    test('flush filters retryable events to the current account', () async {
+      const owner =
+          '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd';
+      final scopedQueue = ProductEventQueue(
+        dao: dao,
+        ingestClient: client,
+        now: () => DateTime.utc(2026, 7, 7, 12),
+        currentOwnerPubkey: () => owner,
+      );
+      when(
+        () => dao.getRetryable(
+          now: any(named: 'now'),
+          maxAttempts: any(named: 'maxAttempts'),
+          limit: any(named: 'limit'),
+          ownerPubkey: any(named: 'ownerPubkey'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      await scopedQueue.flush();
+
+      verify(
+        () => dao.getRetryable(
+          now: any(named: 'now'),
+          maxAttempts: any(named: 'maxAttempts'),
+          limit: any(named: 'limit'),
+          ownerPubkey: owner,
+        ),
+      ).called(1);
+    });
 
     test('flush deletes rows accepted by ingest', () async {
       when(
@@ -62,6 +115,7 @@ void main() {
           now: any(named: 'now'),
           maxAttempts: any(named: 'maxAttempts'),
           limit: any(named: 'limit'),
+          ownerPubkey: any(named: 'ownerPubkey'),
         ),
       ).thenAnswer((_) async => [_row('event-a')]);
       when(() => dao.markPublishing('event-a')).thenAnswer((_) async => true);
@@ -85,6 +139,7 @@ void main() {
             now: any(named: 'now'),
             maxAttempts: any(named: 'maxAttempts'),
             limit: any(named: 'limit'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).thenAnswer((_) async => [_row('event-a')]);
         when(() => dao.markPublishing('event-a')).thenAnswer((_) async => true);
@@ -101,6 +156,7 @@ void main() {
             now: any(named: 'now'),
             maxAttempts: any(named: 'maxAttempts'),
             limit: any(named: 'limit'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
           () => dao.markPublishing('event-a'),
           () => client.publishBatch(any(that: hasLength(1))),
@@ -115,6 +171,7 @@ void main() {
           now: any(named: 'now'),
           maxAttempts: any(named: 'maxAttempts'),
           limit: any(named: 'limit'),
+          ownerPubkey: any(named: 'ownerPubkey'),
         ),
       ).thenAnswer((_) async => [_row('event-a')]);
       when(() => dao.markPublishing('event-a')).thenAnswer((_) async => true);
@@ -149,6 +206,7 @@ void main() {
           now: any(named: 'now'),
           maxAttempts: any(named: 'maxAttempts'),
           limit: any(named: 'limit'),
+          ownerPubkey: any(named: 'ownerPubkey'),
         ),
       ).thenAnswer((_) async => [_row('event-a')]);
       when(() => dao.markPublishing('event-a')).thenAnswer((_) async => true);
@@ -169,12 +227,13 @@ void main() {
   });
 }
 
-ProductAnalyticsEvent _event(String id) {
+ProductAnalyticsEvent _event(String id, {String? userPubkey}) {
   return ProductAnalyticsEvent(
     eventId: id,
     eventName: 'screen_time',
     occurredAt: DateTime.utc(2026, 7, 7, 12),
     userPubkey:
+        userPubkey ??
         '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd',
     anonymousId: '018ff7d7-2ef5-7000-8000-000000000001',
     sessionId: '018ff7d7-2ef5-7000-8000-000000000002',

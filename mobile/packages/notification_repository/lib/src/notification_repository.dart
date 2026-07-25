@@ -450,6 +450,7 @@ class NotificationRepository {
       if (_snapshot.value.items.isNotEmpty) return;
       final rows = await _notificationsDao.getAllNotifications(
         limit: _pageSize,
+        ownerPubkey: _userPubkey,
       );
       if (rows.isEmpty) return;
       if (_snapshot.value.items.isNotEmpty) return;
@@ -661,7 +662,7 @@ class NotificationRepository {
   Future<void> _persistSnapshot(List<NotificationItem> items) async {
     try {
       final rows = items.map(_itemToCacheRow).toList();
-      await _notificationsDao.replaceAll(rows);
+      await _notificationsDao.replaceAll(rows, ownerPubkey: _userPubkey);
     } on Exception catch (e, s) {
       Log.error(
         'Failed to persist notifications cache: $e',
@@ -796,7 +797,7 @@ class NotificationRepository {
       );
 
       for (final id in notificationIds) {
-        await _notificationsDao.markAsRead(id);
+        await _notificationsDao.markAsRead(id, ownerPubkey: _userPubkey);
       }
     } catch (_) {
       _pagesLoaded = pagesLoadedBefore;
@@ -833,7 +834,7 @@ class NotificationRepository {
         authHeaders: authHeaders,
       );
 
-      await _notificationsDao.markAllAsRead();
+      await _notificationsDao.markAllAsRead(ownerPubkey: _userPubkey);
     } catch (_) {
       _pagesLoaded = pagesLoadedBefore;
       _snapshot.add(before);

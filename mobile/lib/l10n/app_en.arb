@@ -68,6 +68,10 @@
   "settingsInvites": "Invites",
   "settingsSwitchAccount": "Switch account",
   "settingsAddAnotherAccount": "Add another account",
+  "settingsAccountSwitchFailed": "Couldn't switch accounts. Please try again.",
+  "@settingsAccountSwitchFailed": {
+    "description": "Snackbar shown when an in-place account switch fails and the current account is kept."
+  },
   "settingsUnsavedDraftsTitle": "Unsaved Drafts",
   "settingsUnsavedDraftsMessage": "You have {count} unsaved {count, plural, =1{draft} other{drafts}}. Switching accounts will keep your {count, plural, =1{draft} other{drafts}}, but you may want to publish or review {count, plural, =1{it} other{them}} first.",
   "@settingsUnsavedDraftsMessage": {

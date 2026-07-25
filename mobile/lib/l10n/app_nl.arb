@@ -86,6 +86,7 @@
     "settingsInvites": "Uitnodigingen",
     "settingsSwitchAccount": "Wissel van account",
     "settingsAddAnotherAccount": "Nog een account toevoegen",
+  "settingsAccountSwitchFailed": "Kan niet van account wisselen. Probeer het opnieuw.",
     "settingsUnsavedDraftsTitle": "Niet-opgeslagen concepten",
     "settingsUnsavedDraftsMessage": "Je hebt {count, plural, one{1 niet-opgeslagen concept} other{{count} niet-opgeslagen concepten}}. Als je van account wisselt blijven {count, plural, one{je concept} other{je concepten}} bewaard, maar misschien wil je {count, plural, one{het} other{ze}} eerst publiceren of nakijken.",
     "@settingsUnsavedDraftsMessage": {

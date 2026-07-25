@@ -86,6 +86,7 @@
     "settingsInvites": "Inviti",
     "settingsSwitchAccount": "Cambia account",
     "settingsAddAnotherAccount": "Aggiungi un altro account",
+  "settingsAccountSwitchFailed": "Impossibile cambiare account. Riprova.",
     "settingsUnsavedDraftsTitle": "Bozze non salvate",
     "settingsUnsavedDraftsMessage": "Hai {count} {count, plural, one{bozza non salvata} other{bozze non salvate}}. Cambiando account {count, plural, one{la tua bozza verrà mantenuta} other{le tue bozze verranno mantenute}}, ma potresti voler {count, plural, one{pubblicarla o rivederla} other{pubblicarle o rivederle}} prima.",
     "@settingsUnsavedDraftsMessage": {

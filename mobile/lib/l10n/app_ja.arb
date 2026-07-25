@@ -86,6 +86,7 @@
     "settingsInvites": "招待",
     "settingsSwitchAccount": "アカウントを切り替え",
     "settingsAddAnotherAccount": "別のアカウントを追加",
+  "settingsAccountSwitchFailed": "アカウントを切り替えられませんでした。もう一度お試しください。",
     "settingsUnsavedDraftsTitle": "未保存の下書きがあるよ",
     "settingsUnsavedDraftsMessage": "未保存の下書きが{count}件あるよ。切り替えても下書きは残るけど、先に公開か確認しておくのがおすすめ。",
     "@settingsUnsavedDraftsMessage": {

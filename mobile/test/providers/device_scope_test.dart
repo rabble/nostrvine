@@ -1,0 +1,75 @@
+// ABOUTME: Tests that DeviceScope shares device singletons across containers so
+// ABOUTME: an account switch does not open a second DB connection.
+
+import 'package:db_client/db_client.dart';
+import 'package:drift/native.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/providers/container_swap_host.dart';
+import 'package:openvine/providers/database_provider.dart';
+import 'package:openvine/providers/device_scope.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  late AppDatabase database;
+  late SharedPreferences prefs;
+  late DeviceScope deviceScope;
+
+  setUp(() async {
+    database = AppDatabase.test(NativeDatabase.memory());
+    SharedPreferences.setMockInitialValues({});
+    prefs = await SharedPreferences.getInstance();
+    deviceScope = DeviceScope(
+      database: database,
+      sharedPreferences: prefs,
+      switchController: AccountSwitchController(),
+    );
+  });
+
+  tearDown(() => database.close());
+
+  test('every container reads the same shared database instance', () {
+    final a = buildAccountContainer(deviceScope);
+    addTearDown(a.dispose);
+    final b = buildAccountContainer(deviceScope);
+    addTearDown(b.dispose);
+
+    expect(a.read(databaseProvider), same(database));
+    expect(b.read(databaseProvider), same(a.read(databaseProvider)));
+  });
+
+  test('shared instances survive disposing a container', () {
+    final a = buildAccountContainer(deviceScope);
+    expect(a.read(sharedPreferencesProvider), same(prefs));
+
+    // Simulate a swap: the leaving account's container is disposed.
+    a.dispose();
+
+    final b = buildAccountContainer(deviceScope);
+    addTearDown(b.dispose);
+    expect(b.read(sharedPreferencesProvider), same(prefs));
+  });
+
+  test(
+    'disposing a container does not close the shared database',
+    () async {
+      final a = buildAccountContainer(deviceScope);
+      // Touch the DB through the container to prove it is live.
+      await a.read(databaseProvider).notificationsDao.getAllNotifications();
+
+      a.dispose();
+
+      // The shared DB must still be usable from a new container after the
+      // old one was disposed — the override-with-value path never registered
+      // the factory's onDispose(db.close).
+      final b = buildAccountContainer(deviceScope);
+      addTearDown(b.dispose);
+      await expectLater(
+        b.read(databaseProvider).notificationsDao.getAllNotifications(),
+        completes,
+      );
+    },
+  );
+}

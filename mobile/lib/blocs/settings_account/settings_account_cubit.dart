@@ -3,6 +3,8 @@
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/services/feature_flag_service.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
@@ -13,12 +15,18 @@ class SettingsAccountCubit extends Cubit<SettingsAccountState> {
   SettingsAccountCubit({
     required AuthService authService,
     required DraftStorageService draftStorageService,
+    required FeatureFlagService featureFlagService,
   }) : _authService = authService,
        _draftStorageService = draftStorageService,
+       _featureFlagService = featureFlagService,
        super(const SettingsAccountState());
 
   final AuthService _authService;
   final DraftStorageService _draftStorageService;
+  final FeatureFlagService _featureFlagService;
+
+  bool get _accountSwitchingEnabled =>
+      _featureFlagService.isEnabled(FeatureFlag.accountSwitching);
 
   /// Loads the known accounts list and current draft count.
   Future<void> load() async {
@@ -40,20 +48,14 @@ class SettingsAccountCubit extends Cubit<SettingsAccountState> {
     }
   }
 
-  /// Switches to an existing account by signing out and setting the pending
-  /// account switch pubkey so WelcomeBloc pre-selects it.
-  ///
-  /// CacheSync invalidation is owned by [AuthService.signOut], which clears
-  /// only the leaving account's pubkey-prefixed entries — other accounts'
-  /// caches survive for fast re-switch.
-  Future<void> switchToAccount(String pubkeyHex) async {
-    if (pubkeyHex == state.currentPubkey) return;
-    _authService.pendingAccountSwitchPubkey = pubkeyHex;
-    await _authService.signOut();
-  }
-
   /// Signs out to add a new account (no pending switch pubkey).
+  ///
+  /// Switching *between* already-signed-in accounts no longer goes through the
+  /// cubit — it is an in-place container swap (`swapAccount`) triggered from
+  /// the UI. Adding a genuinely new account still needs the sign-out → welcome
+  /// → sign-in flow, since that account is not yet authenticated on device.
   Future<void> addNewAccount() async {
+    if (!_accountSwitchingEnabled) return;
     await _authService.signOut();
   }
 }
