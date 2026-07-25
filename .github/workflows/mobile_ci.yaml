@@ -273,8 +273,12 @@ jobs:
           flutter-version: "3.44.0"
           channel: "stable"
           cache: true
-      # No `flutter pub get`: `dart format` is purely syntactic and never
-      # resolves package imports, so the ~10s resolve was dead weight.
+      - name: 📦 Install dependencies
+        # Required: `dart format` reads page width from analysis_options.yaml,
+        # which `include`s package:very_good_analysis. Without a resolved
+        # package config that include fails and the formatter silently falls
+        # back to its defaults, reformatting 529 files.
+        run: flutter pub get
       - name: ✨ Check formatting
         run: dart format --output=none --set-exit-if-changed lib test integration_test
   analyze:
