@@ -1068,12 +1068,7 @@ class NotificationRepository {
     if (raw.isEmpty) return [];
 
     final pubkeys = raw.map((n) => n.sourcePubkey).toSet().toList();
-    final eventIds = raw
-        .map((n) => n.referencedEventId)
-        .whereType<String>()
-        .where((id) => id.isNotEmpty)
-        .toSet()
-        .toList();
+    final eventIds = _videoMetadataEventIds(raw);
 
     final profilesFuture = _profileRepository.fetchBatchProfiles(
       pubkeys: pubkeys,
@@ -1161,13 +1156,30 @@ class NotificationRepository {
     return _VideoMetadataLookup(videosById: map, notFoundIds: notFoundIds);
   }
 
+  static List<String> _videoMetadataEventIds(List<RelayNotification> raw) {
+    final eventIds = <String>{};
+    for (final notification in raw) {
+      final referencedEventId = notification.referencedEventId;
+      if (referencedEventId != null && referencedEventId.isNotEmpty) {
+        eventIds.add(referencedEventId);
+      }
+
+      final kind = _mapNotificationKind(notification);
+      if (!_isVideoAnchoredKind(kind)) continue;
+      final anchorEventId = _videoAnchorEventId(kind, notification);
+      if (anchorEventId != null && anchorEventId.isNotEmpty) {
+        eventIds.add(anchorEventId);
+      }
+    }
+    return eventIds.toList();
+  }
+
   /// Builds [VideoNotification]s by grouping like/comment/repost
-  /// notifications by `(referencedEventId, kind)`.
+  /// notifications by `(video anchor event id, kind)`.
   ///
-  /// Threshold is 1 — every video-anchored notification with a non-null
-  /// `referencedEventId` becomes a [VideoNotification], even if only one
-  /// actor interacted. Notifications missing `referencedEventId` are
-  /// dropped.
+  /// Threshold is 1 — every notification with a non-empty video anchor becomes
+  /// a [VideoNotification], even if only one actor interacted. Comments can
+  /// anchor on `rootEventId` when the payload omits `referencedEventId`.
   ///
   /// Notifications whose referenced video is confirmed to belong to a
   /// different user are collected in [misattributed] for reclassification
@@ -1180,15 +1192,10 @@ class NotificationRepository {
     required Set<String> videoNotFoundIds,
     List<RelayNotification>? misattributed,
   }) {
-    bool isVideoAnchored(NotificationKind k) =>
-        k == NotificationKind.like ||
-        k == NotificationKind.comment ||
-        k == NotificationKind.repost;
-
     final groups = <_VideoGroupKey, List<RelayNotification>>{};
     for (final n in raw) {
       final kind = _mapNotificationKind(n);
-      if (!isVideoAnchored(kind)) continue;
+      if (!_isVideoAnchoredKind(kind)) continue;
       final eventId = _videoAnchorEventId(kind, n);
       if (eventId == null || eventId.isEmpty) continue;
       if (_hasKnownReferencedVideoOwnerMismatch(
@@ -1199,7 +1206,7 @@ class NotificationRepository {
         rootEventPubkey: n.rootEventPubkey,
       )) {
         _logReclassifiedOwnerMismatch(
-          notificationId: n.id,
+          notificationId: n.dedupeKey,
           sourcePubkey: n.sourcePubkey,
           referencedVideoEventId: eventId,
           referencedVideoOwnerPubkey: videosById[eventId]?.pubkey,
@@ -1278,6 +1285,11 @@ class NotificationRepository {
     }
     return result;
   }
+
+  static bool _isVideoAnchoredKind(NotificationKind kind) =>
+      kind == NotificationKind.like ||
+      kind == NotificationKind.comment ||
+      kind == NotificationKind.repost;
 
   /// Builds [ActorNotification]s for follow/mention/system kinds.
   ///
@@ -1444,8 +1456,8 @@ class NotificationRepository {
   /// video; a confirmed *different* owner is reclassified to an actor row
   /// upstream ([_groupVideoAnchored] / #4920) before this is reached. So
   /// ownership here is either confirmed-recipient or unconfirmable (a metadata
-  /// miss: stale/edited event id, fetch failure, or a comment with an empty
-  /// `referenced_event_id`). In both cases we synthesize the route rather than
+  /// miss: stale/edited event id or fetch failure). In both cases we synthesize
+  /// the route rather than
   /// dropping to the raw, often-stale `referencedEventId` — which is the #4730
   /// broken-link gap: once the recipient edits a video, its old event id no
   /// longer resolves, so the stable route is the only thing that reopens it.
