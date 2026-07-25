@@ -100,13 +100,15 @@ graph on every run.
 
 ### Package workflows
 
-All 57 package workflows under `.github/workflows/` carry `paths:` filters
-scoped to their own package plus their own workflow file, so a PR that touches
-no package code runs none of them. The six workflows without `paths:` filters
-are `mobile_ci.yaml`, `mobile_service_integration_tests.yaml`, `semantic_pr.yaml`,
-`pr_issue_link.yml`, `mergeability_check.yml`, and `mobile_pr_preview_deploy.yml`
-— all of which are intentionally repo-wide. **There is no path-filter waste to
-recover here.**
+`mobile/packages/` has 55 entries. The 54 package workflows currently present
+under `.github/workflows/` carry `paths:` filters scoped to their own package
+plus their own workflow file; `nostr_apps` is the existing package-CI exception
+tracked in `mobile/scripts/baseline/package_ci_exceptions.txt`. The two mobile
+web build/deploy workflows are also path-filtered to `mobile/**`. The six
+workflows without `paths:` filters are `mobile_ci.yaml`,
+`mobile_service_integration_tests.yaml`, `semantic_pr.yaml`, `pr_issue_link.yml`,
+`mergeability_check.yml`, and `mobile_pr_preview_deploy.yml` — all of which are
+intentionally repo-wide. **There is no path-filter waste to recover here.**
 
 `--coverage` is *not* collected in the `Mobile CI` Tests job. Package workflows
 do collect it, and they consume it (`min_coverage` gates), so it is not waste.
@@ -225,9 +227,9 @@ as inconclusive and re-run before attributing it to a diff.
 - `mobile/lib`: 1,400 Dart files
 - `mobile/test`: 1,225 `*_test.dart` files, largest buckets `widgets/` (289),
   `services/` (280), `screens/` (185), `blocs/` (114)
-- `mobile/packages`: 57 packages, **all** declared `resolution: workspace` under
+- `mobile/packages`: 55 entries, **all** declared `resolution: workspace` under
   a single `workspace:` block in `mobile/pubspec.yaml` — one pub resolve for the
-  whole monorepo, not 57. No win available here.
+  whole monorepo, not 55. No win available here.
 
 ---
 
@@ -252,11 +254,10 @@ cd mobile
 mise exec -- very_good test --optimization --concurrency=4 \
   --exclude-tags integration --test-randomize-ordering-seed random
 
-# Plain vs optimized on an identical subset (uses the sharding selector)
-bash scripts/ci/select_test_shard.sh --total 40 --index 0 --force
-mise exec -- flutter test --concurrency=4 --exclude-tags integration
-mise exec -- very_good test --optimization --concurrency=4 --exclude-tags integration
-git checkout -- test        # restore
+# Plain vs optimized on an identical subset
+git ls-files 'test/**/*_test.dart' | sort | awk 'NR % 40 == 1' > /tmp/mobile-perf-subset.txt
+mise exec -- flutter test --concurrency=4 --exclude-tags integration $(cat /tmp/mobile-perf-subset.txt)
+mise exec -- very_good test --optimization --concurrency=4 --exclude-tags integration $(cat /tmp/mobile-perf-subset.txt)
 
 # Local, one file
 cd mobile && time mise exec -- flutter test <path> --reporter expanded

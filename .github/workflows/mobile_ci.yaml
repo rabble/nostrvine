@@ -15,6 +15,9 @@ jobs:
   changes:
     name: Detect App CI Scope
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       app: ${{ steps.scope.outputs.app }}
       native: ${{ steps.scope.outputs.native }}
@@ -47,7 +50,7 @@ jobs:
             exit 0
           fi
 
-          gh api --paginate "/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files" \
+          gh api --method GET --paginate -F per_page=100 "/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files" \
             --jq '.[].filename' > /tmp/mobile-ci-changed-files.txt
           echo "Changed files:"
           cat /tmp/mobile-ci-changed-files.txt
