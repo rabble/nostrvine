@@ -6,6 +6,8 @@ import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/container_swap_host.dart';
 import 'package:openvine/providers/device_scope.dart';
+import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 
 /// Signs [container]'s fresh [AuthService] in as [account].
 ///
@@ -19,8 +21,18 @@ typedef AccountSignIn =
 Future<void> _defaultSignIn(
   ProviderContainer container,
   KnownAccount account,
-) {
-  return container
+) async {
+  // A swapped-in container does not run the startup coordinator, so give it the
+  // same per-container prerequisites a fresh launch establishes before auth.
+  // EnvironmentService defaults to production and applies any persisted
+  // override here, so the new account's signer and relays target the right
+  // environment rather than whatever an uninitialised service would default to.
+  // (NostrService / relay connections still come up lazily once
+  // signInForAccount authenticates — same as a cold launch.)
+  await container
+      .read(environmentServiceProvider)
+      .initialize(sharedPreferences: container.read(sharedPreferencesProvider));
+  await container
       .read(authServiceProvider)
       .signInForAccount(account.pubkeyHex, account.authSource);
 }
