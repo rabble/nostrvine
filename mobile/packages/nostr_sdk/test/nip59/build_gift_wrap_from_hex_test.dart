@@ -48,7 +48,8 @@ void main() {
       expect(decrypted!.content, equals('secret message'));
       expect(decrypted.pubkey, equals(senderPubkey));
       expect(decrypted.kind, equals(EventKind.privateDirectMessage));
-      // Rumor id is preserved — receiver-side gift-wrap dedup keys on it.
+      // Receivers derive the rumor id after unwrap, so only the wrap id is
+      // relevant for gift-wrap dedup.
       expect(decrypted.id, equals(rumor.id));
     });
 

@@ -94,7 +94,7 @@ Future<DecryptedRumorResult> _decryptOne(
   }
 
   // C16/NIP-44: validate the outer gift wrap (kind 1059) signature before
-  // decrypting. Defense-in-depth — diVine relays verify on publish, but an
+  // decrypting. Defense-in-depth — Divine relays verify on publish, but an
   // untrusted relay or local cache could serve a forged/tampered wrap.
   if (!verifyGiftWrapPart(giftWrap)) {
     return DecryptedRumorResult.failure(
@@ -156,19 +156,13 @@ Future<DecryptedRumorResult> _decryptOne(
   // (it signed the seal), so it is the authoritative author, and the id is
   // derived rather than trusted: it becomes the `direct_messages` primary
   // key and the reaction upsert key, so accepting a claimed one lets a
-  // sender overwrite another user's row. Rebuilding through the Event
-  // constructor recomputes the canonical NIP-01 id from the rumor's own
-  // fields — for a well-formed sender it equals the claimed id, so there is
-  // no observable divergence. Mirrors GiftWrapUtil.getRumorEvent and
-  // DmRepository._rumorFromSlot, which already build rumors this way.
+  // sender overwrite another user's row. Parse only the authenticated/needed
+  // fields; claimed `id` and `pubkey` may be absent. Mirrors
+  // GiftWrapUtil.getRumorEvent and DmRepository._rumorFromSlot.
   try {
-    final parsed = Event.fromJson(rumorJson);
-    final rumor = Event(
-      sealEvent.pubkey,
-      parsed.kind,
-      parsed.tags,
-      parsed.content,
-      createdAt: parsed.createdAt,
+    final rumor = rebuildUnsignedRumorFromJson(
+      rumorJson,
+      authenticatedPubkey: sealEvent.pubkey,
     );
     return DecryptedRumorResult.success(rumor.toJson());
   } on Object catch (e) {

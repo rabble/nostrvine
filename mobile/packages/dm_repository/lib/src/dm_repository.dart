@@ -1691,22 +1691,20 @@ class DmRepository {
       final rumor = rumorEvent;
 
       // A NIP-59 rumor is unsigned, so `created_at` is chosen freely by the
-      // sender. Refuse an implausibly future-dated one before any kind
-      // routing — this seam covers kinds 14/15, reactions and deletions
-      // alike. Persisting it would advance the sync cursor past now and
-      // blackhole every later subscription (and pin the thread to the top of
-      // the inbox forever). Ledger the wrap so it is not re-decrypted on
-      // every launch; the sender can always resend with an honest timestamp.
+      // sender. Keep the message, but clamp the timestamp used for local
+      // ordering/cursors so a bad clock cannot blackhole future subscriptions
+      // or pin the thread above honest messages forever.
       final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      final persistedCreatedAt = rumor.createdAt > nowSec
+          ? nowSec
+          : rumor.createdAt;
       if (rumor.createdAt > nowSec + DmSyncState.maxFutureSkewSeconds) {
         Log.warning(
-          'Rejected DM (kind ${rumor.kind}) from ${rumor.pubkey}: rumor '
-          'created_at ${rumor.createdAt} is beyond the accepted skew of '
+          'Clamped DM (kind ${rumor.kind}) from ${rumor.pubkey}: rumor '
+          'created_at ${rumor.createdAt} is beyond the expected skew of '
           '${DmSyncState.maxFutureSkewSeconds}s (now $nowSec)',
           category: LogCategory.system,
         );
-        await _recordProcessedWrap(giftWrapEvent.id);
-        return;
       }
 
       // NIP-17 spec line 14 explicitly permits kind 7 reactions inside
@@ -1823,7 +1821,7 @@ class DmRepository {
         conversationId: conversationId,
         senderPubkey: rumor.pubkey,
         content: rumor.content,
-        createdAt: rumor.createdAt,
+        createdAt: persistedCreatedAt,
         ownerPubkey: _userPubkey,
       );
       if (isDuplicate) {
@@ -1849,7 +1847,7 @@ class DmRepository {
           conversationId: conversationId,
           senderPubkey: rumor.pubkey,
           content: rumor.content,
-          createdAt: rumor.createdAt,
+          createdAt: persistedCreatedAt,
           giftWrapId: giftWrapEvent.id,
           messageKind: rumor.kind,
           replyToId: replyToId,
@@ -1878,9 +1876,9 @@ class DmRepository {
           id: conversationId,
           participantPubkeys: jsonEncode(participants),
           isGroup: isGroup,
-          createdAt: existing?.createdAt ?? rumor.createdAt,
+          createdAt: existing?.createdAt ?? persistedCreatedAt,
           lastMessageContent: previewContent,
-          lastMessageTimestamp: rumor.createdAt,
+          lastMessageTimestamp: persistedCreatedAt,
           lastMessageSenderPubkey: rumor.pubkey,
           subject: subject,
           isRead: isSentByMe,
@@ -1891,10 +1889,10 @@ class DmRepository {
         );
       });
 
-      // Advance sync boundaries using the rumor's REAL created_at. The
-      // outer gift wrap randomizes its own created_at within a ~2 day
-      // window (NIP-17) so it must not be used for boundary tracking.
-      await _syncState?.recordSeen(_userPubkey, createdAt: rumor.createdAt);
+      // Advance sync boundaries from the bounded local timestamp. The outer
+      // gift wrap randomizes its own created_at within a ~2 day window
+      // (NIP-17) so it must not be used for boundary tracking.
+      await _syncState?.recordSeen(_userPubkey, createdAt: persistedCreatedAt);
 
       Log.debug(
         'Persisted DM (kind ${rumor.kind}) in conversation '
@@ -2213,9 +2211,9 @@ class DmRepository {
   ///
   /// The id is recomputed by the constructor from [GiftWrapUnwrapSlot.sender] —
   /// always the canonical NIP-01 id for the authenticated sender, the same
-  /// recompute [GiftWrapUtil.getRumorEvent] performs on its sender-mismatch
-  /// branch. For a well-formed sender (every diVine client embeds the canonical
-  /// id) it equals the claimed id, so there is no observable divergence; for a
+  /// unconditional recompute [GiftWrapUtil.getRumorEvent] performs locally.
+  /// For a well-formed sender (every Divine client embeds the canonical id) it
+  /// equals the claimed id, so there is no observable divergence; for a
   /// non-canonical claimed id the recompute is the more correct, interoperable
   /// choice (the DB primary key is the rumor id).
   Event? _rumorFromSlot(GiftWrapUnwrapSlot slot) {

@@ -348,6 +348,27 @@ void main() {
         expect(newest, closeTo(nowSec(), 5));
       });
 
+      test('recordSeen caps oldest for a first far-future createdAt', () async {
+        await state.recordSeen(pkA, createdAt: year2100);
+
+        final oldest = state.oldestSyncedAt(pkA);
+        expect(oldest, isNotNull);
+        expect(oldest, lessThan(year2100));
+        expect(oldest, closeTo(nowSec(), 5));
+      });
+
+      test(
+        'recordSeen floors newest for a first implausibly old createdAt',
+        () async {
+          await state.recordSeen(pkA, createdAt: epochOne);
+
+          expect(
+            state.newestSyncedAt(pkA),
+            equals(DmSyncState.minPlausibleCreatedAt),
+          );
+        },
+      );
+
       test(
         'a capped createdAt cannot push the live since: filter past now',
         () async {
@@ -386,12 +407,14 @@ void main() {
           // Simulate a pre-guard build having written the poisoned value.
           await prefs.setInt('dm.newestSyncedAt.$pkA', year2100);
           await state.markHistoryDrainComplete(pkA);
+          await state.setHistoryDrainCursor(pkA, tsOldest);
           expect(state.historyDrainComplete(pkA), isTrue);
 
           await state.repairPoisonedBoundaries(pkA);
 
           expect(state.newestSyncedAt(pkA), closeTo(nowSec(), 5));
           expect(state.historyDrainComplete(pkA), isFalse);
+          expect(state.historyDrainCursor(pkA), closeTo(nowSec(), 5));
         },
       );
 
@@ -405,6 +428,18 @@ void main() {
           equals(DmSyncState.minPlausibleCreatedAt),
         );
       });
+
+      test(
+        'repairPoisonedBoundaries heals an implausibly future oldest',
+        () async {
+          await prefs.setInt('dm.oldestSyncedAt.$pkA', year2100);
+
+          await state.repairPoisonedBoundaries(pkA);
+
+          expect(state.oldestSyncedAt(pkA), closeTo(nowSec(), 5));
+          expect(state.historyDrainCursor(pkA), closeTo(nowSec(), 5));
+        },
+      );
 
       test(
         'repairPoisonedBoundaries is a no-op for healthy boundaries',

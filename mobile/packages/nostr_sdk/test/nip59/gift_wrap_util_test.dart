@@ -67,10 +67,12 @@ void main() {
     required String senderPrivateKey,
     required String recipientPubkey,
     bool keepRumorSig = false,
+    void Function(Map<String, dynamic> rumorMap)? mutateRumorMap,
   }) async {
     final senderPubkey = getPublicKey(senderPrivateKey);
     final rumorMap = rumor.toJson();
     if (!keepRumorSig) rumorMap.remove('sig');
+    mutateRumorMap?.call(rumorMap);
     final sealKey = NIP44V2.shareSecret(senderPrivateKey, recipientPubkey);
     final sealContent = await NIP44V2.encrypt(jsonEncode(rumorMap), sealKey);
     final sealEvent = Event(
@@ -323,6 +325,34 @@ void main() {
         expect(rumor!.pubkey, equals(senderPubkey));
         expect(rumor.id, isNot(equals(spoofedId)));
         expect(rumor.isValid, isTrue);
+      });
+
+      test('an omitted claimed id and pubkey still unwraps', () async {
+        final honest = Event(
+          senderPubkey,
+          EventKind.privateDirectMessage,
+          const <List<String>>[
+            ['p', 'abc'],
+          ],
+          'minimal rumor',
+        );
+        final expectedId = honest.id;
+        final wrap = await buildGiftWrap(
+          rumor: honest,
+          senderPrivateKey: senderPrivateKey,
+          recipientPubkey: getPublicKey(recipientPrivateKey),
+          mutateRumorMap: (rumorMap) {
+            rumorMap.remove('id');
+            rumorMap.remove('pubkey');
+          },
+        );
+
+        final rumor = await GiftWrapUtil.getRumorEvent(recipientNostr, wrap);
+
+        expect(rumor, isNotNull);
+        expect(rumor!.id, equals(expectedId));
+        expect(rumor.pubkey, equals(senderPubkey));
+        expect(rumor.content, equals('minimal rumor'));
       });
     });
   });

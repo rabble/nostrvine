@@ -46,7 +46,8 @@ class DmSyncState {
   static const int currentDrainVersion = 3;
 
   /// Maximum clock skew, in seconds, tolerated on a self-asserted DM
-  /// `created_at` before it is treated as implausible.
+  /// `created_at` before callers should stop treating it as an honest send
+  /// time.
   ///
   /// A NIP-59 inner rumor is unsigned — only the kind-13 seal and kind-1059
   /// wrap are cryptographically bound — so its `created_at` is chosen freely
@@ -55,12 +56,12 @@ class DmSyncState {
   /// `DmRepository.startListening` derives the live subscription's `since:`
   /// from it, so no relay ever returns anything again.
   ///
-  /// One hour is deliberately far below the 2-day `since:` overlap window: a
-  /// timestamp saturating this allowance still yields
-  /// `since = (now + 1h) - 2d = now - 47h`, comfortably in the past, so even
-  /// the maximum accepted skew cannot push the cursor past now. It also
-  /// absorbs any realistic consumer-device clock error.
-  static const int maxFutureSkewSeconds = 3600;
+  /// Twenty-four hours is still safely inside the 2-day `since:` overlap
+  /// window: a timestamp saturating this allowance still yields
+  /// `since = (now + 24h) - 2d = now - 24h`, in the past, so the maximum
+  /// tolerated skew cannot push the cursor past now. It also avoids silently
+  /// dropping messages from devices with a badly drifted clock.
+  static const int maxFutureSkewSeconds = 86400;
 
   /// Lower bound for a plausible Nostr `created_at` (2020-01-01T00:00:00Z).
   ///
@@ -89,32 +90,27 @@ class DmSyncState {
   /// never roll back `newest`, and newer events never roll back `oldest`.
   ///
   /// [createdAt] is caller-supplied and, for a NIP-59 rumor, unauthenticated,
-  /// so each boundary is bounded independently before it is persisted: the
-  /// newest is capped at now ([maxFutureSkewSeconds]) and the oldest floored
-  /// at [minPlausibleCreatedAt]. The two bounds are applied separately rather
-  /// than clamping one value, because they defend two different failure modes
-  /// and must not interact on a device whose own clock is wrong.
+  /// so each boundary is bounded independently before it is persisted. The
+  /// two bounds are applied separately rather than clamping one value, because
+  /// they defend two different failure modes and must not interact on a device
+  /// whose own clock is wrong.
   ///
-  /// This is defence in depth: `DmRepository` already refuses to persist a
-  /// rumor dated beyond the skew allowance, so a well-behaved caller never
-  /// reaches the cap here.
+  /// This is defence in depth: `DmRepository` already bounds the timestamp it
+  /// persists for NIP-17 rumors, so a well-behaved caller should reach these
+  /// clamps only through legacy state or direct callers.
   Future<void> recordSeen(String pubkey, {required int createdAt}) async {
     final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
-    final cappedNewest = createdAt > nowSec + maxFutureSkewSeconds
-        ? nowSec
-        : createdAt;
+    final cappedNewest = createdAt.clamp(minPlausibleCreatedAt, nowSec);
     final newest = newestSyncedAt(pubkey);
     if (newest == null || cappedNewest > newest) {
       await _prefs.setInt('$_newestPrefix$pubkey', cappedNewest);
     }
 
-    final flooredOldest = createdAt < minPlausibleCreatedAt
-        ? minPlausibleCreatedAt
-        : createdAt;
+    final cappedOldest = createdAt.clamp(minPlausibleCreatedAt, nowSec);
     final oldest = oldestSyncedAt(pubkey);
-    if (oldest == null || flooredOldest < oldest) {
-      await _prefs.setInt('$_oldestPrefix$pubkey', flooredOldest);
+    if (oldest == null || cappedOldest < oldest) {
+      await _prefs.setInt('$_oldestPrefix$pubkey', cappedOldest);
     }
   }
 
@@ -128,30 +124,33 @@ class DmSyncState {
   /// switch. Called once per subscription start, before the `since:` filter
   /// is derived.
   ///
-  /// Clearing the completion flag and resume cursor matches
-  /// [upgradeDrainVersionIfNeeded]: while the poisoned boundary was in place
-  /// the subscription filtered out real history, so the one-time drain must
-  /// run again to recover whatever the relays still hold.
+  /// Clearing the completion flag and seeding the resume cursor at now
+  /// re-drains down through the window the poisoned live subscription missed;
+  /// removing the cursor would seed from [oldestSyncedAt] and only revisit
+  /// older history the user already has.
   Future<void> repairPoisonedBoundaries(String pubkey) async {
     final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     var repaired = false;
 
     final newest = newestSyncedAt(pubkey);
-    if (newest != null && newest > nowSec + maxFutureSkewSeconds) {
+    if (newest != null && newest > nowSec) {
       await _prefs.setInt('$_newestPrefix$pubkey', nowSec);
       repaired = true;
     }
 
     final oldest = oldestSyncedAt(pubkey);
-    if (oldest != null && oldest < minPlausibleCreatedAt) {
-      await _prefs.setInt('$_oldestPrefix$pubkey', minPlausibleCreatedAt);
+    if (oldest != null && (oldest < minPlausibleCreatedAt || oldest > nowSec)) {
+      await _prefs.setInt(
+        '$_oldestPrefix$pubkey',
+        oldest < minPlausibleCreatedAt ? minPlausibleCreatedAt : nowSec,
+      );
       repaired = true;
     }
 
     if (!repaired) return;
 
     await _prefs.remove('$_drainCompletePrefix$pubkey');
-    await _prefs.remove('$_drainCursorPrefix$pubkey');
+    await _prefs.setInt('$_drainCursorPrefix$pubkey', nowSec);
   }
 
   /// Whether the one-time full-history drain has completed for [pubkey].

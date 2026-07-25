@@ -11072,7 +11072,7 @@ void main() {
       Event futureDatedRumor() => Event.fromJson({
         'id': _rumorEventId,
         'pubkey': _validPubkeyB,
-        // Year 2100 — unconditionally beyond the accepted skew.
+        // Year 2100 — unconditionally beyond the local ordering clamp.
         'created_at': 4102444800,
         'kind': EventKind.privateDirectMessage,
         'tags': [
@@ -11083,10 +11083,58 @@ void main() {
       });
 
       test(
-        'a future-dated rumor is rejected, ledgered, and never advances the '
-        'sync cursor',
+        'a future-dated rumor is persisted with a clamped timestamp and never '
+        'advances the sync cursor past now',
         () async {
           final syncState = _FakeDmSyncState();
+          when(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              tagsJson: any(named: 'tagsJson'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockConversationsDao.getConversation(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).thenAnswer((_) async {});
           final repository = createRepository(
             processedGiftWrapsDao: ledger,
             syncState: syncState,
@@ -11098,23 +11146,37 @@ void main() {
           await Future<void>.delayed(Duration.zero);
           await Future<void>.delayed(Duration.zero);
 
-          // Never persisted...
-          verifyNever(
+          final insertCall = verify(
             () => mockDirectMessagesDao.insertMessage(
               id: any(named: 'id'),
               conversationId: any(named: 'conversationId'),
               senderPubkey: any(named: 'senderPubkey'),
               content: any(named: 'content'),
-              createdAt: any(named: 'createdAt'),
+              createdAt: captureAny(named: 'createdAt'),
               giftWrapId: any(named: 'giftWrapId'),
               messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              tagsJson: any(named: 'tagsJson'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
+              sendBatchId: any(named: 'sendBatchId'),
             ),
-          );
-          // ...and critically, the cursor is untouched.
-          expect(syncState.recorded, isEmpty);
-          // Ledgered so it is not re-decrypted on every launch.
-          expect(ledger.recorded, contains(_giftWrapEventId));
+          )..called(1);
+          final insertedCreatedAt = insertCall.captured.single as int;
+          final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          expect(insertedCreatedAt, closeTo(nowSec, 5));
+          expect(syncState.recorded.single.createdAt, closeTo(nowSec, 5));
+          expect(ledger.recorded, isNot(contains(_giftWrapEventId)));
 
           await controller.close();
           await repository.stopListening();
