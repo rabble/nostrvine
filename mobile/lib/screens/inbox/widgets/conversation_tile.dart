@@ -26,6 +26,8 @@ class ConversationTile extends ConsumerWidget {
     required this.onTap,
     this.onLongPress,
     this.highlighted = false,
+    this.displayNameOverride,
+    this.subtitleOverride,
     super.key,
   });
 
@@ -38,6 +40,17 @@ class ConversationTile extends ConsumerWidget {
   /// indicate this row is the target of an open long-press action sheet.
   final bool highlighted;
 
+  /// Fixed display name, bypassing the kind-0 profile lookup.
+  ///
+  /// Needed for rows whose identity is known ahead of the network: the profile
+  /// provider yields `null` until the relay client is ready, and the tile's
+  /// fallback is a generated "Adjective Animal N" name, so a known account
+  /// would otherwise render as a random user for the whole cold-start window.
+  final String? displayNameOverride;
+
+  /// Fixed preview line, bypassing [DmConversation.lastMessageContent].
+  final String? subtitleOverride;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final otherPubkey = conversation.participantPubkeys.firstWhere(
@@ -47,12 +60,14 @@ class ConversationTile extends ConsumerWidget {
 
     final profileAsync = ref.watch(fetchUserProfileProvider(otherPubkey));
 
-    final displayName = profileAsync.maybeWhen(
-      data: (profile) =>
-          profile?.bestDisplayName ??
-          UserProfile.defaultDisplayNameFor(otherPubkey),
-      orElse: () => UserProfile.defaultDisplayNameFor(otherPubkey),
-    );
+    final displayName =
+        displayNameOverride ??
+        profileAsync.maybeWhen<String>(
+          data: (profile) =>
+              profile?.bestDisplayName ??
+              UserProfile.defaultDisplayNameFor(otherPubkey),
+          orElse: () => UserProfile.defaultDisplayNameFor(otherPubkey),
+        );
 
     final imageUrl = profileAsync.maybeWhen(
       data: (profile) => profile?.picture,
@@ -75,7 +90,12 @@ class ConversationTile extends ConsumerWidget {
       label: conversation.isRead
           ? context.l10n.inboxConversationTileLabel(displayName)
           : context.l10n.inboxConversationTileLabelUnread(displayName),
-      onLongPressHint: context.l10n.inboxConversationTileLongPressHint,
+      // Only advertise the long-press affordance when there is one: the hint
+      // is a promise to assistive tech, and rows built without a handler
+      // (the pinned support row) have no action sheet to open.
+      onLongPressHint: onLongPress == null
+          ? null
+          : context.l10n.inboxConversationTileLongPressHint,
       child: GestureDetector(
         onTap: () {
           Log.debug(
@@ -142,7 +162,17 @@ class ConversationTile extends ConsumerWidget {
                           ],
                         ],
                       ),
-                      if (conversation.lastMessageContent != null) ...[
+                      if (subtitleOverride case final subtitle?) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle,
+                          style: VineTheme.bodyMediumFont(
+                            color: VineTheme.onSurfaceVariant,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ] else if (conversation.lastMessageContent != null) ...[
                         const SizedBox(height: 4),
                         _ConversationPreviewText(
                           payload: _previewPayload(

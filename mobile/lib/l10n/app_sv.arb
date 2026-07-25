@@ -2337,6 +2337,8 @@
     "inboxUnreadEmptyTitle": "Du är helt ikapp",
     "inboxUnreadEmptySubtitle": "Inga olästa meddelanden just nu.",
     "inboxSearchHint": "Sök meddelanden",
+    "inboxSupportRowTitle": "Divine Moderation",
+    "inboxSupportRowSubtitle": "Buggar, moderering, kontofrågor – vi lyssnar.",
     "inboxSearchEmptyTitle": "Inga träffar",
     "inboxSearchEmptySubtitle": "Prova ett annat namn eller ord.",
     "inboxRemoveConfirmBody": "Detta tar bort din konversation med {displayName}. Denna åtgärd kan inte ångras.",

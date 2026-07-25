@@ -44,3 +44,16 @@ const List<OfficialAccount> kPinnedOfficialAccounts = [
     minorContactable: true,
   ),
 ];
+
+/// Moderation pubkeys the account has rotated away from.
+///
+/// A DM thread opened before a rotation stays keyed on the old pubkey, so the
+/// pinned support row de-duplicates against these to avoid rendering beside an
+/// orphaned "Divine Moderation" conversation. Never a send target — messages
+/// always go to the current pin above.
+///
+/// `121b915b…` was retired in #2321 (2026-03-20); `ModerationLabelService`
+/// carries the matching one-time migration for labeler subscriptions.
+const List<String> kLegacyModerationPubkeys = [
+  '121b915baba659cbe59626a8afaf83b01dc42354dfecaad9d465d51bb5715d72',
+];

@@ -52,6 +52,11 @@ class BuildConfiguration {
       case FeatureFlag.emailVerificationPinFallback:
         // Default OFF until keycast verify-pin support is deployed.
         return const bool.fromEnvironment('FF_EMAIL_VERIFICATION_PIN_FALLBACK');
+      case FeatureFlag.supportDmRow:
+        // Default OFF until the moderation DM inbox is staffed as a queue
+        // with an SLA. Promoting it earlier reads as a silent black hole
+        // (#6283, support-trust-safety#194).
+        return const bool.fromEnvironment('FF_SUPPORT_DM_ROW');
     }
   }
 
@@ -96,6 +101,8 @@ class BuildConfiguration {
         return 'FF_COMMUNITY_CONTENT_WARNINGS';
       case FeatureFlag.emailVerificationPinFallback:
         return 'FF_EMAIL_VERIFICATION_PIN_FALLBACK';
+      case FeatureFlag.supportDmRow:
+        return 'FF_SUPPORT_DM_ROW';
     }
   }
 }

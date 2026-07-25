@@ -2337,6 +2337,8 @@
     "inboxUnreadEmptyTitle": "Tu es à jour",
     "inboxUnreadEmptySubtitle": "Aucun message non lu pour le moment.",
     "inboxSearchHint": "Rechercher des messages",
+    "inboxSupportRowTitle": "Divine Moderation",
+    "inboxSupportRowSubtitle": "Bugs, modération, questions de compte — on vous écoute.",
     "inboxSearchEmptyTitle": "Aucun résultat",
     "inboxSearchEmptySubtitle": "Essaie un autre nom ou un autre mot.",
     "inboxRemoveConfirmBody": "Cela supprimera votre conversation avec {displayName}. Cette action est irréversible.",

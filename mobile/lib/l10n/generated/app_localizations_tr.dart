@@ -5635,6 +5635,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get inboxSearchHint => 'Mesajlarda ara';
 
   @override
+  String get inboxSupportRowTitle => 'Divine Moderation';
+
+  @override
+  String get inboxSupportRowSubtitle =>
+      'Hatalar, moderasyon, hesap meseleleri — dinliyoruz.';
+
+  @override
   String get inboxSearchEmptyTitle => 'Sonuç yok';
 
   @override

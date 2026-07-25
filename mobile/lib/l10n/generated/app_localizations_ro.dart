@@ -5807,6 +5807,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get inboxSearchHint => 'Caută mesaje';
 
   @override
+  String get inboxSupportRowTitle => 'Divine Moderation';
+
+  @override
+  String get inboxSupportRowSubtitle =>
+      'Buguri, moderare, chestiuni de cont — te ascultăm.';
+
+  @override
   String get inboxSearchEmptyTitle => 'Nicio potrivire';
 
   @override

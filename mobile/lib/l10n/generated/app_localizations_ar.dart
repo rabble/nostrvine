@@ -5617,6 +5617,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get inboxSearchHint => 'البحث في الرسائل';
 
   @override
+  String get inboxSupportRowTitle => 'Divine Moderation';
+
+  @override
+  String get inboxSupportRowSubtitle =>
+      'الأخطاء والإشراف ومشكلات الحساب — نحن نستمع.';
+
+  @override
   String get inboxSearchEmptyTitle => 'لا توجد نتائج';
 
   @override

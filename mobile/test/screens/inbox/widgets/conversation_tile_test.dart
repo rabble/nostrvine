@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
@@ -47,6 +48,24 @@ void main() {
       lastMessageTimestamp: lastMessageTimestamp,
       isRead: isRead,
     );
+  }
+
+  /// The [SemanticsProperties] of the tile's own outermost Semantics wrapper.
+  ///
+  /// `onLongPressHint` lands in `SemanticsHintOverrides`, which `SemanticsData`
+  /// does not expose, so the widget's declared properties are the accessible
+  /// assertion point.
+  SemanticsProperties tileSemantics(WidgetTester tester) {
+    return tester
+        .widget<Semantics>(
+          find
+              .descendant(
+                of: find.byType(ConversationTile),
+                matching: find.byType(Semantics),
+              )
+              .first,
+        )
+        .properties;
   }
 
   group(ConversationTile, () {
@@ -648,6 +667,149 @@ void main() {
         );
         final decoration = decoratedBox.decoration as BoxDecoration;
         expect(decoration.color, isNull);
+      });
+    });
+
+    group('fixed-identity overrides (#6283)', () {
+      testWidgets('displayNameOverride wins over the resolved profile', (
+        tester,
+      ) async {
+        final testProfile = createTestProfile(displayName: 'Alice');
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            additionalOverrides: [
+              fetchUserProfileProvider(
+                otherPubkey,
+              ).overrideWith((ref) async => testProfile),
+            ],
+            home: Scaffold(
+              body: ConversationTile(
+                conversation: createTestConversation(),
+                currentUserPubkey: currentPubkey,
+                onTap: () {},
+                displayNameOverride: 'Divine Moderation',
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Divine Moderation'), findsOneWidget);
+        expect(find.text('Alice'), findsNothing);
+      });
+
+      testWidgets('displayNameOverride also wins before the profile '
+          'repository is ready', (tester) async {
+        // profileRepositoryProvider is null until the relay client is ready,
+        // so the tile's fallback is a generated "Adjective Animal N" name.
+        // A pinned, known account must never render that.
+        await tester.pumpWidget(
+          testMaterialApp(
+            additionalOverrides: [
+              fetchUserProfileProvider(
+                otherPubkey,
+              ).overrideWith((ref) async => null),
+            ],
+            home: Scaffold(
+              body: ConversationTile(
+                conversation: createTestConversation(),
+                currentUserPubkey: currentPubkey,
+                onTap: () {},
+                displayNameOverride: 'Divine Moderation',
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Divine Moderation'), findsOneWidget);
+        expect(
+          find.text(UserProfile.defaultDisplayNameFor(otherPubkey)),
+          findsNothing,
+        );
+      });
+
+      testWidgets('subtitleOverride replaces the message preview', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          testMaterialApp(
+            additionalOverrides: [
+              fetchUserProfileProvider(
+                otherPubkey,
+              ).overrideWith((ref) async => null),
+            ],
+            home: Scaffold(
+              body: ConversationTile(
+                conversation: createTestConversation(
+                  lastMessageContent: 'Hello',
+                ),
+                currentUserPubkey: currentPubkey,
+                onTap: () {},
+                subtitleOverride: 'Bugs, moderation, account stuff.',
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Bugs, moderation, account stuff.'), findsOneWidget);
+        expect(find.text('Hello'), findsNothing);
+      });
+
+      testWidgets('advertises no long-press hint when no handler is given', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          testMaterialApp(
+            additionalOverrides: [
+              fetchUserProfileProvider(
+                otherPubkey,
+              ).overrideWith((ref) async => null),
+            ],
+            home: Scaffold(
+              body: ConversationTile(
+                conversation: createTestConversation(),
+                currentUserPubkey: currentPubkey,
+                onTap: () {},
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // The hint is a promise to assistive tech; without onLongPress there
+        // is no action sheet to open, so promising one is a lie.
+        expect(tileSemantics(tester).hintOverrides?.onLongPressHint, isNull);
+      });
+
+      testWidgets('keeps the long-press hint when a handler IS given', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          testMaterialApp(
+            additionalOverrides: [
+              fetchUserProfileProvider(
+                otherPubkey,
+              ).overrideWith((ref) async => null),
+            ],
+            home: Scaffold(
+              body: ConversationTile(
+                conversation: createTestConversation(),
+                currentUserPubkey: currentPubkey,
+                onTap: () {},
+                onLongPress: () {},
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          tileSemantics(tester).hintOverrides?.onLongPressHint,
+          isNotNull,
+        );
       });
     });
   });

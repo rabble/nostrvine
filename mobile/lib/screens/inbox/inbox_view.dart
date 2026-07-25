@@ -353,6 +353,17 @@ class _MessagesContent extends ConsumerWidget {
         children: [
           Column(
             children: [
+              // Pinned Divine Moderation support row (#6283).
+              //
+              // Deliberately ABOVE the status switch inside
+              // _ConversationListContent: that switch replaces the entire list
+              // subtree with a spinner while the bloc loads, and returns early
+              // to InboxEmptyState for a user with no conversations — so a row
+              // rendered inside the list would be invisible in five of the six
+              // branches, including for the brand-new user who most needs it.
+              // Placed above FollowingBar so its position does not shift when
+              // the following strip resolves from empty to 128px.
+              _PinnedSupportRow(currentUserPubkey: currentPubkey),
               // Following users horizontal bar
               FollowingBar(
                 onUserTapped: (pubkey) {
@@ -480,6 +491,56 @@ class _RestorePausedBannerGate extends StatelessWidget {
 }
 
 /// Switches between loading, error, empty, and conversation list states.
+/// Pinned "Divine Moderation" support row at the top of the Messages tab.
+///
+/// Renders nothing unless [ConversationListState.pinnedConversation] is set —
+/// the bloc composes that inside the same pipeline that applies the blocklist
+/// filter and the protected-minor gate, so a user who blocked the moderation
+/// account, or a restricted minor whose approval was revoked, gets no row
+/// rather than one the conversation route guard would bounce.
+class _PinnedSupportRow extends StatelessWidget {
+  const _PinnedSupportRow({required this.currentUserPubkey});
+
+  /// Signed-in pubkey. Passed in rather than derived from the conversation's
+  /// participant list — that list is sorted, so its first entry is not
+  /// reliably self, and [ConversationTile] uses self to pick which
+  /// participant's avatar to render.
+  final String currentUserPubkey;
+
+  @override
+  Widget build(BuildContext context) {
+    final pinned = context.select<ConversationListBloc, DmConversation?>(
+      (bloc) => bloc.state.pinnedConversation,
+    );
+    if (pinned == null) return const SizedBox.shrink();
+
+    return ConversationTile(
+      conversation: pinned,
+      currentUserPubkey: currentUserPubkey,
+      // Fixed identity: the profile lookup yields null until the relay client
+      // is ready, and the tile's fallback is a generated name — so sourcing
+      // this from kind-0 would show a random display name at cold start.
+      displayNameOverride: context.l10n.inboxSupportRowTitle,
+      // Only stand in for the preview when there is no real thread yet; once
+      // the team replies, the last message is more useful than the blurb.
+      subtitleOverride: pinned.lastMessageContent == null
+          ? context.l10n.inboxSupportRowSubtitle
+          : null,
+      onTap: () => _pushConversation(
+        context,
+        pinned.id,
+        // Self must be stripped, matching _onConversationTapped: the route
+        // reads `extra` as the COUNTERPARTY list, so passing the raw
+        // participants opens a conversation with the signed-in user instead
+        // of with moderation.
+        pinned.participantPubkeys
+            .where((pk) => pk != currentUserPubkey)
+            .toList(),
+      ),
+    );
+  }
+}
+
 class _ConversationListContent extends StatelessWidget {
   const _ConversationListContent({required this.currentUserPubkey});
 

@@ -1325,5 +1325,199 @@ void main() {
         ).called(1);
       });
     });
+
+    group('pinned support row (#6283)', () {
+      const moderationPubkey =
+          '8fd5eb6d8f362163bc00a5ab6b4a3167dbf32d00ec4efdbcf43b3c9514433b7e';
+
+      DmConversation supportPin({
+        String? lastMessageContent,
+        bool isRead = true,
+      }) => DmConversation(
+        id: 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+        participantPubkeys: const [currentPubkey, moderationPubkey],
+        isGroup: false,
+        createdAt: 0,
+        lastMessageContent: lastMessageContent,
+        isRead: isRead,
+      );
+
+      Future<void> openMessages(WidgetTester tester) async {
+        await tester.pump();
+        await tester.tap(find.text('Messages'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+      }
+
+      testWidgets('renders the moderation title from l10n, never a '
+          'generated profile name', (tester) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              pinnedConversation: supportPin(),
+            ),
+          ),
+        );
+        await openMessages(tester);
+
+        expect(find.text(l10n.inboxSupportRowTitle), findsOneWidget);
+        expect(find.text(l10n.inboxSupportRowSubtitle), findsOneWidget);
+        // The tile's profile fallback is a deterministic "Adjective Animal N"
+        // string. If the override ever regresses, the moderation row silently
+        // renders as a random user, so pin the exact fallback out.
+        expect(
+          find.text(UserProfile.defaultDisplayNameFor(moderationPubkey)),
+          findsNothing,
+        );
+      });
+
+      testWidgets('is absent when the bloc emits no pin (flag off)', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.pumpWidget(
+          buildSubject(
+            state: const ConversationListState(
+              status: ConversationListStatus.loaded,
+            ),
+          ),
+        );
+        await openMessages(tester);
+
+        expect(find.text(l10n.inboxSupportRowTitle), findsNothing);
+      });
+
+      testWidgets('renders BESIDE the empty state, not instead of it — the '
+          'user with zero conversations is the one who needs it most', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              pinnedConversation: supportPin(),
+            ),
+          ),
+        );
+        await openMessages(tester);
+
+        expect(find.byType(InboxEmptyState), findsOneWidget);
+        expect(find.text(l10n.inboxSupportRowTitle), findsOneWidget);
+      });
+
+      testWidgets('renders during an active search, like FollowingBar', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final conversation = DmConversation(
+          id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+          participantPubkeys: const [currentPubkey, otherPubkey],
+          isGroup: false,
+          createdAt: nowUnix,
+          lastMessageContent: 'Hello',
+          lastMessageTimestamp: nowUnix,
+        );
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: [conversation],
+              searchQuery: 'zzzz',
+              hasMore: false,
+              pinnedConversation: supportPin(),
+            ),
+          ),
+        );
+        await openMessages(tester);
+
+        // The filtered branch is showing ("No matches"), and the row is still
+        // there — it lives above the list, not inside it.
+        expect(find.text(l10n.inboxSearchEmptyTitle), findsOneWidget);
+        expect(find.text(l10n.inboxSupportRowTitle), findsOneWidget);
+      });
+
+      testWidgets('shows the real last message once the team has replied', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              pinnedConversation: supportPin(
+                lastMessageContent: 'We looked into your report.',
+                isRead: false,
+              ),
+            ),
+          ),
+        );
+        await openMessages(tester);
+
+        expect(find.text('We looked into your report.'), findsOneWidget);
+        expect(find.text(l10n.inboxSupportRowSubtitle), findsNothing);
+      });
+
+      testWidgets('opens the conversation with MODERATION, not with self', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final pin = supportPin();
+        when(
+          () => mockGoRouter.push<Object?>(any(), extra: any(named: 'extra')),
+        ).thenAnswer((_) async => null);
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              pinnedConversation: pin,
+            ),
+          ),
+        );
+        await openMessages(tester);
+        await tester.tap(find.text(l10n.inboxSupportRowTitle));
+        await tester.pump();
+
+        // The route reads `extra` as the COUNTERPARTY list. Passing the raw
+        // participants (which include self) opened a conversation with the
+        // signed-in user — caught only by running the app, because a mocked
+        // router happily accepts either list.
+        final captured = verify(
+          () => mockGoRouter.push<Object?>(
+            ConversationPage.pathForId(pin.id),
+            extra: captureAny(named: 'extra'),
+          ),
+        ).captured.single;
+        expect(captured, equals([moderationPubkey]));
+        expect(captured, isNot(contains(currentPubkey)));
+      });
+
+      testWidgets('exposes a tappable button to assistive tech', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              pinnedConversation: supportPin(),
+            ),
+          ),
+        );
+        await openMessages(tester);
+
+        final data = tester
+            .getSemantics(find.byType(ConversationTile))
+            .getSemanticsData();
+        expect(data.label, contains(l10n.inboxSupportRowTitle));
+        expect(data.flagsCollection.isButton, isTrue);
+        // No action sheet is wired for this row, so it must not advertise a
+        // long-press hint it cannot honour.
+        expect(data.hasAction(SemanticsAction.longPress), isFalse);
+      });
+    });
   });
 }

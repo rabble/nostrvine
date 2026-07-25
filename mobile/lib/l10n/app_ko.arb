@@ -1660,6 +1660,8 @@
     "inboxUnreadEmptyTitle": "모두 확인했어요",
     "inboxUnreadEmptySubtitle": "읽지 않은 메시지가 없어요.",
     "inboxSearchHint": "메시지 검색",
+    "inboxSupportRowTitle": "Divine Moderation",
+    "inboxSupportRowSubtitle": "버그, 모더레이션, 계정 문제 — 듣고 있어요.",
     "inboxSearchEmptyTitle": "일치하는 항목 없음",
     "inboxSearchEmptySubtitle": "다른 이름이나 단어로 시도해 보세요.",
     "inboxRemoveConfirmBody": "{displayName}와의 대화가 삭제돼요. 이 작업은 되돌릴 수 없어요.",

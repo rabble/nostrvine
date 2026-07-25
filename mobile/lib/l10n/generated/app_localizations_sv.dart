@@ -5652,6 +5652,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get inboxSearchHint => 'Sök meddelanden';
 
   @override
+  String get inboxSupportRowTitle => 'Divine Moderation';
+
+  @override
+  String get inboxSupportRowSubtitle =>
+      'Buggar, moderering, kontofrågor – vi lyssnar.';
+
+  @override
   String get inboxSearchEmptyTitle => 'Inga träffar';
 
   @override

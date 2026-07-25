@@ -75,6 +75,13 @@ enum FeatureFlag {
     'Show the in-app email verification PIN and resend fallback. Off by '
         'default until keycast verify-pin support is deployed.',
     audience: FeatureFlagAudience.internal,
+  ),
+  supportDmRow(
+    'Support DM Row',
+    'Pin a "Divine Moderation" row at the top of the Messages inbox that '
+        'opens a NIP-17 conversation with the moderation team. Off by '
+        'default until the moderation inbox is staffed as a queue.',
+    audience: FeatureFlagAudience.internal,
   );
 
   const FeatureFlag(

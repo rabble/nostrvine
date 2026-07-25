@@ -2451,6 +2451,8 @@
     "inboxUnreadEmptyTitle": "В крак си с всичко",
     "inboxUnreadEmptySubtitle": "Няма непрочетени съобщения в момента.",
     "inboxSearchHint": "Търсене в съобщенията",
+    "inboxSupportRowTitle": "Divine Moderation",
+    "inboxSupportRowSubtitle": "Бъгове, модерация, проблеми с акаунта — слушаме.",
     "inboxSearchEmptyTitle": "Няма съвпадения",
     "inboxSearchEmptySubtitle": "Опитай с друго име или дума.",
     "inboxActionMute": "Заглушаване на разговора",

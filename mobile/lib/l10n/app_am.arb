@@ -2599,6 +2599,8 @@
     "inboxUnreadEmptyTitle": "ሁሉንም አንብበሃል",
     "inboxUnreadEmptySubtitle": "አሁን ያልተነበበ መልዕክት የለም።",
     "inboxSearchHint": "መልዕክቶችን ፈልግ",
+    "inboxSupportRowTitle": "Divine Moderation",
+    "inboxSupportRowSubtitle": "ሳንካዎች፣ ማጣራት፣ የመለያ ጉዳዮች — እያዳመጥን ነው።",
     "inboxSearchEmptyTitle": "ምንም አልተገኘም",
     "inboxSearchEmptySubtitle": "ሌላ ስም ወይም ቃል ሞክር።",
     "inboxActionMute": "ውይይት ድምጸ-ከል አድርግ",

@@ -29,12 +29,18 @@ class ConversationListBloc
     ProfileRepository? profileRepository,
     ProtectedMinorInboxGate? protectedMinorInboxGate,
     Duration recomputeDebounce = _defaultRecomputeDebounce,
+    String? supportRowPubkey,
+    List<String> supportRowLegacyPubkeys = const [],
+    bool supportRowEnabled = false,
   }) : _dmRepository = dmRepository,
        _followRepository = followRepository,
        _blocklistRepository = contentBlocklistRepository,
        _profileRepository = profileRepository,
        _protectedMinorInboxGate = protectedMinorInboxGate,
        _recomputeDebounce = recomputeDebounce,
+       _supportRowPubkey = supportRowPubkey,
+       _supportRowLegacyPubkeys = supportRowLegacyPubkeys,
+       _supportRowEnabled = supportRowEnabled,
        super(const ConversationListState()) {
     on<ConversationListStarted>(_onStarted, transformer: restartable());
     on<ConversationListLoadMore>(_onLoadMore, transformer: droppable());
@@ -71,6 +77,18 @@ class ConversationListBloc
   /// the bloc. Mirrors `NotificationBadgeCubit.setRepository`.
   ProfileRepository? _profileRepository;
   final ProtectedMinorInboxGate? _protectedMinorInboxGate;
+
+  /// Moderation pubkey the pinned support row targets, injected rather than
+  /// imported so this bloc stays free of app-layer config (#6283).
+  final String? _supportRowPubkey;
+
+  /// Historical moderation pubkeys. Used for de-duplication only, never as a
+  /// send target: a user who messaged moderation before the #2321 key rotation
+  /// still holds that thread, and without this it would render beside the
+  /// pinned row as a second "Divine Moderation" entry.
+  final List<String> _supportRowLegacyPubkeys;
+
+  final bool _supportRowEnabled;
 
   /// Window over which bursty conversation writes are coalesced before the
   /// list is re-composed. The combined stream re-runs `classifyPotentialRequests`
@@ -237,6 +255,15 @@ class ConversationListBloc
             ) ??
             blocklistedRequests;
 
+        // Lift the moderation thread out of the list into the pinned row, so
+        // the inbox never renders it twice (#6283). Runs after both filters so
+        // the pin inherits them rather than bypassing them.
+        final pin = _extractPinnedSupport(
+          userPubkey: userPubkey,
+          inbox: visibleInbox,
+          requests: visibleRequests,
+        );
+
         // A conversation can stream in while a name search is active whose
         // counterparty was not resolved when the search fired; it would fall
         // back to the generated name and drop out of the results until the
@@ -246,7 +273,7 @@ class ConversationListBloc
         // re-firing for those would loop on every recompute.
         if (state.searchQuery.length >= minSearchQueryLength) {
           final known = state.conversations.map((c) => c.id).toSet();
-          final hasNewUnresolved = visibleInbox.any(
+          final hasNewUnresolved = pin.inbox.any(
             (c) =>
                 !known.contains(c.id) &&
                 !state.profileNames.containsKey(
@@ -260,22 +287,24 @@ class ConversationListBloc
 
         return state.copyWith(
           status: ConversationListStatus.loaded,
-          conversations: visibleInbox,
+          conversations: pin.inbox,
           // Only true when the gate is actually costing the user something —
           // a closed gate with nothing to hold back needs no banner.
           requestsWithheld: !recoveryComplete && split.requests.isNotEmpty,
           visibleConversations: _computeVisible(
-            visibleInbox,
+            pin.inbox,
             unreadOnly: state.unreadOnly,
             query: state.searchQuery,
             profileNames: state.profileNames,
             userPubkey: userPubkey,
             limit: state.currentLimit,
           ),
-          requestConversations: visibleRequests,
+          requestConversations: pin.requests,
           potentialRequests: data.potentialRequests,
-          hasMore: visibleInbox.length > state.currentLimit,
+          hasMore: pin.inbox.length > state.currentLimit,
           isRestoringHistory: data.isRestoring,
+          pinnedConversation: pin.pinned,
+          clearPinnedConversation: pin.pinned == null,
         );
       },
       onError: (error, stackTrace) {
@@ -439,6 +468,101 @@ class ConversationListBloc
     return conversation.participantPubkeys.firstWhere(
       (pk) => pk != self,
       orElse: () => conversation.participantPubkeys.first,
+    );
+  }
+
+  /// A synthetic pin carries no timestamp, so it needs a `createdAt` that is
+  /// stable across recomputes — a clock read would make every debounce tick
+  /// produce an unequal state and re-emit forever. The value is never shown:
+  /// the pin renders no timestamp and is not sorted with the list.
+  static const _pinnedSupportEpoch = 0;
+
+  /// Extract the pinned Divine Moderation conversation and remove it from the
+  /// lists it would otherwise render in (#6283).
+  ///
+  /// Called with lists that have ALREADY passed the blocklist filter and the
+  /// protected-minor gate, so an existing moderation thread that those filters
+  /// removed simply is not found here. The synthetic fallback is pushed back
+  /// through both filters for the same reason: without that, a user who blocked
+  /// the moderation account — or a restricted minor whose approval was revoked
+  /// — would get a row that `ConversationPage`'s route guard bounces straight
+  /// back to the inbox.
+  ({
+    DmConversation? pinned,
+    List<DmConversation> inbox,
+    List<DmConversation> requests,
+  })
+  _extractPinnedSupport({
+    required String userPubkey,
+    required List<DmConversation> inbox,
+    required List<DmConversation> requests,
+  }) {
+    final supportPubkey = _supportRowPubkey;
+    if (!_supportRowEnabled ||
+        supportPubkey == null ||
+        supportPubkey.isEmpty ||
+        userPubkey.isEmpty) {
+      return (pinned: null, inbox: inbox, requests: requests);
+    }
+
+    // Every key the support thread may live under: the current moderation
+    // pubkey plus any it has rotated away from.
+    final knownIds = <String>{
+      for (final pk in [supportPubkey, ..._supportRowLegacyPubkeys])
+        if (pk.isNotEmpty) DmRepository.computeConversationId([userPubkey, pk]),
+    };
+
+    DmConversation? real;
+    final remainingInbox = <DmConversation>[];
+    for (final c in inbox) {
+      if (real == null && knownIds.contains(c.id)) {
+        real = c;
+      } else {
+        remainingInbox.add(c);
+      }
+    }
+
+    // An inbound-only moderation DM (the team wrote first) has
+    // currentUserHasSent == false and lands in requests, not the inbox.
+    // Without this the same thread would be reachable from both the pinned row
+    // and the Requests page with independent unread accounting.
+    final remainingRequests = <DmConversation>[];
+    for (final c in requests) {
+      if (real == null && knownIds.contains(c.id)) {
+        real = c;
+      } else {
+        remainingRequests.add(c);
+      }
+    }
+
+    if (real != null) {
+      return (
+        pinned: real,
+        inbox: remainingInbox,
+        requests: remainingRequests,
+      );
+    }
+
+    final synthetic = DmConversation(
+      id: DmRepository.computeConversationId([userPubkey, supportPubkey]),
+      participantPubkeys: [userPubkey, supportPubkey],
+      isGroup: false,
+      createdAt: _pinnedSupportEpoch,
+    );
+
+    final allowed =
+        _blocklistRepository?.filterBlockedConversations([
+          synthetic,
+        ], userPubkey: userPubkey) ??
+        [synthetic];
+    final visible =
+        _protectedMinorInboxGate?.filter(allowed, userPubkey: userPubkey) ??
+        allowed;
+
+    return (
+      pinned: visible.isEmpty ? null : visible.first,
+      inbox: remainingInbox,
+      requests: remainingRequests,
     );
   }
 

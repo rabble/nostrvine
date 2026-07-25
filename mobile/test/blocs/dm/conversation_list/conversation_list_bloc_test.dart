@@ -1742,7 +1742,8 @@ void main() {
         false, // isRestoringHistory
         false, // requestsWithheld
         ConversationListState.pageSize,
-        null,
+        null, // navigationTarget
+        null, // pinnedConversation
       ]);
     });
   });
@@ -2618,6 +2619,242 @@ void main() {
       // gift-wrap subscription. Doing so would silently break DM ingestion
       // for users who navigated away from the inbox tab.
       verifyNever(() => mockDmRepository.stopListening());
+    });
+  });
+
+  group('pinned support row (#6283)', () {
+    late _MockDmRepository mockDmRepository;
+    late _MockFollowRepository mockFollowRepository;
+
+    setUp(() {
+      mockDmRepository = _MockDmRepository();
+      mockFollowRepository = _MockFollowRepository();
+
+      when(() => mockFollowRepository.isFollowing(any())).thenReturn(true);
+      when(
+        () => mockFollowRepository.followingStream,
+      ).thenAnswer((_) => const Stream<List<String>>.empty());
+      when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
+      when(() => mockDmRepository.isHistoryRecoveryComplete).thenReturn(true);
+      when(() => mockDmRepository.startListening()).thenAnswer((_) async {});
+      when(() => mockDmRepository.stopListening()).thenAnswer((_) async {});
+      when(
+        () => mockDmRepository.backfillHistoryIfNeeded(),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockDmRepository.retryPendingDecryptions(),
+      ).thenAnswer((_) async {});
+    });
+
+    // Real moderation pin from kPinnedOfficialAccounts.
+    const moderationPubkey =
+        '8fd5eb6d8f362163bc00a5ab6b4a3167dbf32d00ec4efdbcf43b3c9514433b7e';
+    // Retired in #2321; a thread opened before the rotation is keyed on it.
+    const legacyModerationPubkey =
+        '121b915baba659cbe59626a8afaf83b01dc42354dfecaad9d465d51bb5715d72';
+
+    final supportId = DmRepository.computeConversationId([
+      _testPubkey1,
+      moderationPubkey,
+    ]);
+    final legacySupportId = DmRepository.computeConversationId([
+      _testPubkey1,
+      legacyModerationPubkey,
+    ]);
+
+    ConversationListBloc createSupportBloc({
+      bool enabled = true,
+      ContentBlocklistRepository? blocklist,
+      ProtectedMinorInboxGate? gate,
+    }) => ConversationListBloc(
+      dmRepository: mockDmRepository,
+      followRepository: mockFollowRepository,
+      contentBlocklistRepository: blocklist,
+      protectedMinorInboxGate: gate,
+      recomputeDebounce: Duration.zero,
+      supportRowEnabled: enabled,
+      supportRowPubkey: moderationPubkey,
+      supportRowLegacyPubkeys: const [legacyModerationPubkey],
+    );
+
+    Future<ConversationListState> loadedState(
+      ConversationListBloc bloc,
+    ) async {
+      bloc.add(const ConversationListStarted());
+      return bloc.stream.firstWhere(
+        (s) => s.status == ConversationListStatus.loaded,
+      );
+    }
+
+    test('is null when the feature flag is off', () async {
+      _stubStreams(mockDmRepository);
+      final bloc = createSupportBloc(enabled: false);
+      addTearDown(bloc.close);
+
+      final state = await loadedState(bloc);
+
+      expect(state.pinnedConversation, isNull);
+    });
+
+    test('synthesizes a pin when no moderation thread exists', () async {
+      _stubStreams(mockDmRepository);
+      final bloc = createSupportBloc();
+      addTearDown(bloc.close);
+
+      final state = await loadedState(bloc);
+
+      expect(state.pinnedConversation, isNotNull);
+      expect(state.pinnedConversation!.id, equals(supportId));
+      expect(
+        state.pinnedConversation!.participantPubkeys,
+        containsAll([_testPubkey1, moderationPubkey]),
+      );
+      // Nothing to preview and nothing unread until the team replies —
+      // this is what keeps the row visually matching divine-web.
+      expect(state.pinnedConversation!.lastMessageContent, isNull);
+      expect(state.pinnedConversation!.isRead, isTrue);
+    });
+
+    test(
+      'adopts the real thread and removes it from the list, so the inbox '
+      'never shows Divine Moderation twice',
+      () async {
+        final supportThread = _createConversation(
+          id: supportId,
+          currentUserHasSent: true,
+          isRead: false,
+          lastMessageContent: 'We looked into your report.',
+          participantPubkeys: const [_testPubkey1, moderationPubkey],
+        );
+        final other = _createConversation(
+          id: _testConversationId2,
+          currentUserHasSent: true,
+        );
+        _stubStreams(mockDmRepository, accepted: [supportThread, other]);
+        final bloc = createSupportBloc();
+        addTearDown(bloc.close);
+
+        final state = await loadedState(bloc);
+
+        expect(state.pinnedConversation?.id, equals(supportId));
+        // The pin carries the real unread state, so the Messages badge
+        // still corresponds to something the user can see.
+        expect(state.pinnedConversation!.isRead, isFalse);
+        expect(
+          state.pinnedConversation!.lastMessageContent,
+          equals('We looked into your report.'),
+        );
+        expect(
+          state.conversations.map((c) => c.id),
+          isNot(contains(supportId)),
+        );
+        expect(
+          state.conversations.map((c) => c.id),
+          contains(_testConversationId2),
+        );
+      },
+    );
+
+    test(
+      'absorbs an inbound-only moderation thread out of message requests',
+      () async {
+        // The team wrote first: currentUserHasSent == false, and the user
+        // does not follow moderation, so it classifies as a request.
+        when(
+          () => mockFollowRepository.isFollowing(moderationPubkey),
+        ).thenReturn(false);
+        final inbound = _createConversation(
+          id: supportId,
+          participantPubkeys: const [_testPubkey1, moderationPubkey],
+        );
+        _stubStreams(mockDmRepository, potentialRequests: [inbound]);
+        final bloc = createSupportBloc();
+        addTearDown(bloc.close);
+
+        final state = await loadedState(bloc);
+
+        expect(state.pinnedConversation?.id, equals(supportId));
+        expect(
+          state.requestConversations.map((c) => c.id),
+          isNot(contains(supportId)),
+        );
+      },
+    );
+
+    test('de-duplicates a pre-rotation legacy moderation thread', () async {
+      final legacyThread = _createConversation(
+        id: legacySupportId,
+        currentUserHasSent: true,
+        participantPubkeys: const [_testPubkey1, legacyModerationPubkey],
+      );
+      _stubStreams(mockDmRepository, accepted: [legacyThread]);
+      final bloc = createSupportBloc();
+      addTearDown(bloc.close);
+
+      final state = await loadedState(bloc);
+
+      expect(state.pinnedConversation?.id, equals(legacySupportId));
+      expect(state.conversations, isEmpty);
+    });
+
+    test(
+      'is null for a restricted minor whose approval was revoked, so the '
+      'row cannot be tapped into a route-guard bounce',
+      () async {
+        _stubStreams(mockDmRepository);
+        final bloc = createSupportBloc(
+          gate: _FakeInboxGate(approved: const {}),
+        );
+        addTearDown(bloc.close);
+
+        final state = await loadedState(bloc);
+
+        expect(state.pinnedConversation, isNull);
+      },
+    );
+
+    test(
+      'is null when the user has blocked the moderation account',
+      () async {
+        final blocklist = _MockContentBlocklistRepository();
+        when(
+          () => blocklist.filterBlockedConversations(
+            any(),
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).thenAnswer((invocation) {
+          final input =
+              invocation.positionalArguments.first as List<DmConversation>;
+          return input
+              .where(
+                (c) => !c.participantPubkeys.contains(moderationPubkey),
+              )
+              .toList();
+        });
+        _stubStreams(mockDmRepository);
+        final bloc = createSupportBloc(blocklist: blocklist);
+        addTearDown(bloc.close);
+
+        final state = await loadedState(bloc);
+
+        expect(state.pinnedConversation, isNull);
+      },
+    );
+
+    test('survives an active search query', () async {
+      _stubStreams(mockDmRepository);
+      final bloc = createSupportBloc();
+      addTearDown(bloc.close);
+
+      await loadedState(bloc);
+      bloc.add(const ConversationListSearchQueryChanged('zzzz'));
+      final searched = await bloc.stream.firstWhere(
+        (s) => s.searchQuery == 'zzzz',
+      );
+
+      // The row is a persistent affordance, not a search result: it is
+      // rendered outside the filtered list, so a query must not drop it.
+      expect(searched.pinnedConversation, isNotNull);
     });
   });
 }

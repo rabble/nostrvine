@@ -4,6 +4,7 @@
 // ABOUTME: gift-wrap subscription is auth-session-scoped via
 // ABOUTME: dmRepositoryProvider, not driven by this screen's lifecycle.
 
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -13,6 +14,9 @@ import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart'
 import 'package:openvine/blocs/dm/conversation_mute/conversation_mute_cubit.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/blocs/notifications/badge/notification_badge_cubit.dart';
+import 'package:openvine/config/official_accounts.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/official_accounts_providers.dart';
@@ -45,6 +49,16 @@ class InboxPage extends ConsumerWidget {
     final currentUserPubkey =
         ref.watch(authServiceProvider).currentPublicKeyHex ?? '';
     final protectedMinorInboxGate = ref.watch(protectedMinorInboxGateProvider);
+    // Pinned Divine Moderation support row (#6283). The identity comes from
+    // the release-pinned official-accounts list — the same anchor the
+    // protected-minor gate resolves against — so the row can never point
+    // somewhere the gate would not approve.
+    final supportRowEnabled = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.supportDmRow),
+    );
+    final supportRowPubkey = kPinnedOfficialAccounts
+        .firstWhereOrNull((a) => a.role == 'moderation')
+        ?.pubkeyHex;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -78,6 +92,10 @@ class InboxPage extends ConsumerWidget {
           blocklistRepository,
           currentUserPubkey,
           protectedMinorInboxGate,
+          // The pin is composed inside the bloc, so a flag flip has to rebuild
+          // it. Cheap: the flag only moves from the debug Experimental
+          // Features screen.
+          supportRowEnabled,
         )),
         providers: [
           BlocProvider(
@@ -95,6 +113,9 @@ class InboxPage extends ConsumerWidget {
               contentBlocklistRepository: blocklistRepository,
               profileRepository: profileRepository,
               protectedMinorInboxGate: protectedMinorInboxGate,
+              supportRowEnabled: supportRowEnabled,
+              supportRowPubkey: supportRowPubkey,
+              supportRowLegacyPubkeys: kLegacyModerationPubkeys,
             )..add(const ConversationListStarted()),
           ),
           // Inbox-scope NotificationBadgeCubit feeds the segmented

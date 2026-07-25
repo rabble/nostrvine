@@ -2336,6 +2336,8 @@
     "inboxUnreadEmptyTitle": "Her şeyi okudun",
     "inboxUnreadEmptySubtitle": "Şu anda okunmamış mesaj yok.",
     "inboxSearchHint": "Mesajlarda ara",
+    "inboxSupportRowTitle": "Divine Moderation",
+    "inboxSupportRowSubtitle": "Hatalar, moderasyon, hesap meseleleri — dinliyoruz.",
     "inboxSearchEmptyTitle": "Sonuç yok",
     "inboxSearchEmptySubtitle": "Başka bir isim veya kelime dene.",
     "inboxRemoveConfirmBody": "Bu işlem, {displayName} ile olan sohbetini siler. Bu işlem geri alınamaz.",

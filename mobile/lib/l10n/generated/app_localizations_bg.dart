@@ -5708,6 +5708,13 @@ class AppLocalizationsBg extends AppLocalizations {
   String get inboxSearchHint => 'Търсене в съобщенията';
 
   @override
+  String get inboxSupportRowTitle => 'Divine Moderation';
+
+  @override
+  String get inboxSupportRowSubtitle =>
+      'Бъгове, модерация, проблеми с акаунта — слушаме.';
+
+  @override
   String get inboxSearchEmptyTitle => 'Няма съвпадения';
 
   @override
