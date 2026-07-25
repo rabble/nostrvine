@@ -1582,9 +1582,11 @@ void main() {
         );
       });
 
-      testWidgets('is absent when the bloc emits no pin (flag off)', (
-        tester,
-      ) async {
+      // The bloc withholds the pin for a user who blocked moderation, for a
+      // restricted minor whose approval was revoked, and wherever no
+      // moderation pubkey is configured. The view must render nothing at all
+      // in that case, not an empty tile.
+      testWidgets('is absent when the bloc emits no pin', (tester) async {
         final l10n = lookupAppLocalizations(const Locale('en'));
         await tester.pumpWidget(
           buildSubject(
