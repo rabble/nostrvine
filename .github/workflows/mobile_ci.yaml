@@ -416,3 +416,19 @@ jobs:
             echo "Could not determine Mobile CI scope."
             exit 1
           fi
+      - uses: actions/checkout@v4
+        if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.app == 'true' }}
+      - name: ⏱️ Check CI timing budget
+        # This job only starts once every other job has finished, so the run's
+        # job durations are final here. Budgets live in
+        # .github/ci-timing-budgets.json; over-warn annotates the PR, over-fail
+        # fails this gate. Guards the wins recorded in PERF_BASELINE.md from
+        # eroding silently.
+        if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.app == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 mobile/scripts/ci/check_ci_timing_budget.py \
+            --budgets .github/ci-timing-budgets.json \
+            --repo "${GITHUB_REPOSITORY}" \
+            --run-id "${GITHUB_RUN_ID}"
