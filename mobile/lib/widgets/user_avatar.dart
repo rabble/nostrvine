@@ -33,6 +33,7 @@ class UserAvatar extends StatelessWidget {
     this.placeholderTone = UserAvatarPlaceholderTone.auto,
     this.placeholderSeed,
     this.cornerRadius,
+    this.contentOverride,
   });
 
   final String? imageUrl;
@@ -54,6 +55,14 @@ class UserAvatar extends StatelessWidget {
   /// profile avatar lightbox to render the maximized avatar at 112px
   /// instead of the size-derived default.
   final double? cornerRadius;
+
+  /// Fixed artwork rendered in place of [imageUrl] / [imageProvider] and the
+  /// generated placeholder, inside the shared avatar chrome (size, corner
+  /// radius, border) so it still lines up with neighbouring avatars.
+  ///
+  /// For rows whose identity is known ahead of the network and whose remote
+  /// picture cannot be trusted to render.
+  final Widget? contentOverride;
 
   @visibleForTesting
   static bool isSvgImageUrl(String? url) {
@@ -121,6 +130,10 @@ class UserAvatar extends StatelessWidget {
   );
 
   Widget _buildContent() {
+    if (contentOverride case final override?) {
+      return override;
+    }
+
     if (imageProvider != null) {
       return Image(
         image: imageProvider!,

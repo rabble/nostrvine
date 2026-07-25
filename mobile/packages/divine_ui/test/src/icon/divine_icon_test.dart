@@ -104,6 +104,38 @@ void main() {
       expect(svgPicture.height, 32);
     });
 
+    testWidgets('letterboxes the artwork by default', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: DivineIcon(icon: DivineIconName.arrowLeft),
+          ),
+        ),
+      );
+
+      final svgPicture = tester.widget<SvgPicture>(find.byType(SvgPicture));
+      expect(svgPicture.fit, BoxFit.contain);
+    });
+
+    testWidgets('crops the artwork when fit is cover', (tester) async {
+      // A wide asset standing in for a square avatar has to fill the box and
+      // crop, not shrink to a letterboxed sliver.
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: DivineIcon(
+              icon: DivineIconName.logo,
+              size: 40,
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+      );
+
+      final svgPicture = tester.widget<SvgPicture>(find.byType(SvgPicture));
+      expect(svgPicture.fit, BoxFit.cover);
+    });
+
     testWidgets('applies color filter when color is provided', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(

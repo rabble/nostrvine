@@ -6,10 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/widgets/conversation_tile.dart';
 import 'package:openvine/widgets/user_avatar.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
 
@@ -810,6 +812,97 @@ void main() {
           tileSemantics(tester).hintOverrides?.onLongPressHint,
           isNotNull,
         );
+      });
+    });
+
+    group('moderation avatar (#6283)', () {
+      final moderationPubkey = kPinnedOfficialAccounts
+          .firstWhere((account) => account.role == 'moderation')
+          .pubkeyHex;
+
+      Finder wordmarkFinder() => find.byWidgetPredicate(
+        (widget) => widget is DivineIcon && widget.icon == DivineIconName.logo,
+        description: 'bundled Divine wordmark',
+      );
+
+      Future<void> pumpTileFor(
+        WidgetTester tester,
+        String counterparty, {
+        String? picture,
+      }) async {
+        await tester.pumpWidget(
+          testMaterialApp(
+            additionalOverrides: [
+              fetchUserProfileProvider(counterparty).overrideWith(
+                (ref) async => UserProfile(
+                  pubkey: counterparty,
+                  displayName: 'Divine Moderation',
+                  picture: picture,
+                  rawData: const {},
+                  createdAt: now,
+                  eventId:
+                      'cccccccccccccccccccccccccccccccccccccccccccccccccc'
+                      'cccccccccccccc',
+                ),
+              ),
+            ],
+            home: Scaffold(
+              body: ConversationTile(
+                conversation: DmConversation(
+                  id:
+                      'dddddddddddddddddddddddddddddddddddddddddddddddddd'
+                      'dddddddddddddd',
+                  participantPubkeys: [currentPubkey, counterparty],
+                  isGroup: false,
+                  createdAt: nowUnix,
+                ),
+                currentUserPubkey: currentPubkey,
+                onTap: () {},
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('an ordinary account keeps its kind-0 picture', (
+        tester,
+      ) async {
+        await pumpTileFor(
+          tester,
+          otherPubkey,
+          picture: 'https://divine.video/avatar.png',
+        );
+
+        expect(find.byType(VineCachedImage), findsOneWidget);
+        expect(wordmarkFinder(), findsNothing);
+      });
+
+      testWidgets('the moderation account renders the bundled wordmark instead '
+          'of its kind-0 picture', (tester) async {
+        // divine-logo.svg colours itself through a <style> block that
+        // flutter_svg's parser discards, so the account's own picture paints
+        // opaque black on the dark inbox surface.
+        await pumpTileFor(
+          tester,
+          moderationPubkey,
+          picture: 'https://divine.video/divine-logo.svg',
+        );
+
+        expect(wordmarkFinder(), findsOneWidget);
+        expect(find.byType(VineCachedImage), findsNothing);
+        // The wordmark is 3.8:1. Contain would letterbox the whole lockup
+        // into an illegible sliver; cover crops it to the middle "Vi", which
+        // is how divine-web frames the same artwork.
+        expect(tester.widget<DivineIcon>(wordmarkFinder()).fit, BoxFit.cover);
+      });
+
+      testWidgets('a retired moderation pubkey is covered too', (tester) async {
+        // A thread opened before the #2321 rotation stays keyed on the old
+        // pubkey, and it is the same team on the other end of it.
+        await pumpTileFor(tester, kLegacyModerationPubkeys.first);
+
+        expect(wordmarkFinder(), findsOneWidget);
       });
     });
   });

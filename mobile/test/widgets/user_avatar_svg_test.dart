@@ -350,6 +350,28 @@ void main() {
       expect(find.byType(Image), findsOneWidget);
       expect(find.byType(VineCachedImage), findsNothing);
     });
+
+    testWidgets('contentOverride wins over the remote picture', (tester) async {
+      // The Divine Moderation row (#6283) supplies its own bundled artwork
+      // because that account's kind-0 picture renders black under
+      // flutter_svg. The override has to beat a perfectly valid picture URL,
+      // not just fill in for a missing one.
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: UserAvatar(
+              imageUrl: 'https://divine.video/avatar.png',
+              name: 'Divine Moderation',
+              contentOverride: Text('brand-mark'),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('brand-mark'), findsOneWidget);
+      expect(find.byType(VineCachedImage), findsNothing);
+      expect(gradientPlaceholderFinder(), findsNothing);
+    });
   });
 }
 

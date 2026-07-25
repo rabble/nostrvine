@@ -1349,6 +1349,11 @@ void main() {
         await tester.pump(const Duration(milliseconds: 350));
       }
 
+      final wordmarkFinder = find.byWidgetPredicate(
+        (widget) => widget is DivineIcon && widget.icon == DivineIconName.logo,
+        description: 'bundled Divine wordmark',
+      );
+
       testWidgets('renders the moderation title from l10n, never a '
           'generated profile name', (tester) async {
         final l10n = lookupAppLocalizations(const Locale('en'));
@@ -1517,6 +1522,38 @@ void main() {
         // No action sheet is wired for this row, so it must not advertise a
         // long-press hint it cannot honour.
         expect(data.hasAction(SemanticsAction.longPress), isFalse);
+      });
+
+      testWidgets('renders the bundled wordmark rather than the account '
+          'picture', (tester) async {
+        // The moderation account's kind-0 picture is divine-logo.svg, which
+        // colours itself through a <style> block. flutter_svg's parser has no
+        // <style> support, discards it, and paints every path opaque black —
+        // 1.1:1 against the inbox surface. The row must not depend on it.
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              pinnedConversation: supportPin(),
+            ),
+          ),
+        );
+        await openMessages(tester);
+
+        expect(wordmarkFinder, findsOneWidget);
+      });
+
+      testWidgets('renders no wordmark when there is no pin', (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            state: const ConversationListState(
+              status: ConversationListStatus.loaded,
+            ),
+          ),
+        );
+        await openMessages(tester);
+
+        expect(wordmarkFinder, findsNothing);
       });
     });
   });

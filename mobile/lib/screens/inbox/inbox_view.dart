@@ -490,7 +490,6 @@ class _RestorePausedBannerGate extends StatelessWidget {
   }
 }
 
-/// Switches between loading, error, empty, and conversation list states.
 /// Pinned "Divine Moderation" support row at the top of the Messages tab.
 ///
 /// Renders nothing unless [ConversationListState.pinnedConversation] is set —
@@ -541,6 +540,7 @@ class _PinnedSupportRow extends StatelessWidget {
   }
 }
 
+/// Switches between loading, error, empty, and conversation list states.
 class _ConversationListContent extends StatelessWidget {
   const _ConversationListContent({required this.currentUserPubkey});
 

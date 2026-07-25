@@ -57,3 +57,14 @@ const List<OfficialAccount> kPinnedOfficialAccounts = [
 const List<String> kLegacyModerationPubkeys = [
   '121b915baba659cbe59626a8afaf83b01dc42354dfecaad9d465d51bb5715d72',
 ];
+
+/// Whether [pubkeyHex] is the Divine moderation account, current or retired.
+///
+/// Retired keys count: a thread opened before a rotation stays keyed on the
+/// old pubkey, and it is the same team on the other end of it.
+bool isModerationAccount(String pubkeyHex) =>
+    kPinnedOfficialAccounts.any(
+      (account) =>
+          account.role == 'moderation' && account.pubkeyHex == pubkeyHex,
+    ) ||
+    kLegacyModerationPubkeys.contains(pubkeyHex);

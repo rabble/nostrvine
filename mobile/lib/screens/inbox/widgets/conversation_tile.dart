@@ -6,6 +6,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -129,6 +130,11 @@ class ConversationTile extends ConsumerWidget {
                     name: displayName,
                     placeholderSeed: otherPubkey,
                     size: 40,
+                    // Bundled artwork for the moderation account, whose kind-0
+                    // picture does not survive the SVG parser (see below).
+                    contentOverride: isModerationAccount(otherPubkey)
+                        ? const _ModerationAvatar()
+                        : null,
                   ),
                 ),
                 const SizedBox(width: 20),
@@ -189,6 +195,34 @@ class ConversationTile extends ConsumerWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Brand artwork for the Divine moderation account's avatar.
+///
+/// The account's kind-0 `picture` is the hosted `divine-logo.svg`, which
+/// colours its paths through a `<style>` block. `vector_graphics_compiler` has
+/// no `<style>` parser, so it discards the stylesheet and every path falls
+/// back to opaque black — 1.1:1 against the inbox surface. The bundled
+/// `logo.svg` is the same wordmark carrying presentational `fill` attributes
+/// instead, so it survives the parser and renders in brand green.
+///
+/// `BoxFit.cover` matches how divine-web frames the same artwork: the wordmark
+/// is 3.8:1, so filling a square avatar crops it to the middle "Vi". Contain
+/// would letterbox the whole lockup into an illegible 40px sliver.
+class _ModerationAvatar extends StatelessWidget {
+  const _ModerationAvatar();
+
+  @override
+  Widget build(BuildContext context) {
+    return const ColoredBox(
+      color: VineTheme.containerLow,
+      child: DivineIcon(
+        icon: DivineIconName.logo,
+        size: 40,
+        fit: BoxFit.cover,
       ),
     );
   }

@@ -246,6 +246,7 @@ class DivineIcon extends StatelessWidget {
     required this.icon,
     this.size = 24,
     this.color,
+    this.fit = BoxFit.contain,
     super.key,
   });
 
@@ -258,12 +259,21 @@ class DivineIcon extends StatelessWidget {
   /// The color to apply to the icon. If null, uses the icon's original colors.
   final Color? color;
 
+  /// How the artwork is inscribed into the [size] box. Defaults to
+  /// [BoxFit.contain], which letterboxes a non-square asset.
+  ///
+  /// [BoxFit.cover] instead fills the box and crops the overflow, which is
+  /// what a wide asset like the wordmark needs when it stands in for a square
+  /// avatar.
+  final BoxFit fit;
+
   @override
   Widget build(BuildContext context) {
     return SvgPicture.asset(
       icon.assetPath,
       width: size,
       height: size,
+      fit: fit,
       colorFilter: color != null
           ? ColorFilter.mode(color!, BlendMode.srcIn)
           : null,
