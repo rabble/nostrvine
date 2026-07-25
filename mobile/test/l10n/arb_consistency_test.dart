@@ -220,7 +220,7 @@ const _knownUntranslatedDebt = <String>{
   'authVerificationErrorPinFailed',
   'authVerificationErrorPinUnavailable',
   // Crossposting settings strings; translation deferred to the next
-  // l10n pass.
+  // l10n pass. Tracked in #6398.
   'settingsCrosspostingTitle',
   'settingsCrosspostingSubtitle',
   'crosspostingSignInRequired',
