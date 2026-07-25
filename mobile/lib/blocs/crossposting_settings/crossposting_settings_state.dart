@@ -49,9 +49,6 @@ class CrosspostingSettingsState extends Equatable {
   /// Whether any mutation currently owns the global operation gate.
   bool get hasPendingAction => pendingAction != null;
 
-  /// All platform controls are disabled while any mutation is pending.
-  bool isBusy(CrosspostingPlatform platform) => hasPendingAction;
-
   CrosspostingSettingsState copyWith({
     CrosspostingSettingsStatus? status,
     List<CrosspostingPlatformSettings>? entries,

@@ -882,8 +882,7 @@ void main() {
             CrosspostingPlatform.instagram,
             CrosspostingMode.automatic,
           );
-          expect(cubit.state.isBusy(CrosspostingPlatform.instagram), isTrue);
-          expect(cubit.state.isBusy(CrosspostingPlatform.x), isTrue);
+          expect(cubit.state.hasPendingAction, isTrue);
 
           await cubit.connect(CrosspostingPlatform.x);
 
