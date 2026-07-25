@@ -3,8 +3,7 @@
 
 import 'package:db_client/db_client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:openvine/providers/auth_providers.dart';
+import 'package:openvine/providers/container_swap_host.dart';
 import 'package:openvine/providers/database_corruption_provider.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/db_cipher_key_provider.dart';
@@ -14,6 +13,13 @@ import 'package:openvine/services/database_corruption_service.dart';
 // re-export the type name even though it accepts List<Override>.
 import 'package:riverpod/misc.dart' show Override;
 import 'package:shared_preferences/shared_preferences.dart';
+
+/// The [DeviceScope] for the current app, injected into every container so UI
+/// anywhere in the tree can trigger an account switch. Overridden at
+/// construction; reading it without a [DeviceScope] override throws.
+final deviceScopeProvider = Provider<DeviceScope>(
+  (_) => throw StateError('deviceScopeProvider must be overridden'),
+);
 
 /// Dependencies that belong to the *device*, not to a signed-in account, and
 /// must therefore outlive an account switch.
@@ -36,17 +42,25 @@ class DeviceScope {
   const DeviceScope({
     required this.database,
     required this.sharedPreferences,
-    required this.secureStorage,
+    required this.switchController,
     this.dbCipherKey,
     this.databaseCorruptionService,
   });
 
   /// The single open database connection, shared across every container.
+  ///
+  /// This is the one dependency that genuinely cannot be rebuilt per container:
+  /// it holds an open SQLite connection to the encrypted file, so two would
+  /// mean lock contention / corruption. `FlutterSecureStorage` is deliberately
+  /// *not* here — it is a stateless facade over the platform keychain, so a
+  /// per-container instance is harmless.
   final AppDatabase database;
 
   final SharedPreferences sharedPreferences;
 
-  final FlutterSecureStorage secureStorage;
+  /// The app-lifetime handle the UI calls to switch accounts. Device-scoped so
+  /// it outlives — and drives — every container swap.
+  final AccountSwitchController switchController;
 
   /// At-rest encryption key resolved by the startup bootstrap, or null on web /
   /// tests / a deferred migration.
@@ -61,11 +75,11 @@ class DeviceScope {
   List<Override> get overrides => [
     databaseProvider.overrideWithValue(database),
     sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-    flutterSecureStorageProvider.overrideWithValue(secureStorage),
     dbCipherKeyProvider.overrideWithValue(dbCipherKey),
     databaseCorruptionServiceProvider.overrideWithValue(
       databaseCorruptionService,
     ),
+    deviceScopeProvider.overrideWithValue(this),
   ];
 }
 

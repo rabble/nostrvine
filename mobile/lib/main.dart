@@ -60,10 +60,10 @@ import 'package:openvine/notifications/routing/notification_tap_target.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/observability/divine_bloc_observer.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/database_corruption_provider.dart';
+import 'package:openvine/providers/container_swap_host.dart';
 import 'package:openvine/providers/database_provider.dart';
-import 'package:openvine/providers/db_cipher_key_provider.dart';
 import 'package:openvine/providers/deep_link_provider.dart';
+import 'package:openvine/providers/device_scope.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/foreground_idle_warmup_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -1417,18 +1417,27 @@ Future<void> _startOpenVineApp() async {
   if (dbCipherKeyResult.didRenderFailureApp) return;
   final dbCipherKey = dbCipherKeyResult.cipherKey;
 
-  // Create ProviderContainer to initialize services BEFORE runApp
-  final container = ProviderContainer(
-    overrides: [
-      sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-      dbCipherKeyProvider.overrideWithValue(dbCipherKey),
-      // Same instance the bootstrap above consulted, so the interceptor the
-      // database provider installs writes the flag the next launch reads.
-      databaseCorruptionServiceProvider.overrideWithValue(
-        databaseCorruptionService,
-      ),
-    ],
+  // Build the device-scoped dependencies ONCE, before any container. The
+  // database in particular holds the single open SQLite connection that must
+  // survive account switches — every container (initial and swapped-in) shares
+  // it via DeviceScope so a switch never opens a second connection.
+  final deviceDatabase = createAppDatabase(
+    cipherKey: dbCipherKey,
+    // Same instance the bootstrap above consulted, so the interceptor the
+    // database installs writes the flag the next launch reads.
+    corruptionService: databaseCorruptionService,
   );
+  final accountSwitchController = AccountSwitchController();
+  final deviceScope = DeviceScope(
+    database: deviceDatabase,
+    sharedPreferences: sharedPreferences,
+    switchController: accountSwitchController,
+    dbCipherKey: dbCipherKey,
+    databaseCorruptionService: databaseCorruptionService,
+  );
+
+  // Create the initial account container to initialize services BEFORE runApp.
+  final container = buildAccountContainer(deviceScope);
 
   final startupCoordinator = _createStartupCoordinator(container);
   // The native splash is released by [StartupSplashReleaseController], wired in
@@ -1466,8 +1475,9 @@ Future<void> _startOpenVineApp() async {
   );
 
   runApp(
-    UncontrolledProviderScope(
-      container: container,
+    ContainerSwapHost(
+      initialContainer: container,
+      controller: accountSwitchController,
       child: DivineApp(
         startupCoordinator: startupCoordinator,
         packageInfo: packageInfo,

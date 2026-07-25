@@ -5,7 +5,6 @@ import 'package:db_client/db_client.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/authentication_source.dart';
 import 'package:openvine/models/known_account.dart';
@@ -46,12 +45,12 @@ void main() {
     database = AppDatabase.test(NativeDatabase.memory());
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
+    controller = AccountSwitchController();
     deviceScope = DeviceScope(
       database: database,
       sharedPreferences: prefs,
-      secureStorage: const FlutterSecureStorage(),
+      switchController: controller,
     );
-    controller = AccountSwitchController();
   });
 
   tearDown(() => database.close());

@@ -3,8 +3,8 @@
 
 import 'package:db_client/db_client.dart';
 import 'package:drift/native.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/providers/container_swap_host.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/device_scope.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -24,7 +24,7 @@ void main() {
     deviceScope = DeviceScope(
       database: database,
       sharedPreferences: prefs,
-      secureStorage: const FlutterSecureStorage(),
+      switchController: AccountSwitchController(),
     );
   });
 
