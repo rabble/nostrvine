@@ -110,6 +110,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get settingsAddAnotherAccount => '다른 계정 추가';
 
   @override
+  String get settingsAccountSwitchFailed =>
+      'Couldn\'t switch accounts. Please try again.';
+
+  @override
   String get settingsUnsavedDraftsTitle => '저장되지 않은 초안';
 
   @override

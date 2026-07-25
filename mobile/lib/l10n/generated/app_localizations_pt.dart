@@ -115,6 +115,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get settingsAddAnotherAccount => 'Adicionar outra conta';
 
   @override
+  String get settingsAccountSwitchFailed =>
+      'Couldn\'t switch accounts. Please try again.';
+
+  @override
   String get settingsUnsavedDraftsTitle => 'Rascunhos não salvos';
 
   @override

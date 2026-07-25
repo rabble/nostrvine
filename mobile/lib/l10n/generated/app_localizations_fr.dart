@@ -115,6 +115,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsAddAnotherAccount => 'Ajouter un autre compte';
 
   @override
+  String get settingsAccountSwitchFailed =>
+      'Couldn\'t switch accounts. Please try again.';
+
+  @override
   String get settingsUnsavedDraftsTitle => 'Brouillons non enregistrés';
 
   @override

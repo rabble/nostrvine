@@ -322,6 +322,12 @@ abstract class AppLocalizations {
   /// **'Add another account'**
   String get settingsAddAnotherAccount;
 
+  /// Snackbar shown when an in-place account switch fails and the current account is kept.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t switch accounts. Please try again.'**
+  String get settingsAccountSwitchFailed;
+
   /// No description provided for @settingsUnsavedDraftsTitle.
   ///
   /// In en, this message translates to:

@@ -123,6 +123,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsAddAnotherAccount => 'Adaugă alt cont';
 
   @override
+  String get settingsAccountSwitchFailed =>
+      'Couldn\'t switch accounts. Please try again.';
+
+  @override
   String get settingsUnsavedDraftsTitle => 'Ciorne nesalvate';
 
   @override

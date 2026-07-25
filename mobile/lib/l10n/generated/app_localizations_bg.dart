@@ -116,6 +116,10 @@ class AppLocalizationsBg extends AppLocalizations {
   String get settingsAddAnotherAccount => 'Добави друг акаунт';
 
   @override
+  String get settingsAccountSwitchFailed =>
+      'Couldn\'t switch accounts. Please try again.';
+
+  @override
   String get settingsUnsavedDraftsTitle => 'Незапазени чернови';
 
   @override

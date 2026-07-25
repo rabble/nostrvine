@@ -115,6 +115,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsAddAnotherAccount => 'Add another account';
 
   @override
+  String get settingsAccountSwitchFailed =>
+      'Couldn\'t switch accounts. Please try again.';
+
+  @override
   String get settingsUnsavedDraftsTitle => 'Unsaved Drafts';
 
   @override

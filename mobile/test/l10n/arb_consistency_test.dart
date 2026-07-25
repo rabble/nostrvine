@@ -179,6 +179,9 @@ void main() {
 
 // Add keys here only when a translation pass is intentionally deferred.
 const _knownUntranslatedDebt = <String>{
+  // #4623: in-place account-switch failure copy; translation deferred until
+  // the account-switching feature ships.
+  'settingsAccountSwitchFailed',
   // #6217: light-mode experiment copy; translation deferred until rollout.
   'appearanceSettingsTitle',
   'appearanceSettingsSubtitle',

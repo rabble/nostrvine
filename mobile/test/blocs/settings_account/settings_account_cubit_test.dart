@@ -1,5 +1,5 @@
 // ABOUTME: Unit tests for SettingsAccountCubit
-// ABOUTME: Covers load, switchToAccount, addNewAccount, and state helpers
+// ABOUTME: Covers load, addNewAccount, and state helpers
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -139,45 +139,6 @@ void main() {
       errors: () => [isA<Exception>()],
     );
 
-    group('switchToAccount', () {
-      blocTest<SettingsAccountCubit, SettingsAccountState>(
-        'sets pending pubkey and signs out for different account',
-        seed: () => SettingsAccountState(
-          status: SettingsAccountStatus.loaded,
-          accounts: testAccounts,
-          currentPubkey: testAccounts.first.pubkeyHex,
-        ),
-        setUp: () {
-          when(() => mockAuthService.signOut()).thenAnswer((_) async {});
-        },
-        build: buildCubit,
-        act: (cubit) async =>
-            cubit.switchToAccount(testAccounts.last.pubkeyHex),
-        verify: (_) {
-          verify(
-            () => mockAuthService.pendingAccountSwitchPubkey =
-                testAccounts.last.pubkeyHex,
-          ).called(1);
-          verify(() => mockAuthService.signOut()).called(1);
-        },
-      );
-
-      blocTest<SettingsAccountCubit, SettingsAccountState>(
-        'does nothing when switching to current account',
-        seed: () => SettingsAccountState(
-          status: SettingsAccountStatus.loaded,
-          accounts: testAccounts,
-          currentPubkey: testAccounts.first.pubkeyHex,
-        ),
-        build: buildCubit,
-        act: (cubit) async =>
-            cubit.switchToAccount(testAccounts.first.pubkeyHex),
-        verify: (_) {
-          verifyNever(() => mockAuthService.signOut());
-        },
-      );
-    });
-
     group('addNewAccount', () {
       blocTest<SettingsAccountCubit, SettingsAccountState>(
         'signs out without setting pending pubkey',
@@ -199,24 +160,6 @@ void main() {
           () => mockFeatureFlagService.isEnabled(FeatureFlag.accountSwitching),
         ).thenReturn(false);
       });
-
-      blocTest<SettingsAccountCubit, SettingsAccountState>(
-        'switchToAccount does not sign out when the flag is disabled',
-        seed: () => SettingsAccountState(
-          status: SettingsAccountStatus.loaded,
-          accounts: testAccounts,
-          currentPubkey: testAccounts.first.pubkeyHex,
-        ),
-        build: buildCubit,
-        act: (cubit) async =>
-            cubit.switchToAccount(testAccounts.last.pubkeyHex),
-        verify: (_) {
-          verifyNever(() => mockAuthService.signOut());
-          verifyNever(
-            () => mockAuthService.pendingAccountSwitchPubkey = any(),
-          );
-        },
-      );
 
       blocTest<SettingsAccountCubit, SettingsAccountState>(
         'addNewAccount does not sign out when the flag is disabled',
