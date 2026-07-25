@@ -28,6 +28,7 @@ import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/screens/settings/storage/storage_management_page.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
+import 'package:openvine/screens/settings/supporter_screen.dart';
 
 List<RouteBase> settingsRoutes(Ref ref) {
   return [
@@ -81,6 +82,12 @@ List<RouteBase> settingsRoutes(Ref ref) {
       name: MonetizationLinksSettingsScreen.routeName,
       redirect: (_, _) => monetizationLinksRedirectIfDisabled(ref),
       builder: (_, _) => const MonetizationLinksSettingsScreen(),
+    ),
+    GoRoute(
+      path: SupporterScreen.path,
+      name: SupporterScreen.routeName,
+      redirect: (_, _) => supporterRedirectIfDisabled(ref),
+      builder: (_, _) => const SupporterScreen(),
     ),
     GoRoute(
       path: AppLanguageScreen.path,
@@ -162,6 +169,14 @@ List<RouteBase> settingsRoutes(Ref ref) {
 String? monetizationLinksRedirectIfDisabled(Ref ref) {
   final enabled = ref.read(
     isFeatureEnabledProvider(FeatureFlag.profileMonetizationLinks),
+  );
+  if (enabled) return null;
+  return SettingsScreen.path;
+}
+
+String? supporterRedirectIfDisabled(Ref ref) {
+  final enabled = ref.read(
+    isFeatureEnabledProvider(FeatureFlag.divineSupporters),
   );
   if (enabled) return null;
   return SettingsScreen.path;
