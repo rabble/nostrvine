@@ -62,7 +62,7 @@
 		     single-label hostnames, and the .local TLD so the local
 		     Docker stack works from iOS Simulator. Remote cleartext
 		     stays rejected. Available since iOS 10.0; project
-		     deployment target is 16.0. Mirrors the loopback domain-config
+		     deployment target is 17.4. Mirrors the loopback domain-config
 		     in android/app/src/main/res/xml/network_security_config.xml. -->
 		<key>NSAllowsLocalNetworking</key>
 		<true/>

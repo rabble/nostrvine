@@ -26,6 +26,6 @@
         <string>$(PRODUCT_MODULE_NAME).NotificationService</string>
     </dict>
     <key>MinimumOSVersion</key>
-    <string>16.0</string>
+    <string>17.4</string>
 </dict>
 </plist>
