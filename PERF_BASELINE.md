@@ -186,13 +186,39 @@ Apple Silicon dev machine, Flutter 3.44.0 via `mise exec --`, run from `mobile/`
 | `flutter pub get`, warm workspace | 8.5s |
 | `dart format --output=none lib test integration_test` (2708 files) | 44.5s |
 | `flutter test <one 7-test service file>`, cold compile | 3m08s (18s after the backoff fix) |
-| `flutter test` (whole suite, **no** `--optimization`) | **projected ~5h** |
+| Full suite, `very_good test --optimization --concurrency=4` | 5m08s – 7m12s |
 
-That last row is the headline dev-loop finding. Plain `flutter test` compiles
-and spins a fresh isolate **per file** across 1,225 test files; a 50-minute
-sample completed 2,151 of ~13,159 tests. CI does the same suite in 9m07s
-because `very_good test --optimization` bundles them. A developer who types
-`flutter test` gets a ~30x worse experience than CI for the same work.
+### Plain `flutter test` vs the optimized run
+
+Plain `flutter test` compiles and spins a fresh isolate **per file**;
+`very_good test --optimization` bundles the untagged files into one. Measured
+head-to-head on an identical subset — 31 files / 277 tests, selected by
+round-robin so it spans directories, same machine, back to back:
+
+| Command | Wall | Tests |
+|---|---:|---:|
+| `flutter test --concurrency=4` | **60s** | 277 |
+| `very_good test --optimization --concurrency=4` | **17s** | 277 |
+
+**3.5x on identical work**, i.e. roughly 1.4s of per-file isolate and compile
+overhead that the optimizer amortises away. `flutter test` is what
+`CONTRIBUTING.md` currently tells developers to run.
+
+The whole suite was not run to completion unoptimized; a partial run was
+abandoned after a 50-minute sample reached 2,151 of ~13,159 tests, but that
+sample was CPU-contended and is not a sound basis for a projection, so no
+full-suite plain figure is claimed here.
+
+### Full-suite run-to-run stability (local)
+
+The optimized full suite is **not reliably green on this machine**, on
+`main` as well as on branches. Across seven runs at
+`--test-randomize-ordering-seed 12345`, one `origin/main`-equivalent run
+failed on `personalEventCacheServiceProvider keeps queued events through
+transient non-auth states` (a known CI-only flake, #6280); other runs failed on
+`clips_library_bloc_test.dart` and `video_event_service_deduplication_test.dart`.
+Each failing test passes in isolation. Treat a single red local full-suite run
+as inconclusive and re-run before attributing it to a diff.
 
 ### Repo shape (verified, not assumed)
 
@@ -225,6 +251,12 @@ gh run view <id> --log --job=<test-job-id> | grep "Run Flutter tests"
 cd mobile
 mise exec -- very_good test --optimization --concurrency=4 \
   --exclude-tags integration --test-randomize-ordering-seed random
+
+# Plain vs optimized on an identical subset (uses the sharding selector)
+bash scripts/ci/select_test_shard.sh --total 40 --index 0 --force
+mise exec -- flutter test --concurrency=4 --exclude-tags integration
+mise exec -- very_good test --optimization --concurrency=4 --exclude-tags integration
+git checkout -- test        # restore
 
 # Local, one file
 cd mobile && time mise exec -- flutter test <path> --reporter expanded
