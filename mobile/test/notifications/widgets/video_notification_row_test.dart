@@ -1,6 +1,7 @@
 // ABOUTME: Tests for VideoNotificationRow — single/multi actor messages,
 // ABOUTME: thumbnail rendering, and tap callbacks (row, profile, thumbnail).
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
@@ -101,6 +102,29 @@ void main() {
       ) async {
         await _pump(tester, notification: _video());
         expect(find.byType(NotificationTypeIcon), findsOneWidget);
+      });
+
+      testWidgets('video-sourced mention renders the video-camera icon', (
+        tester,
+      ) async {
+        await _pump(
+          tester,
+          notification: _video(type: NotificationKind.mention),
+        );
+
+        final icon = tester.widget<NotificationTypeIcon>(
+          find.byType(NotificationTypeIcon),
+        );
+        expect(icon.icon, equals(DivineIconName.videoCamera));
+      });
+
+      testWidgets('non-mention kinds keep their own icon', (tester) async {
+        await _pump(tester, notification: _video());
+
+        final icon = tester.widget<NotificationTypeIcon>(
+          find.byType(NotificationTypeIcon),
+        );
+        expect(icon.icon, isNot(equals(DivineIconName.videoCamera)));
       });
 
       testWidgets('actor name and like message when single actor', (

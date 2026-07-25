@@ -1229,10 +1229,13 @@ class NotificationRepository {
       if (!_isVideoAnchoredKind(kind)) continue;
       final eventId = _videoAnchorEventId(kind, n);
       if (eventId == null || eventId.isEmpty) continue;
-      // Video-sourced mentions are anchored to the sender's source video.
-      // Their root coordinate is validated separately by
-      // _trustedSourceRootAddressableId because the root can be a parent video
-      // owned by the notification recipient.
+      // Video-sourced mentions are anchored to the sender's source video, not
+      // the recipient's, so the recipient-owner check does not apply. Their
+      // root coordinate is validated separately by
+      // _trustedSourceRootAddressableId: a kind 34236 published without a `d`
+      // tag makes Funnelcake derive the root from the event's `a`/`A` tag
+      // instead, which for an inspired-by or reply video is the *original*
+      // creator's coordinate — often the recipient's own.
       if (kind != NotificationKind.mention &&
           _hasKnownReferencedVideoOwnerMismatch(
             kind: kind,
@@ -1275,21 +1278,27 @@ class NotificationRepository {
             .toList(),
       );
       final video = videosById[entry.key.eventId];
+      // Funnelcake sets `referenced_d_tag` from `root_d_tag`, so both name the
+      // same coordinate (funnelcake `client.rs:12145`).
       final dTag = group
-          .map(
-            (n) => entry.key.kind == NotificationKind.mention
-                ? n.rootDTag
-                : n.referencedDTag,
-          )
+          .map((n) => n.referencedDTag)
           .firstWhere((d) => d != null, orElse: () => null);
       final isVideoMention = entry.key.kind == NotificationKind.mention;
+      final trustedRootAddressableId = isVideoMention
+          ? _trustedRootAddressableIdForGroup(group, video: video)
+          : null;
+      // `root_d_tag` and the `referenced_video` block are both keyed on the
+      // root coordinate, so rejecting that coordinate as untrusted invalidates
+      // them too — splicing either one back in would describe another
+      // creator's video under "mentioned you".
+      final trustsRootPayload =
+          !isVideoMention || trustedRootAddressableId != null;
       final addressableId = isVideoMention
-          ? _trustedRootAddressableIdForGroup(group, video: video) ??
-                _sourceVideoAddressableId(dTag: dTag, video: video)
+          ? trustedRootAddressableId ?? _sourceVideoAddressableId(video: video)
           : _recipientScopedVideoAddressableId(dTag: dTag, video: video);
       // Normal video rows prefer payload media because it is stable after
-      // metadata updates. Video mentions prefer source metadata when available:
-      // a video reply's payload root can be the recipient's parent video.
+      // metadata updates. Video mentions prefer the resolved source video, and
+      // only accept payload media when the root coordinate was trusted.
       final thumbnailFromNotif = group
           .map((n) => n.referencedVideoThumbnail)
           .firstWhere((t) => t != null && t.isNotEmpty, orElse: () => null);
@@ -1297,10 +1306,12 @@ class NotificationRepository {
           .map((n) => n.referencedVideoTitle)
           .firstWhere((t) => t != null && t.isNotEmpty, orElse: () => null);
       final thumbnailUrl = isVideoMention
-          ? _nonEmpty(video?.thumbnail) ?? _nonEmpty(thumbnailFromNotif)
+          ? _nonEmpty(video?.thumbnail) ??
+                (trustsRootPayload ? _nonEmpty(thumbnailFromNotif) : null)
           : _nonEmpty(thumbnailFromNotif) ?? _nonEmpty(video?.thumbnail);
       final videoTitle = isVideoMention
-          ? _nonEmpty(video?.title) ?? _nonEmpty(titleFromNotif)
+          ? _nonEmpty(video?.title) ??
+                (trustsRootPayload ? _nonEmpty(titleFromNotif) : null)
           : _nonEmpty(titleFromNotif) ?? _nonEmpty(video?.title);
       // Carry the lead actor's comment text so the quoted body stays in
       // sync with the bold first-actor span after named-actor reordering.
@@ -1566,14 +1577,14 @@ class NotificationRepository {
   ///
   /// Unlike likes/comments/reposts on the recipient's own video, a kind 34236
   /// mention is anchored to the sender's source video. The authoritative
-  /// coordinate is the root/source coordinate from Funnelcake; when only
-  /// metadata is available, the video owner comes from [VideoStats].
-  String? _sourceVideoAddressableId({
-    required String? dTag,
-    required VideoStats? video,
-  }) {
+  /// coordinate is the root coordinate from Funnelcake; this is the fallback
+  /// used only once [_trustedSourceRootAddressableId] has rejected it, so both
+  /// halves must come from the resolved [VideoStats]. Taking the d-tag from the
+  /// payload instead would splice the rejected coordinate's d-tag onto the
+  /// sender's pubkey and mint a route to a video that does not exist.
+  String? _sourceVideoAddressableId({required VideoStats? video}) {
     final ownerPubkey = _nonEmpty(video?.pubkey);
-    final resolvedDTag = _nonEmpty(video?.dTag) ?? _nonEmpty(dTag);
+    final resolvedDTag = _nonEmpty(video?.dTag);
     if (ownerPubkey == null || resolvedDTag == null) return null;
     return '${NIP71VideoKinds.addressableShortVideo}'
         ':$ownerPubkey:$resolvedDTag';
@@ -1867,13 +1878,10 @@ class NotificationRepository {
       n.notificationType == 'mention' &&
       NIP71VideoKinds.isVideoKind(n.sourceKind);
 
-  static String? _videoMetadataEventId(RelayNotification n) {
-    final kind = _mapNotificationKind(n);
-    if (_isVideoSourcedMention(n)) {
-      return _nonEmpty(n.sourceEventId);
-    }
-    return _videoAnchorEventId(kind, n);
-  }
+  /// The event whose [VideoStats] back a row, keyed identically to the anchor
+  /// so every fetched id is also a live lookup key in `videosById`.
+  static String? _videoMetadataEventId(RelayNotification n) =>
+      _videoAnchorEventId(_mapNotificationKind(n), n);
 
   static String _videoGroupId(
     NotificationKind kind,
