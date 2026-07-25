@@ -3,10 +3,12 @@
 // ABOUTME: timeline mapping applied to layers, tune adjustments and filters at
 // ABOUTME: export.
 
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' show Offset, Size;
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as model;
 import 'package:openvine/constants/video_editor_constants.dart';
@@ -377,6 +379,38 @@ void main() {
       );
 
       expect(calls, 1);
+    });
+
+    test('runs the first attempt immediately and waits settleDelay '
+        'before each retry', () {
+      fakeAsync((async) {
+        const settle = VideoEditorConstants.encoderRetrySettleDelay;
+        final harness = flakyEncoder(failuresBeforeSuccess: 2);
+
+        unawaited(
+          VideoEditorRenderService.renderWithEncoderFallback(
+            baseTask: baseTask(),
+            aspectRatio: aspectRatio,
+            encode: harness.encode,
+          ),
+        );
+
+        // First attempt pays no delay.
+        async.flushMicrotasks();
+        expect(harness.calls, hasLength(1));
+
+        // The retry waits out the full settle window before firing.
+        async.elapse(settle - const Duration(milliseconds: 1));
+        expect(harness.calls, hasLength(1));
+        async.elapse(const Duration(milliseconds: 1));
+        expect(harness.calls, hasLength(2));
+
+        // The reduced-resolution attempt waits another settle window.
+        async.elapse(settle - const Duration(milliseconds: 1));
+        expect(harness.calls, hasLength(2));
+        async.elapse(const Duration(milliseconds: 1));
+        expect(harness.calls, hasLength(3));
+      });
     });
   });
 }

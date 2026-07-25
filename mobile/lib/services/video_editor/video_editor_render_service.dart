@@ -1167,6 +1167,12 @@ class VideoEditorRenderService {
 
     for (var i = 0; i < attempts.length; i++) {
       final attempt = attempts[i];
+      // No native task is tracked during this settle window, so a teardown
+      // cancel (cancelActiveNativeTasks, AppLifecycleState.detached only) is a
+      // no-op here; the next attempt still starts and then fails/cancels
+      // against the torn-down state. A user cancel mid-encode throws
+      // RenderCanceledException, which isn't caught below and aborts the loop
+      // immediately.
       if (attempt.settle > Duration.zero) {
         await Future<void>.delayed(attempt.settle);
       }
