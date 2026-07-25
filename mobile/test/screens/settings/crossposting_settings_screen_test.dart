@@ -273,14 +273,17 @@ void main() {
     });
 
     testWidgets(
-      'never misrepresents stale automatic mode as Off',
+      'clamps stale automatic mode to manual on an unsupported platform',
       (tester) async {
+        // The repository guarantees a stale automatic preference degrades to
+        // manual before reaching the UI, so the screen surfaces Manual as the
+        // selected mode and never offers the unsupported Automatic chip.
         when(repository.loadSettings).thenAnswer(
           (_) async => [
             _connected(
               platform: CrosspostingPlatform.x,
               supportsAutomatic: false,
-              mode: CrosspostingMode.automatic,
+              mode: CrosspostingMode.manual,
             ),
           ],
         );
@@ -288,14 +291,15 @@ void main() {
         await tester.pumpWidget(buildApp());
         await tester.pumpAndSettle();
 
-        final automaticButton = tester.widget<DivineButton>(
-          find.byKey(const ValueKey('crossposting-mode-x-automatic')),
+        final manualButton = tester.widget<DivineButton>(
+          find.byKey(const ValueKey('crossposting-mode-x-manual')),
         );
-        expect(automaticButton.type, DivineButtonType.primary);
-        expect(find.text(l10n.crosspostingModeAutomatic), findsOneWidget);
+        expect(manualButton.type, DivineButtonType.primary);
+        expect(find.text(l10n.crosspostingModeManual), findsOneWidget);
+        expect(find.text(l10n.crosspostingModeAutomatic), findsNothing);
         expect(
           find.text(l10n.crosspostingModeAutomaticSubtitle),
-          findsOneWidget,
+          findsNothing,
         );
       },
     );

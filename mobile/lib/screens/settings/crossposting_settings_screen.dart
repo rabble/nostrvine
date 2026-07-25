@@ -421,7 +421,7 @@ class _ModeSelector extends StatelessWidget {
     final options = <(CrosspostingMode, String)>[
       (CrosspostingMode.disabled, context.l10n.crosspostingModeOff),
       (CrosspostingMode.manual, context.l10n.crosspostingModeManual),
-      if (entry.supportsAutomatic || selectedMode == CrosspostingMode.automatic)
+      if (entry.supportsAutomatic)
         (
           CrosspostingMode.automatic,
           context.l10n.crosspostingModeAutomatic,
