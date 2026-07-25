@@ -283,6 +283,8 @@ class VideoEditorRenderService {
   static final _compositeProgressController =
       StreamController<ProgressModel>.broadcast();
 
+  static final Set<String> _cancelledTaskIds = <String>{};
+
   @visibleForTesting
   static double proofModeProgressBudgetForClipCount(int clipCount) {
     final normalizedClipCount = clipCount < 1 ? 1 : clipCount;
@@ -311,7 +313,12 @@ class VideoEditorRenderService {
   @visibleForTesting
   static void resetActiveNativeTaskIdsForTesting() {
     NativeRenderTaskRegistry.reset();
+    _cancelledTaskIds.clear();
   }
+
+  @visibleForTesting
+  static bool isTaskCancellationRequestedForTesting(String taskId) =>
+      _cancelledTaskIds.contains(taskId);
 
   @visibleForTesting
   static void emitCompositeProgressForTesting({
@@ -1002,7 +1009,10 @@ class VideoEditorRenderService {
       ),
     );
 
-    await _cancelAndRender(outputPath, task);
+    await renderWithEncoderFallback(
+      baseTask: task,
+      encode: (attemptTask) => _cancelAndRender(outputPath, attemptTask),
+    );
 
     Log.debug(
       '✅ Clip ${clip.id} normalized to: $outputPath',
@@ -1119,8 +1129,8 @@ class VideoEditorRenderService {
 
     await renderWithEncoderFallback(
       baseTask: task,
-      aspectRatio: aspectRatio,
       encode: (attemptTask) => _cancelAndRender(outputPath, attemptTask),
+      fallbackAspectRatio: aspectRatio,
     );
 
     return outputPath;
@@ -1137,7 +1147,8 @@ class VideoEditorRenderService {
   /// — or another app codec — has not been reclaimed by the OS media server
   /// yet, and the plugin runs every attempt within a few hundred ms, so it
   /// cannot outlast that window. We retry at the Dart level with a
-  /// [settleDelay] (letting the codec free up), then once more at
+  /// [settleDelay] (letting the codec free up). When [fallbackAspectRatio] is
+  /// provided, it then retries once more at
   /// [VideoEditorConstants.encoderFallbackQuality] for devices genuinely at
   /// their 1080p encoder ceiling. Only if every attempt fails does the
   /// exception propagate to the UI's retry affordance (#6058).
@@ -1147,37 +1158,39 @@ class VideoEditorRenderService {
   @visibleForTesting
   static Future<void> renderWithEncoderFallback({
     required VideoRenderData baseTask,
-    required model.AspectRatio aspectRatio,
     required Future<void> Function(VideoRenderData task) encode,
+    model.AspectRatio? fallbackAspectRatio,
     Duration settleDelay = VideoEditorConstants.encoderRetrySettleDelay,
   }) async {
     const fallbackQuality = VideoEditorConstants.encoderFallbackQuality;
-    final reducedTask = baseTask.copyWith(
-      qualityConfig: VideoQualityConfig.custom(
-        bitrate: fallbackQuality.bitrate,
-        resolution: fallbackQuality.resolutionForAspectRatio(aspectRatio),
-      ),
-    );
+    final reducedTask = fallbackAspectRatio == null
+        ? null
+        : baseTask.copyWith(
+            qualityConfig: VideoQualityConfig.custom(
+              bitrate: fallbackQuality.bitrate,
+              resolution: fallbackQuality.resolutionForAspectRatio(
+                fallbackAspectRatio,
+              ),
+            ),
+          );
 
     final attempts = <({VideoRenderData task, Duration settle, bool reduced})>[
       (task: baseTask, settle: Duration.zero, reduced: false),
       (task: baseTask, settle: settleDelay, reduced: false),
-      (task: reducedTask, settle: settleDelay, reduced: true),
+      if (reducedTask != null)
+        (task: reducedTask, settle: settleDelay, reduced: true),
     ];
 
+    _cancelledTaskIds.remove(baseTask.id);
     for (var i = 0; i < attempts.length; i++) {
       final attempt = attempts[i];
-      // No native task is tracked during this settle window, so a teardown
-      // cancel (cancelActiveNativeTasks, AppLifecycleState.detached only) is a
-      // no-op here; the next attempt still starts and then fails/cancels
-      // against the torn-down state. A user cancel mid-encode throws
-      // RenderCanceledException, which isn't caught below and aborts the loop
-      // immediately.
       if (attempt.settle > Duration.zero) {
         await Future<void>.delayed(attempt.settle);
       }
+      _throwIfCancellationRequested(baseTask.id);
       try {
         await encode(attempt.task);
+        _throwIfCancellationRequested(baseTask.id);
         return;
       } on RenderEncoderException catch (e) {
         final isLast = i == attempts.length - 1;
@@ -1190,6 +1203,12 @@ class VideoEditorRenderService {
         );
         if (isLast) rethrow;
       }
+    }
+  }
+
+  static void _throwIfCancellationRequested(String taskId) {
+    if (_cancelledTaskIds.remove(taskId)) {
+      throw const RenderCanceledException();
     }
   }
 
@@ -1302,6 +1321,11 @@ class VideoEditorRenderService {
   }
 
   static Future<void> cancelTask(String id) async {
+    _cancelledTaskIds.add(id);
+    await _cancelNativeTaskOnly(id);
+  }
+
+  static Future<void> _cancelNativeTaskOnly(String id) async {
     try {
       Log.info(
         '⏹️ Cancelling video render',
@@ -1336,7 +1360,8 @@ class VideoEditorRenderService {
     // #4801 diagnostics while clean renders stay quiet.
     NativeLogLevel? nativeLogLevel = NativeLogLevel.warning,
   }) async {
-    await cancelTask(task.id);
+    _cancelledTaskIds.remove(task.id);
+    await _cancelNativeTaskOnly(task.id);
     return NativeRenderTaskRegistry.track(task.id, () {
       return ProVideoEditor.instance.renderVideoToFile(
         outputPath,

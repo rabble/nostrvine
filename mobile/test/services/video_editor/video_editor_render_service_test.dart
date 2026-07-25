@@ -255,6 +255,8 @@ void main() {
   });
 
   group('renderWithEncoderFallback', () {
+    tearDown(VideoEditorRenderService.resetActiveNativeTaskIdsForTesting);
+
     const aspectRatio = model.AspectRatio.vertical;
     final baseResolution = VideoEditorConstants.quality
         .resolutionForAspectRatio(aspectRatio);
@@ -299,8 +301,8 @@ void main() {
 
       await VideoEditorRenderService.renderWithEncoderFallback(
         baseTask: baseTask(),
-        aspectRatio: aspectRatio,
         encode: harness.encode,
+        fallbackAspectRatio: aspectRatio,
         settleDelay: Duration.zero,
       );
 
@@ -313,8 +315,8 @@ void main() {
 
       await VideoEditorRenderService.renderWithEncoderFallback(
         baseTask: baseTask(),
-        aspectRatio: aspectRatio,
         encode: harness.encode,
+        fallbackAspectRatio: aspectRatio,
         settleDelay: Duration.zero,
       );
 
@@ -330,8 +332,8 @@ void main() {
 
       await VideoEditorRenderService.renderWithEncoderFallback(
         baseTask: baseTask(),
-        aspectRatio: aspectRatio,
         encode: harness.encode,
+        fallbackAspectRatio: aspectRatio,
         settleDelay: Duration.zero,
       );
 
@@ -351,8 +353,8 @@ void main() {
       await expectLater(
         VideoEditorRenderService.renderWithEncoderFallback(
           baseTask: baseTask(),
-          aspectRatio: aspectRatio,
           encode: harness.encode,
+          fallbackAspectRatio: aspectRatio,
           settleDelay: Duration.zero,
         ),
         throwsA(isA<RenderEncoderException>()),
@@ -371,14 +373,102 @@ void main() {
       await expectLater(
         VideoEditorRenderService.renderWithEncoderFallback(
           baseTask: baseTask(),
-          aspectRatio: aspectRatio,
           encode: encode,
+          fallbackAspectRatio: aspectRatio,
           settleDelay: Duration.zero,
         ),
         throwsA(isA<RenderCanceledException>()),
       );
 
       expect(calls, 1);
+    });
+
+    test(
+      'uses only the settle retry when reduced fallback is disabled',
+      () async {
+        final harness = flakyEncoder(failuresBeforeSuccess: 2);
+
+        await expectLater(
+          VideoEditorRenderService.renderWithEncoderFallback(
+            baseTask: baseTask(),
+            encode: harness.encode,
+            settleDelay: Duration.zero,
+          ),
+          throwsA(isA<RenderEncoderException>()),
+        );
+
+        expect(harness.calls, hasLength(2));
+        expect(
+          harness.calls.map((t) => t.qualityConfig?.resolution),
+          everyElement(baseResolution),
+        );
+      },
+    );
+
+    test('honors cancellation recorded during the settle window', () {
+      fakeAsync((async) {
+        const settle = VideoEditorConstants.encoderRetrySettleDelay;
+        final harness = flakyEncoder(failuresBeforeSuccess: 1);
+        Object? caught;
+
+        unawaited(
+          VideoEditorRenderService.renderWithEncoderFallback(
+            baseTask: baseTask(),
+            encode: harness.encode,
+            fallbackAspectRatio: aspectRatio,
+          ).catchError((Object error) {
+            caught = error;
+          }),
+        );
+
+        async.flushMicrotasks();
+        expect(harness.calls, hasLength(1));
+
+        unawaited(VideoEditorRenderService.cancelTask('render-task'));
+        expect(
+          VideoEditorRenderService.isTaskCancellationRequestedForTesting(
+            'render-task',
+          ),
+          isTrue,
+        );
+
+        async.elapse(settle);
+        async.flushMicrotasks();
+
+        expect(caught, isA<RenderCanceledException>());
+        expect(harness.calls, hasLength(1));
+        expect(
+          VideoEditorRenderService.isTaskCancellationRequestedForTesting(
+            'render-task',
+          ),
+          isFalse,
+        );
+      });
+    });
+
+    test('honors cancellation recorded while encode is running', () async {
+      var calls = 0;
+
+      await expectLater(
+        VideoEditorRenderService.renderWithEncoderFallback(
+          baseTask: baseTask(),
+          encode: (task) async {
+            calls++;
+            unawaited(VideoEditorRenderService.cancelTask(task.id));
+          },
+          fallbackAspectRatio: aspectRatio,
+          settleDelay: Duration.zero,
+        ),
+        throwsA(isA<RenderCanceledException>()),
+      );
+
+      expect(calls, 1);
+      expect(
+        VideoEditorRenderService.isTaskCancellationRequestedForTesting(
+          'render-task',
+        ),
+        isFalse,
+      );
     });
 
     test('runs the first attempt immediately and waits settleDelay '
@@ -390,8 +480,8 @@ void main() {
         unawaited(
           VideoEditorRenderService.renderWithEncoderFallback(
             baseTask: baseTask(),
-            aspectRatio: aspectRatio,
             encode: harness.encode,
+            fallbackAspectRatio: aspectRatio,
           ),
         );
 
