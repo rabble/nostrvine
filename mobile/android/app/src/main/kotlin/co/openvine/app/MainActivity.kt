@@ -46,6 +46,8 @@ class MainActivity : FlutterActivity() {
     companion object {
         private const val NAVIGATION_CHANNEL = "org.openvine/navigation"
         private const val NAV_TAG = "OpenVineNavigation"
+        private const val INSTALL_SOURCE_CHANNEL = "divine/install_source"
+        private const val INSTALL_SOURCE_TAG = "OpenVineInstallSource"
     }
 
     private var navigationChannel: MethodChannel? = null
@@ -76,6 +78,11 @@ class MainActivity : FlutterActivity() {
 
         // Set up navigation channel for back button handling
         setupNavigationChannel(flutterEngine)
+
+        // Set up install-source channel (Play Store / Zapstore / sideload).
+        // Drives the in-app review prompt's store-install gate and the
+        // AppUpdateRepository's download-URL resolution (#6296).
+        setupInstallSourceChannel(flutterEngine)
 
         // Set up NIP-55 Android Signer plugin
         nostrSignerPlugin = NostrSignerPlugin(this, flutterEngine)
@@ -145,6 +152,43 @@ class MainActivity : FlutterActivity() {
             isFinishing = { isFinishing },
             onFallback = { finish() },
         )
+    }
+
+    /// Resolves the installer package name (e.g. "com.android.vending" for Play
+    /// Store, "com.zapstore.app" for Zapstore) so the Dart side can classify
+    /// the install source. Returns null for sideloaded APKs or on older Android
+    /// versions where the installer cannot be determined.
+    @Suppress("DEPRECATION")
+    private fun resolveInstallerPackageName(): String? {
+        return try {
+            // Prefer getInstallSourceInfo (Play's documented API) on Tiramisu+.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                packageManager
+                    .getInstallSourceInfo(packageName)
+                    .installingPackageName
+            } else {
+                packageManager.getInstallerPackageName(packageName)
+            }
+        } catch (e: PackageManager.NameNotFoundException) {
+            Log.d(INSTALL_SOURCE_TAG, "No installer package name available", e)
+            null
+        } catch (e: IllegalArgumentException) {
+            Log.d(INSTALL_SOURCE_TAG, "Installer lookup failed", e)
+            null
+        }
+    }
+
+    private fun setupInstallSourceChannel(flutterEngine: FlutterEngine) {
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            INSTALL_SOURCE_CHANNEL,
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "getInstallerPackageName" -> result.success(resolveInstallerPackageName())
+                else -> result.notImplemented()
+            }
+        }
+        Log.d(INSTALL_SOURCE_TAG, "Install source channel registered")
     }
 
     override fun onDestroy() {

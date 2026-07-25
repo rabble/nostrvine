@@ -44,6 +44,7 @@ import 'package:openvine/config/zendesk_config.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/features/app/startup/startup_coordinator.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
+import 'package:openvine/features/app_review/app_review_coordinator.dart';
 import 'package:openvine/features/appearance/bloc/appearance_cubit.dart';
 import 'package:openvine/features/appearance/models/appearance_mode.dart';
 import 'package:openvine/features/appearance/providers/appearance_providers.dart';
@@ -66,6 +67,7 @@ import 'package:openvine/providers/deep_link_provider.dart';
 import 'package:openvine/providers/device_scope.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/foreground_idle_warmup_provider.dart';
+import 'package:openvine/providers/install_source_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -82,6 +84,7 @@ import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
+import 'package:openvine/services/app_engagement_store.dart';
 import 'package:openvine/services/back_button_handler.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
@@ -91,6 +94,7 @@ import 'package:openvine/services/database_corruption_service.dart';
 import 'package:openvine/services/database_encryption_bootstrap.dart';
 import 'package:openvine/services/deep_link_service.dart';
 import 'package:openvine/services/firebase_initialization.dart';
+import 'package:openvine/services/install_source_service.dart';
 import 'package:openvine/services/locale_preference_service.dart';
 import 'package:openvine/services/memory_pressure_handler.dart';
 import 'package:openvine/services/memory_telemetry_service.dart';
@@ -1428,12 +1432,24 @@ Future<void> _startOpenVineApp() async {
     corruptionService: databaseCorruptionService,
   );
   final accountSwitchController = AccountSwitchController();
+
+  // Resolve how this install was distributed (Play Store / App Store /
+  // TestFlight / Zapstore / sideload) via the native method channel, and
+  // record this cold start for the install-scoped engagement counter that the
+  // in-app review gate reads. Both are best-effort and fall back to safe
+  // defaults on web/desktop/unsupported native shells (#6296).
+  final installSource = await const InstallSourceService().resolve();
+  await AppEngagementStore(
+    sharedPreferences: sharedPreferences,
+  ).recordSession();
+
   final deviceScope = DeviceScope(
     database: deviceDatabase,
     sharedPreferences: sharedPreferences,
     switchController: accountSwitchController,
     dbCipherKey: dbCipherKey,
     databaseCorruptionService: databaseCorruptionService,
+    installSource: installSource,
   );
 
   // Create the initial account container to initialize services BEFORE runApp.
@@ -2599,9 +2615,15 @@ class _DivineAppState extends ConsumerState<DivineApp>
             localeListResolutionCallback: resolveAppUiLocale,
             // One gate above every route: once the local database reports
             // corruption there is no screen left that can work, so ask for the
-            // restart that repairs it instead of failing route by route.
-            builder: (context, child) =>
-                DatabaseCorruptionGate(child: child ?? const SizedBox.shrink()),
+            // restart that repairs it instead of failing route by route. The
+            // AppReviewCoordinator mounts here too: a zero-size widget that
+            // evaluates the in-app review gate on auth/stats/foreground changes
+            // and renders nothing itself.
+            builder: (context, child) => AppReviewCoordinator(
+              child: DatabaseCorruptionGate(
+                child: child ?? const SizedBox.shrink(),
+              ),
+            ),
           ),
         );
       }
@@ -2626,9 +2648,15 @@ class _DivineAppState extends ConsumerState<DivineApp>
             localeListResolutionCallback: resolveAppUiLocale,
             // One gate above every route: once the local database reports
             // corruption there is no screen left that can work, so ask for the
-            // restart that repairs it instead of failing route by route.
-            builder: (context, child) =>
-                DatabaseCorruptionGate(child: child ?? const SizedBox.shrink()),
+            // restart that repairs it instead of failing route by route. The
+            // AppReviewCoordinator mounts here too: a zero-size widget that
+            // evaluates the in-app review gate on auth/stats/foreground changes
+            // and renders nothing itself.
+            builder: (context, child) => AppReviewCoordinator(
+              child: DatabaseCorruptionGate(
+                child: child ?? const SizedBox.shrink(),
+              ),
+            ),
           ),
         ),
       );
@@ -2798,7 +2826,10 @@ class _DivineAppState extends ConsumerState<DivineApp>
                   appVersionClient: AppVersionClient(),
                   sharedPreferences: ref.read(sharedPreferencesProvider),
                   currentVersion: widget.packageInfo.version,
-                  installSource: InstallSource.sideload,
+                  // Real install source resolved at startup (Play / App Store
+                  // / TestFlight / Zapstore / sideload) — drives the correct
+                  // download URL for update nudges. Was hardcoded `sideload`.
+                  installSource: ref.read(installSourceProvider),
                 ),
               )..add(const AppUpdateCheckRequested()),
             ),

@@ -306,6 +306,10 @@ dependencies:
   flutter_native_splash: ^2.4.7
   flutter_local_notifications: ^21.0.0
   package_info_plus: ^9.0.0
+  # Triggers the OS-native review card (SKStoreReviewController on iOS,
+  # Google Play in-app review on Android). Used by AppReviewCoordinator to
+  # ask engaged, store-installed creators to rate the app — no custom dialog.
+  in_app_review: ^2.0.12
   uuid: ^4.5.1
   app_links: ^6.4.1
   drift: ^2.34.0

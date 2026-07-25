@@ -72,6 +72,11 @@ extension FlutterError: @retroactive Error {}
     // Set up Zendesk platform channel
     setupZendeskChannel(with: engineBridge)
 
+    // Set up install-source channel (App Store / TestFlight / sideload).
+    // Drives the in-app review prompt's store-install gate and the
+    // AppUpdateRepository's download-URL resolution (#6296).
+    setupInstallSourceChannel(with: engineBridge)
+
     NSLog("✅ AppDelegate: Implicit Flutter engine initialized with UIScene lifecycle")
   }
 
@@ -190,6 +195,42 @@ extension FlutterError: @retroactive Error {}
     }
 
     NSLog("✅ ProofMode: Platform channel registered with LibProofMode")
+  }
+
+  /// Install-source platform channel.
+  ///
+  /// iOS distinguishes install source by the app store receipt URL: TestFlight
+  /// builds ship a `sandboxReceipt`, App Store builds ship a `receipt`. The
+  /// Dart side maps `isSandbox` → testFlight/appStore via the shared
+  /// `resolveIosInstallSource` resolver in app_update_repository.
+  private func setupInstallSourceChannel(with engineBridge: FlutterImplicitEngineBridge) {
+    let channel = FlutterMethodChannel(
+      name: "divine/install_source",
+      binaryMessenger: engineBridge.applicationRegistrar.messenger()
+    )
+
+    channel.setMethodCallHandler { (call, result) in
+      switch call.method {
+      case "isSandboxReceipt":
+        // The receipt URL is nil in simulator/debug runs without a store
+        // receipt; treat that as "not sandbox" so debug builds don't get
+        // classified as TestFlight. Production App Store builds always have a
+        // receipt URL whose lastPathComponent is "receipt".
+        guard let receiptURL = Bundle.main.appStoreReceiptURL else {
+          NSLog("📦 InstallSource: no receipt URL — defaulting to App Store")
+          result(false)
+          return
+        }
+        let isSandbox = receiptURL.lastPathComponent == "sandboxReceipt"
+        NSLog("📦 InstallSource: isSandbox=\(isSandbox) (\(receiptURL.lastPathComponent))")
+        result(isSandbox)
+
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    }
+
+    NSLog("✅ InstallSource: Platform channel registered")
   }
 
   private func setupZendeskChannel(with engineBridge: FlutterImplicitEngineBridge) {

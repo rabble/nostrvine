@@ -1,12 +1,14 @@
 // ABOUTME: The device-scoped dependencies that must survive an account switch —
 // ABOUTME: shared across every ProviderContainer so a swap opens no new DB, etc.
 
+import 'package:app_update_repository/app_update_repository.dart';
 import 'package:db_client/db_client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/container_swap_host.dart';
 import 'package:openvine/providers/database_corruption_provider.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/db_cipher_key_provider.dart';
+import 'package:openvine/providers/install_source_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/database_corruption_service.dart';
 // Override lives in riverpod's misc barrel; flutter_riverpod does not
@@ -45,6 +47,7 @@ class DeviceScope {
     required this.switchController,
     this.dbCipherKey,
     this.databaseCorruptionService,
+    this.installSource = InstallSource.sideload,
     this.accountOverrides = const [],
   });
 
@@ -71,6 +74,12 @@ class DeviceScope {
   /// uninstrumented (no cipher key).
   final DatabaseCorruptionService? databaseCorruptionService;
 
+  /// How this install was distributed (Play Store, App Store, TestFlight,
+  /// Zapstore, sideload). Resolved once during startup via
+  /// `InstallSourceService` and shared across every account container so the
+  /// in-app review gate and `AppUpdateRepository` see the same value.
+  final InstallSource installSource;
+
   /// Extra overrides applied to every account container.
   ///
   /// Production leaves this empty. Tests use it for container-wide fakes that
@@ -86,6 +95,7 @@ class DeviceScope {
     databaseCorruptionServiceProvider.overrideWithValue(
       databaseCorruptionService,
     ),
+    installSourceProvider.overrideWithValue(installSource),
     deviceScopeProvider.overrideWithValue(this),
     ...accountOverrides,
   ];
